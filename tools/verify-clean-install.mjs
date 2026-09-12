@@ -37,6 +37,12 @@ import { fileURLToPath } from 'node:url'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
 const CHECKOUT = process.env.DSH_CHECKOUT ?? '/home/lhc/.npm/_npx/1e7f6d9597241db0'
+/**
+ * `dsh` 从哪来:CI 里我们把它装进一个前缀(`npm install --prefix`),本地则用 checkout 里的那份。
+ * 两个都不在就如实说"装不了 dsh CLI",而不是让后面每一步都报一个看不懂的错。
+ */
+const CLI_PREFIX = process.env.DSH_CLI_PREFIX ?? null
+const CLI = CLI_PREFIX !== null && existsSync(join(CLI_PREFIX, 'node_modules', '.bin', 'dsh')) ? join(CLI_PREFIX, 'node_modules', '.bin', 'dsh') : null
 const argv = process.argv.slice(2)
 const option = (name, fallback) => {
 	const index = argv.indexOf(`--${name}`)
@@ -62,7 +68,7 @@ const check = (label, condition, detail = '') => {
 }
 
 const dsh = (args, home, extra = {}) =>
-	spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', ...args], {
+	spawnSync(CLI === null ? 'npx' : CLI, CLI === null ? ['--no-install', '@deepseek-ai/dsh', ...args] : args, {
 		encoding: 'utf8',
 		env: { ...process.env, DSH_HOME: home },
 		cwd: CHECKOUT,
@@ -99,7 +105,9 @@ console.log(`  一次性 DSH_HOME:${HOME_DIR}`)
 		cpSync(creds, join(HOME_DIR, '.credentials.yaml'))
 		check('搬进来了模型凭据(只这一份)', existsSync(join(HOME_DIR, '.credentials.yaml')))
 	} else {
-		check('搬进来了模型凭据(只这一份)', false, '源 ~/.dsh/.credentials.yaml 不存在;浏览器那半跑不了')
+		// CI / 新机器上没有凭据:机械那半照样能验(安装、组合、名册都不需要模型)。
+		// 如实说"跳过了什么",不把"没跑"记成"通过"。
+		console.log('  · 跳过模型凭据:这台机器上没有 ~/.dsh/.credentials.yaml —— 浏览器那半跑不了,机械那半照跑')
 	}
 	check('没有搬 settings.yaml(实测:搬了会把干净 profile 里没有的 provider 带进来)', !existsSync(join(HOME_DIR, 'settings.yaml')))
 	check('没有搬 .agent-presets(预设要由包提供)', !existsSync(join(HOME_DIR, '.agent-presets')))

@@ -1,0 +1,48 @@
+name: Release
+
+# tag 即版本。两道门:tag 必须与 package.json 的 version 一致;发布前所有自检必须绿。
+# 发布用的是 npm 的 **Trusted Publishing**(OIDC,无需长期令牌):在 npmjs.com 上把这个仓库
+# 配成该包的 trusted publisher 即可。没有配的话退回 NPM_TOKEN(见最后一步的注释)。
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Trusted Publishing 要它
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          pnpm --version
+      - name: Tag must match the manifest
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest="$(node -p "require('./package.json').version")"
+          echo "tag=$tag manifest=$manifest"
+          [ "$tag" = "$manifest" ] || { echo "::error::tag $tag does not match package.json $manifest"; exit 1; }
+      - name: Suites
+        run: npm test
+      - name: Build and self-check
+        run: |
+          node tools/build-package.mjs
+          node tools/verify-package.mjs
+      - name: Install the DSH CLI
+        run: npm install --no-save --prefix "$RUNNER_TEMP/dsh-cli" @deepseek-ai/dsh
+      - name: Clean install (mechanical half)
+        env:
+          DSH_CLI_PREFIX: ${{ runner.temp }}/dsh-cli
+          DSH_CHECKOUT: ${{ github.workspace }}
+        run: node tools/verify-clean-install.mjs
+      - name: Publish the built package
+        # 从 dist/ 发布:仓库根的 package.json 永不发布。
+        # 退回令牌方式时,把下面这行换成:NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish ./dist/clearai-dsh --access public --provenance

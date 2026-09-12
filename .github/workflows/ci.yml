@@ -1,0 +1,35 @@
+name: CI
+
+# 每次 push / PR 都跑:五份套件 + 打包自检 + 真实装配。
+# 最后一条「干净安装」要 dsh CLI 与 pnpm,所以单独一步装它们 —— 那条路正是陌生人走的那条。
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable pnpm (the CLI forwards to it)
+        run: |
+          corepack enable
+          pnpm --version
+      - name: Suites
+        run: npm test
+      - name: Package is a pure function of the source
+        run: |
+          node tools/build-package.mjs
+          node tools/verify-package.mjs
+      - name: Install the DSH CLI
+        run: npm install --no-save --prefix "$RUNNER_TEMP/dsh-cli" @deepseek-ai/dsh
+      - name: Clean install (mechanical half)
+        env:
+          DSH_CLI_PREFIX: ${{ runner.temp }}/dsh-cli
+          DSH_CHECKOUT: ${{ github.workspace }}
+        run: node tools/verify-clean-install.mjs
