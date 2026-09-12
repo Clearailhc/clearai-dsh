@@ -121,6 +121,10 @@ ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一
 
 本项目的工作署名单位为[基点起源](https://jidianqiyuan.com/)。
 
+## Star 曲线
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Clearailhc/clearai-dsh&type=Date)](https://star-history.com/#Clearailhc/clearai-dsh&Date)
+
 ## 许可证
 
 Apache-2.0,见 [LICENSE](LICENSE)。

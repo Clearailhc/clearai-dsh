@@ -26,6 +26,11 @@ What follows is the honest boundary of this release. Every line is either absent
 
 - **English UI and English prompts.** The browser panels are still Chinese-only, and the preset's prompt sections carry a Chinese-language rule. A foreign-language user therefore gets a Chinese interface. The native DSH locale service is the intended mechanism for fixing the panels; the prompt language is a design decision still open.
 
+## Before you can run it
+
+- **pnpm is a prerequisite.** `dsh plugin …` is a pnpm forwarder, so installing this plugin needs `pnpm` on `PATH` (`corepack enable --install-directory ~/.local/bin` is enough). Without it the CLI stops with `pnpm not found on PATH`, and a profile cannot be managed at all.
+- **Restart `dsh web` after installing.** The host half and the client half are both cached inside the running process; refreshing the browser is not enough, and a process that keeps running while its package is replaced will serve a broken client bundle.
+
 ## Operational caveats
 
 - **Worldline branches live in the ledger, not in your folder.** When the workspace is not a git repository, the kernel keeps a bypass ledger repo under `$DSH_HOME/storages/clearai/ledger/<slug>` and treats the workspace as its working tree. A fork's branch and worktree live **there**. Deleting or garbage-collecting that directory orphans live forks: the plan still shows an open fork, but its branch and working copy are gone.

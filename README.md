@@ -121,6 +121,10 @@ They are illustrations of the mechanism, not shipped run records.
 
 This project is developed and maintained under the work attribution of [基点起源](https://jidianqiyuan.com/).
 
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Clearailhc/clearai-dsh&type=Date)](https://star-history.com/#Clearailhc/clearai-dsh&Date)
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).

@@ -71,6 +71,12 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 | Surface | Criterion | Check | Passing line |
 |---|---|---|---|
+| **Clean install (zero)** | Empty `DSH_HOME`, official template, **real pnpm**, real `dsh plugin add` — no file edits | `node tools/verify-clean-install.mjs` | 16/16 |
+| Clean install (browser) | A real session on that home shows our views and runs a task | `--ui`, then the browser steps below | human pass |
+
+
+| Surface | Criterion | Check | Passing line |
+|---|---|---|---|
 | Artifact | Byte-for-byte rebuildable, exports present, file inventory stable | `build-package.mjs` + `verify-package.mjs` | 25/0 |
 | Install | Three landing points correct; automatic backup before overwrite; one-command rollback | `install.sh` + `backup-home.sh` | self-check passes |
 | Isolated real start | Real `DSH_HOME`, real `dsh web`, real Chrome: session starts, panels mount | human gate below | all pass |
@@ -98,6 +104,24 @@ Then, in the browser:
 9. There is **no** autonomy toggle in the tools row, and creating a plan **always** raises the native plan review — the run does not proceed until a human approves.
 
 Any failure means: do not release. Go back to that component's suite and add a regression first.
+
+## Clean-install checklist (the release gate)
+
+`node tools/verify-clean-install.mjs --ui` builds the package, installs it into an empty home with the
+real CLI and pnpm, and asserts the sixteen mechanical facts (dependency, bundles exactly once, exactly one
+host row, roster root inside the package, shipped roots intact, preset self-contained, no machine paths).
+Then, in the browser it prints:
+
+1. a session opens on the **ClearAI** preset and the middle column shows **Deliverables / Facts**;
+2. the right sidebar offers **Worldlines** and **Skills · Memory**;
+3. send one small task (e.g. "copy `input.md` to `products/echo.md` and set a goal for it");
+4. the ledger records `goal/set` and an audit pair, and `products/echo.md` exists;
+5. the page console has no errors.
+
+Two things the tool cannot do for you, both environmental rather than product: the native workspace
+picker cannot be driven headless (the tool registers a scratch workspace instead), and the clean home
+must borrow `~/.dsh/.credentials.yaml` — **nothing else**, because copying `settings.yaml` drags in a
+provider that a clean profile does not have.
 
 ## Known unverified items
 
