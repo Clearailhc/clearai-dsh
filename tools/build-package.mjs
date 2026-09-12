@@ -67,7 +67,7 @@ copy(join(PORT, 'pack', 'bin'), join(OUT, 'bin'))
 
 // ── ①′ 包里也要有 README 与 LICENSE ─────────────────────────────────────────
 // npm 会把包根的同名文件带上;源在仓库根,不拷就发出去一个没有说明、没有许可证的包。
-for (const name of ['README.md', 'README.zh-CN.md', 'LICENSE']) {
+for (const name of ['README.md', 'README.zh-CN.md', 'LICENSE', 'CHANGELOG.md']) {
 	if (existsSync(join(PORT, name))) copy(join(PORT, name), join(OUT, name))
 }
 // 品牌位图随包走:README 里那张组合标要在 npm 页面上也认得出来。

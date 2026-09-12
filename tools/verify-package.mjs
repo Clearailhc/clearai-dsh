@@ -68,7 +68,7 @@ check('随包带上 README(中英)、LICENSE 与品牌位图(npm 页面靠它们
 
 // ── ② 发行物干净 ────────────────────────────────────────────────────────────
 console.log('\n② 发行物干净:只带该带的')
-const allowedRoots = ['package.json', 'cordis.patch.yml', 'INVENTORY.txt', 'README.md', 'README.zh-CN.md', 'LICENSE', 'brand', 'lib', 'presets', 'bin']
+const allowedRoots = ['package.json', 'cordis.patch.yml', 'INVENTORY.txt', 'README.md', 'README.zh-CN.md', 'LICENSE', 'CHANGELOG.md', 'brand', 'lib', 'presets', 'bin']
 const stray = inventory.filter((rel) => !allowedRoots.some((root) => rel === root || rel.startsWith(`${root}/`)))
 check('包内没有白名单之外的文件', stray.length === 0, stray.slice(0, 5).join(', '))
 const forbidden = /(^|\/)(\.env|\.git|node_modules|coverage|__pycache__|\.pytest_cache)(\/|$)|\.(zst|tgz|log)$/

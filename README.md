@@ -75,11 +75,14 @@ The plugin contributes three surfaces on top of stock DSH: a **deliverables** vi
 
 ## Install
 
+Requires **Node ≥ 22** and **`pnpm` on `PATH`** — `dsh plugin …` is a pnpm forwarder, so without pnpm the profile cannot be managed at all:
+
 ```bash
+corepack enable --install-directory ~/.local/bin   # if you do not have pnpm yet
 dsh plugin --profile web add clearai-dsh
 ```
 
-Restart the DSH web process, open a session, and pick **ClearAI** in the preset picker.
+**Restart `dsh web` afterwards.** Both halves of the plugin are cached inside the running process, so refreshing the browser is not enough. Then open a session and pick **ClearAI** in the preset picker.
 
 From a checkout:
 
@@ -87,6 +90,7 @@ From a checkout:
 npm test                       # kernel / host / brain / client / ontology suites
 node tools/build-package.mjs   # assemble dist/ from source
 node tools/verify-package.mjs  # rebuild and compare byte-for-byte
+node tools/verify-clean-install.mjs   # install into an empty DSH_HOME through the real CLI
 node docs/diagrams/build.mjs   # regenerate the loop diagram (needs google-chrome)
 ```
 

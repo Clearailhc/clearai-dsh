@@ -75,11 +75,14 @@ ClearAI **不**声称实现递归自我改进。它提供的是自我改进系�
 
 ## 安装
 
+需要 **Node ≥ 22** 和 **`pnpm` 在 PATH 上** —— `dsh plugin …` 是 pnpm 的一层转发器，没有 pnpm 就管不了 profile：
+
 ```bash
+corepack enable --install-directory ~/.local/bin   # 还没有 pnpm 就先装它
 dsh plugin --profile web add clearai-dsh
 ```
 
-重启 DSH web 进程，新建会话，在预设选择器里选 **ClearAI**。
+**装完要重启 `dsh web`。** 插件的两半都在运行中的进程里按模块 URL 缓存，只刷新浏览器不够。然后新建会话，在预设选择器里选 **ClearAI**。
 
 从仓库开发：
 
@@ -87,6 +90,7 @@ dsh plugin --profile web add clearai-dsh
 npm test                       # 内核 / 宿主 / 外脑 / 客户端 / 本体 五份套件
 node tools/build-package.mjs   # 由源装配 dist/
 node tools/verify-package.mjs  # 现场重建并逐字节比对
+node tools/verify-clean-install.mjs   # 空 DSH_HOME + 真 CLI 装一遍(16 条断言)
 node docs/diagrams/build.mjs   # 重画循环主图(需 google-chrome)
 ```
 
