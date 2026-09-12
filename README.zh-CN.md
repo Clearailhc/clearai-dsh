@@ -117,6 +117,10 @@ ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一
 - [循环哲学](docs/loop-philosophy.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md)
 - [已知缺口](docs/known-gaps.zh-CN.md) · [发布验收](docs/release-verification.zh-CN.md)
 
+## 工作署名
+
+本项目的工作署名单位为[基点起源](https://jidianqiyuan.com/)。
+
 ## 许可证
 
 Apache-2.0,见 [LICENSE](LICENSE)。

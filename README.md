@@ -117,6 +117,10 @@ They are illustrations of the mechanism, not shipped run records.
 - [Loop philosophy](docs/loop-philosophy.md) · [Verification ontology](docs/verification-loop.md)
 - [Known gaps](docs/known-gaps.md) · [Release verification](docs/release-verification.md)
 
+## Work attribution
+
+This project is developed and maintained under the work attribution of [基点起源](https://jidianqiyuan.com/).
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
