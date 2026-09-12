@@ -14,6 +14,10 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 - `RequestPlanReview` — re-present the current plan for review without changing anything. Returns `already_confirmed` when the plan is already authorised.
 
+### Changed
+
+- **The continuation window no longer shows a machine id.** The native goal chip displayed `ClearAI 续跑窗口 · 目标 g-…` — a mechanism word plus an id, on a surface the platform renders for people. It now reads as a sentence about the work (`继续做完:<what you asked for>`). The window's identity is no longer the text: ownership is tracked in the ledger, and a change of wording goes through `goals.edit`, which **does not touch the round budget**, so revising a goal still cannot refresh it.
+
 ## [0.1.1] — 2026-09-12
 
 ### Fixed
