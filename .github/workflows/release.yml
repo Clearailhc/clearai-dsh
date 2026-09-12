@@ -44,5 +44,13 @@ jobs:
         run: node tools/verify-clean-install.mjs
       - name: Publish the built package
         # 从 dist/ 发布:仓库根的 package.json 永不发布。
+        # **幂等**:0.1.0 是手工首发(2FA 只能人敲),之后再打同一个 tag 不能让 CI 红着报
+        # "version already published" —— 先问 registry 有没有这个版本,有就如实跳过。
         # 退回令牌方式时,把下面这行换成:NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish ./dist/clearai-dsh --access public --provenance
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if npm view "clearai-dsh@$version" version >/dev/null 2>&1; then
+            echo "::notice::clearai-dsh@$version 已经在 registry 上,跳过发布(首发是手工完成的)"
+            exit 0
+          fi
+          npm publish ./dist/clearai-dsh --access public --provenance
