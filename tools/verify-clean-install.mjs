@@ -154,6 +154,12 @@ if (spec === null) {
 {
 	const manifest = JSON.parse(readFileSync(join(PROFILE, 'package.json'), 'utf8'))
 	const deps = Object.keys(manifest.dependencies ?? {})
+	/**
+	 * **装到的是哪个版本,要念出来。** 2026-09-12 的实测:pnpm 的 registry 元数据有本地缓存,
+	 * 刚发完新版它可能仍然解析到旧版 —— 于是"干净安装通过"到底装的是哪一版,不念出来就没人知道。
+	 */
+	const installed = JSON.parse(readFileSync(join(PROFILE, 'node_modules', 'clearai-dsh', 'package.json'), 'utf8'))
+	console.log(`  装到的版本:${installed.name}@${installed.version}`)
 	const bundles = manifest.dsh?.profile?.bundles ?? []
 	check('① 依赖里有 clearai-dsh', deps.includes('clearai-dsh'), deps.join(','))
 	check('② bundles 里有它,而且恰好一次', bundles.filter((name) => name === 'clearai-dsh').length === 1, bundles.join(','))
