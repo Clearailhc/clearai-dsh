@@ -492,12 +492,12 @@ console.log('\n【提示词面:预设的提示词段】')
 console.log('\n【装配:贡献表驱动(阶段 3)】')
 {
 	const NAMES = [
-		'SetGoal', 'CloseGoal', 'CreatePlan', 'CheckPlan', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan',
+		'SetGoal', 'CloseGoal', 'CreatePlan', 'CheckPlan', 'RequestPlanReview', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan',
 		'ForkPlan', 'AdvanceWorldline', 'ConvergeFork', 'WorldlineStatus', 'AwaitWorldlines', 'AbandonFork', 'SpawnScout', 'MapScouts',
 		'SaveSkill', 'WriteMemory', 'FileHistory', 'RestoreFile',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
-	check('工具面恰好 21 件(实测,不是推断)', thisHost.tools.size === 21, `${thisHost.tools.size} 件`)
+	check('工具面恰好 22 件(实测,不是推断)', thisHost.tools.size === 22, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -551,8 +551,8 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	const trimmed = makeHost()
 	apply(trimmed.ctx, { contributions: { mechanisms: { worldline: false } } })
 	check(
-		'关掉世界线机制 → 6 件世界线工具真的没装(15 件)',
-		trimmed.tools.size === 15 && !trimmed.tools.has('ForkPlan') && !trimmed.tools.has('AbandonFork') && !trimmed.tools.has('AwaitWorldlines') && trimmed.tools.has('AdvancePlan'),
+		'关掉世界线机制 → 6 件世界线工具真的没装(16 件)',
+		trimmed.tools.size === 16 && !trimmed.tools.has('ForkPlan') && !trimmed.tools.has('AbandonFork') && !trimmed.tools.has('AwaitWorldlines') && trimmed.tools.has('AdvancePlan'),
 		`${trimmed.tools.size} 件`,
 	)
 	// 只裁工具面、不动机制:能装出来的最小面就是清单本身。
@@ -1058,6 +1058,49 @@ console.log('\n【无人值守续跑:宿主目标只当驱动器,不当事实源
 		const R = 'session-plan-revise'
 		const revised = await callOn(reviseHost, R, 'CreatePlan', { steps: [{ id: 'a1', do: '造 lab/a.txt', artifacts: ['lab/a.txt'], done_criteria: 'lab/a.txt 存在' }] })
 		check('人选择「先改再交」⇒ **不落授权**(计划仍未授权)', reviseHost.service.state(R).plans[0]?.confirmed_at === null && revised.confirmation_required === true, JSON.stringify({ at: reviseHost.service.state(R).plans[0]?.confirmed_at, need: revised.confirmation_required }))
+
+		/**
+		 * 2026-09-12 实测的死胡同:人点了「先改再交」之后,模型照意见改了计划,
+		 * 而**没有任何入口**能再呈一次 —— 计划永远停在未授权,内核又如实拒绝开工。
+		 * 门打不开比没有门更糟。两条出口都要在:
+		 *   ① 改完**自动**再呈一次(审阅卡上承诺的就是这句);
+		 *   ② 一个显式入口 `RequestPlanReview`(模型随时能再呈)。
+		 */
+		{
+			// ① AmendPlan:未授权的计划补一步 ⇒ 自动再呈;人这次批准 ⇒ 记号落账
+			reviseHost.userQuestions = { async ask() { return { answers: [{ id: 'plan-review', selected: ['批准,开始执行'] }] } } }
+			const amended = await callOn(reviseHost, R, 'AmendPlan', { step: { id: 'extra', do: '补一步交付 lab/extra.txt', artifacts: ['lab/extra.txt'], done_criteria: 'lab/extra.txt 存在' } })
+			check('未授权的计划:补一步之后**自动再呈**一次,人批准即落账', amended.ok === true && reviseHost.service.state(R).plans[0]?.confirmed_at !== null && /批准/.test(String(amended.message)), `${amended.code} ${String(amended.message).slice(-80)}`)
+
+			// ② 换个会话:精化判据也会再呈;这次人仍然不批,记号一个字都不落
+			const refineHost = makeHost()
+			refineHost.userQuestions = { async ask() { return { answers: [{ id: 'plan-review', selected: [], custom: '判据太松' }] } } }
+			apply(refineHost.ctx, {})
+			const R2 = 'session-plan-refine'
+			await callOn(refineHost, R2, 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
+			const created2 = await callOn(refineHost, R2, 'CreatePlan', { steps: [{ id: 'r1', do: '造 lab/r.txt 探针', artifacts: ['lab/r.txt'], done_criteria: 'lab/r.txt 存在' }] })
+			check('前置:审阅被拒 ⇒ 未授权', created2.confirmation_required === true && refineHost.service.state(R2).plans[0]?.confirmed_at === null, `${created2.code} ${String(created2.message).slice(0,120)}`)
+			refineHost.userQuestions = { async ask() { return { answers: [{ id: 'plan-review', selected: ['批准,开始执行'] }] } } }
+			const refined2 = await callOn(refineHost, R2, 'RefinePlan', { step_id: 'r1', done_criteria: 'lab/r.txt 存在且非空', reason: '按人的意见收紧' })
+			check('未授权的计划:精化判据之后**自动再呈**', refined2.ok === true && /批准/.test(String(refined2.message)) && refineHost.service.state(R2).plans[0]?.confirmed_at !== null, `${refined2.code} ${String(refined2.message).slice(-80)}`)
+
+			// ③ 显式入口:已经授权就不再打扰人
+			const again = await callOn(refineHost, R2, 'RequestPlanReview', {})
+			check('已授权的计划:RequestPlanReview 如实说「不必再问」,不再弹卡', again.ok === true && again.code === 'already_confirmed', String(again.code))
+
+			// ④ 显式入口:没授权时能再呈,而且只有批准才落记号
+			const orphanHost = makeHost()
+			orphanHost.userQuestions = { async ask() { return { answers: [] } } }
+			apply(orphanHost.ctx, {})
+			const R3 = 'session-plan-request'
+			await callOn(orphanHost, R3, 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
+			await callOn(orphanHost, R3, 'CreatePlan', { steps: [{ id: 'q1', do: '造 lab/q.txt 探针', artifacts: ['lab/q.txt'], done_criteria: 'lab/q.txt 存在' }] })
+			const stillNil = await callOn(orphanHost, R3, 'RequestPlanReview', {})
+			check('人又一次撤下审阅:仍不落授权,如实说仍未授权', stillNil.ok === true && stillNil.code === 'plan_review_pending' && orphanHost.service.state(R3).plans[0]?.confirmed_at === null, String(stillNil.code))
+			orphanHost.userQuestions = { async ask() { return { answers: [{ id: 'plan-review', selected: ['批准,开始执行'] }] } } }
+			const nowOk = await callOn(orphanHost, R3, 'RequestPlanReview', {})
+			check('再由人批准 ⇒ 记号落账(借界面,不借账)', nowOk.ok === true && nowOk.code === 'plan_confirmed' && orphanHost.service.state(R3).plans[0]?.confirmed_at !== null, String(nowOk.code))
+		}
 		check('并且把他的意见如实交回模型', /第二步判据太松/.test(String(revised.message ?? '')), String(revised.message ?? '').slice(0, 120))
 
 		// 没有审阅通道(headless):退回旧行为,并且明说「别再自己去问一遍」
@@ -2013,7 +2056,7 @@ console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 21)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 22)
 	}
 
 	// ② SaveSkill:写进工作区、默认候选态、写盘后让宿主目录失效

@@ -2,6 +2,18 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-09-12
+
+### Fixed
+
+- **A gate could be impossible to open.** The plan review is a real gate — only a person's approval writes the authorisation mark, and the kernel refuses to start work without it. But the review card was raised **only** when a plan was created, so after a person chose *revise first, then resubmit*, the model revised the plan and there was **no entry point left** to present it again. The plan stayed unauthorised while the kernel correctly refused to work: a mechanism turned into a dead end.
+
+  Now `AmendPlan` and `RefinePlan` present an unauthorised plan again automatically, and the new **`RequestPlanReview`** tool is an explicit entry point for the model or a person to re-present it. Only approval writes the mark; every other outcome still writes nothing.
+
+### Added
+
+- `RequestPlanReview` — re-present the current plan for review without changing anything. Returns `already_confirmed` when the plan is already authorised.
+
 ## [0.1.1] — 2026-09-12
 
 ### Fixed
@@ -33,5 +45,6 @@ The first release: ClearAI as a native DSH plugin.
 - **Restart `dsh web` after installing**: both halves are cached in the running process, so a browser refresh is not enough.
 - Known gaps — what is deliberately not implemented, and what has only been verified to a stated depth — are listed in [`docs/known-gaps.md`](docs/known-gaps.md).
 
+[0.1.2]: https://github.com/Clearailhc/clearai-dsh/releases/tag/v0.1.2
 [0.1.1]: https://github.com/Clearailhc/clearai-dsh/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Clearailhc/clearai-dsh/releases/tag/v0.1.0

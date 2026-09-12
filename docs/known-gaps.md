@@ -31,6 +31,11 @@ What follows is the honest boundary of this release. Every line is either absent
 - **pnpm is a prerequisite.** `dsh plugin …` is a pnpm forwarder, so installing this plugin needs `pnpm` on `PATH` (`corepack enable --install-directory ~/.local/bin` is enough). Without it the CLI stops with `pnpm not found on PATH`, and a profile cannot be managed at all.
 - **Restart `dsh web` after installing.** The host half and the client half are both cached inside the running process; refreshing the browser is not enough, and a process that keeps running while its package is replaced will serve a broken client bundle.
 
+## Fixed after the first release
+
+- **A gate could be impossible to open.** The plan review is a real gate: only a person's approval writes the authorisation mark, and the kernel refuses to start work without it. But the review card was raised **only** when a plan was created — so after a person chose "revise first, then resubmit", the model revised the plan and there was **no entry point left** to present it again. The plan stayed unauthorised forever while the kernel correctly refused to work. A gate that cannot be opened is worse than no gate: it turns a mechanism into a dead end.
+  Since 0.1.2 `AmendPlan` and `RefinePlan` present an unauthorised plan again automatically, and `RequestPlanReview` is an explicit entry point for either the model or a person to re-present it. Only approval writes the mark; every other outcome still writes nothing.
+
 ## Operational caveats
 
 - **Worldline branches live in the ledger, not in your folder.** When the workspace is not a git repository, the kernel keeps a bypass ledger repo under `$DSH_HOME/storages/clearai/ledger/<slug>` and treats the workspace as its working tree. A fork's branch and worktree live **there**. Deleting or garbage-collecting that directory orphans live forks: the plan still shows an open fork, but its branch and working copy are gone.

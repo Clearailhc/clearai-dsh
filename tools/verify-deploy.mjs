@@ -184,6 +184,6 @@ if (existsSync(HOST_PKG)) {
 }
 console.log(`  宿主包:${hostOk ? '✓' : '✗'} ${hostNote}`)
 
-const ok = tools.size === 21 && sections.length === 22 && clarifications.length === 1 && hostOk
+const ok = tools.size === 22 && sections.length === 22 && clarifications.length === 1 && hostOk
 console.log(ok ? '\n部署自洽。(运行期验收仍需重启宿主:内核按 URL 缓存。)' : '\n✗ 实测数字与预期不符。')
 process.exit(ok ? 0 : 1)

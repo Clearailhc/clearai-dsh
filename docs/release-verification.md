@@ -62,7 +62,7 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 | Surface | Criterion | Check | Passing line |
 |---|---|---|---|
-| Intent tools | Output-schema validation and semantic refusals are both asserted | `test/kernel.test.mjs` | green |
+| Intent tools (22) | Output-schema validation and semantic refusals are both asserted | `test/kernel.test.mjs` | green |
 | Single completion verb | Progress only through `AdvancePlan`; the doer cannot judge its own result | same | green |
 | L4 release | The native approval pair is the only authority | same | green |
 | Shelves | Fact shelf and ontology shelf rebuild idempotently | same | green |

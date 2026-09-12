@@ -473,7 +473,7 @@ export const CONFIG_KEYS = [
  */
 export const MECHANISM_TOOLS = {
 	goal: ['SetGoal', 'CloseGoal'],
-	plan: ['CreatePlan', 'CheckPlan', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan'],
+	plan: ['CreatePlan', 'CheckPlan', 'RequestPlanReview', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan'],
 	worldline: ['ForkPlan', 'AdvanceWorldline', 'ConvergeFork', 'WorldlineStatus', 'AwaitWorldlines', 'AbandonFork'],
 	scout: ['SpawnScout', 'MapScouts'],
 	/** 外脑:写侧两件(读侧全走宿主原生的技能目录与 `skill` 工具)。 */
@@ -2251,6 +2251,37 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
+	/**
+	 * 请人审阅**已经立起来的**计划,并按结果落授权记号。
+	 *
+	 * 为什么必须有这条路:`CreatePlan` 会请人审阅,但**改完不会再请** —— 而审阅卡上那句
+	 * 「改完再呈一次」正是我们承诺的。2026-09-12 实测的死胡同:人在审阅里选了「先改再交」,
+	 * 模型照意见改了计划,然后**没有任何入口**能再呈一次 ⇒ 计划永远停在未授权,
+	 * 而内核又如实拒绝开工。**打不开的门比没有门更糟**:它把机制变成死胡同。
+	 *
+	 * 尺子与 CreatePlan 完全一样:只有 approved 才落记号,其余三种结局一个字都不落。
+	 */
+	async function reviewExistingPlan(plan, exec, mutations, stepsOverride) {
+		const steps = stepsOverride ?? plan.steps
+		const review = await requestPlanReview(
+			exec.agent,
+			renderPlanForReview(
+				plan.id,
+				plan.brief ?? '',
+				null,
+				steps.map((step) => ({ id: step.id, do: step.do, artifacts: step.artifacts ?? [], done_criteria: step.done_criteria })),
+			),
+			exec.signal,
+		)
+		if (review.outcome === 'approved') {
+			mutations.push({ t: 'plan/confirmed', plan: plan.id, by: 'user', at: new Date().toISOString() })
+			return { confirmed: true, note: '\n人在审阅里**批准**了这份计划——授权记号已落账,可以开工。' }
+		}
+		if (review.outcome === 'declined') return { confirmed: false, note: `\n人又一次选择**先改再交**${review.note === '' ? '' : `,他的意见:${review.note}`}——仍未授权,按意见再改。` }
+		if (review.outcome === 'cancelled') return { confirmed: false, note: '\n人把审阅撤下、改为先说话:仍未授权,等他的下一步指令。' }
+		return { confirmed: false, note: `\n(这份计划还没有得到人的授权:${review.note}。**不要开工**——如实停下等人。)` }
+	}
+
 	/** 给人审阅的计划正文(markdown)。原生审阅界面渲染它,所以它得是人读得懂的一份计划。 */
 	function renderPlanForReview(planId, brief, goal, steps) {
 		const lines = [`# 计划:${typeof brief === 'string' && brief.trim() !== '' ? brief.trim() : planId}`]
@@ -2779,12 +2810,14 @@ export function apply(ctx, config = {}) {
 			const problem = validateSteps([args.step])
 			if (problem !== null) return fail('invalid_step', problem)
 			if (plan.steps.some((step) => step.id === args.step.id)) return fail('duplicate_step', `步骤 id 已存在:${args.step.id}`)
-			mutations.push({
-				t: 'plan/amended',
-				plan: plan.id,
-				step: { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: args.step.tests ?? null },
-			})
-			return done({ ok: true, code: 'plan_amended', progress_changed: false, message: `已补一步 ${args.step.id}(进度不变)。` })
+			const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: args.step.tests ?? null }
+			mutations.push({ t: 'plan/amended', plan: plan.id, step: amended })
+			/**
+			 * **没授权的计划:改完再呈一次**(审阅卡上承诺的就是这句)。
+			 * 已经授权的计划不再打扰人 —— 补一步不是重新立约。
+			 */
+			const again = plan.confirmed_at === null ? await reviewExistingPlan(plan, exec, mutations, [...plan.steps, amended]) : { note: '' }
+			return done({ ok: true, code: 'plan_amended', progress_changed: false, message: `已补一步 ${args.step.id}(进度不变)。${again.note}` })
 		},
 	})
 
@@ -2813,7 +2846,35 @@ export function apply(ctx, config = {}) {
 			const selfRef = SELF_REFERENCE.find(([pattern]) => pattern.test(criteria))
 			if (selfRef !== undefined) return fail('criteria_self_reference', selfRef[1])
 			mutations.push({ t: 'plan/refined', plan: plan.id, step: step.id, old_criteria: step.done_criteria, new_criteria: criteria, reason: args.reason ?? null })
-			return done({ ok: true, code: 'plan_refined', progress_changed: false, message: `步骤 ${step.id} 的判据已精化(进度不变,旧判据留痕)。` })
+			const refinedSteps = plan.steps.map((item) => (item.id === step.id ? { ...item, done_criteria: criteria } : item))
+			const againRefined = plan.confirmed_at === null ? await reviewExistingPlan(plan, exec, mutations, refinedSteps) : { note: '' }
+			return done({ ok: true, code: 'plan_refined', progress_changed: false, message: `步骤 ${step.id} 的判据已精化(进度不变,旧判据留痕)。${againRefined.note}` })
+		},
+	})
+
+	defineTool({
+		name: 'RequestPlanReview',
+		description:
+			'把**当前这份计划**再呈给人审阅一次(不改任何东西)。计划还没获授权、而你已经按人的意见改完时用它——审阅卡不会自己回来,必须有人再呈一次。人批准 ⇒ 授权记号落账,可以开工;否则一个字都不落,如实停下。已经授权的计划不必再问。',
+		parameters: { type: 'object', properties: {}, additionalProperties: false },
+		output: CARD_OUTPUT,
+		async execute(_args, exec) {
+			const call = open(exec)
+			if (call.ok !== true) return call.response
+			const { hostService, sessionId, state, mutations } = call
+			const done = finish(hostService, sessionId, mutations)
+			const plan = activePlanOf(state)
+			if (plan === null) return fail('no_active_plan', '没有活动计划。')
+			if (plan.confirmed_at !== null) {
+				return done({ ok: true, code: 'already_confirmed', progress_changed: false, message: `计划 ${plan.id} 已经获授权(${plan.confirmed_by ?? 'user'}),不必再问。` })
+			}
+			const review = await reviewExistingPlan(plan, exec, mutations)
+			return done({
+				ok: true,
+				code: review.confirmed ? 'plan_confirmed' : 'plan_review_pending',
+				progress_changed: false,
+				message: review.confirmed ? `计划 ${plan.id} 已获授权。${review.note}` : `计划 ${plan.id} 仍未授权。${review.note}`,
+			})
 		},
 	})
 

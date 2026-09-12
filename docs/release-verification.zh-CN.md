@@ -64,7 +64,7 @@ node tools/recheck.mjs --log ~/.dsh/sessions/<桶>/<会话>/session.v3.jsonl.zst
 
 | 面 | 判据 | 怎么验 | 通过线 |
 |---|---|---|---|
-| 意图工具 21 件 | 契约校验(输出 schema)+ 语义拒绝都断言 | `test/kernel.test.mjs` | 全绿 |
+| 意图工具 22 件 | 契约校验(输出 schema)+ 语义拒绝都断言 | `test/kernel.test.mjs` | 全绿 |
 | 唯一完成动词 | 推进只经 `AdvancePlan`;做的人不判自己 | 同上(§「做的人不判自己」) | 全绿 |
 | L4 人放行 | 原生审批对是唯一权威;同一步重试不再问人 | 同上(§19-B) | 全绿 |
 | 货架 | 事实货架 `INDEX.md` 幂等重建;本体货架落盘 | 同上(§22·§23) | 全绿 |
