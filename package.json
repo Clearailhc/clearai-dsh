@@ -1,0 +1,62 @@
+{
+  "name": "clearai-dsh",
+  "version": "0.1.0",
+  "description": "ClearAI: The Epistemic Loop, native to DSH.",
+  "type": "module",
+  "private": false,
+  "license": "Apache-2.0",
+  "main": "./lib/host.js",
+  "exports": {
+    ".": "./lib/host.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "clearai-dsh": "./bin/clearai.mjs"
+  },
+  "files": [
+    "lib",
+    "presets",
+    "bin",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "brand"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "zod": "^4.6.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "clearai",
+    "agent-preset",
+    "evidence",
+    "worldline"
+  ],
+  "scripts": {
+    "test": "bash test/run.sh",
+    "build": "node tools/build-package.mjs",
+    "verify": "node tools/verify-package.mjs",
+    "verify:deploy": "node tools/verify-deploy.mjs",
+    "pack": "npm run build && npm pack dist/clearai-dsh"
+  }
+}

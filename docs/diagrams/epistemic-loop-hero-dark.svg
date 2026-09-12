@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="t d">
+	<title id="t">ClearAI · the Epistemic Loop</title>
+	<desc id="d">The ClearAI mark as the loop itself: its c is divided into seven segments, one per stage — Frame, Hypothesize, Plan, Observe, Verify, Evaluate, Record and act. Inside sits an evidence chart: five observations with error bars across levels L0 to L4, one pre-registered criterion line, one observation refuted and kept in place, one inconclusive, one that clears the criterion. A leader line carries that accepted observation through the opening of the c, where it becomes the single emerald fact dot.</desc>
+
+	<defs>
+		<clipPath id="plate"><circle cx="800" cy="450" r="276"/></clipPath>
+		<linearGradient id="zone" gradientUnits="userSpaceOnUse" x1="0" y1="462" x2="0" y2="300">
+			<stop offset="0%" stop-color="#FBFAF7" stop-opacity="0.06"/>
+			<stop offset="100%" stop-color="#FBFAF7" stop-opacity="0"/>
+		</linearGradient>
+		<linearGradient id="zoneFade" gradientUnits="userSpaceOnUse" x1="620" y1="0" x2="980" y2="0">
+			<stop offset="0%" stop-color="#000"/>
+			<stop offset="14%" stop-color="#fff"/>
+			<stop offset="86%" stop-color="#fff"/>
+			<stop offset="100%" stop-color="#000"/>
+		</linearGradient>
+		<mask id="zoneMask"><rect x="620" y="300" width="360" height="162" fill="url(#zoneFade)"/></mask>
+	</defs>
+
+	<rect width="1600" height="900" fill="#1C1A18"/>
+
+	<!-- 环内:方格纸 + 达标区 -->
+	<g clip-path="url(#plate)">
+		<g stroke="#FBFAF7" stroke-opacity="0.055" stroke-width="1.4"><line x1="554" y1="174" x2="554" y2="726"/><line x1="584" y1="174" x2="584" y2="726"/><line x1="614" y1="174" x2="614" y2="726"/><line x1="644" y1="174" x2="644" y2="726"/><line x1="674" y1="174" x2="674" y2="726"/><line x1="704" y1="174" x2="704" y2="726"/><line x1="734" y1="174" x2="734" y2="726"/><line x1="764" y1="174" x2="764" y2="726"/><line x1="794" y1="174" x2="794" y2="726"/><line x1="824" y1="174" x2="824" y2="726"/><line x1="854" y1="174" x2="854" y2="726"/><line x1="884" y1="174" x2="884" y2="726"/><line x1="914" y1="174" x2="914" y2="726"/><line x1="944" y1="174" x2="944" y2="726"/><line x1="974" y1="174" x2="974" y2="726"/><line x1="1004" y1="174" x2="1004" y2="726"/><line x1="1034" y1="174" x2="1034" y2="726"/><line x1="1064" y1="174" x2="1064" y2="726"/><line x1="524" y1="204" x2="1076" y2="204"/><line x1="524" y1="234" x2="1076" y2="234"/><line x1="524" y1="264" x2="1076" y2="264"/><line x1="524" y1="294" x2="1076" y2="294"/><line x1="524" y1="324" x2="1076" y2="324"/><line x1="524" y1="354" x2="1076" y2="354"/><line x1="524" y1="384" x2="1076" y2="384"/><line x1="524" y1="414" x2="1076" y2="414"/><line x1="524" y1="444" x2="1076" y2="444"/><line x1="524" y1="474" x2="1076" y2="474"/><line x1="524" y1="504" x2="1076" y2="504"/><line x1="524" y1="534" x2="1076" y2="534"/><line x1="524" y1="564" x2="1076" y2="564"/><line x1="524" y1="594" x2="1076" y2="594"/><line x1="524" y1="624" x2="1076" y2="624"/><line x1="524" y1="654" x2="1076" y2="654"/><line x1="524" y1="684" x2="1076" y2="684"/><line x1="524" y1="714" x2="1076" y2="714"/></g>
+		<rect x="620" y="300" width="360" height="162" fill="url(#zone)" mask="url(#zoneMask)"/>
+	</g>
+
+	<!-- 事先登记进判据的那条线:先写后做 -->
+	<line x1="620" y1="462" x2="980" y2="462" stroke="#FBFAF7" stroke-opacity="0.55" stroke-width="2.4" stroke-dasharray="14 11"/>
+
+	<!-- 横轴是证据等级;纵轴只给框 -->
+	<g stroke="#FBFAF7" stroke-opacity="0.16" stroke-width="2">
+		<line x1="620" y1="630" x2="980" y2="630"/>
+		<line x1="620" y1="300" x2="620" y2="630"/>
+	</g>
+	<g font-family="Inter,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="23" font-weight="600" letter-spacing="1.4" text-anchor="middle" fill="#FBFAF7" fill-opacity="0.53">
+		<line x1="638" y1="630" x2="638" y2="640"/><text x="638" y="668">L0</text>
+		<line x1="717" y1="630" x2="717" y2="640"/><text x="717" y="668">L1</text>
+		<line x1="796" y1="630" x2="796" y2="640"/><text x="796" y="668">L2</text>
+		<line x1="875" y1="630" x2="875" y2="640"/><text x="875" y="668">L3</text>
+		<line x1="954" y1="630" x2="954" y2="640"/><text x="954" y="668">L4</text>
+	</g>
+
+	<!-- 观测与误差棒 -->
+	<g stroke-linecap="butt">
+		<line x1="638" y1="524" x2="638" y2="608" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<line x1="627" y1="524" x2="649" y2="524" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<line x1="627" y1="608" x2="649" y2="608" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<circle cx="638" cy="566" r="12" fill="none" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<line x1="717" y1="490" x2="717" y2="566" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<line x1="706" y1="490" x2="728" y2="490" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<line x1="706" y1="566" x2="728" y2="566" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<circle cx="717" cy="528" r="12" fill="none" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="3"/>
+		<line x1="796" y1="394" x2="796" y2="506" stroke="#FBFAF7" stroke-opacity="0.5" stroke-width="3"/>
+		<line x1="785" y1="394" x2="807" y2="394" stroke="#FBFAF7" stroke-opacity="0.5" stroke-width="3"/>
+		<line x1="785" y1="506" x2="807" y2="506" stroke="#FBFAF7" stroke-opacity="0.5" stroke-width="3"/>
+		<circle cx="796" cy="450" r="12" fill="none" stroke="#FBFAF7" stroke-opacity="0.7" stroke-width="3" stroke-dasharray="7 6"/>
+		<line x1="875" y1="562" x2="875" y2="614" stroke="#FBFAF7" stroke-opacity="0.4" stroke-width="3"/>
+		<line x1="864" y1="562" x2="886" y2="562" stroke="#FBFAF7" stroke-opacity="0.4" stroke-width="3"/>
+		<line x1="864" y1="614" x2="886" y2="614" stroke="#FBFAF7" stroke-opacity="0.4" stroke-width="3"/>
+		<circle cx="875" cy="588" r="12" fill="none" stroke="#FBFAF7" stroke-opacity="0.4" stroke-width="3"/>
+		<line x1="860" y1="603" x2="890" y2="573" stroke="#FBFAF7" stroke-opacity="0.4" stroke-width="3"/>
+		<line x1="954" y1="372" x2="954" y2="420" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="4"/>
+		<line x1="943" y1="372" x2="965" y2="372" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="4"/>
+		<line x1="943" y1="420" x2="965" y2="420" stroke="#FBFAF7" stroke-opacity="0.78" stroke-width="4"/>
+		<circle cx="954" cy="396" r="14" fill="#FBFAF7"/>
+	</g>
+
+	<!-- 引导线:被接纳的那条观测穿过开口,落成事实点 -->
+	<line x1="973.74" y1="373.41" x2="1064.71" y2="269.33" stroke="#FBFAF7" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="4 8"/>
+
+	<!-- 内圈发丝线:表盘,与主环同开口 -->
+	<path d="M1095.44 502.09 A 300 300 0 1 1 852.09 154.56" fill="none" stroke="#FBFAF7" stroke-opacity="0.16" stroke-width="1.6" stroke-linecap="round"/>
+
+	<!-- 品牌字形:开口的 c;七个段界刻度 = 七个阶段 -->
+	<path d="M1130.9 508.35 A 336 336 0 1 1 858.35 119.1" fill="none" stroke="#FBFAF7" stroke-width="20" stroke-linecap="round"/>
+	<g stroke-linecap="round">
+		<line x1="1009.09" y1="686.93" x2="1035.56" y2="716.92" stroke="#FBFAF7" stroke-opacity="0.45" stroke-width="3"/>
+		<line x1="815.75" y1="765.61" x2="817.75" y2="805.56" stroke="#FBFAF7" stroke-opacity="0.45" stroke-width="3"/>
+		<line x1="615.54" y1="706.57" x2="592.19" y2="739.05" stroke="#FBFAF7" stroke-opacity="0.45" stroke-width="3"/>
+		<line x1="495.81" y1="535.59" x2="457.31" y2="546.42" stroke="#FBFAF7" stroke-opacity="0.45" stroke-width="3"/>
+		<line x1="508.81" y1="327.25" x2="471.95" y2="311.72" stroke="#FBFAF7" stroke-opacity="0.45" stroke-width="3"/>
+		<line x1="648.87" y1="172.48" x2="629.74" y2="137.35" stroke="#FBFAF7" stroke-opacity="0.45" stroke-width="3"/>
+	</g>
+
+	<!-- 七个阶段(规范名逐字) -->
+	<g font-family="Inter,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="27" font-weight="600" fill="#FBFAF7">
+		<text x="1138.41" y="633.8" text-anchor="start">Frame</text>
+		<text x="1138.41" y="660.8" text-anchor="start" font-size="19" font-weight="400" fill-opacity="0.53">bound the question</text>
+		<text x="946.24" y="803.38" text-anchor="start">Hypothesize</text>
+		<text x="946.24" y="830.38" text-anchor="start" font-size="19" font-weight="400" fill-opacity="0.53">a proposition</text>
+		<text x="690.27" y="848.16" text-anchor="middle">Plan</text>
+		<text x="690.27" y="875.16" text-anchor="middle" font-size="19" font-weight="400" fill-opacity="0.53">criteria first</text>
+		<text x="482.17" y="666.55" text-anchor="end">Observe</text>
+		<text x="482.17" y="693.55" text-anchor="end" font-size="19" font-weight="400" fill-opacity="0.53">what happened</text>
+		<text x="412.75" y="419.83" text-anchor="end">Verify</text>
+		<text x="412.75" y="446.83" text-anchor="end" font-size="19" font-weight="400" fill-opacity="0.53">against criteria</text>
+		<text x="512.31" y="183.66" text-anchor="end">Evaluate</text>
+		<text x="512.31" y="210.66" text-anchor="end" font-size="19" font-weight="400" fill-opacity="0.53">the evidence</text>
+		<text x="737.39" y="55.08" text-anchor="middle">Record and act</text>
+		<text x="737.39" y="82.08" text-anchor="middle" font-size="19" font-weight="400" fill-opacity="0.53">keep, then move</text>
+	</g>
+
+	<!-- 开口里那颗事实点 -->
+	<circle cx="1075.24" cy="257.28" r="22" fill="#10B981"/>
+</svg>

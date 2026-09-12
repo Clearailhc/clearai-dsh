@@ -1,0 +1,226 @@
+# The `clearai` agent preset: ClearAI 的「单循环 + 事实边界」认识论,作为一个可挂载的会话组合。
+#
+# 这份文件是一份 AGENT-PLANE 组合。名册(roster)把它挂在**一个 standing scope** 下,
+# 每个选择它的会话以 scope 父子关系加入;因此这里的工具与提示词段覆盖每个加入的 agent,
+# 而每个会话自己的状态按 Session/Agent 键在插件内部区分。
+#
+# 平面规则(为什么这样分):
+#   · 认识论属于「一个会话的能力集」→ 预设平面(本文件 + ./plugins/clearai-kernel.js)
+#   · 沙箱、审批、文件策略、模型路由、子代理注册表、持久化 → 宿主平面,**本文件一行都不碰**
+#     (DSH 的硬约束:预设 exactly as privileged as the plugins it names;让它放宽自己的关押就废掉了关押)
+#   · 循环面板的浏览器 UI 必须在宿主平面(客户端模块扫描只扫宿主 Loader 的行),
+#     所以它不在本文件里,而在 profile 的 cordis.patch.yml 一行。
+#
+# 本内核**不发布任何服务**(工具、guard、提示词段、web 路由都由同一个插件在自身 fiber 内注册),
+# 因此这一行可以坦然坐在预设里,不需要 isolate realm。realm 是给「预设真的拥有一个服务」用的。
+
+# ── 身份 ────────────────────────────────────────────────────────────────────
+
+# 预设自己的 persona,覆盖部署默认。`{{model}}`/`{{cwd}}` 由 agent 自己的路由与工作区解析。
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    prefix: |-
+      你是 ClearAI 的主人格,运行在 DeepSeek Harness 上。
+
+      你以**单循环**工作:计划 → 执行 → 观察 → 反思,一个循环推进,不做多 Agent 编排。子角色(评估者)由系统按触发派生,不是自由委派。
+
+      你的判断是智能的部分:理解材料、提出假设、选择路线、判断哪条证据更可信。事实的部分由系统持有:什么算完成、进度是多少、一个事实能不能写进知识库、谁的裁决有效——这些都不由你声明,只由系统算出来。
+
+      你不靠提示词约束自己:完成要过观测准入,推进只能通过唯一完成动词,L3 以上的裁决由独立评估者写。你要做的是把智能用在判断上,而不是用在描述状态上。
+    suffix: 你的工作目录是 {{cwd}}。工作区就是用户的文件夹;`clear/` 是系统与外脑的目录,其余目录都是用户的。
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+    # 项目章程走**原生指令文件**这一条:空工作区铺下的 `PROJECT.md` 会被宿主当作
+    # 工作区指令基线注入(内容变了整份替换、字节有预算),我们一行代码都不用写。
+    # 候选名按 ClearAI 的 `taxonomy.json:special_files.constitution` 补一个。
+    instructionFileCandidates:
+      - PROJECT.md
+      - AGENTS.md
+      - CLAUDE.md
+
+# ── shell ───────────────────────────────────────────────────────────────────
+
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# ── 文件系统 ────────────────────────────────────────────────────────────────
+
+# 两行都只注册进宿主 `tools` 注册表、不发布任何服务,所以不需要 realm。
+# `fs` 服务与它的观察策略留在宿主:读前先看(observation policy)是宿主不变量,不是本预设的选择。
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+# ── 后台任务 ────────────────────────────────────────────────────────────────
+
+# 只挂模型面的控制工具。任务注册表留在宿主(bash 工具用 ctx.get 解析它,预设内部的作用域看不见),
+# 它本来就按 owning agent 键,一个宿主实例服务所有会话。
+- id: tool-jobs
+  name: '@deepseek-ai/dsh-tool-jobs'
+
+# ── 技能(外脑) ─────────────────────────────────────────────────────────────
+
+# 技能注册表在宿主并按 scope 分层:这两行注册进**本预设的层**,所以不需要 realm。
+# `customSkillDirs` 指向本预设自己的 skills/ —— 哲学文本随预设走,`baseUrl` 就是预设目录,
+# 因此整份预设被复制到任何部署,技能都跟着到位。
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    customSkillDirs:
+      - !!js "process.getBuiltinModule('node:url').fileURLToPath(new URL('skills/', baseUrl))"
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+
+# ── 压缩(上下文是受控资源) ─────────────────────────────────────────────────
+
+# `compaction-basic` 通过 ctx.get 读 `toolResultPruner`,所以剪枝器必须与它同一个 realm。
+# `tokenMeter` 刻意在 realm 之外:它在宿主,按 Session 折叠,拥有浏览器读的上下文计量投影单元。
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: '@deepseek-ai/dsh-compaction-basic'
+
+    - id: command-compact
+      name: '@deepseek-ai/dsh-command-compact'
+
+    - id: tool-result-pruner
+      name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+      config:
+        thresholdChars: 8192
+        headChars: 4096
+        tailChars: 1024
+
+# ── 认识论内核(本预设的灵魂) ───────────────────────────────────────────────
+
+# 18 件意图工具(计划/目标九件 + 世界线五件 + 侦察两件 + 外脑两件)+ 一个 guard + 每回合派生的运行态卡 +
+# 只增不删的台账 + 面板数据路由。逐条对照 docs/loop-philosophy.md 的五条哲学,
+# 见 ./plugins/clearai-kernel.js 的文件头。
+#
+# 外脑(阶段 5):**读侧全走宿主原生**——`./plugins/brain.js` 只把工作区投影成技能条目
+# (`clear/skills/**` → 目录条目;`clear/memory/**` → 一个**虚拟条目** `project-memory`,
+# 正文现算所以没有「索引过期」),目录注入与按需加载由宿主的 `tool-skill` 承担(digest 变了才注入)。
+# 自建的只有写侧两件:`SaveSkill`(默认候选态)与 `WriteMemory`(字段校验 + 标题去重)。
+#
+# 世界线(ForkPlan):互斥方案各占一份自己的工作副本,收敛是**算术**——拿事先登记的尺子
+# 对读数排序,采纳最优的,落选的全部保留。算不出来就停下问人,绝不退化成随便挑一条。
+# git 世界线已落地(A+B 两档):用户仓库可用就地开分支 + worktree,不可用退到旁路账本仓库。
+#
+# 装配是**清单驱动**的(阶段 3):工具面、提示词段、机制开关、预算全部查表,代码里不出现模式名。
+#
+# 无人值守续跑(阶段 3.3):`autonomy: unattended` 时,立目标会同时在宿主 `goals` 服务上布防一枚
+# **续跑令牌**——计划收尾而目标未达成时,由宿主的回合驱动自己开下一轮。宿主目标只当**驱动器**,
+# 内核从不读它做判断(事实仍然只从投影里算出来);达成→收回,触礁/放弃→置阻塞,重启后自动补防。
+# 配置项就是机制的旋钮,默认值全部取 ClearAI 的代码事实:
+- id: clearai-kernel
+  name: ./plugins/clearai-kernel.js
+  config:
+    # 连拦阈值:同一件事连续冲闸这么多次没过,计划置 blocked、停下等人。
+    # 模块默认是 3(`evidence.py` 的 _DEFAULT_BLOCKED_THRESHOLD);这里写 2 是产品立场
+    # 「人就在旁边,早点回来问」。2026-09-11 起它**不再随当档变**(它是质量闸,不是预算)。
+    #
+    # 注意:同一个键在这个 config 里只能出现一次——YAML 的重复键会让 yaml 包直接抛错
+    # (2026-09-11 长测抓到的:顶层提到这里时下面还留着一份,DSH 的加载器却是静默取值的)。
+    blockedThreshold: 2
+    # brief 质量门:低于此长度只警告不阻断(brief.py)
+    minBriefChars: 280
+    # L4 必须有人放行:用宿主审批瀑布的 ask 实现(ClearAI 文档写了、代码未实现的那一条)
+    l4RequiresHumanRelease: true
+    # L4 只认外部来源:做的人自己写过的路径不算观测
+    l4RejectSelfWritten: true
+    # 「≥2 条假设」在 ClearAI 只是文案;这里默认不强制,要开就把值改成 2
+    minHypotheses: 0
+    # deny_rules 十条里可移植的九条(路径越狱那条不搬:宿主沙箱已经拥有它,ClearAI 自己也说「不重复」)
+    bashDenyRules: true
+    # 独立评估者:spawn = fresh context(fork 会继承历史,做的人与判的人就分不开了)
+    auditProvider: spawn
+    auditTimeoutMs: 240000
+    # 评估者只读:工具面只给 read/glob/grep;provider 不支持时会降级,降级事实写进台账
+    auditToolFilter:
+      - read
+      - glob
+      - grep
+      # 看图也是读:评估者要能核图表类产物(只在挂了 attachments 的部署里存在,
+      # 内核会按工具注册表把它过滤掉,见 resolveToolFace)
+      - read_image
+    # 每回合派生的运行态卡(只在状态变化时注入:前缀稳定是硬约束)
+    runtimeCard: true
+    # 运行档:人在场 / 无人值守。它只换**机制**,不换人格、不换工具面:
+    #   · 澄清协议装哪一套(槽位 clarification 收敛;两套措辞互斥,永不同时在场);
+    #   · 立约是否即授权(无人值守档:选择它本身就是授权);
+    #   · 续跑策略(目标边界处:人在场停下等人 / 无人值守自己开下一轮);
+    #   · 续跑轮数上限(人在场:6 / 无人值守:512,见下面 maxAutoTurns)。
+    #
+    # 这里写的是**初值**(新会话的默认档)。**当档是人可以在面板上随时切的**
+    # (输入框下方那条常驻条上的「档:…」,走人门动词 set_autonomy)——
+    # 「我现在在不在场」只有人知道,让配置文件替人回答是不对的。
+    autonomy: attended
+    # 续跑轮数上限。**不写**就按当档取(人在场 6 / 无人值守 512);写死则两档都用这个数。
+    # 这里**刻意不写**(2026-09-11 修正):以前留着 `maxAutoTurns: 6`,于是上面那句
+    # 「按档取」在实跑里从未生效——人切到无人值守,面板标签写着无人值守,额度却还是 6。
+    # 单元测试量的是「不写配置」的自由形态(512 拿得到),而真跑走的是这一份被写死的配置,
+    # 两者差了整整一个数量级,直到真跑读数摊出来才看见(§17.6)。
+    # 执行者是**原生**:数字传到宿主目标的 maxGoalRounds,到限由 `dsh-goal-round-driver`
+    # 自己 block(code='round-limit')——上限真的是机制在执行,不是一句嘱咐。
+    # 曾经这里还有一个 `budgets:` 块与 `tokenBudget`(8M/32M):2026-09-11 删了——上下文预算
+    # 本来就是原生 `dsh-token-meter` + `dsh-compaction-basic` 的活,那两个数字从未执行过。
+    # 贡献表(ClearAI `composition.py` 的装配语义):装配根遍历清单,清单里出现表外的名字
+    # 当场抛错——未知机制 / 未知工具 / 未知段 / 已关机制却仍列着它的工具,四种错法都在装配期炸,
+    # 而不是静默少装一件工具、等某一轮才发现。
+    #
+    # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(20 件意图工具、22 段提示词,
+    # 其中澄清协议那一段由 autonomy 在两套措辞里收敛)。要裁剪就把 tools 或 sections 显式写出来:
+    #   tools: [SetGoal, CreatePlan, AdvancePlan, ...]      # 名字必须都在工具目录里
+    #   sections: [clearai/foundation, clearai/loop-contract, clarification, ...]
+    # `clarification` 是槽位名;直接写两套措辞里的哪一个会被拒绝(同时在场不可表示)。
+    contributions:
+      mechanisms:
+        goal: true
+        plan: true
+        worldline: true
+        scout: true
+        brain: true
+        ledger: true
+
+# ── 其余模型面 ──────────────────────────────────────────────────────────────
+
+- id: tool-ask-user
+  name: '@deepseek-ai/dsh-tool-ask-user'
+
+# `web` 服务与它的搜索提供者在宿主:这里只挂模型面的工具。
+- id: tool-web
+  name: '@deepseek-ai/dsh-tool-web'
+  config:
+    fetch: true
+    searchTimeoutMs: 60000
+
+- id: present
+  name: '@deepseek-ai/dsh-tool-present'
+
+# ── 刻意不挂的行(是决策,不是遗漏) ─────────────────────────────────────────
+#
+# · `tool-todo` / `tool-goal` / `command-goal`:ClearAI 的目标与计划各自只有一本账。
+#   再挂一个模型可自行声明的状态源,就等于放弃「事实与判断分离」。目标与进度由
+#   clearai-kernel 持有,面板显示的就是它。
+# · `tool-subagent` / `tool-workflow` / `tool-ralph`:ClearAI 的子角色由 Harness 按触发派生
+#   (Scout/Evaluator),评估者的派遣已经在内核里;自由委派会重新引入「自己派一个来判自己」。
+# · `plan-mode`:那是 DSH 的计划模式,与本内核的 CreatePlan/AdvancePlan 是两套计划纪律。
+#   同时挂上就是第二本账。要它就得先决定哪一本是唯一账本。

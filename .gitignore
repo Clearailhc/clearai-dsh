@@ -1,0 +1,7 @@
+# 依赖与产物
+node_modules/
+dist/
+
+# 编辑器与系统
+.DS_Store
+*.log

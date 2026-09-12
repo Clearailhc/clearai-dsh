@@ -1,0 +1,12 @@
+<!-- 组合标:主标 + 字标(横向锁定;间距 = 主标宽度的 18%) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1088 240" width="1088" height="240" fill="none">
+  <g transform="translate(0,20) scale(0.1953)">
+  <circle cx="512" cy="512" r="326" stroke="currentColor" stroke-width="118" pathLength="360"
+          stroke-dasharray="270 90" stroke-linecap="round" transform="rotate(10 512 512)"/>
+  <circle cx="792" cy="308" r="104" fill="#10B981"/>
+</g>
+  <g transform="translate(268,0)">
+  <text x="0" y="178" font-family="Helvetica Neue, Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif"
+        font-size="196" font-weight="560" letter-spacing="-7" fill="currentColor">clear<tspan fill="#3E8E7A">ai</tspan></text>
+</g>
+</svg>

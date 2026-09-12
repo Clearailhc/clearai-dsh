@@ -1,0 +1,6 @@
+<!-- 字标(排版示意;真做要转曲或定制字形):clear 用墨色,ai 用品牌青。
+     它只与主标**组合**使用,不单独当应用图标(16px 下字母没意义)。 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 240" width="880" height="240" fill="none">
+  <text x="0" y="178" font-family="Helvetica Neue, Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif"
+        font-size="196" font-weight="560" letter-spacing="-7" fill="currentColor">clear<tspan fill="#3E8E7A">ai</tspan></text>
+</svg>

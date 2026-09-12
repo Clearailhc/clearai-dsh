@@ -1,0 +1,19 @@
+<!--
+  ClearAI 主标 —— 「c 的开口 + 一颗事实点」(定稿,w2c)。
+
+  为什么长这样(三件语义一个字形):
+    · c        = Clear(说清楚)
+    · 开口     = 不闭合:完成要过观测准入,不由模型宣布(缺口**故意**留在右上,不是正右)
+    · 实心点   = 事实(世界树里「采纳/落定」那枚 emerald)
+
+  结构上与已知标记刻意错开:©(C 在圈里)、CircleCI(环 + **圆心**点)、Coda(C 在方块里)——
+  我们的点**不在圆心**,而在**开口里**;开口**斜朝右上**,不是正右。
+
+  几何(1024 网格):环心线 R=326,笔画 118,开口 90° 以 -35° 为中心;点 r=104,坐在开口的角平分线上。
+  主笔是 currentColor(深浅两版同一份源),点固定 emerald(产品里「采纳/落定」的颜色)。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <circle cx="512" cy="512" r="326" stroke="currentColor" stroke-width="118" pathLength="360"
+          stroke-dasharray="270 90" stroke-linecap="round" transform="rotate(10 512 512)"/>
+  <circle cx="792" cy="308" r="104" fill="#10B981"/>
+</svg>

@@ -1,0 +1,39 @@
+# clearai-dsh 的 bundle patch:宿主平面的一行。
+#
+# 为什么宿主半必须在**补丁层**而不是 agent 预设里:
+# 客户端模块扫描只扫宿主 Loader 的行 —— 预设里的行浏览器看不见,面板就长不出来。
+# 而投影单元 `clearai`(把工具写下的变更记录折成视图)也是宿主平面的:它在会话日志上注册一个投影,
+# 多个会话共享同一个注册表。
+#
+# 行名用**包名**(不是文件路径):Loader 从组合自身的 base 解析它,也就是装进 profile 的那份包。
+# 打包纪律④:发行物里不出现任何绝对路径,也不出现仓库结构。
+
+- insert:
+    - id: clearai-host
+      name: 'clearai-dsh'
+
+# 预设(agent.cordis.yml)不在补丁层 —— 它由名册(roster)从 preset root 扫描。
+# 预设的注册方式有三种候选(补丁层重述名册行 / 播种到用户根 / 打印待粘贴的行),
+# 由 S2 的干净 profile 探针决定,不在这里拍脑袋。
+
+# ── 预设的 root:现场算出来,零安装期写入(S2 探针的结论)──────────────────────
+#
+# 名册(roster)只从 **root 目录**扫预设,而后端包没法自己声明一个 root —— 这是整个打包里
+# 唯一没有现成通道的一环。S2 在干净 profile 上把三件事都量过了:
+#   · `!!js` 在**补丁行**里确实会被求值(与自带补丁用 `!!js dshHomePath(...)` 同一条路);
+#   · 但 `baseUrl` 在补丁层里是**profile 目录**,不是本包目录(`resolvedRoots` 实测:
+#     `path:"BASEURL=file:///…/profiles/clearai-test/"`)——所以「拿 baseUrl 当包目录」不成立;
+#   · 而包在 profile 里的位置是**可预测的**:`dsh plugin add` 就是把它装进 profile 的
+#     `node_modules/`。于是 root 可以现场算出来:`<profile>/node_modules/clearai-dsh/presets/`。
+#
+# 于是不需要任何安装期写入(不改用户的文件、不需要 bin 先跑一遍),归属也落在 system 信任层。
+# 想改预设的人仍然有两条路:`clearai-dsh seed`(播种到用户根,可改可回滚)或复制成新 id。
+- id: agent-presets
+  config:
+    # ⚠️ 补丁层替换**整份** config:下面这些键要与部署里那份保持一致(上游将来加字段要跟上)。
+    default: standard
+    includeShippedRoot: true
+    includeUserRoot: true
+    roots:
+      - path: !!js "process.getBuiltinModule('node:url').fileURLToPath(new URL('node_modules/clearai-dsh/presets/', baseUrl))"
+        trust: system
