@@ -1,0 +1,20 @@
+{
+  "case": "periodic smooth reconstruction convergence",
+  "function": "u(x)=cos(2*pi*x)",
+  "domain": "[0,1)",
+  "method": "four-point polynomial face reconstruction from exact cell averages",
+  "boundary": "periodic",
+  "norm": "L-infinity face error",
+  "grid_sizes": [
+    16,
+    32,
+    64,
+    128,
+    256,
+    512
+  ],
+  "command": "python lab/scripts/run_ai4sci_case.py",
+  "python": "3.14.4",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "generated_at_utc": "2026-09-12T15:16:50.467883+00:00"
+}

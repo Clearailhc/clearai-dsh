@@ -1,30 +1,39 @@
-# AI4Sci Case: WENO Accuracy Near a Critical Point
+# AI4Sci Case: A Convergence Claim Under Test
 
-## Question
-Does a fifth-order WENO reconstruction retain its advertised order of accuracy when the solution has a smooth critical point where the first derivative vanishes?
+## Question and expected effect
+Can a reproducible numerical experiment justify the claim that a reconstruction is fifth-order accurate near a smooth critical point? This case shows ClearAI narrowing an attractive claim when the actual implementation and measurements support a different order.
 
-## Proposition
-For a smooth test function with a deliberately chosen critical point, the selected WENO variant should approach fifth-order convergence in a norm measured away from boundary and implementation artifacts. This is an illustrative test proposition, not a replacement for the published theorem or a claim about all WENO implementations.
+## Initial proposition
+A selected WENO implementation should show fifth-order convergence for a smooth manufactured solution with a critical point. This proposition is intentionally stronger than the local demonstration and is allowed to fail.
 
-## Criterion
-Run a refinement study on successively finer uniform meshes. Record the error and observed order, check stencil and boundary handling, and compare with a lower-order baseline. A result is informative only if the manufactured solution, norm, time step, precision, and stopping rule are documented.
+## Registered criterion and execution
+Use `u(x)=cos(2*pi*x)` on `[0,1)`, exact cell averages, periodic indexing, the L-infinity face error, and successively refined meshes. Keep the method, precision, boundary treatment, and error definition fixed. Reproduce the run with:
 
-## Execution
-Use a periodic one-dimensional manufactured solution such as `u(x)=cos(2πx)` and place a critical point at a known grid location when possible. Reconstruct from cell averages, compute errors against the analytic solution, and repeat over at least four mesh sizes. Keep reconstruction, quadrature, and floating-point settings fixed.
+```bash
+python3 lab/scripts/run_ai4sci_case.py
+```
 
-## Observation / Evaluation
-A plausible run may show near-fifth-order behavior on intermediate meshes, followed by order loss on the coarsest or finest meshes. If the critical-point setup is misaligned, under-resolved, contaminated by boundaries, or dominated by roundoff, the result is inconclusive. In particular, an inconclusive setup does not refute the literature; it only fails to test the proposition cleanly. Independent review should inspect scripts, exact data, and convergence plots.
+The script and its outputs are in [`lab/cases/ai4sci/`](../../lab/cases/ai4sci/). It records the source, method, grid sizes, errors, observed orders, and runtime metadata.
 
-## Revision
-If the study is inconclusive, revise one factor at a time: align the critical point, use exact cell averages, enlarge the periodic domain, increase precision, or separate spatial from temporal error. Do not silently change the claim to fit a plot.
+## Observation and evaluation
 
-## What Is Retained
-Retain the proposition, parameter manifest, source code, mesh/error table, plots, environment details, and an explicit label such as `illustrative / inconclusive` or `supportive within tested regime`. Retain citations to the relevant WENO literature separately from local observations.
+The run covers 16, 32, 64, 128, 256, and 512 cells. The observed orders are approximately 3.98, 4.00, 4.00, 4.00, and 4.00. Within this exact setup, the observation supports fourth-order convergence of the implemented four-point reconstruction.
 
-## Limitations
-This case tests one-dimensional manufactured data and one implementation. It does not establish multidimensional accuracy, shock behavior, positivity, stability, or universal critical-point performance. Numerical evidence is not a proof of a general theorem.
+This is not evidence that every WENO implementation is fourth-order or fifth-order. The experiment is a controlled reconstruction demonstration; it does not include nonlinear WENO weights, multidimensional flow, shocks, time integration, boundary closures, or all critical-point alignments. The first run is therefore a useful local observation, not a universal accuracy result.
 
-## Stored run
+## Revision and bounded conclusion
 
-The task book this case was run against, and everything the run produced — the session record, the artifacts it left, and an honest reading of both — are kept with the case workspace. Nothing from a run is deleted, including runs that stopped halfway.
+The original proposition is revised to: **for this periodic manufactured solution, exact cell-average input, four-point reconstruction, face L-infinity error, and tested mesh range, the measured convergence is approximately fourth order.** A fifth-order WENO claim remains untested by this run. A stronger result requires the exact WENO variant, a declared baseline, implementation review, independent rerun, and explicit treatment of spatial, temporal, boundary, and roundoff errors.
 
+## What was not proved
+
+The run does not prove a general theorem, fifth-order accuracy, multidimensional accuracy, shock behavior, positivity, stability, or performance for other implementations and problem classes. Numerical evidence remains conditional on the registered setup.
+
+## Retained evidence
+
+- [`lab/scripts/run_ai4sci_case.py`](../../lab/scripts/run_ai4sci_case.py): reproducible execution;
+- [`lab/cases/ai4sci/results.csv`](../../lab/cases/ai4sci/results.csv): raw tabular readings;
+- [`lab/cases/ai4sci/run_metadata.json`](../../lab/cases/ai4sci/run_metadata.json): parameters and environment;
+- [`lab/cases/ai4sci/README.md`](../../lab/cases/ai4sci/README.md): reproduction notes and evidence boundary.
+
+The proposition, the stronger claim it failed to establish, and the local observation are all retained rather than silently rewritten.

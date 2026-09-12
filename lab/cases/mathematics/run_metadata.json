@@ -1,0 +1,16 @@
+{
+  "case": "finite primality check",
+  "definition": "a_0=2; a_(n+1)=a_n+2; equivalently a_n=2+2n",
+  "checked_terms": 30,
+  "arithmetic": "exact Python integers",
+  "primality_test": "trial division through floor(sqrt(n))",
+  "first_composite": {
+    "index": 1,
+    "value": 4,
+    "is_prime": false
+  },
+  "command": "python3 lab/scripts/run_mathematics_case.py",
+  "python": "3.14.4",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "generated_at_utc": "2026-09-12T15:27:53.526714+00:00"
+}

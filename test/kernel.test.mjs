@@ -2831,8 +2831,17 @@ console.log('\n【账本:交付点落一条提交,恢复是一条新提交】')
 	check('FileHistory 列得出来(提交信息写着是哪一步交付的)', history.ok === true && /交付/.test(String(history.message)) && /l1/.test(String(history.message)), String(history.message).slice(0, 160))
 	// 历史是**新的在前**:最后一条就是第一次交付(第一版)。
 	const commits = [...String(history.message).matchAll(/([0-9a-f]{7,40})\s·/g)].map((match) => match[1])
-	check('历史里给得出提交 id(两条都在)', commits.length === 2, String(history.message).slice(0, 160))
-	const commit = commits[commits.length - 1]
+	check('历史里给得出提交 id(两条都在)', commits.length === 2, String(history.message))
+	/**
+	 * 取的是**那一步自己的提交**(按提交信息里的步 id),不是"位置上的最后一条":
+	 * 账本是懒建的,第一笔可能是基线(它现在继承那一步的信息,所以按 id 找仍然找得到)。
+	 * 按位置找的话,基线一旦掺进来就会把恢复指到一个不相干的提交上 —— 那是测试脆,不是产品错。
+	 */
+	const lineForL1 = String(history.message)
+		.split('\n')
+		.find((line) => /[0-9a-f]{7,40}\s·/.test(line) && /l1/.test(line))
+	const commit = (lineForL1 ?? '').match(/([0-9a-f]{7,40})\s·/)?.[1] ?? commits[commits.length - 1]
+	check('找得到 l1 那一步的提交(按步 id,不按位置)', typeof commit === 'string' && commit.length >= 7, String(history.message))
 
 	const restored = await callOn(host, S, 'RestoreFile', { path: 'lab/ledger-probe.txt', commit, reason: '被后来的编辑弄坏了' })
 	check('恢复成功', restored.ok === true, String(restored.code))

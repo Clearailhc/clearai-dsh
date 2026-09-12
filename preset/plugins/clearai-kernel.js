@@ -3228,7 +3228,7 @@ export function apply(ctx, config = {}) {
 	 * (`--git-dir` + `--work-tree`,用户文件夹里不会出现 `.git`)。
 	 * 两者都不行 → mode 为 null,退化成声明目录并如实说明原因。
 	 */
-	function gitContext(cwd) {
+	function gitContext(cwd, baselineMessage) {
 		if (isGitWorkspace(cwd)) return { mode: 'workspace', cwd, gitDir: null, reason: null }
 		const gitDir = ledgerDirFor(cwd)
 		if (!existsSync(join(gitDir, 'HEAD'))) {
@@ -3243,7 +3243,12 @@ export function apply(ctx, config = {}) {
 			git(['--git-dir', gitDir, 'config', 'core.worktree', cwd], cwd)
 			const context = { mode: 'ledger', cwd, gitDir, reason: null }
 			const added = gitAt(context, ['add', '-A'])
-			const committed = added.ok ? gitAt(context, [...GIT_IDENTITY, 'commit', '-qm', 'clearai:旁路账本基线(工作区当时的全部内容)']) : added
+			/**
+			 * 基线的提交信息可以**由调用方给**:账本是懒建的,如果第一次建立就发生在某一步交付那一刻,
+			 * 那么这一笔既是基线、也是那一步的账 —— 信息必须写成那一步,否则那一步就"没有自己的提交"了
+			 * (实测:CI 上基线把第一步的内容吞掉,历史里那一步只剩一条匿名基线)。
+			 */
+			const committed = added.ok ? gitAt(context, [...GIT_IDENTITY, 'commit', '-qm', baselineMessage ?? 'clearai:旁路账本基线(工作区当时的全部内容)']) : added
 			if (!committed.ok && !/nothing to commit|无文件要提交|working tree clean/i.test(`${committed.out}${committed.err}`)) {
 				return { mode: null, cwd, gitDir: null, reason: `旁路账本基线提交失败:${(committed.err || committed.out || '').split('\n')[0]}` }
 			}
@@ -3266,7 +3271,8 @@ export function apply(ctx, config = {}) {
 
 	/** 在**当前工作区**上落一次账本提交;没有改动就不提交(空提交是噪音)。 */
 	function commitLedger(cwd, message) {
-		const context = gitContext(cwd)
+		// 把这一步的信息带进建基线那一笔:懒建账本时,基线就是这一步的提交。
+		const context = gitContext(cwd, message)
 		if (context.mode === null) return { ok: false, reason: context.reason ?? '没有可用的 git' }
 		const added = gitAt(context, ['add', '-A'])
 		if (added.ok !== true) return { ok: false, reason: `add 失败:${(added.err || '').split('\n')[0]}` }
