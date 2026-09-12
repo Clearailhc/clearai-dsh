@@ -5,6 +5,8 @@
   </picture>
 </p>
 
+<p align="center"><a href="README.md">English</a> · <b>中文</b></p>
+
 **从答案，到证据；从证据，到改进。**
 
 ClearAI 是一个**原生 DSH 插件**，把认识论循环带进 DeepSeek Harness。
@@ -49,7 +51,7 @@ ClearAI **不**声称实现递归自我改进。它提供的是自我改进系�
 | 评估 | 判断支持、不确定性与冲突 | 高等级工作可要求独立评估 | 评估与依据 |
 | 记录并行动 | 保存结果，选择下一项有边界的行动 | 保留历史；未解决命题保持限定 | 事实、边界与下一步 |
 
-完整版：[认识论循环](docs/epistemic-loop.zh-CN.md) · [English](docs/epistemic-loop.md)
+完整版：[认识论循环](docs/epistemic-loop.zh-CN.md)
 
 ## 它长什么样
 
@@ -88,7 +90,7 @@ node tools/verify-package.mjs  # 现场重建并逐字节比对
 node docs/diagrams/build.mjs   # 重画循环主图(需 google-chrome)
 ```
 
-`dist/` 是生成物，不进版本库。见 [DSH 集成](docs/dsh-integration.zh-CN.md) · [English](docs/dsh-integration.md)。
+`dist/` 是生成物，不进版本库。见 [DSH 集成](docs/dsh-integration.zh-CN.md)。
 
 ## 它落在 DSH 的哪一层
 
@@ -108,12 +110,12 @@ ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一
 
 ## 文档
 
-- [定位](docs/positioning.zh-CN.md) · [English](docs/positioning.md)
-- [设计原则](docs/design-principles.zh-CN.md) · [English](docs/design-principles.md)
-- [灵魂映射：原则 → 机制 → 测试](docs/soul-map.zh-CN.md) · [English](docs/soul-map.md)
-- [术语表](docs/glossary.zh-CN.md) · [English](docs/glossary.md)
+- [定位](docs/positioning.zh-CN.md)
+- [设计原则](docs/design-principles.zh-CN.md)
+- [灵魂映射：原则 → 机制 → 测试](docs/soul-map.zh-CN.md)
+- [术语表](docs/glossary.zh-CN.md)
 - [循环哲学](docs/loop-philosophy.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md)
-- [已知缺口](docs/known-gaps.zh-CN.md) · [发布验收](docs/release-verification.md)
+- [已知缺口](docs/known-gaps.zh-CN.md) · [发布验收](docs/release-verification.zh-CN.md)
 
 ## 许可证
 

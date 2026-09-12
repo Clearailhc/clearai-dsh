@@ -5,6 +5,8 @@
   </picture>
 </p>
 
+<p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
+
 **From answers to evidence. From evidence to improvement.**
 
 ClearAI is a **native DSH plugin** that brings the Epistemic Loop to DeepSeek Harness.
@@ -49,7 +51,7 @@ The Epistemic Loop has seven stages. At runtime, these stages compress into four
 | Evaluate | Assesses support, uncertainty, and conflicts | Higher-level work can require independent evaluation | Evaluation and basis |
 | Record and act | Preserves the result and chooses the next bounded action | History is retained; unresolved claims stay qualified | Facts, limits, and next step |
 
-Full version: [The Epistemic Loop](docs/epistemic-loop.md) · [中文](docs/epistemic-loop.zh-CN.md)
+Full version: [The Epistemic Loop](docs/epistemic-loop.md)
 
 ## What it looks like
 
@@ -88,7 +90,7 @@ node tools/verify-package.mjs  # rebuild and compare byte-for-byte
 node docs/diagrams/build.mjs   # regenerate the loop diagram (needs google-chrome)
 ```
 
-`dist/` is generated and never committed. See [DSH integration](docs/dsh-integration.md) · [中文](docs/dsh-integration.zh-CN.md).
+`dist/` is generated and never committed. See [DSH integration](docs/dsh-integration.md).
 
 ## Where it lands in DSH
 
@@ -108,10 +110,10 @@ They are illustrations of the mechanism, not shipped run records.
 
 ## Documentation
 
-- [Positioning](docs/positioning.md) · [中文](docs/positioning.zh-CN.md)
-- [Design principles](docs/design-principles.md) · [中文](docs/design-principles.zh-CN.md)
-- [Soul map: principle → mechanism → test](docs/soul-map.md) · [中文](docs/soul-map.zh-CN.md)
-- [Glossary](docs/glossary.md) · [中文](docs/glossary.zh-CN.md)
+- [Positioning](docs/positioning.md)
+- [Design principles](docs/design-principles.md)
+- [Soul map: principle → mechanism → test](docs/soul-map.md)
+- [Glossary](docs/glossary.md)
 - [Loop philosophy](docs/loop-philosophy.md) · [Verification ontology](docs/verification-loop.md)
 - [Known gaps](docs/known-gaps.md) · [Release verification](docs/release-verification.md)
 
