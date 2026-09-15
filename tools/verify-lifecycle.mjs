@@ -14,9 +14,9 @@
 
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -56,8 +56,32 @@ const build = (out, version) => {
 }
 const install = (dist, extra = []) =>
 	spawnSync('node', [join(PORT, 'tools', 'install-native.mjs'), '--home', HOME, '--profile', 'life', '--from-default', 'web', '--dist', dist, ...extra], { encoding: 'utf8', env: ENV, timeout: 900000 })
+/** 在 PATH 上找一个可执行文件(只查文件、不执行它)。 */
+function findOnPath(name) {
+	const exts = process.platform === 'win32' ? ['.cmd', '.exe', '.bat'] : ['']
+	for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+		if (dir === '') continue
+		for (const ext of exts) {
+			const candidate = join(dir, `${name}${ext}`)
+			try {
+				if (statSync(candidate).isFile()) return candidate
+			} catch {
+				/* 这个目录里没有 */
+			}
+		}
+	}
+	return null
+}
+const DSH_ON_PATH = findOnPath('dsh')
 const composedRows = () => {
-	const run = spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--profile', 'life', '--dump-config'], { encoding: 'utf8', env: ENV, timeout: 300000 })
+	/**
+	 * 优先 PATH 上真正的 `dsh`(与随包 bin 的 `install`、`install-native.mjs` 同一套判据)。
+	 * 以前一律 `npx --no-install`:在 npx 跑不起来的环境里它会**静默返回空串**,
+	 * 于是下面两条正向断言红、而"组合里没有 clearai-host"那条**假通过** —— 空输出骗过负向断言。
+	 */
+	const run = DSH_ON_PATH === null
+		? spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--profile', 'life', '--dump-config'], { encoding: 'utf8', env: ENV, timeout: 300000 })
+		: spawnSync(DSH_ON_PATH, ['--profile', 'life', '--dump-config'], { encoding: 'utf8', env: ENV, timeout: 300000 })
 	return String(run.stdout ?? '')
 }
 const profileManifest = () => JSON.parse(readFileSync(join(HOME, 'profiles', 'life', 'package.json'), 'utf8'))
@@ -120,6 +144,13 @@ const afterBundles = profileManifest().dsh?.profile?.bundles ?? []
 const afterRows = composedRows()
 const installedTree = hashTree(pkgDir)
 const builtTree = hashTree(V2)
+/**
+ * `INVENTORY.txt` 是**构建自己的文件清单**,不在清单的 `files` 白名单里,所以 pnpm 打包时
+ * 不带它 —— 于是「盘上那份 vs 构建产物」这条比对必须把它排除,否则这闸门**永远打不开**。
+ * (2026-09-15 实测:它一直红着;verify-lifecycle 不在 CI 里跑,所以没人看见。一道打不开的
+ * 闸门比没有闸门更坏 —— 它会让人以为验过了。)
+ */
+delete builtTree['INVENTORY.txt']
 check('层栈没有重复(升级后仍只有一次)', afterBundles.filter((name) => name === 'clearai-dsh').length === 1, afterBundles.join(' · '))
 check('组合里 clearai-host 行仍在', /^- id: clearai-host$/m.test(afterRows))
 check('名册 root 仍在且仍指向包内', /agent-presets[\s\S]{0,400}node_modules\/clearai-dsh\/presets\//.test(afterRows))
@@ -145,6 +176,23 @@ check('dependencies 里也没有了', profileManifest().dependencies?.['clearai-
 check('组合里没有 clearai-host 行(不留悬空引用)', !/^- id: clearai-host$/m.test(finalRows))
 check('包目录已删', !existsSync(pkgDir))
 check('名册 root 也随包一起没了', !/node_modules\/clearai-dsh\/presets\//.test(finalRows))
+
+// ── ④ 随包的 install 动词:读者会敲的那一条命令,走的是同一条原生路 ───────────
+console.log('\n④ 随包的 install 动词(node bin/clearai.mjs install)')
+const HOME2 = mkdtempSync(join(tmpdir(), 'clearai-verb-'))
+for (const name of ['.credentials.yaml', 'settings.yaml']) {
+	if (existsSync(join(realHome, name))) cpSync(join(realHome, name), join(HOME2, name))
+}
+const verb = spawnSync('node', [join(V2, 'bin', 'clearai.mjs'), 'install', '--home', HOME2, '--profile', 'web', '--dist', V2], { encoding: 'utf8', env: { ...process.env, DSH_HOME: HOME2 }, timeout: 900000 })
+check('install 动词成功退出', verb.status === 0, String(verb.stderr ?? '').slice(-200))
+const verbProfile = join(HOME2, 'profiles', 'web', 'package.json')
+const verbManifest = existsSync(verbProfile) ? JSON.parse(readFileSync(verbProfile, 'utf8')) : null
+check('包进了 profile 的 node_modules', existsSync(join(HOME2, 'profiles', 'web', 'node_modules', 'clearai-dsh', 'package.json')))
+check('bundles 里有它(宿主自己对的账)', (verbManifest?.dsh?.profile?.bundles ?? []).includes('clearai-dsh'), JSON.stringify(verbManifest?.dsh?.profile?.bundles ?? null))
+/** 两件事分开验:它给了**读数**(宿主行进了组合),也给了**下一步**(重启),不是只说一句成功。 */
+check('它报出宿主行真的进了组合(读数,不是断言)', /宿主行\s+在组合里/.test(String(verb.stdout)), String(verb.stdout ?? '').split('\n').filter((line) => line.includes('宿主行')).join(' '))
+check('它报出下一步(重启)', /下一步/.test(String(verb.stdout)))
+rmSync(HOME2, { recursive: true, force: true })
 
 // ── 收尾 ────────────────────────────────────────────────────────────────────
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

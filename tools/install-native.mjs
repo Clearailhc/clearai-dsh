@@ -21,9 +21,9 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, delimiter, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -50,7 +50,38 @@ const PROFILE_PATCH = join(PROFILE_DIR, 'cordis.patch.yml')
 const ENV = { ...process.env, DSH_HOME: HOME }
 
 const say = (line) => console.log(`  ${line}`)
-const dsh = (args, extra = {}) => spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', ...args], { encoding: 'utf8', env: ENV, timeout: 900000, ...extra })
+/**
+ * 在 PATH 上找一个可执行文件。**只查文件、不执行它** —— 执行一个同名命令可能是别的东西
+ * (比如 corepack 的转发器),那会引出网络与副作用。
+ */
+function findOnPath(name) {
+	const exts = process.platform === 'win32' ? ['.cmd', '.exe', '.bat'] : ['']
+	for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+		if (dir === '') continue
+		for (const ext of exts) {
+			const candidate = join(dir, `${name}${ext}`)
+			try {
+				if (statSync(candidate).isFile()) return candidate
+			} catch {
+				/* 这个目录里没有 */
+			}
+		}
+	}
+	return null
+}
+const DSH_ON_PATH = findOnPath('dsh')
+/**
+ * 找 CLI:**优先 PATH 上真正的 `dsh`**(与随包 `bin/clearai.mjs install` 同一套判据),
+ * 没有再退回 `npx --no-install`。
+ *
+ * 以前一律走 npx:于是 npx 缓存是冷的时候,这个工具只会甩一句
+ * `npx canceled due to missing packages and no YES option` —— 而 PATH 上明明有 CLI。
+ * (2026-09-15 实测撞到:缓存被指到空目录时,② 整段都跑不起来。)
+ */
+const dsh = (args, extra = {}) =>
+	DSH_ON_PATH === null
+		? spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', ...args], { encoding: 'utf8', env: ENV, timeout: 900000, ...extra })
+		: spawnSync(DSH_ON_PATH, args, { encoding: 'utf8', env: ENV, timeout: 900000, ...extra })
 
 if (!existsSync(join(DIST, 'package.json'))) {
 	console.error(`✗ 没有包:${DIST}\n  先跑 node tools/build-package.mjs`)
@@ -80,8 +111,15 @@ console.log(`【原生安装】${NAME}@${manifest.version} → DSH_HOME=${HOME} 
 
 // ── ① profile 在不在 ────────────────────────────────────────────────────────
 if (!existsSync(PROFILE_PATCH)) {
-	say(`profile 不存在,用官方模板建一个:--from-default-profile ${TEMPLATE} --profile ${PROFILE}`)
-	const created = dsh(['--profile', PROFILE, '--from-default-profile', TEMPLATE, '--dump-config'])
+	/**
+	 * `--from-default-profile` 只接受**自定义目标**:把 shipped 名字(web/headless)传给它,
+	 * CLI 会直接拒 —— `profile "web" is shipped and cannot be a custom profile target`。
+	 * 所以目标是 shipped 名字时**不带这个开关**(CLI 自己就会用自带模板建一个)。
+	 * 2026-09-15 实测:这个工具的默认参数正好就是 `--profile web`,于是默认调用即报错。
+	 */
+	const shipped = ['web', 'headless'].includes(PROFILE)
+	say(`profile 不存在,建一个:${shipped ? `--profile ${PROFILE}(用 CLI 自带的模板)` : `--from-default-profile ${TEMPLATE} --profile ${PROFILE}`}`)
+	const created = shipped ? dsh(['--profile', PROFILE, '--dump-config']) : dsh(['--profile', PROFILE, '--from-default-profile', TEMPLATE, '--dump-config'])
 	if (created.status !== 0) {
 		console.error(`✗ 建 profile 失败:${String(created.stderr ?? '').slice(-400)}`)
 		process.exit(1)

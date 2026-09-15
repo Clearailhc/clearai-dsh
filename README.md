@@ -22,6 +22,32 @@ A language model can produce a plausible answer in seconds. ClearAI is about wha
 
 ---
 
+## Install
+
+One command, and it needs nothing but Node:
+
+```bash
+npx clearai-dsh install
+```
+
+It resolves the DSH CLI (from your `PATH`, or through `npx`), installs the plugin into your `web` profile, and reads the composed config back so you are not taking "success" on faith. Underneath it is the host's own install, so this is the same command: `dsh plugin --profile web add clearai-dsh`.
+
+**Restart `dsh web` after that** (`npx @deepseek-ai/dsh web`). Both halves of the plugin are cached inside the running process, so refreshing the browser is not enough. Then open a session and pick **ClearAI** in the preset picker.
+
+If it stops because **pnpm is not on your `PATH`**: DSH manages a profile by driving pnpm, so it needs one. Install it with `npm install -g pnpm`, or your system package manager. Prefer that to `corepack enable`, which installs a version *router* rather than pnpm, and the corepack shipped with current Node can fetch a pnpm it is unable to launch.
+
+From a checkout (development, not the install path):
+
+```bash
+npm test                       # kernel / host / brain / client / ontology suites
+node tools/build-package.mjs   # assemble dist/ from source
+node tools/verify-package.mjs  # rebuild and compare byte-for-byte
+node tools/verify-clean-install.mjs   # install into an empty DSH_HOME through the real CLI
+node docs/diagrams/build.mjs   # regenerate the loop diagram (needs google-chrome)
+```
+
+`dist/` is generated and never committed. See [DSH integration](docs/dsh-integration.md).
+
 ## Why this is not just another agent loop
 
 Most agent loops track one thing: whether the task is done. The Epistemic Loop also tracks **how a conclusion came to be trusted**:
@@ -72,29 +98,6 @@ The plugin contributes three surfaces on top of stock DSH: a **deliverables** vi
 **External brain** — skills and memory appear as native DSH entries in one merged catalogue, with the usage of this session next to them.
 
 ![External brain](docs/shots/en/skills.png)
-
-## Install
-
-Requires **Node ≥ 22** and **`pnpm` on `PATH`** — `dsh plugin …` is a pnpm forwarder, so without pnpm the profile cannot be managed at all:
-
-```bash
-corepack enable --install-directory ~/.local/bin   # if you do not have pnpm yet
-dsh plugin --profile web add clearai-dsh
-```
-
-**Restart `dsh web` afterwards.** Both halves of the plugin are cached inside the running process, so refreshing the browser is not enough. Then open a session and pick **ClearAI** in the preset picker.
-
-From a checkout:
-
-```bash
-npm test                       # kernel / host / brain / client / ontology suites
-node tools/build-package.mjs   # assemble dist/ from source
-node tools/verify-package.mjs  # rebuild and compare byte-for-byte
-node tools/verify-clean-install.mjs   # install into an empty DSH_HOME through the real CLI
-node docs/diagrams/build.mjs   # regenerate the loop diagram (needs google-chrome)
-```
-
-`dist/` is generated and never committed. See [DSH integration](docs/dsh-integration.md).
 
 ## Where it lands in DSH
 

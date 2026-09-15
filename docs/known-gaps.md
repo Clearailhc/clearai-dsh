@@ -24,11 +24,12 @@ What follows is the honest boundary of this release. Every line is either absent
 
 ## Open decisions
 
-- **English UI and English prompts.** The browser panels are still Chinese-only, and the preset's prompt sections carry a Chinese-language rule. A foreign-language user therefore gets a Chinese interface. The native DSH locale service is the intended mechanism for fixing the panels; the prompt language is a design decision still open.
+- **English UI and English prompts.** The browser panels are still Chinese-only, the preset's prompt sections carry a Chinese-language rule, and the install-side CLI (`doctor`, `install`, `seed`) prints Chinese as well — so the first command a stranger runs answers in a language they may not read. A foreign-language user therefore gets a Chinese interface end to end. The native DSH locale service is the intended mechanism for fixing the panels; the prompt language and the CLI's output language are design decisions still open.
 
 ## Before you can run it
 
-- **pnpm is a prerequisite.** `dsh plugin …` is a pnpm forwarder, so installing this plugin needs `pnpm` on `PATH` (`corepack enable --install-directory ~/.local/bin` is enough). Without it the CLI stops with `pnpm not found on PATH`, and a profile cannot be managed at all.
+- **pnpm is a prerequisite — and it is DSH's, not ours.** `dsh plugin …` forwards to pnpm, so an executable `pnpm` has to be on `PATH`; without it the CLI stops with `pnpm not found on PATH` and no profile can be managed. Install it directly (`npm install -g pnpm`, or your system package manager). `corepack enable` is the tempting shortcut, and it is not an install: it drops a version **router** on `PATH` that fetches a pnpm the first time it is invoked. Corepack 0.34 — the one Node 24 ships — launches pnpm by looking for `bin/pnpm.cjs`, which pnpm 11 onwards no longer ships (`bin/pnpm.mjs`, then a native binary at the package root), so it can fetch a version it is unable to run; and its shims can sit earlier on `PATH` than a pnpm that already worked, shadowing it.
+- **The DSH CLI is what adds the plugin, and it ships in the npm package `@deepseek-ai/dsh`.** Starting the harness with `npx` does **not** put `dsh` on your `PATH` — that copy lives in the npx cache and exists only for that one process. So either borrow it for the install (`npx @deepseek-ai/dsh plugin --profile web add clearai-dsh`), or install the CLI once with `npm install -g @deepseek-ai/dsh`.
 - **Restart `dsh web` after installing.** The host half and the client half are both cached inside the running process; refreshing the browser is not enough, and a process that keeps running while its package is replaced will serve a broken client bundle.
 
 ## Fixed after the first release

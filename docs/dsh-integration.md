@@ -52,8 +52,12 @@ The patch layer replaces the whole `agent-presets` config, so the keys listed th
 ## Install
 
 ```bash
-dsh plugin --profile web add clearai-dsh
+npx clearai-dsh install
 ```
+
+The shipped `bin/clearai.mjs` grows exactly one mutating verb for this. It resolves the DSH CLI (a `dsh` on `PATH`, else `npx --yes @deepseek-ai/dsh`), runs the host's own install against the default `web` profile, then reads the composed config back and reports whether the `clearai-host` row actually landed. `--dist` / `--tarball` / `--spec` point it at a local build instead of the registry, `--profile` / `--home` override the defaults, and `dsh plugin --profile web add clearai-dsh` stays the equivalent command if you would rather drive the CLI yourself.
+
+It deliberately does **not** bootstrap a profile or hand-reconcile one. The CLI initializes a profile the first time it is used for one (`initialized profile web at …`), and a second implementation of the host's reconcile step is exactly the duplication this project rejects. For the same reason it stops when `pnpm` is missing instead of working around it: pnpm is DSH's prerequisite, not this plugin's. The degraded, pnpm-less path stays in `tools/install-native.mjs`, where it exists for one-shot E2E homes and labels itself as degraded.
 
 Restart the DSH process (the host half is cached per module URL), then pick **ClearAI** in the preset picker.
 

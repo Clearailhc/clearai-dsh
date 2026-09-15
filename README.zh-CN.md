@@ -22,6 +22,32 @@ ClearAI 是一个**原生 DSH 插件**，把认识论循环带进 DeepSeek Harne
 
 ---
 
+## 安装
+
+一条命令，除了 Node 什么都不需要：
+
+```bash
+npx clearai-dsh install
+```
+
+它会自己找到 DSH CLI（PATH 上有就用，没有就走 npx），把插件装进你的 `web` profile，再把组合读回来核一眼 —— 不用凭一句「成功」相信它。底下就是宿主自己的安装动作，所以两者等价：`dsh plugin --profile web add clearai-dsh`。
+
+**装完要重启 `dsh web`**（`npx @deepseek-ai/dsh web`）。插件的两半都在运行中的进程里按模块 URL 缓存，只刷新浏览器不够。然后新建会话，在预设选择器里选 **ClearAI**。
+
+如果它因为 **PATH 上没有 pnpm** 而停下：DSH 管理 profile 就是靠 pnpm，所以需要一个。用 `npm install -g pnpm` 装，或用你的系统包管理器。**别用 `corepack enable` 抄近路**——它装的是一个版本**转发器**而不是 pnpm，而当前 Node 自带的那份 corepack 可能下载一个它自己启动不了的 pnpm。
+
+从仓库开发（这是开发路径，不是安装路径）：
+
+```bash
+npm test                       # 内核 / 宿主 / 外脑 / 客户端 / 本体 五份套件
+node tools/build-package.mjs   # 由源装配 dist/
+node tools/verify-package.mjs  # 现场重建并逐字节比对
+node tools/verify-clean-install.mjs   # 空 DSH_HOME + 真 CLI 装一遍(16 条断言)
+node docs/diagrams/build.mjs   # 重画循环主图(需 google-chrome)
+```
+
+`dist/` 是生成物，不进版本库。见 [DSH 集成](docs/dsh-integration.zh-CN.md)。
+
 ## 为什么它不只是又一个 agent loop
 
 多数 agent loop 只跟踪一件事：任务做完没有。认识论循环还跟踪**一个结论凭什么被信任**：
@@ -72,29 +98,6 @@ ClearAI **不**声称实现递归自我改进。它提供的是自我改进系�
 **外脑**——技能与记忆以 DSH 原生条目的形式出现在同一张合并目录里，旁边是本会话的用量。
 
 ![外脑](docs/shots/zh/skills.png)
-
-## 安装
-
-需要 **Node ≥ 22** 和 **`pnpm` 在 PATH 上** —— `dsh plugin …` 是 pnpm 的一层转发器，没有 pnpm 就管不了 profile：
-
-```bash
-corepack enable --install-directory ~/.local/bin   # 还没有 pnpm 就先装它
-dsh plugin --profile web add clearai-dsh
-```
-
-**装完要重启 `dsh web`。** 插件的两半都在运行中的进程里按模块 URL 缓存，只刷新浏览器不够。然后新建会话，在预设选择器里选 **ClearAI**。
-
-从仓库开发：
-
-```bash
-npm test                       # 内核 / 宿主 / 外脑 / 客户端 / 本体 五份套件
-node tools/build-package.mjs   # 由源装配 dist/
-node tools/verify-package.mjs  # 现场重建并逐字节比对
-node tools/verify-clean-install.mjs   # 空 DSH_HOME + 真 CLI 装一遍(16 条断言)
-node docs/diagrams/build.mjs   # 重画循环主图(需 google-chrome)
-```
-
-`dist/` 是生成物，不进版本库。见 [DSH 集成](docs/dsh-integration.zh-CN.md)。
 
 ## 它落在 DSH 的哪一层
 

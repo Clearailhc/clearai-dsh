@@ -2,6 +2,20 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — 2026-09-15
+
+### Added
+
+- **`npx clearai-dsh install` — one command, and the only prerequisite left is DSH's own.** The published package has always carried an install-side tool, but it only *diagnosed*: `doctor`, `root-yaml`, `seed`, `unseed`. The installer that could actually place the package lived in `tools/install-native.mjs`, which is not in the published files — so a stranger had nothing to run but `dsh plugin … add`, a command whose first word assumes a `dsh` that an `npx`-launched harness never puts on `PATH`. The new `install` verb resolves the CLI (a `dsh` on `PATH`, else `npx --yes @deepseek-ai/dsh`), installs into the profile, and then reads the composed config back to show that the `clearai-host` row really landed. `--dist` / `--tarball` / `--spec` point it at a local build instead of the registry, which is what the lifecycle check now exercises.
+
+### Changed
+
+- **The install instructions no longer teach a mechanism we do not own.** They handed the reader a `corepack enable` line as the way to get pnpm. Corepack is a version *router*, not an install: its 186-byte shim fetches a pnpm on first use, and corepack 0.34 — the one Node 24 ships — launches pnpm by looking for `bin/pnpm.cjs`, which pnpm 11 and later no longer provide. It can therefore fetch a version it is unable to run, and its shims can shadow a pnpm that already worked. The docs now name the requirement (a `pnpm` on `PATH`, which is DSH's rather than ours) and leave the choice of how to satisfy it to the reader.
+- `install` does not bootstrap a profile or hand-reconcile one. The CLI initializes a profile the first time it is used for one (`initialized profile web at …`), and a second implementation of the host's reconcile step is exactly the duplication this project rejects. Passing a shipped profile name to `--from-default-profile` is an error in the CLI (`profile "web" is shipped and cannot be a custom profile target`), so the verb does not offer that flag at all.
+- `install` stops when `pnpm` is missing instead of degrading: pnpm is DSH's prerequisite, not this plugin's. The degraded, pnpm-less path stays in `tools/install-native.mjs`, where it exists for one-shot E2E homes and labels itself as degraded.
+- **`doctor` asks the composed config through a `dsh` on `PATH` first**, falling back to `npx --no-install`. It previously always went through npx, so a machine that had the CLI on `PATH` could still be told the composition could not be determined.
+- **The lifecycle check had a gate that could never open.** Its byte-for-byte comparison included `INVENTORY.txt` — the build's own file manifest, which is not in `files` and is therefore never present in a pnpm-installed copy — so that assertion was red on every run, and because the lifecycle check is not part of CI, nobody saw it. It also drove every compose query through `npx --no-install`, which returns an empty string when npx cannot run: two positive assertions failed while the negative one ("the row is gone") passed on that empty output. Both are fixed — the CLI is resolved from `PATH` first, and the comparison ignores the build manifest — and the check now exercises the shipped `install` verb too (28 checks).
+
 ## [0.1.2] — 2026-09-12
 
 ### Fixed

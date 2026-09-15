@@ -52,8 +52,12 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 ## 安装
 
 ```bash
-dsh plugin --profile web add clearai-dsh
+npx clearai-dsh install
 ```
+
+随包的 `bin/clearai.mjs` 为此只长了**一个会动 profile 的动词**:它自己解析 DSH CLI(PATH 上有 `dsh` 就用,没有走 `npx --yes @deepseek-ai/dsh`),对缺省的 `web` profile 调宿主自己的安装动作,然后把组合读回来,报出 `clearai-host` 那一行到底有没有进去。`--dist` / `--tarball` / `--spec` 让它改从本地构建装(开发用),`--profile` / `--home` 覆盖缺省;想自己驱动 CLI 的话,`dsh plugin --profile web add clearai-dsh` 仍然是等价的那条命令。
+
+它**刻意不做 profile bootstrap,也不手工对账 profile**:CLI 第一次用到某个 profile 时会自己初始化它(`initialized profile web at …`),而把宿主的 reconcile 再写一遍正是这个项目拒绝的重复。同样的理由,缺 `pnpm` 时它**停下**而不是绕过去 —— pnpm 是 DSH 的前置,不是本插件的。那条没有 pnpm 的降级路径留在 `tools/install-native.mjs` 里,它的用途是一次性 DSH_HOME 上的 E2E,并且如实标注自己是降级。
 
 重启 DSH 进程（宿主半按模块 URL 缓存），然后在预设选择器里选 **ClearAI**。
 

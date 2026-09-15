@@ -65,6 +65,14 @@ check('出口齐:宿主半 / 浏览器半 / 补丁 / 清单', ['exports', 'main'
 check('宿主半与浏览器半都真的在包里', has('lib/host.js') && has('lib/client.js') && has('lib/fold.js'))
 check('补丁层文件在包里,且插的是**包名**行(不是路径)', has('cordis.patch.yml') && /name:\s*'clearai-dsh'/.test(readFileSync(join(DIST, 'cordis.patch.yml'), 'utf8')))
 check('随包带上 README(中英)、LICENSE 与品牌位图(npm 页面靠它们)', has('README.md') && has('README.zh-CN.md') && has('LICENSE') && has('brand/logo-lockup.png'))
+/**
+ * **声明与接线必须一致**:README 的安装段第一位写的是 `npx clearai-dsh install`,
+ * 那随包的 bin 就必须真的有这个动词 —— 否则文档说的是一句读者做不到的话。
+ * (与本体那条纪律同形:声明了却没接线,当场红。)
+ */
+const readmeText = readFileSync(join(DIST, 'README.md'), 'utf8')
+const binText = readFileSync(join(DIST, 'bin', 'clearai.mjs'), 'utf8')
+check('README 的安装入口与 bin 的动词对得上(npx clearai-dsh install)', readmeText.includes('npx clearai-dsh install') && binText.includes("command === 'install'"), `README 提到:${readmeText.includes('npx clearai-dsh install')} · bin 有 install 动词:${binText.includes("command === 'install'")}`)
 
 // ── ② 发行物干净 ────────────────────────────────────────────────────────────
 console.log('\n② 发行物干净:只带该带的')
