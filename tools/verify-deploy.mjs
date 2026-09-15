@@ -17,9 +17,10 @@
  * 跑法:node tools/verify-deploy.mjs
  */
 
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 
 /**
@@ -68,10 +69,28 @@ const ymlText = readFileSync(join(PRESET, 'agent.cordis.yml'), 'utf8')
  * 下面那份 config 是**文本级抽取**的(它取最后一个匹配),所以它也不会发现重复。
  * 两条一起用:严格解析负责「文件本身合法」,文本抽取负责「部署的那份与代码对得上」。
  */
+/**
+ * yaml 包不是本仓库的依赖,但一定是 DSH 宿主自己的依赖——从宿主 CLI 的位置解析它,
+ * 而不是把某台机器上的绝对路径写死(那条旧路径在别的机器上就是「模块找不到」)。
+ */
+function loadYaml() {
+	const roots = [join(process.env.HOME ?? homedir(), '.npm', '_npx')]
+	for (const root of roots) {
+		for (const entry of existsSync(root) ? readdirSync(root) : []) {
+			const dshPkg = join(root, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+			if (existsSync(dshPkg)) return createRequire(dshPkg)('yaml')
+		}
+	}
+	throw new Error('找不到 DSH 宿主自带的 yaml 包(查过 ~/.npm/_npx/*)。宿主装了它就在。')
+}
 let strictRows = null
 try {
-	const { parse } = await import('/home/lhc/.npm/_npx/1e7f6d9597241db0/node_modules/yaml/dist/index.js')
-	strictRows = parse(ymlText)
+	const { parse } = loadYaml()
+	strictRows = parse(ymlText, {
+		// 组合文件用 !!js 表达平台相关的 disabled;严格解析只为查重复键/缩进,
+		// js 片段本身不求值——解析成原文本即可。
+		customTags: [{ tag: 'tag:yaml.org,2002:js', identify: () => false, resolve: (source) => source }],
+	})
 } catch (error) {
 	console.log(`✗ 组合文件不是合法 YAML(重复键 / 缩进 / 语法):${String(error?.message ?? error).split('\n')[0]}`)
 	process.exit(1)

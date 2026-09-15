@@ -29,14 +29,28 @@
  */
 
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
-const CHECKOUT = process.env.DSH_CHECKOUT ?? '/home/lhc/.npm/_npx/1e7f6d9597241db0'
+/**
+ * dsh checkout 在哪:那是 `npx --no-install` 的工作目录(让它优先解析到 checkout 里的
+ * 那份 CLI)。曾经在代码里写死了一台机器的绝对路径——换台机器,spawn 的 cwd 不存在,
+ * 后面每一步都报一个看不懂的错。现在从 npx 缓存现找,找不到就退回仓库根(缓存解析照样工作)。
+ */
+function discoverDshCheckout() {
+	const cache = join(process.env.HOME ?? homedir(), '.npm', '_npx')
+	if (existsSync(cache)) {
+		for (const entry of readdirSync(cache)) {
+			if (existsSync(join(cache, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'))) return join(cache, entry)
+		}
+	}
+	return ROOT
+}
+const CHECKOUT = process.env.DSH_CHECKOUT ?? discoverDshCheckout()
 /**
  * `dsh` 从哪来:CI 里我们把它装进一个前缀(`npm install --prefix`),本地则用 checkout 里的那份。
  * 两个都不在就如实说"装不了 dsh CLI",而不是让后面每一步都报一个看不懂的错。
