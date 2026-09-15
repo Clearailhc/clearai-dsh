@@ -1372,6 +1372,8 @@ export function apply(ctx, config = {}) {
 		let pending = 0
 		/** 本次刚收到的结论(给「没有原生通知」那一档用:收集那一刻的返回里带上它们)。 */
 		const notices = []
+		/** 判成「失联」的条数(与执行者那条同名的账,面板与注记都要说得出)。 */
+		let lost = 0
 		const publish = (scoutId, stepId, ok, conclusion, stopReason, meta = {}) => {
 			const full = String(conclusion ?? '')
 			/**
@@ -1454,13 +1456,84 @@ export function apply(ctx, config = {}) {
 			 * 真跑里立刻掉了一条回灌)。所以限流只针对 **I/O**:同一个窗口里对同一条只读一次。
 			 */
 			const found = recoverScoutConclusion(sessionId, scout.id, child)
-			// 读不到有两种成因:还在跑,或者读面拿不到。都按「不能证明它落定」处理,
-			// 但不计入 pending——判不出「在跑」就不能让等待循环为它空转。
-			if (found === null) continue
-			publish(scout.id, scout.step ?? null, found.ok === true, found.conclusion, found.stopReason, { trigger: scout.trigger ?? null, digest: scout.digest ?? null, child, native: scout.capability === 'continuable' })
-			lines.push(`侦察 · ${scout.trigger ?? scout.id}:从会话日志回收(${found.ok === true ? '完成' : found.stopReason})`)
+			if (found !== null) {
+				publish(scout.id, scout.step ?? null, found.ok === true, found.conclusion, found.stopReason, { trigger: scout.trigger ?? null, digest: scout.digest ?? null, child, native: scout.capability === 'continuable' })
+				lines.push(`侦察 · ${scout.trigger ?? scout.id}:从会话日志回收(${found.ok === true ? '完成' : found.stopReason})`)
+				continue
+			}
+			/**
+			 * 这一次捞不到 ≠ 永远捞不到:它是**收集机会**,不是判决。
+			 * 「失联」是另一件事(子会话真的不在了),由回合边界的
+			 * `sweepLostScouts()` 用**原生子代理目录**判——判据不该混在一起,
+			 * 混在一起会把「迟到一步的结论」冤杀成失联(真跑里立刻掉一条回灌)。
+			 */
 		}
-		return { mutations, lines, pending, notices }
+		return { mutations, lines, pending, notices, lost }
+	}
+
+	/**
+	 * **失联的侦察**。判据与评估者那条**逐字同构**(`sweepLostAudits`):
+	 *   · 只看投影里还没收口的;
+	 *   · 本进程攥着的那几次派遣是活的,**不问目录**;
+	 *   · 问原生子代理目录:还在跑的不动;
+	 *   · 目录里不在跑、结论又收不回来 ⇒ 如实落「失联」终局(一句永久「未回灌」是等不到下文的承诺);
+	 *   · 目录拿不到 ⇒ **不判**(判不出就不编)。
+	 * 为什么放回合边界而不是每次收集都判:目录是异步读面,而「这次没捞到」不等于「永远捞不到」。
+	 */
+	/**
+	 * 子会话日志里**有几条事件**。判不出回 `null`(读面不可用)——**不编**:
+	 * 「一片空白」与「读不到」是两回事,前者说明结论永远不会来,后者什么也说明不了。
+	 */
+	function childSessionEventCount(childId) {
+		const sessions = ctx.get('sessions')
+		if (sessions === undefined || typeof sessions.get !== 'function') return null
+		try {
+			const session = sessions.get(childId)
+			if (session === null || session === undefined) return 0
+			const events = typeof session.ownEvents === 'function' ? session.ownEvents() : []
+			return Array.isArray(events) ? events.length : 0
+		} catch {
+			return null
+		}
+	}
+
+	async function sweepLostScouts(sessionId, state, justSettled = new Set()) {
+		// `justSettled`:这一拍**刚刚**收上来的(还在同一批 `factMutations` 里,投影尚未前进)。
+		// 不排除它们,就会把刚落定的结论再判成「失联」——自己和自己打架,还把那一条结论写没。
+		const pending = (state?.scouts ?? []).filter(
+			(scout) => (scout.conclusion === null || scout.conclusion === undefined) && typeof scout.child === 'string' && scout.child !== '' && !justSettled.has(scout.id),
+		)
+		if (pending.length === 0) return { mutations: [], lost: 0, lines: [] }
+		const known = new Set([...scoutRuns.values()].map((entry) => String(entry.child ?? '')))
+		const unresolved = pending.filter((scout) => !known.has(String(scout.child)))
+		if (unresolved.length === 0) return { mutations: [], lost: 0, lines: [] }
+		const subagents = ctx.get('subagents')
+		if (subagents === undefined || typeof subagents.listChildren !== 'function') return { mutations: [], lost: 0, lines: [] }
+		let children = []
+		try {
+			children = await subagents.listChildren(sessionId)
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai: 列子代理失败,本次不判侦察失联 ${String(error?.message ?? error).slice(0, 120)}`)
+			return { mutations: [], lost: 0, lines: [] }
+		}
+		const running = new Set((Array.isArray(children) ? children : []).filter((item) => item?.kind === 'child' && item.activity === 'running').map((item) => String(item.id)))
+		const listed = new Set((Array.isArray(children) ? children : []).filter((item) => item?.kind === 'child').map((item) => String(item.id)))
+		const mutations = []
+		const lines = []
+		for (const scout of unresolved) {
+			const child = String(scout.child)
+			if (running.has(child)) continue
+			/**
+			 * 目录里**没有**这个子会话时,不能立刻判死:可能它刚派出、注册表还没认领。
+			 * 退回**它自己的日志**判——一片空白 ⇒ 结论永远不会来了,如实落失联;
+			 * 有事件却没有 `turn/end` ⇒ 还在跑,不动它。(目录里**有**它、但不在跑,
+			 * 那就是注册表也认它已经结束 ⇒ 直接判失联。)
+			 */
+			if (!listed.has(child) && childSessionEventCount(child) !== 0) continue
+			mutations.push({ t: 'scout/settled', id: scout.id, step: scout.step ?? null, conclusion: '', note: '失联', path: null })
+			lines.push(`${scout.trigger ?? scout.id}:侦察失联(子会话已不在跑,结论收不回来)`)
+		}
+		return { mutations, lost: mutations.length, lines }
 	}
 
 	/**
@@ -1892,6 +1965,7 @@ export function apply(ctx, config = {}) {
 			lost: late.lost,
 			scouts: scouts.mutations.length,
 			scoutsPending: scouts.pending,
+			scoutsLost: scouts.lost,
 			// 本次刚收到的结论:有原生通知的那一档由运行时投递,这里只带「没有原生通知」的那些。
 			notices: [...(swept.notices ?? []), ...(scouts.notices ?? [])],
 		}
@@ -5632,6 +5706,21 @@ export function apply(ctx, config = {}) {
 			}
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 失联裁决盘点失败 ${String(error?.message ?? error).slice(0, 160)}`)
+		}
+		/**
+		 * **失联的侦察**:同一拍、同一套判据(原生子代理目录 + 本进程攥着的派遣)。
+		 * 一句永久「未回灌」在卡片上就是一句等不到下文的承诺。
+		 */
+		try {
+			// 本拍刚落定的侦察不算失联(它们的 `scout/settled` 还在这一批变更里,投影没前进)。
+			const settledInBatch = new Set(factMutations.filter((mutation) => mutation.t === 'scout/settled').map((mutation) => mutation.id))
+			const scouts = await sweepLostScouts(sessionId, hostService.state(sessionId), settledInBatch)
+			if (scouts.mutations.length > 0) {
+				factMutations.push(...scouts.mutations)
+				brainNote = `${brainNote}\n(有 ${scouts.lost} 条侦察**失联**(子会话已不在跑):已如实记下「结论收不回来」——不必再等它,需要那份材料就重新派一次。)`
+			}
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai: 失联侦察盘点失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
 		/**
 		 * **盘上残留**:投影从零开始,可盘上的上一轮还在。

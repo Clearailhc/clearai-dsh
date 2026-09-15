@@ -2397,6 +2397,61 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	}
 
 	/**
+	 * **失联终局**(U3):进程重启过 ⇒ 内存表空了,投影里那条侦察还没收口,而子会话
+	 * 已经不在了。判据与执行者那条**完全一致**:表里没有 + 会话里没有 `turn/end` ⇒ 失联。
+	 * 一句永久「未回灌」是等不到下文的承诺。
+	 */
+	{
+		const L = 'session-scout-lost'
+		const first = makeHost()
+		apply(first.ctx, { blockedThreshold: 3 })
+		await callOn(first, L, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		await callOn(first, L, 'CreatePlan', { steps: [{ id: 'l1', do: '核材料', artifacts: ['lab/l1.txt'], done_criteria: 'lab/l1.txt 存在', tests: null }] })
+		await callOn(first, L, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
+		const child = String(first.service.state(L).scouts.at(-1)?.child ?? '')
+		// 模拟进程重启:内存表空了(新 host),子会话也不在会话服务里(拿不到任何事件)
+		const second = makeHost()
+		second.states.set(L, first.service.state(L))
+		apply(second.ctx, { blockedThreshold: 3 })
+		await preStep(second, L, 51)
+		const lost = second.service.state(L).scouts.at(-1)
+		check('子会话不在了 ⇒ 如实落「失联」终局(不再永久挂着「未回灌」)', lost?.note === '失联' && lost?.conclusion === '', JSON.stringify({ note: lost?.note ?? null }))
+		check('失联也要进视图(面板才分诊得出)', second.service.view(L).scouts.at(-1)?.status === 'failed', JSON.stringify(second.service.view(L).scouts.at(-1)?.status ?? null))
+	}
+	{
+		// 会话在、只是还没写完 turn/end(真的还在跑)⇒ **不冤枉它**。
+		const R = 'session-scout-still-running'
+		const first = makeHost()
+		apply(first.ctx, { blockedThreshold: 3 })
+		await callOn(first, R, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		await callOn(first, R, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
+		const child = String(first.service.state(R).scouts.at(-1)?.child ?? '')
+		const second = makeHost()
+		second.states.set(R, first.service.state(R))
+		// 会话在(有壳)、但没有 turn/end;原生子代理目录说它还在跑
+		second.sessionEvents = { [child]: [{ type: 'turn/start', data: { turn: 1 } }] }
+		second.listing = [{ kind: 'child', id: child, activity: 'running', mode: 'continuable' }]
+		apply(second.ctx, { blockedThreshold: 3 })
+		await preStep(second, R, 52)
+		check('目录说它在跑 ⇒ 不判失联,继续等', second.service.state(R).scouts.at(-1)?.note === null, JSON.stringify({ note: second.service.state(R).scouts.at(-1)?.note ?? null }))
+		check('还在跑 ⇒ 视图上仍然是「跑着」而不是终局', second.service.view(R).scouts.at(-1)?.status === 'running', JSON.stringify(second.service.view(R).scouts.at(-1)?.status ?? null))
+	}
+	{
+		// 没有 `sessions` 服务 = 判不了 ⇒ **不编**(不落终局)。
+		const U = 'session-scout-unknown'
+		const first = makeHost()
+		apply(first.ctx, { blockedThreshold: 3 })
+		await callOn(first, U, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		await callOn(first, U, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
+		const second = makeHost()
+		second.states.set(U, first.service.state(U))
+		second.subagentsAvailable = false
+		apply(second.ctx, { blockedThreshold: 3 })
+		await preStep(second, U, 53)
+		check('目录读面不可用 ⇒ 不落终局(判不出就不编)', second.service.state(U).scouts.at(-1)?.note === null, JSON.stringify({ note: second.service.state(U).scouts.at(-1)?.note ?? null }))
+	}
+
+	/**
 	 * **可续跑那一档**(U2a):侦察的结论由原生结算通知投给模型,内核这侧只做两件事——
 	 * 把派遣能力如实落账、把结论从子会话日志收进账本并落盘。
 	 */
