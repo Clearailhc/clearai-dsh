@@ -31,8 +31,8 @@ jobs:
       contents: read
       id-token: write # Trusted Publishing 要它
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           # Node 24 自带 npm ≥ 11.5.1;trusted publishing 的硬要求就是它。
           node-version: '24'

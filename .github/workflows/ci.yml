@@ -12,8 +12,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           # CI 跑 engines 的下界(22)。发布那条流水线用 Node 24,因为 trusted publishing 要求
           # npm ≥ 11.5.1,而 Node 22 自带 10.9.8 —— 两处刻意不同,别顺手统一。
