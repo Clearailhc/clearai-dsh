@@ -27,6 +27,8 @@ import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { artifactExists, countMemoryEntries } from './e2e-workspace.mjs'
+
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
 /**
@@ -70,6 +72,21 @@ const option = (flag) => {
  * 「记忆里已经有经验」这类**有历史的工作区**——而最近几轮改的恰恰是这三件事的行为。
  * 传进来的工作区**不会被删**(那是调用方的资产)。
  */
+/**
+ * `--scenario <name>`:换一份**长测剧本**(定义在 `tools/e2e-scenarios.mjs`)。
+ *
+ * 剧本给两样:任务书(写死,因为测的是装配不是模型的创造力)与断言(从真日志取证)。
+ * 另外它还会跑一组**跨机制不变量**(不跳准入、评估者不悬空、分叉不留孤儿……)——
+ * 那些才是长测的价值所在:单点机制在单测里都绿,跨机制的先后与配对关系只有跑完整一场才看得见。
+ */
+const scenarioName = option('--scenario')
+const SCENARIO_MODULE = await import(new URL('./e2e-scenarios.mjs', import.meta.url))
+const scenario = scenarioName === undefined ? null : (SCENARIO_MODULE.SCENARIOS[scenarioName] ?? null)
+if (scenarioName !== undefined && scenario === null) {
+	console.error(`✗ 没有这个剧本:${scenarioName}\n  可选:${Object.keys(SCENARIO_MODULE.SCENARIOS).join(', ')}`)
+	process.exit(2)
+}
+
 const useWorkspace = option('--workspace')
 /**
  * `--autonomy attended|unattended` / `--max-turns N`:覆盖内核那一行的配置。
@@ -99,7 +116,7 @@ const freeform = argv.includes('--freeform')
  * 的截断场),给它们扣一顶「没跑完」的帽子是冤枉。但长链验收场必须显式要求,
  * 否则「半路停下」会伪装成一排 ✓(R3 之前就是这样:24 通过,而链根本没走完)。
  */
-const expectComplete = argv.includes('--expect-complete')
+const expectComplete = argv.includes('--expect-complete') || scenario?.expectComplete === true
 /**
  * `--installed`:这一场跑**装出来的包**,不是仓库里摊平的行(S3)。
  *
@@ -119,12 +136,13 @@ const installedMode = argv.includes('--installed')
  * `--installed` 与它组合时,装出来的 profile 也从 **web** 缺省模板来(名册只在挂它的部署里存在)。
  */
 const resident = argv.includes('--resident')
-const VALUE_FLAGS = new Set(['--workspace', '--autonomy', '--max-turns'])
+const VALUE_FLAGS = new Set(['--workspace', '--autonomy', '--max-turns', '--scenario'])
 const task =
 	argv
 		.filter((item, index) => !item.startsWith('--') && !VALUE_FLAGS.has(argv[index - 1] ?? ''))
 		.join(' ')
 		.trim() ||
+	scenario?.task ||
 	(skillsScenario
 		? '/literature-review 只做一件事:读一遍我刚引用的这条技能,用一句话告诉我它的名字与它教你做的第一件事。不要调用任何其他工具,不要立目标、不要建计划。'
 		: '这个工作区是空的。我要一份可核对的小交付:先立目标(判据:lab/probe.txt 存在且含一行表头 + 一行数据),再建一份两步计划——第一步造出 lab/probe.txt,第二步核对它的列名。立目标时登记至少两条候选假设(每条写清什么结果会推翻它),计划步骤里用 tests 声明验哪条。建完计划就停,不要执行步骤。')
@@ -172,21 +190,6 @@ function readConstitution(workspace) {
 }
 
 /** 记忆条数:数 `clear/memory/*.md` 里的一级条目(`## `)。 */
-function countMemoryEntries(workspace) {
-	const dir = join(workspace, 'clear', 'memory')
-	if (!existsSync(dir)) return 0
-	let count = 0
-	for (const name of readdirSync(dir)) {
-		if (!name.endsWith('.md')) continue
-		try {
-			count += (readFileSync(join(dir, name), 'utf8').match(/^##\s+\S/gm) ?? []).length
-		} catch {
-			/* 读不了就不数 */
-		}
-	}
-	return count
-}
-
 /** 盘上产物:products/ 下的文件(相对工作区路径)。 */
 function listProducts(workspace, limit = 200) {
 	const root = join(workspace, 'products')
@@ -385,6 +388,7 @@ const before = {
 	logs: countSessionLogs(workspace),
 }
 console.log(`  工作区:${workspace}${tempWorkspace ? '(临时)' : '(现成,跑完不动)'}`)
+if (scenario !== null) console.log(`  剧本:${scenarioName} · ${scenario.title}\n  为什么要它:${scenario.why}`)
 console.log(`  跑之前:章程占位 ${before.constitution.placeholders}/${before.constitution.items} · 记忆 ${before.memory} 条 · products/ ${before.products.length} 个文件 · 已有会话 ${before.logs} 个`)
 if (autonomy !== undefined || maxTurns !== undefined) console.log(`  覆盖:autonomy=${autonomy ?? '(预设)'} maxAutoTurns=${maxTurns ?? '(预设)'}`)
 const started = Date.now()
@@ -586,8 +590,9 @@ const DELIBERATE = /续跑窗口未布防:goals 服务不可用/
 		unexpected.map((text) => text.slice(0, 80)).slice(0, 2).join(' | '),
 	)
 }
+const allMutations = toolResults.flatMap((event) => event.data?.meta?.mutations ?? [])
 {
-	const mutations = toolResults.flatMap((event) => event.data?.meta?.mutations ?? [])
+	const mutations = allMutations
 	console.log(`  变更记录:${mutations.length} 条(${[...new Set(mutations.map((mutation) => mutation.t))].join(',')})`)
 	check('变更记录真的落了(goal/set)', skillsScenario || mutations.some((mutation) => mutation.t === 'goal/set'), mutations.map((mutation) => mutation.t).join(','))
 	check('变更记录真的落了(plan/created)', skillsScenario || mutations.some((mutation) => mutation.t === 'plan/created'), mutations.map((mutation) => mutation.t).join(','))
@@ -774,6 +779,32 @@ if (events.length > 0) {
 			goalStatus === 'achieved' && openSteps.length === 0,
 			`目标 ${goalStatus} · 剩 ${openSteps.length} 步(${openSteps.map((step) => step.id).join(',') || '—'})· 未回灌 ${unfinished.length} 条 ⇒ 半路停下:一次性形态没有续跑窗口,让出回合就跑动结束`,
 		)
+	}
+}
+
+// ── ⑥ 长测:跨机制不变量 + 剧本自己的断言 ────────────────────────────────────
+//
+// 判据本体在 `tools/e2e-scenarios.mjs` 的 `evaluateLog()` 里——**同一份实现**也被
+// `tools/e2e-replay.mjs` 用来离线重判同一份日志。放在那里而不是这里,是为了让
+// 「跑一场」与「重判一场」永远不会漂移:判据只有一份。
+if (events.length > 0) {
+	const { evaluateLog } = SCENARIO_MODULE
+	const exists = (rel) => artifactExists(workspace, rel)
+	const evaluated = await evaluateLog({
+		scenario,
+		events,
+		mutations: allMutations,
+		workspace,
+		exists,
+		called,
+		memoryEntries: countMemoryEntries(workspace),
+	})
+	console.log(`  变更直方图:${evaluated.stats.histogram || '(空)'}`)
+	console.log('\n【跨机制不变量】')
+	for (const item of evaluated.checks.filter((entry) => entry.kind === 'invariant')) check(item.label, item.ok, item.detail)
+	if (scenario !== null) {
+		console.log(`\n【剧本断言:${scenario.title}】`)
+		for (const item of evaluated.checks.filter((entry) => entry.kind === 'scenario')) check(item.label, item.ok, item.detail)
 	}
 }
 
