@@ -2,13 +2,20 @@
 
 What follows is the honest boundary of this release. Every line is either absent, partially implemented, or verified only to a stated depth. If something is not listed here and not demonstrated elsewhere in the documentation, treat it as unverified.
 
+**How to read this**: wherever the repository describes a mechanism in the future or ideal tense, this file and the
+[mechanism truth table](optimization/truth-table.md) take precedence. The truth table labels every entry
+`implemented / partial / design only` and records each place where "the docs say A, the code does B". Mixing `current`
+with `design goal` in the same tense was this documentation set's worst habit.
+
 ## Not implemented
 
 - **The eight-state verification machine.** The ontology in [Verification ontology](verification-loop.md) describes a full state machine for verification objects. What ships is the subset the kernel actually enforces: hypotheses, observations, evaluations, evidence, and facts, with levels L0–L4. The richer lifecycle remains a design target.
 - **A universal L4 human-release gate.** A per-step/per-branch human release for L4 deliveries is implemented: the kernel refuses delivery without that record. A blanket gate over every evaluation is not implemented.
+- **A hard block on unauthorized plans (worth calling out).** The review card **always** asks a person to approve (`CreatePlan` has no auto-confirm branch, and the third `confirmed_by` source `'autonomy'` is deleted), but **being unauthorized does not block delivery**: it only makes auto continuation `hold`, while `AdvancePlan` proceeds and back-fills `confirmed_by='progress'` in the same mutation (the kernel's "behaviour is authorization"). Authorization is therefore a **stamp and an attribution**, not a gate. Whether to promote it into a real gate is an unmade product decision.
 - **A `retracted` producer.** The ontology defines the state; no code path currently produces it.
 - **Observation provenance labels beyond `self` and `scout`.** Other origins exist in the type, but nothing writes them yet.
 - **Machine evaluator self-running.** An independent evaluator is dispatched by the kernel when admission sets `needs_audit`. That evaluator runs as a real sub-session; there is no separate background re-evaluation loop.
+- **ClearAI's own `/` command menu.** The preset currently mounts only the native `/compact` and contributes no ClearAI human-side command at all (the `standard` preset additionally mounts `/goal`). The menu is DSH's native human-command channel and should be preferred over a bespoke protocol; adding it is Phase 5 of the [convergence and slimming plan](optimization/plan.md).
 
 ## Verified only to a stated depth
 
@@ -24,7 +31,9 @@ What follows is the honest boundary of this release. Every line is either absent
 
 ## Open decisions
 
-- **English UI and English prompts.** The browser panels are still Chinese-only, the preset's prompt sections carry a Chinese-language rule, and the install-side CLI (`doctor`, `install`, `seed`) prints Chinese as well — so the first command a stranger runs answers in a language they may not read. A foreign-language user therefore gets a Chinese interface end to end. The native DSH locale service is the intended mechanism for fixing the panels; the prompt language and the CLI's output language are design decisions still open.
+- **English UI and English prompts (partially corrected, aligned 2026-09).** The install-side CLI (`doctor`, `install`, `seed`) still prints Chinese, and the browser panels still use Chinese as their source text (English tables exist but have not been proofread screen by screen in a real browser) — so a non-Chinese user may still get a Chinese interface.
+  **The half that is already fixed**: the preset prompts **no longer require Chinese throughout**. They now say "follow the user's current language, one language per turn" (the language subsection in `preset/plugins/prompts.js`), so "the prompts lock everyone into Chinese" is no longer true.
+  One design decision remains open: which language the CLI prints in. (The panels can reuse the native DSH locale service; that mechanism is already in place.)
 
 ## Before you can run it
 

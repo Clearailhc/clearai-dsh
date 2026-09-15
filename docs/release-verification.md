@@ -101,7 +101,8 @@ Then, in the browser:
 6. Step artifacts show real paths, never `undefined`; nothing is labelled missing without a disk check.
 7. With several plans, the header dropdown switches to an older tree and marks it archived.
 8. After a goal closes, no stale "step N" remains anywhere.
-9. There is **no** autonomy toggle in the tools row, and creating a plan **always** raises the native plan review — the run does not proceed until a human approves.
+9. There is **no** autonomy toggle in the tools row, and creating a plan **always** raises the native plan review — and **only a human approval writes the authorization stamp** (`confirmed_by='user'`; the `'autonomy'` source is deleted).
+   This is **not** "nothing proceeds until a human approves": being unauthorized only makes auto continuation `hold` (it will not drive the next turn), while `AdvancePlan` still runs and back-fills `confirmed_by='progress'` in the same mutation. Authorization is a stamp and an attribution, not a gate — see [Known gaps](known-gaps.md).
 
 Any failure means: do not release. Go back to that component's suite and add a regression first.
 
