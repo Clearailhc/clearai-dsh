@@ -147,7 +147,9 @@
     # L4 只认外部来源:做的人自己写过的路径不算观测
     l4RejectSelfWritten: true
     # 「≥2 条假设」在 ClearAI 只是文案;这里默认不强制,要开就把值改成 2
-    minHypotheses: 0
+    # 假设数量下限:首次立目标至少登记 2 条候选假设(0 条一样拦)。候选对比是检验的前提——
+    # 只有一个猜想时,「验证」容易退化成找证据支持自己。修订目标不受此限。
+    minHypotheses: 2
     # deny_rules 十条里可移植的九条(路径越狱那条不搬:宿主沙箱已经拥有它,ClearAI 自己也说「不重复」)
     bashDenyRules: true
     # 独立评估者:spawn = fresh context(fork 会继承历史,做的人与判的人就分不开了)

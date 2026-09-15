@@ -15,7 +15,7 @@
 | 3′ | 一致性检查（提前于阶段 7） | 已完成 | `node test/docs-consistency.test.mjs` | 11 通过,0 失败 |
 | 3″ | 不缩水覆盖设计（阶段 4 的验收基线） | 已完成 | 人工通读 + 真值表交叉 | 两语落盘，42 行覆盖矩阵 |
 | 9′ | 注释风格棘轮（提前立规则） | 进行中 | `node test/comment-style.test.mjs` | 8 通过,0 失败；债务 79/159/70 |
-| 4 | 最小硬边界重构 | 未开始 | `node test/authority-boundary.test.mjs` | — |
+| 4 | 最小硬边界重构 | 已完成 | `node test/authority-boundary.test.mjs` | 13 通过,0 失败 |
 | 5 | DSH 原生菜单与能力回归 | 未开始 | `node test/preset-composition.test.mjs` | — |
 | 6 | Prompt 瘦身与上下文注入 | 未开始 | `node test/prompt-sections.test.mjs` | — |
 | 7 | 文档对齐（一致性测试部分已完成） | 未开始 | `node test/docs-consistency.test.mjs` | — |
@@ -240,3 +240,52 @@ node tools/install-native.mjs --profile web
   「Agent」不许作为 mermaid 参与者回归、「内容是我们的」写明、旧名词对照保留。
 
 **验证**：`node test/state-machine.test.mjs` → 43 通过,0 失败（原 33 项）。
+
+## 阶段 4 · 最小硬边界重构（权威边界）
+
+**4-1 授权语义归一（行为不变）**
+
+覆盖设计 §4 的决定落地：授权是**归属记号**，审阅卡才是闸门。同一回合里两句矛盾的话
+（CreatePlan 说「不要开工」、运行态卡说「不需要任何人先按什么」）统一为同一语义：
+「未经人批准的计划，系统不会自动续跑；显式推进时，第一次交付会按事实记下归属。」
+改了 6 处：内核 CreatePlan 四结局消息、requestPlanReviewAndStamp 的 unavailable 分支、
+两处注释（§19-A 与 §34 的旧表述）、fold 运行态卡、prompts 的 plan-governance 段。
+kernel 测试同步更新（无通道形态断言新语义：不自动续跑 + 可 RequestPlanReview 重呈）。
+
+**4-2 假设数量下限落为硬边界（行为变更）**
+
+主线十三拍里唯一的「部分」覆盖升格：门在 `SetGoal`（`hypotheses_too_few`，0 条一样拦，
+修订不受限），产品立场在 preset（`minHypotheses: 2`，与 blockedThreshold 同一模式，
+内核默认 0 保持机制中立），提示词补上了此前完全缺失的假设纪律（loop-contract
+「假设至少两条，各带推翻条件」）。kernel 新增 5 个用例（0/1/2/修订/默认中立），
+校验器新增 ⑫ 组 3 项。真值表 hypothesis-registry 的 known_mismatch 消除。
+
+**4-3 权威边界测试（13 项）**
+
+`test/authority-boundary.test.mjs` 把「不可表达优于不可违反」变成可执行断言：
+变更字面量只出现在 clearai-kernel.js（brain/ontology/prompts 一件不产）；
+投影侧 applyMutations 恰好两个调用点，各被 `meta.kind === MUTATION_KIND` 与
+`clearai/mutations` 段名把守；人门动词没有工具 schema（模型工具面不存在它们）；
+标记常量两侧同源；fold.js 只读账本（无任何写文件调用）。
+阶段 5 交还原生能力之后，这份测试保证探索区结构上写不进权威账本。
+
+**4-4 bash deny 与宿主治理的重叠核实（结论：无重叠）**
+
+逐一核查 `dsh-tool-bash` / `dsh-bash-sandbox` / `dsh-bash-local`：宿主只有沙箱路径域与
+审批升级，**没有内容级威胁模式清单**。fork 炸弹这类在可写沙箱内完全合法的命令，
+只有内容规则拦得住。三条轴分清楚：沙箱管「写哪」、审批管「谁同意」、
+deny 清单管「命令本身是什么威胁」。真值表该条的 known_mismatch 消除（原「部分重叠」
+的怀疑不成立），没有条目需要交还。
+
+**4-5 autonomy.override 死路径的决定**
+
+保留只读容忍：旧会话日志里可能仍有 `set_autonomy` 记录，历史必须继续读得通；
+当前没有任何写入者（fold 与 kernel 注释均已写明）。删除它是引入迁移风险换一个
+注释问题，不值。
+
+**验证**
+
+```text
+第 1 遍 · 内核:576 · 宿主:69 · 外脑:40 · 客户端:192 · 本体:85 · 真值表:22 · 状态机:43 · 文档:11 · 注释:8 · 边界:13
+全绿(1 遍)。真值表校验:21 项全过。部署与源逐字节一致。
+```

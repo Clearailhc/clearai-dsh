@@ -2227,15 +2227,16 @@ export function apply(ctx, config = {}) {
 
 
 	/**
-	 * 请人**审阅计划**(§19-A):走原生 `ctx.userQuestions.ask` 的 `plan-review` 意图。
+	 * 请人**审阅计划**:走原生 `ctx.userQuestions.ask` 的 `plan-review` 意图。
 	 *
 	 * 为什么要借这一条:客户端为这个意图做了**专门的整屏审阅**(计划 markdown 由原生渲染),
-	 * 批准/继续改的标签由机制定义,答案**程序化回到调用方**——于是「人在场那一档要不要开工」
-	 * 从**提示词劝告**(模型记得问)变成**机制阻断**(系统自己问)。而授权记号仍然由我们落账:
+	 * 批准/继续改的标签由机制定义,答案**程序化回到调用方**——于是「计划要人审」从
+	 * **提示词劝告**(模型记得问)变成**机制动作**(系统自己问)。而授权记号仍然由我们落账:
 	 * **借界面,不借账。**
 	 *
-	 * 四种结局只有一种放行:approved / declined(带回人的反馈)/ cancelled(他改为先说话)
-	 * / unavailable(这个形态没有审阅通道)。后三种一律**不放行**——宁可停着等人,也不擅自开工。
+	 * 四种结局:approved(落 by='user')/ declined(带回人的反馈)/ cancelled(他改为先说话)
+	 * / unavailable(这个形态没有审阅通道)。后三种**不落授权记号**——记号是归属,不是闸门:
+	 * 未授权的唯一后果是自动续跑 hold;显式推进不被阻止,第一次交付会按事实补写 by='progress'。
 	 */
 	async function requestPlanReview(agent, planMarkdown, signal) {
 		const questions = ctx.get('userQuestions')
@@ -2297,7 +2298,7 @@ export function apply(ctx, config = {}) {
 		}
 		if (review.outcome === 'declined') return { confirmed: false, note: `\n人又一次选择**先改再交**${review.note === '' ? '' : `,他的意见:${review.note}`}——仍未授权,按意见再改。` }
 		if (review.outcome === 'cancelled') return { confirmed: false, note: '\n人把审阅撤下、改为先说话:仍未授权,等他的下一步指令。' }
-		return { confirmed: false, note: `\n(这份计划还没有得到人的授权:${review.note}。**不要开工**——如实停下等人。)` }
+		return { confirmed: false, note: `\n(这份计划还没有得到人的授权:${review.note}。系统不会自动续跑它;你显式推进时,第一次交付会按事实记下归属。想再请人审,用 RequestPlanReview 重呈。)` }
 	}
 
 	/** 给人审阅的计划正文(markdown)。原生审阅界面渲染它,所以它得是人读得懂的一份计划。 */
@@ -2474,8 +2475,10 @@ export function apply(ctx, config = {}) {
 				if (typeof hypothesis?.claim !== 'string' || hypothesis.claim.trim() === '') return fail('hypothesis_claim_required', '每条假设要有一句话主张。')
 				if (typeof hypothesis?.refute_when !== 'string' || hypothesis.refute_when.trim() === '') return fail('hypothesis_refute_required', '每条假设必须写清「什么结果会推翻它」——没有推翻条件的假设无法被检验。')
 			}
-			if (CFG.minHypotheses > 0 && state.goal === null && hypotheses.length > 0 && hypotheses.length < CFG.minHypotheses) {
-				return fail('hypotheses_too_few', `至少登记 ${CFG.minHypotheses} 条候选假设。`)
+			// 假设数量下限:首次立目标就得带够候选——0 条一样拦(候选对比是检验的前提,
+			// 只有一个猜想时「验证」容易退化成找证据支持自己)。修订不受此限。
+			if (CFG.minHypotheses > 0 && state.goal === null && hypotheses.length < CFG.minHypotheses) {
+				return fail('hypotheses_too_few', `至少登记 ${CFG.minHypotheses} 条候选假设(每条:一句话主张 + 一句推翻条件)。只有一个猜想,检验容易退化成找证据支持自己;候选对比才让「推翻」成为可能。`)
 			}
 			const isRevision = state.goal !== null && state.goal.status === 'open'
 			if (isRevision && (typeof args.reason !== 'string' || args.reason.trim() === '')) {
@@ -2746,18 +2749,17 @@ export function apply(ctx, config = {}) {
 			const goal = state.goal !== null && state.goal.status === 'open' ? state.goal : null
 			const planId = uniqueId('p')
 			/**
-			 * 计划确认门(§34):**永远请人审阅,没有任何一档自动确认**。
+			 * 计划确认门:**永远请人审阅,没有任何一档自动确认**。
 			 *
-			 * 原先无人值守那一档「立约即授权」——那会让「计划经人确认」这条证据变成
-			 * **系统自己签的**,和 L4「人放行」是同一类病。门的意义就在"这一下是人按的":
-			 * 没有它,后面所有基于授权的推理都是空的。`by:'autonomy'` 这个来源因此被删除。
+			 * 如果让系统替人签「计划经人确认」,这条证据就是**系统自己签的**,
+			 * 和 L4「人放行」是同一类病。门的意义就在"这一下是人按的":
+			 * 没有它,后面所有基于授权的推理都是空的。
 			 *
-			 * 走**原生审阅**(以前是提示词让模型自己去问):由**我们**在计划立起来的这一步
-			 * 请人审阅,计划正文交给原生界面渲染。批准 ⇒ 授权记号现在就落(`by:'user'`);
-			 * 其余三种结局 ⇒ 一个字都不落,如实停下等人。这一条把「模型记得问才有一道门」
-			 * 换成了「机制自己问」——P1(机制优于劝告)。
+			 * 走**原生审阅**:由**我们**在计划立起来的这一步请人审阅,计划正文交给原生界面渲染。
+			 * 批准 ⇒ 授权记号现在就落(`by:'user'`);其余三种结局 ⇒ 记号不落。这一条把
+			 * 「模型记得问才有一道门」换成了「机制自己问」——机制优于劝告。
 			 *
-			 * 注意它**不是硬阻断**:未授权只让自动续跑 `hold`(见 turnDemand),`AdvancePlan`
+			 * 注意记号**不是闸门**:未授权只让自动续跑 `hold`(见 turnDemand),`AdvancePlan`
 			 * 照常执行,并在同一条变更里补写 `by:'progress'`(行为即授权,见 AdvancePlan)。
 			 */
 			const brief = typeof args.brief === 'string' ? args.brief : ''
@@ -2768,11 +2770,11 @@ export function apply(ctx, config = {}) {
 				confirmed = true
 				reviewNote = '\n人在审阅里**批准**了这份计划(原生审阅卡),授权记号已落账——开始执行。'
 			} else if (review.outcome === 'declined') {
-				reviewNote = `\n人在审阅里选择**先改再交**${review.note === '' ? '' : `,他的意见:${review.note}`}——计划仍未授权,按他的意见改完再呈一次,不要开工。`
+				reviewNote = `\n人在审阅里选择**先改再交**${review.note === '' ? '' : `,他的意见:${review.note}`}——计划仍未授权,按他的意见改完再呈一次。`
 			} else if (review.outcome === 'cancelled') {
-				reviewNote = '\n人把审阅撤下、改为先说话:计划仍未授权,**不要开工**,等他的下一步指令。'
+				reviewNote = '\n人把审阅撤下、改为先说话:计划仍未授权,等他的下一步指令。'
 			} else {
-				reviewNote = `\n(这份计划还没有得到人的授权:${review.note}。**不要开工**——如实停下等人,别自己去问一遍(系统已经问过了)。)`
+				reviewNote = `\n(这份计划还没有得到人的授权:${review.note}。系统不会自动续跑它;你显式推进时,第一次交付会按事实记下归属。想再请人审,用 RequestPlanReview 重呈。)`
 			}
 			mutations.push({
 				t: 'plan/created',

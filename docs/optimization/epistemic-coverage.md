@@ -69,7 +69,7 @@ currently rests on prompts or is missing.
 | Beat | Expected behavior | Carried by | Hardness | Status | Verified by |
 |---|---|---|---|---|---|
 | ① | Goal with criteria; refinement appends, never overwrites | `SetGoal` / `RefineGoal` | hard | implemented | kernel suite |
-| ② | ≥2 hypotheses, each with a falsification condition | `RegisterHypothesis` + prompts | **advisory** (`minHypotheses: 0`) | **partial** | kernel suite (shape only) |
+| ② | ≥2 hypotheses, each with a falsification condition | `SetGoal` entry gate + preset `minHypotheses: 2` | hard | implemented | kernel suite (0/1/2/revision forms + neutral default) |
 | ③ | Criteria enforced: every step's `done_criteria` ≥ 4 chars | `validateSteps` ← `CreatePlan` | hard | implemented | kernel suite |
 | ④ | Plan always raises native review; `confirmed_by` is only `user`/`progress` | `CreatePlan` → native review | hard | implemented | kernel + host suites |
 | ⑤ | Artifacts land on disk; `clear/` is protected | bash deny rules + host sandbox | hard | implemented | kernel + host suites |
@@ -117,13 +117,11 @@ currently rests on prompts or is missing.
 
 | Beat | Expected behavior | Status | Destination |
 |---|---|---|---|
-| ② | Hypothesis count floor (≥2) as a mechanism | partial | Phase 4b makes it hard, or it is explicitly demoted to preference |
 | ⑦+ | A universal L4 gate covering **every** evaluation | design-only | stays design-only; docs must not claim it |
 | — | The eight-state verification machine | design-only | stays design-only |
 | — | A producer for `retracted` | design-only | stays design-only |
 | — | Observation sources `human_upload` / `file_drop` / `callback` / `pull` | design-only | stays design-only; only `self`/`scout` have producers today |
 | B2a–c | Native return of non-authoritative capability | design-only | Phase 5 |
-| — | Unified authorization semantics (see §4) | implemented but **self-contradictory wording** | Phase 4 unifies |
 
 ## 3. The no-shrinkage list and the hand-back list
 
@@ -153,9 +151,10 @@ the authoritative ledger" still holds.
 
 ## 4. Unified semantics: authorization is a stamp; the review is the gate
 
-The system currently says two contradictory things to the model in the same turn (the
-`CreatePlan` result says "do not start work", the runtime card says "nobody needs to press
-anything first"). The unification — **behavior unchanged, wording and reasoning aligned**:
+Two texts once contradicted each other (the `CreatePlan` result said "do not start work", the
+runtime card said "nobody needs to press anything first"). The unification — **behavior
+unchanged, wording and reasoning aligned** (landed: the CreatePlan result, the runtime card and
+the prompts now say one sentence):
 
 1. **The gate is the native review card itself**: `CreatePlan` always raises it; that is the only
    human gate. Approval → `confirmed_by='user'`.
@@ -172,10 +171,10 @@ anything first"). The unification — **behavior unchanged, wording and reasonin
 
 ## 5. Destinations for gaps (every gap gets exactly one of three)
 
-- **Become mechanism**: the hypothesis count floor (Phase 4b); the authority-boundary test
-  (Phase 4); the `/` menu and non-authoritative capability (Phase 5); the dead
-  `autonomy.override` read path (Phase 4/5 decides delete or keep — if kept, document it as
-  read-only for old logs).
+- **Become mechanism**: the authority-boundary test (Phase 4); the `/` menu and
+  non-authoritative capability (Phase 5); the dead `autonomy.override` read path (Phase 4/5
+  decides delete or keep — if kept, document it as read-only for old logs).
+  (Landed: the hypothesis count floor — preset sets 2, kernel gate + prompt discipline, see row ②.)
 - **Stay design-only, honestly labelled**: the eight-state verification machine, the universal
   L4 gate, a `retracted` producer, the four other observation sources. The criterion: each has a
   truth-table row with the correct `status`, and no document claims it is implemented.

@@ -1508,14 +1508,14 @@ export function renderCard(state) {
 	} else {
 		if (derived.planConfirmationPending) {
 			/**
-			 * 2026-09-11 起这里只说**事实**,不再带「先引导确认」那句劝告。
+			 * 授权记号的语义:它是**归属**,不是闸门。
 			 *
-			 * 为什么:确认计划那道门砍了(见 HUMAN_GATE_ACTIONS 的收敛记录)——它本来就不是闸门,
-			 * 而那句劝告会让人(和模型)以为有一条必须走的路。现在这句只交代机理:
-			 * 记号没落账,但**授权不会因此缺席**——交付第一步就按事实补写。
+			 * 记号没落账时,自动续跑会 hold(turnDemand),但显式推进不被阻止——
+			 * 第一次交付会在同一条变更里按事实补写 by='progress'(行为即授权)。
+			 * 卡片只交代机理,不劝人走哪条路:劝告会让人(和模型)以为有一道必须走的门。
 			 */
 			lines.push('- plan_confirmation_pending: true')
-			lines.push('- confirmed_at:(null — 授权记号未落账;第一次交付会按事实补写(行为即授权)。不需要任何人先按什么)')
+			lines.push('- confirmed_at:(null — 授权记号未落账。未经人批准的计划不会自动续跑;显式推进时,第一次交付会按事实补写归属(行为即授权))')
 		} else if (plan.confirmed_at === null) {
 			// 记号没落账,但计划事实上已经推进过:授权已经发生。照旧写「等人确认」会与上一行
 			// 当场矛盾,而同一段里两句打架的话比一句错话更糟(ClearAI 的原话)。

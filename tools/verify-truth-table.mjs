@@ -32,6 +32,7 @@ const read = (rel) => readFileSync(join(PORT, rel), 'utf8')
 
 const KERNEL = read('preset/plugins/clearai-kernel.js')
 const PRESET = read('preset/agent.cordis.yml')
+const PROMPTS = read('preset/plugins/prompts.js')
 const TABLE = JSON.parse(read('docs/optimization/truth-table.json'))
 
 const problems = []
@@ -164,6 +165,16 @@ check(
 for (const orphan of ['clearai-kernel.js', 'kernel.test.mjs']) {
 	check(!existsSync(join(PORT, orphan)), `⑪ 仓库根没有孤儿副本 ${orphan}`)
 }
+
+// ── ⑫ 假设数量下限: preset 立了 2,内核有那道门 ──────────────────────────────
+// 「假设 ≥2」曾经是纯文案(minHypotheses 默认 0,提示词里甚至没写)。不缩水原则把它落成了
+// 硬边界:产品立场写在 preset(与 blockedThreshold 同一模式),门在 SetGoal。
+check(/minHypotheses:\s*2\b/.test(PRESET), '⑫ preset 把假设数量下限立为 2(产品立场)')
+check(/hypotheses_too_few/.test(KERNEL), '⑫ 内核有 hypotheses_too_few 这道门(SetGoal 入口)')
+check(
+	/假设至少两条/.test(PROMPTS),
+	'⑫ loop-contract 写明了假设纪律(模型得先知道规则,门才不会天天误伤)',
+)
 
 // ── 结果 ─────────────────────────────────────────────────────────────────────
 void apply // 保留导入以便将来做装配期探针；当前校验走文本级核对

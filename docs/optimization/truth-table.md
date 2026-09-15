@@ -13,7 +13,7 @@ This table answers one question: **what the current code actually guarantees**. 
 - By strength: 
 - Actually blocking execution: **16**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **17**
+- Carrying a known mismatch between docs/comments and code: **15**
 
 ## Code constant snapshot
 
@@ -112,11 +112,10 @@ This section is exported from code, not written by hand:
 - **Output**: 派生 supportedLevel / refutation 计数（不落第二本账）
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 假设状态由证据算出来，模型不能打分。
+- **Rationale**: 假设状态由证据算出来，模型不能打分。首次立目标至少登记 2 条候选（preset 强制，0 条一样拦）：只有一个猜想，检验容易退化成找证据支持自己。
 - **Code**: preset/plugins/clearai-kernel.js:2444 SetGoal hypotheses; ui/lib/fold.js:264 case 'hypothesis/superseded'
-- **Tests**: test/kernel.test.mjs · **Config**: minHypotheses（默认 0 = 不强制）
+- **Tests**: test/kernel.test.mjs · **Config**: minHypotheses（内核默认 0 = 机制中立；preset 立 2 = 产品立场，与 blockedThreshold 同一模式）
 - **Prompt**: clearai/loop-contract · **Docs**: docs/epistemic-loop.zh-CN.md
-- **Known mismatch**: minHypotheses 默认 0，即「≥2 条假设」当前只是文案，不是机制。
 
 ### `criteria-required` · Criteria-before-work enforcement
 
@@ -502,12 +501,11 @@ This section is exported from code, not written by hand:
 - **Input**: command 字符串
 - **Output**: kind:'deny' + reason
 - **Blocks execution**: yes · **Affected by autonomy**: no
-- **Native alternative**: 宿主沙箱与权限预设（同源，但清单一侧由 ClearAI 贡献）
-- **Rationale**: 危险命令不可执行应落机制而不是提示词。
+- **Native alternative**: 无重叠（已核实）：宿主 bash 只有沙箱路径域与审批升级，没有内容级威胁模式清单（dsh-tool-bash / dsh-bash-sandbox / dsh-bash-local 均无）；fork 炸弹这类在可写沙箱内完全合法的命令，只有内容规则拦得住
+- **Rationale**: 危险命令不可执行应落机制而不是提示词。与宿主治理分属三条轴：沙箱管「写哪」、审批管「谁同意」、这份清单管「命令本身是什么威胁」。
 - **Code**: preset/plugins/clearai-kernel.js:5283 危险命令匹配; :5245/:5255 受保护路径拒绝
 - **Tests**: test/kernel.test.mjs · **Config**: bashDenyRules=true
 - **Prompt**: — · **Docs**: docs/loop-philosophy.zh-CN.md
-- **Known mismatch**: 与宿主已有治理部分重叠；阶段 3 重新评估哪些条目可以交还宿主。
 
 ### `protected-roots` · Protected roots the model cannot write
 

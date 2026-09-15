@@ -630,6 +630,37 @@ console.log('\n【判据先写后做:入口强制 + 自指检测】')
 	check('修订留痕:goal/set 有两条(旧值不删)', eventsOf('goal/set').length === 2)
 }
 
+console.log('\n【假设数量下限:首次立约就要候选对比(preset 立 2,内核默认不限)】')
+{
+	// 机制在 SetGoal,产品立场在 preset(minHypotheses: 2,与 blockedThreshold 同一模式)。
+	// 这里用 apply 直接给内核配置,验四种形态:0 条拦、1 条拦、2 条过、修订不受限。
+	const floorHost = makeHost()
+	apply(floorHost.ctx, { minHypotheses: 2 })
+	const F = 'session-hyp-floor'
+	const f0 = await callOn(floorHost, F, 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
+	check('带下限时不登记假设(0 条)→ 拒绝', f0.ok === false && f0.code === 'hypotheses_too_few', String(f0.code))
+	const f1 = await callOn(floorHost, F, 'SetGoal', { claim: 'x', done_criteria: 'y 存在', hypotheses: [{ claim: '只有一个猜想', refute_when: '读数不成立' }] })
+	check('只登记 1 条 → 同样拒绝(一个猜想的检验容易退化成找证据支持自己)', f1.ok === false && f1.code === 'hypotheses_too_few', String(f1.code))
+	const f2 = await callOn(floorHost, F, 'SetGoal', {
+		claim: 'x',
+		done_criteria: 'y 存在',
+		hypotheses: [
+			{ claim: '猜想一', refute_when: '读数不成立' },
+			{ claim: '猜想二', refute_when: '对照组无差异' },
+		],
+	})
+	check('登记 2 条 → 立起', f2.ok === true && f2.code === 'goal_set', String(f2.code))
+	const f3 = await callOn(floorHost, F, 'SetGoal', { claim: 'x 改口径', done_criteria: 'z 存在', reason: '换了判据' })
+	check('修订目标不带新假设 → 不受下限限制', f3.ok === true && f3.code === 'goal_revised', String(f3.code))
+
+	// 默认形态(不写配置)保持机制中立:0 条也能立——下限是产品立场,不是引擎偏见。
+	const freeHost = makeHost()
+	apply(freeHost.ctx, {})
+	const FREE = 'session-hyp-free'
+	const g0 = await callOn(freeHost, FREE, 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
+	check('不写配置时(minHypotheses=0)0 条假设可立', g0.ok === true && g0.code === 'goal_set', String(g0.code))
+}
+
 const HYP = eventsOf('goal/set')[0].hypotheses[0].id
 
 console.log('\n【计划:判据强制 + 步骤 id 唯一 + 判据自指 + 约立起便锁定】')
@@ -1122,13 +1153,13 @@ console.log('\n【无人值守续跑:宿主目标只当驱动器,不当事实源
 		}
 		check('并且把他的意见如实交回模型', /第二步判据太松/.test(String(revised.message ?? '')), String(revised.message ?? '').slice(0, 120))
 
-		// 没有审阅通道(headless):退回旧行为,并且明说「别再自己去问一遍」
+		// 没有审阅通道(headless):记号不落,并如实交代机理——不自动续跑、显式推进记归属、可再呈审。
 		const bare = makeHost()
 		apply(bare.ctx, { autonomy: 'attended' })
 		const B = 'session-plan-nochannel'
 		const bareCreated = await callOn(bare, B, 'CreatePlan', { steps: [{ id: 'a1', do: '造 lab/a.txt', artifacts: ['lab/a.txt'], done_criteria: 'lab/a.txt 存在' }] })
-		check('没有审阅通道的形态:仍不放行(退回旧行为)', bare.service.state(B).plans[0]?.confirmed_at === null && bareCreated.confirmation_required === true)
-		check('并且如实告诉他「不要自己再问一遍」', /不要开工|别再自己去问/.test(String(bareCreated.message ?? '')), String(bareCreated.message ?? '').slice(0, 140))
+		check('没有审阅通道的形态:不落授权记号(确认仍要求)', bare.service.state(B).plans[0]?.confirmed_at === null && bareCreated.confirmation_required === true)
+		check('并且如实告诉他:不自动续跑、显式推进记归属、可再呈审', /不会自动续跑/.test(String(bareCreated.message ?? '')) && /RequestPlanReview/.test(String(bareCreated.message ?? '')), String(bareCreated.message ?? '').slice(0, 160))
 
 		/**
 		 * §34:**计划永远要人确认**,无人值守配置也不例外。

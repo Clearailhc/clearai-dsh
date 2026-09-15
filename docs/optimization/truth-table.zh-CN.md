@@ -13,7 +13,7 @@
 - 按强度：
 - 真正阻断执行的：**16**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**17**
+- 存在已知不符（文档 / 注释与代码不一致）的：**15**
 
 ## 代码常量快照
 
@@ -112,11 +112,10 @@
 - **输出**：派生 supportedLevel / refutation 计数（不落第二本账）
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：假设状态由证据算出来，模型不能打分。
+- **理由**：假设状态由证据算出来，模型不能打分。首次立目标至少登记 2 条候选（preset 强制，0 条一样拦）：只有一个猜想，检验容易退化成找证据支持自己。
 - **代码**：preset/plugins/clearai-kernel.js:2444 SetGoal hypotheses; ui/lib/fold.js:264 case 'hypothesis/superseded'
-- **测试**：test/kernel.test.mjs · **配置**：minHypotheses（默认 0 = 不强制）
+- **测试**：test/kernel.test.mjs · **配置**：minHypotheses（内核默认 0 = 机制中立；preset 立 2 = 产品立场，与 blockedThreshold 同一模式）
 - **提示词**：clearai/loop-contract · **文档**：docs/epistemic-loop.zh-CN.md
-- **已知不符**：minHypotheses 默认 0，即「≥2 条假设」当前只是文案，不是机制。
 
 ### `criteria-required` · 判据先写（done_criteria 强制）
 
@@ -502,12 +501,11 @@
 - **输入**：command 字符串
 - **输出**：kind:'deny' + reason
 - **阻断执行**：是 · **受 autonomy 影响**：否
-- **原生替代**：宿主沙箱与权限预设（同源，但清单一侧由 ClearAI 贡献）
-- **理由**：危险命令不可执行应落机制而不是提示词。
+- **原生替代**：无重叠（已核实）：宿主 bash 只有沙箱路径域与审批升级，没有内容级威胁模式清单（dsh-tool-bash / dsh-bash-sandbox / dsh-bash-local 均无）；fork 炸弹这类在可写沙箱内完全合法的命令，只有内容规则拦得住
+- **理由**：危险命令不可执行应落机制而不是提示词。与宿主治理分属三条轴：沙箱管「写哪」、审批管「谁同意」、这份清单管「命令本身是什么威胁」。
 - **代码**：preset/plugins/clearai-kernel.js:5283 危险命令匹配; :5245/:5255 受保护路径拒绝
 - **测试**：test/kernel.test.mjs · **配置**：bashDenyRules=true
 - **提示词**：— · **文档**：docs/loop-philosophy.zh-CN.md
-- **已知不符**：与宿主已有治理部分重叠；阶段 3 重新评估哪些条目可以交还宿主。
 
 ### `protected-roots` · 系统受保护目录（模型不可直写）
 
