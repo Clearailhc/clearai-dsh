@@ -73,6 +73,19 @@ check('随包带上 README(中英)、LICENSE 与品牌位图(npm 页面靠它们
 const readmeText = readFileSync(join(DIST, 'README.md'), 'utf8')
 const binText = readFileSync(join(DIST, 'bin', 'clearai.mjs'), 'utf8')
 check('README 的安装入口与 bin 的动词对得上(npx clearai-dsh install)', readmeText.includes('npx clearai-dsh install') && binText.includes("command === 'install'"), `README 提到:${readmeText.includes('npx clearai-dsh install')} · bin 有 install 动词:${binText.includes("command === 'install'")}`)
+/**
+ * 发布要用的两条 manifest 事实 —— 都是 2026-09-15 发布时**撞出来**的:
+ *   · **provenance 校验要求 `repository.url` 与来源仓库一致**。缺了它,registry 直接 422
+ *     (`Failed to validate repository information`)。而这条**只在 CI 发布时**才会撞到 ——
+ *     手工 `npm publish` 不带 provenance,永远看不见。
+ *   · `bin` 的值不能带 `./`:npm 发布时会**自动改写**它,于是"发出去的那一份"与"我们构建的
+ *     那一份"就不是同一份了(下面那道 registry 逐文件核对会红)。
+ * 两条都是"本地全绿、发布才炸"的类型,所以放在这里。
+ */
+const repoUrl = typeof manifest.repository === 'string' ? manifest.repository : manifest.repository?.url
+check('manifest 声明了 repository(provenance 校验要它)', typeof repoUrl === 'string' && /github\.com\/Clearailhc\/clearai-dsh/.test(repoUrl), String(repoUrl))
+const binValues = Object.values(manifest.bin ?? {})
+check('bin 的值是 npm 规范化过的写法(不带 ./)', binValues.every((value) => !String(value).startsWith('./')), binValues.join(', '))
 
 // ── ② 发行物干净 ────────────────────────────────────────────────────────────
 console.log('\n② 发行物干净:只带该带的')

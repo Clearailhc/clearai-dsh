@@ -5,6 +5,10 @@
   "type": "module",
   "private": false,
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Clearailhc/clearai-dsh.git"
+  },
   "main": "./lib/host.js",
   "exports": {
     ".": "./lib/host.js",
@@ -13,7 +17,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "clearai-dsh": "./bin/clearai.mjs"
+    "clearai-dsh": "bin/clearai.mjs"
   },
   "files": [
     "lib",
