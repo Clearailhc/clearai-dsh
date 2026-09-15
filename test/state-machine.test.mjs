@@ -1,0 +1,134 @@
+/**
+ * 状态机文档的交叉校验:**图里画的每一条边,折法必须真认识;折法认识的类型,图里必须有交代**。
+ *
+ * 这一份测试的意义与 ontology 那份同源——`docs/optimization/state-machines.zh-CN.md` 是给人读的,
+ * 而人读的图最容易悄悄长出「其实没有这条边」。所以把图里出现的 event 名抓出来,拿去问 `fold.js`:
+ *   ① 图里每个 `xxx/yyy` 形式的 event,必须能在 `applyMutation` 的 case 里找到,
+ *      或者属于 `LEDGER_ONLY_MUTATIONS`(只留台账、不折视图的那几类);
+ *   ② 折法里每一个 case,必须在文档里出现过——多一个少一个都红,免得图慢慢变成残图;
+ *   ③ 中英两份文档的 event 集合必须一致(不然一份在讲旧语义);
+ *   ④ 序位与棘轮这类**不变量**必须在文档里写明(它们是「不可表示」那条哲学的落点)。
+ *
+ * 跑法:node test/state-machine.test.mjs
+ */
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+const PORT = join(HERE, '..')
+const read = (rel) => readFileSync(join(PORT, rel), 'utf8')
+
+const foldSource = read('ui/lib/fold.js')
+const zh = read('docs/optimization/state-machines.zh-CN.md')
+const en = read('docs/optimization/state-machines.md')
+const timingZh = read('docs/optimization/timing-diagrams.zh-CN.md')
+const timingEn = read('docs/optimization/timing-diagrams.md')
+
+let passed = 0
+let failed = 0
+const failures = []
+const check = (label, condition, detail = '') => {
+	if (condition) {
+		passed += 1
+		console.log(`  ✓ ${label}`)
+	} else {
+		failed += 1
+		failures.push(label)
+		console.log(`  ✗ ${label}${detail === '' ? '' : ` — ${detail}`}`)
+	}
+}
+
+/** 折法真认识的变更类型(词汇表)。 */
+const foldKinds = new Set([...foldSource.matchAll(/case '([a-z]+\/[a-z_]+)':/g)].map((match) => match[1]))
+/** 只留台账、不折进视图的那几类:它们同样是合法词汇。 */
+const ledgerOnly = new Set([...foldSource.matchAll(/LEDGER_ONLY_MUTATIONS = \[([^\]]+)\]/g)].flatMap((match) => [...match[1].matchAll(/'([^']+)'/g)].map((item) => item[1])))
+const vocabulary = new Set([...foldKinds, ...ledgerOnly])
+/**
+ * 文档里的「event 名」= 首段是折法真用过的命名空间的 `xxx/yyy`。
+ * 为什么要这一层过滤:文档里还有 `ui/lib`、`clear/knowledge`、`docs/verification` 这类**路径**,
+ * 它们的形状与 event 名一样。只按形状抓会把路径误判成事件,于是这条检查要么天天红、
+ * 要么被人用豁免名单糊过去——两种结局都等于没有这条检查。
+ */
+const NAMESPACES = new Set([...vocabulary].map((kind) => kind.split('/')[0]))
+const docKinds = (text) =>
+	new Set([...text.matchAll(/\b([a-z]+\/[a-z_]+)\b/g)].map((match) => match[1]).filter((kind) => NAMESPACES.has(kind.split('/')[0])))
+
+console.log('\n【词汇表:折法认识哪些变更】')
+{
+	check('折法词汇表读得到(不是空集)', foldKinds.size > 20, `${foldKinds.size} 个`)
+	check('台账专用清单读得到', ledgerOnly.size > 0, [...ledgerOnly].join(' '))
+}
+
+console.log('\n【① 图里的每条边,折法必须认识】')
+{
+	const inDoc = docKinds(zh)
+	const unknown = [...inDoc].filter((kind) => !vocabulary.has(kind))
+	check('状态机文档里出现的 event 都在折法词汇表里', unknown.length === 0, unknown.join(' '))
+	check('文档确实引用了 event(不是纯散文)', inDoc.size >= 20, `${inDoc.size} 个`)
+}
+
+console.log('\n【② 折法认识的类型,文档必须交代】')
+{
+	const inDoc = docKinds(zh)
+	// 折法的词汇表里,有一部分属于内核内部记账(如 git/*、admission/checked、brain/*),
+	// 它们不进状态机图是**正确**的——但那一组必须是显式列举的,而不是"漏了就说不用画"。
+	const notInStateMachine = ['admission/checked', 'git/committed', 'git/restored', 'git/snapshot', 'brain/candidates', 'skill/promoted']
+	const coreKinds = [...vocabulary].filter((kind) => !notInStateMachine.includes(kind))
+	const missing = coreKinds.filter((kind) => !inDoc.has(kind))
+	check('核心变更类型都在状态机文档里出现', missing.length === 0, missing.join(' '))
+	// 反向:被排除的那一组,必须在真值表里有交代(它们不是"忘了画")
+	const table = JSON.parse(read('docs/optimization/truth-table.json'))
+	const mentionsLedger = JSON.stringify(table).includes('LEDGER_ONLY') || table.mechanisms.some((m) => m.id === 'evidence-record' || m.id === 'git-ledger')
+	check('被排除在状态机之外的记账类变更,在真值表里有对应机制', mentionsLedger)
+}
+
+console.log('\n【③ 中英两份文档的 event 集合一致】')
+{
+	const a = docKinds(zh)
+	const b = docKinds(en)
+	const onlyZh = [...a].filter((kind) => !b.has(kind))
+	const onlyEn = [...b].filter((kind) => !a.has(kind))
+	check('中文版没有英文版缺失的 event', onlyZh.length === 0, onlyZh.join(' '))
+	check('英文版没有中文版缺失的 event', onlyEn.length === 0, onlyEn.join(' '))
+}
+
+console.log('\n【④ 不变量必须写在文档里,而不只在代码里】')
+{
+	check('秩(RANK)与「降级不可表示」写明', zh.includes('降级不可表示') && zh.includes('RANK'))
+	check('世界线分支秩 BRANCH_RANK 写明', zh.includes('BRANCH_RANK'))
+	check('序位不变量 out_of_order 写明', zh.includes('out_of_order'))
+	check('授权不是硬阻断这件事写明', zh.includes('授权不是硬阻断') && zh.includes("by='progress'"))
+	check('turnDemand 的判定顺序写明且不含 autonomy', zh.includes('turnDemand') && /这条链里没有 autonomy/.test(zh))
+	check('默认续跑额度 128 写明', zh.includes('DEFAULT_MAX_AUTO_TURNS = 128'))
+	check('「不是落选」的三种派生状态写明', zh.includes('failed') && zh.includes('orphaned') && zh.includes('unreturned'))
+	check('retracted 无生产者这件事写明', zh.includes('retracted') && /没有任何生产者/.test(zh))
+}
+
+console.log('\n【⑤ 时序图:四条主路径与关键边界】')
+{
+	for (const [name, text] of [['中文', timingZh], ['英文', timingEn]]) {
+		check(`${name}时序图含轻量探索路径`, /轻量探索路径|Light exploration path/.test(text))
+		check(`${name}时序图含正式认识论路径`, /正式认识论路径|Formal epistemic path/.test(text))
+		check(`${name}时序图含失败恢复路径`, /失败与恢复路径|Failure and recovery path/.test(text))
+		check(`${name}时序图含世界线路径`, /世界线路径|Worldline path/.test(text))
+		check(`${name}时序图写明准入不裁决`, /准入不裁决|Admission does not judge/.test(text))
+		check(`${name}时序图写明 L3+ 拒绝自判 verdict`, /verdict_not_accepted/.test(text))
+		check(`${name}时序图写明算术排序与人工采纳分离`, /算术只负责\*\*排序\*\*|Arithmetic only \*\*ranks\*\*/.test(text))
+	}
+}
+
+console.log('\n【⑥ 状态机文档与真值表互相指认】')
+{
+	const table = JSON.parse(read('docs/optimization/truth-table.json'))
+	check('状态机文档指向真值表', zh.includes('truth-table.zh-CN.md'))
+	check('真值表指向状态机文档或计划', table.mechanisms.every((m) => m.source !== undefined))
+	check('计划里登记了这两份文档', read('docs/optimization/plan.zh-CN.md').includes('state-machines.zh-CN.md'))
+}
+
+console.log(`\n结果:${passed} 通过,${failed} 失败`)
+if (failures.length > 0) {
+	console.log('失败项:')
+	for (const failure of failures) console.log(`  - ${failure}`)
+	process.exit(1)
+}
