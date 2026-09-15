@@ -576,7 +576,7 @@
       "output": "模型被要求以单一主循环推进",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": "dsh 原生 subagent / workflow / ralph（当前未挂载）",
+      "native_dsh_alternative": "dsh 原生 subagent / workflow / ralph（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）",
       "rationale": "子角色由系统按触发派生，避免自由委派把「自己派人判自己」重新引入。",
       "known_mismatch": "只由提示词承载，属偏好；阶段 5 计划以「非权威探索 / 权威评估」分层重新放开自由编排。"
     },
@@ -651,7 +651,7 @@
       "output": "多个只读子 run 的结论",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": "dsh 原生 subagent 并行（当前未挂载）",
+      "native_dsh_alternative": "dsh 原生 subagent 并行（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）",
       "rationale": "放几十个子 run 出去不是并行，是把宿主打满。",
       "known_mismatch": null
     },
@@ -732,15 +732,15 @@
     },
     {
       "id": "native-todo-disabled",
-      "name": "原生 todo 未挂载",
-      "name_en": "Native todo not mounted",
+      "name": "原生工作方式(todo/subagent/workflow/ralph)挂载",
+      "name_en": "Native working tools (todo/subagent/workflow/ralph) mounted",
       "layer": "harness",
       "status": "implemented",
       "hardness": "hard",
       "authority": "none",
       "actor": "system",
       "source": {
-        "code": "preset/agent.cordis.yml:218-226 刻意不挂的行",
+        "code": "preset/agent.cordis.yml 工作方式段(刻意不挂表只剩 tool-goal/command-goal/plan-mode)",
         "tests": "test/preset-composition.test.mjs（阶段 5 新增）",
         "config": null,
         "prompt": null,
@@ -748,12 +748,12 @@
       },
       "trigger": "装配期",
       "input": "—",
-      "output": "tool-todo 不在工具面里",
+      "output": "四件原生工作方式在工具面里;第二本账三件仍不挂",
       "blocks_execution": false,
       "affected_by_autonomy": false,
       "native_dsh_alternative": "dsh-tool-todo（standard 预设挂载）",
-      "rationale": "避免出现第二本进度账。",
-      "known_mismatch": "阶段 5 计划重新挂载为非权威临时计划，并明确它不进入 ClearAI 进度。"
+      "rationale": "工作方式交还原生:它们产不出一条 clearai 变更(权威边界测试钉死)。「todo 是第二本账」的旧判断在阶段 5 被修正——便签不是账本,进度永远以 AdvancePlan 落账为准。第二本账三件(goal 工具/命令、plan-mode)仍然不挂:那是真冲突。",
+      "known_mismatch": null
     },
     {
       "id": "native-goal-disabled",

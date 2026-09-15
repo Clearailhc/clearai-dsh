@@ -13,7 +13,7 @@ This table answers one question: **what the current code actually guarantees**. 
 - By strength: 
 - Actually blocking execution: **16**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **15**
+- Carrying a known mismatch between docs/comments and code: **14**
 
 ## Code constant snapshot
 
@@ -57,7 +57,7 @@ This section is exported from code, not written by hand:
 | `evaluator-readonly-face` | Evaluator read-only tool face | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `preset/plugins/clearai-kernel.js:1014 resolveToolFace` |
 | `executor-tool-face` | Worldline executor face, no plan/goal verbs | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `preset/plugins/clearai-kernel.js:671 executorToolFilter` |
 | `tool-trimming` | Tool face trimmed by the contribution table | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `preset/plugins/clearai-kernel.js:474 MECHANISM_TOOLS` |
-| `native-todo-disabled` | Native todo not mounted | Harness | Implemented | Hard boundary | None | system | no | no | `preset/agent.cordis.yml:218-226 刻意不挂的行` |
+| `native-todo-disabled` | Native working tools (todo/subagent/workflow/ralph) mounted | Harness | Implemented | Hard boundary | None | system | no | no | `preset/agent.cordis.yml 工作方式段(刻意不挂表只剩 tool-goal/command-goal/plan-mode)` |
 | `native-goal-disabled` | Native goal tool and command not mounted | Harness | Implemented | Hard boundary | None | system | no | no | `preset/agent.cordis.yml:220-222` |
 | `native-plan-mode-disabled` | Native plan mode not mounted | Harness | Implemented | Hard boundary | None | system | no | no | `preset/agent.cordis.yml:225-226` |
 | `subagent-trimmed` | Free subagent / workflow / ralph not mounted | Harness | Implemented | Hard boundary | None | system | no | no | `preset/agent.cordis.yml:223-225` |
@@ -359,7 +359,7 @@ This section is exported from code, not written by hand:
 - **Trigger**: 每回合的 persona 与 foundation 段
 - **Output**: 模型被要求以单一主循环推进
 - **Blocks execution**: no · **Affected by autonomy**: no
-- **Native alternative**: dsh 原生 subagent / workflow / ralph（当前未挂载）
+- **Native alternative**: dsh 原生 subagent / workflow / ralph（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）
 - **Rationale**: 子角色由系统按触发派生，避免自由委派把「自己派人判自己」重新引入。
 - **Code**: preset/agent.cordis.yml:23-31 persona; preset/plugins/prompts.js:31 foundation
 - **Tests**: test/prompt-sections.test.mjs（阶段 6 新增） · **Config**: —
@@ -399,7 +399,7 @@ This section is exported from code, not written by hand:
 - **Input**: 任务清单
 - **Output**: 多个只读子 run 的结论
 - **Blocks execution**: no · **Affected by autonomy**: no
-- **Native alternative**: dsh 原生 subagent 并行（当前未挂载）
+- **Native alternative**: dsh 原生 subagent 并行（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）
 - **Rationale**: 放几十个子 run 出去不是并行，是把宿主打满。
 - **Code**: preset/plugins/clearai-kernel.js:4385 MapScouts; :1330 sweepScouts
 - **Tests**: test/kernel.test.mjs · **Config**: mapScoutMax=50, mapScoutConcurrency=4
@@ -444,18 +444,17 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: contributions.{mechanisms,tools,sections}
 - **Prompt**: — · **Docs**: docs/loop-philosophy.zh-CN.md
 
-### `native-todo-disabled` · Native todo not mounted
+### `native-todo-disabled` · Native working tools (todo/subagent/workflow/ralph) mounted
 
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: None · **Actor**: system
 - **Trigger**: 装配期
-- **Output**: tool-todo 不在工具面里
+- **Output**: 四件原生工作方式在工具面里;第二本账三件仍不挂
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: dsh-tool-todo（standard 预设挂载）
-- **Rationale**: 避免出现第二本进度账。
-- **Code**: preset/agent.cordis.yml:218-226 刻意不挂的行
+- **Rationale**: 工作方式交还原生:它们产不出一条 clearai 变更(权威边界测试钉死)。「todo 是第二本账」的旧判断在阶段 5 被修正——便签不是账本,进度永远以 AdvancePlan 落账为准。第二本账三件(goal 工具/命令、plan-mode)仍然不挂:那是真冲突。
+- **Code**: preset/agent.cordis.yml 工作方式段(刻意不挂表只剩 tool-goal/command-goal/plan-mode)
 - **Tests**: test/preset-composition.test.mjs（阶段 5 新增） · **Config**: —
 - **Prompt**: — · **Docs**: preset/agent.cordis.yml
-- **Known mismatch**: 阶段 5 计划重新挂载为非权威临时计划，并明确它不进入 ClearAI 进度。
 
 ### `native-goal-disabled` · Native goal tool and command not mounted
 

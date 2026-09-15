@@ -171,10 +171,11 @@ the prompts now say one sentence):
 
 ## 5. Destinations for gaps (every gap gets exactly one of three)
 
-- **Become mechanism**: the authority-boundary test (Phase 4); the `/` menu and
-  non-authoritative capability (Phase 5); the dead `autonomy.override` read path (Phase 4/5
-  decides delete or keep — if kept, document it as read-only for old logs).
-  (Landed: the hypothesis count floor — preset sets 2, kernel gate + prompt discipline, see row ②.)
+- **Become mechanism**: the dead `autonomy.override` read path (Phase 4/5 decides delete or
+  keep — decided: keep, read-only for old logs).
+  (Landed: the hypothesis count floor — preset sets 2, kernel gate + prompt discipline, see
+  row ②; the authority-boundary test; the five `/` commands and the returned native working
+  tools todo/subagent/workflow/ralph — see the Phase 4/5 ledger entries.)
 - **Stay design-only, honestly labelled**: the eight-state verification machine, the universal
   L4 gate, a `retracted` producer, the four other observation sources. The criterion: each has a
   truth-table row with the correct `status`, and no document claims it is implemented.

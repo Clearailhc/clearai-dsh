@@ -34,7 +34,17 @@ const PORT = join(HERE, '..')
  * (装包 + 建 profile + 读会话日志都在那边),所以建好之后要把它重指过去。
  */
 let DSH_HOME = process.env.DSH_HOME ?? join(homedir(), '.dsh')
-const CHECKOUT = '/home/lhc/.npm/_npx/1e7f6d9597241db0'
+/** dsh checkout 在哪:只用来解析它自带的 `yaml`(摊平预设用)。从 npx 缓存现找,不写死机器路径。 */
+function discoverDshCheckout() {
+	const cache = join(process.env.HOME ?? homedir(), '.npm', '_npx')
+	if (existsSync(cache)) {
+		for (const entry of readdirSync(cache)) {
+			if (existsSync(join(cache, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'))) return join(cache, entry)
+		}
+	}
+	throw new Error('找不到 DSH 宿主(查过 ~/.npm/_npx/*)。先 `npx @deepseek-ai/dsh --help` 让缓存就位。')
+}
+const CHECKOUT = process.env.DSH_CHECKOUT ?? discoverDshCheckout()
 /** 预设来源:默认 = 仓库里那份;`--installed` 重指到**装出来的包**里那份(见下)。 */
 let PRESET_YML = join(PORT, 'preset', 'agent.cordis.yml')
 
@@ -117,7 +127,7 @@ const task =
 		.trim() ||
 	(skillsScenario
 		? '/literature-review 只做一件事:读一遍我刚引用的这条技能,用一句话告诉我它的名字与它教你做的第一件事。不要调用任何其他工具,不要立目标、不要建计划。'
-		: '这个工作区是空的。我要一份可核对的小交付:先立目标(判据:lab/probe.txt 存在且含一行表头 + 一行数据),再建一份两步计划——第一步造出 lab/probe.txt,第二步核对它的列名。计划里声明你要检验的假设(自己提一条,写清什么结果会推翻它)。建完计划就停,不要执行步骤。')
+		: '这个工作区是空的。我要一份可核对的小交付:先立目标(判据:lab/probe.txt 存在且含一行表头 + 一行数据),再建一份两步计划——第一步造出 lab/probe.txt,第二步核对它的列名。立目标时登记至少两条候选假设(每条写清什么结果会推翻它),计划步骤里用 tests 声明验哪条。建完计划就停,不要执行步骤。')
 /** 引用场景里那个手势指向的技能名(断言注入的是它不是别的)。 */
 const QUOTED_SKILL = 'literature-review'
 
@@ -248,7 +258,8 @@ if (argv.includes('--installed')) {
 const { parse: parseYaml, stringify: stringifyYaml } = await import(join(CHECKOUT, 'node_modules', 'yaml', 'dist', 'index.js'))
 const presetRows = parseYaml(readFileSync(PRESET_YML, 'utf8')).map((row) => ({
 	...row,
-	name: row.name?.startsWith('.') ? resolve(join(PORT, 'preset'), row.name) : row.name,
+	// 相对路径按**这份预设自己所在的目录**解析:仓库形态是 preset/,--installed 是包里的那份。
+	name: row.name?.startsWith('.') ? resolve(dirname(PRESET_YML), row.name) : row.name,
 }))
 
 /**
@@ -262,7 +273,7 @@ check(`读得到 ${resident ? 'web' : 'headless'} profile 的行清单(dump-conf
 
 /** 预设刻意不挂的行(第二本账):base 里有就关掉,否则 E2E 跑的不是预设的行为。 */
 /**
- * 关掉**模型面**的第二本账:`tool-todo`/`tool-goal`/`command-goal`/`plan-mode`/自由委派那一族,
+ * 关掉**模型面**的第二本账:`tool-goal`/`command-goal`/`plan-mode`,
  * 以及 `goal`(服务)与 `goal-round-driver`(续跑执行者)。
  *
  * 后者为什么也关(2026-09-11 那次长测定案):**一次性形态兑现不了续跑** —— 一个任务一个回合,
@@ -276,7 +287,10 @@ check(`读得到 ${resident ? 'web' : 'headless'} profile 的行清单(dump-conf
  * 关掉这两行,内核会如实报「续跑窗口未布防:goals 服务不可用」,卡片上不再有假承诺。
  * 产品形态(web)照旧挂着它们,一行不动。
  */
-const SECOND_LEDGER = ['tool-todo', 'tool-goal', 'command-goal', 'plan-mode', 'tool-subagent', 'tool-subagent-fork', 'tool-subagent-control', 'tool-subagent-list-agents', 'tool-ralph', 'tool-workflow', 'workflow-worker-thread', 'goal', 'goal-round-driver']
+// 阶段 5 起,todo/subagent/workflow/ralph 随预设挂回(工作方式,产不出 clearai 变更,
+// 权威边界测试钉死)——E2E 必须带着它们跑,否则跑的不是预设的行为。
+// 仍然要关的只有第二本账三件(goal 工具/命令与 plan-mode)与一次性形态兑现不了的续跑两行。
+const SECOND_LEDGER = ['tool-goal', 'command-goal', 'plan-mode', 'goal', 'goal-round-driver']
 /**
  * 两种「看起来缺、其实已经在」的行,单独处理(不插,否则 prompt 段/嵌套 id 会撞):
  *   · `persona`:headless 的人格由 `system-prompt` 行的 `personaPrefix` 承担 → 改成覆盖那个配置;

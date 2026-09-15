@@ -16,7 +16,7 @@
 | 3″ | 不缩水覆盖设计（阶段 4 的验收基线） | 已完成 | 人工通读 + 真值表交叉 | 两语落盘，42 行覆盖矩阵 |
 | 9′ | 注释风格棘轮（提前立规则） | 进行中 | `node test/comment-style.test.mjs` | 8 通过,0 失败；债务 79/159/70 |
 | 4 | 最小硬边界重构 | 已完成 | `node test/authority-boundary.test.mjs` | 13 通过,0 失败 |
-| 5 | DSH 原生菜单与能力回归 | 未开始 | `node test/preset-composition.test.mjs` | — |
+| 5 | DSH 原生菜单与能力回归 | 已完成 | `node test/preset-composition.test.mjs` | 20 通过,0 失败 |
 | 6 | Prompt 瘦身与上下文注入 | 未开始 | `node test/prompt-sections.test.mjs` | — |
 | 7 | 文档对齐（一致性测试部分已完成） | 未开始 | `node test/docs-consistency.test.mjs` | — |
 | 8 | 最终验收与发布准备 | 未开始 | 五条验收命令 | — |
@@ -289,3 +289,40 @@ deny 清单管「命令本身是什么威胁」。真值表该条的 known_misma
 第 1 遍 · 内核:576 · 宿主:69 · 外脑:40 · 客户端:192 · 本体:85 · 真值表:22 · 状态机:43 · 文档:11 · 注释:8 · 边界:13
 全绿(1 遍)。真值表校验:21 项全过。部署与源逐字节一致。
 ```
+
+## 阶段 5 · DSH 原生菜单与能力回归
+
+**5-1 `/` 菜单(新插件 `preset/plugins/commands.js`)**
+
+五个命令,全部经过 `dsh-commands` 注册表(客户端菜单自动出现):
+`/goal` `/plan` `/evidence` `/worldline` 四个**只读状态窗**——从宿主半的 `clearai`
+门面现算现渲染,一个字都不落账;`/plan-review` 是**呈审捷径**——它先查先决条件
+(有活动计划且未授权),再把一句结构化请求 steer 给模型,真正的呈审与授权记号落账
+仍走 `RequestPlanReview` 工具。为什么命令自己不写账:变更只能随工具结果的
+`meta.mutations` 进日志,命令处理器没有那条通道——这是权威边界,不是缺功能。
+
+**5-2 工作方式挂回(非权威能力)**
+
+`tool-todo`(允许并行 in_progress)、`tool-subagent`(+fork/control/list-agents,
+`modelSelectionSettings: true` = 执行者自选模型)、`tool-workflow`(+worker thread)、
+`tool-ralph` 全部挂回,与 standard 预设同形(delegation realm 隔离 `workflowEngine`)。
+仍然不挂的只有真·第二本账三件:`tool-goal` / `command-goal` / `plan-mode`
+(目标账与计划纪律各只有一本)。校验器 ⑥ 改成双向断言:不挂的不许回来,挂回的不许被手滑摘掉。
+
+**5-3 提示词同步**
+
+delegation 段重写为「四个委派面」分工表(SpawnScout 只读侦察 / subagent 干活 /
+workflow 批量编排 / ralph 迭代冲刺)+「委派出去的是活,不是账」纪律;
+execution-discipline 给 `todo_write` 定位:工作便签,不是账本。
+
+**5-4 顺手修掉的三个移植性地雷(独立提交)**
+
+`verify-deploy.mjs`、`verify-clean-install.mjs`、`e2e-run.mjs` 各有一处写死的
+旧机器绝对路径(`/home/lhc/.npm/...`)——换台机器就是「模块找不到 / cwd 不存在」。
+改为从 `~/.npm/_npx/*` 现找 DSH 宿主位置。干净安装验收因此首次在本机跑通(16/16)。
+
+**验证**
+
+`test/preset-composition.test.mjs`(20 项):挂载表双向断言 + 命令注册形状 +
+命令行为(空账如实说、待授权才 steer、已授权不打扰、门面缺席报错不炸)。
+11 份套件全绿;`verify:deploy` 通过(22 工具/22 段);`verify-clean-install` 16/16。

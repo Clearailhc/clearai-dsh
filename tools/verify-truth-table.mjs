@@ -106,17 +106,27 @@ check(removedStillLive.length === 0, '⑤ 已删除的机制没有仍留在工�
 
 // ── ⑥ 刻意不挂的原生行必须真的不在 preset 里 ─────────────────────────────────
 const presetPluginNames = new Set([...PRESET.matchAll(/name:\s*'(@deepseek-ai\/[^']+)'/g)].map((match) => match[1]))
+// 仍然刻意不挂的:两件都是「第二本账」(原生目标工具/命令与 ClearAI 目标账冲突;
+// plan-mode 与 CreatePlan/AdvancePlan 是两套计划纪律)。
+// todo/subagent/workflow/ralph 曾经是这张单子上的,阶段 5 起挂回来了——它们是工作方式,
+// 产不出一条 clearai 变更(权威边界测试钉死),「不挂」当年防的是「自派裁判」,
+// 而评估者的派遣在内核里,与模型面的 subagent 是两层。
 const mustBeAbsent = [
 	'@deepseek-ai/dsh-tool-goal',
 	'@deepseek-ai/dsh-command-goal',
 	'@deepseek-ai/dsh-plan-mode',
+]
+const present = mustBeAbsent.filter((name) => presetPluginNames.has(name))
+check(present.length === 0, '⑥ 刻意不挂的原生行确实没有挂载(第二本账三件)', `意外在场:[${present.join(' ')}]`)
+// 挂回来的要真的在——防止哪天被手滑摘掉而没人发现。
+const mustBePresent = [
 	'@deepseek-ai/dsh-tool-todo',
 	'@deepseek-ai/dsh-tool-subagent',
 	'@deepseek-ai/dsh-tool-workflow',
 	'@deepseek-ai/dsh-tool-ralph',
 ]
-const present = mustBeAbsent.filter((name) => presetPluginNames.has(name))
-check(present.length === 0, '⑥ 刻意不挂的原生行确实没有挂载', `意外在场:[${present.join(' ')}]`)
+const missing = mustBePresent.filter((name) => !presetPluginNames.has(name))
+check(missing.length === 0, '⑥b 交还原生的工作方式确实挂着(防手滑摘除)', `意外缺席:[${missing.join(' ')}]`)
 
 // ── ⑦ 续跑默认额度 = 128，且布防点真的回落到这个常量 ─────────────────────────
 const budgetMatch = /const DEFAULT_MAX_AUTO_TURNS = (\d+)/.exec(KERNEL)

@@ -13,7 +13,7 @@
 - 按强度：
 - 真正阻断执行的：**16**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**15**
+- 存在已知不符（文档 / 注释与代码不一致）的：**14**
 
 ## 代码常量快照
 
@@ -57,7 +57,7 @@
 | `evaluator-readonly-face` | 评估者只读工具面 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `preset/plugins/clearai-kernel.js:1014 resolveToolFace` |
 | `executor-tool-face` | 世界线执行者工具面（不含计划/目标动词） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `preset/plugins/clearai-kernel.js:671 executorToolFilter` |
 | `tool-trimming` | 工具面按贡献表裁剪 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `preset/plugins/clearai-kernel.js:474 MECHANISM_TOOLS` |
-| `native-todo-disabled` | 原生 todo 未挂载 | Harness | 已实现 | 硬边界 | 无 | system | 否 | 否 | `preset/agent.cordis.yml:218-226 刻意不挂的行` |
+| `native-todo-disabled` | 原生工作方式(todo/subagent/workflow/ralph)挂载 | Harness | 已实现 | 硬边界 | 无 | system | 否 | 否 | `preset/agent.cordis.yml 工作方式段(刻意不挂表只剩 tool-goal/command-goal/plan-mode)` |
 | `native-goal-disabled` | 原生 goal 工具与命令未挂载 | Harness | 已实现 | 硬边界 | 无 | system | 否 | 否 | `preset/agent.cordis.yml:220-222` |
 | `native-plan-mode-disabled` | 原生 plan-mode 未挂载 | Harness | 已实现 | 硬边界 | 无 | system | 否 | 否 | `preset/agent.cordis.yml:225-226` |
 | `subagent-trimmed` | 自由子代理 / workflow / ralph 未挂载 | Harness | 已实现 | 硬边界 | 无 | system | 否 | 否 | `preset/agent.cordis.yml:223-225` |
@@ -359,7 +359,7 @@
 - **触发**：每回合的 persona 与 foundation 段
 - **输出**：模型被要求以单一主循环推进
 - **阻断执行**：否 · **受 autonomy 影响**：否
-- **原生替代**：dsh 原生 subagent / workflow / ralph（当前未挂载）
+- **原生替代**：dsh 原生 subagent / workflow / ralph（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）
 - **理由**：子角色由系统按触发派生，避免自由委派把「自己派人判自己」重新引入。
 - **代码**：preset/agent.cordis.yml:23-31 persona; preset/plugins/prompts.js:31 foundation
 - **测试**：test/prompt-sections.test.mjs（阶段 6 新增） · **配置**：—
@@ -399,7 +399,7 @@
 - **输入**：任务清单
 - **输出**：多个只读子 run 的结论
 - **阻断执行**：否 · **受 autonomy 影响**：否
-- **原生替代**：dsh 原生 subagent 并行（当前未挂载）
+- **原生替代**：dsh 原生 subagent 并行（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）
 - **理由**：放几十个子 run 出去不是并行，是把宿主打满。
 - **代码**：preset/plugins/clearai-kernel.js:4385 MapScouts; :1330 sweepScouts
 - **测试**：test/kernel.test.mjs · **配置**：mapScoutMax=50, mapScoutConcurrency=4
@@ -444,18 +444,17 @@
 - **测试**：test/kernel.test.mjs · **配置**：contributions.{mechanisms,tools,sections}
 - **提示词**：— · **文档**：docs/loop-philosophy.zh-CN.md
 
-### `native-todo-disabled` · 原生 todo 未挂载
+### `native-todo-disabled` · 原生工作方式(todo/subagent/workflow/ralph)挂载
 
 - **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：无 · **责任方**：system
 - **触发**：装配期
-- **输出**：tool-todo 不在工具面里
+- **输出**：四件原生工作方式在工具面里;第二本账三件仍不挂
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：dsh-tool-todo（standard 预设挂载）
-- **理由**：避免出现第二本进度账。
-- **代码**：preset/agent.cordis.yml:218-226 刻意不挂的行
+- **理由**：工作方式交还原生:它们产不出一条 clearai 变更(权威边界测试钉死)。「todo 是第二本账」的旧判断在阶段 5 被修正——便签不是账本,进度永远以 AdvancePlan 落账为准。第二本账三件(goal 工具/命令、plan-mode)仍然不挂:那是真冲突。
+- **代码**：preset/agent.cordis.yml 工作方式段(刻意不挂表只剩 tool-goal/command-goal/plan-mode)
 - **测试**：test/preset-composition.test.mjs（阶段 5 新增） · **配置**：—
 - **提示词**：— · **文档**：preset/agent.cordis.yml
-- **已知不符**：阶段 5 计划重新挂载为非权威临时计划，并明确它不进入 ClearAI 进度。
 
 ### `native-goal-disabled` · 原生 goal 工具与命令未挂载
 

@@ -204,6 +204,69 @@
         brain: true
         ledger: true
 
+# ── 人侧命令(/ 菜单) ────────────────────────────────────────────────────────
+
+# 五个命令都是**人侧界面**:四个只读状态窗(goal/plan/evidence/worldline,从账本现算,
+# 一个字都不落账) + 一个呈审捷径(plan-review,把「重新呈审」steer 给模型,
+# 授权记号仍走 RequestPlanReview 工具落账——命令处理器没有变更通道,这是权威边界)。
+- id: clearai-commands
+  name: ./plugins/commands.js
+
+# ── 工作方式(非权威能力,交还原生) ──────────────────────────────────────────
+
+# todo / 子代理 / workflow / ralph 是**工作方式**,不是认识论:它们一件 clearai 变更都
+# 产不出来(权威边界测试钉死:变更字面量只在内核、入口被标记把守)。模型干活不设限,
+# 但结论要进权威账本,只能由主线自己过观测准入与唯一完成动词。
+- id: tool-todo
+  name: '@deepseek-ai/dsh-tool-todo'
+  config:
+    allowParallelInProgress: true
+
+# `subagents` 注册表与 spawn/fork 后端在宿主平面;`workflows` 是谁都不在外面读的服务,
+# 所以到达它的行共享这一个 entry-local realm(与 standard 预设同形)。
+- id: delegation
+  name: cordis:group
+  group: true
+  isolate:
+    workflowEngine: true
+  config:
+    - id: tool-subagent-control
+      name: '@deepseek-ai/dsh-tool-subagent-control'
+
+    - id: tool-subagent-list-agents
+      name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
+
+    # 执行者自选模型:重活可以换模型跑(modelSelectionSettings 出面板设置)。
+    - id: tool-subagent
+      name: '@deepseek-ai/dsh-tool-subagent'
+      config:
+        provider: spawn
+        toolName: subagent
+        modelSelectionSettings: true
+        backgroundMode: continuable
+
+    # fork 不开模型选择:provider/model 与父保持一致,继承的历史才能继续吃 KV Cache。
+    - id: tool-subagent-fork
+      name: '@deepseek-ai/dsh-tool-subagent'
+      config:
+        provider: fork
+        toolName: subagent_fork
+        backgroundMode: continuable
+
+    - id: workflow-worker-thread
+      name: '@deepseek-ai/dsh-workflow-worker-thread'
+      config:
+        provider: spawn
+
+    - id: tool-workflow
+      name: '@deepseek-ai/dsh-tool-workflow'
+
+    - id: tool-ralph
+      name: '@deepseek-ai/dsh-tool-ralph'
+      config:
+        subagentProvider: spawn
+        maxRounds: 64
+
 # ── 其余模型面 ──────────────────────────────────────────────────────────────
 
 - id: tool-ask-user
@@ -221,10 +284,14 @@
 
 # ── 刻意不挂的行(是决策,不是遗漏) ─────────────────────────────────────────
 #
-# · `tool-todo` / `tool-goal` / `command-goal`:ClearAI 的目标与计划各自只有一本账。
-#   再挂一个模型可自行声明的状态源,就等于放弃「事实与判断分离」。目标与进度由
-#   clearai-kernel 持有,面板显示的就是它。
-# · `tool-subagent` / `tool-workflow` / `tool-ralph`:ClearAI 的子角色由 Harness 按触发派生
-#   (Scout/Evaluator),评估者的派遣已经在内核里;自由委派会重新引入「自己派一个来判自己」。
+# · `tool-goal` / `command-goal`:DSH 的 goals 服务已经被内核用作**续跑驱动器**
+#   (布防/收兵都走它);再挂上模型面的 goal 工具,模型就能自己声明目标状态——
+#   那是第二本账。ClearAI 的目标账只有一本,由内核持有,面板显示的就是它。
 # · `plan-mode`:那是 DSH 的计划模式,与本内核的 CreatePlan/AdvancePlan 是两套计划纪律。
 #   同时挂上就是第二本账。要它就得先决定哪一本是唯一账本。
+#
+# 曾经不挂、现在**挂回来了**的(阶段 5,权威边界由 test/authority-boundary.test.mjs 钉死):
+# · `tool-todo` / `tool-subagent` / `tool-workflow` / `tool-ralph`:这些是**工作方式**,
+#   产不出一条 clearai 变更。「不挂」当年防的是「自己派一个来判自己」——评估者的派遣
+#   在内核里(auditProvider),与模型面的 subagent 是两层;后者派出去的只是干活的,
+#   它的结论要进账本,只能回到主线过观测准入。
