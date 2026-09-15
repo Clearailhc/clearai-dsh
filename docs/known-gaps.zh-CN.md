@@ -16,8 +16,6 @@
 - **机器评估者自动重跑。** 准入判出 `needs_audit` 时内核会派独立评估者，评估者是一个**真的子会话**；此外没有单独的后台重评循环。
 - **真浏览器走查已做一轮（深度写死在这里）。** 干净安装 + 真 Chrome + deepseek-flash 的一整场：预设可切换、原生审阅卡弹出、人点 Approve 后授权记号以 `by='user'` 落账、十三拍主链走完（含独立评估者子会话与两条事实升格）、`/goal` 在原生菜单渲染、Deliverables/Facts/Worldlines/Skills·Memory 四个面板出图（截图在 `docs/shots/browser-e2e-*.png`）。**没验的**：长会话下的面板交互细节（出处跳转、命题展开）、`/evidence` `/worldline` `/plan-review` 三个命令的浏览器渲染、英文界面。
 
-- **侦察结论的回灌在单回合形态里收不上来(长测发现,未修)。** `SpawnScout` 派出的子代理会正常跑完(`turn/end{completed}`),但父会话里既没有 `scout/settled`,资料面也没有 `source:'scout'` 的观测。根因:`AwaitWorldlines` 的等待循环只数**世界线执行者**的「仍在跑」,`sweepScouts()` 从不报这一行,于是**只有侦察在跑时**循环第一拍就退出——而 SpawnScout 的返回原话恰恰让人「用 `AwaitWorldlines` 在这个回合里等它」。一次性形态再叠一层:没有下一回合,结论若在最后一次工具调用之后落定就再也遇不到回收点。后果不是静默假绿——独立评估者会拒收依赖侦察结论的判据(实测报 inconclusive),但产品能力确实缺一块。细节与建议修法见 [长测结果与发现](optimization/e2e-longruns.zh-CN.md)。
-
 ## 只验到写明的深度
 
 - **事实行的跳转。** 「点一条已确认事实 → 跳到产生它的那一步」只在节点渲染层面验过，还没有在**真的升格过事实**的会话里用真浏览器点过。

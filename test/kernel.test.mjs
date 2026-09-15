@@ -260,10 +260,15 @@ function makeHost() {
 								}
 							}
 							if (isScout) {
+								// `scoutDelayMs`:让侦察**晚一点**落定——“等侦察”这件事才测得到
+								// (真实子 run 要跑几秒,而它正是长测里断掉的那条链)。
+								const settle = { output: [{ type: 'text', text: host.scoutConclusion }], structured: undefined, stopReason: stopOf('Scout') }
+								const delay = Number(host.scoutDelayMs ?? 0)
+								const result = host.scoutNeverSettles === true ? new Promise(() => {}) : delay > 0 ? new Promise((resolve) => setTimeout(() => resolve(settle), delay)) : Promise.resolve(settle)
 								return {
 									id: `scout-${audits.length}`,
 									localAgent: undefined,
-									result: Promise.resolve({ output: [{ type: 'text', text: host.scoutConclusion }], structured: undefined, stopReason: stopOf('Scout') }),
+									result,
 									dispose: async () => {},
 								}
 							}
@@ -2334,6 +2339,30 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	check('侦察被中断 → 结论里写明「未正常结束」,不冒充回灌', /未正常结束\(aborted\)/.test(String(scoutRecord?.conclusion ?? '')), String(scoutRecord?.conclusion ?? '').slice(0, 80))
 	check('侦察被中断 → 半截文本**不进资料面**(它不是观测)', host.service.state(S).materials.length === before, `${before} → ${host.service.state(S).materials.length}`)
 	check('视图把结局交出去(status=failed,面板才分诊得出)', host.service.view(S).scouts.at(-1)?.status === 'failed', JSON.stringify(host.service.view(S).scouts.at(-1) ?? null).slice(0, 120))
+	/**
+	 * **等侦察**:`AwaitWorldlines` 的「还在跑」必须把侦察算进去。
+	 *
+	 * 长测抓到的真缺陷:`sweepScouts()` 只落账、不报「还在跑」,而 `AwaitWorldlines` 的循环
+	 * 只数世界线执行者产出的那一行 ⇒ **只有侦察在跑时它第一拍就退出**,而 SpawnScout 的
+	 * 返回原话恰恰让模型「用 AwaitWorldlines 在这个回合里等它」。模型于是空等三轮回合、
+	 * 判据里那句「与侦察结论一致」失去对照物,独立评估者只能裁 inconclusive 拒收结案。
+	 */
+	{
+		const W = 'session-scout-await'
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		host.scoutDelayMs = 800
+		await callOn(host, W, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		const dispatched = await callOn(host, W, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
+		check('前置:侦察异步派出(返回值里没有结论)', dispatched.code === 'scout_dispatched', String(dispatched.code))
+		const started = Date.now()
+		const awaited = await callOn(host, W, 'AwaitWorldlines', { timeout_s: 5 })
+		const waitedMs = Date.now() - started
+		check('侦察在跑 ⇒ AwaitWorldlines 真的等它(不再第一拍退出)', waitedMs >= 1500, `等了 ${waitedMs}ms(修之前是 0ms)`)
+		check('等到了:结论落成 scout/settled 并进资料面', host.journal.some((mutation) => mutation.t === 'scout/settled' && mutation.conclusion !== undefined) && host.service.state(W).materials.some((item) => String(item.ref ?? '').startsWith('scout:')), JSON.stringify(host.service.state(W).materials.map((item) => item.ref)))
+		check('回报里写明了回灌了几条(不是含糊的「等完了」)', /回灌 1 条/.test(String(awaited.message ?? '')), String(awaited.message ?? '').slice(0, 120))
+	}
+
 	/**
 	 * **表里没有的侦察**也要收得回来(§14-C 的第二半,与执行者那条同一个修法):
 	 * 进程重启过 ⇒ 内存表空了,可投影里那条侦察还没收口,而它的会话日志里已经有 `turn/end`。

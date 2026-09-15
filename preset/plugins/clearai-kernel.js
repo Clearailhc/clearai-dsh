@@ -1322,6 +1322,14 @@ export function apply(ctx, config = {}) {
 		const mutations = []
 		const lines = []
 		const emitted = new Set()
+		/**
+		 * **还在跑的侦察数**:`AwaitWorldlines` 靠它决定要不要继续等。
+		 *
+		 * 少了这个数,「等侦察」就是一句空话:`AwaitWorldlines` 的循环只数世界线执行者产出的
+		 * 「仍在跑」行,而侦察从来不产那行 ⇒ 只有侦察在跑时 `running` 恒为 0,循环**第一拍就退出**,
+		 * 于是模型被告知「用 AwaitWorldlines 在这个回合里等它」却永远等不到。
+		 */
+		let pending = 0
 		const publish = (scoutId, stepId, ok, conclusion, stopReason) => {
 			mutations.push({ t: 'scout/settled', id: scoutId, step: stepId, conclusion: String(conclusion ?? '').slice(0, 4000), note: ok ? null : String(stopReason ?? 'failed') })
 			if (ok && String(conclusion ?? '').trim() !== '') {
@@ -1353,7 +1361,11 @@ export function apply(ctx, config = {}) {
 				}
 				continue
 			}
-			if (entry.settled === null) continue
+			if (entry.settled === null) {
+				// 派出去了、还没落定:它对「要不要继续等」是一票。
+				pending += 1
+				continue
+			}
 			/**
 			 * **`reported` 不等于「已落账」**(失效模式:侦察结论发布之后被丢掉,
 			 * 而条目已删、`reported` 已置位 ⇒ 那条结论永久丢)。判据改成看**投影**:
@@ -1385,11 +1397,13 @@ export function apply(ctx, config = {}) {
 			if (Date.now() - lastTry < CFG.collectRetryMs) continue
 			recoverAttempts.set(recoveryKey, Date.now())
 			const found = recoverFromChildSession(child)
+			// 读不到有两种成因:还在跑,或者读面拿不到。都按「不能证明它落定」处理,
+			// 但不计入 pending——判不出「在跑」就不能让等待循环为它空转。
 			if (found === null) continue
 			publish(scout.id, scout.step ?? null, found.ok === true, found.conclusion, found.stopReason)
 			lines.push(`侦察 · ${scout.trigger ?? scout.id}:从会话日志回收(${found.ok === true ? '完成' : found.stopReason})`)
 		}
-		return { mutations, lines }
+		return { mutations, lines, pending }
 	}
 
 	/**
@@ -1792,7 +1806,13 @@ export function apply(ctx, config = {}) {
 		// 侦察同一套:它也是「派出去就不等」的子 run,结论同样由这里收。
 		const scouts = sweepScouts(state, sessionId)
 		mutations.push(...scouts.mutations)
-		return { lines: [...swept.lines, ...scouts.lines], recovered: late.recovered, lost: late.lost, scouts: scouts.mutations.length }
+		return {
+			lines: [...swept.lines, ...scouts.lines],
+			recovered: late.recovered,
+			lost: late.lost,
+			scouts: scouts.mutations.length,
+			scoutsPending: scouts.pending,
+		}
 	}
 
 	/** 开一次调用的上下文:拿宿主读面、取状态、备一个变更列表。 */
@@ -4452,7 +4472,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'AwaitWorldlines',
 		description:
-			'**有界地等**在跑的世界线执行者(最长 300 秒),谁的结论回来了就顺手落账。它是「等」这件事的**唯一正当姿势**:换成 bash `sleep` 轮询会把一整个回合的时间烧在空等上,而且结论什么时候回来与你睡多久无关。等待期间不会阻塞别的会话;到点就返回,没回来的照样在跑。',
+			'**有界地等**派出去还没回来的子 run——世界线执行者**与侦察**都算(最长 300 秒),谁的结论回来了就顺手落账。它是「等」这件事的**唯一正当姿势**:换成 bash `sleep` 轮询会把一整个回合的时间烧在空等上,而且结论什么时候回来与你睡多久无关。等待期间不会阻塞别的会话;到点就返回,没回来的照样在跑。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -4475,13 +4495,22 @@ export function apply(ctx, config = {}) {
 			const pending = () => {
 				const before = mutations.length
 				const swept = collectExecutors(mutations, hostService.state(sessionId), sessionId)
-				// 这一拍到底收上来几条:两级收集(内存表 + 会话日志)都算数。
-				collected += mutations.length - before
+				/**
+				 * 「回灌几条」数的是**结论**,不是变更条数:一条侦察会落两条变更
+				 * (`scout/settled` + 观测),一条世界线落一条 `worldline/executed`。
+				 * 模型读这句话是判断「它回来了没有」——数变更会报出比事实大的数字
+				 * (一条侦察报成两条),那是这一层最不该有的假话。
+				 */
+				collected += mutations.slice(before).filter((mutation) => mutation.t === 'scout/settled' || mutation.t === 'worldline/executed').length
 				lines = swept.lines.map((item) => `· ${item}`)
 				if (swept.recovered > 0) lines.push(`· ${swept.recovered} 条结论是从执行者自己的会话日志里回收的`)
 				if (swept.lost > 0) lines.push(`· ${swept.lost} 条失联(产物还在各自的工作副本里)`)
-				// 「还在跑」只认内存表里真有、且还没落定的那些(回收与失联都不算在跑)。
-				return swept.lines.filter((line) => line.endsWith('仍在跑')).length
+				/**
+				 * 「还在跑」= 世界线执行者(内存表里真有、还没落定的那些)**加上**侦察。
+				 * 少了侦察这一票,只有侦察在跑时这个循环第一拍就退出,
+				 * 而 SpawnScout 的返回原话恰恰让模型「用 AwaitWorldlines 在这个回合里等它」。
+				 */
+				return swept.lines.filter((line) => line.endsWith('仍在跑')).length + (swept.scoutsPending ?? 0)
 			}
 			/**
 			 * 等:每 2 秒看一次表。**不 busy-wait**——每次都是一个真定时器,
@@ -4510,7 +4539,7 @@ export function apply(ctx, config = {}) {
 			const recovered = lines.filter((line) => line.includes('从执行者自己的会话日志里回收')).length
 			const lostLines = lines.filter((line) => line.includes('条失联'))
 			const head =
-				`等了 ${waited}s(上限 ${wait}s):回灌 ${collected} 条` +
+				`等了 ${waited}s(上限 ${wait}s):回灌 ${collected} 条结论` +
 				(waited >= wait && running > 0 ? `,**还有 ${running} 条仍在跑**(到点返回,不是失败:它们跑的是真活,可以再来等一次,或先干别的)` : '') +
 				(recovered > 0 ? `;其中 ${recovered} 条是从执行者自己的会话日志里回收的` : '') +
 				(lostLines.length > 0 ? `;${lostLines.join('、')}` : '')

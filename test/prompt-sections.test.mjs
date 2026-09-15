@@ -77,6 +77,15 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 	// 原生 web_search/web_fetch 没有这些参数(核验过 dsh-tool-web 的 schema)。
 	const stale = ['freshness', 'search_strategy', 'next_offset', 'view=links'].filter((word) => web.text.includes(word))
 	check('web-research 不提不存在的原生参数(freshness/search_strategy/next_offset/view=links)', stale.length === 0, stale.join(','))
+	// 侦察是**异步**的(内核的实现与注释都写明了为什么:阻塞等待会在跑动中断时丢掉「派过侦察」这条事实)。
+	// 提示词若把它说成「同步、派出就等它回来」,模型就会去等一个不存在的返回值——长测里正是这么卡住的。
+	const delegation = SECTIONS.find((section) => section.name === 'clearai/delegation')
+	check(
+		'delegation 按异步讲侦察(与内核契约一致,不说「同步」)',
+		/派出去就不等/.test(delegation.text) && !/同步,派出就等它回来/.test(delegation.text),
+		delegation.text.match(/SpawnScout[^|]*\|[^|]*/)?.[0]?.slice(0, 90) ?? '(没找到那一行)',
+	)
+
 	// 内核的 OUTPUT_SCHEMA 是 additionalProperties:false——多写一个不存在的字段,宿主会让整次调用失败。
 	check('内核工具的 output schema 是闭集(契约是硬的,提示词才必须跟上)', /const OUTPUT_SCHEMA = \{[\s\S]*?additionalProperties: false/.test(KERNEL))
 }

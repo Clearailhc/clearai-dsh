@@ -114,7 +114,7 @@ export const SCENARIOS = {
 	'scout-first': {
 		title: '侦察先于计划',
 		expectComplete: true,
-		why: 'SpawnScout 是「只读、同步、结论进资料面」那条路;它与主线的衔接(收结论→据此立计划)没在真跑里验过。',
+		why: 'SpawnScout 是「只读、派出去就不等、结论回灌进资料面」那条路;它与主线的衔接(收结论→据此立计划)没在真跑里验过。',
 		task: [
 			'这个工作区是空的(系统会铺好 clear/ 骨架)。我要一份「先看再动」的小交付。',
 			`要求(按顺序做;${DISCIPLINE}):`,
