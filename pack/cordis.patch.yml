@@ -11,6 +11,11 @@
 - insert:
     - id: clearai-host
       name: 'clearai-dsh'
+    # 预设的 tool-subagent 开了 modelSelectionSettings(执行者自选模型),它要求宿主平面
+    # 有这一行(standard 预设注释写明了这条依赖)。web 发行版自带同一行(insert 幂等);
+    # headless 等不自带的 profile 靠这一行补齐。
+    - id: subagent-model-selection-settings
+      name: '@deepseek-ai/dsh-tool-subagent/model-selection-settings'
 
 # 预设(agent.cordis.yml)不在补丁层 —— 它由名册(roster)从 preset root 扫描。
 # 预设的注册方式有三种候选(补丁层重述名册行 / 播种到用户根 / 打印待粘贴的行),

@@ -22,7 +22,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -301,6 +301,15 @@ const handled = new Set(['persona', 'compaction'])
 const missing = presetRows
 	.filter((row) => !present.has(row.id) && !handled.has(row.id))
 	.map((row) => {
+		// delegation 组:摊平成行就丢了 standing scope,而 modelSelectionSettings 需要它
+		// (子代理的模型选择按会话键在预设 scope 上)。headless 没有界面也没有 scope,
+		// 这一项在摊平形态里关掉——产品形态(web 名册挂载)照开,不受这里影响。
+		if (row.id === 'delegation' && Array.isArray(row.config)) {
+			const config = row.config.map((sub) =>
+				sub?.id === 'tool-subagent' ? { ...sub, config: { ...(sub.config ?? {}), modelSelectionSettings: false } } : sub,
+			)
+			return { ...row, config }
+		}
 		// 内核那一行:按命令行覆盖当档与轮数上限(其余配置照抄预设)。
 		if (row.id !== 'clearai-kernel') return row
 		const config = { ...(row.config ?? {}) }
@@ -320,23 +329,38 @@ const personaRow = presetRows.find((row) => row.id === 'persona')
  * ——第一次跑 E2E 就是这么发现的:工具「成功」返回、可 mutations 全空,投影长不出任何东西。
  */
 const HOST_PACKAGE = join(DSH_HOME, 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib', 'host.js')
+/** 预设的 tool-subagent 开了 modelSelectionSettings,它要求宿主平面这一行(web 自带,headless 没有)。 */
+const MODEL_SELECTION_ROW = { id: 'subagent-model-selection-settings', name: '@deepseek-ai/dsh-tool-subagent/model-selection-settings' }
 /**
  * 常驻形态**不关**这两行:续跑窗口就是它们。关掉它再验 §17 等于验一个空壳。
  */
 const keepGoalRows = resident || argv.includes('--goals')
 const disabledRows = keepGoalRows ? SECOND_LEDGER.filter((id) => id !== 'goal' && id !== 'goal-round-driver') : SECOND_LEDGER
-const patch = [
-	...disabledRows.map((id) => ({ id, disabled: true })),
+/**
+ * 补丁拆两层,顺序敏感:宿主面的行(模型选择设置、投影宿主半)必须**先于**预设面加载——
+ * 同一补丁层内的行是**并发**加载的,而 tool-subagent 在 apply 期就同步取
+ * `subagentModelSelection` 服务,同层竞态会必现「requires … in the Host scope」。
+ * 两个 `--patch` 按顺序各成一层,层与层之间是顺序的。
+ */
+const hostPatch = [
+	// 必须 insert 形态:补丁层里「裸 id 行」只能改**已存在**的行,引用缺席的 id 是硬错误;
+	// insert 撞到已有 id 是幂等覆盖(web 自带这一行,实测同 id insert 不出重影)。
+	...(present.has('subagent-model-selection-settings') ? [] : [{ insert: [MODEL_SELECTION_ROW] }]),
 	// installed 模式:宿主行由**包的补丁层**提供(我们不再插,免得同一个 id 挂两行)
 	...(installedHome !== null || !existsSync(HOST_PACKAGE) ? [] : [{ insert: [{ id: 'clearai-host', name: HOST_PACKAGE }] }]),
+]
+const presetPatch = [
+	...disabledRows.map((id) => ({ id, disabled: true })),
 	...(personaRow === undefined
 		? []
 		: [{ id: 'system-prompt', config: { personaPrefix: personaRow.config?.prefix ?? '', personaSuffix: 'Your working directory is {{cwd}}.' } }]),
 	{ insert: missing },
 ]
 const patchDir = mkdtempSync(join(tmpdir(), 'clearai-e2e-patch-'))
+const hostPatchFile = join(patchDir, 'host.patch.yml')
 const patchFile = join(patchDir, 'preset.patch.yml')
-writeFileSync(patchFile, stringifyYaml(patch), 'utf8')
+writeFileSync(hostPatchFile, stringifyYaml(hostPatch), 'utf8')
+writeFileSync(patchFile, stringifyYaml(presetPatch), 'utf8')
 
 const freshAtStart = existsSync(useWorkspace === undefined ? '' : resolve(useWorkspace)) ? readdirSync(resolve(useWorkspace)).length === 0 : true
 const tempWorkspace = useWorkspace === undefined
@@ -364,7 +388,7 @@ console.log(`  跑之前:章程占位 ${before.constitution.placeholders}/${befo
 if (autonomy !== undefined || maxTurns !== undefined) console.log(`  覆盖:autonomy=${autonomy ?? '(预设)'} maxAutoTurns=${maxTurns ?? '(预设)'}`)
 const started = Date.now()
 const profileName = installedHome === null ? (resident ? 'web' : 'headless') : installedProfile
-const run = spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--patch', patchFile, '--profile', profileName, task], {
+const run = spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--patch', hostPatchFile, '--patch', patchFile, '--profile', profileName, task], {
 	cwd: workspace,
 	env: { ...process.env, DSH_HOME },
 	encoding: 'utf8',
@@ -384,14 +408,16 @@ check('进程正常退出(exit 0)', run.status === 0, `exit=${run.status} stderr
  * 里面每个会话一个目录,日志是 session.v3.jsonl.zstd)。
  * 不靠 mtime 猜最近一份——并行跑两个 E2E 时会串。
  */
-/** 工作区路径 → 会话目录名(DSH 自己的 slug 规则:非字母数字折成 `-`,两端包 `--`)。 */
+/** 工作区路径 → 会话目录名(DSH 自己的 slug 规则:字母数字与 `_` 保留,其余折成 `-`,两端包 `--`)。 */
 function sessionSlug(workspaceDir) {
-	return `--${workspaceDir.replace(/^\//, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/-+$/, '')}--`
+	return `--${workspaceDir.replace(/^\//, '').replace(/[^A-Za-z0-9_]+/g, '-').replace(/-+$/, '')}--`
 }
 
 /** 一个工作区下的所有会话(每个会话一个目录,日志可能是 `.jsonl` 或 `.jsonl.zstd`)。 */
 function sessionLogsIn(workspaceDir) {
-	const dir = join(DSH_HOME, 'sessions', sessionSlug(workspaceDir))
+	// slug 的是**解析后的真实路径**:macOS 上 /var 是 /private/var 的软链,
+	// 宿主按 realpath 记账,按未解析的路径 slug 会永远找不到(目录名差一个 private- 前缀)。
+	const dir = join(DSH_HOME, 'sessions', sessionSlug(realpathSync(workspaceDir)))
 	if (!existsSync(dir)) return []
 	const found = []
 	for (const entry of readdirSync(dir)) {
@@ -694,7 +720,8 @@ if (events.length > 0) {
 	let state = emptyState()
 	for (const event of events) state = applyEvent(state, event)
 	const projected = view(state)
-	const declared = (projected.plan?.steps ?? []).flatMap((step) => step.artifacts ?? [])
+	// view 把物证归一成 {path, exists} 对象(声明时则是纯字符串)——两种形状都认,取路径本身。
+	const declared = (projected.plan?.steps ?? []).flatMap((step) => step.artifacts ?? []).map((artifact) => (typeof artifact === 'string' ? artifact : artifact?.path)).filter((path) => typeof path === 'string')
 	if (declared.length > 0) {
 		// 与产品**同一判据**:物证必须是**文件**(目录不算——准入就是这么判的)。
 		const isArtifactFile = (artifact) => {
