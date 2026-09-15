@@ -190,16 +190,19 @@ concatenation):
 
 ```text
 Human: sets the goal
-System: clarification (slot wording) → SetGoal → register hypotheses → CreatePlan (criteria
-        validation) → native review card
+Model→Kernel: clarification (slot wording) → SetGoal → register hypotheses → CreatePlan
+        (criteria validation)
+Kernel→Host→Human: the native review card (always raised; approval → confirmed_by='user')
 Human: approve / request changes / withdraw
-System: arm the continuation token (goals) → execute steps → artifacts on disk
-System: observation admission → needs_audit? → dispatch an independent evaluator (read-only
-        tool surface + outputSchema)
+Kernel→Host: arm the continuation token (goals service)
+Model: execute steps → artifacts land in the workspace
+Kernel: observation admission → needs_audit? → dispatch an independent evaluator via the host
+        (read-only tool surface + outputSchema)
 Evaluator: evaluation card on disk (supports / refutes / undecidable)
-System: rejected? → count+1 → ≥ threshold blocks the plan and waits for a human
-System: evidence complete → fact promotion → closing evaluation → disarm / re-arm
-System: turnDemand: gate open → hold; gates closed → host drives the next round (≤128)
+Kernel: rejected? → count+1 → ≥ threshold blocks the plan and waits for a human
+Kernel: evidence complete → fact promotion → closing evaluation → disarm / re-arm (mutations
+        enter the fact ledger; the projection folds the state out)
+Kernel→Host: turnDemand: gate open → hold; gates closed → the host drives the next round (≤128)
 Human (any time): gate verbs / ask_user_question answers / native approvals / `/` commands
 ```
 

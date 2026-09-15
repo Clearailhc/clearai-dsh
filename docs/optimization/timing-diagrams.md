@@ -1,171 +1,230 @@
-# ClearAI Expected Timing Diagrams
+# ClearAI expected timing diagrams
 
-> These diagrams describe **who does what to whom, and when**, on the four main paths.
-> They pair with the state machines ([`state-machines.md`](state-machines.md)): the machines answer
-> "which states exist", these answer "who moved it there".
-> Every tool name and event name here can be matched against the code.
+> These diagrams describe **who does what to whom, when, along five main paths**.
+> They pair with the state machines ([`state-machines.md`](state-machines.md)):
+> state machines answer "which states exist", timing diagrams answer "who pushed it there".
+> Every tool name and event name in the diagrams maps one-to-one to code.
 
-## 1. Light exploration path · partial
+## 0. The fixed cast (one set for every diagram, no aliases)
 
-**Purpose**: let the model explore with native DSH capability at low authority, without being forced
-to open a formal plan first.
+| Role | What it is | What it is not |
+|---|---|---|
+| **Human** | The user. Only they can do three things: approve a plan on the native review card, release L4 on the native approval stack, press a human-gate verb on the panel | not a system component |
+| **Model** | The LLM reasoner. It **emits intent** (tool calls, answers) and executes nothing | not "the agent system"; it touches neither the ledger nor files — everything passes through the host |
+| **DSH host** | The engine: the turn loop, tool dispatch, sandbox and approvals, the native review card, subagents, the goals service (continuation driver), writing the session log | makes no epistemic judgments; it does not know "what may be believed" |
+| **ClearAI kernel** | The preset plugin: 22 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
+| **Fact ledger** | The append-only record of facts. **The content is ours**: clearai mutation events + `clear/` artifacts and evaluation cards; **the carrier is the host's**: the session log + the filesystem. It stores no conclusions — "what may be believed now" is folded out of it by the projection | not a second state book; state is not "read" from it but "folded" out of it |
+| **Projection** | The host-side half `ui/lib`: fold (ledger → state) + derive (state → views) + the panel. **Reads the ledger, never writes** | not a cache, not a copy — one view of the same facts |
+| **Independent evaluator** | A fresh-context read-only subagent dispatched by the kernel via the host (L3+), returning a structured verdict through `outputSchema` | not the executor's twin; the other half of doer ≠ judge |
+| **Worldline executor** | One per mutually exclusive branch, each owning a working copy, with a tool surface that excludes plan/goal verbs | cannot contract, cannot close |
+
+Old-name mapping: **Agent** = split into "Model + DSH host"; **kernel** = ClearAI kernel;
+**projection / panel** = the projection; **ledger (git)** = the fact ledger.
+
+The full path of one intent tool call (every arrow in the later diagrams is a segment of it):
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant U as Human
-    participant A as Agent
-    participant D as Native DSH tools
-    participant P as ClearAI projection
+    participant M as Model
+    participant D as DSH host
+    participant K as ClearAI kernel
+    participant L as Fact ledger
+    participant P as Projection
 
-    U->>A: question / task
-    A->>D: read / glob / grep / bash / web_search
-    D-->>A: exploration material
-    A->>A: form provisional hypotheses and a route
-    A-->>U: findings, or a suggestion to formalize
-    Note over A,P: Nothing authoritative is written here:<br/>no SetGoal / CreatePlan / AdvancePlan
+    M->>D: tool call (intent: SetGoal / AdvancePlan / ...)
+    D->>K: dispatch to the plugin's execute
+    K->>K: validate + compute authoritative mutations
+    K-->>D: result + meta.mutations
+    D->>L: mutations appended to the session log (append-only)
+    D->>P: notify
+    P->>L: fold: log → state
+    P->>P: derive: state → panel views
 ```
 
-Current status: **partial**. Low-authority exploration is physically possible (the native tools are
-already there), but the prompt describes it as a preliminary step of the formal loop rather than a zone
-one may freely stay in, and the scratch-planning tools (`tool-todo`) are not mounted, so the model has
-no "plan that does not enter the ledger" available.
+Keep this chain in mind: every "kernel → ledger → projection" segment in the five diagrams
+below is exactly it, not repeated.
 
-Planned: optimization plan Phase 4 ("exploration zone / formal zone") and Phase 5 ("non-authoritative
-tools return").
+## 1. Light exploration path · partial
+
+**Purpose**: let the model explore at low authority with native DSH capability first, without
+forcing an immediate formal plan.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant H as Human
+    participant M as Model
+    participant D as DSH host
+    participant W as Workspace / web
+
+    H->>D: question / task (user message)
+    D->>M: turn starts (persona and prompts injected)
+    M->>D: read / glob / grep / bash / web_search
+    D->>W: execute (inside the sandbox)
+    W-->>M: exploration material (relayed by the host)
+    M->>M: form tentative hypotheses and a route
+    M-->>H: findings, or a proposal to formalize
+    Note over M,D: this segment never touches the ClearAI kernel:<br/>the ledger gets ordinary session events, no authoritative mutations
+```
+
+Current status: **partial**. Low-authority exploration is physically possible (the native tools
+exist), but the prompts describe it as a prelude to the formal loop rather than a region one may
+freely stay in; provisional planning tools like `tool-todo` are not mounted, so the model has no
+"plan that stays out of the ledger".
+
+Plan: see Phase 4 "exploration zone / formal zone" and Phase 5 "non-authoritative tools return"
+in the optimization plan.
 
 ## 2. Formal epistemic path · implemented
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant A as Agent
+    participant M as Model
+    participant D as DSH host
     participant K as ClearAI kernel
     participant H as Human
     participant E as Independent evaluator
-    participant P as Projection / panel
+    participant L as Fact ledger
 
-    A->>K: SetGoal(claim, done_criteria, hypotheses)
-    K->>P: goal/set (derived phase: planning)
-    K->>E: precommitRecon dispatches one read-only scout (optional, when input/ has material)
+    M->>D: SetGoal(claim, done_criteria, hypotheses)
+    D->>K: execute
+    K->>L: goal/set (derived stage: planning)
+    K->>D: precommitRecon: dispatch one read-only scout (optional, when input/ has material)
+    D->>E: start subagent
     E-->>K: scout/settled
 
-    A->>K: CreatePlan(brief, steps[].done_criteria)
-    K->>K: validateSteps (criteria required, not self-referential, <= 25 steps)
-    K->>H: native review card (plan-review)
+    M->>D: CreatePlan(brief, steps[].done_criteria)
+    D->>K: execute
+    K->>K: validateSteps (criteria required, non-self-referential, ≤25 steps)
+    K->>D: requestPlanReview
+    D->>H: native review card (the plan text)
     alt approved
         H-->>K: approved
-        K->>P: plan/created (confirmed_by='user')
+        K->>L: plan/created (confirmed_by='user')
     else declined / cancelled / unavailable
-        H-->>K: one of the other three
-        K->>P: plan/created (confirmed_at=null)
-        Note over K,P: No stamp; auto continuation holds;<br/>delivering a step later back-fills by='progress'
+        H-->>K: the three other outcomes
+        K->>L: plan/created (confirmed_at=null)
+        Note over K,L: no stamp; auto continuation holds;<br/>an advance back-fills by='progress'
     end
 
-    A->>K: AdvancePlan(step_id, observations)
-    K->>K: admission: artifacts exist / non-empty / structurally valid
-    alt admission fails
-        K->>P: block/counted (threshold reached -> plan/blocked)
-    else admission passes and L0-L2
-        K->>P: step/advanced + evidence/recorded
-    else admission passes and L3+
-        K->>E: dispatch a fresh-context read-only evaluator
+    M->>D: AdvancePlan(step_id, observations)
+    D->>K: execute
+    K->>K: admission: artifact exists / non-empty / structurally valid
+    alt admission failed
+        K->>L: block/counted (reaching blockedThreshold → plan/blocked)
+    else admitted, L0–L2
+        K->>L: step/advanced + evidence/recorded
+    else admitted, L3+
+        K->>D: dispatch a fresh-context read-only evaluator
+        D->>E: start (with outputSchema)
         E-->>K: structured verdict
-        K->>P: audit/settled + step/advanced (the system writes the verdict)
+        K->>L: audit/settled + step/advanced (the verdict is written by the system)
     end
     opt L4
-        K->>H: native approval stack (human release)
+        K->>D: native approval stack (human release)
+        D->>H: approval card
         H-->>K: approval
-        K->>P: human/released
+        K->>L: human/released
     end
 
-    A->>K: ClosePlan then CloseGoal(outcome=achieved)
-    K->>E: goal evaluator (synthetic step, criteria = goal.done_criteria)
+    M->>D: ClosePlan → CloseGoal(outcome=achieved)
+    D->>K: execute
+    K->>D: dispatch the goal evaluator (synthetic step, criteria = goal.done_criteria)
+    D->>E: start
     E-->>K: support
-    K->>P: goal/closed + fact/promoted (at promote_at_level and with no refutation)
+    K->>L: goal/closed + fact/promoted (promote_at_level reached, no refutation)
 ```
 
 Three boundaries to remember:
 
-1. **Admission does not judge.** It answers "do we take this in"; `support / refute` belongs to the
-   evaluator or to L0–L2 self-judgement.
-2. **At L3 and above a caller-supplied verdict is refused** (`verdict_not_accepted`).
-3. **A goal cannot close while a plan is open** — the kernel refuses.
+1. **Admission does not judge**. Admission only answers "accept or not"; `support / refute`
+   belongs to the evaluator or to L0–L2 self-judgment.
+2. **Writing a verdict at L3 or above is rejected** (`verdict_not_accepted`).
+3. **The plan must be closed before the goal**, or the kernel refuses.
 
-## 3. Failure and recovery path · implemented (mechanism) / prompt-only (recovery discipline)
+## 3. Failure and recovery path · implemented (mechanism side) / prompt-only (recovery discipline)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant A as Agent
-    participant D as DSH
-    participant K as Kernel
-    participant L as Ledger (git)
+    participant M as Model
+    participant D as DSH host
+    participant K as ClearAI kernel
+    participant L as Fact ledger
 
-    A->>D: side-effecting tool call
+    M->>D: a tool call with side effects
     alt ordinary tool error
-        D-->>A: ok=false + failure_class
-        Note over A: Self-correct: fix the cause, change route,<br/>or retry within bounds when retry_safe
+        D-->>M: ok=false + failure_class
+        Note over M: self-correctable: fix the cause, take another route,<br/>or bounded retry per retry_safe
     else provider failure
-        D-->>A: typed fact
-        Note over A,K: bounded backoff; if permanently unusable the run pauses
+        D-->>M: typed facts
+        Note over M,K: bounded backoff; if finally unavailable, run paused
     else KernelPanic / EffectOutcomeUnknown
-        D-->>A: the effect may already be committed
-        A->>K: classify as engine-level failure
-        K-->>A: downgraded contract: read-only recovery turn
-        A->>D: read / glob / grep (no bash / subagent replay)
-        D-->>A: current facts
-        A->>K: decide from observation: fix the cause, or stop
-        Note over A,L: Every write already entered the ledger,<br/>so "observe first" always has an object
+        D-->>M: the effect may already be committed
+        M->>D: read the kernel's error classification (engine-level fault)
+        D->>K: pre-step
+        K-->>M: degraded contract: a read-only recovery turn
+        M->>D: read / glob / grep (bash and subagent replay forbidden)
+        D-->>M: current facts
+        M->>M: decide from observation: fix the cause / stop
+        Note over D,L: every write already went to the ledger automatically,<br/>so "observe first" always has something to observe
     end
 ```
 
-Current status: the ledger and admission are mechanism; **the recovery discipline itself lives only in
-the prompt** (`clearai/execution-discipline`). Turning it from advice into a boundary needs host-side
-support and is a separate topic.
+Current status: the ledger and admission are mechanisms; **the recovery discipline itself lives
+only in the prompts** (`clearai/execution-discipline`). Upgrading it from advice to boundary
+needs host-side cooperation and is a later topic.
 
 ## 4. Worldline path · implemented
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant A as Agent
-    participant K as Kernel
-    participant X as Worldline executors (own working copies)
+    participant M as Model
+    participant D as DSH host
+    participant K as ClearAI kernel
+    participant X as Worldline executors
     participant H as Human
-    participant P as Projection
+    participant L as Fact ledger
 
-    A->>K: ForkPlan(branches[], decide_by)
-    K->>K: validateForkOptions (the metric must be registered up front)
-    K->>X: prepare branch + worktree (or degrade to declared directories)
-    K->>X: dispatch one executor each (their tool face has no plan/goal verbs)
-    K->>P: fork/created, worldline/prepared, worldline/executing
+    M->>D: ForkPlan(branches[], decide_by)
+    D->>K: execute
+    K->>K: validateForkOptions (the ruler must be registered in advance)
+    K->>D: prepare branch + worktree (or degrade to a declared directory)
+    K->>D: dispatch one executor per branch (tool surface excludes plan/goal verbs)
+    D->>X: start (each in its own working copy)
+    K->>L: fork/created, worldline/prepared, worldline/executing
 
-    X-->>K: branch delivery (reading + artifacts)
-    K->>P: branch/delivered (each branch rank -> evaluated)
+    X-->>K: branch delivery (readings + artifacts)
+    K->>L: branch/delivered (each branch's rank → evaluated)
 
-    A->>K: ConvergeFork
-    K->>K: decideWinner (arithmetic ranking by the pre-registered metric)
-    alt unique winner and margin >= autoAdoptMinGap
-        K->>P: fork/converged (winner adopted, the rest pruned on record)
-        K->>H: adoption gate
-        H-->>K: adopt_branch
-        K->>P: user-sourced message (by='user')
-    else small margin but a real winner
-        K->>P: fork/converged (provisional adoption + a review trace)
-    else arithmetic cannot decide
-        K->>P: fork/undecidable
-        K->>K: optional cross-evaluation arbitration (fork/arbitrated only records the verdict)
-        K->>H: hand it to a person
+    M->>D: ConvergeFork
+    D->>K: execute
+    K->>K: decideWinner (arithmetic ranking by the pre-registered ruler)
+    alt a unique winner with margin ≥ autoAdoptMinGap
+        K->>L: fork/converged (winner marked adopted, the rest marked pruned but kept)
+        K->>D: the adoption gate
+        D->>H: panel inbox
+        H-->>K: adopt_branch (a human-gate verb, recorded via the ledger)
+        K->>L: by='user'
+    else a small margin but a real winner
+        K->>L: fork/converged (provisional adoption + pending-review trace)
+    else undecidable
+        K->>L: fork/undecidable
+        K->>D: optional: dispatch a cross-evaluation arbitration (fork/arbitrated records the ruling only)
+        K->>D: hand to the human
+        D->>H: panel inbox
     end
 ```
 
-Notes:
+Key points:
 
-- Arithmetic only **ranks**; `adopt_branch` is the press a person makes.
-- A losing branch loses only its working copy; the **branch ref is kept**, because a later reversal
-  depends on it staying readable.
-- A settled fork whose executor never reported derives `unreturned` and is no longer awaited.
+- Arithmetic only **ranks**; `adopt_branch` is the press of a human finger.
+- Losing branches lose only their working copies; **the branch refs are kept**, because a later
+  reversal depends on them staying readable forever.
+- A fork closed while an executor has not returned → derived `unreturned`; stop waiting.
 
 ## 5. Human gate path · implemented
 
@@ -173,22 +232,24 @@ Notes:
 sequenceDiagram
     autonumber
     participant H as Human
-    participant UI as Panel (read-only projection + gate channel)
-    participant Host as Host half (projection unit)
-    participant K as Kernel
+    participant P as Projection (panel)
+    participant D as DSH host
+    participant L as Fact ledger
+    participant K as ClearAI kernel
 
-    Host-->>UI: useProjection('clearai') pushes the view
-    H->>UI: click an action (adopt_branch / abandon_fork / promote_skill)
-    UI->>Host: submit verb + arguments
-    Host->>Host: whitelist check (anything off the table is refused)
-    Host->>Host: turn it into a source.kind='user' message
-    Host->>K: the message enters the session log
-    K->>K: parseHumanGateMessage -> folds into the projection
-    Host-->>UI: view updates (by='user')
+    P-->>H: useProjection('clearai') pushes views
+    H->>P: press an action (adopt_branch / abandon_fork / promote_skill)
+    P->>D: submit verb + arguments
+    D->>D: whitelist check (anything off-list is refused; values checked on the same layer)
+    D->>L: becomes a source.kind='user' message (append-only)
+    D->>P: notify
+    P->>L: fold: folded into state (by='user')
+    P-->>H: view updated (signed: human)
+    Note over K,L: the kernel reads the same fact at its next pre-step —<br/>a fact has exactly one fold, regardless of entry point
 ```
 
-Three hard constraints, each with tests:
+Three hard constraints (each pinned by a test):
 
-1. A verb whitelist; anything off the table is refused, and the value is validated here too.
-2. These verbs have **no tool schema** — they do not exist in the model's tool face.
-3. The action leaves a signature; folding writes `by:'user'`.
+1. A verb whitelist; anything off-list is refused, and values are checked on the same layer.
+2. These verbs **have no tool schema** — they do not exist in the model's tool surface.
+3. Every action leaves a signature, folded into the projection as `by:'user'`.

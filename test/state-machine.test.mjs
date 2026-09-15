@@ -118,6 +118,25 @@ console.log('\n【⑤ 时序图:四条主路径与关键边界】')
 	}
 }
 
+console.log('\n【⑤b 时序图:固定角色表,不许退回模糊角色】')
+{
+	// 这次重写的动机:读者分不清「内核」「Agent」「投影」各是什么。
+	// 纪律:八位角色在图例里定义一次,每张图只用这套名字;「Agent」作为参与者被拆成
+	// 「模型」(发出意图)与「DSH 宿主」(执行回合),不许作为 mermaid 参与者回归。
+	for (const [name, text] of [['中文', timingZh], ['英文', timingEn]]) {
+		check(`${name}时序图有固定角色表`, /固定角色表|fixed cast/i.test(text))
+		check(
+			`${name}角色表覆盖八个角色`,
+			[/人|Human/, /模型|Model/, /DSH 宿主|DSH host/, /ClearAI 内核|ClearAI kernel/, /事实账本|Fact ledger/, /投影|Projection/, /独立评估者|Independent evaluator/, /世界线执行者|Worldline executor/].every((pattern) =>
+				pattern.test(text),
+			),
+		)
+		check(`${name}没有 Agent 作为 mermaid 参与者(它已被拆成模型+宿主)`, !/participant\s+\w+\s+as\s+Agent/.test(text))
+		check(`${name}事实账本写明「内容是我们的,载体是宿主的」`, /内容是我们的|content is ours/.test(text))
+		check(`${name}保留了旧名词对照(老读者找得回来)`, /旧名词对照|Old-name mapping/.test(text))
+	}
+}
+
 console.log('\n【⑥ 状态机文档与真值表互相指认】')
 {
 	const table = JSON.parse(read('docs/optimization/truth-table.json'))
