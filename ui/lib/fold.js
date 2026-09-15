@@ -1513,16 +1513,16 @@ export function renderCard(state) {
 			 * 记号没落账时,自动续跑会 hold(turnDemand),但显式推进不被阻止——
 			 * 第一次交付会在同一条变更里按事实补写 by='progress'(行为即授权)。
 			 * 卡片只交代机理,不劝人走哪条路:劝告会让人(和模型)以为有一道必须走的门。
+			 * 卡片不出现字段名(plan_confirmation_pending / confirmed_at 是账本词汇,
+			 * 不是给人与模型读的语言)——事实用一句人话说。
 			 */
-			lines.push('- plan_confirmation_pending: true')
-			lines.push('- confirmed_at:(null — 授权记号未落账。未经人批准的计划不会自动续跑;显式推进时,第一次交付会按事实补写归属(行为即授权))')
+			lines.push('- 授权:记号未落账。未经人批准的计划不会自动续跑;显式推进时,第一次交付会按事实补写归属(行为即授权)')
 		} else if (plan.confirmed_at === null) {
 			// 记号没落账,但计划事实上已经推进过:授权已经发生。照旧写「等人确认」会与上一行
 			// 当场矛盾,而同一段里两句打架的话比一句错话更糟(ClearAI 的原话)。
-			lines.push('- plan_confirmation_pending: false')
-			lines.push('- confirmed_at:(null,但本计划已推进过——授权已经发生,继续执行)')
+			lines.push('- 授权:记号未落账,但本计划已推进过——授权已经发生(行为即授权),继续执行')
 		} else {
-			lines.push(`- confirmed_at:${plan.confirmed_at}(${plan.confirmed_by === 'user' ? '人显式确认' : plan.confirmed_by === 'progress' ? '据推进事实补写' : String(plan.confirmed_by)})`)
+			lines.push(`- 授权:已于 ${plan.confirmed_at} 落账(${plan.confirmed_by === 'user' ? '人显式批准' : plan.confirmed_by === 'progress' ? '据推进事实补写归属' : String(plan.confirmed_by)})`)
 		}
 		lines.push(`- 当前计划(${plan.id}${plan.goal === null ? '' : ` · 目标 ${plan.goal} 的一个阶段`})步骤:`)
 		for (const step of plan.steps) {

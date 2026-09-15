@@ -326,3 +326,38 @@ execution-discipline 给 `todo_write` 定位:工作便签,不是账本。
 `test/preset-composition.test.mjs`(20 项):挂载表双向断言 + 命令注册形状 +
 命令行为(空账如实说、待授权才 steer、已授权不打扰、门面缺席报错不炸)。
 11 份套件全绿;`verify:deploy` 通过(22 工具/22 段);`verify-clean-install` 16/16。
+
+## 阶段 5 尾声 · deepseek-flash 端到端(目标要求的验收方式)
+
+用内置 **deepseek-flash** 跑了两场真 e2e(headless,真模型真账本):
+
+1. **建计划即停场**(默认任务):24/24。模型按新纪律立目标时**主动登记了两条候选假设**
+   (下限机制 + loop-contract 提示词第一次被真模型走通),CreatePlan 一次过。
+2. **全程收尾场**(`--expect-complete`):25/25。13 拍主链在真模型上走完一遍:
+   goal/set(2 假设)→ plan/created → plan/confirmed(headless 无审阅通道,
+   第一次交付按事实补写 by='progress'——阶段 4 的统一语义真跑成立)→
+   observation/recorded → admission/checked → evidence/recorded → step/advanced ×2 →
+   audit/dispatched → audit/settled(**独立评估者真跑了**)→ plan/closed → goal/closed(achieved)。
+   声明 vs 实际:2/2 产物在盘上;结案前列表清空。
+
+途中修掉四个 e2e 自身的坑(已提交 `73029c0`):CHECKOUT 硬编码、会话 slug 丢下划线、
+macOS realpath 前缀、同层补丁并发加载竞态(宿主面行拆成先行补丁层)。
+
+## 阶段 6 · Prompt 分类瘦身与运行态卡
+
+**6a 段分类落地**:23 段全部打上 `class` 标签(hard 10 · native 5 · advisory 8),
+语义写进 `test/prompt-sections.test.mjs` 头部注释。分类与内容咬合由测试钉:
+hard 段必须带机制锚点、native 段不许背内核工具名、advisory 段不许伪装成机制承诺。
+
+**抓到两处真漂移**(提示词描述的原生工具契约已经过期):
+- `edit` 早就是字面替换(old_string/new_string),builder-tools 还在教 unified diff——
+  模型照做会当场契约失败;
+- `web_search` 没有 freshness/search_strategy,`web_fetch` 没有 view/next_offset——
+  web-research 段的四个参数引用全是旧契约残留。
+两处都已按现行原生 schema 改写。这就是为什么分类里要有「native 契约不漂移」这一组断言。
+
+**6b 运行态卡瘦身**:授权三态从账本字段名(plan_confirmation_pending / confirmed_at:)
+改成人话(「授权:记号未落账 / 已于 X 落账(人显式批准)」),语义一字未丢
+(不自动续跑 + 按事实补写归属仍在)。卡片上的机制名就此清零。
+
+**验证**:12 份套件全绿(新增「段」10 项)。

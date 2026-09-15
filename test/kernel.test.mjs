@@ -1481,7 +1481,7 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 		const view = host.service.view(S)
 		check('通道不在 ⇒ 记号一个字都不落(不替人签字,无人值守配置也一样)', view.plan?.confirmedAt === null && view.plan?.confirmedBy === null && created.confirmation_required === true, JSON.stringify({ by: view.plan?.confirmedBy, need: created.confirmation_required }))
 		const card = host.service.renderCard(S)
-		check('卡片如实写 plan_confirmation_pending: true', /plan_confirmation_pending: true/.test(card) && /授权记号未落账/.test(card))
+		check('卡片如实说授权记号未落账(人话,不带账本字段名)', /授权:记号未落账/.test(card) && !/plan_confirmation_pending|confirmed_at/.test(card))
 		check('卡片不再劝人去「引导确认」(那是已经砍掉的动作)', !/先引导确认/.test(card) && /第一次交付会按事实补写/.test(card))
 		await preStep(host, S, 2)
 		check(
