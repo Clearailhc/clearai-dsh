@@ -1307,8 +1307,10 @@ export function apply(ctx, config = {}) {
 	 * (第一版就是这么把 3/3 掉成 2/3 的,真跑验收抓住的)。它按**时间窗口**限流,不按回合。
 	 */
 	const collectEpochs = new Map()
-	/** 本窗口里已经从子会话日志捞过的侦察(会话:侦察 id → 上次尝试的毫秒数):限 I/O,不限机会。 */
+	/** 已经从子会话日志捞过的侦察(会话:侦察 id → 上次尝试的毫秒数)。 */
 	const recoverAttempts = new Map()
+	/** 已经为哪几条打过「未落定」诊断(每一条只打一行,免得刷屏)。 */
+	const recoverDiagnosed = new Set()
 	function collectEpoch(sessionId) {
 		return collectEpochs.get(String(sessionId)) ?? -1
 	}
@@ -1649,9 +1651,28 @@ export function apply(ctx, config = {}) {
 		if (child === null || child === undefined) return null
 		const recoveryKey = `${String(sessionId)}:${scoutId}`
 		const lastTry = Number(recoverAttempts.get(recoveryKey) ?? 0)
-		if (Date.now() - lastTry < CFG.collectRetryMs) return null
+		/**
+		 * 与执行者那条**同一条纪律**:回收是**机会**,不是重发——所以不按回合、也不按时间窗
+		 * 把它掐掉;真正需要限的是「重复发布」(下面 `reportedEpoch` 管着)。
+		 * 此前这里按 `collectRetryMs` 限流,而侦察的兜底路(path②)又明确跳过表里的条目,
+		 * 于是「这次没捞到」被当成了「不必再捞」——比执行者少一条路,还更窄。
+		 */
 		recoverAttempts.set(recoveryKey, Date.now())
-		return recoverFromChildSession(String(child))
+		const found = recoverFromChildSession(String(child))
+		// 每一条只留一行诊断(而不是每拍一行):没落定时读面各自看到了什么。
+		if (found === null && recoverDiagnosed.has(recoveryKey) === false) {
+			recoverDiagnosed.add(recoveryKey)
+			const sessions = ctx.get('sessions')
+			let childEvents = -1
+			try {
+				const childSession = sessions?.get?.(String(child))
+				childEvents = childSession === undefined || childSession === null ? -1 : typeof childSession.ownEvents === 'function' ? (childSession.ownEvents() ?? []).length : -2
+			} catch {
+				childEvents = -3
+			}
+			ctx.logger?.warn?.(`clearai kernel: 侦察 ${scoutId} 未落定且通知未见(自上次尝试 ${Date.now() - lastTry}ms 前)· 子会话事件数 ${childEvents}`)
+		}
+		return found
 	}
 
 	/**
