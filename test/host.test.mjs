@@ -593,6 +593,27 @@ console.log('\n【技能面:合并目录折进投影,用量从日志里折出来
 	}
 }
 
+// ── 原生结算通知:模型读到的正文与账本记的结论同源 ─────────────────────────────
+{
+	const notice = applyEvent(emptyState(), {
+		type: 'user/message',
+		time: 1000,
+		data: {
+			id: 'notice-1',
+			role: 'user',
+			content: [
+				{ type: 'text', text: 'Background subagent c-1 finished and will do no further work unless you send it more.' },
+				{ type: 'text', text: 'Its closing message:' },
+				{ type: 'text', text: '数完了:clear/skills 下 18 条技能。' },
+			],
+			source: { kind: 'subagent-settled', form: 'notice', summary: 'Background subagent c-1 finished.', senderSessionId: 'c-1' },
+		},
+	})
+	check('运行时结算通知被折进投影(带子会话 id 与结论)', view(notice).notices.length === 1 && view(notice).notices[0].child === 'c-1' && /18 条技能/.test(view(notice).notices[0].conclusion), JSON.stringify(view(notice).notices))
+	check('结论取的是子会话说的话,不是运行时那行英文摘要', !/closing message|Background subagent/.test(view(notice).notices[0].conclusion), view(notice).notices[0].conclusion.slice(0, 60))
+	check('不是人的消息:通知不该被当成人的动作(人门/答复都只认 source.kind=user)', parseHumanGate({ source: { kind: 'subagent-settled' }, content: [{ type: 'text', text: '[clearai·人门] x' }] }) === null)
+}
+
 // ── 假设留痕:三零 = 「未触及」,结案之后仍看得见(不逼 verdict,但不许留白)──────
 {
 	const { renderCard } = await import('../ui/lib/fold.js')

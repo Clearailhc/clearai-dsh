@@ -1081,7 +1081,10 @@ export function apply(ctx, config = {}) {
 				// 归一化:可续跑**没有** `run.result`(也没有 dispose)——结算由原生通知与子会话日志给出。
 				return { ok: true, run: { id: childId, result: undefined, dispose: undefined }, capability: 'continuable', native: true }
 			} catch (error) {
-				failures.push(`continuable:${String(error?.message ?? error).slice(0, 100)}`)
+				const reason = `continuable:${String(error?.message ?? error).slice(0, 200)}`
+				failures.push(reason)
+				// 降级不是静默事件:它决定「结论由谁送达」,值得一行诊断日志。
+				ctx.logger?.warn?.(`clearai kernel: 可续跑派遣不可用,降级到一次性派遣(${reason})`)
 			}
 		}
 		const attempts = []
@@ -1094,8 +1097,12 @@ export function apply(ctx, config = {}) {
 		for (const attempt of attempts) {
 			try {
 				const run = await subagents.start(CFG.auditProvider, { ...base, ...attempt.variant })
-				// `native: false` = 结论不会由运行时投递,得靠收集那一刻的返回值带上(降级路径)。
-				return { ok: true, run, capability: attempt.capability, native: false }
+				/**
+				 * `native: false` = 结论不会由运行时投递,得靠收集那一刻的返回值带上(降级路径)。
+				 * `degraded` 把**为什么降级**如实带出去(调用方落进账本):只说「能力不是 continuable」
+				 * 不解释原因,读账的人无法判断这是部署限制还是代码 bug。
+				 */
+				return { ok: true, run, capability: attempt.capability, native: false, degraded: failures[0] ?? null }
 			} catch (error) {
 				failures.push(`${attempt.capability}:${String(error?.message ?? error).slice(0, 100)}`)
 			}
@@ -1174,27 +1181,36 @@ export function apply(ctx, config = {}) {
 			toolFilter: { allow: resolveToolFace(agent, CFG.executorToolFilter) },
 			parent: agent,
 			signal,
+			// 执行者的收尾消息就是它给模型的报告:与侦察同一条路——要原生结算通知送达。
+			nativeDelivery: true,
 		})
 		if (dispatched.ok !== true) return { ok: false, note: `执行者派不出去(${dispatched.reason})`, mutations }
 		const childId = String(dispatched.run.id)
-		const entry = { fork: fork.id, branch: branch.id, label: branch.label, workspace: branch.workspace, child: childId, settled: null, reported: false, run: dispatched.run }
+		const entry = { fork: fork.id, branch: branch.id, label: branch.label, workspace: branch.workspace, child: childId, settled: null, reported: false, run: dispatched.run, native: dispatched.native === true }
 		executorRuns.set(childId, entry)
-		mutations.push({ t: 'worldline/executing', fork: fork.id, branch: branch.id, child: childId, capability: dispatched.capability })
-		// 先把结果挂上,再等:等超时了也不要紧——条目留在表里,WorldlineStatus 之后来收。
-		// 中断/报错是 resolve 带 stopReason(见 settleSubRun):不判它就会把「被打断的执行者」
-		// 记成「交付成功」,而世界线的算术会拿半截读数去比较。
-		entry.promise = dispatched.run.result.then(
-			(value) => {
-				const settled = settleSubRun(value)
-				entry.settled = { ok: settled.ok, conclusion: settled.conclusion, stopReason: settled.stopReason }
-				return entry.settled
-			},
-			(error) => {
-				const settled = settleSubRun(undefined, error)
-				entry.settled = { ok: false, conclusion: settled.conclusion, stopReason: settled.stopReason }
-				return entry.settled
-			},
-		)
+		mutations.push({ t: 'worldline/executing', fork: fork.id, branch: branch.id, child: childId, capability: dispatched.capability, degraded_reason: dispatched.degraded ?? null })
+		/**
+		 * 先把结果挂上,再等:等超时了也不要紧——条目留在表里,WorldlineStatus 之后来收。
+		 * 中断/报错是 resolve 带 stopReason(见 settleSubRun):不判它就会把「被打断的执行者」
+		 * 记成「交付成功」,而世界线的算术会拿半截读数去比较。
+		 *
+		 * **可续跑那一档没有 `result` promise**(与侦察同一个形状):结算改由运行时的结算通知
+		 * 或子会话日志给出,所以这里要会「没有」。
+		 */
+		if (dispatched.run?.result !== undefined) {
+			entry.promise = dispatched.run.result.then(
+				(value) => {
+					const settled = settleSubRun(value)
+					entry.settled = { ok: settled.ok, conclusion: settled.conclusion, stopReason: settled.stopReason }
+					return entry.settled
+				},
+				(error) => {
+					const settled = settleSubRun(undefined, error)
+					entry.settled = { ok: false, conclusion: settled.conclusion, stopReason: settled.stopReason }
+					return entry.settled
+				},
+			)
+		}
 		return { ok: true, mutations, entry, child: childId }
 	}
 
@@ -1300,7 +1316,7 @@ export function apply(ctx, config = {}) {
 		collectEpochs.set(String(sessionId), Number.isFinite(turn) ? Number(turn) : collectEpoch(sessionId) + 1)
 	}
 
-	function sweepLostExecutors(state) {
+	function sweepLostExecutors(state, sessionId) {
 		const mutations = []
 		let recovered = 0
 		let lost = 0
@@ -1326,7 +1342,17 @@ export function apply(ctx, config = {}) {
 				const found = child === null ? null : recoverFromChildSession(child)
 				if (found !== null) {
 					recovered += 1
-					if (entry !== undefined) entry.reported = true
+					/**
+					 * 回收成功就要把条目标成**已落定 + 已发布**。只标 `reported` 不够:
+					 * 可续跑那一档没有 promise,条目永远停在 `settled === null`,于是每一拍回收
+					 * 都成功、每一拍都重发同一条事实(真跑里会看到「回灌 20 条结论」这种数)。
+					 */
+					if (entry !== undefined) {
+						entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
+						entry.reported = true
+						entry.reportedEpoch = collectEpoch(sessionId)
+						entry.reportedAt = Date.now()
+					}
 					mutations.push({
 						t: 'worldline/executed',
 						fork: fork.id,
@@ -1432,12 +1458,18 @@ export function apply(ctx, config = {}) {
 				 * ——结论永久收不上来(修回灌时踩过的同一个坑,换了个入口)。
 				 * 读不到就按「还在跑」计一票,让等待循环继续等。
 				 */
-				const found = recoverScoutConclusion(sessionId, entry.scoutId, entry.child)
-				if (found === null) {
-					pending += 1
-					continue
+				// 运行时已经宣告它落定 ⇒ 直接用那条通知(与模型读到的是同一份文本)。
+				const announced = noticeFor(state, entry.child)
+				if (announced !== null) {
+					entry.settled = { ok: announced.ok, conclusion: announced.conclusion, stopReason: announced.stopReason }
+				} else {
+					const found = recoverScoutConclusion(sessionId, entry.scoutId, entry.child)
+					if (found === null) {
+						pending += 1
+						continue
+					}
+					entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
 				}
-				entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
 			}
 			/**
 			 * **`reported` 不等于「已落账」**(失效模式:侦察结论发布之后被丢掉,
@@ -1547,6 +1579,25 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
+	 * 运行时**已经宣告它落定**了吗。
+	 *
+	 * 原生的结算通知落在**父会话自己的日志**里(`source.kind === 'subagent-settled'`,带子会话 id
+	 * 与它的收尾消息)。用它当结算信号有两个好处:省一次「去子会话日志里捞」的 I/O,
+	 * 而且**模型读到的正文**与**账本记的结论**来自同一条信息——两处不会各说各话。
+	 *
+	 * `ok` 只能从摘要那句英文里读(运行时自己的格式,版本变了要跟着改);结论正文不受影响。
+	 */
+	function noticeFor(state, child) {
+		if (child === null || child === undefined) return null
+		const notice = (state?.notices ?? []).find((item) => String(item?.child ?? '') === String(child))
+		if (notice === undefined) return null
+		const summary = String(notice.summary ?? '')
+		const abnormal = /failed|declined|stopped|abnormally|ran out of room/i.test(summary)
+		const conclusion = String(notice.conclusion ?? '').trim()
+		return { ok: !abnormal, stopReason: abnormal ? 'abnormal' : 'completed', conclusion: conclusion === '' ? summary : conclusion, from: 'notice' }
+	}
+
+	/**
 	 * 从子会话日志里捞一次侦察结论(**限 I/O** 不限机会:同一个窗口里对同一条只读一次)。
 	 *
 	 * 为什么按时间窗口限流而不按回合:这条是**收集机会**,不是重发。按回合限它,
@@ -1615,6 +1666,8 @@ export function apply(ctx, config = {}) {
 	function sweepWorldlineExecutors(state, sessionId) {
 		const mutations = []
 		const lines = []
+		/** 本次刚收到的执行者报告(降级形态靠它送达:有原生通知时这一项不被使用)。 */
+		const notices = []
 		/** 投影里这条世界线的执行者收到了结论吗(`execution.ok` 不再是 null)。 */
 		const landedIn = (forkId, branchId) => {
 			const fork = (state?.forks ?? []).find((item) => item.id === forkId)
@@ -1636,8 +1689,13 @@ export function apply(ctx, config = {}) {
 				continue
 			}
 			if (entry.settled === null) {
-				lines.push(`${entry.label}:仍在跑`)
-				continue
+				// 与侦察同一条:先看运行时的结算通知,再退回子会话日志。
+				const announced = noticeFor(state, entry.child)
+				if (announced === null) {
+					lines.push(`${entry.label}:仍在跑`)
+					continue
+				}
+				entry.settled = { ok: announced.ok, conclusion: announced.conclusion, stopReason: announced.stopReason }
 			}
 			/**
 			 * 与侦察同一条纪律:**`reported` 不等于「已落账」**。投影里还没落地,过了重试窗口就再发一次
@@ -1652,8 +1710,11 @@ export function apply(ctx, config = {}) {
 			if (collected === null) continue
 			mutations.push(collected.mutation)
 			lines.push(`${entry.label}:${collected.mutation.ok === true ? '完成' : `未完成(${collected.mutation.note ?? 'unknown'})`}`)
+			if (collected.mutation.ok === true && String(entry.settled.conclusion ?? '').trim() !== '') {
+				notices.push({ kind: 'worldline', id: entry.branch, trigger: entry.label, conclusion: String(entry.settled.conclusion), path: entry.workspace ?? null, native: entry.native === true })
+			}
 		}
-		return { mutations, lines }
+		return { mutations, lines, notices }
 	}
 
 	/**
@@ -1727,7 +1788,7 @@ export function apply(ctx, config = {}) {
 			return { ok: false, note: `侦察派不出去(${dispatched.reason})`, mutations }
 		}
 		const childId = String(dispatched.run.id)
-		mutations.push({ t: 'scout/dispatched', id: scoutId, step: step.id, plan: plan?.id ?? null, goal: step.goal ?? null, trigger, child: childId, capability: dispatched.capability, digest })
+		mutations.push({ t: 'scout/dispatched', id: scoutId, step: step.id, plan: plan?.id ?? null, goal: step.goal ?? null, trigger, child: childId, capability: dispatched.capability, digest, degraded_reason: dispatched.degraded ?? null })
 		/**
 		 * **派出去就返回**(与「世界线执行者」同一个病,同一个修法)。
 		 *
@@ -1964,7 +2025,7 @@ export function apply(ctx, config = {}) {
 	function collectExecutors(mutations, state, sessionId) {
 		const swept = sweepWorldlineExecutors(state, sessionId)
 		mutations.push(...swept.mutations)
-		const late = sweepLostExecutors(state)
+		const late = sweepLostExecutors(state, sessionId)
 		mutations.push(...late.mutations)
 		// 侦察同一套:它也是「派出去就不等」的子 run,结论同样由这里收。
 		const scouts = sweepScouts(state, sessionId)

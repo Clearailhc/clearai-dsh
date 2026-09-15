@@ -63,6 +63,13 @@ export function emptyState() {
 		forks: [],
 		/** 系统按触发派出去的侦察(子角色不是模型自由委派):结论进资料面,这里留一条记录 */
 		scouts: [],
+		/**
+		 * **运行时结算通知**(原生):子会话落定时,运行时把它的收尾消息作为一条 user message
+		 * 投给父会话(`source.kind === 'subagent-settled'`)。它同时是两件事的证据:
+		 * 模型**读到了**结论(它就是模型上下文里的文本),以及「这条子 run 结束了」这个事实。
+		 * 折进来之后,账本侧的结算不必再去读子会话日志。
+		 */
+		notices: [],
 		/** 工作区里等人采纳的候选技能(内核扫描后落的事实)与已采纳的记录 */
 		brainCandidates: [],
 		skillPromotions: [],
@@ -730,6 +737,20 @@ export function applyEvent(state, event) {
 		// 内核观察到的事实(候选技能、采纳记录、合并目录)走**插件消息的结构化 section**——
 		// 记在会话日志里,所以状态仍然可以从日志重放出来,而不是靠一句散文。
 		const source = event.data?.source
+		/**
+		 * 原生结算通知:先折它。结论 = 通知里「Its closing message:」之后的那些文本块
+		 * (前面是运行时写的一行摘要,不是子会话说的话)。
+		 */
+		if (source !== null && typeof source === 'object' && source.kind === 'subagent-settled') {
+			const blocks = (event.data?.content ?? []).filter((block) => block?.type === 'text').map((block) => String(block.text ?? ''))
+			const label = blocks.findIndex((text) => /closing message/i.test(text))
+			const conclusion = (label === -1 ? blocks.slice(1) : blocks.slice(label + 1)).join('\n').trim()
+			const child = source.senderSessionId === null || source.senderSessionId === undefined ? null : String(source.senderSessionId)
+			// `next` 必须在这一支里自己 clone:这道门里它还没被声明(旁边那段注释警告过同一个坑)。
+			const next = clone(state)
+			next.notices = [...(next.notices ?? []), { child, summary: String(source.summary ?? blocks[0] ?? ''), conclusion, at: typeof event.time === 'number' ? event.time : Date.now() }]
+			return next
+		}
 		if (source !== null && typeof source === 'object' && source.kind === 'plugin' && Array.isArray(source.sections)) {
 			/**
 			 * 一条插件消息里可能**同时**带好几件事实(内核一次 pre-step 把目录、运行档、候选一起发)。
@@ -1409,6 +1430,7 @@ export function view(state, sessionId) {
 		 * 两处都修了:内核改成按 `stopReason` 落账(aborted/error 不算完成),这里把 `note` 交出去
 		 * 并派生成三态——跑着 / 正常回灌 / 没正常结束。面板与资料面据此分诊,而不是一律当"完成"。
 		 */
+		notices: (state.notices ?? []).map((item) => ({ child: item.child, summary: item.summary, conclusion: item.conclusion, at: item.at })),
 		scouts: (state.scouts ?? []).map((item) => ({
 			id: item.id,
 			stepId: item.step,

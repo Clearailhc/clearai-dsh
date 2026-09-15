@@ -243,8 +243,14 @@ function makeHost() {
 							 * 测试台替它写:于是「结论从子会话日志回收」这条真路径被现有用例一并覆盖。
 							 * `host.scoutDelayMs` 决定它什么时候写完(「等」这件事才测得到)。
 							 */
-							const stopKind = host.stopReasonScout ?? host.stopReason ?? 'completed'
-							const text = String(host.scoutConclusion ?? '')
+							// 角色各自的结局/延迟旋钮与一次性那条路**同一套**(执行者与侦察可以分别设)。
+							const label = String(spec.label ?? '')
+							const isExecutor = label.startsWith('世界线执行者')
+							const isScout = label.startsWith('侦察')
+							const stopKind = (isExecutor ? host.stopReasonExecutor : isScout ? host.stopReasonScout : undefined) ?? host.stopReason ?? 'completed'
+							const never = isExecutor ? host.executorNeverSettles === true : host.scoutNeverSettles === true
+							const settleDelay = isExecutor ? Number(host.executorDelayMs ?? 0) : Number(host.scoutDelayMs ?? 0)
+							const text = String(isExecutor ? (host.executorConclusion ?? '') : (host.scoutConclusion ?? ''))
 							host.sessionEvents = host.sessionEvents ?? {}
 							const write = () => {
 								host.sessionEvents[childId] = [
@@ -253,8 +259,9 @@ function makeHost() {
 									{ type: 'turn/end', data: { turn: 1, reason: { kind: stopKind } } },
 								]
 							}
-							const delay = Number(host.scoutDelayMs ?? 0)
-							if (delay > 0) setTimeout(write, delay)
+							if (never) {
+								// 永不落定:表里有条目、promise 与日志都不落地(「等」的边界用例要用)。
+							} else if (settleDelay > 0) setTimeout(write, settleDelay)
 							else write()
 							return { childId, messageId: `msg-${audits.length}` }
 						},
@@ -2441,6 +2448,15 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	{
 		const H = 'session-hypothesis-unjudged'
 		const host = makeHost()
+		/**
+		 * 这一段**会真的交付**(于是落一条账本提交)。所以给它一间自己的工作区:
+		 * 交付提交写进的是**共享工作区的旁路账本**,而那会顶掉别的用例对提交条数的断言
+		 * (与「完成度」那一段同一个理由,同一个做法)。
+		 */
+		const ws = tempDir('clearai-unjudged-')
+		execFileSync('git', ['init', '-q'], { cwd: ws })
+		execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: ws })
+		host.cwd = ws
 		apply(host.ctx, { blockedThreshold: 3 })
 		await callOn(host, H, 'SetGoal', {
 			claim: '判定这台机器能不能跑 python3',
@@ -2452,7 +2468,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		})
 		const first = host.service.state(H).hypotheses[0].id
 		await callOn(host, H, 'CreatePlan', { steps: [{ id: 'h1', do: '跑一次观测', artifacts: ['lab/h1.txt'], done_criteria: 'lab/h1.txt 存在', tests: { hypothesis: first, level: 'L2' } }] })
-		writeText(join(WORKSPACE, 'lab', 'h1.txt'), 'stdout=2\n')
+		writeText(join(ws, 'lab', 'h1.txt'), 'stdout=2\n')
 		// 只碰第一条:第二条从没被任何证据触及
 		const delivered = await callOn(host, H, 'AdvancePlan', {
 			observations: [{ ref: 'lab/h1.txt', note: '命令正常输出 2' }],
@@ -2524,6 +2540,46 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		apply(second.ctx, { blockedThreshold: 3 })
 		await preStep(second, U, 53)
 		check('目录读面不可用 ⇒ 不落终局(判不出就不编)', second.service.state(U).scouts.at(-1)?.note === null, JSON.stringify({ note: second.service.state(U).scouts.at(-1)?.note ?? null }))
+	}
+
+	/**
+	 * **原生结算通知就是账本侧的结算信号**。
+	 *
+	 * 可续跑那一档没有 `result` promise,而「去子会话日志里捞」在真实部署里并不总能捞到。
+	 * 运行时的通知本来就落在**父会话自己的日志**里(带子会话 id 与它的收尾消息),
+	 * 用它当结算信号:既省一次 I/O,又让**模型读到的正文**与**账本记的结论**同源。
+	 */
+	{
+		const N = 'session-scout-notice'
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		await callOn(host, N, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		await callOn(host, N, 'CreatePlan', { steps: [{ id: 'n1', do: '核材料', artifacts: ['lab/n1.txt'], done_criteria: 'lab/n1.txt 存在', tests: null }] })
+		await callOn(host, N, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
+		const child = String(host.service.state(N).scouts.at(-1)?.child ?? '')
+		// 运行时把结算通知投进父会话(原生那一拍:`createSettlementMessage` 的形状)。
+		host.states.set(
+			N,
+			applyEvent(host.service.state(N), {
+				type: 'user/message',
+				time: Date.now(),
+				data: {
+					id: 'notice-1',
+					role: 'user',
+					content: [
+						{ type: 'text', text: `Background subagent ${child} finished and will do no further work unless you send it more.` },
+						{ type: 'text', text: 'Its closing message:' },
+						{ type: 'text', text: '数完了:clear/skills 下 18 条技能。' },
+					],
+					source: { kind: 'subagent-settled', form: 'notice', summary: `Background subagent ${child} finished and will do no further work unless you send it more.`, senderSessionId: child },
+				},
+			}),
+		)
+		await preStep(host, N, 81)
+		const settled = host.service.state(N).scouts.at(-1)
+		check('通知即结算:账本从原生通知里收下结论(不必再读子会话日志)', /18 条技能/.test(String(settled?.conclusion ?? '')), JSON.stringify({ note: settled?.note ?? null, len: String(settled?.conclusion ?? '').length }))
+		check('折出来的结论是**子会话说的话**,不是运行时那行英文摘要', !/Background subagent/.test(String(settled?.conclusion ?? '')), String(settled?.conclusion ?? '').slice(0, 60))
+		check('通知也进了投影(面板与判据都看得见)', (host.service.view(N).notices ?? []).some((item) => String(item.child) === child), JSON.stringify((host.service.view(N).notices ?? []).map((item) => item.child)))
 	}
 
 	/**
