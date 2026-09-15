@@ -490,28 +490,17 @@ const TOOL_CATALOG = new Set(Object.values(MECHANISM_TOOLS).flat())
 const AUTONOMY_VARIANTS = new Set(Object.values(SECTION_SLOTS).flatMap((variants) => Object.values(variants)))
 
 /**
- * 续跑轮数:两个档的**默认额度**(各自的最大自动回合数)。
+ * 续跑轮数:一个**保险丝**,不是用户的档位(§34 拆掉了「预算档」这个概念,奥卡姆)。
  *
- *   dialogue 档 6 轮 ← 人在场:「一条人类消息 = 一个窗口,最多 6 个自动续跑回合(≈144 步工具调用),
- *                    够一口气跑完一个中等计划;跑飞了最多烧 6 回合自停」
- *   max 档   512 轮 ← 无人值守:人不在场,跑得久才划算
+ * 历史上这里是 `{attended: 6, unattended: 512}`,由面板上「多问我 / 自己跑」那个开关选。
+ * 从第一性原理看错了两次:
+ *   · 「我要不要在场」是**运行时状态**(有没有门开着、有没有裁决在飞、有没有开着的步),
+ *     不是**配置项**——它现在由 `turnDemand` 从门状态算出来,不看档;
+ *   · 那一档还顺手把「计划经人确认」变成系统自己签的 ✗(见 §34)。
  *
- * 2026-09-11 拆掉「预算档」这个概念(奥卡姆,用户拍板),三件事一起说清:
- *   · **执行它的本来就是原生**——`maxAutoTurns` → 宿主目标的 `maxGoalRounds`,到限由
- *     `dsh-goal-round-driver` 自己 `block(code='round-limit')`。我们只负责给数字,不造机制;
- *   · `tokenBudget`(8M / 32M)**删掉**:它从未被执行(上下文预算本来就是原生
- *     `dsh-token-meter` + `dsh-compaction-basic` 的活),留着的两个死数字只会让人以为
- *     「这里还有个额度旋钮」——不可执行的旋钮不该出现在任何清单上;
- *   · `blockedThreshold`(连拦阈值)**移出**这个概念:它是观察准入的**质量闸**,不是预算。
- *     现在是一个独立旋钮(默认 2),不再按档取值。
- */
-/**
- * 续跑窗口的**额度**(§34):一个保险丝,不是用户的档位。
- *
- * 原先这里是 `{attended: 6, unattended: 512}` —— 由面板上「多问我 / 自己跑」那个开关选。
- * 从第一性原理看:「我要不要在场」是**运行时状态**(有没有门开着、有没有裁决在飞、有没有开着的步),
- * 不是**配置项** ✗;而且那一档还顺手把「计划经人确认」变成系统自己签的 ✗(见 §34)。
  * 现在只剩一个默认值:够长到能跑完一件真活,又短到不会无声烧掉一整夜;要更长由人显式表达。
+ * 执行它的是**原生**——`maxAutoTurns` → 宿主目标的 `maxGoalRounds`,到限由
+ * `dsh-goal-round-driver` 自己 `block(code='round-limit')`。我们只负责给数字,不造机制。
  */
 const DEFAULT_MAX_AUTO_TURNS = 128
 
@@ -624,8 +613,8 @@ export function apply(ctx, config = {}) {
 		 */
 		blockedThreshold: config.blockedThreshold ?? DEFAULT_BLOCKED_THRESHOLD,
 		/**
-		 * 续跑轮数上限:显式写了就用它;没写则由**当档**决定(人在场 6 / 无人值守 512)。
-		 * 当档是会话事实(人可以在面板上切),所以这里只存「人写没写」,值在 armContinuation 现算。
+		 * 续跑轮数上限:显式写了就用它,没写回落到 `DEFAULT_MAX_AUTO_TURNS`(128)。
+		 * 这里只存「人写没写」,真正的回落发生在布防点(见 `armContinuation`)。
 		 */
 		maxAutoTurns: config.maxAutoTurns ?? null,
 		minBriefChars: config.minBriefChars ?? MIN_BRIEF_CHARS,
@@ -691,10 +680,12 @@ export function apply(ctx, config = {}) {
 		forkArbitration: config.forkArbitration !== false,
 		runtimeCard: config.runtimeCard !== false,
 		/**
-		 * 人在场 / 人不在场。只决定两件**机制**上的事(不决定人格、不决定工具面——
-		 * 按 D1,模式已合并,`if mode === ...` 在内核里不该出现):
-		 *   · 澄清协议装哪一段(槽位 `clarification`,见末尾装配);
-		 *   · (阶段 3.3)无人值守时的续跑与预算策略。
+		 * 人在场 / 人不在场。**现在只决定一件事**:澄清协议装哪一段(槽位 `clarification`)。
+		 *
+		 * §34 之后它不再决定续跑(那由 `turnDemand` 从门状态算)、不再决定预算
+		 * (只有一个 `DEFAULT_MAX_AUTO_TURNS`)、也不再是用户可切换的运行档
+		 * (`set_autonomy` 已摘除;这里写的是部署初值)。
+		 * 它不决定人格、不决定工具面——`if mode === ...` 在内核里不该出现。
 		 */
 		autonomy: config.autonomy === 'unattended' ? 'unattended' : 'attended',
 		/** 贡献表。缺省 = 全开;要裁剪就从这里裁,而不是去改装配代码。 */
@@ -704,7 +695,7 @@ export function apply(ctx, config = {}) {
 	/** 贡献表:先校验(装配期炸),后登记(见文件末尾的装配段)。 */
 	const CONTRIB = resolveContributions(CFG.contributions, CFG.autonomy)
 	const SECTION_LIST = resolveSections(CONTRIB.sections, CFG.autonomy)
-	// 档决定缺省的连拦阈值(显式配置优先):对话档 2、目标档 3。
+	// 连拦阈值**不按档取**(见 CFG.blockedThreshold):它是质量闸,不是预算。
 
 	/** 宿主读面。缺了它整件事不成立——所以每个工具都显式报错,不静默降级。 */
 	const host = () => ctx.get('clearai')
@@ -1894,7 +1885,7 @@ export function apply(ctx, config = {}) {
 		if (plan !== null && plan.blocked !== undefined) return 'stop'
 		// 计划在场但**授权记号未落账**(`PLAN_AWAITING_CONFIRM`):那是等人的一道门,
 		// 不是「还有活可干」——推它就是替人做决定(ClearAI 原话:「已经有人在推它了」)。
-		// 注意:门开着时**人在场**那一档照样 hold;而无人值守那一档在立约时已自动确认,不会走到这里。
+		// 它与档无关:§34 之后没有任何一档会替你签这个记号(见 CreatePlan 的确认门)。
 		if (plan !== null && plan.status === 'active' && !derived.planIsAuthorized(plan)) return 'hold'
 		/**
 		 * 裁决还没回来(`audit/dispatched` 但未 `audit/settled`)= 机器等待态,与 fold 的派生同源。
@@ -1917,11 +1908,11 @@ export function apply(ctx, config = {}) {
 		return 'hold'
 	}
 
-	/** 令牌可用性:人在场不布防(那一档由人给下一轮);服务不在就如实说,而不是假装布防了。 */
+	/** 令牌可用性:服务不在就如实说,而不是假装布防了。 */
 	function continuationService() {
-		// **两档都有窗口**——ClearAI 原话:「每个 root run 都有预算窗口——两个模式的差别是**额度大小**
-		// (tier),不是「有没有预算」。对话档窗口小…且每条人类消息都会 reset_goal_loop 换新窗口」。
-		// 所以这里不按 autonomy 分叉;两档的差别在档(6 轮 vs 512 轮)与分层策略(见 turnDemand)。
+		// **不按 autonomy 分叉**:要不要继续由 `turnDemand` 从门状态算出来
+		// (有没有门开着、有没有裁决在飞、有没有开着的步),档位在这条路上不参与判断。
+		// 额度也只有一个:`DEFAULT_MAX_AUTO_TURNS`(见布防点)。
 		const goals = ctx.get('goals')
 		if (goals === undefined || typeof goals.create !== 'function') return { goals: null, why: 'goals 服务不可用' }
 		return { goals, why: null }
@@ -2041,18 +2032,18 @@ export function apply(ctx, config = {}) {
 				}
 				/**
 				 * 窗口活着(active + armed),而且账也对得上 → **一个字都不说、一次写都不做**。
-				 * 这里以前还有一条 `edit` 对齐分支(文本随目标修订而改写);§17.1 之后窗口的身份
-				 * 只由 (服务对象, 档位) 构成,**身份一变就是换一枚窗口**,所以那条路整个不需要了:
+				 * 这里以前还有一条 `edit` 对齐分支(文本随目标修订而改写);§17.1 之后身份一变
+				 * 就是换一枚窗口,所以那条路整个不需要了:
 				 * 目标修订不再动窗口 ⇒ 预算也不会被反复修订刷掉。
 				 */
 				/**
-				 * **身份变了就换窗口**(§17.6 补上 §17.1 写下却没实现的那半句):
-				 * 窗口的身份 = (服务对象, 档位),它同时也是**授权**——换档就是换一份授权,
-				 * 额度得跟着走(人在场 6 轮 / 无人值守 512 轮)。而旧实现靠 `edit` 去对齐轮数,
-				 * 那条路在 §17.1 删掉了,于是换档会把窗口锁在旧档的额度上——这是个真缺口。
+				 * **额度变了就换窗口**(§17.6 补上 §17.1 写下却没实现的那半句):
+				 * 窗口的额度就是**授权**,额度变了就是换一份授权(§34 之后额度只有一个默认值,
+				 * 但 `maxAutoTurns` 仍可由人显式配置)。旧实现靠 `edit` 去对齐轮数,
+				 * 那条路在 §17.1 删掉了,于是额度变化会把窗口锁在旧额度上——这是个真缺口。
 				 *
-				 * 怎么分清「身份变了」与「人改写过了」:看**平台上的文本还是不是我们记下的那句**。
-				 * 是我们的 ⇒ 身份可以换;不是我们的 ⇒ 以人为准,一个字都不动(§17.2)。
+				 * 怎么分清「额度变了」与「人改写过了」:看**平台上的文本还是不是我们记下的那句**。
+				 * 是我们的 ⇒ 可以按额度换;不是我们的 ⇒ 以人为准,一个字都不动(§17.2)。
 				 */
 				const ours = before !== null && before.label !== null && before.label !== undefined && before.label === current.objective
 				// 额度变了 = 授权变了 ⇒ 换一枚新窗口(清 + 建,按宿主契约)。
@@ -2091,8 +2082,9 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * 窗口的说明文字:别让人以为「人在场就没有窗口」(两档都有窗口,只是额度不同)。
-	 * 上限由调用方现算的 maxGoalRounds 给——**它取决于当档**,而档是人可以在面板上切的。
+	 * 窗口的说明文字:别让人以为「没有窗口」——每个会话都有窗口,只是额度不同。
+	 * 上限由调用方现算的 maxGoalRounds 给:它是 `maxAutoTurns` 或默认值(128),
+	 * **不随任何运行档变化**(档位连面板入口都没有了,见 §34)。
 	 */
 	function windowLabel(maxGoalRounds) {
 		return `${maxGoalRounds} 轮自动续跑,一条人类消息换一个新窗口`
@@ -2754,39 +2746,33 @@ export function apply(ctx, config = {}) {
 			const goal = state.goal !== null && state.goal.status === 'open' ? state.goal : null
 			const planId = uniqueId('p')
 			/**
-			 * 计划确认门:
-			 * 「选择 Goal 模式就是用户的**无人值守执行授权**」——所以无人值守那一档在立约时
-			 * 就把授权记号落下,不再造一道人工确认门又在第二次状态迁移里补掉它。
-			 * 人在场那一档**不**自动确认:记号等两条通道之一(人显式确认 / 交付一步按事实补写)。
+			 * 计划确认门(§34):**永远请人审阅,没有任何一档自动确认**。
+			 *
+			 * 原先无人值守那一档「立约即授权」——那会让「计划经人确认」这条证据变成
+			 * **系统自己签的**,和 L4「人放行」是同一类病。门的意义就在"这一下是人按的":
+			 * 没有它,后面所有基于授权的推理都是空的。`by:'autonomy'` 这个来源因此被删除。
+			 *
+			 * 走**原生审阅**(以前是提示词让模型自己去问):由**我们**在计划立起来的这一步
+			 * 请人审阅,计划正文交给原生界面渲染。批准 ⇒ 授权记号现在就落(`by:'user'`);
+			 * 其余三种结局 ⇒ 一个字都不落,如实停下等人。这一条把「模型记得问才有一道门」
+			 * 换成了「机制自己问」——P1(机制优于劝告)。
+			 *
+			 * 注意它**不是硬阻断**:未授权只让自动续跑 `hold`(见 turnDemand),`AdvancePlan`
+			 * 照常执行,并在同一条变更里补写 `by:'progress'`(行为即授权,见 AdvancePlan)。
 			 */
-			// 「立约即授权」按**本回合**的当档判(人刚在面板上切过档的那一轮尤其要准,§17.5)。
-			/**
-			 * **计划永远要人确认**(§34):原先无人值守那一档「立约即授权」✗——
-			 * 那会让「计划经人确认」这条证据变成**系统自己签的**,和 L4「人放行」是同一类病。
-			 * 门的意义就在"这一下是人按的":没有它,后面所有基于授权的推理都是空的。
-			 */
-			const autoConfirmed = false
 			const brief = typeof args.brief === 'string' ? args.brief : ''
-			/**
-			 * §19-A 人在场那一档的确认门走**原生审阅**(以前是提示词让模型自己去问):
-			 * 由**我们**在计划立起来的这一步请人审阅,计划正文交给原生界面渲染。
-			 * 批准 ⇒ 授权记号现在就落(by: 'user');其余三种结局 ⇒ 一个字都不落,如实停下等人。
-			 * 这一条把「模型记得问才有一道门」换成了「机制自己问」——P1(机制优于劝告)。
-			 */
-			let confirmed = autoConfirmed
+			const review = await requestPlanReview(exec.agent, renderPlanForReview(planId, brief, goal, args.steps), exec.signal)
+			let confirmed = false
 			let reviewNote = ''
-			if (!autoConfirmed) {
-				const review = await requestPlanReview(exec.agent, renderPlanForReview(planId, brief, goal, args.steps), exec.signal)
-				if (review.outcome === 'approved') {
-					confirmed = true
-					reviewNote = '\n人在审阅里**批准**了这份计划(原生审阅卡),授权记号已落账——开始执行。'
-				} else if (review.outcome === 'declined') {
-					reviewNote = `\n人在审阅里选择**先改再交**${review.note === '' ? '' : `,他的意见:${review.note}`}——计划仍未授权,按他的意见改完再呈一次,不要开工。`
-				} else if (review.outcome === 'cancelled') {
-					reviewNote = '\n人把审阅撤下、改为先说话:计划仍未授权,**不要开工**,等他的下一步指令。'
-				} else {
-					reviewNote = `\n(这份计划还没有得到人的授权:${review.note}。**不要开工**——如实停下等人,别自己去问一遍(系统已经问过了)。)`
-				}
+			if (review.outcome === 'approved') {
+				confirmed = true
+				reviewNote = '\n人在审阅里**批准**了这份计划(原生审阅卡),授权记号已落账——开始执行。'
+			} else if (review.outcome === 'declined') {
+				reviewNote = `\n人在审阅里选择**先改再交**${review.note === '' ? '' : `,他的意见:${review.note}`}——计划仍未授权,按他的意见改完再呈一次,不要开工。`
+			} else if (review.outcome === 'cancelled') {
+				reviewNote = '\n人把审阅撤下、改为先说话:计划仍未授权,**不要开工**,等他的下一步指令。'
+			} else {
+				reviewNote = `\n(这份计划还没有得到人的授权:${review.note}。**不要开工**——如实停下等人,别自己去问一遍(系统已经问过了)。)`
 			}
 			mutations.push({
 				t: 'plan/created',
@@ -2795,7 +2781,7 @@ export function apply(ctx, config = {}) {
 				phase_id: goal?.id ?? null,
 				brief,
 				confirmed_at: confirmed ? new Date().toISOString() : null,
-				confirmed_by: confirmed ? (autoConfirmed ? 'autonomy' : 'user') : null,
+				confirmed_by: confirmed ? 'user' : null,
 				steps: args.steps.map((step) => ({ id: step.id, do: step.do, artifacts: step.artifacts ?? [], done_criteria: step.done_criteria, tests: step.tests ?? null })),
 			})
 			return done({

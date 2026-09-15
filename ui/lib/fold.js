@@ -84,10 +84,12 @@ export function emptyState() {
 		blocks: {},
 		releases: [],
 		/**
-		 * 运行档(人在场 / 无人值守)。**它是人的事实,不是部署的常量**:
-		 *   · `effective` = 内核随投影下发的那一份(只有内核知道组合配置),面板据此画开关;
-		 *   · `override`  = 人在面板上切过的那一份(人门 `set_autonomy`,署名是人)。
-		 * 两者分开摆,才说得清「这是部署给我的默认」还是「这是我此刻要的」。
+		 * 运行档(人在场 / 无人值守)。**它是部署预设的初值,不是可切换的开关**:
+		 *   · §34 摘掉了人门动词 `set_autonomy`,面板上那个开关已经不存在;
+		 *   · `effective` = 内核随投影下发的那一份(只有内核知道组合配置),**只用于展示**;
+		 *   · `override`  = 历史日志里可能留下的人门记录。读取侧保留它只是为了旧会话仍然读得通,
+		 *     当前**没有任何写入者**——不要据此认为现在还能切换档位。
+		 *   · 它也不影响续跑:要不要继续由门状态算出来(见内核 turnDemand)。
 		 */
 		autonomy: { override: null, effective: null },
 		/**
@@ -293,9 +295,11 @@ export function applyMutation(state, mutation) {
 				blocked: undefined,
 				/**
 				 * 授权记号(ClearAI `plan.confirmed_at` / `confirmed_by`)。
-				 * 两种取得方式,都可考:**显式动作**(人在面板上按确认 → `by:'user'`)与
-				 * **行为**(交付过一步 → `by:'progress'`);无人值守那一档在立约时由档自动确认
-				 * (`by:'autonomy'`——ClearAI 的原话是「选择 Goal 模式就是用户的无人值守授权」)。
+				 * 两种取得方式,都可考:**显式动作**(人在原生审阅卡上批准 → `by:'user'`)与
+				 * **行为**(交付过一步 → `by:'progress'`,见内核 AdvancePlan)。
+				 * 第三种来源 `by:'autonomy'`(无人值守档在立约时自动确认)**已于 §34 删除**:
+				 * 那会让「计划经人确认」这条证据变成系统自己签的。读取侧不需要兼容它,
+				 * 因为删除发生在写入侧,历史日志里最多出现 `user` 与 `progress`。
 				 * 注意这是一个**记号**,不是闸门:没确认的计划照样能被交付推起来,那一刻记号按事实补写。
 				 */
 				confirmed_at: mutation.confirmed_at ?? null,
@@ -723,10 +727,10 @@ export function applyEvent(state, event) {
 		const source = event.data?.source
 		if (source !== null && typeof source === 'object' && source.kind === 'plugin' && Array.isArray(source.sections)) {
 			/**
-			 * 一条插件消息里可能**同时**带好几件事实(内核一次 pre-step 把目录、当档、候选一起发)。
+			 * 一条插件消息里可能**同时**带好几件事实(内核一次 pre-step 把目录、运行档、候选一起发)。
 			 * 所以这里是「逐件折」而不是「找到一件就 return」——2026-09-11 实测踩过:
-			 * 原来找到目录就 return,于是同一条消息里的**当档被吃掉**,
-			 * 表现是面板上的档位开关永远停在「还没定档」,而机制那边早就按新档跑了。
+			 * 原来找到目录就 return,于是同一条消息里的**运行档被吃掉**,
+			 * 表现是投影里的 effective 档永远停在「还没定档」,而机制那边早就按新档跑了。
 			 */
 			const brain = source.sections.find((section) => section?.name === 'clearai/brain')
 			const tier = source.sections.find((section) => section?.name === 'clearai/autonomy')
@@ -812,7 +816,9 @@ export function applyEvent(state, event) {
 		const next = clone(state)
 		for (const name of quoted) recordSkillUse(next, name, 'human', at, stepPointer(state))
 		if (gate === null) return next
-		// 人切运行档:记成一条**人的事实**,当值立刻生效(机制在内核那一侧,见 effectiveAutonomy)。
+		// **旧日志容忍分支**(§34 之后没有写入者):人切运行档曾经是一条人门动作,旧会话里可能留着。
+		// 读到它就照旧记成一条**人的事实**,让历史会话仍然读得通;当前面板上已经没有这个开关,
+		// 新的会话不会再产生这一条。不要据此认为"现在还能切档"——要删这个分支得先确认没有旧日志。
 		if (gate.action === 'set_autonomy') {
 			const value = String(gate.value ?? '')
 			if (!AUTONOMY_VALUES.includes(value)) return next
@@ -1102,16 +1108,20 @@ export function derive(state) {
  *     `ask_user_question`(它同样把人的答复留在日志里,署名一样是人)。
  *   · `invoke_skill` —— 原生 `/` 技能触发器(`dsh-client-ui-skill` 注册 trigger `/`,
  *     `dsh-client-ui-input-trigger` 出候选菜单)做的正是同一件事,而且带候选菜单。
- * 留下的四个各有原生没有的职责:
+ * 留下的三个各有原生没有的职责:
  *   · `adopt_branch`/`abandon_fork` —— `ConvergeFork` 只认「算术」或「人门」两条路,
  *     算不出来时这是唯一的结构化人裁决通道(不做 NLU 是纪律,不是懒);
- *   · `promote_skill` —— 候选技能扶正是**只有人能触发**的写动作(模型不能自举);
- *   · `set_autonomy` —— 「我现在在不在场」只有人知道,档是人写的事实,不是系统猜的。
+ *   · `promote_skill` —— 候选技能扶正是**只有人能触发**的写动作(模型不能自举)。
+ *
+ * 已摘除:`set_autonomy`(§34)。「在场与否」是**运行时状态**(有没有门开着、有没有裁决在飞),
+ * 不是人在面板上按的一个开关;那个档位还顺手把「计划经人确认」变成系统自己签的。
+ * 折法里仍留一条**只读**容忍分支(见 `applyEvent` 的注释):旧会话日志里可能有一条这样的记录,
+ * 而历史必须继续读得通——但**当前没有任何写入者**,面板上也没有这个开关。
  */
 export const HUMAN_GATE_MARK = '[clearai·人门]'
 /** 面板上允许出现的动词。表外的动词一律拒(与贡献表同一套「表外的名字不许出现」)。 */
 export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill']
-/** 运行档的两个取值(`set_autonomy` 的合法参数)。 */
+/** 运行档的两个取值。**只用于读取旧日志**里的 `set_autonomy` 记录;当前没有写入口。 */
 export const AUTONOMY_VALUES = ['attended', 'unattended']
 
 /** 从一条用户消息里认出人门标记;不是标记就返回 null。 */
@@ -1187,8 +1197,10 @@ export function view(state, sessionId) {
 		inbox: derived.inbox,
 		hasOpenGate: derived.hasOpenGate,
 		/**
-		 * 运行档:`value` = 当档(内核下发的那份)、`source` 说明它从哪来(部署预设 / 人在面板上切的)。
-		 * 面板画开关与卡片写事实都读这里 —— 投影是唯一真相。
+		 * 运行档:`value` = 当档(内核下发的那份)、`source` 说明它从哪来(部署预设 / 旧日志里的人门记录)。
+		 * 面板与卡片都读这里 —— 投影是唯一真相。
+		 * 注意**它不是可切换的开关**:§34 摘掉了 `set_autonomy`,现在只有部署预设会下发新值;
+		 * `source === 'session'` 只可能来自旧日志。
 		 */
 		/** 项目章程的读数(面板「技能 · 记忆」页签顶部那一行;点开走原生预览)。 */
 		constitution: state.constitution ?? null,
