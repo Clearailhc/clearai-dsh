@@ -16,6 +16,9 @@
 /** 剧本共用的一份任务书骨架片段。 */
 const DISCIPLINE = '一路做完,不要在中途停下来问我;每一步交付时给观测与判据对照。'
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 export const SCENARIOS = {
 	'worldline-arbitration': {
 		title: '世界线:两条实现按尺子算术裁决',
@@ -119,15 +122,22 @@ export const SCENARIOS = {
 			'这个工作区是空的(系统会铺好 clear/ 骨架)。我要一份「先看再动」的小交付。',
 			`要求(按顺序做;${DISCIPLINE}):`,
 			'1. **先派一次只读侦察**:用 SpawnScout 让一个子代理回答「工作区里有哪些现成技能(clear/skills/ 下各是什么)、有没有可用的数据文件、工作区根目录下有什么」。',
-			'2. 拿到侦察结论后,再 SetGoal:判据 = 「lab/inventory.md 存在,且内容与侦察结论一致(技能条数、文件清单)」;登记至少两条候选假设。',
+			'   侦察是异步的:**必须等它的结论回来**(用 AwaitWorldlines;结论会作为通知/观测送到你面前)。',
+			'2. 拿到侦察结论后,再 SetGoal:判据 = 「lab/inventory.md 存在,且(1)技能条数与**侦察结论报的条数**一致、(2)文件里**逐字引用侦察结论里的一句话**」;登记至少两条候选假设。',
 			'3. CreatePlan 两步:第一步据侦察结论写 lab/inventory.md,第二步独立核对(自己再列一遍目录,与文件内容对照)。',
 			'4. 做完两步,ClosePlan 收尾。',
 		].join('\n'),
-		asserts: ({ countOf, exists, called }) => [
+		asserts: ({ countOf, exists, called, readArtifact }) => [
 			{ label: '真的派了侦察(scout/dispatched)', ok: countOf('scout/dispatched') >= 1, detail: `dispatched=${countOf('scout/dispatched')}` },
 			{ label: '侦察结论收上来了(scout/settled)', ok: countOf('scout/settled') >= 1, detail: `settled=${countOf('scout/settled')}` },
 			{ label: '侦察是走工具派的(SpawnScout)', ok: called('SpawnScout'), detail: 'SpawnScout' },
 			{ label: '清单落成了产物(lab/inventory.md)', ok: exists('lab/inventory.md'), detail: 'lab/inventory.md' },
+			// 判据**依赖**侦察结论:产物里必须留下引用它的痕迹——"结论送达了模型"因此有外部证据。
+			{
+				label: '产物里引用了侦察结论(送达不只是进了上下文,还被用上了)',
+				ok: /侦察/.test(readArtifact('lab/inventory.md')),
+				detail: readArtifact('lab/inventory.md').slice(0, 80),
+			},
 		],
 	},
 	'goal-chain': {
@@ -341,11 +351,20 @@ export async function evaluateLog({ scenario, events, mutations, workspace, exis
 			}),
 	].join('\n')
 
+	/** 读产物正文(判据要验「引用」这类文本性质时用)。读不到就给空串,判据自己红。 */
+	const readArtifact = (relative) => {
+		try {
+			return readFileSync(join(workspace, relative), 'utf8')
+		} catch {
+			return ''
+		}
+	}
 	const context = {
 		mutations,
 		kinds,
 		countOf,
 		exists,
+		readArtifact,
 		called,
 		events,
 		modelVisibleText,

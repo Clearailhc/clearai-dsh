@@ -38,6 +38,7 @@ function contextOf(mutations, overrides = {}) {
 		countOf,
 		// 默认「盘上什么都没有」:空日志配 `exists: () => true` 会让物证类断言假绿。
 		exists: () => false,
+		readArtifact: () => '',
 		called: () => true,
 		events: [],
 		toolCalls: [],
@@ -198,6 +199,14 @@ console.log('\n【④ 剧本断言:用坏上下文必须红】')
 	// **安全性质**在空日志上恒真是对的(「被推翻的不许升格」,没有事实就没有违规);
 	// 其余断言在空日志上必须全红,否则「它在看日志」这句话就不成立。
 	const SAFETY = '安全性质'
+	// 侦察剧本里「产物引用了侦察结论」那一条:读不到文件 ⇒ 红;读到且含「侦察」⇒ 绿。
+	const scout = SCENARIOS['scout-first']
+	const citing = scout.asserts(contextOf([{ t: 'scout/dispatched', id: 's-1', child: 'c-1' }, { t: 'scout/settled', id: 's-1', conclusion: '共 18 条', path: null }], { readArtifact: () => '清单(据侦察结论):18 条技能。' }))
+	const noCite = scout.asserts(contextOf([{ t: 'scout/dispatched', id: 's-1', child: 'c-1' }, { t: 'scout/settled', id: 's-1', conclusion: '共 18 条', path: null }], { readArtifact: () => '清单:18 条技能。' }))
+	const citeCheck = (rows) => rows.find((row) => row.label.includes('引用了侦察结论'))
+	check('产物引用了侦察结论 ⇒ 放过', citeCheck(citing).ok === true, JSON.stringify(citeCheck(citing).detail))
+	check('产物没引用侦察结论 ⇒ 抓住(送达要被用上,不只是进了上下文)', citeCheck(noCite).ok === false, JSON.stringify(citeCheck(noCite).detail))
+
 	const worldlineEmpty = worldline.asserts(empty)
 	check('世界线剧本在空日志上一条都立不住(断言真的在看日志)', worldlineEmpty.every((assertion) => assertion.ok === false), `${worldlineEmpty.filter((a) => a.ok).length} 条意外通过`)
 	const falsificationEmpty = falsification.asserts(empty).filter((assertion) => !assertion.label.includes(SAFETY))
