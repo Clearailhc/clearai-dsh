@@ -1,0 +1,84 @@
+{
+  "at": "2026-09-15T07:57:24.735Z",
+  "concurrency": 3,
+  "timeoutMin": 45,
+  "scenarios": [
+    {
+      "name": "worldline-arbitration",
+      "title": "世界线:两条实现按尺子算术裁决",
+      "code": 1,
+      "passed": 35,
+      "failed": 1,
+      "failures": [
+        "两条世界线都登记了(worldline/prepared ≥ 2)"
+      ],
+      "elapsedSec": 412,
+      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/worldline-arbitration.log",
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-CcWJ0J",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-CcWJ0J--/session-cc99c806-96d5-44cb-b312-357ecd7b9517/session.v3.jsonl.zstd",
+      "mutationCount": 53,
+      "mutationKinds": "goal/set,plan/created,fork/created,worldline/prepared,worldline/executing,worldline/executed,observation/recorded,evidence/recorded,branch/delivered,fork/merge_conflict,fork/merged,worldline/removed,fork/converged,plan/confirmed,admission/checked,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+    },
+    {
+      "name": "falsification",
+      "title": "证伪:两条互斥假设,一条被推翻",
+      "code": 1,
+      "passed": 34,
+      "failed": 2,
+      "failures": [
+        "证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)",
+        "有假设被升格为事实"
+      ],
+      "elapsedSec": 100,
+      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/falsification.log",
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-d29QfF",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-d29QfF--/session-1a2acefe-eebd-4d07-9714-61f6ade107aa/session.v3.jsonl.zstd",
+      "mutationCount": 23,
+      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,plan/voided,plan/amended,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+    },
+    {
+      "name": "long-plan",
+      "title": "长链:五步交付,物证、准入、收尾",
+      "code": 0,
+      "passed": 37,
+      "failed": 0,
+      "failures": [],
+      "elapsedSec": 237,
+      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/long-plan.log",
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-LWATEh",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-LWATEh--/session-07eb7f7b-8153-4ba8-8fa5-af598667c7bb/session.v3.jsonl.zstd",
+      "mutationCount": 52,
+      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,plan/refined,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+    },
+    {
+      "name": "scout-first",
+      "title": "侦察先于计划",
+      "code": 1,
+      "passed": 33,
+      "failed": 1,
+      "failures": [
+        "侦察结论收上来了(scout/settled)"
+      ],
+      "elapsedSec": 220,
+      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/scout-first.log",
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-67Urbq",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-67Urbq--/session-d5ef4987-4cdc-4edc-a3b1-aa2d38d8973b/session.v3.jsonl.zstd",
+      "mutationCount": 21,
+      "mutationKinds": "scout/dispatched,goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+    },
+    {
+      "name": "goal-chain",
+      "title": "目标链:结案后再立一个,复用前一环的产物",
+      "code": 0,
+      "passed": 36,
+      "failed": 0,
+      "failures": [],
+      "elapsedSec": 185,
+      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/goal-chain.log",
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-qJHs5J",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-qJHs5J--/session-9e4eeb76-1979-412e-8a72-c00c703f0dd8/session.v3.jsonl.zstd",
+      "mutationCount": 40,
+      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+    }
+  ]
+}

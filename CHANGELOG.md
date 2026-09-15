@@ -22,6 +22,10 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - **`clearai-commands` cross-plane import.** It imported `ui/lib/fold.js` from the preset plane; in the installed package the relative layout differs, so switching to the preset in a browser failed at import. The command renderers now use the host-provided `clearai` facade for `derive` as well, and the boundary suite pins that no preset plugin imports across planes.
 - **macOS temp-path realpath mismatches.** Session-log lookup and clean-install workspace registration now resolve realpaths (`/var` is a symlink to `/private/var`), which had made e2e logs unfindable and browser session attach fail.
 
+### Tooling
+
+- **Long-run end-to-end scenarios with offline re-judging.** Five scenarios (`worldline-arbitration`, `falsification`, `long-plan`, `scout-first`, `goal-chain`) plus a set of cross-mechanism invariants (no advance without admission, no dangling evaluator, no orphaned fork, promotion level consistency, no dangling scout, evidence bound to real steps, declared artifacts on disk). `tools/e2e-parallel.mjs` runs them concurrently (cap 3, because each run spawns its own worldline executors and evaluators), `tools/e2e-replay.mjs` re-judges a saved session log without spending tokens, and `test/e2e-scenarios.test.mjs` pins every invariant with a negative case so a mis-written judge cannot report a false green.
+
 ### Validated
 
 - **deepseek-flash end-to-end, two headless scenarios** (24/24 plan-and-stop; 25/25 full completion including independent-evaluator settlement) and **one real-browser session** (clean install + Chrome): preset switching, native review-card approval landing `by='user'`, the full thirteen-beat chain, `/goal` rendering, and all four panels drawing — screenshots in `docs/shots/browser-e2e-*.png`.
