@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-15T10:43:08.000Z",
+  "at": "2026-09-15T10:59:26.052Z",
   "concurrency": 1,
   "timeoutMin": 30,
   "scenarios": [
@@ -7,18 +7,17 @@
       "name": "scout-first",
       "title": "侦察先于计划",
       "code": 1,
-      "passed": 35,
-      "failed": 3,
+      "passed": 36,
+      "failed": 2,
       "failures": [
-        "升格与证据等级自洽(没到级不升格,到了级必须升格)",
         "侦察没有悬空(每个 scout/dispatched 都有 scout/settled)",
         "侦察结论收上来了(scout/settled)"
       ],
-      "elapsedSec": 380,
+      "elapsedSec": 456,
       "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/scout-first.log",
-      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-Blz6E0",
-      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-Blz6E0--/session-b96d6c1b-97e1-42f4-904e-e7f047fb7a3d/session.v3.jsonl.zstd",
-      "mutationCount": 21,
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-RBbSBo",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-RBbSBo--/session-5bb2442e-07f1-40d8-aa3c-332624d64590/session.v3.jsonl.zstd",
+      "mutationCount": 20,
       "mutationKinds": "scout/dispatched,goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
     }
   ]

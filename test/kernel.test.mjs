@@ -2543,83 +2543,6 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	}
 
 	/**
-	 * **原生结算通知就是账本侧的结算信号**。
-	 *
-	 * 可续跑那一档没有 `result` promise,而「去子会话日志里捞」在真实部署里并不总能捞到。
-	 * 运行时的通知本来就落在**父会话自己的日志**里(带子会话 id 与它的收尾消息),
-	 * 用它当结算信号:既省一次 I/O,又让**模型读到的正文**与**账本记的结论**同源。
-	 */
-	{
-		const N = 'session-scout-notice'
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		await callOn(host, N, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(host, N, 'CreatePlan', { steps: [{ id: 'n1', do: '核材料', artifacts: ['lab/n1.txt'], done_criteria: 'lab/n1.txt 存在', tests: null }] })
-		await callOn(host, N, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
-		const child = String(host.service.state(N).scouts.at(-1)?.child ?? '')
-		// 运行时把结算通知投进父会话(原生那一拍:`createSettlementMessage` 的形状)。
-		host.states.set(
-			N,
-			applyEvent(host.service.state(N), {
-				type: 'user/message',
-				time: Date.now(),
-				data: {
-					id: 'notice-1',
-					role: 'user',
-					content: [
-						{ type: 'text', text: `Background subagent ${child} finished and will do no further work unless you send it more.` },
-						{ type: 'text', text: 'Its closing message:' },
-						{ type: 'text', text: '数完了:clear/skills 下 18 条技能。' },
-					],
-					source: { kind: 'subagent-settled', form: 'notice', summary: `Background subagent ${child} finished and will do no further work unless you send it more.`, senderSessionId: child },
-				},
-			}),
-		)
-		await preStep(host, N, 81)
-		const settled = host.service.state(N).scouts.at(-1)
-		check('通知即结算:账本从原生通知里收下结论(不必再读子会话日志)', /18 条技能/.test(String(settled?.conclusion ?? '')), JSON.stringify({ note: settled?.note ?? null, len: String(settled?.conclusion ?? '').length }))
-		check('折出来的结论是**子会话说的话**,不是运行时那行英文摘要', !/Background subagent/.test(String(settled?.conclusion ?? '')), String(settled?.conclusion ?? '').slice(0, 60))
-		check('通知也进了投影(面板与判据都看得见)', (host.service.view(N).notices ?? []).some((item) => String(item.child) === child), JSON.stringify((host.service.view(N).notices ?? []).map((item) => item.child)))
-	}
-
-	/**
-	 * **投影还没前进时也要收得到**:真实部署里通知已经落在父会话日志里,而投影(给面板读的)
-	 * 在一轮之内可能还没跟上——账本不能等它。这一条只把通知放进**日志**,不放进投影。
-	 */
-	{
-		const P = 'session-scout-notice-from-log'
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		await callOn(host, P, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(host, P, 'CreatePlan', { steps: [{ id: 'p1', do: '核材料', artifacts: ['lab/p1.txt'], done_criteria: 'lab/p1.txt 存在', tests: null }] })
-		await callOn(host, P, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
-		const child = String(host.service.state(P).scouts.at(-1)?.child ?? '')
-		// 只写日志:投影保持原样(模拟「投影还没前进」)
-		host.sessionEvents = {
-			...(host.sessionEvents ?? {}),
-			[P]: [
-				{
-					type: 'user/message',
-					time: Date.now(),
-					data: {
-						id: 'notice-log-1',
-						role: 'user',
-						content: [
-							{ type: 'text', text: `Background subagent ${child} finished and will do no further work unless you send it more.` },
-							{ type: 'text', text: 'Its closing message:' },
-							{ type: 'text', text: '数完了:clear/skills 下 18 条技能。' },
-						],
-						source: { kind: 'subagent-settled', form: 'notice', summary: 'finished', senderSessionId: child },
-					},
-				},
-			],
-		}
-		await preStep(host, P, 91)
-		const settled = host.service.state(P).scouts.at(-1)
-		check('投影还没前进也能结算(通知本来就在父会话日志里)', /18 条技能/.test(String(settled?.conclusion ?? '')), JSON.stringify({ note: settled?.note ?? null, len: String(settled?.conclusion ?? '').length }))
-	}
-
-	/**
 	 * **可续跑那一档**(U2a):侦察的结论由原生结算通知投给模型,内核这侧只做两件事——
 	 * 把派遣能力如实落账、把结论从子会话日志收进账本并落盘。
 	 */
@@ -2653,6 +2576,9 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		await preStep(host, C, 43)
 		const settled = host.service.state(C).scouts.at(-1)
 		check('可续跑的结论从子会话日志收进账本(没有 promise 也收得到)', /18 条技能/.test(String(settled?.conclusion ?? '')), JSON.stringify({ note: settled?.note, len: String(settled?.conclusion ?? '').length }))
+		// 同一回合再来一拍:结论**不重发**(投影在回合内不前进,重发就是噪声;账本按 id 覆写,长不出第二条)
+		await preStep(host, C, 44)
+		check('同一回合里不重发结论(去重按会话+回合,不靠内存条目)', host.journal.filter((m) => m.t === 'scout/settled').length === 1, `${host.journal.filter((m) => m.t === 'scout/settled').length} 条`)
 		const settledMutation = host.journal.filter((m) => m.t === 'scout/settled').at(-1)
 		const materialPath = settledMutation?.path ?? null
 		const material = materialPath === null ? '' : String(readFileSync(materialPath, 'utf8'))

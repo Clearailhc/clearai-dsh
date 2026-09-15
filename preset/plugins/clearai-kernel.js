@@ -1121,16 +1121,20 @@ export function apply(ctx, config = {}) {
 	 * (「报过」不等于「到账本了」)。`dispose` 也挪到「确认到账」之后——早释放会把子会话
 	 * 从会话服务里摘掉,而它正是回收结论的最后一份凭据。
 	 */
-	function collectExecutor(entry) {
+	function collectExecutor(entry, recovered = false) {
 		if (entry.settled === null) return null
 		const ok = entry.settled.ok === true
 		return {
 			fork: entry.fork,
 			branch: entry.branch,
 			label: entry.label,
-			// `note` 写**具体**的结局(aborted / error / …),不写笼统的 failed——与侦察那条路同一个纪律
-			// (不分开的话,卡片会把 aborted 写成「执行没跑成:failed」——一句假话)。
-			mutation: { t: 'worldline/executed', fork: entry.fork, branch: entry.branch, child: entry.child, ok, conclusion: clipConclusion(entry.settled.conclusion, entry.workspace ?? null), note: ok ? null : String(entry.settled.stopReason ?? 'failed') },
+			/**
+			 * `note` 写**出处或具体结局**,两件事都写清:
+			 *   · 成功且是从它自己的会话日志回收的 ⇒ `recovered`(派它的那次进程可能已经不在了,
+			 *     读账的人必须看得出这条结论不是当场拿到的);
+			 *   · 失败 ⇒ 具体结局(aborted / error / …),不写笼统的 failed——与侦察那条路同一个纪律。
+			 */
+			mutation: { t: 'worldline/executed', fork: entry.fork, branch: entry.branch, child: entry.child, ok, conclusion: clipConclusion(entry.settled.conclusion, entry.workspace ?? null), note: ok ? (recovered ? 'recovered' : null) : String(entry.settled.stopReason ?? 'failed') },
 		}
 	}
 
@@ -1307,10 +1311,25 @@ export function apply(ctx, config = {}) {
 	 * (第一版就是这么把 3/3 掉成 2/3 的,真跑验收抓住的)。它按**时间窗口**限流,不按回合。
 	 */
 	const collectEpochs = new Map()
-	/** 已经从子会话日志捞过的侦察(会话:侦察 id → 上次尝试的毫秒数)。 */
-	const recoverAttempts = new Map()
-	/** 已经为哪几条打过「未落定」诊断(每一条只打一行,免得刷屏)。 */
-	const recoverDiagnosed = new Set()
+	/**
+	 * **本回合已经落过账的子 run**(会话 → 回合号 + id 集)。
+	 *
+	 * 投影在回合内不前进,同一件事会被每一拍重新「发现」一次;靠这张表保证**同一回合不重发**。
+	 * 跨回合仍不见落地才补发——那时回合号变了,自然放行。keyed by 会话+记录 id,
+	 * 所以重启之后同样成立(不依赖内存里的条目)。
+	 */
+	const publishedInEpoch = new Map()
+	function alreadyPublished(sessionId, key) {
+		const record = publishedInEpoch.get(String(sessionId))
+		return record !== undefined && record.epoch === collectEpoch(sessionId) && record.keys.has(String(key))
+	}
+	function markPublished(sessionId, key) {
+		const sessionKey = String(sessionId)
+		const epoch = collectEpoch(sessionId)
+		const record = publishedInEpoch.get(sessionKey)
+		if (record === undefined || record.epoch !== epoch) publishedInEpoch.set(sessionKey, { epoch, keys: new Set([String(key)]) })
+		else record.keys.add(String(key))
+	}
 	function collectEpoch(sessionId) {
 		return collectEpochs.get(String(sessionId)) ?? -1
 	}
@@ -1345,16 +1364,13 @@ export function apply(ctx, config = {}) {
 				if (found !== null) {
 					recovered += 1
 					/**
-					 * 回收成功就要把条目标成**已落定 + 已发布**。只标 `reported` 不够:
-					 * 可续跑那一档没有 promise,条目永远停在 `settled === null`,于是每一拍回收
-					 * 都成功、每一拍都重发同一条事实(真跑里会看到「回灌 20 条结论」这种数)。
+					 * 回收成功要把条目也标成已落定:可续跑那一档没有 promise,条目会永远停在
+					 * `settled === null`,于是每一拍回收都成功、每一拍都重发同一条事实。
+					 * 重发本身由 `alreadyPublished` 兜住,这里只是让条目如实反映「已经拿到了」。
 					 */
-					if (entry !== undefined) {
-						entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
-						entry.reported = true
-						entry.reportedEpoch = collectEpoch(sessionId)
-						entry.reportedAt = Date.now()
-					}
+					if (entry !== undefined) entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
+					if (alreadyPublished(sessionId, `${fork.id}:${branch.id}`)) continue
+					markPublished(sessionId, `${fork.id}:${branch.id}`)
 					mutations.push({
 						t: 'worldline/executed',
 						fork: fork.id,
@@ -1396,30 +1412,19 @@ export function apply(ctx, config = {}) {
 	function sweepScouts(state, sessionId) {
 		const mutations = []
 		const lines = []
-		const emitted = new Set()
-		/**
-		 * **还在跑的侦察数**:`AwaitWorldlines` 靠它决定要不要继续等。
-		 *
-		 * 少了这个数,「等侦察」就是一句空话:`AwaitWorldlines` 的循环只数世界线执行者产出的
-		 * 「仍在跑」行,而侦察从来不产那行 ⇒ 只有侦察在跑时 `running` 恒为 0,循环**第一拍就退出**,
-		 * 于是模型被告知「用 AwaitWorldlines 在这个回合里等它」却永远等不到。
-		 */
-		let pending = 0
-		/** 本次刚收到的结论(给「没有原生通知」那一档用:收集那一刻的返回里带上它们)。 */
+		/** 降级形态的送达(见 `noticeBlock`):有原生结算通知时不使用。 */
 		const notices = []
-		/** 判成「失联」的条数(与执行者那条同名的账,面板与注记都要说得出)。 */
-		let lost = 0
+		/** 派出去了、这一拍还没落定的条数:`AwaitWorldlines` 靠它决定要不要继续等。 */
+		let pending = 0
 		const publish = (scoutId, stepId, ok, conclusion, stopReason, meta = {}) => {
 			const full = String(conclusion ?? '')
 			/**
 			 * **全文落盘**。一条事实有三个当事人:下达侦察的模型、独立评估者、人。
-			 * 结论此前只活在账本折叠出的资料面里(只有面板读),于是判据写成
-			 * 「与侦察结论一致」时模型与评估者都无处可读。落进 `clear/` 之内,
-			 * 三者都能读;账本仍是真值源,这份文件是投影产物。
+			 * 结论只活在折叠出的资料面里时,只有面板读得到;落进 `clear/` 之内,三者都能读。
+			 * 账本仍是真值源,这份文件是投影产物。
 			 */
 			const path = ok && full.trim() !== '' ? persistMaterial(sessionId, scoutId, meta, full) : null
-			// 账本与观测**同一个上限、同一句截断标记**(超出时必须说清全文在哪):
-			// 同一个数在几处各写一遍,迟早会漂成两套口径。
+			// 账本与观测**同一个上限、同一句截断标记**(超出时必须说清全文在哪)。
 			const clipped = clipConclusion(full, path)
 			mutations.push({ t: 'scout/settled', id: scoutId, step: stepId, conclusion: clipped, note: ok ? null : String(stopReason ?? 'failed'), path })
 			if (ok && full.trim() !== '') {
@@ -1437,82 +1442,57 @@ export function apply(ctx, config = {}) {
 			}
 			if (ok && full.trim() !== '') notices.push({ kind: 'scout', id: scoutId, trigger: meta.trigger ?? null, conclusion: full, path, native: meta.native === true })
 		}
-		/** 投影里这条侦察收到结论了吗(`scout/settled` 折进去之后 `conclusion` 就不再是 null)。 */
-		const landedIn = (scoutId) => {
-			const record = (state?.scouts ?? []).find((item) => item.id === scoutId)
-			return record !== undefined && record.conclusion !== null && record.conclusion !== undefined
-		}
-		for (const entry of scoutRuns.values()) {
-			// 已经落到账本上了:这条子 run 退休(摘表 + 释放),免得表无限长。
-			if (landedIn(entry.scoutId)) {
-				scoutRuns.delete(entry.child)
+		/**
+		 * **唯一收集通道**:投影里**还没收口**的侦察——不管内存表里有没有它的条目。
+		 *
+		 * 两条来源,按优先级:
+		 *   ① 本进程攥着的 handle 已经落定(只有**一次性派遣**才有 `result` promise);
+		 *   ② **子会话自己的日志**(权威记录,重启之后也还在)。
+		 *
+		 * 运行时的结算通知**不在这条路上**:它是运行时给**模型**的送达(已经工作了),
+		 * 不是账本的依据。把一个面向模型的消息当成账本的承重结构,就是这一串 bug 的病根——
+		 * 通知没到/到得晚,账本就整条路失效;而执行者那条路之所以稳,正是因为它只读日志与目录。
+		 */
+		for (const scout of state?.scouts ?? []) {
+			if (scout.conclusion !== null && scout.conclusion !== undefined) continue
+			const child = scout.child === null || scout.child === undefined ? null : String(scout.child)
+			if (child === null) continue
+			const entry = scoutRuns.get(child)
+			let settled = entry?.settled ?? null
+			let recovered = false
+			if (settled === null) {
+				const found = recoverFromChildSession(child)
+				if (found !== null) {
+					settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
+					recovered = true
+				}
+			}
+			// 读不到:还在跑(或这个形态读不了子会话)——留着,别冤枉它。
+			if (settled === null) {
+				if (entry !== undefined) pending += 1
+				continue
+			}
+			// 同一回合里不重发(投影在回合内不前进);跨回合仍不见落地才补发。
+			if (alreadyPublished(sessionId, scout.id)) continue
+			markPublished(sessionId, scout.id)
+			publish(scout.id, scout.step ?? null, settled.ok === true, settled.conclusion, settled.stopReason, {
+				trigger: scout.trigger ?? null,
+				digest: scout.digest ?? null,
+				child,
+				native: entry?.native === true,
+			})
+			lines.push(`侦察 · ${scout.trigger ?? scout.id}:${settled.ok === true ? (recovered ? '从会话日志回收' : '完成') : `未完成(${settled.stopReason ?? 'unknown'})`}`)
+			// 结论已经拿到,handle 没用了:退休(可续跑那一档没有 dispose,子会话按原生语义留着)。
+			if (entry !== undefined) {
+				scoutRuns.delete(child)
 				try {
 					void entry.run?.dispose?.().catch?.(() => {})
 				} catch {
 					/* dispose 失败不影响结论 */
 				}
-				continue
 			}
-			if (entry.settled === null) {
-				/**
-				 * **没有 `result` promise 的那一档(可续跑)只能从子会话日志里读结论**。
-				 * 不走这一步,条目会永远停在「未落定」,而路径②又因为「表里有条目」跳过它
-				 * ——结论永久收不上来(修回灌时踩过的同一个坑,换了个入口)。
-				 * 读不到就按「还在跑」计一票,让等待循环继续等。
-				 */
-				// 运行时已经宣告它落定 ⇒ 直接用那条通知(与模型读到的是同一份文本)。
-				const announced = noticeFor(state, sessionId, entry.child)
-				if (announced !== null) {
-					entry.settled = { ok: announced.ok, conclusion: announced.conclusion, stopReason: announced.stopReason }
-				} else {
-					const found = recoverScoutConclusion(sessionId, entry.scoutId, entry.child)
-					if (found === null) {
-						pending += 1
-						continue
-					}
-					entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
-				}
-			}
-			/**
-			 * **`reported` 不等于「已落账」**(失效模式:侦察结论发布之后被丢掉,
-			 * 而条目已删、`reported` 已置位 ⇒ 那条结论永久丢)。判据改成看**投影**:
-			 * 投影里还没落地,过了重试窗口就**再发一次**。重复发布是安全的——
-			 * fold 按 id 找记录、覆写同样的字段,不会长出第二条事实。
-			 */
-			// 同一个回合内不重发(投影在回合内不前进,再发也是白发);跨回合仍不见落地才补发。
-			if (entry.reported === true && entry.reportedEpoch === collectEpoch(sessionId)) continue
-			entry.reported = true
-			entry.reportedEpoch = collectEpoch(sessionId)
-			entry.reportedAt = Date.now()
-			emitted.add(entry.scoutId)
-			publish(entry.scoutId, entry.stepId, entry.settled.ok === true, entry.settled.conclusion, entry.settled.stopReason, { trigger: entry.trigger, digest: entry.digest, child: entry.child, native: entry.native === true })
-			lines.push(`侦察 · ${entry.trigger}:${entry.settled.ok === true ? '完成' : `未完成(${entry.settled.stopReason ?? 'unknown'})`}`)
 		}
-		// ② 表里没有的:投影里**还没收口**的侦察(`scout/dispatched` 落了,`scout/settled` 没落),
-		//    去它自己的会话日志里读结论(进程重启过也收得回来)。
-		for (const scout of state?.scouts ?? []) {
-			if (scout.conclusion !== null && scout.conclusion !== undefined) continue
-			if (emitted.has(scout.id)) continue
-			const child = scout.child === null || scout.child === undefined ? null : String(scout.child)
-			if (child === null || scoutRuns.has(child)) continue
-			/**
-			 * 这条是**收集机会**,不是重发:迟到一步的结论全靠它接住(第一版把它按回合限流,
-			 * 真跑里立刻掉了一条回灌)。所以限流只针对 **I/O**:同一个窗口里对同一条只读一次。
-			 */
-			const found = recoverScoutConclusion(sessionId, scout.id, child)
-			if (found !== null) {
-				publish(scout.id, scout.step ?? null, found.ok === true, found.conclusion, found.stopReason, { trigger: scout.trigger ?? null, digest: scout.digest ?? null, child, native: scout.capability === 'continuable' })
-				lines.push(`侦察 · ${scout.trigger ?? scout.id}:从会话日志回收(${found.ok === true ? '完成' : found.stopReason})`)
-				continue
-			}
-			/**
-			 * 这一次捞不到 ≠ 永远捞不到:它是**收集机会**,不是判决。
-			 * 「失联」是另一件事(子会话真的不在了),由回合边界的
-			 * `sweepLostScouts()` 用**原生子代理目录**判——判据不该混在一起,
-			 * 混在一起会把「迟到一步的结论」冤杀成失联(真跑里立刻掉一条回灌)。
-			 */
-		}
-		return { mutations, lines, pending, notices, lost }
+		return { mutations, lines, pending, notices }
 	}
 
 	/**
@@ -1580,100 +1560,6 @@ export function apply(ctx, config = {}) {
 		return { mutations, lost: mutations.length, lines }
 	}
 
-	/**
-	 * 运行时**已经宣告它落定**了吗。
-	 *
-	 * 原生的结算通知落在**父会话自己的日志**里(`source.kind === 'subagent-settled'`,带子会话 id
-	 * 与它的收尾消息)。用它当结算信号有两个好处:省一次「去子会话日志里捞」的 I/O,
-	 * 而且**模型读到的正文**与**账本记的结论**来自同一条信息——两处不会各说各话。
-	 *
-	 * `ok` 只能从摘要那句英文里读(运行时自己的格式,版本变了要跟着改);结论正文不受影响。
-	 */
-	function noticeFor(state, sessionId, child) {
-		if (child === null || child === undefined) return null
-		/**
-		 * 先看投影,再看**父会话自己的日志**。
-		 *
-		 * 为什么要兜这一层:投影是给面板读的,它在一轮之内**可能还没前进**——而通知是运行时刚投
-		 * 进来的。失效模式:通知早已落进日志,而投影里还是空的,于是侦察永远收不了口。
-		 * 两处解析同一形状的通知,是分层纪律的代价(两个平面互不 import),
-		 * 与 fold 里那份等价实现同一个理由。
-		 */
-		const notice = (state?.notices ?? []).find((item) => String(item?.child ?? '') === String(child)) ?? ownNotices(sessionId).find((item) => String(item?.child ?? '') === String(child))
-		if (notice === undefined) return null
-		const summary = String(notice.summary ?? '')
-		const abnormal = /failed|declined|stopped|abnormally|ran out of room/i.test(summary)
-		const conclusion = String(notice.conclusion ?? '').trim()
-		return { ok: !abnormal, stopReason: abnormal ? 'abnormal' : 'completed', conclusion: conclusion === '' ? summary : conclusion, from: 'notice' }
-	}
-
-	/** 父会话自己的日志里折出来的结算通知(按事件条数缓存,避免每拍重读)。 */
-	const noticeCache = new Map()
-	function ownNotices(sessionId) {
-		const sessions = ctx.get('sessions')
-		if (sessions === undefined || typeof sessions.get !== 'function') return []
-		let events = []
-		try {
-			const session = sessions.get(String(sessionId))
-			events = typeof session?.ownEvents === 'function' ? session.ownEvents() : []
-		} catch {
-			return []
-		}
-		if (!Array.isArray(events)) return []
-		const key = String(sessionId)
-		const cached = noticeCache.get(key)
-		if (cached !== undefined && cached.count === events.length) return cached.notices
-		const notices = []
-		for (const event of events) {
-			if (event?.type !== 'user/message') continue
-			const source = event.data?.source
-			if (source === null || typeof source !== 'object' || source.kind !== 'subagent-settled') continue
-			const blocks = (event.data?.content ?? []).filter((block) => block?.type === 'text').map((block) => String(block.text ?? ''))
-			const label = blocks.findIndex((text) => /closing message/i.test(text))
-			notices.push({
-				child: source.senderSessionId === null || source.senderSessionId === undefined ? null : String(source.senderSessionId),
-				summary: String(source.summary ?? blocks[0] ?? ''),
-				conclusion: (label === -1 ? blocks.slice(1) : blocks.slice(label + 1)).join('\n').trim(),
-				at: typeof event.time === 'number' ? event.time : null,
-			})
-		}
-		noticeCache.set(key, { count: events.length, notices })
-		return notices
-	}
-
-	/**
-	 * 从子会话日志里捞一次侦察结论(**限 I/O** 不限机会:同一个窗口里对同一条只读一次)。
-	 *
-	 * 为什么按时间窗口限流而不按回合:这条是**收集机会**,不是重发。按回合限它,
-	 * 就会漏掉「这次收集之后才到」的结论——第一版这么干过,真跑里立刻掉了一条回灌。
-	 */
-	function recoverScoutConclusion(sessionId, scoutId, child) {
-		if (child === null || child === undefined) return null
-		const recoveryKey = `${String(sessionId)}:${scoutId}`
-		const lastTry = Number(recoverAttempts.get(recoveryKey) ?? 0)
-		/**
-		 * 与执行者那条**同一条纪律**:回收是**机会**,不是重发——所以不按回合、也不按时间窗
-		 * 把它掐掉;真正需要限的是「重复发布」(下面 `reportedEpoch` 管着)。
-		 * 此前这里按 `collectRetryMs` 限流,而侦察的兜底路(path②)又明确跳过表里的条目,
-		 * 于是「这次没捞到」被当成了「不必再捞」——比执行者少一条路,还更窄。
-		 */
-		recoverAttempts.set(recoveryKey, Date.now())
-		const found = recoverFromChildSession(String(child))
-		// 每一条只留一行诊断(而不是每拍一行):没落定时读面各自看到了什么。
-		if (found === null && recoverDiagnosed.has(recoveryKey) === false) {
-			recoverDiagnosed.add(recoveryKey)
-			const sessions = ctx.get('sessions')
-			let childEvents = -1
-			try {
-				const childSession = sessions?.get?.(String(child))
-				childEvents = childSession === undefined || childSession === null ? -1 : typeof childSession.ownEvents === 'function' ? (childSession.ownEvents() ?? []).length : -2
-			} catch {
-				childEvents = -3
-			}
-			ctx.logger?.warn?.(`clearai kernel: 侦察 ${scoutId} 未落定且通知未见(自上次尝试 ${Date.now() - lastTry}ms 前)· 子会话事件数 ${childEvents}`)
-		}
-		return found
-	}
 
 	/**
 	 * **失联的评估者**。
@@ -1751,28 +1637,30 @@ export function apply(ctx, config = {}) {
 				}
 				continue
 			}
+			/**
+			 * 结算只认两条来源:① 本进程攥着的 handle 已落定(一次性派遣);② 子会话自己的日志。
+			 * **结算通知不在这条路上**——它是给模型的送达,不是账本的依据(与侦察同一条纪律)。
+			 * 读不到就是还在跑:留着,别冤枉。
+			 */
+			let recoveredFromLog = false
 			if (entry.settled === null) {
-				// 与侦察同一条:先看运行时的结算通知,再退回子会话日志。
-				const announced = noticeFor(state, sessionId, entry.child)
-				if (announced === null) {
+				const found = recoverFromChildSession(entry.child)
+				if (found === null) {
 					lines.push(`${entry.label}:仍在跑`)
 					continue
 				}
-				entry.settled = { ok: announced.ok, conclusion: announced.conclusion, stopReason: announced.stopReason }
+				entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
+				recoveredFromLog = true
 			}
-			/**
-			 * 与侦察同一条纪律:**`reported` 不等于「已落账」**。投影里还没落地,过了重试窗口就再发一次
-			 * (`worldline/executed` 按分支覆写,重复发布不会长出第二条事实)。
-			 */
-			// 与侦察同一条判据:同回合不重发,跨回合仍不见落地才补发。
-			if (entry.reported === true && entry.reportedEpoch === collectEpoch(sessionId)) continue
-			entry.reported = true
-			entry.reportedEpoch = collectEpoch(sessionId)
-			entry.reportedAt = Date.now()
-			const collected = collectExecutor(entry)
+			// 同一回合里不重发(投影在回合内不前进);跨回合仍不见落地才补发。
+			if (alreadyPublished(sessionId, `${entry.fork}:${entry.branch}`)) continue
+			markPublished(sessionId, `${entry.fork}:${entry.branch}`)
+			const collected = collectExecutor(entry, recoveredFromLog)
 			if (collected === null) continue
 			mutations.push(collected.mutation)
-			lines.push(`${entry.label}:${collected.mutation.ok === true ? '完成' : `未完成(${collected.mutation.note ?? 'unknown'})`}`)
+			lines.push(
+				`${entry.label}:${collected.mutation.ok !== true ? `未完成(${collected.mutation.note ?? 'unknown'})` : recoveredFromLog ? '从会话日志回收' : '完成'}`,
+			)
 			if (collected.mutation.ok === true && String(entry.settled.conclusion ?? '').trim() !== '') {
 				notices.push({ kind: 'worldline', id: entry.branch, trigger: entry.label, conclusion: String(entry.settled.conclusion), path: entry.workspace ?? null, native: entry.native === true })
 			}
