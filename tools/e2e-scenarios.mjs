@@ -36,7 +36,7 @@ export const SCENARIOS = {
 			'4. 用 AdvanceWorldline 把两条世界线都交付,每条报一个**整串就是一个数**的读数(字节数)。',
 			'5. ConvergeFork 让算术裁决;然后接着做第二步与第三步,最后 ClosePlan 收尾。',
 		].join('\n'),
-		asserts: ({ kinds, countOf, exists, mutations }) => {
+		asserts: ({ kinds, countOf, exists, mutations, readArtifact }) => {
 			// **一条 `worldline/prepared` 携带全部世界线**(fold 里就是按 `branches` 展开的),
 			// 所以这里数分支、不数变更——数变更会得出「只登记了一条」的假失败。
 			const branches = mutations.filter((m) => m.t === 'worldline/prepared').flatMap((m) => m.branches ?? [])
@@ -44,13 +44,31 @@ export const SCENARIOS = {
 			{ label: '分叉真的开了(fork/created)', ok: countOf('fork/created') >= 1, detail: `fork/created=${countOf('fork/created')}` },
 			{ label: '两条世界线都登记了(prepared 里 ≥2 条分支)', ok: branches.length >= 2, detail: `分支=${branches.length}(${branches.map((b) => b.label ?? b.id).join(',')})` },
 			{ label: '两条世界线都交付了读数(worldline/executed ≥ 2)', ok: countOf('worldline/executed') >= 2, detail: `executed=${countOf('worldline/executed')}` },
-			{ label: '分叉被裁了(fork/converged)', ok: kinds.has('fork/converged'), detail: [...kinds].filter((k) => k.startsWith('fork/')).join(',') },
+			/**
+			 * **两种诚实结局都接受**:收敛(算术裁决出赢家)或**如实不可判**(读数不足/不可用)。
+			 * 后者是设计里的路(「算不出来就停下问人」),把它判成失败等于要求内核编一个赢家。
+			 * 但两条都不许:既不收敛又不留痕——那才是「默默停下」。
+			 */
 			{
-				label: '赢家被采纳(merged 或如实登记未合并)',
-				ok: kinds.has('fork/merged') || kinds.has('fork/merge_skipped'),
+				label: '分叉收口了:收敛 或 如实记下不可判(不许默默停下)',
+				ok: kinds.has('fork/converged') || kinds.has('fork/undecidable') || kinds.has('fork/abandoned'),
 				detail: [...kinds].filter((k) => k.startsWith('fork/')).join(','),
 			},
-			{ label: '赢家落成了产物(lab/winner.txt 在盘上)', ok: exists('lab/winner.txt'), detail: 'lab/winner.txt' },
+			{
+				label: '条件断言:收敛了就必须有赢家被采纳(merged 或如实登记未合并)',
+				ok: !kinds.has('fork/converged') || kinds.has('fork/merged') || kinds.has('fork/merge_skipped'),
+				detail: [...kinds].filter((k) => k.startsWith('fork/')).join(','),
+			},
+			{
+				label: '条件断言:不可判时要写清原因(读数不足/不可用,而不是一句「没成」)',
+				ok: !kinds.has('fork/undecidable') || String(mutations.find((m) => m.t === 'fork/undecidable')?.reason ?? '').length > 8,
+				detail: String(mutations.find((m) => m.t === 'fork/undecidable')?.reason ?? '(没有不可判记录)').slice(0, 90),
+			},
+			{
+				label: '条件断言:拿到赢家就落成产物;不可判则不落(不许把没裁出来的东西写成赢家)',
+				ok: kinds.has('fork/converged') ? exists('lab/winner.txt') : true,
+				detail: 'lab/winner.txt',
+			},
 			]
 		},
 	},
@@ -122,7 +140,8 @@ export const SCENARIOS = {
 			'这个工作区是空的(系统会铺好 clear/ 骨架)。我要一份「先看再动」的小交付。',
 			`要求(按顺序做;${DISCIPLINE}):`,
 			'1. **先派一次只读侦察**:用 SpawnScout 让一个子代理回答「工作区里有哪些现成技能(clear/skills/ 下各是什么)、有没有可用的数据文件、工作区根目录下有什么」。',
-			'   侦察是异步的:**必须等它的结论回来**(用 AwaitWorldlines;结论会作为通知/观测送到你面前)。',
+			'   侦察是异步的:**必须等它的结论回来**——用 AwaitWorldlines;到点还没回来就**再等一次**(最多等三次),',
+			'   直到结论到手再往下做。等不到就如实说明,不要假装它有结论。',
 			'2. 拿到侦察结论后,再 SetGoal:判据 = 「lab/inventory.md 存在,且(1)技能条数与**侦察结论报的条数**一致、(2)文件里**逐字引用侦察结论里的一句话**」;登记至少两条候选假设。',
 			'3. CreatePlan 两步:第一步据侦察结论写 lab/inventory.md,第二步独立核对(自己再列一遍目录,与文件内容对照)。',
 			'4. 做完两步,ClosePlan 收尾。',

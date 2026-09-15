@@ -207,9 +207,13 @@ console.log('\n【④ 剧本断言:用坏上下文必须红】')
 	check('产物引用了侦察结论 ⇒ 放过', citeCheck(citing).ok === true, JSON.stringify(citeCheck(citing).detail))
 	check('产物没引用侦察结论 ⇒ 抓住(送达要被用上,不只是进了上下文)', citeCheck(noCite).ok === false, JSON.stringify(citeCheck(noCite).detail))
 
-	const worldlineEmpty = worldline.asserts(empty)
-	check('世界线剧本在空日志上一条都立不住(断言真的在看日志)', worldlineEmpty.every((assertion) => assertion.ok === false), `${worldlineEmpty.filter((a) => a.ok).length} 条意外通过`)
-	const falsificationEmpty = falsification.asserts(empty).filter((assertion) => !assertion.label.includes(SAFETY))
+	// 两类断言在空日志上恒真是**对的**,不算「意外通过」:
+	//   · 安全性质(「被推翻的不许升格」:没有事实就没有违规);
+	//   · 条件断言(「收敛了就必须有赢家」:没收敛就不适用)——前提由别的断言保证。
+	const vacuouslyTrue = (label) => label.includes('安全性质') || label.includes('条件断言')
+	const worldlineEmpty = worldline.asserts(empty).filter((assertion) => !vacuouslyTrue(assertion.label))
+	check('世界线剧本的**非条件**断言在空日志上全红(断言真的在看日志)', worldlineEmpty.every((assertion) => assertion.ok === false), `${worldlineEmpty.filter((a) => a.ok).length} 条意外通过`)
+	const falsificationEmpty = falsification.asserts(empty).filter((assertion) => !vacuouslyTrue(assertion.label))
 	check('证伪剧本的**活性**断言在空日志上全红(安全性质那条按定义恒真,已排除)', falsificationEmpty.every((assertion) => assertion.ok === false), `${falsificationEmpty.filter((a) => a.ok).length} 条意外通过`)
 	// 证伪剧本的核心断言必须真的能区分「被推翻的假设不许升格」。
 	const sneaky = contextOf([], {

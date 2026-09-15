@@ -1,21 +1,44 @@
 {
-  "at": "2026-09-15T10:04:23.693Z",
-  "concurrency": 1,
-  "timeoutMin": 30,
+  "at": "2026-09-15T10:21:34.310Z",
+  "concurrency": 2,
+  "timeoutMin": 40,
   "scenarios": [
     {
       "name": "scout-first",
       "title": "侦察先于计划",
       "code": 1,
-      "passed": 0,
-      "failed": -1,
-      "failures": [],
-      "elapsedSec": 476,
+      "passed": 36,
+      "failed": 2,
+      "failures": [
+        "侦察没有悬空(每个 scout/dispatched 都有 scout/settled)",
+        "侦察结论收上来了(scout/settled)"
+      ],
+      "elapsedSec": 441,
       "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/scout-first.log",
-      "workspace": null,
-      "sessionLog": null,
-      "mutationCount": 25,
-      "mutationKinds": "scout/dispatched,goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,plan/refined,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-61p4oH",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-61p4oH--/session-44d86358-964d-408b-8638-5c9bb80e0745/session.v3.jsonl.zstd",
+      "mutationCount": 22,
+      "mutationKinds": "scout/dispatched,goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+    },
+    {
+      "name": "worldline-arbitration",
+      "title": "世界线:两条实现按尺子算术裁决",
+      "code": 1,
+      "passed": 34,
+      "failed": 5,
+      "failures": [
+        "进程正常退出(exit 0)",
+        "这一轮跑到了收尾(目标结案且没有未落定的步骤)",
+        "分叉被裁了(fork/converged)",
+        "赢家被采纳(merged 或如实登记未合并)",
+        "赢家落成了产物(lab/winner.txt 在盘上)"
+      ],
+      "elapsedSec": 902,
+      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/worldline-arbitration.log",
+      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-pKyDtB",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-pKyDtB--/session-5c16c39f-5f87-4508-a880-5b4b0fe23e48/session.v3.jsonl.zstd",
+      "mutationCount": 34,
+      "mutationKinds": "goal/set,plan/created,fork/created,worldline/prepared,worldline/executing,worldline/executed,observation/recorded,audit/dispatched,audit/settled,evidence/recorded,branch/delivered,fork/arbitration_dispatched,fork/arbitrated,fork/undecidable,plan/amended,plan/voided"
     }
   ]
 }
