@@ -59,7 +59,7 @@ const SELF_JUDGE_MAX_INDEX = 2
 const MAX_PLAN_STEPS = 25
 /**
  * `_DEFAULT_BLOCKED_THRESHOLD`:连续未过闸达阈值 → 计划置 blocked,等人。
- * 2026-09-11 起它**不再按档取值**(曾经 dialogue 2 / max 3):它是证据质量闸,不是预算,
+ * 它**不按档取值**:它是证据质量闸,不是预算,
  * 人在不在场都得先过闸。部署想要「人就在旁边,早点回来问」,就在配置面写小一点(现在是 2)。
  */
 const DEFAULT_BLOCKED_THRESHOLD = 3
@@ -71,7 +71,7 @@ const MIN_BRIEF_CHARS = 280
  */
 const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url))
 /**
- * 模板从哪来(2026-09-11 打包纪律④:**发行物里不许出现仓库路径**)。
+ * 模板从哪来(打包纪律:**发行物里不许出现仓库路径**)。
  *
  * 原来这里有一条 fallback 指回 ClearAI 仓库里那份工作区模板(同一份模板的第二个位置)——
  * 在 dev checkout 里很方便,**但它把仓库结构写进了发行物**:
@@ -306,7 +306,7 @@ function collectText(output) {
 /**
  * 子 run 的结局 —— **必须过这里**,别各自 `then(v => ok:true)`。
  *
- * 2026-09-11 用户实测的 bug:中断一次跑动之后,状态里**所有子代理都显示"执行完成"**。
+ * 一个修过的 bug:中断一次跑动之后,状态里**所有子代理都显示"执行完成"**。
  * 根因:DSH 里「中断 / 报错」**不是 reject**——`run.result` 照常 resolve,只是
  * `stopReason` 变成 `aborted` / `error` / `interrupted`(`dsh-subagent` 的
  * `settleSubagent` 就是这么落的)。只按 reject 判失败,就会把被打断的侦察记成"完成"、
@@ -390,7 +390,7 @@ const OUTPUT_SCHEMA = {
  *
  * 两份实现必须同格式,所以不是靠人记住,而是靠测试:
  * `test/kernel.test.mjs` 拿同一批消息喂两个解析器,断言结论一致。
- * 走过一次教训——2026-09-11 收敛动词表时才发现内核这份是**抄在闭包里的私本**,
+ * 这份白名单不能是**抄在闭包里的私本**——
  * 改标记要改两处、忘了就静默失效。现在它在模块层、被导出,漏一处测试就红。
  */
 export const HUMAN_GATE_MARK = '[clearai·人门]'
@@ -398,7 +398,7 @@ export const HUMAN_GATE_MARK = '[clearai·人门]'
  * 人门**动词白名单**(与宿主半 `fold.js` 的同名表逐字一致 —— 两边不 import 对方,
  * 靠 `test/kernel.test.mjs` 的等价性用例钉住)。
  *
- * §34 摘掉 `set_autonomy` 时漏改了这一侧 ⇒ 内核仍认它、宿主已经不认 ⇒ **等价性用例立刻红** ✓。
+ * 两侧白名单一旦各自维护,摘动词时只改一侧 ⇒ 内核仍认、宿主不认 ⇒ **等价性用例立刻红** ✓。
  * 这正是那条用例存在的意义:两份实现漂移不许静默。
  */
 export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill']
@@ -490,13 +490,13 @@ const TOOL_CATALOG = new Set(Object.values(MECHANISM_TOOLS).flat())
 const AUTONOMY_VARIANTS = new Set(Object.values(SECTION_SLOTS).flatMap((variants) => Object.values(variants)))
 
 /**
- * 续跑轮数:一个**保险丝**,不是用户的档位(§34 拆掉了「预算档」这个概念,奥卡姆)。
+ * 续跑轮数:一个**保险丝**,不是用户的档位(「预算档」这个概念已拆,奥卡姆)。
  *
  * 历史上这里是 `{attended: 6, unattended: 512}`,由面板上「多问我 / 自己跑」那个开关选。
  * 从第一性原理看错了两次:
  *   · 「我要不要在场」是**运行时状态**(有没有门开着、有没有裁决在飞、有没有开着的步),
  *     不是**配置项**——它现在由 `turnDemand` 从门状态算出来,不看档;
- *   · 那一档还顺手把「计划经人确认」变成系统自己签的 ✗(见 §34)。
+ *   · 那一档还顺手把「计划经人确认」变成系统自己签的 ✗。
  *
  * 现在只剩一个默认值:够长到能跑完一件真活,又短到不会无声烧掉一整夜;要更长由人显式表达。
  * 执行它的是**原生**——`maxAutoTurns` → 宿主目标的 `maxGoalRounds`,到限由
@@ -524,7 +524,7 @@ const CONTRIB_DEFAULTS = {
 function resolveContributions(contributions, autonomy) {
 	const declared = contributions ?? {}
 	/**
-	 * 贡献表**顶层**也走白名单:2026-09-11 删掉 `budgets` 块之后,旧写法
+	 * 贡献表**顶层**也走白名单:`budgets` 块删掉之后,旧写法
 	 * (`contributions: { budgets: {...} }`)必须装配期就炸——否则它会**静默无效**,
 	 * 而「配了没生效」正是这份移植最想消灭的一类错(与未知机制/未知工具同一条纪律)。
 	 */
@@ -558,7 +558,7 @@ function resolveContributions(contributions, autonomy) {
 		if (AUTONOMY_VARIANTS.has(entry)) throw new Error(`autonomy_section_must_use_slot:clearai-kernel:${entry}`)
 	}
 	/**
-	 * **本体(§22)**:贡献表的第八项,也是唯一一项**状态面**(前七项都是行为面)。
+	 * **本体**:贡献表的第八项,也是唯一一项**状态面**(前七项都是行为面)。
 	 * 三条装配期纪律(逐条对着 ClearAI 本体 P1 的定案):
 	 *   · **一个进程一份本体**:两份声明的合并语义未定义(两个插件各声明一个 hypothesis 算什么?),
 	 *     所以第二份直接拒;换装 = 换发行清单那一行。
@@ -574,7 +574,7 @@ function resolveContributions(contributions, autonomy) {
 		if (problems.length > 0) throw new Error(`invalid_ontology:clearai-kernel:${problems[0]}`)
 		ontology = VERIFICATION_LOOP
 	}
-	// 2026-09-11:「预算档」这个概念拆了。轮数与连拦阈值不再是贡献表里的一档,
+	// 「预算档」这个概念已拆。轮数与连拦阈值不再是贡献表里的一档,
 	// 而是两个普通配置键(maxAutoTurns / blockedThreshold,见 CONFIG_KEYS)——
 	// 它们跟「装哪些机制」不是一类事,混在一张清单里只会让人以为关掉机制就得关掉预算。
 	return { mechanisms, tools, sections, ontology }
@@ -608,7 +608,7 @@ export function apply(ctx, config = {}) {
 	const CFG = {
 		/**
 		 * 连拦阈值:同一件事连续冲闸这么多次没过,计划置 blocked、停下等人。
-		 * **它不是预算**(2026-09-11 从「预算档」里拿出来):它管的是证据质量,
+		 * **它不是预算**:它管的是证据质量,
 		 * 而且不再按档取值——人在不在场都得先过闸。
 		 */
 		blockedThreshold: config.blockedThreshold ?? DEFAULT_BLOCKED_THRESHOLD,
@@ -622,7 +622,7 @@ export function apply(ctx, config = {}) {
 		/**
 		 * 收上来的结论「多久没在投影里落地就重收一次」(缺省 2000ms)。
 		 * 为什么需要它:内存里的 `reported` 只是「我发布过」,不等于**事实已经到了账本上**
-		 * (2026-09-11 长测现场:侦察结论发布后被丢掉,而条目已删、`reported` 已置位 ⇒ 永久丢)。
+		 * (失效模式:侦察结论发布后被丢掉,而条目已删、`reported` 已置位 ⇒ 永久丢)。
 		 * 判据改成看**投影**:投影里还没落地就再发一次(同 id 的 `scout/settled`/`worldline/executed`
 		 * 在 fold 里是幂等的,重复发布不会长出第二条事实)。
 		 */
@@ -645,7 +645,7 @@ export function apply(ctx, config = {}) {
 		// 部署里没有,`tools.restrict` 会**直接抛**(未知工具名)→ 侦察整条路 fail-closed。
 		auditToolFilter: config.auditToolFilter ?? ['read', 'glob', 'grep', 'read_image'],
 		/** 侦察的只读工具面:读文件、找文件、找内容、查公网——都不能写、不能执行。 */
-		// 侦察是**只读**角色,看图也是读:`read_image` 必须在这张脸上(2026-09-11 用户指出)。
+		// 侦察是**只读**角色,看图也是读:`read_image` 必须在这张脸上。
 		scoutToolFilter: config.scoutToolFilter ?? ['read', 'glob', 'grep', 'read_image', 'web_search', 'web_fetch'],
 		/** 世界线是否物化成 git 分支 + worktree(工作区是 git 仓库时)。关掉就退化成声明的目录。 */
 		gitWorldlines: config.gitWorldlines !== false,
@@ -682,7 +682,7 @@ export function apply(ctx, config = {}) {
 		/**
 		 * 人在场 / 人不在场。**现在只决定一件事**:澄清协议装哪一段(槽位 `clarification`)。
 		 *
-		 * §34 之后它不再决定续跑(那由 `turnDemand` 从门状态算)、不再决定预算
+		 * 它不再决定续跑(那由 `turnDemand` 从门状态算)、不再决定预算
 		 * (只有一个 `DEFAULT_MAX_AUTO_TURNS`)、也不再是用户可切换的运行档
 		 * (`set_autonomy` 已摘除;这里写的是部署初值)。
 		 * 它不决定人格、不决定工具面——`if mode === ...` 在内核里不该出现。
@@ -718,7 +718,7 @@ export function apply(ctx, config = {}) {
 	/**
 	 * 认一条假设:`id` 最稳,**原文**与**唯一前缀**(≥8 字)也认。
 	 *
-	 * 为什么放宽:2026-09-10 的实跑里,模型连着三轮把假设**原文**填进 `tests.hypothesis`,
+	 * 为什么放宽:模型会把假设**原文**整句填进 `tests.hypothesis`(真跑里连着三轮都是),
 	 * 而当时只认 id,错误信息又不列出有效 id——它于是逐字猜哪里差了一个标点,白烧了三轮上下文。
 	 * 「机制把模型逼进猜谜」是机制的问题,不是模型的问题。
 	 */
@@ -758,7 +758,7 @@ export function apply(ctx, config = {}) {
 				message: `${value.message ?? value.code ?? 'ok'}\n\n${preview.card}`,
 			}
 			// 输出**越界就裁掉并告警**:宿主会拿 output.schema 校验工具结果,多一个未声明的字段
-			// 会让整个工具调用失败(2026-09-10 实际发生过:CreatePlan 因此全军覆没)。
+			// 会让整个工具调用失败(CreatePlan 曾因此全军覆没)。
 			// 裁掉会让模型少看到一个字段(可接受的降级),但绝不让一次成功的动作整个作废。
 			const declared = new Set(Object.keys(OUTPUT_SCHEMA.properties))
 			const trimmed = Object.keys(result).filter((key) => !declared.has(key))
@@ -1069,7 +1069,7 @@ export function apply(ctx, config = {}) {
 	/**
 	 * 把一条已落定的执行者结果折成变更(仍在跑就返回 null)。
 	 *
-	 * **这里不再管「报过没有」**(2026-09-11):发布的时机与重试由 sweep 按**投影**判断
+	 * **这里不管「报过没有」**:发布的时机与重试由 sweep 按**投影**判断
 	 * (「报过」不等于「到账本了」)。`dispose` 也挪到「确认到账」之后——早释放会把子会话
 	 * 从会话服务里摘掉,而它正是回收结论的最后一份凭据。
 	 */
@@ -1081,7 +1081,7 @@ export function apply(ctx, config = {}) {
 			branch: entry.branch,
 			label: entry.label,
 			// `note` 写**具体**的结局(aborted / error / …),不写笼统的 failed——与侦察那条路同一个纪律
-			// (2026-09-11:卡片上写着「执行没跑成:failed」,而当时真正发生的是 aborted)。
+			// (不分开的话,卡片会把 aborted 写成「执行没跑成:failed」——一句假话)。
 			mutation: { t: 'worldline/executed', fork: entry.fork, branch: entry.branch, child: entry.child, ok, conclusion: String(entry.settled.conclusion ?? '').slice(0, 4000), note: ok ? null : String(entry.settled.stopReason ?? 'failed') },
 		}
 	}
@@ -1100,7 +1100,7 @@ export function apply(ctx, config = {}) {
 	/**
 	 * **只派遣,不等**:把执行者放出去、登记进表,立刻返回。
 	 *
-	 * 为什么必须分开(2026-09-11 用户在 GUI 里抓到的):原来 `ForkPlan` 在这里
+	 * 为什么必须分开:`ForkPlan` 若在这里
 	 * `await Promise.all(四个执行者)`,而变更记录是**随工具结果**进日志的——
 	 * 于是「长出四条世界线」这条事实要等四个执行者全部跑完才落账:
 	 *   · 树上十几分钟看不到分叉(用户看到的就是这个窗口);
@@ -1163,9 +1163,9 @@ export function apply(ctx, config = {}) {
 	 * 两个调用者:pre-step 的 sweep(不问自答,结论自动回灌)与 `WorldlineStatus`(模型主动查)。
 	 */
 	/**
-	 * **从执行者自己的会话日志里回收结论**(2026-09-11 R3 长测:结论只活在父进程内存的 promise 上)。
+	 * **从执行者自己的会话日志里回收结论**(结论若只挂在父进程内存的 promise 上,父进程一断就永久丢)。
 	 *
-	 * 现场:四条执行者**都正常跑完了**(各自子会话日志最后一条都是 `turn/end{completed}`),
+	 * 典型形态:四条执行者**都正常跑完了**(各自子会话日志最后一条都是 `turn/end{completed}`),
 	 * 可父会话退出时只收上来一条 —— 另外三条的结论还在内存那个 `.then()` 上,进程一没就没了。
 	 * 而结论**并没有丢**:它就写在执行者自己的会话日志里(DSH 的会话日志就是账本)。
 	 * 「什么都不删」在这里的具体含义是:**没丢的东西不该当成丢了**。
@@ -1231,11 +1231,11 @@ export function apply(ctx, config = {}) {
 	 * 执行者的产物还在它自己的工作副本里,模型可以照常 `AdvanceWorldline` 用那些产物交付。
 	 */
 	/**
-	 * 收集器的**回合纪元**(§21):纪元 = 当前回合号(`payload.turn`)。
+	 * 收集器的**回合纪元**:纪元 = 当前回合号(`payload.turn`)。
 	 *
 	 * 为什么:投影**在回合内不前进**(本回合落的变更要等回合边界才折进去),所以
 	 * 「投影里还没落地」在同一回合内**永远为真**;旧写法配的是「过了 2 秒就重发」,
-	 * 于是每个成功路径都重发一遍(长测现场:1 次侦察派遣 ⇒ **31 条** `scout/settled`;
+	 * 于是每个成功路径都重发一遍(踩过的坑:1 次侦察派遣 ⇒ **31 条** `scout/settled`;
 	 * 3 条世界线 ⇒ 14 条 `worldline/executed`),每次都还读一遍子会话日志,那一场跑了 8408s。
 	 * 重发只该发生在**下一个回合**——那时投影才有机会说话。
 	 *
@@ -1270,7 +1270,7 @@ export function apply(ctx, config = {}) {
 				const child = execution.child === null || execution.child === undefined ? null : String(execution.child)
 				const entry = child === null ? undefined : executorRuns.get(child)
 				/**
-				 * **表里有条目但还没落定**时也要试着回收(2026-09-11 最后一场长测:四条执行者都跑完了,
+				 * **表里有条目但还没落定**时也要试着回收(形态:四条执行者都跑完了,
 				 * 表里那条 promise 却没落定,于是「有条目」把回收挡住了,那条世界线永久停在「执行者未归」)。
 				 * 判据不看内存表,看**执行者自己的会话日志**:它写了 `turn/end`,结论就存在了。
 				 * 回收成功就把条目标成已报,免得那份 promise 之后落定时又报一次(一条事实一份账)。
@@ -1310,7 +1310,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * **收侦察的结论**(2026-09-11,AUDIT §14-C)。
+	 * **收侦察的结论**。
 	 *
 	 * 两级,和 `sweepLostExecutors` 同一套:
 	 *   ① 表里已落定的 → 落 `scout/settled`;正常结束且结论非空 → 再落一条 `observation/recorded`(资料面);
@@ -1355,7 +1355,7 @@ export function apply(ctx, config = {}) {
 			}
 			if (entry.settled === null) continue
 			/**
-			 * **`reported` 不等于「已落账」**(2026-09-11 长测现场:侦察结论发布之后被丢掉,
+			 * **`reported` 不等于「已落账」**(失效模式:侦察结论发布之后被丢掉,
 			 * 而条目已删、`reported` 已置位 ⇒ 那条结论永久丢)。判据改成看**投影**:
 			 * 投影里还没落地,过了重试窗口就**再发一次**。重复发布是安全的——
 			 * fold 按 id 找记录、覆写同样的字段,不会长出第二条事实。
@@ -1393,7 +1393,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * **失联的评估者**(2026-09-11,AUDIT §14-D)。
+	 * **失联的评估者**。
 	 *
 	 * `pendingAudits` 是**进程内**的:重启之后它空了,而投影里那条 `audit/dispatched` 还在
 	 * (`verdict === null`)。后果有两条,后一条更狠:
@@ -1490,7 +1490,7 @@ export function apply(ctx, config = {}) {
 	/**
 	 * 一条侦察任务的**身份**:锚定的步 + 任务原文(空白归一)。
 	 *
-	 * 为什么要它(2026-09-11 用户实测):中途被打断之后再跑,所有侦察**从头重派**——
+	 * 为什么要它:没有它,中途被打断之后再跑,所有侦察**从头重派**——
 	 * 已经正常回灌过的那些也白跑一遍。任务原文相同 = 同一件事,认出来就能复用它的结论。
 	 * 身份里带锚定的步:同一个问法落在不同的步上,是两件事。
 	 */
@@ -1558,7 +1558,7 @@ export function apply(ctx, config = {}) {
 		const childId = String(dispatched.run.id)
 		mutations.push({ t: 'scout/dispatched', id: scoutId, step: step.id, plan: plan?.id ?? null, goal: step.goal ?? null, trigger, child: childId, capability: dispatched.capability, digest })
 		/**
-		 * **派出去就返回**(2026-09-11,AUDIT §14-C:与「世界线执行者」同一个病,同一个修法)。
+		 * **派出去就返回**(与「世界线执行者」同一个病,同一个修法)。
 		 *
 		 * 原来这里 `await Promise.race([结论, 240s 超时])`,而 `scout/dispatched` 是**随工具结果**
 		 * 进日志的 —— 于是这 240 秒里跑动一断(用户打断、进程退出、模型换路),「派过侦察」这条事实
@@ -1660,7 +1660,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * 从「依据」里挑出一个**真实存在**的工作区文件(§27b)。
+	 * 从「依据」里挑出一个**真实存在**的工作区文件。
 	 *
 	 * 依据是模型写的一句话,通常点着某个产物(「lab/roots.csv 的读数」)。这里把候选 token 逐个
 	 * 落到盘上核一次:存在才算数。**这不是猜,是核** —— 面板上每个可点的东西都必须此刻真的在盘上。
@@ -1679,7 +1679,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * 一条证据的**出处**(§27b):记账那一刻就解析成事实,界面只渲染、不猜。
+	 * 一条证据的**出处**:记账那一刻就解析成事实,界面只渲染、不猜。
 	 *
 	 * 四类(与面板上的四个入口一一对应):
 	 *   · `artifact`          —— 产物文件(准入闸门 stat 过的,或依据里点名且此刻在盘上的)
@@ -1731,14 +1731,14 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * 「该收口哪个分叉」的目标步(**2026-09-11 补的一处结构洞**)。
+	 * 「该收口哪个分叉」的目标步。
 	 *
 	 * 洞长这样:`AbandonFork`/`ConvergeFork` 都在 `firstOpenStep` 上取步。步骤一旦被作废,
 	 * 它就不再是「第一个未落定步」——于是挂在上面的未收口分叉**既不能收敛也不能放弃**,
-	 * 工作副本永久留在盘上。S3 长测里真的发生了(`lab/` 被声明成物证 → 准入拒 → 模型作废该步改道,
+	 * 工作副本永久留在盘上(形态:`lab/` 被声明成物证 → 准入拒 → 模型作废该步改道,
 	 * 两条世界线就此失联)。
 	 *
-	 * 收口的判据(用户 2026-09-11 拍板,走「只落事实 + 放开可达性」那条):
+	 * 收口的判据(「只落事实 + 放开可达性」):
 	 *   · 常规:目标步 = 第一个未落定步(不带 step_id 时的默认);
 	 *   · 例外:**已作废**的步,且它上面的分叉还没收口(没收敛、没放弃)——允许显式收口。
 	 *     **只允许放弃**,不允许把成果并进一个已经撤回的承诺(交付必须有归宿)。
@@ -1762,7 +1762,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * **用到世界线的地方先收一次**结论(2026-09-11 长测抓到的缺口)。
+	 * **用到世界线的地方先收一次**结论。
 	 *
 	 * 原来只有 pre-step 的 sweep 收结论。可一次真跑里整条链(ForkPlan → 四条交付 → 收敛 → 交付
 	 * → 收尾)可能**全在一个回合内**走完,中间根本没有回合边界——于是三条执行者跑完了、
@@ -1779,7 +1779,7 @@ export function apply(ctx, config = {}) {
 	 * 而失败的返回(`fail(...)`)不带走 `mutations` —— 在入口处收,一旦这次调用失败,
 	 * 结论就**永久丢了**(没人会再收它)。放在成功返回前收,失败时它们原封不动留到下一次。
 	 *
-	 * 为什么两级一起收(2026-09-11 R3 长测:四条执行者只收上来一条):
+	 * 为什么两级一起收(只收一级时,四条执行者只收上来一条):
 	 * 内存表是**尽力而为**的——表里没有、或者扫的时候它还没落定的那些,答案在**执行者自己的
 	 * 会话日志**里。所以每个「结果会用到世界线」的返回点都顺手做一次回收:
 	 * 交付、收敛、收尾、以及两件观察工具。少收一条就是少一条结论叙事,而它是可回收的。
@@ -1789,7 +1789,7 @@ export function apply(ctx, config = {}) {
 		mutations.push(...swept.mutations)
 		const late = sweepLostExecutors(state)
 		mutations.push(...late.mutations)
-		// 侦察同一套:它也是「派出去就不等」的子 run,结论同样由这里收(§14-C)。
+		// 侦察同一套:它也是「派出去就不等」的子 run,结论同样由这里收。
 		const scouts = sweepScouts(state, sessionId)
 		mutations.push(...scouts.mutations)
 		return { lines: [...swept.lines, ...scouts.lines], recovered: late.recovered, lost: late.lost, scouts: scouts.mutations.length }
@@ -1818,7 +1818,7 @@ export function apply(ctx, config = {}) {
 	const CONTINUATION_CODES = { stalled: 'clearai_loop_stalled', abandoned: 'clearai_loop_abandoned' }
 
 	/**
-	 * 计划审阅的两个标签(§19-A):它们是**机制**定义的措辞,不是模型的即兴表达。
+	 * 计划审阅的两个标签:它们是**机制**定义的措辞,不是模型的即兴表达。
 	 * 原生 `plan-review` 意图只要求 `approve` 精确指向本问题自己的某个选项,
 	 * 所以标签怎么写由我们定——但**必须**与 `intent.approve` 是同一个字面值。
 	 */
@@ -1826,7 +1826,7 @@ export function apply(ctx, config = {}) {
 	const PLAN_REVIEW_REVISE = '先改再交'
 
 	/**
-	 * 内核**自己**对平台说过的关于续跑窗口的话,落进投影(§17.2)。
+	 * 内核**自己**对平台说过的关于续跑窗口的话,落进投影。
 	 *
 	 * 为什么不再记在进程内存里:宿主的 `paused` 相位分不清「人按的」与「策略按的」,
 	 * 而这两者的处置正好相反——人按的绝不覆盖,自己按的要能恢复。记在内存里,
@@ -1885,12 +1885,12 @@ export function apply(ctx, config = {}) {
 		if (plan !== null && plan.blocked !== undefined) return 'stop'
 		// 计划在场但**授权记号未落账**(`PLAN_AWAITING_CONFIRM`):那是等人的一道门,
 		// 不是「还有活可干」——推它就是替人做决定(ClearAI 原话:「已经有人在推它了」)。
-		// 它与档无关:§34 之后没有任何一档会替你签这个记号(见 CreatePlan 的确认门)。
+		// 它与档无关:没有任何一档会替你签这个记号(见 CreatePlan 的确认门)。
 		if (plan !== null && plan.status === 'active' && !derived.planIsAuthorized(plan)) return 'hold'
 		/**
 		 * 裁决还没回来(`audit/dispatched` 但未 `audit/settled`)= 机器等待态,与 fold 的派生同源。
 		 * `auditsResolved` 是「这一拍刚刚判定这些裁决已经失联」:那些事实要到下一拍才折进投影,
-		 * 所以这一拍必须显式放行,否则一条永远不会回来的裁决会把目标按死在挂起上(§14-D)。
+		 * 所以这一拍必须显式放行,否则一条永远不会回来的裁决会把目标按死在挂起上。
 		 */
 		if (auditsResolved !== true && state.audits.some((audit) => audit.verdict === null)) return 'hold'
 		// 有一道门开着(收件箱非空)就不驱动:等人的事永远优先于往前跑。
@@ -1900,7 +1900,7 @@ export function apply(ctx, config = {}) {
 		// (SetGoal 之后目标一定是开着的——那一拍投影还没前进)。
 		const goalOpen = goalOpenOverride ?? (state.goal !== null && state.goal.status === 'open')
 		/**
-		 * 目标还开着、门都关着、也没有在飞的裁决 ⇒ **该继续**(§34)。
+		 * 目标还开着、门都关着、也没有在飞的裁决 ⇒ **该继续**。
 		 * 原先这里按档分叉(无人值守 drive / 人在场 hold)——那是让用户**预先声明**
 		 * 「请多问我」✗,而"要不要人"这件事已经由**门**表达了:有事要拍板 ⇒ 门开着 ⇒ 上面就 hold 了。
 		 */
@@ -1919,7 +1919,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * 续跑窗口的**身份**(§17.1):谁在跑 + 哪一档。
+	 * 续跑窗口的**身份**:谁在跑 + 哪一档。
 	 *
 	 * 为什么不再把目标的主张与判据铺进去:宿主那句 objective 有两个消费者——平台面板(**给人看**)
 	 * 与驱动器的续跑种子(**给模型看**)。把它写成「用户的目标」,面板上就出现第二个目标,
@@ -1931,14 +1931,14 @@ export function apply(ctx, config = {}) {
 	 * 这条也是「目标修订不重置预算」的机制保证——否则反复修订目标就能刷出无限轮数。
 	 */
 	/**
-	 * 窗口身份里那一档怎么写(§18.2):**用人话**,与工具行那颗控制同一套词。
+	 * 窗口身份里那一档怎么写:**用人话**,与工具行那颗控制同一套词。
 	 *
 	 * 为什么不是「人在场 / 无人值守」:那两个词是**机制**的词汇,给模型和写文档的人用
 	 * (运行态卡、提示词、AUDIT 里继续用它们)。而窗口身份是印在**人看的那块面板**上的
-	 * ——实测里同一屏上出现「人在场」与「多问我」两个名字指同一件事,人只会更糊涂。
+	 * ——同一屏上出现「人在场」与「多问我」两个名字指同一件事,人只会更糊涂。
 	 * 两处的字面值由两侧的测试各钉一遍(内核这一份 + 客户端那一份),漂移会当场红。
 	 */
-	/** 窗口身份里**不再写档位**(§34):「多问我 / 自己跑」不是用户的配置,是运行时状态。 */
+	/** 窗口身份里**不写档位**:「多问我 / 自己跑」不是用户的配置,是运行时状态。 */
 	/** 一句话摘要:压平空白、超长截断(平台上那句给人看的话用它;内核里没有客户端的 `brief`)。 */
 	function clip(text, max) {
 		const flat = String(text ?? '').replace(/\s+/g, ' ').trim()
@@ -1951,7 +1951,7 @@ export function apply(ctx, config = {}) {
 		return '继续把手上这一步做完'
 	}
 	/**
-	 * 窗口上那句**给人看的话**(§17.1 的第二次修正,2026-09-12 实测)。
+	 * 窗口上那句**给人看的话**。
 	 *
 	 * 原来这里是 `ClearAI 续跑窗口 · 目标 g-mtyirobr2y2l`:一个机制词加一串机器 id。
 	 * 而这句是**印在平台面板上、给人看**的 —— 人该看到"在做什么",不是我们在内部怎么称呼它。
@@ -1981,7 +1981,7 @@ export function apply(ctx, config = {}) {
 	function armContinuation(agent, state, derived, options = {}) {
 		const { goals, why } = continuationService()
 		/**
-		 * 窗口不在时,把这句**事实**的后果也说清楚(R3 长测:一次性形态根本没有窗口,
+		 * 窗口不在时,把这句**事实**的后果也说清楚(一次性形态根本没有窗口,
 		 * 而提示词里「让出本轮等唤醒」那句在那种场合是不成立的)。
 		 * 只说事实与含义,不劝:**回合结束之后没有人会叫醒你** —— 这一句就够了。
 		 */
@@ -2003,7 +2003,7 @@ export function apply(ctx, config = {}) {
 			const current = continuationView(agent)
 			if (current === null) {
 				/**
-				 * **它不在了,而那不是我们干的**(§17.2)。我们自己每次清除都在同一次调用里
+				 * **它不在了,而那不是我们干的**。我们自己每次清除都在同一次调用里
 				 * 立刻建回一枚(见下面 freshWindow 与 blocked/complete 两支),所以「我们记过一枚
 				 * 活着的窗口、此刻它不在」在证据上只可能是外部清的——平台的人在面板上按了清空。
 				 * 那就**不重建**:人的动作即刻为真,我们只落一条账、并如实说明后果。
@@ -2032,18 +2032,18 @@ export function apply(ctx, config = {}) {
 				}
 				/**
 				 * 窗口活着(active + armed),而且账也对得上 → **一个字都不说、一次写都不做**。
-				 * 这里以前还有一条 `edit` 对齐分支(文本随目标修订而改写);§17.1 之后身份一变
+				 * 文本随目标修订而改写的 `edit` 对齐分支已删:身份一变
 				 * 就是换一枚窗口,所以那条路整个不需要了:
 				 * 目标修订不再动窗口 ⇒ 预算也不会被反复修订刷掉。
 				 */
 				/**
-				 * **额度变了就换窗口**(§17.6 补上 §17.1 写下却没实现的那半句):
-				 * 窗口的额度就是**授权**,额度变了就是换一份授权(§34 之后额度只有一个默认值,
+				 * **额度变了就换窗口**:
+				 * 窗口的额度就是**授权**,额度变了就是换一份授权(额度只有一个默认值,
 				 * 但 `maxAutoTurns` 仍可由人显式配置)。旧实现靠 `edit` 去对齐轮数,
-				 * 那条路在 §17.1 删掉了,于是额度变化会把窗口锁在旧额度上——这是个真缺口。
+				 * 不在这里换窗口,额度变化会把窗口锁在旧额度上。
 				 *
 				 * 怎么分清「额度变了」与「人改写过了」:看**平台上的文本还是不是我们记下的那句**。
-				 * 是我们的 ⇒ 可以按额度换;不是我们的 ⇒ 以人为准,一个字都不动(§17.2)。
+				 * 是我们的 ⇒ 可以按额度换;不是我们的 ⇒ 以人为准,一个字都不动。
 				 */
 				const ours = before !== null && before.label !== null && before.label !== undefined && before.label === current.objective
 				// 额度变了 = 授权变了 ⇒ 换一枚新窗口(清 + 建,按宿主契约)。
@@ -2084,7 +2084,7 @@ export function apply(ctx, config = {}) {
 	/**
 	 * 窗口的说明文字:别让人以为「没有窗口」——每个会话都有窗口,只是额度不同。
 	 * 上限由调用方现算的 maxGoalRounds 给:它是 `maxAutoTurns` 或默认值(128),
-	 * **不随任何运行档变化**(档位连面板入口都没有了,见 §34)。
+	 * **不随任何运行档变化**(档位连面板入口都没有了)。
 	 */
 	function windowLabel(maxGoalRounds) {
 		return `${maxGoalRounds} 轮自动续跑,一条人类消息换一个新窗口`
@@ -2118,7 +2118,7 @@ export function apply(ctx, config = {}) {
 						: '计划层已经收尾而目标还开着,下一阶段由人给。人一开口就换新窗口。'
 		try {
 			continuationService().goals.pause(agent, { id: current.id, revision: current.revision })
-			// 「这次暂停是我们按的」必须落账:宿主的 paused 相位分不清人按的与策略按的(§17.2)。
+			// 「这次暂停是我们按的」必须落账:宿主的 paused 相位分不清人按的与策略按的。
 			recordContinuation(mutations, state.continuation ?? null, { state: 'paused', goal: current.id, target: state.continuation?.target ?? null, why: reason })
 			return `\n(这一档暂时停着:${why})`
 		} catch (error) {
@@ -2128,7 +2128,7 @@ export function apply(ctx, config = {}) {
 
 	/**
 	 * 让窗口服从策略。判定顺序就是 ClearAI 的语义顺序:
-	 *   ⓪ 人清掉过续跑 → 撤回一直有效,直到人再开口(§17.2:人的动作不被静默撤销);
+	 *   ⓪ 人清掉过续跑 → 撤回一直有效,直到人再开口(人的动作不被静默撤销);
 	 *   ① **人开口 = 重新授权**:无条件换新窗口(`reset_goal_loop` 连 budget_exhausted 一起清);
 	 *   ② 窗口已经停着(blocked / complete / 人按的 paused)→ 如实说,不自动重开
 	 *      ——自动重开一个「额度用尽」的窗口,等于把预算机制废掉;
@@ -2142,7 +2142,7 @@ export function apply(ctx, config = {}) {
 		const planWork = plan !== null && plan.steps.some((step) => step.status === 'open')
 		const goalOpen = options.goalOpen ?? (state.goal !== null && state.goal.status === 'open')
 		const hasWork = goalOpen || planWork
-		// §34:档位已经是**部署预设的初值**,不随回合变化 ⇒ 这里没有"当档"要优先。
+		// 档位已经是**部署预设的初值**,不随回合变化 ⇒ 这里没有"当档"要优先。
 		const demand = turnDemand(state, derived, options.goalOpen ?? goalOpen, options.auditsResolved === true)
 		const { goals, why } = continuationService()
 		const current = continuationView(agent)
@@ -2187,7 +2187,7 @@ export function apply(ctx, config = {}) {
 		if (plan !== null && plan.status === 'active' && !derived.planIsAuthorized(plan)) return 'plan_confirm'
 		if (derived.hasOpenGate) return 'gate'
 		/**
-		 * §34:原来这里还有个 `goal_boundary`(「人在场时,一个阶段收尾就停下等人」)——
+		 * 这里曾有个 `goal_boundary`(「人在场时,一个阶段收尾就停下等人」)——
 		 * 那是**档位**的表达,档删了它也就不该存在。上面三条是**唯一**能让窗口停下的理由
 		 * (都是"真的有人的事"),所以走到这里说明判据与我理解的不一致 ⇒ 如实报未知 + 告警,
 		 * 而不是编一个好听的理由(理由那句话是要给模型读的,不许说假话)。
@@ -2220,7 +2220,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * §34 **删掉了「当档从输入读」这整套**(`autonomyFromMessages` / `turnAutonomy` / `autonomyForTurn`):
+	 * **「当档从输入读」这整套已删**(`autonomyFromMessages` / `turnAutonomy` / `autonomyForTurn`):
 	 * 它服务的唯一动词是已摘掉的 `set_autonomy` ✗。档位现在只是**部署预设的初值**,
 	 * 不随回合变化 ⇒ 没有"这一拍按哪一档跑"这个问题,也就没有瞬时参数要传。
 	 */
@@ -2274,7 +2274,7 @@ export function apply(ctx, config = {}) {
 	 * 请人审阅**已经立起来的**计划,并按结果落授权记号。
 	 *
 	 * 为什么必须有这条路:`CreatePlan` 会请人审阅,但**改完不会再请** —— 而审阅卡上那句
-	 * 「改完再呈一次」正是我们承诺的。2026-09-12 实测的死胡同:人在审阅里选了「先改再交」,
+	 * 「改完再呈一次」正是我们承诺的。死胡同的形态:人在审阅里选了「先改再交」,
 	 * 模型照意见改了计划,然后**没有任何入口**能再呈一次 ⇒ 计划永远停在未授权,
 	 * 而内核又如实拒绝开工。**打不开的门比没有门更糟**:它把机制变成死胡同。
 	 *
@@ -2318,7 +2318,7 @@ export function apply(ctx, config = {}) {
 	const ontologyShelved = new Set()
 
 	/**
-	 * **事实货架**(§23):把已升格的事实汇成 `clear/knowledge/facts/INDEX.md`。
+	 * **事实货架**:把已升格的事实汇成 `clear/knowledge/facts/INDEX.md`。
 	 *
 	 * 为什么必须有它:在它之前,事实只落进 `clear/knowledge/facts/<目标 id>.md`
 	 * —— **没有任何读者**(模型不知道有哪些事实、更不知道文件名按目标 id 拼)。
@@ -2366,7 +2366,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * **本体货架**(§22):把已装的那份本体落成 `clear/ontology/<id>.md`。
+	 * **本体货架**:把已装的那份本体落成 `clear/ontology/<id>.md`。
 	 *
 	 * 为什么落成文件而不是只留在代码里:声明是**给模型读的**——它得知道这套系统认哪些对象、
 	 * 哪些转移合法、每一级谁来判,才能在写判据与交付时对得上。与 ClearAI 那一侧的
@@ -2519,7 +2519,7 @@ export function apply(ctx, config = {}) {
 						exec.signal,
 					)
 					mutations.push(...scout.mutations)
-					// 侦察是「派出去就不等」的子 run(§14-C):结论由 sweep 收,进资料面。
+					// 侦察是「派出去就不等」的子 run:结论由 sweep 收,进资料面。
 					scoutNote =
 						scout.pending === true
 							? '\n立约前侦察已派出(只读),结论会作为观测回灌到资料面 —— 下一步卡片的「资料面」里能看到;要在这个回合里就等它,用 AwaitWorldlines。'
@@ -2574,12 +2574,12 @@ export function apply(ctx, config = {}) {
 			}
 			const plan = activePlanOf(state)
 			/**
-			 * §38 **目标结案前先把计划收尾**(严格,不是提示)。
+			 * **目标结案前先把计划收尾**(严格,不是提示)。
 			 *
 			 * 为什么不让跳过:事实是在收尾那条路上沉淀的(`fact/promoted` 就在本工具里,
 			 * 而它按 `derived.hypotheses` 逐条升格)—— 先结目标、留一份 active 的计划,
 			 * 等于在账上留下一个开着的东西,还绕过了"沉淀"这道动作 ✗。
-			 * 真长测实测到过这个组合:目标 achieved 而计划 active、`fact/promoted: 0`。
+			 * 真跑里出现过这个组合:目标 achieved 而计划 active、`fact/promoted: 0`。
 			 *
 			 * 放弃(`abandoned`)走的是另一条路,**不**受此限:如实说清阻塞就收兵,别为难人 ✓。
 			 */
@@ -2609,7 +2609,7 @@ export function apply(ctx, config = {}) {
 			if (audit.verdict === 'pending') return fail('audit_pending', `目标评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试。`)
 			if (audit.verdict !== 'support') {
 				/**
-				 * 目标级裁决也要带得出出处(§27b):那条审计自己写了一张卡、也有它的评估者会话。
+				 * 目标级裁决也要带得出出处:那条审计自己写了一张卡、也有它的评估者会话。
 				 * 这一处原先 `refs: []` ⇒ 面板上这条证据一个可点的东西都没有 ✗。
 				 */
 				const goalOrigin = buildEvidenceOrigins({
@@ -2911,7 +2911,7 @@ export function apply(ctx, config = {}) {
 			if (typeof args.reason !== 'string' || args.reason.trim() === '') return fail('reason_required', '作废必须带原因。')
 			mutations.push({ t: 'plan/voided', plan: plan.id, step: step.id, reason: args.reason.trim() })
 			/**
-			 * 作废**不动**分叉(2026-09-11 拍板):作废是承诺层的权威动作,它不改变尝试层已经发生的事实
+			 * 作废**不动**分叉:作废是承诺层的权威动作,它不改变尝试层已经发生的事实
 			 * ——那些世界线探索过、有的还出了读数。把它们改写成「已放弃」就是改写历史。
 			 * 但也不能装作没看见:这一步上要是还挂着没收口的分叉,那是一条**事实**,
 			 * 而且它有唯一一个出口(带 step_id 的 AbandonFork)。所以如实说,不说教。
@@ -3112,7 +3112,7 @@ export function apply(ctx, config = {}) {
 				if (audit.verdict === 'refute') {
 					const scout = await runScout(sessionId, exec.agent, plan, step, audit.shortfalls.join('; '), `audit_shortfall:${audit.shortfalls[0] ?? '未指明'}`, exec.signal)
 					mutations.push(...scout.mutations)
-					// 派出去就不等(§14-C):结论会在下一个回合边界回灌到资料面。
+					// 派出去就不等:结论会在下一个回合边界回灌到资料面。
 					if (scout.pending === true) basis = `${basis}\n[已派出只读侦察补缺口 ${scout.scoutId}:结论会作为观测回灌到资料面,不在这次回执里]`
 				}
 			} else {
@@ -3128,12 +3128,12 @@ export function apply(ctx, config = {}) {
 			}
 
 			/**
-			 * §19-B **人的放行先落账**(在别的门之前)。
+			 * **人的放行先落账**(在别的门之前)。
 			 *
 			 * 放行是**人的动作**,它成立与否与这次交付后来过不过得了别的门无关:
-			 *   · 发起者仍是 `tools/pre-execute` 瀑布(§14-B,在工具跑起来之前就把这次交付摆给人看);
+			 *   · 发起者仍是 `tools/pre-execute` 瀑布(在工具跑起来之前就把这次交付摆给人看);
 			 *   · 但旧写法把 `human/released` 留在第 ⑦ 步(交付成功之后)——于是「人放行了,可这一交付
-			 *     栽在来源分离/判据门上」时,那条事实随失败一起消失,**同一步重试又问人一遍**(真跑现场)。
+			 *     栽在来源分离/判据门上」时,那条事实随失败一起消失,**同一步重试又问人一遍**。
 			 * 所以:一知道人放行过,就把这条事实落下来;失败时它跟着回去(见下面的 `refuse`)。
 			 */
 			const releaseTarget = levelIndex === 4 && CFG.l4RequiresHumanRelease ? l4Delivery(state, 'AdvancePlan', args) : null
@@ -3157,7 +3157,7 @@ export function apply(ctx, config = {}) {
 			}
 
 			/**
-			 * ⑥ L4 人放行:**只读**审批栈的权威记录,不推断(2026-09-11,AUDIT §14-B)。
+			 * ⑥ L4 人放行:**只读**审批栈的权威记录,不推断。
 			 * 发起者是 `tools/pre-execute` 瀑布;这里只认那条记录——`human/released`
 			 * 已经在上面(别的门之前)落过账,所以这里不写第二遍。
 			 */
@@ -3171,7 +3171,7 @@ export function apply(ctx, config = {}) {
 
 			// ⑦ 写证据 + 推进(只增不改)
 			/**
-			 * **出处在这一刻定下来**(§27b):四类入口(产物 / 评估卡 / 评估者子会话 / 人放行)
+			 * **出处在这一刻定下来**:四类入口(产物 / 评估卡 / 评估者子会话 / 人放行)
 			 * 全部解析成事实写进账里,界面只渲染、不猜。
 			 */
 			const originInfo = buildEvidenceOrigins({
@@ -3240,7 +3240,7 @@ export function apply(ctx, config = {}) {
 
 	// ═══ git 世界线层:世界线 = 分支 + worktree ═══════════════════════════════
 	//
-	// 探针实测换来三条硬事实(见 tools/spike-git-worldlines.mjs):
+	// 探针换来三条硬事实(见 tools/spike-git-worldlines.mjs):
 	//   · worktree 隔离完美,落选后 branch ref 永久可读(P5 的落点);
 	//   · **主线脏且与世界线改动重叠时 git 直接拒绝合并** → 先把用户手上的快照落成一条提交,再合并;
 	//   · **落选世界线里还有未提交的活时 git 拒绝删 worktree** → 先提交到分支,再删工作副本。
@@ -3322,7 +3322,7 @@ export function apply(ctx, config = {}) {
 			/**
 			 * 基线的提交信息可以**由调用方给**:账本是懒建的,如果第一次建立就发生在某一步交付那一刻,
 			 * 那么这一笔既是基线、也是那一步的账 —— 信息必须写成那一步,否则那一步就"没有自己的提交"了
-			 * (实测:CI 上基线把第一步的内容吞掉,历史里那一步只剩一条匿名基线)。
+			 * (失效模式:基线把第一步的内容吞掉,历史里那一步只剩一条匿名基线)。
 			 */
 			const committed = added.ok ? gitAt(context, [...GIT_IDENTITY, 'commit', '-qm', baselineMessage ?? 'clearai:旁路账本基线(工作区当时的全部内容)']) : added
 			if (!committed.ok && !/nothing to commit|无文件要提交|working tree clean/i.test(`${committed.out}${committed.err}`)) {
@@ -3341,7 +3341,7 @@ export function apply(ctx, config = {}) {
 	// ── 账本(D3/D4:账本 = git,与世界线共用一本) ─────────────────────────────
 	//
 	// ClearAI 的账本是**每次写入**都记一笔(带 turn/tool 归属),我们记在**交付点**:
-	// 一次提交 = 一次「这一步交付时工作区长什么样」。这是刻意的偏离(见 DESIGN §6):
+	// 一次提交 = 一次「这一步交付时工作区长什么样」。这是刻意的偏离:
 	// 每次写入的归属在 DSH 里属于宿主的 fs 领域,而交付点归属是内核真正知道的事实。
 	// 两条性质照抄不变:**只前进**(恢复 = 新版本 + 新提交)与**留下来源**(提交信息写步 id)。
 
@@ -3401,11 +3401,11 @@ export function apply(ctx, config = {}) {
 	/**
 	 * 世界线工作副本的容器:**工作区里**(`<workspace>/clear/worldlines/`)。
 	 *
-	 * 2026-09-11 改的位置,原因是**宿主沙箱的硬边界**:它只允许写「会话自己的 cwd」,
+	 * 位置由**宿主沙箱的硬边界**决定:它只允许写「会话自己的 cwd」,
 	 * 而原生子代理**继承父会话的 cwd**(`dsh-subagent` 的 `childSessionMeta` 写死
 	 * `cwd: parentHeader.cwd`,`SubagentStartRequest` 没有 cwd 字段,沙箱也没有「额外可写根」的缝)。
 	 * 于是原设计那个位置(数据区、jail 之外)会让每个执行者**写不进自己的交付物**:
-	 * 实测报 `[sandbox: file access denied under workspace-write mode]`,只能申请提权——而人只会拒绝。
+	 * 沙箱报 `[sandbox: file access denied under workspace-write mode]`,只能申请提权——而人只会拒绝。
 	 *
 	 * 前提是:「**分支 run 的根就是它自己的 worktree**」,
 	 * 所以它写自己是「jail 之内」。DSH 给不了子会话自己的根 ⇒ 位置必须让位于沙箱边界。
@@ -3413,7 +3413,7 @@ export function apply(ctx, config = {}) {
 	 * 为什么放 `clear/` 而不是 `.clearai/`:这个产品对用户有一句明确承诺——「系统只在你的文件夹里
 	 * 加 `clear/` 一个目录」。放 `clear/worldlines/` 完全在那句承诺之内,而且照样在沙箱可写区里。
 	 *
-	 * 代价(三条,都记在 AUDIT §15):① 要往账本仓库(工作区本身是 git 仓库时是它的)写
+	 * 代价(三条):① 要往账本仓库(工作区本身是 git 仓库时是它的)写
 	 * `.git/info/exclude`,否则每次交付提交会把各条世界线的文件一起提进主线历史;
 	 * ② 「只准写自己那条」从此由**我们的路径守卫**承担(沙箱只保证「在工作区内」);
 	 * ③ 备份/同步会同时看到两份(与旧的放置方式同样的成本)。
@@ -3456,7 +3456,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * **盘上残留的读数**(2026-09-11 R3-c):截断之后,上一轮的世界线工作副本与分支还躺在盘上,
+	 * **盘上残留的读数**:截断之后,上一轮的世界线工作副本与分支还躺在盘上,
 	 * 而**新会话的投影是从零开始的**——树上看不到、卡片不提,连「它们存在」这件事都没人报。
 	 *
 	 * 「什么都不删」(P5)不该等于「什么都看不见」:残留是一条**事实**,该像目录、当档一样
@@ -3969,7 +3969,7 @@ export function apply(ctx, config = {}) {
 				if (typeof observation?.ref !== 'string' || observation.ref.trim() === '') continue
 				const ref = observation.ref.trim()
 				/**
-				 * 相对路径按**这条世界线自己的工作副本**解析(2026-09-11 修)。
+				 * 相对路径按**这条世界线自己的工作副本**解析。
 				 *
 				 * 原来按主线 `cwd` 解析,于是「世界线的观测」永远落在主线路径上,再被下面那条
 				 * 隔离检查拒掉——用户那次真跑里 `AdvanceWorldline` 连续两次报
@@ -4016,7 +4016,7 @@ export function apply(ctx, config = {}) {
 
 			const levelIndex = levelIndexOf(branch.level)
 			/**
-			 * **L4 的两道门,这条路也要走**(2026-09-11,AUDIT §14-A)。
+			 * **L4 的两道门,这条路也要走**。
 			 *
 			 * 等级是**事实的属性**,不是工具的属性:同一个 L4,走主线要人放行 + 只认外部来源,
 			 * 走世界线两样都不要——那是门挂错了轴。这里与 `AdvancePlan` 用**同一个**判定
@@ -4090,7 +4090,7 @@ export function apply(ctx, config = {}) {
 			}
 			if (validity === null && reading !== null) validity = metricReading(reading) === null ? 'unusable' : 'usable'
 			/**
-			 * 世界线证据的出处同样在**记账那一刻**定下来(§27b)。世界线在**自己的工作副本**里作业,
+			 * 世界线证据的出处同样在**记账那一刻**定下来。世界线在**自己的工作副本**里作业,
 			 * 所以 `cwd` 就是那份副本 —— 依据里点名的产物按副本核存在性。
 			 */
 			const originInfo = buildEvidenceOrigins({
@@ -4112,7 +4112,7 @@ export function apply(ctx, config = {}) {
 				level: branch.level,
 				evaluator,
 				basis,
-				/** `refs` 一律是**路径**:旧写法只写材料 id ⇒ 世界线证据一条都开不了(实测)。 */
+				/** `refs` 一律是**路径**:只写材料 id ⇒ 世界线证据一条都开不了。 */
 				refs: originInfo.paths,
 				origins: originInfo.origins,
 				anchor: evaluator === 'independent' ? 'auditor' : 'artifact',
@@ -4234,7 +4234,7 @@ export function apply(ctx, config = {}) {
 			/**
 			 * 采纳 = 合并,但**只在那个 git 对象今天真的还在的时候**。
 			 *
-			 * 2026-09-12 的实测(案例 A):分叉落账时物化过,后来账本被清理,分支与工作副本一起没了
+			 * 形态:分叉落账时物化过,后来账本被清理,分支与工作副本一起没了
 			 * ——于是 `fork.git_branch` 还写着名字,合并却必然失败,一份计划被一个**机制上不可能收敛**
 			 * 的分叉卡住(agent 只能改走 AbandonFork)。
 			 *
@@ -4358,7 +4358,7 @@ export function apply(ctx, config = {}) {
 				})
 			}
 			/**
-			 * **派出去就不等**(2026-09-11,§14-C):结论走事实通道,不挤在工具结果里——
+			 * **派出去就不等**:结论走事实通道,不挤在工具结果里——
 			 * 工具结果是「这一动作做完了」的收据,不是「世界发生了什么」的记录。
 			 */
 			return done({
@@ -4675,7 +4675,7 @@ export function apply(ctx, config = {}) {
 	/**
 	 * ═══ 项目章程(``PROJECT.md``):把「它还是不是一个空壳」变成一条可查的事实 ═══
 	 *
-	 * 为什么需要它(2026-09-11 用户实测):跑完五轮、交付了 HTML、记忆写了两份,
+	 * 为什么需要它:没有它,跑完几轮、交付了产物、记忆写了两份,
 	 * `PROJECT.md` 还是铺工作区那一刻的模板——18 处占位原封不动,谁也没发现。
 	 * 根因不是模型懒:章程的**读**侧已经是最好的(原生指令文件每步重投影),但**写**侧
 	 * 只有一句提示词、没有任何时机,而且**没有任何地方让模型或人看见「它还是空壳」**。
@@ -4689,9 +4689,9 @@ export function apply(ctx, config = {}) {
 	/**
 	 * 章程的读数——**只有文件系统事实**:在不在、多大、最后改动什么时候。
 	 *
-	 * 2026-09-11 砍掉了这里原来那份「占位 X/Y 条 + §1 当前阶段解析」(用户一问点醒:
-	 * 「要有计数吗」)。三条理由,第一条是实测的:
-	 *   · **脆**:它是对文本做格式解析——模型把 §5 写成 `- **变更记录**（一行即…）`,
+	 * 这里原来那份「占位 X/Y 条 + 当前阶段解析」已砍掉(
+	 * 「要有计数吗」)。三条理由:
+	 *   · **脆**:它是对文本做格式解析——模型把章程第 5 节写成 `- **变更记录**（一行即…）`,
 	 *     要求 `**标签**:` 的规则当场把条目数从 18 数成 17。改一个标点,「事实」就变了;
 	 *   · **可刷**:「占位 0/18」可以靠删占位、灌废话达到——奖励的是把数字清掉,不是把章程写实;
 	 *   · **第二本账**:章程每回合被**原生指令文件整份注入**上下文,模型手里就是原文。
@@ -4763,7 +4763,7 @@ export function apply(ctx, config = {}) {
 					// 正文文件 = 技能目录下的 `SKILL.md`(原生 filesystem provider 自己的约定:
 					// `path = join(dir,'SKILL.md')`、`resourceBase.path = 技能目录`)。
 					// 记忆那条是**虚拟条目**(根本没有正文文件),所以它是 null——面板据此不画链接,
-					// 而不是让人点进去撞一个 404(2026-09-11 实测的「点技能跳 not found」)。
+					// 而不是让人点进去撞一个 404。
 					file: dir === null || String(skill?.source ?? '') === 'clearai-memory' ? null : join(dir, 'SKILL.md'),
 					// 面板读正文走的是**工作区内**的读面(路径守卫),所以「在不在工作区里」这条
 					// 事实由知道 cwd 的这一侧算好发下去,免得面板去猜。
@@ -4792,7 +4792,7 @@ export function apply(ctx, config = {}) {
 		return CFG.autonomy
 	}
 	/**
-	 * **本体形状**下发(§23):面板那一格页眉要从**声明**生成,不能在界面里手抄一份
+	 * **本体形状**下发:面板那一格页眉要从**声明**生成,不能在界面里手抄一份
 	 * (抄一份就会漂移——而漂移的界面比没有界面更坏)。所以把形状当事实发下去,
 	 * 与目录/当档同一条纪律:**变了才发**;它一个会话只发一次(本体在进程内是常量)。
 	 */
@@ -5115,7 +5115,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * **人放行的权威记录**(2026-09-11,AUDIT §14-B)。
+	 * **人放行的权威记录**。
 	 *
 	 * 原生审批栈在**会话日志**里落了一对事件:`approval/asked{id,toolName,callId}` +
 	 * `approval/decided{id,outcome}`。`allowed-once` 是唯一的放行,而审批策略只有 `ask`/`never`
@@ -5153,7 +5153,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * L4 的那道门挂在**等级**上,不挂在工具名上(2026-09-11,AUDIT §14-A)。
+	 * L4 的那道门挂在**等级**上,不挂在工具名上。
 	 *
 	 * 同一个 `level: 'L4'`,主线按**步骤**等级、世界线按**分支**等级——两条交付路径必须是同一道门。
 	 * 改之前:`l4RequiresHumanRelease` 与 `l4RejectSelfWritten` 只写在 `AdvancePlan` 里,
@@ -5243,7 +5243,7 @@ export function apply(ctx, config = {}) {
 					return { kind: 'deny', reason: `clear/evidence、clear/knowledge/facts、clear/goals 由系统所有,做的人不能写:${suspect}。事实与评估卡只能由系统落盘。` }
 				}
 				// L4 人放行:ClearAI 的设计目标未实现,这里用宿主的审批瀑布实现。
-				// 门挂在**等级**上:主线看步骤等级,世界线看分支等级——两条路同一道门(AUDIT §14-A)。
+				// 门挂在**等级**上:主线看步骤等级,世界线看分支等级——两条路同一道门。
 				{
 					const target = CFG.l4RequiresHumanRelease ? l4Delivery(state, exec.name, args) : null
 					if (target !== null && !target.released) {
@@ -5282,7 +5282,7 @@ export function apply(ctx, config = {}) {
 	 * 技能目录是宿主原生那张**合并目录**的一部分,而原生 `tool-skill` 的 pre-step 会在我们前面
 	 * 先取一次快照(`cwd + 作用域 + revision` 做键的缓存)。等轮到自己才铺,那次快照就把**空表**
 	 * 缓存住了——后果不只是面板没内容:模型自己也一直看不到 `clear/skills` 里的 18 条模板技能,
-	 * 人引用 `/技能名` 也注入不出正文(2026-09-11 的 E2E 实测)。
+	 * 人引用 `/技能名` 也注入不出正文。
 	 * pre-step 里仍然保留一次调用:铺之前就存在的会话、或事件没送到的情况,兜底。
 	 *
 	 * `cwdHint` 只信**调用方给的** cwd:`agent/created` 那一刻会话服务里可能还查不到这个会话,
@@ -5333,7 +5333,7 @@ export function apply(ctx, config = {}) {
 		const humanSpoke = entering.some((message) => message?.source?.kind === 'user')
 		const autoRound = entering.find((message) => message?.source?.kind === 'goal') ?? null
 		/**
-		 * **本回合的当档从输入读**(§17.5):人门消息先入 inbox、后落日志,而这一拍跑在它落账之前,
+		 * **本回合的当档从输入读**:人门消息先入 inbox、后落日志,而这一拍跑在它落账之前,
 		 * 所以这里读投影必然是旧档——而这一轮恰恰是人的动作触发的那一轮。
 		 */
 		noteCollectTurn(sessionId, payload.turn)
@@ -5348,7 +5348,7 @@ export function apply(ctx, config = {}) {
 		/**
 		 * 本体货架:每个会话铺一次;第一拍在卡里指一下它(只说一次——它是**常驻事实**,
 		 * 每拍重复就是往上下文里灌水)。模型据此知道「这套系统认哪些对象、每级谁来判」,
-		 * 于是写判据与交付时对得上本体(§22)。
+		 * 于是写判据与交付时对得上本体。
 		 */
 		let ontologyNote = ''
 		if (CONTRIB.ontology !== null && CONTRIB.ontology !== undefined && !ontologyShelved.has(sessionId)) {
@@ -5398,7 +5398,7 @@ export function apply(ctx, config = {}) {
 		if (autonomyPayload !== null && brainNote === '') brainNote = `\n(运行档:${autonomyPayload.value === 'unattended' ? '无人值守' : '人在场'}。)`
 
 		/**
-		 * **世界线结论的回灌**(2026-09-11):`ForkPlan` 现在把执行者放出去就返回(事实先落账),
+		 * **世界线结论的回灌**:`ForkPlan` 把执行者放出去就返回(事实先落账),
 		 * 结论由这里收——每个回合扫一次已落定的执行者,把 `worldline/executed` 当作**事实**注入。
 		 *
 		 * 为什么走「插件消息的 section」而不是等模型来问:结论是**世界发生的事**,该像目录、
@@ -5423,7 +5423,7 @@ export function apply(ctx, config = {}) {
 			ctx.logger?.warn?.(`clearai: 世界线结论回灌失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
 		/**
-		 * 失联的评估者(§14-D):重启之后 `pendingAudits` 空了,而投影里那条裁决还停在「在跑」——
+		 * 失联的评估者:重启之后 `pendingAudits` 空了,而投影里那条裁决还停在「在跑」——
 		 * 它会把目标按在 hold 上。这里问一次宿主的子代理目录,把「它已经不在跑」如实落成一条事实。
 		 */
 		let auditsResolved = false
@@ -5438,7 +5438,7 @@ export function apply(ctx, config = {}) {
 			ctx.logger?.warn?.(`clearai: 失联裁决盘点失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
 		/**
-		 * **盘上残留**(2026-09-11 R3-c):投影从零开始,可盘上的上一轮还在。
+		 * **盘上残留**:投影从零开始,可盘上的上一轮还在。
 		 * 每个会话扫一次(签名 = 工作目录 + 当前这盘的分叉 id 列表,变了才重扫),
 		 * 有残留就如实报一条读数——不落状态、不新增变更类型。
 		 */
@@ -5446,7 +5446,7 @@ export function apply(ctx, config = {}) {
 			const cwd = sessionCwd(sessionId)
 			const state = hostService.state(sessionId)
 			/**
-			 * **事实货架**(§23):事实变了才重写、才在卡里提一句——**变了才发**,与目录同一条纪律。
+			 * **事实货架**:事实变了才重写、才在卡里提一句——**变了才发**,与目录同一条纪律。
 			 * 事实很少变(升格一次),所以这句话在大多数回合里都不出现。
 			 */
 			const shelf = ensureFactsShelf(sessionId, state)
@@ -5477,7 +5477,7 @@ export function apply(ctx, config = {}) {
 				if (brainNote === '' && brainPayload === null && autonomyPayload === null && ontologyPayload === null && factMutations.length === 0) return decision
 				return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, brainNote, brainPayload, autonomyPayload, factMutations)] }
 			}
-			// §34:档位不再随回合变化(它是部署预设的初值)⇒ 卡片照投影渲染,没有"本回合的新档"要覆盖。
+			// 档位不再随回合变化(它是部署预设的初值)⇒ 卡片照投影渲染,没有"本回合的新档"要覆盖。
 			card = hostService.renderCard(sessionId)
 			const derived = hostService.derive(sessionId)
 			// 续跑窗口的接管:策略说 drive 就布防(人开口则换新窗口)、hold 就停、

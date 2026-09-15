@@ -254,8 +254,8 @@ export function brainFingerprint(cwd) {
  *
  * `invalidate`(`registerProvider` 给的 `control.invalidate`)在**指纹真的变了**时被调用:
  * 宿主那边另有一层按「cwd + 作用域 + revision」做键的目录缓存,不 bump revision 的话,
- * 我们这边明明多了一条技能、它那边还会把旧表端出来(实测:第一回合的目录被缓存成空表,
- * 之后连模型都一直看不到 `clear/skills`——2026-09-11 的 E2E 抓到的就是这个)。
+ * 我们这边明明多了一条技能、它那边还会把旧表端出来——失效模式是第一回合的空目录被
+ * 缓存住,模型之后一直看不到 `clear/skills`。
  * 原生 filesystem provider 靠 watcher 做这件事,我们没有 watcher,就靠指纹。
  */
 export function createBrainProvider(options = {}) {

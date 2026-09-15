@@ -29,7 +29,7 @@ window.__ModuleLoader__.load({
 
 		const React = require('react')
 		/**
-		 * **原生图标**(§23):dsh 右栏页签的 guide 吃一个 `icon` 组件,原生那几张页签用的是
+		 * **原生图标**(与本体页签同一族):dsh 右栏页签的 guide 吃一个 `icon` 组件,原生那几张页签用的是
 		 * `@deepseek-ai/dsh-client-ui-primitives` 里那套(文件页签 = FileTypeIcon ✓)。
 		 * 我们照同一套用,于是"面包屑"与"世界树"在视觉上属于同一个家族。
 		 *
@@ -63,7 +63,7 @@ window.__ModuleLoader__.load({
 			)
 		/**
 		 * 惰性表:语言是**运行时**的事,而这些表在模块加载时就被求值了——直接写 `t(...)`
-		 * 会把语言冻在加载那一刻(实测:面板标题跟着语言换了,表里的词还停在中文)。
+		 * 会把语言冻在加载那一刻(失效模式:面板标题跟着语言换了,表里的词还停在中文)。
 		 * 这个代理每次取键都重新求值,读起来仍与普通对象一样。
 		 */
 		const lazyTable = (make) =>
@@ -113,7 +113,7 @@ window.__ModuleLoader__.load({
 		/**
 		 * 依赖的客户端服务,**必须全部声明在这里**。
 		 *
-		 * 这不是洁癖,是 2026-09-11 实测换来的:客户端模块在 `slots` 一出现就被激活
+		 * 这不是洁癖,是行为约束:客户端模块在 `slots` 一出现就被激活
 		 * (`slots` 是平台 seed,启动时就有),而 `sessions` / `sidebarRightTabs` 是**后来**
 		 * 才由各自的插件 `provide` 的。只声明 `slots` 的话,我们的 `apply()` 会在它们之前跑,
 		 * 读不到会话服务 → 早退 → **一个插座都不注册**,而且不报错:右栏只剩宿主自带的「文件」,
@@ -142,7 +142,7 @@ window.__ModuleLoader__.load({
 			proposed: t('已提出'),
 			alive: t('验证中'),
 			confirmed: t('已确认'),
-			/** 规范词是「已替代」(`docs/verification-loop.md` §5 与原始 loopModel.ts 同词);「已改版」是旧写法。 */
+			/** 规范词是「已替代」(与验证本体同词);「已改版」是旧写法。 */
 			refuted: t('已推翻'),
 			superseded: t('已替代'),
 			retracted: t('已撤回'),
@@ -168,7 +168,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 面板的 CSS:按钮与标签照抄**原生那一套**(实测取自宿主自己的包,不是我们编的):
+		 * 面板的 CSS:按钮与标签照抄**原生那一套**(取自宿主自己的包,不是我们编的):
 		 *   · 28px 药丸(设置页的「Add model」):`.5px solid var(--dsw-alias-border-l3)` + `border-radius:14px`
 		 *     + `bg:0 0` + `label-primary` + `font-size:12px;line-height:18px;padding:0 10px`
 		 *   · 11px 小药丸(技能卡上的「inspect」):`.5px solid var(--dsw-alias-border-l4)`
@@ -181,7 +181,7 @@ window.__ModuleLoader__.load({
 .clearai-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-btn:disabled{color:var(--dsw-alias-label-secondary);opacity:.5;cursor:default}
 .clearai-btn[data-tone="warn"]{border-color:var(--dsw-alias-state-warn-primary)}
-/* 工具行里的控制(§18.1):照原生那一行的形状——无边框、次级文字色、悬浮才出底。
+/* 工具行里的控制(控制归工具行):照原生那一行的形状——无边框、次级文字色、悬浮才出底。
    刻意不做成我们自己那种药丸:它坐在原生「完全权限」旁边,长得像原生才不突兀。 */
 .clearai-toolctl{box-sizing:border-box;display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;cursor:pointer}
 .clearai-toolctl:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
@@ -257,7 +257,7 @@ window.__ModuleLoader__.load({
 			progressTrack: { display: 'inline-block', width: 90, height: 4, background: 'var(--dsw-alias-border-l1)', borderRadius: 2, verticalAlign: 'middle', marginLeft: 4 },
 			progressBar: { display: 'block', height: 4, background: 'var(--dsw-alias-brand-primary)', borderRadius: 2 },
 			/**
-			 * §24「事实」那一格:一个知识货架(上架=已确认事实,下架=命题)。
+			 * 「事实」那一格:一个知识货架(上架=已确认事实,下架=命题)。
 			 * 默认一行一条命题,只有主张 + 当前处境 + 等级判者;点开才展开来路与证据。
 			 */
 			group: { display: 'flex', gap: 6, alignItems: 'baseline', fontSize: 11, fontWeight: 600, letterSpacing: 1, color: 'var(--dsw-alias-label-secondary)', margin: '10px 0 2px' },
@@ -273,7 +273,7 @@ window.__ModuleLoader__.load({
 			propWhere: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', opacity: 0.85, textAlign: 'left' },
 			propJudge: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', textAlign: 'right', whiteSpace: 'nowrap' },
 			propBody: { marginTop: 8, paddingLeft: 10, borderLeft: '2px solid var(--dsw-alias-border-l2)', display: 'flex', flexDirection: 'column', gap: 4 },
-			/** 流转图(§25):竖排的状态机,走过的边实线、未走的虚线灰,当前态高亮。 */
+			/** 流转图:竖排的状态机,走过的边实线、未走的虚线灰,当前态高亮。 */
 			flow: { display: 'flex', flexDirection: 'column', gap: 0, margin: '2px 0 6px' },
 			flowStep: { display: 'flex', flexDirection: 'column' },
 			flowNode: { alignSelf: 'flex-start', display: 'inline-flex', gap: 6, alignItems: 'baseline', padding: '1px 10px', border: '.5px solid var(--dsw-alias-border-l2)', borderRadius: 999, fontSize: 11.5 },
@@ -319,7 +319,7 @@ window.__ModuleLoader__.load({
 		 * 为什么不能直接 `response.json()`:那条路上失败时返回的是**纯文本**
 		 * (`connection` 层查不到 exact fetch route 就回 `404 "not found"`),
 		 * 直接 parse 会抛出 `Unexpected token 'o', "not found" is not valid JSON`
-		 * ——人看到的是解析器的抱怨,不是发生了什么(2026-09-11 实测)。
+		 * ——人看到的是解析器的抱怨,不是发生了什么。
 		 * 这里统一成 `{ ok, status, payload, error }`,`error` 里带上状态码与原文。
 		 */
 		const readResponse = async (response) => {
@@ -354,7 +354,7 @@ window.__ModuleLoader__.load({
 		/**
 		 * 小节。`mark: true` 时在标题前放我们的标记 —— **只有事实货架要它**:
 		 * 那一格是这套系统真正的产物(已确认、可引用),标一下是"这一格由 ClearAI 维护"的陈述。
-		 * 别的标题不标:标滥了就只是装饰(§11:同类同一规矩,而不是到处贴)。
+		 * 别的标题不标:标滥了就只是装饰(同类同一规矩,而不是到处贴)。
 		 */
 		function Section(props) {
 			return h(
@@ -371,7 +371,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 空态。**每一格空态都带我们的标记**——同类空态同一规矩(§11),不是逐处装饰。
+		 * 空态。**每一格空态都带我们的标记**——同类空态同一规矩,不是逐处装饰。
 		 *
 		 * 为什么标在这里而不是页签图标那一排:一排里两个一样的标是**重复**(试过,退了);
 		 * 而空态一次只看得见一个,标记在这里是"这一格是我们的"这一句陈述,克制且不抢。
@@ -391,7 +391,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * **目标那一行**(§23):世界树页眉用。只放事实(主张 · 判据 · 阶段与完成度),
+		 * **目标那一行**:世界树页眉用。只放事实(主张 · 判据 · 阶段与完成度),
 		 * 详情(结算单、推进次数)在各处自己的面上——页眉不该变成第二份面板。
 		 */
 		function GoalLine(props) {
@@ -401,8 +401,8 @@ window.__ModuleLoader__.load({
 				'div',
 				{ style: { ...S.rowFirst, ...S.inline } },
 				h('span', null, dash(goal.claim)),
-				// 阶段与完成度归**状态条**(常驻可见)⇒ 这里不重复(§30:两处说同一件事 = 冗余)
-				// 判据常常是五条清单(真数据里 ~400 字 ✗)⇒ 页眉只放一句,全文进 tooltip(§30)
+				// 阶段与完成度归**状态条**(常驻可见)⇒ 这里不重复(两处说同一件事 = 冗余)
+				// 判据常常是五条清单(真数据里 ~400 字 ✗)⇒ 页眉只放一句,全文进 tooltip(页眉只放一句)
 				h('span', { style: S.faint, title: String(goal.doneCriteria ?? '') }, `${t('判据:')}${brief(goal.doneCriteria, 56)}`),
 			)
 		}
@@ -434,7 +434,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 对象的**人话名字**(§23)。与本体声明里的对象名一一对应——交叉校验测试里
+		 * 对象的**人话名字**。与本体声明里的对象名一一对应——交叉校验测试里
 		 * 有一条「声明里每个对象都必须在这里有名字」,少一个就红(界面不许漏对象)。
 		 */
 		const LOOP_LABEL = lazyTable(() => ({
@@ -452,7 +452,7 @@ window.__ModuleLoader__.load({
 		/**
 		 * 命题的分组 = **本体声明的五个状态**,顺序即认识论的顺序。
 		 *
-		 * 用词有权威出处:[`docs/verification-loop.md`](../docs/verification-loop.md) §5 的状态表
+		 * 用词有权威出处:[`docs/verification-loop.md`](../docs/verification-loop.md) 的状态表
 		 * (那份文档明说「其他文档、提示词与代码注释提到这些概念时,以这里的叫法为准」)。
 		 * 界面因此不另造一套产品词——「已确认」的命题不在这一列:它已经**升格为事实**,在事实货架上。
 		 */
@@ -484,7 +484,7 @@ window.__ModuleLoader__.load({
 		 */
 		function evidenceOf(data, hypothesisId) {
 			/**
-			 * 走**跨计划**的步骤索引(§25):命题的验证步常常留在**已收尾的旧计划**里
+			 * 走**跨计划**的步骤索引:命题的验证步常常留在**已收尾的旧计划**里
 			 * (真数据:两条计划,`tests` 全在旧的那条上)⇒ 只查活动计划会全断,
 			 * 面板上五个命题的证据与判者全是「—」。索引由折法派生,不新增存储。
 			 */
@@ -498,17 +498,17 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 一条证据的**出处**(§27b)。分两层:
+		 * 一条证据的**出处**。分两层:
 		 *
 		 *   ① **记账时定下的 `origins` 优先** —— 四类入口(产物 / 评估卡 / 评估者子会话 / 人放行)
 		 *      是内核在写证据那一刻解析好的事实,界面只渲染;
 		 *   ② 旧日志没有 `origins` 时走**只读回退**:材料 id → 材料表里的路径,换不出来的**丢掉** ——
-		 *      绝不把裸 id 渲染成"能点"的样子(真数据实测:整排出处因此点不开)。
+		 *      绝不把裸 id 渲染成"能点"的样子(失效模式:整排出处因此点不开)。
 		 */
 		const ORIGIN_LABEL = lazyTable(() => ({ 'audit-card': t('评估卡'), 'evaluator-session': t('看评估者'), 'approval-record': t('审批记录') }))
 		/**
 		 * 出处的**可点标签**:产物用**文件名**,不用「产物」三个字 ——
-		 * 一条证据常常挂着两三个产物,都叫「产物」就没人知道该点谁(用户实测反馈)。
+		 * 一条证据常常挂着两三个产物,都叫「产物」就没人知道该点谁。
 		 * 同名不同目录时才补路径片段(仍然是"一眼能认出点的是哪个")。
 		 */
 		function fileLabel(path, others) {
@@ -543,7 +543,7 @@ window.__ModuleLoader__.load({
 			if (item.anchor === 'auditor') {
 				/**
 				 * 评估卡按**步骤**归属;世界线证据的卡按 `分支` 归属(形如 `k-…:b-…`),
-				 * 与证据的 `stepId` 不是同一个 id —— 所以两种都要认(实测踩过:只认 stepId 时,
+				 * 与证据的 `stepId` 不是同一个 id —— 所以两种都要认(只认 stepId 时,
 				 * 世界线的五条独立证据一条都指不到卡)。
 				 */
 				const audits = (data?.audits ?? []).filter((row) => row.evaluator === 'independent')
@@ -572,7 +572,7 @@ window.__ModuleLoader__.load({
 				h('span', { style: S.evBasis, title: String(item.basis ?? '') }, brief(item.basis, 160)),
 				...originsOf(data, item).map((origin, index) => {
 					/**
-					 * 四类入口各自的去处(§27b):
+					 * 四类入口各自的去处:
 					 *   产物 / 评估卡 → 右侧**原生预览**打开那个文件;
 					 *   看评估者      → 旁观**评估者子会话**(论证过程在里面,harness 原生能力);
 					 *   审批记录      → 没有文件(原生审批对在会话日志里),如实说明它凭什么不可伪造。
@@ -662,7 +662,7 @@ window.__ModuleLoader__.load({
 			const out = []
 			/**
 			 * `to` 一律用**声明里的原始状态键**(`alive` / `refuted` …),不做翻译——
-			 * 翻译只在渲染时做。混用两套键是实测踩过的坑:流转图按原始键查「这一跳走没走过」,
+			 * 翻译只在渲染时做。混用两套键是踩过的坑:流转图按原始键查「这一跳走没走过」,
 			 * 而这里返回的是中文字面 ⇒ 命不中 ⇒ 走过的边全被画成"没走"。
 			 */
 			if (evidence.length > 0) {
@@ -717,7 +717,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * **流转图**(§27 重做):横向主干 + 分支的 SVG 状态机。
+		 * **流转图**:横向主干 + 分支的 SVG 状态机。
 		 *
 		 * 三条着色规矩(与世界树同一套视觉语言):
 		 *   · **走过的边**:实线 + 颜色(独立裁决用品牌强调色、自判用前景色),旁边写清触发与凭据;
@@ -879,7 +879,7 @@ window.__ModuleLoader__.load({
 							/**
 							 * 图上那一跳的完整凭据(触发 + 判者 + 两个可点入口)。
 							 * 这里**不再**摆本体文件路径:那是文档坐标,不是面板上的动作 ——
-							 * 用户实测反馈「这句话不用了」(§28)。
+							 * 「这句话不用了」——人拍板删的。
 							 */
 							evidence.length === 0
 								? null
@@ -908,12 +908,12 @@ window.__ModuleLoader__.load({
 		function PropositionShelf(props) {
 			/**
 			 * 打开器**自己接**(不靠外层注入):谁渲染这个货架,点证据/点事实都能开原件。
-			 * 实测踩过:只有最外层 `Facts` 注入 `openPreview` 时,单独渲染货架(测试缝、
+			 * 踩过的坑:只有最外层 `Facts` 注入 `openPreview` 时,单独渲染货架(测试缝、
 			 * 以后的复用)会让整排出处看着能点、点了没反应。
 			 */
 			/**
 			 * `props.X ?? 已有值`:外层 `Facts` 只传 `{data}`,而打开器在 `data` 里 ——
-			 * 直接写 `openRail: props.openRail` 会用 `undefined` 把它盖掉 ⇒ 链接永不渲染 ✗(实测踩过)。
+			 * 直接写 `openRail: props.openRail` 会用 `undefined` 把它盖掉 ⇒ 链接永不渲染 ✗(踩过的坑)。
 			 */
 			const base = props.data ?? (typeof props.useProjection === 'function' ? props.useProjection('clearai') : undefined) ?? {}
 			const data = { ...base, openPreview: props.openPreview ?? base.openPreview, openRail: props.openRail ?? base.openRail, openSpectator: props.openSpectator ?? base.openSpectator }
@@ -974,19 +974,19 @@ window.__ModuleLoader__.load({
 										{ style: S.factMeta, title: row.scope === null || row.scope === undefined ? '' : String(row.scope) },
 										/**
 										 * 边界和证据的「依据」是同一类字段 ⇒ **同一条规矩**:列表放摘要、全文进 tooltip。
-										 * 真数据里边界常是 200~300 字,三条事实就把这一格撑到 1393 字 ✗(§30)。
+										 * 真数据里边界常是 200~300 字,三条事实就把这一格撑到一千多字 ✗(货架只放摘要)。
 										 */
 										`${t('边界:')}${row.scope === null || row.scope === undefined || String(row.scope).trim() === '' ? '(未写——引用前请谨慎)' : brief(row.scope, 80)}${t(' · 支持到 ')}${dash(row.level)}${t(' · 证据 ')}${(row.evidenceIds ?? []).length}${t(' 条')}`,
 										/**
 										 * 原件的标签用**文件名**(「打开原件」四平八稳,但一排下来同样认不出是谁)。
 										 */
 										/**
-										 * 整行已经可点开原件 ⇒ 不再挂一个同样动作的「事实存档」✗(§30:同一动作两条路)。
+										 * 整行已经可点开原件 ⇒ 不再挂一个同样动作的「事实存档」✗(同一动作不开两条路)。
 										 * 原件路径在整行的 tooltip 里(`打开 <path>`)。
 										 */
 										/**
-										 * 跳去它那一步(§27e)。**不把 `openRail` 当成渲染前提** ——
-										 * 上一版因此整条链接都不出现(用户实测:那一行什么都没有)。
+										 * 跳去它那一步。**不把 `openRail` 当成渲染前提** ——
+										 * 把渲染前提挂在它上面,整条链接会一起消失。
 										 * 拿不到 `openRail` 也照常渲染:点了至少把聚焦设上、并试一次原生切视图。
 										 */
 										stepOfFact(data, row) === null
@@ -1011,7 +1011,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * **「事实」页签**(§24):一个**知识货架**,不是机制说明页。
+		 * **「事实」页签**:一个**知识货架**,不是机制说明页。
 		 *
 		 * 上架 = 已确认事实(可用作下一轮已知,按支持等级分级、每条带边界);
 		 * 下架 = 命题(人与模型提出的候选知识,按本体状态分组流转)。
@@ -1039,7 +1039,7 @@ window.__ModuleLoader__.load({
 					{ style: S.bar },
 					h('span', { style: S.title }, t('事实')),
 					/**
-					 * 页眉只说这一格是干什么的:计数在下面两段的标题里(§30:同屏四个数字两两重复 ✗),
+					 * 页眉只说这一格是干什么的:计数在下面两段的标题里(同屏四个数字两两重复 = 噪声),
 					 * 「模型读的是同一张表」是实现保证、不是用户信息 ✗。
 					 */
 					h('span', { style: S.faint }, t('能用的在上面,正在验的在下面')),
@@ -1077,12 +1077,12 @@ window.__ModuleLoader__.load({
 		 * (地址语法与编码规则照抄 `workspace-path/file-address`:`/#?` 之前、按 `/` 分段、逐段解码。)
 		 * 路径是绝对路径时,分段里会自然出现一个空段,拼回来仍是绝对路径——原生就是这么分的。
 		 *
-		 * **第二参是会话 id,不是路径**(2026-09-11 实测踩过):读面按它查工作区根
+		 * **第二参是会话 id,不是路径**(传错会直接读空):读面按它查工作区根
 		 * (`workspaceFileScope`),拿错了就原样报
 		 * `lookup provider "workspaceFileScope" did not resolve the requested identity`。
 		 * 谁调用谁负责给对 —— 见 `apply` 里的 `openPreviewFor`,按**座位自己的** props 定型。
 		 */
-		/** 时间戳 → 「2026-09-11 00:30」。与宿主半卡片里的写法一致:同一份事实在两处长得不一样,人就会怀疑其中一处。 */
+		/** 时间戳 → 「YYYY-MM-DD HH:mm」。与宿主半卡片里的写法一致:同一份事实在两处长得不一样,人就会怀疑其中一处。 */
 		const stampOf = (value) => (typeof value === 'number' && Number.isFinite(value) ? new Date(value).toISOString().slice(0, 16).replace('T', ' ') : t('未知'))
 
 		/** 逐段编码:照抄原生的 `encodeSegment`——`:` 保持字面(Windows 盘符),其余交给 encodeURIComponent。 */
@@ -1114,16 +1114,16 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 产物视图(中栏,UI 定案 §7:中栏第一眼该看「我拿到了什么」)。
+		 * 产物视图(中栏第一眼该看「我拿到了什么」)。
 		 *
 		 * 数据走宿主读面(`/api/clearai/deliverables`):交付物的**存在性是文件系统事实**,
-		 * 浏览器读不了盘,所以由宿主在请求时现场 stat(顺带给出字节与修改时间)。
+		 * 浏览器读不了盘,所以由宿主在请求时即时 stat(顺带给出字节与修改时间)。
 		 * 投影一变(推进了一步、多了一条证据)就重新取一次——面板不许比状态慢一拍。
 		 *
 		 * 这条读面回**两半**,这一栏也画两半:
 		 *   · `stages`  = **声明**(计划里写了要交什么、谁验的、盘上在不在);
 		 *   · `outputs` = **实际**(products/ 底下真有、但没有任何计划声明过的)。
-		 * 为什么两半都要(2026-09-11 用户实测):在一个已经有产物的老项目里开新会话,原来这一栏
+		 * 为什么两半都要:在一个已经有产物的老项目里开新会话,原来这一栏
 		 * 只有「阶段 0 · 交付 0/0」—— 可人此刻问的是「我拿到了什么」,盘上那份 46 KB 的 HTML
 		 * 明明就在。声明与实际是两件事,少画一半就等于对着半张表回答。
 		 */
@@ -1169,7 +1169,7 @@ window.__ModuleLoader__.load({
 			 * 淹没 3 份交付物。
 			 */
 			/**
-			 * 「核心产物」= **一份文件一行**(§29)。
+			 * 「核心产物」= **一份文件一行**。
 			 *
 			 * 原先摊平的是「步骤 × 声明产物」这对组合 ⇒ 一个文件被几个步骤声明就出现几次 ✗
 			 * (真数据:`qinrun-dipforming-3d.html` 被 build/verify-3d/rebuild/integrate 四步都声明了,
@@ -1335,7 +1335,7 @@ window.__ModuleLoader__.load({
 		 *   ③ **光环**  此刻在动吗          呼吸 = 是(步骤与世界线共用同一惯用法)
 		 *   ④ **分段**  被闸门裁断过几次    N>1 才分段,封顶 3 段,驳回的那几段画红
 		 *
-		 * 2026-09-11 用户指出这一处没移植好(分岔/推进/闪烁/选择/裁减/变灰都丢了)。补回来的:
+		 * 这一处曾丢过一批行为(分岔/推进/闪烁/选择/裁减/变灰)。必须都在的:
 		 * 空心圈与实心核、呼吸光环与虚线审计环、轮次分段弧、落选/作废的**变灰划掉**、
 		 * 虚线轨道(落选那条)、点行选中 → 树下详情(含给人的两个动作:采纳这条世界线 / 放弃探索)。
 		 *
@@ -1383,7 +1383,7 @@ window.__ModuleLoader__.load({
 		 * 原设计里那棵树也把它留着——「什么都不删」在图上就是「还在,但灰了」。
 		 */
 		/**
-		 * **对外聚焦通道**(§27d):别的面点一个步骤/世界线,世界树要能**选中那一行**。
+		 * **对外聚焦通道**:别的面点一个步骤/世界线,世界树要能**选中那一行**。
 		 *
 		 * 为什么需要它:树原先只有**内部**选中状态(点行看详情),外面够不着 ⇒
 		 * 「在世界树里看这一步」只能把树打开,不定位 ✗ —— 这是"点击跳转闭环"里缺的那一环。
@@ -1435,7 +1435,7 @@ window.__ModuleLoader__.load({
 
 		const treeFocus = makeFocusStore()
 		/**
-		 * **反向聚焦**(§27e):从世界树的某一步跳回「事实」那一格,并**展开对应的命题**。
+		 * **反向聚焦**:从世界树的某一步跳回「事实」那一格,并**展开对应的命题**。
 		 * 与 treeFocus 同一个形状、同一条纪律(界面状态,不进账本)。
 		 */
 		const factsFocus = makeFocusStore()
@@ -1481,7 +1481,7 @@ window.__ModuleLoader__.load({
 		/**
 		 * 行与行之间的**连接**(轨道):不是「相邻两行连一条」,而是显式的扇出/扇入。
 		 *
-		 * 2026-09-11 用户看图指出来的问题:上一版按相邻行连线,于是「脊柱裂成四条并行车道」
+		 * 按相邻行连线会把「脊柱裂成四条并行车道」——
 		 * 被画成了一条往右下掉的**蛇**——分叉点只连到第一条车道,第二条连第三条……
 		 * 那不是分叉,是排队。原设计用的是显式连接表(fork → 每条车道、每条车道 → 收敛菱形),
 		 * 所以四条车道是从同一个点扇出去的。这里照它重写。
@@ -1565,19 +1565,19 @@ window.__ModuleLoader__.load({
 			//    · 实心呼吸 = 这条世界线还在探索(原设计的 run 级状态我们这侧没有,所以只画我们真有的)
 			const auditing = row.kind !== 'branch' && audits.some((audit) => audit.stepId === stepId && (audit.verdict === null || audit.verdict === undefined))
 			/**
-			 * 光环 = 「此刻在动吗」。两个**必须**排除的假话(2026-09-11 长测抓到的):
+			 * 光环 = 「此刻在动吗」。两个**必须**排除的假话:
 			 *   · 步骤已经作废/交付了,它上面那条车道不可能还在跑(分叉没跟着收口时会留下这种孤儿);
 			 *   · 分叉自己已经放弃了(它下面没有「在动」的东西)。
 			 * 状态机那一侧该不该让分叉跟着步骤一起收口,是另一件事(记在 recon 里待定);
 			 * 但**界面不许说假话**这一条不依赖那个决定。
 			 */
 			const ownerAlive = row.step?.status !== 'void' && row.step?.status !== 'advanced'
-			// 失败的世界线不再「在动」:它死了,不是还在跑(2026-09-11 补的派生状态)。
+			// 失败的世界线不再「在动」:它死了,不是还在跑。
 			const dead = row.kind === 'branch' && row.branch.failed === true
 			/**
 			 * 「执行者未归」也不在动:分叉已经收口(收敛或放弃),派出去的执行者**再回来也没有归宿**。
 			 * 它既不是失败(没人知道它跑成没跑成),也不是在跑(「结论会自动回灌」那句承诺实现不了)——
-			 * 所以它是第三个静止态:不判成败、不呼吸(2026-09-11 长测抓到的第二句假话)。
+			 * 所以它是第三个静止态:不判成败、不呼吸(不说破就会被读成还在跑)。
 			 */
 			const unreturned = row.kind === 'branch' && row.branch.unreturned === true
 			const live = row.kind === 'branch' && row.branch.status === 'exploring' && ownerAlive && !dead && !unreturned
@@ -1653,7 +1653,7 @@ window.__ModuleLoader__.load({
 			const [picked, setPicked] = React.useState(null)
 			const focus = useFocus(treeFocus)
 			/**
-			 * **一个对话会有多个世界树**(§32):活动的那份默认显示,已收尾的可以切回去看
+			 * **一个对话会有多个世界树**:活动的那份默认显示,已收尾的可以切回去看
 			 * (它们没被删:文档归档在 `clear/goals/plans/<id>.md`)。
 			 * 优先级:外面点进来的聚焦所指的那份 > 手动切的 > 活动的。
 			 */
@@ -1750,7 +1750,7 @@ window.__ModuleLoader__.load({
 			}
 			/**
 			 * 行文只放**名字**,状态交给颜色/形状/标签说。但「失败」与「随步骤作废而终止」是两种
-			 * 容易被误读成「还在跑」的状态,所以它们各带一个后缀(2026-09-11 定的语义:
+			 * 容易被误读成「还在跑」的状态,所以它们各带一个后缀(语义:
 			 * 失败不是落选,孤儿不是被裁)。
 			 */
 			const rowSuffix = (row) =>
@@ -1774,7 +1774,7 @@ window.__ModuleLoader__.load({
 							? `${t('已放弃探索:')}${brief(row.fork.question, 24)}`
 							: /**
 							 * 行里只放**认得出这一步的那几个字**:`do` 常常是整句话(真数据里 ~100 字 ✗),
-							 * 全文在点开的详情里(§30)。
+							 * 全文在点开的详情里。
 							 */
 								`${row.step.ordinal}. ${brief(row.step.do, 26)}`
 			return h(
@@ -1787,11 +1787,11 @@ window.__ModuleLoader__.load({
 					/**
 					 * 页眉只放**一句话**:`brief` 常常是整篇 markdown 计划(真数据里这一行渲染出 1794 字 ✗),
 					 * 全文进 tooltip,要读整篇点「打开计划」(原生预览 `clear/goals/plans/<id>.md`)——
-					 * 默认少而准,细节靠点开(§30)。
+					 * 默认少而准,细节靠点开。
 					 */
 					h('span', { style: S.faint, title: briefText }, titleText),
 					/**
-					 * **历史世界树的入口**(§32):一个对话会有多个计划。
+					 * **历史世界树的入口**:一个对话会有多个计划。
 					 * 只有一份时不出现 ✓;多份时用**一个原生下拉**(一行,不铺一排标签 —— 真数据里有 8 份 ✗)。
 					 * 默认停在最近那份;切到旧的会在下面标出「已收尾 · 存档可看」。
 					 */
@@ -1826,7 +1826,7 @@ window.__ModuleLoader__.load({
 					h('span', { style: { ...S.faint, marginLeft: 'auto' } }, t('点一行看细节')),
 				),
 				/**
-				 * 这一格是**计划的一切**(§23):目标是脊柱的起点、拓扑是它的形状、
+				 * 这一格是**计划的一切**:目标是脊柱的起点、拓扑是它的形状、
 				 * 要你拍板的那一下(人门)就发生在某条车道上——所以三样都在这张图上,
 				 * 而不是散在三个页签里(「进展」那一格因此撤了)。
 				 */
@@ -2020,7 +2020,7 @@ window.__ModuleLoader__.load({
 										}),
 							),
 							/**
-							 * **反向跳**(§27e):从树里的这一步跳到「事实」那一格,并展开对应的命题。
+							 * **反向跳**:从树里的这一步跳到「事实」那一格,并展开对应的命题。
 							 * 切中栏视图走**原生正门** selectPanel(经可选读法拿到的 layout 服务;守卫:
 							 * 没注册的 key 它会抛,而抛了不该把整棵树带下水)。
 							 */
@@ -2134,7 +2134,7 @@ window.__ModuleLoader__.load({
 		 * 写动作只留**一个**,而且它走既有的原生机制:
 		 *   · 「采纳」→ 人门动词 `promote_skill` → 内核改写 frontmatter(`status: active`)。
 		 * 引用走**原生**的 `/` 技能触发器(输入框里打 `/`,出候选菜单,选一条即注入正文)——
-		 * 我们原来在旁边又放了一个「引用」按钮,做的是同一件事,2026-09-11 砍掉(奥卡姆)。
+		 * 我们原来在旁边又放了一个「引用」按钮,做的是同一件事,已砍掉(奥卡姆:重复不是能力)。
 		 */
 		function BrainTab(props) {
 			const sessionId = props.sessionId
@@ -2154,7 +2154,7 @@ window.__ModuleLoader__.load({
 			 *
 			 * 为什么要有这一条:面板的数据来自会话日志,而内核只在 pre-step 里落事实——
 			 * 新建的会话在第一轮对话之前**没有任何日志**,于是页签是空的,可工作区里其实
-			 * 已经躺着 18 个模板技能(2026-09-11 用户实测)。这条读面直接问宿主的 skills 服务,
+			 * 已经躺着模板技能。这条读面直接问宿主的 skills 服务,
 			 * 拿到的就是模型看到的那张合并目录;渲染仍走同一套分组,并如实标注「还没进投影」。
 			 */
 			const [live, setLive] = React.useState(null)
@@ -2208,7 +2208,7 @@ window.__ModuleLoader__.load({
 			}
 
 			/**
-			 * 2026-09-11 删掉了「引用」按钮(人门动词 `invoke_skill`)。
+			 * 「引用」按钮已删掉(人门动词 `invoke_skill` 一并摘除)。
 			 *
 			 * 原生的 `/` 技能触发器做的正是同一件事,而且更好:`dsh-client-ui-skill` 注册
 			 * `trigger: '/'`,`dsh-client-ui-input-trigger` 出候选菜单,选一条就把技能正文
@@ -2229,7 +2229,7 @@ window.__ModuleLoader__.load({
 			 * 点技能名 → **原生**文档预览(markdown 会渲染成 markdown,不是源码)。
 			 *
 			 * 用内核随投影发下来的 `file`(技能目录下的 SKILL.md):虚拟条目(记忆索引)没有正文文件,
-			 * `file` 是 null,面板就不画链接(点进去撞 404 是 2026-09-11 实测过的 bug)。
+			 * `file` 是 null,面板就不画链接(点进去撞 404 是踩过的坑)。
 			 */
 			const pointAt = (skill) => {
 				if (typeof skill.file !== 'string') return
@@ -2297,15 +2297,15 @@ window.__ModuleLoader__.load({
 						/**
 						 * 机器读数(字节 / 资源数 / 层级)**不渲染**:它们不帮人认出一条技能,
 						 * 20 条排下来就是噪声(真数据这一格 4741 字里很大一份是它们 ✗),
-						 * 而且藏成 `display:none` 也还是 DOM 里的噪声 ⇒ 干脆不画,挂到技能名的 tooltip(§31)。
+						 * 而且藏成 `display:none` 也还是 DOM 里的噪声 ⇒ 干脆不画,挂到技能名的 tooltip。
 						 */
 						candidate ? h(Chip, { disabled: busy, onClick: () => promote(skill.name), title: t('采纳:改写 frontmatter,模型从此加载得到它') }, t('采纳')) : null,
-						// §20 混合路径:同一件事也可以摆到原生提问卡上答(卡里带它的描述与后果)。
+						// 混合路径:同一件事也可以摆到原生提问卡上答(卡里带它的描述与后果)。
 						candidate ? h('span', { className: busy ? undefined : 'clearai-link', style: S.faint, onClick: busy ? undefined : () => promote(skill.name, true), title: t('用原生提问卡决定') }, t('用提问卡决定')) : null,
 					),
 					/**
 					 * 描述只留**认得出这条技能的那一句**(真数据里每条是一整段「适用/不适用」✗,
-					 * 18 条一起看就是信息爆炸)。全文在技能名的 tooltip 里,要选技能用原生的 `/` 触发菜单(§31)。
+					 * 18 条一起看就是信息爆炸)。全文在技能名的 tooltip 里,要选技能用原生的 `/` 触发菜单。
 					 */
 					skill.description === null || skill.description === undefined || skill.description === ''
 						? null
@@ -2326,7 +2326,7 @@ window.__ModuleLoader__.load({
 					{ style: S.bar },
 					h('span', { style: S.title }, t('技能 · 记忆')),
 					/**
-					 * 计数在下面各段标题里(§30/§31:同屏重复计数 = 噪声);
+					 * 计数在下面各段标题里(同屏重复计数 = 噪声);
 					 * 「与模型看到的是同一张表」是实现保证、不是用户信息,与事实那一格同一条规矩 → 去掉。
 					 * 只留**状态**:目录到没到、这份是不是"本会话还没有第一轮对话"的工作区现状。
 					 */
@@ -2336,8 +2336,8 @@ window.__ModuleLoader__.load({
 				/**
 				 * 章程那一行(这个页签的第一层):**只有文件系统事实** + 一个点开就走的原生预览。
 				 *
-				 * 为什么不再有「占位 X/Y 条」(2026-09-11 砍的,用户一问点醒):那是对文本做格式解析
-				 * ——模型把 §5 写成 `- **变更记录**（一行即…）`,条目数就从 18 数成 17,
+				 * 为什么不再有「占位 X/Y 条」:那是对文本做格式解析
+				 * ——模型把章程第 5 节写成 `- **变更记录**（一行即…）`,条目数就会数错,
 				 * **改一个标点「事实」就变**;而且它奖励的是「把数字清掉」而不是「把章程写实」。
 				 * 章程每回合本来就被原生指令文件整份注入模型上下文,面板这边只需要说清
 				 * 「它在哪、什么时候动过」——`mtime` 不依赖任何格式约定。
@@ -2390,7 +2390,7 @@ window.__ModuleLoader__.load({
 							h(Link, { onClick: () => props.openPreview?.(file.path) }, h('span', { style: S.mono }, file.file)),
 							/**
 							 * 一个记忆文件里的条目可能十几条 ⇒ 行里只给**前两条 + 共几条**,
-							 * 全文进 tooltip(§31:默认少而准,细节靠悬停/点开)。
+							 * 全文进 tooltip(默认少而准,细节靠悬停/点开)。
 							 */
 							h(
 								'span',
@@ -2428,7 +2428,7 @@ window.__ModuleLoader__.load({
 			const send = (item, extra) => {
 				setBusy(`${item.kind}:${item.plan || ''}:${item.step || ''}`)
 				setError(null)
-				// `gate` 只有「用提问卡决定」那一步用得上(§20):它是**界面手势**,不是事实动词。
+				// `gate` 只有「用提问卡决定」那一步用得上:它是**界面手势**,不是事实动词。
 				const body = { sessionId, action: item.human_action, plan: item.plan ?? null, fork: extra?.fork ?? null, branch: extra?.branch ?? null, gate: extra?.gate ?? null, skill: extra?.skill ?? null }
 				fetch('/api/clearai/gate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 					.then(readResponse)
@@ -2441,7 +2441,7 @@ window.__ModuleLoader__.load({
 			/**
 			 * 收件箱里现在只有**真门**(计划确认已砍:它是记号不是闸门,见 fold 的 HUMAN_GATE_ACTIONS)。
 			 *
-			 * §37:门要什么由**数据**说(`item.needs`),不在这里按 kind 猜 ✗:
+			 * 门要什么由**数据**说(`item.needs`),不在这里按 kind 猜 ✗:
 			 *   · `click` ⇒ 给按钮(白名单动词:裁决 / 采纳);
 			 *   · `word`  ⇒ 给**一句提示**(「说一句话就行 —— <要说什么>」),
 			 *     因为那种门本来就不是点击能表达的(复核 / 解除阻塞),而它照样会按住续跑。
@@ -2460,7 +2460,7 @@ window.__ModuleLoader__.load({
 									{ key: `adopt-${fork.id}`, style: S.gateRow },
 									h('span', { style: S.mono }, `${fork.stepId} · ${fork.question}`),
 									/**
-									 * §20 混合路径:同一道门,也可以摆到**原生提问卡**上去答。
+									 * 混合路径:同一道门,也可以摆到**原生提问卡**上去答。
 									 * 为什么两条路都留:面板这条是熟手的快路(一步到位);提问卡那条把
 									 * 判据、各分支的读数与推荐**铺在对话框里**,而且它会挡住输入框——
 									 * 人正在看对话时,那是最不会被忽略的位置。两条路的落账完全相同。
@@ -2574,7 +2574,7 @@ window.__ModuleLoader__.load({
 		/**
 		 * 续跑档的两个小工具(纯函数,便于直接断言文案)。
 		 *
-		 * **说行为,不说机制**(§18):人要回答的是「我走开的时候它还接着干吗」,不是「这是哪个档」。
+		 * **说行为,不说机制**:人要回答的是「我走开的时候它还接着干吗」,不是「这是哪个档」。
 		 * 哲学词(人在场 / 无人值守)留在文档、运行态卡与提示词里——那些读者是模型和写文档的人;
 		 * 给人点的那一格说人话,并在 tooltip 里注明两个词是一回事。
 		 *
@@ -2589,7 +2589,7 @@ window.__ModuleLoader__.load({
 		const tierLabel = (value, pending) => `${TIER_TEXT[value] ?? value}${pending ? '(已切,下一步生效)' : ''}`
 
 		/**
-		 * 「多问我 / 自己跑」那个开关**删掉了**(§34)。
+		 * 「多问我 / 自己跑」那个开关**删掉了**。
 		 *
 		 * 第一性原理 + 奥坎姆:「我要不要在场」是**运行时状态**——有没有门开着、有没有裁决在飞、
 		 * 有没有开着的步;这些系统自己知道 ✗,不该要用户预先声明。
@@ -2597,9 +2597,9 @@ window.__ModuleLoader__.load({
 		 * 续跑本身走**原生 goal**(宿主的回合驱动);我们只决定"什么时候该布防、给多大保险丝"。
 		 */
 		/**
-		 * 计划的小图形(§18.3):一棵**迷你世界树**——一根脊柱、一条岔、两个节点。
+		 * 计划的小图形:一棵**迷你世界树**——一根脊柱、一条岔、两个节点。
 		 * 用 `currentColor`:颜色留给状态(等人确认 = 琥珀,受阻 = 琥珀,收尾 = 灰),形状留给语义。
-		 * 为什么要有它:工具行是要抢地盘的地方(实测:我们的两个字面项占了整行 28%,
+		 * 为什么要有它:工具行是要抢地盘的地方(两个字面项能占掉整行近三成,
 		 * 窄窗口下会把发送键挤到第二行)。图标能省一半宽度,而它指向的正是「世界树」那一页。
 		 */
 		function PlanGlyph() {
@@ -2615,7 +2615,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 计划芯片(§17.3):坐在原生 plan 座位上的那一格。
+		 * 计划芯片:坐在原生 plan 座位上的那一格。
 		 *
 		 * 只说**计划**这一件事(进度、受阻、待确认),不重复状态条已经说过的话——
 		 * 一个事实只在一块面上说,是这个面板与原生 dock 之间的分工。
@@ -2630,16 +2630,16 @@ window.__ModuleLoader__.load({
 			const total = plan.totalCount ?? 0
 			const done = plan.advancedCount ?? 0
 			/**
-			 * 说人话(§18):内部 id(`p-xxxx`)不进这一格——它对人没有信息量,只让芯片变长;
+			 * 说人话:内部 id(`p-xxxx`)不进这一格——它对人没有信息量,只让芯片变长;
 			 * 状态优先于数字(等人确认 / 受阻 / 已收尾都是**要人注意**的那一类)。
 			 */
 			/**
-			 * 一格只放**一个符号**(§18.3):进度,或者一件要人注意的事。
+			 * 一格只放**一个符号**:进度,或者一件要人注意的事。
 			 * 要人动手的那件事(等你确认)由**输入框下那条**说「需要你 N」——它在事实面上,
 			 * 而这里只是工具行里的一个指针,不能把两个事实挤在一格里。
 			 */
 			/**
-			 * §35:原来输入框下**单独占一行**的派生状态条删掉了 ——
+			 * 输入框下**单独占一行**的派生状态条已删掉 ——
 			 * 「已达成 · 100%」与原生目标提示、与这颗 chip 的 `3/8` 说的是同一件事 ✗,
 			 * 却把输入框整行顶上去 ✗。留下的只有**可点、且只有我们知道**的两件:
 			 *   需要你 N(人门计数,点了开世界树)· 续跑停着(为什么停,人是可以处置的)
@@ -2660,7 +2660,7 @@ window.__ModuleLoader__.load({
 			const meaning = pending ? t('计划在建,**等你确认**') : blocked ? t('计划受阻,等人处置') : plan.status === 'closed' ? `${t('计划已收尾(')}${done}/${total}${t(' 步)')}` : `${t('计划已交付 ')}${done}/${total}${t(' 步')}`
 			/**
 			 * 等人时**只说一句**:先「需要你 N」(人门计数),没有门才说续跑停着的原因。
-			 * 两者是同一根轴(为什么在等人)⇒ 一格只放一个,不并列(§35)。
+			 * 两者是同一根轴(为什么在等人)⇒ 一格只放一个,不并列。
 			 */
 			const waiting = inboxCount > 0 ? `${t('需要你 ')}${inboxCount}` : null
 			const attentionNow = attention || waiting !== null
@@ -2687,7 +2687,7 @@ window.__ModuleLoader__.load({
 		 * 面板要说的正是「平台说不出的那一句」——为什么停。新增理由时这张表跟着补,
 		 * 补漏了也不骗人:认不出来的值原样显示,而不是显示一个体面的空话。
 		 */
-		/** 窗口停下的理由 = **真的有人的事**(§34 删掉了「一阶段收尾」那条:它是档位的表达)。 */
+		/** 窗口停下的理由 = **真的有人的事**(「一阶段收尾」那条已删:它是档位的表达,不是人的事)。 */
 		const HOLD_WHY = lazyTable(() => ({
 			audit: t('等独立裁决'),
 			plan_confirm: t('计划待确认'),
@@ -2696,7 +2696,7 @@ window.__ModuleLoader__.load({
 		}))
 
 		/**
-		 * 一步的**人话**名字(§18):`do` 是模型写的那句「做什么」,截短了放进一行。
+		 * 一步的**人话**名字:`do` 是模型写的那句「做什么」,截短了放进一行。
 		 * 内部步 id(`s-3`)只进 tooltip 与世界树——它在日志里是账,在界面上不是给人看的。
 		 */
 		function shortDo(text) {
@@ -2705,7 +2705,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * **续跑注**(§35):只在**有话要说**时出现的一格。
+		 * **续跑注**:只在**有话要说**时出现的一格。
 		 *
 		 * 输入框下那条整行删掉之后,它说的三句话里有两句**别处无处可说** ✗:
 		 *   · 「续跑已撤回」——人按下清除的那一瞬,dock 已经消失,而内核还没到下一拍;
@@ -2740,7 +2740,7 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * §35 输入框下那条派生状态条**删掉了**。
+		 * 输入框下那条派生状态条**删掉了**。
 		 *
 		 * 它说的事(阶段 / 完成度 / 当前步)与**原生目标提示**、与工具行那颗计划 chip 的 `N/M`
 		 * 说的是同一件 ✗ —— 而它**独占一行,把输入框整个顶上去** ✗。
@@ -2751,7 +2751,7 @@ window.__ModuleLoader__.load({
 		 * 席位跟着会话预设进出。
 		 *
 		 * 为什么必须这样:`conversation.view` 是**产品级**插座,它的主人遍历全部注册项投影出
-		 * 视图导航,不按会话过滤(实测 `dsh-client-ui-conversation` 的 viewTabs() 只读 id 与 label)。
+		 * 视图导航,不按会话过滤(宿主原生那个视图页签组件的 viewTabs() 只读 id 与 label)。
 		 * 所以一个宿主平面的插件一旦注册,每个会话、每种模式都会多出一个页。
 		 * 这个面板是循证模式的一部分,它只在那个模式里该出现——于是注册与注销都跟着
 		 * 当前会话的 `projectionValues.agentPreset` 走。
@@ -2782,7 +2782,7 @@ window.__ModuleLoader__.load({
 				 * 语言变了要做两件事:① 让**组件**重画;② 把**座位重挂**一遍。
 				 *
 				 * ② 不是洁癖:座位上的标签是**注册那一刻**求值的,只重画组件的话,中栏页签会
-				 * 停在上一种语言(实测:整页已经切成中文,页签还写着 Deliverables / Facts)。
+				 * 停在上一种语言(失效模式:整页已经切成中文,页签还写着 Deliverables / Facts)。
 				 * 走宿主自己的 `locale/change` 事件(它声明了这个事件,也正是为这种情况留的)。
 				 */
 				ctx.effect(() => {
@@ -2822,7 +2822,7 @@ window.__ModuleLoader__.load({
 			const seats = []
 			/**
 			 * `options` 可以是对象,也可以是**函数**。为什么要有函数这一路:座位上的标签在
-			 * 注册那一刻就被求值了,传对象等于把语言冻住(实测:整页切成中文,页签还写着英文)。
+			 * 注册那一刻就被求值了,传对象等于把语言冻住(失效模式:整页切成中文,页签还写着英文)。
 			 * 传函数就让每次注册都重新求值——语言一变重挂一次,标签跟着走。
 			 */
 			const occupy = (name, options, component) => {
@@ -2867,7 +2867,7 @@ window.__ModuleLoader__.load({
 			 * 拿不到就留空 ⇒ 原生默认字形。
 			 */
 			/**
-			 * 右栏只剩两格(§23):**世界树**(计划的一切:脊柱、车道、闸门、要你拍板的那一下)
+			 * 右栏只剩两格:**世界树**(计划的一切:脊柱、车道、闸门、要你拍板的那一下)
 			 * 与 **技能 · 记忆**(外脑)。
 			 *
 			 * 「进展」撤了:它原先装的四段各有归宿——计划与世界线的行归世界树,
@@ -2915,7 +2915,7 @@ window.__ModuleLoader__.load({
 										openPreview: openPreviewFor(props),
 										openSpectator,
 										/**
-										 * 反向跳(§27e):记住要展开哪条命题,再用**原生正门**切中栏视图。
+										 * 反向跳:记住要展开哪条命题,再用**原生正门**切中栏视图。
 										 * `layout` 走可选读法(契约里就给了 `ctx.get('layout')` 这一路);
 										 * `selectPanel` 对未注册的 key 会抛 ⇒ 包起来,别把整棵树带下水。
 										 */
@@ -2964,7 +2964,7 @@ window.__ModuleLoader__.load({
 			/**
 			 * 这条行所属的会话 id —— 预览地址里那一段**必须是它**。
 			 *
-			 * 2026-09-11 用户实测的 bug:原来这里是
+			 * 一个修过的 bug:原来这里是
 			 * `openPreview = (path) => openNativePreview(sidebarRight, typeof path === 'string' ? path : '', path)` ——
 			 * 第二参本该是**会话 id**,却把路径塞了进去。于是地址成了
 			 * `dsh-resource://file/session/products%2Freport.html`,原生读面按 SessionId 查不到
@@ -2991,28 +2991,28 @@ window.__ModuleLoader__.load({
 			const openPreviewFor = (props) => (path) => openNativePreview(sidebarRight, sessionIdFor(props), path)
 
 			/**
-			 * 中栏视图:**产物**(UI 定案 §7「中栏第一眼该看我拿到了什么」)。
+			 * 中栏视图:**产物**(中栏第一眼该看「我拿到了什么」)。
 			 * 原来占着中栏的「循环」面板搬进右栏「进展」——那种全景适合与对话并排,
 			 * 而中栏这个位子(native 已有 chat / trajectory)该留给**结果**。
 			 */
 			occupy('conversation.view', () => ({ id: 'clearai-deliverables', order: 15, label: t('产物') }), (props) => h(LocalizedDeliverables, { ...props, openRail, openPreview: openPreviewFor(props) }))
 			/**
-			 * 中栏视图:**事实**(§23)——整条闭环一屏看完(假设是起点,事实是沉淀)。
+			 * 中栏视图:**事实**——整条闭环一屏看完(假设是起点,事实是沉淀)。
 			 * 放在「产物」之后:先看拿到了什么,再看**凭什么**(以及已经确认了什么)。
 			 * 这一格与模型读的 `clear/knowledge/facts/INDEX.md` 是**同一张表**。
 			 */
 			/**
-			 * 注册时必须把**打开器**交下去(§25 修):这一格的证据出处、事实原件、跳世界树
+			 * 注册时必须把**打开器**交下去:这一格的证据出处、事实原件、跳世界树
 			 * 全靠这两个回调。漏了它们,界面看着能点、点了什么也不会发生——
-			 * 这正是实测里「点击证据没反应」的真因。
+			 * 漏了它,「点击证据没反应」。
 			 */
 			/**
-			 * 注册时必须把**打开器**都交下去(§27b):证据的四类出处、事实原件、跳世界树全靠它们。
-			 * 漏了它们,界面看着能点、点了什么也不会发生(实测踩过)。
+			 * 注册时必须把**打开器**都交下去:证据的四类出处、事实原件、跳世界树全靠它们。
+			 * 漏了它们,界面看着能点、点了什么也不会发生。
 			 */
 			occupy('conversation.view', () => ({ id: 'clearai-facts', order: 20, label: t('事实') }), (props) => h(LocalizedFacts, { ...props, openRail, openSpectator, openPreview: openPreviewFor(props) }))
 			/**
-			 * **计划面坐在原生 plan 那个座位上**(§17.3)。
+			 * **计划面坐在原生 plan 那个座位上**。
 			 *
 			 * 为什么是这个座位:DSH 把「计划」这件事的控件固定在 composer 工具行的
 			 * `conversation.input.plan` 上(`dsh-client-ui-plan` 的「Plan ×」),而它只在
@@ -3030,13 +3030,13 @@ window.__ModuleLoader__.load({
 			occupy('conversation.input.plan', { priority: -1 }, (props) => h(PlanChip, { ...props, openRail }))
 			occupy('conversation.input.left', { id: 'clearai-continuation', order: 110 }, (props) => h(ContinuationNote, props))
 			/**
-			 * **续跑档控制搬进工具行**(§18.1:控制归工具行,事实归输入框下方)。
+			 * **续跑档控制搬进工具行**(控制归工具行,事实归输入框下方)。
 			 * `conversation.input.left` 是**加法**座位(list),与原生「完全权限」并排——
 			 * 同一类东西(我能改的)放同一行,这是原生的排版,不是我们发明的。
 			 */
 			// 输入框下方的常驻派生条(运行态卡在人这一侧的对应物)
 			/**
-			 * §35 **输入框下那一条不再注册**:它说的话(阶段 / 完成度 / 当前步)与原生目标提示、
+			 * **输入框下那一条不再注册**:它说的话(阶段 / 完成度 / 当前步)与原生目标提示、
 			 * 与工具行那颗计划 chip 重复 ✗,却**独占一行把输入框顶上去** ✗。
 			 * 唯一可点、且只有我们知道的那件事(「需要你 N」)已经并进计划 chip(同一行,一点直达世界树)。
 			 */

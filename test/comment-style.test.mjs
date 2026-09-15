@@ -40,9 +40,9 @@ const check = (label, condition, detail = '') => {
  * 阶段 9 的终点是四个 0。
  */
 const BASELINE = {
-	dateStamp: 79,
-	sectionRef: 159,
-	incidentTag: 70,
+	dateStamp: 0,
+	sectionRef: 0,
+	incidentTag: 0,
 }
 
 /** 四类反模式。只统计注释行,不统计字符串字面量里的同形文本。 */
@@ -76,8 +76,10 @@ function commentLines(text) {
 
 const counts = { dateStamp: 0, sectionRef: 0, incidentTag: 0 }
 const perFile = {}
+let scannedCommentLines = 0
 for (const file of files) {
 	const lines = commentLines(readFileSync(file, 'utf8'))
+	scannedCommentLines += lines.length
 	const local = { dateStamp: 0, sectionRef: 0, incidentTag: 0 }
 	for (const line of lines) {
 		for (const [key, pattern] of Object.entries(PATTERNS)) {
@@ -94,7 +96,8 @@ console.log('\n【统计面:确实扫到了代码注释】')
 {
 	const total = Object.values(perFile).reduce((sum, local) => sum + local.dateStamp + local.sectionRef + local.incidentTag, 0)
 	check('扫到了 preset 插件与 ui 库', files.length >= 6, `${files.length} 个文件`)
-	check('注释解析不是空跑(总数 > 0,说明还欠着账)', total > 0, `${total} 处反模式`)
+	// 欠账已清到 0:「非空跑」的证明不再是「还有欠账」,而是「真的解析到了注释行」。
+	check('注释解析不是空跑(扫到的注释行数以百计)', scannedCommentLines > 500, `${scannedCommentLines} 行注释,${total} 处反模式`)
 	check('判据文档存在且可引用', readFileSync(join(PORT, 'docs', 'optimization', 'comment-style.zh-CN.md'), 'utf8').includes('棘轮'))
 }
 
@@ -109,19 +112,15 @@ for (const [key, label] of [['dateStamp', '日期戳'], ['sectionRef', '内部�
 	)
 }
 
-console.log('\n【分布:下一步该清哪个文件】')
+console.log('\n【分布:欠账按文件列(应常年为空)】')
 {
 	const rows = Object.entries(perFile)
 		.map(([file, local]) => [file, local.dateStamp + local.sectionRef + local.incidentTag])
 		.filter(([, total]) => total > 0)
 		.sort((a, b) => b[1] - a[1])
 	for (const [file, total] of rows) console.log(`  · ${file}: ${total} 处`)
-	check('分布可读(至少有一个文件列出来)', rows.length > 0)
-	check(
-		'最大的欠账在 clearai-kernel.js(阶段 9 从它开始)',
-		rows.length === 0 || rows[0][0].endsWith('clearai-kernel.js'),
-		rows[0]?.[0] ?? '(空)',
-	)
+	// 配额已收到 0:任何一处新欠账都让这份测试红,不需要再找「下一个该清谁」。
+	check('没有任何文件欠账(配额 0 之后,这就是全部断言)', rows.length === 0, rows.map(([file, total]) => `${file}:${total}`).join(','))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

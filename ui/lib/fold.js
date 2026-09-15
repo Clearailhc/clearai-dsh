@@ -25,12 +25,12 @@ export const MUTATION_KIND = 'clearai'
  * 状态版本:形状一变就 +1。
  *   v2 → v3:多了「合并技能目录」与「本会话用了几次技能」两块(技能面)。
  *   v3 → v4:多了「运行档」(人在场 / 无人值守)这块。
- *          (§34 更正:它**不是**"可被人切换的事实"而是部署预设的初值——面板那个开关已删。)
- *   v4 → v5:多了「项目章程」的读数(占位还有几条 / §1 当前阶段填没填 / 最后改动)。
+ *          (更正:它**不是**"可被人切换的事实"而是部署预设的初值——面板那个开关已删。)
+ *   v4 → v5:多了「项目章程」的读数(占位还有几条 / 章程的当前阶段填没填 / 最后改动)。
  *   v5 → v6:多了「续跑窗口」的账(`continuation`):我们**对宿主说过的话**——布防、暂停、收兵、
  *           以及「它不在了,而那不是我们干的」。它以前记在内核的进程内存里,重启或分叉就说不清了。
  *   v6 → v7:那条账多一个 `label`:我们最后一次在平台对象上写下的那句身份文本。
- *           它的用途只有一个:**分清「身份变了」与「人改写过了」**(§17.6)——前者我们换窗口,
+ *           它的用途只有一个:**分清「身份变了」与「人改写过了」**——前者我们换窗口,
  *           后者以人为准、一个字都不动。没有它,这两种情形在外部长得一模一样。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍——用量是**从日志折出来的**,重折才完整。
  */
@@ -85,7 +85,7 @@ export function emptyState() {
 		releases: [],
 		/**
 		 * 运行档(人在场 / 无人值守)。**它是部署预设的初值,不是可切换的开关**:
-		 *   · §34 摘掉了人门动词 `set_autonomy`,面板上那个开关已经不存在;
+		 *   · 人门动词 `set_autonomy` 已摘除,面板上那个开关已经不存在;
 		 *   · `effective` = 内核随投影下发的那一份(只有内核知道组合配置),**只用于展示**;
 		 *   · `override`  = 历史日志里可能留下的人门记录。读取侧保留它只是为了旧会话仍然读得通,
 		 *     当前**没有任何写入者**——不要据此认为现在还能切换档位。
@@ -95,18 +95,18 @@ export function emptyState() {
 		/**
 		 * 项目章程(`PROJECT.md`)的读数(内核扫描后随投影下发)。
 		 * 为什么要有它:章程的**读**侧早就接在原生指令文件上了,但**写**侧只有一句提示词——
-		 * 结果是跑完几轮、交付了产物,章程还是铺工作区那天的模板,谁也没发现(2026-09-11 实测)。
+		 * 结果是跑完几轮、交付了产物,章程还是铺工作区那天的模板,谁也没发现——不提醒它就会一直漂着。
 		 * 事实摆在这里,人与模型都看得见「它还是不是空壳」。
 		 */
 		constitution: null,
 		/**
-		 * **本体形状**(§23):内核随投影下发的那份声明(对象/状态/边/等级)。
+		 * **本体形状**:内核随投影下发的那份声明(对象/状态/边/等级)。
 		 * 为什么进投影而不是在界面里手抄:面板那一格的页眉要从**声明**生成——
 		 * 抄一份就会漂移,而漂移的界面比没有界面更坏。它与目录同一条纪律:变了才发。
 		 */
 		ontology: null,
 		/**
-		 * **续跑窗口的账**(§17):我们向平台说过的那句话——「这个窗口归我布防 / 我按了暂停 /
+		 * **续跑窗口的账**:我们向平台说过的那句话——「这个窗口归我布防 / 我按了暂停 /
 		 * 我收兵了 / 它不在了而那不是我们干的」。形状见 `applyMutation` 的 `continuation/set`。
 		 *
 		 * 为什么它必须在投影里而不是内核内存里:宿主的 `paused` 相位分不清「人按的」与
@@ -265,7 +265,7 @@ export function applyMutation(state, mutation) {
 		}
 		case 'hypothesis/superseded': {
 			/**
-			 * **终态黏住**(§22,与 ClearAI 本体 P3 同一个病、同一个修法):
+			 * **终态黏住**(与本体里「推翻不可撤销」同一条原则):
 			 * 旧写法把任何还没被替代的行都改成 `superseded` —— 于是一条**已被推翻**的假设,
 			 * 会因为下一版假设清单里没再列它而变成「已被替代」。而「被推翻」与「被替代」是两件事:
 			 * 前者说这条猜想错了,后者说这条猜想不再被提。后者不该改写前者。
@@ -297,7 +297,7 @@ export function applyMutation(state, mutation) {
 				 * 授权记号(ClearAI `plan.confirmed_at` / `confirmed_by`)。
 				 * 两种取得方式,都可考:**显式动作**(人在原生审阅卡上批准 → `by:'user'`)与
 				 * **行为**(交付过一步 → `by:'progress'`,见内核 AdvancePlan)。
-				 * 第三种来源 `by:'autonomy'`(无人值守档在立约时自动确认)**已于 §34 删除**:
+				 * 第三种来源 `by:'autonomy'`(无人值守档在立约时自动确认)**已删除**:
 				 * 那会让「计划经人确认」这条证据变成系统自己签的。读取侧不需要兼容它,
 				 * 因为删除发生在写入侧,历史日志里最多出现 `user` 与 `progress`。
 				 * 注意这是一个**记号**,不是闸门:没确认的计划照样能被交付推起来,那一刻记号按事实补写。
@@ -414,10 +414,10 @@ export function applyMutation(state, mutation) {
 				basis: mutation.basis ?? null,
 				refs: mutation.refs ?? [],
 				/**
-				 * **出处**(§27b):记账那一刻解析好的四类入口
+				 * **出处**:记账那一刻解析好的四类入口
 				 * (`artifact` / `audit-card` / `evaluator-session` / `approval-record`)。
 				 * 界面只渲染它,不再自己猜「这一串是路径还是材料 id」——
-				 * 正是那种猜法让整排出处点不开(真数据实测)。
+				 * 正是那种猜法让整排出处点不开(真数据踩过这个坑)。
 				 */
 				origins: Array.isArray(mutation.origins) ? mutation.origins : [],
 				anchor: mutation.anchor ?? 'artifact',
@@ -437,7 +437,7 @@ export function applyMutation(state, mutation) {
 		}
 		case 'human/released': {
 			/**
-			 * 放行绑在**哪条轴**上要说清(2026-09-11,AUDIT §14-A):主线绑步骤、世界线绑分支。
+			 * 放行绑在**哪条轴**上要说清:主线绑步骤、世界线绑分支。
 			 * `via` 记它凭什么算数——现在只有 `approval`(原生审批栈的权威记录),不推断。
 			 */
 			next.releases.push({
@@ -453,7 +453,7 @@ export function applyMutation(state, mutation) {
 		}
 		case 'fact/promoted': {
 			/**
-			 * 事实的字段(§23):`scope` 是它的**边界**(推翻条件)——没有边界的事实下一轮没人敢用;
+			 * 事实的字段:`scope` 是它的**边界**(推翻条件)——没有边界的事实下一轮没人敢用;
 			 * `level` 是它被支持到哪一级(判者可查)。两者都来自升格那一刻的假设,不事后补。
 			 */
 			next.facts.push({
@@ -674,11 +674,11 @@ export function applyMutation(state, mutation) {
 		}
 		case 'continuation/set': {
 			/**
-			 * 续跑窗口的账(§17)。四种状态就是「我们说过的话」的全部:
+			 * 续跑窗口的账。四种状态就是「我们说过的话」的全部:
 			 *   · `armed`     —— 我们布了防(或按策略恢复了它):此刻它在为我们跑。
 			 *   · `paused`    —— **我们**按下的暂停,`why` 是真实理由(等裁决 / 等人门 / 阶段边界)。
 			 *   · `stopped`   —— 我们收的兵(目标达成 / 如实放弃 / 计划触礁)。
-			 *   · `withdrawn` —— 它不在了,而**不是我们清的**(我们的清除永远与建同拍,见内核 §17.2):
+			 *   · `withdrawn` —— 它不在了,而**不是我们清的**(我们的清除永远与建同拍):
 			 *                    这是平台上唯一说得出口的解释,所以它也只说这些,不说「谁」干的。
 			 * 一条记录:**窗口在会话里是单数**,所以后一条覆盖前一条,不留历史(历史在会话日志里)。
 			 */
@@ -688,7 +688,7 @@ export function applyMutation(state, mutation) {
 				target: mutation.target ?? null,
 				why: mutation.why ?? null,
 				/**
-				 * 平台对象上那句身份文本的**最后一次观测值**(§17.6):我们写下它时记我们的,
+				 * 平台对象上那句身份文本的**最后一次观测值**:我们写下它时记我们的,
 				 * 别人改写之后重记他的。判据是「平台上的文本 === 这条记录」⇒ 还是我们的。
 				 */
 				label: mutation.label ?? null,
@@ -728,7 +728,7 @@ export function applyEvent(state, event) {
 		if (source !== null && typeof source === 'object' && source.kind === 'plugin' && Array.isArray(source.sections)) {
 			/**
 			 * 一条插件消息里可能**同时**带好几件事实(内核一次 pre-step 把目录、运行档、候选一起发)。
-			 * 所以这里是「逐件折」而不是「找到一件就 return」——2026-09-11 实测踩过:
+			 * 所以这里是「逐件折」而不是「找到一件就 return」——早退会漏掉后面的事件:
 			 * 原来找到目录就 return,于是同一条消息里的**运行档被吃掉**,
 			 * 表现是投影里的 effective 档永远停在「还没定档」,而机制那边早就按新档跑了。
 			 */
@@ -742,7 +742,7 @@ export function applyEvent(state, event) {
 			 * 注意它必须**在同一道门里**折:一条插件消息可能同时带目录、当档与事实变更,
 			 * 而 `next` 是这道门里才 clone 出来的。第一版把这段写在门**外**并引用了 `next`,
 			 * 抛出的 ReferenceError 被自己的 try/catch 吞掉——于是它一直是空操作
-			 * (2026-09-11 长测:世界线结论回灌「落账了」但投影里看不见,查了一轮才找到)。
+			 * (失效模式:世界线结论回灌落账了,投影里却看不见)。
 			 */
 			const ontologySection = source.sections.find((section) => section?.name === 'clearai/ontology')
 			if (ontologySection !== undefined && typeof ontologySection.text === 'string') {
@@ -816,7 +816,7 @@ export function applyEvent(state, event) {
 		const next = clone(state)
 		for (const name of quoted) recordSkillUse(next, name, 'human', at, stepPointer(state))
 		if (gate === null) return next
-		// **旧日志容忍分支**(§34 之后没有写入者):人切运行档曾经是一条人门动作,旧会话里可能留着。
+		// **旧日志容忍分支**(写入者已摘除,只有旧日志可能带着):人切运行档曾经是一条人门动作,旧会话里可能留着。
 		// 读到它就照旧记成一条**人的事实**,让历史会话仍然读得通;当前面板上已经没有这个开关,
 		// 新的会话不会再产生这一条。不要据此认为"现在还能切档"——要删这个分支得先确认没有旧日志。
 		if (gate.action === 'set_autonomy') {
@@ -904,7 +904,7 @@ export function derive(state) {
 			.reduce((best, item) => Math.max(best, levelIndex(item.level)), -1)
 		let status = hypothesis.status
 		if (status === 'proposed' && rows.length > 0) status = 'alive'
-		// 被推翻是黏性终态(§22):「已被替代」不该改写「已被推翻」——两件事。
+		// 被推翻是黏性终态:「已被替代」不该改写「已被推翻」——两件事。
 		if (status !== 'superseded' && status !== 'refuted' && refutations > 0) status = 'refuted'
 		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive }
 	})
@@ -931,7 +931,7 @@ export function derive(state) {
 		/**
 		 * 完成度(派生,不存)。
 		 *
-		 * 2026-09-11 长测抓到的自相矛盾:目标已经 achieved、两条事实都升格了,卡片却写「完成度 0%」。
+		 * 一处自相矛盾的由来:目标已经 achieved、两条事实都升格了,卡片却写「完成度 0%」。
 		 * 两个原因:① 计划一关,活跃计划为 null,口径回落到假设;② 而**升格**(`fact/promoted`)
 		 * 是一条独立路径,它不改假设状态,于是分子是 0。
 		 *
@@ -955,7 +955,7 @@ export function derive(state) {
 	}
 
 	/**
-	 * 世界线的**派生状态**(2026-09-11 定的语义,见 recon 的「四条结束方式」):
+	 * 世界线的**派生状态**(语义:见 recon 的「四条结束方式」):
 	 *
 	 *   · `failed`   —— 执行者没跑成(`worldline/executed{ok:false}`)。**它不是落选**:
 	 *     落选意味着它跑完了、被尺子排到了后面;失败是「世界没给它机会」。原来的实现在这两件事上
@@ -987,7 +987,7 @@ export function derive(state) {
 				failed: branch.status === 'exploring' && branch.execution !== null && branch.execution !== undefined && branch.execution.ok === false,
 				orphaned: ownerVoided && !fork.settled && !fork.abandoned && branch.status === 'exploring',
 				/**
-				 * **执行者未归**(2026-09-11 长测抓到的第二句假话,与「失败」「孤儿」同一族):
+				 * **执行者未归**(与「失败」「孤儿」同一族的假话——不说破就会被当成还在跑):
 				 *
 				 * 执行者是异步派的,所以「它在跑」是一条会过期的状态。分叉一旦收口(收敛或放弃),
 				 * 那条世界线就**没有归宿**了——回灌也进不了任何决定。可 `execution.ok` 仍是 `null`,
@@ -1006,7 +1006,7 @@ export function derive(state) {
 	 * 不可能残留成僵尸。
 	 * 条目只带**分诊信息**(标题/摘要/指向),不带全部正文:收件箱是分诊,不是问诊。
 	 *
-	 * 2026-09-11 起这里**只放真门**:不拍板就真的推不动的那种。计划确认不再是条目(它是记号,
+	 * 这里**只放真门**:不拍板就真的推不动的那种。计划确认不再是条目(它是记号,
 	 * 不是闸门;见 HUMAN_GATE_ACTIONS 的收敛记录)——收件箱里的每一条都经得起「等人是必须的吗」。
 	 */
 	const inbox = []
@@ -1036,7 +1036,7 @@ export function derive(state) {
 			// 复核不是一次点击:要么认可(什么都不用做),要么让人/模型改判据重做一条。
 			human_action: null,
 			/**
-			 * §37:它是**要一句话**的门 ✗ —— 原先"认可就什么都不用做"的写法有个洞:
+			 * 它是**要一句话**的门 ✗ —— "认可就什么都不用做"的写法有个洞:
 			 * 门开着 ⇒ 续跑停着(`hasOpenGate`)⇒ 什么都不做的话,系统就一直等 ✗。
 			 * 所以人得**说一声**;界面上必须把这件事说出来(以前既没按钮也没提示 ✗)。
 			 */
@@ -1101,7 +1101,7 @@ export function derive(state) {
  *   · **agent 不可达**:这些动词**没有工具 schema**——模型能调的工具面里不存在它们,
  *     它只能看见「人做了什么」这条事实。
  *
- * 2026-09-11 收敛(奥卡姆,用户拍板):动词表从 5 个缩到 4 个,砍的两个都是**重复**:
+ * 动词表只有 4 个(奥卡姆:砍掉的两个都是**重复**):
  *   · `confirm_plan` —— 原生 `dsh-plan-mode` 就是「用户复核的出口」;而我们自己的
  *     `planIsAuthorized` 本来就承认「交付第一步即授权」。计划确认从来不是闸门(它是记号),
  *     少一个假装成闸门的按钮,界面就不再暗示一条不存在的约束。需要人拍板时用原生
@@ -1113,7 +1113,7 @@ export function derive(state) {
  *     算不出来时这是唯一的结构化人裁决通道(不做 NLU 是纪律,不是懒);
  *   · `promote_skill` —— 候选技能扶正是**只有人能触发**的写动作(模型不能自举)。
  *
- * 已摘除:`set_autonomy`(§34)。「在场与否」是**运行时状态**(有没有门开着、有没有裁决在飞),
+ * 已摘除:`set_autonomy`。「在场与否」是**运行时状态**(有没有门开着、有没有裁决在飞),
  * 不是人在面板上按的一个开关;那个档位还顺手把「计划经人确认」变成系统自己签的。
  * 折法里仍留一条**只读**容忍分支(见 `applyEvent` 的注释):旧会话日志里可能有一条这样的记录,
  * 而历史必须继续读得通——但**当前没有任何写入者**,面板上也没有这个开关。
@@ -1184,7 +1184,7 @@ function skillUsageView(state) {
 		.sort((left, right) => String(left.name).localeCompare(String(right.name)))
 }
 
-/** 面板契约(DESIGN.md §3.2)。浏览器读的就是这个,一字不改。 */
+/** 面板契约。浏览器读的就是这个,一字不改。 */
 export function view(state, sessionId) {
 	const derived = derive(state)
 	const plan = derived.activePlan ?? derived.closedPlans[derived.closedPlans.length - 1] ?? null
@@ -1199,7 +1199,7 @@ export function view(state, sessionId) {
 		/**
 		 * 运行档:`value` = 当档(内核下发的那份)、`source` 说明它从哪来(部署预设 / 旧日志里的人门记录)。
 		 * 面板与卡片都读这里 —— 投影是唯一真相。
-		 * 注意**它不是可切换的开关**:§34 摘掉了 `set_autonomy`,现在只有部署预设会下发新值;
+		 * 注意**它不是可切换的开关**:`set_autonomy` 已摘除,现在只有部署预设会下发新值;
 		 * `source === 'session'` 只可能来自旧日志。
 		 */
 		/** 项目章程的读数(面板「技能 · 记忆」页签顶部那一行;点开走原生预览)。 */
@@ -1225,7 +1225,7 @@ export function view(state, sessionId) {
 		/** 本体形状(面板页眉据此生成,不手抄)。 */
 		ontology: state.ontology ?? null,
 		/**
-		 * 续跑窗口的账(§17):面板读它,于是「续跑停着——等裁决」这种**平台说不出来的话**
+		 * 续跑窗口的账:面板读它,于是「续跑停着——等裁决」这种**平台说不出来的话**
 		 * 有地方说。轮数与相位仍然只在原生 dock 上出现(一个事实只在**一块**面上说),
 		 * 这里交出去的只有:状态、它服务的事实对象、以及停下来的真实理由。
 		 */
@@ -1267,7 +1267,7 @@ export function view(state, sessionId) {
 						})),
 					},
 		/**
-		 * **全部计划**(§32):一个对话会有多个世界树。活动的那份照旧在 `plan` 里,
+		 * **全部计划**:一个对话会有多个世界树。活动的那份照旧在 `plan` 里,
 		 * 已收尾的留在这里 —— 它们没有被删(文档也归档在 `clear/goals/plans/<id>.md`),
 		 * 只是原先**没有入口**切回去看 ✗。
 		 */
@@ -1296,7 +1296,7 @@ export function view(state, sessionId) {
 				: {
 						id: plan.id,
 						status: plan.status,
-						/** 计划自己的一句话(模型建计划时写的)。**给人看的名字**用它,内部 id 退回 tooltip(§18)。 */
+						/** 计划自己的一句话(模型建计划时写的)。**给人看的名字**用它,内部 id 退回 tooltip。 */
 						brief: plan.brief ?? '',
 						blocked: plan.blocked ?? null,
 						// 授权记号(ClearAI `plan.confirmed_at` / `confirmed_by`):面板据此显示计划门。
@@ -1324,10 +1324,10 @@ export function view(state, sessionId) {
 						totalCount: plan.steps.filter((step) => step.status !== 'void').length,
 					},
 		/**
-		 * **跨计划的步骤索引**(§25):步骤 id → 它的判据/归属。
+		 * **跨计划的步骤索引**:步骤 id → 它的判据/归属。
 		 *
 		 * 为什么必须有它(真数据踩出来的):计划会改版、收尾、重开——**命题的验证步常常留在旧计划里**
-		 * (实测:一场里两条计划,命题的 `tests` 全在已收尾的那条上,而 `view.plan` 只交当前活动的那条)
+		 * (成因:一场里多条计划,命题的 `tests` 可能在已收尾的那条上,而 `view.plan` 只交当前活动的那条)
 		 * ⇒ 只查活动计划时,证据→步骤→命题这条链**全断**,面板上五个命题的证据与判者全显示「—」。
 		 * 索引是纯派生,不新增存储。
 		 */
@@ -1344,14 +1344,14 @@ export function view(state, sessionId) {
 			stepId: item.step,
 			planId: item.plan,
 			/**
-			 * `branch` 与 `anchor` **必须交出去**(§24 修):面板要给每条证据指一个**出处**——
+			 * `branch` 与 `anchor` **必须交出去**:面板要给每条证据指一个**出处**——
 			 * 独立证据指评估卡(文件)、自判证据指它锚定的产物。少了这两个字段,
-			 * 「评估卡」那一项永远出不来(实测:世界线证据的评估卡按 `分支` 归属,
+			 * 「评估卡」那一项永远出不来(成因:世界线证据的评估卡按 `分支` 归属,
 			 * 与证据的 `stepId` 不是同一个 id,只看 stepId 会对不上)。
 			 */
 			branch: item.branch ?? null,
 			anchor: item.anchor ?? 'artifact',
-			/** 记账时定下的出处(§27b)。旧日志没有这个字段 ⇒ 客户端走只读回退。 */
+			/** 记账时定下的出处。旧日志没有这个字段 ⇒ 客户端走只读回退。 */
 			origins: item.origins ?? [],
 			basisReviewable: item.basis_reviewable !== false,
 			verdict: item.verdict,
@@ -1386,7 +1386,7 @@ export function view(state, sessionId) {
 		/**
 		 * 侦察记录:**结局要能看出来**。
 		 *
-		 * 2026-09-11 用户实测:中断一次跑动之后「状态上全部显示执行完成」,而 DSH 其实报了失败。
+		 * 失效模式:中断一次跑动之后「状态上全部显示执行完成」,而宿主其实报了失败。
 		 * 两处都修了:内核改成按 `stopReason` 落账(aborted/error 不算完成),这里把 `note` 交出去
 		 * 并派生成三态——跑着 / 正常回灌 / 没正常结束。面板与资料面据此分诊,而不是一律当"完成"。
 		 */
@@ -1480,7 +1480,7 @@ export function renderCard(state) {
 	if (autonomy !== null) {
 		lines.push(
 			/**
-			 * §34 之后档位**不再是面板上的开关**:它只是部署预设写的初值。
+			 * 档位**不再是面板上的开关**:它只是部署预设写的初值。
 			 * 所以卡片如实说"这件事是怎么配的",不再承诺"你可以在面板上切"(那是已删的能力 ✗)。
 			 */
 			`- 运行档:${autonomy.value === 'unattended' ? '无人值守' : '人在场'}(部署预设写的;它不是"要不要人参与"的开关——要不要人由**门**决定:计划待确认/等裁决/有人在等)`,
@@ -1542,7 +1542,7 @@ export function renderCard(state) {
 		for (const branch of fork.branches) {
 			const reading = branch.reading === null || branch.reading === undefined ? '未报读数' : `读数 ${branch.reading}${branch.validity === 'usable' ? '' : '(不可用)'}`
 			/**
-			 * 执行者是**异步**派的(2026-09-11:ForkPlan 不再空等),所以「它跑完了没有」是一条
+			 * 执行者是**异步**派的(ForkPlan 不空等结论),所以「它跑完了没有」是一条
 			 * 独立的事实——不写出来,模型会以为分支在闲着,或者以为结论已经到手。
 			 */
 			const executing = branch.execution ?? null

@@ -1,5 +1,5 @@
 /**
- * 本体声明(§22):把「有哪些对象、哪些状态、谁能发起哪条转移、每一级谁来判」
+ * 本体声明:把「有哪些对象、哪些状态、谁能发起哪条转移、每一级谁来判」
  * 从散文变成**装配期可校验的数据**。
  *
  * 为什么它得进插件:本体以**声明数据**的形式进入插件平面,插件里那堆散在
@@ -212,7 +212,7 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 			fields: [field('claim'), field('refute_when')],
 			persistence: 'fold.hypotheses(goal/set 一起落)',
 			event_kind: 'hypothesis/superseded',
-			note: '状态由证据算:**confirmed 那条边的落账在 fact 对象那边**(升格成事实 ⇒ 面板把它读成已确认),假设自己没有这条变更;refuted 是黏性终态(§22 与那一侧 P3 同一个病同一个修法);不声明 status',
+			note: '状态由证据算:**confirmed 那条边的落账在 fact 对象那边**(升格成事实 ⇒ 面板把它读成已确认),假设自己没有这条变更;refuted 是黏性终态(与「目标侧被推翻的计划不可复活」同一个病同一个修法);不声明 status',
 		}),
 		object('plan', {
 			states: ['active', 'closed'],
@@ -300,7 +300,7 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 			fields: [field('step', { required: false }), field('branch', { required: false }), field('call'), field('via', { values: ['approval'] })],
 			persistence: 'fold.releases(原生审批栈的审计对是权威记录)',
 			event_kind: 'human/released',
-			note: 'L4 的人放行:一次一放行;步级的事实一落,同一步重试不再问人(§19-B)',
+			note: 'L4 的人放行:一次一放行;步级的事实一落,同一步重试不再问人)',
 		}),
 	],
 })
