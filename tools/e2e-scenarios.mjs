@@ -251,6 +251,32 @@ export const INVARIANTS = [
 		},
 	},
 	{
+		/**
+		 * **异步子 run 的结论必须对模型可见**。
+		 *
+		 * 这条是「账上有、心里没有」的墓志铭:修好之前,侦察与执行者的结论只落在
+		 * `meta.mutations` 里,模型可见文本中出现 0 次——于是模型的判据写成
+		 * 「与侦察结论一致」时,它和独立评估者都无处可读,只能裁 inconclusive。
+		 * 判据必须查**模型可见文本**,查账本等于什么都没查(这正是上一轮假绿的成因)。
+		 */
+		label: '异步子 run 的结论对模型可见(侦察与执行者都不许只躺在账本里)',
+		run: ({ mutations, modelVisibleText }) => {
+			const settled = [
+				...mutations.filter((m) => m.t === 'scout/settled' && String(m.conclusion ?? '').trim() !== '').map((m) => ({ who: `侦察 ${m.id}`, text: String(m.conclusion) })),
+				...mutations.filter((m) => m.t === 'worldline/executed' && m.ok === true && String(m.conclusion ?? '').trim() !== '').map((m) => ({ who: `执行者 ${m.branch}`, text: String(m.conclusion) })),
+			]
+			// 正文可能被截断后进消息(带指针),所以取开头一段做特征串再找。
+			const missing = settled.filter((item) => {
+				const fingerprint = item.text.trim().slice(0, 120)
+				return fingerprint !== '' && !modelVisibleText.includes(fingerprint)
+			})
+			return {
+				ok: missing.length === 0,
+				detail: settled.length === 0 ? '(这一场没有异步子 run 的结论)' : `共 ${settled.length} 条,模型看不到 ${missing.length} 条:${missing.map((item) => item.who).join(',')}`,
+			}
+		},
+	},
+	{
 		label: '侦察没有悬空(每个 scout/dispatched 都有 scout/settled)',
 		run: ({ countOf }) => ({ ok: countOf('scout/dispatched') <= countOf('scout/settled'), detail: `dispatched=${countOf('scout/dispatched')} settled=${countOf('scout/settled')}` }),
 	},
@@ -296,6 +322,25 @@ export async function evaluateLog({ scenario, events, mutations, workspace, exis
 		.filter((m) => m.t === 'fact/promoted')
 		.map((m) => claimToId.get(m.text) ?? `(对不上:${String(m.text).slice(0, 16)}…)`)
 	const hypothesisStatus = Object.fromEntries((derived.hypotheses ?? []).map((h) => [h.id, h.status]))
+	/**
+	 * **模型看得到的文本**:判「一条事实有没有送达模型」只能用这个,不能用账本。
+	 *
+	 * 三类都算:工具结果的消息体(`tool/result.message.content`)、用户消息
+	 * (**原生结算通知就走这条**——`subagent-settled` 是一条 user message)、助手消息。
+	 * 排除的是变更记录(`meta.mutations`)——账上有、心里没有,不算送达。
+	 */
+	const modelVisibleText = [
+		...events
+			.filter((event) => event.type === 'tool/result')
+			.flatMap((event) => (event.data?.message?.content ?? []).filter((block) => block?.type === 'text').map((block) => String(block.text ?? ''))),
+		...events
+			.filter((event) => event.type === 'user/message' || event.type === 'assistant/message')
+			.flatMap((event) => {
+				const content = event.data?.content ?? event.data?.message?.content ?? []
+				return (Array.isArray(content) ? content : []).filter((block) => block?.type === 'text').map((block) => String(block.text ?? ''))
+			}),
+	].join('\n')
+
 	const context = {
 		mutations,
 		kinds,
@@ -303,6 +348,7 @@ export async function evaluateLog({ scenario, events, mutations, workspace, exis
 		exists,
 		called,
 		events,
+		modelVisibleText,
 		workspace,
 		projected,
 		derived,

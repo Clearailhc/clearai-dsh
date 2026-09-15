@@ -41,6 +41,8 @@ function contextOf(mutations, overrides = {}) {
 		called: () => true,
 		events: [],
 		toolCalls: [],
+		// 默认「模型什么都没看到」:默认值给了正文就等于把这条不变量架空。
+		modelVisibleText: '',
 		workspace: '/tmp',
 		projected: { plan: { steps: [] } },
 		derived: { hypotheses: [] },
@@ -163,6 +165,29 @@ console.log('\n【③b 升格与证据等级自洽:两边都要抓】')
 		{ t: 'evidence/recorded', step: 's1', level: 'L2', verdict: 'support' },
 	])
 	check('目标未结案 ⇒ 不要求升格(只判「没到级不许升格」)', promotion.run(openGoal).ok === true, JSON.stringify(promotion.run(openGoal).detail))
+}
+
+console.log('\n【③c 异步子 run 的结论:账上有 ≠ 心里有】')
+{
+	const visible = invariantNamed('异步子 run 的结论对模型可见')
+	const conclusion = '侦察结论(只读):clear/skills 下共 18 条技能,其中 SKILL.md 覆盖 18/18。'
+	const withScout = [...HEALTHY, { t: 'scout/settled', id: 's-1', conclusion, note: null }]
+	// 反例:结论只在变更记录里——这正是上一轮把那场 36/36 判成绿的形态。
+	const onlyInLedger = contextOf(withScout)
+	check('结论只躺在账本里 ⇒ 抓住(上一轮假绿的墓志铭)', visible.run(onlyInLedger).ok === false, JSON.stringify(visible.run(onlyInLedger).detail))
+	// 正例之一:结论出现在工具结果的消息体里。
+	const inToolResult = contextOf(withScout, { modelVisibleText: `回了 1 条结论\n${conclusion}` })
+	check('结论出现在工具返回里 ⇒ 放过', visible.run(inToolResult).ok === true, JSON.stringify(visible.run(inToolResult).detail))
+	// 正例之二:结论出现在 **user/message** 里——原生结算通知走的就是这条。
+	const inNotice = contextOf(withScout, { modelVisibleText: `Background subagent s-1 finished.\nIts closing message:\n${conclusion}` })
+	check('结论出现在原生通知(user/message)里 ⇒ 放过', visible.run(inNotice).ok === true, JSON.stringify(visible.run(inNotice).detail))
+	// 执行者那条同样要查(否则只有侦察被修)。
+	const withExecutor = [...HEALTHY, { t: 'worldline/executed', fork: 'k-1', branch: 'b-1', child: 'c-1', ok: true, conclusion, note: null }]
+	check('执行者的结论只躺在账本里 ⇒ 同样抓住', visible.run(contextOf(withExecutor)).ok === false, JSON.stringify(visible.run(contextOf(withExecutor)).detail))
+	// 被截断后进消息:特征串取开头一段,截断也能认出来(避免判据自己制造假红)。
+	const long = `${'甲'.repeat(200)}结尾`
+	const truncated = contextOf([...HEALTHY, { t: 'scout/settled', id: 's-2', conclusion: long, note: null }], { modelVisibleText: `${long.slice(0, 120)}…已截断,全文 203 字` })
+	check('正文被截断后进消息(带指针)⇒ 仍算送达', visible.run(truncated).ok === true, JSON.stringify(visible.run(truncated).detail))
 }
 
 console.log('\n【④ 剧本断言:用坏上下文必须红】')
