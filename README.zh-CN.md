@@ -123,6 +123,7 @@ ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一
 - [术语表](docs/glossary.zh-CN.md)
 - [循环哲学](docs/loop-philosophy.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md)
 - [已知缺口](docs/known-gaps.zh-CN.md) · [发布验收](docs/release-verification.zh-CN.md)
+- [收敛与瘦身计划](docs/optimization/plan.zh-CN.md) · [认识论循环全覆盖设计](docs/optimization/epistemic-coverage.zh-CN.md) · [执行进度](docs/optimization/progress.zh-CN.md)
 
 ## 工作署名
 
