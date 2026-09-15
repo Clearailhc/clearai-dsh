@@ -15,6 +15,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
+          # CI 跑 engines 的下界(22)。发布那条流水线用 Node 24,因为 trusted publishing 要求
+          # npm ≥ 11.5.1,而 Node 22 自带 10.9.8 —— 两处刻意不同,别顺手统一。
           node-version: '22'
       - name: Enable pnpm (the CLI forwards to it)
         run: |
@@ -28,8 +30,18 @@ jobs:
           node tools/verify-package.mjs
       - name: Install the DSH CLI
         run: npm install --no-save --prefix "$RUNNER_TEMP/dsh-cli" @deepseek-ai/dsh
+      - name: Put the DSH CLI on PATH
+        # 下面两个验收都**优先用 PATH 上的 `dsh`**(找不到才退回 npx)。挂上它,GITHUB_PATH
+        # 之后的步骤就看得见 —— 而 `npx --no-install` 在缓存冷的时候会**静默返回空串**,
+        # 空串能让负向断言假通过(2026-09-15 撞到过)。
+        run: echo "$RUNNER_TEMP/dsh-cli/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Clean install (mechanical half)
         env:
           DSH_CLI_PREFIX: ${{ runner.temp }}/dsh-cli
           DSH_CHECKOUT: ${{ github.workspace }}
         run: node tools/verify-clean-install.mjs
+      - name: Lifecycle (upgrade / uninstall / user fork / the install verb)
+        # 唯一验「时间轴上的行为」的闸门:换版本重装、卸载四处归位、播种不覆盖人改过的文件、
+        # 以及随包那个 `install` 动词。它以前**哪都不自动跑**,于是一道永远打不开的比对在里面
+        # 烂了很久(2026-09-15 一并修掉)。放进 CI:每次 push 都真的走一遍。
+        run: node tools/verify-lifecycle.mjs
