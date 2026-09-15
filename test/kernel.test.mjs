@@ -225,6 +225,39 @@ function makeHost() {
 						async listChildren() {
 							return host.listing ?? []
 						},
+						/**
+						 * **可续跑那一档**(生产里它换来原生结算通知)。它**没有** `result` promise——
+						 * 结论只能从子会话日志里读,这正是生产里那条路。`host.continuableUnavailable`
+						 * 用来验降级(模拟没有 `agents` 服务时的 `CONTINUATION_UNAVAILABLE`)。
+						 */
+						async startContinuable(spec) {
+							if (host.continuableUnavailable === true) throw new Error('continuable subagents require the agents service')
+							if (host.auditFails) throw new Error('provider unavailable')
+							const childId = `continuable-${audits.length}`
+							host.continuations = host.continuations ?? []
+							host.continuations.push({ spec, childId })
+							// 也进 `audits`:现有那些「工具面/人格」断言两档都该看得到(生产里也是同一份请求)。
+							audits.push({ provider: spec.provider, request: spec.request, isScout: String(spec.label ?? '').startsWith('侦察') })
+							/**
+							 * 生产里可续跑子会话会**自己往日志里写** `turn/end`(内核据此收结论)。
+							 * 测试台替它写:于是「结论从子会话日志回收」这条真路径被现有用例一并覆盖。
+							 * `host.scoutDelayMs` 决定它什么时候写完(「等」这件事才测得到)。
+							 */
+							const stopKind = host.stopReasonScout ?? host.stopReason ?? 'completed'
+							const text = String(host.scoutConclusion ?? '')
+							host.sessionEvents = host.sessionEvents ?? {}
+							const write = () => {
+								host.sessionEvents[childId] = [
+									{ type: 'turn/start', data: { turn: 1 } },
+									...(text === '' ? [] : [{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text }] } } }]),
+									{ type: 'turn/end', data: { turn: 1, reason: { kind: stopKind } } },
+								]
+							}
+							const delay = Number(host.scoutDelayMs ?? 0)
+							if (delay > 0) setTimeout(write, delay)
+							else write()
+							return { childId, messageId: `msg-${audits.length}` }
+						},
 						async start(provider, request) {
 							if (host.auditFails) throw new Error('provider unavailable')
 							// 每个角色的结局可以单独设:中断「执行者」时不该把「评估者」也一起中断
@@ -2361,6 +2394,64 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		check('侦察在跑 ⇒ AwaitWorldlines 真的等它(不再第一拍退出)', waitedMs >= 1500, `等了 ${waitedMs}ms(修之前是 0ms)`)
 		check('等到了:结论落成 scout/settled 并进资料面', host.journal.some((mutation) => mutation.t === 'scout/settled' && mutation.conclusion !== undefined) && host.service.state(W).materials.some((item) => String(item.ref ?? '').startsWith('scout:')), JSON.stringify(host.service.state(W).materials.map((item) => item.ref)))
 		check('回报里写明了回灌了几条(不是含糊的「等完了」)', /回灌 1 条/.test(String(awaited.message ?? '')), String(awaited.message ?? '').slice(0, 120))
+	}
+
+	/**
+	 * **可续跑那一档**(U2a):侦察的结论由原生结算通知投给模型,内核这侧只做两件事——
+	 * 把派遣能力如实落账、把结论从子会话日志收进账本并落盘。
+	 */
+	{
+		const C = 'session-scout-continuable'
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		await callOn(host, C, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		await callOn(host, C, 'CreatePlan', { steps: [{ id: 'c1', do: '核材料', artifacts: ['lab/c1.txt'], done_criteria: 'lab/c1.txt 存在', tests: null }] })
+		const dispatched = await callOn(host, C, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
+		check(
+			'可续跑可用 ⇒ 走可续跑,能力如实落账',
+			dispatched.code === 'scout_dispatched' && host.journal.some((m) => m.t === 'scout/dispatched' && m.capability === 'continuable'),
+			JSON.stringify(host.journal.filter((m) => m.t === 'scout/dispatched').map((m) => m.capability)),
+		)
+		check(
+			'只读面与人格随派遣交出去(durable descriptor 会记住,续跑也放宽不了)',
+			(host.continuations ?? []).some((entry) => entry.spec?.request?.toolFilter !== undefined && entry.spec?.request?.persona !== undefined),
+			JSON.stringify(Object.keys(host.continuations?.[0]?.spec?.request ?? {})),
+		)
+		const child = String(host.service.state(C).scouts.at(-1)?.child ?? '')
+		check('前置:可续跑没有 result promise ⇒ 结论还没到', child !== '' && host.service.state(C).scouts.at(-1)?.conclusion === null, child)
+		// 子会话跑完(它的日志里出现 turn/end):下一拍就该收进账本
+		host.sessionEvents = {
+			[child]: [
+				{ type: 'turn/start', data: { turn: 1 } },
+				{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: '数完了:clear/skills 下 18 条技能,SKILL.md 覆盖 18/18。' }] } } },
+				{ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+			],
+		}
+		await preStep(host, C, 43)
+		const settled = host.service.state(C).scouts.at(-1)
+		check('可续跑的结论从子会话日志收进账本(没有 promise 也收得到)', /18 条技能/.test(String(settled?.conclusion ?? '')), JSON.stringify({ note: settled?.note, len: String(settled?.conclusion ?? '').length }))
+		const settledMutation = host.journal.filter((m) => m.t === 'scout/settled').at(-1)
+		const materialPath = settledMutation?.path ?? null
+		const material = materialPath === null ? '' : String(readFileSync(materialPath, 'utf8'))
+		check('结论全文落盘(评估者与人也能读同一份)', materialPath !== null && material.includes('18 条技能') && material.includes('# 侦察结论'), String(materialPath))
+	}
+
+	/**
+	 * **可续跑不可用时如实降级**(U2a):能力不冒充,结论改由「收集那一刻的返回」带上。
+	 */
+	{
+		const D = 'session-scout-degrade'
+		const host = makeHost()
+		host.continuableUnavailable = true
+		apply(host.ctx, { blockedThreshold: 3 })
+		await callOn(host, D, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		await callOn(host, D, 'CreatePlan', { steps: [{ id: 'd1', do: '核材料', artifacts: ['lab/d1.txt'], done_criteria: 'lab/d1.txt 存在', tests: null }] })
+		const dispatched = await callOn(host, D, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
+		const capability = host.journal.filter((m) => m.t === 'scout/dispatched').at(-1)?.capability
+		check('可续跑不可用 ⇒ 降级到一次性派遣,能力不冒充可续跑', dispatched.code === 'scout_dispatched' && capability !== 'continuable' && String(capability).length > 0, String(capability))
+		// 降级那一档的结论只能由「收集那一刻的返回」送达:等到之后,那次调用的消息里必须有正文。
+		const awaiting = await callOn(host, D, 'AwaitWorldlines', { timeout_s: 5 })
+		check('降级形态:收集那一刻的返回带上结论正文(模型这才读得到)', /数完了|核完了|亲眼读到|lab\//.test(String(awaiting.message ?? '')) || /子任务/.test(String(awaiting.message ?? '')), String(awaiting.message ?? '').slice(0, 160))
 	}
 
 	/**

@@ -369,6 +369,7 @@ export function applyMutation(state, mutation) {
 				digest: mutation.digest ?? null,
 				bytes: mutation.bytes ?? null,
 				note: mutation.note ?? null,
+				path: mutation.path ?? null,
 				step: mutation.step ?? null,
 				branch: mutation.branch ?? null,
 				at,
@@ -547,6 +548,7 @@ export function applyMutation(state, mutation) {
 				digest: mutation.digest ?? null,
 				conclusion: null,
 				note: null,
+				path: null,
 				at,
 			})
 			break
@@ -556,6 +558,7 @@ export function applyMutation(state, mutation) {
 			if (scout !== undefined) {
 				scout.conclusion = mutation.conclusion ?? null
 				scout.note = mutation.note ?? null
+				scout.path = mutation.path ?? null
 			}
 			break
 		}
@@ -1372,7 +1375,18 @@ export function view(state, sessionId) {
 			capability: item.capability ?? null,
 			at: item.at,
 		})),
-		materials: state.materials.map((item) => ({ id: item.id, ref: item.ref, source: item.source, digest: item.digest, note: item.note ?? null, at: item.at })),
+		materials: state.materials.map((item) => ({
+			id: item.id,
+			ref: item.ref,
+			source: item.source,
+			digest: item.digest,
+			note: item.note ?? null,
+			// 落盘路径:评估者与人靠它读全文(模型侧由卡片的资料面给出同一个指针)。
+			path: item.path ?? null,
+			bytes: item.bytes ?? null,
+			step: item.step ?? null,
+			at: item.at,
+		})),
 		facts: state.facts.map((item) => ({
 			id: item.id,
 			text: item.text,
@@ -1400,6 +1414,7 @@ export function view(state, sessionId) {
 			conclusion: item.conclusion,
 			at: item.at,
 			note: item.note ?? null,
+			path: item.path ?? null,
 			status: item.conclusion === null || item.conclusion === undefined ? 'running' : item.note === null || item.note === undefined ? 'settled' : 'failed',
 		})),
 		settlement: derived.settlement,
@@ -1583,6 +1598,31 @@ export function renderCard(state) {
 		lines.push(`- 最近一条证据:${last.id} ${last.verdict}(${last.evaluator} · ${last.level})`)
 	}
 	if (state.facts.length > 0) lines.push(`- 已升格事实:${state.facts.length} 条`)
+	/**
+	 * **资料面**:外脑送回来的观测(不是你写的那些)**与还在跑的侦察**。
+	 *
+	 * 为什么必须有它:模型每一步唯一读到的窗口就是这张卡。从前结论只进 `view()`
+	 * (面板读得到、模型读不到),于是判据写成「与侦察结论一致」时,模型与独立评估者
+	 * 都无处可读,只能裁 inconclusive。这里给**指针 + 摘要**:全文落在
+	 * `clear/knowledge/materials/<id>.md`,要细节就 `read` 它——卡片不背长文。
+	 */
+	{
+		const foreign = state.materials.filter((material) => material.source !== 'self')
+		const flying = state.scouts.filter((scout) => scout.conclusion === null || scout.conclusion === undefined)
+		if (foreign.length > 0 || flying.length > 0) {
+			lines.push('- 资料面(外脑送来的观测 + 还在跑的侦察;全文在工作区文件里,要细节就 read):')
+			for (const material of foreign.slice(-3)) {
+				const note = String(material.note ?? '')
+				const excerpt = note.replace(/\s+/g, ' ').slice(0, 120)
+				const where = material.path === null || material.path === undefined ? `账本 ${material.ref}` : material.path
+				lines.push(`  · [${material.source}] ${where}${material.bytes === null || material.bytes === undefined ? '' : `(${material.bytes} 字)`}:${excerpt}${note.length > 120 ? '…' : ''}`)
+			}
+			if (foreign.length > 3) lines.push(`  · (还有 ${foreign.length - 3} 条更早的,全在 clear/knowledge/materials/ 下)`)
+			for (const scout of flying) {
+				lines.push(`  · [在跑] 侦察 ${scout.id}${scout.trigger === null || scout.trigger === undefined ? '' : `(${scout.trigger})`}:结论回来时会作为观测送到你面前`)
+			}
+		}
+	}
 	lines.push('- 提醒:进度、阶段、假设状态都是系统算出来的;你不能声明它们,只能通过交付与裁决推进。')
 	return lines.join('\n')
 }

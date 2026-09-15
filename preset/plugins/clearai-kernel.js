@@ -1043,6 +1043,40 @@ export function apply(ctx, config = {}) {
 		const persona = options.persona
 		const schema = options.outputSchema ?? undefined
 		const toolFilter = options.toolFilter ?? null
+		const failures = []
+		/**
+		 * **可续跑那一档放最前**(当调用方要的是「结论送达模型」时)。
+		 *
+		 * 它换来的是**原生结算通知**:运行时在子会话落定时把它的收尾消息投给父 agent
+		 * (`notifySettlement`)。这正是异步子 run 此前缺的一环——结论只进账本,模型读不到。
+		 *
+		 * 两条边界,都是原生自己划的,不是我们挑的:
+		 *   · 带 `outputSchema` 的调用**不走这一档**:durable 子会话的 descriptor 刻意不含它
+		 *     (原话:它属于「一次性 activation 的结果契约」)。评估者/横评仲裁要的是当场解析的裁决,
+		 *     改成可续跑是语义倒退;
+		 *   · `persona` / `toolFilter` 会写进 durable descriptor,建时与冷恢复都从它重建 ——
+		 *     侦察的只读面因此不会被续跑放宽(这是切换安全的前提,已核)。
+		 *
+		 * 拿不到这一档(无 `agents` 服务 = `CONTINUATION_UNAVAILABLE`,或后端无
+		 * `prepareContinuable` = `UNSUPPORTED_CAPABILITY`)就照旧降级到一次性派遣,
+		 * 失败原因进 `failures`,能力事实由调用方如实落账。
+		 */
+		if (schema === undefined && options.nativeDelivery === true) {
+			try {
+				const started = await subagents.startContinuable({
+					provider: CFG.auditProvider,
+					label: options.label,
+					request: { ...base, ...(persona !== undefined ? { persona } : {}), ...(toolFilter !== null ? { toolFilter } : {}) },
+					signal: options.signal,
+				})
+				const childId = String(started?.childId ?? '')
+				if (childId === '') throw new Error('startContinuable 没有交出 childId')
+				// 归一化:可续跑**没有** `run.result`(也没有 dispose)——结算由原生通知与子会话日志给出。
+				return { ok: true, run: { id: childId, result: undefined, dispose: undefined }, capability: 'continuable', native: true }
+			} catch (error) {
+				failures.push(`continuable:${String(error?.message ?? error).slice(0, 100)}`)
+			}
+		}
 		const attempts = []
 		if (toolFilter !== null) attempts.push({ variant: { persona, outputSchema: schema, toolFilter }, capability: 'persona+outputSchema+toolFilter' })
 		attempts.push({ variant: { persona, outputSchema: schema }, capability: 'persona+outputSchema' })
@@ -1050,11 +1084,11 @@ export function apply(ctx, config = {}) {
 		attempts.push({ variant: { persona }, capability: 'persona' })
 		if (schema !== undefined) attempts.push({ variant: { outputSchema: schema }, capability: 'outputSchema' })
 		attempts.push({ variant: {}, capability: 'prompt-only' })
-		const failures = []
 		for (const attempt of attempts) {
 			try {
 				const run = await subagents.start(CFG.auditProvider, { ...base, ...attempt.variant })
-				return { ok: true, run, capability: attempt.capability }
+				// `native: false` = 结论不会由运行时投递,得靠收集那一刻的返回值带上(降级路径)。
+				return { ok: true, run, capability: attempt.capability, native: false }
 			} catch (error) {
 				failures.push(`${attempt.capability}:${String(error?.message ?? error).slice(0, 100)}`)
 			}
@@ -1220,7 +1254,13 @@ export function apply(ctx, config = {}) {
 			if (text !== '') conclusion = text
 		}
 		const reason = String(end.data?.reason?.kind ?? 'unknown')
-		return { ok: reason === 'completed', stopReason: reason, conclusion }
+		const ok = reason === 'completed'
+		/**
+		 * 异常结束的结论要**自带说明**,与一次性派遣那条路(`settleSubRun`)同一个形状:
+		 * 半截文本被当成「回灌过的结论」是这里最危险的假话。两条路形状一致,
+		 * 「这句话是从哪条路来的」就不再影响账本的可读性。
+		 */
+		return { ok, stopReason: reason, conclusion: ok ? conclusion : `子任务未正常结束(${reason}):${conclusion.slice(0, 1200)}` }
 	}
 
 	/**
@@ -1330,20 +1370,32 @@ export function apply(ctx, config = {}) {
 		 * 于是模型被告知「用 AwaitWorldlines 在这个回合里等它」却永远等不到。
 		 */
 		let pending = 0
-		const publish = (scoutId, stepId, ok, conclusion, stopReason) => {
-			mutations.push({ t: 'scout/settled', id: scoutId, step: stepId, conclusion: String(conclusion ?? '').slice(0, 4000), note: ok ? null : String(stopReason ?? 'failed') })
-			if (ok && String(conclusion ?? '').trim() !== '') {
+		/** 本次刚收到的结论(给「没有原生通知」那一档用:收集那一刻的返回里带上它们)。 */
+		const notices = []
+		const publish = (scoutId, stepId, ok, conclusion, stopReason, meta = {}) => {
+			const full = String(conclusion ?? '')
+			/**
+			 * **全文落盘**。一条事实有三个当事人:下达侦察的模型、独立评估者、人。
+			 * 结论此前只活在账本折叠出的资料面里(只有面板读),于是判据写成
+			 * 「与侦察结论一致」时模型与评估者都无处可读。落进 `clear/` 之内,
+			 * 三者都能读;账本仍是真值源,这份文件是投影产物。
+			 */
+			const path = ok && full.trim() !== '' ? persistMaterial(sessionId, scoutId, meta, full) : null
+			mutations.push({ t: 'scout/settled', id: scoutId, step: stepId, conclusion: full.slice(0, 4000), note: ok ? null : String(stopReason ?? 'failed'), path })
+			if (ok && full.trim() !== '') {
 				mutations.push({
 					t: 'observation/recorded',
 					id: `m-${Math.random().toString(36).slice(2, 8)}`,
 					ref: `scout:${scoutId}`,
 					source: 'scout',
 					digest: null,
-					bytes: String(conclusion).length,
-					note: String(conclusion).slice(0, 2000),
+					bytes: full.length,
+					note: full.slice(0, 2000),
+					path,
 					step: stepId ?? null,
 				})
 			}
+			if (ok && full.trim() !== '') notices.push({ kind: 'scout', id: scoutId, trigger: meta.trigger ?? null, conclusion: full, path, native: meta.native === true })
 		}
 		/** 投影里这条侦察收到结论了吗(`scout/settled` 折进去之后 `conclusion` 就不再是 null)。 */
 		const landedIn = (scoutId) => {
@@ -1362,9 +1414,18 @@ export function apply(ctx, config = {}) {
 				continue
 			}
 			if (entry.settled === null) {
-				// 派出去了、还没落定:它对「要不要继续等」是一票。
-				pending += 1
-				continue
+				/**
+				 * **没有 `result` promise 的那一档(可续跑)只能从子会话日志里读结论**。
+				 * 不走这一步,条目会永远停在「未落定」,而路径②又因为「表里有条目」跳过它
+				 * ——结论永久收不上来(修回灌时踩过的同一个坑,换了个入口)。
+				 * 读不到就按「还在跑」计一票,让等待循环继续等。
+				 */
+				const found = recoverScoutConclusion(sessionId, entry.scoutId, entry.child)
+				if (found === null) {
+					pending += 1
+					continue
+				}
+				entry.settled = { ok: found.ok, conclusion: found.conclusion, stopReason: found.stopReason }
 			}
 			/**
 			 * **`reported` 不等于「已落账」**(失效模式:侦察结论发布之后被丢掉,
@@ -1378,7 +1439,7 @@ export function apply(ctx, config = {}) {
 			entry.reportedEpoch = collectEpoch(sessionId)
 			entry.reportedAt = Date.now()
 			emitted.add(entry.scoutId)
-			publish(entry.scoutId, entry.stepId, entry.settled.ok === true, entry.settled.conclusion, entry.settled.stopReason)
+			publish(entry.scoutId, entry.stepId, entry.settled.ok === true, entry.settled.conclusion, entry.settled.stopReason, { trigger: entry.trigger, digest: entry.digest, child: entry.child, native: entry.native === true })
 			lines.push(`侦察 · ${entry.trigger}:${entry.settled.ok === true ? '完成' : `未完成(${entry.settled.stopReason ?? 'unknown'})`}`)
 		}
 		// ② 表里没有的:投影里**还没收口**的侦察(`scout/dispatched` 落了,`scout/settled` 没落),
@@ -1392,18 +1453,29 @@ export function apply(ctx, config = {}) {
 			 * 这条是**收集机会**,不是重发:迟到一步的结论全靠它接住(第一版把它按回合限流,
 			 * 真跑里立刻掉了一条回灌)。所以限流只针对 **I/O**:同一个窗口里对同一条只读一次。
 			 */
-			const recoveryKey = `${String(sessionId)}:${scout.id}`
-			const lastTry = Number(recoverAttempts.get(recoveryKey) ?? 0)
-			if (Date.now() - lastTry < CFG.collectRetryMs) continue
-			recoverAttempts.set(recoveryKey, Date.now())
-			const found = recoverFromChildSession(child)
+			const found = recoverScoutConclusion(sessionId, scout.id, child)
 			// 读不到有两种成因:还在跑,或者读面拿不到。都按「不能证明它落定」处理,
 			// 但不计入 pending——判不出「在跑」就不能让等待循环为它空转。
 			if (found === null) continue
-			publish(scout.id, scout.step ?? null, found.ok === true, found.conclusion, found.stopReason)
+			publish(scout.id, scout.step ?? null, found.ok === true, found.conclusion, found.stopReason, { trigger: scout.trigger ?? null, digest: scout.digest ?? null, child, native: scout.capability === 'continuable' })
 			lines.push(`侦察 · ${scout.trigger ?? scout.id}:从会话日志回收(${found.ok === true ? '完成' : found.stopReason})`)
 		}
-		return { mutations, lines, pending }
+		return { mutations, lines, pending, notices }
+	}
+
+	/**
+	 * 从子会话日志里捞一次侦察结论(**限 I/O** 不限机会:同一个窗口里对同一条只读一次)。
+	 *
+	 * 为什么按时间窗口限流而不按回合:这条是**收集机会**,不是重发。按回合限它,
+	 * 就会漏掉「这次收集之后才到」的结论——第一版这么干过,真跑里立刻掉了一条回灌。
+	 */
+	function recoverScoutConclusion(sessionId, scoutId, child) {
+		if (child === null || child === undefined) return null
+		const recoveryKey = `${String(sessionId)}:${scoutId}`
+		const lastTry = Number(recoverAttempts.get(recoveryKey) ?? 0)
+		if (Date.now() - lastTry < CFG.collectRetryMs) return null
+		recoverAttempts.set(recoveryKey, Date.now())
+		return recoverFromChildSession(String(child))
 	}
 
 	/**
@@ -1564,6 +1636,8 @@ export function apply(ctx, config = {}) {
 			toolFilter: { allow: resolveToolFace(agent, CFG.scoutToolFilter) },
 			parent: agent,
 			signal,
+			// 侦察的结论就是它的全部价值:要原生结算通知把它送进模型上下文。
+			nativeDelivery: true,
 		})
 		if (dispatched.ok !== true) {
 			// 侦察失败不该挡住主循环:它只是"本可以去查的缺口",如实回报即可
@@ -1582,9 +1656,14 @@ export function apply(ctx, config = {}) {
 		 * 事实该在副作用之前/同批落账:所以派遣立即返回,结论由 `sweepScouts()` 在
 		 * 「下一个回合边界 / 用到世界线与侦察的那几件工具」上收(与执行者完全同一套)。
 		 */
-		const entry = { scoutId, stepId: step.id, planId: plan?.id ?? null, trigger, digest, child: childId, settled: null, reported: false, run: dispatched.run }
+		const entry = { scoutId, stepId: step.id, planId: plan?.id ?? null, trigger, digest, child: childId, settled: null, reported: false, run: dispatched.run, native: dispatched.native === true }
 		scoutRuns.set(childId, entry)
-		entry.promise = dispatched.run.result.then(
+		/**
+		 * 只有一次性派遣才有 `result` promise。可续跑那一档没有 ⇒ 结算改由
+		 * `sweepScouts()` 从**子会话自己的日志**里读(它本来就更权威,也是重启后唯一的路)。
+		 */
+		if (dispatched.run?.result !== undefined) {
+			entry.promise = dispatched.run.result.then(
 			(value) => {
 				const settled = settleSubRun(value)
 				entry.settled = { ok: settled.ok, conclusion: settled.conclusion, stopReason: settled.stopReason }
@@ -1595,7 +1674,8 @@ export function apply(ctx, config = {}) {
 				entry.settled = { ok: false, conclusion: settled.conclusion, stopReason: settled.stopReason }
 				return entry.settled
 			},
-		)
+			)
+		}
 		return { ok: true, pending: true, conclusion: '', note: null, digest, mutations, child: childId, scoutId }
 	}
 
@@ -1812,7 +1892,37 @@ export function apply(ctx, config = {}) {
 			lost: late.lost,
 			scouts: scouts.mutations.length,
 			scoutsPending: scouts.pending,
+			// 本次刚收到的结论:有原生通知的那一档由运行时投递,这里只带「没有原生通知」的那些。
+			notices: [...(swept.notices ?? []), ...(scouts.notices ?? [])],
 		}
+	}
+
+	/** 结论正文进消息时的上限(账本、文件、消息三处同一个数;文件里是全文)。 */
+	const CONCLUSION_CHARS = 4000
+
+	/** 正文进消息时的截断标记:不许静默截断——读者要知道自己拿到的是不是全文。 */
+	function clipConclusion(text, path) {
+		const full = String(text ?? '')
+		if (full.length <= CONCLUSION_CHARS) return full
+		return `${full.slice(0, CONCLUSION_CHARS)}\n…已截断(全文 ${full.length} 字${path === null || path === undefined ? '' : `,见 ${path}`})`
+	}
+
+	/**
+	 * 「没有原生通知」那一档的送达:把**本次刚收到**的结论正文拼进这次工具返回。
+	 *
+	 * 有原生通知时**不拼**——运行时已经把它投给模型了,同一段话出现两遍是这个仓库
+	 * 一直反对的事。所以这里只挑 `native !== true` 的那些(即降级到一次性派遣的形态)。
+	 */
+	function noticeBlock(notices) {
+		const pendingNotices = (notices ?? []).filter((item) => item.native !== true)
+		if (pendingNotices.length === 0) return ''
+		return pendingNotices
+			.map((item) => {
+				const who = item.kind === 'scout' ? '侦察' : '执行者'
+				const head = `【${who}结论 · ${item.id}】${item.trigger === null || item.trigger === undefined ? '' : `${item.trigger}\n`}`
+				return `${head}${clipConclusion(item.conclusion, item.path)}`
+			})
+			.join('\n\n')
 	}
 
 	/** 开一次调用的上下文:拿宿主读面、取状态、备一个变更列表。 */
@@ -2700,6 +2810,43 @@ export function apply(ctx, config = {}) {
 		},
 	})
 
+	/**
+	 * 把一份侦察结论**全文**落成工作区文件(`clear/` 之内,账本仍是真值源,这是投影产物)。
+	 *
+	 * 为什么是文件而不是只留在账本里:一条事实有三个当事人——下达侦察的模型、独立评估者、
+	 * 人。只放在会话日志折叠出的资料面里,只有面板读得到;判据一旦写成「与侦察结论一致」,
+	 * 模型与评估者都无处可读,只能裁 inconclusive。落成文件之后三者读的是同一份。
+	 * 失败只 warn(照 `persistFact` 的做法):投递仍走消息,只是少了那份可读副本。
+	 */
+	function persistMaterial(sessionId, scoutId, meta, conclusion) {
+		const file = join(sessionCwd(sessionId), 'clear', 'knowledge', 'materials', `${scoutId}.md`)
+		try {
+			writeTextFile(
+				file,
+				[
+					`# 侦察结论 · ${scoutId}`,
+					'',
+					`- 触发:${String(meta.trigger ?? '(未记)')}`,
+					`- 锚在哪一步:${String(meta.stepId ?? meta.step ?? '(未记)')}`,
+					meta.child === undefined ? null : `- 子会话:${String(meta.child)}`,
+					meta.digest === undefined ? null : `- 任务指纹:${String(meta.digest)}`,
+					`- 收到时间:${new Date().toISOString()}`,
+					'',
+					'> 这份文件由系统按账本落盘(投影产物);真值源是会话日志里的 `scout/settled`。',
+					'',
+					String(conclusion),
+					'',
+				]
+					.filter((line) => line !== null)
+					.join('\n'),
+			)
+			return file
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 侦察结论落盘失败 ${String(error?.message ?? error)}`)
+			return null
+		}
+	}
+
 	function persistFact(sessionId, goal, hypothesis, factId) {
 		const file = join(sessionCwd(sessionId), 'clear', 'knowledge', 'facts', `${goal.id}.md`)
 		try {
@@ -2967,13 +3114,14 @@ export function apply(ctx, config = {}) {
 			if (unsettled.length > 0) {
 				return fail('plan_has_open_steps', `还有 ${unsettled.length} 步没落定:${unsettled.map((step) => step.id).join(', ')}。交付它们,或带因作废(VoidPlanStep)。`)
 			}
-			collectExecutors(mutations, hostService.state(sessionId), sessionId)
+			// 收尾也要把**结论正文**带给模型:这一拍收上来的东西,丢弃返回值就等于白收。
+			const collected = collectExecutors(mutations, hostService.state(sessionId), sessionId)
 			mutations.push({ t: 'plan/closed', plan: plan.id, summary: args.summary ?? null })
 			persistArchive(sessionId, plan, args.summary ?? null)
 			return done({
 				ok: true,
 				code: 'plan_closed',
-				message: `计划 ${plan.id} 已收束归档(clear/goals/plans/${plan.id}.md)。${state.goal === null || state.goal.status !== 'open' ? '' : `目标 ${state.goal.id} 仍未结案,继续开下一阶段。`}`,
+				message: `计划 ${plan.id} 已收束归档(clear/goals/plans/${plan.id}.md)。${state.goal === null || state.goal.status !== 'open' ? '' : `目标 ${state.goal.id} 仍未结案,继续开下一阶段。`}${noticeBlock(collected.notices) === '' ? '' : `\n\n${noticeBlock(collected.notices)}`}`,
 			})
 		},
 	})
@@ -4155,7 +4303,8 @@ export function apply(ctx, config = {}) {
 			})
 			const parsed = metricReading(reading)
 			// 交付成功前收一次执行者结论:这条世界线的「执行者跑成没跑成」该跟它的读数一起落账。
-			collectExecutors(mutations, hostService.state(sessionId), sessionId)
+			// 返回值不再丢弃:本次收到的结论正文要跟着这次交付一起给模型。
+			const collectedOnDeliver = collectExecutors(mutations, hostService.state(sessionId), sessionId)
 			return done({
 				ok: true,
 				code: 'worldline_delivered',
@@ -4163,7 +4312,8 @@ export function apply(ctx, config = {}) {
 				evaluator,
 				message:
 					`世界线「${branch.label}」已交付(裁决 ${verdict}${evaluator === 'independent' ? ' · 独立评估者读数' : ' · 自判'})。` +
-					`读数:${reading ?? '未报'}${parsed === null ? '(读不出一个数 → 不参赛)' : ` → ${parsed}`};有效性:${validity ?? '未声明'}。\n胜负由 ConvergeFork 的算术决定。`,
+					`读数:${reading ?? '未报'}${parsed === null ? '(读不出一个数 → 不参赛)' : ` → ${parsed}`};有效性:${validity ?? '未声明'}。\n胜负由 ConvergeFork 的算术决定。` +
+					(noticeBlock(collectedOnDeliver.notices) === '' ? '' : `\n\n${noticeBlock(collectedOnDeliver.notices)}`),
 			})
 		},
 	})
@@ -4329,7 +4479,7 @@ export function apply(ctx, config = {}) {
 				}
 			}
 			mutations.push({ t: 'fork/converged', fork: fork.id, winner: outcome.winner, margin: outcome.margin, tie: outcome.tie, metric: outcome.metric, direction: outcome.direction })
-			collectExecutors(mutations, hostService.state(sessionId), sessionId)
+			const collectedOnConverge = collectExecutors(mutations, hostService.state(sessionId), sessionId)
 			return done({
 				ok: true,
 				code: 'fork_converged',
@@ -4338,7 +4488,8 @@ export function apply(ctx, config = {}) {
 					`算术裁决:采纳「${winner?.label ?? outcome.winner}」(${outcome.metric} ${outcome.direction === 'min' ? '越小越好' : '越大越好'}),` +
 					`差额 ${outcome.margin}${outcome.tie ? ' · 并列(指标说一样好是买到的信息)' : ''}。\n` +
 					`读数:${outcome.readings.map((row) => `${row.label}=${row.value}`).join('、')}\n` +
-					`落选的世界线标为未采纳,**留档不删**。${mergeNote}\n下一步:把采纳那条的产物落进步骤 ${step.id} 声明的位置,再用 AdvancePlan 交付这一步。`,
+					`落选的世界线标为未采纳,**留档不删**。${mergeNote}\n下一步:把采纳那条的产物落进步骤 ${step.id} 声明的位置,再用 AdvancePlan 交付这一步。` +
+					(noticeBlock(collectedOnConverge.notices) === '' ? '' : `\n\n${noticeBlock(collectedOnConverge.notices)}`),
 			})
 		},
 	})
@@ -4464,6 +4615,7 @@ export function apply(ctx, config = {}) {
 			const lines = swept.lines.map((item) => `· ${item}`)
 			if (swept.recovered > 0) lines.push(`· ${swept.recovered} 条结论是从执行者自己的会话日志里回收的`)
 			if (swept.lost > 0) lines.push(`· ${swept.lost} 条失联(产物还在各自的工作副本里)`)
+			if (noticeBlock(swept.notices) !== '') lines.push('', noticeBlock(swept.notices))
 			if (lines.length === 0) lines.push('· 没有在跑的世界线执行者')
 			return done({ ok: true, code: 'worldline_status', message: lines.join('\n') })
 		},
@@ -4492,6 +4644,11 @@ export function apply(ctx, config = {}) {
 			const started = Date.now()
 			let collected = 0
 			let lines = []
+			/**
+			 * 等到的**结论正文**要攒着:摘要行每一拍都重建,正文必须跨拍累积,
+			 * 否则「等到的那一拍」过去之后,模型只剩一句「回灌 1 条结论」。
+			 */
+			const notices = []
 			const pending = () => {
 				const before = mutations.length
 				const swept = collectExecutors(mutations, hostService.state(sessionId), sessionId)
@@ -4505,6 +4662,7 @@ export function apply(ctx, config = {}) {
 				lines = swept.lines.map((item) => `· ${item}`)
 				if (swept.recovered > 0) lines.push(`· ${swept.recovered} 条结论是从执行者自己的会话日志里回收的`)
 				if (swept.lost > 0) lines.push(`· ${swept.lost} 条失联(产物还在各自的工作副本里)`)
+				notices.push(...(swept.notices ?? []))
 				/**
 				 * 「还在跑」= 世界线执行者(内存表里真有、还没落定的那些)**加上**侦察。
 				 * 少了侦察这一票,只有侦察在跑时这个循环第一拍就退出,
@@ -4543,7 +4701,11 @@ export function apply(ctx, config = {}) {
 				(waited >= wait && running > 0 ? `,**还有 ${running} 条仍在跑**(到点返回,不是失败:它们跑的是真活,可以再来等一次,或先干别的)` : '') +
 				(recovered > 0 ? `;其中 ${recovered} 条是从执行者自己的会话日志里回收的` : '') +
 				(lostLines.length > 0 ? `;${lostLines.join('、')}` : '')
-			return done({ ok: true, code: 'worldlines_awaited', message: `${head}\n${(doneLines.length > 0 ? doneLines : lines).join('\n')}` })
+			return done({
+				ok: true,
+				code: 'worldlines_awaited',
+				message: `${head}\n${(doneLines.length > 0 ? doneLines : lines).join('\n')}${noticeBlock(notices) === '' ? '' : `\n\n${noticeBlock(notices)}`}`,
+			})
 		},
 	})
 
@@ -5448,6 +5610,11 @@ export function apply(ctx, config = {}) {
 				const done = swept.lines.filter((line) => !line.endsWith('仍在跑'))
 				if (done.length > 0) brainNote = `${brainNote}\n(世界线执行者已回灌:${done.join('、')}——结论已进投影,逐条用 AdvanceWorldline 交付读数。)`
 			}
+			/**
+			 * 这一拍收上来的结论,**没有原生通知的那一档**要把正文直接放进注记:
+			 * 它是「没有工具调用却收到结论」的唯一路径,不带正文的话,这条结论就只剩计数了。
+			 */
+			if (noticeBlock(swept.notices) !== '') brainNote = `${brainNote}\n\n${noticeBlock(swept.notices)}`
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 世界线结论回灌失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}

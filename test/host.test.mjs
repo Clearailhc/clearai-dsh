@@ -593,6 +593,29 @@ console.log('\n【技能面:合并目录折进投影,用量从日志里折出来
 	}
 }
 
+// ── 资料面:外脑送来的观测与在跑的侦察(模型与面板读的是同一份)────────────────
+{
+	// `renderCard` 是模型每一步唯一读到的窗口;`view` 是面板读的。两处必须都有指针。
+	const { renderCard } = await import('../ui/lib/fold.js')
+	const materialPath = 'clear/knowledge/materials/s-1.md'
+	const withScout = applyMutations(emptyState(), [
+		{ t: 'scout/dispatched', id: 's-1', step: 'goal:g1', trigger: 'model_request:盘点', child: 'c-1', capability: 'continuable', digest: 'd1' },
+		{ t: 'observation/recorded', id: 'm-1', ref: 'scout:s-1', source: 'scout', digest: null, bytes: 4200, note: '侦察结论(只读):clear/skills 下 18 条技能,SKILL.md 覆盖 18/18。', path: materialPath, step: 'goal:g1' },
+		{ t: 'scout/settled', id: 's-1', step: 'goal:g1', conclusion: '侦察结论(只读):clear/skills 下 18 条技能。', note: null, path: materialPath },
+	])
+	const card = renderCard(withScout)
+	check(
+		'卡片「资料面」给出指针与摘要(模型这才读得到外脑的结论)',
+		/资料面/.test(card) && card.includes(materialPath) && /18 条技能/.test(card),
+		card.split('\n').filter((line) => line.includes('资料面') || line.includes(materialPath)).join(' / ').slice(0, 160),
+	)
+	check('面板与模型读同一份:侦察与材料的 path 都交出去了', view(withScout).scouts[0]?.path === materialPath && view(withScout).materials[0]?.path === materialPath, JSON.stringify({ scout: view(withScout).scouts[0]?.path ?? null, material: view(withScout).materials[0]?.path ?? null }))
+	const pending = applyMutations(emptyState(), [{ t: 'scout/dispatched', id: 's-2', step: 'goal:g1', trigger: 'model_request:盘点', child: 'c-2', capability: 'continuable', digest: 'd2' }])
+	check('在跑的侦察也列出来(模型知道有东西在路上)', /\[在跑\] 侦察 s-2/.test(renderCard(pending)), renderCard(pending).split('\n').filter((line) => line.includes('在跑')).join(' ').slice(0, 120))
+	const selfOnly = applyMutations(emptyState(), [{ t: 'observation/recorded', id: 'm-2', ref: 'lab/a.txt', source: 'self', digest: null, bytes: 10, note: '我自己写的观测', step: 's1' }])
+	check('只有自己的观测 ⇒ 不出「资料面」段(不制造噪声)', !/资料面/.test(renderCard(selfOnly)))
+}
+
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failures.length > 0) {
 	console.log('失败项:')
