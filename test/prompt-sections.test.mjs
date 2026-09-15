@@ -86,6 +86,10 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 		delegation.text.match(/SpawnScout[^|]*\|[^|]*/)?.[0]?.slice(0, 90) ?? '(没找到那一行)',
 	)
 
+	// 侦察的产出纪律:它是给父任务**省**上下文的,不是流水账——超长要压缩,并说清细节在哪。
+	// (这段纪律在**侦察人格**里(kernel 的 SCOUT_PERSONA),不在段表里,所以扫 KERNEL。)
+	check('侦察人格写明产出的长度纪律(3000 字以内 + 指针)', /3000 字以内/.test(KERNEL), KERNEL.match(/用 Markdown 写结论[^\n]*/)?.[0]?.slice(0, 80) ?? '(没找到)')
+
 	// 假设留痕的纪律:不强求证实/证伪,但「没看过」不能留白(结案时会被如实记进账里)。
 	const loop = SECTIONS.find((section) => section.name === 'clearai/loop-contract')
 	check(

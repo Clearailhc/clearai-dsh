@@ -907,6 +907,13 @@ export function apply(ctx, config = {}) {
 - **只读**:你**不能写文件、不能执行命令**。若任务要求"产出文件/写入某路径",这不是你能做的——
   把该文件**应有的内容直接写进你的最终答复文本**,由父任务据此落盘。
 
+**产出纪律(结论是给父任务省上下文的,不是流水账):**
+- 用 Markdown 写结论,**3000 字以内**;要的是判断与可复核的锚点(文件路径、行号、数字、原文摘录),
+  不是把你读过的过程复述一遍。
+- 超了就**压缩**:先给结论与关键读数,再给「要细节去哪里看」的指针(哪个文件、哪一节)。
+  3000 字装不下的细节,本来就不该指望父任务一次读完。
+- 你只读、不能落盘;父任务会把你的答复落成文件。所以宁可写短而准,也不要长而糊。
+
 **怎么算查清了(侦察的方法,不只是禁令):**
 - **落到第一手证据**:结论要落在你**亲眼读到**的东西上——文件里的原话、真实的目录清单、
   日志里的退出码、代码里的那一行。"按常理应该是"不是证据;凭文件名猜内容也不是。
@@ -1116,7 +1123,7 @@ export function apply(ctx, config = {}) {
 			label: entry.label,
 			// `note` 写**具体**的结局(aborted / error / …),不写笼统的 failed——与侦察那条路同一个纪律
 			// (不分开的话,卡片会把 aborted 写成「执行没跑成:failed」——一句假话)。
-			mutation: { t: 'worldline/executed', fork: entry.fork, branch: entry.branch, child: entry.child, ok, conclusion: String(entry.settled.conclusion ?? '').slice(0, 4000), note: ok ? null : String(entry.settled.stopReason ?? 'failed') },
+			mutation: { t: 'worldline/executed', fork: entry.fork, branch: entry.branch, child: entry.child, ok, conclusion: clipConclusion(entry.settled.conclusion, entry.workspace ?? null), note: ok ? null : String(entry.settled.stopReason ?? 'failed') },
 		}
 	}
 
@@ -1326,7 +1333,7 @@ export function apply(ctx, config = {}) {
 						branch: branch.id,
 						child,
 						ok: found.ok,
-						conclusion: String(found.conclusion ?? '').slice(0, 4000),
+						conclusion: clipConclusion(found.conclusion, branch.workspace ?? null),
 						note: found.ok ? 'recovered' : found.stopReason,
 					})
 					continue
@@ -1383,7 +1390,10 @@ export function apply(ctx, config = {}) {
 			 * 三者都能读;账本仍是真值源,这份文件是投影产物。
 			 */
 			const path = ok && full.trim() !== '' ? persistMaterial(sessionId, scoutId, meta, full) : null
-			mutations.push({ t: 'scout/settled', id: scoutId, step: stepId, conclusion: full.slice(0, 4000), note: ok ? null : String(stopReason ?? 'failed'), path })
+			// 账本与观测**同一个上限、同一句截断标记**(超出时必须说清全文在哪):
+			// 同一个数在几处各写一遍,迟早会漂成两套口径。
+			const clipped = clipConclusion(full, path)
+			mutations.push({ t: 'scout/settled', id: scoutId, step: stepId, conclusion: clipped, note: ok ? null : String(stopReason ?? 'failed'), path })
 			if (ok && full.trim() !== '') {
 				mutations.push({
 					t: 'observation/recorded',
@@ -1392,7 +1402,7 @@ export function apply(ctx, config = {}) {
 					source: 'scout',
 					digest: null,
 					bytes: full.length,
-					note: full.slice(0, 2000),
+					note: clipped,
 					path,
 					step: stepId ?? null,
 				})
@@ -4612,7 +4622,7 @@ export function apply(ctx, config = {}) {
 				return done({
 					ok: true,
 					code: 'scout_reported',
-					message: `这件事**上一次已经正常回灌过**(同一个任务原文,身份 ${scout.digest}),直接复用它的结论——没有再派一次。要真重跑,把任务原文改一个字。\n\n${String(scout.conclusion ?? '').slice(0, 2000)}`,
+					message: `这件事**上一次已经正常回灌过**(同一个任务原文,身份 ${scout.digest}),直接复用它的结论——没有再派一次。要真重跑,把任务原文改一个字。\n\n${clipConclusion(scout.conclusion, null)}`,
 				})
 			}
 			/**

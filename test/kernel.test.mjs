@@ -2388,12 +2388,50 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		await callOn(host, W, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
 		const dispatched = await callOn(host, W, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
 		check('前置:侦察异步派出(返回值里没有结论)', dispatched.code === 'scout_dispatched', String(dispatched.code))
-		const started = Date.now()
 		const awaited = await callOn(host, W, 'AwaitWorldlines', { timeout_s: 5 })
-		const waitedMs = Date.now() - started
-		check('侦察在跑 ⇒ AwaitWorldlines 真的等它(不再第一拍退出)', waitedMs >= 1500, `等了 ${waitedMs}ms(修之前是 0ms)`)
+		/**
+		 * 断的是**行为**不是耗时:修好之前它在第一拍就返回(回灌 0 条、侦察仍挂着),
+		 * 修好之后它必须等到那条结论落定才返回。用耗时判会在机器忙时抖(第一拍本身
+		 * 可能就跨过了子会话落定的时刻),而「结论到手了没有」与机器快慢无关。
+		 */
+		check(
+			'侦察在跑 ⇒ AwaitWorldlines 一直等到它落定(不再第一拍退出)',
+			/回灌 1 条结论/.test(String(awaited.message ?? '')) && host.service.state(W).scouts.at(-1)?.conclusion !== null,
+			String(awaited.message ?? '').split('\n')[0].slice(0, 120),
+		)
 		check('等到了:结论落成 scout/settled 并进资料面', host.journal.some((mutation) => mutation.t === 'scout/settled' && mutation.conclusion !== undefined) && host.service.state(W).materials.some((item) => String(item.ref ?? '').startsWith('scout:')), JSON.stringify(host.service.state(W).materials.map((item) => item.ref)))
 		check('回报里写明了回灌了几条(不是含糊的「等完了」)', /回灌 1 条/.test(String(awaited.message ?? '')), String(awaited.message ?? '').slice(0, 120))
+	}
+
+	/**
+	 * **长度纪律**(U5):上限是摘要边界,不是信息丢失——全文在文件里,账本里带截断标记与指针。
+	 */
+	{
+		const L = 'session-scout-long'
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		await callOn(host, L, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
+		await callOn(host, L, 'CreatePlan', { steps: [{ id: 'l1', do: '核材料', artifacts: ['lab/l1.txt'], done_criteria: 'lab/l1.txt 存在', tests: null }] })
+		const long = `${'甲'.repeat(9000)}结尾标记`
+		host.scoutConclusion = long
+		await callOn(host, L, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
+		const child = String(host.service.state(L).scouts.at(-1)?.child ?? '')
+		host.sessionEvents = {
+			[child]: [
+				{ type: 'turn/start', data: { turn: 1 } },
+				{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: long }] } } },
+				{ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+			],
+		}
+		await preStep(host, L, 61)
+		const settledMutation = host.journal.filter((m) => m.t === 'scout/settled').at(-1)
+		const conclusion = String(settledMutation?.conclusion ?? '')
+		const materialPath = settledMutation?.path ?? null
+		check('账本里带截断标记与指针(不许静默截断)', /已截断/.test(conclusion) && /全文 9004 字/.test(conclusion) && materialPath !== null && conclusion.includes(String(materialPath)), conclusion.slice(-120))
+		const material = materialPath === null ? '' : String(readFileSync(materialPath, 'utf8'))
+		check('文件里是**全文**(截断只是摘要边界,不是信息丢失)', material.includes('结尾标记') && material.length > 9000, `${material.length} 字`)
+		const observation = host.journal.filter((m) => m.t === 'observation/recorded' && m.source === 'scout').at(-1)
+		check('观测与账本同一条上限、同一句标记(两套口径迟早会漂)', String(observation?.note ?? '').includes('已截断') && String(observation?.note ?? '').length === conclusion.length, `${String(observation?.note ?? '').length} / ${conclusion.length}`)
 	}
 
 	/**
