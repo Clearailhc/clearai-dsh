@@ -14,7 +14,7 @@
 - **`retracted`（已撤回）的生产者。** 本体里定义了这个状态，但目前没有任何代码路径会写它。
 - **`self` 与 `scout` 之外的观测来源标注。** 类型里有别的来源，但还没有东西写它们。
 - **机器评估者自动重跑。** 准入判出 `needs_audit` 时内核会派独立评估者，评估者是一个**真的子会话**；此外没有单独的后台重评循环。
-- **真浏览器里的逐屏走查仍未做。** `/` 命令菜单（`/goal` `/plan` `/evidence` `/worldline` `/plan-review`）与挂回的原生工作方式（todo/subagent/workflow/ralph）已由组合测试与 headless e2e 验证，但浏览器里菜单弹出、命令渲染、面板与命令的一致性还没逐屏点过。
+- **真浏览器走查已做一轮（深度写死在这里）。** 干净安装 + 真 Chrome + deepseek-flash 的一整场：预设可切换、原生审阅卡弹出、人点 Approve 后授权记号以 `by='user'` 落账、十三拍主链走完（含独立评估者子会话与两条事实升格）、`/goal` 在原生菜单渲染、Deliverables/Facts/Worldlines/Skills·Memory 四个面板出图（截图在 `docs/shots/browser-e2e-*.png`）。**没验的**：长会话下的面板交互细节（出处跳转、命题展开）、`/evidence` `/worldline` `/plan-review` 三个命令的浏览器渲染、英文界面。
 
 ## 只验到写明的深度
 

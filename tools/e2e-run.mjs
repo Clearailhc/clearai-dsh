@@ -343,8 +343,9 @@ const disabledRows = keepGoalRows ? SECOND_LEDGER.filter((id) => id !== 'goal' &
  * 两个 `--patch` 按顺序各成一层,层与层之间是顺序的。
  */
 const hostPatch = [
-	// 必须 insert 形态:补丁层里「裸 id 行」只能改**已存在**的行,引用缺席的 id 是硬错误;
-	// insert 撞到已有 id 是幂等覆盖(web 自带这一行,实测同 id insert 不出重影)。
+	// 必须 insert 形态:补丁层里「裸 id 行」只能改**已存在**的行,引用缺席的 id 是硬错误。
+	// 它只走 CLI 补丁层,不进发行物的 cordis.patch.yml——bundle 补丁的 insert 撞到已有 id
+	// 是硬错误(duplicate loader entry id),而 web 自带这一行;headless 形态由这里按缺席补齐。
 	...(present.has('subagent-model-selection-settings') ? [] : [{ insert: [MODEL_SELECTION_ROW] }]),
 	// installed 模式:宿主行由**包的补丁层**提供(我们不再插,免得同一个 id 挂两行)
 	...(installedHome !== null || !existsSync(HOST_PACKAGE) ? [] : [{ insert: [{ id: 'clearai-host', name: HOST_PACKAGE }] }]),

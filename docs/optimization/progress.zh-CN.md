@@ -19,7 +19,7 @@
 | 5 | DSH 原生菜单与能力回归 | 已完成 | `node test/preset-composition.test.mjs` | 20 通过,0 失败 |
 | 6 | Prompt 瘦身与上下文注入 | 已完成 | `node test/prompt-sections.test.mjs` | 10 通过,0 失败 |
 | 7 | 文档对齐（一致性测试部分已完成） | 已完成 | `node test/docs-consistency.test.mjs` | 11 通过,0 失败 |
-| 8 | 最终验收与发布准备 | 进行中 | 五条验收命令 | 真值表 22 ✓ · 发行物 29 ✓ · 干净安装 16 ✓ · 部署自洽 ✓ · 真浏览器冒烟进行中 |
+| 8 | 最终验收与发布准备 | 已完成 | 五条验收命令 + 真浏览器一场 | 全过;抓到并修掉 commands.js 跨界 import |
 | 9 | 注释质量整体梳理（清账到 0） | 已完成 | `node test/comment-style.test.mjs` | 7 通过,0 失败；约 310 处改写 |
 | 10 | 收尾陈述 | 未开始 | 人工通读 | — |
 
@@ -392,3 +392,29 @@ PROJECT.md 的真实小节(章程第 5 节)改写为可解析的说法。
 换成「真的扫到了注释行(>500 行)」;分布段从「下一个该清谁」改成「应常年为空」。
 
 **验证**:12 份套件全绿(行为零变化——只动注释)。
+
+## 阶段 8 · 最终验收(含真浏览器一场)
+
+**机械验收五条全过**:全套件 12 份绿;真值表 22 项;发行物 29 项(155 文件);
+干净安装 16 项;部署自洽(宿主路由 3 条 + clearai 服务)。
+
+**真浏览器一场**(干净安装 + 真 Chrome + deepseek-flash,截图在 `docs/shots/browser-e2e-*.png`):
+
+1. 预设可切换——**当场抓到一个真缺陷**:commands.js 从预设平面 import ui/lib/fold.js,
+   发行物布局下相对路径失效,浏览器里切预设直接 failed to import。
+   修为走宿主门面的 `derive(sessionId)`,并把「预设不 import 宿主平面」钉进边界测试(14 项)。
+   这正是 `--ui` 这条验收线存在的理由:组合测试在仓库布局下永远抓不到它。
+2. 原生审阅卡弹出,人点 Approve ⇒ 授权记号以 `by='user'` 落进 `plan/created` 同一条变更。
+3. 续跑窗口布防(Ongoing Goal 可见),计划授权后自动续跑,十三拍主链在浏览器里走完:
+   goal/set(3 假设)→ plan/created → 观测/准入/证据/推进 ×2 → audit/dispatched+settled
+   (头部「1 subagent」就是独立评估者)→ fact/promoted ×2 → plan/closed → goal/closed。
+4. `/goal` 在原生菜单带我们的描述渲染,输出目标卡;Deliverables/Facts(中栏)与
+   Worldlines/Skills·Memory(右栏)四个面板出图。
+5. 模型的收尾陈词如实交代了「批准即开工信号」的归属语义,并主动提出可删文件回退——
+   诚实归属从机制一路透到了模型的表达。
+
+顺手修:verify-clean-install 的工作区登记改用 realpath(macOS /var 软链导致
+workspace-attach-failed,浏览器会话建不起来——与 e2e slug 同一族的病)。
+
+**验收后仍未验的**(已写进 known-gaps):长会话面板交互细节、`/evidence` `/worldline`
+`/plan-review` 的浏览器渲染、英文界面逐屏校对。

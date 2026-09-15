@@ -88,6 +88,15 @@ console.log('\n【⑤ 非权威写面与权威写面在文件层面就是分开�
 	check('投影只读账本:fold.js 里没有任何写文件调用', !/writeFileSync|appendFileSync/.test(FOLD))
 }
 
+console.log('\n【⑧ 平面互不依赖:预设不 import 宿主平面】')
+{
+	// 发行物里预设与 ui/ 的相对位置和仓库不一样;跨平面 import 在装上之后才炸
+	// (浏览器里切预设报 failed to import)。共享逻辑要么各写一份(内核/fold 的先例),
+	// 要么走宿主提供的服务门面。
+	const crossPlane = pluginFiles.filter((name) => /from\s+['"]\.\.\/\.\.\/ui\//.test(readFileSync(join(PLUGINS_DIR, name), 'utf8')))
+	check('预设插件没有任何 ../../ui/ 跨界 import', crossPlane.length === 0, crossPlane.join(','))
+}
+
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failures.length > 0) {
 	console.log('失败项:')

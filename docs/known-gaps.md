@@ -15,7 +15,7 @@ with `design goal` in the same tense was this documentation set's worst habit.
 - **A `retracted` producer.** The ontology defines the state; no code path currently produces it.
 - **Observation provenance labels beyond `self` and `scout`.** Other origins exist in the type, but nothing writes them yet.
 - **Machine evaluator self-running.** An independent evaluator is dispatched by the kernel when admission sets `needs_audit`. That evaluator runs as a real sub-session; there is no separate background re-evaluation loop.
-- **A real-browser walkthrough is still undone.** The `/` command menu (`/goal` `/plan` `/evidence` `/worldline` `/plan-review`) and the returned native working tools (todo/subagent/workflow/ralph) are covered by the composition suite and headless e2e, but nobody has yet clicked through the menu rendering, command output, and panel-command consistency in a real browser.
+- **One real-browser walkthrough is now done (depth stated precisely).** Clean install + real Chrome + deepseek-flash, one full session: the preset switches, the native review card appears, a human Approve lands the stamp as `by='user'`, the main chain runs to completion (including the independent evaluator sub-session and two fact promotions), `/goal` renders from the native menu, and the Deliverables/Facts/Worldlines/Skills·Memory panels draw (screenshots in `docs/shots/browser-e2e-*.png`). **Not yet checked**: panel interaction details over long sessions (provenance jumps, proposition expansion), browser rendering of `/evidence` `/worldline` `/plan-review`, and the English UI.
 
 ## Verified only to a stated depth
 

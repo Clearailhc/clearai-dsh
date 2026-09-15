@@ -2,6 +2,30 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **ClearAI's own `/` command menu.** `/goal` `/plan` `/evidence` `/worldline` are read-only state windows computed from the ledger on the spot; `/plan-review` re-presents the active plan through the native review card instead of stamping anything itself (commands carry no mutation channel — the authority boundary test pins this).
+- **Native working tools return.** todo, subagent (with model selection), workflow and ralph mount from the standard preset's own rows; the composition suite pins both directions — present: these four; absent: `tool-goal`, `command-goal`, `plan-mode` (the second ledger stays off).
+- **`test/prompt-sections.test.mjs`.** All 23 prompt sections carry a `hard` / `native` / `advisory` class tag, and the suite pins that the classification matches the content (hard sections name a mechanism anchor; native sections name no kernel tool; advisory sections make no mechanism promises).
+
+### Changed
+
+- **Hypothesis floor is now a hard boundary.** `SetGoal` rejects zero or one hypotheses when `minHypotheses > 0` (kernel default 0 stays neutral; the preset sets 2). Revisions of an existing goal are exempt.
+- **Authorization wording unified to one sentence everywhere.** Kernel messages, the runtime card and the prompts all say: an unapproved plan does not auto-continue; when you advance it explicitly, the first delivery records attribution as it happened (behaviour is authorization). The card says it in human words — ledger field names no longer appear.
+- **Stale native-tool contracts rewritten.** `edit` is literal replacement, not unified diff; `web_search`/`web_fetch` parameter references that no longer exist were removed.
+- **Comment debt cleared to zero.** ~310 comments rewritten to the style rule (why / what breaks / boundary — no dates, no internal section numbers, no incident narratives); the ratchet quotas are now {0, 0, 0}.
+
+### Fixed
+
+- **`clearai-commands` cross-plane import.** It imported `ui/lib/fold.js` from the preset plane; in the installed package the relative layout differs, so switching to the preset in a browser failed at import. The command renderers now use the host-provided `clearai` facade for `derive` as well, and the boundary suite pins that no preset plugin imports across planes.
+- **macOS temp-path realpath mismatches.** Session-log lookup and clean-install workspace registration now resolve realpaths (`/var` is a symlink to `/private/var`), which had made e2e logs unfindable and browser session attach fail.
+
+### Validated
+
+- **deepseek-flash end-to-end, two headless scenarios** (24/24 plan-and-stop; 25/25 full completion including independent-evaluator settlement) and **one real-browser session** (clean install + Chrome): preset switching, native review-card approval landing `by='user'`, the full thirteen-beat chain, `/goal` rendering, and all four panels drawing — screenshots in `docs/shots/browser-e2e-*.png`.
+
 ## [0.1.3] — 2026-09-15
 
 ### Added

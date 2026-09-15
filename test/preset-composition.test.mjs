@@ -32,7 +32,7 @@ const check = (label, condition, detail = '') => {
 
 const PRESET = readFileSync(join(PORT, 'preset', 'agent.cordis.yml'), 'utf8')
 const { CLEARAI_COMMANDS, apply, inject } = await import('../preset/plugins/commands.js')
-const { emptyState, applyMutations } = await import('../ui/lib/fold.js')
+const { emptyState, applyMutations, derive } = await import('../ui/lib/fold.js')
 
 console.log('\n【① 挂载表:工作方式回来了,第二本账没有】')
 {
@@ -76,7 +76,9 @@ console.log('\n【③ 命令行为:只读现算 + 呈审捷径的门】')
 		},
 		{ t: 'plan/created', id: 'p1', steps: [{ id: 's1', do: '跑实验', done_criteria: 'lab/out.csv 存在' }, { id: 's2', do: '分析', done_criteria: 'facts.md 更新' }], brief: 'x'.repeat(300) },
 	])
-	const facade = { state: () => ledgerState, derive: undefined, view: undefined }
+	// 假门面照宿主半的真实形状(ui/lib/index.js):state(sessionId) 与 derive(sessionId) 都在。
+	let current = ledgerState
+	const facade = { state: () => current, derive: () => derive(current), view: undefined }
 	const registered = new Map()
 	const steered = []
 	const fakeAgent = { id: 's-cmd', status: 'idle', steer: (message) => steered.push(message), followup: (message) => steered.push(message) }
@@ -100,13 +102,13 @@ console.log('\n【③ 命令行为:只读现算 + 呈审捷径的门】')
 
 	// 已授权的计划:/plan-review 如实说不用重呈,不再 steer。
 	const authorized = applyMutations(ledgerState, [{ t: 'plan/confirmed', plan: 'p1', by: 'user' }])
-	facade.state = () => authorized
+	current = authorized
 	steered.length = 0
 	const again = await invoke('plan-review')
 	check('已授权后 /plan-review 不再打扰(如实说已有授权)', again.kind === 'success' && /不需要重呈/.test(again.text) && steered.length === 0)
 
 	// 空账:四个命令都不该炸,如实说「没有」。
-	facade.state = () => emptyState()
+	current = emptyState()
 	check('空账上 /goal /plan /plan-review 都如实且不失控', (await invoke('goal')).kind === 'success' && (await invoke('plan')).kind === 'success' && (await invoke('plan-review')).kind === 'error')
 	check('内核门面缺席时报错而不是炸进程', await (async () => {
 		const reg = new Map()

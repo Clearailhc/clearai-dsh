@@ -12,10 +12,11 @@
  * `meta.mutations` 进日志,命令处理器没有这条通道——这不是限制,是权威边界
  * (test/authority-boundary.test.mjs 钉的就是它)。
  *
- * 数据从哪来:宿主半(ui/lib/index.js)提供的 `clearai` 门面——state/derive/view 都是
+ * 数据从哪来:宿主半(ui/lib/index.js)提供的 `clearai` 门面——state/derive/view 都走它,
+ * **不从 ui/lib import**:发行物里预设与 ui/ 的相对位置不一样,跨平面 import 装上就炸
+ * (分层纪律与内核一致:预设平面与宿主平面互不依赖,共享逻辑各自实现或走服务)。
  * 从会话日志现折的,与面板读的是同一份,不存在「命令看到的是另一份状态」。
  */
-import { derive } from '../../ui/lib/fold.js'
 
 export const name = 'clearai-commands'
 export const inject = ['commands']
@@ -50,7 +51,7 @@ export function apply(ctx) {
 		if (facade === undefined) return { error: 'ClearAI 内核不在这个会话里(命令挂上了,内核没挂上)。' }
 		const sessionId = sessionOf(invocation)
 		const state = facade.state(sessionId)
-		return { sessionId, state, derived: derive(state) }
+		return { sessionId, state, derived: facade.derive(sessionId) }
 	}
 
 	commands.register({

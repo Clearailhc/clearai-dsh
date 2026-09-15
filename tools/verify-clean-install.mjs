@@ -29,7 +29,7 @@
  */
 
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -131,6 +131,9 @@ console.log(`  一次性 DSH_HOME:${HOME_DIR}`)
 {
 	mkdirSync(WORKSPACE, { recursive: true })
 	writeFileSync(join(WORKSPACE, 'input.md'), 'hello from a clean install\n')
+	// 登记用**解析后的真实路径**:macOS 上 /var 是 /private/var 的软链,宿主按 realpath 归置
+	// 会话,登记路径不解析的话,会话创建时 attach 会永远失配(workspace-attach-failed)。
+	const WORKSPACE_REAL = realpathSync(WORKSPACE)
 	const id = 'clean-install-ws'
 	mkdirSync(join(HOME_DIR, 'storages'), { recursive: true })
 	writeFileSync(
@@ -139,7 +142,7 @@ console.log(`  一次性 DSH_HOME:${HOME_DIR}`)
 			{
 				unit: { name: 'workspace', version: 2 },
 				global: { initialized: true, workspaceIds: [id], archivedSessionIds: [] },
-				tables: { workspaces: { [id]: { path: WORKSPACE, title: 'clean-install', sessionIds: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } } },
+				tables: { workspaces: { [id]: { path: WORKSPACE_REAL, title: 'clean-install', sessionIds: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } } },
 			},
 			null,
 			2,
