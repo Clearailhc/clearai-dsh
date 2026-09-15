@@ -1593,8 +1593,8 @@ export function apply(ctx, config = {}) {
 		 * 先看投影,再看**父会话自己的日志**。
 		 *
 		 * 为什么要兜这一层:投影是给面板读的,它在一轮之内**可能还没前进**——而通知是运行时刚投
-		 * 进来的。账本不能等投影(实测:通知在事件 31、最后一次收集在事件 107,投影里却还是空的,
-		 * 于是侦察永远收不了口)。两处解析同一形状的通知,是分层纪律的代价(两个平面互不 import),
+		 * 进来的。失效模式:通知早已落进日志,而投影里还是空的,于是侦察永远收不了口。
+		 * 两处解析同一形状的通知,是分层纪律的代价(两个平面互不 import),
 		 * 与 fold 里那份等价实现同一个理由。
 		 */
 		const notice = (state?.notices ?? []).find((item) => String(item?.child ?? '') === String(child)) ?? ownNotices(sessionId).find((item) => String(item?.child ?? '') === String(child))
