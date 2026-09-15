@@ -72,6 +72,30 @@ jobs:
           DSH_CLI_PREFIX: ${{ runner.temp }}/dsh-cli
           DSH_CHECKOUT: ${{ github.workspace }}
         run: node tools/verify-clean-install.mjs
+      - name: OIDC claims(与 npm 上那份配置逐字对比用)
+        # 交换被 registry 拒时,npm 只会说一句 `OIDC token exchange error - package not found` ——
+        # 而真实原因几乎总是「OIDC 声明与 npmjs.com 上那份 trusted publisher 对不上」。
+        # 这里把声明原文打出来,于是"哪个字段不一致"是**看出来的**,不是猜出来的。
+        # (只打印声明字段,不打印令牌本身;这些都是公开信息:仓库名、workflow 路径、ref。)
+        run: |
+          token="$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).value||"")}catch{process.stdout.write("")}})')"
+          if [ -z "$token" ]; then
+            echo "::warning::拿不到 id_token(OIDC 环境不可用)"
+            exit 0
+          fi
+          echo "$token" | node -e '
+            let s = ""
+            process.stdin.on("data", (d) => (s += d)).on("end", () => {
+              const j = JSON.parse(Buffer.from(s.trim().split(".")[1], "base64url").toString())
+              console.log("npm 会拿这些声明去换令牌 —— 必须与 npmjs.com 上那份配置逐字一致:")
+              for (const k of ["repository", "repository_owner", "repository_owner_id", "workflow_ref", "job_workflow_ref", "environment", "ref", "event_name"]) {
+                console.log(`  ${k.padEnd(20)} ${j[k] === undefined ? "(没有这个声明)" : j[k]}`)
+              }
+            })
+          '
+
       - name: Publish the built package
         # 从 dist/ 发布:仓库根的 package.json 永不发布。
         # **幂等**:0.1.0 是手工首发(2FA 只能人敲),之后再打同一个 tag 不能让 CI 红着报
