@@ -593,6 +593,20 @@ console.log('\n【技能面:合并目录折进投影,用量从日志里折出来
 	}
 }
 
+// ── 假设留痕:三零 = 「未触及」,结案之后仍看得见(不逼 verdict,但不许留白)──────
+{
+	const { renderCard } = await import('../ui/lib/fold.js')
+	const state = applyMutations(emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: '判定 A 与 B', done_criteria: '有结论', revision: 1, status: 'open', promote_at_level: 'L2', hypotheses: [{ id: 'h1', claim: 'A 成立', refute_when: '读数不支持' }, { id: 'h2', claim: 'B 成立', refute_when: '控制 B 后差异消失' }] },
+		{ t: 'evidence/recorded', id: 'e1', step: 's1', verdict: 'support', level: 'L2', hypothesis: 'h1' },
+		{ t: 'goal/closed', id: 'g1', status: 'achieved', verdict: 'support', note: null, unjudged: ['h2'] },
+	])
+	const card = renderCard(state)
+	check('卡片把「从没被证据碰过」写成 (未触及)(与「无法判定 n」分得开)', /h2 \[proposed\].*\(未触及\)/.test(card), card.split('\n').filter((line) => line.includes('h2')).join(' ').slice(0, 140))
+	check('结案留痕在卡片上还在(未判不是「没问题」,是「没看过」)', /结案留痕.*h2/.test(card), card.split('\n').filter((line) => line.includes('结案留痕')).join(' ').slice(0, 140))
+	check('视图把 unjudged 交出去', (view(state).goal?.unjudged ?? []).includes('h2'), JSON.stringify(view(state).goal?.unjudged ?? null))
+}
+
 // ── 资料面:外脑送来的观测与在跑的侦察(模型与面板读的是同一份)────────────────
 {
 	// `renderCard` 是模型每一步唯一读到的窗口;`view` 是面板读的。两处必须都有指针。

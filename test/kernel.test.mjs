@@ -2397,6 +2397,43 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	}
 
 	/**
+	 * **假设留痕**(U4):不逼 verdict,但「没看过」必须留在账上。
+	 * 两种「没结论」要分得开:证据说「无法判定」是一回事,从没人碰过它是另一回事。
+	 */
+	{
+		const H = 'session-hypothesis-unjudged'
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		await callOn(host, H, 'SetGoal', {
+			claim: '判定这台机器能不能跑 python3',
+			done_criteria: '有结论文件',
+			hypotheses: [
+				{ claim: 'python3 可用', refute_when: '命令报 not found' },
+				{ claim: 'python3 不可用', refute_when: '命令正常输出' },
+			],
+		})
+		const first = host.service.state(H).hypotheses[0].id
+		await callOn(host, H, 'CreatePlan', { steps: [{ id: 'h1', do: '跑一次观测', artifacts: ['lab/h1.txt'], done_criteria: 'lab/h1.txt 存在', tests: { hypothesis: first, level: 'L2' } }] })
+		writeText(join(WORKSPACE, 'lab', 'h1.txt'), 'stdout=2\n')
+		// 只碰第一条:第二条从没被任何证据触及
+		const delivered = await callOn(host, H, 'AdvancePlan', {
+			observations: [{ ref: 'lab/h1.txt', note: '命令正常输出 2' }],
+			verdict: 'support',
+			basis: '实跑一次,stdout=2',
+			step_id: 'h1',
+		})
+		check('前置:这一步交付成功(证据只碰到第一条假设)', delivered.ok === true, JSON.stringify(delivered.code ?? null))
+		await callOn(host, H, 'ClosePlan', { summary: '这一阶段做完了' })
+		const closed = await callOn(host, H, 'CloseGoal', { outcome: 'achieved' })
+		check('结案成功(判据达成了)', closed.ok === true, JSON.stringify(closed.code ?? null))
+		const closedMutation = host.journal.filter((m) => m.t === 'goal/closed').at(-1)
+		const unjudged = closedMutation?.unjudged ?? null
+		check('结案把「没被任何证据触及的假设」如实落账', Array.isArray(unjudged) && unjudged.length === 1, JSON.stringify(unjudged))
+		check('结案消息如实说出来(未判不是「没问题」,是「没看过」)', /没有被任何证据触及/.test(String(closed.message ?? '')) && /没看过/.test(String(closed.message ?? '')), String(closed.message ?? '').slice(0, 160))
+		check('视图把留痕交出去(面板与卡片读同一份)', (host.service.view(H).goal?.unjudged ?? []).length === 1, JSON.stringify(host.service.view(H).goal?.unjudged ?? null))
+	}
+
+	/**
 	 * **失联终局**(U3):进程重启过 ⇒ 内存表空了,投影里那条侦察还没收口,而子会话
 	 * 已经不在了。判据与执行者那条**完全一致**:表里没有 + 会话里没有 `turn/end` ⇒ 失联。
 	 * 一句永久「未回灌」是等不到下文的承诺。

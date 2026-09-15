@@ -86,6 +86,14 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 		delegation.text.match(/SpawnScout[^|]*\|[^|]*/)?.[0]?.slice(0, 90) ?? '(没找到那一行)',
 	)
 
+	// 假设留痕的纪律:不强求证实/证伪,但「没看过」不能留白(结案时会被如实记进账里)。
+	const loop = SECTIONS.find((section) => section.name === 'clearai/loop-contract')
+	check(
+		'loop-contract 写明「要么被证据碰到、要么留痕」(不逼 verdict,但不留白)',
+		/没看过/.test(loop.text) && /unjudged/.test(loop.text),
+		loop.text.match(/每条假设[^。]*。/)?.[0]?.slice(0, 90) ?? '(没找到那一条)',
+	)
+
 	// 内核的 OUTPUT_SCHEMA 是 additionalProperties:false——多写一个不存在的字段,宿主会让整次调用失败。
 	check('内核工具的 output schema 是闭集(契约是硬的,提示词才必须跟上)', /const OUTPUT_SCHEMA = \{[\s\S]*?additionalProperties: false/.test(KERNEL))
 }

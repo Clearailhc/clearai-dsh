@@ -260,6 +260,8 @@ export function applyMutation(state, mutation) {
 				next.goal.status = mutation.status
 				next.goal.closedAt = at
 				next.goal.closeVerdict = mutation.verdict ?? null
+				// 结案时如实记下「没被任何证据触及的假设」:未判不是「没问题」,是「没看过」。
+				next.goal.unjudged = Array.isArray(mutation.unjudged) ? mutation.unjudged.slice() : []
 			}
 			break
 		}
@@ -1258,6 +1260,9 @@ export function view(state, sessionId) {
 						phase: derived.phase,
 						progress: derived.progress,
 						revision: state.goal.revision,
+						// 结案留痕:没被任何证据触及的假设。未判不是「没问题」,是「没看过」。
+						unjudged: Array.isArray(state.goal.unjudged) ? state.goal.unjudged.slice() : [],
+						closeVerdict: state.goal.closeVerdict ?? null,
 						hypotheses: derived.hypotheses.map((hypothesis) => ({
 							id: hypothesis.id,
 							claim: hypothesis.claim,
@@ -1512,10 +1517,14 @@ export function renderCard(state) {
 	if (derived.hypotheses.length > 0) {
 		lines.push('- 假设状态(由证据算出):')
 		for (const hypothesis of derived.hypotheses) {
-			lines.push(
-				`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}` +
-					`(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive})`,
-			)
+			/**
+			 * 三样全零 = **没人碰过它**,与「判过但无法判定」是两回事:
+			 * 前者要如实说「未触及」,后者本来就有「无法判定 n」这个读数。
+			 * 不逼 verdict,但也不许把「没看过」写成「没问题」。
+			 */
+			const untouched = (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0
+			const readings = untouched ? '(未触及)' : `(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive})`
+			lines.push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}`)
 		}
 	}
 	if (plan === null) {
@@ -1598,6 +1607,8 @@ export function renderCard(state) {
 		lines.push(`- 最近一条证据:${last.id} ${last.verdict}(${last.evaluator} · ${last.level})`)
 	}
 	if (state.facts.length > 0) lines.push(`- 已升格事实:${state.facts.length} 条`)
+	// 结案时留的痕:未判的假设不是「没问题」,是「没看过」——结案之后也要看得见。
+	if (Array.isArray(goal?.unjudged) && goal.unjudged.length > 0) lines.push(`- 结案留痕:有 ${goal.unjudged.length} 条假设没有被任何证据触及(${goal.unjudged.join(', ')})`)
 	/**
 	 * **资料面**:外脑送回来的观测(不是你写的那些)**与还在跑的侦察**。
 	 *

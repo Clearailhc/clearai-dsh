@@ -2845,7 +2845,17 @@ export function apply(ctx, config = {}) {
 					{ mutations },
 				)
 			}
-			mutations.push({ t: 'goal/closed', id: goal.id, status: 'achieved', verdict: 'support', note: args.note ?? null })
+			/**
+			 * **没被任何证据触及的假设**,结案时如实记一笔。
+			 *
+			 * 两种「没结论」要分得开:证据说「无法判定」= 现有信息不足以定论(已经在账上);
+			 * 三样全零 = **没人碰过它**。不强制证实/证伪——但「没看过」不能被写成「没问题」,
+			 * 所以这里把它记进结案那条变更里,卡片与面板都说得出来。
+			 */
+			const untouched = derived.hypotheses.filter(
+				(hypothesis) => (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0,
+			)
+			mutations.push({ t: 'goal/closed', id: goal.id, status: 'achieved', verdict: 'support', note: args.note ?? null, unjudged: untouched.map((hypothesis) => hypothesis.id) })
 			const continuationNote = stopContinuation(exec.agent, null, '目标达成', mutations)
 			const threshold = levelIndexOf(goal.promote_at_level)
 			const promoted = []
@@ -2878,6 +2888,9 @@ export function apply(ctx, config = {}) {
 				message:
 					`目标 ${goal.id} 已达成(独立评估者裁决:${audit.basis})。` +
 					(promoted.length > 0 ? `\n升格为事实:${promoted.join(' / ')}(写入 clear/knowledge/facts/${goal.id}.md)` : '\n没有达到升格门槛的假设。') +
+					(untouched.length > 0
+						? `\n结案时有 ${untouched.length} 条假设**没有被任何证据触及**:${untouched.map((hypothesis) => hypothesis.id).join(', ')}——未判的假设不是「没问题」,是「没看过」;它们留在账上,随时可以补一次验证。`
+						: '') +
 					'\n被推翻与被改版的假设保留在日志里。' +
 					continuationNote,
 			})
