@@ -1459,7 +1459,7 @@ export function apply(ctx, config = {}) {
 				 * 读不到就按「还在跑」计一票,让等待循环继续等。
 				 */
 				// 运行时已经宣告它落定 ⇒ 直接用那条通知(与模型读到的是同一份文本)。
-				const announced = noticeFor(state, entry.child)
+				const announced = noticeFor(state, sessionId, entry.child)
 				if (announced !== null) {
 					entry.settled = { ok: announced.ok, conclusion: announced.conclusion, stopReason: announced.stopReason }
 				} else {
@@ -1587,14 +1587,56 @@ export function apply(ctx, config = {}) {
 	 *
 	 * `ok` 只能从摘要那句英文里读(运行时自己的格式,版本变了要跟着改);结论正文不受影响。
 	 */
-	function noticeFor(state, child) {
+	function noticeFor(state, sessionId, child) {
 		if (child === null || child === undefined) return null
-		const notice = (state?.notices ?? []).find((item) => String(item?.child ?? '') === String(child))
+		/**
+		 * 先看投影,再看**父会话自己的日志**。
+		 *
+		 * 为什么要兜这一层:投影是给面板读的,它在一轮之内**可能还没前进**——而通知是运行时刚投
+		 * 进来的。账本不能等投影(实测:通知在事件 31、最后一次收集在事件 107,投影里却还是空的,
+		 * 于是侦察永远收不了口)。两处解析同一形状的通知,是分层纪律的代价(两个平面互不 import),
+		 * 与 fold 里那份等价实现同一个理由。
+		 */
+		const notice = (state?.notices ?? []).find((item) => String(item?.child ?? '') === String(child)) ?? ownNotices(sessionId).find((item) => String(item?.child ?? '') === String(child))
 		if (notice === undefined) return null
 		const summary = String(notice.summary ?? '')
 		const abnormal = /failed|declined|stopped|abnormally|ran out of room/i.test(summary)
 		const conclusion = String(notice.conclusion ?? '').trim()
 		return { ok: !abnormal, stopReason: abnormal ? 'abnormal' : 'completed', conclusion: conclusion === '' ? summary : conclusion, from: 'notice' }
+	}
+
+	/** 父会话自己的日志里折出来的结算通知(按事件条数缓存,避免每拍重读)。 */
+	const noticeCache = new Map()
+	function ownNotices(sessionId) {
+		const sessions = ctx.get('sessions')
+		if (sessions === undefined || typeof sessions.get !== 'function') return []
+		let events = []
+		try {
+			const session = sessions.get(String(sessionId))
+			events = typeof session?.ownEvents === 'function' ? session.ownEvents() : []
+		} catch {
+			return []
+		}
+		if (!Array.isArray(events)) return []
+		const key = String(sessionId)
+		const cached = noticeCache.get(key)
+		if (cached !== undefined && cached.count === events.length) return cached.notices
+		const notices = []
+		for (const event of events) {
+			if (event?.type !== 'user/message') continue
+			const source = event.data?.source
+			if (source === null || typeof source !== 'object' || source.kind !== 'subagent-settled') continue
+			const blocks = (event.data?.content ?? []).filter((block) => block?.type === 'text').map((block) => String(block.text ?? ''))
+			const label = blocks.findIndex((text) => /closing message/i.test(text))
+			notices.push({
+				child: source.senderSessionId === null || source.senderSessionId === undefined ? null : String(source.senderSessionId),
+				summary: String(source.summary ?? blocks[0] ?? ''),
+				conclusion: (label === -1 ? blocks.slice(1) : blocks.slice(label + 1)).join('\n').trim(),
+				at: typeof event.time === 'number' ? event.time : null,
+			})
+		}
+		noticeCache.set(key, { count: events.length, notices })
+		return notices
 	}
 
 	/**
@@ -1690,7 +1732,7 @@ export function apply(ctx, config = {}) {
 			}
 			if (entry.settled === null) {
 				// 与侦察同一条:先看运行时的结算通知,再退回子会话日志。
-				const announced = noticeFor(state, entry.child)
+				const announced = noticeFor(state, sessionId, entry.child)
 				if (announced === null) {
 					lines.push(`${entry.label}:仍在跑`)
 					continue

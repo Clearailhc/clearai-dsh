@@ -2583,6 +2583,43 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	}
 
 	/**
+	 * **投影还没前进时也要收得到**:真实部署里通知已经落在父会话日志里,而投影(给面板读的)
+	 * 在一轮之内可能还没跟上——账本不能等它。这一条只把通知放进**日志**,不放进投影。
+	 */
+	{
+		const P = 'session-scout-notice-from-log'
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		await callOn(host, P, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
+		await callOn(host, P, 'CreatePlan', { steps: [{ id: 'p1', do: '核材料', artifacts: ['lab/p1.txt'], done_criteria: 'lab/p1.txt 存在', tests: null }] })
+		await callOn(host, P, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
+		const child = String(host.service.state(P).scouts.at(-1)?.child ?? '')
+		// 只写日志:投影保持原样(模拟「投影还没前进」)
+		host.sessionEvents = {
+			...(host.sessionEvents ?? {}),
+			[P]: [
+				{
+					type: 'user/message',
+					time: Date.now(),
+					data: {
+						id: 'notice-log-1',
+						role: 'user',
+						content: [
+							{ type: 'text', text: `Background subagent ${child} finished and will do no further work unless you send it more.` },
+							{ type: 'text', text: 'Its closing message:' },
+							{ type: 'text', text: '数完了:clear/skills 下 18 条技能。' },
+						],
+						source: { kind: 'subagent-settled', form: 'notice', summary: 'finished', senderSessionId: child },
+					},
+				},
+			],
+		}
+		await preStep(host, P, 91)
+		const settled = host.service.state(P).scouts.at(-1)
+		check('投影还没前进也能结算(通知本来就在父会话日志里)', /18 条技能/.test(String(settled?.conclusion ?? '')), JSON.stringify({ note: settled?.note ?? null, len: String(settled?.conclusion ?? '').length }))
+	}
+
+	/**
 	 * **可续跑那一档**(U2a):侦察的结论由原生结算通知投给模型,内核这侧只做两件事——
 	 * 把派遣能力如实落账、把结论从子会话日志收进账本并落盘。
 	 */
