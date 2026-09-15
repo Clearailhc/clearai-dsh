@@ -101,7 +101,7 @@ The plugin contributes three surfaces on top of stock DSH: a **deliverables** vi
 
 ## Where it lands in DSH
 
-ClearAI adds an epistemic layer on the DSH **composition surface** — one host package, one agent preset, one client module. The DSH engine is not modified.
+ClearAI adds an epistemic layer on the DSH **composition surface** — one host package, one agent preset, one client module. The DSH engine is not modified. `/goal` `/plan` `/evidence` `/worldline` `/plan-review` are the human's read-only state windows in the `/` menu (computed from the ledger on the spot); todo, subagents, workflows and model switching are DSH-native — working style is unbounded, but none of it can write the authoritative ledger (the authority boundary is pinned by tests).
 
 ![ClearAI in DSH](docs/diagrams/loop-to-dsh-planes.svg)
 

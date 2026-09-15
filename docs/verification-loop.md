@@ -92,7 +92,7 @@ Six segments. Each states what happens in the ontology, who does it, and which o
 
 ### 4.1 Set the goal and hypotheses
 
-A goal is the question the project must answer, with a statement of what would count as answering it. Hypotheses are registered under the goal: one line of claim plus a refutation condition each, at least two.
+A goal is the question the project must answer, with a statement of what would count as answering it. Hypotheses are registered under the goal: one line of claim plus a refutation condition each, at least two (enforced at the door: `SetGoal` rejects zero or one; revising an existing goal is exempt).
 
 | Ontology | Who | System object and verb |
 |---|---|---|
@@ -106,7 +106,7 @@ One plan carries one stage of the goal. Steps in the plan may declare that they 
 | Ontology | Who | System object and verb |
 |---|---|---|
 | Verification registered | The model | Step `tests: {hypothesis, level}` + `done_criteria`; `CreatePlan` / `AmendPlan` / `RefinePlan` |
-| L4 release (**per step/branch**) | A human | Goes through `Confirm` (the goal mode's human gate); there is no level-wide release covering every evaluation |
+| L4 release (**per step/branch**) | A human | Delivering an L4 step/branch raises the host approval card — a human approval releases it; there is no level-wide release covering every evaluation |
 
 ### 4.3 Execute and produce observations
 

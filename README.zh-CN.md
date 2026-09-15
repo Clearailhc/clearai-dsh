@@ -101,7 +101,7 @@ ClearAI **不**声称实现递归自我改进。它提供的是自我改进系�
 
 ## 它落在 DSH 的哪一层
 
-ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一个 agent 预设、一个客户端模块，**DSH 引擎一行都没改**。
+ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一个 agent 预设、一个客户端模块，**DSH 引擎一行都没改**。`/goal` `/plan` `/evidence` `/worldline` `/plan-review` 是人在 `/` 菜单里的状态窗（只读，从账本现算）；todo、子代理、workflow、模型切换用 DSH 原生的——工作方式不设限，但它们写不进权威账本（权威边界由测试钉死）。
 
 ![ClearAI 在 DSH 中](docs/diagrams/loop-to-dsh-planes.zh-CN.svg)
 
