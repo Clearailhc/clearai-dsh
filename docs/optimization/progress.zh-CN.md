@@ -14,13 +14,13 @@
 | 3 | mismatch 清理（行为不变） | 已完成 | `npm test` | 9 份套件全绿 |
 | 3′ | 一致性检查（提前于阶段 7） | 已完成 | `node test/docs-consistency.test.mjs` | 11 通过,0 失败 |
 | 3″ | 不缩水覆盖设计（阶段 4 的验收基线） | 已完成 | 人工通读 + 真值表交叉 | 两语落盘，42 行覆盖矩阵 |
-| 9′ | 注释风格棘轮（提前立规则） | 进行中 | `node test/comment-style.test.mjs` | 8 通过,0 失败；债务 79/159/70 |
+| 9′ | 注释风格棘轮（提前立规则） | 已完成 | `node test/comment-style.test.mjs` | 7 通过,0 失败；配额已收到 0 |
 | 4 | 最小硬边界重构 | 已完成 | `node test/authority-boundary.test.mjs` | 13 通过,0 失败 |
 | 5 | DSH 原生菜单与能力回归 | 已完成 | `node test/preset-composition.test.mjs` | 20 通过,0 失败 |
-| 6 | Prompt 瘦身与上下文注入 | 未开始 | `node test/prompt-sections.test.mjs` | — |
-| 7 | 文档对齐（一致性测试部分已完成） | 未开始 | `node test/docs-consistency.test.mjs` | — |
-| 8 | 最终验收与发布准备 | 未开始 | 五条验收命令 | — |
-| 9 | 注释质量整体梳理（清账到 0） | 未开始 | `node test/comment-style.test.mjs` | 债务台账已立 |
+| 6 | Prompt 瘦身与上下文注入 | 已完成 | `node test/prompt-sections.test.mjs` | 10 通过,0 失败 |
+| 7 | 文档对齐（一致性测试部分已完成） | 已完成 | `node test/docs-consistency.test.mjs` | 11 通过,0 失败 |
+| 8 | 最终验收与发布准备 | 进行中 | 五条验收命令 | 真值表 22 ✓ · 发行物 29 ✓ · 干净安装 16 ✓ · 部署自洽 ✓ · 真浏览器冒烟进行中 |
+| 9 | 注释质量整体梳理（清账到 0） | 已完成 | `node test/comment-style.test.mjs` | 7 通过,0 失败；约 310 处改写 |
 | 10 | 收尾陈述 | 未开始 | 人工通读 | — |
 
 ## 基线
