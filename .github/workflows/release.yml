@@ -79,13 +79,29 @@ jobs:
         # 但"跳过"不再等于"没发布成功":下面那道核对会把两种情形都验成同一个事实。
         # `--provenance` 在 trusted publishing 下已是默认行为,留着是为了「退回 granular token」那条路也对。
         # 退回令牌方式时:给 setup-node 加回 registry-url,并加 NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}。
+        #
+        # 为什么要把 OIDC 环境与 debug 日志打出来:2026-09-15 实测,npm 的 `oidc()` 在拿不到
+        # id_token 时**静默返回**,然后一句 `ENEEDAUTH` 顶上来 —— 到底是"job 没有 id-token 权限"
+        # 还是"拿 token 去换的时候被 registry 拒了",从输出里**完全看不出来**。
+        # 这里把两件事都摆到台面上:环境在不在(不打印值),以及失败时 npm 的 debug 日志尾巴。
         run: |
           version="$(node -p "require('./package.json').version")"
+          if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+            echo "OIDC 环境:在(GitHub 已注入 id-token 请求参数)"
+          else
+            echo "::warning::OIDC 环境:不在 —— 这个 job 没有拿到 id-token: write,trusted publishing 走不了"
+          fi
           if npm view "clearai-dsh@$version" version >/dev/null 2>&1; then
             echo "::notice::clearai-dsh@$version 已经在 registry 上 —— 本次没有发布任何东西(首发是手工完成的,幂等跳过)"
           else
             echo "registry 上还没有 $version → 发布 dist/clearai-dsh"
-            npm publish ./dist/clearai-dsh --access public --provenance
+            if ! npm publish ./dist/clearai-dsh --access public --provenance; then
+              echo "::group::npm debug 日志尾巴(OIDC 交换失败的原因在这里)"
+              latest="$(ls -t "$HOME/.npm/_logs/"*debug-0.log 2>/dev/null | head -1)"
+              if [ -n "$latest" ]; then tail -70 "$latest"; else echo "(没有 debug 日志)"; fi
+              echo "::endgroup::"
+              exit 1
+            fi
           fi
       - name: Registry must carry exactly this source
         # 「跳过」那条路的解药,也是发布本身的自检:不管上面是**发了**还是**跳了**,
