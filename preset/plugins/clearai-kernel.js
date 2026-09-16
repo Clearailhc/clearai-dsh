@@ -401,7 +401,7 @@ export const HUMAN_GATE_MARK = '[clearai·人门]'
  * 两侧白名单一旦各自维护,摘动词时只改一侧 ⇒ 内核仍认、宿主不认 ⇒ **等价性用例立刻红** ✓。
  * 这正是那条用例存在的意义:两份实现漂移不许静默。
  */
-export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill']
+export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact']
 export function parseHumanGateMessage(message) {
 	if (message === null || typeof message !== 'object') return null
 	// 署名必须是人:插件与模型来源的同名标记不算人门动作(与宿主半同一条纪律)。
@@ -2519,6 +2519,17 @@ export function apply(ctx, config = {}) {
 			lines.push(`- 边界:${fact.scope === null || fact.scope === undefined || String(fact.scope).trim() === '' ? '(未写——引用前请谨慎)' : String(fact.scope)}`)
 			lines.push(`- 支持到:${fact.level ?? '(未记等级)'} · 证据:${(fact.evidence ?? []).join('、') || '(无)'}`)
 			lines.push(`- 来源目标:${fact.goal ?? '—'} · 升格时间:${fact.at === undefined || fact.at === null ? '—' : new Date(fact.at).toISOString()}`)
+			/**
+			 * 复核状态要写在货架上:模型读的就是这份文件。撤回过的若还写「可作为已知引用」,
+			 * 下一轮它会照旧引用一条已经作废的事实——那是最坏的一种不实。
+			 */
+			if (fact.review !== undefined && fact.review !== null) {
+				const when = fact.review.at === undefined || fact.review.at === null ? '' : ` @ ${new Date(fact.review.at).toISOString()}`
+				const why = fact.review.reason === null || fact.review.reason === undefined ? '' : `,缘由:${fact.review.reason}`
+				lines.push(fact.review.decision === 'retracted' ? `- **已撤回**(人审查后决定${why}${when}):不再作为「已知」引用;记录保留` : `- 有推翻证据,但**人判定证据不可靠,维持原事实**(${why.replace(/^,/, '')}${when})`)
+			} else if (fact.refuted === true) {
+				lines.push('- ⚠️ **有推翻证据,等人决定**(撤回或维持):引用它之前先看这条。')
+			}
 			lines.push('')
 		}
 		return `${lines.join('\n')}`
@@ -2526,7 +2537,12 @@ export function apply(ctx, config = {}) {
 
 	/** 写货架;内容没变就返回 null(调用方据此决定要不要在卡里提一句)。 */
 	function ensureFactsShelf(sessionId, state) {
-		const body = renderFactsIndex(state)
+		/**
+		 * 货架要显示「被推翻」那个读数,而它是**派生的**(fold 的 derive),不在原始状态里。
+		 * 所以这里问一次读面,而不是在货架里重算一遍(重算 = 第二份判据,必然漂)。
+		 */
+		const rows = host()?.derive?.(sessionId)?.factRows
+		const body = renderFactsIndex(Array.isArray(rows) ? { ...state, facts: rows } : state)
 		if (body === null) return null
 		const file = join(sessionCwd(sessionId), 'clear', 'knowledge', 'facts', 'INDEX.md')
 		try {
@@ -4936,12 +4952,16 @@ export function apply(ctx, config = {}) {
 	function applyHumanGateActions(sessionId, messages) {
 		const list = Array.isArray(messages) ? messages : []
 		const promotions = []
+		const reviews = []
 		for (const message of list) {
 			const gate = parseHumanGateMessage(message)
-			if (gate === null || gate.action !== 'promote_skill' || typeof gate.skill !== 'string') continue
-			promotions.push(gate.skill)
+			if (gate === null) continue
+			if (gate.action === 'promote_skill' && typeof gate.skill === 'string') promotions.push(gate.skill)
+			if ((gate.action === 'retract_fact' || gate.action === 'keep_fact') && typeof gate.value === 'string') {
+				reviews.push({ fact: gate.value, retracted: gate.action === 'retract_fact', reason: typeof gate.note === 'string' && gate.note !== '' ? gate.note : null })
+			}
 		}
-		if (promotions.length === 0) return { note: '', promoted: [] }
+		if (promotions.length === 0 && reviews.length === 0) return { note: '', promoted: [], reviewed: [] }
 		const cwd = sessionCwd(sessionId)
 		const notes = []
 		const promoted = []
@@ -4963,7 +4983,23 @@ export function apply(ctx, config = {}) {
 			// 变更检测交给扫描自己:名单确实变了,它就会发。
 			notes.push(`${skill}:已采纳(status → active,作者与时间留在 frontmatter 里)`)
 		}
-		return { note: notes.length === 0 ? '' : `\n外脑:${notes.join(';')}`, promoted }
+		/**
+		 * 人审查过的事实:在它自己那份文件上追加一行。**投影里的那个决定由宿主折**
+		 * (人门消息落进会话日志就是那条事实),这里补的是给模型读的那一面——货架文件。
+		 */
+		const reviewCwd = sessionCwd(sessionId)
+		const reviewState = host()?.state?.(sessionId) ?? null
+		const facts = Array.isArray(reviewState?.facts) ? reviewState.facts : []
+		const reviewed = []
+		for (const review of reviews) {
+			const fact = facts.find((item) => item.id === review.fact)
+			if (fact === undefined) continue
+			const file = markFactReviewed(reviewCwd, fact, review)
+			if (file === null) continue
+			reviewed.push(review.fact)
+			notes.push(`${review.fact}:${review.retracted ? '已撤回(记录保留,不再作为已知引用)' : '维持原事实(判定证据不可靠)'}`)
+		}
+		return { note: notes.length === 0 ? '' : `\n外脑:${notes.join(';')}`, promoted, reviewed }
 	}
 
 	/**
@@ -5184,6 +5220,29 @@ export function apply(ctx, config = {}) {
 			role: 'user',
 			content: text(note),
 			source: { kind: 'plugin', plugin: 'clearai', form: 'snapshot', sections },
+		}
+	}
+
+	/**
+	 * 人审查一条事实之后**在它自己那份文件上追加一行**(不改写、不删行)。
+	 *
+	 * 为什么在文件里而不是只留在账本:模型读的是 `clear/knowledge/facts/`,撤回过的若还
+	 * 原样躺在那里,下一轮它会照旧引用一条已经作废的事实。行里带 fact id,所以即使多条事实
+	 * 共用一个文件、追加落在最后,也读得出是哪一条被审过。
+	 */
+	function markFactReviewed(cwd, fact, review) {
+		const goalId = typeof fact.goal === 'string' && fact.goal !== '' ? fact.goal : 'facts'
+		const file = join(cwd, 'clear', 'knowledge', 'facts', `${goalId}.md`)
+		const why = review.reason === null || review.reason === undefined || String(review.reason).trim() === '' ? '' : `,缘由:${String(review.reason).slice(0, 200)}`
+		const line = review.retracted
+			? `- **撤回记录**(\`${fact.id}\`):人审查后决定**撤回**${why} @ ${new Date().toISOString()}——记录保留,不再作为「已知」引用。\n`
+			: `- **复核记录**(\`${fact.id}\`):有推翻证据,人判定证据不可靠,**维持原事实**${why} @ ${new Date().toISOString()}。\n`
+		try {
+			appendTextFile(file, line)
+			return file
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 事实复核记录落盘失败 ${String(error?.message ?? error).slice(0, 160)}`)
+			return null
 		}
 	}
 

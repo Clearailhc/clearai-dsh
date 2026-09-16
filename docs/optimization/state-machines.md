@@ -311,6 +311,7 @@ ledger facts), so it appears in no state machine:
 | `worldline/executed` | §9 Worldlines | yes |
 | `worldline/removed` | §9 Worldlines | yes |
 | `branch/delivered` | §9 Worldlines | yes |
+| `fact/reviewed` | §4 Hypothesis (human review: retract / keep) | yes |
 | `fork/recommended` | §9 Worldlines | yes |
 | `fork/created` | §9 Worldlines | yes |
 | `fork/converged` | §9 Worldlines | yes |

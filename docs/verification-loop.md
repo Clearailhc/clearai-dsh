@@ -15,7 +15,7 @@ How a conjecture becomes a fact that can be cited with confidence. This document
 > **Not there yet** (same line as [Known gaps](known-gaps.md)):
 >
 > 1. **The eight-state verification machine** is designed, not implemented; only the subset above actually runs.
-> 2. **`retracted` has no producer** — the state is defined in the ontology, and no code path writes it today.
+> 2. ~~**`retracted` has no producer**~~ — **implemented**: refuting evidence only *marks* a promoted fact (`refuted`, derived) and raises an inbox item; a human decides to **retract** it or to judge the evidence unreliable and **keep** the fact. Both outcomes land as one `fact/reviewed` mutation (a retraction is terminal; the record is kept), and the fact's own file under `clear/knowledge/facts/` records the review.
 > 3. **A universal L4 gate over every evaluation** is not implemented; the human release that exists hangs on the step/branch axis.
 > 4. **Observation provenance has only ever been written as `self` and `scout`**; other origins exist in the type with no producer.
 >
@@ -231,7 +231,7 @@ L3 and above start at registered; changing criteria afterwards must leave a trac
 
 Observations: on arrival, origin is checked against the verification level. Eligible ones are admitted and wake the task; ineligible ones are kept but not accepted, and flagged in the inbox.
 
-Facts: new refuting evidence only marks the fact and raises an inbox item. A human decides whether to retract it, or judges the evidence unreliable and leaves the fact alone. Data brought in from outside can itself be wrong, so retraction is never automatic.
+Facts: new refuting evidence only **marks** the fact (`refuted`, derived) and raises an inbox item; **retract** and **keep** are two buttons a human presses, and both land as one `fact/reviewed`. "No decision" and "decided to keep" have to stay distinguishable, or the gate holds continuation forever. A retraction is terminal and the record is kept (the shelf and the fact's own file say who, when and why). Data brought in from outside can itself be wrong, so retraction is never automatic.
 
 ## 6. Rules
 

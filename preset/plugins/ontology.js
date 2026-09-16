@@ -196,15 +196,21 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 			note: '这一平面的一等对象(那一侧记在 goal 文档里);status 是派生值,声明里没有它的住处',
 		}),
 		object('hypothesis', {
-			states: ['proposed', 'alive', 'confirmed', 'refuted', 'superseded'],
+			states: ['proposed', 'alive', 'confirmed', 'refuted', 'superseded', 'retracted'],
 			initial: 'proposed',
-			terminal: ['refuted', 'superseded'],
+			terminal: ['refuted', 'superseded', 'retracted'],
 			transitions: [
 				transition('proposed', 'alive', 'system', 'evidence_appended', [], '第一条证据到达', 'evidence/recorded'),
 				transition('proposed', 'confirmed', 'system', 'promotion_threshold', [], '捷径:单条达门槛的支持证据可直接确认(与那一侧同一条边)', 'fact/promoted'),
 				transition('alive', 'confirmed', 'system', 'promotion_threshold', [], '最高支持等级达到 promote_at_level ⇒ 升格为事实', 'fact/promoted'),
 				transition('confirmed', 'refuted', 'system', 'refuting_evidence', [], '已确认的假设后来被新证据推翻——状态由证据算,不因「已确认」而豁免', 'evidence/recorded'),
 				transition('alive', 'refuted', 'system', 'refuting_evidence', [], '有推翻裁决;被推翻的假设保留', 'evidence/recorded'),
+				/**
+				 * **撤回只由人做**,而且只对已经升格成事实的那一条:新证据出现时系统只**标记**事实
+				 * `refuted`,要不要撤回由人审后决定(数据本身也可能是错的,撤回永不自动)。
+				 * 它是终态:撤回过的记录留着,不因为后来又出现支持证据而复活。
+				 */
+				transition('confirmed', 'retracted', 'human', 'retraction_request', ['human_retraction_decision'], '人审查后决定撤回:已升格的事实作废,记录保留;同一条变更也承载「判定证据不可靠、维持原事实」那个结局(那不是状态转移)', 'fact/reviewed'),
 				transition('proposed', 'refuted', 'system', 'refuting_evidence', [], '第一条证据就是推翻(L3 以上由独立评估者写)', 'evidence/recorded'),
 				transition('proposed', 'superseded', 'model', 'hypothesis_revised', [], '还没证据就被下一版清单换掉', 'hypothesis/superseded'),
 				transition('alive', 'superseded', 'model', 'hypothesis_revised', [], '同上,已经活着的也算', 'hypothesis/superseded'),
@@ -212,7 +218,7 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 			fields: [field('claim'), field('refute_when')],
 			persistence: 'fold.hypotheses(goal/set 一起落)',
 			event_kind: 'hypothesis/superseded',
-			note: '状态由证据算:**confirmed 那条边的落账在 fact 对象那边**(升格成事实 ⇒ 面板把它读成已确认),假设自己没有这条变更;refuted 是黏性终态(与「目标侧被推翻的计划不可复活」同一个病同一个修法);不声明 status',
+			note: '状态由证据算:**confirmed 那条边的落账在 fact 对象那边**(升格成事实 ⇒ 面板把它读成已确认),假设自己没有那条变更;refuted 与 retracted 都是黏性终态(与「目标侧被推翻的计划不可复活」同一个病同一个修法),而 retracted 是**人的动作**、落账在 fact 对象上(`fact/retracted`);不声明 status',
 		}),
 		object('plan', {
 			states: ['active', 'closed'],
@@ -287,10 +293,13 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 				field('evidence'),
 				field('path'),
 				field('last_verified', { required: false, note: '升格时间(派生,不另存)' }),
+				/** 被推翻的标记(新证据出现时由系统写)与人的撤回决定:两件事,分别可查。 */
+				field('refuted', { required: false, note: '派生:该假设收到过推翻证据 ⇒ 这条事实要复核' }),
+				field('review', { required: false, note: '人审查后的决定:{decision: retracted|kept, reason, at}——记录保留;撤回的不再作为「已知」引用' }),
 			],
 			persistence: 'clear/knowledge/facts/',
 			event_kind: 'fact/promoted',
-			note: '升格由系统做;每条带边界(scope)与等级,下一轮作为「已知」引用时先看边界。货架在 clear/knowledge/facts/INDEX.md(面板「事实」那一格读的是同一张表)。「被推翻先标记、由人决定撤回」这一层这一平面**还没有**——如实记着(那一侧 P9 有)',
+			note: '升格由系统做;每条带边界(scope)与等级,下一轮作为「已知」引用时先看边界。货架在 clear/knowledge/facts/INDEX.md(面板「事实」那一格读的是同一张表)。被推翻只**标记**(refuted,派生),撤回是**人的动作**(retracted,落 fact/retracted)——两件事分开记,因为数据自己也可能错',
 		}),
 		object('release', {
 			states: ['granted'],

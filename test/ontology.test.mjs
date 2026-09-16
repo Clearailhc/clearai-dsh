@@ -88,6 +88,7 @@ console.log('\n【② 守卫:声明里每一个具名守卫,核心里真有那�
 		external_source_for_l4: /l4RejectSelfWritten/,
 		human_release_for_l4: /l4RequiresHumanRelease/,
 		block_threshold: /CFG\.blockedThreshold/,
+		human_retraction_decision: /markFactReviewed/,
 	}
 	const named = new Set(VERIFICATION_LOOP.objects.flatMap((object) => object.transitions.flatMap((edge) => edge.guards)))
 	for (const guard of named) {
@@ -120,7 +121,7 @@ console.log('\n【④ 状态词汇:声明写的,必须与折法里真用的**同
 	 */
 	const vocab = {
 		goal: ['open', 'achieved', 'abandoned', 'superseded'],
-		hypothesis: ['proposed', 'refuted', 'superseded'],
+		hypothesis: ['proposed', 'refuted', 'superseded', 'retracted'],
 		plan: ['active', 'closed'],
 		step: ['open', 'advanced', 'void'],
 		observation: ['accepted', 'rejected'],
@@ -130,9 +131,12 @@ console.log('\n【④ 状态词汇:声明写的,必须与折法里真用的**同
 		const missing = states.filter((state) => !object.states.includes(state))
 		check(`${name}:声明的状态里有折法真用的那几个(${states.join('/')})`, missing.length === 0, missing.join(','))
 	}
-	// §22 的黏性:终态不该被别的边改写 —— 声明里 refuted 零出边,折法里也必须真的黏住
-	const refutedSticky = /status !== 'refuted' && refutations > 0/.test(foldSource)
-	check('假设的 refuted 是黏性终态:声明零出边,折法真黏住(与 ClearAI 本体 P3 同一个修法)', refutedSticky)
+	/**
+	 * §22 的黏性:终态不该被别的边改写。声明里 `refuted` / `retracted` 都是零出边,
+	 * 折法里也必须真的黏住——**撤回优先于一切**:后来的支持证据不复活一条被撤回的事实。
+	 */
+	check('假设的 refuted 是黏性终态:声明零出边,折法真黏住(与 ClearAI 本体 P3 同一个修法)', /status !== 'refuted'[\s\S]{0,40}refutations > 0/.test(foldSource))
+	check('假设的 retracted 同样是黏性终态,而且优先于 refuted(人撤回的不因后来证据复活)', /retractedClaims\.has\(String\(hypothesis\.claim/.test(foldSource) && /status !== 'retracted' && refutations > 0/.test(foldSource))
 	const supersededGuarded = /item\.status !== 'refuted' && !promoted/.test(foldSource)
 	check('「已被替代」不改写终态:折法里那两处前提在', supersededGuarded)
 }

@@ -1295,26 +1295,25 @@
    "name": "事实撤回:人审查后决定",
    "name_en": "Fact retraction by human decision",
    "layer": "epistemic",
-   "status": "design-only",
+   "status": "implemented",
    "hardness": "hard",
    "authority": "authoritative",
    "actor": "human",
    "source": {
-    "code": "preset/plugins/ontology.js hypothesis; ui/lib/client.js PROPOSITION_GROUPS",
-    "tests": null,
+    "code": "preset/plugins/clearai-kernel.js markFactReviewed; ui/lib/fold.js case 'fact/reviewed'; preset/plugins/ontology.js VERIFICATION_LOOP",
+    "tests": "test/kernel.test.mjs（门 / 两个结局 / 黏性 / 货架）; test/host.test.mjs（核标的）; test/client.test.mjs（两个按钮）",
     "config": null,
     "prompt": "clearai/verification",
-    "docs": "docs/verification-loop.md"
+    "docs": "docs/verification-loop.zh-CN.md"
    },
-   "trigger": "已升格事实的假设收到推翻证据",
-   "input": "事实 + 缘由",
-   "output": "—(没有生产者)",
+   "trigger": "已升格事实的假设收到推翻证据 ⇒ 收件箱起一条门;人按「撤回」或「维持原事实」",
+   "input": "事实 id + 缘由(可空)",
+   "output": "mutation fact/reviewed;事实文件追加一行;货架 INDEX 同步",
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": null,
-   "rationale": "事实带边界(scope):边界被触发时,要有一个人能把它撤回,而且撤回永不自动。**声明与实现三方不一致**:文档说 ontology 定义了 `retracted`,实际 `preset/plugins/ontology.js` 的 hypothesis states 里没有它,而 `ui/lib/client.js` 已经在画这个状态、`fold.js` 的派生也已经把它排除在有效命题之外。",
-   "destination": "become-mechanism",
-   "known_mismatch": "`docs/verification-loop.md` 与 `docs/known-gaps.md` 都说「ontology 定义了 `retracted`」,而 `preset/plugins/ontology.js` 的 hypothesis states 是 proposed/alive/confirmed/refuted/superseded——**没有** `retracted`;界面却已经渲染它。"
+   "rationale": "事实带边界(scope):边界被触发时要有一个人能把它撤回,而**撤回永不自动**——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定(不然「没决定」与「决定维持」在门的状态上一模一样,系统会一直等)。两种结局都落 `fact/reviewed`,撤回是终态:记录留着、不再作为「已知」被引用,后来的支持证据也不复活它。",
+   "known_mismatch": null
   },
   {
    "id": "observation-provenance",

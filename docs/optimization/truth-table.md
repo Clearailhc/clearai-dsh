@@ -9,12 +9,12 @@ This table answers one question: **what the current code actually guarantees**. 
 ## Counts
 
 - Mechanisms: **57**
-- By status: Implemented 48 · Partial 2 · Design only 3 · Removed 4
+- By status: Implemented 49 · Partial 2 · Design only 2 · Removed 4
 - By strength: Hard boundary 40 · Advisory 9 · Native 3 · Prompt only 1 · Deprecated 4
-- By destination: becomes a mechanism 3 · stays design-only 2 · deleted and accounted 4
+- By destination: becomes a mechanism 2 · stays design-only 2 · deleted and accounted 4
 - Actually blocking execution: **17**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **5**
+- Carrying a known mismatch between docs/comments and code: **4**
 
 ## Code constant snapshot
 
@@ -53,7 +53,7 @@ This section is exported from code, not written by hand:
 | `memory-write` | Memory write with field contract and title dedup | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/brain.js 字段契约` |
 | `l4-universal-gate` | A universal L4 gate over every evaluation | Epistemic | Design only | Advisory | None | human | no | no | `docs/known-gaps.md` |
 | `verification-lifecycle` | Verification lifecycle: which guarantees are live | Epistemic | Design only | Advisory | None | system | no | no | `docs/verification-loop.md` |
-| `fact-retraction` | Fact retraction by human decision | Epistemic | Design only | Hard boundary | Authoritative | human | no | no | `preset/plugins/ontology.js hypothesis` |
+| `fact-retraction` | Fact retraction by human decision | Epistemic | Implemented | Hard boundary | Authoritative | human | no | no | `preset/plugins/clearai-kernel.js markFactReviewed` |
 | `observation-provenance` | Observation provenance: declared sources vs producers | Epistemic | Partial | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `plan-auto-confirm` | Removed: unattended plans auto-confirmed themselves | Epistemic | Removed | Deprecated | None | system | no | no | — |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | no | `preset/agent.cordis.yml persona` |
@@ -732,18 +732,16 @@ This section is exported from code, not written by hand:
 
 ### `fact-retraction` · Fact retraction by human decision
 
-- **Layer**: Epistemic · **Status**: Design only · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: human
-- **Trigger**: 已升格事实的假设收到推翻证据
-- **Input**: 事实 + 缘由
-- **Output**: —(没有生产者)
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: human
+- **Trigger**: 已升格事实的假设收到推翻证据 ⇒ 收件箱起一条门;人按「撤回」或「维持原事实」
+- **Input**: 事实 id + 缘由(可空)
+- **Output**: mutation fact/reviewed;事实文件追加一行;货架 INDEX 同步
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 事实带边界(scope):边界被触发时,要有一个人能把它撤回,而且撤回永不自动。**声明与实现三方不一致**:文档说 ontology 定义了 `retracted`,实际 `preset/plugins/ontology.js` 的 hypothesis states 里没有它,而 `ui/lib/client.js` 已经在画这个状态、`fold.js` 的派生也已经把它排除在有效命题之外。
-- **Destination**: becomes a mechanism
-- **Code**: preset/plugins/ontology.js hypothesis; ui/lib/client.js PROPOSITION_GROUPS
-- **Tests**: — · **Config**: —
-- **Prompt**: clearai/verification · **Docs**: docs/verification-loop.md
-- **Known mismatch**: `docs/verification-loop.md` 与 `docs/known-gaps.md` 都说「ontology 定义了 `retracted`」,而 `preset/plugins/ontology.js` 的 hypothesis states 是 proposed/alive/confirmed/refuted/superseded——**没有** `retracted`;界面却已经渲染它。
+- **Rationale**: 事实带边界(scope):边界被触发时要有一个人能把它撤回,而**撤回永不自动**——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定(不然「没决定」与「决定维持」在门的状态上一模一样,系统会一直等)。两种结局都落 `fact/reviewed`,撤回是终态:记录留着、不再作为「已知」被引用,后来的支持证据也不复活它。
+- **Code**: preset/plugins/clearai-kernel.js markFactReviewed; ui/lib/fold.js case 'fact/reviewed'; preset/plugins/ontology.js VERIFICATION_LOOP
+- **Tests**: test/kernel.test.mjs（门 / 两个结局 / 黏性 / 货架）; test/host.test.mjs（核标的）; test/client.test.mjs（两个按钮） · **Config**: —
+- **Prompt**: clearai/verification · **Docs**: docs/verification-loop.zh-CN.md
 
 ### `observation-provenance` · Observation provenance: declared sources vs producers
 

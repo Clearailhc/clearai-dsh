@@ -292,6 +292,7 @@ stateDiagram-v2
 | `worldline/executed` | §9 世界线 | 是 |
 | `worldline/removed` | §9 世界线 | 是 |
 | `branch/delivered` | §9 世界线 | 是 |
+| `fact/reviewed` | §4 假设(人审查后撤回 / 维持) | 是 |
 | `fork/recommended` | §9 世界线 | 是 |
 | `fork/created` | §9 世界线 | 是 |
 | `fork/converged` | §9 世界线 | 是 |

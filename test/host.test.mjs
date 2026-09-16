@@ -202,6 +202,39 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 		return result
 	}
 
+	/**
+	 * ①′ 事实复核:**先核标的**。
+	 *
+	 * 这条门和世界线那道一样,标的可能已经不在了(投影前进、事实被别的路径改了)。
+	 * 不核就回一句成功,等于又一个「点了报成功、账上一字未改」的控件——
+	 * 那正是这套界面最不能有的东西(收件箱那个 `fork_adopt` 按钮刚刚栽在这上面)。
+	 */
+	{
+		/**
+		 * 这一组要一份**有工作目录**的宿主:`stateOf` 先问 `sessions.get`,拿不到会话就退回空状态
+		 * ——没有 cwd 的桩读不到任何投影,撤回自然找不到标的。
+		 */
+		const factHost = makeHost({ cwd: '/tmp/clearai-facts-test' })
+		apply(factHost.ctx)
+		const postFact = async (payload) => {
+			const result = await callRoute(factHost, '/api/clearai/gate', { method: 'POST', body: payload })
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			return result
+		}
+		factHost.projectionState = { ...emptyState(), facts: [{ id: 'fct-2', text: 'X 比 Y 快', scope: null, level: 'L3', evidence: [], path: null, at: 1, review: null }] }
+		const unknownFact = await postFact({ sessionId: 'session-1', action: 'retract_fact', value: 'fct-nope' })
+		check('撤回一条不存在的事实 → 409 fact_not_found(不许回一句成功)', unknownFact.status === 409 && unknownFact.payload?.error === 'fact_not_found', `${unknownFact.status}/${unknownFact.payload?.error}`)
+		const before = factHost.sent.length
+		const retracted = await postFact({ sessionId: 'session-1', action: 'retract_fact', value: 'fct-2', note: '外部数据更正' })
+		check('撤回一条在的事实 → 200,并落一条**署名是人**的人门消息', retracted.status === 200 && retracted.payload?.action === 'retract_fact' && factHost.sent.length === before + 1 && factHost.sent.at(-1).message?.source?.kind === 'user', `${retracted.status}/${factHost.sent.length}`)
+		check('消息里带事实 id 与缘由(落账要靠它)', /fct-2/.test(factHost.sent.at(-1).message.content[0].text) && /外部数据更正/.test(factHost.sent.at(-1).message.content[0].text), factHost.sent.at(-1).message.content[0].text.slice(0, 140))
+		const kept = await postFact({ sessionId: 'session-1', action: 'keep_fact', value: 'fct-2' })
+		check('维持原事实也是一条人门动作(它必须能一键落地,否则那道门没有出口)', kept.status === 200 && kept.payload?.action === 'keep_fact', `${kept.status}/${kept.payload?.action}`)
+		factHost.projectionState = { ...factHost.projectionState, facts: [{ ...factHost.projectionState.facts[0], review: { decision: 'kept', reason: null, at: 2, by: 'user' } }] }
+		const again = await postFact({ sessionId: 'session-1', action: 'keep_fact', value: 'fct-2' })
+		check('已经审过的事实再审 → 409 fact_already_reviewed(第一次决定为准)', again.status === 409 && again.payload?.error === 'fact_already_reviewed', `${again.status}/${again.payload?.error}`)
+	}
+
 	// ① 动词白名单:表外的动作一律拒(与贡献表同一套纪律:表外的名字不许出现)
 	const unknown = await post({ sessionId: 'session-1', action: 'delete_everything' })
 	check('表外的动词 → 400 unknown_gate_action', unknown.status === 400 && unknown.payload?.error === 'unknown_gate_action', `${unknown.status}/${unknown.payload?.error}`)
@@ -212,13 +245,13 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	 * `invoke_skill`(原生 `/` 技能触发器做同一件事)。这条断言把「不许再长回来」钉死:
 	 * 想加动词,先回答「原生为什么不够」。
 	 */
+	/**
+	 * 白名单**逐字列举**,不数个数:加一个动词必须同时改这里——那一步就是「先说清原生为什么不够」。
+	 * 砍掉的三个(confirm_plan / invoke_skill / set_autonomy)不许长回来。
+	 */
 	check(
-		'白名单恰好三个动词(砍掉的重复项不许回来:confirm_plan / invoke_skill / set_autonomy)',
-		HUMAN_GATE_ACTIONS.length === 3 &&
-			['adopt_branch', 'abandon_fork', 'promote_skill'].every((action) => HUMAN_GATE_ACTIONS.includes(action)) &&
-			!HUMAN_GATE_ACTIONS.includes('confirm_plan') &&
-			!HUMAN_GATE_ACTIONS.includes('invoke_skill') &&
-			!HUMAN_GATE_ACTIONS.includes('set_autonomy'),
+		'白名单恰好是那五个动词(砍掉的重复项不许回来:confirm_plan / invoke_skill / set_autonomy)',
+		[...HUMAN_GATE_ACTIONS].sort().join(',') === ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact'].sort().join(','),
 		HUMAN_GATE_ACTIONS.join(','),
 	)
 

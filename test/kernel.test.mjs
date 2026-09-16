@@ -3940,6 +3940,54 @@ console.log('\n【探索期产出有据可查:回合边界上的工作区快照�
 	check('FileHistory 查得到探索产物', history.ok === true && /探索期快照/.test(String(history.message ?? '')), String(history.message ?? '').slice(0, 140))
 }
 
+console.log('\n【事实撤回:推翻证据只标记,撤不撤由人定】')
+{
+	/**
+	 * 设计里这一层是「新证据只**标记**事实并起一条收件箱条目;人决定撤回,或判证据不可靠、
+	 * 维持原事实」。此前 `retracted` 只有声明、没有生产者(而文档还说 ontology 声明了它,
+	 * 实际并没有)。这里钉:门起得来、两个结局都能落地、撤回让假设状态跟着变且黏住、审过门就消失。
+	 */
+	const base = {
+		...emptyState(),
+		hypotheses: [{ id: 'h-1', claim: 'X 比 Y 快', refute_when: 'Y 更快', status: 'confirmed' }],
+		plans: [{ id: 'p-1', status: 'active', steps: [{ id: 's1', ordinal: 1, do: '测两条', status: 'advanced', tests: { hypothesis: 'h-1', level: 'L3' }, artifacts: [], done_criteria: '有读数' }] }],
+		evidence: [{ id: 'e-1', plan: 'p-1', step: 's1', verdict: 'refute', level: 'L3', refs: [], evaluator: 'independent', basis: '三次重复里 Y 更快' }],
+		facts: [{ id: 'fct-1', goal: 'g-1', text: 'X 比 Y 快', scope: 'Y 更快则作废', level: 'L3', evidence: ['e-1'], path: null, at: 1 }],
+	}
+	const gateMessage = (action, extra = {}) => ({
+		id: `m-${action}-${Math.random().toString(36).slice(2, 6)}`,
+		role: 'user',
+		content: [{ type: 'text', text: `${HUMAN_GATE_MARK} ${JSON.stringify({ action, plan: null, fork: null, branch: null, skill: null, value: 'fct-1', note: null, ...extra })}` }],
+		source: { kind: 'user' },
+	})
+	const opened = derive(base)
+	check('被推翻的事实起一道门,要人决定撤不撤(设计里的正门)', opened.inbox.some((item) => item.kind === 'fact_refutation' && item.value === 'fct-1' && item.human_action === 'retract_fact'), JSON.stringify(opened.inbox.map((item) => item.kind)))
+	check('事实那一行同时给出「被推翻」这个派生读数', view(base).facts[0].refuted === true)
+	const retracted = applyEvent(base, { type: 'user/message', time: 2, data: gateMessage('retract_fact', { note: '外部数据更正' }) })
+	check('撤回落账:事实带上人的审查决定与缘由', view(retracted).facts[0].review.decision === 'retracted' && view(retracted).facts[0].review.reason === '外部数据更正', JSON.stringify(view(retracted).facts[0].review))
+	check('假设状态跟着变 retracted(人的裁决落在事实那一侧)', derive(retracted).hypotheses[0].status === 'retracted')
+	check('撤过之后那道门消失(状态锚:条目自然消失,不留僵尸)', !derive(retracted).inbox.some((item) => item.kind === 'fact_refutation'))
+	const kept = applyEvent(base, { type: 'user/message', time: 3, data: gateMessage('keep_fact', { note: '样本量太小' }) })
+	check('「维持原事实」同样落账——没决定与决定维持必须分得开,否则系统会一直等', view(kept).facts[0].review.decision === 'kept' && !derive(kept).inbox.some((item) => item.kind === 'fact_refutation'))
+	/**
+	 * 「维持」判的是**证据可不可靠**,不是改写证据:账本里那条推翻裁决仍在,所以假设照样算
+	 * `refuted`,而事实留在货架上。两处不一致正是这条记录要存在的原因(它写着谁、什么时候、
+	 * 为什么判它不可靠)——把假设也一起改回 confirmed 才是编。
+	 */
+	check('维持不动证据:假设仍由证据算 refuted,而事实留在货架上', derive(kept).hypotheses[0].status === 'refuted' && view(kept).facts[0].review.decision === 'kept')
+	check('第一次决定为准(再审不改写)', view(applyEvent(retracted, { type: 'user/message', time: 4, data: gateMessage('keep_fact') })).facts[0].review.decision === 'retracted')
+
+	// 货架:模型读的那一面也要写上这次复核(不写,下一轮它会照旧引用一条已作废的事实)
+	const host = makeHost()
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-fact-review'
+	write('clear/knowledge/facts/g-1.md', '## fct-1 · X 比 Y 快\n')
+	host.states.set(S, { ...emptyState(), facts: [{ id: 'fct-1', goal: 'g-1', text: 'X 比 Y 快', scope: null, level: 'L3', evidence: [], path: null, at: 1 }] })
+	await preStep(host, S, 2, [gateMessage('retract_fact', { note: '外部数据更正' })])
+	const file = readFileSync(join(WORKSPACE, 'clear/knowledge/facts/g-1.md'), 'utf8')
+	check('撤回记录写进那份事实文件(追加,不删旧行)', /撤回记录/.test(file) && /fct-1/.test(file) && /外部数据更正/.test(file), file.slice(-220))
+}
+
 console.log('\n【首回合的系统事实:本体声明与货架那句话必须真的发出去】')
 {
 	/**

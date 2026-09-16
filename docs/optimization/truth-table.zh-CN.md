@@ -9,12 +9,12 @@
 ## 计数
 
 - 机制条目：**57**
-- 按状态：已实现 48 · 部分实现 2 · 设计目标 3 · 已删除 4
+- 按状态：已实现 49 · 部分实现 2 · 设计目标 2 · 已删除 4
 - 按强度：硬边界 40 · 建议 9 · 原生 3 · 仅提示词 1 · 废弃 4
-- 按归宿：变成机制 3 · 保持设计目标 2 · 已删除并记账 4
+- 按归宿：变成机制 2 · 保持设计目标 2 · 已删除并记账 4
 - 真正阻断执行的：**17**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**5**
+- 存在已知不符（文档 / 注释与代码不一致）的：**4**
 
 ## 代码常量快照
 
@@ -53,7 +53,7 @@
 | `memory-write` | 记忆写入（字段校验 + 标题去重） | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/brain.js 字段契约` |
 | `l4-universal-gate` | 覆盖每一次评估的通用 L4 门 | 认识论 | 设计目标 | 建议 | 无 | human | 否 | 否 | `docs/known-gaps.md` |
 | `verification-lifecycle` | 验证生命周期:哪些保证是活的 | 认识论 | 设计目标 | 建议 | 无 | system | 否 | 否 | `docs/verification-loop.md` |
-| `fact-retraction` | 事实撤回:人审查后决定 | 认识论 | 设计目标 | 硬边界 | 权威 | human | 否 | 否 | `preset/plugins/ontology.js hypothesis` |
+| `fact-retraction` | 事实撤回:人审查后决定 | 认识论 | 已实现 | 硬边界 | 权威 | human | 否 | 否 | `preset/plugins/clearai-kernel.js markFactReviewed` |
 | `observation-provenance` | 观测来源:声明必须与生产者对得上 | 认识论 | 部分实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `plan-auto-confirm` | 已删除:无人值守立约即授权 | 认识论 | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/agent.cordis.yml persona` |
@@ -732,18 +732,16 @@
 
 ### `fact-retraction` · 事实撤回:人审查后决定
 
-- **层**：认识论 · **状态**：设计目标 · **强度**：硬边界 · **权威**：权威 · **责任方**：human
-- **触发**：已升格事实的假设收到推翻证据
-- **输入**：事实 + 缘由
-- **输出**：—(没有生产者)
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：human
+- **触发**：已升格事实的假设收到推翻证据 ⇒ 收件箱起一条门;人按「撤回」或「维持原事实」
+- **输入**：事实 id + 缘由(可空)
+- **输出**：mutation fact/reviewed;事实文件追加一行;货架 INDEX 同步
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：事实带边界(scope):边界被触发时,要有一个人能把它撤回,而且撤回永不自动。**声明与实现三方不一致**:文档说 ontology 定义了 `retracted`,实际 `preset/plugins/ontology.js` 的 hypothesis states 里没有它,而 `ui/lib/client.js` 已经在画这个状态、`fold.js` 的派生也已经把它排除在有效命题之外。
-- **归宿**：变成机制
-- **代码**：preset/plugins/ontology.js hypothesis; ui/lib/client.js PROPOSITION_GROUPS
-- **测试**：— · **配置**：—
-- **提示词**：clearai/verification · **文档**：docs/verification-loop.md
-- **已知不符**：`docs/verification-loop.md` 与 `docs/known-gaps.md` 都说「ontology 定义了 `retracted`」,而 `preset/plugins/ontology.js` 的 hypothesis states 是 proposed/alive/confirmed/refuted/superseded——**没有** `retracted`;界面却已经渲染它。
+- **理由**：事实带边界(scope):边界被触发时要有一个人能把它撤回,而**撤回永不自动**——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定(不然「没决定」与「决定维持」在门的状态上一模一样,系统会一直等)。两种结局都落 `fact/reviewed`,撤回是终态:记录留着、不再作为「已知」被引用,后来的支持证据也不复活它。
+- **代码**：preset/plugins/clearai-kernel.js markFactReviewed; ui/lib/fold.js case 'fact/reviewed'; preset/plugins/ontology.js VERIFICATION_LOOP
+- **测试**：test/kernel.test.mjs（门 / 两个结局 / 黏性 / 货架）; test/host.test.mjs（核标的）; test/client.test.mjs（两个按钮） · **配置**：—
+- **提示词**：clearai/verification · **文档**：docs/verification-loop.zh-CN.md
 
 ### `observation-provenance` · 观测来源:声明必须与生产者对得上
 

@@ -897,6 +897,26 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		 * 曾经这里是同一个「要你裁决」按钮渲染两遍,而其中一遍的请求里**没有分支**——
 		 * 落账时找不到分叉,状态一字未动,界面却回一句成功。
 		 */
+		/**
+		 * 被推翻的事实:那道门有**两个**结局,而且两个都必须能一键落地——
+		 * 只给「撤回」的话,「判定证据不可靠、维持原事实」就只能靠不说话,而门开着按住续跑,
+		 * 系统于是等一个永远不会来的动作。
+		 */
+		{
+			const refuted = {
+				...view,
+				hasOpenGate: true,
+				inbox: [{ kind: 'fact_refutation', title: '事实被推翻,等你决定', summary: '「X 比 Y 快」出现了推翻证据:撤回它,或判证据不可靠、维持原事实。', plan: null, step: null, value: 'fct-1', human_action: 'retract_fact', needs: 'click' }],
+				facts: [{ id: 'fct-1', text: 'X 比 Y 快', scope: null, level: 'L3', evidenceIds: [], path: null, at: 1, refuted: true, review: null }],
+			}
+			const text = react.render(components.Inbox({ data: refuted })).replace(/\s+/g, ' ')
+			check('被推翻的事实:撤回与维持两个按钮都在(少一个那道门就没有出口)', /撤回事实/.test(text) && /维持原事实/.test(text), text.slice(0, 200))
+			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
+			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻,等你决定/.test(shelf), shelf.slice(0, 180))
+			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }
+			const shelf2 = react.render(components.FactShelf({ useProjection: () => retractedFacts })).replace(/\s+/g, ' ')
+			check('撤回过的事实**仍列在这里**(P5:记录不删),但标着「人已撤回」', /人已撤回\(记录保留\)/.test(shelf2), shelf2.slice(0, 180))
+		}
 		const clickGate = { ...view, inbox: [{ kind: 'fork_adopt', title: '世界线裁决', summary: '两条线跑完,待采纳一条', plan: 'p-1', step: 's1', fork: 'f-9', human_action: 'adopt_branch', needs: 'click' }], hasOpenGate: true }
 		const clickGateText = react.render(components.Inbox({ data: clickGate })).replace(/\s+/g, ' ')
 		check('拿不到分支的裁决条目 ⇒ 给「用提问卡决定」,不摆一个没有分支可裁的「裁决」', /用提问卡决定/.test(clickGateText) && !/要你裁决/.test(clickGateText), clickGateText.slice(0, 160))

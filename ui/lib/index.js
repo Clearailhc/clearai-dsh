@@ -384,6 +384,19 @@ export function apply(ctx) {
 				return reply(400, { ok: false, error: 'bad_skill_name' })
 			}
 			/**
+			 * 撤回 / 维持一条事实:先**核标的还在不在**。
+			 *
+			 * 与提问卡那条同一个理由:`buildGateQuestion` 认不出那道门时回 409,而不是摆一张过期的卡。
+			 * 这里如果不核,面板会收到一句成功、而账本上一字未改——「点了报成功、什么都没做」
+			 * 正是这套界面最不能有的那类东西。
+			 */
+			if (action === 'retract_fact' || action === 'keep_fact') {
+				const projected = view(stateOf(sessionId))
+				const fact = (projected.facts ?? []).find((item) => item.id === detail.value)
+				if (fact === undefined) return reply(409, { ok: false, error: 'fact_not_found' })
+				if (fact.review !== null && fact.review !== undefined) return reply(409, { ok: false, error: 'fact_already_reviewed' })
+			}
+			/**
 			 * ── 混合路径:点我们那条 → 用**原生提问卡**问 ──────────────────────
 			 *
 			 * 为什么值这一条:我们自己的人门行(fork 裁决 / 采纳技能)现在只能在右栏面板里点按钮,
@@ -421,9 +434,15 @@ export function apply(ctx) {
 					? `人在面板上裁决:采纳这条世界线(${detail.branch ?? '?'})。`
 					: action === 'promote_skill'
 						? `人在面板上采纳了候选技能「${detail.skill ?? '?'}」——它从此进你的技能目录。`
-						: '人在面板上做了一个动作。'
+						: action === 'retract_fact'
+							? `人审查了被推翻的那条事实(${detail.value ?? '?'})后决定**撤回**它${detail.note === null ? '' : `,缘由:${detail.note}`}。`
+							: action === 'keep_fact'
+								? `人审查了被推翻的那条事实(${detail.value ?? '?'})后判定**证据不可靠,维持原事实**${detail.note === null ? '' : `,缘由:${detail.note}`}。`
+								: '人在面板上做了一个动作。'
 			const followUp =
-				action === 'promote_skill'
+				action === 'retract_fact' || action === 'keep_fact'
+					? '这个决定已经落账,并会写进 `clear/knowledge/facts/` 那一份(下一轮引用它之前先看那条记录)'
+					: action === 'promote_skill'
 					? '候选状态正由内核改写(`status: active`),下一个回合它就在你的技能目录里'
 					/* 说准(rather than 说满):这句话写下的那一刻只到 inbox、还没进投影,
 					   所以不能断言「已经在投影里生效」——失效模式是模型看到它与卡片矛盾,停下来问人。 */

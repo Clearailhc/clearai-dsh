@@ -495,6 +495,19 @@ export function applyMutation(state, mutation) {
 			})
 			break
 		}
+		case 'fact/reviewed': {
+			/**
+			 * **人审查过一条被推翻标记的事实**:撤回它,或判证据不可靠、维持原事实。
+			 *
+			 * 两种结局都要落账——「没决定」与「决定维持」在别处长得一模一样,而后者正是
+			 * 一次真实的价值判断(数据自己也可能错)。撤回是终态:记录留着,不再作为「已知」引用;
+			 * 后来又出现支持证据也不复活,要复活就是新的一次升格。
+			 */
+			const fact = next.facts.find((item) => item.id === mutation.fact)
+			if (fact === undefined) break
+			fact.review = { decision: mutation.decision === 'retracted' ? 'retracted' : 'kept', reason: mutation.reason ?? null, at, by: mutation.by ?? 'user' }
+			break
+		}
 		case 'worldline/prepared': {
 			const fork = next.forks.find((item) => item.id === mutation.fork)
 			if (fork === undefined) break
@@ -885,6 +898,16 @@ export function applyEvent(state, event) {
 			next.autonomy = { ...(next.autonomy ?? {}), override: { value, at } }
 			return next
 		}
+		/**
+		 * 人审查一条事实:标的在 `value`(面板送出的是事实 id),缘由在 `note`。
+		 * 已经审过的不再改(第一次决定为准,与计划授权那条同一条纪律)。
+		 */
+		if (gate.action === 'retract_fact' || gate.action === 'keep_fact') {
+			const fact = next.facts.find((item) => item.id === (gate.value ?? null))
+			if (fact === undefined || fact.review !== undefined) return next
+			fact.review = { decision: gate.action === 'retract_fact' ? 'retracted' : 'kept', reason: gate.note ?? null, at, by: 'user' }
+			return next
+		}
 		const fork = next.forks.find((item) => item.id === (gate.fork ?? null))
 		if (fork === undefined) return next
 		fork.humanDecision = {
@@ -956,6 +979,11 @@ export function derive(state) {
 	const stepOf = (planId, stepId) => state.plans.find((plan) => plan.id === planId)?.steps.find((step) => step.id === stepId) ?? null
 	const levelIndex = (level) => ['L0', 'L1', 'L2', 'L3', 'L4'].indexOf(String(level ?? '').toUpperCase())
 
+	/**
+	 * 被**人**撤回的事实:它的主张在那条假设上落成 `retracted`(黏性终态)。
+	 * 读的是事实上的 `review`——人的动作落在事实那一侧,facts 是唯一事实源。
+	 */
+	const retractedClaims = new Set((state.facts ?? []).filter((item) => item.review?.decision === 'retracted').map((item) => String(item.text ?? '')))
 	const hypotheses = state.hypotheses.map((hypothesis) => {
 		const rows = []
 		for (const item of state.evidence) {
@@ -968,9 +996,11 @@ export function derive(state) {
 			.filter((item) => item.verdict === 'support')
 			.reduce((best, item) => Math.max(best, levelIndex(item.level)), -1)
 		let status = hypothesis.status
-		if (status === 'proposed' && rows.length > 0) status = 'alive'
+		// 撤回优先于一切:那是人对已升格事实的裁决,后来的支持证据不复活它。
+		if (retractedClaims.has(String(hypothesis.claim ?? ''))) status = 'retracted'
+		else if (status === 'proposed' && rows.length > 0) status = 'alive'
 		// 被推翻是黏性终态:「已被替代」不该改写「已被推翻」——两件事。
-		if (status !== 'superseded' && status !== 'refuted' && refutations > 0) status = 'refuted'
+		if (status !== 'superseded' && status !== 'refuted' && status !== 'retracted' && refutations > 0) status = 'refuted'
 		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive }
 	})
 
@@ -1140,6 +1170,35 @@ export function derive(state) {
 	// `has_open_gate`:有一道门开着——调度侧据此不驱动(ClearAI:两个谓词同集)。
 	const hasOpenGate = inbox.length > 0
 
+	/**
+	 * 事实那一行的**两个读数**(都派生,不另存):
+	 *   · `refuted`——它的假设收到过推翻证据 ⇒ 这条事实要复核;
+	 *   · `review` ——人已经审查过(撤回 / 维持),决定连缘由一起留着。
+	 */
+	const factRows = (state.facts ?? []).map((fact) => {
+		const owner = hypotheses.find((item) => String(item.claim ?? '') === String(fact.text ?? ''))
+		return { ...fact, refuted: (owner?.refutations ?? 0) > 0, review: fact.review ?? null }
+	})
+	for (const fact of factRows) {
+		/**
+		 * **推翻证据只标记事实,撤不撤由人定**(数据本身也可能是错的)。
+		 * 两种结局都要能一键落地,否则这道门没有出口:维持也是一次决定,而且它必须落账,
+		 * 不然「没决定」与「决定维持」在门的状态上长得一模一样,系统会一直等。
+		 */
+		if (fact.refuted !== true || fact.review !== null) continue
+		inbox.push({
+			kind: 'fact_refutation',
+			title: '事实被推翻,等你决定',
+			summary: `「${String(fact.text ?? '').slice(0, 90)}」出现了推翻证据:撤回它,或判证据不可靠、维持原事实。`,
+			plan: null,
+			step: null,
+			/** 标的:面板把 `value` 原样写进人门动作,宿主据此核标的存在、fold 据此落账。 */
+			value: fact.id,
+			human_action: 'retract_fact',
+			needs: 'click',
+		})
+	}
+
 	const settlement = state.evidence.map((item) => {
 		const step = stepOf(item.plan, item.step)
 		const refs = state.materials.filter((material) => item.refs.includes(material.id)).map((material) => material.ref)
@@ -1153,7 +1212,7 @@ export function derive(state) {
 		}
 	})
 
-	return { phase, progress, hypotheses, activePlan, closedPlans, pendingAudit, forks, settlement, stepOf, inbox, hasOpenGate, planConfirmationPending, planIsAuthorized }
+	return { phase, progress, hypotheses, activePlan, closedPlans, pendingAudit, forks, factRows, settlement, stepOf, inbox, hasOpenGate, planConfirmationPending, planIsAuthorized }
 }
 
 /**
@@ -1187,7 +1246,7 @@ export function derive(state) {
  */
 export const HUMAN_GATE_MARK = '[clearai·人门]'
 /** 面板上允许出现的动词。表外的动词一律拒(与贡献表同一套「表外的名字不许出现」)。 */
-export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill']
+export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact']
 /** 运行档的两个取值。**只用于读取旧日志**里的 `set_autonomy` 记录;当前没有写入口。 */
 export const AUTONOMY_VALUES = ['attended', 'unattended']
 
@@ -1452,7 +1511,7 @@ export function view(state, sessionId) {
 			step: item.step ?? null,
 			at: item.at,
 		})),
-		facts: state.facts.map((item) => ({
+		facts: derived.factRows.map((item) => ({
 			id: item.id,
 			text: item.text,
 			/** 边界(推翻条件)与支持等级:面板与货架都要显示它——「已知」必须带边界。 */
@@ -1461,6 +1520,9 @@ export function view(state, sessionId) {
 			evidenceIds: item.evidence,
 			path: item.path,
 			at: item.at,
+			/** 派生:收到过推翻证据(要复核)与人的审查决定(撤回 / 维持)。 */
+			refuted: item.refuted === true,
+			review: item.review ?? null,
 		})),
 		/**
 		 * 侦察记录:**结局要能看出来**。
