@@ -20,6 +20,9 @@
 /** 世界线分支状态的秩。秩只增;一旦出现 adopted,整个分叉的分支状态冻结。 */
 const BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }
 
+/** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
+const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
+
 export const MUTATION_KIND = 'clearai'
 /**
  * 状态版本:形状一变就 +1。
@@ -902,6 +905,19 @@ export function applyEvent(state, event) {
 		 * 人审查一条事实:标的在 `value`(面板送出的是事实 id),缘由在 `note`。
 		 * 已经审过的不再改(第一次决定为准,与计划授权那条同一条纪律)。
 		 */
+		/**
+		 * 人认可一次**临时采纳**:它是那道门唯一的机械出口。
+		 *
+		 * 「临时采纳」的语义是「分差不足以称结论」;原来它只能靠人说话,而门开着会按住续跑
+		 * ⇒ 什么都不做的话系统一直等。认可是**人的决定**,落一条 `by:'user'` 的确认留着痕迹;
+		 * 「要改判据」那条路仍然在(说一句话,模型重做一条世界线)。
+		 */
+		if (gate.action === 'confirm_provisional') {
+			const provisionalFork = next.forks.find((item) => item.id === (gate.fork ?? null))
+			if (provisionalFork?.merge?.provisional !== true || provisionalFork.merge.confirmed !== undefined) return next
+			provisionalFork.merge = { ...provisionalFork.merge, confirmed: { at, by: 'user' } }
+			return next
+		}
 		if (gate.action === 'retract_fact' || gate.action === 'keep_fact') {
 			const fact = next.facts.find((item) => item.id === (gate.value ?? null))
 			if (fact === undefined || fact.review !== undefined) return next
@@ -977,7 +993,7 @@ export function derive(state) {
 	const closedPlans = state.plans.filter((plan) => plan.status === 'closed')
 	const pendingAudit = state.audits.some((audit) => audit.verdict === null)
 	const stepOf = (planId, stepId) => state.plans.find((plan) => plan.id === planId)?.steps.find((step) => step.id === stepId) ?? null
-	const levelIndex = (level) => ['L0', 'L1', 'L2', 'L3', 'L4'].indexOf(String(level ?? '').toUpperCase())
+	const levelIndex = (level) => LEVELS.indexOf(String(level ?? '').toUpperCase())
 
 	/**
 	 * 被**人**撤回的事实:它的主张在那条假设上落成 `retracted`(黏性终态)。
@@ -1001,7 +1017,21 @@ export function derive(state) {
 		else if (status === 'proposed' && rows.length > 0) status = 'alive'
 		// 被推翻是黏性终态:「已被替代」不该改写「已被推翻」——两件事。
 		if (status !== 'superseded' && status !== 'refuted' && status !== 'retracted' && refutations > 0) status = 'refuted'
-		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive }
+		/**
+		 * **从没被走过的等级**(派生,零新账)。
+		 *
+		 * 等级衡量的是「这条结论在多大程度上只能靠信任做的人」,而它逐级上升的补偿是
+		 * 独立裁决与人放行。所以「我直接在 L3 上交付、L0/L1/L2 从没走过」本身不是违规
+		 * (首次测量没有廉价路可走),但**它必须看得见**——与「假设从没被证据碰过」记成
+		 * `unjudged` 是同一条先例:不逼裁决,但不许把「没看过」写成「没问题」。
+		 *
+		 * 只列**低于已用到过的最高等级**、且一条证据都没有的那些级;没走过任何等级时为空
+		 * (还没有声明可谈)。
+		 */
+		const used = new Set(rows.map((item) => String(item.level ?? '').toUpperCase()))
+		const top = [...used].reduce((best, level) => Math.max(best, LEVELS.indexOf(level)), -1)
+		const untouchedLevels = top <= 0 ? [] : LEVELS.slice(0, top).filter((level) => !used.has(level))
+		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive, untouchedLevels }
 	})
 
 	/**
@@ -1123,22 +1153,25 @@ export function derive(state) {
 		})
 	}
 	for (const fork of forks) {
-		if (fork.merge?.provisional !== true) continue
+		// 人已经认可过就不再等他(状态锚:状态一变,条目自然消失)。
+		if (fork.merge?.provisional !== true || (fork.merge.confirmed ?? null) !== null) continue
 		inbox.push({
 			kind: 'provisional_review',
 			title: '临时采纳待复核',
 			summary: `${fork.question} · 已**临时**采纳「${fork.branches.find((branch) => branch.id === fork.merge.branch)?.label ?? fork.merge.branch}」:${fork.merge.decisionNote ?? '分差不足以称结论'}`,
 			plan: fork.plan ?? null,
 			step: fork.step,
-			// 复核不是一次点击:要么认可(什么都不用做),要么让人/模型改判据重做一条。
-			human_action: null,
+			/** 标的:认可是对**哪一盘分叉**的认可。 */
+			fork: fork.id,
+			/** 认可是一个动作(一键);「要改判据」那条路仍然靠说一句话,由模型重做一条世界线。 */
+			human_action: 'confirm_provisional',
 			/**
-			 * 它是**要一句话**的门 ✗ —— "认可就什么都不用做"的写法有个洞:
-			 * 门开着 ⇒ 续跑停着(`hasOpenGate`)⇒ 什么都不做的话,系统就一直等 ✗。
-			 * 所以人得**说一声**;界面上必须把这件事说出来(以前既没按钮也没提示 ✗)。
+			 * **一键认可**:它曾经是「要一句话」的门,而「认可就什么都不用做」有个洞——
+			 * 门开着 ⇒ 续跑停着 ⇒ 什么都不做的话系统一直等,等一个永远不会来的动作。
+			 * 认可是一次决定,决定就该有按钮;要改判据那条路仍然在(说一句话,模型重做一条世界线)。
 			 */
-			needs: 'word',
-			ask: '认可就说一句话(比如「认可,继续」);要改判据就重做一条',
+			needs: 'click',
+			ask: '要改判据就重做一条世界线(说一句即可)',
 		})
 	}
 	for (const candidate of state.brainCandidates ?? []) {
@@ -1246,7 +1279,7 @@ export function derive(state) {
  */
 export const HUMAN_GATE_MARK = '[clearai·人门]'
 /** 面板上允许出现的动词。表外的动词一律拒(与贡献表同一套「表外的名字不许出现」)。 */
-export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact']
+export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional']
 /** 运行档的两个取值。**只用于读取旧日志**里的 `set_autonomy` 记录;当前没有写入口。 */
 export const AUTONOMY_VALUES = ['attended', 'unattended']
 
@@ -1390,6 +1423,8 @@ export function view(state, sessionId) {
 							supportedLevel: hypothesis.supportedLevel,
 							refutations: hypothesis.refutations,
 							inconclusive: hypothesis.inconclusive,
+							/** 从没被走过的等级(派生):面板据此说清「这一级是跳上来的」。 */
+							untouchedLevels: hypothesis.untouchedLevels,
 							version: hypothesis.version,
 						})),
 					},
@@ -1655,7 +1690,8 @@ export function renderCard(state) {
 			 * 不逼 verdict,但也不许把「没看过」写成「没问题」。
 			 */
 			const untouched = (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0
-			const readings = untouched ? '(未触及)' : `(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive})`
+			const skipped = (hypothesis.untouchedLevels ?? []).length === 0 ? '' : ` · 未走过 ${hypothesis.untouchedLevels.join('/')}`
+			const readings = untouched ? '(未触及)' : `(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive}${skipped})`
 			lines.push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}`)
 		}
 	}

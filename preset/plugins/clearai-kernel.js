@@ -401,7 +401,7 @@ export const HUMAN_GATE_MARK = '[clearai·人门]'
  * 两侧白名单一旦各自维护,摘动词时只改一侧 ⇒ 内核仍认、宿主不认 ⇒ **等价性用例立刻红** ✓。
  * 这正是那条用例存在的意义:两份实现漂移不许静默。
  */
-export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact']
+export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional']
 export function parseHumanGateMessage(message) {
 	if (message === null || typeof message !== 'object') return null
 	// 署名必须是人:插件与模型来源的同名标记不算人门动作(与宿主半同一条纪律)。
@@ -3306,11 +3306,24 @@ export function apply(ctx, config = {}) {
 				needs_audit: gate.needs_audit,
 			})
 
+			/**
+			 * **连拦计数**:一条路,两个触发点——准入没过、拿不到裁决。
+			 *
+			 * 「拿不到裁决」原来不计数,于是评估者失联或提供方不可用时,模型可以一次次重新交付、
+			 * 每次 fail-closed,而**永远不会升级给人**:同一语义动作反复做、不带来新事实,
+			 * 正是这套失败哲学要停下来的那一种(每次恢复都要带来新东西)。计数之后,
+			 * 它落到同一道已有的门(`plan/blocked` ⇒ 收件箱里那条等人处置的条目)。
+			 */
+			const countBlock = (kind, detail) => {
+				const count = (state.blocks[`${plan.id}:${step.id}`] ?? 0) + 1
+				mutations.push({ t: 'block/counted', plan: plan.id, step: step.id, count, reason: `${kind}:${detail}` })
+				if (count >= CFG.blockedThreshold) mutations.push({ t: 'plan/blocked', plan: plan.id, step: step.id, attempts: count, reason: `${kind}:${detail}` })
+				return count
+			}
+
 			// ③ 硬拦:连拦计数,达阈值 → 计划 blocked,等人
 			if (!gate.ok && !gate.needs_audit) {
-				const count = (state.blocks[`${plan.id}:${step.id}`] ?? 0) + 1
-				mutations.push({ t: 'block/counted', plan: plan.id, step: step.id, count })
-				if (count >= CFG.blockedThreshold) mutations.push({ t: 'plan/blocked', plan: plan.id, step: step.id, attempts: count, reason: `${gate.verified_by}:${gate.hint}` })
+				const count = countBlock(gate.verified_by, gate.hint)
 				// 触礁就收兵:无人值守这一档不能一边报阻塞、一边让系统继续叫醒自己。
 				const stalledNote =
 					count >= CFG.blockedThreshold
@@ -3322,6 +3335,28 @@ export function apply(ctx, config = {}) {
 					`未过观测准入(${gate.verified_by},第 ${count} 次):${gate.hint}${count >= CFG.blockedThreshold ? '\n已达阈值,计划置 blocked——停下等人,不要继续交付。' : ''}${stalledNote}\n\n${preview.card}`,
 					{ gate: gate.verified_by, blocked: count >= CFG.blockedThreshold, mutations },
 				)
+			}
+
+			/**
+			 * **同一步连续拿不到结论 ⇒ 先改点什么,再交**。
+			 *
+			 * 判据是这一步已有 ≥2 条 `inconclusive` 证据。两次都答不上来,第三次原样再交就不是
+			 * 「再试一次」,而是**同一语义动作重复做而没有新事实**——该换法,不该继续烧评估者的时间。
+			 * 改判据(`RefinePlan` 会给 `criteria_versions` 追加一版)或换法(作废/新增步骤)之后门自然放行:
+			 * 它拦的是「什么都没改就再交一次」,不是「这一级不许做第二次」。
+			 *
+			 * 只挂 L3 以上:那两级每次交付都要花一次独立评估,重复的代价是真的;
+			 * L0–L2 由做的人自己判,重试很便宜,判据也是他自己的。
+			 */
+			if (levelIndex > SELF_JUDGE_MAX_INDEX) {
+				const repeats = (state.evidence ?? []).filter((item) => item.step === step.id && item.verdict === 'inconclusive').length
+				const refined = Array.isArray(step.criteria_versions) && step.criteria_versions.length > 1
+				if (repeats >= 2 && !refined) {
+					return fail(
+						'inconclusive_repeat_forced_change',
+						`这一步已经连续 ${repeats} 次无法判定。同一判据下再交一次只是把同一个问题再问一遍:先改判据(\`RefinePlan\`)或换法(\`AmendPlan\` 加一步 / \`VoidPlanStep\` 作废这一步),再交付。`,
+					)
+				}
 			}
 
 			// ④ 裁决:谁可以写
@@ -3339,8 +3374,17 @@ export function apply(ctx, config = {}) {
 				mutations.push(...audit.mutations)
 				if (audit.verdict === 'pending') return fail('audit_pending', `独立评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试——不要重复派遣。`, { mutations })
 				if (audit.verdict === 'unknown') {
+					const count = countBlock('audit_unavailable', audit.basis)
+					const stalled = count >= CFG.blockedThreshold
+					const stalledNote = stalled ? stopContinuation(exec.agent, CONTINUATION_CODES.stalled, `计划 ${plan.id} 第 ${count} 次拿不到独立裁决`, mutations) : ''
 					const preview = hostService.preview(sessionId, mutations)
-					return fail('evidence_audit_unavailable', `没有拿到独立裁决,这一步不推进(fail-closed):${audit.basis}\n\n${preview.card}`, { mutations })
+					return fail(
+						'evidence_audit_unavailable',
+						`没有拿到独立裁决,这一步不推进(fail-closed):${audit.basis}` +
+							(stalled ? `\n已达连拦阈值(${count} 次),计划置 blocked——停下等人,不要继续交付。` : `\n(这是第 ${count} 次;同一件事连续 ${CFG.blockedThreshold} 次拿不到裁决就置 blocked 等人。)`) +
+							`${stalledNote}\n\n${preview.card}`,
+						{ gate: 'audit_unavailable', blocked: stalled, mutations },
+					)
 				}
 				verdict = audit.verdict
 				evaluator = 'independent'
@@ -4389,7 +4433,17 @@ export function apply(ctx, config = {}) {
 				const audit = await runEvaluator(sessionId, exec.agent, plan, syntheticStep, gate, 'worldline_audit', exec.signal)
 				mutations.push(...audit.mutations)
 				if (audit.verdict === 'pending') return fail('audit_pending', `世界线评估者仍在跑:${audit.basis}`, { mutations })
-				if (audit.verdict === 'unknown') return fail('evidence_audit_unavailable', `没有拿到独立读数,这条世界线不推进(fail-closed):${audit.basis}`, { mutations })
+				if (audit.verdict === 'unknown') {
+					const count = (state.blocks[`${plan.id}:${step.id}`] ?? 0) + 1
+					mutations.push({ t: 'block/counted', plan: plan.id, step: step.id, count, reason: `audit_unavailable:${audit.basis}` })
+					const stalled = count >= CFG.blockedThreshold
+					if (stalled) mutations.push({ t: 'plan/blocked', plan: plan.id, step: step.id, attempts: count, reason: `audit_unavailable:${audit.basis}` })
+					return fail(
+						'evidence_audit_unavailable',
+						`没有拿到独立读数,这条世界线不推进(fail-closed):${audit.basis}` + (stalled ? `\n已达连拦阈值(${count} 次),计划置 blocked——停下等人。` : `\n(第 ${count} 次)`),
+						{ gate: 'audit_unavailable', blocked: stalled, mutations },
+					)
+				}
 				verdict = audit.verdict
 				basis = audit.basis
 				evaluator = 'independent'

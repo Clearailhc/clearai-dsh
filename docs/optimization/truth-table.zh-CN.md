@@ -9,12 +9,12 @@
 ## 计数
 
 - 机制条目：**57**
-- 按状态：已实现 49 · 部分实现 2 · 设计目标 2 · 已删除 4
+- 按状态：已实现 50 · 部分实现 2 · 设计目标 1 · 已删除 4
 - 按强度：硬边界 40 · 建议 9 · 原生 3 · 仅提示词 1 · 废弃 4
-- 按归宿：变成机制 2 · 保持设计目标 2 · 已删除并记账 4
+- 按归宿：变成机制 1 · 保持设计目标 2 · 已删除并记账 4
 - 真正阻断执行的：**17**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**4**
+- 存在已知不符（文档 / 注释与代码不一致）的：**3**
 
 ## 代码常量快照
 
@@ -52,7 +52,7 @@
 | `skill-candidate` | 技能默认候选态（人采纳才进目录） | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/brain.js LESSON_REQUIRED/FACT_REQUIRED` |
 | `memory-write` | 记忆写入（字段校验 + 标题去重） | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/brain.js 字段契约` |
 | `l4-universal-gate` | 覆盖每一次评估的通用 L4 门 | 认识论 | 设计目标 | 建议 | 无 | human | 否 | 否 | `docs/known-gaps.md` |
-| `verification-lifecycle` | 验证生命周期:哪些保证是活的 | 认识论 | 设计目标 | 建议 | 无 | system | 否 | 否 | `docs/verification-loop.md` |
+| `verification-lifecycle` | 验证生命周期:哪些保证是活的 | 认识论 | 已实现 | 建议 | 无 | system | 否 | 否 | `preset/plugins/clearai-kernel.js countBlock` |
 | `fact-retraction` | 事实撤回:人审查后决定 | 认识论 | 已实现 | 硬边界 | 权威 | human | 否 | 否 | `preset/plugins/clearai-kernel.js markFactReviewed` |
 | `observation-provenance` | 观测来源:声明必须与生产者对得上 | 认识论 | 部分实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `plan-auto-confirm` | 已删除:无人值守立约即授权 | 认识论 | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
@@ -353,12 +353,12 @@
 
 - **层**：宿主 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：human
 - **触发**：面板提交人门动词
-- **输入**：adopt_branch / abandon_fork / promote_skill
-- **输出**：source.kind='user' 的消息；表外动词一律拒（400）
+- **输入**：adopt_branch / abandon_fork / promote_skill / retract_fact / keep_fact / confirm_provisional
+- **输出**：user 来源消息折进投影,写 by:'user'
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：这些动词没有工具 schema，模型的工具面里不存在它们。
-- **代码**：ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS; preset/plugins/clearai-kernel.js
+- **理由**：人门动词白名单,两侧各一份(宿主半与内核),靠等价性用例钉住。每个动词都对应一道**真有出口**的门:世界线裁决(采纳 / 放弃)、候选技能扶正、被推翻事实的复核(撤回 / 维持)、临时采纳的认可。最后两个是补出来的出口——「认可就什么都不用做」「维持原事实」在别处都长得像「没决定」,而门开着会按住续跑,于是系统会一直等一个永远不会来的动作。
+- **代码**：ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS
 - **测试**：test/host.test.mjs · **配置**：—
 - **提示词**：clearai/state-protocol · **文档**：docs/design-principles.zh-CN.md
 
@@ -719,16 +719,15 @@
 
 ### `verification-lifecycle` · 验证生命周期:哪些保证是活的
 
-- **层**：认识论 · **状态**：设计目标 · **强度**：建议 · **权威**：无 · **责任方**：system
-- **触发**：—
+- **层**：认识论 · **状态**：已实现 · **强度**：建议 · **权威**：无 · **责任方**：system
+- **触发**：拿不到裁决 / 同一步连续两次无法判定 / 某条假设跳过了低等级
+- **输出**：block/counted ⇒ plan/blocked;inconclusive_repeat_forced_change;untouchedLevels(派生读数)
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：文档里那台「八状态验证机」是**设计记录**,不是运行时保证:它要求把九个生命周期态**存下来**,而本系统的状态必须能由日志重算(P3)。逐条对照后,它承诺的保证大部分已由既有事实与派生覆盖(判据登记 / L4 放行 / 观测准入 / 评估 / 无果终止),**还缺两条**:结果永远不来时把决定摆到人面前(expired),以及同一步连续无法判定时强制改判据(inconclusive 重试政策)。§6 的 rule 1(逐级推进)同样没有落点。
-- **归宿**：变成机制
-- **代码**：docs/verification-loop.md; preset/plugins/ontology.js VERIFICATION_LOOP; ui/lib/fold.js derive
-- **测试**：test/ontology.test.mjs · **配置**：—
+- **理由**：文档里那台「八状态验证机」是**设计记录**。逐个名字看过之后,九个状态今天各自住在哪已经写明;而它真正承诺的三条**保证**也都有落点了:①结果永远不来时不再无声重试——拿不到裁决与准入没过**共用同一个连拦计数**,反复拿不到就置 blocked,人通过已有的那道收件箱门看到;②同一步连续两次无法判定之后,第三次原样再交被拒(先改判据或换法);③「跳级」**只记事实**:从没走过的等级是一条派生读数,因为「为什么没走便宜的路」是不可校验的领域判断,强制它就等于造一个核不了的字段。
+- **代码**：preset/plugins/clearai-kernel.js countBlock; ui/lib/fold.js untouchedLevels; docs/verification-loop.md
+- **测试**：test/kernel.test.mjs（拿不到裁决计数 / inconclusive 强制改 / 跳级读数）; test/ontology.test.mjs（状态表逐行有落点） · **配置**：—
 - **提示词**：— · **文档**：docs/verification-loop.md
-- **已知不符**：文档以现在时把整台状态机标为设计目标是对的,但 §6 开头那句「系统在状态变更时检查这些,而不是靠提示词」对 rule 1 不成立:它**零实现、零提示词**。
 
 ### `fact-retraction` · 事实撤回:人审查后决定
 

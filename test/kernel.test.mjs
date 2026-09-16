@@ -3940,6 +3940,106 @@ console.log('\n【探索期产出有据可查:回合边界上的工作区快照�
 	check('FileHistory 查得到探索产物', history.ok === true && /探索期快照/.test(String(history.message ?? '')), String(history.message ?? '').slice(0, 140))
 }
 
+console.log('\n【跳级要看得见(但不必许可):从没被走过的等级是一条派生读数】')
+{
+	/**
+	 * 等级衡量的是「这条结论有多大程度只能靠信任做的人」,逐级上升的补偿是独立裁决与人放行。
+	 * 「直接在 L3 上交付、L0–L2 从没走过」本身**不是违规**——首次测量没有廉价路可走;
+	 * 但它必须看得见,与「假设从没被证据碰过」记成 `unjudged` 是同一条先例。
+	 * 这里刻意**不设闸门、不加必填字段**:「为什么没走便宜的路」是不可校验的领域判断,
+	 * 强制它只会造一个看起来像机制、其实核不了的字段。
+	 */
+	const base = {
+		...emptyState(),
+		hypotheses: [{ id: 'h-1', claim: 'X 比 Y 快', refute_when: 'Y 更快', status: 'alive' }],
+		plans: [{ id: 'p-1', status: 'active', steps: [{ id: 's1', ordinal: 1, do: '直接测', status: 'advanced', tests: { hypothesis: 'h-1', level: 'L3' }, artifacts: [], done_criteria: '有读数' }] }],
+	}
+	const l3Only = { ...base, evidence: [{ id: 'e-1', plan: 'p-1', step: 's1', verdict: 'support', level: 'L3', refs: [], evaluator: 'independent', basis: '均值差 6.2' }] }
+	check('只在 L3 上交过 ⇒ 如实列出 L0/L1/L2 从没走过', JSON.stringify(derive(l3Only).hypotheses[0].untouchedLevels) === JSON.stringify(['L0', 'L1', 'L2']), JSON.stringify(derive(l3Only).hypotheses[0].untouchedLevels))
+	check('运行态卡里说得出这件事(模型据此交代「为什么更便宜的路不通」)', /未走过 L0\/L1\/L2/.test(renderCard(l3Only)), renderCard(l3Only).split('\n').find((line) => line.includes('未走过')) ?? '(卡片里没有这一行)')
+	const withL0 = { ...base, evidence: [...l3Only.evidence, { id: 'e-0', plan: 'p-1', step: 's1', verdict: 'support', level: 'L0', refs: [], evaluator: 'self', basis: '量纲检查' }] }
+	check('走过 L0 之后,读数只剩真正没走过的那些', JSON.stringify(derive(withL0).hypotheses[0].untouchedLevels) === JSON.stringify(['L1', 'L2']), JSON.stringify(derive(withL0).hypotheses[0].untouchedLevels))
+	check('一条证据都没有的假设不报这个读数(还没有声明可谈)', (derive(base).hypotheses[0].untouchedLevels ?? []).length === 0)
+}
+
+console.log('\n【临时采纳的那道门:认可是它的机械出口】')
+{
+	/**
+	 * 「临时采纳」(分差不足以称结论)原来只能靠人**说一句话**,而门开着会按住续跑
+	 * ⇒ 什么都不做的话系统一直等一个永远不会来的动作。认可是决定,决定就该有按钮;
+	 * 「要改判据」那条路仍然在(说一句,模型重做一条世界线)。
+	 */
+	const forkState = {
+		...emptyState(),
+		forks: [{
+			id: 'f-1', step: 's1', plan: 'p-1', question: '走哪条', phase: 'settled', settled: true, abandoned: false,
+			decide_by: { metric: 'ms', direction: 'min' }, humanDecision: null, arbitration: null, arbitrationSession: null,
+			branches: [{ id: 'b-1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数', status: 'adopted', level: 'L0', reading: '60', validity: 'usable', artifacts: [] }],
+			merge: { branch: 'b-1', provisional: true, decisionNote: 'auto_adopt: 相对差距 2.0%,阈值 15%', by: 'metric', margin: 0.02 },
+		}],
+	}
+	const opened = derive(forkState)
+	const item = opened.inbox.find((row) => row.kind === 'provisional_review')
+	check('临时采纳起一道门,而且它现在是**可点击**的(needs=click)', item !== undefined && item.needs === 'click' && item.human_action === 'confirm_provisional' && item.fork === 'f-1', JSON.stringify(item))
+	const gateMessage = { id: 'm-cp', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} ${JSON.stringify({ action: 'confirm_provisional', plan: 'p-1', fork: 'f-1', branch: null, skill: null, value: null, note: null })}` }], source: { kind: 'user' } }
+	const confirmed = applyEvent(forkState, { type: 'user/message', time: 9, data: gateMessage })
+	check('认可是人的决定:落一条 by:user 的确认', view(confirmed).forks[0].merge.confirmed?.by === 'user', JSON.stringify(view(confirmed).forks[0].merge))
+	check('认可之后那道门消失(状态锚)', !derive(confirmed).inbox.some((row) => row.kind === 'provisional_review'))
+	check('第一次认可为准(再审不改写)', view(applyEvent(confirmed, { type: 'user/message', time: 10, data: { ...gateMessage, id: 'm-cp-2' } })).forks[0].merge.confirmed.at === view(confirmed).forks[0].merge.confirmed.at)
+}
+
+console.log('\n【拿不到裁决要计数:同一件事反复失败必须升级给人,不许无声重试】')
+{
+	/**
+	 * 「拿不到独立裁决」原来不计数:评估者失联/提供方不可用时,模型可以一次次重新交付、
+	 * 每次 fail-closed,而**永远不会升级给人**——同一语义动作反复做、不带来新事实,
+	 * 正是这套失败哲学要停下来的那一种。现在它与准入没过共用同一个连拦计数,
+	 * 于是落到同一道已有的门(`plan/blocked` ⇒ 收件箱里那条等人处置的条目)。
+	 */
+	const host = makeHost()
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-audit-unavailable'
+	await callOn(host, S, 'SetGoal', { claim: '判断 X 是否成立', done_criteria: '拿到裁决', hypotheses: [{ claim: 'X 成立', refute_when: 'X 不成立' }] })
+	const hypothesis = host.service.state(S).hypotheses[0].id
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'a1', do: '测 X', artifacts: ['lab/a1.txt'], done_criteria: 'lab/a1.txt 有读数', tests: { hypothesis, level: 'L3' } }] })
+	write('lab/a1.txt', 'reading: 42\n')
+	host.auditFails = true
+	const counted = () => host.journal.filter((mutation) => mutation.t === 'block/counted' && mutation.step === 'a1')
+	const first = await callOn(host, S, 'AdvancePlan', { step_id: 'a1' })
+	check('拿不到裁决仍然 fail-closed(不推进)', first.ok === false && first.code === 'evidence_audit_unavailable', `${first.code}`)
+	check('但它**计入连拦**(第 1 次)', counted().length === 1 && counted()[0].count === 1, JSON.stringify(counted()))
+	check('第 1 次的结果里说明还剩几次会置 blocked(不让人猜)', /第 1 次/.test(String(first.message)) && /3/.test(String(first.message)), String(first.message).slice(0, 140))
+	await callOn(host, S, 'AdvancePlan', { step_id: 'a1' })
+	const third = await callOn(host, S, 'AdvancePlan', { step_id: 'a1' })
+	check('连拦到阈值 ⇒ 计划置 blocked,并如实说已停下等人', third.ok === false && host.service.state(S).plans[0].blocked !== undefined && /停下等人/.test(String(third.message)), `${third.code}/${JSON.stringify(host.service.state(S).plans[0].blocked)}`)
+	check('收件箱里出现等人处置的那条门(升级给人的路是已有的那条)', host.service.view(S).inbox.some((item) => item.kind === 'plan_blocked'), JSON.stringify(host.service.view(S).inbox.map((item) => item.kind)))
+}
+
+console.log('\n【同一步连续两次无法判定 ⇒ 必须先改判据或换法】')
+{
+	const host = makeHost()
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-inconclusive-repeat'
+	await callOn(host, S, 'SetGoal', { claim: '判断 X 是否成立', done_criteria: '拿到一条裁决', hypotheses: [{ claim: 'X 成立', refute_when: 'X 不成立' }] })
+	const hypothesis = host.service.state(S).hypotheses[0].id
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'i1', do: '测 X', artifacts: ['lab/i1.txt'], done_criteria: 'lab/i1.txt 有读数', tests: { hypothesis, level: 'L3' } }] })
+	write('lab/i1.txt', 'reading: unknown\n')
+	host.nextVerdict = { verdict: 'inconclusive', basis: '样本量不足,判不了', shortfalls: ['sample_size'] }
+	const countInconclusive = () => (host.service.state(S).evidence ?? []).filter((item) => item.verdict === 'inconclusive').length
+	// 无法判定**照样落账**(记录不隐藏),只是这一步不推进:`ok:false` + `not_converged_inconclusive`。
+	const first = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
+	check('第一次无法判定照样落账(不逼 verdict,也不隐藏读数)', first.ok === false && first.code === 'not_converged_inconclusive' && countInconclusive() === 1, `${first.code}/${countInconclusive()}`)
+	const second = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
+	check('第二次也无法判定(判据没变)', second.ok === false && second.code === 'not_converged_inconclusive' && countInconclusive() === 2, `${second.code}/${countInconclusive()}`)
+	const third = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
+	check('第三次原样再交 ⇒ 拒绝,并指名要改判据或换法', third.ok === false && third.code === 'inconclusive_repeat_forced_change' && /RefinePlan/.test(String(third.message)) && /VoidPlanStep/.test(String(third.message)), `${third.code}:${String(third.message).slice(0, 140)}`)
+	const refined = await callOn(host, S, 'RefinePlan', { step_id: 'i1', done_criteria: 'lab/i1.txt 里三次重复的均值差 > 5', reason: '把判据写成可测的量' })
+	check('改判据之后就放行(门拦的是「什么都没改」,不是「第二次」)', refined.ok === true, String(refined.code))
+	host.nextVerdict = { verdict: 'support', basis: '按新判据三次重复均值差 6.2', shortfalls: [] }
+	const fourth = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
+	check('改判据后的交付正常推进', fourth.ok === true && host.service.view(S).plan.advancedCount === 1, `${fourth.code}/${host.service.view(S).plan.advancedCount}`)
+}
+
 console.log('\n【事实撤回:推翻证据只标记,撤不撤由人定】')
 {
 	/**

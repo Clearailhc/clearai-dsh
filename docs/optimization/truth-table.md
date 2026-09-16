@@ -9,12 +9,12 @@ This table answers one question: **what the current code actually guarantees**. 
 ## Counts
 
 - Mechanisms: **57**
-- By status: Implemented 49 · Partial 2 · Design only 2 · Removed 4
+- By status: Implemented 50 · Partial 2 · Design only 1 · Removed 4
 - By strength: Hard boundary 40 · Advisory 9 · Native 3 · Prompt only 1 · Deprecated 4
-- By destination: becomes a mechanism 2 · stays design-only 2 · deleted and accounted 4
+- By destination: becomes a mechanism 1 · stays design-only 2 · deleted and accounted 4
 - Actually blocking execution: **17**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **4**
+- Carrying a known mismatch between docs/comments and code: **3**
 
 ## Code constant snapshot
 
@@ -52,7 +52,7 @@ This section is exported from code, not written by hand:
 | `skill-candidate` | Skills default to candidate until a human promotes them | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/brain.js LESSON_REQUIRED/FACT_REQUIRED` |
 | `memory-write` | Memory write with field contract and title dedup | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/brain.js 字段契约` |
 | `l4-universal-gate` | A universal L4 gate over every evaluation | Epistemic | Design only | Advisory | None | human | no | no | `docs/known-gaps.md` |
-| `verification-lifecycle` | Verification lifecycle: which guarantees are live | Epistemic | Design only | Advisory | None | system | no | no | `docs/verification-loop.md` |
+| `verification-lifecycle` | Verification lifecycle: which guarantees are live | Epistemic | Implemented | Advisory | None | system | no | no | `preset/plugins/clearai-kernel.js countBlock` |
 | `fact-retraction` | Fact retraction by human decision | Epistemic | Implemented | Hard boundary | Authoritative | human | no | no | `preset/plugins/clearai-kernel.js markFactReviewed` |
 | `observation-provenance` | Observation provenance: declared sources vs producers | Epistemic | Partial | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `plan-auto-confirm` | Removed: unattended plans auto-confirmed themselves | Epistemic | Removed | Deprecated | None | system | no | no | — |
@@ -353,12 +353,12 @@ This section is exported from code, not written by hand:
 
 - **Layer**: Host · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: human
 - **Trigger**: 面板提交人门动词
-- **Input**: adopt_branch / abandon_fork / promote_skill
-- **Output**: source.kind='user' 的消息；表外动词一律拒（400）
+- **Input**: adopt_branch / abandon_fork / promote_skill / retract_fact / keep_fact / confirm_provisional
+- **Output**: user 来源消息折进投影,写 by:'user'
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 这些动词没有工具 schema，模型的工具面里不存在它们。
-- **Code**: ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS; preset/plugins/clearai-kernel.js
+- **Rationale**: 人门动词白名单,两侧各一份(宿主半与内核),靠等价性用例钉住。每个动词都对应一道**真有出口**的门:世界线裁决(采纳 / 放弃)、候选技能扶正、被推翻事实的复核(撤回 / 维持)、临时采纳的认可。最后两个是补出来的出口——「认可就什么都不用做」「维持原事实」在别处都长得像「没决定」,而门开着会按住续跑,于是系统会一直等一个永远不会来的动作。
+- **Code**: ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS
 - **Tests**: test/host.test.mjs · **Config**: —
 - **Prompt**: clearai/state-protocol · **Docs**: docs/design-principles.zh-CN.md
 
@@ -719,16 +719,15 @@ This section is exported from code, not written by hand:
 
 ### `verification-lifecycle` · Verification lifecycle: which guarantees are live
 
-- **Layer**: Epistemic · **Status**: Design only · **Strength**: Advisory · **Authority**: None · **Actor**: system
-- **Trigger**: —
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: system
+- **Trigger**: 拿不到裁决 / 同一步连续两次无法判定 / 某条假设跳过了低等级
+- **Output**: block/counted ⇒ plan/blocked;inconclusive_repeat_forced_change;untouchedLevels(派生读数)
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 文档里那台「八状态验证机」是**设计记录**,不是运行时保证:它要求把九个生命周期态**存下来**,而本系统的状态必须能由日志重算(P3)。逐条对照后,它承诺的保证大部分已由既有事实与派生覆盖(判据登记 / L4 放行 / 观测准入 / 评估 / 无果终止),**还缺两条**:结果永远不来时把决定摆到人面前(expired),以及同一步连续无法判定时强制改判据(inconclusive 重试政策)。§6 的 rule 1(逐级推进)同样没有落点。
-- **Destination**: becomes a mechanism
-- **Code**: docs/verification-loop.md; preset/plugins/ontology.js VERIFICATION_LOOP; ui/lib/fold.js derive
-- **Tests**: test/ontology.test.mjs · **Config**: —
+- **Rationale**: 文档里那台「八状态验证机」是**设计记录**。逐个名字看过之后,九个状态今天各自住在哪已经写明;而它真正承诺的三条**保证**也都有落点了:①结果永远不来时不再无声重试——拿不到裁决与准入没过**共用同一个连拦计数**,反复拿不到就置 blocked,人通过已有的那道收件箱门看到;②同一步连续两次无法判定之后,第三次原样再交被拒(先改判据或换法);③「跳级」**只记事实**:从没走过的等级是一条派生读数,因为「为什么没走便宜的路」是不可校验的领域判断,强制它就等于造一个核不了的字段。
+- **Code**: preset/plugins/clearai-kernel.js countBlock; ui/lib/fold.js untouchedLevels; docs/verification-loop.md
+- **Tests**: test/kernel.test.mjs（拿不到裁决计数 / inconclusive 强制改 / 跳级读数）; test/ontology.test.mjs（状态表逐行有落点） · **Config**: —
 - **Prompt**: — · **Docs**: docs/verification-loop.md
-- **Known mismatch**: 文档以现在时把整台状态机标为设计目标是对的,但 §6 开头那句「系统在状态变更时检查这些,而不是靠提示词」对 rule 1 不成立:它**零实现、零提示词**。
 
 ### `fact-retraction` · Fact retraction by human decision
 

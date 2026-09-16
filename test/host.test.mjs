@@ -233,6 +233,24 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 		factHost.projectionState = { ...factHost.projectionState, facts: [{ ...factHost.projectionState.facts[0], review: { decision: 'kept', reason: null, at: 2, by: 'user' } }] }
 		const again = await postFact({ sessionId: 'session-1', action: 'keep_fact', value: 'fct-2' })
 		check('已经审过的事实再审 → 409 fact_already_reviewed(第一次决定为准)', again.status === 409 && again.payload?.error === 'fact_already_reviewed', `${again.status}/${again.payload?.error}`)
+
+		/**
+		 * 认可一次临时采纳:同一套纪律——先核那道门还开着没有。
+		 * 标的错、不是临时采纳、已经认可过,一律 409,而不是收下一条什么都不改的动作。
+		 */
+		const provisionalFork = { id: 'f-1', stepId: 's1', question: '走哪条', phase: 'settled', branches: [], merge: { branch: 'b-1', provisional: true, confirmed: null } }
+		factHost.projectionState = { ...emptyState(), forks: [provisionalFork] }
+		const noFork = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-nope' })
+		check('认可一盘不存在的分叉 → 409 fork_not_found', noFork.status === 409 && noFork.payload?.error === 'fork_not_found', `${noFork.status}/${noFork.payload?.error}`)
+		factHost.projectionState = { ...emptyState(), forks: [{ ...provisionalFork, merge: { ...provisionalFork.merge, provisional: false } }] }
+		const notProvisional = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-1' })
+		check('不是临时采纳 → 409 not_provisional(不许把正式采纳再「认可」一遍)', notProvisional.status === 409 && notProvisional.payload?.error === 'not_provisional', `${notProvisional.status}/${notProvisional.payload?.error}`)
+		factHost.projectionState = { ...emptyState(), forks: [provisionalFork] }
+		const confirmed = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-1' })
+		check('临时采纳且门开着 → 200,并落一条署名是人的人门消息', confirmed.status === 200 && confirmed.payload?.action === 'confirm_provisional' && factHost.sent.at(-1).message?.source?.kind === 'user' && /f-1/.test(factHost.sent.at(-1).message.content[0].text), `${confirmed.status}/${String(factHost.sent.at(-1)?.message?.content?.[0]?.text).slice(0, 120)}`)
+		factHost.projectionState = { ...emptyState(), forks: [{ ...provisionalFork, merge: { ...provisionalFork.merge, confirmed: { at: 3, by: 'user' } } }] }
+		const twice = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-1' })
+		check('已经认可过 → 409 already_confirmed(第一次认可为准)', twice.status === 409 && twice.payload?.error === 'already_confirmed', `${twice.status}/${twice.payload?.error}`)
 	}
 
 	// ① 动词白名单:表外的动作一律拒(与贡献表同一套纪律:表外的名字不许出现)
@@ -250,8 +268,8 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	 * 砍掉的三个(confirm_plan / invoke_skill / set_autonomy)不许长回来。
 	 */
 	check(
-		'白名单恰好是那五个动词(砍掉的重复项不许回来:confirm_plan / invoke_skill / set_autonomy)',
-		[...HUMAN_GATE_ACTIONS].sort().join(',') === ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact'].sort().join(','),
+		'白名单恰好是那六个动词(砍掉的重复项不许回来:confirm_plan / invoke_skill / set_autonomy)',
+		[...HUMAN_GATE_ACTIONS].sort().join(',') === ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional'].sort().join(','),
 		HUMAN_GATE_ACTIONS.join(','),
 	)
 

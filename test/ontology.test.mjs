@@ -74,6 +74,25 @@ console.log('\n【① 事件面:每一条边声明的 event,折法必须真认�
 	}
 }
 
+console.log('\n【①′ 验证状态表:每一行都要指得出今天的落点】')
+{
+	/**
+	 * 这张表曾经是一台「存储式状态机」的设计目标,而**没有一行有落点**;文档自己承认它是设计目标,
+	 * 但读者没法知道每个名字今天到底在哪。改写之后它是**落点记录**:每个状态要么指得出折法里的事实、
+	 * 要么明说「刻意不可表示 / 不是状态」。
+	 *
+	 * 这条断言就是那份记录的机械面:以后往里加一行而没写落点,当场红。
+	 */
+	const doc = readFileSync(join(PORT, 'docs', 'verification-loop.md'), 'utf8')
+	const rows = [...doc.matchAll(/^\| (planned|registered|authorized|submitted|awaiting|observed|evaluated|expired|aborted) \|([^|]*)\|([^|]*)\|/gm)]
+	check('状态表读得到全部九个名字(表被删或改名都会红)', rows.length === 9, `${rows.length} 行`)
+	/** 落点词:折法里真有的变更类型 / 现算函数 / 明确的「不是状态」。 */
+	const LANDING = /(Unrepresentable by design|unrepresentable|not a state|Facts, not a state|derive\(\)|plan\/|audit\/|observation\/|evidence\/|human\/released|VoidPlanStep|AbandonFork|inFlight|block\/counted|tests: \{hypothesis, level\}|l4Delivery)/
+	const homeless = rows.filter((row) => !LANDING.test(row[3])).map((row) => row[1])
+	check('每一行都指得出今天的落点(事实 / 现算 / 刻意不可表示)', homeless.length === 0, homeless.join(','))
+	check('表头写明它是落点记录,不是运行时保证', /Where it lives today/.test(doc) && /derived, not stored/i.test(doc))
+}
+
 console.log('\n【② 守卫:声明里每一个具名守卫,核心里真有那一处实现】')
 {
 	/**

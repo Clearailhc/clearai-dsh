@@ -390,6 +390,13 @@ export function apply(ctx) {
 			 * 这里如果不核,面板会收到一句成功、而账本上一字未改——「点了报成功、什么都没做」
 			 * 正是这套界面最不能有的那类东西。
 			 */
+			if (action === 'confirm_provisional') {
+				const projected = view(stateOf(sessionId))
+				const fork = (projected.forks ?? []).find((item) => item.id === detail.fork)
+				if (fork === undefined) return reply(409, { ok: false, error: 'fork_not_found' })
+				if (fork.merge?.provisional !== true) return reply(409, { ok: false, error: 'not_provisional' })
+				if (fork.merge?.confirmed !== null && fork.merge?.confirmed !== undefined) return reply(409, { ok: false, error: 'already_confirmed' })
+			}
 			if (action === 'retract_fact' || action === 'keep_fact') {
 				const projected = view(stateOf(sessionId))
 				const fact = (projected.facts ?? []).find((item) => item.id === detail.value)
@@ -434,13 +441,17 @@ export function apply(ctx) {
 					? `人在面板上裁决:采纳这条世界线(${detail.branch ?? '?'})。`
 					: action === 'promote_skill'
 						? `人在面板上采纳了候选技能「${detail.skill ?? '?'}」——它从此进你的技能目录。`
-						: action === 'retract_fact'
+						: action === 'confirm_provisional'
+							? `人复核了那次**临时采纳**(${detail.fork ?? '?'})并认可它:这个结论不再是「待复核」。`
+							: action === 'retract_fact'
 							? `人审查了被推翻的那条事实(${detail.value ?? '?'})后决定**撤回**它${detail.note === null ? '' : `,缘由:${detail.note}`}。`
 							: action === 'keep_fact'
 								? `人审查了被推翻的那条事实(${detail.value ?? '?'})后判定**证据不可靠,维持原事实**${detail.note === null ? '' : `,缘由:${detail.note}`}。`
 								: '人在面板上做了一个动作。'
 			const followUp =
-				action === 'retract_fact' || action === 'keep_fact'
+				action === 'confirm_provisional'
+					? '这条确认已经落账(`by:user`);那道门随之消失,续跑可以继续'
+					: action === 'retract_fact' || action === 'keep_fact'
 					? '这个决定已经落账,并会写进 `clear/knowledge/facts/` 那一份(下一轮引用它之前先看那条记录)'
 					: action === 'promote_skill'
 					? '候选状态正由内核改写(`status: active`),下一个回合它就在你的技能目录里'

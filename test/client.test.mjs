@@ -884,7 +884,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	{
 		const wordGate = {
 			...view,
-			inbox: [{ kind: 'provisional_review', title: '临时采纳待复核', summary: '分叉 x · 分差不足以称结论', plan: 'p-1', step: 's1', human_action: null, needs: 'word', ask: '认可就说一句话(比如「认可,继续」);要改判据就重做一条' }],
+			// 「要一句话」的门现在只剩计划受阻那一种(临时采纳已经有按钮了)。
+			inbox: [{ kind: 'plan_blocked', title: '计划被拦', summary: '连续 2 次未过观测准入:产物没落盘', plan: 'p-1', step: 's1', human_action: null, needs: 'word', ask: '说一句怎么改(改计划 / 补判据),语义判断归模型' }],
 			hasOpenGate: true,
 		}
 		const inboxText = react.render(components.Inbox({ data: wordGate })).replace(/\s+/g, ' ')
@@ -911,6 +912,17 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			}
 			const text = react.render(components.Inbox({ data: refuted })).replace(/\s+/g, ' ')
 			check('被推翻的事实:撤回与维持两个按钮都在(少一个那道门就没有出口)', /撤回事实/.test(text) && /维持原事实/.test(text), text.slice(0, 200))
+			/**
+			 * 临时采纳那道门:认可是它的机械出口。「认可就什么都不用做」的写法有个洞——
+			 * 门开着按住续跑,于是系统一直等一个永远不会来的动作。
+			 */
+			const provisional = { ...view, hasOpenGate: true, inbox: [{ kind: 'provisional_review', title: '临时采纳待复核', summary: '走哪条 · 已临时采纳「甲」:分差不足以称结论', plan: 'p-1', step: 's1', fork: 'f-1', human_action: 'confirm_provisional', needs: 'click', ask: '要改判据就重做一条世界线(说一句即可)' }] }
+			const provisionalText = react.render(components.Inbox({ data: provisional })).replace(/\s+/g, ' ')
+			check('临时采纳那道门:给「认可,继续」按钮(不再只是「说一句话就行」)', /认可,继续/.test(provisionalText) && !/说一句话就行/.test(provisionalText), provisionalText.slice(0, 180))
+			/** 从没被走过的等级:面板也要看得见(与卡片同一个读数)。 */
+			const skipped = { ...view, goal: { ...(view.goal ?? { claim: 'x', doneCriteria: 'y', status: 'open', revision: 1, promoteAtLevel: 'L3', phase: 'executing', progress: 0.5 }), hypotheses: [{ id: 'h-1', claim: 'X 比 Y 快', refuteWhen: 'Y 更快', status: 'alive', supportedLevel: 'L3', refutations: 0, inconclusive: 0, untouchedLevels: ['L0', 'L1', 'L2'] }] } }
+			const propText = react.render(components.PropositionShelf({ data: skipped })).replace(/\s+/g, ' ')
+			check('命题行标出「未走过 L0/L1/L2」(跳级要看得见)', /未走过 L0\/L1\/L2/.test(propText), propText.slice(0, 200))
 			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
 			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻,等你决定/.test(shelf), shelf.slice(0, 180))
 			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }
