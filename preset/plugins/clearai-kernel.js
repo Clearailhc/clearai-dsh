@@ -1124,6 +1124,18 @@ export function apply(ctx, config = {}) {
 			`- **你这一个方案**:${branch.label} —— ${branch.approach}`,
 			`- **判定标准(你必须做到,并且可被客观核对)**:${branch.done_criteria}`,
 			`- 裁决指标:${fork.decide_by?.metric ?? '(未登记)'}(${fork.decide_by?.direction === 'min' ? '越小越好' : '越大越好'})`,
+			/**
+			 * **声明的物证路径必须告诉干活的人**。
+			 *
+			 * 它们是模型在开分叉那一刻写下的,而交付时内核会**逐条要求这些路径在执行者的工作副本里
+			 * 真的存在**(`branch_artifact_missing`)。可执行者是另一个 fresh agent,先前这份任务书
+			 * 只给了判据与方案——等于「宣布了证据该放哪,却从没告诉干活的人」。执行者于是按自己的判断
+			 * 写到别处,交付时按声明路径核对必然落空,只剩"事后拷一份到那个路径"这条路:那份拷贝
+			 * 不是证据真正产生的地方,而账本会把它当成物证。
+			 */
+			...(Array.isArray(branch.artifacts) && branch.artifacts.length > 0
+				? [`- **交付物必须落在这些路径(你的工作副本内的相对路径;交付时内核逐条核对存在)**:${branch.artifacts.join('、')}`]
+				: []),
 			`- 你的工作副本(读写都在这里面):${branch.workspace}`,
 			'',
 			'你不知道也不要去猜别的方案。做完就把**结论与产物路径**写进最终答复:',
@@ -3490,7 +3502,7 @@ export function apply(ctx, config = {}) {
 				mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
 				// 交付点落一次账本提交:一次提交 = 「这一步交付时工作区长什么样」。
 				// 只前进、来源可考(提交信息里写着是哪个计划的哪一步)。
-				const committed = commitLedger(cwd, `clearai: 交付 ${plan.id}/${step.id} — ${String(step.do).slice(0, 60)}`)
+				const committed = commitLedger(cwd, `clearai: 交付 ${plan.id}/${step.id} — ${String(step.do).slice(0, 60)}`, { allowEmpty: true })
 				if (committed.ok === true && committed.skipped !== true) {
 					mutations.push({ t: 'git/committed', commit: committed.commit, step: step.id, plan: plan.id, mode: committed.mode, reason: '交付点' })
 					ledgerNote = `\n账本:这次交付已记为一条提交(${String(committed.commit ?? '').slice(0, 7)}${committed.mode === 'ledger' ? ',旁路账本' : ''})。`
@@ -3653,28 +3665,36 @@ export function apply(ctx, config = {}) {
 		const calls = Number(state?.writeCalls ?? 0)
 		if (calls <= 0 || lastWorkspaceSnapshot.get(sessionId) === calls) return ''
 		lastWorkspaceSnapshot.set(sessionId, calls)
-		const committed = commitLedger(cwd, `clearai: 探索期快照 — 第 ${turn} 回合(本会话尚未交付的写入)`)
+		const committed = commitLedger(cwd, `clearai: 探索期快照 — 第 ${turn} 回合中尚未交付的写入`)
 		if (committed.ok !== true) {
 			ctx.logger?.warn?.(`clearai: 工作区快照失败 ${String(committed.reason ?? '').slice(0, 160)}`)
 			return ''
 		}
 		if (committed.skipped === true) return ''
 		// 落一条**台账事实**:系统对工作区做过什么,日志里要说得出来(与交付那笔同一条纪律)。
-		mutations.push({ t: 'git/snapshot', commit: committed.commit, reason: '探索期快照(回合边界)', turn })
+		mutations.push({ t: 'git/snapshot', commit: committed.commit, reason: '探索期快照(尚未交付的写入)', turn })
 		const short = committed.commit === null ? '' : `(${String(committed.commit).slice(0, 7)})`
 		return `\n(工作区已记入账本${short}:探索期的产出从此可查、可恢复——不需要你为它声明什么。)`
 	}
 
 	/** 在**当前工作区**上落一次账本提交;没有改动就不提交(空提交是噪音)。 */
-	function commitLedger(cwd, message) {
+	function commitLedger(cwd, message, options = {}) {
 		// 把这一步的信息带进建基线那一笔:懒建账本时,基线就是这一步的提交。
 		const context = gitContext(cwd, message)
 		if (context.mode === null) return { ok: false, reason: context.reason ?? '没有可用的 git' }
 		const added = gitAt(context, ['add', '-A'])
 		if (added.ok !== true) return { ok: false, reason: `add 失败:${(added.err || '').split('\n')[0]}` }
 		const status = gitAt(context, ['status', '--porcelain'])
-		if (status.ok === true && status.out.trim() === '') return { ok: true, skipped: true, commit: null, mode: context.mode }
-		const committed = gitAt(context, [...GIT_IDENTITY, 'commit', '-qm', message])
+		const clean = status.ok === true && status.out.trim() === ''
+		/**
+		 * **交付点是一笔具名事件**:工作树与上一次探索期快照相同时,它也要留下一条提交。
+		 *
+		 * 不然账本里就没有「这一步交付时工作区长什么样」这条记录:交付前恰好有一次快照把那棵树
+		 * 先提交了,交付那笔就变成空提交,于是**交付点在账上消失**。只有交付点传 `allowEmpty`:
+		 * 快照本来就是"有变化才记",它没有这条义务。
+		 */
+		if (clean && options.allowEmpty !== true) return { ok: true, skipped: true, commit: null, mode: context.mode }
+		const committed = gitAt(context, [...GIT_IDENTITY, 'commit', '-qm', message, ...(clean ? ['--allow-empty'] : [])])
 		if (committed.ok !== true) {
 			const detail = `${committed.err || committed.out || ''}`.split('\n')[0]
 			if (/nothing to commit|working tree clean|无文件要提交/i.test(detail)) return { ok: true, skipped: true, commit: null, mode: context.mode }
@@ -4366,7 +4386,12 @@ export function apply(ctx, config = {}) {
 					} catch {
 						/* 不存在 */
 					}
-					return fail('branch_artifact_missing', `世界线 ${branch.label} 声明的产物没落盘:${branch.workspace}/${artifact}`)
+					return fail(
+						'branch_artifact_missing',
+						`世界线 ${branch.label} 声明的产物没落盘:${branch.workspace}/${artifact}。\n` +
+							'**不要为了过关把文件拷到这个路径下**:账本上那条物证路径会因此指向一个"证据并不是在这里产生的"位置。' +
+							'要么让执行者把产物写到声明路径(重开一条世界线),要么把这条世界线的物证改成它**真的**写出来的路径。',
+					)
 				}
 			}
 			// 交付要有物证:世界线也不例外

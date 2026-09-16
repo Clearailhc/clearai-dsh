@@ -3222,6 +3222,32 @@ console.log('\n【账本:交付点落一条提交,恢复是一条新提交】')
 	check('提交里没有这个文件 → 拒绝(不写坏东西)', ghost.ok === false && ghost.code === 'not_in_commit', String(ghost.code))
 }
 
+console.log('\n【账本:交付点不会被探索期快照顶掉】')
+{
+	/**
+	 * 长测抓到的洞:探索期快照先提交了那棵树,紧接着的**交付提交**变成空提交 ⇒
+	 * `commitLedger` 按「树干净就不提交」的纪律静默跳过 ⇒ 账本里**没有这条交付**。
+	 * 交付点是一笔**具名事件**(它记的是"这一步交付时工作区长什么样"),所以它必须留着;
+	 * 快照本来就是「有变化才记」,没有这条义务。
+	 */
+	const host = makeHost()
+	apply(host.ctx, {})
+	const S = 'session-ledger-snapshot'
+	await callOn(host, S, 'SetGoal', { claim: '把产物做出来', done_criteria: 'lab/snap-probe.txt 存在', hypotheses: [{ claim: '能一次做成', refute_when: '做不成' }] })
+	const hypothesis = host.service.state(S).hypotheses[0].id
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'p1', do: '写第一版', artifacts: ['lab/snap-probe.txt'], done_criteria: 'lab/snap-probe.txt 存在', tests: { hypothesis, level: 'L0' } }] })
+	write('lab/snap-probe.txt', 'v1\n')
+	// 造一次「本回合有写入」:快照正是按这个读数触发的。
+	host.states.set(S, { ...host.service.state(S), writeCalls: 1 })
+	await preStep(host, S, 1, [])
+	check('探索期快照确实落了账(它先提交了这棵树)', host.journal.some((mutation) => mutation.t === 'git/snapshot'), JSON.stringify(host.journal.map((mutation) => mutation.t)))
+	check('快照的措辞不撒谎:它写的是「尚未交付的写入」,不是「回合边界」以外的承诺', /尚未交付的写入/.test(String(host.journal.find((mutation) => mutation.t === 'git/snapshot')?.reason ?? '')), String(host.journal.find((mutation) => mutation.t === 'git/snapshot')?.reason))
+	// L0 由做的人自己判:交付要带 verdict 与可复查的依据。
+	const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'p1', verdict: 'support', basis: 'lab/snap-probe.txt 里写着 v1' })
+	const committed = host.journal.filter((mutation) => mutation.t === 'git/committed' && mutation.step === 'p1')
+	check('树相同时交付仍然是**一条提交**(交付点不许在账上消失)', delivered.ok === true && committed.length === 1 && typeof committed[0].commit === 'string' && committed[0].commit.length >= 7, `${delivered.code}/${JSON.stringify(committed)}`)
+}
+
 console.log('\n【连拦计数 → 计划 blocked,停下等人】')
 {
 	await call('CreatePlan', { steps: [{ id: 'u1', do: '做一个不会落盘的产物', artifacts: ['lab/never.txt'], done_criteria: 'lab/never.txt 存在且非空' }] })
