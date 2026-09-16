@@ -9,12 +9,12 @@
 ## 计数
 
 - 机制条目：**57**
-- 按状态：已实现 50 · 部分实现 2 · 设计目标 1 · 已删除 4
+- 按状态：已实现 51 · 部分实现 1 · 设计目标 1 · 已删除 4
 - 按强度：硬边界 40 · 建议 9 · 原生 3 · 仅提示词 1 · 废弃 4
-- 按归宿：变成机制 1 · 保持设计目标 2 · 已删除并记账 4
+- 按归宿：保持设计目标 2 · 已删除并记账 4
 - 真正阻断执行的：**17**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**3**
+- 存在已知不符（文档 / 注释与代码不一致）的：**2**
 
 ## 代码常量快照
 
@@ -54,7 +54,7 @@
 | `l4-universal-gate` | 覆盖每一次评估的通用 L4 门 | 认识论 | 设计目标 | 建议 | 无 | human | 否 | 否 | `docs/known-gaps.md` |
 | `verification-lifecycle` | 验证生命周期:哪些保证是活的 | 认识论 | 已实现 | 建议 | 无 | system | 否 | 否 | `preset/plugins/clearai-kernel.js countBlock` |
 | `fact-retraction` | 事实撤回:人审查后决定 | 认识论 | 已实现 | 硬边界 | 权威 | human | 否 | 否 | `preset/plugins/clearai-kernel.js markFactReviewed` |
-| `observation-provenance` | 观测来源:声明必须与生产者对得上 | 认识论 | 部分实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
+| `observation-provenance` | 观测来源:声明必须与生产者对得上 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/ontology.js VERIFICATION_LOOP` |
 | `plan-auto-confirm` | 已删除:无人值守立约即授权 | 认识论 | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/plugins/prompts.js exploration-rhythm` |
@@ -744,18 +744,16 @@
 
 ### `observation-provenance` · 观测来源:声明必须与生产者对得上
 
-- **层**：认识论 · **状态**：部分实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：交付时登记观测(主线或世界线)
 - **输入**：ref + note
-- **输出**：mutation observation/recorded（source 只写过 self 与 scout）
+- **输出**：mutation observation/recorded（source 只有 self 与 scout）
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：类型的职责是**只声明今天真的可表示的东西**:内核只有两处写 `self`、一处写 `scout`,而 ontology 的 `source.values` 列了五个取值。多出来的那四个既没有生产者,也没有任何决策消费它们。
-- **归宿**：变成机制
-- **代码**：preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'
-- **测试**：test/kernel.test.mjs · **配置**：—
+- **理由**：类型的职责是**只声明今天真的可表示的东西**:内核只写过 `self`(主线/世界线的交付)与 `scout`(侦察),所以 `source` 只声明这两个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。
+- **代码**：preset/plugins/ontology.js VERIFICATION_LOOP; preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'
+- **测试**：test/kernel.test.mjs; test/ontology.test.mjs（声明取值与生产者逐一对齐） · **配置**：—
 - **提示词**：— · **文档**：docs/verification-loop.md
-- **已知不符**：ontology 声明 `source` 可取 `human_upload` / `file_drop` / `callback` / `pull`,而这四个**没有任何生产者**,也没有任何决策消费它们——类型里的假话。
 
 ### `set-autonomy` · 已删除:人在面板上切换运行档
 

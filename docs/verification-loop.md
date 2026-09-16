@@ -17,7 +17,7 @@ How a conjecture becomes a fact that can be cited with confidence. This document
 > 1. **The eight-state verification machine** is designed, not implemented; only the subset above actually runs.
 > 2. ~~**`retracted` has no producer**~~ — **implemented**: refuting evidence only *marks* a promoted fact (`refuted`, derived) and raises an inbox item; a human decides to **retract** it or to judge the evidence unreliable and **keep** the fact. Both outcomes land as one `fact/reviewed` mutation (a retraction is terminal; the record is kept), and the fact's own file under `clear/knowledge/facts/` records the review.
 > 3. **A universal L4 gate over every evaluation** is not implemented; the human release that exists hangs on the step/branch axis.
-> 4. **Observation provenance has only ever been written as `self` and `scout`**; other origins exist in the type with no producer.
+> 4. **Observation provenance declares exactly what has a producer.** `source` used to list five origins while only `self` and `scout` were ever written. The type now declares those two, and `test/ontology.test.mjs` checks the declared set against the set the kernel actually writes — a value may exist only when something produces it *and* something decides on it.
 >
 > **One easily misread fact**: a step's declared level only decides **who may write a verdict** (L0–L2 self-judged by the doer, L3 and above refusing self-judgment) and **the L4 human gate**. It does **not** drive evaluator dispatch. Dispatch is triggered by admission deciding `needs_audit` (declared artifacts complete **and** `done_criteria` non-empty). So a step at L3 or above without `done_criteria` takes the deterministic release exit and **never passes through independent evaluation**.
 

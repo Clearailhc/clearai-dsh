@@ -74,6 +74,31 @@ console.log('\n【① 事件面:每一条边声明的 event,折法必须真认�
 	}
 }
 
+console.log('\n【⑤ 类型只许声明今天真能发生的取值:每个取值都要有生产者】')
+{
+	/**
+	 * 病灶:ontology 的 `source` 声明了五个取值,而内核只写过两个——
+	 * 「声明了「有种观测来自人上传」,而那条路根本不存在」是类型里的一句假话,
+	 * 而类型是给模型读的(它会据此以为可以指望那种观测)。
+	 *
+	 * 判据是**逐一对齐**:声明的取值集合 = 内核真的写过的取值集合。
+	 * 将来真接上一个人上传入口,这条会红,那时回来把取值加进声明即可。
+	 */
+	const observation = VERIFICATION_LOOP.objects.find((item) => item.name === 'observation')
+	const declared = observation.fields.find((field) => field.name === 'source')?.values ?? []
+	/**
+	 * 取「某条 `observation/recorded` 之后不远处」的 `source:`:不能用 `[^}]` 跨——
+	 * 生成材料 id 的模板字符串里就带 `}`,一跨就断(这条断言自己撞过一次)。
+	 */
+	const produced = new Set()
+	for (const chunk of kernelSource.split("t: 'observation/recorded'").slice(1)) {
+		const hit = /source: '([a-z_]+)'/.exec(chunk.slice(0, 400))
+		if (hit !== null) produced.add(hit[1])
+	}
+	check('折法/内核真的写过来源(不是空集)', produced.size > 0, [...produced].join(','))
+	check('声明的来源取值与实际生产者逐一对齐(多一个就是类型里的假话)', declared.length === produced.size && declared.every((value) => produced.has(value)), `声明:${declared.join(',')} · 实际:${[...produced].join(',')}`)
+}
+
 console.log('\n【①′ 验证状态表:每一行都要指得出今天的落点】')
 {
 	/**

@@ -9,12 +9,12 @@ This table answers one question: **what the current code actually guarantees**. 
 ## Counts
 
 - Mechanisms: **57**
-- By status: Implemented 50 · Partial 2 · Design only 1 · Removed 4
+- By status: Implemented 51 · Partial 1 · Design only 1 · Removed 4
 - By strength: Hard boundary 40 · Advisory 9 · Native 3 · Prompt only 1 · Deprecated 4
-- By destination: becomes a mechanism 1 · stays design-only 2 · deleted and accounted 4
+- By destination: stays design-only 2 · deleted and accounted 4
 - Actually blocking execution: **17**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **3**
+- Carrying a known mismatch between docs/comments and code: **2**
 
 ## Code constant snapshot
 
@@ -54,7 +54,7 @@ This section is exported from code, not written by hand:
 | `l4-universal-gate` | A universal L4 gate over every evaluation | Epistemic | Design only | Advisory | None | human | no | no | `docs/known-gaps.md` |
 | `verification-lifecycle` | Verification lifecycle: which guarantees are live | Epistemic | Implemented | Advisory | None | system | no | no | `preset/plugins/clearai-kernel.js countBlock` |
 | `fact-retraction` | Fact retraction by human decision | Epistemic | Implemented | Hard boundary | Authoritative | human | no | no | `preset/plugins/clearai-kernel.js markFactReviewed` |
-| `observation-provenance` | Observation provenance: declared sources vs producers | Epistemic | Partial | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
+| `observation-provenance` | Observation provenance: declared sources vs producers | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/ontology.js VERIFICATION_LOOP` |
 | `plan-auto-confirm` | Removed: unattended plans auto-confirmed themselves | Epistemic | Removed | Deprecated | None | system | no | no | — |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | no | `preset/plugins/prompts.js exploration-rhythm` |
@@ -744,18 +744,16 @@ This section is exported from code, not written by hand:
 
 ### `observation-provenance` · Observation provenance: declared sources vs producers
 
-- **Layer**: Epistemic · **Status**: Partial · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: 交付时登记观测(主线或世界线)
 - **Input**: ref + note
-- **Output**: mutation observation/recorded（source 只写过 self 与 scout）
+- **Output**: mutation observation/recorded（source 只有 self 与 scout）
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 类型的职责是**只声明今天真的可表示的东西**:内核只有两处写 `self`、一处写 `scout`,而 ontology 的 `source.values` 列了五个取值。多出来的那四个既没有生产者,也没有任何决策消费它们。
-- **Destination**: becomes a mechanism
-- **Code**: preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'
-- **Tests**: test/kernel.test.mjs · **Config**: —
+- **Rationale**: 类型的职责是**只声明今天真的可表示的东西**:内核只写过 `self`(主线/世界线的交付)与 `scout`(侦察),所以 `source` 只声明这两个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。
+- **Code**: preset/plugins/ontology.js VERIFICATION_LOOP; preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'
+- **Tests**: test/kernel.test.mjs; test/ontology.test.mjs（声明取值与生产者逐一对齐） · **Config**: —
 - **Prompt**: — · **Docs**: docs/verification-loop.md
-- **Known mismatch**: ontology 声明 `source` 可取 `human_upload` / `file_drop` / `callback` / `pull`,而这四个**没有任何生产者**,也没有任何决策消费它们——类型里的假话。
 
 ### `set-autonomy` · Removed: switching the run tier from the panel
 

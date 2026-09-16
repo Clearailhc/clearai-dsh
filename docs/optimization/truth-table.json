@@ -1319,26 +1319,25 @@
    "name": "观测来源:声明必须与生产者对得上",
    "name_en": "Observation provenance: declared sources vs producers",
    "layer": "epistemic",
-   "status": "partial",
+   "status": "implemented",
    "hardness": "hard",
    "authority": "authoritative",
    "actor": "system",
    "source": {
-    "code": "preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'",
-    "tests": "test/kernel.test.mjs",
+    "code": "preset/plugins/ontology.js VERIFICATION_LOOP; preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'",
+    "tests": "test/kernel.test.mjs; test/ontology.test.mjs（声明取值与生产者逐一对齐）",
     "config": null,
     "prompt": null,
     "docs": "docs/verification-loop.md"
    },
    "trigger": "交付时登记观测(主线或世界线)",
    "input": "ref + note",
-   "output": "mutation observation/recorded（source 只写过 self 与 scout）",
+   "output": "mutation observation/recorded（source 只有 self 与 scout）",
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": null,
-   "rationale": "类型的职责是**只声明今天真的可表示的东西**:内核只有两处写 `self`、一处写 `scout`,而 ontology 的 `source.values` 列了五个取值。多出来的那四个既没有生产者,也没有任何决策消费它们。",
-   "destination": "become-mechanism",
-   "known_mismatch": "ontology 声明 `source` 可取 `human_upload` / `file_drop` / `callback` / `pull`,而这四个**没有任何生产者**,也没有任何决策消费它们——类型里的假话。"
+   "rationale": "类型的职责是**只声明今天真的可表示的东西**:内核只写过 `self`(主线/世界线的交付)与 `scout`(侦察),所以 `source` 只声明这两个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。",
+   "known_mismatch": null
   },
   {
    "id": "set-autonomy",
