@@ -545,6 +545,11 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	)
 
 	rejects('配置键名写错(拼错 autonomy)→ 装配期抛错', { autonomoy: 'unattended' }, /unknown_config:clearai-kernel:autonomoy/)
+	// 两个键(`collectRetryMs` / `executorTimeoutMs`)在白名单里躺了很久却**没有任何读者**:
+	// 一个描述的策略早被「回合 epoch 去重」取代,一个承诺的执行者超时根本不存在。它们已经摘除,
+	// 旧配置必须当场炸——「配了没生效」正是这套装配纪律要消灭的那一类错。
+	rejects('已摘除的 collectRetryMs 不再被接受(它从来没有人读)', { collectRetryMs: 0 }, /unknown_config:clearai-kernel:collectRetryMs/)
+	rejects('已摘除的 executorTimeoutMs 不再被接受(它从来没有人读)', { executorTimeoutMs: 1 }, /unknown_config:clearai-kernel:executorTimeoutMs/)
 
 	// 部署的组合文件必须只用已知的配置键(文本级抽取,不是 YAML 解析:顶层 config 键在 4 空格缩进)。
 	{
@@ -2624,7 +2629,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	 */
 	{
 		const first = makeHost()
-		apply(first.ctx, { blockedThreshold: 3, collectRetryMs: 0 })
+		apply(first.ctx, { blockedThreshold: 3 })
 		const C = 'session-late-scout'
 		await callOn(first, C, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
 		await callOn(first, C, 'CreatePlan', { steps: [{ id: 'c1', do: '核材料', artifacts: ['lab/c1.txt'], done_criteria: 'lab/c1.txt 存在', tests: null }] })
@@ -2638,7 +2643,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		const second = makeHost()
 		second.states.set(C, first.service.state(C))
 		second.childSessions = { [child]: { id: child, header: { cwd: WORKSPACE }, ownEvents: () => events.slice() } }
-		apply(second.ctx, { blockedThreshold: 3, collectRetryMs: 0 })
+		apply(second.ctx, { blockedThreshold: 3 })
 		await preStep(second, C, 42)
 		await callOn(second, C, 'WorldlineStatus', {}) // 第一次捞:子会话还没 turn/end ⇒ 捞不到(而且不该动它)
 		check('子会话还没跑完 ⇒ 不动它(不是「失败」,是「还在跑」)', second.service.state(C).scouts.at(-1)?.conclusion === null, JSON.stringify(second.service.state(C).scouts.at(-1)?.conclusion ?? null))
@@ -2658,7 +2663,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	 */
 	{
 		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3, collectRetryMs: 0 })
+		apply(host.ctx, { blockedThreshold: 3 })
 		const SR = 'session-retry'
 		await callOn(host, SR, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
 		await callOn(host, SR, 'CreatePlan', { steps: [{ id: 'rt1', do: '核材料', artifacts: ['lab/rt1.txt'], done_criteria: 'lab/rt1.txt 存在', tests: null }] })
@@ -2782,7 +2787,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	 */
 	{
 		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3, collectRetryMs: 0 })
+		apply(host.ctx, { blockedThreshold: 3 })
 		const E = 'session-epoch'
 		await callOn(host, E, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
 		await callOn(host, E, 'CreatePlan', { steps: [{ id: 'e1', do: '核材料', artifacts: ['lab/e1.txt'], done_criteria: 'lab/e1.txt 存在', tests: null }] })
@@ -2800,7 +2805,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	 */
 	{
 		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3, collectRetryMs: 0 })
+		apply(host.ctx, { blockedThreshold: 3 })
 		const SW = 'session-retry-wl'
 		await callOn(host, SW, 'SetGoal', { claim: '两条路线取一条', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 更好', refute_when: 'B 更好' }] })
 		await callOn(host, SW, 'CreatePlan', { steps: [{ id: 'rw1', do: '两条线路各试一遍', artifacts: ['lab/rw1.txt'], done_criteria: 'lab/rw1.txt 有读数', tests: null }] })
@@ -3839,6 +3844,35 @@ console.log('\n【什么都不删 + 降级不可表示 + 可从日志重放】')
 	const replayed = all.reduce((state, mutation) => applyMutations(state, [mutation]), emptyState())
 	check('状态可以从日志重放出来(投影的本质:状态不是被存下来的)', replayed.plans.length > 0 && view(replayed).plan !== null && derive(replayed).forks.length > 0)
 	check('重放出来的世界线仍然记得采纳与落选', derive(replayed).forks.some((fork) => fork.branches.some((branch) => branch.status === 'adopted') && fork.branches.some((branch) => branch.status === 'pruned')))
+}
+
+console.log('\n【首回合的系统事实:本体声明与货架那句话必须真的发出去】')
+{
+	/**
+	 * 「立约之前」那一回合走的是**无状态**那条出口(`hasState === false`),而本体那一次发布
+	 * 曾经排在 pre-step 的末尾——那条出口根本走不到它,而「本体已就位」这句话只说得一次
+	 * (说过就记进 `ontologyShelved`)⇒ 模型永远读不到货架在哪,面板也要等到立约之后才画得出本体。
+	 *
+	 * 所以这里钉的是**结果**:空投影下的第一次 pre-step,必须真的带出本体 section 与那句话。
+	 */
+	const fresh = makeHost()
+	apply(fresh.ctx, { blockedThreshold: 3 })
+	const decision = await preStep(fresh, 'session-first-turn', 1, [])
+	const sections = (decision?.messages ?? []).flatMap((message) => message?.source?.sections ?? [])
+	const ontology = sections.find((section) => section?.name === 'clearai/ontology')
+	check('空投影的第一次 pre-step 仍然 enter', decision?.kind === 'enter')
+	check('本体声明随首回合发出(不是被静默跳过)', ontology !== undefined)
+	let parsed = null
+	try {
+		parsed = JSON.parse(String(ontology?.text ?? ''))
+	} catch {
+		parsed = null
+	}
+	check('本体 section 是折法认得的形状(objects 数组)', Array.isArray(parsed?.objects) && parsed.objects.length > 0, String(ontology?.text ?? '').slice(0, 80))
+	check(
+		'「本体已就位」那句话在注记里(它只说一次,丢了就永远没了)',
+		sections.some((section) => section?.name === 'clearai' && String(section.text ?? '').includes('本体')),
+	)
 }
 
 console.log('\n【输出契约:工具返回值必须落在自己声明的 schema 里】')

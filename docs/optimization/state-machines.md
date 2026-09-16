@@ -263,8 +263,9 @@ stateDiagram-v2
 
 Notes:
 
-- `collectRetryMs` (default 2000ms) decides "re-collect while the projection has not landed yet" — the
-  criterion is the **projection**, not the in-memory `reported` flag.
+- A conclusion is re-published only while the **projection** has not landed it — the criterion is the
+  projection, not an in-memory "reported" flag. The retry cadence is the turn boundary, so there is no
+  interval knob.
 - `scout/settled` with the same id is idempotent in fold; a repeat never grows a second fact.
 - The scout tool face is read-only (`scoutToolFilter`), and `MapScouts` is bounded by `mapScoutMax` /
   `mapScoutConcurrency`.

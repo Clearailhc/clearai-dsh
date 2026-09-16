@@ -21,7 +21,7 @@ This section is exported from code, not written by hand:
 
 - Mechanisms: 6 (goal / plan / worldline / scout / brain / ledger)
 - Intent tools: 22 (SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile)
-- Config keys: 26
+- Config keys: 24
 - Prompt sections: 23 defined, 22 mounted at any moment (the clarification slot picks one of two)
 
 ## Summary
@@ -299,7 +299,7 @@ This section is exported from code, not written by hand:
 - **Native alternative**: none
 - **Rationale**: 互斥路线各占一份工作副本，互不污染。
 - **Code**: preset/plugins/clearai-kernel.js ForkPlan; prepareWorldlines; startWorldlineExecutor
-- **Tests**: test/kernel.test.mjs, tools/spike-git-worldlines.mjs · **Config**: gitWorldlines, autoDispatchExecutors, executorToolFilter, executorTimeoutMs
+- **Tests**: test/kernel.test.mjs, tools/spike-git-worldlines.mjs · **Config**: gitWorldlines, autoDispatchExecutors, executorToolFilter
 - **Prompt**: clearai/worldline · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `worldline-metric` · Pre-registered metric and arithmetic convergence
@@ -702,7 +702,7 @@ This section is exported from code, not written by hand:
 - **Native alternative**: subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构
 - **Rationale**: 子任务的生命周期必须由内核自己掌握:账本只认本进程攥着的句柄,结论送达由收集那一刻的返回完成;四种角色共用一套,差异只在人格、工具面与结果解释方式。
 - **Code**: preset/plugins/clearai-kernel.js dispatchSubRun / startWorldlineExecutor / runScout / runEvaluator / runArbiter / sweepScouts / sweepWorldlineExecutors / sweepLostExecutors / sweepLostScouts / publishedInEpoch / noticeBlock
-- **Tests**: test/kernel.test.mjs（含会话隔离用例）; tools/e2e-scenarios.mjs（模型可见性不变量） · **Config**: auditProvider=spawn, collectRetryMs, auditTimeoutMs
+- **Tests**: test/kernel.test.mjs（含会话隔离用例）; tools/e2e-scenarios.mjs（模型可见性不变量） · **Config**: auditProvider=spawn, auditTimeoutMs
 - **Prompt**: clearai/delegation · **Docs**: docs/optimization/e2e-longruns.zh-CN.md
 
 ---

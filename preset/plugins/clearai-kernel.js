@@ -443,14 +443,12 @@ export const CONFIG_KEYS = [
 	'maxAutoTurns',
 	'minBriefChars',
 	'l4RequiresHumanRelease',
-	'collectRetryMs',
 	'templateDir',
 	'l4RejectSelfWritten',
 	'minHypotheses',
 	'bashDenyRules',
 	'auditProvider',
 	'auditTimeoutMs',
-	'executorTimeoutMs',
 	'auditToolFilter',
 	'scoutToolFilter',
 	'gitWorldlines',
@@ -620,14 +618,6 @@ export function apply(ctx, config = {}) {
 		minBriefChars: config.minBriefChars ?? MIN_BRIEF_CHARS,
 		l4RequiresHumanRelease: config.l4RequiresHumanRelease !== false,
 		/**
-		 * 收上来的结论「多久没在投影里落地就重收一次」(缺省 2000ms)。
-		 * 为什么需要它:内存里的 `reported` 只是「我发布过」,不等于**事实已经到了账本上**
-		 * (失效模式:侦察结论发布后被丢掉,而条目已删、`reported` 已置位 ⇒ 永久丢)。
-		 * 判据改成看**投影**:投影里还没落地就再发一次(同 id 的 `scout/settled`/`worldline/executed`
-		 * 在 fold 里是幂等的,重复发布不会长出第二条事实)。
-		 */
-		collectRetryMs: Number.isFinite(config.collectRetryMs) ? Math.max(0, Number(config.collectRetryMs)) : 2000,
-		/**
 		 * 工作区模板目录(相对路径按**插件目录**解析,所以「随包走」是默认行为)。
 		 * 部署形态:预设自带的 `template/`(随包);dev/E2E:在补丁层里指回仓库那份。
 		 */
@@ -638,8 +628,6 @@ export function apply(ctx, config = {}) {
 		bashDenyRules: config.bashDenyRules !== false,
 		auditProvider: config.auditProvider ?? 'spawn',
 		auditTimeoutMs: config.auditTimeoutMs ?? 240000,
-		/** 世界线执行者做的是真活(跑脚本、算数据),给的时间比评估者长得多。 */
-		executorTimeoutMs: config.executorTimeoutMs ?? 900000,
 		// 三张脸的**候选**工具名。真正的 face 还要过一道「这个部署里到底有没有这件工具」的过滤
 		// (见 resolveToolFace):`read_image` 只在挂了 `attachments` 的部署里存在,名单里写了它、
 		// 部署里没有,`tools.restrict` 会**直接抛**(未知工具名)→ 侦察整条路 fail-closed。
@@ -5090,10 +5078,12 @@ export function apply(ctx, config = {}) {
 	}
 
 	/** 一条最简的插件消息(与运行态卡同一条通道,只是没有卡)。 */
-	function pluginNotice(payload, note, brainPayload, autonomyPayload = null, factMutations = []) {
+	function pluginNotice(payload, note, brainPayload, autonomyPayload = null, factMutations = [], ontologyPayload = null) {
 		const sections = [{ name: 'clearai', text: note }]
 		if (brainPayload !== null) sections.push({ name: 'clearai/brain', text: JSON.stringify(brainPayload) })
 		if (autonomyPayload !== null) sections.push({ name: 'clearai/autonomy', text: JSON.stringify(autonomyPayload) })
+		// 与 `brainSections` 同一份形状:这条通道也可能**只**带本体(第一回合、状态还没立起来)。
+		if (ontologyPayload !== null) sections.push({ name: 'clearai/ontology', text: JSON.stringify(ontologyPayload) })
 		/**
 		 * 内核在**回合之间**观察到的事实变更(目前是「世界线执行者跑完了」)。
 		 * 与工具结果里的 `meta.mutations` 同形,所以投影那一侧直接 `applyMutations` —— 一个折法。
@@ -5658,6 +5648,16 @@ export function apply(ctx, config = {}) {
 		if (autonomyPayload !== null && brainNote === '') brainNote = `\n(运行档:${autonomyPayload.value === 'unattended' ? '无人值守' : '人在场'}。)`
 
 		/**
+		 * 本体声明与运行档**同一类**:会话级事实,第一回合就该到,所以在这里发。
+		 *
+		 * 为什么不能留在函数末尾:它下面是两条**早起返回**(无卡档 / 无状态档),而它们正是
+		 * 「立约之前」那条路唯一的出口。留在末尾,这份声明就只能在会话**已经有状态**之后才到;
+		 * 而卡里那句「本体已就位」只说得了一次(说过就记进 `ontologyShelved`,早起返回又不带它)
+		 * ⇒ 模型永远读不到货架在哪,面板也要等到立约之后才画得出本体页眉。
+		 */
+		const ontologyPayload = publishOntology(sessionId)
+
+		/**
 		 * **世界线结论的回灌**:`ForkPlan` 把执行者放出去就返回(事实先落账),
 		 * 结论由这里收——每个回合扫一次已落定的执行者,把 `worldline/executed` 当作**事实**注入。
 		 *
@@ -5745,17 +5745,23 @@ export function apply(ctx, config = {}) {
 			ctx.logger?.warn?.(`clearai: 盘上残留读数失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
 
+		/**
+		 * 无卡通道的注记 = 卡里那几句(工作区、本体、事实货架)。
+		 * 这条通道正是「还没有状态」那一回合唯一的出口,而本体货架那句话**只说一次**
+		 * (说完就记进 `ontologyShelved`)——不带它,这一回合就是把那句话永久丢掉。
+		 */
+		const noticeNote = `${brainNote}${ontologyNote}`
 		if (!CFG.runtimeCard) {
-			if (brainNote === '' && brainPayload === null && autonomyPayload === null && ontologyPayload === null && factMutations.length === 0) return decision
-			return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, brainNote, brainPayload, autonomyPayload, factMutations)] }
+			if (noticeNote === '' && brainPayload === null && autonomyPayload === null && ontologyPayload === null && factMutations.length === 0) return decision
+			return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, noticeNote, brainPayload, autonomyPayload, factMutations, ontologyPayload)] }
 		}
 		let card
 		let rearmNote = ''
 		try {
 			const state = hostService.state(sessionId)
 			if (!hasState(state)) {
-				if (brainNote === '' && brainPayload === null && autonomyPayload === null && ontologyPayload === null && factMutations.length === 0) return decision
-				return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, brainNote, brainPayload, autonomyPayload, factMutations)] }
+				if (noticeNote === '' && brainPayload === null && autonomyPayload === null && ontologyPayload === null && factMutations.length === 0) return decision
+				return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, noticeNote, brainPayload, autonomyPayload, factMutations, ontologyPayload)] }
 			}
 			// 档位不再随回合变化(它是部署预设的初值)⇒ 卡片照投影渲染,没有"本回合的新档"要覆盖。
 			card = hostService.renderCard(sessionId)
@@ -5781,7 +5787,6 @@ export function apply(ctx, config = {}) {
 		if (workspaceNote !== '') card = `${card}${workspaceNote}`
 		if (ontologyNote !== '') card = `${card}${ontologyNote}`
 		if (factsNote !== '') card = `${card}${factsNote}`
-		const ontologyPayload = publishOntology(sessionId)
 		// 外脑的事实走**结构化 section**(不是卡里的散文):fold 从会话日志里把它折进投影,
 		// 于是「有哪些候选技能」与「谁采纳了它」都是**可重放的事实**,不是一句说明。
 		const brainSections = [
@@ -5795,7 +5800,7 @@ export function apply(ctx, config = {}) {
 			// 卡片没变,但**外脑事实变了**(目录是最常见的一种:人在外面加了一条技能,状态一动没动):
 			// 只发事实、不重发卡片——重发卡片是往会话里塞一段没变的长文(白花 token,还多一条噪音)。
 			if (brainSections.length === 0 && autonomyPayload === null && ontologyPayload === null && factMutations.length === 0) return decision
-			return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, brainNote, brainPayload, autonomyPayload, factMutations)] }
+			return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, noticeNote, brainPayload, autonomyPayload, factMutations, ontologyPayload)] }
 		}
 		lastCard.set(sessionId, card)
 		return {

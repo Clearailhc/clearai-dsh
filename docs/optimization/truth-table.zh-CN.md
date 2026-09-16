@@ -21,7 +21,7 @@
 
 - 机制：6 个（goal / plan / worldline / scout / brain / ledger）
 - 意图工具：22 件（SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile）
-- 配置键：26 个
+- 配置键：24 个
 - 提示词段：定义 23 段，同一时刻在场 22 段（槽位 clarification 二选一）
 
 ## 总表
@@ -299,7 +299,7 @@
 - **原生替代**：无
 - **理由**：互斥路线各占一份工作副本，互不污染。
 - **代码**：preset/plugins/clearai-kernel.js ForkPlan; prepareWorldlines; startWorldlineExecutor
-- **测试**：test/kernel.test.mjs, tools/spike-git-worldlines.mjs · **配置**：gitWorldlines, autoDispatchExecutors, executorToolFilter, executorTimeoutMs
+- **测试**：test/kernel.test.mjs, tools/spike-git-worldlines.mjs · **配置**：gitWorldlines, autoDispatchExecutors, executorToolFilter
 - **提示词**：clearai/worldline · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `worldline-metric` · 预注册指标与算术收敛
@@ -702,7 +702,7 @@
 - **原生替代**：subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构
 - **理由**：子任务的生命周期必须由内核自己掌握:账本只认本进程攥着的句柄,结论送达由收集那一刻的返回完成;四种角色共用一套,差异只在人格、工具面与结果解释方式。
 - **代码**：preset/plugins/clearai-kernel.js dispatchSubRun / startWorldlineExecutor / runScout / runEvaluator / runArbiter / sweepScouts / sweepWorldlineExecutors / sweepLostExecutors / sweepLostScouts / publishedInEpoch / noticeBlock
-- **测试**：test/kernel.test.mjs（含会话隔离用例）; tools/e2e-scenarios.mjs（模型可见性不变量） · **配置**：auditProvider=spawn, collectRetryMs, auditTimeoutMs
+- **测试**：test/kernel.test.mjs（含会话隔离用例）; tools/e2e-scenarios.mjs（模型可见性不变量） · **配置**：auditProvider=spawn, auditTimeoutMs
 - **提示词**：clearai/delegation · **文档**：docs/optimization/e2e-longruns.zh-CN.md
 
 ---

@@ -442,7 +442,7 @@
    "source": {
     "code": "preset/plugins/clearai-kernel.js ForkPlan; prepareWorldlines; startWorldlineExecutor",
     "tests": "test/kernel.test.mjs, tools/spike-git-worldlines.mjs",
-    "config": "gitWorldlines, autoDispatchExecutors, executorToolFilter, executorTimeoutMs",
+    "config": "gitWorldlines, autoDispatchExecutors, executorToolFilter",
     "prompt": "clearai/worldline",
     "docs": "docs/epistemic-loop.zh-CN.md"
    },
@@ -1217,7 +1217,7 @@
    "source": {
     "code": "preset/plugins/clearai-kernel.js dispatchSubRun / startWorldlineExecutor / runScout / runEvaluator / runArbiter / sweepScouts / sweepWorldlineExecutors / sweepLostExecutors / sweepLostScouts / publishedInEpoch / noticeBlock",
     "tests": "test/kernel.test.mjs（含会话隔离用例）; tools/e2e-scenarios.mjs（模型可见性不变量）",
-    "config": "auditProvider=spawn, collectRetryMs, auditTimeoutMs",
+    "config": "auditProvider=spawn, auditTimeoutMs",
     "prompt": "clearai/delegation",
     "docs": "docs/optimization/e2e-longruns.zh-CN.md"
    },

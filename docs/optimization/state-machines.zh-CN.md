@@ -249,7 +249,7 @@ stateDiagram-v2
 
 要点：
 
-- `collectRetryMs`（默认 2000ms）决定「投影里还没落地就再收一次」——判据是**投影**，不是内存里的 `reported`。
+- 「投影里还没落地就再收一次」的判据是**投影**，不是内存里的 `reported`；重收的节拍是**回合边界**，没有间隔旋钮。
 - 同一 id 的 `scout/settled` 在 fold 里幂等，重复发布不会长出第二条事实。
 - 侦察工具面只读（`scoutToolFilter`），`MapScouts` 有 `mapScoutMax` / `mapScoutConcurrency` 上限。
 
