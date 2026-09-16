@@ -225,45 +225,10 @@ function makeHost() {
 						async listChildren() {
 							return host.listing ?? []
 						},
-						/**
-						 * **可续跑那一档**(生产里它换来原生结算通知)。它**没有** `result` promise——
-						 * 结论只能从子会话日志里读,这正是生产里那条路。`host.continuableUnavailable`
-						 * 用来验降级(模拟没有 `agents` 服务时的 `CONTINUATION_UNAVAILABLE`)。
-						 */
-						async startContinuable(spec) {
-							if (host.continuableUnavailable === true) throw new Error('continuable subagents require the agents service')
-							if (host.auditFails) throw new Error('provider unavailable')
-							const childId = `continuable-${audits.length}`
-							host.continuations = host.continuations ?? []
-							host.continuations.push({ spec, childId })
-							// 也进 `audits`:现有那些「工具面/人格」断言两档都该看得到(生产里也是同一份请求)。
-							audits.push({ provider: spec.provider, request: spec.request, isScout: String(spec.label ?? '').startsWith('侦察') })
-							/**
-							 * 生产里可续跑子会话会**自己往日志里写** `turn/end`(内核据此收结论)。
-							 * 测试台替它写:于是「结论从子会话日志回收」这条真路径被现有用例一并覆盖。
-							 * `host.scoutDelayMs` 决定它什么时候写完(「等」这件事才测得到)。
-							 */
-							// 角色各自的结局/延迟旋钮与一次性那条路**同一套**(执行者与侦察可以分别设)。
-							const label = String(spec.label ?? '')
-							const isExecutor = label.startsWith('世界线执行者')
-							const isScout = label.startsWith('侦察')
-							const stopKind = (isExecutor ? host.stopReasonExecutor : isScout ? host.stopReasonScout : undefined) ?? host.stopReason ?? 'completed'
-							const never = isExecutor ? host.executorNeverSettles === true : host.scoutNeverSettles === true
-							const settleDelay = isExecutor ? Number(host.executorDelayMs ?? 0) : Number(host.scoutDelayMs ?? 0)
-							const text = String(isExecutor ? (host.executorConclusion ?? '') : (host.scoutConclusion ?? ''))
-							host.sessionEvents = host.sessionEvents ?? {}
-							const write = () => {
-								host.sessionEvents[childId] = [
-									{ type: 'turn/start', data: { turn: 1 } },
-									...(text === '' ? [] : [{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text }] } } }]),
-									{ type: 'turn/end', data: { turn: 1, reason: { kind: stopKind } } },
-								]
-							}
-							if (never) {
-								// 永不落定:表里有条目、promise 与日志都不落地(「等」的边界用例要用)。
-							} else if (settleDelay > 0) setTimeout(write, settleDelay)
-							else write()
-							return { childId, messageId: `msg-${audits.length}` }
+						// 四种角色都必须用 start() 的一次性句柄;旧入口一旦触达就让测试失败。
+						async startContinuable() {
+							check('内核不得调用 startContinuable', false)
+							throw new Error('unexpected startContinuable call')
 						},
 						async start(provider, request) {
 							if (host.auditFails) throw new Error('provider unavailable')
@@ -2542,40 +2507,31 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		check('目录读面不可用 ⇒ 不落终局(判不出就不编)', second.service.state(U).scouts.at(-1)?.note === null, JSON.stringify({ note: second.service.state(U).scouts.at(-1)?.note ?? null }))
 	}
 
-	/**
-	 * **可续跑那一档**(U2a):侦察的结论由原生结算通知投给模型,内核这侧只做两件事——
-	 * 把派遣能力如实落账、把结论从子会话日志收进账本并落盘。
-	 */
+	// 只通过 result promise 交回结论,不伪造子会话日志;派遣与材料发布是两个边界。
 	{
-		const C = 'session-scout-continuable'
+		const C = 'session-scout-start-handle'
 		const host = makeHost()
+		host.scoutConclusion = '数完了:clear/skills 下 18 条技能,SKILL.md 覆盖 18/18。'
 		apply(host.ctx, { blockedThreshold: 3 })
 		await callOn(host, C, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
 		await callOn(host, C, 'CreatePlan', { steps: [{ id: 'c1', do: '核材料', artifacts: ['lab/c1.txt'], done_criteria: 'lab/c1.txt 存在', tests: null }] })
 		const dispatched = await callOn(host, C, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
 		check(
-			'可续跑可用 ⇒ 走可续跑,能力如实落账',
-			dispatched.code === 'scout_dispatched' && host.journal.some((m) => m.t === 'scout/dispatched' && m.capability === 'continuable'),
+			'统一 start() ⇒ 走一次性 result handle,异步材料稍后回灌',
+			dispatched.code === 'scout_dispatched' && host.journal.some((m) => m.t === 'scout/dispatched' && m.capability !== 'continuable'),
 			JSON.stringify(host.journal.filter((m) => m.t === 'scout/dispatched').map((m) => m.capability)),
 		)
 		check(
 			'只读面与人格随派遣交出去(durable descriptor 会记住,续跑也放宽不了)',
-			(host.continuations ?? []).some((entry) => entry.spec?.request?.toolFilter !== undefined && entry.spec?.request?.persona !== undefined),
-			JSON.stringify(Object.keys(host.continuations?.[0]?.spec?.request ?? {})),
+			host.audits.some((entry) => entry.isScout === true && entry.request?.toolFilter !== undefined && entry.request?.persona !== undefined),
+			JSON.stringify(Object.keys(host.audits.find((entry) => entry.isScout === true)?.request ?? {})),
 		)
 		const child = String(host.service.state(C).scouts.at(-1)?.child ?? '')
-		check('前置:可续跑没有 result promise ⇒ 结论还没到', child !== '' && host.service.state(C).scouts.at(-1)?.conclusion === null, child)
-		// 子会话跑完(它的日志里出现 turn/end):下一拍就该收进账本
-		host.sessionEvents = {
-			[child]: [
-				{ type: 'turn/start', data: { turn: 1 } },
-				{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: '数完了:clear/skills 下 18 条技能,SKILL.md 覆盖 18/18。' }] } } },
-				{ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
-			],
-		}
+		check('前置:start() 返回 result handle,异步结论尚未回灌', child.startsWith('scout-') && host.service.state(C).scouts.at(-1)?.conclusion === null && !host.journal.some((m) => m.t === 'scout/settled'), child)
+		// 即使 promise 已落定,派遣回执也不代替下一拍的事实发布。
 		await preStep(host, C, 43)
 		const settled = host.service.state(C).scouts.at(-1)
-		check('可续跑的结论从子会话日志收进账本(没有 promise 也收得到)', /18 条技能/.test(String(settled?.conclusion ?? '')), JSON.stringify({ note: settled?.note, len: String(settled?.conclusion ?? '').length }))
+		check('start() 的 result 结论在 pre-step 收进账本(无需子会话日志)', settled?.conclusion === host.scoutConclusion, JSON.stringify({ note: settled?.note, conclusion: settled?.conclusion }))
 		// 同一回合再来一拍:结论**不重发**(投影在回合内不前进,重发就是噪声;账本按 id 覆写,长不出第二条)
 		await preStep(host, C, 44)
 		check('同一回合里不重发结论(去重按会话+回合,不靠内存条目)', host.journal.filter((m) => m.t === 'scout/settled').length === 1, `${host.journal.filter((m) => m.t === 'scout/settled').length} 条`)
@@ -2586,12 +2542,41 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 	}
 
 	/**
-	 * **可续跑不可用时如实降级**(U2a):能力不冒充,结论改由「收集那一刻的返回」带上。
+	 * **两个会话同时派任务,不串结果、不串工作区**。
+	 *
+	 * 这是统一生命周期最容易踩的一处:子 run 表按 **child id** 索引(全局唯一),
+	 * 而收集要按**父会话**归属。若把状态挂在进程级、或按「最后一条」取,两个会话就会互相串账。
 	 */
+	{
+		const host = makeHost()
+		const A = 'session-iso-a'
+		const B = 'session-iso-b'
+		apply(host.ctx, { blockedThreshold: 3 })
+		for (const [session, claim] of [[A, '核 A 的材料'], [B, '核 B 的材料']]) {
+			await callOn(host, session, 'SetGoal', { claim, done_criteria: '有结论', hypotheses: [] })
+			await callOn(host, session, 'CreatePlan', { steps: [{ id: 'i1', do: '核材料', artifacts: ['lab/i1.txt'], done_criteria: 'lab/i1.txt 存在', tests: null }] })
+		}
+		// 两条侦察的任务原文必须**不同**,否则 digest 复用会让第二条直接复用第一条的结论(那是设计,不是串账)。
+		host.scoutConclusion = 'A 的结论:三份记录里两份有原始导出。'
+		await callOn(host, A, 'SpawnScout', { task: '核 A 会话的 lab/ 记录,报你亲眼读到的。', why: 'A 的缺口' })
+		host.scoutConclusion = 'B 的结论:五份记录全部有原始导出。'
+		await callOn(host, B, 'SpawnScout', { task: '核 B 会话的 lab/ 记录,报你亲眼读到的。', why: 'B 的缺口' })
+		const childA = String(host.service.state(A).scouts.at(-1)?.child ?? '')
+		const childB = String(host.service.state(B).scouts.at(-1)?.child ?? '')
+		check('两条侦察各拿各的 child(表按 child id 索引,不互相覆盖)', childA !== '' && childB !== '' && childA !== childB, `${childA} / ${childB}`)
+		await preStep(host, A, 71)
+		await preStep(host, B, 71)
+		const settledA = String(host.service.state(A).scouts.at(-1)?.conclusion ?? '')
+		const settledB = String(host.service.state(B).scouts.at(-1)?.conclusion ?? '')
+		check('A 会话收到的是 A 的结论', settledA.includes('A 的结论'), settledA.slice(0, 40))
+		check('B 会话收到的是 B 的结论', settledB.includes('B 的结论'), settledB.slice(0, 40))
+		check('两边没有互相串账', !settledA.includes('B 的结论') && !settledB.includes('A 的结论'), JSON.stringify({ A: settledA.slice(0, 30), B: settledB.slice(0, 30) }))
+	}
+
+	// 显式等待也是事实收集边界:一次性句柄的结论必须在回执里可见。
 	{
 		const D = 'session-scout-degrade'
 		const host = makeHost()
-		host.continuableUnavailable = true
 		apply(host.ctx, { blockedThreshold: 3 })
 		await callOn(host, D, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
 		await callOn(host, D, 'CreatePlan', { steps: [{ id: 'd1', do: '核材料', artifacts: ['lab/d1.txt'], done_criteria: 'lab/d1.txt 存在', tests: null }] })

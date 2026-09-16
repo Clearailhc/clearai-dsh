@@ -1051,42 +1051,6 @@ export function apply(ctx, config = {}) {
 		const schema = options.outputSchema ?? undefined
 		const toolFilter = options.toolFilter ?? null
 		const failures = []
-		/**
-		 * **可续跑那一档放最前**(当调用方要的是「结论送达模型」时)。
-		 *
-		 * 它换来的是**原生结算通知**:运行时在子会话落定时把它的收尾消息投给父 agent
-		 * (`notifySettlement`)。这正是异步子 run 此前缺的一环——结论只进账本,模型读不到。
-		 *
-		 * 两条边界,都是原生自己划的,不是我们挑的:
-		 *   · 带 `outputSchema` 的调用**不走这一档**:durable 子会话的 descriptor 刻意不含它
-		 *     (原话:它属于「一次性 activation 的结果契约」)。评估者/横评仲裁要的是当场解析的裁决,
-		 *     改成可续跑是语义倒退;
-		 *   · `persona` / `toolFilter` 会写进 durable descriptor,建时与冷恢复都从它重建 ——
-		 *     侦察的只读面因此不会被续跑放宽(这是切换安全的前提,已核)。
-		 *
-		 * 拿不到这一档(无 `agents` 服务 = `CONTINUATION_UNAVAILABLE`,或后端无
-		 * `prepareContinuable` = `UNSUPPORTED_CAPABILITY`)就照旧降级到一次性派遣,
-		 * 失败原因进 `failures`,能力事实由调用方如实落账。
-		 */
-		if (schema === undefined && options.nativeDelivery === true) {
-			try {
-				const started = await subagents.startContinuable({
-					provider: CFG.auditProvider,
-					label: options.label,
-					request: { ...base, ...(persona !== undefined ? { persona } : {}), ...(toolFilter !== null ? { toolFilter } : {}) },
-					signal: options.signal,
-				})
-				const childId = String(started?.childId ?? '')
-				if (childId === '') throw new Error('startContinuable 没有交出 childId')
-				// 归一化:可续跑**没有** `run.result`(也没有 dispose)——结算由原生通知与子会话日志给出。
-				return { ok: true, run: { id: childId, result: undefined, dispose: undefined }, capability: 'continuable', native: true }
-			} catch (error) {
-				const reason = `continuable:${String(error?.message ?? error).slice(0, 200)}`
-				failures.push(reason)
-				// 降级不是静默事件:它决定「结论由谁送达」,值得一行诊断日志。
-				ctx.logger?.warn?.(`clearai kernel: 可续跑派遣不可用,降级到一次性派遣(${reason})`)
-			}
-		}
 		const attempts = []
 		if (toolFilter !== null) attempts.push({ variant: { persona, outputSchema: schema, toolFilter }, capability: 'persona+outputSchema+toolFilter' })
 		attempts.push({ variant: { persona, outputSchema: schema }, capability: 'persona+outputSchema' })
@@ -1185,12 +1149,10 @@ export function apply(ctx, config = {}) {
 			toolFilter: { allow: resolveToolFace(agent, CFG.executorToolFilter) },
 			parent: agent,
 			signal,
-			// 执行者的收尾消息就是它给模型的报告:与侦察同一条路——要原生结算通知送达。
-			nativeDelivery: true,
 		})
 		if (dispatched.ok !== true) return { ok: false, note: `执行者派不出去(${dispatched.reason})`, mutations }
 		const childId = String(dispatched.run.id)
-		const entry = { fork: fork.id, branch: branch.id, label: branch.label, workspace: branch.workspace, child: childId, settled: null, reported: false, run: dispatched.run, native: dispatched.native === true }
+		const entry = { fork: fork.id, branch: branch.id, label: branch.label, workspace: branch.workspace, child: childId, settled: null, reported: false, run: dispatched.run }
 		executorRuns.set(childId, entry)
 		mutations.push({ t: 'worldline/executing', fork: fork.id, branch: branch.id, child: childId, capability: dispatched.capability, degraded_reason: dispatched.degraded ?? null })
 		/**
@@ -1731,8 +1693,6 @@ export function apply(ctx, config = {}) {
 			toolFilter: { allow: resolveToolFace(agent, CFG.scoutToolFilter) },
 			parent: agent,
 			signal,
-			// 侦察的结论就是它的全部价值:要原生结算通知把它送进模型上下文。
-			nativeDelivery: true,
 		})
 		if (dispatched.ok !== true) {
 			// 侦察失败不该挡住主循环:它只是"本可以去查的缺口",如实回报即可
@@ -1751,7 +1711,7 @@ export function apply(ctx, config = {}) {
 		 * 事实该在副作用之前/同批落账:所以派遣立即返回,结论由 `sweepScouts()` 在
 		 * 「下一个回合边界 / 用到世界线与侦察的那几件工具」上收(与执行者完全同一套)。
 		 */
-		const entry = { scoutId, stepId: step.id, planId: plan?.id ?? null, trigger, digest, child: childId, settled: null, reported: false, run: dispatched.run, native: dispatched.native === true }
+		const entry = { scoutId, stepId: step.id, planId: plan?.id ?? null, trigger, digest, child: childId, settled: null, reported: false, run: dispatched.run }
 		scoutRuns.set(childId, entry)
 		/**
 		 * 只有一次性派遣才有 `result` promise。可续跑那一档没有 ⇒ 结算改由
