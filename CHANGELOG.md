@@ -2,7 +2,14 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.4] — 2026-09-16
+
+**本版重点:子任务的交付链修好了。** 侦察与世界线执行者的结论此前只进账本、模型读不到
+(账本里也有过「派出去就再也没人收」的挂空)。现在四类子任务(侦察 / 世界线执行者 /
+评估者 / 横评仲裁)统一走原生 `subagents.start()` 的一次性句柄:账本只认本进程攥着的
+`run.result`,结论正文由**收集那一刻的工具返回**交给模型,全文另落
+`clear/knowledge/materials/<id>.md` 供模型、独立评估者与人共读。
+试过的另一条路(拿运行时的结算通知当账本信号)已撤回——它是 best-effort,当不了承重结构。
 
 ### Added
 
@@ -25,6 +32,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ### Fixed
 
+- **`install.sh` aborted on macOS (bash 3.2).** It expanded an empty array as `"${OLD_PANEL_PKGS[@]}"` under `set -u`; bash only tolerates that from 4.4 on, while macOS ships 3.2 — so the documented developer install died at step ② for every macOS contributor. CI runs on Linux (bash 5), which is why it never caught it. Both expansions now use the portable `${arr[@]+"${arr[@]}"}` form.
 - **Long-run evidence was overwritten or lost.** Every run now gets its own timestamped archive: the light half (stdout, structured result, provenance, decoded one-line-per-event trajectory, append-only index) is committed, while the heavy half (workspace, raw session log) stays on disk under `~/.dsh/e2e-archive/` so it can be re-judged offline with `tools/e2e-replay.mjs`. `--workspace` pointing inside any git repository is now refused outright: ClearAI commits each delivery into the workspace's own repository, so an in-repo workspace had the kernel commit its delivery snapshots — and the author's uncommitted work — into the host project.
 - **Session-directory name derivation dropped dots.** DSH keeps `.` (and `_`) when it slugs a workspace path; the old rule folded both away, so a workspace under `~/.dsh/…` was reported as "no session log" (38 assertions red in one run). The rule is now taken from a real directory comparison.
 - **Scout conclusions never came back in a scouts-only run.** `AwaitWorldlines` decided whether to keep waiting from the wait-lines produced by `sweepWorldlineExecutors()`, and `sweepScouts()` never produced one — so with only scouts in flight the loop exited on its first tick, even though `SpawnScout`'s own reply tells the model to "wait for it this turn with `AwaitWorldlines`". The one-shot form added a second layer: with no next turn, a conclusion that settled after the last tool call never met another collection point. `sweepScouts()` now reports how many scouts are still unsettled, `collectExecutors()` passes it through, and `AwaitWorldlines` counts it. Verified end to end: the same scenario that stalled twice (goal left open, evaluator refusing `inconclusive`) now finishes 36/36 with the conclusion in the material surface and the goal `achieved`.

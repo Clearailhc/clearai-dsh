@@ -80,7 +80,10 @@ if [ -f "$HERE/ui/package.json" ]; then
 	mkdir -p "$PANEL_DST"
 	cp -r "$HERE/ui/." "$PANEL_DST/"
 	echo "② 宿主包已装:$PANEL_DST"
-	for old_pkg in "${OLD_PANEL_PKGS[@]}"; do
+	# 空数组的可移植展开:macOS 自带 bash 3.2,`set -u` 下 `"${arr[@]}"` 展开**空数组**会报
+	# unbound variable(bash ≥ 4.4 才不报)。CI 跑在 Linux(bash 5)所以永远抓不到这条,
+	# 而用户按文档 `bash install.sh` 时必炸。`${arr[@]+"${arr[@]}"}` 是两边都对的老写法。
+	for old_pkg in ${OLD_PANEL_PKGS[@]+"${OLD_PANEL_PKGS[@]}"}; do
 		old_dst="$DSH_HOME/profiles/$PROFILE/node_modules/$old_pkg"
 		if [ -d "$old_dst" ]; then rm -rf "$old_dst"; echo "   已清掉旧包目录:$old_dst"; fi
 	done
@@ -93,7 +96,7 @@ if [ ! -f "$PATCH" ]; then
 	echo "③ 找不到 $PATCH:先跑一次 dsh --profile $PROFILE 让它初始化,再重跑本脚本" >&2
 	exit 1
 fi
-for old_pkg in "${OLD_PANEL_PKGS[@]}"; do
+for old_pkg in ${OLD_PANEL_PKGS[@]+"${OLD_PANEL_PKGS[@]}"}; do
 	if grep -q "$old_pkg" "$PATCH"; then
 		# 旧行(改名前的包)先摘掉:同一个包不能在补丁层挂两行
 		old_id="$(printf '%s' "$old_pkg" | sed 's|@clearai/||')"
