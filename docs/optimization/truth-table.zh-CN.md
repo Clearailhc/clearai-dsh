@@ -306,7 +306,7 @@
 - **输出**：mutation fork/created, worldline/prepared, worldline/executing, worldline/executed, branch/delivered
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：分叉是「选一」，不是并行加速：每条世界线一份独立工作副本，各自交付读数，收敛由**算术**决定（`decideWinner` 只排序，不做语义判定）。尺子在动手之前登记，并且**自带口径**（`量 = 口径`）：只有指标名不是尺子——口径一旦下放给每条世界线各自去定，两条线就会各写一套公式（一条按炉次、一条按等效炉次），算术随后把两套约定的输出放在一起比大小，说服力就从争论里被赶走、又从度量里溜回来。口径写进 metric 之后，既有的「判据里必须逐字出现裁决指标」那条检查自动把它钉进每条世界线的判据，执行者任务书与评估者任务书也带着同一句话——共用由构造保证，不需要新字段。
+- **理由**：分叉是「选一」，不是并行加速：每条世界线一份独立工作副本，各自交付读数，收敛由**算术**决定（`decideWinner` 只排序，不做语义判定）。尺子在动手之前登记，并且要写成「量 = 口径」。**这条规则的真实能力要说准**：它保证的是**声明被登记、被逐字传给每条世界线的判据与任务书**（口径从"各写一套、事后才发现不可比"变成"一份声明、人人可见"）；它**不保证两条读数真的可比**——`评分 = 按本路线情况评分` 同样通过检查。可比性只能由评估者重跑确认，不由字符串格式确认。
 - **代码**：preset/plugins/clearai-kernel.js ForkPlan; prepareWorldlines; startWorldlineExecutor
 - **测试**：test/kernel.test.mjs, tools/spike-git-worldlines.mjs · **配置**：gitWorldlines, autoDispatchExecutors, executorToolFilter
 - **提示词**：clearai/worldline · **文档**：docs/epistemic-loop.zh-CN.md
@@ -714,7 +714,7 @@
 - **输出**：违反时抛宿主 InvariantError（归属 clearai-dsh）；通过则什么都不做
 - **阻断执行**：是 · **受 autonomy 影响**：否
 - **原生替代**：@deepseek-ai/dsh-invariants（宿主自己的包级不变量注册表；不另造一套自检）
-- **理由**：跨机制的不变量原本只在验收脚本里**事后**算：跑完一场、解出日志、再判——判晚了，bug 就留到跑完之后才看见。而这几条本来就是**逐条事实**的性质。宿主给了位置（register(packageName, installer)，违反时抛带稳定错误码与归属包名的 InvariantError），就用它：判在落账之前，不合法的事实根本进不了日志。它约束的是所有生产者（22 件工具、人门、将来的入口），所以它自己跑在落账路径上：判宽了等于没判，判严了会把正确的行为拦下——真跑两次各教出一条（observation/audit 的 step 常常不带 plan；goal 轴与世界线轴的伪步骤不是计划步骤），两条都写成了回归测试。
+- **理由**：把这五条契约交给宿主的包级不变量注册表（`register(packageName, installer)`，违反时抛带稳定错误码与归属包名的 `InvariantError`），判在宿主的 `internal/dispatch` 那一拍——**不合法的事实根本进不了日志**。**范围与代价，照实说**：①它是诊断面，**随包的 web/headless profile 并不挂这个服务**（宿主自己的开发组合才挂），所以它在用户那儿不生效；②它自己折了一整套 plans/steps/forks/audits 索引，**等于第二套解释器**——上岗第一小时就因为与主投影不一致被修了两次；③因此它按 [权威归属](../../authority-map.zh-CN.md) §四 的界线**正在复审**：已经发生的运行失败**必须允许入账**，"只允许好看的事实进入账本"是把一致性做成了不实陈述。
 - **代码**：ui/lib/invariant.js（契约与增量折叠 + install/apply）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）
 - **测试**：test/invariant.test.mjs（合法放行 / 每条契约的违反 / 落账之前拦下 / 伪步骤不误伤） · **配置**：宿主 invariants 的 enabled / package_allowlist / package_blocklist
 - **提示词**：— · **文档**：docs/release-verification.zh-CN.md

@@ -122,7 +122,7 @@ They are illustrations of the mechanism, not shipped run records.
 - [Soul map: principle → mechanism → test](docs/soul-map.md)
 - [Glossary](docs/glossary.md)
 - [Loop philosophy](docs/loop-philosophy.md) · [Verification ontology](docs/verification-loop.md)
-- [Known gaps](docs/known-gaps.md) · [Release verification](docs/release-verification.md)
+- [Known gaps](docs/known-gaps.md) · [Authority map](docs/authority-map.md) · [Release verification](docs/release-verification.md)
 - [Convergence and slimming plan](docs/optimization/plan.md) · [Full-coverage design](docs/optimization/epistemic-coverage.md) · [Execution progress](docs/optimization/progress.zh-CN.md)
 
 ## Work attribution
