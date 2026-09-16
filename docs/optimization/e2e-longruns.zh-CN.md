@@ -26,11 +26,32 @@ node tools/e2e-parallel.mjs --concurrency 1 --timeout-min 45
 node tools/e2e-run.mjs --scenario falsification --keep   # 单场,留着现场看
 ```
 
-产物:
+产物(**按场归档,永不覆盖**):
 
-- `docs/optimization/e2e-logs/<剧本>.log` —— 每场完整输出(含每条断言的通过/失败与变更直方图)
-- `docs/optimization/e2e-logs/summary.json` —— 结构化汇总(用时、变更数、失败项、现场路径)
-- `--keep` 会把临时工作区与会话日志路径打出来,便于事后翻证据
+```
+docs/optimization/e2e-logs/                      ← 轻档(入库):判读证据
+  index.json                                     追加式索引(跨批次可比读数都在这里)
+  <剧本>.log                                     最新一场的 stdout 快照
+  <剧本>/<时间戳>/run.log                        该场完整 stdout(断言与读数)
+                /summary.json                    该场结构化结果
+                /meta.json                       出处:commit、脏否、模型、并发、任务书、路径
+                /trajectory.txt                  解码后的轨迹(一行一事件,可 grep)
+~/.dsh/e2e-archive/<剧本>/<时间戳>/                ← 重档(不入库):现场
+                /workspace/                      工作区现场(产物、账本提交、clear/ 骨架)
+                /session.jsonl.zstd              会话日志原件(可用 tools/e2e-replay.mjs 离线复算)
+```
+
+**为什么分轻/重两档**:轨迹解码后小且可 grep,是「模型到底做了什么」的可读记录,入库;
+工作区与会话原件每场几 MB,留在盘上供本地复算,不入库。
+
+**重型现场必须在仓库之外**(`~/.dsh/e2e-archive/`):ClearAI 的设计是「工作区本身是 git 仓库时,
+每次交付往那个仓库落一条提交」。跑验收时若把工作区指到宿主的项目仓库内,内核就会往那个仓库
+写一串 `clearai: 交付 …` 的提交——**实测发生过一次,它连当时未提交的改动一起提交了**。
+所以 `tools/e2e-run.mjs` 现在**当场拒绝**落在 git 仓库内的工作区(fail closed)。
+
+顺带被这套归档暴露出的一个潜在 bug:会话目录名(slug)规则**要保留点号**。
+`~/.dsh/e2e-archive/…` 里的 `.dsh` 让按旧规则(只保留字母数字与下划线)算出的目录找不到,
+于是一场跑动被误判成「没有会话日志」。现在规则是**拿真实目录比对出来的**:保留 `[A-Za-z0-9_.]`。
 
 **并发上限默认 3**:每场自己还会派世界线执行者与独立评估者,一场最坏拉起三四条模型流,
 并发开太大打的是 API 的限流,不是本机的 CPU。这一点如实记进 `summary.json`。

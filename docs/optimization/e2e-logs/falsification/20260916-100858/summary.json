@@ -1,0 +1,24 @@
+{
+  "name": "falsification",
+  "title": "证伪:两条互斥假设,一条被推翻",
+  "stamp": "20260916-100858",
+  "code": 1,
+  "passed": 9,
+  "failed": 9,
+  "failures": [
+    "找得到这次会话的日志",
+    "模型真的用了意图工具(SetGoal)",
+    "模型真的建了计划(CreatePlan)—— 这正是 2026-09-10 全军覆没的那一件",
+    "CreatePlan 没有契约错误(invalid output / not a declared property)",
+    "CreatePlan 没有语义拒绝(is_error=false)",
+    "变更记录真的落了(goal/set)",
+    "变更记录真的落了(plan/created)",
+    "内核在真跑里取到了宿主的合并目录(随投影下发)",
+    "工作区模板的 18 条都在目录里(我们这一层不会漏)"
+  ],
+  "elapsedSec": 124,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/falsification/20260916-100858/workspace",
+  "sessionLog": "(未找到)",
+  "mutationCount": 0,
+  "mutationKinds": ""
+}

@@ -367,6 +367,24 @@ writeFileSync(hostPatchFile, stringifyYaml(hostPatch), 'utf8')
 writeFileSync(patchFile, stringifyYaml(presetPatch), 'utf8')
 
 const freshAtStart = existsSync(useWorkspace === undefined ? '' : resolve(useWorkspace)) ? readdirSync(resolve(useWorkspace)).length === 0 : true
+/**
+ * **fail closed:工作区不许落在 git 仓库里**。
+ *
+ * 为什么:ClearAI 的设计是「工作区本身是 git 仓库时,每次交付往那个仓库落一条提交」。
+ * 跑验收时若把工作区指到宿主的项目仓库内,内核就会往那个仓库写一串 `clearai: 交付 …`
+ * 的提交(实测发生过:它连当时未提交的改动一起提交了)。所以这里当场拒绝,
+ * 而不是让人事后去 `git reset`。
+ */
+if (useWorkspace !== undefined) {
+	try {
+		const top = execFileSync('git', ['-C', resolve(useWorkspace), 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+		console.error(`✗ 工作区落在 git 仓库里(${top}):ClearAI 会把交付提交进那个仓库,跑验收会污染它。\n  请换到仓库之外的目录(例如 ~/.dsh/e2e-archive/…)。`)
+		process.exit(2)
+	} catch {
+		/* 不在任何仓库里 = 正是我们要的 */
+	}
+}
+
 const tempWorkspace = useWorkspace === undefined
 const workspace = tempWorkspace ? mkdtempSync(join(tmpdir(), 'clearai-e2e-ws-')) : resolve(useWorkspace)
 if (!existsSync(workspace)) {
@@ -413,9 +431,15 @@ check('进程正常退出(exit 0)', run.status === 0, `exit=${run.status} stderr
  * 里面每个会话一个目录,日志是 session.v3.jsonl.zstd)。
  * 不靠 mtime 猜最近一份——并行跑两个 E2E 时会串。
  */
-/** 工作区路径 → 会话目录名(DSH 自己的 slug 规则:字母数字与 `_` 保留,其余折成 `-`,两端包 `--`)。 */
+/**
+ * 工作区路径 → 会话目录名。DSH 自己的 slug 规则:**字母数字、`_`、`.` 都保留**,其余折成 `-`,两端包 `--`。
+ *
+ * 这两条(保留 `_` 与 `.`)都是拿真实目录比对出来的,不是猜的:
+ * 少保留下划线时,`/var/folders/_1/…` 找不到;少保留点号时,`~/.dsh/e2e-archive/…` 找不到。
+ * 判据是「宿主真的把会话放在哪儿」,不是我们觉得它应该怎么折。
+ */
 function sessionSlug(workspaceDir) {
-	return `--${workspaceDir.replace(/^\//, '').replace(/[^A-Za-z0-9_]+/g, '-').replace(/-+$/, '')}--`
+	return `--${workspaceDir.replace(/^\//, '').replace(/[^A-Za-z0-9_.]+/g, '-').replace(/-+$/, '')}--`
 }
 
 /** 一个工作区下的所有会话(每个会话一个目录,日志可能是 `.jsonl` 或 `.jsonl.zstd`)。 */

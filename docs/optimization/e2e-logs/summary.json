@@ -1,49 +1,23 @@
 {
-  "at": "2026-09-16T02:04:38.407Z",
-  "concurrency": 3,
-  "timeoutMin": 40,
+  "at": "2026-09-16T02:13:12.566Z",
+  "concurrency": 1,
+  "timeoutMin": 20,
+  "commit": "075f67a",
+  "dirty": true,
   "scenarios": [
-    {
-      "name": "scout-first",
-      "title": "侦察先于计划",
-      "code": 0,
-      "passed": 38,
-      "failed": 0,
-      "failures": [],
-      "elapsedSec": 230,
-      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/scout-first.log",
-      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-Cyed6B",
-      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-Cyed6B--/session-415e2aa0-d867-46cd-9451-3045176890df/session.v3.jsonl.zstd",
-      "mutationCount": 35,
-      "mutationKinds": "scout/dispatched,scout/settled,observation/recorded,goal/set,plan/created,plan/confirmed,admission/checked,evidence/recorded,step/advanced,block/cleared,plan/refined,plan/voided,plan/amended,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
-    },
-    {
-      "name": "worldline-arbitration",
-      "title": "世界线:两条实现按尺子算术裁决",
-      "code": 0,
-      "passed": 40,
-      "failed": 0,
-      "failures": [],
-      "elapsedSec": 289,
-      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/worldline-arbitration.log",
-      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-qhEZqE",
-      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-qhEZqE--/session-1b3a9817-b2b2-4f3a-acb5-71656f358e52/session.v3.jsonl.zstd",
-      "mutationCount": 56,
-      "mutationKinds": "goal/set,plan/created,fork/created,worldline/prepared,worldline/executing,worldline/executed,observation/recorded,evidence/recorded,branch/delivered,fork/merged,worldline/removed,fork/converged,plan/confirmed,admission/checked,block/counted,step/advanced,block/cleared,git/committed,plan/amended,plan/voided,plan/closed,audit/dispatched,audit/settled,goal/closed"
-    },
     {
       "name": "falsification",
       "title": "证伪:两条互斥假设,一条被推翻",
+      "stamp": "20260916-101122",
       "code": 0,
       "passed": 38,
       "failed": 0,
       "failures": [],
-      "elapsedSec": 151,
-      "logPath": "/Users/lhc/Projects/clearai-dsh/docs/optimization/e2e-logs/falsification.log",
-      "workspace": "/var/folders/_1/jp31sgqd7g7_5r21tp0cdv8c0000gn/T/clearai-e2e-ws-LP2vS9",
-      "sessionLog": "/Users/lhc/.dsh/sessions/--private-var-folders-_1-jp31sgqd7g7_5r21tp0cdv8c0000gn-T-clearai-e2e-ws-LP2vS9--/session-791e833d-6d79-41c2-b158-20c5cf520065/session.v3.jsonl.zstd",
-      "mutationCount": 34,
-      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,plan/refined,plan/voided,plan/amended,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+      "elapsedSec": 110,
+      "workspace": "/Users/lhc/.dsh/e2e-archive/falsification/20260916-101122/workspace",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-falsification-20260916-101122-workspace--/session-fce9ad86-1e64-4fdf-a600-53ef37f96b20/session.v3.jsonl.zstd",
+      "mutationCount": 31,
+      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,plan/voided,plan/amended,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
     }
   ]
 }
