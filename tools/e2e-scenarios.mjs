@@ -85,7 +85,7 @@ export const SCENARIOS = {
 			'   判据:lab/python3_verdict.md 存在,且里面写明了被推翻的是哪一条、依据是哪次观测。',
 			'2. CreatePlan 两步计划:第一步做那次观测并把结论写进 lab/python3_verdict.md,第二步核对结论与观测一致。',
 			'3. 真去跑那条命令(bash),把观测如实登记;交付时给每条假设一个 verdict:成立的给 support,**不成立的那条必须给 refute**。',
-			'4. 做完两步,ClosePlan 收尾。',
+			'4. 做完两步:ClosePlan 收束计划,然后 CloseGoal 结案(判据达成了就结案,不要停在「计划已收尾」)。',
 		].join('\n'),
 		asserts: ({ evidenceVerdicts, promotedIds, hypothesisStatus, exists }) => [
 			{ label: '至少记了一条「推翻」证据(verdict=refute;这条考的是模型的判断,不是机制)', ok: evidenceVerdicts.includes('refute'), detail: evidenceVerdicts.join(',') },
@@ -295,9 +295,12 @@ export const INVARIANTS = [
 				...mutations.filter((m) => m.t === 'worldline/executed' && m.ok === true && String(m.conclusion ?? '').trim() !== '').map((m) => ({ who: `执行者 ${m.branch}`, text: String(m.conclusion) })),
 			]
 			// 正文可能被截断后进消息(带指针),所以取开头一段做特征串再找。
+			// 归一空白再比:同一段正文在账本里带换行、进消息时可能被重排,逐字节比会假红。
+			const norm = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
+			const visible = norm(modelVisibleText)
 			const missing = settled.filter((item) => {
-				const fingerprint = item.text.trim().slice(0, 120)
-				return fingerprint !== '' && !modelVisibleText.includes(fingerprint)
+				const fingerprint = norm(item.text).slice(0, 120)
+				return fingerprint !== '' && !visible.includes(fingerprint)
 			})
 			return {
 				ok: missing.length === 0,
@@ -358,16 +361,26 @@ export async function evaluateLog({ scenario, events, mutations, workspace, exis
 	 * (**原生结算通知就走这条**——`subagent-settled` 是一条 user message)、助手消息。
 	 * 排除的是变更记录(`meta.mutations`)——账上有、心里没有,不算送达。
 	 */
+	/**
+	 * 把内容块里的**全部文本**取出来。
+	 *
+	 * 为什么不能只看 `type === 'text'`:工具结果的内容块是**套娃**的——外层是
+	 * `{type:'tool-result', content:[{type:'text', text}]}`,真正的文本在里层。
+	 * 只认外层会把"送到了"判成"没送到"(这正是这条不变量此前误报的原因)。
+	 */
+	const textOf = (blocks) =>
+		(Array.isArray(blocks) ? blocks : [])
+			.flatMap((block) => {
+				if (block?.type === 'text') return [String(block.text ?? '')]
+				if (Array.isArray(block?.content)) return textOf(block.content)
+				return []
+			})
+			.join('\n')
 	const modelVisibleText = [
-		...events
-			.filter((event) => event.type === 'tool/result')
-			.flatMap((event) => (event.data?.message?.content ?? []).filter((block) => block?.type === 'text').map((block) => String(block.text ?? ''))),
+		...events.filter((event) => event.type === 'tool/result').flatMap((event) => [textOf(event.data?.message?.content)]),
 		...events
 			.filter((event) => event.type === 'user/message' || event.type === 'assistant/message')
-			.flatMap((event) => {
-				const content = event.data?.content ?? event.data?.message?.content ?? []
-				return (Array.isArray(content) ? content : []).filter((block) => block?.type === 'text').map((block) => String(block.text ?? ''))
-			}),
+			.flatMap((event) => [textOf(event.data?.content ?? event.data?.message?.content)]),
 	].join('\n')
 
 	/** 读产物正文(判据要验「引用」这类文本性质时用)。读不到就给空串,判据自己红。 */

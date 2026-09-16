@@ -27,7 +27,7 @@ const check = (label, condition, detail = '') => {
 	}
 }
 
-const { SCENARIOS, INVARIANTS } = await import(join(PORT, 'tools', 'e2e-scenarios.mjs'))
+const { SCENARIOS, INVARIANTS, evaluateLog } = await import(join(PORT, 'tools', 'e2e-scenarios.mjs'))
 
 /** 把一串变更包成不变量要的上下文(与 e2e-run.mjs 里那份同形)。 */
 function contextOf(mutations, overrides = {}) {
@@ -176,6 +176,25 @@ console.log('\n【③c 异步子 run 的结论:账上有 ≠ 心里有】')
 	// 反例:结论只在变更记录里——这正是上一轮把那场 36/36 判成绿的形态。
 	const onlyInLedger = contextOf(withScout)
 	check('结论只躺在账本里 ⇒ 抓住(上一轮假绿的墓志铭)', visible.run(onlyInLedger).ok === false, JSON.stringify(visible.run(onlyInLedger).detail))
+	// **真回归**:工具结果的内容是**套娃**的(外层 tool-result,文本在里层 content[]),
+	// 判据必须认——它真实地把「送到了」误报成「没送到」过一次(E2E 两场都因此假红)。
+	{
+		const evaluated = await evaluateLog({
+			scenario: null,
+			mutations: withScout,
+			events: [
+				{
+					type: 'tool/result',
+					data: { message: { content: [{ type: 'tool-result', content: [{ type: 'text', text: `等了 32s(上限 300s):回灌 1 条结论\n\n【侦察结论 · s-1】\n${conclusion}` }] }] } },
+				},
+			],
+			workspace: '/tmp',
+			exists: () => false,
+			called: () => true,
+		})
+		const row = evaluated.checks.find((item) => item.label.includes('对模型可见'))
+		check('套娃内容块也算送达(tool-result 里层的文本)', row?.ok === true, JSON.stringify(row?.detail ?? ''))
+	}
 	// 正例之一:结论出现在工具结果的消息体里。
 	const inToolResult = contextOf(withScout, { modelVisibleText: `回了 1 条结论\n${conclusion}` })
 	check('结论出现在工具返回里 ⇒ 放过', visible.run(inToolResult).ok === true, JSON.stringify(visible.run(inToolResult).detail))
