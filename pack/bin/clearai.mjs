@@ -136,6 +136,23 @@ function doctor() {
 		const dir = join(root, PRESET_ID)
 		const present = existsSync(join(dir, 'agent.cordis.yml'))
 		rows.push(`用户根        ${dir} ${present ? '✓ 名册看得见' : '✗ 还没有(用 seed 播种,或把 root-yaml 那一行粘进 profile)'}`)
+		/**
+		 * 用户根里那份**会不会被包的 root 遮住**。
+		 *
+		 * 名册按 root 顺序先到先得(自带 root → 配置 root → 用户根),所以包一装,用户根里
+		 * 同 id 的那份副本就**再也读不到**——它会安静地烂在那里,还会把「部署出去的那份」的
+		 * 自检引到你手改过的旧副本上。判据只取事实:两份 `preset.yml` 的字节是否一致。
+		 */
+		const mine = join(PRESET_SRC, 'preset.yml')
+		const theirs = join(dir, 'preset.yml')
+		if (!present || !existsSync(mine) || !existsSync(theirs)) continue
+		let same = false
+		try {
+			same = readFileSync(mine).equals(readFileSync(theirs))
+		} catch {
+			same = false
+		}
+		if (!same) rows.push(`  ⚠️ 影子副本     ${theirs} 与包里的那份**不一致**,而它被包的 root 遮住、永远不会被读到(自检却会优先读它)。删掉它,或用它来承载你自己的改动并换一个 id。`)
 	}
 	const profileDir = join(DSH_HOME, 'profiles', profile)
 	rows.push(`profile       ${profileDir}${existsSync(profileDir) ? '' : '(不存在:先跑一次 dsh --profile ' + profile + ')'}`)
