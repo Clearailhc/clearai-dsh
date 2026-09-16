@@ -66,10 +66,13 @@ For development, `install.sh` lays the repository's source directly into a real 
 ## Build and verify
 
 ```bash
-npm test                        # kernel / host / brain / client / ontology suites
+npm test                        # 13 suites — the list lives in test/run.sh
 node tools/build-package.mjs    # assemble dist/clearai-dsh
-node tools/verify-package.mjs   # rebuild and compare; 25 checks
+node tools/verify-package.mjs   # rebuild and compare byte-for-byte
 node tools/verify-deploy.mjs    # compose the deployed files for real (bypasses the ESM cache)
+node tools/verify-truth-table.mjs   # the truth table against the code constants
+node tools/verify-clean-install.mjs # install into an empty DSH_HOME through the real CLI
+node tools/verify-lifecycle.mjs     # upgrade / uninstall / user fork / the install verb
 ```
 
 Confirming the browser surface needs a browser: `tools/capture-ui.sh` boots an isolated `DSH_HOME`, installs the built package, starts `dsh web`, and launches a debuggable Chrome; `tools/ui-drive.mjs` then clicks and screenshots it. This exists because the packaged client half was verified only at unit level for a long time, and the first real browser run found the plugin failing to register at all.

@@ -68,10 +68,11 @@ sequenceDiagram
     Note over M,D: this segment never touches the ClearAI kernel:<br/>the ledger gets ordinary session events, no authoritative mutations
 ```
 
-Current status: **partial**. Low-authority exploration is physically possible (the native tools
-exist), but the prompts describe it as a prelude to the formal loop rather than a region one may
-freely stay in; provisional planning tools like `tool-todo` are not mounted, so the model has no
-"plan that stays out of the ledger".
+Current status: **partial**. Low-authority exploration is physically possible — the native tools
+are mounted (`tool-todo`, subagents, `workflow`, `ralph`), and the authority-boundary suite pins
+that none of them can write the authoritative ledger. What is missing is the positive half: the
+prompts describe exploration as a prelude to the formal loop rather than a region one may freely
+stay in, and the runtime card never names the zone.
 
 Plan: see Phase 4 "exploration zone / formal zone" and Phase 5 "non-authoritative tools return"
 in the optimization plan.

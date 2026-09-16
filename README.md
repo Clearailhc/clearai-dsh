@@ -39,7 +39,7 @@ If it stops because **pnpm is not on your `PATH`**: DSH manages a profile by dri
 From a checkout (development, not the install path):
 
 ```bash
-npm test                       # kernel / host / brain / client / ontology suites
+npm test                       # 13 suites — the list lives in test/run.sh
 node tools/build-package.mjs   # assemble dist/ from source
 node tools/verify-package.mjs  # rebuild and compare byte-for-byte
 node tools/verify-clean-install.mjs   # install into an empty DSH_HOME through the real CLI

@@ -154,10 +154,25 @@ console.log('\n【⑤ 事实那一格:声明里的字段与名字,界面与内�
 	check('事实货架(INDEX.md)由内核维护,且面板读的是同一张表', /renderFactsIndex/.test(kernelSource) && /INDEX\.md/.test(kernelSource))
 }
 
+console.log('\n【计数类说法:文件里写的对象数必须与声明对得上】')
+{
+	/**
+	 * 「对象是八个」曾经同时写在文件头与 note 里,而 `objects` 声明的是**九个**
+	 * (多出来的是 `release`)——两处一起漂,谁也没发现。所以这个数不靠人眼:
+	 * 把正文里的汉字数抓出来,与声明的长度对账。
+	 */
+	const NUMERALS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 }
+	const source = readFileSync(join(PORT, 'preset', 'plugins', 'ontology.js'), 'utf8')
+	// 只认**计数声明**那两处(文件头与 note):`一个对象` 这类量词短语不是计数,别误伤。
+	const claimed = [...source.matchAll(/对象是([一二三四五六七八九十])个/g), ...source.matchAll(/^\s*note: '([一二三四五六七八九十])个对象/gm)].map((match) => NUMERALS[match[1]])
+	check('正文里的对象数读得出来(至少一处)', claimed.length >= 1, String(claimed))
+	check('正文里写的对象数与声明长度一致', claimed.every((value) => value === VERIFICATION_LOOP.objects.length), `写的:${claimed.join(',')} · 声明:${VERIFICATION_LOOP.objects.length}`)
+}
+
 console.log('\n【货架:本体落成 clear/ontology/<id>.md,而且是给模型读的】')
 {
 	const doc = describeOntology(VERIFICATION_LOOP)
-	check('货架正文含八个对象与五级', VERIFICATION_LOOP.objects.every((object) => doc.includes(`### ${object.name}`)) && doc.includes('## 五级'))
+	check('货架正文含全部对象与五级', VERIFICATION_LOOP.objects.every((object) => doc.includes(`### ${object.name}`)) && doc.includes('## 五级'))
 	check('货架正文写出转移与守卫(模型据此对得上本体)', doc.includes('→') && doc.includes('守卫:'))
 	check('内核确实会写它(货架函数与调用点都在)', /function ensureOntologyShelf/.test(kernelSource) && /ensureOntologyShelf\(sessionCwd\(sessionId\)\)/.test(kernelSource))
 	check('clear/ 骨架里有 ontology 那一格', /\['skills', 'memory', 'knowledge', 'audit', 'ontology'\]/.test(kernelSource))

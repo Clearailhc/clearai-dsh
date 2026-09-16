@@ -66,10 +66,13 @@ npx clearai-dsh install
 ## 构建与验证
 
 ```bash
-npm test                        # 内核 / 宿主 / 外脑 / 客户端 / 本体 五份套件
+npm test                        # 13 份套件 —— 清单在 test/run.sh
 node tools/build-package.mjs    # 装配 dist/clearai-dsh
-node tools/verify-package.mjs   # 现场重建并比对；25 项
+node tools/verify-package.mjs   # 现场重建并逐字节比对
 node tools/verify-deploy.mjs    # 用部署出去的文件做一次真实装配（绕开 ESM 缓存）
+node tools/verify-truth-table.mjs   # 真值表与代码常量对账
+node tools/verify-clean-install.mjs # 空 DSH_HOME + 真 CLI 装一遍
+node tools/verify-lifecycle.mjs     # 换版本重装 / 卸载 / 用户分叉 / 随包的 install 动词
 ```
 
 浏览器那一面必须有浏览器：`tools/capture-ui.sh` 会建一次性 `DSH_HOME`、装好构建出来的包、起 `dsh web`、再拉起一个带调试端口的 Chrome；`tools/ui-drive.mjs` 负责点击与截图。之所以要有这条链路：客户端半在很长一段时间里只验到单测层面，而**第一次真的在浏览器里打开**就抓到插件根本没注册。

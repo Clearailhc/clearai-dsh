@@ -13,7 +13,7 @@
  *
  * ## 声明必须描述**派生的真实语义**,不是理想化
  *
- * 1. **对象是八个**:目标 / 计划 / 步骤是折法里的一等对象(goal / plan / step),
+ * 1. **对象是九个**:目标 / 计划 / 步骤是折法里的一等对象(goal / plan / step),
  *    与假设、观测、评估、证据、事实并列声明。
  * 2. **`step` 承载验证**:一个步骤最多承载一次验证(`step.tests`),
  *    这是「一步一验」的落地形态。
@@ -172,7 +172,7 @@ export function describeOntology(spec) {
  * 四处差异见文件头)。
  */
 export const VERIFICATION_LOOP = ontology('verification-loop', {
-	note: '八个对象 + 五级验证。声明是数据;实例状态由事实算出来(见文件头那条红线)。',
+	note: '九个对象 + 五级验证。声明是数据;实例状态由事实算出来(见文件头那条红线)。',
 	levels: [
 		level('L0', { judge: 'self', sources: ['self'], note: '只靠推理的快速合理性检查;依据必须可复查' }),
 		level('L1', { judge: 'self', sources: ['self'], note: '已有知识:文献、数据库是否已回答或已否定' }),

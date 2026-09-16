@@ -7,7 +7,7 @@ The detailed Chinese working copy, including the per-component notes accumulated
 ## How to run
 
 ```bash
-npm test                                                  # all five suites
+npm test                                                  # all 13 suites (list: test/run.sh)
 node tools/build-package.mjs && node tools/verify-package.mjs
 node tools/verify-deploy.mjs                              # compose the deployed files for real
 node tools/recheck.mjs --log <a real session.v3.jsonl.zstd>   # suites + deploy + per-surface text budgets

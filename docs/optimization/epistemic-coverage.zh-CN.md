@@ -85,9 +85,9 @@
 |---|---|---|---|---|---|
 | B1a | 世界线各占工作副本 | `ForkPlan` + worktree | 硬 | 已实现 | kernel 套件 |
 | B1b | 收敛是算术；算不出 → 人门；落选保留 | `ConvergeFork` + 人门 | 硬 | 已实现 | kernel 套件 |
-| B2a | todo / 子代理 / workflow / ralph 原生回归，产物留在非权威区 | 阶段 5 计划 | — | **仅设计** | `authority-boundary`（待写） |
-| B2b | 模型切换走原生 `modelSelectionSettings` | 阶段 5 计划 | — | **仅设计** | `preset-composition`（待写） |
-| B2c | ClearAI 自己的 `/` 菜单（命令注册表贡献） | 阶段 5 计划 | — | **仅设计** | `preset-composition`（待写） |
+| B2a | todo / 子代理 / workflow / ralph 原生回归，产物留在非权威区 | `preset/agent.cordis.yml` 工作方式段 | 硬 | 已实现 | `authority-boundary`（14 条）+ `preset-composition` |
+| B2b | 模型切换走原生 `modelSelectionSettings` | `dsh-tool-subagent` 行的配置 | 硬 | 已实现 | `preset-composition` |
+| B2c | ClearAI 自己的 `/` 菜单（命令注册表贡献） | `preset/plugins/commands.js` | 硬 | 已实现 | `preset-composition` |
 
 ### 贯穿支撑
 
@@ -107,7 +107,6 @@
 | — | 验证八状态机 | 仅设计 | 保持 design-only |
 | — | `retracted`（已撤回）有产生者 | 仅设计 | 保持 design-only |
 | — | 观测来源 `human_upload` / `file_drop` / `callback` / `pull` | 仅设计 | 保持 design-only；当前只有 `self`/`scout` 生产者 |
-| B2a–c | 非权威能力原生回归 | 仅设计 | 阶段 5 实现 |
 
 ## 3. 不可缩水清单 与 可交还清单
 
@@ -188,9 +187,9 @@
 | `test/state-machine.test.mjs` | 状态转移 ↔ 折法 |
 | `test/docs-consistency.test.mjs` | 历史说法不冒充现状 |
 
-| 缺失的测试（阶段计划已列） | 要钉住的拍 |
+| 已补齐的测试 | 要钉住的拍 |
 |---|---|
-| `test/authority-boundary.test.mjs`（阶段 4） | B2a：非权威路径结构上写不出 `clearai` 变更 |
-| `test/preset-composition.test.mjs`（阶段 5） | B2b/B2c：菜单与模型切换挂载形态 |
-| `test/prompt-sections.test.mjs`（阶段 6） | 段落分类（hard/native/advisory）不漂移 |
-| 假设数量下限用例（阶段 4b） | ②：从提示词升格为机制后的行为 |
+| `test/authority-boundary.test.mjs` | B2a：非权威路径结构上写不出 `clearai` 变更 |
+| `test/preset-composition.test.mjs` | B2b/B2c：菜单与模型切换挂载形态 |
+| `test/prompt-sections.test.mjs` | 段落分类（hard/native/advisory）不漂移 |
+| 假设数量下限用例（在 `test/kernel.test.mjs` 里） | ②：下限是机制，不是文案 |

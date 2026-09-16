@@ -41,6 +41,7 @@ const EN = {
 }
 
 const STATUS_ORDER = ['implemented', 'partial', 'design-only', 'removed']
+const HARDNESS_ORDER = ['hard', 'advisory', 'native', 'prompt-only', 'deprecated']
 const LAYER_ORDER = ['epistemic', 'harness', 'host', 'ux', 'policy']
 
 function load() {
@@ -63,11 +64,16 @@ function codeSnapshot() {
 
 /** 一句可读的 counts 行。 */
 function countsLine(table, labels) {
-	const by = (key) =>
-		STATUS_ORDER.filter((value) => table.mechanisms.some((m) => m[key] === value))
+	/**
+	 * 每个键有**自己的**取值序:`status` 与 `hardness` 是两套词表,拿同一份序去过滤
+	 * 只会得到空串——这正是「按强度」那一行长期空着的原因。序按枚举声明,不按印象。
+	 */
+	const by = (key, order) =>
+		order
+			.filter((value) => table.mechanisms.some((m) => m[key] === value))
 			.map((value) => `${labels[key][value]} ${table.mechanisms.filter((m) => m[key] === value).length}`)
 			.join(' · ')
-	return { status: by('status'), hardness: by('hardness') }
+	return { status: by('status', STATUS_ORDER), hardness: by('hardness', HARDNESS_ORDER) }
 }
 
 function tableRows(table, labels, lang) {

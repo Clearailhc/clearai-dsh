@@ -39,7 +39,7 @@ npx clearai-dsh install
 从仓库开发（这是开发路径，不是安装路径）：
 
 ```bash
-npm test                       # 内核 / 宿主 / 外脑 / 客户端 / 本体 五份套件
+npm test                       # 13 份套件 —— 清单在 test/run.sh
 node tools/build-package.mjs   # 由源装配 dist/
 node tools/verify-package.mjs  # 现场重建并逐字节比对
 node tools/verify-clean-install.mjs   # 空 DSH_HOME + 真 CLI 装一遍(16 条断言)

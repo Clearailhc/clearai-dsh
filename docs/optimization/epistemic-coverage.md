@@ -99,9 +99,9 @@ currently rests on prompts or is missing.
 |---|---|---|---|---|---|
 | B1a | Each worldline owns a working copy | `ForkPlan` + worktree | hard | implemented | kernel suite |
 | B1b | Convergence is arithmetic; undecidable → human gate; losers kept | `ConvergeFork` + human gate | hard | implemented | kernel suite |
-| B2a | todo / subagents / workflow / ralph return natively, products stay non-authoritative | Phase 5 plan | — | **design-only** | `authority-boundary` (to write) |
-| B2b | Model switching via native `modelSelectionSettings` | Phase 5 plan | — | **design-only** | `preset-composition` (to write) |
-| B2c | ClearAI's own `/` menu (command-registry contributions) | Phase 5 plan | — | **design-only** | `preset-composition` (to write) |
+| B2a | todo / subagents / workflow / ralph return natively, products stay non-authoritative | `preset/agent.cordis.yml` working-style rows | hard | implemented | `authority-boundary` (14 checks) + `preset-composition` |
+| B2b | Model switching via native `modelSelectionSettings` | `dsh-tool-subagent` row config | hard | implemented | `preset-composition` |
+| B2c | ClearAI's own `/` menu (command-registry contributions) | `preset/plugins/commands.js` | hard | implemented | `preset-composition` |
 
 ### Pervasive supports
 
@@ -121,7 +121,6 @@ currently rests on prompts or is missing.
 | — | The eight-state verification machine | design-only | stays design-only |
 | — | A producer for `retracted` | design-only | stays design-only |
 | — | Observation sources `human_upload` / `file_drop` / `callback` / `pull` | design-only | stays design-only; only `self`/`scout` have producers today |
-| B2a–c | Native return of non-authoritative capability | design-only | Phase 5 |
 
 ## 3. The no-shrinkage list and the hand-back list
 
@@ -220,7 +219,7 @@ Human (any time): gate verbs / ask_user_question answers / native approvals / `/
 
 | Missing test (already planned) | Beats to pin |
 |---|---|
-| `test/authority-boundary.test.mjs` (Phase 4) | B2a: non-authoritative paths structurally cannot emit `clearai` mutations |
-| `test/preset-composition.test.mjs` (Phase 5) | B2b/B2c: menu and model-switching mount shape |
-| `test/prompt-sections.test.mjs` (Phase 6) | section tags (hard/native/advisory) do not drift |
-| hypothesis-floor cases (Phase 4b) | ②: behavior once promoted from prompt to mechanism |
+| `test/authority-boundary.test.mjs` | B2a: non-authoritative paths structurally cannot emit `clearai` mutations |
+| `test/preset-composition.test.mjs` | B2b/B2c: menu and model-switching mount shape |
+| `test/prompt-sections.test.mjs` | section tags (hard/native/advisory) do not drift |
+| hypothesis-floor cases (in `test/kernel.test.mjs`) | ②: the floor as a mechanism, not prompt text |

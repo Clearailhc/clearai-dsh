@@ -10,7 +10,7 @@ This table answers one question: **what the current code actually guarantees**. 
 
 - Mechanisms: **48**
 - By status: Implemented 44 · Partial 3 · Design only 1
-- By strength: 
+- By strength: Hard boundary 36 · Advisory 8 · Native 3 · Prompt only 1
 - Actually blocking execution: **16**
 - Affected by autonomy: **2**
 - Carrying a known mismatch between docs/comments and code: **14**
