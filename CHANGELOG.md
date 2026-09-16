@@ -2,6 +2,12 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — 2026-09-16
+
+### Fixed
+
+- **The preset card still read `clearai` with an empty description.** 0.1.2, 0.1.3 and 0.1.4 all shipped `preset.yml` with the description as a plain YAML scalar containing `English: state` — a colon followed by a space cannot appear in a plain scalar, so the file did not parse at all. DSH's preset roster treats *every* metadata read failure as "no metadata", silently, so the picker fell back to the directory id plus 「暂无描述」 and nothing on either side reported an error. The description is now a block scalar, and `verify-package` parses `preset.yml` with the host's own `yaml` library and requires a non-empty `name` and `description` — this can no longer ship silently.
+
 ## [0.1.4] — 2026-09-16
 
 **本版重点:子任务的交付链修好了。** 侦察与世界线执行者的结论此前只进账本、模型读不到

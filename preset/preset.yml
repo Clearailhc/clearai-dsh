@@ -1,5 +1,13 @@
 name: ClearAI
 # 预设名册只有这两行元数据,而且**宿主不会替我们本地化**:它自己的预设走 i18n,
-# 插件给的 name/description 是静态字符串。所以这里写成一行双语 —— 英文读者先看到它,
+# 插件给的 name/description 是静态字符串。所以这里写成双语 —— 英文读者先看到它,
 # 中文读者接着读;长度压在卡片的 clamp 之内(约 4 行)。
-description: Evidence-first exploration (循证探索):先写判据再动手,完成要过观测准入、再经评估与证据推进,高等级结论由独立评估者裁决;进度与阶段全部由系统算出来。互斥方案分叉成世界线,各有一份工作副本,胜负由事先登记的尺子算出来——算不出来就停下问人。English: state the criterion before acting; completion passes admission and independent evaluation, never the doer's own word.
+#
+# ⚠️ description **必须**是块标量(下面那个 `|-`)或者引号,不能写成普通标量。
+# 它里面有 `English: state` 这种「冒号 + 空格」,普通标量会被 YAML 读成嵌套映射 ——
+# 而名册对读失败的处理是**静默降级成「没有元数据」**(@deepseek-ai/dsh-agent-presets 的原话:
+# "Every read failure degrades to no metadata"),于是预设卡片显示成目录名 + 「暂无描述」,
+# 宿主与我们两边都不报错。2026-09-16 实测踩到:0.1.2 与 0.1.3 都带着这个 bug 发了出去。
+# `verify-package` 里那条「preset.yml 必须真能解析出 name 与 description」就是为此立的门。
+description: |-
+  Evidence-first exploration (循证探索):先写判据再动手,完成要过观测准入、再经评估与证据推进,高等级结论由独立评估者裁决;进度与阶段全部由系统算出来。互斥方案分叉成世界线,各有一份工作副本,胜负由事先登记的尺子算出来——算不出来就停下问人。English: state the criterion before acting; completion passes admission and independent evaluation, never the doer's own word.

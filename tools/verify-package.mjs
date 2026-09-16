@@ -21,7 +21,8 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { createRequire } from 'node:module'
+import { homedir, tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -102,6 +103,48 @@ console.log('\n③ 内容归属:预设是**厂商内容**,随包走,且自洽')
 const presetBase = 'presets/clearai'
 check('预设组合文件在', has(`${presetBase}/agent.cordis.yml`))
 check('名册要的两份元数据在(agent.cordis.yml + preset.yml)', has(`${presetBase}/preset.yml`))
+/**
+ * **显示元数据必须真能解析出来。** 这条门是 2026-09-16 踩出来的:
+ *
+ * 名册(@deepseek-ai/dsh-agent-presets)对 `preset.yml` 读失败的处理是**静默降级成
+ * 「没有元数据」**(它的原话:"Every read failure degrades to no metadata"),于是预设卡片
+ * 显示成**目录名 + 「暂无描述」**,而宿主和我们两边都不报错。最容易踩的形态是:
+ * description 写成普通标量,里面又有 `English: state` 这种「冒号 + 空格」→ YAML 读不了。
+ * 0.1.2 与 0.1.3 就是带着这个 bug 发出去的(卡片上写着 `clearai / 暂无描述`)。
+ *
+ * `yaml` 不是本仓库的依赖(仓库里没有 node_modules),所以**从宿主 CLI 的位置**解析它 ——
+ * 与 verify-deploy 同一招,而且正是名册自己用的那个库。宿主不在就退化成形态检查,并如实说明。
+ */
+function loadHostYaml() {
+	const root = join(process.env.HOME ?? homedir(), '.npm', '_npx')
+	for (const entry of existsSync(root) ? readdirSync(root) : []) {
+		const dshPkg = join(root, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+		if (existsSync(dshPkg)) return createRequire(dshPkg)('yaml')
+	}
+	return null
+}
+const presetMetadata = readFileSync(join(DIST, `${presetBase}/preset.yml`), 'utf8')
+const hostYaml = loadHostYaml()
+if (hostYaml === null) {
+	check(
+		'preset.yml 的 description 是块标量或引号(拿不到宿主的 yaml 包,退化成形态检查)',
+		/^name:\s*\S/m.test(presetMetadata) && /^description:\s*[>|"']/m.test(presetMetadata),
+	)
+} else {
+	let parsedMetadata = null
+	let metadataProblem = ''
+	try {
+		parsedMetadata = hostYaml.parse(presetMetadata)
+	} catch (error) {
+		metadataProblem = String(error?.message ?? error).split('\n')[0]
+	}
+	check('preset.yml 是合法 YAML(读不了它,卡片就只显示目录名 + 暂无描述)', parsedMetadata !== null, metadataProblem)
+	check(
+		'preset.yml 给了卡片要显示的 name 与 description',
+		typeof parsedMetadata?.name === 'string' && parsedMetadata.name.trim() !== '' && typeof parsedMetadata?.description === 'string' && parsedMetadata.description.trim() !== '',
+		JSON.stringify({ name: parsedMetadata?.name ?? null, description: `${String(parsedMetadata?.description ?? '').slice(0, 30)}…` }),
+	)
+}
 check('内核随预设走(./plugins/clearai-kernel.js)', has(`${presetBase}/plugins/clearai-kernel.js`))
 check('提示词段随预设走(./plugins/prompts.js)', has(`${presetBase}/plugins/prompts.js`))
 check('预设自己的技能在(skills/ 走 baseUrl,所以必须同目录)', inventory.some((rel) => rel.startsWith(`${presetBase}/skills/`)))
