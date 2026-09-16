@@ -46,11 +46,20 @@ console.log('\n【形状:真值表自身是合法的】')
 		if (!enums.status.includes(m.status)) badEnum.push(`${m.id}:status=${m.status}`)
 		if (!enums.hardness.includes(m.hardness)) badEnum.push(`${m.id}:hardness=${m.hardness}`)
 		if (!enums.authority.includes(m.authority)) badEnum.push(`${m.id}:authority=${m.authority}`)
+		// 归宿只对**非 implemented** 的条目必填:实现了的条目不需要交代「以后怎么办」。
+		if (m.status !== 'implemented' && !enums.destination.includes(m.destination)) badEnum.push(`${m.id}:destination=${String(m.destination)}`)
+		if (m.destination !== undefined && !enums.destination.includes(m.destination)) badEnum.push(`${m.id}:destination=${m.destination}`)
 	}
 	check('每条机制的枚举值都在表头声明的取值里', badEnum.length === 0, badEnum.join(' '))
 	const missingFields = TABLE.mechanisms.filter((m) => typeof m.name !== 'string' || typeof m.name_en !== 'string' || typeof m.rationale !== 'string' || typeof m.trigger !== 'string' || typeof m.actor !== 'string')
 	check('每条机制都有 name / name_en / trigger / actor / rationale', missingFields.length === 0, missingFields.map((m) => m.id).join(' '))
 	check('每条机制都显式声明了 known_mismatch 字段(值可以是 null,但不能缺)', TABLE.mechanisms.every((m) => 'known_mismatch' in m))
+	/**
+	 * 「还没做」与「决定不做」必须分得开:前者会被当待办,后者不会。
+	 * 所以非 implemented 的条目一律要有归宿,取值只能是那三种。
+	 */
+	const undecided = TABLE.mechanisms.filter((m) => m.status !== 'implemented' && m.destination === undefined)
+	check('非 implemented 的条目都交代了归宿(变成机制 / 保持设计目标 / 已删除并记账)', undecided.length === 0, undecided.map((m) => m.id).join(' '))
 }
 
 console.log('\n【生成物:两份 markdown 与 JSON 同步】')
@@ -95,9 +104,20 @@ console.log('\n【重构基线:计划点名的不符必须在表里留痕】')
 		const entry = TABLE.mechanisms.find((m) => m.id === id)
 		check(`真值表收录了 ${id}(${why})`, entry !== undefined)
 	}
-	const tracked = TABLE.mechanisms.filter((m) => m.known_mismatch !== null).map((m) => m.id)
-	check('至少记录了 6 处已知不符(优化计划的存在理由)', tracked.length >= 6, tracked.join(' '))
+	/**
+	 * 这里**刻意不设下限**:`known_mismatch` 是不符字段,解决一条就该清一条。
+	 * 原先那句「至少记录 6 处」把「留着矛盾」写成了通过条件——棘轮指错了方向。
+	 * 要守住的是**结构**(上面那组:被点名的机制都在表里)与**质量**(记下来的必须是具体差异)。
+	 */
 	check('已知不符的条目都写清了差异(不是空串或占位符)', TABLE.mechanisms.filter((m) => m.known_mismatch !== null).every((m) => typeof m.known_mismatch === 'string' && m.known_mismatch.trim().length >= 10))
+	// 已经解决的那两条**不许悄悄长回来**:它们曾是真实的不符,现在代码与文案说的是同一句话。
+	for (const [id, why] of [
+		['plan-review', '授权语义已统一为一句话(记号是归属,门是审阅卡)'],
+		['commands-menu', 'commands.js 已贡献五个只读命令'],
+	]) {
+		const entry = TABLE.mechanisms.find((m) => m.id === id)
+		check(`${id} 的不符字段已清空(${why})`, entry !== undefined && entry.known_mismatch === null)
+	}
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

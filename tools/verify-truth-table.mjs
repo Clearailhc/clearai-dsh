@@ -186,6 +186,73 @@ check(
 	'⑫ loop-contract 写明了假设纪律(模型得先知道规则,门才不会天天误伤)',
 )
 
+// ── ⑬ source.code 必须**可被证伪**:文件在、符号在、没有行号 ─────────────────
+/**
+ * `source.code` 是「这条机制落在哪」的声明。它原来是一段带**行号**的散文
+ * (`clearai-kernel.js-3178`),而行号随每次编辑腐烂——真值表于是长期指着不存在的位置,
+ * 谁也没发现。这里把它变成**可以被机器证伪**的东西:
+ *   · 出现的每个文件路径必须真的存在;
+ *   · 出现的每个标识符必须在**它所属的那一段**里真的出现(按 `;` 切段,段首的路径即归属);
+ *   · 不许出现行号(它必烂;要指位置就指符号)。
+ * 这不是风格检查:一条「已实现」的机制指不出真实的落点,它就该红。
+ */
+const CODE_STOPWORDS = new Set(['case', 'the', 'and', 'file', 'group', 'js', 'mjs', 'yml', 'json', 'md'])
+const codeProblems = []
+for (const mechanism of TABLE.mechanisms) {
+	const code = mechanism.source?.code
+	if (typeof code !== 'string' || code === '') continue
+	if (/(?:\.js|\.mjs|\.yml|\.json|\.md)[-:]\d+/.test(code)) {
+		codeProblems.push(`${mechanism.id}: source.code 里还有行号(行号必烂,请指符号)`)
+		continue
+	}
+	let owner = null
+	for (const segment of code.split(';')) {
+		const trimmed = segment.trim()
+		if (trimmed === '') continue
+		const path = /[\w./-]+\.(?:js|mjs|yml|json|md)/.exec(trimmed)
+		if (path !== null) {
+			owner = path[0]
+			if (!existsSync(join(PORT, owner))) codeProblems.push(`${mechanism.id}: source.code 指向不存在的文件 ${owner}`)
+		}
+		if (owner === null) continue
+		let body = null
+		try {
+			body = readFileSync(join(PORT, owner), 'utf8')
+		} catch {
+			continue
+		}
+		// 路径本身会被标识符正则切碎(`preset`/`plugins`/`kernel`),先把它整段挖掉再认符号。
+		const symbols = (path === null ? trimmed : trimmed.replace(path[0], ' ')).match(/[A-Za-z_][A-Za-z0-9_]{2,}/g) ?? []
+		for (const identifier of symbols) {
+			if (CODE_STOPWORDS.has(identifier)) continue
+			if (!body.includes(identifier)) codeProblems.push(`${mechanism.id}: ${owner} 里找不到符号 ${identifier}`)
+		}
+	}
+}
+check(codeProblems.length === 0, '⑬ 每条机制的 source.code 都能被证伪(文件在、符号在、没有行号)', codeProblems.slice(0, 6).join(' ;; '))
+
+// ── ⑭ 非 implemented 的条目必须交代归宿；不符字段不许再写计划 ────────────────
+/**
+ * coverage §5 立了三分法:**变成机制 / 保持设计目标 / 已删除并记账**。没有这一栏,
+ * 「还没做」与「决定不做」在表里长得一模一样,读的人会一直把设计目标当待办。
+ * 同时:`known_mismatch` 是**不符**字段——它描述的是文档/注释与代码当下的矛盾,
+ * 不是「阶段 N 计划做什么」。行号与计划措辞都不许再出现(行号必烂,计划会落地)。
+ */
+const DESTINATIONS = new Set(['become-mechanism', 'stay-design-only', 'deleted'])
+const destinationProblems = []
+const mismatchProblems = []
+for (const mechanism of TABLE.mechanisms) {
+	if (mechanism.status !== 'implemented') {
+		if (!DESTINATIONS.has(mechanism.destination)) destinationProblems.push(`${mechanism.id}: status=${mechanism.status} 却没有归宿(${String(mechanism.destination)})`)
+	}
+	const mismatch = mechanism.known_mismatch
+	if (typeof mismatch !== 'string') continue
+	if (/(?:kernel|fold|index|client|brain|prompts)\.js[-:]\d+/.test(mismatch)) mismatchProblems.push(`${mechanism.id}: known_mismatch 里还有行号`)
+	if (/阶段\s*\d+\s*(计划|待|实现)|留给阶段|to be done in phase/i.test(mismatch)) mismatchProblems.push(`${mechanism.id}: known_mismatch 里写的是计划,不是当下的不符`)
+}
+check(destinationProblems.length === 0, '⑭ 每条非 implemented 的机制都交代了归宿', destinationProblems.slice(0, 4).join(' ;; '))
+check(mismatchProblems.length === 0, '⑭ known_mismatch 只写当下的不符(不写行号、不写计划)', mismatchProblems.slice(0, 4).join(' ;; '))
+
 // ── 结果 ─────────────────────────────────────────────────────────────────────
 void apply // 保留导入以便将来做装配期探针；当前校验走文本级核对
 

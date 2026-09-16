@@ -151,10 +151,14 @@
 - **落为机制**：`autonomy.override` 死路径（阶段 4/5 决定删或留，留则写明只读旧日志——已决定留）。
   （已落地：假设数量下限——preset 立 2，内核门 + 提示词纪律，见行 ②；权威边界测试；
   `/` 菜单五个命令与非权威能力 todo/subagent/workflow/ralph 挂回——见阶段 4/5 台账。）
-- **保持 design-only 并如实标注**：验证八状态机、通用 L4 门、`retracted` 产生者、
-  观测的另外四种来源。判据：真值表里各有一行、`status` 正确、任何文档不冒称已实现。
-- **删除并记账**：已删机制（`set_autonomy`、6/512 预算、`autoConfirmed`）只在真值表
-  与 CHANGELOG 里留痕，代码与注释不再叙述。
+- **保持 design-only 并如实标注**：通用 L4 门。判据：真值表里各有一行、`status` 与
+  `destination` 都正确、任何文档不冒称已实现。现在**每一条非 implemented 的行都带归宿**
+  （变成机制 / 保持设计目标 / 已删除并记账），「还没做」与「决定不做」不再写成同一个样子。
+- **变成机制**：`retracted` 产生者（真值表行 `fact-retraction`）、观测来源收窄
+  （`observation-provenance`）、验证生命周期里**缺的那两条保证**（`verification-lifecycle`）、
+  以及探索区（`exploration-zone`）。
+- **删除并记账**：已删机制（`set_autonomy`、6/512 预算、`autoConfirmed`）在真值表里各有
+  一行 `status=removed`、`destination=deleted`，另在 CHANGELOG 留痕；代码与注释不再叙述。
 
 ## 6. 端到端时序（规范序列）
 

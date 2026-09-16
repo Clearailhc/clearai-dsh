@@ -27,6 +27,11 @@
    "authoritative",
    "non-authoritative",
    "none"
+  ],
+  "destination": [
+   "become-mechanism",
+   "stay-design-only",
+   "deleted"
   ]
  },
  "mechanisms": [
@@ -115,7 +120,7 @@
    "authority": "authoritative",
    "actor": "system",
    "source": {
-    "code": "preset/plugins/clearai-kernel.js-2426 validateSteps; 调用点 CreatePlan",
+    "code": "preset/plugins/clearai-kernel.js validateSteps; CreatePlan 调用点",
     "tests": "test/kernel.test.mjs",
     "config": null,
     "prompt": "clearai/plan-governance",
@@ -128,7 +133,7 @@
    "affected_by_autonomy": false,
    "native_dsh_alternative": null,
    "rationale": "没有判据就没有可失败的检验，独立评估也无从触发。",
-   "known_mismatch": "历史上的真实软肋：docs/loop-philosophy 曾称「L3+ 无 done_criteria 可绕过独立评估」。阶段 3 已把该段限缩为「只适用于旧日志/内部构造/未来入口」，并写明正常 CreatePlan 入口已强制判据（validateSteps，kernel.js:2405-2426）。残余风险是「每条进入系统的路径都校验判据」这条假设靠测试而非类型维持。"
+   "known_mismatch": "「每条进入系统的路径都校验判据」靠**测试**维持,不由类型保证:正常入口(`CreatePlan` / `AmendPlan` 经 `validateSteps`)强制判据,而旧会话日志、内部构造的计划对象、以及将来新增的入口不受它约束。"
   },
   {
    "id": "formal-plan",
@@ -165,7 +170,7 @@
    "authority": "authoritative",
    "actor": "human",
    "source": {
-    "code": "preset/plugins/clearai-kernel.js-2798 autoConfirmed=false + requestPlanReview; requestPlanReview 走 ctx.userQuestions.ask('plan-review')",
+    "code": "preset/plugins/clearai-kernel.js requestPlanReview; CreatePlan 的审阅门; ctx.userQuestions.ask",
     "tests": "test/kernel.test.mjs",
     "config": null,
     "prompt": "clearai/plan-governance",
@@ -177,8 +182,8 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": "dsh-plan-mode 的审阅卡（ClearAI 借用原生审阅界面，不借账）",
-   "rationale": "计划授权必须是「人按的那一下」。若无此门，一切基于授权的推理都是空的。",
-   "known_mismatch": "**系统前后不一致（阶段 3 修掉了文案，语义冲突仍在，留给阶段 4 决定）**：同一回合里 `CreatePlan` 的结果消息写「计划仍未授权，**不要开工**，如实停下等人」（kernel.js:2775），而运行态卡写「授权记号未落账……**不需要任何人先按什么**」（fold.js:1510），两句都进模型上下文。根因是 fold 把授权当**记号**、CreatePlan 把它当**闸门**。阶段 3 已修正的漂移：preset/agent.cordis.yml 与 prompts.js 的「无人值守立约即授权 / Goal 档自动确认」、CHANGELOG 0.1.2 与 release-verification 的「未授权内核拒收工作」、fold.js 里 `by:'autonomy'` 的注释。"
+   "rationale": "计划授权必须是「人按的那一下」。唯一的门是原生审阅卡;授权记号只是**归属**——未授权不挡显式推进,只让自动续跑 hold,第一次交付按事实补写 `by=progress`。",
+   "known_mismatch": null
   },
   {
    "id": "plan-reauthorize",
@@ -335,12 +340,12 @@
    "name": "L4 步骤/分支级人工放行",
    "name_en": "L4 step/branch human release",
    "layer": "epistemic",
-   "status": "partial",
+   "status": "implemented",
    "hardness": "hard",
    "authority": "authoritative",
    "actor": "human",
    "source": {
-    "code": "preset/plugins/clearai-kernel.js-3178 l4Delivery; -4067; ; ui/lib/fold.js case 'human/released'",
+    "code": "preset/plugins/clearai-kernel.js l4Delivery; witnessedRelease; ui/lib/fold.js case 'human/released'",
     "tests": "test/kernel.test.mjs",
     "config": "l4RequiresHumanRelease=true, l4RejectSelfWritten=true",
     "prompt": "clearai/verification",
@@ -352,8 +357,8 @@
    "blocks_execution": true,
    "affected_by_autonomy": false,
    "native_dsh_alternative": "宿主审批瀑布 ask",
-   "rationale": "L4 意味着高代价或不可逆，必须有人按的那一下。",
-   "known_mismatch": "只覆盖步骤/分支级放行；覆盖每一次评估的通用 L4 门未实现，属设计目标。"
+   "rationale": "L4 意味着高代价或不可逆,必须有人按的那一下。**范围是步骤/分支轴**——这是已定的范围,不是待办:覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。",
+   "known_mismatch": null
   },
   {
    "id": "evidence-record",
@@ -565,7 +570,7 @@
    "authority": "none",
    "actor": "model",
    "source": {
-    "code": "preset/agent.cordis.yml-31 persona; preset/plugins/prompts.js foundation",
+    "code": "preset/agent.cordis.yml persona; preset/plugins/prompts.js foundation",
     "tests": "test/prompt-sections.test.mjs（阶段 6 新增）",
     "config": null,
     "prompt": "clearai/foundation",
@@ -577,8 +582,8 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": "dsh 原生 subagent / workflow / ralph（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）",
-   "rationale": "子角色由系统按触发派生，避免自由委派把「自己派人判自己」重新引入。",
-   "known_mismatch": "只由提示词承载，属偏好；阶段 5 计划以「非权威探索 / 权威评估」分层重新放开自由编排。"
+   "rationale": "子角色由系统按触发派生,避免自由委派把「自己派人判自己」重新引入。这是**偏好**(hardness=advisory):工作方式本身不设限,约束在权威账本那一侧。",
+   "known_mismatch": null
   },
   {
    "id": "four-beats",
@@ -603,7 +608,7 @@
    "affected_by_autonomy": false,
    "native_dsh_alternative": null,
    "rationale": "七阶段在运行时的压缩表达。",
-   "known_mismatch": "属提示词偏好，未落机制。"
+   "known_mismatch": null
   },
   {
    "id": "scout-precommit",
@@ -765,7 +770,7 @@
    "authority": "none",
    "actor": "system",
    "source": {
-    "code": "preset/agent.cordis.yml-222",
+    "code": "preset/agent.cordis.yml",
     "tests": "test/preset-composition.test.mjs（阶段 5 新增）",
     "config": null,
     "prompt": null,
@@ -790,7 +795,7 @@
    "authority": "none",
    "actor": "system",
    "source": {
-    "code": "preset/agent.cordis.yml-226",
+    "code": "preset/agent.cordis.yml",
     "tests": "test/preset-composition.test.mjs（阶段 5 新增）",
     "config": null,
     "prompt": null,
@@ -807,15 +812,15 @@
   },
   {
    "id": "subagent-trimmed",
-   "name": "自由子代理 / workflow / ralph 未挂载",
-   "name_en": "Free subagent / workflow / ralph not mounted",
+   "name": "原生工作方式已挂回(todo / 子代理 / workflow / ralph)",
+   "name_en": "Native working tools are mounted (todo / subagents / workflow / ralph)",
    "layer": "harness",
    "status": "implemented",
    "hardness": "hard",
    "authority": "none",
    "actor": "system",
    "source": {
-    "code": "preset/agent.cordis.yml-225",
+    "code": "preset/agent.cordis.yml",
     "tests": "test/preset-composition.test.mjs（阶段 5 新增）",
     "config": null,
     "prompt": "clearai/delegation",
@@ -827,8 +832,8 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow / dsh-tool-ralph",
-   "rationale": "自由委派会重新引入「自己派一个来判自己」。",
-   "known_mismatch": "阶段 5 计划以分层方式放开：非权威探索可自由编排，权威评估仍由内核派生。"
+   "rationale": "自由委派会重新引入「自己派一个来判自己」。现在按**分层**处理:工作方式交还原生、产物停在非权威区;权威账本仍只能由主线过准入与唯一完成动词写入(见 authority-boundary 套件)。",
+   "known_mismatch": null
   },
   {
    "id": "bash-deny-rules",
@@ -865,7 +870,7 @@
    "authority": "authoritative",
    "actor": "system",
    "source": {
-    "code": "preset/plugins/clearai-kernel.js-5255 protectedRoots / touchesProtected",
+    "code": "preset/plugins/clearai-kernel.js protectedRoots; touchesProtected",
     "tests": "test/kernel.test.mjs",
     "config": null,
     "prompt": "clearai/verification",
@@ -890,7 +895,7 @@
    "authority": "authoritative",
    "actor": "system",
    "source": {
-    "code": "preset/plugins/clearai-kernel.js-3446 git/ledger; FileHistory; RestoreFile",
+    "code": "preset/plugins/clearai-kernel.js commitLedger; FileHistory; RestoreFile",
     "tests": "test/kernel.test.mjs",
     "config": "ledgerMaxFiles=20000",
     "prompt": "clearai/context-discipline",
@@ -927,8 +932,8 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": null,
-   "rationale": "效果未知时先观察当前事实，再谈重试。",
-   "known_mismatch": "只由提示词承载；宿主侧是否另有硬约束需要阶段 3 核实。"
+   "rationale": "效果未知时先观察当前事实,再谈重试。**只由提示词承载**(`prompts.js` 的 execution-discipline);内核与宿主两半都没有针对它的硬约束——这是 hardness=advisory 的含义,不是缺口。",
+   "known_mismatch": null
   },
   {
    "id": "auto-continuation",
@@ -1002,8 +1007,9 @@
    "blocks_execution": false,
    "affected_by_autonomy": true,
    "native_dsh_alternative": null,
-   "rationale": "「我在不在场」是运行时状态；档位现在只是部署初值。",
-   "known_mismatch": "阶段 3 已修掉 preset/agent.cordis.yml 与内核注释里「决定续跑与预算、可由面板切换」的表述。仍然 partial 的原因：状态里保留 `autonomy.override` 读取路径而**已无任何写入者**（set_autonomy 摘除），历史日志兼容性与「要不要彻底删掉这个字段」是阶段 4/5 的决定。"
+   "rationale": "「我在不在场」是运行时状态:要不要继续由**门**算出来(计划待确认 / 裁决在飞 / 有人在等),档位只剩一个作用——决定澄清协议装哪一段。`autonomy.override` 的读取路径**保留但只读**(旧会话日志里可能有 `set_autonomy` 记录),当前没有任何写入者;更完整的「模式系统」是刻意不做的。",
+   "destination": "stay-design-only",
+   "known_mismatch": null
   },
   {
    "id": "runtime-card",
@@ -1027,8 +1033,8 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": null,
-   "rationale": "让模型每回合看到当前真实状态，而不是依赖记忆；仅在状态变化时注入以保持前缀稳定。",
-   "known_mismatch": "阶段 6 计划瘦身：移除内部机制名与宿主 id。"
+   "rationale": "让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。",
+   "known_mismatch": null
   },
   {
    "id": "prompt-sections",
@@ -1040,7 +1046,7 @@
    "authority": "none",
    "actor": "system",
    "source": {
-    "code": "preset/plugins/prompts.js-312; preset/plugins/clearai-kernel.js 段装配",
+    "code": "preset/plugins/prompts.js SECTIONS; preset/plugins/clearai-kernel.js systemPrompt",
     "tests": "test/prompt-sections.test.mjs（阶段 6 新增）",
     "config": "contributions.sections",
     "prompt": "自身",
@@ -1052,8 +1058,8 @@
    "blocks_execution": false,
    "affected_by_autonomy": true,
    "native_dsh_alternative": null,
-   "rationale": "提示词解释行为，但按 P1 不是执行边界。",
-   "known_mismatch": "阶段 3 已修掉「Goal 档自动确认」「run.current_step（DSH 里不存在这个字段）」与计数漂移（preset 原写「20 件工具、22 段」）。仍待阶段 6 处理：段落过厚、与 DSH 原生重复的内容未下沉、未按 hard/native/advisory 分类。"
+   "rationale": "提示词解释行为,但按 P1 不是执行边界。每一段都带 `hard` / `native` / `advisory` 分类,并由 `test/prompt-sections.test.mjs` 咬合内容与分类。剩下来的是**厚薄**上的取舍(与原生重复的说明还能再下沉),属编辑口味,不是机制缺口。",
+   "known_mismatch": null
   },
   {
    "id": "context-pruning",
@@ -1065,7 +1071,7 @@
    "authority": "none",
    "actor": "system",
    "source": {
-    "code": "preset/agent.cordis.yml-110 compaction group",
+    "code": "preset/agent.cordis.yml compaction",
     "tests": "test/client.test.mjs（装配）",
     "config": "thresholdChars=8192, headChars=4096, tailChars=1024",
     "prompt": "clearai/context-discipline",
@@ -1115,7 +1121,7 @@
    "authority": "authoritative",
    "actor": "model",
    "source": {
-    "code": "preset/plugins/brain.js-39 字段契约; WriteMemory",
+    "code": "preset/plugins/brain.js 字段契约; WriteMemory",
     "tests": "test/brain.test.mjs",
     "config": null,
     "prompt": "clearai/memory-protocol",
@@ -1152,15 +1158,15 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": "dsh-client-ui-model-selection",
-   "rationale": "ClearAI 不维护第二份模型状态账。",
-   "known_mismatch": "当前 ClearAI 预设未挂载任何模型选择相关的客户端行；运行态卡也不展示当前模型。阶段 5 计划只读展示。"
+   "rationale": "ClearAI 不维护第二份模型状态账:切换走原生入口(`dsh-tool-subagent` 的 `modelSelectionSettings`),运行态卡不展示当前模型——它不参与任何判断。",
+   "known_mismatch": null
   },
   {
    "id": "commands-menu",
    "name": "人类 `/` 命令菜单",
    "name_en": "Human `/` command menu",
    "layer": "ux",
-   "status": "partial",
+   "status": "implemented",
    "hardness": "native",
    "authority": "none",
    "actor": "human",
@@ -1177,8 +1183,8 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": "dsh-commands 注册表",
-   "rationale": "菜单是 DSH 原生的人类命令通道，应优先于自建协议。",
-   "known_mismatch": "ClearAI 只贡献了 /compact，比 standard 预设少了 /goal，且没有任何自己的命令。阶段 5 计划新增 preset/plugins/commands.js 贡献 ClearAI 人侧命令。"
+   "rationale": "菜单是 DSH 原生的人类命令通道,应优先于自建协议。ClearAI 贡献五个**只读**命令(`/goal` `/plan` `/evidence` `/worldline` 现算状态窗,`/plan-review` 把呈审 steer 给模型);命令处理器没有变更通道,那是权威边界。",
+   "known_mismatch": null
   },
   {
    "id": "exploration-zone",
@@ -1203,7 +1209,8 @@
    "affected_by_autonomy": false,
    "native_dsh_alternative": "dsh-tool-todo / dsh-tool-subagent",
    "rationale": "把「组织工作」与「确认知识」解耦：探索可以自由，事实必须严格。",
-   "known_mismatch": "尚未实现；当前所有工作都被拉进正式循环。"
+   "known_mismatch": "尚未实现；当前所有工作都被拉进正式循环。",
+   "destination": "become-mechanism"
   },
   {
    "id": "subrun-lifecycle",
@@ -1230,6 +1237,188 @@
    "known_mismatch": null,
    "notes": "四类子 run 共用一套启动与收集；差异只在人格、工具面与结果解释方式。结论送达模型 = 收集那一刻的返回值带上正文（不赌运行时的尽力投递）。",
    "rationale": "子任务的生命周期必须由内核自己掌握:账本只认本进程攥着的句柄,结论送达由收集那一刻的返回完成;四种角色共用一套,差异只在人格、工具面与结果解释方式。"
+  },
+  {
+   "id": "l4-universal-gate",
+   "name": "覆盖每一次评估的通用 L4 门",
+   "name_en": "A universal L4 gate over every evaluation",
+   "layer": "epistemic",
+   "status": "design-only",
+   "hardness": "advisory",
+   "authority": "none",
+   "actor": "human",
+   "source": {
+    "code": "docs/known-gaps.md",
+    "tests": null,
+    "config": null,
+    "prompt": null,
+    "docs": "docs/known-gaps.md"
+   },
+   "trigger": "—",
+   "input": "—",
+   "output": "—",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "**不实现是一个决定,不是待办**:门要加在「正确答案取决于人」的地方。每一次评估都上门,等于把非承重的取舍塞给人——那正是这套设计反复要避免的。L4 的门挂在**等级**上(步骤/分支轴),见 l4-human-release。",
+   "destination": "stay-design-only",
+   "known_mismatch": null
+  },
+  {
+   "id": "verification-lifecycle",
+   "name": "验证生命周期:哪些保证是活的",
+   "name_en": "Verification lifecycle: which guarantees are live",
+   "layer": "epistemic",
+   "status": "design-only",
+   "hardness": "advisory",
+   "authority": "none",
+   "actor": "system",
+   "source": {
+    "code": "docs/verification-loop.md; preset/plugins/ontology.js VERIFICATION_LOOP; ui/lib/fold.js derive",
+    "tests": "test/ontology.test.mjs",
+    "config": null,
+    "prompt": null,
+    "docs": "docs/verification-loop.md"
+   },
+   "trigger": "—",
+   "input": "—",
+   "output": "—",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "文档里那台「八状态验证机」是**设计记录**,不是运行时保证:它要求把九个生命周期态**存下来**,而本系统的状态必须能由日志重算(P3)。逐条对照后,它承诺的保证大部分已由既有事实与派生覆盖(判据登记 / L4 放行 / 观测准入 / 评估 / 无果终止),**还缺两条**:结果永远不来时把决定摆到人面前(expired),以及同一步连续无法判定时强制改判据(inconclusive 重试政策)。§6 的 rule 1(逐级推进)同样没有落点。",
+   "destination": "become-mechanism",
+   "known_mismatch": "文档以现在时把整台状态机标为设计目标是对的,但 §6 开头那句「系统在状态变更时检查这些,而不是靠提示词」对 rule 1 不成立:它**零实现、零提示词**。"
+  },
+  {
+   "id": "fact-retraction",
+   "name": "事实撤回:人审查后决定",
+   "name_en": "Fact retraction by human decision",
+   "layer": "epistemic",
+   "status": "design-only",
+   "hardness": "hard",
+   "authority": "authoritative",
+   "actor": "human",
+   "source": {
+    "code": "preset/plugins/ontology.js hypothesis; ui/lib/client.js PROPOSITION_GROUPS",
+    "tests": null,
+    "config": null,
+    "prompt": "clearai/verification",
+    "docs": "docs/verification-loop.md"
+   },
+   "trigger": "已升格事实的假设收到推翻证据",
+   "input": "事实 + 缘由",
+   "output": "—(没有生产者)",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "事实带边界(scope):边界被触发时,要有一个人能把它撤回,而且撤回永不自动。**声明与实现三方不一致**:文档说 ontology 定义了 `retracted`,实际 `preset/plugins/ontology.js` 的 hypothesis states 里没有它,而 `ui/lib/client.js` 已经在画这个状态、`fold.js` 的派生也已经把它排除在有效命题之外。",
+   "destination": "become-mechanism",
+   "known_mismatch": "`docs/verification-loop.md` 与 `docs/known-gaps.md` 都说「ontology 定义了 `retracted`」,而 `preset/plugins/ontology.js` 的 hypothesis states 是 proposed/alive/confirmed/refuted/superseded——**没有** `retracted`;界面却已经渲染它。"
+  },
+  {
+   "id": "observation-provenance",
+   "name": "观测来源:声明必须与生产者对得上",
+   "name_en": "Observation provenance: declared sources vs producers",
+   "layer": "epistemic",
+   "status": "partial",
+   "hardness": "hard",
+   "authority": "authoritative",
+   "actor": "system",
+   "source": {
+    "code": "preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'",
+    "tests": "test/kernel.test.mjs",
+    "config": null,
+    "prompt": null,
+    "docs": "docs/verification-loop.md"
+   },
+   "trigger": "交付时登记观测(主线或世界线)",
+   "input": "ref + note",
+   "output": "mutation observation/recorded（source 只写过 self 与 scout）",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "类型的职责是**只声明今天真的可表示的东西**:内核只有两处写 `self`、一处写 `scout`,而 ontology 的 `source.values` 列了五个取值。多出来的那四个既没有生产者,也没有任何决策消费它们。",
+   "destination": "become-mechanism",
+   "known_mismatch": "ontology 声明 `source` 可取 `human_upload` / `file_drop` / `callback` / `pull`,而这四个**没有任何生产者**,也没有任何决策消费它们——类型里的假话。"
+  },
+  {
+   "id": "set-autonomy",
+   "name": "已删除:人在面板上切换运行档",
+   "name_en": "Removed: switching the run tier from the panel",
+   "layer": "harness",
+   "status": "removed",
+   "hardness": "deprecated",
+   "authority": "none",
+   "actor": "human",
+   "source": {
+    "code": null,
+    "tests": null,
+    "config": null,
+    "prompt": null,
+    "docs": "docs/known-gaps.md"
+   },
+   "trigger": "—",
+   "input": "—",
+   "output": "—",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "「要不要人在场」是**运行时状态**,不是面板上的一个开关:有事要拍板就有门开着,没门就继续跑。那个档位还顺手把「计划经人确认」变成系统自己签的——用门代替开关之后,它没有存在的理由。",
+   "destination": "deleted",
+   "known_mismatch": null
+  },
+  {
+   "id": "budget-tiers",
+   "name": "已删除:人在场 6 轮 / 无人值守 512 轮",
+   "name_en": "Removed: 6-round / 512-round budget tiers",
+   "layer": "harness",
+   "status": "removed",
+   "hardness": "deprecated",
+   "authority": "none",
+   "actor": "system",
+   "source": {
+    "code": null,
+    "tests": null,
+    "config": null,
+    "prompt": null,
+    "docs": "docs/known-gaps.md"
+   },
+   "trigger": "—",
+   "input": "—",
+   "output": "—",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "轮数是**保险丝**,不是用户的档位。原先两档把「我在不在场」变成了配置项,还把「计划经人确认」变成系统自己签的。现在只有一个默认值(128),由**原生**的 round driver 执行上限。",
+   "destination": "deleted",
+   "known_mismatch": null
+  },
+  {
+   "id": "plan-auto-confirm",
+   "name": "已删除:无人值守立约即授权",
+   "name_en": "Removed: unattended plans auto-confirmed themselves",
+   "layer": "epistemic",
+   "status": "removed",
+   "hardness": "deprecated",
+   "authority": "none",
+   "actor": "system",
+   "source": {
+    "code": null,
+    "tests": null,
+    "config": null,
+    "prompt": null,
+    "docs": "docs/known-gaps.md"
+   },
+   "trigger": "—",
+   "input": "—",
+   "output": "—",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "让系统替人签「这份计划经人确认」,那条证据就是系统自己伪造的——与 L4「人放行」是同一类病。门的意义在于「这一下是人按的」,所以 `confirmed_by` 只剩 `user` 与 `progress`。",
+   "destination": "deleted",
+   "known_mismatch": null
   }
  ]
 }

@@ -42,6 +42,15 @@ const EN = {
 
 const STATUS_ORDER = ['implemented', 'partial', 'design-only', 'removed']
 const HARDNESS_ORDER = ['hard', 'advisory', 'native', 'prompt-only', 'deprecated']
+/**
+ * 非 implemented 的条目必须交代**归宿**(coverage §5 的三分法:变成机制 / 保持设计目标 /
+ * 已删除并记账)。没有它,「还没做」与「决定不做」在表里长得一模一样,读的人会一直当待办。
+ */
+const DESTINATION = {
+	'become-mechanism': { zh: '变成机制', en: 'becomes a mechanism' },
+	'stay-design-only': { zh: '保持设计目标', en: 'stays design-only' },
+	deleted: { zh: '已删除并记账', en: 'deleted and accounted' },
+}
 const LAYER_ORDER = ['epistemic', 'harness', 'host', 'ux', 'policy']
 
 function load() {
@@ -73,7 +82,11 @@ function countsLine(table, labels) {
 			.filter((value) => table.mechanisms.some((m) => m[key] === value))
 			.map((value) => `${labels[key][value]} ${table.mechanisms.filter((m) => m[key] === value).length}`)
 			.join(' · ')
-	return { status: by('status', STATUS_ORDER), hardness: by('hardness', HARDNESS_ORDER) }
+	const byDestination = Object.keys(DESTINATION)
+		.filter((value) => table.mechanisms.some((m) => m.destination === value))
+		.map((value) => `${labels === ZH ? DESTINATION[value].zh : DESTINATION[value].en} ${table.mechanisms.filter((m) => m.destination === value).length}`)
+		.join(' · ')
+	return { status: by('status', STATUS_ORDER), hardness: by('hardness', HARDNESS_ORDER), destination: byDestination }
 }
 
 function tableRows(table, labels, lang) {
@@ -121,6 +134,7 @@ function detailSections(table, lang) {
 			lines.push(`- **阻断执行**：${m.blocks_execution ? '是' : '否'} · **受 autonomy 影响**：${m.affected_by_autonomy ? '是' : '否'}`)
 			lines.push(`- **原生替代**：${m.native_dsh_alternative ?? '无'}`)
 			lines.push(`- **理由**：${m.rationale}`)
+			if (m.destination !== undefined) lines.push(`- **归宿**：${DESTINATION[m.destination]?.zh ?? m.destination}`)
 			lines.push(`- **代码**：${m.source.code ?? '—'}`)
 			lines.push(`- **测试**：${m.source.tests ?? '—'} · **配置**：${m.source.config ?? '—'}`)
 			lines.push(`- **提示词**：${m.source.prompt ?? '—'} · **文档**：${m.source.docs ?? '—'}`)
@@ -132,6 +146,7 @@ function detailSections(table, lang) {
 			lines.push(`- **Blocks execution**: ${m.blocks_execution ? 'yes' : 'no'} · **Affected by autonomy**: ${m.affected_by_autonomy ? 'yes' : 'no'}`)
 			lines.push(`- **Native alternative**: ${m.native_dsh_alternative ?? 'none'}`)
 			lines.push(`- **Rationale**: ${m.rationale}`)
+			if (m.destination !== undefined) lines.push(`- **Destination**: ${DESTINATION[m.destination]?.en ?? m.destination}`)
 			lines.push(`- **Code**: ${m.source.code ?? '—'}`)
 			lines.push(`- **Tests**: ${m.source.tests ?? '—'} · **Config**: ${m.source.config ?? '—'}`)
 			lines.push(`- **Prompt**: ${m.source.prompt ?? '—'} · **Docs**: ${m.source.docs ?? '—'}`)
@@ -155,6 +170,7 @@ function renderZh(table) {
 	lines.push(`- 机制条目：**${table.mechanisms.length}**`)
 	lines.push(`- 按状态：${counts.status}`)
 	lines.push(`- 按强度：${counts.hardness}`)
+	lines.push(`- 按归宿：${counts.destination}`)
 	lines.push(`- 真正阻断执行的：**${table.mechanisms.filter((m) => m.blocks_execution).length}**`)
 	lines.push(`- 受 autonomy 影响的：**${table.mechanisms.filter((m) => m.affected_by_autonomy).length}**`)
 	lines.push(`- 存在已知不符（文档 / 注释与代码不一致）的：**${table.mechanisms.filter((m) => m.known_mismatch !== null).length}**`, '')
@@ -187,6 +203,7 @@ function renderEn(table) {
 	lines.push(`- Mechanisms: **${table.mechanisms.length}**`)
 	lines.push(`- By status: ${counts.status}`)
 	lines.push(`- By strength: ${counts.hardness}`)
+	lines.push(`- By destination: ${counts.destination}`)
 	lines.push(`- Actually blocking execution: **${table.mechanisms.filter((m) => m.blocks_execution).length}**`)
 	lines.push(`- Affected by autonomy: **${table.mechanisms.filter((m) => m.affected_by_autonomy).length}**`)
 	lines.push(`- Carrying a known mismatch between docs/comments and code: **${table.mechanisms.filter((m) => m.known_mismatch !== null).length}**`, '')

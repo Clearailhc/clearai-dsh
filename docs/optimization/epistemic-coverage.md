@@ -117,10 +117,10 @@ currently rests on prompts or is missing.
 
 | Beat | Expected behavior | Status | Destination |
 |---|---|---|---|
-| ⑦+ | A universal L4 gate covering **every** evaluation | design-only | stays design-only; docs must not claim it |
-| — | The eight-state verification machine | design-only | stays design-only |
-| — | A producer for `retracted` | design-only | stays design-only |
-| — | Observation sources `human_upload` / `file_drop` / `callback` / `pull` | design-only | stays design-only; only `self`/`scout` have producers today |
+| ⑦+ | A universal L4 gate covering **every** evaluation | design-only | truth-table row `l4-universal-gate` · destination `stay-design-only` (a decision, not a backlog item) |
+| — | The eight-state verification machine | design-only | truth-table row `verification-lifecycle` · destination `become-mechanism` — only its two missing **guarantees** are planned, not the nine stored states |
+| — | A producer for `retracted` | design-only | truth-table row `fact-retraction` · destination `become-mechanism` |
+| — | Observation sources `human_upload` / `file_drop` / `callback` / `pull` | design-only | truth-table row `observation-provenance` · destination `become-mechanism` (the type gets narrowed to the producers that exist) |
 
 ## 3. The no-shrinkage list and the hand-back list
 
@@ -175,9 +175,10 @@ the prompts now say one sentence):
   (Landed: the hypothesis count floor — preset sets 2, kernel gate + prompt discipline, see
   row ②; the authority-boundary test; the five `/` commands and the returned native working
   tools todo/subagent/workflow/ralph — see the Phase 4/5 ledger entries.)
-- **Stay design-only, honestly labelled**: the eight-state verification machine, the universal
-  L4 gate, a `retracted` producer, the four other observation sources. The criterion: each has a
-  truth-table row with the correct `status`, and no document claims it is implemented.
+- **Stay design-only, honestly labelled**: the universal L4 gate. The criterion: it has a
+  truth-table row with the correct `status` and a `destination`, and no document claims it is
+  implemented. Every non-`implemented` row now carries that destination, so "not yet" and
+  "decided against" are no longer spelled the same way.
 - **Deleted and accounted**: removed mechanisms (`set_autonomy`, the 6/512 budgets,
   `autoConfirmed`) leave traces only in the truth table and the CHANGELOG; code and comments no
   longer narrate them.
