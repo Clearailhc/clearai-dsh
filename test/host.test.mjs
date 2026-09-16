@@ -679,8 +679,12 @@ console.log('\n【技能面:合并目录折进投影,用量从日志里折出来
 			source: { kind: 'subagent-settled', form: 'notice', summary: 'Background subagent c-1 finished.', senderSessionId: 'c-1' },
 		},
 	})
-	check('运行时结算通知被折进投影(带子会话 id 与结论)', view(notice).notices.length === 1 && view(notice).notices[0].child === 'c-1' && /18 条技能/.test(view(notice).notices[0].conclusion), JSON.stringify(view(notice).notices))
-	check('结论取的是子会话说的话,不是运行时那行英文摘要', !/closing message|Background subagent/.test(view(notice).notices[0].conclusion), view(notice).notices[0].conclusion.slice(0, 60))
+	/**
+	 * 原生结算通知**不进投影**:模型自己就收到了那条消息,而账本侧的结算只认内核攥着的
+	 * `run.result`。折它只会多出一个没有读者的字段——这条断言钉住「别再折回来」:
+	 * 真要消费它,得先有一个消费者,并且记住结论在「closing message:」之后(运行时那行摘要不是子会话说的话)。
+	 */
+	check('原生结算通知不进投影(没有消费者的字段不该被折进来)', view(notice).notices === undefined && !/notices/.test(JSON.stringify(view(notice))), JSON.stringify(view(notice)).slice(0, 120))
 	check('不是人的消息:通知不该被当成人的动作(人门/答复都只认 source.kind=user)', parseHumanGate({ source: { kind: 'subagent-settled' }, content: [{ type: 'text', text: '[clearai·人门] x' }] }) === null)
 }
 

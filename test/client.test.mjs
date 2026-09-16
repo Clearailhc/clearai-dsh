@@ -913,16 +913,17 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const text = react.render(components.Inbox({ data: refuted })).replace(/\s+/g, ' ')
 			check('被推翻的事实:撤回与维持两个按钮都在(少一个那道门就没有出口)', /撤回事实/.test(text) && /维持原事实/.test(text), text.slice(0, 200))
 			/**
-			 * 临时采纳那道门:认可是它的机械出口。「认可就什么都不用做」的写法有个洞——
-			 * 门开着按住续跑,于是系统一直等一个永远不会来的动作。
+			 * 撤回是**两步**(与「放弃这条分叉」同一分工):机制只记录,「值得索要理由」在界面上——
+			 * 撤回改变的是下一轮模型会引用什么;而「维持原事实」不改任何面,所以它是一键。
+			 * 这份渲染桩的 `useState` 是空实现,所以这里断言的是**初始态**:缘由没写之前,
+			 * 「确认撤回」根本不存在(它要点开之后才出现)。
 			 */
-			const provisional = { ...view, hasOpenGate: true, inbox: [{ kind: 'provisional_review', title: '临时采纳待复核', summary: '走哪条 · 已临时采纳「甲」:分差不足以称结论', plan: 'p-1', step: 's1', fork: 'f-1', human_action: 'confirm_provisional', needs: 'click', ask: '要改判据就重做一条世界线(说一句即可)' }] }
-			const provisionalText = react.render(components.Inbox({ data: provisional })).replace(/\s+/g, ' ')
-			check('临时采纳那道门:给「认可,继续」按钮(不再只是「说一句话就行」)', /认可,继续/.test(provisionalText) && !/说一句话就行/.test(provisionalText), provisionalText.slice(0, 180))
-			/** 从没被走过的等级:面板也要看得见(与卡片同一个读数)。 */
-			const skipped = { ...view, goal: { ...(view.goal ?? { claim: 'x', doneCriteria: 'y', status: 'open', revision: 1, promoteAtLevel: 'L3', phase: 'executing', progress: 0.5 }), hypotheses: [{ id: 'h-1', claim: 'X 比 Y 快', refuteWhen: 'Y 更快', status: 'alive', supportedLevel: 'L3', refutations: 0, inconclusive: 0, untouchedLevels: ['L0', 'L1', 'L2'] }] } }
-			const propText = react.render(components.PropositionShelf({ data: skipped })).replace(/\s+/g, ' ')
-			check('命题行标出「未走过 L0/L1/L2」(跳级要看得见)', /未走过 L0\/L1\/L2/.test(propText), propText.slice(0, 200))
+			{
+				const tree = walkNodes(components.Inbox({ data: refuted }))
+				const label = (node) => flatNode(node)
+				check('撤回先要写缘由:初始态只有「撤回事实」,没有「确认撤回」', tree.some((node) => label(node) === '撤回事实') && !tree.some((node) => label(node) === '确认撤回'))
+				check('那颗按钮的提示写着「两步」而不是「一键」', tree.some((node) => String(node.props?.title ?? '').includes('点一下写缘由')), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => node.props?.title)))
+			}
 			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
 			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻,等你决定/.test(shelf), shelf.slice(0, 180))
 			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }
