@@ -539,5 +539,6 @@ meta.json / trajectory.txt + 追加式 index.json),重档留盘(`~/.dsh/e2e-arch
 (48 条机制全过校验);发现文档把第二轮「通知当账本信号」标为**已被第三轮取代**,
 并补齐「现行实现一览」与「缺口(诚实清单)」;known-gaps 两语同步。
 
-**端到端**：falsification 38/0(归档后复跑);此前 3 场并行 3/3 全绿
-(scout-first 38/0 · worldline 40/0 · falsification 38/0)。
+**端到端(最终一批,带完整归档)**：`scout-first 38/0 · worldline-arbitration 40/0 ·
+falsification 38/0`(deepseek-flash 并行,并发 3,出处 commit `aa9e2a3`)。
+每场轻档入库、重档留盘;索引在 `docs/optimization/e2e-logs/index.json`。
