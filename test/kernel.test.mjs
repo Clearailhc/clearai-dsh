@@ -3246,6 +3246,32 @@ console.log('\n【账本:交付点落一条提交,恢复是一条新提交】')
 	check('提交里没有这个文件 → 拒绝(不写坏东西)', ghost.ok === false && ghost.code === 'not_in_commit', String(ghost.code))
 }
 
+console.log('\n【裁决一旦结束就要落结算事实:不许让派发事实独自留在账上】')
+{
+	/**
+	 * 三条路原来都直接 `return unknown`(评估者失败 / 没正常结束 / **评估卡落盘失败**),
+	 * 账上只剩 `audit/dispatched`——看上去像"它还在跑",而它已经结束了。
+	 * 长测里那条「评估者没有悬空」因此红过一次,而且连解释都拿不出证据。
+	 */
+	const host = makeHost()
+	apply(host.ctx, {})
+	const S = 'session-audit-settled-on-unknown'
+	await callOn(host, S, 'SetGoal', { claim: '拿到裁决', done_criteria: 'lab/audit-settle.txt 存在', hypotheses: [{ claim: '能做', refute_when: '不能' }] })
+	const hypothesis = host.service.state(S).hypotheses[0].id
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'a1', do: '把这一步交付并等独立裁决', artifacts: ['lab/audit-settle.txt'], done_criteria: 'lab/audit-settle.txt 有读数', tests: { hypothesis, level: 'L3' } }] })
+	write('lab/audit-settle.txt', 'reading 1\n')
+	// 评估者**没有正常结束**:账上必须留下一条结算事实,而不是只有派发。
+	host.stopReasonEvaluator = 'aborted'
+	host.nextVerdict = undefined
+	const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'a1' })
+	const dispatched = host.journal.filter((mutation) => mutation.t === 'audit/dispatched').length
+	const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
+	check('这一笔交付 fail-closed(没拿到裁决就不推进)', delivered.ok === false && delivered.code === 'evidence_audit_unavailable', String(delivered.code))
+	check('派发事实落了(前置)', dispatched === 1, String(dispatched))
+	check('**结算事实也落了**:结局不好也是结局', settled.length === 1 && settled[0].verdict === 'unknown' && Array.isArray(settled[0].shortfalls) && settled[0].shortfalls.includes('audit_incomplete'), JSON.stringify(settled))
+	check('结算事实带着 id 与步(可回指那一次派遣)', typeof settled[0].id === 'string' && settled[0].step === 'a1', JSON.stringify(settled[0]).slice(0, 120))
+}
+
 console.log('\n【回合收尾:宿主要停了,我们留下最后一句事实】')
 {
 	/**

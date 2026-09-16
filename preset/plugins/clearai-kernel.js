@@ -1774,12 +1774,24 @@ export function apply(ctx, config = {}) {
 		// 已落定:这次派遣的生命周期到此为止。下一次交付是**新的一次评估**(新证据),必须重新派遣。
 		pendingAudits.delete(key)
 		if (outcome.ok !== true) {
-			return { verdict: 'unknown', basis: `评估者失败:${String(outcome.error?.message ?? outcome.error)}`, shortfalls: ['audit_failed'], cardPath: null, mutations }
+			return settleUnknown(`评估者失败:${String(outcome.error?.message ?? outcome.error)}`, ['audit_failed'])
+		}
+		/**
+		 * **裁决一旦结束,就要落一条结算事实**——不管结局是什么。
+		 *
+		 * 三条路原来直接 `return unknown`(评估者失败 / 没正常结束 / 评估卡落盘失败),
+		 * 账上只剩 `audit/dispatched`:看上去像"它还在跑",而它**已经结束了**。
+		 * 结局不好也是结局,如实落下来——不然那条派发事实会在账上挂到天荒地老,
+		 * 而"评估者没有悬空"这条不变量也只能红着,连解释都拿不出证据。
+		 */
+		const settleUnknown = (basis, shortfalls) => {
+			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', basis, shortfalls, card_path: null })
+			return { verdict: 'unknown', basis, shortfalls, cardPath: null, mutations }
 		}
 		const settled = outcome.value
 		const stopReason = String(settled?.stopReason ?? 'completed')
 		if (stopReason !== 'completed' && settled?.structured === undefined) {
-			return { verdict: 'unknown', basis: `评估者未正常结束(${stopReason})`, shortfalls: ['audit_incomplete'], cardPath: null, mutations }
+			return settleUnknown(`评估者未正常结束(${stopReason})`, ['audit_incomplete'])
 		}
 		const verdict = settled?.structured !== undefined ? normalizeVerdict(settled.structured) : normalizeVerdict(parseLooseJson(settled?.output))
 		try {
@@ -1790,7 +1802,7 @@ export function apply(ctx, config = {}) {
 		const card = { schema_version: 'clearai.audit.v1', kind, step_id: step.id, auditor_run_id: String(entry.run.id), verdict: verdict.verdict, shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
 		const cardPath = writeAuditCard(sessionId, step.id, card)
 		if (cardPath === null) {
-			return { verdict: 'unknown', basis: '评估卡落盘失败:裁决降级', shortfalls: ['card_persist_failed'], cardPath: null, mutations }
+			return settleUnknown('评估卡落盘失败:裁决降级', ['card_persist_failed'])
 		}
 		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.verdict, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath })
 		return { ...verdict, cardPath, mutations }
