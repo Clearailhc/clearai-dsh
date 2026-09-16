@@ -209,7 +209,18 @@ function makeHost() {
 					// 每个会话都给一个 `ownEvents()`:内核读**权威记录**用得上
 					// (执行者结论回收 `turn/end`、人放行审批对 `approval/asked`+`approval/decided`)。
 					// 默认空数组 = 读不到 ⇒ fail closed(用例要放行就得自己把那一对事件放进去)。
-					const shell = (id) => ({ header: { cwd: host.cwd ?? WORKSPACE }, ownEvents: () => host.sessionEvents?.[String(id)] ?? [] })
+					const shell = (id) => ({
+						header: { cwd: host.cwd ?? WORKSPACE },
+						ownEvents: () => host.sessionEvents?.[String(id)] ?? [],
+						/**
+						 * 内核的**回合收尾**会往会话日志里写一条 `clearai/turn-ended`
+						 * (事件而不是消息:这一拍任何"追加消息"的路子都会把模型再叫起来)。
+						 */
+						append: (type, data) => {
+							host.appended = host.appended ?? []
+							host.appended.push({ sessionId: String(id), type, data })
+						},
+					})
 					return {
 						get: (id) => host.childSessions?.[String(id)] ?? shell(id),
 						list: () => Object.values(host.childSessions ?? {}),
@@ -3223,6 +3234,77 @@ console.log('\n【账本:交付点落一条提交,恢复是一条新提交】')
 	check('非法 commit → 拒绝', badCommit.ok === false && badCommit.code === 'invalid_commit', String(badCommit.code))
 	const ghost = await callOn(host, S, 'RestoreFile', { path: 'lab/ledger-probe.txt', commit: 'deadbee' })
 	check('提交里没有这个文件 → 拒绝(不写坏东西)', ghost.ok === false && ghost.code === 'not_in_commit', String(ghost.code))
+}
+
+console.log('\n【回合收尾:宿主要停了,我们留下最后一句事实】')
+{
+	/**
+	 * 一次性形态里,回合一停、进程一走,在飞的子 run 的结论就再也回不来;而投影里只留着
+	 * `worldline/executing` 这类**派发**事实——看上去像"它还在跑",事实是"它停在那里了"。
+	 * 宿主的 `agent/turn-stopping`(回合将停且队列为空时**串行 await**)是停下之前唯一还能
+	 * 说话的地方:在那里把工作区记一笔、把在飞的如实写下来。
+	 */
+	const host = makeHost()
+	apply(host.ctx, {})
+	const S = 'session-turn-end'
+	await callOn(host, S, 'SetGoal', { claim: '把产物做出来', done_criteria: 'lab/turn-end.txt 存在', hypotheses: [{ claim: '能做成', refute_when: '做不成' }] })
+	const hypothesis = host.service.state(S).hypotheses[0].id
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 't1', do: '分头试两条', artifacts: ['lab/turn-end.txt'], done_criteria: 'lab/turn-end.txt 存在', tests: { hypothesis, level: 'L0' } }] })
+	const turnEnd = host.listeners.get('agent/turn-stopping')
+	check('内核注册了 agent/turn-stopping(宿主给的回合收尾位)', typeof turnEnd === 'function')
+	host.executorNeverSettles = true
+	await callOn(host, S, 'ForkPlan', {
+		question: '两条路线选哪条',
+		options: [
+			{ label: '甲', approach: '甲做法', done_criteria: '读数 order 越大越好' },
+			{ label: '乙', approach: '乙做法', done_criteria: '读数 order 越大越好' },
+		],
+		decide_by: { metric: 'order = 数值从小到大排的位次', direction: 'max' },
+	})
+	check('前置:两条执行者派出去了、且永不落定', host.journal.filter((mutation) => mutation.t === 'worldline/executing').length === 2)
+	await turnEnd({ agent: { id: S }, turn: 3, signal: undefined })
+	const appended = (host.appended ?? []).filter((row) => row.type === 'clearai/turn-ended')
+	check('收尾写成一条**事件**(不是消息:那会把模型再叫起来)', appended.length === 1 && appended[0].sessionId === S, JSON.stringify(appended.map((row) => row.type)))
+	check('在飞的子 run 如实列在里面(不猜它们会不会回来)', Array.isArray(appended[0]?.data?.inFlight) && appended[0].data.inFlight.length === 2 && appended[0].data.inFlight.every((row) => row.kind === 'executor'), JSON.stringify(appended[0]?.data?.inFlight))
+	/**
+	 * 折进投影 ⇒ 下一个回合的运行态卡**说得出这件事**。
+	 * 不说,模型下一个回合就会继续等一个不会来的东西——那正是"默默停下"。
+	 */
+	const folded = applyEvent(host.service.state(S), { type: 'clearai/turn-ended', time: Date.now(), data: appended[0].data })
+	check('投影里读得到这一笔(事件进日志 ⇒ 可重算)', (view(folded).turnEnd?.inFlight ?? []).length === 2)
+	check('运行态卡把「它停在那里了」说出来', /上一个回合结束时还有 2 条子 run 仍在飞/.test(renderCard(folded)), renderCard(folded).split ? String(renderCard(folded)).split('\n').find((line) => line.includes('仍在飞')) ?? '(卡片没这一行)' : '')
+	// 没人叫醒的核对:收尾**不许**发消息(发了就等于偷偷续跑一轮)。
+	check('收尾只写事件、不发消息(不许偷偷把模型叫起来)', (host.sent ?? []).length === 0, JSON.stringify((host.sent ?? []).map((row) => row.via)))
+}
+
+console.log('\n【子 run 落定由宿主告诉我们:handle 不在了也不丢结算】')
+{
+	/**
+	 * 原来只有两条结算通道:本进程攥着的 `run.result`,和"读子会话自己的日志"。
+	 * `subagent/end` 是宿主在**同一个 promise 落定那一刻**发出的(成功与失败都发),
+	 * 于是第三种通道有了:handle 已经不在(重启、换档、早退)也收得到,失败一路也不必靠日志猜。
+	 * **认 id 才吃**:别人的子 run 不是我们的事实。
+	 */
+	const host = makeHost()
+	apply(host.ctx, {})
+	const S = 'session-subagent-end'
+	await callOn(host, S, 'SetGoal', { claim: '查清 lab 里的原始记录', done_criteria: 'lab/records.md 有结论', hypotheses: [{ claim: '记录齐备', refute_when: '缺记录' }] })
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 's1', do: '查记录', artifacts: ['lab/records.md'], done_criteria: 'lab/records.md 有结论' }] })
+	host.scoutNeverSettles = true
+	const spawned = await callOn(host, S, 'SpawnScout', { task: '去看看 lab/ 里有没有原始记录,查不到就说查不到。', why: '观测缺口' })
+	check('前置:侦察派出去就返回(不等结论)', spawned.ok === true && spawned.code === 'scout_dispatched', String(spawned.code))
+	const childId = host.journal.filter((mutation) => mutation.t === 'scout/dispatched').at(-1)?.child
+	await preStep(host, S, 2)
+	check('promise 不落定 ⇒ 账上仍是「派过、没回」', !host.journal.some((mutation) => mutation.t === 'scout/settled'))
+	host.listeners.get('subagent/end')({ id: childId, stopReason: 'completed', lastAssistantMessage: [{ type: 'text', text: '查到了:三次重复里只有两次有原始记录。' }] })
+	await preStep(host, S, 3)
+	const settled = host.journal.filter((mutation) => mutation.t === 'scout/settled').at(-1)
+	check('宿主一报落定,下一个回合边界就收进账(不再只靠读子会话日志)', settled !== undefined && /只有两次有原始记录/.test(String(settled.conclusion)), JSON.stringify(settled ?? null).slice(0, 160))
+	check('不认识的 id 不会被吃(别人的子 run 不是我们的事实)', (() => {
+		const before = host.journal.filter((mutation) => mutation.t === 'scout/settled').length
+		host.listeners.get('subagent/end')({ id: 'someone-else', stopReason: 'completed', lastAssistantMessage: [{ type: 'text', text: '与我无关' }] })
+		return host.journal.filter((mutation) => mutation.t === 'scout/settled').length === before
+	})())
 }
 
 console.log('\n【账本不记平台垃圾:.DS_Store 这类不该让模型兜圈子】')

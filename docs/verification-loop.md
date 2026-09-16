@@ -225,7 +225,7 @@ Verification — **derived, not stored**:
 | observed | Result obtained | `observation/recorded` → `state.materials[]`, recorded on delivery from the declared refs (the artifact files plus the execution records are the observation). |
 | evaluated | Evaluated, evidence written | `audit/settled` + `evidence/recorded`; `derive()` computes support / refute / inconclusive per hypothesis. The "one more try, then force a change" policy is enforced at the **next** delivery: two inconclusive results on the same step refuse a third unchanged attempt (`inconclusive_repeat_forced_change`). |
 | expired | Deadline passed with no result | Not a state: an unavailable verdict is a fact (`audit/settled` with `verdict: 'unknown'`) and it **counts toward the same threshold as a failed admission** (`block/counted`), so repeating it blocks the plan and reaches a human through the inbox door that already exists. |
-| aborted | Stopped without a result | Facts, not a state: `VoidPlanStep(reason)`, `AbandonFork(reason)`, and a sub-run's `stopReason` as recorded by the kernel's settlement funnel. |
+| aborted | Stopped without a result | Facts, not a state: `VoidPlanStep(reason)`, `AbandonFork(reason)`, a sub-run's `stopReason` as recorded by the kernel's settlement funnel, and the `clearai/turn-ended` event written when the turn stops (in-flight sub-runs recorded as they are — the host's `agent/turn-stopping` is the last beat that can still speak). |
 
 L3 and above start at registered; changing criteria afterwards must leave a trace, keep the old version, and ask a human to confirm. Time spent waiting for a result does not count toward failure counts.
 

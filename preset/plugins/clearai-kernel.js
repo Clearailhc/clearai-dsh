@@ -1152,7 +1152,7 @@ export function apply(ctx, config = {}) {
 		})
 		if (dispatched.ok !== true) return { ok: false, note: `执行者派不出去(${dispatched.reason})`, mutations }
 		const childId = String(dispatched.run.id)
-		const entry = { fork: fork.id, branch: branch.id, label: branch.label, workspace: branch.workspace, child: childId, settled: null, reported: false, run: dispatched.run }
+		const entry = { sessionId, fork: fork.id, branch: branch.id, label: branch.label, workspace: branch.workspace, child: childId, settled: null, reported: false, run: dispatched.run }
 		executorRuns.set(childId, entry)
 		mutations.push({ t: 'worldline/executing', fork: fork.id, branch: branch.id, child: childId, capability: dispatched.capability, degraded_reason: dispatched.degraded ?? null })
 		/**
@@ -1711,7 +1711,7 @@ export function apply(ctx, config = {}) {
 		 * 事实该在副作用之前/同批落账:所以派遣立即返回,结论由 `sweepScouts()` 在
 		 * 「下一个回合边界 / 用到世界线与侦察的那几件工具」上收(与执行者完全同一套)。
 		 */
-		const entry = { scoutId, stepId: step.id, planId: plan?.id ?? null, trigger, digest, child: childId, settled: null, reported: false, run: dispatched.run }
+		const entry = { sessionId, scoutId, stepId: step.id, planId: plan?.id ?? null, trigger, digest, child: childId, settled: null, reported: false, run: dispatched.run }
 		scoutRuns.set(childId, entry)
 		/**
 		 * 只有一次性派遣才有 `result` promise。可续跑那一档没有 ⇒ 结算改由
@@ -1950,6 +1950,55 @@ export function apply(ctx, config = {}) {
 			scoutsLost: scouts.lost,
 			// 本次刚收到的结论:有原生通知的那一档由运行时投递,这里只带「没有原生通知」的那些。
 			notices: [...(swept.notices ?? []), ...(scouts.notices ?? [])],
+		}
+	}
+
+	/**
+	 * 回合结束时**还在飞**的子 run。如实列出来,不猜它们会不会回来。
+	 *
+	 * 为什么要列:宿主的一次性形态里,回合一停、进程一走,这些子 run 的结论就再也回不来,
+	 * 而投影里只留下 `scout/dispatched` / `worldline/executing` 这些**派发**事实——
+	 * 读者看到的是"它还在跑",而事实是"它停在那里了"。这一条把后者写下来。
+	 */
+	function inFlightChildren(sessionId) {
+		const rows = []
+		for (const entry of executorRuns.values()) {
+			if (String(entry.sessionId ?? '') !== sessionId) continue
+			if (entry.settled !== null && entry.settled !== undefined) continue
+			rows.push({ kind: 'executor', child: String(entry.child ?? ''), label: `世界线执行者 · ${entry.label ?? ''}`.trim() })
+		}
+		for (const entry of scoutRuns.values()) {
+			if (String(entry.sessionId ?? '') !== sessionId) continue
+			if (entry.settled !== null && entry.settled !== undefined) continue
+			rows.push({ kind: 'scout', child: String(entry.child ?? ''), label: String(entry.trigger ?? '侦察') })
+		}
+		return rows
+	}
+
+	/**
+	 * 把"这个回合在这里停下"写成会话日志里的一条**事件**。
+	 *
+	 * 为什么走事件而不是插件消息:这一拍在**回合停止时**,任何"追加消息"的路子都会把模型
+	 * 再叫起来跑一轮(`followup`/`steer` 都是唤醒),而这里要的恰恰是**不叫醒任何人**地留个话。
+	 * 事件进日志 ⇒ 折法下一次重放就看到它,面板与下个回合的运行态卡都读得到(P3:它可重算)。
+	 * 认不出会话或宿主不给 `append` 就安静地放弃——收尾失败不该把回合停下这件事也弄坏。
+	 */
+	function appendTurnEnd(sessionId, payload) {
+		const sessions = ctx.get('sessions')
+		if (sessions === undefined || typeof sessions.get !== 'function') return false
+		let session = null
+		try {
+			session = sessions.get(sessionId) ?? null
+		} catch {
+			return false
+		}
+		if (session === null || typeof session.append !== 'function') return false
+		try {
+			session.append('clearai/turn-ended', { turn: payload.turn, inFlight: payload.inFlight, commit: payload.commit ?? null })
+			return true
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai: 回合收尾事件写不进日志 ${String(error?.message ?? error).slice(0, 160)}`)
+			return false
 		}
 	}
 
@@ -3661,18 +3710,23 @@ export function apply(ctx, config = {}) {
 	 *
 	 * 失败如实告警并返回空串:账本没记上就说没记上,不假装记过。
 	 */
-	function snapshotWorkspace(sessionId, cwd, state, mutations, turn) {
+	function snapshotWorkspace(sessionId, cwd, state, mutations, turn, phase = 'mid') {
 		const calls = Number(state?.writeCalls ?? 0)
 		if (calls <= 0 || lastWorkspaceSnapshot.get(sessionId) === calls) return ''
 		lastWorkspaceSnapshot.set(sessionId, calls)
-		const committed = commitLedger(cwd, `clearai: 探索期快照 — 第 ${turn} 回合中尚未交付的写入`)
+		/**
+		 * 措辞分流:pre-step 是**回合中途**的恢复点,turn-stopping 是**回合结束时**那一笔
+		 * ——后者才是"跑动在这里停下,工作区长这样",也是唯一在一次性形态里会落地的那笔。
+		 */
+		const when = phase === 'end' ? `第 ${turn} 回合结束时尚未交付的写入` : `第 ${turn} 回合中尚未交付的写入`
+		const committed = commitLedger(cwd, `clearai: 探索期快照 — ${when}`)
 		if (committed.ok !== true) {
 			ctx.logger?.warn?.(`clearai: 工作区快照失败 ${String(committed.reason ?? '').slice(0, 160)}`)
 			return ''
 		}
 		if (committed.skipped === true) return ''
 		// 落一条**台账事实**:系统对工作区做过什么,日志里要说得出来(与交付那笔同一条纪律)。
-		mutations.push({ t: 'git/snapshot', commit: committed.commit, reason: '探索期快照(尚未交付的写入)', turn })
+		mutations.push({ t: 'git/snapshot', commit: committed.commit, reason: phase === 'end' ? '探索期快照(回合结束时尚未交付的写入)' : '探索期快照(尚未交付的写入)', turn })
 		const short = committed.commit === null ? '' : `(${String(committed.commit).slice(0, 7)})`
 		return `\n(工作区已记入账本${short}:探索期的产出从此可查、可恢复——不需要你为它声明什么。)`
 	}
@@ -5853,6 +5907,61 @@ export function apply(ctx, config = {}) {
 	}
 
 	// 会话一被创建/接入就把工作区铺好(见 ensureWorkspace:要抢在原生目录快照之前)。
+	/**
+	 * **子 run 落定由宿主告诉我们**(`subagent/end`),不再只靠"轮询子会话日志"。
+	 *
+	 * 载荷 `{runId, provider, id, local, stopReason, lastAssistantMessage?}` 由持有 `run.result`
+	 * 的那个 service 在**同一个 promise 落定的那一刻**发出(成功与失败都发)——与我们本来
+	 * 就信任的那次 `run.result` 是同一个触发点,所以权威性相同,而好处是:handle 已经不在
+	 * (重启、换档、早退)时结算也不会丢,失败一路也不用再靠日志里的停止原因去猜。
+	 *
+	 * 认出 id 才吃:只认我们自己派出去的那几个(别人的子 run 不是我们的事实)。
+	 */
+	ctx.on('subagent/end', (info) => {
+		try {
+			const childId = String(info?.id ?? '')
+			if (childId === '') return
+			const settled = settleSubRun({ output: Array.isArray(info.lastAssistantMessage) ? info.lastAssistantMessage : [], stopReason: String(info.stopReason ?? 'completed') })
+			for (const table of [executorRuns, scoutRuns]) {
+				const entry = table.get(childId)
+				// 已经落定的不覆盖:先到的那一条为准(事件与 promise 是同一个触发点)。
+				if (entry !== undefined && (entry.settled === null || entry.settled === undefined)) entry.settled = settled
+			}
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai: 子 run 结算事件处理失败 ${String(error?.message ?? error).slice(0, 160)}`)
+		}
+	})
+
+	/**
+	 * **回合收尾**:宿主在回合将停、且队列里没有下一步时**串行 await** 这一拍
+	 * (`dsh-agent-loop` 的 `agent/turn-stopping`,载荷带 `agent`)。
+	 *
+	 * 这一拍是"跑动在这里停下"之前**唯一**还能说话的地方,做两件:
+	 *   ① 把工作区记一次账(**回合边界**的那一笔——一次性形态里唯一会落地的那笔);
+	 *   ② 把还在飞的子 run 如实写成一条 `clearai/turn-ended` 事件。
+	 *
+	 * 边界(都重要):**不改状态、不叫醒任何人、不写裁决**——只留事实;任何异常都吞掉并记一行,
+	 * 收尾失败绝不能把回合停下这件事本身弄坏(宿主是 await 它的)。
+	 */
+	ctx.on('agent/turn-stopping', (payload) => {
+		try {
+			const hostService = host()
+			if (hostService === undefined) return
+			const sessionId = String(payload?.agent?.id ?? '')
+			if (sessionId === '') return
+			const state = hostService.state(sessionId)
+			const mutations = []
+			snapshotWorkspace(sessionId, sessionCwd(sessionId), state, mutations, payload.turn, 'end')
+			const commit = mutations.find((mutation) => mutation.t === 'git/snapshot')?.commit ?? null
+			const inFlight = inFlightChildren(sessionId)
+			// 什么都没发生就不留话:空事件只是往日志里灌水。
+			if (inFlight.length === 0 && commit === null) return
+			appendTurnEnd(sessionId, { turn: payload.turn, inFlight, commit })
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai: 回合收尾失败 ${String(error?.message ?? error).slice(0, 160)}`)
+		}
+	})
+
 	ctx.on('agent/created', (payload) => {
 		const agent = payload?.agent
 		const id = agent?.id ?? agent?.session?.id

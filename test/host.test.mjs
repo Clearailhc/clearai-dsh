@@ -273,6 +273,25 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 		HUMAN_GATE_ACTIONS.join(','),
 	)
 
+	/**
+	 * **回合收尾事件**要折得进投影,而且状态可重算(它进的是日志,不是内存)。
+	 * 内核在宿主的 `agent/turn-stopping` 上写 `clearai/turn-ended`;面板与运行态卡读的是
+	 * 同一份派生读数。这里钉三件:折出来、线面上读得到、重放一遍还在。
+	 */
+	{
+		const before = emptyState()
+		const at = 1_700_000_000_000
+		const folded = applyEvent(before, {
+			type: 'clearai/turn-ended',
+			time: at,
+			data: { turn: 4, inFlight: [{ kind: 'executor', child: 'c-9', label: '世界线执行者 · 甲' }], commit: 'abc1234' },
+		})
+		check('回合收尾事件折得进状态(turnEnds 记一笔)', (folded.turnEnds ?? []).length === 1 && folded.turnEnds[0].turn === 4, JSON.stringify(folded.turnEnds ?? null))
+		const wire = view(folded)
+		check('线面上读得到在飞清单与那一笔账本提交', (wire.turnEnd?.inFlight ?? []).length === 1 && wire.turnEnd.inFlight[0].label === '世界线执行者 · 甲' && wire.turnEnd.commit === 'abc1234', JSON.stringify(wire.turnEnd ?? null))
+		check('重放一遍结论一样(它不是内存里的东西)', JSON.stringify(applyEvent(emptyState(), { type: 'clearai/turn-ended', time: at, data: { turn: 4, inFlight: [{ kind: 'executor', child: 'c-9', label: '世界线执行者 · 甲' }], commit: 'abc1234' } }).turnEnds) === JSON.stringify(folded.turnEnds))
+	}
+
 	// 方法过滤发生在 connection 层(按路由声明的 methods),我们的处理器根本不会被调用——
 	// 这正是「挂错层」那个 bug 的反面:挂对了,平台替我们把方法也管了。
 	const notPost = await post({ sessionId: 'session-1', action: 'promote_skill', skill: 'my-sop' }, 'GET')

@@ -37,7 +37,7 @@ export const MUTATION_KIND = 'clearai'
  *           后者以人为准、一个字都不动。没有它,这两种情形在外部长得一模一样。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍——用量是**从日志折出来的**,重折才完整。
  */
-export const STATE_VERSION = 7
+export const STATE_VERSION = 8
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -66,6 +66,12 @@ export function emptyState() {
 		forks: [],
 		/** 系统按触发派出去的侦察(子角色不是模型自由委派):结论进资料面,这里留一条记录 */
 		scouts: [],
+		/**
+		 * **回合收尾**(`clearai/turn-ended`,内核在宿主的 `agent/turn-stopping` 上写的):
+		 * 留下"这一回合在哪里停下、当时还有谁在飞、工作区记到了哪一笔"。
+		 * 只留最后几笔——它是**给下一个回合看的**(一次性形态里是给读日志的人看的)。
+		 */
+		turnEnds: [],
 		/** 工作区里等人采纳的候选技能(内核扫描后落的事实)与已采纳的记录 */
 		brainCandidates: [],
 		skillPromotions: [],
@@ -921,6 +927,26 @@ export function applyEvent(state, event) {
 		}
 		return next
 	}
+	/**
+	 * **回合收尾事件**(内核在 `agent/turn-stopping` 上写的)。
+	 *
+	 * 它不是裁决、不是门,只是一条**关于过程本身的事实**:这一回合停了,当时还有谁在飞,
+	 * 工作区记到了哪一笔。折它是因为**读者需要它**:投影里只留着 `scout/dispatched` /
+	 * `worldline/executing` 这类"派发"事实,看上去像"它还在跑",而事实是"它停在那里了"。
+	 */
+	if (event.type === 'clearai/turn-ended') {
+		const data = event.data ?? {}
+		const inFlight = (Array.isArray(data.inFlight) ? data.inFlight : []).map((item) => ({
+			kind: String(item?.kind ?? 'child'),
+			child: String(item?.child ?? ''),
+			label: String(item?.label ?? ''),
+		}))
+		const next = clone(state)
+		// 只留最后五笔:这是给"下一个回合/读日志的人"看的,不是流水账。
+		next.turnEnds = [...(next.turnEnds ?? []), { turn: typeof data.turn === 'number' ? data.turn : null, at: typeof event.time === 'number' ? event.time : null, inFlight, commit: data.commit === null || data.commit === undefined ? null : String(data.commit) }].slice(-5)
+		return next
+	}
+
 	if (event.type === 'tool/call') {
 		const data = event.data ?? {}
 		if (typeof data.name !== 'string') return state
@@ -1232,7 +1258,9 @@ export function derive(state) {
 		}
 	})
 
-	return { phase, progress, hypotheses, activePlan, closedPlans, pendingAudit, forks, factRows, settlement, stepOf, inbox, hasOpenGate, planConfirmationPending, planIsAuthorized }
+	/** 最后一笔回合收尾(它是"下一个回合要看的"那一笔)。 */
+	const lastTurnEnd = (state.turnEnds ?? []).length === 0 ? null : state.turnEnds[state.turnEnds.length - 1]
+	return { phase, progress, hypotheses, activePlan, closedPlans, pendingAudit, forks, factRows, settlement, stepOf, inbox, hasOpenGate, planConfirmationPending, planIsAuthorized, lastTurnEnd }
 }
 
 /**
@@ -1488,6 +1516,11 @@ export function view(state, sessionId) {
 				]),
 			),
 		),
+		/**
+		 * 回合收尾(派生自 `clearai/turn-ended`)。本轮**不新增面板格子**——读数先在线面上,
+		 * 谁来画都读得到同一个字段(卡片已经用它说"上一个回合结束时还有谁在飞")。
+		 */
+		turnEnd: derived.lastTurnEnd,
 		evidence: state.evidence.map((item) => ({
 			id: item.id,
 			stepId: item.step,
@@ -1668,6 +1701,17 @@ export function renderCard(state) {
 		lines.push(`- 阶段(派生):${derived.phase} · 完成度(派生):${progress}`)
 	}
 	if (derived.hypotheses.length > 0) {
+		/**
+		 * **上一个回合在哪里停下**:只在这件事有内容时说。
+		 *
+		 * 为什么必须说:投影里留着 `scout/dispatched` / `worldline/executing` 这类派发事实,
+		 * 看起来像"它还在跑";而回合一停,这些子 run 的结论(一次性形态里)再也不会回来。
+		 * 不说,模型下一个回合就会继续等一个不会来的东西——那正是"默默停下"。
+		 */
+		if (derived.lastTurnEnd !== null && derived.lastTurnEnd.inFlight.length > 0) {
+			const who = derived.lastTurnEnd.inFlight.map((item) => item.label || item.child || item.kind).join('、')
+			lines.push(`- **上一个回合结束时还有 ${derived.lastTurnEnd.inFlight.length} 条子 run 仍在飞**:${who}——它们的结论不会自己回来(要么重派,要么把对应那一步作废)。`)
+		}
 		lines.push('- 假设状态(由证据算出):')
 		for (const hypothesis of derived.hypotheses) {
 			/**

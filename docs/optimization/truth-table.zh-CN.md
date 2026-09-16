@@ -77,7 +77,7 @@
 | `runtime-card` | 每回合派生的运行态卡 | Harness | 已实现 | 建议 | 无 | system | 否 | 否 | `ui/lib/fold.js renderCard` |
 | `prompt-sections` | 提示词段（23 段定义 / 22 段在场） | Harness | 已实现 | 建议 | 无 | system | 否 | **是** | `preset/plugins/prompts.js SECTIONS` |
 | `exploration-zone` | 已删除:把「探索区」当作一个被命名的模式 | Harness | 已删除 | 废弃 | 非权威 | model | 否 | 否 | — |
-| `subrun-lifecycle` | 子 run 统一生命周期（一次性句柄 + 一条收集通道） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js dispatchSubRun / startWorldlineExecutor / runScout / runEvaluator / runArbiter / sweepScouts / sweepWorldlineExecutors / sweepLostExecutors / sweepLostScouts / publishedInEpoch / noticeBlock` |
+| `subrun-lifecycle` | 子 run 统一生命周期（一次性句柄 + 一条收集通道） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors` |
 | `set-autonomy` | 已删除:人在面板上切换运行档 | Harness | 已删除 | 废弃 | 无 | human | 否 | 否 | — |
 | `budget-tiers` | 已删除:人在场 6 轮 / 无人值守 512 轮 | Harness | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
 | `non-authoritative-isolation` | 非权威路径写不进权威账本 | Harness | 已实现 | 硬边界 | 无 | system | 是 | 否 | `test/authority-boundary.test.mjs` |
@@ -697,12 +697,12 @@
 - **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：内核派任何子任务：侦察、世界线执行者、评估者、横评仲裁
 - **输入**：人格 + 任务书 + 工具面 + （评估者/仲裁）结构化输出 schema
-- **输出**：对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）
+- **输出**：对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）;回合结束时另写一条 clearai/turn-ended（在飞的如实记录）
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构
-- **理由**：子任务的生命周期必须由内核自己掌握:账本只认本进程攥着的句柄,结论送达由收集那一刻的返回完成;四种角色共用一套,差异只在人格、工具面与结果解释方式。
-- **代码**：preset/plugins/clearai-kernel.js dispatchSubRun / startWorldlineExecutor / runScout / runEvaluator / runArbiter / sweepScouts / sweepWorldlineExecutors / sweepLostExecutors / sweepLostScouts / publishedInEpoch / noticeBlock
-- **测试**：test/kernel.test.mjs（含会话隔离用例）; tools/e2e-scenarios.mjs（模型可见性不变量） · **配置**：auditProvider=spawn, auditTimeoutMs
+- **理由**：子任务的生命周期必须由内核自己掌握:账本只认本进程攥着的句柄,结论送达由收集那一刻的返回完成;四种角色共用一套,差异只在人格、工具面与结果解释方式。结算有两条来源:我们自己这一次派遣的 `run.result`,以及宿主的 `subagent/end` 事件(它在**同一个 promise 落定那一刻**发出,成功与失败都发,所以 handle 已经不在了也收得到);重启之后还能把子会话自己的日志当地面真相读回来。**回合一停,在飞的子 run 再也不会自己回来**——那一条由宿主的 `agent/turn-stopping`(串行 await)写成 `clearai/turn-ended` 事件:不叫醒任何人、不写裁决,只留事实,下一个回合的运行态卡据此说清「上一个回合结束时还有谁在飞」。
+- **代码**：preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js clearai/turn-ended
+- **测试**：test/kernel.test.mjs（落定 / 认 id / 回合收尾）; test/host.test.mjs（事件折得进投影且可重放） · **配置**：auditProvider=spawn, auditTimeoutMs
 - **提示词**：clearai/delegation · **文档**：docs/optimization/e2e-longruns.zh-CN.md
 
 ### `l4-universal-gate` · 覆盖每一次评估的通用 L4 门
