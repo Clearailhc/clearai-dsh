@@ -1085,6 +1085,8 @@ export function derive(state) {
 			summary: `${fork.question} · ${fork.branches.length} 条世界线探索完毕,待采纳一条${label === null ? '' : ` · 推荐★${label}`}`,
 			plan: fork.plan ?? null,
 			step: fork.step,
+			/** 条目要指得出**是哪一盘分叉**:界面那条「用提问卡决定」的手势按它去取题目与选项。 */
+			fork: fork.id,
 			human_action: 'adopt_branch',
 			/** 门要什么:**点击**(有白名单动词)还是**一句话**(语义判断归模型)。 */
 			needs: 'click',

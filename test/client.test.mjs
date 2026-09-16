@@ -889,10 +889,28 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		}
 		const inboxText = react.render(components.Inbox({ data: wordGate })).replace(/\s+/g, ' ')
 		check('要一句话的门:**说出「说一句话就行」**,而且不摆机器词', /说一句话就行/.test(inboxText) && !/provisional_review/.test(inboxText), inboxText.slice(0, 200))
-		check('要一句话的门:不给按钮(它不是点击能表达的)', !/要你裁决|要你采纳/.test(inboxText), inboxText.slice(0, 160))
-		const clickGate = { ...view, inbox: [{ kind: 'fork_adopt', title: '世界线裁决', summary: '两条线跑完,待采纳一条', plan: 'p-1', step: 's1', human_action: 'adopt_branch', needs: 'click' }], hasOpenGate: true }
+		check('要一句话的门:不给按钮(它不是点击能表达的)', !/要你采纳/.test(inboxText), inboxText.slice(0, 160))
+		/**
+		 * 裁决条目**永远给得出一个能落实的动作**:
+		 *   · 投影里有这一盘分叉 ⇒ 由世界线那一块渲染,一个分支一个采纳按钮;
+		 *   · 落不到那一块(拿不到分支数据)⇒ 给「用提问卡决定」,那条路会把读数铺进对话框。
+		 * 曾经这里是同一个「要你裁决」按钮渲染两遍,而其中一遍的请求里**没有分支**——
+		 * 落账时找不到分叉,状态一字未动,界面却回一句成功。
+		 */
+		const clickGate = { ...view, inbox: [{ kind: 'fork_adopt', title: '世界线裁决', summary: '两条线跑完,待采纳一条', plan: 'p-1', step: 's1', fork: 'f-9', human_action: 'adopt_branch', needs: 'click' }], hasOpenGate: true }
 		const clickGateText = react.render(components.Inbox({ data: clickGate })).replace(/\s+/g, ' ')
-		check('要点击的门:给按钮,而且标明"要你裁决"', /要你裁决/.test(clickGateText), clickGateText.slice(0, 160))
+		check('拿不到分支的裁决条目 ⇒ 给「用提问卡决定」,不摆一个没有分支可裁的「裁决」', /用提问卡决定/.test(clickGateText) && !/要你裁决/.test(clickGateText), clickGateText.slice(0, 160))
+		{
+			/** 同一盘分叉同时出现在 `inbox` 与 `forks` 里 —— 真实投影就是这么给的。 */
+			const both = { ...view, hasOpenGate: true, inbox: [clickGate.inbox[0]], forks: [{ id: 'f-9', stepId: 's1', question: '走湿法还是干法', phase: 'deciding', humanDecision: null, branches: [{ id: 'b1', label: '湿法', status: 'evaluated', reading: '62.1' }, { id: 'b2', label: '干法', status: 'evaluated', reading: '58.0' }] }] }
+			const bothText = react.render(components.Inbox({ data: both })).replace(/\s+/g, ' ')
+			const cardButtons = (bothText.match(/用提问卡决定/g) ?? []).length
+			check('同一道门只渲染一次(曾经渲染两遍,其中一遍是空动作)', cardButtons === 1, `提问卡按钮 ${cardButtons} 个:${bothText.slice(0, 200)}`)
+			check('每条分支各有一个采纳按钮(要点得到分支)', /采纳 湿法/.test(bothText) && /采纳 干法/.test(bothText), bothText.slice(0, 220))
+			/** 人已经裁决过:条目已经消失,世界线那一块也不该再摆按钮(计数说 0 件、按钮还在就矛盾了)。 */
+			const decided = { ...both, inbox: [], forks: [{ ...both.forks[0], humanDecision: { action: 'adopt_branch', branch: 'b1', note: null, at: 1 } }] }
+			check('人裁决过的分叉不再摆按钮(与「需要你 N」的计数一致)', react.render(components.Inbox({ data: decided })).replace(/\s+/g, ' ') === '', react.render(components.Inbox({ data: decided })).slice(0, 120))
+		}
 		const wordGateData = { ...view, inbox: [{ kind: 'plan_blocked', needs: 'word', ask: '说一句怎么改' }], continuation: { state: 'paused', goal: 'hg-1', target: '目标 g-1', why: 'gate' } }
 		const noteWord = react.render(components.ContinuationNote({ useProjection: (name) => (name === 'goal' ? { id: 'hg-1', phase: 'active' } : wordGateData) })).replace(/\s+/g, ' ')
 		check('续跑注:有"要一句话"的门 ⇒ 说「等你说一句话」', /续跑停着:等你说一句话/.test(noteWord), noteWord.slice(0, 120))

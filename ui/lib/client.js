@@ -2389,18 +2389,33 @@ window.__ModuleLoader__.load({
 			 * 收件箱里现在只有**真门**(计划确认已砍:它是记号不是闸门,见 fold 的 HUMAN_GATE_ACTIONS)。
 			 *
 			 * 门要什么由**数据**说(`item.needs`),不在这里按 kind 猜 ✗:
-			 *   · `click` ⇒ 给按钮(白名单动词:裁决 / 采纳);
+			 *   · `click` ⇒ 给按钮;
 			 *   · `word`  ⇒ 给**一句提示**(「说一句话就行 —— <要说什么>」),
 			 *     因为那种门本来就不是点击能表达的(复核 / 解除阻塞),而它照样会按住续跑。
+			 *
+			 * 但**世界线裁决那一种不走这里**:它要点出每条分支的读数,只有下面那一块拿得到
+			 * 分支数据。两条路都渲染同一条条目,就等于同一道门上摆两个按钮——其中一个还没有
+			 * 分支可裁,点下去只会落一条**什么都不改**的人门记录,而界面还会回一句成功。
 			 */
-			const label = (item) => (item.needs === 'click' ? (item.kind === 'skill_candidate' ? t('采纳') : t('裁决')) : null)
+			const FORK_RENDERED = 'fork_adopt'
+			/** 世界线那一块真正会渲染的分叉(判据与条目本身一字不差:同一个分叉、同一步)。 */
+			const forkRows = (data.forks || []).filter((fork) => fork.phase === 'deciding' && (fork.humanDecision ?? null) === null)
+			const covered = new Set(forkRows.map((fork) => fork.stepId))
+			const restItems = items.filter((item) => !(item.kind === FORK_RENDERED && covered.has(item.step)))
+			/**
+			 * 这一层给什么,由**它真的能落实什么**决定:
+			 *   · 候选技能 → 「采纳」(白名单动词,一步到位);
+			 *   · 落不到世界线块的裁决条目 → 「用提问卡决定」——它不是点击能裁的,
+			 *     而提问卡那条路会把判据与各分支读数铺进对话框,答案照样落账;
+			 *   · 要一句话的门 → 不摆按钮,给一句话提示。
+			 */
+			const label = (item) => (item.kind === FORK_RENDERED ? t('用提问卡决定') : item.needs === 'click' && item.kind === 'skill_candidate' ? t('采纳') : null)
 			return h(
 				'div',
 				{ style: S.gate },
 				h('div', { style: S.head }, `${t('需要你 ')}${items.length}`),
-				...(data.forks || []).filter((fork) => fork.phase === 'deciding').length > 0
-					? (data.forks || [])
-							.filter((fork) => fork.phase === 'deciding')
+				...forkRows.length > 0
+					? forkRows
 							.map((fork) =>
 								h(
 									'div',
@@ -2478,8 +2493,12 @@ window.__ModuleLoader__.load({
 								),
 							)
 					: [],
-				...items.map((item, index) =>
-					h(
+				...restItems.map((item, index) => {
+					/** 裁决条目走**界面手势**:`ask` 只是把卡摆上去,答案回到宿主那条老路落账。 */
+					const asCard = item.kind === FORK_RENDERED
+					const act = asCard ? { ...item, human_action: 'ask' } : item
+					const extra = asCard ? { gate: FORK_RENDERED, fork: item.fork ?? null } : null
+					return h(
 						'div',
 						{ key: `${item.kind}-${index}`, style: S.gateRow, title: item.kind },
 						/** 机器词(`provisional_review` 这类)**不上屏** ✗ —— 进 tooltip,给人看的是标题那句话。 */
@@ -2489,14 +2508,14 @@ window.__ModuleLoader__.load({
 						label(item) !== null
 							? h(
 									'button',
-									{ type: 'button', className: 'clearai-btn', disabled: busy !== null, onClick: () => send(item, null) },
+									{ type: 'button', className: 'clearai-btn', disabled: busy !== null, onClick: () => send(act, extra) },
 									label(item),
 								)
 							: item.needs === 'word'
 								? h('span', { style: { ...S.faint, opacity: 0.9 } }, `${t('说一句话就行 —— ')}${item.ask ?? '说一句你的决定'}`)
 								: null,
-					),
-				),
+					)
+				}),
 				error === null ? null : h('div', { style: S.faint }, `${t('没送出去:')}${error}`),
 			)
 		}
@@ -2570,15 +2589,11 @@ window.__ModuleLoader__.load({
 			 * 状态优先于数字(等人确认 / 受阻 / 已收尾都是**要人注意**的那一类)。
 			 */
 			/**
-			 * 一格只放**一个符号**:进度,或者一件要人注意的事。
-			 * 要人动手的那件事(等你确认)由**输入框下那条**说「需要你 N」——它在事实面上,
-			 * 而这里只是工具行里的一个指针,不能把两个事实挤在一格里。
-			 */
-			/**
-			 * 输入框下**单独占一行**的派生状态条已删掉 ——
-			 * 「已达成 · 100%」与原生目标提示、与这颗 chip 的 `3/8` 说的是同一件事 ✗,
-			 * 却把输入框整行顶上去 ✗。留下的只有**可点、且只有我们知道**的两件:
-			 *   需要你 N(人门计数,点了开世界树)· 续跑停着(为什么停,人是可以处置的)
+			 * 一格只放**一个符号**:进度。要人注意的事不换符号,只换颜色。
+			 *
+			 * 这条工具行上的格子只承担**可点、且只有我们知道**的两句:
+			 *   需要你 N(人门计数,点了开世界树)· 续跑停着(为什么停,人是可以处置的)。
+			 * 「已达成 · 100%」那一类与原生目标提示说的是同一件事,不在这里重复。
 			 */
 			const inboxCount = Array.isArray(data?.inbox) ? data.inbox.length : 0
 			const cont = data?.continuation ?? null
@@ -2589,7 +2604,8 @@ window.__ModuleLoader__.load({
 			/**
 			 * 符号**恒定是进度**(形状稳定才学得会):要人注意不在符号上换字,
 			 * 而是换颜色(与世界树同一条规矩:形状说状态,别让人去猜一个 '?')。
-			 * 「需要你 N」由输入框下那条说——那才是事实面该管的事。
+			 * 「需要你 N」就在这一格(`waiting`):门开着是**事实面**上最要紧的一句,
+			 * 而它可点——点一下开世界树,那里才看得到要裁什么。
 			 */
 			const symbol = `${done}/${total}`
 			const brief = typeof plan.brief === 'string' && plan.brief.trim() !== '' ? plan.brief.trim() : null
@@ -2808,7 +2824,7 @@ window.__ModuleLoader__.load({
 			 *
 			 * 「进展」撤了:它原先装的四段各有归宿——计划与世界线的行归世界树,
 			 * 假设/观测/证据/事实归中栏「事实」,目标与判据归世界树的页眉,
-			 * 而"当下什么状态"由输入框下那条**常驻事实条**回答(它一直在,不用切页签)。
+			 * 而"当下什么状态"由工具行那颗**计划芯片**回答(它一直在,不用切页签)。
 			 * 页签越少,越不需要向人解释每个页签该在什么时候看。
 			 */
 			const rightRail = [
