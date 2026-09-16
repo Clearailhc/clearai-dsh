@@ -1994,7 +1994,7 @@ export function apply(ctx, config = {}) {
 		}
 		if (session === null || typeof session.append !== 'function') return false
 		try {
-			session.append('clearai/turn-ended', { turn: payload.turn, inFlight: payload.inFlight, commit: payload.commit ?? null })
+			session.append('clearai/turn-ended', { turn: payload.turn, inFlight: payload.inFlight, commit: payload.commit ?? null, reason: payload.reason ?? 'stopped' })
 			return true
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 回合收尾事件写不进日志 ${String(error?.message ?? error).slice(0, 160)}`)
@@ -5943,24 +5943,38 @@ export function apply(ctx, config = {}) {
 	 * 边界(都重要):**不改状态、不叫醒任何人、不写裁决**——只留事实;任何异常都吞掉并记一行,
 	 * 收尾失败绝不能把回合停下这件事本身弄坏(宿主是 await 它的)。
 	 */
-	ctx.on('agent/turn-stopping', (payload) => {
+	function closeTurn(payload, reason) {
 		try {
 			const hostService = host()
 			if (hostService === undefined) return
 			const sessionId = String(payload?.agent?.id ?? '')
 			if (sessionId === '') return
+			const turn = typeof payload?.turn === 'number' ? payload.turn : null
 			const state = hostService.state(sessionId)
 			const mutations = []
-			snapshotWorkspace(sessionId, sessionCwd(sessionId), state, mutations, payload.turn, 'end')
+			snapshotWorkspace(sessionId, sessionCwd(sessionId), state, mutations, turn, 'end')
 			const commit = mutations.find((mutation) => mutation.t === 'git/snapshot')?.commit ?? null
 			const inFlight = inFlightChildren(sessionId)
 			// 什么都没发生就不留话:空事件只是往日志里灌水。
-			if (inFlight.length === 0 && commit === null) return
-			appendTurnEnd(sessionId, { turn: payload.turn, inFlight, commit })
+			// **出错那一档要说**:回合以错误结束与"模型自己收手"是两件事,读日志的人要分得开。
+			if (inFlight.length === 0 && commit === null && reason === 'stopped') return
+			appendTurnEnd(sessionId, { turn, inFlight, commit, reason })
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 回合收尾失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
-	})
+	}
+
+	ctx.on('agent/turn-stopping', (payload) => closeTurn(payload, 'stopped'))
+
+	/**
+	 * **回合以错误结束也要收尾**。
+	 *
+	 * 宿主在出错那一档**不派** `agent/turn-stopping`:它把 `turnEnds` 记成 `{kind:'error'}` 就
+	 * throw 出去了(那一拍在 try 里,被跳过),只有在 `finally` 里补一条 `turn/end`。
+	 * 而真跑里最常见的"半路死"恰恰是这一种(提供方连接错误:重试五次之后整个回合以错误收场)。
+	 * `agent/error` 是宿主为这一刻发的,所以这里也走一遍收尾——**理由如实写成 error**。
+	 */
+	ctx.on('agent/error', (payload) => closeTurn(payload, 'error'))
 
 	ctx.on('agent/created', (payload) => {
 		const agent = payload?.agent

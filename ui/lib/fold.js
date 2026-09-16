@@ -943,7 +943,14 @@ export function applyEvent(state, event) {
 		}))
 		const next = clone(state)
 		// 只留最后五笔:这是给"下一个回合/读日志的人"看的,不是流水账。
-		next.turnEnds = [...(next.turnEnds ?? []), { turn: typeof data.turn === 'number' ? data.turn : null, at: typeof event.time === 'number' ? event.time : null, inFlight, commit: data.commit === null || data.commit === undefined ? null : String(data.commit) }].slice(-5)
+		next.turnEnds = [...(next.turnEnds ?? []), {
+			turn: typeof data.turn === 'number' ? data.turn : null,
+			at: typeof event.time === 'number' ? event.time : null,
+			inFlight,
+			commit: data.commit === null || data.commit === undefined ? null : String(data.commit),
+			/** `stopped` = 正常收手;`error` = 回合以错误结束(两件事,读日志的人要分得开)。 */
+			reason: String(data.reason ?? 'stopped'),
+		}].slice(-5)
 		return next
 	}
 
@@ -1710,7 +1717,8 @@ export function renderCard(state) {
 		 */
 		if (derived.lastTurnEnd !== null && derived.lastTurnEnd.inFlight.length > 0) {
 			const who = derived.lastTurnEnd.inFlight.map((item) => item.label || item.child || item.kind).join('、')
-			lines.push(`- **上一个回合结束时还有 ${derived.lastTurnEnd.inFlight.length} 条子 run 仍在飞**:${who}——它们的结论不会自己回来(要么重派,要么把对应那一步作废)。`)
+			const how = derived.lastTurnEnd.reason === 'error' ? '(那一回合**以错误结束**)' : ''
+			lines.push(`- **上一个回合结束时还有 ${derived.lastTurnEnd.inFlight.length} 条子 run 仍在飞**${how}:${who}——它们的结论不会自己回来(要么重派,要么把对应那一步作废)。`)
 		}
 		lines.push('- 假设状态(由证据算出):')
 		for (const hypothesis of derived.hypotheses) {

@@ -3275,6 +3275,15 @@ console.log('\n【回合收尾:宿主要停了,我们留下最后一句事实】
 	check('运行态卡把「它停在那里了」说出来', /上一个回合结束时还有 2 条子 run 仍在飞/.test(renderCard(folded)), renderCard(folded).split ? String(renderCard(folded)).split('\n').find((line) => line.includes('仍在飞')) ?? '(卡片没这一行)' : '')
 	// 没人叫醒的核对:收尾**不许**发消息(发了就等于偷偷续跑一轮)。
 	check('收尾只写事件、不发消息(不许偷偷把模型叫起来)', (host.sent ?? []).length === 0, JSON.stringify((host.sent ?? []).map((row) => row.via)))
+	/**
+	 * **回合以错误结束也要收尾**。宿主在出错那一档**不派** `agent/turn-stopping`
+	 * (它把 turnEnds 记成 `{kind:'error'}` 就 throw 出去,那一拍在 try 里被跳过),
+	 * 而真跑里最常见的"半路死"恰恰是这一种(提供方连接错误:重试五次后整个回合以错误收场)。
+	 */
+	check('内核也盯着 agent/error(宿主为"回合以错误结束"发的那个)', typeof host.listeners.get('agent/error') === 'function')
+	host.listeners.get('agent/error')({ agent: { id: S }, turn: 3, step: 4, error: new Error('Connection error.') })
+	const errored = (host.appended ?? []).filter((row) => row.type === 'clearai/turn-ended')
+	check('错误结束那一档同样留下事实,而且**理由写得出来**', errored.length === 2 && errored[1].data.reason === 'error' && errored[1].data.inFlight.length === 2, JSON.stringify(errored.map((row) => row.data.reason)))
 }
 
 console.log('\n【子 run 落定由宿主告诉我们:handle 不在了也不丢结算】')
