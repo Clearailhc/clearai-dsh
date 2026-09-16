@@ -1,0 +1,14 @@
+{
+  "name": "scout-first",
+  "title": "侦察先于计划",
+  "stamp": "20260916-101658",
+  "code": 0,
+  "passed": 38,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 154,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/scout-first/20260916-101658/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-scout-first-20260916-101658-workspace--/session-b8d758c4-c7cd-4855-8cef-c91ea7aeaab5/session.v3.jsonl.zstd",
+  "mutationCount": 24,
+  "mutationKinds": "scout/dispatched,scout/settled,observation/recorded,goal/set,plan/created,plan/confirmed,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed,fact/promoted"
+}

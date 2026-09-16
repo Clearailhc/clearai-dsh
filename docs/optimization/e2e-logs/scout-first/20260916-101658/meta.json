@@ -1,0 +1,20 @@
+{
+  "name": "scout-first",
+  "title": "侦察先于计划",
+  "stamp": "20260916-101658",
+  "code": 0,
+  "passed": 38,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 154,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/scout-first/20260916-101658/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-scout-first-20260916-101658-workspace--/session-b8d758c4-c7cd-4855-8cef-c91ea7aeaab5/session.v3.jsonl.zstd",
+  "mutationCount": 24,
+  "mutationKinds": "scout/dispatched,scout/settled,observation/recorded,goal/set,plan/created,plan/confirmed,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed,fact/promoted",
+  "commit": "aa9e2a3",
+  "dirty": true,
+  "model": "deepseek-flash",
+  "concurrency": 3,
+  "archive": "/Users/lhc/.dsh/e2e-archive/scout-first/20260916-101658",
+  "task": "这个工作区是空的(系统会铺好 clear/ 骨架)。我要一份「先看再动」的小交付。\n要求(按顺序做;一路做完,不要在中途停下来问我;每一步交付时给观测与判据对照。):\n1. **先派一次只读侦察**:用 SpawnScout 让一个子代理回答「工作区里有哪些现成技能(clear/skills/ 下各是什么)、有没有可用的数据文件、工作区根目录下有什么」。\n   侦察是异步的:**必须等它的结论回来**——用 AwaitWorldlines;到点还没回来就**再等一次**(最多等三次),\n   直到结论到手再往下做。等不到就如实说明,不要假装它有结论。\n2. 拿到侦察结论后,再 SetGoal:判据 = 「lab/inventory.md 存在,且(1)技能条数与**侦察结论报的条数**一致、(2)文件里**逐字引用侦察结论里的一句话**」;登记至少两条候选假设。\n3. CreatePlan 两步:第一步据侦察结论写 lab/inventory.md,第二步独立核对(自己再列一遍目录,与文件内容对照)。\n4. 做完两步,ClosePlan 收尾。"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "worldline-arbitration",
+  "title": "世界线:两条实现按尺子算术裁决",
+  "stamp": "20260916-101658",
+  "code": 0,
+  "passed": 40,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 234,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/worldline-arbitration/20260916-101658/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-worldline-arbitration-20260916-101658-workspace--/session-6d010a78-969a-4eaa-bb4f-ca2ef5fab101/session.v3.jsonl.zstd",
+  "mutationCount": 47,
+  "mutationKinds": "goal/set,plan/created,fork/created,worldline/prepared,worldline/executing,worldline/executed,observation/recorded,evidence/recorded,branch/delivered,fork/merged,worldline/removed,fork/converged,plan/confirmed,admission/checked,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed",
+  "commit": "aa9e2a3",
+  "dirty": true,
+  "model": "deepseek-flash",
+  "concurrency": 3,
+  "archive": "/Users/lhc/.dsh/e2e-archive/worldline-arbitration/20260916-101658",
+  "task": "这个工作区是空的。目标:用一把**事先登记的尺子**在两种实现之间择优,把赢家落成产物。\n要求(按顺序做;一路做完,不要在中途停下来问我;每一步交付时给观测与判据对照。):\n1. SetGoal:判据写清「lab/winner.txt 存在,且第一行是赢家路线的名字」;登记至少两条候选假设,每条写清什么结果会推翻它。\n2. CreatePlan 一份三步计划:第一步是「分叉择优」(判据里要写出裁决指标与方向),第二步把赢家落成 lab/winner.txt,第三步核对并结案。\n3. 第一步上用 ForkPlan 开**两条**世界线:\n   路线 compact:用 python3 写 lab/gen_compact.py,生成 lab/data_compact.json(紧凑 JSON,无空格);\n   路线 pretty:用 python3 写 lab/gen_pretty.py,生成 lab/data_pretty.json(缩进 JSON,带空格)。\n   两条的 done_criteria 都要写明「读数 = 生成文件的字节数」;decide_by 指标写「字节数」,方向取 min。\n4. 用 AdvanceWorldline 把两条世界线都交付,每条报一个**整串就是一个数**的读数(字节数)。\n5. ConvergeFork 让算术裁决;然后接着做第二步与第三步,最后 ClosePlan 收尾。"
+}
