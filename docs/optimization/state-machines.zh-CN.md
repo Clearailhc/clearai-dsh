@@ -298,8 +298,6 @@ stateDiagram-v2
 | `scout/dispatched` | §11 侦察 | 是 |
 | `scout/settled` | §11 侦察 | 是 |
 | `continuation/set` | §10 自动续跑 | 是 |
-| `brain/candidates` | 外脑候选扫描（真值表 `skill-candidate`） | 是 |
-| `skill/promoted` | 技能采纳（真值表 `skill-candidate`） | 是 |
 | `admission/checked` | **只留台账** | 否 |
 | `git/committed` | **只留台账** | 否 |
 | `git/restored` | **只留台账** | 否 |

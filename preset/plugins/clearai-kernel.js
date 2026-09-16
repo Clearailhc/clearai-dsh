@@ -5646,7 +5646,8 @@ export function apply(ctx, config = {}) {
 		// 外脑的两件活**与运行态卡无关**,所以放在最前面(否则「还没有目标」的会话里,
 		// 人采纳候选技能那一下会被状态门挡住——那是人的决定,不该被状态挡住):
 		//   ① 人在面板上采纳了某个候选 → 改写 frontmatter(`status: active`)并落一条记录;
-		//   ② 扫描候选技能 → 落一条 `brain/candidates` 事实(面板的收件箱据此出条目)。
+		//   ② 扫描候选技能 → 把候选与采纳记录随**插件消息的 `clearai/brain` 段**下发
+		//      (走 section 而不是自造变更类型:折法折它,于是「有哪些候选」是可重放的事实)。
 		// 顺序有讲究:先落实人的动作,再扫描——采纳之后这一回合扫出来就「已经没有候选了」。
 		// 工作区兜底铺设(正常情况下 agent/created 那一刻已经铺过了)。
 		const workspaceNote = ensureWorkspace(sessionId, sessionCwd(sessionId))

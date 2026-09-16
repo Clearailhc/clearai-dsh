@@ -71,16 +71,22 @@ console.log('\n【① 图里的每条边,折法必须认识】')
 console.log('\n【② 折法认识的类型,文档必须交代】')
 {
 	const inDoc = docKinds(zh)
-	// 折法的词汇表里,有一部分属于内核内部记账(如 git/*、admission/checked、brain/*),
-	// 它们不进状态机图是**正确**的——但那一组必须是显式列举的,而不是"漏了就说不用画"。
-	const notInStateMachine = ['admission/checked', 'git/committed', 'git/restored', 'git/snapshot', 'brain/candidates', 'skill/promoted']
-	const coreKinds = [...vocabulary].filter((kind) => !notInStateMachine.includes(kind))
-	const missing = coreKinds.filter((kind) => !inDoc.has(kind))
-	check('核心变更类型都在状态机文档里出现', missing.length === 0, missing.join(' '))
-	// 反向:被排除的那一组,必须在真值表里有交代(它们不是"忘了画")
-	const table = JSON.parse(read('docs/optimization/truth-table.json'))
-	const mentionsLedger = JSON.stringify(table).includes('LEDGER_ONLY') || table.mechanisms.some((m) => m.id === 'evidence-record' || m.id === 'git-ledger')
-	check('被排除在状态机之外的记账类变更,在真值表里有对应机制', mentionsLedger)
+	/**
+	 * 折法认识的每一个变更类型,文档都必须交代——**豁免的那一组由代码算出来**,
+	 * 不是手写的名字:它就是 `LEDGER_ONLY_MUTATIONS`(内核内部记账,不进状态机图是对的)。
+	 *
+	 * 为什么要这样:手写豁免名单是这条检查自己的假话。名单上曾经多出两个
+	 * **没有任何生产者**的类型,于是「折法认识的东西文档必须交代」对它们静默失效。
+	 */
+	const missing = [...vocabulary].filter((kind) => !inDoc.has(kind) && !ledgerOnly.has(kind))
+	check('折法认识的变更类型都在状态机文档里(或属于台账那一组)', missing.length === 0, missing.join(' '))
+	// 反向:文档里标成「只留台账」的那些行,必须与代码里的 `LEDGER_ONLY_MUTATIONS` 逐字一致。
+	const docLedgerOnly = new Set([...zh.matchAll(/^\|\s*`([a-z]+\/[a-z_]+)`\s*\|\s*\*\*只留台账\*\*\s*\|/gm)].map((match) => match[1]))
+	check(
+		'文档里的「只留台账」行与 LEDGER_ONLY_MUTATIONS 逐字一致',
+		docLedgerOnly.size === ledgerOnly.size && [...ledgerOnly].every((kind) => docLedgerOnly.has(kind)),
+		`文档:${[...docLedgerOnly].join(' ')} · 代码:${[...ledgerOnly].join(' ')}`,
+	)
 }
 
 console.log('\n【③ 中英两份文档的 event 集合一致】')

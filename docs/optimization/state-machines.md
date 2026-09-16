@@ -316,8 +316,6 @@ ledger facts), so it appears in no state machine.
 | `scout/dispatched` | §11 Scout | yes |
 | `scout/settled` | §11 Scout | yes |
 | `continuation/set` | §10 Auto continuation | yes |
-| `brain/candidates` | Brain candidate scan (truth table `skill-candidate`) | yes |
-| `skill/promoted` | Skill promotion (truth table `skill-candidate`) | yes |
 | `admission/checked` | **ledger only** | no |
 | `git/committed` | **ledger only** | no |
 | `git/restored` | **ledger only** | no |

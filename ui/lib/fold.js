@@ -17,7 +17,7 @@
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
 
-/** 世界线分支状态的秩:`_BRANCH_RANK`。秩只增;一旦出现 adopted,整个分叉的分支状态冻结。 */
+/** 世界线分支状态的秩。秩只增;一旦出现 adopted,整个分叉的分支状态冻结。 */
 const BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }
 
 export const MUTATION_KIND = 'clearai'
@@ -669,16 +669,6 @@ export function applyMutation(state, mutation) {
 			}
 			break
 		}
-		case 'brain/candidates': {
-			// 内核扫描工作区后落的**事实**:当前有哪些候选技能在等人采纳。
-			// 收件箱条目据此派生(状态锚:候选被采纳或文件消失,条目自然消失)。
-			next.brainCandidates = Array.isArray(mutation.items) ? mutation.items : []
-			break
-		}
-		case 'skill/promoted': {
-			next.skillPromotions = [...(next.skillPromotions ?? []), { name: mutation.name, by: mutation.by ?? 'user', at }]
-			break
-		}
 		case 'fork/arbitration_dispatched': {
 			const fork = next.forks.find((item) => item.id === mutation.fork)
 			if (fork === undefined) break
@@ -1294,8 +1284,6 @@ export function view(state, sessionId) {
 					},
 		/** 技能面:合并目录 + 本会话用量(「技能 · 记忆」页签的数据面)。 */
 		skills: { catalog: state.skillCatalog ?? null, usage: skillUsageView(state) },
-		inFlight: state.inFlight === undefined ? null : state.inFlight,
-		written: Array.isArray(state.written) ? state.written.length : 0,
 		goal:
 			state.goal === null
 				? null
@@ -1471,7 +1459,6 @@ export function view(state, sessionId) {
 			path: item.path ?? null,
 			status: item.conclusion === null || item.conclusion === undefined ? 'running' : item.note === null || item.note === undefined ? 'settled' : 'failed',
 		})),
-		settlement: derived.settlement,
 		forks: derived.forks.map((fork) => ({
 			tier: fork.tier ?? null,
 			degradedReason: fork.degradedReason ?? null,

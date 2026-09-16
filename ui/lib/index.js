@@ -18,7 +18,7 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
-import { AUTONOMY_VALUES, HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, renderCard, view } from './fold.js'
+import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, renderCard, view } from './fold.js'
 
 export const name = 'clearai-host'
 /** 投影注册表与会话存储:两个都是宿主服务,这里只消费。 */
@@ -64,7 +64,6 @@ const viewSchema = z.looseObject({
 	facts: z.array(z.unknown()),
 	forks: z.array(z.unknown()),
 	scouts: z.array(z.unknown()),
-	settlement: z.array(z.unknown()),
 })
 
 export function apply(ctx) {
@@ -375,12 +374,11 @@ export function apply(ctx) {
 				note: typeof request.note === 'string' ? request.note.slice(0, 200) : null,
 			}
 			/**
-			 * 技能名与运行档都要先过**取值校验**,再进日志。
+			 * 技能名要先过**取值校验**,再进日志。
 			 *
-			 * 技能名必须是原生那条语法(kebab-case):它曾要变成 `/<名字>` 手势(原生 pre-step
+			 * 它必须是原生那条语法(kebab-case):这个名字会变成 `/<名字>` 手势(原生 pre-step
 			 * 认的就是 `[a-z0-9]+(-[a-z0-9]+)*`),放别的形状进去只会静默不生效——比拒绝更坏。
-			 * 运行档只认两档;写别的值进去会让「立约即授权」这条机制在半个会话里失效,
-			 * 而人以为切好了。表外的值一律拒,与动词白名单同一套纪律。
+			 * 表外的值一律拒,与动词白名单同一套纪律。
 			 */
 			if (action === 'promote_skill' && (detail.skill === null || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(detail.skill))) {
 				return reply(400, { ok: false, error: 'bad_skill_name' })

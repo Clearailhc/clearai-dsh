@@ -1,23 +1,16 @@
 /**
- * clearai-dsh —— 浏览器半(ClearAI 的循环面板)。
+ * clearai-dsh —— 浏览器半(ClearAI 的面板)。
  *
- * 这个文件承载 ClearAI 的**左栏循环面板**:目标 → 假设 → 验证与工作 → 资料 → 事实。
- * 它刻意是**只读**的:面板里没有一个写入口,因为按 ClearAI 的设计,状态的唯一写入者是
- * 系统(内核工具 + 准入 + 独立评估者)。人在这里读到的是**算出来的事实**,不是模型的说法。
+ * 它注册四个座位,外加输入框那两个:
+ *   中栏 `conversation.view`    产物(声明 vs 盘上实际)、事实(已确认事实 + 在流转的命题)
+ *   右栏 `sidebarRightTabs`     世界树(步骤/分叉/车道的拓扑与闸门)、技能 · 记忆(合并目录 + 本会话用量)
+ *   输入框 `conversation.input`  计划芯片(步数 + 「需要你 N」)、续跑状态行
+ * 除此之外还有一个**只给人**的写入口:世界树详情里的人门动作(采纳 / 放弃),它走宿主半的
+ * `POST /api/clearai/gate`,落成一条署名为人的消息——模型能调的工具面里没有这些动词。
  *
- * 五个域各自读什么:
- *   目标         ← 目标文档 + 派生阶段 + 派生完成度(`plan_tree.goal_progress`)
- *   假设         ← 目标文档 hypotheses[],状态由证据算出来(不打分)
- *   验证与工作   ← 一张 Plan 的步骤 + 每步的 tests{hypothesis, level} 与交付状态
- *   资料         ← 观测(只追加,带来源与 digest)
- *   事实         ← 升格事实(evidence 够了之后由系统写进 clear/knowledge/facts/)
- * 底部结算单四列 = 意图 / 事实 / 评估者 / 差额;
- * 前端只渲染不重算 —— 内核给什么就显示什么。
- *
- * 数据通道:宿主半注册的**会话投影单元** `clearai`(key 就是 `clearai`,见 `lib/index.js`)。
- * `conversation.view` 与 `conversation.composer.dock` 都把 `useProjection` 作为标准 prop 交下来,
- * 面板读 `useProjection('clearai')` 拿到宿主算好的整份视图——随会话控制流推送、自带变更通知,
- * 面板自己不取数、不重算。投影为空(`undefined`)时渲染平静的空态,绝不抛错、不显示堆栈。
+ * 面板自己不取数、不重算:宿主半注册的**会话投影单元** `clearai`(见 `lib/index.js`)把算好的
+ * 视图推下来,`useProjection('clearai')` 读它。投影为空(`undefined`)时渲染平静的空态,
+ * 绝不抛错、不显示堆栈。
  */
 
 window.__ModuleLoader__.load({
@@ -155,7 +148,7 @@ window.__ModuleLoader__.load({
 		const FORK_ACTION = lazyTable(() => ({ adopt_branch: t('采纳了某条世界线'), abandon_fork: t('放弃了这次探索') }))
 		/** 侦察的三种结局(与 fold 的派生同源):跑着 / 正常回灌 / 没正常结束。 */
 		const SCOUT = lazyTable(() => ({ running: t('跑着'), settled: t('已回灌'), failed: t('没正常结束') }))
-		const FORK_PHASE = lazyTable(() => ({ exploring: t('探索中'), deciding: t('待裁决'), settled: t('已裁决'), abandoned: t('已放弃') }))
+
 		const STRONG = { refuted: true, stalled: true, refute: true }
 
 		const dash = (value) => (value === null || value === undefined || value === '' ? '—' : String(value))
@@ -296,15 +289,7 @@ window.__ModuleLoader__.load({
 			pathFoot: { fontSize: 11, color: 'var(--dsw-alias-label-secondary)', opacity: 0.7, marginTop: 2 },
 		}
 
-		/** 原生那一档的药丸按钮(28px 圆角版),`tone` 只影响边框色。 */
-		function Button(props) {
-			return h(
-				'button',
-				{ type: 'button', className: 'clearai-btn', 'data-tone': props.tone, disabled: props.disabled === true, title: props.title, onClick: props.onClick },
-				props.children,
-			)
-		}
-		/** 更小的一档(11px),用在密集列表里。 */
+		/** 密集列表里用的那一档按钮(11px 圆角)。 */
 		function Chip(props) {
 			return h('button', { type: 'button', className: 'clearai-chip', disabled: props.disabled === true, title: props.title, onClick: props.onClick }, props.children)
 		}
@@ -333,18 +318,6 @@ window.__ModuleLoader__.load({
 			if (payload !== null && payload.ok === true) return { ok: true, status: response.status, payload, error: null }
 			const reason = payload !== null && typeof payload.error === 'string' ? payload.error : `${response.status} ${text.slice(0, 80)}`.trim()
 			return { ok: false, status: response.status, payload, error: reason }
-		}
-
-		function Progress(props) {
-			if (typeof props.value !== 'number') return h('span', { style: S.faint }, t('完成度 —'))
-			const pct = Math.max(0, Math.min(1, props.value))
-			return h(
-				'span',
-				null,
-				t('完成度 '),
-				`${Math.round(pct * 100)}%`,
-				h('span', { style: S.progressTrack }, h('span', { style: { ...S.progressBar, width: `${Math.round(pct * 100)}%` } })),
-			)
 		}
 
 		function Tag(props) {
@@ -404,32 +377,6 @@ window.__ModuleLoader__.load({
 				// 阶段与完成度归**状态条**(常驻可见)⇒ 这里不重复(两处说同一件事 = 冗余)
 				// 判据常常是五条清单(真数据里 ~400 字 ✗)⇒ 页眉只放一句,全文进 tooltip(页眉只放一句)
 				h('span', { style: S.faint, title: String(goal.doneCriteria ?? '') }, `${t('判据:')}${brief(goal.doneCriteria, 56)}`),
-			)
-		}
-
-		function GoalDomain(props) {
-			const goal = props.goal
-			if (goal === null || goal === undefined) {
-				return h(Empty, null, t('还没有目标。目标带一份「怎样算回答了」的判据——判据在结果出现之前写下,由系统强制。'))
-			}
-			return h(
-				Section,
-				{ title: t('目标') },
-				h('div', { style: S.rowFirst }, h('div', null, dash(goal.claim))),
-				h(
-					'div',
-					{ style: S.kv },
-					h('span', { style: S.dim }, t('判据')),
-					h('span', null, dash(goal.doneCriteria)),
-					h('span', { style: S.dim }, t('阶段')),
-					h('span', null, h(Tag, { strong: STRONG[goal.phase] === true }, gloss(PHASE, goal.phase)), h('span', { style: S.faint }, `${t('派生 · ')}${dash(goal.phase)}`)),
-					h('span', { style: S.dim }, t('进度')),
-					h('span', null, h(Progress, { value: goal.progress })),
-					h('span', { style: S.dim }, t('升格门槛')),
-					h('span', null, `${dash(goal.promoteAtLevel)}${t('(假设达到这一级且无推翻才升格为事实)')}`),
-					goal.revision > 1 ? h('span', { style: S.dim }, t('版本')) : null,
-					goal.revision > 1 ? h('span', null, `rev${goal.revision}${t('(每次修订留痕,旧值不删)')}`) : null,
-				),
 			)
 		}
 
@@ -2559,17 +2506,6 @@ window.__ModuleLoader__.load({
 		 * 判断不许匿名——评估者/仲裁是谁、在哪,面板上给得出入口。
 		 * 拿不到会话服务就退化成一行文本 id:宁可少一个按钮,也不假装能跳。
 		 */
-		function Spectator(props) {
-			const sessionId = props.sessionId
-			const open = props.open
-			if (typeof sessionId !== 'string' || sessionId === '') return null
-			if (typeof open !== 'function') return h('span', { style: S.faint }, `${t('评估者会话 ')}${sessionId}`)
-			return h(
-				'button',
-				{ type: 'button', className: 'clearai-chip', title: sessionId, onClick: () => open(sessionId) },
-				props.label ?? t('旁观评估者'),
-			)
-		}
 
 		/**
 		 * 续跑档的两个小工具(纯函数,便于直接断言文案)。
