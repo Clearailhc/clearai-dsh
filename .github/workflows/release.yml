@@ -28,7 +28,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # `contents: write` 是给最后那一步建 GitHub Release 用的(它要写 releases)。
+      # **发布本身不需要它** —— npm 那边的身份走 OIDC(下面那个 id-token)。
+      contents: write
       id-token: write # Trusted Publishing 要它
     steps:
       - uses: actions/checkout@v7
@@ -147,3 +149,25 @@ jobs:
           # INVENTORY.txt 是**构建自己的**文件清单,不在清单的 files 白名单里,发行物里本来就没有它。
           diff -r "$RUNNER_TEMP/published/package" dist/clearai-dsh --exclude=INVENTORY.txt
           echo "registry 上的 $version 与本 commit 构建的逐文件一致 ✓"
+      - name: Create the GitHub Release
+        # tag 已经等于「registry 上那一份源码」(上一步刚核对过),这里补的是**人看的那一面**。
+        #
+        # 说明**从 CHANGELOG 里抽该版本那一段**(唯一账本),不用 `--generate-notes` 拿 commit
+        # 列表自己编一份 —— 那是第二本账,而且会随 commit 数漂移。人工回填也用同一个抽取器,
+        # 所以两边印出来的话永远一致。
+        #
+        # 幂等:已存在就改写说明,重跑同一个 tag 不会红。
+        # 这一步是 2026-09-16 补的:此前 Releases 面板停在手建的 0.1.2,而 npm 已经到 0.1.5 ——
+        # 三个对象(tag / npm / GitHub Release)本来就是三件事,缺哪一步哪一步就不动。
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          node tools/changelog-section.mjs "$version" > "$RUNNER_TEMP/release-notes.md"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "已存在 → 改写说明:$GITHUB_REF_NAME"
+            gh release edit "$GITHUB_REF_NAME" --title "clearai-dsh $version" --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            echo "新建 Release:$GITHUB_REF_NAME"
+            gh release create "$GITHUB_REF_NAME" --title "clearai-dsh $version" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
