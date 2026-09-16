@@ -307,11 +307,11 @@
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：ConvergeFork
 - **输入**：各分支读数 + 预注册尺子
-- **输出**：mutation fork/converged；算不出来 → fork/undecidable，交人
+- **输出**：mutation fork/recommended（读数凑齐即落推荐，只记事实）；fork/converged；算不出来 → fork/undecidable，交人
 - **阻断执行**：是 · **受 autonomy 影响**：否
 - **原生替代**：无
 - **理由**：尺子必须事先登记；算不出来就停下问人，绝不退化成随便挑一条。
-- **代码**：preset/plugins/clearai-kernel.js validateForkOptions; decideWinner; ConvergeFork; runArbiter
+- **代码**：preset/plugins/clearai-kernel.js validateForkOptions; decideWinner; pushRecommendation; ConvergeFork; runArbiter
 - **测试**：test/kernel.test.mjs · **配置**：autoAdoptMinGap=0.15, forkArbitration
 - **提示词**：clearai/worldline · **文档**：docs/epistemic-loop.zh-CN.md
 

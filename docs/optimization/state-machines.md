@@ -175,6 +175,7 @@ stateDiagram-v2
         [*] --> exploring_f: fork/created
         exploring_f --> exploring_f: worldline/prepared / executing / executed / branch_delivered
         exploring_f --> deciding: every branch rank >= evaluated
+        deciding --> deciding: fork/recommended (arithmetic names a favourite; a fact only, no state change)
         deciding --> settled: fork/converged (arithmetic yields a unique winner)
         deciding --> undecidable: fork/undecidable (arithmetic cannot decide)
         undecidable --> undecidable: fork/arbitrated (the arbitration verdict lands, but settled is NOT set)
@@ -302,6 +303,7 @@ ledger facts), so it appears in no state machine.
 | `worldline/executed` | §9 Worldlines | yes |
 | `worldline/removed` | §9 Worldlines | yes |
 | `branch/delivered` | §9 Worldlines | yes |
+| `fork/recommended` | §9 Worldlines | yes |
 | `fork/created` | §9 Worldlines | yes |
 | `fork/converged` | §9 Worldlines | yes |
 | `fork/undecidable` | §9 Worldlines | yes |

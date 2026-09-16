@@ -589,6 +589,19 @@ export function applyMutation(state, mutation) {
 				humanDecision: null,
 				verdict: null,
 				undecidable: null,
+				/**
+				 * 算术算出来的推荐(`fork/recommended`):人裁决那条路上**唯一的输入**。
+				 * 它是事实(系统算过),不是状态——分支秩不动,收敛仍然只走 ConvergeFork。
+				 */
+				recommended: null,
+				recommendMargin: null,
+				recommendProvisional: false,
+				recommendBy: null,
+				/**
+				 * 采纳时**没能合并**的原因(`fork/merge_skipped`):面板据此说清「决定登记了,
+				 * 赢家的产物要靠一次普通交付落位」。不转发它,这句话就永远说不出来。
+				 */
+				mergeSkipped: null,
 				at,
 				branches: (mutation.options ?? []).map((option) => ({
 					id: option.id,
@@ -628,6 +641,20 @@ export function applyMutation(state, mutation) {
 			branch.card_path = mutation.card_path ?? null
 			branch.evaluator_session = mutation.evaluator_session ?? null
 			branch.at = at
+			break
+		}
+		case 'fork/recommended': {
+			/**
+			 * 算术算出来的推荐。**只记事实,不动状态**:分支秩不变、`settled` 不变——
+			 * 采纳永远还是要走 `ConvergeFork`(或人的一次裁决)。它存在的理由只有一个:
+			 * 人门卡与面板读的是投影里的这个字段,不落账它们就只能写「推荐:无」。
+			 */
+			const fork = next.forks.find((item) => item.id === mutation.fork)
+			if (fork === undefined) break
+			fork.recommended = mutation.branch ?? null
+			fork.recommendMargin = mutation.margin ?? null
+			fork.recommendProvisional = mutation.provisional === true
+			fork.recommendBy = mutation.by ?? null
 			break
 		}
 		case 'fork/converged': {
@@ -1469,6 +1496,16 @@ export function view(state, sessionId) {
 			decideBy: { metric: fork.decide_by?.metric ?? null, direction: fork.decide_by?.direction ?? null },
 			verdict: fork.verdict,
 			undecidable: fork.undecidable,
+			/**
+			 * 算术推荐(`fork/recommended`):人门卡与面板的「推荐★」读的就是它。
+			 * 它只在分叉**还没收口**时才有意义——收口之后 `verdict.winner` 才是结论。
+			 */
+			recommended: fork.recommended ?? null,
+			recommendMargin: fork.recommendMargin ?? null,
+			recommendProvisional: fork.recommendProvisional === true,
+			recommendBy: fork.recommendBy ?? null,
+			/** 采纳时没能合并(以及为什么):决定登记了,产物靠一次普通交付落位。 */
+			mergeSkipped: fork.mergeSkipped ?? null,
 			arbitration: fork.arbitration ?? null,
 			arbitrationSession: fork.arbitrationSession ?? null,
 			branches: fork.branches.map((branch) => ({

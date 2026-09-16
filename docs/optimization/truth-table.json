@@ -465,7 +465,7 @@
    "authority": "authoritative",
    "actor": "system",
    "source": {
-    "code": "preset/plugins/clearai-kernel.js validateForkOptions; decideWinner; ConvergeFork; runArbiter",
+    "code": "preset/plugins/clearai-kernel.js validateForkOptions; decideWinner; pushRecommendation; ConvergeFork; runArbiter",
     "tests": "test/kernel.test.mjs",
     "config": "autoAdoptMinGap=0.15, forkArbitration",
     "prompt": "clearai/worldline",
@@ -473,7 +473,7 @@
    },
    "trigger": "ConvergeFork",
    "input": "各分支读数 + 预注册尺子",
-   "output": "mutation fork/converged；算不出来 → fork/undecidable，交人",
+   "output": "mutation fork/recommended（读数凑齐即落推荐，只记事实）；fork/converged；算不出来 → fork/undecidable，交人",
    "blocks_execution": true,
    "affected_by_autonomy": false,
    "native_dsh_alternative": null,

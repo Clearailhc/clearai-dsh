@@ -166,6 +166,7 @@ stateDiagram-v2
         [*] --> exploring_f: fork/created
         exploring_f --> exploring_f: worldline/prepared / executing / executed / branch_delivered
         exploring_f --> deciding: 所有分支秩 ≥ evaluated
+        deciding --> deciding: fork/recommended（算术给出推荐；只记事实，状态不变）
         deciding --> settled: fork/converged（算术给出唯一优胜者）
         deciding --> undecidable: fork/undecidable（算术给不出结果）
         undecidable --> undecidable: fork/arbitrated（仲裁判决落账，但**不改 settled**）
@@ -284,6 +285,7 @@ stateDiagram-v2
 | `worldline/executed` | §9 世界线 | 是 |
 | `worldline/removed` | §9 世界线 | 是 |
 | `branch/delivered` | §9 世界线 | 是 |
+| `fork/recommended` | §9 世界线 | 是 |
 | `fork/created` | §9 世界线 | 是 |
 | `fork/converged` | §9 世界线 | 是 |
 | `fork/undecidable` | §9 世界线 | 是 |

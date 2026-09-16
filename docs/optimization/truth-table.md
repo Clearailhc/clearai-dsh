@@ -307,11 +307,11 @@ This section is exported from code, not written by hand:
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: ConvergeFork
 - **Input**: 各分支读数 + 预注册尺子
-- **Output**: mutation fork/converged；算不出来 → fork/undecidable，交人
+- **Output**: mutation fork/recommended（读数凑齐即落推荐，只记事实）；fork/converged；算不出来 → fork/undecidable，交人
 - **Blocks execution**: yes · **Affected by autonomy**: no
 - **Native alternative**: none
 - **Rationale**: 尺子必须事先登记；算不出来就停下问人，绝不退化成随便挑一条。
-- **Code**: preset/plugins/clearai-kernel.js validateForkOptions; decideWinner; ConvergeFork; runArbiter
+- **Code**: preset/plugins/clearai-kernel.js validateForkOptions; decideWinner; pushRecommendation; ConvergeFork; runArbiter
 - **Tests**: test/kernel.test.mjs · **Config**: autoAdoptMinGap=0.15, forkArbitration
 - **Prompt**: clearai/worldline · **Docs**: docs/epistemic-loop.zh-CN.md
 

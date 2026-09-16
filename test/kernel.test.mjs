@@ -3846,6 +3846,63 @@ console.log('\n【什么都不删 + 降级不可表示 + 可从日志重放】')
 	check('重放出来的世界线仍然记得采纳与落选', derive(replayed).forks.some((fork) => fork.branches.some((branch) => branch.status === 'adopted') && fork.branches.some((branch) => branch.status === 'pruned')))
 }
 
+console.log('\n【世界线的推荐:算得出来的那条必须落账,否则人门卡只能写「推荐:无」】')
+{
+	/**
+	 * 人裁决一条世界线时,面板与人门卡读的「推荐哪条」来自投影里的 `fork.recommended`。
+	 * 没有生产者,它们只能写「推荐:无」——两条一模一样的候选,那次裁决等于让人瞎猜。
+	 * 这里钉两头:读数凑齐后推荐落账(带余量与临时标记);算不出来时**什么都不写**。
+	 */
+	const options = [
+		{ label: '甲', approach: '直接算', done_criteria: '读数 ms 越小越好', workspace: 'lab/wl/jia', level: 'L0' },
+		{ label: '乙', approach: '绕一圈', done_criteria: '读数 ms 越小越好', workspace: 'lab/wl/yi', level: 'L0' },
+	]
+	const host = makeHost()
+	apply(host.ctx, { autonomy: 'unattended' })
+	const S = 'session-recommend'
+	await callOn(host, S, 'SetGoal', { claim: '选一条路线', done_criteria: '两条路线各有读数', hypotheses: [{ claim: '甲比乙快', refute_when: '乙更快' }] })
+	const hypothesis = host.service.state(S).hypotheses[0].id
+	const created = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'r1', do: '两条路线各跑一遍', artifacts: ['lab/r1.txt'], done_criteria: 'lab/r1.txt 存在且含读数', tests: { hypothesis, level: 'L0' } }] })
+	check('前置:计划建起来了', created.ok === true, String(created.code))
+	const forked = await callOn(host, S, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms', direction: 'min' } })
+	check('前置:分叉立起来了', forked.ok === true && host.service.view(S).forks.length === 1, String(forked.code))
+	const pathOf = (label) => host.service.view(S).forks[0].branches.find((item) => item.label === label).worktreePath
+	const deliver = async (label, reading) => {
+		writeText(join(pathOf(label), 'probe.txt'), `route,ms\n${label},${reading}\n`)
+		return await callOn(host, S, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(pathOf(label), 'probe.txt') }], verdict: 'support', basis: `硬信号:${label} 的读数来自 probe.txt`, reading, validity: 'usable' })
+	}
+	const first = await deliver('甲', '60')
+	check('只交付一条时不给推荐(读数没凑齐,推荐就是猜)', first.ok === true && !host.journal.some((mutation) => mutation.t === 'fork/recommended'), String(first.code))
+	const second = await deliver('乙', '200')
+	check('最后一条交付完,推荐落账(算术此刻真的算得出)', second.ok === true && host.journal.some((mutation) => mutation.t === 'fork/recommended'))
+	const jiaId = host.service.state(S).forks[0].branches.find((branch) => branch.label === '甲').id
+	const recommended = host.journal.filter((mutation) => mutation.t === 'fork/recommended').at(-1)
+	check('推荐的是读数更优的那条(min ⇒ 60)', recommended?.branch === jiaId, JSON.stringify({ got: recommended?.branch, want: jiaId }))
+	check('余量按**相对**差距算(140/200 = 0.7)', Math.abs(Number(recommended?.margin) - 0.7) < 1e-9, String(recommended?.margin))
+	check('余量够大 ⇒ 不是「临时推荐」', recommended?.provisional === false, String(recommended?.provisional))
+	const projected = host.service.view(S).forks[0]
+	check('投影里真的有了它(人门卡与面板读的就是这里)', projected.recommended === jiaId && projected.recommendProvisional === false && projected.phase === 'deciding', JSON.stringify({ recommended: projected.recommended, phase: projected.phase }))
+	await callOn(host, S, 'WorldlineStatus', {})
+	check('重复盘点不重复落账(同一份读数只写一次)', host.journal.filter((mutation) => mutation.t === 'fork/recommended').length === 1, String(host.journal.filter((mutation) => mutation.t === 'fork/recommended').length))
+	check('推荐不改写任何状态:分叉还没收口,分支秩一步没动', projected.decided === false && projected.branches.every((branch) => branch.status === 'evaluated'), JSON.stringify(projected.branches.map((branch) => branch.status)))
+
+	// 反面:读数落不成数时**什么都不写**——「没有推荐」也是事实,不编一个。
+	const host2 = makeHost()
+	apply(host2.ctx, { autonomy: 'unattended' })
+	const S2 = 'session-recommend-undecidable'
+	await callOn(host2, S2, 'SetGoal', { claim: '选一条路线', done_criteria: '两条路线各有读数', hypotheses: [{ claim: '甲比乙快', refute_when: '乙更快' }] })
+	const hypothesis2 = host2.service.state(S2).hypotheses[0].id
+	await callOn(host2, S2, 'CreatePlan', { steps: [{ id: 'r2', do: '两条路线各跑一遍', artifacts: ['lab/r2.txt'], done_criteria: 'lab/r2.txt 存在且含读数', tests: { hypothesis: hypothesis2, level: 'L0' } }] })
+	await callOn(host2, S2, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms', direction: 'min' } })
+	const pathOf2 = (label) => host2.service.view(S2).forks[0].branches.find((item) => item.label === label).worktreePath
+	for (const label of ['甲', '乙']) {
+		writeText(join(pathOf2(label), 'probe.txt'), `route,ms\n${label},?\n`)
+		await callOn(host2, S2, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(pathOf2(label), 'probe.txt') }], verdict: 'support', basis: `硬信号:${label} 的读数`, reading: '说不清', validity: 'usable' })
+	}
+	check('读数落不成数 ⇒ 一条推荐都不写(不猜)', host2.journal.filter((mutation) => mutation.t === 'fork/recommended').length === 0)
+	check('投影里的推荐保持 null(面板照实说「没有推荐」)', host2.service.view(S2).forks[0].recommended === null)
+}
+
 console.log('\n【首回合的系统事实:本体声明与货架那句话必须真的发出去】')
 {
 	/**

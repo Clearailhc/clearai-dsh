@@ -4030,6 +4030,46 @@ export function apply(ctx, config = {}) {
 		return { winner: sorted[0].branch, margin, tie: sorted[0].value === sorted[1].value, metric: contract.metric, direction, readings: rows, by: 'metric' }
 	}
 
+	/**
+	 * 把算术算出来的推荐**落成一条事实**(`fork/recommended`)。
+	 *
+	 * 为什么必须落账:分叉收口那一下要人在面板上裁决,而「算出来推荐哪条」是那次裁决
+	 * **唯一的输入**。人门卡、世界树与 `/worldline` 读的都是投影里的这个字段——
+	 * 不落账,它们只能写「推荐:无」,人看到的是两条一模一样、没有任何提示的候选。
+	 *
+	 * 边界(逐条都重要):
+	 *   · **只记事实**:分支秩不动、`settled` 不动,采纳依然只走 `ConvergeFork`(或人的一次裁决);
+	 *   · **算不出就不写**:读数不足两条、没有尺子 ——「没有推荐」本身也是事实,不编一个;
+	 *   · **收口之后不写**:分叉已有终局时,`verdict.winner` 才是结论,再推荐一条只会互相矛盾;
+	 *   · **没变就不重复写**:同一份读数在每一拍都会重新算到,重复落账只是往日志里灌水。
+	 */
+	function pushRecommendation(mutations, state, forkId) {
+		const fork = (state.forks ?? []).find((item) => item.id === forkId)
+		if (fork === undefined) return
+		if (fork.settled === true || fork.abandoned === true) return
+		if (!fork.branches.every((branch) => (BRANCH_RANK[branch.status] ?? 0) >= BRANCH_RANK.evaluated)) return
+		const outcome = decideWinner(fork)
+		if (outcome.undecidable !== undefined) return
+		const margin = typeof outcome.margin === 'number' ? outcome.margin : null
+		// 与 `ConvergeFork` 的 `decisive` 同一把尺子:分差不够(或来自判断)就是**临时推荐**,
+		// 人看到的是「★ 但证据不够硬」——这正是他该知道的那件事。
+		const provisional = !(margin !== null && margin >= CFG.autoAdoptMinGap)
+		const already = mutations.find((mutation) => mutation.t === 'fork/recommended' && mutation.fork === fork.id)
+		if (already !== undefined && already.branch === outcome.winner && already.margin === margin && already.provisional === provisional) return
+		if (already === undefined && fork.recommended === outcome.winner && fork.recommendMargin === margin && fork.recommendProvisional === provisional) return
+		mutations.push({
+			t: 'fork/recommended',
+			fork: fork.id,
+			step: fork.step ?? null,
+			branch: outcome.winner,
+			margin,
+			metric: outcome.metric ?? null,
+			direction: outcome.direction ?? null,
+			by: outcome.by ?? null,
+			provisional,
+		})
+	}
+
 	defineTool({
 		name: 'ForkPlan',
 		description:
@@ -4359,6 +4399,12 @@ export function apply(ctx, config = {}) {
 				evaluator_session: auditSessionId,
 			})
 			const parsed = metricReading(reading)
+			/**
+			 * 这一条交付完,**分叉可能刚好凑齐了全部读数** —— 那就顺手把算术的推荐落成事实。
+			 * 放在这里而不是等人来问:推荐是「系统知道的事」,该像目录、运行档一样自己进投影,
+			 * 而不是压在人记不记得点开面板上。
+			 */
+			pushRecommendation(mutations, hostService.preview(sessionId, mutations).state, fork.id)
 			// 交付成功前收一次执行者结论:这条世界线的「执行者跑成没跑成」该跟它的读数一起落账。
 			// 返回值不再丢弃:本次收到的结论正文要跟着这次交付一起给模型。
 			const collectedOnDeliver = collectExecutors(mutations, hostService.state(sessionId), sessionId)
@@ -4669,6 +4715,15 @@ export function apply(ctx, config = {}) {
 			const { hostService, sessionId, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
 			const swept = collectExecutors(mutations, hostService.state(sessionId), sessionId)
+			/**
+			 * 顺手补一次推荐:世界线可能在**别的进程**里交付完(或早于这条机制就交付完了),
+			 * 那一条 `fork/recommended` 就没人写过。这个工具本来就是「看现在什么状态」,
+			 * 在这里现算一次最省事——没变就不落账(见 `pushRecommendation`)。
+			 */
+			const statusPlan = activePlanOf(hostService.state(sessionId))
+			const statusStep = statusPlan === null ? null : firstOpenStep(statusPlan)
+			const statusFork = statusStep === null ? null : forkOfStep(hostService.derive(sessionId).forks, statusStep.id)
+			if (statusFork !== null) pushRecommendation(mutations, hostService.preview(sessionId, mutations).state, statusFork.id)
 			const lines = swept.lines.map((item) => `· ${item}`)
 			if (swept.recovered > 0) lines.push(`· ${swept.recovered} 条结论是从执行者自己的会话日志里回收的`)
 			if (swept.lost > 0) lines.push(`· ${swept.lost} 条失联(产物还在各自的工作副本里)`)
