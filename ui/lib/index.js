@@ -19,6 +19,7 @@ import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
 import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, renderCard, view } from './fold.js'
+import { install as installInvariants } from './invariant.js'
 
 export const name = 'clearai-host'
 /** 投影注册表与会话存储:两个都是宿主服务,这里只消费。 */
@@ -67,6 +68,26 @@ const viewSchema = z.looseObject({
 })
 
 export function apply(ctx) {
+	/**
+	 * **把自己的不变量交给宿主**(`@deepseek-ai/dsh-invariants`)——但只在它挂了的时候。
+	 *
+	 * 为什么在这里注册、而不是另起一行组合:不变量服务**不是每个部署都挂**的诊断面
+	 * (它由组合决定,还带 `enabled` 与包名白/黑名单)。在我们这一侧读一次、有就加入,
+	 * 于是任何挂了它的部署(宿主自己的开发组合、我们跑验收的那套)都自动带上这几条契约,
+	 * 而没挂它的部署里这段是**零成本**的一行判断,不是一个永远等服务的悬空行。
+	 *
+	 * 认不出服务、或这个名字已经被别的路径注册过(同包名重复注册宿主会抛):都安静放过——
+	 * 诊断面不许把产品弄坏。
+	 */
+	try {
+		const invariants = ctx.get('invariants')
+		if (invariants !== undefined && typeof invariants.register === 'function') {
+			invariants.register('clearai-dsh', installInvariants)
+		}
+	} catch (error) {
+		ctx.logger?.warn?.(`clearai: 宿主不变量没挂上 ${String(error?.message ?? error).slice(0, 160)}`)
+	}
+
 	// 视图按状态引用记忆:同一份状态不重复造对象(投影用 Object.is 判断要不要发布)
 	let lastState = null
 	let lastView = null

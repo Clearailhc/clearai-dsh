@@ -66,7 +66,7 @@ npx clearai-dsh install
 ## 构建与验证
 
 ```bash
-npm test                        # 13 份套件 —— 清单在 test/run.sh
+npm test                        # 14 份套件 —— 清单在 test/run.sh
 node tools/build-package.mjs    # 装配 dist/clearai-dsh
 node tools/verify-package.mjs   # 现场重建并逐字节比对
 node tools/verify-deploy.mjs    # 用部署出去的文件做一次真实装配（绕开 ESM 缓存）

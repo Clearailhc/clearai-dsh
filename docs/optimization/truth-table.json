@@ -1239,6 +1239,32 @@
    "rationale": "子任务的生命周期必须由内核自己掌握:账本只认本进程攥着的句柄,结论送达由收集那一刻的返回完成;四种角色共用一套,差异只在人格、工具面与结果解释方式。结算有两条来源:我们自己这一次派遣的 `run.result`,以及宿主的 `subagent/end` 事件(它在**同一个 promise 落定那一刻**发出,成功与失败都发,所以 handle 已经不在了也收得到);重启之后还能把子会话自己的日志当地面真相读回来。**回合一停,在飞的子 run 再也不会自己回来**——那一条由宿主的 `agent/turn-stopping`(串行 await)写成 `clearai/turn-ended` 事件:不叫醒任何人、不写裁决,只留事实,下一个回合的运行态卡据此说清「上一个回合结束时还有谁在飞」。"
   },
   {
+   "id": "host-invariants",
+   "name": "宿主不变量（五条契约，落账之前判）",
+   "name_en": "Host-side invariants (five contracts, judged before the append)",
+   "layer": "harness",
+   "status": "implemented",
+   "hardness": "hard",
+   "authority": "authoritative",
+   "actor": "system",
+   "source": {
+    "code": "ui/lib/invariant.js（契约与增量折叠 + install/apply）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）",
+    "tests": "test/invariant.test.mjs（合法放行 / 每条契约的违反 / 落账之前拦下 / 伪步骤不误伤）",
+    "config": "宿主 invariants 的 enabled / package_allowlist / package_blocklist",
+    "prompt": "—",
+    "docs": "docs/release-verification.zh-CN.md"
+   },
+   "trigger": "任何一条 clearai 事实要落进会话日志之前（宿主 internal/dispatch 那一拍）",
+   "input": "会话事件里的 clearai 变更（插件消息的 clearai/mutations 段、工具结果的 meta.mutations）",
+   "output": "违反时抛宿主 InvariantError（归属 clearai-dsh）；通过则什么都不做",
+   "blocks_execution": true,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": "@deepseek-ai/dsh-invariants（宿主自己的包级不变量注册表；不另造一套自检）",
+   "known_mismatch": null,
+   "notes": "五条契约：引用完整性 / 准入先于推进 / 结算必有派遣 / 升格有据 / 事实棘轮。**只判契约不判判断**；伪步骤（goal:<id>、<fork>:<branch>）与\"窗口不从开头起\"两处刻意不判——判据比事实窄就是误伤。服务不在的部署里这段是零成本的一行判断。",
+   "rationale": "跨机制的不变量原本只在验收脚本里**事后**算：跑完一场、解出日志、再判——判晚了，bug 就留到跑完之后才看见。而这几条本来就是**逐条事实**的性质。宿主给了位置（register(packageName, installer)，违反时抛带稳定错误码与归属包名的 InvariantError），就用它：判在落账之前，不合法的事实根本进不了日志。它约束的是所有生产者（22 件工具、人门、将来的入口），所以它自己跑在落账路径上：判宽了等于没判，判严了会把正确的行为拦下——真跑两次各教出一条（observation/audit 的 step 常常不带 plan；goal 轴与世界线轴的伪步骤不是计划步骤），两条都写成了回归测试。"
+  },
+  {
    "id": "l4-universal-gate",
    "name": "覆盖每一次评估的通用 L4 门",
    "name_en": "A universal L4 gate over every evaluation",

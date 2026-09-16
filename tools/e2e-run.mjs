@@ -352,6 +352,16 @@ const hostPatch = [
 	...(present.has('subagent-model-selection-settings') ? [] : [{ insert: [MODEL_SELECTION_ROW] }]),
 	// installed 模式:宿主行由**包的补丁层**提供(我们不再插,免得同一个 id 挂两行)
 	...(installedHome !== null || !existsSync(HOST_PACKAGE) ? [] : [{ insert: [{ id: 'clearai-host', name: HOST_PACKAGE }] }]),
+	/**
+	 * **长测里把宿主的不变量面挂上**。
+	 *
+	 * `@deepseek-ai/dsh-invariants` 是诊断面:它由组合决定装不装(默认那套 bundle 不装它,
+	 * 只有 DSH 自己的开发组合装)。长测是我们自己的跑动,正好是它该在场的地方——
+	 * 内核那侧发现有这个服务就会把自己的五条契约注册进去,于是**每条事实在落账之前**就被判一道:
+	 * 引用完整性 / 准入先于推进 / 结算必有派遣 / 升格有据 / 事实棘轮。
+	 * 违反时宿主抛带稳定错误码与归属包名的 `InvariantError`,这场长测当场红,而不是等归档人肉核。
+	 */
+	...(present.has('invariants') ? [] : [{ insert: [{ id: 'invariants', name: '@deepseek-ai/dsh-invariants' }] }]),
 ]
 const presetPatch = [
 	...disabledRows.map((id) => ({ id, disabled: true })),

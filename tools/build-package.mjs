@@ -13,6 +13,7 @@
  *   preset/                      → presets/clearai/        (agent.cordis.yml + plugins/ + skills/ + preset.yml)
  *   ui/lib/index.js              → lib/host.js             (宿主半:投影单元 + 路由)
  *   ui/lib/fold.js               → lib/fold.js             (纯 fold,宿主半 import 它)
+ *   ui/lib/invariant.js          → lib/invariant.js        (宿主不变量伴生件;宿主那侧 import 它)
  *   ui/lib/client.js             → lib/client.js           (浏览器半)
  *   preset/template/              → presets/clearai/template/
  *                                  (工作区模板:随包走,内核缺省从这里找)
@@ -97,6 +98,8 @@ if (existsSync(TEMPLATE_SRC)) {
 // ── ④ 宿主半 / 浏览器半:同一份源,两个出口 ─────────────────────────────────
 copy(join(PORT, 'ui', 'lib', 'index.js'), join(OUT, 'lib', 'host.js'))
 copy(join(PORT, 'ui', 'lib', 'fold.js'), join(OUT, 'lib', 'fold.js'))
+// 宿主不变量的伴生件:单独一个文件,按名字可挂(`clearai-dsh/invariant`)。
+copy(join(PORT, 'ui', 'lib', 'invariant.js'), join(OUT, 'lib', 'invariant.js'))
 copy(join(PORT, 'ui', 'lib', 'client.js'), join(OUT, 'lib', 'client.js'))
 
 // ── ⑤ 产物清单:让人一眼看出包里有什么(也是 verify 的输入) ─────────────────

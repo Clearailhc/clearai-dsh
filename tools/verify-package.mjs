@@ -64,6 +64,8 @@ check('清单声明了宿主 bundle(patch)', typeof manifest.dsh?.bundle?.patch 
 check('清单声明了浏览器半(platform + inject)', manifest.dsh?.client?.platform === 'web' && Array.isArray(manifest.dsh.client.inject) && manifest.dsh.client.inject.length > 0, JSON.stringify(manifest.dsh?.client ?? null))
 check('出口齐:宿主半 / 浏览器半 / 补丁 / 清单', ['exports', 'main', 'bin'].every((key) => manifest[key] !== undefined) && manifest.exports['./client'] !== undefined && manifest.exports['./cordis.patch.yml'] !== undefined, Object.keys(manifest.exports ?? {}).join(','))
 check('宿主半与浏览器半都真的在包里', has('lib/host.js') && has('lib/client.js') && has('lib/fold.js'))
+// 伴生件在包里、也有出口:声明了 `./invariant` 却没有那个文件,等于文档说了一句做不到的话。
+check('宿主不变量伴生件在包里,且清单里有它的出口', has('lib/invariant.js') && manifest.exports['./invariant'] === './lib/invariant.js')
 check('补丁层文件在包里,且插的是**包名**行(不是路径)', has('cordis.patch.yml') && /name:\s*'clearai-dsh'/.test(readFileSync(join(DIST, 'cordis.patch.yml'), 'utf8')))
 check('随包带上 README(中英)、LICENSE 与品牌位图(npm 页面靠它们)', has('README.md') && has('README.zh-CN.md') && has('LICENSE') && has('brand/logo-lockup.png'))
 /**

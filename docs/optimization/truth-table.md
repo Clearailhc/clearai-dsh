@@ -8,11 +8,11 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **57**
-- By status: Implemented 51 · Partial 1 · Design only 1 · Removed 4
-- By strength: Hard boundary 40 · Advisory 9 · Native 3 · Prompt only 1 · Deprecated 4
+- Mechanisms: **58**
+- By status: Implemented 52 · Partial 1 · Design only 1 · Removed 4
+- By strength: Hard boundary 41 · Advisory 9 · Native 3 · Prompt only 1 · Deprecated 4
 - By destination: stays design-only 2 · deleted and accounted 4
-- Actually blocking execution: **17**
+- Actually blocking execution: **18**
 - Affected by autonomy: **2**
 - Carrying a known mismatch between docs/comments and code: **2**
 
@@ -78,6 +78,7 @@ This section is exported from code, not written by hand:
 | `prompt-sections` | Prompt sections: 23 defined, 22 mounted at a time | Harness | Implemented | Advisory | None | system | no | **yes** | `preset/plugins/prompts.js SECTIONS` |
 | `exploration-zone` | Removed: the exploration zone as a named mode | Harness | Removed | Deprecated | Non-authoritative | model | no | no | — |
 | `subrun-lifecycle` | Unified sub-run lifecycle (one-shot handle, one collection channel) | Harness | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors` |
+| `host-invariants` | Host-side invariants (five contracts, judged before the append) | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `ui/lib/invariant.js（契约与增量折叠 + install/apply）` |
 | `set-autonomy` | Removed: switching the run tier from the panel | Harness | Removed | Deprecated | None | human | no | no | — |
 | `budget-tiers` | Removed: 6-round / 512-round budget tiers | Harness | Removed | Deprecated | None | system | no | no | — |
 | `non-authoritative-isolation` | Non-authoritative paths cannot write the authoritative ledger | Harness | Implemented | Hard boundary | None | system | yes | no | `test/authority-boundary.test.mjs` |
@@ -704,6 +705,19 @@ This section is exported from code, not written by hand:
 - **Code**: preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js clearai/turn-ended
 - **Tests**: test/kernel.test.mjs（落定 / 认 id / 回合收尾）; test/host.test.mjs（事件折得进投影且可重放） · **Config**: auditProvider=spawn, auditTimeoutMs
 - **Prompt**: clearai/delegation · **Docs**: docs/optimization/e2e-longruns.zh-CN.md
+
+### `host-invariants` · Host-side invariants (five contracts, judged before the append)
+
+- **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 任何一条 clearai 事实要落进会话日志之前（宿主 internal/dispatch 那一拍）
+- **Input**: 会话事件里的 clearai 变更（插件消息的 clearai/mutations 段、工具结果的 meta.mutations）
+- **Output**: 违反时抛宿主 InvariantError（归属 clearai-dsh）；通过则什么都不做
+- **Blocks execution**: yes · **Affected by autonomy**: no
+- **Native alternative**: @deepseek-ai/dsh-invariants（宿主自己的包级不变量注册表；不另造一套自检）
+- **Rationale**: 跨机制的不变量原本只在验收脚本里**事后**算：跑完一场、解出日志、再判——判晚了，bug 就留到跑完之后才看见。而这几条本来就是**逐条事实**的性质。宿主给了位置（register(packageName, installer)，违反时抛带稳定错误码与归属包名的 InvariantError），就用它：判在落账之前，不合法的事实根本进不了日志。它约束的是所有生产者（22 件工具、人门、将来的入口），所以它自己跑在落账路径上：判宽了等于没判，判严了会把正确的行为拦下——真跑两次各教出一条（observation/audit 的 step 常常不带 plan；goal 轴与世界线轴的伪步骤不是计划步骤），两条都写成了回归测试。
+- **Code**: ui/lib/invariant.js（契约与增量折叠 + install/apply）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）
+- **Tests**: test/invariant.test.mjs（合法放行 / 每条契约的违反 / 落账之前拦下 / 伪步骤不误伤） · **Config**: 宿主 invariants 的 enabled / package_allowlist / package_blocklist
+- **Prompt**: — · **Docs**: docs/release-verification.zh-CN.md
 
 ### `l4-universal-gate` · A universal L4 gate over every evaluation
 

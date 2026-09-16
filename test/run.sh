@@ -43,6 +43,7 @@ for round in $(seq 1 "$ROUNDS"); do
 	composition="$(node "$HERE/preset-composition.test.mjs" 2>&1)"
 	sections="$(node "$HERE/prompt-sections.test.mjs" 2>&1)"
 	scenarios="$(node "$HERE/e2e-scenarios.test.mjs" 2>&1)"
+	invariant="$(node "$HERE/invariant.test.mjs" 2>&1)"
 	kernel_line="$(printf '%s\n' "$kernel" | grep -a '通过,' | tail -1)"
 	host_line="$(printf '%s\n' "$host" | grep -a '通过,' | tail -1)"
 	brain_line="$(printf '%s\n' "$brain" | grep -a '通过,' | tail -1)"
@@ -56,13 +57,14 @@ for round in $(seq 1 "$ROUNDS"); do
 	composition_line="$(printf '%s\n' "$composition" | grep -a '通过,' | tail -1)"
 	sections_line="$(printf '%s\n' "$sections" | grep -a '通过,' | tail -1)"
 	scenarios_line="$(printf '%s\n' "$scenarios" | grep -a '通过,' | tail -1)"
+	invariant_line="$(printf '%s\n' "$invariant" | grep -a '通过,' | tail -1)"
 	# 没装插件 ⇒ 这两份自己会打印一行「· 跳过…」并以 0 退出;那不是失败,如实记成「跳过」。
 	host_display="${host_line:-$(printf '%s\n' "$host" | grep -a '跳过' | head -1 | sed 's/^· //')}"
 	client_display="${client_line:-$(printf '%s\n' "$client" | grep -a '跳过' | head -1 | sed 's/^· //')}"
-	printf '第 %s 遍 · 内核:%s · 宿主:%s · 外脑:%s · 客户端:%s · 本体:%s · 真值表:%s · 状态机:%s · 文档:%s · 注释:%s · 边界:%s · 组合:%s · 段:%s · 长测:%s\n' "$round" "${kernel_line:-崩溃}" "${host_display:-崩溃}" "${brain_line:-崩溃}" "${client_display:-崩溃}" "${ontology_line:-崩溃}" "${truth_line:-崩溃}" "${statemachine_line:-崩溃}" "${docs_line:-崩溃}" "${comment_line:-崩溃}" "${authority_line:-崩溃}" "${composition_line:-崩溃}" "${sections_line:-崩溃}" "${scenarios_line:-崩溃}"
-	if ! printf '%s\n' "$kernel_line" | grep -qa ',0 失败' || ! printf '%s\n' "$brain_line" | grep -qa ',0 失败' || ! printf '%s\n' "$ontology_line" | grep -qa ',0 失败' || ! printf '%s\n' "$truth_line" | grep -qa ',0 失败' || ! printf '%s\n' "$statemachine_line" | grep -qa ',0 失败' || ! printf '%s\n' "$docs_line" | grep -qa ',0 失败' || ! printf '%s\n' "$comment_line" | grep -qa ',0 失败' || ! printf '%s\n' "$authority_line" | grep -qa ',0 失败' || ! printf '%s\n' "$composition_line" | grep -qa ',0 失败' || ! printf '%s\n' "$sections_line" | grep -qa ',0 失败' || ! printf '%s\n' "$scenarios_line" | grep -qa ',0 失败'; then
+	printf '第 %s 遍 · 内核:%s · 宿主:%s · 外脑:%s · 客户端:%s · 本体:%s · 真值表:%s · 状态机:%s · 文档:%s · 注释:%s · 边界:%s · 组合:%s · 段:%s · 长测:%s · 不变量:%s\n' "$round" "${kernel_line:-崩溃}" "${host_display:-崩溃}" "${brain_line:-崩溃}" "${client_display:-崩溃}" "${ontology_line:-崩溃}" "${truth_line:-崩溃}" "${statemachine_line:-崩溃}" "${docs_line:-崩溃}" "${comment_line:-崩溃}" "${authority_line:-崩溃}" "${composition_line:-崩溃}" "${sections_line:-崩溃}" "${scenarios_line:-崩溃}" "${invariant_line:-崩溃}"
+	if ! printf '%s\n' "$kernel_line" | grep -qa ',0 失败' || ! printf '%s\n' "$brain_line" | grep -qa ',0 失败' || ! printf '%s\n' "$ontology_line" | grep -qa ',0 失败' || ! printf '%s\n' "$truth_line" | grep -qa ',0 失败' || ! printf '%s\n' "$statemachine_line" | grep -qa ',0 失败' || ! printf '%s\n' "$docs_line" | grep -qa ',0 失败' || ! printf '%s\n' "$comment_line" | grep -qa ',0 失败' || ! printf '%s\n' "$authority_line" | grep -qa ',0 失败' || ! printf '%s\n' "$composition_line" | grep -qa ',0 失败' || ! printf '%s\n' "$sections_line" | grep -qa ',0 失败' || ! printf '%s\n' "$scenarios_line" | grep -qa ',0 失败' || ! printf '%s\n' "$invariant_line" | grep -qa ',0 失败'; then
 		FAILED=1
-		printf '\n--- 内核 ---\n%s\n--- 外脑 ---\n%s\n--- 本体 ---\n%s\n--- 真值表 ---\n%s\n--- 状态机 ---\n%s\n--- 文档 ---\n%s\n--- 注释 ---\n%s\n--- 边界 ---\n%s\n--- 组合 ---\n%s\n--- 段 ---\n%s\n--- 长测 ---\n%s\n' "$kernel" "$brain" "$ontology" "$truth" "$statemachine" "$docs" "$comment" "$authority" "$composition" "$sections" "$scenarios"
+		printf '\n--- 内核 ---\n%s\n--- 外脑 ---\n%s\n--- 本体 ---\n%s\n--- 真值表 ---\n%s\n--- 状态机 ---\n%s\n--- 文档 ---\n%s\n--- 注释 ---\n%s\n--- 边界 ---\n%s\n--- 组合 ---\n%s\n--- 段 ---\n%s\n--- 长测 ---\n%s\n--- 不变量 ---\n%s\n' "$kernel" "$brain" "$ontology" "$truth" "$statemachine" "$docs" "$comment" "$authority" "$composition" "$sections" "$scenarios" "$invariant"
 	fi
 	# 跳过不算失败,但**不能被当成通过**;有通过行就必须是 0 失败。
 	if [ -n "$host_line" ] && ! printf '%s\n' "$host_line" | grep -qa ',0 失败'; then

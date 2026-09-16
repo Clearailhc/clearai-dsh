@@ -14,7 +14,8 @@
     ".": "./lib/host.js",
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./invariant": "./lib/invariant.js"
   },
   "bin": {
     "clearai-dsh": "bin/clearai.mjs"

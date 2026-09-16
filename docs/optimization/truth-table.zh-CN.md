@@ -8,11 +8,11 @@
 
 ## 计数
 
-- 机制条目：**57**
-- 按状态：已实现 51 · 部分实现 1 · 设计目标 1 · 已删除 4
-- 按强度：硬边界 40 · 建议 9 · 原生 3 · 仅提示词 1 · 废弃 4
+- 机制条目：**58**
+- 按状态：已实现 52 · 部分实现 1 · 设计目标 1 · 已删除 4
+- 按强度：硬边界 41 · 建议 9 · 原生 3 · 仅提示词 1 · 废弃 4
 - 按归宿：保持设计目标 2 · 已删除并记账 4
-- 真正阻断执行的：**17**
+- 真正阻断执行的：**18**
 - 受 autonomy 影响的：**2**
 - 存在已知不符（文档 / 注释与代码不一致）的：**2**
 
@@ -78,6 +78,7 @@
 | `prompt-sections` | 提示词段（23 段定义 / 22 段在场） | Harness | 已实现 | 建议 | 无 | system | 否 | **是** | `preset/plugins/prompts.js SECTIONS` |
 | `exploration-zone` | 已删除:把「探索区」当作一个被命名的模式 | Harness | 已删除 | 废弃 | 非权威 | model | 否 | 否 | — |
 | `subrun-lifecycle` | 子 run 统一生命周期（一次性句柄 + 一条收集通道） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors` |
+| `host-invariants` | 宿主不变量（五条契约，落账之前判） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `ui/lib/invariant.js（契约与增量折叠 + install/apply）` |
 | `set-autonomy` | 已删除:人在面板上切换运行档 | Harness | 已删除 | 废弃 | 无 | human | 否 | 否 | — |
 | `budget-tiers` | 已删除:人在场 6 轮 / 无人值守 512 轮 | Harness | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
 | `non-authoritative-isolation` | 非权威路径写不进权威账本 | Harness | 已实现 | 硬边界 | 无 | system | 是 | 否 | `test/authority-boundary.test.mjs` |
@@ -704,6 +705,19 @@
 - **代码**：preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js clearai/turn-ended
 - **测试**：test/kernel.test.mjs（落定 / 认 id / 回合收尾）; test/host.test.mjs（事件折得进投影且可重放） · **配置**：auditProvider=spawn, auditTimeoutMs
 - **提示词**：clearai/delegation · **文档**：docs/optimization/e2e-longruns.zh-CN.md
+
+### `host-invariants` · 宿主不变量（五条契约，落账之前判）
+
+- **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：任何一条 clearai 事实要落进会话日志之前（宿主 internal/dispatch 那一拍）
+- **输入**：会话事件里的 clearai 变更（插件消息的 clearai/mutations 段、工具结果的 meta.mutations）
+- **输出**：违反时抛宿主 InvariantError（归属 clearai-dsh）；通过则什么都不做
+- **阻断执行**：是 · **受 autonomy 影响**：否
+- **原生替代**：@deepseek-ai/dsh-invariants（宿主自己的包级不变量注册表；不另造一套自检）
+- **理由**：跨机制的不变量原本只在验收脚本里**事后**算：跑完一场、解出日志、再判——判晚了，bug 就留到跑完之后才看见。而这几条本来就是**逐条事实**的性质。宿主给了位置（register(packageName, installer)，违反时抛带稳定错误码与归属包名的 InvariantError），就用它：判在落账之前，不合法的事实根本进不了日志。它约束的是所有生产者（22 件工具、人门、将来的入口），所以它自己跑在落账路径上：判宽了等于没判，判严了会把正确的行为拦下——真跑两次各教出一条（observation/audit 的 step 常常不带 plan；goal 轴与世界线轴的伪步骤不是计划步骤），两条都写成了回归测试。
+- **代码**：ui/lib/invariant.js（契约与增量折叠 + install/apply）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）
+- **测试**：test/invariant.test.mjs（合法放行 / 每条契约的违反 / 落账之前拦下 / 伪步骤不误伤） · **配置**：宿主 invariants 的 enabled / package_allowlist / package_blocklist
+- **提示词**：— · **文档**：docs/release-verification.zh-CN.md
 
 ### `l4-universal-gate` · 覆盖每一次评估的通用 L4 门
 

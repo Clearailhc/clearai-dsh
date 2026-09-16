@@ -7,7 +7,7 @@ The detailed Chinese working copy, including the per-component notes accumulated
 ## How to run
 
 ```bash
-npm test                                                  # all 13 suites (list: test/run.sh)
+npm test                                                  # all 14 suites (list: test/run.sh)
 node tools/build-package.mjs && node tools/verify-package.mjs
 node tools/verify-deploy.mjs                              # compose the deployed files for real
 node tools/recheck.mjs --log <a real session.v3.jsonl.zstd>   # suites + deploy + per-surface text budgets
@@ -63,6 +63,7 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 | Surface | Criterion | Check | Passing line |
 |---|---|---|---|
 | Intent tools (22) | Output-schema validation and semantic refusals are both asserted | `test/kernel.test.mjs` | green |
+| **Host-side invariants** | Five contracts (referential integrity / admission before advance / no settlement without dispatch / promotion is backed / the fact ratchet) judged **before the append**; a violation raises the host's `InvariantError` owned by `clearai-dsh` | `test/invariant.test.mjs`; the long runs mount `@deepseek-ai/dsh-invariants` for real | green · no `invariant violated` in long runs |
 | Single completion verb | Progress only through `AdvancePlan`; the doer cannot judge its own result | same | green |
 | L4 release | The native approval pair is the only authority | same | green |
 | Shelves | Fact shelf and ontology shelf rebuild idempotently | same | green |

@@ -1753,7 +1753,7 @@ export function apply(ctx, config = {}) {
 				return { verdict: 'unknown', basis: `独立评估者无法派遣(${dispatched.reason})`, shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
 			mutations.push({ t: 'audit/dispatched', id: auditKey, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability })
-			entry = { run: dispatched.run, capability: dispatched.capability, auditKey, settled: undefined }
+			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey, step: step.id, plan: plan?.id ?? 'goal', kind, settled: undefined }
 			pendingAudits.set(key, entry)
 			entry.settled = dispatched.run.result.then(
 				(value) => ({ ok: true, value }),
@@ -1971,6 +1971,15 @@ export function apply(ctx, config = {}) {
 			if (String(entry.sessionId ?? '') !== sessionId) continue
 			if (entry.settled !== null && entry.settled !== undefined) continue
 			rows.push({ kind: 'scout', child: String(entry.child ?? ''), label: String(entry.trigger ?? '侦察') })
+		}
+		/**
+		 * **评估者也在内**:它同样是"派出去就不等"的子 run——回合停了,它的裁决也回不来
+		 * (裁决只在交付那一拍被收集)。条目还在表里 = 还没收口(`runEvaluator` 收完就删),
+		 * 所以"在表里"就是"在飞"。
+		 */
+		for (const entry of pendingAudits.values()) {
+			if (String(entry.sessionId ?? '') !== sessionId) continue
+			rows.push({ kind: 'auditor', child: String(entry.run?.id ?? entry.auditKey ?? ''), label: `评估者 · ${String(entry.kind ?? 'audit')}(${String(entry.step ?? '?')})` })
 		}
 		return rows
 	}

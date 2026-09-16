@@ -199,8 +199,23 @@ export const INVARIANTS = [
 		},
 	},
 	{
-		label: '评估者没有悬空(每个 audit/dispatched 都有 audit/settled)',
-		run: ({ countOf }) => ({ ok: countOf('audit/dispatched') <= countOf('audit/settled'), detail: `dispatched=${countOf('audit/dispatched')} settled=${countOf('audit/settled')}` }),
+		label: '评估者没有悬空(每个 audit/dispatched 都有 audit/settled,或被回合收尾如实记下)',
+		run: ({ countOf, state }) => {
+			/**
+			 * 与侦察那条同一个定义:**悬空 = 既没有结论、也没有被如实记下**。
+			 * 回合停了,在飞的评估者的裁决也回不来(它只在交付那一拍被收集),
+			 * 所以它必须出现在 `clearai/turn-ended` 的在飞清单里,而不是只剩一条派发事实。
+			 */
+			const recorded = new Set(
+				(state?.turnEnds ?? [])
+					.flatMap((end) => end.inFlight ?? [])
+					.filter((row) => String(row.kind) === 'auditor')
+					.map((row) => String(row.label ?? '')),
+			)
+			const dispatched = countOf('audit/dispatched')
+			const settled = countOf('audit/settled')
+			return { ok: dispatched <= settled + recorded.size, detail: `dispatched=${dispatched} settled=${settled} 回合收尾记下=${recorded.size}` }
+		},
 	},
 	{
 		label: '分叉不留孤儿(每个 fork/created 都以 converged/abandoned/undecidable 收口)',

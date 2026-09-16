@@ -291,10 +291,20 @@ function makeHost() {
 									dispose: async () => {},
 								}
 							}
+							// `auditNeverSettles` / `auditDelayMs`:让评估者**晚一点**（或永不）落定——
+							// 「回合结束时它还在飞」这件事才测得到。
+							const evaluatorSettle = { output: [], structured: host.nextVerdict, stopReason: stopOf('Evaluator') }
+							const evaluatorDelay = Number(host.auditDelayMs ?? 0)
+							const evaluatorResult =
+								host.auditNeverSettles === true
+									? new Promise(() => {})
+									: evaluatorDelay > 0
+										? new Promise((resolve) => setTimeout(() => resolve(evaluatorSettle), evaluatorDelay))
+										: Promise.resolve(evaluatorSettle)
 							return {
 								id: `child-${audits.length}`,
 								localAgent: undefined,
-								result: Promise.resolve({ output: [], structured: host.nextVerdict, stopReason: stopOf('Evaluator') }),
+								result: evaluatorResult,
 								dispose: async () => {},
 							}
 						},
@@ -3266,6 +3276,28 @@ console.log('\n【回合收尾:宿主要停了,我们留下最后一句事实】
 	const appended = (host.appended ?? []).filter((row) => row.type === 'clearai/turn-ended')
 	check('收尾写成一条**事件**(不是消息:那会把模型再叫起来)', appended.length === 1 && appended[0].sessionId === S, JSON.stringify(appended.map((row) => row.type)))
 	check('在飞的子 run 如实列在里面(不猜它们会不会回来)', Array.isArray(appended[0]?.data?.inFlight) && appended[0].data.inFlight.length === 2 && appended[0].data.inFlight.every((row) => row.kind === 'executor'), JSON.stringify(appended[0]?.data?.inFlight))
+	/**
+	 * **评估者也算在飞的子 run**:它同样是"派出去就不等"的那一种——回合停了,它的裁决
+	 * 也回不来(裁决只在交付那一拍被收集)。少列它,世界线那一场的"评估者没有悬空"就只能红着。
+	 */
+	{
+		const auditHost = makeHost()
+		apply(auditHost.ctx, {})
+		const AS = 'session-inflight-auditor'
+		await callOn(auditHost, AS, 'SetGoal', { claim: '拿到裁决', done_criteria: 'lab/audit.txt 存在', hypotheses: [{ claim: '能做', refute_when: '不能' }] })
+		const hypothesis = auditHost.service.state(AS).hypotheses[0].id
+		await callOn(auditHost, AS, 'CreatePlan', { steps: [{ id: 'a1', do: '把这一步交付并等独立裁决', artifacts: ['lab/audit.txt'], done_criteria: 'lab/audit.txt 有读数', tests: { hypothesis, level: 'L3' } }] })
+		write('lab/audit.txt', 'reading 1\n')
+		auditHost.auditNeverSettles = true
+		const started = callOn(auditHost, AS, 'AdvancePlan', { step_id: 'a1' })
+		await new Promise((resolve) => setTimeout(resolve, 20))
+		await auditHost.listeners.get('agent/turn-stopping')({ agent: { id: AS }, turn: 1, signal: undefined })
+		const rows = (auditHost.appended ?? []).filter((row) => row.type === 'clearai/turn-ended').flatMap((row) => row.data.inFlight ?? [])
+		check('评估者也在"在飞"清单里(它同样会在回合边界丢结论)', rows.some((row) => row.kind === 'auditor'), JSON.stringify(rows))
+		// 这一拍故意不 await:评估者永不落定,那笔交付本来就不会返回——挂个处理器免得
+		// Node 报未处理的拒绝就够了(等它就是把测试挂死)。
+		started.catch(() => {})
+	}
 	/**
 	 * 折进投影 ⇒ 下一个回合的运行态卡**说得出这件事**。
 	 * 不说,模型下一个回合就会继续等一个不会来的东西——那正是"默默停下"。

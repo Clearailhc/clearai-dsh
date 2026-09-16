@@ -69,6 +69,7 @@ node tools/recheck.mjs --log ~/.dsh/sessions/<桶>/<会话>/session.v3.jsonl.zst
 | L4 人放行 | 原生审批对是唯一权威;同一步重试不再问人 | 同上(§19-B) | 全绿 |
 | 货架 | 事实货架 `INDEX.md` 幂等重建;本体货架落盘 | 同上(§22·§23) | 全绿 |
 | 提示词 | 两档措辞与机制一致;依据要点着产物 | `test/kernel.test.mjs` 段断言 | 全绿 |
+| **宿主不变量** | 五条契约(引用完整性 / 准入先于推进 / 结算必有派遣 / 升格有据 / 事实棘轮)在**落账之前**判;违反时抛宿主 `InvariantError`(归属 `clearai-dsh`) | `test/invariant.test.mjs`;长测里宿主那一侧真的挂着 `@deepseek-ai/dsh-invariants` | 全绿 · 长测无 `invariant violated` |
 
 ## 七、打包与安装
 
