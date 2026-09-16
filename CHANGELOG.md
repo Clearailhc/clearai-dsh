@@ -2,6 +2,36 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] — 2026-09-16
+
+**机制不许再说自己没有的话。** 一轮「按真值表逐条核对文档 vs 代码」的清点,把三处
+「文档写了、代码没有」补上了生产者;同时修掉四处在真跑里现形的缺陷——其中一个控件
+**点了报成功、账上一字未改**,还有一把**只有方向、没有口径**的尺子。
+
+### Fixed
+
+- **A control that reported success and did nothing.** The inbox rendered the same `fork_adopt` gate twice: once by the worldline block (with each branch's reading) and again by the generic list, because `needs === 'click'` implied "give it a 裁决 button". The second button sent `fork: null`, so the fold's `forks.find(id === null)` matched nothing and the state did not change — while the host route answered `200 {ok:true}`. One criterion now drives both renderings, and the generic layer only offers what it can actually land: 采纳 for a skill candidate, 用提问卡决定 for a gate the worldline block cannot render, a sentence-prompt for word gates.
+- **The ruler had a direction but no scale.** Two worldlines' `done_criteria` were byte-identical and each told the *branch* to publish its own 计分口径 — so two mutually invisible executors measured in different units (炉次 vs 等效炉次) and `min` compared the two conventions as if they were one quantity. `decide_by.metric` must now read `量 = 口径` (`decide_by_scale_required`), and the *sharing* is guaranteed by the existing "each branch's criteria must contain the metric verbatim" check — no new field, no new gate, refused at registration instead of after the work.
+- **The declared evidence path was never told to the doer.** `ForkPlan` declares each branch's `artifacts`, and delivery requires those paths to exist inside the executor's worktree — but the executor's brief carried only criteria, approach and workspace. A fresh agent therefore wrote to `products/reports/` and delivery failed on the declaration, leaving "copy the file into the declared path" as the only way through: a copy in a place where the evidence was not produced. The brief now carries the declared paths, and the refusal names the two honest ways out instead of inviting the copy.
+- **The delivery-point commit could be swallowed by an exploration snapshot.** A snapshot committed the tree, so the delivery commit became empty, `commitLedger` skipped it silently (its rule is "nothing changed → no commit") and the delivery point disappeared from the ledger. The delivery point is a *named* event ("what the workspace looked like when this step was delivered"): only it passes `allowEmpty`.
+- **Receiving no verdict never escalated.** A lost or unavailable independent verdict failed closed forever: the model could re-deliver, fail closed, and repeat — the same action, no new fact — without ever reaching a person. It now shares the block counter with a failed admission, so repeating it blocks the plan and lands in the inbox door that already exists.
+- **`retracted` had no producer** — the state was declared in the ontology, absent from it in code, and drawn in the panel. Refuting evidence now only *marks* a promoted fact (`refuted`, derived) and raises an inbox item; a human decides **撤回** or **维持原事实**, and both land as one `fact/reviewed` (retraction is terminal, the record is kept). "No decision" and "decided to keep" have to stay distinguishable, or the gate holds continuation forever.
+- **Platform junk no longer enters the ledger.** `.DS_Store` is nobody's content, is binary, and changes whenever a directory is browsed — two worldlines' copies always differ, so a merge conflicts over something unrelated to the delivery (a person clicked adopt and the model spent a round aligning `.DS_Store` bytes). `LEDGER_JUNK` now goes into the same `info/exclude` (exclusion is per repository, so every worktree benefits), and files already tracked are unstaged with `git rm --cached` — index only, the file in the workspace is untouched.
+
+### Added
+
+- **`untouchedLevels`.** A level measures how much a conclusion depends on trusting the doer; the compensation ladder (independent evaluator → human release) is the mechanism. "One level at a time" is an economic order, not a permission — and a reason for skipping cannot be falsified, so requiring one would be a field nobody can check. What is mechanical: the levels a hypothesis never used are derived and shown.
+- **`confirm_provisional`.** A provisional adoption could only be acknowledged by talking, while an open gate holds continuation — so the system waited for an action that could never arrive. Approval is a decision and now has a button.
+- **`VoidPlanStep`-style exits for the two gates that had none**, and two new human-gate verbs `retract_fact` / `keep_fact` (the whitelist is enumerated verbatim, and every gate is now checkable for both outcomes).
+- **Exploration snapshots** (`git/snapshot`): work written between deliveries is recorded, so exploration output is recoverable without asking anyone to declare it.
+
+### Changed
+
+- **The truth table tells the truth about itself.** Every `implemented` row must point at symbols that exist (`source.code` is now falsifiable and caught a dead identifier), every non-implemented row must name a destination, and the counts are 57 mechanisms: implemented 51 / partial 1 / design-only 1 / removed 4.
+- **`verification-loop`'s state table is a landing-point record**, not a design target: each of the nine names says where it lives today (a fact / something `derive()` computes / deliberately unrepresentable), and a machine check goes red if a row is added without one. §6 now says what carries each rule and admits that rule 1 is a reading, not a gate.
+- **Observation provenance declares only what has a producer** (`self`, `scout`); the type may not promise an origin nothing writes.
+- Docs, counts and suites aligned: 13 suites, 1267 assertions, `verify-package` 31/0.
+
 ## [0.1.5] — 2026-09-16
 
 **卡片读不出自己的名字。** 预设卡片显示成 `clearai` + 「暂无描述」,而不是 ClearAI 与它的说明 ——

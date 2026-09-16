@@ -1,6 +1,6 @@
 {
   "name": "clearai-dsh",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "ClearAI: The Epistemic Loop, native to DSH.",
   "type": "module",
   "private": false,
