@@ -4,13 +4,16 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [0.1.5] — 2026-09-16
 
+**卡片读不出自己的名字。** 预设卡片显示成 `clearai` + 「暂无描述」,而不是 ClearAI 与它的说明 ——
+根因不在界面,在文件:元数据根本没被读进去,而名册对读失败**静默降级**。
+
 ### Fixed
 
 - **The preset card still read `clearai` with an empty description.** 0.1.2, 0.1.3 and 0.1.4 all shipped `preset.yml` with the description as a plain YAML scalar containing `English: state` — a colon followed by a space cannot appear in a plain scalar, so the file did not parse at all. DSH's preset roster treats *every* metadata read failure as "no metadata", silently, so the picker fell back to the directory id plus 「暂无描述」 and nothing on either side reported an error. The description is now a block scalar, and `verify-package` parses `preset.yml` with the host's own `yaml` library and requires a non-empty `name` and `description` — this can no longer ship silently.
 
 ## [0.1.4] — 2026-09-16
 
-**本版重点:子任务的交付链修好了。** 侦察与世界线执行者的结论此前只进账本、模型读不到
+**子任务的交付链修好了。** 侦察与世界线执行者的结论此前只进账本、模型读不到
 (账本里也有过「派出去就再也没人收」的挂空)。现在四类子任务(侦察 / 世界线执行者 /
 评估者 / 横评仲裁)统一走原生 `subagents.start()` 的一次性句柄:账本只认本进程攥着的
 `run.result`,结论正文由**收集那一刻的工具返回**交给模型,全文另落
@@ -63,6 +66,8 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - **deepseek-flash end-to-end, two headless scenarios** (24/24 plan-and-stop; 25/25 full completion including independent-evaluator settlement) and **one real-browser session** (clean install + Chrome): preset switching, native review-card approval landing `by='user'`, the full thirteen-beat chain, `/goal` rendering, and all four panels drawing — screenshots in `docs/shots/browser-e2e-*.png`.
 
 ## [0.1.3] — 2026-09-15
+
+**一条命令的安装路径,以及一条从没被走通的发布路径。**
 
 ### Added
 

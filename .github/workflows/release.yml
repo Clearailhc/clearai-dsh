@@ -164,12 +164,14 @@ jobs:
         run: |
           version="$(node -p "require('./package.json').version")"
           node tools/changelog-section.mjs "$version" > "$RUNNER_TEMP/release-notes.md"
+          # 标题里那句短语也来自同一段:段首那段黑体(没有就只写版本号)。
+          title="$(node tools/changelog-section.mjs "$version" --title)"
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             # 已存在就**只改说明,不动标题** —— 标题可能是人写过的(手工那三个就带一句短语),
-            # 重跑同一个 tag 不该把它抹平成机器标题。
+            # 重跑同一个 tag 不该把它抹平。
             echo "已存在 → 改写说明:$GITHUB_REF_NAME"
             gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
           else
-            echo "新建 Release:$GITHUB_REF_NAME"
-            gh release create "$GITHUB_REF_NAME" --title "clearai-dsh $version" --notes-file "$RUNNER_TEMP/release-notes.md"
+            echo "新建 Release:$GITHUB_REF_NAME → $title"
+            gh release create "$GITHUB_REF_NAME" --title "$title" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
