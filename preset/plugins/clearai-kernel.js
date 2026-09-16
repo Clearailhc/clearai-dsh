@@ -1123,7 +1123,7 @@ export function apply(ctx, config = {}) {
 			`- 要裁决的分歧:${fork.question}`,
 			`- **你这一个方案**:${branch.label} —— ${branch.approach}`,
 			`- **判定标准(你必须做到,并且可被客观核对)**:${branch.done_criteria}`,
-			`- 裁决指标:${fork.decide_by?.metric ?? '(未登记)'}(${fork.decide_by?.direction === 'min' ? '越小越好' : '越大越好'})`,
+			`- **裁决指标(所有世界线共用同一把尺子,不许各自另定口径)**:${fork.decide_by?.metric ?? '(未登记)'}(${fork.decide_by?.direction === 'min' ? '越小越好' : '越大越好'})`,
 			/**
 			 * **声明的物证路径必须告诉干活的人**。
 			 *
@@ -3682,6 +3682,7 @@ export function apply(ctx, config = {}) {
 		// 把这一步的信息带进建基线那一笔:懒建账本时,基线就是这一步的提交。
 		const context = gitContext(cwd, message)
 		if (context.mode === null) return { ok: false, reason: context.reason ?? '没有可用的 git' }
+		cleanLedgerJunk(context)
 		const added = gitAt(context, ['add', '-A'])
 		if (added.ok !== true) return { ok: false, reason: `add 失败:${(added.err || '').split('\n')[0]}` }
 		const status = gitAt(context, ['status', '--porcelain'])
@@ -3763,10 +3764,39 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
+	 * **账本不记平台垃圾**。
+	 *
+	 * `.DS_Store` 这类文件不是任何人的内容:它们由 Finder/Explorer/编辑器生成,二进制,
+	 * 每浏览一次目录就可能变一次。让它们进账本有三个具体后果:
+	 *   ① 交付提交里混进与交付无关的二进制;
+	 *   ② 两条世界线各自的 `.DS_Store` **一定**不同 ⇒ 合并必然冲突,而冲突源与交付内容毫无关系
+	 *      (人点了合并,模型却要围着 `.DS_Store` 兜一圈才把两边字节对齐);
+	 *   ③ 账本随平台元数据膨胀。
+	 *
+	 * 只列**明摆着不是内容**的那些:平台元数据 + 编辑器的临时/备份文件。
+	 * `.idea/`、`.vscode/` 这类项目配置**不列**——有人就是要提交它们,替用户决定比不决定更糟。
+	 */
+	const LEDGER_JUNK = ['.DS_Store', '._*', '__MACOSX/', '.AppleDouble/', 'Thumbs.db', 'ehthumbs.db', 'desktop.ini', '*~', '*.swp', '*.swo']
+
+	/**
+	 * **已经在追踪的**平台垃圾要从索引里摘掉。
+	 *
+	 * exclude 只管"还没被追踪的":早先那几笔提交一旦已经把 `.DS_Store` 收进账本,
+	 * 之后每一笔 `add -A` 仍会带着它的改动,合并照样冲突。所以提交前先 `rm --cached`:
+	 * **只动索引,不碰工作树里的文件**(那不是我们的东西,更不是我们要删的东西)——
+	 * 历史里那几笔照旧留着,下一笔提交如实记下"从此不再记它"。
+	 */
+	function cleanLedgerJunk(context) {
+		gitAt(context, ['rm', '-r', '--cached', '--ignore-unmatch', '-q', ...LEDGER_JUNK])
+	}
+
+	/**
 	 * 让 git **看不见**世界线工作副本:把容器写进仓库的 `info/exclude`(本地、不提交、不外传)。
 	 *
 	 * 不写这一行的后果是具体的:交付点的 `git add -A` 会把**各条世界线**的文件一起提交进主线历史
 	 * ——污染主线,而且把「互不通信」的三条方案和它们的中间产物全部泄漏进账本。
+	 * 平台垃圾(`LEDGER_JUNK`)走同一份 exclude:排除是**按仓库**生效的,所以各条世界线的
+	 * worktree 一起受益——它们各自的 `.DS_Store` 从此不会被 `add -A` 收进任何一条分支。
 	 */
 	function ensureWorldlineExcluded(cwd) {
 		const container = 'clear/worldlines/'
@@ -3781,10 +3811,21 @@ export function apply(ctx, config = {}) {
 		} catch {
 			/* 还没有这个文件:下面建 */
 		}
-		if (current.split('\n').some((line) => line.trim() === container)) return { ok: true, already: true }
+		const lines = current.split('\n').map((line) => line.trim())
+		const missing = [container, ...LEDGER_JUNK].filter((pattern) => !lines.includes(pattern))
+		if (missing.length === 0) return { ok: true, already: true }
 		try {
 			mkdirSync(dirname(file), { recursive: true })
-			writeFileSync(file, `${current === '' || current.endsWith('\n') ? current : `${current}\n`}# clearai:世界线工作副本(它们各自是独立的 git worktree,不属于主线)\n${container}\n`, 'utf8')
+			const head = current === '' || current.endsWith('\n') ? current : `${current}\n`
+			const block = [
+				'# clearai:世界线工作副本(它们各自是独立的 git worktree,不属于主线)',
+				container,
+				'# clearai:平台与编辑器的垃圾文件(不是任何人的内容;进账本会让合并无端冲突)',
+				...LEDGER_JUNK,
+				'',
+			].join('\n')
+			// 只追加缺的那些:已经写过容器的那份 exclude 不该被整块重写。
+			writeFileSync(file, `${head}${missing.length === 1 + LEDGER_JUNK.length ? block : `${missing.join('\n')}\n`}`, 'utf8')
 			return { ok: true, already: false }
 		} catch (error) {
 			return { ok: false, reason: String(error?.message ?? error).slice(0, 200) }
@@ -3867,6 +3908,8 @@ export function apply(ctx, config = {}) {
 
 	/** 把某条世界线里还没提交的活提交到它自己的分支(删工作副本前必须做,否则就是"删了留不住")。 */
 	function commitWorldline(path, message) {
+		const context = gitContext(path)
+		if (context.mode !== null) cleanLedgerJunk(context)
 		const status = git(['status', '--porcelain'], path)
 		if (!status.ok) return { ok: false, reason: status.err }
 		if (status.out === '') return { ok: true, committed: false }
@@ -3938,7 +3981,24 @@ export function apply(ctx, config = {}) {
 		if (!Array.isArray(options) || options.length < 2 || options.length > 4) return 'fork_needs_2to4_options:世界线要 2–4 条(分叉是「选一」,不是清单)'
 		if (decideBy === null || decideBy === undefined || typeof decideBy !== 'object') return 'decide_by_required:分叉必须登记一把尺子 {metric, direction}——没有判定契约就不能收敛'
 		if (typeof decideBy.metric !== 'string' || decideBy.metric.trim() === '') return 'decide_by_metric_required:尺子要有指标名(如 yield_pct)'
+		/**
+		 * **尺子必须自带口径**:写成「量 = 口径」。
+		 *
+		 * 只有指标名不是尺子——它把「这个数怎么算出来」留给每条世界线**各自去定**,而执行者
+		 * 是互不通信的独立 agent,必然各定一套(一条按炉次、一条按等效炉次)。两条不同尺子上的
+		 * 数放在一起比大小,算术就成了摆设:说服力从争论里被赶走,又从度量里溜回来。
+		 *
+		 * 口径写进 metric 之后,**既有的「判据里必须逐字出现裁决指标」**那条检查自动把它钉进
+		 * 每条世界线的判据,执行者任务书与评估者任务书读的也是同一句话——共用由构造保证,
+		 * 不需要新字段、不需要新闸门、也不需要在收敛那一刻才发现不可比(那时活已经干完了)。
+		 */
+		const scale = decideBy.metric.split(/[=＝]/).slice(1).join('=').trim()
+		if (!/[=＝]/.test(decideBy.metric) || scale.length < 4) {
+			return 'decide_by_scale_required:尺子要写成「量 = 口径」(口径 = 这个数怎么算出来、单位是什么),例:字节数 = 生成文件的字节数。只有指标名不是尺子:口径不能留给每条世界线各自去定,否则两条线各写一套公式,比出来的大小不作数'
+		}
 		if (decideBy.direction !== 'max' && decideBy.direction !== 'min') return 'decide_by_direction_required:尺子要说明方向:max(越大越好)或 min(越小越好)'
+		/** 量那一半:判据里要点名它。 */
+		const metricName = decideBy.metric.split(/[=＝]/)[0].trim()
 		const labels = new Set()
 		for (const [index, option] of options.entries()) {
 			const at = `第 ${index + 1} 条世界线`
@@ -3950,7 +4010,11 @@ export function apply(ctx, config = {}) {
 			if (typeof option.done_criteria !== 'string' || option.done_criteria.trim().length < 4) return `no_done_criteria:${at} 要有判定标准`
 			const selfRef = SELF_REFERENCE.find(([pattern]) => pattern.test(option.done_criteria))
 			if (selfRef !== undefined) return `criteria_self_reference:${at} 的判据自指:${selfRef[1]}`
-			if (!option.done_criteria.includes(decideBy.metric.trim())) return `decide_by_not_measured:${at} 的判据里没有出现裁决指标「${decideBy.metric.trim()}」——尺子必须写进每条世界线的判据,否则它量不到东西`
+			/**
+			 * 判据里要点**量**的名字(口径那一半是契约共有的:契约、执行者任务书、评估者任务书
+			 * 读的都是同一条 `量 = 口径`,不必让每条判据把整句抄一遍)。
+			 */
+			if (!option.done_criteria.includes(metricName)) return `decide_by_not_measured:${at} 的判据里没有出现裁决指标「${metricName}」——尺子必须写进每条世界线的判据,否则它量不到东西`
 			if (option.level !== undefined && levelIndexOf(option.level) < 0) return `invalid_option:${at} 的 level 必须是 L0–L4`
 		}
 		return null
@@ -4188,7 +4252,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'ForkPlan',
 		description:
-			'分叉:把一个步骤分成 2–4 条互斥的世界线,每条自己做一份工作副本、自己交付。**必须先登记一把尺子**(decide_by{metric,direction}),而且这把尺子要写进每条世界线的判据里——把测量仪装到每条世界线上。收敛由算术决定,不由谁说得响。分叉是「选一」,不是并行加速。',
+			'分叉:把一个步骤分成 2–4 条互斥的世界线,每条自己做一份工作副本、自己交付。**必须先登记一把尺子**(decide_by{metric,direction}),而 metric 要写成**「量 = 口径」**(口径 = 这个数怎么算出来、单位是什么),并且这句话要**逐字**出现在每条世界线的判据里——把同一台测量仪装到每条世界线上。口径不能留给各条世界线自己定:两条线上各写一套公式,比出来的大小不作数。收敛由算术决定,不由谁说得响。分叉是「选一」,不是并行加速。',
 		parameters: {
 			type: 'object',
 			properties: {

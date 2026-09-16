@@ -32,7 +32,7 @@ export const SCENARIOS = {
 			'3. 第一步上用 ForkPlan 开**两条**世界线:',
 			'   路线 compact:用 python3 写 lab/gen_compact.py,生成 lab/data_compact.json(紧凑 JSON,无空格);',
 			'   路线 pretty:用 python3 写 lab/gen_pretty.py,生成 lab/data_pretty.json(缩进 JSON,带空格)。',
-			'   两条的 done_criteria 都要写明「读数 = 生成文件的字节数」;decide_by 指标写「字节数」,方向取 min。',
+			'   两条的 done_criteria 都要**逐字**写明「读数 = 生成文件的字节数」;decide_by 指标写「字节数 = 生成文件的字节数」(尺子自带口径:量 = 口径),方向取 min。',
 			'4. 用 AdvanceWorldline 把两条世界线都交付,每条报一个**整串就是一个数**的读数(字节数)。',
 			'5. ConvergeFork 让算术裁决;然后接着做第二步与第三步,最后 ClosePlan 收尾。',
 		].join('\n'),

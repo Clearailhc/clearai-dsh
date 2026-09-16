@@ -301,11 +301,11 @@
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
 - **触发**：模型调用 ForkPlan 且给出互斥分支与预注册指标
-- **输入**：branches[], decide_by（指标）
+- **输入**：branches[], decide_by（尺子:量 = 口径 + 方向）
 - **输出**：mutation fork/created, worldline/prepared, worldline/executing, worldline/executed, branch/delivered
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：互斥路线各占一份工作副本，互不污染。
+- **理由**：分叉是「选一」，不是并行加速：每条世界线一份独立工作副本，各自交付读数，收敛由**算术**决定（`decideWinner` 只排序，不做语义判定）。尺子在动手之前登记，并且**自带口径**（`量 = 口径`）：只有指标名不是尺子——口径一旦下放给每条世界线各自去定，两条线就会各写一套公式（一条按炉次、一条按等效炉次），算术随后把两套约定的输出放在一起比大小，说服力就从争论里被赶走、又从度量里溜回来。口径写进 metric 之后，既有的「判据里必须逐字出现裁决指标」那条检查自动把它钉进每条世界线的判据，执行者任务书与评估者任务书也带着同一句话——共用由构造保证，不需要新字段。
 - **代码**：preset/plugins/clearai-kernel.js ForkPlan; prepareWorldlines; startWorldlineExecutor
 - **测试**：test/kernel.test.mjs, tools/spike-git-worldlines.mjs · **配置**：gitWorldlines, autoDispatchExecutors, executorToolFilter
 - **提示词**：clearai/worldline · **文档**：docs/epistemic-loop.zh-CN.md
