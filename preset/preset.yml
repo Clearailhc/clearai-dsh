@@ -10,4 +10,4 @@ name: ClearAI
 # 显示成目录名 + 「暂无描述」,宿主与我们两边都不报错。0.1.2–0.1.4 都带着这个 bug 发出去过;
 # `verify-package` 里那条「preset.yml 必须真能解析出 name 与 description」就是为此立的门。
 description: |-
-  循证探索:判据在先,完成由证据决定,不由做的人宣布。Evidence-first: the criterion comes first, and evidence — not the doer — decides completion.
+  认识论循环:命题→观测→评估→证据→事实,从答案到证据,从证据到改进。The epistemic loop: proposition → observation → evaluation → evidence → fact — from answers to evidence, from evidence to improvement.
