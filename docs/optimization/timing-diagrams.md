@@ -68,14 +68,20 @@ sequenceDiagram
     Note over M,D: this segment never touches the ClearAI kernel:<br/>the ledger gets ordinary session events, no authoritative mutations
 ```
 
-Current status: **partial**. Low-authority exploration is physically possible — the native tools
-are mounted (`tool-todo`, subagents, `workflow`, `ralph`), and the authority-boundary suite pins
-that none of them can write the authoritative ledger. What is missing is the positive half: the
-prompts describe exploration as a prelude to the formal loop rather than a region one may freely
-stay in, and the runtime card never names the zone.
+Current status: **implemented**. Two things carry it, and neither is a "zone" object:
 
-Plan: see Phase 4 "exploration zone / formal zone" and Phase 5 "non-authoritative tools return"
-in the optimization plan.
+- **The negative half is a mechanism**: the native working tools are mounted (`tool-todo`,
+  subagents, `workflow`, `ralph`) and the authority-boundary suite pins that none of them can
+  emit a `clearai` mutation.
+- **The positive half is coverage, not a region**: a workspace snapshot lands at each turn
+  boundary in which this session wrote something, so exploration output produced before any plan
+  exists is in the ledger — inspectable and restorable. What that does not claim is attribution
+  (see [known gaps](../known-gaps.md)).
+
+The "exploration zone" as a **named mode** is retired as a concept: making it a mechanism would
+have dressed advice as machinery, and making it a surface would have been a second name for the
+same thing. The requirement behind it — "exploration output must be accounted for" — is met by
+the two bullets above.
 
 ## 2. Formal epistemic path · implemented
 

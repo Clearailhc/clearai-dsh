@@ -275,7 +275,15 @@ Notes:
 
 **Every** mutation kind fold understands is assigned a home below; conversely, every event named in
 this document is in fold's vocabulary. The `ledger-only` group never folds into the view (they are
-ledger facts), so it appears in no state machine.
+ledger facts), so it appears in no state machine:
+
+- `git/committed`: the commit a **delivery** lands in the ledger (`AdvancePlan` / worldline adoption).
+- `git/snapshot`: a workspace snapshot at a **turn boundary** (only when this session wrote something
+  and the workspace is genuinely dirty), plus the pre-merge snapshot. Its job is not attribution —
+  the kernel cannot see what bash wrote — but **coverage**: exploration output produced before any
+  plan is in the ledger too, so it can be inspected and restored.
+- `git/restored`: a `RestoreFile` restore (a restore is a new version plus a new commit, never a rollback).
+- `admission/checked`: the admission reading of each delivery (what is accepted also lands an `observation/recorded`).
 
 | Event | Home | Folds into the view |
 |---|---|---|

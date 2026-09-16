@@ -175,6 +175,11 @@ the prompts now say one sentence):
   (Landed: the hypothesis count floor — preset sets 2, kernel gate + prompt discipline, see
   row ②; the authority-boundary test; the five `/` commands and the returned native working
   tools todo/subagent/workflow/ralph — see the Phase 4/5 ledger entries.)
+- **Retired as a concept**: the "exploration zone" as a *named mode*. Its negative half is the
+  `non-authoritative-isolation` row (implemented, pinned by the authority-boundary suite); its
+  positive half — "exploration output must be accounted for" — is the
+  `ledger-exploration-snapshots` row (a workspace snapshot at each turn boundary). Naming a region
+  would have added a second name for the same thing, not a mechanism.
 - **Stay design-only, honestly labelled**: the universal L4 gate. The criterion: it has a
   truth-table row with the correct `status` and a `destination`, and no document claims it is
   implemented. Every non-`implemented` row now carries that destination, so "not yet" and

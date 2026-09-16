@@ -8,13 +8,13 @@
 
 ## 计数
 
-- 机制条目：**55**
-- 按状态：已实现 46 · 部分实现 2 · 设计目标 4 · 已删除 3
-- 按强度：硬边界 38 · 建议 10 · 原生 3 · 仅提示词 1 · 废弃 3
-- 按归宿：变成机制 4 · 保持设计目标 2 · 已删除并记账 3
-- 真正阻断执行的：**16**
+- 机制条目：**57**
+- 按状态：已实现 48 · 部分实现 2 · 设计目标 3 · 已删除 4
+- 按强度：硬边界 40 · 建议 9 · 原生 3 · 仅提示词 1 · 废弃 4
+- 按归宿：变成机制 3 · 保持设计目标 2 · 已删除并记账 4
+- 真正阻断执行的：**17**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**6**
+- 存在已知不符（文档 / 注释与代码不一致）的：**5**
 
 ## 代码常量快照
 
@@ -76,10 +76,12 @@
 | `autonomy-config` | autonomy：部署初值 + clarification 槽位选择器 | Harness | 部分实现 | 仅提示词 | 无 | system | 否 | **是** | `preset/plugins/clearai-kernel.js CFG.autonomy` |
 | `runtime-card` | 每回合派生的运行态卡 | Harness | 已实现 | 建议 | 无 | system | 否 | 否 | `ui/lib/fold.js renderCard` |
 | `prompt-sections` | 提示词段（23 段定义 / 22 段在场） | Harness | 已实现 | 建议 | 无 | system | 否 | **是** | `preset/plugins/prompts.js SECTIONS` |
-| `exploration-zone` | 非权威探索区（设计目标） | Harness | 设计目标 | 建议 | 非权威 | model | 否 | 否 | — |
+| `exploration-zone` | 已删除:把「探索区」当作一个被命名的模式 | Harness | 已删除 | 废弃 | 非权威 | model | 否 | 否 | — |
 | `subrun-lifecycle` | 子 run 统一生命周期（一次性句柄 + 一条收集通道） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js dispatchSubRun / startWorldlineExecutor / runScout / runEvaluator / runArbiter / sweepScouts / sweepWorldlineExecutors / sweepLostExecutors / sweepLostScouts / publishedInEpoch / noticeBlock` |
 | `set-autonomy` | 已删除:人在面板上切换运行档 | Harness | 已删除 | 废弃 | 无 | human | 否 | 否 | — |
 | `budget-tiers` | 已删除:人在场 6 轮 / 无人值守 512 轮 | Harness | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
+| `non-authoritative-isolation` | 非权威路径写不进权威账本 | Harness | 已实现 | 硬边界 | 无 | system | 是 | 否 | `test/authority-boundary.test.mjs` |
+| `ledger-exploration-snapshots` | 回合边界的工作区快照 | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js snapshotWorkspace` |
 | `human-gate-actions` | 人门动作白名单 | 宿主 | 已实现 | 硬边界 | 权威 | human | 否 | 否 | `ui/lib/index.js 人门通道` |
 | `context-pruning` | 上下文剪枝与压缩（宿主原生） | 宿主 | 已实现 | 原生 | 无 | system | 否 | 否 | `preset/agent.cordis.yml compaction` |
 | `model-routing` | 模型路由与切换（宿主原生，ClearAI 不持有） | 宿主 | 已实现 | 原生 | 无 | host | 否 | 否 | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
@@ -678,18 +680,17 @@
 - **测试**：test/preset-composition.test.mjs（阶段 5 新增） · **配置**：—
 - **提示词**：— · **文档**：—
 
-### `exploration-zone` · 非权威探索区（设计目标）
+### `exploration-zone` · 已删除:把「探索区」当作一个被命名的模式
 
-- **层**：Harness · **状态**：设计目标 · **强度**：建议 · **权威**：非权威 · **责任方**：model
+- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：非权威 · **责任方**：model
 - **触发**：—
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：dsh-tool-todo / dsh-tool-subagent
-- **理由**：把「组织工作」与「确认知识」解耦：探索可以自由，事实必须严格。
-- **归宿**：变成机制
+- **理由**：这个名字底下其实捆了三件事,而它们的状态各不相同:**结构性隔离**(非权威路径写不进权威账本)是一条真机制,已实现并由边界套件钉住,现在有自己的一行;**「工作不设限」**是原生工具挂回之后的既成事实,不需要额外机制;**「一块可以自由停留的区域」**是措辞——把它做成机制等于拿劝告冒充机制(P1),做成界面又只是给同一件事起两个名字。所以它作为**概念**注销,而「探索期产出有据可查」这件事另有落点:回合边界的账本快照。
+- **归宿**：已删除并记账
 - **代码**：—
-- **测试**：test/authority-boundary.test.mjs（阶段 4 新增） · **配置**：—
-- **提示词**：— · **文档**：docs/optimization/plan.zh-CN.md
-- **已知不符**：尚未实现；当前所有工作都被拉进正式循环。
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `subrun-lifecycle` · 子 run 统一生命周期（一次性句柄 + 一条收集通道）
 
@@ -794,6 +795,30 @@
 - **代码**：—
 - **测试**：— · **配置**：—
 - **提示词**：— · **文档**：docs/known-gaps.md
+
+### `non-authoritative-isolation` · 非权威路径写不进权威账本
+
+- **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：无 · **责任方**：system
+- **触发**：模型用 todo / 子代理 / workflow / ralph / 模型切换干活
+- **输出**：没有任何 `clearai` 变更
+- **阻断执行**：是 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：这是把「工作方式」与「确认知识」解耦的那条**负向保证**:干活不设限,但干活的路径结构上产不出一条权威变更——权威账本只能由主线过观测准入与唯一完成动词写入。它是「探索可以自由、事实必须严格」这句话里**承重**的那一半,所以它有一行。
+- **代码**：test/authority-boundary.test.mjs; ui/lib/index.js HUMAN_GATE_ACTIONS
+- **测试**：test/authority-boundary.test.mjs（14 项） · **配置**：—
+- **提示词**：— · **文档**：docs/loop-philosophy.zh-CN.md
+
+### `ledger-exploration-snapshots` · 回合边界的工作区快照
+
+- **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：本会话调用过会改工作区的工具(write/edit/bash/pwsh),且工作区真的脏
+- **输出**：一次账本提交 + mutation git/snapshot（只留台账）
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：账本原来只在**交付点**记一笔:那是刻意的偏离,理由写在代码里——每次写入的**归属**属于宿主的 fs 领域(bash 写的文件内核看不见),而交付点归属是内核真正知道的事实。但那条理由管的是粒度,不是**覆盖面**:立约之前(以及两次交付之间)写入的东西在账本里一个字都没有,`FileHistory` / `RestoreFile` 对它们无效,而「事后可恢复代替事前审批」这条安全论证恰恰建立在覆盖面之上(loop-philosophy §3)。回合边界那一笔只声明覆盖面,不声明归属:提交信息只说这是探索期快照。
+- **代码**：preset/plugins/clearai-kernel.js snapshotWorkspace; ui/lib/fold.js writeCalls
+- **测试**：test/kernel.test.mjs（回合边界快照）; test/host.test.mjs（writeCalls 计数） · **配置**：—
+- **提示词**：— · **文档**：docs/verification-loop.zh-CN.md
 
 ---
 

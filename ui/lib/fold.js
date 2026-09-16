@@ -129,6 +129,15 @@ export function emptyState() {
 		inFlight: null,
 		/** 本会话自己写过的路径(来自 tool/call 的 write/edit):L4 来源分离的判据 */
 		written: [],
+		/**
+		 * **会改工作区的工具调用**的一次计数(来自 tool/call 的 write/edit/bash/pwsh)。
+		 *
+		 * 为什么要有它:`written` 只认 write/edit,而探索最常走 bash(脚本自己产出文件),
+		 * 于是「这个会话到底动过工作区没有」用 `written` 答不全。内核在**回合边界**上要问的
+		 * 正是这一句(是否值得记一次工作区快照),所以这里记一个只增的计数——
+		 * 它是日志折出来的,可重放,不是第二本账。
+		 */
+		writeCalls: 0,
 	}
 }
 
@@ -140,6 +149,11 @@ const VERDICT_WAITERS = new Set(['AdvancePlan', 'AdvanceWorldline', 'CloseGoal']
 
 /** 记下来的自写路径有上限:它是判据,不是档案(档案在会话日志里)。 */
 const MAX_WRITTEN = 512
+/**
+ * 会**改工作区**的工具名。`bash`/`pwsh` 也算:脚本自己产出文件,内核分辨不了只读与写入,
+ * 所以宁可偏保守——多记一笔快照,也不漏掉探索产出。
+ */
+const WRITE_CAPABLE_TOOLS = new Set(['write', 'edit', 'bash', 'pwsh'])
 
 /**
  * 技能引用手势:与原生 `dsh-tool-skill` 的 `SKILL_GESTURE` **同一条正则**。
@@ -909,6 +923,11 @@ export function applyEvent(state, event) {
 				if (next.written.length > MAX_WRITTEN) next.written.splice(0, next.written.length - MAX_WRITTEN)
 			}
 		}
+		/**
+		 * 会改工作区的那几件工具都记一笔:`write`/`edit` 是直接的,`bash`/`pwsh` 是间接的
+		 * (脚本自己产出文件,内核看不见)。计数只增,判据留给用它的地方。
+		 */
+		if (WRITE_CAPABLE_TOOLS.has(data.name)) next.writeCalls = (next.writeCalls ?? 0) + 1
 		next.inFlight = VERDICT_WAITERS.has(data.name) ? { name: data.name, callId: data.callId ?? null, at: typeof event.time === 'number' ? event.time : 0 } : null
 		return next
 	}

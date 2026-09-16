@@ -3903,6 +3903,43 @@ console.log('\n【世界线的推荐:算得出来的那条必须落账,否则人
 	check('投影里的推荐保持 null(面板照实说「没有推荐」)', host2.service.view(S2).forks[0].recommended === null)
 }
 
+console.log('\n【探索期产出有据可查:回合边界上的工作区快照】')
+{
+	/**
+	 * 账本原来只在**交付点**记一笔,于是立约之前(以及两次交付之间)写入的东西在账本里
+	 * 一个字都没有——`FileHistory` / `RestoreFile` 对它们无效,而「事后可恢复代替事前审批」
+	 * 这条安全论证恰恰建立在覆盖面之上。这里钉四件事:只读不记、写过才记、同一批不重复记、
+	 * 产物真的查得到。
+	 */
+	const host = makeHost()
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-explore-ledger'
+	const snapshots = () => host.journal.filter((mutation) => mutation.t === 'git/snapshot')
+	const gitLog = (path) => {
+		try {
+			return execFileSync('git', ['log', '--oneline', '--', path], { cwd: WORKSPACE, encoding: 'utf8' }).trim()
+		} catch {
+			return ''
+		}
+	}
+	// ① 只读的一回合:不记账(探索期也可能只是读)
+	const readOnly = await preStep(host, S, 1)
+	check('只读回合不记快照(没有写类调用)', snapshots().length === 0 && !/记入账本/.test(JSON.stringify(readOnly ?? {})), JSON.stringify(snapshots()))
+	// ② 跑过一次 bash(间接写入)⇒ 下一个回合边界记一笔
+	host.states.set(S, applyEvent(host.service.state(S), { type: 'tool/call', time: Date.now(), data: { name: 'bash', callId: 'c-1', arguments: JSON.stringify({ command: 'python probe.py' }) } }))
+	write('lab/explore/probe.txt', 'run,value\n1,42\n')
+	const afterWrite = await preStep(host, S, 2)
+	check('写过之后的回合边界记一笔快照(并带上 commit id)', snapshots().length === 1 && typeof snapshots()[0].commit === 'string' && snapshots()[0].commit !== '', JSON.stringify(snapshots()))
+	check('注记里如实说工作区已记入账本(探索产出可查可恢复)', /记入账本/.test(JSON.stringify(afterWrite ?? {})), JSON.stringify(afterWrite ?? {}).slice(0, 160))
+	check('探索产物真的进了账本(git 历史里查得到)', gitLog('lab/explore/probe.txt') !== '', gitLog('lab/explore/probe.txt'))
+	// ③ 没有新的写类调用 ⇒ 不再记第二笔(不造空提交)
+	await preStep(host, S, 3)
+	check('同一批写入不重复记账', snapshots().length === 1, String(snapshots().length))
+	// ④ 模型侧那条读路径也看得到它(账本两件工具对探索产物同样有效)
+	const history = await callOn(host, S, 'FileHistory', { path: 'lab/explore/probe.txt', limit: 5 })
+	check('FileHistory 查得到探索产物', history.ok === true && /探索期快照/.test(String(history.message ?? '')), String(history.message ?? '').slice(0, 140))
+}
+
 console.log('\n【首回合的系统事实:本体声明与货架那句话必须真的发出去】')
 {
 	/**

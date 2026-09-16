@@ -83,7 +83,7 @@ At runtime these compress into **four beats**: plan → execute → observe → 
 | Beat | Stages it covers | What the model does | What the system guarantees |
 |---|---|---|---|
 | **Plan** | Frame + Hypothesize + Plan | Decompose steps, write criteria | Fine-grained, executable, evidence-acceptable; `done_criteria` enforced; ≤25 steps; artifacts declared |
-| **Execute** | Observe | Explore, write scripts, compute | Read-only work in parallel, writes serial; sandbox; every write lands in the ledger |
+| **Execute** | Observe | Explore, write scripts, compute | Read-only work in parallel, writes serial; sandbox; every write lands in the ledger (a snapshot at each turn boundary, plus a commit at each delivery) |
 | **Observe** | Verify | Receive results | **Admission only decides whether to accept, never what it means** |
 | **Reflect** | Evaluate + Record and act | Deliver, converge, amend | `AdvancePlan` is the only completion verb; evaluation is separated by level; conclusions land with their bounds |
 
@@ -104,6 +104,8 @@ before: deterministic gate in tool governance  →  during: sandbox + ledger  �
 One deliberately counter-intuitive trade-off: **execution is unapproved by default**, on the grounds that "recovery afterwards replaces approval beforehand" — if every write can be restored precisely, the cost of blocking every write exceeds the friction it removes. The safety net therefore becomes three things: block **genuinely dangerous** actions (not all of them), guarantee the ledger is **recoverable**, and keep changes **visible** in the turn strip.
 
 That trade-off holds only if the ledger is reliable enough, so the ledger's requirements are stricter than elsewhere: fixed identity, fixed HEAD, explicit exclusions, and a single failure that does not block the main flow but is never silently swallowed.
+
+It also holds only if the ledger's **coverage starts at the first turn**: a snapshot is taken at each turn boundary in which this session wrote something, so the window in which execution is unapproved and unrestorable is not "everything before the first delivery".
 
 ---
 

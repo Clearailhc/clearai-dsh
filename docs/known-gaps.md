@@ -25,6 +25,7 @@ with `design goal` in the same tense was this documentation set's worst habit.
 
 ## Verified only to a stated depth
 
+- **The ledger's coverage is per turn, not per write.** A snapshot is taken at each turn boundary in which this session wrote something, so exploration output is inspectable and restorable. What it does **not** provide is attribution: the kernel cannot see what `bash` produced, so the in-workspace git history never says which write belonged to which tool call. The designed per-write attribution ("every write enters the ledger, with turn/tool attribution") is deliberately not claimed.
 - **Fact-row navigation.** Clicking a confirmed fact to jump to the step that produced it is verified at the node-render level, not yet in a live browser on a session that actually promoted a fact.
 - **Plan review wording.** The human-gate wording was corrected in code and covered by tests, but the corrected copy has not been re-read in a live browser.
 - **The packaged client bundle in a browser.** Running the plugin from `dsh plugin add` in a browser was, until this release's verification pass, untested. That pass found a real defect: the client bundle registered itself under the old package id, so the browser refused to register the plugin at all and every panel silently disappeared. It is fixed, and the check is now part of release verification.

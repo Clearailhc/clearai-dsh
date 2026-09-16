@@ -553,6 +553,25 @@ console.log('\n【技能面:合并目录折进投影,用量从日志里折出来
 	state = applyEvent(state, { type: 'tool/call', time: 1300, data: { name: 'read', callId: 'c3', arguments: JSON.stringify({ file_path: 'x' }) } })
 	check('别的工具不算用量(只认原生 skill 这一件)', view(state).skills.usage.find((item) => item.name === 'literature-review')?.model === 2)
 
+	/**
+	 * `writeCalls`:内核在**回合边界**上要问「这个会话动过工作区没有」,以此决定要不要记一次
+	 * 工作区快照。`written` 只认 write/edit,而探索最常走 bash(脚本自己产出文件)——
+	 * 所以这条计数必须比 `written` 宽,且只读调用一笔都不记。
+	 */
+	{
+		const before = state.writeCalls ?? 0
+		const call = (time, name, args) => applyEvent(state, { type: 'tool/call', time, data: { name, callId: `wc-${time}`, arguments: JSON.stringify(args) } })
+		state = call(2000, 'bash', { command: 'python probe.py' })
+		state = call(2001, 'write', { file_path: 'lab/a.txt', content: 'x' })
+		state = call(2002, 'edit', { file_path: 'lab/a.txt', old_string: 'x', new_string: 'y' })
+		check('会改工作区的调用各记一笔(bash / write / edit)', state.writeCalls === before + 3, String(state.writeCalls))
+		const snapshotCount = state.writeCalls
+		state = call(2003, 'read', { file_path: 'lab/a.txt' })
+		state = call(2004, 'grep', { pattern: 'x' })
+		state = call(2005, 'glob', { pattern: '*.txt' })
+		check('只读调用一笔都不记(否则空转的回合也会去提交)', state.writeCalls === snapshotCount, String(state.writeCalls))
+	}
+
 	// 用量②:人引用 = 一条含 `/名字` 的用户消息(与原生注入判据同一条正则)
 	state = applyEvent(state, { type: 'user/message', time: 1400, data: { id: 'm-q', role: 'user', content: [{ type: 'text', text: '先按 /my-sop 来一遍' }], source: { kind: 'user' } } })
 	check('人引用一次 → 记为 human 一次', view(state).skills.usage.find((item) => item.name === 'my-sop')?.human === 1)

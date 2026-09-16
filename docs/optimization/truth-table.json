@@ -1188,19 +1188,19 @@
   },
   {
    "id": "exploration-zone",
-   "name": "非权威探索区（设计目标）",
-   "name_en": "Non-authoritative exploration zone (design goal)",
+   "name": "已删除:把「探索区」当作一个被命名的模式",
+   "name_en": "Removed: the exploration zone as a named mode",
    "layer": "harness",
-   "status": "design-only",
-   "hardness": "advisory",
+   "status": "removed",
+   "hardness": "deprecated",
    "authority": "non-authoritative",
    "actor": "model",
    "source": {
     "code": null,
-    "tests": "test/authority-boundary.test.mjs（阶段 4 新增）",
+    "tests": null,
     "config": null,
     "prompt": null,
-    "docs": "docs/optimization/plan.zh-CN.md"
+    "docs": "docs/epistemic-loop.zh-CN.md"
    },
    "trigger": "—",
    "input": "—",
@@ -1208,9 +1208,9 @@
    "blocks_execution": false,
    "affected_by_autonomy": false,
    "native_dsh_alternative": "dsh-tool-todo / dsh-tool-subagent",
-   "rationale": "把「组织工作」与「确认知识」解耦：探索可以自由，事实必须严格。",
-   "known_mismatch": "尚未实现；当前所有工作都被拉进正式循环。",
-   "destination": "become-mechanism"
+   "rationale": "这个名字底下其实捆了三件事,而它们的状态各不相同:**结构性隔离**(非权威路径写不进权威账本)是一条真机制,已实现并由边界套件钉住,现在有自己的一行;**「工作不设限」**是原生工具挂回之后的既成事实,不需要额外机制;**「一块可以自由停留的区域」**是措辞——把它做成机制等于拿劝告冒充机制(P1),做成界面又只是给同一件事起两个名字。所以它作为**概念**注销,而「探索期产出有据可查」这件事另有落点:回合边界的账本快照。",
+   "known_mismatch": null,
+   "destination": "deleted"
   },
   {
    "id": "subrun-lifecycle",
@@ -1418,6 +1418,56 @@
    "native_dsh_alternative": null,
    "rationale": "让系统替人签「这份计划经人确认」,那条证据就是系统自己伪造的——与 L4「人放行」是同一类病。门的意义在于「这一下是人按的」,所以 `confirmed_by` 只剩 `user` 与 `progress`。",
    "destination": "deleted",
+   "known_mismatch": null
+  },
+  {
+   "id": "non-authoritative-isolation",
+   "name": "非权威路径写不进权威账本",
+   "name_en": "Non-authoritative paths cannot write the authoritative ledger",
+   "layer": "harness",
+   "status": "implemented",
+   "hardness": "hard",
+   "authority": "none",
+   "actor": "system",
+   "source": {
+    "code": "test/authority-boundary.test.mjs; ui/lib/index.js HUMAN_GATE_ACTIONS",
+    "tests": "test/authority-boundary.test.mjs（14 项）",
+    "config": null,
+    "prompt": null,
+    "docs": "docs/loop-philosophy.zh-CN.md"
+   },
+   "trigger": "模型用 todo / 子代理 / workflow / ralph / 模型切换干活",
+   "input": "—",
+   "output": "没有任何 `clearai` 变更",
+   "blocks_execution": true,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "这是把「工作方式」与「确认知识」解耦的那条**负向保证**:干活不设限,但干活的路径结构上产不出一条权威变更——权威账本只能由主线过观测准入与唯一完成动词写入。它是「探索可以自由、事实必须严格」这句话里**承重**的那一半,所以它有一行。",
+   "known_mismatch": null
+  },
+  {
+   "id": "ledger-exploration-snapshots",
+   "name": "回合边界的工作区快照",
+   "name_en": "Workspace snapshot at the turn boundary",
+   "layer": "harness",
+   "status": "implemented",
+   "hardness": "hard",
+   "authority": "authoritative",
+   "actor": "system",
+   "source": {
+    "code": "preset/plugins/clearai-kernel.js snapshotWorkspace; ui/lib/fold.js writeCalls",
+    "tests": "test/kernel.test.mjs（回合边界快照）; test/host.test.mjs（writeCalls 计数）",
+    "config": null,
+    "prompt": null,
+    "docs": "docs/verification-loop.zh-CN.md"
+   },
+   "trigger": "本会话调用过会改工作区的工具(write/edit/bash/pwsh),且工作区真的脏",
+   "input": "—",
+   "output": "一次账本提交 + mutation git/snapshot（只留台账）",
+   "blocks_execution": false,
+   "affected_by_autonomy": false,
+   "native_dsh_alternative": null,
+   "rationale": "账本原来只在**交付点**记一笔:那是刻意的偏离,理由写在代码里——每次写入的**归属**属于宿主的 fs 领域(bash 写的文件内核看不见),而交付点归属是内核真正知道的事实。但那条理由管的是粒度,不是**覆盖面**:立约之前(以及两次交付之间)写入的东西在账本里一个字都没有,`FileHistory` / `RestoreFile` 对它们无效,而「事后可恢复代替事前审批」这条安全论证恰恰建立在覆盖面之上(loop-philosophy §3)。回合边界那一笔只声明覆盖面,不声明归属:提交信息只说这是探索期快照。",
    "known_mismatch": null
   }
  ]

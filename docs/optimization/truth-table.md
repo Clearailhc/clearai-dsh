@@ -8,13 +8,13 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **55**
-- By status: Implemented 46 · Partial 2 · Design only 4 · Removed 3
-- By strength: Hard boundary 38 · Advisory 10 · Native 3 · Prompt only 1 · Deprecated 3
-- By destination: becomes a mechanism 4 · stays design-only 2 · deleted and accounted 3
-- Actually blocking execution: **16**
+- Mechanisms: **57**
+- By status: Implemented 48 · Partial 2 · Design only 3 · Removed 4
+- By strength: Hard boundary 40 · Advisory 9 · Native 3 · Prompt only 1 · Deprecated 4
+- By destination: becomes a mechanism 3 · stays design-only 2 · deleted and accounted 4
+- Actually blocking execution: **17**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **6**
+- Carrying a known mismatch between docs/comments and code: **5**
 
 ## Code constant snapshot
 
@@ -76,10 +76,12 @@ This section is exported from code, not written by hand:
 | `autonomy-config` | autonomy: deployment initial value and clarification slot selector | Harness | Partial | Prompt only | None | system | no | **yes** | `preset/plugins/clearai-kernel.js CFG.autonomy` |
 | `runtime-card` | Per-turn runtime card | Harness | Implemented | Advisory | None | system | no | no | `ui/lib/fold.js renderCard` |
 | `prompt-sections` | Prompt sections: 23 defined, 22 mounted at a time | Harness | Implemented | Advisory | None | system | no | **yes** | `preset/plugins/prompts.js SECTIONS` |
-| `exploration-zone` | Non-authoritative exploration zone (design goal) | Harness | Design only | Advisory | Non-authoritative | model | no | no | — |
+| `exploration-zone` | Removed: the exploration zone as a named mode | Harness | Removed | Deprecated | Non-authoritative | model | no | no | — |
 | `subrun-lifecycle` | Unified sub-run lifecycle (one-shot handle, one collection channel) | Harness | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js dispatchSubRun / startWorldlineExecutor / runScout / runEvaluator / runArbiter / sweepScouts / sweepWorldlineExecutors / sweepLostExecutors / sweepLostScouts / publishedInEpoch / noticeBlock` |
 | `set-autonomy` | Removed: switching the run tier from the panel | Harness | Removed | Deprecated | None | human | no | no | — |
 | `budget-tiers` | Removed: 6-round / 512-round budget tiers | Harness | Removed | Deprecated | None | system | no | no | — |
+| `non-authoritative-isolation` | Non-authoritative paths cannot write the authoritative ledger | Harness | Implemented | Hard boundary | None | system | yes | no | `test/authority-boundary.test.mjs` |
+| `ledger-exploration-snapshots` | Workspace snapshot at the turn boundary | Harness | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js snapshotWorkspace` |
 | `human-gate-actions` | Human-gate action whitelist | Host | Implemented | Hard boundary | Authoritative | human | no | no | `ui/lib/index.js 人门通道` |
 | `context-pruning` | Context pruning and compaction, native to the host | Host | Implemented | Native | None | system | no | no | `preset/agent.cordis.yml compaction` |
 | `model-routing` | Model routing and switching, host-native and not owned by ClearAI | Host | Implemented | Native | None | host | no | no | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
@@ -678,18 +680,17 @@ This section is exported from code, not written by hand:
 - **Tests**: test/preset-composition.test.mjs（阶段 5 新增） · **Config**: —
 - **Prompt**: — · **Docs**: —
 
-### `exploration-zone` · Non-authoritative exploration zone (design goal)
+### `exploration-zone` · Removed: the exploration zone as a named mode
 
-- **Layer**: Harness · **Status**: Design only · **Strength**: Advisory · **Authority**: Non-authoritative · **Actor**: model
+- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: Non-authoritative · **Actor**: model
 - **Trigger**: —
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: dsh-tool-todo / dsh-tool-subagent
-- **Rationale**: 把「组织工作」与「确认知识」解耦：探索可以自由，事实必须严格。
-- **Destination**: becomes a mechanism
+- **Rationale**: 这个名字底下其实捆了三件事,而它们的状态各不相同:**结构性隔离**(非权威路径写不进权威账本)是一条真机制,已实现并由边界套件钉住,现在有自己的一行;**「工作不设限」**是原生工具挂回之后的既成事实,不需要额外机制;**「一块可以自由停留的区域」**是措辞——把它做成机制等于拿劝告冒充机制(P1),做成界面又只是给同一件事起两个名字。所以它作为**概念**注销,而「探索期产出有据可查」这件事另有落点:回合边界的账本快照。
+- **Destination**: deleted and accounted
 - **Code**: —
-- **Tests**: test/authority-boundary.test.mjs（阶段 4 新增） · **Config**: —
-- **Prompt**: — · **Docs**: docs/optimization/plan.zh-CN.md
-- **Known mismatch**: 尚未实现；当前所有工作都被拉进正式循环。
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `subrun-lifecycle` · Unified sub-run lifecycle (one-shot handle, one collection channel)
 
@@ -794,6 +795,30 @@ This section is exported from code, not written by hand:
 - **Code**: —
 - **Tests**: — · **Config**: —
 - **Prompt**: — · **Docs**: docs/known-gaps.md
+
+### `non-authoritative-isolation` · Non-authoritative paths cannot write the authoritative ledger
+
+- **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: None · **Actor**: system
+- **Trigger**: 模型用 todo / 子代理 / workflow / ralph / 模型切换干活
+- **Output**: 没有任何 `clearai` 变更
+- **Blocks execution**: yes · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 这是把「工作方式」与「确认知识」解耦的那条**负向保证**:干活不设限,但干活的路径结构上产不出一条权威变更——权威账本只能由主线过观测准入与唯一完成动词写入。它是「探索可以自由、事实必须严格」这句话里**承重**的那一半,所以它有一行。
+- **Code**: test/authority-boundary.test.mjs; ui/lib/index.js HUMAN_GATE_ACTIONS
+- **Tests**: test/authority-boundary.test.mjs（14 项） · **Config**: —
+- **Prompt**: — · **Docs**: docs/loop-philosophy.zh-CN.md
+
+### `ledger-exploration-snapshots` · Workspace snapshot at the turn boundary
+
+- **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 本会话调用过会改工作区的工具(write/edit/bash/pwsh),且工作区真的脏
+- **Output**: 一次账本提交 + mutation git/snapshot（只留台账）
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 账本原来只在**交付点**记一笔:那是刻意的偏离,理由写在代码里——每次写入的**归属**属于宿主的 fs 领域(bash 写的文件内核看不见),而交付点归属是内核真正知道的事实。但那条理由管的是粒度,不是**覆盖面**:立约之前(以及两次交付之间)写入的东西在账本里一个字都没有,`FileHistory` / `RestoreFile` 对它们无效,而「事后可恢复代替事前审批」这条安全论证恰恰建立在覆盖面之上(loop-philosophy §3)。回合边界那一笔只声明覆盖面,不声明归属:提交信息只说这是探索期快照。
+- **Code**: preset/plugins/clearai-kernel.js snapshotWorkspace; ui/lib/fold.js writeCalls
+- **Tests**: test/kernel.test.mjs（回合边界快照）; test/host.test.mjs（writeCalls 计数） · **Config**: —
+- **Prompt**: — · **Docs**: docs/verification-loop.zh-CN.md
 
 ---
 

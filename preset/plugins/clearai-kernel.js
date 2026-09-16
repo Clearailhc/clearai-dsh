@@ -3565,10 +3565,45 @@ export function apply(ctx, config = {}) {
 
 	// ── 账本(D3/D4:账本 = git,与世界线共用一本) ─────────────────────────────
 	//
-	// ClearAI 的账本是**每次写入**都记一笔(带 turn/tool 归属),我们记在**交付点**:
-	// 一次提交 = 一次「这一步交付时工作区长什么样」。这是刻意的偏离:
-	// 每次写入的归属在 DSH 里属于宿主的 fs 领域,而交付点归属是内核真正知道的事实。
+	// ClearAI 的账本是**每次写入**都记一笔(带 turn/tool 归属),我们记在**回合边界与交付点**:
+	// 一次提交 = 一次「那一刻工作区长什么样」。这是刻意的偏离,而且是**粒度**上的偏离:
+	// 每次写入的归属在 DSH 里属于宿主的 fs 领域(bash 写的文件内核根本看不见),
+	// 而「一回合结束时工作区长什么样」是内核真正知道的事实。
+	//
+	// 补这一层的原因不是粒度,是**覆盖面**:只在交付点记,那么立约之前(以及两次交付之间)
+	// 写入的东西在账本里一个字都没有,`FileHistory` / `RestoreFile` 对它们也就无效——
+	// 而「事后可恢复代替事前审批」这条安全论证,恰恰建立在账本覆盖面之上。
+	// 所以回合边界上的那一笔**只声明覆盖面,不声明归属**:
+	// 提交信息只说这是探索期快照,不声称某一笔写入属于哪一次工具调用。
+	//
 	// 两条性质照抄不变:**只前进**(恢复 = 新版本 + 新提交)与**留下来源**(提交信息写步 id)。
+
+	/** 已快照到哪一次调用计数(会话级;进程重启后第一笔会重记一次,无害)。 */
+	const lastWorkspaceSnapshot = new Map()
+	/**
+	 * 回合边界上的**工作区快照**:把本会话到这一回合为止的写入记进账本。
+	 *
+	 * 触发要**两条同时成立**:本会话调用过会改工作区的工具(`state.writeCalls` 增长),
+	 * 且工作区真的脏。没有前者,人在编辑器里没写完的改动不会被我们提交;没有后者,
+	 * 只读回合不会造出一串空提交。这是**降噪判据,不是正确性边界**。
+	 *
+	 * 失败如实告警并返回空串:账本没记上就说没记上,不假装记过。
+	 */
+	function snapshotWorkspace(sessionId, cwd, state, mutations, turn) {
+		const calls = Number(state?.writeCalls ?? 0)
+		if (calls <= 0 || lastWorkspaceSnapshot.get(sessionId) === calls) return ''
+		lastWorkspaceSnapshot.set(sessionId, calls)
+		const committed = commitLedger(cwd, `clearai: 探索期快照 — 第 ${turn} 回合(本会话尚未交付的写入)`)
+		if (committed.ok !== true) {
+			ctx.logger?.warn?.(`clearai: 工作区快照失败 ${String(committed.reason ?? '').slice(0, 160)}`)
+			return ''
+		}
+		if (committed.skipped === true) return ''
+		// 落一条**台账事实**:系统对工作区做过什么,日志里要说得出来(与交付那笔同一条纪律)。
+		mutations.push({ t: 'git/snapshot', commit: committed.commit, reason: '探索期快照(回合边界)', turn })
+		const short = committed.commit === null ? '' : `(${String(committed.commit).slice(0, 7)})`
+		return `\n(工作区已记入账本${short}:探索期的产出从此可查、可恢复——不需要你为它声明什么。)`
+	}
 
 	/** 在**当前工作区**上落一次账本提交;没有改动就不提交(空提交是噪音)。 */
 	function commitLedger(cwd, message) {
@@ -5288,7 +5323,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'FileHistory',
 		description:
-			'查一个文件的账本历史(工作区每次**交付点**落一条提交,不是每次写入)。给路径与可选条数,返回碰过它的提交:短 id、时间、提交信息(写着是哪一步交付的)。要看某个版本的内容或恢复它,用 RestoreFile。',
+			'查一个文件的账本历史(工作区在**回合边界与交付点**各落一条提交,不是每次写入)。给路径与可选条数,返回碰过它的提交:短 id、时间、提交信息(写着是探索期快照还是哪一步交付)。要看某个版本的内容或恢复它,用 RestoreFile。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -5310,7 +5345,7 @@ export function apply(ctx, config = {}) {
 			const history = ledgerHistory(cwd, path, args.limit ?? 10)
 			if (history.ok !== true) return fail('ledger_unavailable', `账本读不到:${history.reason}`)
 			if (history.entries.length === 0) {
-				return done({ ok: true, code: 'no_history', message: `${path} 在账本里没有提交记录(交付点才会落一条;也可能它还没被交付过)。` })
+				return done({ ok: true, code: 'no_history', message: `${path} 在账本里没有提交记录(回合边界与交付点才会落一条;也可能它还没被交付过)。` })
 			}
 			const lines = history.entries.map((entry) => `${entry.commit} · ${String(entry.at).slice(0, 19)} · ${entry.subject}`)
 			return done({
@@ -5800,6 +5835,13 @@ export function apply(ctx, config = {}) {
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 盘上残留读数失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
+
+		/**
+		 * 回合边界上的工作区快照(见 `snapshotWorkspace`)。放在这里:这一拍该收的事实都已经
+		 * 收完了,快照覆盖的正是「到这一回合为止」的工作区;而它落在注记里,所以走的还是那条
+		 * 唯一的通道(有卡进卡、无卡进通知),不另开一条路。
+		 */
+		brainNote = `${brainNote}${snapshotWorkspace(sessionId, sessionCwd(sessionId), hostService.state(sessionId), factMutations, payload.turn)}`
 
 		/**
 		 * 无卡通道的注记 = 卡里那几句(工作区、本体、事实货架)。

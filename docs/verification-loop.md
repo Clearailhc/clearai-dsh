@@ -110,7 +110,9 @@ One plan carries one stage of the goal. Steps in the plan may declare that they 
 
 ### 4.3 Execute and produce observations
 
-The model explores, writes scripts, computes. Every write enters the ledger; every execution leaves a command, exit code and commit in the event stream. Artifacts land in `lab/`. Nothing in this segment judges anything.
+The model explores, writes scripts, computes. Every write enters the ledger — at each **turn boundary** in which this session wrote something, the workspace is snapshotted as a commit (the message says it is an exploration-phase snapshot), so work done before any plan exists is inspectable and restorable too. Every execution leaves a command, exit code and commit in the event stream. Artifacts land in `lab/`. Nothing in this segment judges anything.
+
+> What that snapshot does **not** claim is **attribution**: the kernel cannot see what `bash` wrote, so it never says which write belonged to which call. It claims coverage only — and coverage is what the "recovery replaces approval" argument needs.
 
 | Ontology | Who | System object |
 |---|---|---|
