@@ -32,7 +32,9 @@ export const SCENARIOS = {
 			'3. 第一步上用 ForkPlan 开**两条**世界线:',
 			'   路线 compact:用 python3 写 lab/gen_compact.py,生成 lab/data_compact.json(紧凑 JSON,无空格);',
 			'   路线 pretty:用 python3 写 lab/gen_pretty.py,生成 lab/data_pretty.json(缩进 JSON,带空格)。',
-			'   两条的 done_criteria 都要**逐字**写明「读数 = 生成文件的字节数」;decide_by 指标写「字节数 = 生成文件的字节数」(尺子自带口径:量 = 口径),方向取 min。',
+			'   开分叉**之前**先在工作区写一个测量脚本 lab/measure.sh(内容一行:#!/bin/bash\nwc -c < "$1"),',
+			'   然后 decide_by 指标写「字节数 = lab/measure.sh 对生成文件的输出」(口径必须是**工作区里真有的文件**),方向取 min;',
+			'   两条的 done_criteria 都要**逐字**写明量那一半(「字节数」)。',
 			'4. 用 AdvanceWorldline 把两条世界线都交付,每条报一个**整串就是一个数**的读数(字节数)。',
 			'5. ConvergeFork 让算术裁决;然后接着做第二步与第三步,最后 ClosePlan 收尾。',
 		].join('\n'),
@@ -199,23 +201,8 @@ export const INVARIANTS = [
 		},
 	},
 	{
-		label: '评估者没有悬空(每个 audit/dispatched 都有 audit/settled,或被回合收尾如实记下)',
-		run: ({ countOf, state }) => {
-			/**
-			 * 与侦察那条同一个定义:**悬空 = 既没有结论、也没有被如实记下**。
-			 * 回合停了,在飞的评估者的裁决也回不来(它只在交付那一拍被收集),
-			 * 所以它必须出现在 `clearai/turn-ended` 的在飞清单里,而不是只剩一条派发事实。
-			 */
-			const recorded = new Set(
-				(state?.turnEnds ?? [])
-					.flatMap((end) => end.inFlight ?? [])
-					.filter((row) => String(row.kind) === 'auditor')
-					.map((row) => String(row.label ?? '')),
-			)
-			const dispatched = countOf('audit/dispatched')
-			const settled = countOf('audit/settled')
-			return { ok: dispatched <= settled + recorded.size, detail: `dispatched=${dispatched} settled=${settled} 回合收尾记下=${recorded.size}` }
-		},
+		label: '评估者没有悬空(每个 audit/dispatched 都有 audit/settled)',
+		run: ({ countOf }) => ({ ok: countOf('audit/dispatched') <= countOf('audit/settled'), detail: `dispatched=${countOf('audit/dispatched')} settled=${countOf('audit/settled')}` }),
 	},
 	{
 		label: '分叉不留孤儿(每个 fork/created 都以 converged/abandoned/undecidable 收口)',
@@ -324,58 +311,11 @@ export const INVARIANTS = [
 		},
 	},
 	{
-		label: '侦察没有悬空(每个 scout/dispatched 都有 scout/settled,或被回合收尾如实记下)',
-		run: ({ countOf, mutations, state }) => {
-			/**
-			 * **"悬空"的定义是两条都没有**:既没有结论,也没有被如实记下。
-			 *
-			 * 回合一停(一次性形态里进程就走),在飞的侦察再也不会自己回来——那一条由宿主的
-			 * `agent/turn-stopping` 写成 `clearai/turn-ended`(内核的回合收尾)。只数
-			 * `scout/settled` 会把"已经诚实记账"误判成悬空,那是拿不变量去罚一条正确的行为。
-			 */
-			const settledScouts = new Set(mutations.filter((m) => m.t === 'scout/settled').map((m) => String(m.id)))
-			const settledChildren = new Set(
-				mutations.filter((m) => m.t === 'scout/dispatched' && settledScouts.has(String(m.id))).map((m) => String(m.child)),
-			)
-			const recorded = new Set(
-				(state?.turnEnds ?? [])
-					.flatMap((end) => end.inFlight ?? [])
-					.filter((row) => String(row.kind) === 'scout')
-					.map((row) => String(row.child))
-					.filter((child) => child !== '' && !settledChildren.has(child)),
-			)
-			const dispatched = countOf('scout/dispatched')
-			const settled = countOf('scout/settled')
-			return {
-				ok: dispatched <= settled + recorded.size,
-				detail: `dispatched=${dispatched} settled=${settled} 回合收尾记下=${recorded.size}`,
-			}
-		},
+		label: '侦察没有悬空(每个 scout/dispatched 都有 scout/settled)',
+		run: ({ countOf }) => ({ ok: countOf('scout/dispatched') <= countOf('scout/settled'), detail: `dispatched=${countOf('scout/dispatched')} settled=${countOf('scout/settled')}` }),
 	},
-	{
-		/**
-		 * **回合一停,在飞的子 run 必须被如实记下**——否则投影里只剩"派发"事实,
-		 * 看上去像"它还在跑",而事实是"它停在那里了"。这一条只在真的有落不定的子 run 时才有话说。
-		 */
-		label: '停下来的回合把在飞的子 run 如实记下(clearai/turn-ended)',
-		run: ({ mutations, state }) => {
-			const inFlight = new Set()
-			for (const end of state?.turnEnds ?? []) for (const row of end.inFlight ?? []) inFlight.add(`${String(row.kind)}:${String(row.child)}`)
-			const settledChildren = new Set([
-				...mutations.filter((m) => m.t === 'scout/settled').flatMap((m) => mutations.filter((d) => d.t === 'scout/dispatched' && String(d.id) === String(m.id)).map((d) => String(d.child))),
-				...mutations.filter((m) => m.t === 'worldline/executed').map((m) => String(m.child)),
-			])
-			const dispatchedChildren = [
-				...mutations.filter((m) => m.t === 'scout/dispatched').map((m) => ['scout', String(m.child)]),
-				...mutations.filter((m) => m.t === 'worldline/executing').map((m) => ['executor', String(m.child)]),
-			]
-			const dangling = dispatchedChildren.filter(([kind, child]) => child !== '' && !settledChildren.has(child) && !inFlight.has(`${kind}:${child}`))
-			return {
-				ok: dangling.length === 0,
-				detail: dangling.length === 0 ? `在飞 ${inFlight.size} 条,全部有据` : `没有结论也没被记下:${dangling.map(([, child]) => child).join(',')}`,
-			}
-		},
-	},
+
+
 	{
 		label: '声明的物证真的在盘上(主线步骤的 artifacts)',
 		run: ({ mutations, exists }) => {

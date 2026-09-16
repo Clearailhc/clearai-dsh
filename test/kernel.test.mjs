@@ -32,6 +32,12 @@ const SESSION = 'session-test'
 // 这不是测试的方便之举:ClearAI 的 A 层就是这么用的——用户自己的仓库。
 execFileSync('git', ['init', '-q'], { cwd: WORKSPACE })
 execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: WORKSPACE })
+/**
+ * 尺子的口径必须是**工作区里真有的文件**(一条可指认的引用,不是散文)。
+ * 这里先放一份测量脚本占位,后面各场分叉的尺子都引用它。
+ */
+mkdirSync(join(WORKSPACE, 'lab'), { recursive: true })
+writeFileSync(join(WORKSPACE, 'lab', 'probe.txt'), '# 测量脚本占位:各场分叉的尺子口径引用这个文件\n')
 
 let passed = 0
 let failed = 0
@@ -1570,7 +1576,7 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 				{ label: '湿法', approach: '水相回流', done_criteria: '收率 yield_pct 越高越好', workspace: 'lab/wl/shi', level: 'L3' },
 				{ label: '干法', approach: '固相研磨', done_criteria: '收率 yield_pct 越高越好', workspace: 'lab/wl/gan', level: 'L3' },
 			],
-			decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' },
+			decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
 		})
 		check('分叉立起来(前置)', forked.ok === true, String(forked.code))
 		const forkId = host.service.state(S).forks[0].id
@@ -1623,7 +1629,7 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 				{ label: '点值', approach: 'A', done_criteria: 'order 越大越好', workspace: 'lab/wl/pt', level: 'L3' },
 				{ label: '单元平均', approach: 'B', done_criteria: 'order 越大越好', workspace: 'lab/wl/ca', level: 'L3' },
 			],
-			decide_by: { metric: 'order = 数值从小到大排的位次', direction: 'max' },
+			decide_by: { metric: 'order = lab/probe.txt 里数值的排序位次', direction: 'max' },
 		})
 		const branchPath = (label) => host.service.view(S).forks.find((item) => item.stepId === 'f9').branches.find((item) => item.label === label).worktreePath
 		host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '5.02', validity: 'usable' }
@@ -1657,7 +1663,7 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 				{ label: '甲', approach: '甲的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/jia', level: 'L3' },
 				{ label: '乙', approach: '乙的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/yi', level: 'L3' },
 			],
-			decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' },
+			decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
 		})
 		const branchPath = (label) => host.service.view(S).forks.find((item) => item.stepId === 'f2').branches.find((item) => item.label === label).worktreePath
 		host.nextVerdict = { verdict: 'support', basis: '硬信号:读数一致', reading: '61', validity: 'usable' }
@@ -1727,7 +1733,7 @@ console.log('\n【执行者未归:分叉收口之后,「结论会自动回灌」
 			step: 'u1',
 			plan: 'p-u1',
 			question: '哪条路线的 value 最大',
-			decide_by: { metric: 'value = 方案数值(无量纲)', direction: 'max' },
+			decide_by: { metric: 'value = lab/probe.txt 里的数值', direction: 'max' },
 			options: [
 				{ id: 'ub1', label: '甲', approach: '乘 2', done_criteria: 'value 读数' },
 				{ id: 'ub2', label: '乙', approach: '乘 3', done_criteria: 'value 读数' },
@@ -1740,7 +1746,7 @@ console.log('\n【执行者未归:分叉收口之后,「结论会自动回灌」
 		{ t: 'worldline/executed', fork: 'k-u1', branch: 'ub1', child: 'child-a', ok: true, conclusion: '甲:14' },
 		{ t: 'branch/delivered', fork: 'k-u1', branch: 'ub1', reading: '14', validity: 'usable', verdict: 'support', basis: '读过产物', evidence: 'e-u1' },
 		{ t: 'branch/delivered', fork: 'k-u1', branch: 'ub2', reading: '21', validity: 'usable', verdict: 'support', basis: '读过产物', evidence: 'e-u2' },
-		{ t: 'fork/converged', fork: 'k-u1', winner: 'ub2', margin: 0.5, tie: false, metric: 'value = 方案数值(无量纲)', direction: 'max' },
+		{ t: 'fork/converged', fork: 'k-u1', winner: 'ub2', margin: 0.5, tie: false, metric: 'value = lab/probe.txt 里的数值', direction: 'max' },
 	]
 	const state = applyMutations(emptyState(), base)
 	const fork = view(state).forks[0]
@@ -1788,8 +1794,12 @@ console.log('\n【失联的评估者:重启之后不再被一条等不到的裁�
 		// 第一拍总是「布防」(还没有令牌);hold 只对**已存在**的令牌说话 ⇒ 第二拍才是判据。
 		const decision = await preStep(host, S, 72)
 		const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
-		check('目录里没有活的子会话 ⇒ 失联裁决如实落账(verdict=unknown)', settled.length === 1 && settled[0].verdict === 'unknown' && String(settled[0].basis).includes('失联'), JSON.stringify(settled[0] ?? null).slice(0, 120))
-		check('卡片如实说「失联」并说清下一步(重新交付会派新的评估者)', /裁决\*\*失联\*\*/.test(JSON.stringify(first.messages ?? [])), JSON.stringify(first.messages ?? []).slice(0, 200))
+		/**
+		 * 收尾那条路先试图**从子会话日志取回**裁决;这里目录里没有它、日志也读不到
+		 * ⇒ 如实落「已结束、结论未取回」(不再说「失联/不会有结果」——那是没有证据的推论)。
+		 */
+		check('目录里没有它 ⇒ 已结束、结论未取回,如实落账(verdict=unknown)', settled.length === 1 && settled[0].verdict === 'unknown' && String(settled[0].basis).includes('未能从子会话日志取回'), JSON.stringify(settled[0] ?? null).slice(0, 140))
+		check('卡片只报事实、不给建议(「重新交付会派一个新的评估者」那句删了)', /独立裁决已收口/.test(JSON.stringify(first.messages ?? [])) && !/派一个新的评估者/.test(JSON.stringify(first.messages ?? [])), JSON.stringify(first.messages ?? []).slice(0, 200))
 		check('失联之后不再被「机器等待」按住(第二拍的卡片不再写「评估者还在裁决」)', !/评估者还在裁决/.test(JSON.stringify(decision.messages ?? [])), JSON.stringify(decision.messages ?? []).slice(0, 220))
 	}
 
@@ -1905,7 +1915,7 @@ console.log('\n【L4:门挂在等级上,放行读权威记录(2026-09-11,AUDIT �
 			await callOn(host, S, 'CreatePlan', { steps: [{ id: 'w1', do: '两条路线各试一遍', artifacts: ['lab/w1.txt'], done_criteria: 'lab/w1.txt 有读数', tests: null }] })
 			await callOn(host, S, 'ForkPlan', {
 				question: '走哪条',
-				decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' },
+				decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' },
 				options: [
 					{ id: 'wa', label: '甲', approach: '直接算', done_criteria: '有 ms 读数', level },
 					{ id: 'wb', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数', level: 'L1' },
@@ -1968,7 +1978,7 @@ console.log('\n【世界线的四种结束方式:失败不是落选,孤儿不是
 		],
 	})
 	check('前置:计划建起来了', createdPlan.ok === true, `${createdPlan.code}:${createdPlan.message ?? ''}`.slice(0, 120))
-	const forked = await callOn(host, S, 'ForkPlan', { step_id: 'o1', question: '走哪条', decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' }, options: [{ id: 'ob1', label: 'A', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'ob2', label: 'B', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
+	const forked = await callOn(host, S, 'ForkPlan', { step_id: 'o1', question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'ob1', label: 'A', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'ob2', label: 'B', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
 	check('分叉建得起来(两条互斥路线)', forked.ok === true && host.service.view(S).forks.length === 1, String(forked.code))
 
 	// 作废这一步:分叉**不该**被改写,但结果里要如实报「未收口」并给出出口
@@ -2014,7 +2024,7 @@ console.log('\n【横评仲裁:尺子落不成数时的兜底(不是默认路径
 				{ label: '甲', approach: '甲的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/a', level: 'L3' },
 				{ label: '乙', approach: '乙的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/b', level: 'L3' },
 			],
-			decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' },
+			decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
 		})
 		const branchPath = (label) => host.service.view(S).forks.find((item) => item.stepId === 'a1').branches.find((item) => item.label === label).worktreePath
 		// 尺子落不成数:读数不是数值(「哪个更简洁」这类)。
@@ -2352,7 +2362,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 			{ label: '甲', approach: '甲的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/a', level: 'L3' },
 			{ label: '乙', approach: '乙的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/b', level: 'L3' },
 		],
-		decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' },
+		decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
 	})
 	const forkId = host.service.view(S).forks[0].id
 
@@ -2833,7 +2843,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		const SW = 'session-retry-wl'
 		await callOn(host, SW, 'SetGoal', { claim: '两条路线取一条', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 更好', refute_when: 'B 更好' }] })
 		await callOn(host, SW, 'CreatePlan', { steps: [{ id: 'rw1', do: '两条线路各试一遍', artifacts: ['lab/rw1.txt'], done_criteria: 'lab/rw1.txt 有读数', tests: null }] })
-		await callOn(host, SW, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' }, options: [{ id: 'ra', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'rb', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
+		await callOn(host, SW, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'ra', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'rb', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
 		const beforePublish = host.service.state(SW)
 		await preStep(host, SW, 63)
 		const landed = host.service.view(SW).forks[0].branches.every((branch) => branch.execution?.ok === true)
@@ -2872,7 +2882,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 			const S3 = 'session-lost'
 			await callOn(first, S3, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
 			await callOn(first, S3, 'CreatePlan', { steps: [{ id: 'l1', do: '分两条路试', artifacts: ['lab/l1.txt'], done_criteria: 'lab/l1.txt 有读数', tests: null }] })
-			await callOn(first, S3, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' }, options: [{ id: 'lb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'lb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
+			await callOn(first, S3, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'lb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'lb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
 			const running = first.service.view(S3).forks[0].branches.map((branch) => branch.execution?.ok)
 			check('前置:两条世界线都在「执行中」(ok=null,还没回灌)', running.length === 2 && running.every((ok) => ok === null), JSON.stringify(running))
 			// 模拟进程重启:同一份投影,换一个内核实例(它内存里的执行者表是空的)
@@ -2896,7 +2906,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 			const S4 = 'session-recover'
 			await callOn(first, S4, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
 			await callOn(first, S4, 'CreatePlan', { steps: [{ id: 'r1', do: '分两条路试', artifacts: ['lab/r1.txt'], done_criteria: 'lab/r1.txt 有读数', tests: null }] })
-			await callOn(first, S4, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' }, options: [{ id: 'rb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'rb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
+			await callOn(first, S4, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'rb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'rb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
 			const branchOf = (label) => first.service.view(S4).forks[0].branches.find((branch) => branch.label === label)
 			const childOf = (label) => String(branchOf(label).execution?.child ?? '')
 			// 甲:执行者跑完了(会话里最后一条 turn/end 是 completed,末尾有结论文本)但父进程没来得及收
@@ -2940,7 +2950,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 			const settledState = applyMutations(first.service.state(S4), [
 				{ t: 'branch/delivered', fork: forkId, branch: 'rb1', reading: '61.2', validity: 'usable', verdict: 'support', basis: '硬信号' },
 				{ t: 'branch/delivered', fork: forkId, branch: 'rb2', reading: '44', validity: 'usable', verdict: 'support', basis: '硬信号' },
-				{ t: 'fork/converged', fork: forkId, winner: 'rb1', margin: 0.1, metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' },
+				{ t: 'fork/converged', fork: forkId, winner: 'rb1', margin: 0.1, metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' },
 			])
 			const fourth = makeHost()
 			fourth.states.set(S4, settledState)
@@ -2983,7 +2993,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 			const S6 = 'session-stuck'
 			await callOn(seventh, S6, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
 			await callOn(seventh, S6, 'CreatePlan', { steps: [{ id: 'k1', do: '两条路各试一遍', artifacts: ['lab/k1.txt'], done_criteria: 'lab/k1.txt 有读数', tests: null }] })
-			await callOn(seventh, S6, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' }, options: [{ id: 'kb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'kb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
+			await callOn(seventh, S6, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'kb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'kb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
 			const stuckKids = seventh.service.view(S6).forks[0].branches.map((branch) => String(branch.execution?.child ?? ''))
 			seventh.childSessions = Object.fromEntries(stuckKids.map((id) => [id, sessionOf(id, 'completed', `跑完了:${id.slice(0, 4)} 的读数`)]))
 			const stuckSeen = await callOn(seventh, S6, 'WorldlineStatus', {})
@@ -3272,13 +3282,82 @@ console.log('\n【裁决一旦结束就要落结算事实:不许让派发事实�
 	check('结算事实带着 id 与步(可回指那一次派遣)', typeof settled[0].id === 'string' && settled[0].step === 'a1', JSON.stringify(settled[0]).slice(0, 120))
 }
 
-console.log('\n【回合收尾:宿主要停了,我们留下最后一句事实】')
+console.log('\n【评估者已结束 ⇒ 先取回它的裁决,取不回才如实落 unknown】')
 {
 	/**
-	 * 一次性形态里,回合一停、进程一走,在飞的子 run 的结论就再也回不来;而投影里只留着
-	 * `worldline/executing` 这类**派发**事实——看上去像"它还在跑",事实是"它停在那里了"。
-	 * 宿主的 `agent/turn-stopping`(回合将停且队列为空时**串行 await**)是停下之前唯一还能
-	 * 说话的地方:在那里把工作区记一笔、把在飞的如实写下来。
+	 * 权威归属(§一):宿主说已结束 = **这次运行结束了**;结束不等于失联——结论可能就躺在
+	 * 它自己的会话日志里。跳过取回就把「结束」误报成「死亡」,还会诱导重新交付 ⇒ 同一次评估被重做。
+	 * 这里钉三档:取回裁决 / 结束但未正常完成 / 连日志都读不到。
+	 */
+	const makePending = (child) => {
+		const base = {
+			goal: { id: 'g-rc', claim: '把这一步做实', done_criteria: '有外部读数', status: 'open', promote_at_level: 'L3' },
+			plans: [{ id: 'p-rc', goal: 'g-rc', status: 'active', summary: '一段', steps: [{ id: 'rc1', ordinal: 1, do: '交付', artifacts: ['lab/rc1.txt'], done_criteria: 'lab/rc1.txt 存在', status: 'open', tests: { hypothesis: 'h-rc', level: 'L3' } }] }],
+			hypotheses: [{ id: 'h-rc', claim: 'A 成立', refute_when: 'A 不成立', status: 'alive' }],
+			audits: [{ id: 'a-rc1', step: 'rc1', plan: 'p-rc', kind: 'evidence_audit', verdict: null, evaluator: 'independent', child, capability: 'persona', shortfalls: [], basis: null, card_path: null, at: Date.now() }],
+			assessments: [], evidence: [], materials: [], forks: [], releases: [], written: [], facts: [], scouts: [], blocks: {}, sessions: [], autonomy: null, constitution: null,
+		}
+		return { ...emptyState(), ...base }
+	}
+	const childLog = (events) => ({ id: 'child-x', header: { cwd: WORKSPACE }, ownEvents: () => events })
+
+	// ① 子会话日志里有裁决 ⇒ **取回**,不是失联
+	{
+		const host = makeHost()
+		apply(host.ctx, { autonomy: 'unattended', blockedThreshold: 3 })
+		const S = 'session-audit-recovered'
+		host.states.set(S, makePending('child-done'))
+		host.listing = [] // 目录里没有活的 ⇒ 宿主说它已结束
+		host.childSessions = { 'child-done': childLog([
+			{ type: 'turn/start', data: { turn: 1 } },
+			{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: JSON.stringify({ verdict: 'support', basis: 'lab/rc1.txt 里三次重复的均值差 6.2', shortfalls: [] }) }] } } },
+			{ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+		]) }
+		await preStep(host, S, 81)
+		await preStep(host, S, 82)
+		const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
+		check('子会话日志里有裁决 ⇒ **取回**(不是失联):verdict=support 落账', settled.length === 1 && settled[0].verdict === 'support' && /均值差 6\.2/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 160))
+		check('取回的裁决落了评估卡(凭据与在进程里拿到的那条同构)', typeof settled[0]?.card_path === 'string' && settled[0].card_path.includes('clear/'), String(settled[0]?.card_path))
+	}
+
+	// ② 它结束了但未正常完成 ⇒ 如实写「已结束、未正常完成」
+	{
+		const host = makeHost()
+		apply(host.ctx, { autonomy: 'unattended', blockedThreshold: 3 })
+		const S = 'session-audit-abnormal'
+		host.states.set(S, makePending('child-aborted'))
+		host.listing = []
+		host.childSessions = { 'child-aborted': childLog([
+			{ type: 'turn/start', data: { turn: 1 } },
+			{ type: 'turn/end', data: { turn: 1, reason: { kind: 'aborted' } } },
+		]) }
+		await preStep(host, S, 81)
+		await preStep(host, S, 82)
+		const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
+		check('结束了但未正常完成 ⇒ verdict=unknown,理由写清缘由(aborted)', settled.length === 1 && settled[0].verdict === 'unknown' && /未正常完成/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 140))
+	}
+
+	// ③ 连日志都读不到 ⇒ 已结束、结论未取回(不再说「失联/不会有结果」)
+	{
+		const host = makeHost()
+		apply(host.ctx, { autonomy: 'unattended', blockedThreshold: 3 })
+		const S = 'session-audit-uncollected'
+		host.states.set(S, makePending('child-gone'))
+		host.listing = []
+		await preStep(host, S, 81)
+		await preStep(host, S, 82)
+		const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
+		check('日志读不到 ⇒ 已结束、结论未取回(不说「不会有结果」)', settled.length === 1 && settled[0].verdict === 'unknown' && /未能从子会话日志取回/.test(String(settled[0].basis)) && !/不会有结果/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 140))
+	}
+}
+
+console.log('\n【回合收尾:只记一笔工作区,不替宿主与收集通道说话】')
+{
+	/**
+	 * 权威归属(§一):「还在不在跑」的权威是宿主的子任务目录,「结果收没收回」是收集通道的事。
+	 * 收尾那一拍**只做一件真正属于我们的事**:把这一回合的写入记进账本(一次性形态里
+	 * 唯一会落地的那笔)。此前它还宣告过「它们的结论不会自己回来」——那是没有证据的推论
+	 * (父回合结束只证明父回合结束),已删。
 	 */
 	const host = makeHost()
 	apply(host.ctx, {})
@@ -3295,53 +3374,18 @@ console.log('\n【回合收尾:宿主要停了,我们留下最后一句事实】
 			{ label: '甲', approach: '甲做法', done_criteria: '读数 order 越大越好' },
 			{ label: '乙', approach: '乙做法', done_criteria: '读数 order 越大越好' },
 		],
-		decide_by: { metric: 'order = 数值从小到大排的位次', direction: 'max' },
+		decide_by: { metric: 'order = lab/probe.txt 里数值的排序位次', direction: 'max' },
 	})
-	check('前置:两条执行者派出去了、且永不落定', host.journal.filter((mutation) => mutation.t === 'worldline/executing').length === 2)
+	// 模型写过东西(writeCalls>0)且工作区脏 ⇒ 收尾那一拍应记一笔账
+	write('lab/turn-end.txt', 'v1\n')
+	host.states.set(S, { ...host.service.state(S), writeCalls: 1 })
+	const commitsBefore = execFileSync('git', ['-C', WORKSPACE, 'log', '--format=%h', '-n', '50'], { encoding: 'utf8' }).split('\n').filter(Boolean)
 	await turnEnd({ agent: { id: S }, turn: 3, signal: undefined })
-	const appended = (host.appended ?? []).filter((row) => row.type === 'clearai/turn-ended')
-	check('收尾写成一条**事件**(不是消息:那会把模型再叫起来)', appended.length === 1 && appended[0].sessionId === S, JSON.stringify(appended.map((row) => row.type)))
-	check('在飞的子 run 如实列在里面(不猜它们会不会回来)', Array.isArray(appended[0]?.data?.inFlight) && appended[0].data.inFlight.length === 2 && appended[0].data.inFlight.every((row) => row.kind === 'executor'), JSON.stringify(appended[0]?.data?.inFlight))
-	/**
-	 * **评估者也算在飞的子 run**:它同样是"派出去就不等"的那一种——回合停了,它的裁决
-	 * 也回不来(裁决只在交付那一拍被收集)。少列它,世界线那一场的"评估者没有悬空"就只能红着。
-	 */
-	{
-		const auditHost = makeHost()
-		apply(auditHost.ctx, {})
-		const AS = 'session-inflight-auditor'
-		await callOn(auditHost, AS, 'SetGoal', { claim: '拿到裁决', done_criteria: 'lab/audit.txt 存在', hypotheses: [{ claim: '能做', refute_when: '不能' }] })
-		const hypothesis = auditHost.service.state(AS).hypotheses[0].id
-		await callOn(auditHost, AS, 'CreatePlan', { steps: [{ id: 'a1', do: '把这一步交付并等独立裁决', artifacts: ['lab/audit.txt'], done_criteria: 'lab/audit.txt 有读数', tests: { hypothesis, level: 'L3' } }] })
-		write('lab/audit.txt', 'reading 1\n')
-		auditHost.auditNeverSettles = true
-		const started = callOn(auditHost, AS, 'AdvancePlan', { step_id: 'a1' })
-		await new Promise((resolve) => setTimeout(resolve, 20))
-		await auditHost.listeners.get('agent/turn-stopping')({ agent: { id: AS }, turn: 1, signal: undefined })
-		const rows = (auditHost.appended ?? []).filter((row) => row.type === 'clearai/turn-ended').flatMap((row) => row.data.inFlight ?? [])
-		check('评估者也在"在飞"清单里(它同样会在回合边界丢结论)', rows.some((row) => row.kind === 'auditor'), JSON.stringify(rows))
-		// 这一拍故意不 await:评估者永不落定,那笔交付本来就不会返回——挂个处理器免得
-		// Node 报未处理的拒绝就够了(等它就是把测试挂死)。
-		started.catch(() => {})
-	}
-	/**
-	 * 折进投影 ⇒ 下一个回合的运行态卡**说得出这件事**。
-	 * 不说,模型下一个回合就会继续等一个不会来的东西——那正是"默默停下"。
-	 */
-	const folded = applyEvent(host.service.state(S), { type: 'clearai/turn-ended', time: Date.now(), data: appended[0].data })
-	check('投影里读得到这一笔(事件进日志 ⇒ 可重算)', (view(folded).turnEnd?.inFlight ?? []).length === 2)
-	check('运行态卡把「它停在那里了」说出来', /上一个回合结束时还有 2 条子 run 仍在飞/.test(renderCard(folded)), renderCard(folded).split ? String(renderCard(folded)).split('\n').find((line) => line.includes('仍在飞')) ?? '(卡片没这一行)' : '')
-	// 没人叫醒的核对:收尾**不许**发消息(发了就等于偷偷续跑一轮)。
-	check('收尾只写事件、不发消息(不许偷偷把模型叫起来)', (host.sent ?? []).length === 0, JSON.stringify((host.sent ?? []).map((row) => row.via)))
-	/**
-	 * **回合以错误结束也要收尾**。宿主在出错那一档**不派** `agent/turn-stopping`
-	 * (它把 turnEnds 记成 `{kind:'error'}` 就 throw 出去,那一拍在 try 里被跳过),
-	 * 而真跑里最常见的"半路死"恰恰是这一种(提供方连接错误:重试五次后整个回合以错误收场)。
-	 */
-	check('内核也盯着 agent/error(宿主为"回合以错误结束"发的那个)', typeof host.listeners.get('agent/error') === 'function')
-	host.listeners.get('agent/error')({ agent: { id: S }, turn: 3, step: 4, error: new Error('Connection error.') })
-	const errored = (host.appended ?? []).filter((row) => row.type === 'clearai/turn-ended')
-	check('错误结束那一档同样留下事实,而且**理由写得出来**', errored.length === 2 && errored[1].data.reason === 'error' && errored[1].data.inFlight.length === 2, JSON.stringify(errored.map((row) => row.data.reason)))
+	const commitsAfter = execFileSync('git', ['-C', WORKSPACE, 'log', '--format=%h', '-n', '50'], { encoding: 'utf8' }).split('\n').filter(Boolean)
+	check('收尾把这一回合的写入记进账本(一次性形态里唯一会落地的那笔)', commitsAfter.length > commitsBefore.length && /回合结束/.test(execFileSync('git', ['-C', WORKSPACE, 'log', '-1', '--format=%s'], { encoding: 'utf8' })), execFileSync('git', ['-C', WORKSPACE, 'log', '-1', '--format=%s'], { encoding: 'utf8' }).slice(0, 80))
+	check('收尾不发消息(不许偷偷把模型叫起来)', (host.sent ?? []).length === 0, JSON.stringify((host.sent ?? []).map((row) => row.via)))
+	check('收尾不往会话日志写任何 clearai 事件(那一拍没有我们该说的)', (host.appended ?? []).filter((row) => String(row.type).startsWith('clearai/')).length === 0, JSON.stringify((host.appended ?? []).map((row) => row.type)))
+	check('内核也盯着 agent/error(宿主为"回合以错误结束"发的那个;那一拍同样只记账)', typeof host.listeners.get('agent/error') === 'function')
 }
 
 console.log('\n【子 run 落定由宿主告诉我们:handle 不在了也不丢结算】')
@@ -3585,7 +3629,7 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 	check('先立一步,分叉长在它上面', made.ok === true, String(made.code))
 
 	const OPT = (label, criteria, workspace) => ({ label, approach: `${label} 的做法`, done_criteria: criteria, workspace })
-	const tooFew = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia')], decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' } })
+	const tooFew = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
 	check('少于 2 条世界线 → 拒绝(fork_needs_2to4_options)', tooFew.code === 'fork_needs_2to4_options', String(tooFew.code))
 	const noRuler = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率 yield_pct 高', 'lab/wl/yi')] })
 	check('没有尺子 → 拒绝(decide_by_required):没有判定契约就不能收敛', noRuler.code === 'decide_by_required', String(noRuler.code))
@@ -3601,13 +3645,24 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 	check('尺子只有名字、没有口径 → 拒绝(decide_by_scale_required):口径不能下放给各条世界线', noScale.code === 'decide_by_scale_required', String(noScale.code))
 	const emptyScale = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '读数 yield_pct 高', 'lab/wl/jia'), OPT('乙', '读数 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = ', direction: 'max' } })
 	check('等号右边是空的 → 同样拒绝(口径不是个空壳)', emptyScale.code === 'decide_by_scale_required', String(emptyScale.code))
-	const noDirection = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = 反应产率百分比' } })
+	/**
+	 * **口径必须是可指认的引用,不是散文**。
+	 *
+	 * 「评分 = 按本路线情况评分」同样能通过格式检查,却什么也没保证——两条世界线各读各的。
+	 * 一条引用(工作区里真有的文件)则不同:路径相等是机器可核的,文件内容在账本里有版本。
+	 */
+	const proseScale = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '读数 yield_pct 高', 'lab/wl/jia'), OPT('乙', '读数 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = 按本路线情况评分', direction: 'max' } })
+	check('口径是散文(没有可解析的文件引用)→ 拒绝(decide_by_scale_not_reference)', proseScale.code === 'decide_by_scale_not_reference', String(proseScale.code))
+	const deadPath = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '读数 yield_pct 高', 'lab/wl/jia'), OPT('乙', '读数 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/no_such_file.py 的输出', direction: 'max' } })
+	check('口径引用了不存在的文件 → 同样拒绝', deadPath.code === 'decide_by_scale_not_reference', String(deadPath.code))
+
+	const noDirection = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比' } })
 	check('尺子没说方向 → 拒绝(decide_by_direction_required)', noDirection.code === 'decide_by_direction_required', String(noDirection.code))
-	const notMeasured = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率更高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' } })
+	const notMeasured = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率更高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
 	check('判据里没有指标 → 拒绝(decide_by_not_measured):把测量仪装到每条世界线上', notMeasured.code === 'decide_by_not_measured', String(notMeasured.code))
-	const dupLabel = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', 'yield_pct 高', 'lab/wl/jia'), OPT('甲', 'yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' } })
+	const dupLabel = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', 'yield_pct 高', 'lab/wl/jia'), OPT('甲', 'yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
 	check('标签重复 → 拒绝(duplicate_label)', dupLabel.code === 'duplicate_label', String(dupLabel.code))
-	const selfRef = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', 'yield_pct 高', 'lab/wl/jia'), OPT('乙', '见上文即可 yield_pct', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' } })
+	const selfRef = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', 'yield_pct 高', 'lab/wl/jia'), OPT('乙', '见上文即可 yield_pct', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
 	check('世界线判据自指 → 拒绝(criteria_self_reference)', selfRef.code === 'criteria_self_reference', String(selfRef.code))
 
 	const fork = await call('ForkPlan', {
@@ -3616,10 +3671,10 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 			{ label: '甲', approach: '催化加氢', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/jia', level: 'L3' },
 			{ label: '乙', approach: '酶催化', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/yi', level: 'L3' },
 		],
-		decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' },
+		decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
 	})
 	check('分叉立起(2 条世界线 + 尺子)', fork.ok === true && fork.code === 'fork_created', String(fork.code))
-	const twice = await call('ForkPlan', { question: '再来一次', options: [OPT('丙', 'yield_pct 高', 'lab/wl/bing'), OPT('丁', 'yield_pct 高', 'lab/wl/ding')], decide_by: { metric: 'yield_pct = 反应产率百分比', direction: 'max' } })
+	const twice = await call('ForkPlan', { question: '再来一次', options: [OPT('丙', 'yield_pct 高', 'lab/wl/bing'), OPT('丁', 'yield_pct 高', 'lab/wl/ding')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
 	check('一步只分叉一次(fork_depth_exceeded)', twice.code === 'fork_depth_exceeded', String(twice.code))
 
 	const bypass = await call('AdvancePlan', { step_id: 'r1' })
@@ -3712,7 +3767,7 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 	const converged = await call('ConvergeFork', {})
 	check('算术裁决:采纳读数更高的甲', converged.ok === true && /采纳「甲」/.test(converged.message), String(converged.code))
 	const forkCard = (await call('CheckPlan', {})).card
-	check('世界树上写明尺子与方向', /裁决指标 yield_pct = 反应产率百分比\(越大越好\)/.test(forkCard))
+	check('世界树上写明尺子与方向', /裁决指标 yield_pct = lab\/probe\.txt 里的产率百分比\(越大越好\)/.test(forkCard), forkCard.split('\n').find((l) => l.includes('裁决指标')) ?? '(没有)')
 	check('采纳与未采纳都留在世界树上(未采纳不删)', /\[adopted\] 甲/.test(forkCard) && /\[pruned\] 乙/.test(forkCard), forkCard.split('\n').filter((line) => line.includes('世界线') || line.includes('[')).slice(0, 4).join(' | '))
 	check('两条读数都留着(落选的世界线也是资产)', /读数 62\.1/.test(forkCard) && /读数 55\.4/.test(forkCard))
 
@@ -3794,7 +3849,7 @@ console.log('\n【世界线执行者:路径限定(机制,不是嘱咐)+ 事后�
 		await callOn(waiting, SW, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
 		await callOn(waiting, SW, 'CreatePlan', { steps: [{ id: 'w1', do: '两条路各试一遍', artifacts: ['lab/w1.txt'], done_criteria: 'lab/w1.txt 有读数', tests: null }] })
 		waiting.executorDelayMs = 1200
-		await callOn(waiting, SW, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' }, options: [{ id: 'wb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'wb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
+		await callOn(waiting, SW, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'wb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'wb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
 		const instant = await callOn(waiting, SW, 'WorldlineStatus', {})
 		check('前置:两条都还在跑(它们真的还没回来)', (String(instant.message).match(/仍在跑/g) ?? []).length === 2, String(instant.message).split('\n').slice(0, 2).join(' / '))
 		const startedAt = Date.now()
@@ -3827,7 +3882,7 @@ console.log('\n【世界线:读数的整串匹配与「算不出来」】')
 			{ label: '区间甲', approach: '读出一串数', done_criteria: 'score 越高越好' },
 			{ label: '区间乙', approach: '也读出一串数', done_criteria: 'score 越高越好' },
 		],
-		decide_by: { metric: 'score = 评分(越大越好)', direction: 'max' },
+		decide_by: { metric: 'score = lab/probe.txt 里的评分', direction: 'max' },
 	})
 	check('这一轮的尺子是 score', fork.ok === true, String(fork.code))
 	// 世界线物化成 git 分支 + worktree 之后,产物要落在它**自己的工作副本**里
@@ -3902,7 +3957,7 @@ console.log('\n【世界线:并列不是「算不出」】')
 			{ label: '丙', approach: '一样好', done_criteria: 'gain 越大越好' },
 			{ label: '丁', approach: '一样好', done_criteria: 'gain 越大越好' },
 		],
-		decide_by: { metric: 'gain = 增益(无量纲)', direction: 'max' },
+		decide_by: { metric: 'gain = lab/probe.txt 里的增益数', direction: 'max' },
 	})
 	const y1Of = (label) => {
 		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'y1')
@@ -3936,7 +3991,7 @@ console.log('\n【世界线:脏工作区快照 + 合并冲突即人门】')
 			{ label: '写法甲', approach: '结论句在前', done_criteria: 'score 越大越好' },
 			{ label: '写法乙', approach: '结论句在后', done_criteria: 'score 越大越好' },
 		],
-		decide_by: { metric: 'score = 评分(越大越好)', direction: 'max' },
+		decide_by: { metric: 'score = lab/probe.txt 里的评分', direction: 'max' },
 	})
 	check('分叉立起', forked.ok === true, String(forked.code))
 	const z1Of = (label) => {
@@ -3975,6 +4030,7 @@ console.log('\n【世界线 B 层:工作区不是 git 仓库 → 旁路账本】
 	// (`--git-dir` + `--work-tree`)——用户文件夹里**不会**多出一个 .git。
 	const plain = tempDir('clearai-plain-')
 	writeText(join(plain, 'data.csv'), 'run,yield\n1,60\n')
+	writeText(join(plain, 'lab', 'probe.txt'), '# 测量脚本占位\n')
 	thisHost.cwd = plain
 	const made = await call('CreatePlan', { steps: [{ id: 'b1', do: '在普通文件夹里比两条路线', artifacts: ['report.md'], done_criteria: 'report.md 写下结论' }] })
 	check('普通文件夹里也能开计划', made.ok === true, String(made.code))
@@ -3984,7 +4040,7 @@ console.log('\n【世界线 B 层:工作区不是 git 仓库 → 旁路账本】
 			{ label: '路线甲', approach: '甲做法', done_criteria: 'yield 越大越好' },
 			{ label: '路线乙', approach: '乙做法', done_criteria: 'yield 越大越好' },
 		],
-		decide_by: { metric: 'yield = 产出量(单位:件)', direction: 'max' },
+		decide_by: { metric: 'yield = lab/probe.txt 里的产出数(件)', direction: 'max' },
 	})
 	check('分叉在非仓库工作区里也能立起', forked.ok === true, String(forked.code))
 	const preparedB = eventsOf('worldline/prepared').slice(-1)[0]
@@ -4101,7 +4157,7 @@ console.log('\n【世界线的推荐:算得出来的那条必须落账,否则人
 	const hypothesis = host.service.state(S).hypotheses[0].id
 	const created = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'r1', do: '两条路线各跑一遍', artifacts: ['lab/r1.txt'], done_criteria: 'lab/r1.txt 存在且含读数', tests: { hypothesis, level: 'L0' } }] })
 	check('前置:计划建起来了', created.ok === true, String(created.code))
-	const forked = await callOn(host, S, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' } })
+	const forked = await callOn(host, S, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' } })
 	check('前置:分叉立起来了', forked.ok === true && host.service.view(S).forks.length === 1, String(forked.code))
 	const pathOf = (label) => host.service.view(S).forks[0].branches.find((item) => item.label === label).worktreePath
 	const deliver = async (label, reading) => {
@@ -4130,7 +4186,7 @@ console.log('\n【世界线的推荐:算得出来的那条必须落账,否则人
 	await callOn(host2, S2, 'SetGoal', { claim: '选一条路线', done_criteria: '两条路线各有读数', hypotheses: [{ claim: '甲比乙快', refute_when: '乙更快' }] })
 	const hypothesis2 = host2.service.state(S2).hypotheses[0].id
 	await callOn(host2, S2, 'CreatePlan', { steps: [{ id: 'r2', do: '两条路线各跑一遍', artifacts: ['lab/r2.txt'], done_criteria: 'lab/r2.txt 存在且含读数', tests: { hypothesis: hypothesis2, level: 'L0' } }] })
-	await callOn(host2, S2, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' } })
+	await callOn(host2, S2, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' } })
 	const pathOf2 = (label) => host2.service.view(S2).forks[0].branches.find((item) => item.label === label).worktreePath
 	for (const label of ['甲', '乙']) {
 		writeText(join(pathOf2(label), 'probe.txt'), `route,ms\n${label},?\n`)
@@ -4210,7 +4266,7 @@ console.log('\n【临时采纳的那道门:认可是它的机械出口】')
 		...emptyState(),
 		forks: [{
 			id: 'f-1', step: 's1', plan: 'p-1', question: '走哪条', phase: 'settled', settled: true, abandoned: false,
-			decide_by: { metric: 'ms = 生成文件的耗时(毫秒)', direction: 'min' }, humanDecision: null, arbitration: null, arbitrationSession: null,
+			decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, humanDecision: null, arbitration: null, arbitrationSession: null,
 			branches: [{ id: 'b-1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数', status: 'adopted', level: 'L0', reading: '60', validity: 'usable', artifacts: [] }],
 			merge: { branch: 'b-1', provisional: true, decisionNote: 'auto_adopt: 相对差距 2.0%,阈值 15%', by: 'metric', margin: 0.02 },
 		}],

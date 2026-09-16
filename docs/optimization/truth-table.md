@@ -306,7 +306,7 @@ This section is exported from code, not written by hand:
 - **Output**: mutation fork/created, worldline/prepared, worldline/executing, worldline/executed, branch/delivered
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 分叉是「选一」，不是并行加速：每条世界线一份独立工作副本，各自交付读数，收敛由**算术**决定（`decideWinner` 只排序，不做语义判定）。尺子在动手之前登记，并且要写成「量 = 口径」。**这条规则的真实能力要说准**：它保证的是**声明被登记、被逐字传给每条世界线的判据与任务书**（口径从"各写一套、事后才发现不可比"变成"一份声明、人人可见"）；它**不保证两条读数真的可比**——`评分 = 按本路线情况评分` 同样通过检查。可比性只能由评估者重跑确认，不由字符串格式确认。
+- **Rationale**: 分叉是「选一」，不是并行加速：每条世界线一份独立工作副本，各自交付读数，收敛由**算术**决定（`decideWinner` 只排序，不做语义判定）。尺子在动手之前登记，写成「量 = 口径」，而**口径必须是工作区里真有的一个文件**（`decide_by_scale_not_reference` 拒散文、拒不存在的路径）。这把「同一把尺子」从一句**声明**变成一个**可指认的引用**：路径相等是机器可核的，文件内容在账本里有版本。至于两条世界线有没有真的用它去量，那是评估者重跑的事——字符串检查到这里就到头了，不冒充能验。
 - **Code**: preset/plugins/clearai-kernel.js ForkPlan; prepareWorldlines; startWorldlineExecutor
 - **Tests**: test/kernel.test.mjs, tools/spike-git-worldlines.mjs · **Config**: gitWorldlines, autoDispatchExecutors, executorToolFilter
 - **Prompt**: clearai/worldline · **Docs**: docs/epistemic-loop.zh-CN.md
@@ -701,7 +701,7 @@ This section is exported from code, not written by hand:
 - **Output**: 对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）;回合结束时另写一条 clearai/turn-ended（在飞的如实记录）
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构
-- **Rationale**: 子任务的生命周期必须由内核自己掌握:账本只认本进程攥着的句柄,结论送达由收集那一刻的返回完成;四种角色共用一套,差异只在人格、工具面与结果解释方式。结算有两条来源:我们自己这一次派遣的 `run.result`,以及宿主的 `subagent/end` 事件(它在**同一个 promise 落定那一刻**发出,成功与失败都发,所以 handle 已经不在了也收得到);重启之后还能把子会话自己的日志当地面真相读回来。**回合一停,在飞的子 run 再也不会自己回来**——那一条由宿主的 `agent/turn-stopping`(串行 await)写成 `clearai/turn-ended` 事件:不叫醒任何人、不写裁决,只留事实,下一个回合的运行态卡据此说清「上一个回合结束时还有谁在飞」。
+- **Rationale**: 子任务的生命周期由内核掌握，但**结束与存活的权威是宿主**：`subagents.listChildren`（`activity: running / inactive`）与 `subagent/end` 事件。结算有两条来源：本进程攥着的句柄，以及**从子会话自己的日志取回**（`recoverFromChildSession`——侦察与评估者同一条路）。宿主说已结束 ⇒ **先取回**，取不回才如实落 unknown，理由写清（`ended_uncollected` ≠ `lost`）——跳过取回就把「结束」误报成「死亡」，还诱导重新交付 ⇒ 同一次评估被重做。结算只报事实不给建议：要不要重试是计划层的决定。
 - **Code**: preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js clearai/turn-ended
 - **Tests**: test/kernel.test.mjs（落定 / 认 id / 回合收尾）; test/host.test.mjs（事件折得进投影且可重放） · **Config**: auditProvider=spawn, auditTimeoutMs
 - **Prompt**: clearai/delegation · **Docs**: docs/optimization/e2e-longruns.zh-CN.md

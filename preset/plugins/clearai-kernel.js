@@ -1123,7 +1123,7 @@ export function apply(ctx, config = {}) {
 			`- 要裁决的分歧:${fork.question}`,
 			`- **你这一个方案**:${branch.label} —— ${branch.approach}`,
 			`- **判定标准(你必须做到,并且可被客观核对)**:${branch.done_criteria}`,
-			`- **裁决指标(所有世界线共用同一把尺子,不许各自另定口径)**:${fork.decide_by?.metric ?? '(未登记)'}(${fork.decide_by?.direction === 'min' ? '越小越好' : '越大越好'})`,
+			`- **裁决指标(所有世界线共用同一把尺子,不许各自另定口径;口径里引用的那个文件就是测量仪,你的读数必须出自它)**:${fork.decide_by?.metric ?? '(未登记)'}(${fork.decide_by?.direction === 'min' ? '越小越好' : '越大越好'})`,
 			/**
 			 * **声明的物证路径必须告诉干活的人**。
 			 *
@@ -1524,7 +1524,7 @@ export function apply(ctx, config = {}) {
 
 
 	/**
-	 * **失联的评估者**。
+	 * **已结束的评估者**。
 	 *
 	 * `pendingAudits` 是**进程内**的:重启之后它空了,而投影里那条 `audit/dispatched` 还在
 	 * (`verdict === null`)。后果有两条,后一条更狠:
@@ -1533,13 +1533,16 @@ export function apply(ctx, config = {}) {
 	 *      一条永远不会回来的裁决,把整个目标按死在挂起上。
 	 *
 	 * 判据不看内存,看**宿主的目录**:`subagents.listChildren(sessionId)` 给每个子会话一个
-	 * `activity: 'running' | 'inactive'`(还在跑 / 只剩日志),而且它不需要把子代理加载起来。
-	 * 投影里在裁决 + 子会话不在跑 ⇒ 落一条 `audit/settled{verdict:'unknown', note:'lost'}`:
-	 * 与别的结局用同一个转变,只是缘由写具体(「失联」)。下一次交付会重新派评估者。
+	 * `activity: 'running' | 'inactive'`(还在跑 / 只剩日志)——**宿主是"还在不在跑"的唯一权威**。
+	 * 目录说已结束 ⇒ 这次运行**结束了**。结束不等于失联:结论可能就躺在它自己的会话日志里,
+	 * 所以**先取回**(与侦察的 `sweepScouts` 同一条路),取不回才如实落 unknown。
+	 *
+	 * 结算只报事实、不给建议(「重新交付会派一个新的评估者」那类话删了):
+	 * 要不要重试是计划层的决定,不是账本该说的话。
 	 *
 	 * 拿不到目录(服务不在 / 查询失败)时**什么都不做**:不猜、不误伤正在跑的裁决。
 	 */
-	async function sweepLostAudits(sessionId, state) {
+	async function sweepEndedAudits(sessionId, state) {
 		const pending = (state?.audits ?? []).filter((audit) => audit.verdict === null && typeof audit.child === 'string' && audit.child !== '')
 		if (pending.length === 0) return { mutations: [], lost: 0, lines: [] }
 		// 这个进程里正攥着的那几次派遣:它们是活的,不问目录。
@@ -1560,18 +1563,41 @@ export function apply(ctx, config = {}) {
 		const lines = []
 		for (const audit of unresolved) {
 			if (running.has(String(audit.child))) continue
-			mutations.push({
-				t: 'audit/settled',
-				id: audit.id,
-				step: audit.step,
-				verdict: 'unknown',
-				basis: '评估者失联:派它的那次进程已经不在了,子会话也不在跑——这次裁决不会有结果。重新交付这一步会派一个新的评估者。',
-				shortfalls: ['auditor_lost'],
-				card_path: null,
-			})
-			lines.push(`${audit.step}:裁决失联(记为 unknown,可重新交付)`)
+			/**
+			 * 宿主说已结束 ⇒ **先把它的结论取回来**(读它自己的会话日志,与侦察同一条路)。
+			 * 跳过它就把「结束」误报成「死亡」,还会诱导重新交付 ⇒ 同一次评估被重做。
+			 */
+			const recovered = recoverVerdictFromChildSession(audit.child)
+			if (recovered !== null && recovered.ok === true) {
+				const card = { schema_version: 'clearai.audit.v1', kind: audit.kind ?? 'evidence_audit', step_id: audit.step, auditor_run_id: String(audit.child), verdict: recovered.verdict.verdict, shortfalls: recovered.verdict.shortfalls, card: recovered.verdict.basis, created_at: Date.now() }
+				const cardPath = writeAuditCard(sessionId, audit.step, card)
+				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: recovered.verdict.verdict, basis: recovered.verdict.basis, shortfalls: recovered.verdict.shortfalls, card_path: cardPath })
+				lines.push(`${audit.step}:裁决从子会话日志取回(${recovered.verdict.verdict})`)
+				continue
+			}
+			if (recovered !== null && recovered.ok !== true) {
+				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: `评估者已结束,但未正常完成(${recovered.stopReason})。`, shortfalls: ['audit_incomplete'], card_path: null })
+				lines.push(`${audit.step}:评估者已结束、未正常完成(记为 unknown)`)
+				continue
+			}
+			mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: '评估者已结束(宿主目录报告),但其结论未能从子会话日志取回。', shortfalls: ['auditor_ended_uncollected'], card_path: null })
+			lines.push(`${audit.step}:评估者已结束、结论未取回(记为 unknown)`)
 		}
-		return { mutations, lost: mutations.length, lines }
+		return { mutations, settled: mutations.length, lines }
+	}
+
+	/**
+	 * 从子会话日志里取回**评估者**的裁决——与侦察的 `recoverFromChildSession` 同一条路。
+	 *
+	 * 返回三档:`{ok:true, verdict}` 取回了;`{ok:false, stopReason}` 它结束了但未正常完成;
+	 * `null` 连它的日志都读不到。三档都只是**读数**,判断留给调用方如实分档。
+	 */
+	function recoverVerdictFromChildSession(childId) {
+		const settled = recoverFromChildSession(childId)
+		if (settled === null) return null
+		if (settled.ok !== true) return { ok: false, stopReason: settled.stopReason }
+		const verdict = normalizeVerdict(parseLooseJson([{ type: 'text', text: settled.conclusion }]))
+		return { ok: true, verdict }
 	}
 
 	function sweepWorldlineExecutors(state, sessionId) {
@@ -1962,64 +1988,6 @@ export function apply(ctx, config = {}) {
 			scoutsLost: scouts.lost,
 			// 本次刚收到的结论:有原生通知的那一档由运行时投递,这里只带「没有原生通知」的那些。
 			notices: [...(swept.notices ?? []), ...(scouts.notices ?? [])],
-		}
-	}
-
-	/**
-	 * 回合结束时**还在飞**的子 run。如实列出来,不猜它们会不会回来。
-	 *
-	 * 为什么要列:宿主的一次性形态里,回合一停、进程一走,这些子 run 的结论就再也回不来,
-	 * 而投影里只留下 `scout/dispatched` / `worldline/executing` 这些**派发**事实——
-	 * 读者看到的是"它还在跑",而事实是"它停在那里了"。这一条把后者写下来。
-	 */
-	function inFlightChildren(sessionId) {
-		const rows = []
-		for (const entry of executorRuns.values()) {
-			if (String(entry.sessionId ?? '') !== sessionId) continue
-			if (entry.settled !== null && entry.settled !== undefined) continue
-			rows.push({ kind: 'executor', child: String(entry.child ?? ''), label: `世界线执行者 · ${entry.label ?? ''}`.trim() })
-		}
-		for (const entry of scoutRuns.values()) {
-			if (String(entry.sessionId ?? '') !== sessionId) continue
-			if (entry.settled !== null && entry.settled !== undefined) continue
-			rows.push({ kind: 'scout', child: String(entry.child ?? ''), label: String(entry.trigger ?? '侦察') })
-		}
-		/**
-		 * **评估者也在内**:它同样是"派出去就不等"的子 run——回合停了,它的裁决也回不来
-		 * (裁决只在交付那一拍被收集)。条目还在表里 = 还没收口(`runEvaluator` 收完就删),
-		 * 所以"在表里"就是"在飞"。
-		 */
-		for (const entry of pendingAudits.values()) {
-			if (String(entry.sessionId ?? '') !== sessionId) continue
-			rows.push({ kind: 'auditor', child: String(entry.run?.id ?? entry.auditKey ?? ''), label: `评估者 · ${String(entry.kind ?? 'audit')}(${String(entry.step ?? '?')})` })
-		}
-		return rows
-	}
-
-	/**
-	 * 把"这个回合在这里停下"写成会话日志里的一条**事件**。
-	 *
-	 * 为什么走事件而不是插件消息:这一拍在**回合停止时**,任何"追加消息"的路子都会把模型
-	 * 再叫起来跑一轮(`followup`/`steer` 都是唤醒),而这里要的恰恰是**不叫醒任何人**地留个话。
-	 * 事件进日志 ⇒ 折法下一次重放就看到它,面板与下个回合的运行态卡都读得到(P3:它可重算)。
-	 * 认不出会话或宿主不给 `append` 就安静地放弃——收尾失败不该把回合停下这件事也弄坏。
-	 */
-	function appendTurnEnd(sessionId, payload) {
-		const sessions = ctx.get('sessions')
-		if (sessions === undefined || typeof sessions.get !== 'function') return false
-		let session = null
-		try {
-			session = sessions.get(sessionId) ?? null
-		} catch {
-			return false
-		}
-		if (session === null || typeof session.append !== 'function') return false
-		try {
-			session.append('clearai/turn-ended', { turn: payload.turn, inFlight: payload.inFlight, commit: payload.commit ?? null, reason: payload.reason ?? 'stopped' })
-			return true
-		} catch (error) {
-			ctx.logger?.warn?.(`clearai: 回合收尾事件写不进日志 ${String(error?.message ?? error).slice(0, 160)}`)
-			return false
 		}
 	}
 
@@ -4052,7 +4020,7 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
-	function validateForkOptions(options, decideBy) {
+	function validateForkOptions(options, decideBy, cwd) {
 		if (!Array.isArray(options) || options.length < 2 || options.length > 4) return 'fork_needs_2to4_options:世界线要 2–4 条(分叉是「选一」,不是清单)'
 		if (decideBy === null || decideBy === undefined || typeof decideBy !== 'object') return 'decide_by_required:分叉必须登记一把尺子 {metric, direction}——没有判定契约就不能收敛'
 		if (typeof decideBy.metric !== 'string' || decideBy.metric.trim() === '') return 'decide_by_metric_required:尺子要有指标名(如 yield_pct)'
@@ -4069,7 +4037,26 @@ export function apply(ctx, config = {}) {
 		 */
 		const scale = decideBy.metric.split(/[=＝]/).slice(1).join('=').trim()
 		if (!/[=＝]/.test(decideBy.metric) || scale.length < 4) {
-			return 'decide_by_scale_required:尺子要写成「量 = 口径」(口径 = 这个数怎么算出来、单位是什么),例:字节数 = 生成文件的字节数。只有指标名不是尺子:口径不能留给每条世界线各自去定,否则两条线各写一套公式,比出来的大小不作数'
+			return 'decide_by_scale_required:尺子要写成「量 = 口径」——口径必须是**工作区里真有的一个文件**(脚本或规格),例:读数 = lab/measure.py 的输出。只有指标名不是尺子:口径留给每条世界线各自去定,两条线各写一套公式,比出来的大小不作数'
+		}
+		/**
+		 * **口径必须是可指认的引用,不是散文**。
+		 *
+		 * 「评分 = 按本路线情况评分」同样能通过格式检查,却什么也没保证。一条引用
+		 * (工作区里的路径)则不同:路径相等是机器可核的,文件内容在账本里有版本——
+		 * 「同一把尺子」从一句声明变成一个可指认的对象。至于两条世界线**有没有真的
+		 * 用它**去量,那是评估者重跑的事,字符串检查到这里就到头了,不冒充能验。
+		 */
+		const pathTokens = scale.match(/[^\s,;(){}"']+\/+[^\s,;(){}"']*/g) ?? []
+		const resolvable = pathTokens.filter((token) => {
+			try {
+				return existsSync(isAbsolute(token) ? token : resolvePath(cwd, token))
+			} catch {
+				return false
+			}
+		})
+		if (pathTokens.length === 0 || resolvable.length === 0) {
+			return `decide_by_scale_not_reference:口径里必须引用**工作区里真有的一个文件**(现在写的是「${scale.slice(0, 60)}」)。先在工作区写好测量脚本或口径说明,再用它登记尺子——散文口径两条世界线各读各的,比出来的大小不作数`
 		}
 		if (decideBy.direction !== 'max' && decideBy.direction !== 'min') return 'decide_by_direction_required:尺子要说明方向:max(越大越好)或 min(越小越好)'
 		/** 量那一半:判据里要点名它。 */
@@ -4327,7 +4314,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'ForkPlan',
 		description:
-			'分叉:把一个步骤分成 2–4 条互斥的世界线,每条自己做一份工作副本、自己交付。**必须先登记一把尺子**(decide_by{metric,direction}),而 metric 要写成**「量 = 口径」**(口径 = 这个数怎么算出来、单位是什么),并且这句话要**逐字**出现在每条世界线的判据里——把同一台测量仪装到每条世界线上。口径不能留给各条世界线自己定:两条线上各写一套公式,比出来的大小不作数。收敛由算术决定,不由谁说得响。分叉是「选一」,不是并行加速。',
+			'分叉:把一个步骤分成 2–4 条互斥的世界线,每条自己做一份工作副本、自己交付。**必须先登记一把尺子**(decide_by{metric,direction}),而 metric 要写成**「量 = 口径」**,口径必须是**工作区里真有的一个文件**(测量脚本或口径说明),例:读数 = lab/measure.py 的输出;先写好那个文件再开分叉。量那一半要**逐字**出现在每条世界线的判据里。散文口径两条世界线各读各的,比出来的大小不作数。收敛由算术决定,不由谁说得响。分叉是「选一」,不是并行加速。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -4372,7 +4359,7 @@ export function apply(ctx, config = {}) {
 			if (step === null) return fail('no_open_step', '这份计划没有未落定的步了。')
 			if (typeof args.question !== 'string' || args.question.trim() === '') return fail('question_required', '分叉要说清要裁决的分歧是什么。')
 			if (forkOfStep(hostService.derive(sessionId).forks, step.id) !== null) return fail('fork_depth_exceeded', `步骤 ${step.id} 已经长过一个分叉了:一步只分叉一次。`)
-			const problem = validateForkOptions(args.options, args.decide_by)
+			const problem = validateForkOptions(args.options, args.decide_by, cwd)
 			if (problem !== null) return fail(problem.split(':')[0], problem)
 			const forkId = uniqueId('k')
 			const options = args.options.map((option) => ({
@@ -5953,49 +5940,36 @@ export function apply(ctx, config = {}) {
 		}
 	})
 
+
 	/**
-	 * **回合收尾**:宿主在回合将停、且队列里没有下一步时**串行 await** 这一拍
-	 * (`dsh-agent-loop` 的 `agent/turn-stopping`,载荷带 `agent`)。
+	 * **回合收尾**:宿主在回合将停、且队列里没有下一步时**串行 await** 这一拍。
 	 *
-	 * 这一拍是"跑动在这里停下"之前**唯一**还能说话的地方,做两件:
-	 *   ① 把工作区记一次账(**回合边界**的那一笔——一次性形态里唯一会落地的那笔);
-	 *   ② 把还在飞的子 run 如实写成一条 `clearai/turn-ended` 事件。
-	 *
-	 * 边界(都重要):**不改状态、不叫醒任何人、不写裁决**——只留事实;任何异常都吞掉并记一行,
-	 * 收尾失败绝不能把回合停下这件事本身弄坏(宿主是 await 它的)。
+	 * 这里只做一件真正属于我们的事:把这一回合的写入记进账本(**回合边界**的那一笔,
+	 * 一次性形态里唯一会落地的那笔)。**不判在飞、不写裁决、不叫醒任何人**:
+	 * 「还在不在跑」的权威是宿主的子任务目录,「结果收没收回」是收集通道的事——
+	 * 收尾那一拍各有一句要说的话,但都不该由这里替它们说。
 	 */
-	function closeTurn(payload, reason) {
+	function snapshotAtTurnEnd(payload) {
 		try {
 			const hostService = host()
 			if (hostService === undefined) return
 			const sessionId = String(payload?.agent?.id ?? '')
 			if (sessionId === '') return
 			const turn = typeof payload?.turn === 'number' ? payload.turn : null
-			const state = hostService.state(sessionId)
-			const mutations = []
-			snapshotWorkspace(sessionId, sessionCwd(sessionId), state, mutations, turn, 'end')
-			const commit = mutations.find((mutation) => mutation.t === 'git/snapshot')?.commit ?? null
-			const inFlight = inFlightChildren(sessionId)
-			// 什么都没发生就不留话:空事件只是往日志里灌水。
-			// **出错那一档要说**:回合以错误结束与"模型自己收手"是两件事,读日志的人要分得开。
-			if (inFlight.length === 0 && commit === null && reason === 'stopped') return
-			appendTurnEnd(sessionId, { turn, inFlight, commit, reason })
+			// mutations 进空数组:这一拍没有工具结果可以携带变更,账本提交本身就是记录。
+			snapshotWorkspace(sessionId, sessionCwd(sessionId), hostService.state(sessionId), [], turn, 'end')
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 回合收尾失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
 	}
 
-	ctx.on('agent/turn-stopping', (payload) => closeTurn(payload, 'stopped'))
+	ctx.on('agent/turn-stopping', snapshotAtTurnEnd)
 
 	/**
-	 * **回合以错误结束也要收尾**。
-	 *
-	 * 宿主在出错那一档**不派** `agent/turn-stopping`:它把 `turnEnds` 记成 `{kind:'error'}` 就
-	 * throw 出去了(那一拍在 try 里,被跳过),只有在 `finally` 里补一条 `turn/end`。
-	 * 而真跑里最常见的"半路死"恰恰是这一种(提供方连接错误:重试五次之后整个回合以错误收场)。
-	 * `agent/error` 是宿主为这一刻发的,所以这里也走一遍收尾——**理由如实写成 error**。
+	 * **回合以错误结束也要记一笔工作区**:那一拍的写入不能因为出错就丢。
+	 * 宿主在出错那一档**不派** `agent/turn-stopping`(它 throw 出去了),所以这里也挂一份。
 	 */
-	ctx.on('agent/error', (payload) => closeTurn(payload, 'error'))
+	ctx.on('agent/error', snapshotAtTurnEnd)
 
 	ctx.on('agent/created', (payload) => {
 		const agent = payload?.agent
@@ -6130,14 +6104,14 @@ export function apply(ctx, config = {}) {
 		 */
 		let auditsResolved = false
 		try {
-			const audits = await sweepLostAudits(sessionId, hostService.state(sessionId))
+			const audits = await sweepEndedAudits(sessionId, hostService.state(sessionId))
 			if (audits.mutations.length > 0) {
 				factMutations.push(...audits.mutations)
 				auditsResolved = true
-				brainNote = `${brainNote}\n(有 ${audits.lost} 条独立裁决**失联**(子会话已不在跑):已如实记为 unknown——不必再等它,重新交付这一步就会派一个新的评估者。)`
+				brainNote = `${brainNote}\n(有 ${audits.settled} 条此前在等的独立裁决已收口:结论从子会话日志取回,或如实记为 unknown。)`
 			}
 		} catch (error) {
-			ctx.logger?.warn?.(`clearai: 失联裁决盘点失败 ${String(error?.message ?? error).slice(0, 160)}`)
+			ctx.logger?.warn?.(`clearai: 已结束裁决盘点失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
 		/**
 		 * **失联的侦察**:同一拍、同一套判据(原生子代理目录 + 本进程攥着的派遣)。
@@ -6149,7 +6123,7 @@ export function apply(ctx, config = {}) {
 			const scouts = await sweepLostScouts(sessionId, hostService.state(sessionId), settledInBatch)
 			if (scouts.mutations.length > 0) {
 				factMutations.push(...scouts.mutations)
-				brainNote = `${brainNote}\n(有 ${scouts.lost} 条侦察**失联**(子会话已不在跑):已如实记下「结论收不回来」——不必再等它,需要那份材料就重新派一次。)`
+				brainNote = `${brainNote}\n(有 ${scouts.lost} 条侦察已结束但结论未能取回:已如实记下。)`
 			}
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 失联侦察盘点失败 ${String(error?.message ?? error).slice(0, 160)}`)

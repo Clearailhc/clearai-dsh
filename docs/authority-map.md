@@ -34,7 +34,7 @@ It exists because of a self-diagnosis. After several rounds of fixing defects we
 
 ## 2. Four things now confirmed (each with a code pointer)
 
-### ① The closing beat announced something it had not checked (confirmed: **wording is wrong**)
+### ① The closing beat announced something it had not checked (**fixed**: that claim, and the entire `clearai/turn-ended` mechanism with it, are deleted; the closing beat now only records a workspace ledger snapshot — no liveness judgement, no verdict, no waking anyone)
 
 On the host's `agent/turn-stopping` we write into the run-state card:
 
@@ -44,7 +44,7 @@ On the host's `agent/turn-stopping` we write into the run-state card:
 
 **Conclusion**: that sentence must retreat to "a snapshot taken at that moment", or — better — the beat should ask the host. **Not** add another field.
 
-### ② Audits have no "ended but uncollected" recovery path; scouts do (confirmed: **asymmetry**)
+### ② Audits have no "ended but uncollected" recovery path; scouts do (**fixed**: `sweepEndedAudits` now recovers the verdict from the child's session log first and only records unknown when recovery fails; `ended_uncollected` and `lost` are written as two different things; the settlement text no longer gives advice)
 
 - Scouts: `sweepScouts` first checks the in-process handle and, failing that, **reads the child's own session log** (`recoverFromChildSession`) — "the child ended but the result never arrived" can be recovered.
 - Audits: `sweepLostAudits` looks at only two things — the projection says `verdict === null`, the child is not in our in-memory table, and the host says `activity !== 'running'` — and then writes:
@@ -55,7 +55,7 @@ On the host's `agent/turn-stopping` we write into the run-state card:
 
 **Conclusion**: the right shape here is not "one more closing sweep" but **giving audits the same recovery path scouts have**: try to collect the same run's result first, and only then write a settlement fact — with an accurate reason (`ended_uncollected` and `lost` are two different things).
 
-### ③ The ruler's "scale" check is a **format check** (confirmed: **capability overstated**)
+### ③ The ruler's "scale" check is a **format check** (**fixed**: the scale must now be **a file that exists in the workspace** — prose and dead paths are rejected; "the same ruler" went from a declaration to a nameable reference)
 
 `ForkPlan` now requires `decide_by.metric` to read `quantity = scale`. What that guarantees is: **the declaration is registered and passed verbatim into every branch's criteria and brief**. It does **not** guarantee the two readings are comparable:
 
@@ -65,7 +65,7 @@ score = score it according to this route's situation      ← passes the check t
 
 **Conclusion**: the value of this mechanism is turning "each branch invents its own scale" into "one declaration everyone can see". Every place in the docs and the truth table that calls it "a shared measurement scale guaranteed by construction" must be walked back to what it actually does; the rest belongs to an evaluator re-run, which is the only thing that can truly confirm it.
 
-### ④ The host-invariant companion is growing into a **second interpreter** (confirmed: **structural**)
+### ④ The host-invariant companion is growing into a **second interpreter** (**fixed**: it now advances state with the **production fold** (`applyEvent` from `fold.js`), keeping only the five contract predicates and one admitted-steps set — the index went from ten Maps to one Set, and all shape-interpretation code is gone)
 
 To judge "before the append", `ui/lib/invariant.js` folds its own index of plans / steps / forks / branches / admissions / dispatches / scouts / audits / hypotheses / support levels. In its first hour of duty it needed two repairs for exactly that reason (mutations often carry `step` without `plan`; the goal and worldline axes use pseudo-steps) — both were "my interpreter disagrees with the main projection", not "the business is actually wrong".
 

@@ -234,7 +234,7 @@ L0 到 L3 认第一种;L4 只认后四种。
 | observed | 拿到结果 | `observation/recorded` → `state.materials[]`,在交付时按声明的 ref 登记(产物文件 + 执行记录就是那条观测)。 |
 | evaluated | 已评估,证据写好 | `audit/settled` + `evidence/recorded`;`derive()` 按假设现算 support / refute / inconclusive。「再试一次、然后必须改」这条政策压在**下一次交付**上:同一步连续两条 inconclusive 之后,第三次原样再交会被拒(`inconclusive_repeat_forced_change`)。 |
 | expired | 到期没等到 | 不是状态:拿不到裁决是一条事实(`audit/settled` 的 `verdict: 'unknown'`),而它**与准入没过共用同一个连拦计数**(`block/counted`)——反复拿不到就置 blocked,人通过**已有**的那道收件箱门看到。 |
-| aborted | 没拿到结果就中止 | 是事实,不是状态:`VoidPlanStep(reason)`、`AbandonFork(reason)`、子 run 的 `stopReason`(由内核那个结算漏斗如实落账),以及**回合停下时**那一笔 `clearai/turn-ended`(宿主的 `agent/turn-stopping` 是停下之前唯一还能说话的地方)。**它是那一拍的快照,不是死亡证明**:父回合结束只证明父回合结束,子 run 可能仍在宿主里跑、也可能已经结束而结论尚未收集——判断"还在不在跑"的权威是宿主的子任务目录,不是我们的内存表(见[权威归属](authority-map.zh-CN.md) §一)。 |
+| aborted | 没拿到结果就中止 | 是事实,不是状态:`VoidPlanStep(reason)`、`AbandonFork(reason)`、子 run 的 `stopReason`(由内核那个结算漏斗如实落账),以及子 run 的 `stopReason`(由内核那个结算漏斗如实落账——先从子会话日志**取回**,取不回才落 unknown,见[权威归属](authority-map.zh-CN.md) §一)。 |
 
 L3 以上从 registered 起,再改判定标准要留痕、保留旧版本、并请人确认。等结果这一段不计入失败次数。
 
