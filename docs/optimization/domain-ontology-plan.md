@@ -330,6 +330,17 @@ register predicates → set a goal carrying assertions → create a plan, then s
 the loop (this one stopped after commitment, as tasked), and the ontology-view walkthrough in a
 real browser (stage G).
 
+
+
+### Third run: the full chain (register → assert → deliver → independent audit → promote → conflict) — 36/0 green
+
+The model walked the whole chain **inside one turn** (the lesson from the previous run: in the one-shot form, yielding the turn ends the run, so CloseGoal must follow ClosePlan back-to-back). 21 mutations: `term_added · predicate_added · goal/set · plan/* · observation/admission/evidence ×2 · audit dispatched+settled · goal/closed · **fact/promoted ×2**`.
+
+- **Promotion carries assertions**: both facts (reading A 10 ppm / reading B 12 ppm) were promoted with their full assertions, hypothesis-linked by id.
+- **A conflict surfaced in a real run**: same subject T2, same single-valued predicate, two values ⇒ `derive().conflicts = 1 pair`, stated on the runtime card and the ontology shelf, **with neither fact touched by the system** — "surfaced, never adjudicated" holds with a real model.
+- **Entity graph**: 5 nodes (concept + value form + instance T2 + two literals) · 3 edges (the predicate edge + two [L0][live] assertion edges).
+- **Shelves**: `clear/ontology/domain.md` usage section reads "2/2 promoted facts carry typed assertions; 1 conflict pair"; the `INDEX.md` header is now "本体内容".
+- All eight cross-mechanism invariants green; e2e assertions 36/0.
 ## 4. Test matrix
 
 | Layer | Suite | Coverage |
