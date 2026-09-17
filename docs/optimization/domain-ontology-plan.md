@@ -289,6 +289,35 @@ Real-browser walkthrough: register a concept and a predicate → edit on the gra
 
 **Release conditions**: all of the above green; the built package is byte-identical to source; clean install passes; the end-to-end graph-editing chain passes; known gaps updated.
 
+## Appendix: the first real-project e2e (Hengtong · real model · real material)
+
+A real session ran against a **copy** of the desktop "亨通" workspace (the 163MB paper library
+excluded; the real directory untouched — `--installed` uses a one-off DSH_HOME whose fresh ledger
+does not know the old facts, so an in-place INDEX.md rewrite would wash the old entries off the
+shelf). The task asked for four things: read the two source documents → register concepts →
+register predicates → set a goal carrying assertions → create a plan, then stop.
+
+- **Mutation histogram (9)**: `ontology/term_added×5 · ontology/predicate_added×2 · goal/set×1 ·
+  plan/created×1` — all four landed on the ledger, no contract rejections, no unexpected degradation.
+- **Ontology quality**: from the material the model raised five concepts (cast ingot / heat charge /
+  oxygen content / casting speed / semi-continuous casting) and two predicates
+  (`measured_oxygen_content` in ppm, `draw_speed` in mm/min, both single-valued), each basis citing
+  the meeting-minutes section or ASTM B170/E2575 — **the basis discipline held with a real model**.
+- **Assertion chain**: the first hypothesis carried two assertions (oxygen 10 ppm, speed 80 mm/min)
+  with qualifiers naming their provenance; one plan step is bound to it via `tests` at L2.
+- **Graph projection**: 6 nodes (5 concepts + 1 value form) · 2 predicate edges; 0 conflicts
+  (nothing promoted yet — as the task intended).
+- **Invariants**: all eight cross-mechanism invariants green (offline re-judged with e2e-replay).
+- **Tool fix**: the e2e session-directory slug did not handle CJK paths (the host encodes 亨通 as
+  `~4EA8~901A`), so the old rule never found the log and misreported a successful run as a wall of
+  ✗ — fixed against the real directory name and verified with this session's log.
+- New tool `tools/e2e-rejudge-ontology.mjs`: folds any preserved scene and prints every
+  ontology-view reading.
+
+**Next on the real-run side**: a session that walks the promotion → conflict → retraction half of
+the loop (this one stopped after commitment, as tasked), and the ontology-view walkthrough in a
+real browser (stage G).
+
 ## 4. Test matrix
 
 | Layer | Suite | Coverage |

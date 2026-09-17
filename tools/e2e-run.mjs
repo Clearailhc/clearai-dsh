@@ -449,7 +449,16 @@ check('进程正常退出(exit 0)', run.status === 0, `exit=${run.status} stderr
  * 判据是「宿主真的把会话放在哪儿」,不是我们觉得它应该怎么折。
  */
 function sessionSlug(workspaceDir) {
-	return `--${workspaceDir.replace(/^\//, '').replace(/[^A-Za-z0-9_.]+/g, '-').replace(/-+$/, '')}--`
+	/**
+	 * 非 ASCII 的真实编码是 `~XXXX`(四个大写十六进制)——拿中文目录名的真项目(亨通)跑
+	 * --workspace 时发现:宿主把 亨通 记成 ~4EA8~901A,而把它折成 - 的旧规则永远找不到日志,
+	 * 于是「找不到日志」被误报成一排「什么都没发生」。规则从真实目录比对而来,不是猜的。
+	 */
+	const encoded = workspaceDir
+		.replace(/^\//, '')
+		.replace(/[^A-Za-z0-9_.]+/g, (run) => [...run].map((ch) => (ch.charCodeAt(0) > 127 ? `~${ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}` : '-')).join(''))
+		.replace(/-+$/, '')
+	return `--${encoded}--`
 }
 
 /** 一个工作区下的所有会话(每个会话一个目录,日志可能是 `.jsonl` 或 `.jsonl.zstd`)。 */
