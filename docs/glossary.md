@@ -3,7 +3,7 @@
 This glossary defines the stable terms used by ClearAI. No other product or brand terms are normative.
 
 ## ClearAI
-A local-first, epistemology-based ontology research platform: with the epistemic loop as its process, it settles research into an ever-growing ontology (domain vocabulary + established entries + graphs). In this repository it is delivered as a DSH-native plugin.
+A local-first ontology discovery and exploration platform: AI grows a living domain ontology inside real projects — with the epistemic loop as its process, settling research into an ever-growing knowledge structure (domain vocabulary + established entries + graphs). In this repository it is delivered as a DSH-native plugin.
 
 ## Epistemic Loop
 The repeatable cycle of Frame → Hypothesize → Plan → Observe → Verify → Evaluate → Record and act. At runtime it compresses into four beats: plan, execute, observe, reflect.

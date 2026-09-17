@@ -7,48 +7,27 @@
 
 <p align="center"><a href="README.md">English</a> · <b>中文</b></p>
 
-**从答案，到证据；从证据，到本体。**
+**你的研究，长成一个本体。**
 
-ClearAI 是一个**原生 DSH 插件**，把认识论循环带进 DeepSeek Harness。
+ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑：
 
-语言模型可以在几秒内给出一个看起来合理的答案。ClearAI 关心的是接下来发生的事：写下什么能检验这个想法、执行工作、记录发生了什么、评估证据、修正已有的认识——让一个结论**获得**它的状态，而不是靠断言取得。这一切沉淀为一个**越长越大的本体**：项目的领域词汇、经循环确立的知识条目、以及它们的图——别的知识图谱靠抽取与断言堆边，这里的每一条边都要通过循环挣得。
+- **领域本体**（你得到什么）——项目自己的词汇、经循环确立的知识条目、以及它们的图。研究结束时你拿到一个持续生长的知识结构，下一轮按概念检索。
+- **认识论循环**（你怎么得到它）——七个阶段的纪律化路径：界定、假设、规划、观测、验证、评估、记录。每条边都要经过证据与独立评估的检验。
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/epistemic-loop-hero-dark.zh-CN.png">
-  <img src="docs/diagrams/epistemic-loop-hero.zh-CN.png" alt="认识论循环" width="1200">
-</picture>
-
-> 让模型负责探索，让机制守住事实边界。
+> 别的知识图谱靠抽取与断言堆边；这里的每一条边都要通过循环挣得。
 
 ---
 
-## 安装
+## 你得到什么：领域本体
 
-一条命令，除了 Node 什么都不需要：
+一个**领域本体**，它在你研究的过程中生长：
 
-```bash
-npx clearai-dsh install
-```
+- **词汇**——你的项目用什么语言说话：概念、谓词、值形态、单位。约定本身没有对错，有对错的是用这些词写下的句子。
+- **已确立条目**——通过了循环的知识：每条带边界、支持等级、证据链。每条都写明适用边界，否则无法安全引用。
+- **本体图与实体图**——你的领域长什么样（结构），你已经验证出了什么（战况）。
+- **冲突读数**——两条互相矛盾的结论自动亮出来；系统只报出冲突，撤回或维持由你决定。
 
-它会自己找到 DSH CLI（PATH 上有就用，没有就走 npx），把插件装进你的 `web` profile，再把组合读回来核一眼 —— 不用凭一句「成功」相信它。底下就是宿主自己的安装动作，所以两者等价：`dsh plugin --profile web add clearai-dsh`。
-
-**装完要重启 `dsh web`**（`npx @deepseek-ai/dsh web`）。插件的两半都在运行中的进程里按模块 URL 缓存，只刷新浏览器不够。然后新建会话，在预设选择器里选 **ClearAI**。
-
-如果它因为 **PATH 上没有 pnpm** 而停下：DSH 管理 profile 就是靠 pnpm，所以需要一个。用 `npm install -g pnpm` 装，或用你的系统包管理器。**别用 `corepack enable` 抄近路**——它装的是一个版本**转发器**而不是 pnpm，而当前 Node 自带的那份 corepack 可能下载一个它自己启动不了的 pnpm。
-
-从仓库开发（这是开发路径，不是安装路径）：
-
-```bash
-npm test                       # 15 份套件 —— 清单在 test/run.sh
-node tools/build-package.mjs   # 由源装配 dist/
-node tools/verify-package.mjs  # 现场重建并逐字节比对
-node tools/verify-clean-install.mjs   # 空 DSH_HOME + 真 CLI 装一遍(16 条断言)
-node docs/diagrams/build.mjs   # 重画循环主图(需 google-chrome)
-```
-
-`dist/` 是生成物，不进版本库。见 [DSH 集成](docs/dsh-integration.zh-CN.md)。
-
-## 为什么它不只是又一个 agent loop
+## 你怎么得到它：认识论循环
 
 多数 agent loop 只跟踪一件事：任务做完没有。认识论循环还跟踪**一个结论凭什么被信任**：
 
@@ -58,74 +37,72 @@ node docs/diagrams/build.mjs   # 重画循环主图(需 google-chrome)
 | 完成 | 模型宣布完成 | 系统按交付的证据算出来 |
 | 裁决 | 谁做的谁说了算 | 分离——超过一定等级，做的人不能判自己 |
 | 失败 | 删掉、重来、忘掉 | 留下：被推翻的命题是结果，不是噪声 |
-| 沉淀 | 一段聊天记录 | **一个本体**：词汇、带断言的已确立条目、以及它们的图——每条边都通过循环挣得 |
+| 沉淀 | 一段聊天记录 | **一个本体**：每条边都通过循环挣得 |
 
-ClearAI 把这条循环做成机制，而不是劝告。状态从会话记录派生而不是存第二本账，进度与阶段是算出来的，模型手上的工具里**根本不存在**可以宣告某一步完成的字段。
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/epistemic-loop-hero-dark.zh-CN.png">
+  <img src="docs/diagrams/epistemic-loop-hero.zh-CN.png" alt="认识论循环" width="1000">
+</picture>
 
-ClearAI **不**声称实现递归自我改进。它提供的是自我改进系统所需要的认识论底座：诚实记录改了什么、证据是什么、谁评估了它、哪些失败了。边界在哪，见 [定位](docs/positioning.zh-CN.md) 与 [OpenRSI 调研](docs/research-openrsi.md)。
+运行时，七个阶段压缩为四拍——计划、执行、观察、反思。状态从会话记录派生，没有第二份存储；模型的工具里没有可以宣告某一步完成的字段。
 
-## 循环的每一阶段
+ClearAI **不**声称递归自我改进。它提供的是自我改进系统所需要的认识论底座。详见[定位](docs/positioning.zh-CN.md)与[OpenRSI 调研](docs/research-openrsi.md)。
 
-认识论循环有七个阶段。运行时，这七个阶段压缩成四拍——计划、执行、观察、反思——作为更简洁的工作节奏。
+---
 
-| 阶段 | 模型做什么 | 机制保证什么 | 你看到什么 |
-|---|---|---|---|
-| 界定 | 明确问题、假设、范围与目标 | 调查从显式边界开始 | 范围与假设 |
-| 提出假设 | 记录候选解释或路线 | 命题与已采纳事实分开 | 假设 |
-| 规划 | 定义可执行、可提供证据的步骤和判据 | 只能通过受治理路径推进完成 | 可检查的计划 |
-| 观测 | 执行允许的工作并记录发生了什么 | 准入只判断是否可接收，不判断真假 | 观测与产物 |
-| 验证 | 用已登记的判据检验观测 | 验证始终绑定命题及其边界 | 检查与证据 |
-| 评估 | 判断支持、不确定性与冲突 | 高等级工作可要求独立评估 | 评估与依据 |
-| 记录并行动 | 保存结果，选择下一项有边界的行动 | 保留历史；未解决命题保持限定 | 事实、边界与下一步 |
+## 安装
 
-完整版：[认识论循环](docs/epistemic-loop.zh-CN.md)
+```bash
+npx clearai-dsh install
+```
+
+装完重启 `dsh web`（`npx @deepseek-ai/dsh web`），新建会话选 **ClearAI** 预设。如果 PATH 上没有 pnpm：`npm install -g pnpm`（别用 `corepack enable`——它装的是版本转发器，可能下载一个自己启动不了的 pnpm）。
+
+从仓库开发：
+
+```bash
+npm test                       # 15 份套件
+node tools/build-package.mjs   # 由源装配 dist/
+node tools/verify-package.mjs  # 现场重建并逐字节比对
+```
+
+`dist/` 是生成物，不进版本库。见 [DSH 集成](docs/dsh-integration.zh-CN.md)。
+
+---
 
 ## 它长什么样
 
-插件在原生 DSH 之上贡献这些面：中栏的**产物**与**本体**（图带 · 本体货架 · 在验命题 · 词汇维护），右栏的**世界线**与**外脑**。
+中栏两格可切：**产物**与**本体**。右栏：**世界树**与**外脑**。
 
-**本体货架**——一行一条已确立的主张：等级、边界、判者；未结构化的旧条目照旧在架。被推翻的留在原位，连同推翻它的证据。
+**本体**——这一格是你的知识主场。顶部是**图带**：本体图（你的领域长什么样）与实体图（已经验证出了什么）一键切换，点概念节点按概念过滤。下面是**本体货架**：已确立的条目，每条带断言芯片（点开看这个词什么意思）、边界与等级；互相矛盾的自动亮出来。词汇维护区收在最底下——语言先于句子时它自动展开。
 
-![命题与事实](docs/shots/zh/facts.png)
-
-**世界线**——两条路线真的分歧时，各自独立跑、各自带读数；落选的那条留在记录里，采纳是人按的那一下。
-
-![世界线](docs/shots/zh/worldlines.png)
+**世界树**——两条路线真的分歧时，各自独立跑、各自带读数；落选的那条留在记录里，采纳是人按的那一下。
 
 **产物**——中栏把「计划声明交付的」与「盘上真有的」分开摆，不许混为一谈。
 
-![产物](docs/shots/zh/deliverables.png)
+**外脑**——技能与记忆以 DSH 原生条目的形式出现在同一张合并目录里。
 
-**外脑**——技能与记忆以 DSH 原生条目的形式出现在同一张合并目录里，旁边是本会话的用量。
-
-![外脑](docs/shots/zh/skills.png)
-
-## 它落在 DSH 的哪一层
-
-ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一个 agent 预设、一个客户端模块，**DSH 引擎一行都没改**。`/goal` `/plan` `/evidence` `/worldline` `/plan-review` 是人在 `/` 菜单里的状态窗（只读，从账本现算）；todo、子代理、workflow、模型切换用 DSH 原生的——工作方式不设限，但它们写不进权威账本（权威边界由测试钉死）。
-
-![ClearAI 在 DSH 中](docs/diagrams/loop-to-dsh-planes.zh-CN.svg)
+---
 
 ## 案例
 
-三个案例，用来展示循环在"诚实的答案不是一个干净结果"的问题上怎么工作：
+- [物理世界工艺实验](docs/cases/physical-experiment.zh-CN.md)——传感器热漂移：从立词到冲突现形的完整链路
+- [AI for Science](docs/cases/ai4sci.zh-CN.md)——WENO 重构的收敛阶，以及「分辨不出来」意味着什么
+- [数学探索](docs/cases/mathematics.zh-CN.md)——把有限数值证据与形式证明严格分开
 
-- [AI for Science](docs/cases/ai4sci.zh-CN.md) —— WENO 重构在临界点附近的收敛阶，以及「分辨不出来」到底意味着什么；
-- [数学探索](docs/cases/mathematics.zh-CN.md) —— 把有限数值证据与形式证明严格分开；
-- [物理世界工艺实验](docs/cases/physical-experiment.zh-CN.md) —— 执行离开计算机之后，循环如何保持可追溯。
-
-它们演示的是机制本身，随库不附跑批记录。
+---
 
 ## 文档
 
-- [定位](docs/positioning.zh-CN.md)
-- [设计原则](docs/design-principles.zh-CN.md)
-- [灵魂映射：原则 → 机制 → 测试](docs/soul-map.zh-CN.md)
-- [术语表](docs/glossary.zh-CN.md)
-- [循环哲学](docs/loop-philosophy.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md)
-- [领域本体](docs/domain-ontology.zh-CN.md) · [开发计划](docs/optimization/domain-ontology-plan.zh-CN.md)
+- [定位](docs/positioning.zh-CN.md) · [领域本体设计](docs/domain-ontology.zh-CN.md)
+- [认识论循环](docs/epistemic-loop.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md) · [循环哲学](docs/loop-philosophy.zh-CN.md)
+- [设计原则](docs/design-principles.zh-CN.md) · [灵魂映射](docs/soul-map.zh-CN.md) · [术语表](docs/glossary.zh-CN.md)
+- [开发计划](docs/optimization/domain-ontology-plan.zh-CN.md)（含亨通真跑读数）
 - [已知缺口](docs/known-gaps.zh-CN.md) · [权威归属](docs/authority-map.zh-CN.md) · [发布验收](docs/release-verification.zh-CN.md)
-- [收敛与瘦身计划](docs/optimization/plan.zh-CN.md) · [认识论循环全覆盖设计](docs/optimization/epistemic-coverage.zh-CN.md) · [执行进度](docs/optimization/progress.zh-CN.md)
+
+## 它落在 DSH 的哪一层
+
+ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一个 agent 预设、一个客户端模块，**DSH 引擎一行都没改**。工作方式不设限，但它们写不进权威账本（权威边界由测试钉死）。
 
 ## 工作署名
 
@@ -137,8 +114,8 @@ ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一
 
 ## 许可证
 
-Apache-2.0,见 [LICENSE](LICENSE)。
+Apache-2.0，见 [LICENSE](LICENSE)。
 
 ## 状态
 
-本仓库是 DSH 原生 ClearAI 插件库：一个通过 DSH 交付的本地优先认识论工作台。哪些还没实现、哪些还没在真浏览器里验过，都写在 [已知缺口](docs/known-gaps.zh-CN.md) 里。
+一个通过 DSH 交付的本地优先本体发现与探索平台。哪些还没实现、哪些还没在真浏览器里验过，都写在[已知缺口](docs/known-gaps.zh-CN.md)里。

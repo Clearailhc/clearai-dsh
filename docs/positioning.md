@@ -2,7 +2,7 @@
 
 ## What it is
 
-ClearAI is an **epistemology-based ontology research platform, native to DSH**: what research accumulates into is an **ontology** — the project's own domain language (vocabulary), the entries established through the loop, and their graphs. The Epistemic Loop is the ontology's **production process**: form a hypothesis, inspect or test it, record observations, evaluate the result; every term is admitted with a basis, every entry is established by evidence, and refuted claims stay on record as negative knowledge.
+ClearAI is an **ontology discovery and exploration platform, native to DSH**: AI grows a living **domain ontology** inside real projects — the project's own domain language (vocabulary), the entries established through the loop, and their graphs. The Epistemic Loop is the ontology's **production process**: form a hypothesis, inspect or test it, record observations, evaluate the result; every term is admitted with a basis, every entry is established by evidence, and refuted claims stay on record as negative knowledge.
 
 The dividing line in one sentence: other knowledge graphs pile up edges by extraction and assertion; here **every edge has to be earned through the loop**. The direction of truth never changes — world → evidence → fact → grown into the ontology — so **the ontology adjudicates nothing; it only houses what has been adjudicated**.
 
@@ -37,7 +37,7 @@ Most AI products optimize for fluent answers, task completion, or conversation h
 - **Epistemic Loop:** The repeatable cycle of hypothesis, verification, observation, evaluation, evidence, and bounded conclusion.
 - **Harness:** The DSH-native execution and governance layer around the model and workspace—not a claim about the model itself.
 - **Evidence:** A recorded support for a claim, with provenance and limits.
-- **Fact:** A claim accepted for the current workspace under its recorded evidence and scope; not an eternal guarantee. A fact is the ontology's **content unit** — written as an assertion in the ontology's vocabulary, shelved at the moment of promotion.
+- **Fact:** A claim accepted for the current workspace under its recorded evidence and scope; bounded by its scope. A fact is the ontology's **content unit** — written as an assertion in the ontology's vocabulary, shelved at the moment of promotion.
 - **Ontology:** The whole of a project knowledge base's language and content: vocabulary (convention), established entries (experience), and their graphs. In product contexts it means the domain ontology by default; the process ontology is the plugin's internal flow and is not included.
 - **Ontology shelf:** The shelf view of the ontology's established content: every entry carries its boundary and support level; older, unstructured entries stay on the shelf, marked "unstructured".
 - **Bounded conclusion:** A conclusion stated with its confidence, conditions, alternatives, and remaining uncertainty.
