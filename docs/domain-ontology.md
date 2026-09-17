@@ -337,7 +337,7 @@ Three things have three lifecycles, and none of them pushes another's state. Thi
 | State machine | States | Events | Who pushes it |
 |---|---|---|---|
 | **Process objects** (nine; see [State machines](optimization/state-machines.md)) | `open` / `advanced` / `void` / `proposed` / `refuted` / `promoted` … | `goal/set`, `step/advanced`, `fact/promoted` … | The kernel, as facts arrive; the model can only emit intent |
-| **Domain vocabulary** (concepts / predicates) | `admitted` → `deprecated` (a revision is a self-loop, version +1) | `ontology/term_added`, `ontology/*_revised`, `ontology/*_deprecated` | Named verbs (from stage C); the fold only interprets |
+| **Domain vocabulary** (concepts / predicates) | `admitted` → `deprecated` (a revision is a self-loop, version +1) | `ontology/term_added`, `ontology/*_revised`, `ontology/*_deprecated` | Named verbs (seven, implemented); the fold only interprets |
 | **One verification** (`tests` on a step) | Derived from evidence and levels | `evidence/recorded`, `audit/settled` | The kernel |
 
 **They do not nest**: admitting a concept advances no process object, and closing a plan changes no vocabulary. There is exactly one directional relation between them — **reference**: assertions reference predicates and concepts; facts reference hypotheses and evidence.
@@ -383,7 +383,7 @@ flowchart LR
     class shelf,index,card,panel r
 ```
 
-1. **Shape checked at hypothesis registration**: a `SetGoal` assertion references a predicate and a concept; an unknown or deprecated reference, or a range mismatch, is refused **before anything lands** (stage C).
+1. **Shape checked at hypothesis registration**: a `SetGoal` assertion references a predicate and a concept; an unknown or deprecated reference, or a range mismatch, is refused **before anything lands** (implemented).
 2. **Fixed at promotion**: `fact/promoted` carries `hypothesis` (identity) and `assertions` (content) — from then on the assertion travels in the same record as the level, boundary and evidence.
 3. **Conflicts derived on replay**: `derive()` computes conflict pairs from the fact set and the vocabulary. It **modifies no fact** and enters no gate.
 4. **Deprecation propagates as a boundary**: once an entry is deprecated, **new** assertions referencing it are refused; **existing** facts stay readable and the shelf marks them "the term this used has been deprecated".
@@ -393,7 +393,7 @@ flowchart LR
 | Read surface | What it reads | Rendered by |
 |---|---|---|
 | `clear/ontology/<process-ontology id>.md` | The process-ontology shape (nine objects / five levels) | The kernel, idempotently — the charter the model reads |
-| `clear/ontology/domain.md` | The domain vocabulary (concepts / predicates / basis / deprecations + Mermaid) | The kernel, idempotently (stage C) |
+| `clear/ontology/domain.md` | The domain vocabulary (concepts / predicates / basis / deprecations + Mermaid) | The kernel, idempotently (implemented) |
 | `clear/knowledge/facts/INDEX.md` | Promoted facts (with assertions and boundaries) | The kernel, idempotently |
 | The runtime card | Vocabulary counts, typed-fact ratio, one conflict line | The fold, `renderCard` |
 | The panel's propositions-and-facts view | Facts and assertion chips | The projection, `view().facts` |
@@ -406,7 +406,7 @@ flowchart LR
 | Six vocabulary events fold into `state.lexicon` | Implemented (stage B) |
 | Assertions fold into facts with `fact/promoted` | Implemented (fold layer) |
 | Conflict derivation / vocabulary health / graph projection | Implemented (`test/domain-language.test.mjs`) |
-| The six verbs, the `SetGoal` / `CloseGoal` wiring, the `domain.md` shelf | Design target: stage C |
+| The seven verbs, the `SetGoal` / `CloseGoal` wiring, the `domain.md` shelf, the `clear/ontology/` write protection | Implemented |
 | The panel's ontology view and graph editing | Design target: stages D–E |
 
 **In one line**: the state machines answer "how things change", the ontology answers "in what language knowledge is written", and the graphs are the **read surface** folded out of both — all three layers exist, and only the middle layer's producers are still unplugged.

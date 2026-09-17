@@ -110,15 +110,15 @@ currently rests on prompts or is missing.
 | Intent/fact separation: no writable status/progress fields | schema inexpressibility | hard | implemented | kernel suite |
 | Projection is the only truth: state = log fold, monotonically increasing | `fold.js` + monotone RANKs | hard | implemented | client suite |
 | Runtime card derived each turn, injected only on prefix-stable change | `renderCard` | hard | implemented | client suite |
-| 22 prompt sections manifest-driven, slot wording mutually exclusive | `SECTIONS` + contribution table | hard | implemented | truth-table verifier |
+| 23 prompt sections in place, manifest-driven, slot wording mutually exclusive | `SECTIONS` + contribution table | hard | implemented | truth-table verifier |
 | Ontology declarations cross-checked against implementation | `ontology.js` + assembly check | hard | implemented | ontology suite |
 
 ### Domain ontology (vocabulary / assertions / conflicts / graphs)
 
 | Behavior | Carried by | Hardness | Status | Verified by |
 |---|---|---|---|---|
-| Six vocabulary events fold into `state.lexicon` (revisions kept, deprecation sticky, no delete) | `ui/lib/domain-language.js` + `fold.js` | hard | fold implemented; producer verbs are design targets (stage C) | `test/domain-language.test.mjs` |
-| An assertion lands with promotion (references exist, form fits the range, one fact self-consistent) | `fact/promoted` + `validateAssertions` | hard | fold implemented; `SetGoal` / `CloseGoal` not wired | same suite; wiring in stage C |
+| Six vocabulary events fold into `state.lexicon` (revisions kept, deprecation sticky, no delete) | `ui/lib/domain-language.js` + `fold.js` | hard | implemented (the fold plus the seven verbs) | `test/domain-language.test.mjs` |
+| An assertion lands with promotion (references exist, form fits the range, one fact self-consistent) | `fact/promoted` + `validateAssertions` | hard | implemented (including the `SetGoal` / `CloseGoal` wiring) | `test/kernel.test.mjs` / `test/domain-language.test.mjs` |
 | Conflicts are surfaced, never adjudicated (single-valued predicate + same subject + different objects + neither retracted) | `deriveConflicts` + the runtime card | hard | implemented | same suite |
 | Vocabulary and knowledge graphs derive from one fold (deterministic layout, coordinates never ledgered) | `graphProjection` + `view().lexicon` | hard | fold implemented; the panel does not render yet (stages D–E) | same suite |
 

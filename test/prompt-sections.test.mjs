@@ -43,7 +43,7 @@ const toolNames = Object.values(MECHANISM_TOOLS).flat()
 console.log('\n【① 每段都有合法标签】')
 {
 	const untagged = SECTIONS.filter((section) => !VALID.has(section.class))
-	check('23 段定义全部带 hard/native/advisory 标签', SECTIONS.length === 23 && untagged.length === 0, untagged.map((section) => section.name).join(','))
+	check('24 段定义全部带 hard/native/advisory 标签', SECTIONS.length === 24 && untagged.length === 0, untagged.map((section) => section.name).join(','))
 	const tally = { hard: 0, native: 0, advisory: 0 }
 	for (const section of SECTIONS) tally[section.class] += 1
 	console.log(`  分类账:hard ${tally.hard} · native ${tally.native} · advisory ${tally.advisory}`)

@@ -12,7 +12,7 @@
 | **Human** | The user. Only they can do three things: approve a plan on the native review card, release L4 on the native approval stack, press a human-gate verb on the panel | not a system component |
 | **Model** | The LLM reasoner. It **emits intent** (tool calls, answers) and executes nothing | not "the agent system"; it touches neither the ledger nor files — everything passes through the host |
 | **DSH host** | The engine: the turn loop, tool dispatch, sandbox and approvals, the native review card, subagents, the goals service (continuation driver), writing the session log | makes no epistemic judgments; it does not know "what may be believed" |
-| **ClearAI kernel** | The preset plugin: 22 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
+| **ClearAI kernel** | The preset plugin: 29 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
 | **Fact ledger** | The append-only record of facts. **The content is ours**: clearai mutation events + `clear/` artifacts and evaluation cards; **the carrier is the host's**: the session log + the filesystem. It stores no conclusions — "what may be believed now" is folded out of it by the projection | not a second state book; state is not "read" from it but "folded" out of it |
 | **Projection** | The host-side half `ui/lib`: fold (ledger → state) + derive (state → views) + the panel. **Reads the ledger, never writes** | not a cache, not a copy — one view of the same facts |
 | **Independent evaluator** | A fresh-context read-only subagent dispatched by the kernel via the host (L3+), returning a structured verdict through `outputSchema` | not the executor's twin; the other half of doer ≠ judge |
@@ -237,9 +237,9 @@ Key points:
 
 **Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. **Only the
 fold half runs today**: the six vocabulary events fold, assertions fold, and conflicts and graphs are derived;
-the six verbs that produce them and the panel are not wired yet (stages C–E). Tool names marked as design
-targets in the diagram are therefore **not in the code yet** — they are what this is growing into; event names
-and the fold can be checked line by line today.
+the **seven verbs are wired** (register / revise / deprecate / query) and only the panel is not (stages D–E).
+The only design-target step in the diagram is therefore the panel; the verbs and event names can be checked
+line by line today.
 
 ```mermaid
 sequenceDiagram
@@ -250,7 +250,7 @@ sequenceDiagram
     participant P as Projection
     participant G as Read surfaces (shelf / card / panel)
 
-    Note over M,K: from stage C (design target)
+    Note over M,K: vocabulary verbs (implemented)
     M->>K: RegisterTerm / RegisterPredicate (with a basis)
     K->>K: validate: unique id · references exist · acyclic is_a · legal range
     K-->>L: mutation ontology/term_added (and predicate_added / revised / deprecated)

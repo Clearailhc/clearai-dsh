@@ -612,3 +612,127 @@ export function applyLexiconMutation(lexicon, mutation, at) {
 	}
 	return output
 }
+
+/**
+ * **领域词汇的货架**(`clear/ontology/domain.md` 的正文)。
+ *
+ * 为什么它必须是一份纯函数:同一份词汇与事实,谁渲染都得同一串字节——
+ * 幂等写盘靠它(内容没变就不重写,文件时间戳是给人的读数),测试也靠它钉住。
+ *
+ * 三件事按顺序说:有什么词(概念 / 谓词)、它们长什么样(图)、用起来什么情况(引用与冲突)。
+ * **不写"权威"二字就够了吗**:不够——所以抬头先写明这一份是读面,
+ * 改它不会改词汇,词汇只认账本事件。
+ */
+export function describeDomainShelf(lexicon, facts) {
+	const normalized = normalizeLexicon(lexicon)
+	const rows = Array.isArray(facts) ? facts : []
+	const terms = [...normalized.terms].sort((a, b) => (a.id < b.id ? -1 : 1))
+	const predicates = [...normalized.predicates].sort((a, b) => (a.id < b.id ? -1 : 1))
+	const usage = new Map()
+	for (const fact of rows) {
+		for (const assertion of Array.isArray(fact?.assertions) ? fact.assertions : []) {
+			const predicate = text(assertion?.predicate)
+			if (predicate !== '') usage.set(predicate, (usage.get(predicate) ?? 0) + 1)
+			const type = text(assertion?.subject?.type)
+			if (type !== '') usage.set(type, (usage.get(type) ?? 0) + 1)
+		}
+	}
+	const conflicts = deriveConflicts(rows, normalized)
+	const lines = [
+		'# 领域本体(项目词汇)',
+		'',
+		'> 概念与谓词由账本里的本体事件折出来;**这一份是读面,不是权威**——改它不会改词汇。',
+		'> 词条只能经具名动词增删改:注册要带依据、修订留版本、废止留缘由且**不会删除**。',
+		'> 语义变化(含义、主词域、值域、单值性)必须**换 id**:稳定 id 的含义不许在历史上悄悄改变。',
+		'',
+	]
+	if (terms.length === 0 && predicates.length === 0) {
+		lines.push('(还没有词条。先注册概念与谓词,再让假设带上断言——引用不存在的词会在落账之前被拒。)', '')
+		return `${lines.join('\n')}`
+	}
+	lines.push(`## 概念(${terms.length})`, '')
+	if (terms.length === 0) lines.push('(无)', '')
+	else {
+		lines.push('| id | 名称 | 释义 | 父概念 | 状态 | 引用 | 依据 |', '|---|---|---|---|---|---|---|')
+		for (const term of terms) {
+			lines.push(`| \`${term.id}\` | ${escapeCell(term.label ?? term.id)} | ${escapeCell(term.gloss ?? '')} | ${term.parent === null || term.parent === undefined ? '—' : `\`${term.parent}\``} | ${term.status === 'deprecated' ? '**已废止**' : '已接纳'} | ${usage.get(term.id) ?? 0} | ${escapeCell(term.basis ?? '—')} |`)
+		}
+		lines.push('')
+	}
+	lines.push(`## 谓词(${predicates.length})`, '')
+	if (predicates.length === 0) lines.push('(无)', '')
+	else {
+		lines.push('| id | 名称 | 主词域 | 值域 | 单值 | 状态 | 引用 | 依据 |', '|---|---|---|---|---|---|---|---|')
+		for (const predicate of predicates) {
+			const range = isPlainObject(predicate.range) ? predicate.range : {}
+			const rangeText = text(range.term) !== '' ? `概念 \`${text(range.term)}\`` : `值形态 \`${text(range.form)}\`${text(range.unit) === '' ? '' : `(${text(range.unit)})`}`
+			lines.push(`| \`${predicate.id}\` | ${escapeCell(predicate.label ?? predicate.id)} | ${text(predicate.domain) === '' ? '—' : `\`${text(predicate.domain)}\``} | ${rangeText} | ${predicate.functional === true ? '是' : '否'} | ${predicate.status === 'deprecated' ? '**已废止**' : '已接纳'} | ${usage.get(predicate.id) ?? 0} | ${escapeCell(predicate.basis ?? '—')} |`)
+		}
+		lines.push('')
+	}
+	const mermaid = describeDomainGraph(normalized)
+	if (mermaid !== '') lines.push('## 图', '', mermaid, '')
+	const deprecated = [...terms, ...predicates].filter((entry) => entry.status === 'deprecated')
+	if (deprecated.length > 0) {
+		lines.push('## 已废止(记录保留,新断言不许再引用)', '')
+		for (const entry of deprecated) lines.push(`- \`${entry.id}\`:${escapeCell(entry.deprecated?.reason ?? '(未写缘由)')}`)
+		lines.push('')
+	}
+	const typed = rows.filter((fact) => Array.isArray(fact?.assertions) && fact.assertions.length > 0).length
+	lines.push('## 使用', '', `- 已升格事实里 ${typed}/${rows.length} 条带类型化断言。`)
+	if (conflicts.length > 0) {
+		lines.push(`- **冲突 ${conflicts.length} 对**(只暴露,不裁决):`)
+		for (const conflict of conflicts) {
+			lines.push(`  - \`${conflict.predicate}\` · ${escapeCell(conflict.subject)}:${conflict.sides.map((side) => `${side.fact ?? '?'}(${side.value})`).join(' 对 ')}`)
+		}
+	}
+	return `${lines.join('\n')}`
+}
+
+/** 一个表格单元格里的竖线与换行会毁掉整张表,先逃掉。 */
+function escapeCell(value) {
+	return String(value ?? '').replace(/\|/g, '\\|').replace(/\n+/g, ' ').trim()
+}
+
+/**
+ * 词汇图的 Mermaid 文本(货架里那段)。刻意只画**词汇层**:
+ * 知识层(实例与断言)在面板上按事实逐条看更清楚,把它塞进一张 Mermaid 会把词汇淹没。
+ */
+export function describeDomainGraph(lexicon) {
+	const normalized = normalizeLexicon(lexicon)
+	if (normalized.terms.length === 0 && normalized.predicates.length === 0) return ''
+	const lines = ['```mermaid', 'flowchart LR']
+	const conceptId = (id) => `c_${String(id).replace(/[^A-Za-z0-9_]/g, '_')}`
+	const seen = new Set()
+	for (const term of [...normalized.terms].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+		if (seen.has(conceptId(term.id))) continue
+		seen.add(conceptId(term.id))
+		lines.push(`    ${conceptId(term.id)}["${escapeCell(term.label ?? term.id)}"]`)
+	}
+	for (const predicate of [...normalized.predicates].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+		const range = isPlainObject(predicate.range) ? predicate.range : {}
+		const target = text(range.term) !== '' ? conceptId(text(range.term)) : `v_${text(range.form)}`
+		if (text(range.term) === '' && text(range.form) !== '' && !seen.has(`v_${text(range.form)}`)) {
+			seen.add(`v_${text(range.form)}`)
+			lines.push(`    v_${text(range.form)}(["${text(range.form)}"])`)
+		}
+		const source = text(predicate.domain) === '' ? null : conceptId(text(predicate.domain))
+		if (source === null) {
+			/** 没声明主词域的谓词没有源头可画:给一个显式的「任意主体」节点,别画成自环。 */
+			if (!seen.has('v_any')) {
+				seen.add('v_any')
+				lines.push('    v_any(["任意主体"])')
+			}
+			lines.push(`    v_any -->|"${text(predicate.id)}"| ${target}`)
+		} else {
+			lines.push(`    ${source} -->|"${text(predicate.id)}${predicate.functional === true ? ' · 单值' : ''}"| ${target}`)
+		}
+	}
+	for (const term of [...normalized.terms].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+		const parent = text(term.parent)
+		if (parent === '') continue
+		lines.push(`    ${conceptId(term.id)} -.->|is_a| ${conceptId(parent)}`)
+	}
+	lines.push('```', '')
+	return lines.join('\n')
+}

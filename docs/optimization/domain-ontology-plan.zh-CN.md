@@ -132,6 +132,40 @@ $ DSH_HOME=<临时 home + 构建产物> bash test/run.sh
 
 **回滚**：revert 该阶段提交；新事件不再产生，`state.lexicon` 为空表，其余机制不受影响。
 
+**进度 · 已完成**
+
+完成项:
+
+- 宿主半 facade 增 `domain`:`validateTerm` / `validatePredicate` / `validateAssertions` / `renderShelf(sessionId, mutations)` / `format`
+  ——**判据只有一份**(`ui/lib/domain-language.js`),预设侧经这道门调用它,不复制规则。
+- 七个具名动词(`preset/plugins/clearai-kernel.js`):`RegisterTerm` / `RegisterPredicate` / `ReviseTerm` /
+  `RevisePredicate` / `DeprecateTerm` / `DeprecatePredicate` / `QueryKnowledge`;`MECHANISM_TOOLS` 增 `ontology` 一格
+  (22 → 29 件工具,装配期仍由目录与 `defineTool` 双向核对)。
+- `SetGoal` 的假设可带 `assertions`(提供即严校:引用存在、形态合域、同一事实自洽,一律落账之前拒);
+  `CloseGoal` 升格带 `hypothesis` id 与 `assertions`——**身份与内容一起定型**。
+- 折法补一处:`goal/set` 的假设携带 `assertions`(否则升格那一刻拿不到)。
+- 货架:`ensureDomainShelf` 渲染 `clear/ontology/domain.md`(概念 / 谓词 / Mermaid 图 / 引用统计 / 废止 / 冲突),
+  每个动词落账后重铺、pre-step 也重铺一次(幂等);`clear/ontology/` 进拒写清单。
+- 提示词:新增 `clearai/domain-language`(hard;24 段定义 / 23 段在场)。
+- 测试:kernel 增 32 条(动词正反例、断言链、冲突只暴露不裁决、货架、拒写、查询);真值表两条从设计目标转已实现
+  (`ontology-verbs` / `assertion-validation`)。
+
+验证:
+
+```text
+$ node test/kernel.test.mjs                          → 718 通过,0 失败
+$ node tools/verify-truth-table.mjs                  → 25 项全过(64 条机制;代码快照 7 机制 / 29 工具 / 23 段在场)
+$ DSH_HOME=<临时 home + 构建产物> bash test/run.sh    → 15 套全绿
+```
+
+备注:
+
+- 门不在时(宿主半缺 `domain`)七个动词**明确拒**(`domain_unavailable`),不抛 TypeError——
+  真实原因不该被伪装成参数错误。
+- 量纲换算与公式语义仍不做;断言校验只到**形状**(见已知缺口的「只验到写明的深度」)。
+- 面板「本体」与图编辑留给阶段 D–E:今天词汇与图只有货架与卡片两行读数。
+
+
 ### 阶段 D：本体图只读渲染
 
 **交付物**

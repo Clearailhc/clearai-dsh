@@ -1038,8 +1038,8 @@
     },
     {
       "id": "prompt-sections",
-      "name": "提示词段（23 段定义 / 22 段在场）",
-      "name_en": "Prompt sections: 23 defined, 22 mounted at a time",
+      "name": "提示词段（24 段定义 / 23 段在场）",
+      "name_en": "Prompt sections (24 defined / 23 in place)",
       "layer": "harness",
       "status": "implemented",
       "hardness": "advisory",
@@ -1523,7 +1523,7 @@
       "name": "断言形态校验（落账之前）",
       "name_en": "Assertion shape validation (before anything lands)",
       "layer": "epistemic",
-      "status": "partial",
+      "status": "implemented",
       "hardness": "hard",
       "authority": "authoritative",
       "actor": "model",
@@ -1541,8 +1541,7 @@
       "affected_by_autonomy": false,
       "native_dsh_alternative": null,
       "rationale": "引用不存在的谓词、值域不符或同一事实自相矛盾，必须在进账本之前被拒——先污染后治理不适用于知识库。",
-      "known_mismatch": "判据已实现并被测试覆盖，但生产入口还没有调用它：SetGoal 不接收断言、CloseGoal 不带断言，所以真实会话里升格的事实仍然只有散文。",
-      "destination": "become-mechanism"
+      "known_mismatch": null
     },
     {
       "id": "conflict-derivation",
@@ -1596,29 +1595,28 @@
     },
     {
       "id": "ontology-verbs",
-      "name": "设计目标：领域词汇的具名动词与货架",
-      "name_en": "Design target: named verbs for the domain vocabulary, and the shelf",
+      "name": "领域词汇的具名动词与货架",
+      "name_en": "Named verbs for the domain vocabulary, and the shelf",
       "layer": "epistemic",
-      "status": "design-only",
-      "hardness": "advisory",
-      "authority": "none",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
       "actor": "model",
       "source": {
-        "code": null,
-        "tests": null,
+        "code": "preset/plugins/clearai-kernel.js RegisterTerm; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'",
+        "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": null,
-        "docs": "docs/optimization/domain-ontology-plan.zh-CN.md"
+        "prompt": "clearai/domain-language",
+        "docs": "docs/domain-ontology.zh-CN.md"
       },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
+      "trigger": "模型调用 RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge",
+      "input": "id / label / gloss / domain / range / functional / basis / reason",
+      "output": "mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺",
       "blocks_execution": false,
       "affected_by_autonomy": false,
       "native_dsh_alternative": null,
-      "rationale": "词条只能经具名动词落账（RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge），clear/ontology/domain.md 由内核幂等渲染。今天没有任何路径把词条写进账本。",
-      "known_mismatch": null,
-      "destination": "become-mechanism"
+      "rationale": "词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id。",
+      "known_mismatch": null
     },
     {
       "id": "ontology-panel-graph",

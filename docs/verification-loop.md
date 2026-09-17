@@ -307,7 +307,7 @@ which transition, who judges at each level. It must be read apart from the other
 |---|---|---|
 | Answers | **How** we come to know | **In what language** we say it |
 | Authority | A code declaration (`preset/plugins/ontology.js`), validated at assembly, changeable per release | Ledger events (`ontology/*`), growing with the project |
-| Editable? | **No**: it is the plugin's own backend flow; changing it means changing code and shipping | Yes: named verbs add, revise and deprecate (from stage C) |
+| Editable? | **No**: it is the plugin's own backend flow; changing it means changing code and shipping | Yes: named verbs add, revise and deprecate (seven of them, implemented) |
 | In the projection | `state.ontology` (the shape) | `state.lexicon` (the vocabulary) plus the graph projection |
 | Shown to | The charter the model reads (`clear/ontology/verification-loop.md`); a human sees the **state shape** (worldlines / proposition groups) | The vocabulary and graphs the project reads (`clear/ontology/domain.md`, the panel's ontology view) |
 

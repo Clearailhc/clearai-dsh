@@ -337,7 +337,7 @@ flowchart TD
 | 状态机 | 状态 | 事件 | 谁推 |
 |---|---|---|---|
 | **过程对象**（九个，见[状态机](optimization/state-machines.zh-CN.md)） | `open` / `advanced` / `void` / `proposed` / `refuted` / `promoted` … | `goal/set`、`step/advanced`、`fact/promoted` … | 内核按事实推进；模型只能发起意图 |
-| **领域词汇**（概念 / 谓词） | `admitted` → `deprecated`（修订是自环，版本 +1） | `ontology/term_added`、`ontology/*_revised`、`ontology/*_deprecated` | 具名动词（阶段 C 起）；折法只解释 |
+| **领域词汇**（概念 / 谓词） | `admitted` → `deprecated`（修订是自环，版本 +1） | `ontology/term_added`、`ontology/*_revised`、`ontology/*_deprecated` | 具名动词（七个,已实现）；折法只解释 |
 | **一次验证**（步骤上的 `tests`） | 由证据与等级派生 | `evidence/recorded`、`audit/settled` | 内核 |
 
 **它们互不嵌套**：接纳一个概念不会推进任何过程对象，一条计划收尾也不改词汇。两者之间只有一种方向性关系——**引用**：断言引用谓词与概念，事实引用假设与证据。
@@ -383,7 +383,7 @@ flowchart LR
     class shelf,index,card,panel r
 ```
 
-1. **登记假设时校验形态**：`SetGoal` 的断言引用谓词与概念；引用不存在、已废止，或值域不符 ⇒ **落账之前**就拒（阶段 C）。
+1. **登记假设时校验形态**：`SetGoal` 的断言引用谓词与概念；引用不存在、已废止，或值域不符 ⇒ **落账之前**就拒（已实现）。
 2. **升格那一刻定型**：`fact/promoted` 带上 `hypothesis`（身份）与 `assertions`（内容）——从此这条事实的断言与它的等级、边界、证据绑在同一条记录里。
 3. **重放时派生冲突**：`derive()` 拿事实集与词汇现算冲突对。它**不改任何事实**，也不进闸门。
 4. **废止的边界传播**：词条一旦废止，引用它的**新**断言被拒；**存量**事实照旧可读，并在货架上标明「所用术语已废止」。
@@ -393,7 +393,7 @@ flowchart LR
 | 读面 | 读什么 | 由谁渲染 |
 |---|---|---|
 | `clear/ontology/<过程本体 id>.md` | 过程本体的形状（九个对象 / 五级） | 内核幂等渲染——给模型读的章程 |
-| `clear/ontology/domain.md` | 领域词汇（概念 / 谓词 / 依据 / 废止 + Mermaid 图） | 内核幂等渲染（阶段 C） |
+| `clear/ontology/domain.md` | 领域词汇（概念 / 谓词 / 依据 / 废止 + Mermaid 图） | 内核幂等渲染（已实现） |
 | `clear/knowledge/facts/INDEX.md` | 已升格事实（含断言与边界） | 内核幂等渲染 |
 | 运行态卡 | 词汇计数、类型化事实比例、冲突一行 | 折法 `renderCard` |
 | 面板「命题与事实」 | 事实与断言芯片 | 投影 `view().facts` |
@@ -406,7 +406,7 @@ flowchart LR
 | 六个词汇事件折进 `state.lexicon` | 已实现（阶段 B） |
 | 断言随 `fact/promoted` 折进事实 | 已实现（折法层） |
 | 冲突派生 / 词汇健康度 / 图投影 | 已实现（`test/domain-language.test.mjs`） |
-| 六个动词、`SetGoal` / `CloseGoal` 接线、`domain.md` 货架 | 设计目标：阶段 C |
+| 七个动词、`SetGoal` / `CloseGoal` 接线、`domain.md` 货架、`clear/ontology/` 拒写 | 已实现 |
 | 面板「本体」与图编辑 | 设计目标：阶段 D–E |
 
 **一句话**：状态机回答「东西怎么变」，本体回答「知识用什么语言写」，图是这两者折出来的**读面**——三层都在，只有中间那层的生产者还没接。

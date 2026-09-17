@@ -18,10 +18,10 @@ It exists because of a self-diagnosis. After several rounds of fixing defects we
 | Which proposition is under test; what criteria were committed in advance; which observation fed which evaluation; whether an evaluation supported, refuted or could not decide; why a fact gained or lost the right to be cited; what a human decided and on what question | **ClearAI** | This is the irreplaceable part. A finished task is not a proven proposition; a failed evaluation is not a refuted proposition. |
 | What a file contained at a given time | **The git ledger** | It answers "what was there". It **cannot** answer "how was it produced, is it trustworthy" from a path alone. |
 | What the UI shows ("running / trusted / waiting on you") | **The projection (derived)** | No second copy of the judgement: computed from the two kinds of fact above. |
-| Which concepts and predicates exist in this domain, with what range and single-valuedness | **The ClearAI ledger** | Entries land only through named verbs (from stage C); the fold turns the six `ontology/*` events into `state.lexicon` — **there is no second vocabulary**. |
+| Which concepts and predicates exist in this domain, with what range and single-valuedness | **The ClearAI ledger** | Entries land only through named verbs (seven, implemented); the fold turns the six `ontology/*` events into `state.lexicon` — **there is no second vocabulary**. |
 | One fact's assertion (subject–predicate–object) | **The ClearAI ledger** (`fact/promoted.assertions`) | It lands **only at promotion**; old facts are never rewritten retroactively. |
 | Conflicts, the vocabulary graph, the knowledge graph, vocabulary health | **The projection (derived)** | All computed: a conflict is a paired reading rather than an object, the graphs are the output of `graphProjection()`, layout is a deterministic pure function, and coordinates never enter the ledger. |
-| `clear/ontology/domain.md` and the panel's ontology tab | **Rendering** | Not authority: the shelf is rewritten idempotently by the system and the panel only invokes verbs (stages C–E). |
+| `clear/ontology/domain.md` and the panel's ontology tab | **Rendering** | Not authority: the shelf is rewritten idempotently by the system and the panel only invokes verbs (the panel itself is stages D–E). |
 
 ### One consequence we got wrong last batch
 

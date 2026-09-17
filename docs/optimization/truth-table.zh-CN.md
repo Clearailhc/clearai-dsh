@@ -9,21 +9,21 @@
 ## 计数
 
 - 机制条目：**64**
-- 按状态：已实现 55 · 部分实现 2 · 设计目标 3 · 已删除 4
-- 按强度：硬边界 45 · 建议 11 · 原生 3 · 仅提示词 1 · 废弃 4
-- 按归宿：变成机制 3 · 保持设计目标 2 · 已删除并记账 4
+- 按状态：已实现 57 · 部分实现 1 · 设计目标 2 · 已删除 4
+- 按强度：硬边界 46 · 建议 10 · 原生 3 · 仅提示词 1 · 废弃 4
+- 按归宿：变成机制 1 · 保持设计目标 2 · 已删除并记账 4
 - 真正阻断执行的：**19**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**3**
+- 存在已知不符（文档 / 注释与代码不一致）的：**2**
 
 ## 代码常量快照
 
 这一节由代码导出，不是手写：
 
-- 机制：6 个（goal / plan / worldline / scout / brain / ledger）
-- 意图工具：22 件（SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile）
+- 机制：7 个（goal / plan / worldline / scout / brain / ledger / ontology）
+- 意图工具：29 件（SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate QueryKnowledge）
 - 配置键：24 个
-- 提示词段：定义 23 段，同一时刻在场 22 段（槽位 clarification 二选一）
+- 提示词段：定义 24 段，同一时刻在场 23 段（槽位 clarification 二选一）
 
 ## 总表
 
@@ -57,10 +57,10 @@
 | `observation-provenance` | 观测来源:声明必须与生产者对得上 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/ontology.js VERIFICATION_LOOP` |
 | `plan-auto-confirm` | 已删除:无人值守立约即授权 | 认识论 | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
 | `ontology-lexicon-events` | 领域词汇事件折成 state.lexicon | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js applyLexiconMutation` |
-| `assertion-validation` | 断言形态校验（落账之前） | 认识论 | 部分实现 | 硬边界 | 权威 | model | 是 | 否 | `ui/lib/domain-language.js validateAssertions` |
+| `assertion-validation` | 断言形态校验（落账之前） | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | 否 | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | 冲突派生（只暴露，不裁决） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js deriveConflicts` |
 | `knowledge-graph-projection` | 词汇图 / 知识图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js graphProjection` |
-| `ontology-verbs` | 设计目标：领域词汇的具名动词与货架 | 认识论 | 设计目标 | 建议 | 无 | model | 否 | 否 | — |
+| `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/clearai-kernel.js RegisterTerm` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/plugins/prompts.js exploration-rhythm` |
 | `scout-precommit` | 立约前侦察（一生一次） | Harness | 已实现 | 建议 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js runScout / precommitRecon / scoutDigest / sweepScouts / persistMaterial / noticeBlock` |
@@ -80,7 +80,7 @@
 | `max-auto-turns` | 续跑轮数上限（默认 128） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `preset/plugins/clearai-kernel.js DEFAULT_MAX_AUTO_TURNS=128` |
 | `autonomy-config` | autonomy：部署初值 + clarification 槽位选择器 | Harness | 部分实现 | 仅提示词 | 无 | system | 否 | **是** | `preset/plugins/clearai-kernel.js CFG.autonomy` |
 | `runtime-card` | 每回合派生的运行态卡 | Harness | 已实现 | 建议 | 无 | system | 否 | 否 | `ui/lib/fold.js renderCard` |
-| `prompt-sections` | 提示词段（23 段定义 / 22 段在场） | Harness | 已实现 | 建议 | 无 | system | 否 | **是** | `preset/plugins/prompts.js SECTIONS` |
+| `prompt-sections` | 提示词段（24 段定义 / 23 段在场） | Harness | 已实现 | 建议 | 无 | system | 否 | **是** | `preset/plugins/prompts.js SECTIONS` |
 | `exploration-zone` | 已删除:把「探索区」当作一个被命名的模式 | Harness | 已删除 | 废弃 | 非权威 | model | 否 | 否 | — |
 | `subrun-lifecycle` | 子 run 统一生命周期（一次性句柄 + 一条收集通道） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors` |
 | `host-invariants` | 宿主不变量（五条契约，落账之前判） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）` |
@@ -611,7 +611,7 @@
 - **测试**：test/kernel.test.mjs, test/host.test.mjs · **配置**：runtimeCard=true
 - **提示词**：clearai/state-protocol · **文档**：docs/loop-philosophy.zh-CN.md
 
-### `prompt-sections` · 提示词段（23 段定义 / 22 段在场）
+### `prompt-sections` · 提示词段（24 段定义 / 23 段在场）
 
 - **层**：Harness · **状态**：已实现 · **强度**：建议 · **权威**：无 · **责任方**：system
 - **触发**：装配期
@@ -850,18 +850,16 @@
 
 ### `assertion-validation` · 断言形态校验（落账之前）
 
-- **层**：认识论 · **状态**：部分实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
 - **触发**：为一条假设登记断言（不提供放行；提供即严校）
 - **输入**：assertions[{predicate, subject, object, qualifiers?}] 与当前词汇
 - **输出**：问题清单（空 = 通过）；不通过则调用方拒收
 - **阻断执行**：是 · **受 autonomy 影响**：否
 - **原生替代**：无
 - **理由**：引用不存在的谓词、值域不符或同一事实自相矛盾，必须在进账本之前被拒——先污染后治理不适用于知识库。
-- **归宿**：变成机制
 - **代码**：ui/lib/domain-language.js validateAssertions
 - **测试**：test/domain-language.test.mjs · **配置**：—
 - **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
-- **已知不符**：判据已实现并被测试覆盖，但生产入口还没有调用它：SetGoal 不接收断言、CloseGoal 不带断言，所以真实会话里升格的事实仍然只有散文。
 
 ### `conflict-derivation` · 冲突派生（只暴露，不裁决）
 
@@ -889,17 +887,18 @@
 - **测试**：test/domain-language.test.mjs · **配置**：—
 - **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
 
-### `ontology-verbs` · 设计目标：领域词汇的具名动词与货架
+### `ontology-verbs` · 领域词汇的具名动词与货架
 
-- **层**：认识论 · **状态**：设计目标 · **强度**：建议 · **权威**：无 · **责任方**：model
-- **触发**：—
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **触发**：模型调用 RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge
+- **输入**：id / label / gloss / domain / range / functional / basis / reason
+- **输出**：mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：词条只能经具名动词落账（RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge），clear/ontology/domain.md 由内核幂等渲染。今天没有任何路径把词条写进账本。
-- **归宿**：变成机制
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/optimization/domain-ontology-plan.zh-CN.md
+- **理由**：词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id。
+- **代码**：preset/plugins/clearai-kernel.js RegisterTerm; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
+- **测试**：test/kernel.test.mjs · **配置**：—
+- **提示词**：clearai/domain-language · **文档**：docs/domain-ontology.zh-CN.md
 
 ### `ontology-panel-graph` · 设计目标：面板「本体」页签与图编辑
 

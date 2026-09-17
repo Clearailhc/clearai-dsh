@@ -133,6 +133,46 @@ Notes (three things actually hit in this stage):
 
 **Rollback**: revert the stage commit; no new events are produced, `state.lexicon` is empty, and nothing else is affected.
 
+**Progress — done**
+
+Delivered:
+
+- The host-half facade gained `domain`: `validateTerm` / `validatePredicate` / `validateAssertions` /
+  `renderShelf(sessionId, mutations)` / `format` — **one set of rules** (`ui/lib/domain-language.js`) that the
+  preset plane calls through this door instead of copying.
+- Seven named verbs (`preset/plugins/clearai-kernel.js`): `RegisterTerm` / `RegisterPredicate` / `ReviseTerm` /
+  `RevisePredicate` / `DeprecateTerm` / `DeprecatePredicate` / `QueryKnowledge`; `MECHANISM_TOOLS` gained an
+  `ontology` entry (22 → 29 tools, still cross-checked both ways against `defineTool` at assembly).
+- `SetGoal` hypotheses may carry `assertions` (strict once supplied: references exist, forms fit the range,
+  one fact self-consistent — all refused before anything lands); `CloseGoal` promotion carries the
+  `hypothesis` id and the `assertions`, so **identity and content are fixed together**.
+- One fold gap closed: hypotheses in `goal/set` carry `assertions` (otherwise promotion could not see them).
+- Shelf: `ensureDomainShelf` renders `clear/ontology/domain.md` (concepts / predicates / Mermaid graph /
+  usage counts / deprecations / conflicts), rewritten after every verb and once per pre-step (idempotent);
+  `clear/ontology/` joined the model-side write-protection list.
+- Prompt: a new `clearai/domain-language` section (hard; 24 defined / 23 in place).
+- Tests: 32 new assertions in the kernel suite (verb positive/negative cases, the assertion chain, conflicts
+  surfaced but never adjudicated, the shelf, write protection, queries); two truth-table rows moved from
+  design-target to implemented (`ontology-verbs` / `assertion-validation`).
+
+Verification:
+
+```text
+$ node test/kernel.test.mjs                          → 718 passed, 0 failed
+$ node tools/verify-truth-table.mjs                  → 25/25 (64 mechanisms; snapshot 7 mechanisms / 29 tools / 23 sections in place)
+$ DSH_HOME=<temp home + built package> bash test/run.sh → all 15 suites green
+```
+
+Notes:
+
+- When the door is absent (a host half without `domain`) the seven verbs **refuse explicitly**
+  (`domain_unavailable`) instead of throwing a TypeError — the real cause should not be disguised as a bad argument.
+- Dimensional conversion and formula semantics are still not attempted; assertion validation stops at **shape**
+  (see the "verified only to a stated depth" section of Known gaps).
+- The ontology tab and graph editing remain stages D–E: today the vocabulary and graphs have only the shelf
+  and two card lines as read surfaces.
+
+
 ### Stage D: read-only graph rendering
 
 **Deliverables**

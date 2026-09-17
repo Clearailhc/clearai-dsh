@@ -19,6 +19,7 @@ import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
 import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, renderCard, view } from './fold.js'
+import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { install as installInvariants } from './invariant.js'
 
 export const name = 'clearai-host'
@@ -649,6 +650,29 @@ export function apply(ctx) {
 				preview: (sessionId, mutations) => {
 					const next = applyMutations(stateOf(sessionId), mutations)
 					return { state: next, card: renderCard(next), view: view(next) }
+				},
+				/**
+				 * **领域语言层的判据**(值形状、引用存在、值域、同一事实自洽)与货架正文。
+				 *
+				 * 为什么由宿主半提供,而不是预设侧自己写一份:判据**只能有一份**。
+				 * 预设侧的工具与这条路由要判的是同一件事,而两份实现必然漂成
+				 * 「登记时放行、升格时拒绝」——那种不一致在界面上与「这条还没验」长得一模一样。
+				 * 所以判据住在纯函数模块里,预设侧经这道门调用它。
+				 */
+				domain: {
+					validateTerm: (sessionId, draft) => validateTerm(stateOf(sessionId).lexicon, draft),
+					validatePredicate: (sessionId, draft) => validatePredicate(stateOf(sessionId).lexicon, draft),
+					validateAssertions: (sessionId, assertions) => validateAssertions(stateOf(sessionId).lexicon, assertions),
+					/**
+					 * 货架正文。带 `mutations` 时按**这一步之后**的样子渲染——
+					 * 工具在返回前就把货架写好,读的人不必等下一回合。
+					 */
+					renderShelf: (sessionId, mutations = []) => {
+						const state = applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : [])
+						return describeDomainShelf(state.lexicon, derive(state).factRows)
+					},
+					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
+					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
 				},
 			}),
 		'clearai: read facade',

@@ -292,6 +292,11 @@ export function applyMutation(state, mutation) {
 					refute_when: hypothesis.refute_when,
 					status: 'proposed',
 					version: hypothesis.version ?? 1,
+					/**
+					 * **类型化断言随假设走**:登记时校验、升格时定型。
+					 * 不写断言照旧成立(宽松+校验);写了就是「这条主张用这门语言怎么说」。
+					 */
+					assertions: Array.isArray(hypothesis.assertions) ? clone(hypothesis.assertions) : null,
 					at,
 				})
 			}

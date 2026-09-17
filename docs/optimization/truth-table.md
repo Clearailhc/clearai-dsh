@@ -9,21 +9,21 @@ This table answers one question: **what the current code actually guarantees**. 
 ## Counts
 
 - Mechanisms: **64**
-- By status: Implemented 55 · Partial 2 · Design only 3 · Removed 4
-- By strength: Hard boundary 45 · Advisory 11 · Native 3 · Prompt only 1 · Deprecated 4
-- By destination: becomes a mechanism 3 · stays design-only 2 · deleted and accounted 4
+- By status: Implemented 57 · Partial 1 · Design only 2 · Removed 4
+- By strength: Hard boundary 46 · Advisory 10 · Native 3 · Prompt only 1 · Deprecated 4
+- By destination: becomes a mechanism 1 · stays design-only 2 · deleted and accounted 4
 - Actually blocking execution: **19**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **3**
+- Carrying a known mismatch between docs/comments and code: **2**
 
 ## Code constant snapshot
 
 This section is exported from code, not written by hand:
 
-- Mechanisms: 6 (goal / plan / worldline / scout / brain / ledger)
-- Intent tools: 22 (SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile)
+- Mechanisms: 7 (goal / plan / worldline / scout / brain / ledger / ontology)
+- Intent tools: 29 (SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate QueryKnowledge)
 - Config keys: 24
-- Prompt sections: 23 defined, 22 mounted at any moment (the clarification slot picks one of two)
+- Prompt sections: 24 defined, 23 mounted at any moment (the clarification slot picks one of two)
 
 ## Summary
 
@@ -57,10 +57,10 @@ This section is exported from code, not written by hand:
 | `observation-provenance` | Observation provenance: declared sources vs producers | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/ontology.js VERIFICATION_LOOP` |
 | `plan-auto-confirm` | Removed: unattended plans auto-confirmed themselves | Epistemic | Removed | Deprecated | None | system | no | no | — |
 | `ontology-lexicon-events` | Domain vocabulary events fold into state.lexicon | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js applyLexiconMutation` |
-| `assertion-validation` | Assertion shape validation (before anything lands) | Epistemic | Partial | Hard boundary | Authoritative | model | yes | no | `ui/lib/domain-language.js validateAssertions` |
+| `assertion-validation` | Assertion shape validation (before anything lands) | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | no | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js deriveConflicts` |
 | `knowledge-graph-projection` | Vocabulary and knowledge graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js graphProjection` |
-| `ontology-verbs` | Design target: named verbs for the domain vocabulary, and the shelf | Epistemic | Design only | Advisory | None | model | no | no | — |
+| `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/clearai-kernel.js RegisterTerm` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | no | `preset/plugins/prompts.js exploration-rhythm` |
 | `scout-precommit` | Pre-commit reconnaissance | Harness | Implemented | Advisory | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js runScout / precommitRecon / scoutDigest / sweepScouts / persistMaterial / noticeBlock` |
@@ -80,7 +80,7 @@ This section is exported from code, not written by hand:
 | `max-auto-turns` | Continuation round budget, default 128 | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `preset/plugins/clearai-kernel.js DEFAULT_MAX_AUTO_TURNS=128` |
 | `autonomy-config` | autonomy: deployment initial value and clarification slot selector | Harness | Partial | Prompt only | None | system | no | **yes** | `preset/plugins/clearai-kernel.js CFG.autonomy` |
 | `runtime-card` | Per-turn runtime card | Harness | Implemented | Advisory | None | system | no | no | `ui/lib/fold.js renderCard` |
-| `prompt-sections` | Prompt sections: 23 defined, 22 mounted at a time | Harness | Implemented | Advisory | None | system | no | **yes** | `preset/plugins/prompts.js SECTIONS` |
+| `prompt-sections` | Prompt sections (24 defined / 23 in place) | Harness | Implemented | Advisory | None | system | no | **yes** | `preset/plugins/prompts.js SECTIONS` |
 | `exploration-zone` | Removed: the exploration zone as a named mode | Harness | Removed | Deprecated | Non-authoritative | model | no | no | — |
 | `subrun-lifecycle` | Unified sub-run lifecycle (one-shot handle, one collection channel) | Harness | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors` |
 | `host-invariants` | Host-side invariants (five contracts, judged before the append) | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）` |
@@ -611,7 +611,7 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs, test/host.test.mjs · **Config**: runtimeCard=true
 - **Prompt**: clearai/state-protocol · **Docs**: docs/loop-philosophy.zh-CN.md
 
-### `prompt-sections` · Prompt sections: 23 defined, 22 mounted at a time
+### `prompt-sections` · Prompt sections (24 defined / 23 in place)
 
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: system
 - **Trigger**: 装配期
@@ -850,18 +850,16 @@ This section is exported from code, not written by hand:
 
 ### `assertion-validation` · Assertion shape validation (before anything lands)
 
-- **Layer**: Epistemic · **Status**: Partial · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
 - **Trigger**: 为一条假设登记断言（不提供放行；提供即严校）
 - **Input**: assertions[{predicate, subject, object, qualifiers?}] 与当前词汇
 - **Output**: 问题清单（空 = 通过）；不通过则调用方拒收
 - **Blocks execution**: yes · **Affected by autonomy**: no
 - **Native alternative**: none
 - **Rationale**: 引用不存在的谓词、值域不符或同一事实自相矛盾，必须在进账本之前被拒——先污染后治理不适用于知识库。
-- **Destination**: becomes a mechanism
 - **Code**: ui/lib/domain-language.js validateAssertions
 - **Tests**: test/domain-language.test.mjs · **Config**: —
 - **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
-- **Known mismatch**: 判据已实现并被测试覆盖，但生产入口还没有调用它：SetGoal 不接收断言、CloseGoal 不带断言，所以真实会话里升格的事实仍然只有散文。
 
 ### `conflict-derivation` · Conflict derivation (surfaced, never adjudicated)
 
@@ -889,17 +887,18 @@ This section is exported from code, not written by hand:
 - **Tests**: test/domain-language.test.mjs · **Config**: —
 - **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `ontology-verbs` · Design target: named verbs for the domain vocabulary, and the shelf
+### `ontology-verbs` · Named verbs for the domain vocabulary, and the shelf
 
-- **Layer**: Epistemic · **Status**: Design only · **Strength**: Advisory · **Authority**: None · **Actor**: model
-- **Trigger**: —
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 模型调用 RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge
+- **Input**: id / label / gloss / domain / range / functional / basis / reason
+- **Output**: mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 词条只能经具名动词落账（RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge），clear/ontology/domain.md 由内核幂等渲染。今天没有任何路径把词条写进账本。
-- **Destination**: becomes a mechanism
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/optimization/domain-ontology-plan.zh-CN.md
+- **Rationale**: 词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id。
+- **Code**: preset/plugins/clearai-kernel.js RegisterTerm; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
+- **Tests**: test/kernel.test.mjs · **Config**: —
+- **Prompt**: clearai/domain-language · **Docs**: docs/domain-ontology.zh-CN.md
 
 ### `ontology-panel-graph` · Design target: the ontology tab and graph editing
 
