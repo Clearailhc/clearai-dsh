@@ -2559,7 +2559,7 @@ export function apply(ctx, config = {}) {
 		const facts = Array.isArray(state?.facts) ? state.facts : []
 		if (facts.length === 0) return null
 		const lines = [
-			'# 事实库(已升格、可作为「已知」引用)',
+			'# 本体内容(已确立条目,可作为「已知」引用;未结构化的旧条目照旧在架)',
 			'',
 			'> 每条都带**边界**(推翻条件)与**支持等级**:引用它之前先看边界还在不在。',
 			'> 这一份由系统维护(做的人不能写 `clear/knowledge/facts`);新的在前。',

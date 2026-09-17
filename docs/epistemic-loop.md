@@ -10,7 +10,7 @@ The Epistemic Loop is ClearAI’s disciplined path from an uncertain question to
 4. **Observe** — Gather material through workspace reads and writes, web search and page browsing, experiments, or other permitted tools. An observation is a report of what was encountered, not yet a verdict.
 5. **Verify** — Compare observations with the hypothesis using explicit checks and tests. Verification objects and levels (L0–L4) express epistemic strength; a per-step/per-branch L4 human release is implemented, while the proposed eight-state verification machine and a universal L4 gate over every evaluation are not.
 6. **Evaluate** — Assess quality, uncertainty, conflicts, and whether independent review is needed. Observation admission can set `needs_audit` and trigger an independent Evaluator; admission is routing/eligibility, not a truth verdict. The person or process that performs a test should not be the sole judge of its result.
-7. **Record and act** — Preserve sources, evidence, facts, decisions, and artifacts in the workspace. Accepted conclusions can guide the next plan or user-facing deliverable, while unresolved claims remain qualified and feed the next loop.
+7. **Record and act** — Preserve sources, evidence, facts, decisions, and artifacts in the workspace; established entries settle into the **ontology** (the ontology shelf), retrievable next round by concept. Accepted conclusions can guide the next plan or user-facing deliverable, while unresolved claims remain qualified and feed the next loop.
 
 ## Mermaid overview
 

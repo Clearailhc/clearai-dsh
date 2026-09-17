@@ -17,6 +17,7 @@ A fact today is a one-line statement (`text`), a boundary (`scope`), a support l
 The loop therefore completes only half its work: it *earns* conclusions but does not *place* them into a structure that can keep growing. The starting point of this design is one sentence:
 
 > The product of the epistemic loop is not a string; it is **bounded knowledge** — assertion content (constrained by the ontology) times epistemic metadata (governed by the loop).
+**This re-centering says the conclusion out loud: the product form of research is the ontology.** The epistemic loop is the ontology's production process and facts are its content units — the direction of truth does not change (world → evidence → fact → grown into the ontology), so **the ontology adjudicates nothing; it only houses what has been adjudicated**. Vocabulary is convention and entries are experience; their authorities belong to admission and to verification respectively, and not one line of that boundary moves after the re-centering.
 
 ---
 

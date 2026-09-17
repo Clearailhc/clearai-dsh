@@ -7,11 +7,11 @@
 
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 
-**From answers to evidence. From evidence to improvement.**
+**From answers to evidence. From evidence to ontology.**
 
 ClearAI is a **native DSH plugin** that brings the Epistemic Loop to DeepSeek Harness.
 
-A language model can produce a plausible answer in seconds. ClearAI is about what happens next: stating what would test the idea, running the work, recording what happened, evaluating the evidence, and revising what is believed — so that a conclusion has to *earn* its status instead of asserting it.
+A language model can produce a plausible answer in seconds. ClearAI is about what happens next: stating what would test the idea, running the work, recording what happened, evaluating the evidence, and revising what is believed — so that a conclusion has to *earn* its status instead of asserting it. All of it settles into an **ever-growing ontology**: the project's domain vocabulary, the entries established through the loop, and their graphs — other knowledge graphs pile up edges by extraction and assertion; here every edge has to be earned.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/epistemic-loop-hero-dark.png">
@@ -81,9 +81,9 @@ Full version: [The Epistemic Loop](docs/epistemic-loop.md)
 
 ## What it looks like
 
-The plugin contributes these surfaces on top of stock DSH: a **deliverables** view and a **propositions & facts** view in the middle column (switchable), plus **worldlines** and **external brain** panes on the right.
+The plugin contributes these surfaces on top of stock DSH: a **deliverables** view and an **ontology** view (graph band · ontology shelf · propositions in verification · vocabulary) in the middle column, plus **worldlines** and **external brain** panes on the right.
 
-**Propositions and facts** — every claim is one row: its current standing, its level, and who judged it. Confirmed conclusions move to the shelf with their scope; refuted ones stay, with the evidence that refuted them.
+**Ontology shelf** — one row per established claim: its level, its scope, and who judged it; older unstructured entries stay on the shelf. Refuted ones stay where they were, with the evidence that refuted them.
 
 ![Propositions and facts](docs/shots/en/facts.png)
 

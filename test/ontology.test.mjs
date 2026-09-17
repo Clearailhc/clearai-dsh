@@ -197,7 +197,7 @@ console.log('\n【⑤ 事实那一格:声明里的字段与名字,界面与内�
 	for (const object of VERIFICATION_LOOP.objects) {
 		check(`界面有 ${object.name} 的人话名字(声明里每个对象都要有,少一个就红)`, labelBlock.includes(`${object.name}:`), labelBlock.replace(/\s+/g, ' ').slice(0, 80))
 	}
-	check('「事实」那一格注册在中栏视图里(与产物并列)', /id: 'clearai-facts'/.test(clientSource) && /label: t\('事实'\)/.test(clientSource))
+	check('「本体」那一格注册在中栏视图里(与产物并列;视图 id 仍是 clearai-facts)', /id: 'clearai-facts'/.test(clientSource) && /label: t\('本体'\)/.test(clientSource))
 	check('进展与世界线不再重复(分工写进了注释而不是口头约定)', /计划与世界线的\*\*行\*\*归世界树/.test(clientSource) || /归世界树/.test(clientSource))
 	check('事实货架(INDEX.md)由内核维护,且面板读的是同一张表', /renderFactsIndex/.test(kernelSource) && /INDEX\.md/.test(kernelSource))
 }
