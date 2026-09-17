@@ -6,7 +6,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] — 未发布
+## [0.2.0] — 2026-09-17
 
 **研究的产品形态是本体。** 认识论循环是本体的生产工艺,事实是它的内容单位——真值方向不变(世界 → 证据 → 事实 → 长成本体),所以**本体不裁决任何事,它只收留被裁决过的东西**。别的知识图谱靠抽取与断言堆边;这里的每一条边都要通过循环挣得。
 
