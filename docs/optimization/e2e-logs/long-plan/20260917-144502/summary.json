@@ -1,0 +1,14 @@
+{
+  "name": "long-plan",
+  "title": "长链:五步交付,物证、准入、收尾",
+  "stamp": "20260917-144502",
+  "code": 0,
+  "passed": 40,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 538,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/long-plan/20260917-144502/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-long-plan-20260917-144502-workspace--/session-f80c9036-567d-4e0b-b88f-bad3f13d9c39/session.v3.jsonl.zstd",
+  "mutationCount": 40,
+  "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+}

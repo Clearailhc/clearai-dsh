@@ -1,0 +1,20 @@
+{
+  "name": "goal-chain",
+  "title": "目标链:结案后再立一个,复用前一环的产物",
+  "stamp": "20260917-145400",
+  "code": 0,
+  "passed": 39,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 488,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/goal-chain/20260917-145400/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-goal-chain-20260917-145400-workspace--/session-4d33948a-295b-41e3-a274-f52cea0a55ac/session.v3.jsonl.zstd",
+  "mutationCount": 48,
+  "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/amended,plan/closed,audit/dispatched,audit/settled,goal/closed",
+  "commit": "85c2018",
+  "dirty": true,
+  "model": "deepseek-flash",
+  "concurrency": 3,
+  "archive": "/Users/lhc/.dsh/e2e-archive/goal-chain/20260917-145400",
+  "task": "这个工作区是空的。这一场要**连着做两个目标**。\n要求(按顺序做;一路做完,不要在中途停下来问我;每一步交付时给观测与判据对照。):\n1. 目标一:在 lab/base.txt 里写下三行文本(自己定内容,但写清规则);判据 = 「lab/base.txt 恰好三行、非空」。登记至少两条候选假设。\n2. 为它建一份两步计划(写文件 → 核对行数),做完 ClosePlan,然后 CloseGoal 结案。\n3. 目标二:**基于目标一留下的文件**再做一个可核对的交付——把 lab/base.txt 每行加上行号,写成 lab/numbered.txt;判据 = 「lab/numbered.txt 行数与 lab/base.txt 相同,且每行以行号开头」。\n   同样:SetGoal(至少两条假设)→ CreatePlan(两步)→ 做完 → ClosePlan → CloseGoal。\n4. 两个目标都要真的结案,不要只结一个。"
+}
