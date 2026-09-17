@@ -2794,10 +2794,219 @@ window.__ModuleLoader__.load({
 		 * 当前会话的 `projectionValues.agentPreset` 走。
 		 */
 		/** 包一层**只做一次**:现造会让 React 每次渲染都当成新组件,把面板整个重挂。 */
+
+		/**
+		 * **「本体」页签**:项目词汇与两张图的**只读**面。
+		 *
+		 * 为什么它必须独立成一格,而不是塞进「命题与事实」:两者的时间尺度不同——
+		 * 事实一条条来(快),词汇一层层长(慢)。混在一栏里,读者会把词条也读成「一条结论」,
+		 * 而词条是**约定**(带依据接纳、可废止),事实是**经验**(走完循环才算数)。
+		 *
+		 * 三层都在这儿:词条表(有什么)、图(长什么样)、冲突与健康度(用起来什么情况)。
+		 * 只读:编辑是具名动词的事,面板不写文件——词条的权威在账本事件里,货架只是渲染。
+		 */
+		const Ontology = ({ useProjection, openPreview }) => {
+			const data = useProjection('clearai')
+			const lexicon = data?.lexicon ?? null
+			/** 图分两层看:词汇层(允许表达什么)与知识层(已经表达什么)。 */
+			const [layer, setLayer] = React.useState('vocabulary')
+			const [picked, setPicked] = React.useState(null)
+			const bar = (note) =>
+				h(
+					'div',
+					{ style: S.bar },
+					h('span', { style: S.title }, t('本体')),
+					note === null ? null : h('span', { style: S.faint }, note),
+				)
+			if (lexicon === null || lexicon === undefined) {
+				return h('div', { style: S.wrap }, bar(null), h(Empty, null, t('这个会话还没有 ClearAI 的状态。')))
+			}
+			const terms = Array.isArray(lexicon.terms) ? lexicon.terms : []
+			const predicates = Array.isArray(lexicon.predicates) ? lexicon.predicates : []
+			if (terms.length === 0 && predicates.length === 0) {
+				return h('div', { style: S.wrap }, bar(null), h(Empty, null, t('还没有词条。先注册概念与谓词,假设就能带上类型化断言了——货架在 clear/ontology/domain.md。')))
+			}
+			const graph = lexicon.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
+			const conflicts = Array.isArray(lexicon.conflicts) ? lexicon.conflicts : []
+			const health = Array.isArray(lexicon.health) ? lexicon.health : []
+			const termOf = (id) => terms.find((item) => item.id === id) ?? null
+			const predicateOf = (id) => predicates.find((item) => item.id === id) ?? null
+			const conflicted = new Set(conflicts.flatMap((item) => item.sides.map((side) => side.fact)).filter((id) => typeof id === 'string'))
+
+			// ── 图:确定性坐标由投影算好,这里只画(它不重算任何东西) ──────────────
+			const NODE_W = 148
+			const NODE_H = 36
+			const vocabularyKinds = ['concept', 'value_type']
+			const knowledgeKinds = ['instance', 'literal']
+			const kinds = layer === 'vocabulary' ? vocabularyKinds : knowledgeKinds
+			const edgeKinds = layer === 'vocabulary' ? ['is_a', 'predicate'] : ['assertion']
+			/**
+			 * 实例多起来图会失焦。**截断是界面决定,不写进账本**:被截掉多少如实写在图下面,
+			 * 不假装这就是全部(确定性:按投影给的顺序取前 N 个)。
+			 */
+			const MAX_NODES = 40
+			const allNodes = graph.nodes.filter((node) => kinds.includes(node.kind))
+			const shownNodes = allNodes.slice(0, MAX_NODES)
+			const shownIds = new Set(shownNodes.map((node) => node.id))
+			const nodeById = new Map(shownNodes.map((node) => [node.id, node]))
+			const shownEdges = graph.edges.filter((edge) => edgeKinds.includes(edge.kind) && shownIds.has(edge.from) && shownIds.has(edge.to))
+			const centerOf = (id) => {
+				const node = nodeById.get(id)
+				return node === undefined ? null : { x: node.x + NODE_W / 2, y: node.y + NODE_H / 2 }
+			}
+			const nodeFill = (node) =>
+				node.kind === 'concept' ? 'rgba(74,163,255,0.16)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.16)' : node.kind === 'instance' ? 'rgba(22,163,74,0.16)' : 'rgba(147,51,234,0.16)'
+			const svg =
+				shownNodes.length === 0
+					? h('div', { style: S.faint }, t('这一层还是空的。'))
+					: h(
+							'div',
+							{ style: { overflow: 'auto', maxHeight: 300, border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6, padding: 4 } },
+							h(
+								'svg',
+								{ width: Math.max(graph.bounds?.width ?? 0, 200), height: Math.max(graph.bounds?.height ?? 0, 80), style: { display: 'block' } },
+								h('defs', null, h('marker', { id: 'clearai-onto-arrow', markerWidth: 8, markerHeight: 8, refX: 7, refY: 3, orient: 'auto' }, h('path', { d: 'M0,0 L7,3 L0,6 z', fill: 'currentColor' }))),
+								...shownEdges.map((edge) => {
+									const from = centerOf(edge.from)
+									const to = centerOf(edge.to)
+									if (from === null || to === null) return null
+									const hot = edge.kind === 'assertion' && conflicted.has(edge.fact)
+									return h(
+										'g',
+										{ key: `e-${edge.id}`, style: { cursor: 'pointer' }, onClick: () => setPicked({ kind: 'edge', edge }) },
+										h('line', {
+											x1: from.x + NODE_W / 2 - 8,
+											y1: from.y,
+											x2: to.x - NODE_W / 2 + 8,
+											y2: to.y,
+											stroke: hot ? '#dc2626' : 'rgba(127,127,127,0.55)',
+											strokeWidth: hot ? 2 : 1,
+											strokeDasharray: edge.kind === 'is_a' ? '4 3' : undefined,
+											markerEnd: 'url(#clearai-onto-arrow)',
+										}),
+										h(
+											'text',
+											{ x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - 4, fontSize: 10, textAnchor: 'middle', fill: hot ? '#dc2626' : 'currentColor', opacity: 0.75 },
+											String(edge.label ?? edge.predicate ?? ''),
+										),
+									)
+								}),
+								...shownNodes.map((node) =>
+									h(
+										'g',
+										{ key: `n-${node.id}`, style: { cursor: 'pointer' }, onClick: () => setPicked({ kind: 'node', node }) },
+										h('rect', {
+											x: node.x,
+											y: node.y,
+											width: NODE_W,
+											height: NODE_H,
+											rx: 7,
+											fill: nodeFill(node),
+											stroke: node.status === 'deprecated' ? 'rgba(127,127,127,0.7)' : 'rgba(127,127,127,0.35)',
+											strokeDasharray: node.status === 'deprecated' ? '4 3' : undefined,
+										}),
+										h('text', { x: node.x + NODE_W / 2, y: node.y + 16, fontSize: 11, textAnchor: 'middle', fill: 'currentColor', opacity: node.status === 'deprecated' ? 0.55 : 1 }, String(node.label ?? node.ref ?? '').slice(0, 16)),
+										h('text', { x: node.x + NODE_W / 2, y: node.y + 29, fontSize: 9, textAnchor: 'middle', fill: 'currentColor', opacity: 0.6 }, node.kind === 'concept' ? `${node.ref}${node.status === 'deprecated' ? ' · 已废止' : ''}${node.uses > 0 ? ` · 引用 ${node.uses}` : ''}` : String(node.kind === 'instance' ? node.type ?? '实例' : node.ref ?? '')),
+									),
+								),
+							),
+						)
+
+			const detail =
+				picked === null
+					? h('div', { style: S.faint }, t('点一个节点或一条事实边看详情。'))
+					: picked.kind === 'node'
+						? (() => {
+								const node = picked.node
+								const term = termOf(node.ref)
+								const predicate = predicateOf(node.ref)
+								const rows = []
+								if (term !== null) {
+									rows.push([t('释义'), term.gloss ?? '—'])
+									if (term.parent !== null && term.parent !== undefined) rows.push([t('父概念'), String(term.parent)])
+									rows.push([t('状态'), term.status === 'deprecated' ? t('已废止') : t('已接纳')])
+									rows.push([t('依据'), term.basis ?? '—'])
+								}
+								if (predicate !== null) {
+									const range = predicate.range ?? {}
+									rows.push([t('主词域'), predicate.domain ?? '—'])
+									rows.push([t('值域'), range.term !== undefined && range.term !== null ? String(range.term) : `${String(range.form ?? '—')}${range.unit === undefined || range.unit === null ? '' : `(${range.unit})`}`])
+									rows.push([t('单值'), predicate.functional === true ? '✓' : '—'])
+									rows.push([t('依据'), predicate.basis ?? '—'])
+								}
+								rows.push([t('引用'), String(node.uses ?? 0)])
+								return h('div', null, h('div', { style: S.head }, `${node.kind === 'concept' ? t('概念') : node.kind === 'predicate' ? t('谓词') : node.kind === 'value_type' ? t('值形态') : node.kind === 'instance' ? t('实例') : t('取值')} · ${String(node.label ?? '')}`), ...rows.map(([key, value], index) => h('div', { key: `d-${index}`, style: S.kv }, h('span', { style: S.faint }, `${key}:`), h('span', null, ` ${String(value)}`))))
+							})()
+						: (() => {
+								const edge = picked.edge
+								const rows = []
+								if (edge.kind === 'assertion') {
+									rows.push([t('谓词'), String(edge.predicate ?? '—')])
+									rows.push([t('等级'), String(edge.level ?? '—')])
+									rows.push([t('事实'), String(edge.fact ?? '—')])
+									rows.push([t('边界'), String(edge.scope ?? '—')])
+									rows.push([t('状态'), edge.status === 'retracted' ? t('已撤回') : edge.status === 'refuted' ? t('已推翻') : t('已确认')])
+								} else {
+									rows.push([t('关系'), String(edge.predicate ?? edge.label ?? '—')])
+									rows.push([t('单值'), edge.functional === true ? '✓' : '—'])
+									rows.push([t('状态'), edge.status === 'deprecated' ? t('已废止') : t('已接纳')])
+								}
+								return h('div', null, h('div', { style: S.head }, edge.kind === 'assertion' ? t('一条事实边') : t('一条词汇边')), ...rows.map(([key, value], index) => h('div', { key: `e-${index}`, style: S.kv }, h('span', { style: S.faint }, `${key}:`), h('span', null, ` ${String(value)}`))))
+							})()
+
+			const toggle = (id, label) =>
+				h('span', { key: id, style: { ...S.tag, cursor: 'pointer', opacity: layer === id ? 1 : 0.5 }, onClick: () => { setLayer(id); setPicked(null) } }, label)
+
+			return h(
+				'div',
+				{ style: S.wrap },
+				bar(`${terms.length} ${t('个概念')} · ${predicates.length} ${t('个谓词')}${conflicts.length > 0 ? ` · ${conflicts.length} ${t('对冲突')}` : ''}`),
+				h('div', { style: S.inline }, toggle('vocabulary', t('词汇图')), toggle('knowledge', t('知识图'))),
+				conflicts.length > 0
+					? h(
+							'div',
+							{ style: S.section },
+							h('div', { style: S.head }, `${t('冲突')}(${t('只暴露,不裁决')})`),
+							...conflicts.map((conflict, index) =>
+								h('div', { key: `c-${index}`, style: S.row }, `${conflict.predicate} · ${conflict.subject}:`, ...conflict.sides.map((side, sideIndex) => h('span', { key: `c-${index}-${sideIndex}`, style: S.faint }, ` ${side.fact ?? '?'}(${side.value})`))),
+							),
+							h('div', { style: S.faint }, t('撤回或维持由人决定(人门 retract_fact / keep_fact)——系统不替你选。')),
+						)
+					: null,
+				svg,
+				allNodes.length > shownNodes.length ? h('div', { style: S.faint }, `${t('图里只画了前')} ${shownNodes.length} / ${allNodes.length} ${t('个节点(其余在货架与事实里)')}`) : null,
+				h('div', { style: S.section }, h('div', { style: S.head }, t('条目详情')), detail),
+				h(
+					'div',
+					{ style: S.section },
+					h('div', { style: S.head }, `${t('概念')}(${terms.length})`),
+					...terms.map((term) => h('div', { key: `t-${term.id}`, style: S.row }, h('span', { style: S.mono }, term.id), h('span', { style: S.faint }, ` ${term.label ?? ''}${term.status === 'deprecated' ? ` · ${t('已废止')}` : ''}`))),
+				),
+				h(
+					'div',
+					{ style: S.section },
+					h('div', { style: S.head }, `${t('谓词')}(${predicates.length})`),
+					...predicates.map((predicate) => h('div', { key: `p-${predicate.id}`, style: S.row }, h('span', { style: S.mono }, predicate.id), h('span', { style: S.faint }, ` ${predicate.label ?? ''}${predicate.functional === true ? ` · ${t('单值')}` : ''}${predicate.status === 'deprecated' ? ` · ${t('已废止')}` : ''}`))),
+				),
+				health.some((issue) => issue.severity === 'warning')
+					? h(
+							'div',
+							{ style: S.section },
+							h('div', { style: S.head }, t('词汇健康度')),
+							...health.filter((issue) => issue.severity === 'warning').map((issue, index) => h('div', { key: `h-${index}`, style: S.row }, `${issue.id}:${issue.detail}`)),
+						)
+					: null,
+				openPreview === undefined
+					? null
+					: h('div', { style: S.section }, h('span', { style: { ...S.tag, cursor: 'pointer' }, onClick: () => openPreview('clear/ontology/domain.md') }, t('在货架里打开(原生预览)'))),
+			)
+		}
+
 		const LocalizedDeliverables = withLocale(Deliverables)
 		const LocalizedFacts = withLocale(Facts)
 		const LocalizedWorldTree = withLocale(WorldTree)
 		const LocalizedBrainTab = withLocale(BrainTab)
+		const LocalizedOntology = withLocale(Ontology)
 
 		/** 会话预设的 id:面板只在这个模式的会话里出现。 */
 		const PRESET_ID = 'clearai'
@@ -3097,7 +3306,7 @@ window.__ModuleLoader__.load({
 		 * 真的跑一遍渲染路径(捕 undefined 字段访问这类只有渲染时才炸的错)。
 		 * 仍然不是给别的包用的接口。
 		 */
-		exports.__components = { PlanChip, ContinuationNote, Deliverables, WorldTree, BrainTab, Inbox, TreeDetail, Facts, FactShelf, PropositionShelf, ClearAIMark, LOOP_LABEL, PROPOSITION_GROUPS }
+		exports.__components = { PlanChip, ContinuationNote, Deliverables, WorldTree, BrainTab, Ontology, Inbox, TreeDetail, Facts, FactShelf, PropositionShelf, ClearAIMark, LOOP_LABEL, PROPOSITION_GROUPS }
 		/**
 		 * 测试缝之三:命题那一列的**派生**是纯函数(分组、处境、来路、证据链),
 		 * 渲染本身没法在没浏览器的地方细究——把它导出去,让测试直接断言派生结果。

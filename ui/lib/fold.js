@@ -1521,6 +1521,8 @@ export function view(state, sessionId) {
 							/** 从没被走过的等级(派生):面板据此说清「这一级是跳上来的」。 */
 							untouchedLevels: hypothesis.untouchedLevels,
 							version: hypothesis.version,
+							/** 断言随假设走(未升格):面板同画芯片,但标注「未升格」。 */
+							assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
 						})),
 					},
 		/**
@@ -1650,6 +1652,11 @@ export function view(state, sessionId) {
 			evidenceIds: item.evidence,
 			path: item.path,
 			at: item.at,
+			/**
+			 * **类型化断言**(可 null):事实的内容形态。面板用它画断言芯片——
+			 * 点开就地展开词条卡,这是「事实 ↔ 本体」那座桥的界面侧。
+			 */
+			assertions: Array.isArray(item.assertions) ? item.assertions : null,
 			/** 派生:收到过推翻证据(要复核)与人的审查决定(撤回 / 维持)。 */
 			refuted: item.refuted === true,
 			review: item.review ?? null,

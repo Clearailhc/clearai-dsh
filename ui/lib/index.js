@@ -669,7 +669,9 @@ export function apply(ctx) {
 					 */
 					renderShelf: (sessionId, mutations = []) => {
 						const state = applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : [])
-						return describeDomainShelf(state.lexicon, derive(state).factRows)
+						const next = derive(state)
+						// 在途命题也传进去:词汇刚立起来时「引用 0」会让人以为没人用,而断言已经在假设上了。
+						return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses)
 					},
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),

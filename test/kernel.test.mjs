@@ -90,7 +90,8 @@ function makeHost() {
 			validateAssertions: (id, assertions) => validateAssertions(service.state(id).lexicon, assertions),
 			renderShelf: (id, mutations = []) => {
 				const state = applyMutations(service.state(id), Array.isArray(mutations) ? mutations : [])
-				return describeDomainShelf(state.lexicon, derive(state).factRows)
+				const next = derive(state)
+				return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses)
 			},
 			format: (id, assertion) => formatAssertion(service.state(id).lexicon, assertion),
 		},

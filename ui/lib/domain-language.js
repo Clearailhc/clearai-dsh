@@ -623,7 +623,7 @@ export function applyLexiconMutation(lexicon, mutation, at) {
  * **不写"权威"二字就够了吗**:不够——所以抬头先写明这一份是读面,
  * 改它不会改词汇,词汇只认账本事件。
  */
-export function describeDomainShelf(lexicon, facts) {
+export function describeDomainShelf(lexicon, facts, hypotheses = []) {
 	const normalized = normalizeLexicon(lexicon)
 	const rows = Array.isArray(facts) ? facts : []
 	const terms = [...normalized.terms].sort((a, b) => (a.id < b.id ? -1 : 1))
@@ -679,7 +679,9 @@ export function describeDomainShelf(lexicon, facts) {
 		lines.push('')
 	}
 	const typed = rows.filter((fact) => Array.isArray(fact?.assertions) && fact.assertions.length > 0).length
-	lines.push('## 使用', '', `- 已升格事实里 ${typed}/${rows.length} 条带类型化断言。`)
+	const propositions = Array.isArray(hypotheses) ? hypotheses : []
+	const typedPropositions = propositions.filter((item) => Array.isArray(item?.assertions) && item.assertions.length > 0).length
+	lines.push('## 使用', '', `- 已升格事实里 ${typed}/${rows.length} 条带类型化断言;流转中的命题里 ${typedPropositions}/${propositions.length} 条带断言(未升格,不计入「引用」列)。`)
 	if (conflicts.length > 0) {
 		lines.push(`- **冲突 ${conflicts.length} 对**(只暴露,不裁决):`)
 		for (const conflict of conflicts) {

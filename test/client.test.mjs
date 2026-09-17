@@ -212,8 +212,8 @@ console.log('\n【客户端接线:注册在哪个插座、钥匙是什么】')
 	// 右栏:类型定义 + 体 + 标题,三样都要在
 	const kinds = host.tabDefinitions.map((definition) => definition.kind)
 	check(
-		'右栏页签类型注册了两张(世界树 / 技能 · 记忆)——「进展」撤了:它的四段各有归宿',
-		kinds.length === 2 && kinds.includes('clearai-worldtree') && kinds.includes('clearai-brain') && !kinds.includes('clearai-process'),
+		'右栏页签类型注册了两张(世界树 / 技能 · 记忆)——「进展」撤了:它的四段各有归宿;本体不占右栏,它长在事实格里',
+		kinds.length === 2 && kinds.includes('clearai-worldtree') && kinds.includes('clearai-brain') && !kinds.includes('clearai-process') && !kinds.includes('clearai-ontology'),
 		kinds.join(','),
 	)
 	check('预览页签不预先注册(第一次真的点开才注册)', !kinds.includes('clearai-preview'), kinds.join(','))
