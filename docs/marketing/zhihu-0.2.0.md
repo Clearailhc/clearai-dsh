@@ -1,4 +1,4 @@
-# 我们在 DeepSeek Harness 上把可信本体的构建走通了
+# clearai-dsh：在 DeepSeek Harness 上走通可信本体的构建路径
 
 > Clearailhc/clearai-dsh @ v0.2.0 · DSH 原生插件
 > 15 套件 1372 条断言 · 29 个意图工具 · 6694 行内核 · Apache-2.0
