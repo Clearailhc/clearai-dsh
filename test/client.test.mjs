@@ -543,6 +543,82 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const longText = react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? longView : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
 		check('超长依据只上摘要(全文进 tooltip;一行不被撑爆)', !longText.includes(longBasis) && /…/.test(longText), longText.slice(0, 200))
 		check('还没证据的命题如实说「还没有证据」', /还没有证据:先登记判据,再验证/.test(facts), facts.slice(0, 400))
+
+		// ── 本体格:图带 / 芯片 / 冲突 / 零成本 / 自动展开 / 过滤判据(阶段 D) ──
+		{
+			const lexiconFixture = {
+				terms: [
+					{ id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', parent: null, status: 'admitted', basis: '现场记录 R-01', aliases: [], uses: 1, version: 1 },
+					{ id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', parent: 'furnace_batch', status: 'deprecated', basis: 'b', aliases: [], uses: 0, version: 1, deprecated: { reason: '与父概念无法区分', at: 9 } },
+				],
+				predicates: [
+					{ id: 'oxygen_ppm', label: '氧含量', gloss: '熔体氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, status: 'admitted', basis: 'GB/T 5121', uses: 2, version: 1 },
+				],
+				conflicts: [
+					{ predicate: 'oxygen_ppm', subject: 'furnace_batch|B1', sides: [ { fact: 'f-1', value: 'quantity:8:ppm', text: 'a', level: 'L3', count: 1 }, { fact: 'f-2', value: 'quantity:12:ppm', text: 'b', level: 'L3', count: 1 } ] },
+				],
+				health: [ { kind: 'unused', severity: 'info', id: 'narrow_batch', detail: '还没有任何谓词或事实引用它' } ],
+				graph: {
+					nodes: [
+						{ id: 'term:furnace_batch', kind: 'concept', ref: 'furnace_batch', label: '炉次', status: 'admitted', uses: 1, depth: 0, x: 0, y: 0 },
+						{ id: 'v_quantity', kind: 'value_type', ref: 'quantity', label: 'quantity', status: 'admitted', uses: 0, depth: 0, x: 0, y: 132 },
+						{ id: 'furnace_batch|B1', kind: 'instance', ref: 'B1', label: 'B1', type: 'furnace_batch', status: 'live', facts: ['f-1'], x: 0, y: 264 },
+					],
+					edges: [
+						{ id: 'predicate:oxygen_ppm', kind: 'predicate', predicate: 'oxygen_ppm', label: '氧含量', from: 'term:furnace_batch', to: 'v_quantity', status: 'admitted', functional: true },
+						{ id: 'assertion:f-1:oxygen_ppm', kind: 'assertion', predicate: 'oxygen_ppm', label: '氧含量', from: 'furnace_batch|B1', to: 'v_quantity', status: 'live', level: 'L3', fact: 'f-1', scope: null },
+					],
+					bounds: { width: 400, height: 380 },
+				},
+			}
+			const typedView = {
+				...factsView,
+				lexicon: lexiconFixture,
+				facts: [
+					{ ...factsView.facts[0], assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' }, chip: 'B1 · 氧含量 = 8 ppm' } ] },
+					{ id: 'f-2', text: '复核读数为 12 ppm', scope: 's', level: 'L3', evidenceIds: ['e-1'], path: 'p', at: 31, assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 12, unit: 'ppm' }, chip: 'B1 · 氧含量 = 12 ppm' } ] },
+				],
+			}
+			const renderOnto = (v) => react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? v : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
+			const typed = renderOnto(typedView)
+
+			// ① 零成本:没有词条时,这一格与从前逐像素相同(图带/冲突行/维护区都不出现)
+			const plain = renderOnto(factsView)
+			check('零成本:没有词条就没有图带/冲突行/维护区(与从前同形)', !plain.includes('本体图') && !plain.includes('实体图') && !plain.includes('冲突') && !plain.includes('词汇('), plain.slice(0, 120))
+
+			// ② 图带:本体图/实体图切换在,节点标签在,截断说明的措辞在(有节点就不会出现)
+			check('图带:层次切换与节点都在(本体图默认)', typed.includes('本体图') && typed.includes('实体图') && typed.includes('炉次') && typed.includes('点节点按概念过滤'), typed.slice(0, 200))
+			check('图带:废止节点是虚线幽灵的来源数据(status=deprecated 的词条在维护区带缘由)', lexiconFixture.terms[1].status === 'deprecated' && String(lexiconFixture.terms[1].deprecated.reason).includes('与父概念无法区分'))
+
+			// ③ 冲突:一行指针 + 受害条目的内联标记
+			check('冲突行:仅当有冲突,一句话指针说清两侧', typed.includes('Conflict') === false && /冲突 1 对/.test(typed) && typed.includes('f-1(quantity:8:ppm)') && typed.includes('只暴露,不裁决'), typed.slice(0, 400))
+			check('冲突内联:受害条目自己亮出来(不必回看指针行)', /冲突 · oxygen_ppm/.test(typed), typed.slice(0, 500))
+
+			// ④ 断言芯片:已确立条目带芯片;命题带芯片且标注未升格
+			check('断言芯片:已确立条目显示「主语 · 谓词 = 值」', typed.includes('B1 · 氧含量 = 8 ppm') && typed.includes('B1 · 氧含量 = 12 ppm'), typed.slice(300, 700))
+
+			// ⑤ 词汇维护区:有事实时默认收起(词条表不出现),但区头计数在
+			check('维护区:有事实时默认收起(词条 id 不进 DOM,区头计数在)', !typed.includes('furnace_batch narrow') && /词汇\(2/.test(typed), typed.slice(-300))
+
+			// ⑥ 语言先于句子:0 条目 0 命题而有词条 ⇒ 维护区自动展开
+			const emptyShelves = { ...typedView, facts: [], goal: null }
+			const early = renderOnto(emptyShelves)
+			check('语言先于句子:空货架时维护区自动展开(词条表直接可见)', early.includes('furnace_batch') && early.includes('oxygen_ppm'), early.slice(0, 300))
+
+			// ⑦ 过滤判据(纯函数):断言命中、文本兜底、无关不命中
+			const termMatches = bundle.exports.__ontology?.termMatches
+			check('测试缝在:termMatches 可直接调', typeof termMatches === 'function')
+			if (typeof termMatches === 'function') {
+				const byAssertion = termMatches({ id: 'furnace_batch', label: '炉次', aliases: [] }, { text: '别的', assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } } ] })
+				const byText = termMatches({ id: 'furnace_batch', label: '炉次', aliases: ['熔次'] }, { text: '这条结论按熔次对齐', assertions: null })
+				const byAlias = termMatches({ id: 'fb', label: '炉次', aliases: ['熔铸循环'] }, { text: '每个熔铸循环…', assertions: null })
+				const miss = termMatches({ id: 'furnace_batch', label: '炉次', aliases: [] }, { text: '完全无关的一条', assertions: null })
+				check('过滤判据:断言命中 ∨ 文本命中(含别名)∧ 无关不命中', byAssertion === true && byText === true && byAlias === true && miss === false, `${String(byAssertion)}/${String(byText)}/${String(byAlias)}/${String(miss)}`)
+			}
+
+			// ⑧ 图组件可独立渲染(空图不炸)
+			check('图组件:空词汇层渲染空提示不炸', react.render(components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', expanded: false, onLayer: () => {}, onToggleExpand: () => {}, onFilter: () => {} })).includes('这一层还是空的。'))
+		}
 		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
 		// 这一格**就是**事实库:不再挂一个「打开事实库」的空链接,整行点开原件
 		check(

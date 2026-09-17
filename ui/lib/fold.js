@@ -16,7 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, deriveConflicts, emptyLexicon, graphProjection, lexiconHealth, normalizeLexicon } from './domain-language.js'
+import { applyLexiconMutation, deriveConflicts, emptyLexicon, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon } from './domain-language.js'
 
 /** 世界线分支状态的秩。秩只增;一旦出现 adopted,整个分叉的分支状态冻结。 */
 const BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }
@@ -1521,8 +1521,10 @@ export function view(state, sessionId) {
 							/** 从没被走过的等级(派生):面板据此说清「这一级是跳上来的」。 */
 							untouchedLevels: hypothesis.untouchedLevels,
 							version: hypothesis.version,
-							/** 断言随假设走(未升格):面板同画芯片,但标注「未升格」。 */
-							assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
+							/** 断言随假设走(未升格):面板同画芯片(chip 同样在投影侧算好),标注「未升格」。 */
+							assertions: Array.isArray(hypothesis.assertions)
+								? hypothesis.assertions.map((assertion) => ({ ...assertion, chip: formatAssertion(state.lexicon, assertion) }))
+								: null,
 						})),
 					},
 		/**

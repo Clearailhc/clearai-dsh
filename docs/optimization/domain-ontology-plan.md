@@ -196,6 +196,31 @@ Notes:
 - Locale keys exist in both languages.
 
 **Rollback**: revert the stage commit; the facts view returns to its two shelves (the band and the chips are purely additive).
+**Progress — done (panel side)**
+
+Delivered:
+
+- the projection gained `chip` (one human line per assertion, computed by `formatAssertion` on the projection side; the client only renders);
+- the ontology view assembled: conflict line (only when present) → graph band → filter line → ontology shelf → propositions → collapsed vocabulary maintenance; the zero-cost contract (pixel-identical without vocabulary) is pinned by a test;
+- **graph band**: ontology | entity toggle, wheel zoom, drag pan, "reset"/"panorama" (panorama lifts the 40-node cap); clicking a concept/instance node filters by concept; an edge click shows a one-line detail; conflict edges are red;
+- **assertion chips**: on fact rows and proposition rows (propositions marked "not yet promoted"), expanding a term card **in place** (gloss / subject domain / range / single-valuedness / basis; actions: filter by this predicate, see it in the graph);
+- **conflicts**: one pointer line plus inline marks on the affected rows;
+- **filtering**: assertion hit ∨ text/alias hit (the `termMatches` predicate is a pure function exported through the `__ontology` seam); the N/M line tells the truth and clears in one click;
+- **maintenance block**: term table / health / deprecations (with reasons) / "open the vocabulary shelf"; auto-expands at 0 facts, 0 propositions with vocabulary present;
+- ~30 bilingual locale keys.
+
+Verification:
+
+```text
+$ node test/client.test.mjs   → 211 passed, 0 failed (11 new ontology-view assertions)
+$ bash test/run.sh            → all 15 suites green
+```
+
+Notes:
+
+- zoom/pan/panorama interaction is not verified in a real browser (the string-render stub checks structure only) — listed for the stage-G walkthrough;
+- the README panel screenshots still carry pre-rename copy; retake them together with the ontology-view walkthrough (already recorded in known-gaps).
+
 
 ### Stage E: graph editing and the host route
 
