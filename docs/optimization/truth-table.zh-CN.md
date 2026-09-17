@@ -8,13 +8,13 @@
 
 ## 计数
 
-- 机制条目：**58**
-- 按状态：已实现 52 · 部分实现 1 · 设计目标 1 · 已删除 4
-- 按强度：硬边界 41 · 建议 9 · 原生 3 · 仅提示词 1 · 废弃 4
-- 按归宿：保持设计目标 2 · 已删除并记账 4
-- 真正阻断执行的：**18**
+- 机制条目：**64**
+- 按状态：已实现 55 · 部分实现 2 · 设计目标 3 · 已删除 4
+- 按强度：硬边界 45 · 建议 11 · 原生 3 · 仅提示词 1 · 废弃 4
+- 按归宿：变成机制 3 · 保持设计目标 2 · 已删除并记账 4
+- 真正阻断执行的：**19**
 - 受 autonomy 影响的：**2**
-- 存在已知不符（文档 / 注释与代码不一致）的：**2**
+- 存在已知不符（文档 / 注释与代码不一致）的：**3**
 
 ## 代码常量快照
 
@@ -56,6 +56,11 @@
 | `fact-retraction` | 事实撤回:人审查后决定 | 认识论 | 已实现 | 硬边界 | 权威 | human | 否 | 否 | `preset/plugins/clearai-kernel.js markFactReviewed` |
 | `observation-provenance` | 观测来源:声明必须与生产者对得上 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/ontology.js VERIFICATION_LOOP` |
 | `plan-auto-confirm` | 已删除:无人值守立约即授权 | 认识论 | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
+| `ontology-lexicon-events` | 领域词汇事件折成 state.lexicon | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js applyLexiconMutation` |
+| `assertion-validation` | 断言形态校验（落账之前） | 认识论 | 部分实现 | 硬边界 | 权威 | model | 是 | 否 | `ui/lib/domain-language.js validateAssertions` |
+| `conflict-derivation` | 冲突派生（只暴露，不裁决） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js deriveConflicts` |
+| `knowledge-graph-projection` | 词汇图 / 知识图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js graphProjection` |
+| `ontology-verbs` | 设计目标：领域词汇的具名动词与货架 | 认识论 | 设计目标 | 建议 | 无 | model | 否 | 否 | — |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/plugins/prompts.js exploration-rhythm` |
 | `scout-precommit` | 立约前侦察（一生一次） | Harness | 已实现 | 建议 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js runScout / precommitRecon / scoutDigest / sweepScouts / persistMaterial / noticeBlock` |
@@ -78,7 +83,7 @@
 | `prompt-sections` | 提示词段（23 段定义 / 22 段在场） | Harness | 已实现 | 建议 | 无 | system | 否 | **是** | `preset/plugins/prompts.js SECTIONS` |
 | `exploration-zone` | 已删除:把「探索区」当作一个被命名的模式 | Harness | 已删除 | 废弃 | 非权威 | model | 否 | 否 | — |
 | `subrun-lifecycle` | 子 run 统一生命周期（一次性句柄 + 一条收集通道） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors` |
-| `host-invariants` | 宿主不变量（五条契约，落账之前判） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `ui/lib/invariant.js（契约与增量折叠 + install/apply）` |
+| `host-invariants` | 宿主不变量（五条契约，落账之前判） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | 否 | `ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）` |
 | `set-autonomy` | 已删除:人在面板上切换运行档 | Harness | 已删除 | 废弃 | 无 | human | 否 | 否 | — |
 | `budget-tiers` | 已删除:人在场 6 轮 / 无人值守 512 轮 | Harness | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
 | `non-authoritative-isolation` | 非权威路径写不进权威账本 | Harness | 已实现 | 硬边界 | 无 | system | 是 | 否 | `test/authority-boundary.test.mjs` |
@@ -87,6 +92,7 @@
 | `context-pruning` | 上下文剪枝与压缩（宿主原生） | 宿主 | 已实现 | 原生 | 无 | system | 否 | 否 | `preset/agent.cordis.yml compaction` |
 | `model-routing` | 模型路由与切换（宿主原生，ClearAI 不持有） | 宿主 | 已实现 | 原生 | 无 | host | 否 | 否 | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `commands-menu` | 人类 `/` 命令菜单 | 交互 | 已实现 | 原生 | 无 | human | 否 | 否 | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
+| `ontology-panel-graph` | 设计目标：面板「本体」页签与图编辑 | 交互 | 设计目标 | 建议 | 无 | human | 否 | 否 | — |
 
 ## 逐条明细
 
@@ -698,11 +704,11 @@
 - **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：内核派任何子任务：侦察、世界线执行者、评估者、横评仲裁
 - **输入**：人格 + 任务书 + 工具面 + （评估者/仲裁）结构化输出 schema
-- **输出**：对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）;回合结束时另写一条 clearai/turn-ended（在飞的如实记录）
+- **输出**：对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）;回合结束时另落一笔工作区账本快照（git/snapshot），不判在飞、不写裁决
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构
 - **理由**：子任务的生命周期由内核掌握，但**结束与存活的权威是宿主**：`subagents.listChildren`（`activity: running / inactive`）与 `subagent/end` 事件。结算有两条来源：本进程攥着的句柄，以及**从子会话自己的日志取回**（`recoverFromChildSession`——侦察与评估者同一条路）。宿主说已结束 ⇒ **先取回**，取不回才如实落 unknown，理由写清（`ended_uncollected` ≠ `lost`）——跳过取回就把「结束」误报成「死亡」，还诱导重新交付 ⇒ 同一次评估被重做。结算只报事实不给建议：要不要重试是计划层的决定。
-- **代码**：preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js clearai/turn-ended
+- **代码**：preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js case 'git/snapshot'
 - **测试**：test/kernel.test.mjs（落定 / 认 id / 回合收尾）; test/host.test.mjs（事件折得进投影且可重放） · **配置**：auditProvider=spawn, auditTimeoutMs
 - **提示词**：clearai/delegation · **文档**：docs/optimization/e2e-longruns.zh-CN.md
 
@@ -714,8 +720,8 @@
 - **输出**：违反时抛宿主 InvariantError（归属 clearai-dsh）；通过则什么都不做
 - **阻断执行**：是 · **受 autonomy 影响**：否
 - **原生替代**：@deepseek-ai/dsh-invariants（宿主自己的包级不变量注册表；不另造一套自检）
-- **理由**：把这五条契约交给宿主的包级不变量注册表（`register(packageName, installer)`，违反时抛带稳定错误码与归属包名的 `InvariantError`），判在宿主的 `internal/dispatch` 那一拍——**不合法的事实根本进不了日志**。**范围与代价，照实说**：①它是诊断面，**随包的 web/headless profile 并不挂这个服务**（宿主自己的开发组合才挂），所以它在用户那儿不生效；②它自己折了一整套 plans/steps/forks/audits 索引，**等于第二套解释器**——上岗第一小时就因为与主投影不一致被修了两次；③因此它按 [权威归属](../../authority-map.zh-CN.md) §四 的界线**正在复审**：已经发生的运行失败**必须允许入账**，"只允许好看的事实进入账本"是把一致性做成了不实陈述。
-- **代码**：ui/lib/invariant.js（契约与增量折叠 + install/apply）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）
+- **理由**：把这五条契约交给宿主的包级不变量注册表（`register(packageName, installer)`，违反时抛带稳定错误码与归属包名的 `InvariantError`），判在宿主的 `internal/dispatch` 那一拍——**不合法的事实根本进不了日志**。**范围与代价，照实说**：①它是诊断面，**随包的 web/headless profile 并不挂这个服务**（宿主自己的开发组合才挂），所以它在用户那儿不生效；②它**不再自己折一套索引**——状态用生产折法（`fold.js` 的 `applyEvent`）推进，本文件只留五条契约与一个 admitted 累积，形状解释代码已删（见权威归属 §二④）；③已经发生的运行失败**必须允许入账**——"只允许好看的事实进入账本"是把一致性做成了不实陈述。
+- **代码**：ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）
 - **测试**：test/invariant.test.mjs（合法放行 / 每条契约的违反 / 落账之前拦下 / 伪步骤不误伤） · **配置**：宿主 invariants 的 enabled / package_allowlist / package_blocklist
 - **提示词**：— · **文档**：docs/release-verification.zh-CN.md
 
@@ -828,6 +834,84 @@
 - **代码**：preset/plugins/clearai-kernel.js snapshotWorkspace; ui/lib/fold.js writeCalls
 - **测试**：test/kernel.test.mjs（回合边界快照）; test/host.test.mjs（writeCalls 计数） · **配置**：—
 - **提示词**：— · **文档**：docs/verification-loop.zh-CN.md
+
+### `ontology-lexicon-events` · 领域词汇事件折成 state.lexicon
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：账本里出现 ontology/term_added、ontology/predicate_added、*_revised、*_deprecated 六类事件之一
+- **输入**：变更记录 {t, id, label, gloss, aliases, parent, range, functional, reason, basis}
+- **输出**：state.lexicon：概念表 / 谓词表 / 修订史 / 废止表
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：词汇是项目的语言层：接纳要带依据、修订留痕、废止是黏性终态且没有删除。折法只解释事件，校验发生在落账之前。
+- **代码**：ui/lib/domain-language.js applyLexiconMutation; ui/lib/fold.js case 'ontology/term_added'
+- **测试**：test/domain-language.test.mjs · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
+
+### `assertion-validation` · 断言形态校验（落账之前）
+
+- **层**：认识论 · **状态**：部分实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **触发**：为一条假设登记断言（不提供放行；提供即严校）
+- **输入**：assertions[{predicate, subject, object, qualifiers?}] 与当前词汇
+- **输出**：问题清单（空 = 通过）；不通过则调用方拒收
+- **阻断执行**：是 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：引用不存在的谓词、值域不符或同一事实自相矛盾，必须在进账本之前被拒——先污染后治理不适用于知识库。
+- **归宿**：变成机制
+- **代码**：ui/lib/domain-language.js validateAssertions
+- **测试**：test/domain-language.test.mjs · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
+- **已知不符**：判据已实现并被测试覆盖，但生产入口还没有调用它：SetGoal 不接收断言、CloseGoal 不带断言，所以真实会话里升格的事实仍然只有散文。
+
+### `conflict-derivation` · 冲突派生（只暴露，不裁决）
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：两条未撤回的已确认事实落在同一单值谓词、同一主体、而客体不同
+- **输入**：事实集（含断言与复核态）与词汇（谓词的 functional 声明）
+- **输出**：derive().conflicts：成对读数（谓词 · 主体 · 两侧事实与取值）
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：同一单值谓词上的两个取值是一处必须看得见的不一致；但谁为真不是系统能裁的——它只报，不撤回任何一侧、也不进闸门。
+- **代码**：ui/lib/domain-language.js deriveConflicts; ui/lib/fold.js deriveConflicts(factRows
+- **测试**：test/domain-language.test.mjs · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
+
+### `knowledge-graph-projection` · 词汇图 / 知识图投影（确定性布局）
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：每次投影（view() 计算读面时）
+- **输入**：state.lexicon 与 state.facts
+- **输出**：{nodes, edges, bounds}：词汇层（概念 / is_a / 谓词）与知识层（实例 / 断言），节点带确定性坐标
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：图是最自然的表现形式，但它是投影而不是存储：同一账本必得同一张图，坐标、缩放与筛选都不进账本。
+- **代码**：ui/lib/domain-language.js graphProjection; ui/lib/fold.js graphProjection
+- **测试**：test/domain-language.test.mjs · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
+
+### `ontology-verbs` · 设计目标：领域词汇的具名动词与货架
+
+- **层**：认识论 · **状态**：设计目标 · **强度**：建议 · **权威**：无 · **责任方**：model
+- **触发**：—
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：词条只能经具名动词落账（RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge），clear/ontology/domain.md 由内核幂等渲染。今天没有任何路径把词条写进账本。
+- **归宿**：变成机制
+- **代码**：—
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/optimization/domain-ontology-plan.zh-CN.md
+
+### `ontology-panel-graph` · 设计目标：面板「本体」页签与图编辑
+
+- **层**：交互 · **状态**：设计目标 · **强度**：建议 · **权威**：无 · **责任方**：human
+- **触发**：—
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：图编辑只是具名动词的图形前端：新增节点 = RegisterTerm、连线 = RegisterPredicate、废止 = DeprecateTerm；拖动与缩放不产生任何账本事件。
+- **归宿**：变成机制
+- **代码**：—
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/optimization/domain-ontology-plan.zh-CN.md
 
 ---
 

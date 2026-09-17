@@ -99,13 +99,21 @@
 | 提示词 22 段清单驱动、槽位互斥收敛 | `SECTIONS` + 贡献表 | 硬 | 已实现 | truth-table 校验 |
 | 本体声明与实现交叉核对 | `ontology.js` + 装配校验 | 硬 | 已实现 | ontology 套件 |
 
+### 领域本体（词汇 / 断言 / 冲突 / 图）
+
+| 行为 | 承载机制 | 硬度 | 状态 | 验证 |
+|---|---|---|---|---|
+| 六个词汇事件折成 `state.lexicon`（修订留痕、废止黏性、没有删除） | `ui/lib/domain-language.js` + `fold.js` | 硬 | 折法已实现；生产动词是设计目标（阶段 C） | `test/domain-language.test.mjs` |
+| 断言随升格落地（引用必须存在、形态合域、同一事实自洽） | `fact/promoted` + `validateAssertions` | 硬 | 折法已实现；`SetGoal` / `CloseGoal` 未接线 | 同上；接线在阶段 C |
+| 冲突只暴露不裁决（单值谓词 + 同主体 + 异客体 + 两侧未撤回） | `deriveConflicts` + 运行态卡 | 硬 | 已实现 | 同上 |
+| 词汇图 / 知识图由同一折法派生（确定性布局，坐标不进账本） | `graphProjection` + `view().lexicon` | 硬 | 折法已实现；面板未渲染（阶段 D–E） | 同上 |
+
 ### 已知不覆盖（如实列出，归宿见 §5）
 
 | 拍 | 预期行为 | 状态 | 归宿 |
 |---|---|---|---|
 | ⑦+ | 覆盖**每一次**评估的通用 L4 闸门 | 仅设计 | 保持 design-only，文档不冒称 |
 | — | 验证八状态机 | 仅设计 | 保持 design-only |
-| — | `retracted`（已撤回）有产生者 | 仅设计 | 保持 design-only |
 | — | 观测来源 `human_upload` / `file_drop` / `callback` / `pull` | 仅设计 | 保持 design-only；当前只有 `self`/`scout` 生产者 |
 
 ## 3. 不可缩水清单 与 可交还清单
@@ -158,9 +166,10 @@
 - **保持 design-only 并如实标注**：通用 L4 门。判据：真值表里各有一行、`status` 与
   `destination` 都正确、任何文档不冒称已实现。现在**每一条非 implemented 的行都带归宿**
   （变成机制 / 保持设计目标 / 已删除并记账），「还没做」与「决定不做」不再写成同一个样子。
-- **变成机制**：`retracted` 产生者（真值表行 `fact-retraction`）、观测来源收窄
-  （`observation-provenance`）、验证生命周期里**缺的那两条保证**（`verification-lifecycle`）、
-  以及探索区（`exploration-zone`）。
+- **已经变成机制**：`retracted` 产生者（真值表行 `fact-retraction`，已实现：推翻只标记事实，
+  人用 `retract_fact` / `keep_fact` 决定撤回或维持，落一条 `fact/reviewed`）。
+- **仍然待做**：观测来源收窄（`observation-provenance`，当前类型只声明真有生产者的 `self` / `scout`）、
+  验证生命周期里**缺的那两条保证**（`verification-lifecycle`）、以及探索区（`exploration-zone`）。
 - **删除并记账**：已删机制（`set_autonomy`、6/512 预算、`autoConfirmed`）在真值表里各有
   一行 `status=removed`、`destination=deleted`，另在 CHANGELOG 留痕；代码与注释不再叙述。
 

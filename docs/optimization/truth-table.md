@@ -8,13 +8,13 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **58**
-- By status: Implemented 52 · Partial 1 · Design only 1 · Removed 4
-- By strength: Hard boundary 41 · Advisory 9 · Native 3 · Prompt only 1 · Deprecated 4
-- By destination: stays design-only 2 · deleted and accounted 4
-- Actually blocking execution: **18**
+- Mechanisms: **64**
+- By status: Implemented 55 · Partial 2 · Design only 3 · Removed 4
+- By strength: Hard boundary 45 · Advisory 11 · Native 3 · Prompt only 1 · Deprecated 4
+- By destination: becomes a mechanism 3 · stays design-only 2 · deleted and accounted 4
+- Actually blocking execution: **19**
 - Affected by autonomy: **2**
-- Carrying a known mismatch between docs/comments and code: **2**
+- Carrying a known mismatch between docs/comments and code: **3**
 
 ## Code constant snapshot
 
@@ -56,6 +56,11 @@ This section is exported from code, not written by hand:
 | `fact-retraction` | Fact retraction by human decision | Epistemic | Implemented | Hard boundary | Authoritative | human | no | no | `preset/plugins/clearai-kernel.js markFactReviewed` |
 | `observation-provenance` | Observation provenance: declared sources vs producers | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/ontology.js VERIFICATION_LOOP` |
 | `plan-auto-confirm` | Removed: unattended plans auto-confirmed themselves | Epistemic | Removed | Deprecated | None | system | no | no | — |
+| `ontology-lexicon-events` | Domain vocabulary events fold into state.lexicon | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js applyLexiconMutation` |
+| `assertion-validation` | Assertion shape validation (before anything lands) | Epistemic | Partial | Hard boundary | Authoritative | model | yes | no | `ui/lib/domain-language.js validateAssertions` |
+| `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js deriveConflicts` |
+| `knowledge-graph-projection` | Vocabulary and knowledge graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js graphProjection` |
+| `ontology-verbs` | Design target: named verbs for the domain vocabulary, and the shelf | Epistemic | Design only | Advisory | None | model | no | no | — |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | no | `preset/plugins/prompts.js exploration-rhythm` |
 | `scout-precommit` | Pre-commit reconnaissance | Harness | Implemented | Advisory | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js runScout / precommitRecon / scoutDigest / sweepScouts / persistMaterial / noticeBlock` |
@@ -78,7 +83,7 @@ This section is exported from code, not written by hand:
 | `prompt-sections` | Prompt sections: 23 defined, 22 mounted at a time | Harness | Implemented | Advisory | None | system | no | **yes** | `preset/plugins/prompts.js SECTIONS` |
 | `exploration-zone` | Removed: the exploration zone as a named mode | Harness | Removed | Deprecated | Non-authoritative | model | no | no | — |
 | `subrun-lifecycle` | Unified sub-run lifecycle (one-shot handle, one collection channel) | Harness | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors` |
-| `host-invariants` | Host-side invariants (five contracts, judged before the append) | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `ui/lib/invariant.js（契约与增量折叠 + install/apply）` |
+| `host-invariants` | Host-side invariants (five contracts, judged before the append) | Harness | Implemented | Hard boundary | Authoritative | system | yes | no | `ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）` |
 | `set-autonomy` | Removed: switching the run tier from the panel | Harness | Removed | Deprecated | None | human | no | no | — |
 | `budget-tiers` | Removed: 6-round / 512-round budget tiers | Harness | Removed | Deprecated | None | system | no | no | — |
 | `non-authoritative-isolation` | Non-authoritative paths cannot write the authoritative ledger | Harness | Implemented | Hard boundary | None | system | yes | no | `test/authority-boundary.test.mjs` |
@@ -87,6 +92,7 @@ This section is exported from code, not written by hand:
 | `context-pruning` | Context pruning and compaction, native to the host | Host | Implemented | Native | None | system | no | no | `preset/agent.cordis.yml compaction` |
 | `model-routing` | Model routing and switching, host-native and not owned by ClearAI | Host | Implemented | Native | None | host | no | no | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `commands-menu` | Human `/` command menu | UX | Implemented | Native | None | human | no | no | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
+| `ontology-panel-graph` | Design target: the ontology tab and graph editing | UX | Design only | Advisory | None | human | no | no | — |
 
 ## Detail
 
@@ -698,11 +704,11 @@ This section is exported from code, not written by hand:
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: 内核派任何子任务：侦察、世界线执行者、评估者、横评仲裁
 - **Input**: 人格 + 任务书 + 工具面 + （评估者/仲裁）结构化输出 schema
-- **Output**: 对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）;回合结束时另写一条 clearai/turn-ended（在飞的如实记录）
+- **Output**: 对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）;回合结束时另落一笔工作区账本快照（git/snapshot），不判在飞、不写裁决
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构
 - **Rationale**: 子任务的生命周期由内核掌握，但**结束与存活的权威是宿主**：`subagents.listChildren`（`activity: running / inactive`）与 `subagent/end` 事件。结算有两条来源：本进程攥着的句柄，以及**从子会话自己的日志取回**（`recoverFromChildSession`——侦察与评估者同一条路）。宿主说已结束 ⇒ **先取回**，取不回才如实落 unknown，理由写清（`ended_uncollected` ≠ `lost`）——跳过取回就把「结束」误报成「死亡」，还诱导重新交付 ⇒ 同一次评估被重做。结算只报事实不给建议：要不要重试是计划层的决定。
-- **Code**: preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js clearai/turn-ended
+- **Code**: preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js case 'git/snapshot'
 - **Tests**: test/kernel.test.mjs（落定 / 认 id / 回合收尾）; test/host.test.mjs（事件折得进投影且可重放） · **Config**: auditProvider=spawn, auditTimeoutMs
 - **Prompt**: clearai/delegation · **Docs**: docs/optimization/e2e-longruns.zh-CN.md
 
@@ -714,8 +720,8 @@ This section is exported from code, not written by hand:
 - **Output**: 违反时抛宿主 InvariantError（归属 clearai-dsh）；通过则什么都不做
 - **Blocks execution**: yes · **Affected by autonomy**: no
 - **Native alternative**: @deepseek-ai/dsh-invariants（宿主自己的包级不变量注册表；不另造一套自检）
-- **Rationale**: 把这五条契约交给宿主的包级不变量注册表（`register(packageName, installer)`，违反时抛带稳定错误码与归属包名的 `InvariantError`），判在宿主的 `internal/dispatch` 那一拍——**不合法的事实根本进不了日志**。**范围与代价，照实说**：①它是诊断面，**随包的 web/headless profile 并不挂这个服务**（宿主自己的开发组合才挂），所以它在用户那儿不生效；②它自己折了一整套 plans/steps/forks/audits 索引，**等于第二套解释器**——上岗第一小时就因为与主投影不一致被修了两次；③因此它按 [权威归属](../../authority-map.zh-CN.md) §四 的界线**正在复审**：已经发生的运行失败**必须允许入账**，"只允许好看的事实进入账本"是把一致性做成了不实陈述。
-- **Code**: ui/lib/invariant.js（契约与增量折叠 + install/apply）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）
+- **Rationale**: 把这五条契约交给宿主的包级不变量注册表（`register(packageName, installer)`，违反时抛带稳定错误码与归属包名的 `InvariantError`），判在宿主的 `internal/dispatch` 那一拍——**不合法的事实根本进不了日志**。**范围与代价，照实说**：①它是诊断面，**随包的 web/headless profile 并不挂这个服务**（宿主自己的开发组合才挂），所以它在用户那儿不生效；②它**不再自己折一套索引**——状态用生产折法（`fold.js` 的 `applyEvent`）推进，本文件只留五条契约与一个 admitted 累积，形状解释代码已删（见权威归属 §二④）；③已经发生的运行失败**必须允许入账**——"只允许好看的事实进入账本"是把一致性做成了不实陈述。
+- **Code**: ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）; ui/lib/index.js（有 invariants 服务就注册）; tools/e2e-run.mjs（长测里挂上服务）
 - **Tests**: test/invariant.test.mjs（合法放行 / 每条契约的违反 / 落账之前拦下 / 伪步骤不误伤） · **Config**: 宿主 invariants 的 enabled / package_allowlist / package_blocklist
 - **Prompt**: — · **Docs**: docs/release-verification.zh-CN.md
 
@@ -828,6 +834,84 @@ This section is exported from code, not written by hand:
 - **Code**: preset/plugins/clearai-kernel.js snapshotWorkspace; ui/lib/fold.js writeCalls
 - **Tests**: test/kernel.test.mjs（回合边界快照）; test/host.test.mjs（writeCalls 计数） · **Config**: —
 - **Prompt**: — · **Docs**: docs/verification-loop.zh-CN.md
+
+### `ontology-lexicon-events` · Domain vocabulary events fold into state.lexicon
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 账本里出现 ontology/term_added、ontology/predicate_added、*_revised、*_deprecated 六类事件之一
+- **Input**: 变更记录 {t, id, label, gloss, aliases, parent, range, functional, reason, basis}
+- **Output**: state.lexicon：概念表 / 谓词表 / 修订史 / 废止表
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 词汇是项目的语言层：接纳要带依据、修订留痕、废止是黏性终态且没有删除。折法只解释事件，校验发生在落账之前。
+- **Code**: ui/lib/domain-language.js applyLexiconMutation; ui/lib/fold.js case 'ontology/term_added'
+- **Tests**: test/domain-language.test.mjs · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
+
+### `assertion-validation` · Assertion shape validation (before anything lands)
+
+- **Layer**: Epistemic · **Status**: Partial · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 为一条假设登记断言（不提供放行；提供即严校）
+- **Input**: assertions[{predicate, subject, object, qualifiers?}] 与当前词汇
+- **Output**: 问题清单（空 = 通过）；不通过则调用方拒收
+- **Blocks execution**: yes · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 引用不存在的谓词、值域不符或同一事实自相矛盾，必须在进账本之前被拒——先污染后治理不适用于知识库。
+- **Destination**: becomes a mechanism
+- **Code**: ui/lib/domain-language.js validateAssertions
+- **Tests**: test/domain-language.test.mjs · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
+- **Known mismatch**: 判据已实现并被测试覆盖，但生产入口还没有调用它：SetGoal 不接收断言、CloseGoal 不带断言，所以真实会话里升格的事实仍然只有散文。
+
+### `conflict-derivation` · Conflict derivation (surfaced, never adjudicated)
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 两条未撤回的已确认事实落在同一单值谓词、同一主体、而客体不同
+- **Input**: 事实集（含断言与复核态）与词汇（谓词的 functional 声明）
+- **Output**: derive().conflicts：成对读数（谓词 · 主体 · 两侧事实与取值）
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 同一单值谓词上的两个取值是一处必须看得见的不一致；但谁为真不是系统能裁的——它只报，不撤回任何一侧、也不进闸门。
+- **Code**: ui/lib/domain-language.js deriveConflicts; ui/lib/fold.js deriveConflicts(factRows
+- **Tests**: test/domain-language.test.mjs · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
+
+### `knowledge-graph-projection` · Vocabulary and knowledge graph projection (deterministic layout)
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 每次投影（view() 计算读面时）
+- **Input**: state.lexicon 与 state.facts
+- **Output**: {nodes, edges, bounds}：词汇层（概念 / is_a / 谓词）与知识层（实例 / 断言），节点带确定性坐标
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 图是最自然的表现形式，但它是投影而不是存储：同一账本必得同一张图，坐标、缩放与筛选都不进账本。
+- **Code**: ui/lib/domain-language.js graphProjection; ui/lib/fold.js graphProjection
+- **Tests**: test/domain-language.test.mjs · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
+
+### `ontology-verbs` · Design target: named verbs for the domain vocabulary, and the shelf
+
+- **Layer**: Epistemic · **Status**: Design only · **Strength**: Advisory · **Authority**: None · **Actor**: model
+- **Trigger**: —
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 词条只能经具名动词落账（RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge），clear/ontology/domain.md 由内核幂等渲染。今天没有任何路径把词条写进账本。
+- **Destination**: becomes a mechanism
+- **Code**: —
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/optimization/domain-ontology-plan.zh-CN.md
+
+### `ontology-panel-graph` · Design target: the ontology tab and graph editing
+
+- **Layer**: UX · **Status**: Design only · **Strength**: Advisory · **Authority**: None · **Actor**: human
+- **Trigger**: —
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 图编辑只是具名动词的图形前端：新增节点 = RegisterTerm、连线 = RegisterPredicate、废止 = DeprecateTerm；拖动与缩放不产生任何账本事件。
+- **Destination**: becomes a mechanism
+- **Code**: —
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/optimization/domain-ontology-plan.zh-CN.md
 
 ---
 

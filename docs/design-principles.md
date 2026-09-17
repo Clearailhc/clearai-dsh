@@ -22,6 +22,14 @@ For L3+ work, caller-supplied verdicts are rejected. The kernel dispatches an in
 
 The system is append-only in meaning. Refinements retain prior criteria, superseded hypotheses remain recorded, voiding records a reason, and re-evaluation creates new evidence that can reference what it supersedes. Settled steps and branch decisions cannot silently regress; recovery is represented by new events or commits, never by erasing the past.
 
+## A graph is a projection, not storage
+
+Both the ontology graph and the knowledge graph are computed from the same fold: `graphProjection()` is a deterministic pure function (the same ledger always yields the same nodes, edges and default layout), and coordinates, zoom and filters never enter the ledger. Editing on the panel only invokes verbs, and the shelf is rendered idempotently — **a read surface never turns back into authority**.
+
+## A semantic change must take a new id
+
+Domain vocabulary may revise display information (name, gloss, aliases), but a change to **meaning, subject domain, range or single-valuedness** must deprecate the old entry and register a new one. A stable id whose meaning drifts silently through history rewrites every old fact in today's terms — that is a false statement, not a refactor.
+
 ## Consequences
 
 These principles imply one authoritative loop ledger, derived state rather than a second mutable state store, explicit human gates where required, and a strict separation between host safety invariants and preset epistemic behavior. See `soul-map.md` for the implementation map and current status.

@@ -1,6 +1,6 @@
 # ClearAI expected timing diagrams
 
-> These diagrams describe **who does what to whom, when, along five main paths**.
+> These diagrams describe **who does what to whom, when, along six main paths**.
 > They pair with the state machines ([`state-machines.md`](state-machines.md)):
 > state machines answer "which states exist", timing diagrams answer "who pushed it there".
 > Every tool name and event name in the diagrams maps one-to-one to code.
@@ -233,7 +233,45 @@ Key points:
   reversal depends on them staying readable forever.
 - A fork closed while an executor has not returned → derived `unreturned`; stop waiting.
 
-## 5. Human gate path · implemented
+## 5. Domain-ontology path · partially implemented (the fold half ships)
+
+**Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. **Only the
+fold half runs today**: the six vocabulary events fold, assertions fold, and conflicts and graphs are derived;
+the six verbs that produce them and the panel are not wired yet (stages C–E). Tool names marked as design
+targets in the diagram are therefore **not in the code yet** — they are what this is growing into; event names
+and the fold can be checked line by line today.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant M as Model
+    participant K as ClearAI kernel
+    participant L as Fact ledger
+    participant P as Projection
+    participant G as Read surfaces (shelf / card / panel)
+
+    Note over M,K: from stage C (design target)
+    M->>K: RegisterTerm / RegisterPredicate (with a basis)
+    K->>K: validate: unique id · references exist · acyclic is_a · legal range
+    K-->>L: mutation ontology/term_added (and predicate_added / revised / deprecated)
+    M->>K: SetGoal (hypotheses carrying assertions)
+    K->>K: validate assertions: predicate exists · subject in domain · object form · intra-fact consistency
+    K-->>L: mutation goal/set
+    Note over K,L: everything below is the fold as it stands today
+    K-->>L: mutation fact/promoted (hypothesis + assertions)
+    L->>P: fold: events → state.lexicon / state.facts
+    P->>P: derive: conflict pairs · vocabulary health · graphProjection (deterministic layout)
+    P-->>G: render shelf / runtime card / panel view
+    G-->>M: next turn retrieves what is known by concept
+```
+
+Three boundaries (each has a test, or is written into [Known gaps](../known-gaps.md)):
+
+1. **Refused at registration**: an assertion that references an unknown or deprecated entry, or whose object form does not fit the range, is refused **before anything lands** — nothing enters the ledger, so there is nothing to clean up later.
+2. **Conflicts are surfaced only**: computed by `derive()`, they retract no side, decide nothing about which is true, and **enter no gate**; handling one goes through the existing human gate (`fact/reviewed`).
+3. **Graphs are renderings**: `graphProjection()` is a deterministic pure function (the same ledger always yields the same graph) and coordinates never enter the ledger.
+
+## 6. Human gate path · implemented
 
 ```mermaid
 sequenceDiagram
@@ -245,7 +283,7 @@ sequenceDiagram
     participant K as ClearAI kernel
 
     P-->>H: useProjection('clearai') pushes views
-    H->>P: press an action (adopt_branch / abandon_fork / promote_skill)
+    H->>P: press an action (adopt_branch / abandon_fork / promote_skill / retract_fact / keep_fact / confirm_provisional)
     P->>D: submit verb + arguments
     D->>D: whitelist check (anything off-list is refused; values checked on the same layer)
     D->>L: becomes a source.kind='user' message (append-only)
