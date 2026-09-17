@@ -58,6 +58,7 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 | Completion | The model declares it | The system computes it from delivered evidence |
 | Judgment | Whoever did the work | Separated — above a level, the doer cannot judge its own result |
 | Failure | Deleted, retried, forgotten | Kept: a refuted hypothesis is a result, not noise |
+| What accumulates | A chat transcript | **An ontology**: vocabulary, established entries carrying assertions, and their graphs — every edge earned through the loop |
 
 ClearAI implements that loop as mechanism, not advice. State is derived from the session record rather than stored twice, progress and phases are computed, and the tools the model holds contain **no field in which it could declare a step complete**.
 
