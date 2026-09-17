@@ -1,51 +1,84 @@
 {
-  "at": "2026-09-16T02:20:52.217Z",
+  "at": "2026-09-17T07:02:08.356Z",
   "concurrency": 3,
   "timeoutMin": 40,
-  "commit": "aa9e2a3",
+  "commit": "85c2018",
   "dirty": true,
   "scenarios": [
     {
-      "name": "scout-first",
-      "title": "侦察先于计划",
-      "stamp": "20260916-101658",
-      "code": 0,
-      "passed": 38,
-      "failed": 0,
-      "failures": [],
-      "elapsedSec": 154,
-      "workspace": "/Users/lhc/.dsh/e2e-archive/scout-first/20260916-101658/workspace",
-      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-scout-first-20260916-101658-workspace--/session-b8d758c4-c7cd-4855-8cef-c91ea7aeaab5/session.v3.jsonl.zstd",
-      "mutationCount": 24,
-      "mutationKinds": "scout/dispatched,scout/settled,observation/recorded,goal/set,plan/created,plan/confirmed,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed,fact/promoted"
-    },
-    {
       "name": "worldline-arbitration",
       "title": "世界线:两条实现按尺子算术裁决",
-      "stamp": "20260916-101658",
-      "code": 0,
-      "passed": 40,
-      "failed": 0,
-      "failures": [],
-      "elapsedSec": 234,
-      "workspace": "/Users/lhc/.dsh/e2e-archive/worldline-arbitration/20260916-101658/workspace",
-      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-worldline-arbitration-20260916-101658-workspace--/session-6d010a78-969a-4eaa-bb4f-ca2ef5fab101/session.v3.jsonl.zstd",
-      "mutationCount": 47,
-      "mutationKinds": "goal/set,plan/created,fork/created,worldline/prepared,worldline/executing,worldline/executed,observation/recorded,evidence/recorded,branch/delivered,fork/merged,worldline/removed,fork/converged,plan/confirmed,admission/checked,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+      "stamp": "20260917-144502",
+      "code": 1,
+      "passed": 38,
+      "failed": 2,
+      "failures": [
+        "进程正常退出(exit 0)",
+        "这一轮跑到了收尾(目标结案且没有未落定的步骤)"
+      ],
+      "elapsedSec": 903,
+      "workspace": "/Users/lhc/.dsh/e2e-archive/worldline-arbitration/20260917-144502/workspace",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-worldline-arbitration-20260917-144502-workspace--/session-02059b77-11cb-4e77-8173-978cb201f537/session.v3.jsonl.zstd",
+      "mutationCount": 52,
+      "mutationKinds": "goal/set,plan/created,fork/created,worldline/prepared,worldline/executing,worldline/executed,observation/recorded,evidence/recorded,branch/delivered,fork/recommended,fork/merged,worldline/removed,fork/converged,plan/confirmed,admission/checked,block/counted,step/advanced,block/cleared,git/committed,plan/closed"
     },
     {
       "name": "falsification",
       "title": "证伪:两条互斥假设,一条被推翻",
-      "stamp": "20260916-101658",
+      "stamp": "20260917-144502",
       "code": 0,
       "passed": 38,
       "failed": 0,
       "failures": [],
-      "elapsedSec": 99,
-      "workspace": "/Users/lhc/.dsh/e2e-archive/falsification/20260916-101658/workspace",
-      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-falsification-20260916-101658-workspace--/session-80c6b7fb-5b4b-4743-a5d3-9a58db9d58f1/session.v3.jsonl.zstd",
+      "elapsedSec": 426,
+      "workspace": "/Users/lhc/.dsh/e2e-archive/falsification/20260917-144502/workspace",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-falsification-20260917-144502-workspace--/session-182d1eb2-9d35-4a3b-8da8-04b2c2b9c0d3/session.v3.jsonl.zstd",
       "mutationCount": 24,
-      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,plan/voided,plan/amended,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/refined,plan/voided,plan/closed,audit/dispatched,audit/settled,goal/closed,fact/promoted"
+    },
+    {
+      "name": "long-plan",
+      "title": "长链:五步交付,物证、准入、收尾",
+      "stamp": "20260917-144502",
+      "code": 0,
+      "passed": 40,
+      "failed": 0,
+      "failures": [],
+      "elapsedSec": 538,
+      "workspace": "/Users/lhc/.dsh/e2e-archive/long-plan/20260917-144502/workspace",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-long-plan-20260917-144502-workspace--/session-f80c9036-567d-4e0b-b88f-bad3f13d9c39/session.v3.jsonl.zstd",
+      "mutationCount": 40,
+      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed,audit/dispatched,audit/settled,goal/closed"
+    },
+    {
+      "name": "scout-first",
+      "title": "侦察先于计划",
+      "stamp": "20260917-145208",
+      "code": 1,
+      "passed": 37,
+      "failed": 1,
+      "failures": [
+        "这一轮跑到了收尾(目标结案且没有未落定的步骤)"
+      ],
+      "elapsedSec": 499,
+      "workspace": "/Users/lhc/.dsh/e2e-archive/scout-first/20260917-145208/workspace",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-scout-first-20260917-145208-workspace--/session-11cffab6-736b-403f-8f5e-2c9ce75f3e65/session.v3.jsonl.zstd",
+      "mutationCount": 19,
+      "mutationKinds": "scout/dispatched,scout/settled,observation/recorded,goal/set,plan/created,plan/confirmed,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/closed"
+    },
+    {
+      "name": "goal-chain",
+      "title": "目标链:结案后再立一个,复用前一环的产物",
+      "stamp": "20260917-145400",
+      "code": 0,
+      "passed": 39,
+      "failed": 0,
+      "failures": [],
+      "elapsedSec": 488,
+      "workspace": "/Users/lhc/.dsh/e2e-archive/goal-chain/20260917-145400/workspace",
+      "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-goal-chain-20260917-145400-workspace--/session-4d33948a-295b-41e3-a274-f52cea0a55ac/session.v3.jsonl.zstd",
+      "mutationCount": 48,
+      "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/amended,plan/closed,audit/dispatched,audit/settled,goal/closed"
     }
   ]
 }

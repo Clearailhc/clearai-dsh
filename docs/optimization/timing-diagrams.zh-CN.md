@@ -1,6 +1,6 @@
 # ClearAI 预期时序图
 
-> 这些图描述**五条主路径上，谁在什么时候对谁做了什么**。
+> 这些图描述**六条主路径上，谁在什么时候对谁做了什么**。
 > 与状态机（[`state-machines.zh-CN.md`](state-machines.zh-CN.md)）配套：
 > 状态机回答「有哪些状态」，时序图回答「谁把它推过去的」。
 > 图里出现的工具名与事件名都可以在代码里逐条对上。
@@ -12,7 +12,7 @@
 | **人** | 用户。只有他能做三件事：在原生审阅卡上批准计划、在原生审批栈里放行 L4、在面板上按人门动词 | 不是系统组件 |
 | **模型** | LLM 推理体。它**发出意图**（工具调用、答复），不执行任何东西 | 不是「Agent 系统」；它不碰账本、不碰文件，一切经宿主转手 |
 | **DSH 宿主** | 引擎：回合循环、工具调度、沙箱与审批、原生审阅卡、子代理、goals 服务（续跑驱动）、会话日志的写入 | 不做认识论判断；它不知道「什么可以被相信」 |
-| **ClearAI 内核** | preset 插件：22 件意图工具 + guard + 运行态卡。**权威变更（mutations）的唯一生产者** | 不执行回合、不渲染界面、不持久化 |
+| **ClearAI 内核** | preset 插件：29 件意图工具 + guard + 运行态卡。**权威变更（mutations）的唯一生产者** | 不执行回合、不渲染界面、不持久化 |
 | **事实账本** | 只追加的事实记录。**内容是我们的**：clearai 变更事件 + `clear/` 产物与评估卡；**载体是宿主的**：会话日志 + 文件系统。它不存结论——「现在可以相信什么」由投影从它折叠出来 | 不是第二本状态账；状态不从它「读出来」，而是「折出来」 |
 | **投影** | 宿主半 `ui/lib`：fold（账本 → 状态）+ derive（状态 → 视图）+ 面板。**只读本账本，从不写** | 不是缓存，不是副本——同一份事实的一种看法 |
 | **独立评估者** | 内核经宿主派出的 fresh-context 只读子代理（L3+），带 `outputSchema` 回结构化裁决 | 不是执行者的分身；做判分离的那一半 |
@@ -223,7 +223,43 @@ sequenceDiagram
 - 落选分支只删工作副本，**保留 branch ref**，因为事后改判依赖它永久可读。
 - 分叉已收口而执行者未归 → 派生 `unreturned`，不再等。
 
-## 5. 人门（human gate）路径 · 已实现
+## 5. 领域本体路径 · 部分实现（折法这一半已实现）
+
+**目的**：说清词汇与断言怎么进账本、又怎么变成图。**今天只有折法那一半在跑**：六个词汇事件能折、
+断言能折、冲突与图能派生；**七个动词已接**（注册 / 修订 / 废止 / 查询），面板还没接（阶段 D–E）。所以图里标了「设计目标」
+的只有面板那一步；动词与事件名今天都能逐条对上。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant M as 模型
+    participant K as ClearAI 内核
+    participant L as 事实账本
+    participant P as 投影
+    participant G as 读面（货架 / 卡片 / 面板）
+
+    Note over M,K: 词汇动词（已实现）
+    M->>K: RegisterTerm / RegisterPredicate（带依据）
+    K->>K: 校验：id 唯一 · 引用存在 · is_a 不成环 · 值域合法
+    K-->>L: mutation ontology/term_added（predicate_added / revised / deprecated 同理）
+    M->>K: SetGoal（假设带 assertions）
+    K->>K: 校验断言：谓词在 · 主词合域 · 宾语形态对 · 同一事实自洽
+    K-->>L: mutation goal/set
+    Note over K,L: 以下都是今天已经成立的折法
+    K-->>L: mutation fact/promoted（hypothesis + assertions）
+    L->>P: fold：事件 → state.lexicon / state.facts
+    P->>P: derive：冲突对 · 词汇健康度 · graphProjection（确定性布局）
+    P-->>G: 渲染货架 / 运行态卡 / 面板视图
+    G-->>M: 下一回合按概念取「已知」
+```
+
+三条边界（每条都有测试或写进[已知缺口](../known-gaps.zh-CN.md)）：
+
+1. **登记即拒**：引用不存在、已废止或值域不符的断言在**落账之前**被拒——不进账本，就没有「先污染后治理」。
+2. **冲突只暴露**：由 `derive()` 现算，不撤回任何一侧、不判断哪条为真、**不进闸门**；处置走既有的人门（`fact/reviewed`）。
+3. **图是渲染**：`graphProjection()` 是确定性纯函数（同一账本必得同一张图），坐标不进账本。
+
+## 6. 人门（human gate）路径 · 已实现
 
 ```mermaid
 sequenceDiagram
@@ -235,7 +271,7 @@ sequenceDiagram
     participant K as ClearAI 内核
 
     P-->>H: useProjection('clearai') 推送视图
-    H->>P: 点一个动作（adopt_branch / abandon_fork / promote_skill）
+    H->>P: 点一个动作（adopt_branch / abandon_fork / promote_skill / retract_fact / keep_fact / confirm_provisional）
     P->>D: 提交动词 + 参数
     D->>D: 白名单校验（表外一律拒，取值同层校验）
     D->>L: 变成 source.kind='user' 的消息（只追加）

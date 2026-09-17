@@ -68,5 +68,70 @@
     "elapsedSec": 99,
     "failures": [],
     "dir": "falsification/20260916-101658"
+  },
+  {
+    "at": "2026-09-17T07:02:08.356Z",
+    "commit": "85c2018",
+    "dirty": true,
+    "name": "worldline-arbitration",
+    "stamp": "20260917-144502",
+    "passed": 38,
+    "failed": 2,
+    "elapsedSec": 903,
+    "failures": [
+      "进程正常退出(exit 0)",
+      "这一轮跑到了收尾(目标结案且没有未落定的步骤)"
+    ],
+    "dir": "worldline-arbitration/20260917-144502"
+  },
+  {
+    "at": "2026-09-17T07:02:08.356Z",
+    "commit": "85c2018",
+    "dirty": true,
+    "name": "falsification",
+    "stamp": "20260917-144502",
+    "passed": 38,
+    "failed": 0,
+    "elapsedSec": 426,
+    "failures": [],
+    "dir": "falsification/20260917-144502"
+  },
+  {
+    "at": "2026-09-17T07:02:08.356Z",
+    "commit": "85c2018",
+    "dirty": true,
+    "name": "long-plan",
+    "stamp": "20260917-144502",
+    "passed": 40,
+    "failed": 0,
+    "elapsedSec": 538,
+    "failures": [],
+    "dir": "long-plan/20260917-144502"
+  },
+  {
+    "at": "2026-09-17T07:02:08.356Z",
+    "commit": "85c2018",
+    "dirty": true,
+    "name": "scout-first",
+    "stamp": "20260917-145208",
+    "passed": 37,
+    "failed": 1,
+    "elapsedSec": 499,
+    "failures": [
+      "这一轮跑到了收尾(目标结案且没有未落定的步骤)"
+    ],
+    "dir": "scout-first/20260917-145208"
+  },
+  {
+    "at": "2026-09-17T07:02:08.356Z",
+    "commit": "85c2018",
+    "dirty": true,
+    "name": "goal-chain",
+    "stamp": "20260917-145400",
+    "passed": 39,
+    "failed": 0,
+    "elapsedSec": 488,
+    "failures": [],
+    "dir": "goal-chain/20260917-145400"
   }
 ]

@@ -2,6 +2,38 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# Changelog
+
+All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.2.0] — 2026-09-17
+
+**研究的产品形态是本体。** 认识论循环是本体的生产工艺,事实是它的内容单位——真值方向不变(世界 → 证据 → 事实 → 长成本体),所以**本体不裁决任何事,它只收留被裁决过的东西**。别的知识图谱靠抽取与断言堆边;这里的每一条边都要通过循环挣得。
+
+### Added
+
+- **领域本体(语言层)**:六个账本事件(`ontology/term_added / predicate_added / *_revised / *_deprecated`)折成 `state.lexicon`;概念与谓词带依据接纳、版本化修订、黏性废止(**没有删除**);语义变化必须换 id。判据只有一份(`ui/lib/domain-language.js` 纯函数),模型工具、人门动词与折法同源。
+- **七个具名动词**:`RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge`(意图工具 22 → 29 件)。
+- **类型化断言**:假设可带 `assertions`(主词–谓词–宾语;值形态 statement/quantity/formula/code/reference + 关系宾语 instance);**提供即严校**(引用存在、形态合域、同一事实自洽,一律落账之前拒),不提供放行(旧事实显示「未结构化」,不回溯改写);升格时断言随事实定型,事实按 id 关联假设(修掉按文本匹配)。
+- **冲突只暴露,不裁决**:同一单值谓词、同一主体、不同客体 ⇒ 派生一对冲突;卡片与货架各说一遍;不进闸门、不动任何一侧;处置走既有的人门。
+- **本体格(中栏)**:图带(本体图|实体图、缩放平移、全景、点节点=按概念过滤)、断言芯片就地展开词条卡、冲突行+内联标记、过滤 N/M 行、折叠的词汇维护区(含登记抽屉与废止入口——经人门通道,判据与模型工具同一份);零成本契约:没有词条时这一格与从前逐像素相同。
+- **词汇货架** `clear/ontology/domain.md`(概念/谓词/Mermaid 图/引用统计/废止缘由/冲突),幂等渲染,`clear/ontology/` 进系统拒写清单。
+- **提示词** `clearai/domain-language`(hard;24 段定义 / 23 段在场)。
+
+### Changed
+
+- **定位**:「认识论工作台」→「基于认识论的本体研究平台」;口号「从证据,到改进」→「从证据,到本体」;中栏「事实」格更名「本体」格,事实货架更名**本体货架**(视图 id `clearai-facts` 与账本词汇不动——只有用户可见名词收敛)。
+- 术语收敛:**本体图**(原词汇图)/ **实体图**(原知识图,「知识图谱」是业界词,指整体)。
+- 事实货架 INDEX.md 头改「本体内容(已确立条目…)」。
+- **README 整体重塑**:口号「你的研究，长成一个本体」;叙事从「认识论循环工作台」转向
+  「本体发现与探索平台」——先讲你得到什么(本体),再讲凭什么可信(循环,折叠在 details 里);
+  面板截图换为本体格为主角(待截);安装与案例后移。定位/术语表/CHANGELOG 同步。
+
+### Fixed
+
+- e2e 的会话目录 slug 不认中文路径(宿主把 亨通 编码为 ~4EA8~901A):真项目(中文工作区名)此前必被误报成一排 ✗。
+- `--installed` 一次性形态:ClosePlan 之后交出回合即结束 ⇒ CloseGoal 必须同回合连续调用(已写进 e2e 记账)。
+
 ## [0.1.7] — 2026-09-16
 
 **同一件事实只有一个来源。** 一轮"按真值表逐条核对 → 按症状打补丁 → 发现自己在打补丁 →

@@ -1,0 +1,14 @@
+{
+  "name": "falsification",
+  "title": "证伪:两条互斥假设,一条被推翻",
+  "stamp": "20260917-144502",
+  "code": 0,
+  "passed": 38,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 426,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/falsification/20260917-144502/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-falsification-20260917-144502-workspace--/session-182d1eb2-9d35-4a3b-8da8-04b2c2b9c0d3/session.v3.jsonl.zstd",
+  "mutationCount": 24,
+  "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/refined,plan/voided,plan/closed,audit/dispatched,audit/settled,goal/closed,fact/promoted"
+}

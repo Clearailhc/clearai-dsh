@@ -297,3 +297,19 @@ Everything below waits until a baseline has produced real trajectories; one line
 - Criteria soft-lock: for L3 and above, changing criteria leaves a trace and asks a human to confirm.
 - Refutation weight and the charter's "counterexamples are decisive" switch; section 4 of the charter becomes parsable.
 - Evaluation verdicts enter skill statistics (`skill_lifecycle` gains `audit_pass` / `audit_fail`); goal-level experience (`policy_slots` gains `goal_finished`).
+
+## 9. Relationship to the domain ontology
+
+This document describes the **process ontology**: the behaviour of knowing — which objects exist, who pushes
+which transition, who judges at each level. It must be read apart from the other ontology in the repository:
+
+| | Process ontology (this file) | [Domain ontology](domain-ontology.md) |
+|---|---|---|
+| Answers | **How** we come to know | **In what language** we say it |
+| Authority | A code declaration (`preset/plugins/ontology.js`), validated at assembly, changeable per release | Ledger events (`ontology/*`), growing with the project |
+| Editable? | **No**: it is the plugin's own backend flow; changing it means changing code and shipping | Yes: named verbs add, revise and deprecate (seven of them, implemented) |
+| In the projection | `state.ontology` (the shape) | `state.lexicon` (the vocabulary) plus the graph projection |
+| Shown to | The charter the model reads (`clear/ontology/verification-loop.md`); a human sees the **state shape** (worldlines / proposition groups) | The vocabulary and graphs the project reads (`clear/ontology/domain.md`, the panel's ontology view) |
+
+The two touch at exactly four points (shape checked at registration / fixed at promotion / conflicts derived /
+deprecation propagated); see Domain ontology §8.

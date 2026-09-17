@@ -19,6 +19,7 @@ import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
 import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, renderCard, view } from './fold.js'
+import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { install as installInvariants } from './invariant.js'
 
 export const name = 'clearai-host'
@@ -395,6 +396,46 @@ export function apply(ctx) {
 				note: typeof request.note === 'string' ? request.note.slice(0, 200) : null,
 			}
 			/**
+			 * **本体四动词(人的通道)**:词条字段在 RPC 边界上只收表内的那几个、带长度上限——
+			 * 表外的字段一律剥掉(不是拒:人门消息进日志,日志里不该出现没约定的形状)。
+			 * 判据与模型工具**同一份**:校验用 `domain-language` 的纯函数,对当前词汇判,
+			 * 不过就 400 并把问题清单带回界面——「点了报成功、账上一字未改」不许再出现。
+			 */
+			const ONTOLOGY_GATE_ACTIONS = ['register_term', 'register_predicate', 'revise_term', 'deprecate_entry']
+			if (ONTOLOGY_GATE_ACTIONS.includes(action)) {
+				const raw = request.entry ?? {}
+				const str = (key, cap = 300) => (typeof raw[key] === 'string' ? raw[key].slice(0, cap) : undefined)
+				detail.entry = {
+					id: str('id', 40),
+					label: str('label', 60),
+					gloss: str('gloss'),
+					basis: str('basis'),
+					parent: str('parent', 40),
+					domain: str('domain', 40),
+					reason: str('reason', 200),
+					unit: str('unit', 24),
+					aliases: Array.isArray(raw.aliases) ? raw.aliases.filter((item) => typeof item === 'string').slice(0, 8).map((item) => item.slice(0, 60)) : undefined,
+					functional: raw.functional === true ? true : undefined,
+					range:
+						raw.range !== null && typeof raw.range === 'object' && ['statement', 'quantity', 'formula', 'code', 'reference'].includes(String(raw.range.form))
+							? { form: String(raw.range.form), unit: typeof raw.range.unit === 'string' ? raw.range.unit.slice(0, 24) : undefined, term: typeof raw.range.term === 'string' ? raw.range.term.slice(0, 40) : undefined }
+							: undefined,
+				}
+				const lexicon = stateOf(sessionId).lexicon
+				let problems = []
+				if (action === 'register_term') problems = validateTerm(lexicon, detail.entry)
+				if (action === 'register_predicate') problems = validatePredicate(lexicon, detail.entry)
+				if (action === 'revise_term' || action === 'deprecate_entry') {
+					const id = detail.entry.id ?? ''
+					const known = [...(lexicon.terms ?? []), ...(lexicon.predicates ?? [])].find((item) => item.id === id)
+					if (known === undefined) problems = [`unknown_entry:词汇里没有这个条目:${id}`]
+					else if (action === 'deprecate_entry' && known.status === 'deprecated') problems = [`already_deprecated:${id} 已经是废止状态`]
+					else if ((detail.entry.reason ?? '') === '' || detail.entry.reason === undefined) problems = ['reason_required:这一步要写一句缘由']
+					else if (action === 'revise_term' && detail.entry.label === undefined && detail.entry.gloss === undefined && detail.entry.aliases === undefined) problems = ['nothing_to_revise:label / gloss / aliases 至少给一个']
+				}
+				if (problems.length > 0) return reply(400, { ok: false, error: 'entry_rejected', problems })
+			}
+			/**
 			 * 技能名要先过**取值校验**,再进日志。
 			 *
 			 * 它必须是原生那条语法(kebab-case):这个名字会变成 `/<名字>` 手势(原生 pre-step
@@ -468,9 +509,13 @@ export function apply(ctx) {
 							? `人审查了被推翻的那条事实(${detail.value ?? '?'})后决定**撤回**它${detail.note === null ? '' : `,缘由:${detail.note}`}。`
 							: action === 'keep_fact'
 								? `人审查了被推翻的那条事实(${detail.value ?? '?'})后判定**证据不可靠,维持原事实**${detail.note === null ? '' : `,缘由:${detail.note}`}。`
+							: ONTOLOGY_GATE_ACTIONS.includes(action)
+								? `人在本体格里${action === 'register_term' ? `登记了概念「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'register_predicate' ? `登记了谓词「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'revise_term' ? `修订了「${detail.entry?.id ?? '?'}」的展示信息` : `废止了「${detail.entry?.id ?? '?'}」`}${detail.entry?.basis ? `,依据:${detail.entry.basis}` : ''}${detail.entry?.reason ? `,缘由:${detail.entry.reason}` : ''}。`
 								: '人在面板上做了一个动作。'
 			const followUp =
-				action === 'confirm_provisional'
+				ONTOLOGY_GATE_ACTIONS.includes(action)
+					? '这条词汇变更已落账(`by:user`),与模型工具落的是同一本账、同一套判据;词汇货架会在下一拍同步'
+					: action === 'confirm_provisional'
 					? '这条确认已经落账(`by:user`);那道门随之消失,续跑可以继续'
 					: action === 'retract_fact' || action === 'keep_fact'
 					? '这个决定已经落账,并会写进 `clear/knowledge/facts/` 那一份(下一轮引用它之前先看那条记录)'
@@ -649,6 +694,31 @@ export function apply(ctx) {
 				preview: (sessionId, mutations) => {
 					const next = applyMutations(stateOf(sessionId), mutations)
 					return { state: next, card: renderCard(next), view: view(next) }
+				},
+				/**
+				 * **领域语言层的判据**(值形状、引用存在、值域、同一事实自洽)与货架正文。
+				 *
+				 * 为什么由宿主半提供,而不是预设侧自己写一份:判据**只能有一份**。
+				 * 预设侧的工具与这条路由要判的是同一件事,而两份实现必然漂成
+				 * 「登记时放行、升格时拒绝」——那种不一致在界面上与「这条还没验」长得一模一样。
+				 * 所以判据住在纯函数模块里,预设侧经这道门调用它。
+				 */
+				domain: {
+					validateTerm: (sessionId, draft) => validateTerm(stateOf(sessionId).lexicon, draft),
+					validatePredicate: (sessionId, draft) => validatePredicate(stateOf(sessionId).lexicon, draft),
+					validateAssertions: (sessionId, assertions) => validateAssertions(stateOf(sessionId).lexicon, assertions),
+					/**
+					 * 货架正文。带 `mutations` 时按**这一步之后**的样子渲染——
+					 * 工具在返回前就把货架写好,读的人不必等下一回合。
+					 */
+					renderShelf: (sessionId, mutations = []) => {
+						const state = applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : [])
+						const next = derive(state)
+						// 在途命题也传进去:词汇刚立起来时「引用 0」会让人以为没人用,而断言已经在假设上了。
+						return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses)
+					},
+					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
+					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
 				},
 			}),
 		'clearai: read facade',

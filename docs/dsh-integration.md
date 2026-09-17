@@ -27,6 +27,8 @@ The package is a pure function of the source; `node tools/build-package.mjs` per
 | `preset/template/` | `presets/clearai/template/` |
 | `ui/lib/index.js` | `lib/host.js` |
 | `ui/lib/fold.js` | `lib/fold.js` |
+| `ui/lib/invariant.js` | `lib/invariant.js` |
+| `ui/lib/domain-language.js` | `lib/domain-language.js` |
 | `ui/lib/client.js` | `lib/client.js` |
 
 `dist/` is generated and never committed.
@@ -66,7 +68,7 @@ For development, `install.sh` lays the repository's source directly into a real 
 ## Build and verify
 
 ```bash
-npm test                        # 14 suites — the list lives in test/run.sh
+npm test                        # 15 suites — the list lives in test/run.sh
 node tools/build-package.mjs    # assemble dist/clearai-dsh
 node tools/verify-package.mjs   # rebuild and compare byte-for-byte
 node tools/verify-deploy.mjs    # compose the deployed files for real (bypasses the ESM cache)

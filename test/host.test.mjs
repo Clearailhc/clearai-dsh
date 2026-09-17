@@ -253,6 +253,47 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 		check('已经认可过 → 409 already_confirmed(第一次认可为准)', twice.status === 409 && twice.payload?.error === 'already_confirmed', `${twice.status}/${twice.payload?.error}`)
 	}
 
+	// ── 本体四动词(人的通道):同一套判据,路由侧核完才让进日志 ──────────────
+	{
+		const ontoHost = makeHost({ cwd: tempDir('clearai-host-onto-') })
+		apply(ontoHost.ctx)
+		const postOnto = async (payload) => {
+			const result = await callRoute(ontoHost, '/api/clearai/gate', { method: 'POST', body: payload })
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			return result
+		}
+		const lexiconState = (lexicon) => {
+			ontoHost.projectionState = { ...emptyState(), lexicon }
+			return ontoHost
+		}
+		// 登记:判据拒绝(缺依据)→ 400 + 问题清单,不投消息
+		lexiconState({ terms: [], predicates: [] })
+		const noBasis = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸' } })
+		check('登记概念缺依据 → 400 entry_rejected 且带问题清单(判据与模型工具同一份)', noBasis.status === 400 && noBasis.payload?.error === 'entry_rejected' && JSON.stringify(noBasis.payload?.problems).includes('basis_required'), JSON.stringify(noBasis.payload).slice(0, 120))
+		check('被拒的登记不往会话里投消息', ontoHost.sent.length === 0)
+		// 登记成功:落一条署名是人的人门消息,entry 在消息里
+		const registered = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01', parent: 'ghost_parent_x' } })
+		check('登记概念(父概念不存在)→ 400 且问题点名 ghost_parent_x', registered.status === 400 && JSON.stringify(registered.payload?.problems).includes('ghost_parent_x'), JSON.stringify(registered.payload).slice(0, 120))
+		const okTerm = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' } })
+		check('登记概念合法 → 200,人门消息署名 user 且带 entry', okTerm.status === 200 && ontoHost.sent.at(-1)?.message?.source?.kind === 'user' && /furnace_batch/.test(ontoHost.sent.at(-1).message.content[0].text), `${okTerm.status}/${String(ontoHost.sent.at(-1)?.message?.content?.[0]?.text).slice(0, 100)}`)
+		// 谓词登记 + 重复 id 拒绝(先让投影里已经有那个概念——人门消息在这个桩里不会自动折进去)
+		lexiconState({ terms: [{ id: 'furnace_batch', label: '炉次', status: 'admitted', version: 1 }], predicates: [] })
+		const okPredicate = await postOnto({ sessionId: 'session-1', action: 'register_predicate', entry: { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' } })
+		check('登记谓词(值域合法)→ 200', okPredicate.status === 200, `${okPredicate.status}/${JSON.stringify(okPredicate.payload).slice(0, 120)}`)
+		const dup = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: 'again', basis: 'b' } })
+		check('重复 id → 400 id_taken(人也不能撞已有的词)', dup.status === 400 && JSON.stringify(dup.payload?.problems).includes('id_taken'), JSON.stringify(dup.payload).slice(0, 100))
+		// 废止:不存在的条目 / 已废止 / 缺缘由
+		const ghost = await postOnto({ sessionId: 'session-1', action: 'deprecate_entry', entry: { id: 'nope', reason: 'r' } })
+		check('废止不存在的条目 → 400 unknown_entry', ghost.status === 400 && JSON.stringify(ghost.payload?.problems).includes('unknown_entry'), `${ghost.status}`)
+		const noReason = await postOnto({ sessionId: 'session-1', action: 'deprecate_entry', entry: { id: 'furnace_batch' } })
+		check('废止缺缘由 → 400 reason_required', noReason.status === 400 && JSON.stringify(noReason.payload?.problems).includes('reason_required'), `${noReason.status}`)
+		const okDeprecate = await postOnto({ sessionId: 'session-1', action: 'deprecate_entry', entry: { id: 'furnace_batch', reason: '与子概念无法区分' } })
+		check('废止合法 → 200 且消息带缘由', okDeprecate.status === 200 && /与子概念无法区分/.test(ontoHost.sent.at(-1).message.content[0].text), `${okDeprecate.status}`)
+		// 修订:至少一个展示字段
+		const nothing = await postOnto({ sessionId: 'session-1', action: 'revise_term', entry: { id: 'furnace_batch', reason: 'r' } })
+		check('修订零字段 → 400 nothing_to_revise', nothing.status === 400 && JSON.stringify(nothing.payload?.problems).includes('nothing_to_revise'), `${nothing.status}`)
+	}
+
 	// ① 动词白名单:表外的动作一律拒(与贡献表同一套纪律:表外的名字不许出现)
 	const unknown = await post({ sessionId: 'session-1', action: 'delete_everything' })
 	check('表外的动词 → 400 unknown_gate_action', unknown.status === 400 && unknown.payload?.error === 'unknown_gate_action', `${unknown.status}/${unknown.payload?.error}`)
@@ -269,7 +310,7 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	 */
 	check(
 		'白名单恰好是那六个动词(砍掉的重复项不许回来:confirm_plan / invoke_skill / set_autonomy)',
-		[...HUMAN_GATE_ACTIONS].sort().join(',') === ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional'].sort().join(','),
+		[...HUMAN_GATE_ACTIONS].sort().join(',') === ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional', 'register_term', 'register_predicate', 'revise_term', 'deprecate_entry'].sort().join(','),
 		HUMAN_GATE_ACTIONS.join(','),
 	)
 

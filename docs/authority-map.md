@@ -18,6 +18,10 @@ It exists because of a self-diagnosis. After several rounds of fixing defects we
 | Which proposition is under test; what criteria were committed in advance; which observation fed which evaluation; whether an evaluation supported, refuted or could not decide; why a fact gained or lost the right to be cited; what a human decided and on what question | **ClearAI** | This is the irreplaceable part. A finished task is not a proven proposition; a failed evaluation is not a refuted proposition. |
 | What a file contained at a given time | **The git ledger** | It answers "what was there". It **cannot** answer "how was it produced, is it trustworthy" from a path alone. |
 | What the UI shows ("running / trusted / waiting on you") | **The projection (derived)** | No second copy of the judgement: computed from the two kinds of fact above. |
+| Which concepts and predicates exist in this domain, with what range and single-valuedness | **The ClearAI ledger** | Entries land only through named verbs (seven, implemented); the fold turns the six `ontology/*` events into `state.lexicon` — **there is no second vocabulary**. |
+| One fact's assertion (subject–predicate–object) | **The ClearAI ledger** (`fact/promoted.assertions`) | It lands **only at promotion**; old facts are never rewritten retroactively. |
+| Conflicts, the ontology graph, the entity graph, vocabulary health | **The projection (derived)** | All computed: a conflict is a paired reading rather than an object, the graphs are the output of `graphProjection()`, layout is a deterministic pure function, and coordinates never enter the ledger. |
+| `clear/ontology/domain.md` and the panel's ontology tab | **Rendering** | Not authority: the shelf is rewritten idempotently by the system and the panel only invokes verbs (the panel itself is stages D–E). |
 
 ### One consequence we got wrong last batch
 
@@ -76,7 +80,7 @@ To judge "before the append", `ui/lib/invariant.js` folds its own index of plans
 | What we maintain | What the host / projection already has | Its **only** irreplaceable contribution |
 |---|---|---|
 | `scoutRuns` / `executorRuns` / `pendingAudits` (in-memory) | Host: `listChildren.activity`, `subagent/end`. Projection: `scout/dispatched`, `worldline/executing`, `audit/dispatched` | **The business binding**: which worldline / scout / step-evaluation this child belongs to, plus the in-process result handle |
-| `turnEnds` (turn-end record in the projection) | Host: `turn/end{reason}`; `subagents.listChildren` | Almost none — it is "the snapshot we saw". Either delete it, or keep only "the ledger recorded a workspace state at this moment" |
+| ~~`turnEnds` (turn-end record in the projection)~~ **Disposed: this cell was deleted together with the `clearai/turn-ended` event** | Host: `agent/turn-stopping` / `agent/error`; `subagents.listChildren` | The disposal is "keep nothing": turn-end only commits a workspace ledger snapshot (`git/snapshot`) — it **judges nothing in flight and writes no verdict**; "who is still in flight" is asked of the host on the next turn |
 | The trace index inside `invariant.js` | The state `fold.js` already computes | Only the "before the append" timing; the index itself is a duplicate implementation |
 | `lastWorkspaceSnapshot` (write counter → snapshot) | The git ledger itself | "after which write we committed" — but the ledger already has that history; this could shrink to de-duplication only |
 
@@ -94,7 +98,24 @@ To judge "before the append", `ui/lib/invariant.js` folds its own index of plans
 > Maintaining ledger consistency must not become **admitting only the facts that look good**.
 > Refusing to record a failure that already happened is itself a false statement.
 
-## 5. What to do next (an architecture review that changes no code)
+## 5. Domain vocabulary and graphs (authority in the new layer)
+
+The four fact classes the table above gained follow the same rule, spelled out one by one — **one fact, one authority**:
+
+| Fact | Authority | Who consumes it, and how |
+|---|---|---|
+| Which concepts and predicates exist, with what range and single-valuedness | Ledger events (`ontology/term_added`, `ontology/predicate_added`, plus one revision and one deprecation event each) | The fold → `state.lexicon`; the model (assertion validation), the shelf `clear/ontology/domain.md`, the panel's ontology tab |
+| One fact's assertion | The ledger event `fact/promoted.assertions` (it travels with the fact) | The fold → `state.facts[].assertions`; the graph projection, the shelf, the panel |
+| A conflict (two un-retracted facts contradicting each other) | **Derived**: `deriveConflicts()` recomputes it on every replay | One line on the runtime card, a conflict section on the panel; **it enters no gate** — it is a reading, not a gate awaiting a person |
+| The ontology graph / entity graph | **Derived**: `graphProjection(state)` | The panel, the Mermaid shelf, the tests; layout is a pure function, so the same ledger always yields the same graph |
+
+Three boundaries (written down here so the next reader does not have to guess):
+
+- **Vocabulary events advance no process object.** Admitting a concept is not a step of a goal, plan or step; conversely, process events never change the vocabulary. The two state machines **do not nest** — which is why `state.ontology` (the process-ontology shape) and `state.lexicon` (the domain vocabulary) are two separate fields.
+- **An assertion lands only at promotion.** Delivery and evaluation write none; a malformed assertion supplied when a hypothesis is registered is refused **before anything lands**.
+- **Every arrow points at a read surface, and no read surface points back into the ledger.** The graphs, the card and the shelf are all renderings of the same fold; editing on the panel only invokes verbs.
+
+## 6. What to do next (an architecture review that changes no code)
 
 1. **Rebuild the causal chain from real trajectories**: pick three kinds — a normal completion, an evaluation failure, and a parent turn ending with a sub-run unfinished — and thread "run id → dispatch → result → business landing" through each, **separating confirmed causes from guesses**. Sources: the raw session logs in `~/.dsh/e2e-archive/` and the decoded copies in `docs/optimization/e2e-logs/`.
 2. **Finish this ownership table**: for every field, who produces it, where it lives, who consumes it, whether it is derivable. The four rows in §3 are the review targets.

@@ -1,0 +1,20 @@
+{
+  "name": "falsification",
+  "title": "证伪:两条互斥假设,一条被推翻",
+  "stamp": "20260917-144502",
+  "code": 0,
+  "passed": 38,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 426,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/falsification/20260917-144502/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-falsification-20260917-144502-workspace--/session-182d1eb2-9d35-4a3b-8da8-04b2c2b9c0d3/session.v3.jsonl.zstd",
+  "mutationCount": 24,
+  "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/refined,plan/voided,plan/closed,audit/dispatched,audit/settled,goal/closed,fact/promoted",
+  "commit": "85c2018",
+  "dirty": true,
+  "model": "deepseek-flash",
+  "concurrency": 3,
+  "archive": "/Users/lhc/.dsh/e2e-archive/falsification/20260917-144502",
+  "task": "这个工作区是空的。目标:用一次**可复查的观测**,判定这台机器的 python3 能不能正常运行一段最小脚本。\n要求(按顺序做;一路做完,不要在中途停下来问我;每一步交付时给观测与判据对照。):\n1. SetGoal 登记**两条互斥**假设,每条写清什么结果会推翻它:\n   h-ok:「python3 能正常运行 `python3 -c \"print(1+1)\"` 并输出 2」;\n   h-no:「python3 不能正常运行上面那段脚本(不存在、或报错)」。\n   判据:lab/python3_verdict.md 存在,且里面写明了被推翻的是哪一条、依据是哪次观测。\n2. CreatePlan 两步计划:第一步做那次观测并把结论写进 lab/python3_verdict.md,第二步核对结论与观测一致。\n3. 真去跑那条命令(bash),把观测如实登记;交付时给每条假设一个 verdict:成立的给 support,**不成立的那条必须给 refute**。\n4. 做完两步:ClosePlan 收束计划,然后 CloseGoal 结案(判据达成了就结案,不要停在「计划已收尾」)。"
+}

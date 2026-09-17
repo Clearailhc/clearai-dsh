@@ -110,8 +110,17 @@ currently rests on prompts or is missing.
 | Intent/fact separation: no writable status/progress fields | schema inexpressibility | hard | implemented | kernel suite |
 | Projection is the only truth: state = log fold, monotonically increasing | `fold.js` + monotone RANKs | hard | implemented | client suite |
 | Runtime card derived each turn, injected only on prefix-stable change | `renderCard` | hard | implemented | client suite |
-| 22 prompt sections manifest-driven, slot wording mutually exclusive | `SECTIONS` + contribution table | hard | implemented | truth-table verifier |
+| 23 prompt sections in place, manifest-driven, slot wording mutually exclusive | `SECTIONS` + contribution table | hard | implemented | truth-table verifier |
 | Ontology declarations cross-checked against implementation | `ontology.js` + assembly check | hard | implemented | ontology suite |
+
+### Domain ontology (vocabulary / assertions / conflicts / graphs)
+
+| Behavior | Carried by | Hardness | Status | Verified by |
+|---|---|---|---|---|
+| Six vocabulary events fold into `state.lexicon` (revisions kept, deprecation sticky, no delete) | `ui/lib/domain-language.js` + `fold.js` | hard | implemented (the fold plus the seven verbs) | `test/domain-language.test.mjs` |
+| An assertion lands with promotion (references exist, form fits the range, one fact self-consistent) | `fact/promoted` + `validateAssertions` | hard | implemented (including the `SetGoal` / `CloseGoal` wiring) | `test/kernel.test.mjs` / `test/domain-language.test.mjs` |
+| Conflicts are surfaced, never adjudicated (single-valued predicate + same subject + different objects + neither retracted) | `deriveConflicts` + the runtime card | hard | implemented | same suite |
+| Vocabulary and entity graphs derive from one fold (deterministic layout, coordinates never ledgered) | `graphProjection` + `view().lexicon` | hard | fold implemented; the panel does not render yet (stages D–E) | same suite |
 
 ### Known non-coverage (listed honestly; destinations in §5)
 
@@ -119,7 +128,6 @@ currently rests on prompts or is missing.
 |---|---|---|---|
 | ⑦+ | A universal L4 gate covering **every** evaluation | design-only | truth-table row `l4-universal-gate` · destination `stay-design-only` (a decision, not a backlog item) |
 | — | The eight-state verification machine | design-only | truth-table row `verification-lifecycle` · destination `become-mechanism` — only its two missing **guarantees** are planned, not the nine stored states |
-| — | A producer for `retracted` | design-only | truth-table row `fact-retraction` · destination `become-mechanism` |
 | — | Observation sources `human_upload` / `file_drop` / `callback` / `pull` | design-only | truth-table row `observation-provenance` · destination `become-mechanism` (the type gets narrowed to the producers that exist) |
 
 ## 3. The no-shrinkage list and the hand-back list
@@ -170,6 +178,9 @@ the prompts now say one sentence):
 
 ## 5. Destinations for gaps (every gap gets exactly one of three)
 
+- **Landed as a mechanism**: the `retracted` producer (truth-table row `fact-retraction` — refuting
+  evidence only marks the fact, and a person decides retract or keep with `retract_fact` / `keep_fact`,
+  landing one `fact/reviewed`).
 - **Become mechanism**: the dead `autonomy.override` read path (Phase 4/5 decides delete or
   keep — decided: keep, read-only for old logs).
   (Landed: the hypothesis count floor — preset sets 2, kernel gate + prompt discipline, see

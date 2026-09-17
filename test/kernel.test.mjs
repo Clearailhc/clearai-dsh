@@ -19,6 +19,7 @@ import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, HUMAN_GATE_MARK, apply, parseHumanGateMessage, syncTemplateSkills } from '../preset/plugins/clearai-kernel.js'
 import { applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
+import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS, SECTION_SLOTS, SECTION_TABLE } from '../preset/plugins/prompts.js'
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
@@ -77,6 +78,22 @@ function makeHost() {
 		preview: (id, mutations) => {
 			const next = applyMutations(service.state(id), mutations)
 			return { state: next, card: renderCard(next), view: view(next) }
+		},
+		/**
+		 * **领域判据的宿主门**(与生产半 `ui/lib/index.js` 的 facade 同形)。
+		 * 判据本身来自纯函数模块——测试也不许自己写一份,否则「登记时放行、升格时拒绝」
+		 * 这类漂移在测试里同样看不见。
+		 */
+		domain: {
+			validateTerm: (id, draft) => validateTerm(service.state(id).lexicon, draft),
+			validatePredicate: (id, draft) => validatePredicate(service.state(id).lexicon, draft),
+			validateAssertions: (id, assertions) => validateAssertions(service.state(id).lexicon, assertions),
+			renderShelf: (id, mutations = []) => {
+				const state = applyMutations(service.state(id), Array.isArray(mutations) ? mutations : [])
+				const next = derive(state)
+				return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses)
+			},
+			format: (id, assertion) => formatAssertion(service.state(id).lexicon, assertion),
 		},
 	}
 	// 宿主的 `goals` 服务桩:续跑窗口用的就是它。它记下每一次调用,测试据此断言
@@ -535,9 +552,10 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 		'SetGoal', 'CloseGoal', 'CreatePlan', 'CheckPlan', 'RequestPlanReview', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan',
 		'ForkPlan', 'AdvanceWorldline', 'ConvergeFork', 'WorldlineStatus', 'AwaitWorldlines', 'AbandonFork', 'SpawnScout', 'MapScouts',
 		'SaveSkill', 'WriteMemory', 'FileHistory', 'RestoreFile',
+		'RegisterTerm', 'RegisterPredicate', 'ReviseTerm', 'RevisePredicate', 'DeprecateTerm', 'DeprecatePredicate', 'QueryKnowledge',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
-	check('工具面恰好 22 件(实测,不是推断)', thisHost.tools.size === 22, `${thisHost.tools.size} 件`)
+	check('工具面恰好 29 件(实测,不是推断)', thisHost.tools.size === 29, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -596,8 +614,8 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	const trimmed = makeHost()
 	apply(trimmed.ctx, { contributions: { mechanisms: { worldline: false } } })
 	check(
-		'关掉世界线机制 → 6 件世界线工具真的没装(16 件)',
-		trimmed.tools.size === 16 && !trimmed.tools.has('ForkPlan') && !trimmed.tools.has('AbandonFork') && !trimmed.tools.has('AwaitWorldlines') && trimmed.tools.has('AdvancePlan'),
+		'关掉世界线机制 → 6 件世界线工具真的没装(23 件)',
+		trimmed.tools.size === 23 && !trimmed.tools.has('ForkPlan') && !trimmed.tools.has('AbandonFork') && !trimmed.tools.has('AwaitWorldlines') && trimmed.tools.has('AdvancePlan'),
 		`${trimmed.tools.size} 件`,
 	)
 	// 只裁工具面、不动机制:能装出来的最小面就是清单本身。
@@ -2155,7 +2173,7 @@ console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 22)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 29)
 	}
 
 	// ② SaveSkill:写进工作区、默认候选态、写盘后让宿主目录失效
@@ -3617,6 +3635,123 @@ function factFiles() {
 	}
 }
 
+console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
+{
+	/** 一条断言的构造器:同一主体、同一谓词,只换取值——冲突那一段靠的就是它。 */
+	const assertion = (value) => ({ predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value, unit: 'ppm' } })
+
+	// ① 词汇动词:判据与折法同源,拒绝都发生在**落账之前**
+	const noBasis = await call('RegisterTerm', { id: 'no_basis_term', label: '无依据概念', gloss: 'g', basis: '' })
+	check('概念缺依据 → 拒(约定可以自愿,不能无来由)', noBasis.ok === false && /basis_required/.test(String(noBasis.message)), String(noBasis.code))
+	const badId = await call('RegisterTerm', { id: 'Bad-Id', label: 'L', gloss: 'g', basis: 'b' })
+	check('概念 id 形状不对 → 拒', badId.ok === false && /id_shape/.test(String(badId.message)))
+	const registered = await call('RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+	check('登记概念 → 通过', registered.ok === true && registered.code === 'term_registered', String(registered.code))
+	check('概念落进货架(读面由系统写)', readFileSync(join(WORKSPACE, 'clear/ontology/domain.md'), 'utf8').includes('furnace_batch'))
+	const duplicate = await call('RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: 'again', basis: 'b' })
+	check('同一 id 再登记 → 拒(概念与谓词共用一个命名空间)', duplicate.ok === false && /id_taken/.test(String(duplicate.message)))
+	const ghostParent = await call('RegisterTerm', { id: 'narrow_batch', label: 'N', gloss: 'g', basis: 'b', parent: 'ghost_concept' })
+	check('父概念不存在 → 拒', ghostParent.ok === false && /parent_unknown/.test(String(ghostParent.message)))
+	check('登记子概念(is_a 边)→ 通过', (await call('RegisterTerm', { id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', basis: 'b', parent: 'furnace_batch' })).ok === true)
+	const ambiguous = await call('RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', range: { term: 'furnace_batch', form: 'quantity' }, basis: 'b' })
+	check('值域二选一:同时给 term 与 form → 拒', ambiguous.ok === false && /range_ambiguous/.test(String(ambiguous.message)))
+	const ghostDomain = await call('RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'ghost_concept', range: { form: 'quantity' }, basis: 'b' })
+	check('主词域不存在 → 拒', ghostDomain.ok === false && /domain_unknown/.test(String(ghostDomain.message)))
+	const predicate = await call('RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' })
+	check('登记谓词(量形态 · 单值)→ 通过', predicate.ok === true && predicate.code === 'predicate_registered', String(predicate.code))
+
+	// ② 断言链:SetGoal 在落账之前严校(提供即严校;不提供放行)
+	const ghostPredicate = await call('SetGoal', {
+		claim: 'C', done_criteria: 'D 可核对',
+		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [{ predicate: 'ghost_pred', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } }] }],
+	})
+	check('引用未登记谓词的断言 → 落账之前被拒', ghostPredicate.ok === false && /predicate_unknown/.test(String(ghostPredicate.message)))
+	const wrongType = await call('SetGoal', {
+		claim: 'C', done_criteria: 'D 可核对',
+		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'narrow_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } }] }],
+	})
+	check('主体类型不合主词域 → 拒', wrongType.ok === false && /subject_type_mismatch/.test(String(wrongType.message)))
+	const selfConflict = await call('SetGoal', {
+		claim: 'C', done_criteria: 'D 可核对',
+		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [assertion(8), assertion(12)] }],
+	})
+	check('同一事实里同一主体两个值 → 当场拒(自相矛盾)', selfConflict.ok === false && /assertion_self_conflict/.test(String(selfConflict.message)))
+	const goal = await call('SetGoal', {
+		claim: '氧含量能不能稳定到 8 ppm',
+		done_criteria: '台账里 20 炉次的氧含量读数齐备',
+		promote_at_level: 'L0',
+		hypotheses: [
+			{ claim: '工艺参数是主因', refute_when: '工艺受控时波动仍由来料解释', assertions: [assertion(8)] },
+			{ claim: '来料是主因', refute_when: '来料同一批时波动仍大' },
+		],
+	})
+	check('带断言的假设 → 通过(断言是加法,不是门槛)', goal.ok === true, String(goal.code))
+	const hypothesisId = eventsOf('goal/set').slice(-1)[0].hypotheses[0].id
+	check('断言随假设落账(折法里读得到)', Array.isArray(thisHost.service.state(SESSION).hypotheses.find((item) => item.id === hypothesisId)?.assertions))
+
+	// ③ 升格:身份与内容一起定型
+	await call('CreatePlan', { steps: [{ id: 'd1', do: '整理 20 炉次台账', artifacts: ['lab/o2.md'], done_criteria: 'lab/o2.md 写明每炉次氧含量与工艺参数', tests: { hypothesis: hypothesisId, level: 'L0' } }] })
+	write('lab/o2.md', '# 20 炉次台账\n\n逐炉次列出氧含量读数与同时段的温度窗、拉速、一冷二冷强度与覆盖剂状态;读数取自主控记录的同一批化验单,单位 ppm。\n\n结论:参数可分组的炉次之间氧含量差异明显,而同一参数组内波动较小。\n')
+	const delivered = await call('AdvancePlan', { step_id: 'd1', verdict: 'support', basis: 'lab/o2.md 写明每炉次读数与参数' })
+	check('L0 步骤交付 → 通过', delivered.ok === true, `${String(delivered.code)} :: ${String(delivered.message).slice(0, 200)}`)
+	await call('ClosePlan', {})
+	thisHost.nextVerdict = { verdict: 'support', basis: '判据达成,转写忠实', shortfalls: [] }
+	check('第一条目标达成 → 升格', (await call('CloseGoal', { outcome: 'achieved' })).ok === true)
+	const first = eventsOf('fact/promoted').slice(-1)[0]
+	check('升格带着产出它的假设 id(按 id 关联,不是按文本)', first.hypothesis === hypothesisId, String(first.hypothesis))
+	check('升格带着类型化断言', Array.isArray(first.assertions) && first.assertions.length === 1)
+
+	// ④ 冲突:两条未撤回的事实互相矛盾 → 只暴露,不裁决,不改任何一侧
+	const before = derive(thisHost.service.state(SESSION)).inbox.length
+	await call('SetGoal', {
+		claim: '换个炉次复核氧含量',
+		done_criteria: '复核读数落在 lab/o3.md',
+		promote_at_level: 'L0',
+		hypotheses: [{ claim: '工艺参数仍是主因', refute_when: '复核显示工艺受控', assertions: [assertion(12)] }],
+	})
+	const secondHypothesis = eventsOf('goal/set').slice(-1)[0].hypotheses[0].id
+	await call('CreatePlan', { steps: [{ id: 'd2', do: '复核一炉', artifacts: ['lab/o3.md'], done_criteria: 'lab/o3.md 写明复核读数', tests: { hypothesis: secondHypothesis, level: 'L0' } }] })
+	write('lab/o3.md', '# 复核\n\n对同一主体复核,氧含量读数为 12 ppm;复核使用同一种取样与化验流程,读数可复查。\n\n与上一份台账相比,同一主体的取值不同,需要人来判断哪一份可信。\n')
+	await call('AdvancePlan', { step_id: 'd2', verdict: 'support', basis: 'lab/o3.md 写明复核读数' })
+	await call('ClosePlan', {})
+	thisHost.nextVerdict = { verdict: 'support', basis: '判据达成', shortfalls: [] }
+	await call('CloseGoal', { outcome: 'achieved' })
+	const derived = derive(thisHost.service.state(SESSION))
+	const conflict = derived.conflicts.find((item) => item.predicate === 'oxygen_ppm')
+	check('同一单值谓词、同一主体、两个取值 → 派生一对冲突', conflict !== undefined && conflict.sides.length === 2, JSON.stringify(derived.conflicts.map((item) => item.predicate)))
+	check('冲突不进闸门(它是读数,不是等人处置的门)', derived.inbox.length === before && derived.inbox.every((item) => item.kind !== 'conflict'))
+	check('冲突不改任何一侧(两条事实都在,都没被撤回)', derived.factRows.filter((item) => item.predicate === undefined && Array.isArray(item.assertions) && item.assertions.some((row) => row.predicate === 'oxygen_ppm')).every((item) => item.review === null || item.review === undefined))
+	const cardText = thisHost.service.renderCard(SESSION)
+	check('运行态卡把冲突说出来并说明不替你选', /冲突/.test(cardText) && /系统不替你选/.test(cardText))
+
+	// ⑤ 查已知:按条件取用,查不到如实说
+	const found = await call('QueryKnowledge', { term: 'furnace_batch' })
+	check('按概念取已知 → 返回带断言的事实', found.ok === true && /已知/.test(String(found.message)), String(found.code))
+	const empty = await call('QueryKnowledge', { predicate: 'ghost_pred' })
+	check('查不到也如实说(不把「查不到」写成「不存在」)', empty.ok === true && empty.code === 'knowledge_empty' && /不要/.test(String(empty.message)), String(empty.code))
+	check('一个条件都不给 → 拒', (await call('QueryKnowledge', {})).ok === false)
+
+	// ⑥ 修订 / 废止:展示信息可改,语义不可;废止黏性且挡住新断言
+	check('修订展示信息 → 通过', (await call('ReviseTerm', { id: 'furnace_batch', gloss: '一次熔铸循环(含熔炼与铸造)', reason: '把释义写全' })).ok === true)
+	const revised = thisHost.service.state(SESSION).lexicon.terms.find((item) => item.id === 'furnace_batch')
+	check('修订只动展示信息:版本 +1,父链不动', revised.version === 2 && (revised.parent ?? null) === null)
+	check('废止概念 → 通过(记录保留)', (await call('DeprecateTerm', { id: 'narrow_batch', reason: '与父概念无法区分' })).ok === true)
+	check('废止是黏性终态:第二次不记账', (await call('DeprecateTerm', { id: 'narrow_batch', reason: 'again' })).code === 'already_deprecated')
+	const useDeprecated = await call('SetGoal', {
+		claim: 'C3', done_criteria: 'D3 可核对',
+		hypotheses: [{ claim: 'h3', refute_when: 'r3', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B2', type: 'narrow_batch' }, object: { kind: 'quantity', value: 9, unit: 'ppm' } }] }],
+	})
+	check('引用已废止概念的新断言 → 拒', useDeprecated.ok === false && /deprecated/.test(String(useDeprecated.message)))
+
+	// ⑦ 词汇货架是系统所有:做的人写不进
+	const preExecuteShelf = thisHost.listeners.get('tools/pre-execute')
+	const forgedShelf = await preExecuteShelf(
+		{ name: 'write', arguments: { file_path: join(WORKSPACE, 'clear/ontology/domain.md'), content: '我宣布这就是词汇' }, agent: { id: SESSION }, callId: 'c-forge-shelf' },
+		async () => ({ kind: 'allow' }),
+	)
+	check('直接写词汇货架 → 拒(词条只能经动词落账)', forgedShelf.kind === 'deny' && /clear\/ontology/.test(String(forgedShelf.reason)), String(forgedShelf.kind))
+}
+
 console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 {
 	await call('SetGoal', {
@@ -4121,7 +4256,7 @@ console.log('\n【侦察的另外三个入口:模型可请求 + 立约前】')
 console.log('\n【什么都不删 + 降级不可表示 + 可从日志重放】')
 {
 	const all = ledger()
-	check('日志里只有「发生了什么的记录」', all.every((mutation) => /^(goal|hypothesis|plan|step|observation|admission|audit|evidence|block|human|fact|fork|branch|scout|worldline|git|continuation)\//.test(String(mutation.t))))
+	check('日志里只有「发生了什么的记录」', all.every((mutation) => /^(goal|hypothesis|plan|step|observation|admission|audit|evidence|block|human|fact|fork|branch|scout|worldline|git|continuation|ontology)\//.test(String(mutation.t))))
 	check('被推翻与被作废的记录仍在日志里(可查)', eventsOf('plan/voided').length >= 3 && eventsOf('evidence/recorded').some((mutation) => mutation.verdict === 'refute'))
 	check('判据旧版本留在 refined 记录里', eventsOf('plan/refined').every((mutation) => typeof mutation.old_criteria === 'string'))
 	check('已落定步骤永不回到 open(降级不可表示)', (() => {

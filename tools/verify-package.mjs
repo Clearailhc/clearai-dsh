@@ -169,7 +169,7 @@ console.log('\n⑤ 只增不改:目录面与 fold 的既有词汇表对得上')
 const kernelSource = readFileSync(join(DIST, `${presetBase}/plugins/clearai-kernel.js`), 'utf8')
 const mechanismMatch = /export const MECHANISM_TOOLS = \{([\s\S]*?)\n\}/.exec(kernelSource)
 const toolNames = mechanismMatch === null ? [] : [...mechanismMatch[1].matchAll(/'([A-Z][A-Za-z]+)'/g)].map((match) => match[1])
-check('工具目录读得出来(22 件)', toolNames.length === 22, `${toolNames.length} 件`)
+check('工具目录读得出来(29 件)', toolNames.length === 29, `${toolNames.length} 件`)
 const presetText = readFileSync(join(DIST, `${presetBase}/agent.cordis.yml`), 'utf8')
 const kernelRow = /- id: clearai-kernel[\s\S]*?(?=\n- id: |\n# ──)/.exec(presetText)?.[0] ?? ''
 const declaredTools = [...kernelRow.matchAll(/^\s{6,}([A-Z][A-Za-z]+):\s*true$/gm)].map((match) => match[1])
