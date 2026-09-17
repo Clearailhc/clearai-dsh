@@ -9,7 +9,7 @@
  *       浅墨 = 值形态(一个词取值的样子)
  *       emerald 亮 = 事实点;emerald 柔 = 实例
  *     结构:循环的产出(事实点)长出第一个概念;概念分出子概念(继承)与实例(归属);
- *     子概念经谓词连到值形态;实例经两条断言连到两个不同的值——冲突。
+ *     子概念经谓词连到值形态;实例经两条断言连到两个不同的值——**那两个取值染 amber,冲突靠颜色说话**。
  *   · 桥:**品牌那颗 emerald 事实点就是本体图的第一个节点**。它坐在 c 的开口延长线上
  *     (开口朝 -35° 是品牌几何,不许掰直),一条真实的边从它连到第一个概念。
  *
@@ -91,8 +91,9 @@ const NODES = {
 	conceptA: { x: 1075, y: 285, r: R.concept, fill: 'ink', strength: 0.85 },
 	instance: { x: 1062, y: 580, r: R.instance, fill: 'emerald', strength: 0.55 },
 	pillA: { x: 1292, y: 285, r: R.value, fill: 'ink', strength: 0.27 },
-	pillC: { x: 1300, y: 462, r: R.value, fill: 'ink', strength: 0.27 },
-	pillD: { x: 1300, y: 665, r: R.value, fill: 'ink', strength: 0.27 },
+	/** 这两个取值就是那对冲突读数:染成 amber——产品里冲突用的就是这一族颜色。 */
+	pillC: { x: 1300, y: 462, r: R.value, fill: 'warn', strength: 0.5 },
+	pillD: { x: 1300, y: 665, r: R.value, fill: 'warn', strength: 0.5 },
 }
 
 const EDGES = [
@@ -144,18 +145,8 @@ function edgeSvg(theme, edge) {
  * 颜色即语义:`ink` 是这门语言(概念深、值形态浅),`emerald` 是已经落定的事实与实例。
  */
 function nodeSvg(theme, node) {
-	const color = node.fill === 'emerald' ? EMERALD : theme.ink
+	const color = node.fill === 'emerald' ? EMERALD : node.fill === 'warn' ? WARN : theme.ink
 	return `<circle cx="${n(node.x)}" cy="${n(node.y)}" r="${node.r}" fill="${color}" fill-opacity="${node.strength}"/>`
-}
-
-/** 冲突标记:两条断言边分叉处一枚菱形——冲突是读数,方向由两端的事实给出。 */
-function conflictSvg() {
-	const c = segmentOf(EDGES.find((e) => e.id === 'assertC'))
-	const d = segmentOf(EDGES.find((e) => e.id === 'assertD'))
-	const cx = (c.start.x + c.end.x + d.start.x + d.end.x) / 4
-	const cy = (c.start.y + c.end.y + d.start.y + d.end.y) / 4
-	const s = 11
-	return `<path d="M${n(cx)} ${n(cy - s)} L${n(cx + s)} ${n(cy)} L${n(cx)} ${n(cy + s)} L${n(cx - s)} ${n(cy)} Z" fill="${WARN}" fill-opacity="0.13" stroke="${WARN}" stroke-opacity="0.85" stroke-width="2"/>`
 }
 
 
@@ -245,7 +236,6 @@ function diagram(theme, lang) {
 	<g>
 		${EDGES.map((e) => edgeSvg(theme, e)).join('\n\t\t')}
 		${['hub', 'conceptA', 'pillA', 'pillC', 'pillD', 'instance', 'seed'].map((k) => nodeSvg(theme, NODES[k])).join('\n\t\t')}
-		${conflictSvg()}
 	</g>
 </svg>
 `
