@@ -16,6 +16,13 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 
 > 别的知识图谱靠抽取与断言堆边；这里的每一条边都要通过循环挣得。
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/ontology-hero-dark.zh-CN.png">
+  <img src="docs/diagrams/ontology-hero.zh-CN.png" alt="认识论循环（左）长出领域本体（右）" width="1200">
+</picture>
+
+*左：认识论循环——七阶段。绿点是它落定的事实，也是右侧领域本体的第一个节点。右：本体图——深墨是概念，浅墨是值形态，emerald 是实例；实例上挂着两条互相矛盾的断言，冲突处亮出菱形。*
+
 ---
 
 ## 你得到什么：领域本体
@@ -64,6 +71,7 @@ npx clearai-dsh install
 npm test                       # 15 份套件
 node tools/build-package.mjs   # 由源装配 dist/
 node tools/verify-package.mjs  # 现场重建并逐字节比对
+node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
 ```
 
 `dist/` 是生成物，不进版本库。见 [DSH 集成](docs/dsh-integration.zh-CN.md)。

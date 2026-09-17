@@ -16,6 +16,13 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 > Other knowledge graphs pile up edges by extraction and assertion; here every edge has to be earned through the loop.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/ontology-hero-dark.png">
+  <img src="docs/diagrams/ontology-hero.png" alt="The epistemic loop (left) growing a domain ontology (right)" width="1200">
+</picture>
+
+*Left: the Epistemic Loop — seven stages. Its emerald fact dot is also the first node of the domain ontology on the right. Right: the ontology graph — dark is a concept, light is a value form, emerald an instance; the instance carries two contradictory assertions, with a conflict mark between them.*
+
 ---
 
 ## What you get: a domain ontology
@@ -64,6 +71,7 @@ From the repository:
 npm test                       # 15 suites
 node tools/build-package.mjs   # assemble dist/ from source
 node tools/verify-package.mjs  # rebuild on the spot, byte-compare
+node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chrome)
 ```
 
 `dist/` is generated and never committed. See [DSH integration](docs/dsh-integration.md).
