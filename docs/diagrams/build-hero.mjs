@@ -31,10 +31,12 @@ const H = 900
 
 const EMERALD = '#10B981'
 const WARN = '#D97706'
+/** 暗色底上 #D97706 发浊;同一族里换亮一档,语义不变(冲突色)。 */
+const WARN_DARK = '#F59E0B'
 
 const THEMES = {
-	light: { bg: '#FBFAF7', ink: '#1C1A18' },
-	dark: { bg: '#1C1A18', ink: '#FBFAF7' },
+	light: { bg: '#FBFAF7', ink: '#1C1A18', warn: WARN },
+	dark: { bg: '#1C1A18', ink: '#FBFAF7', warn: WARN_DARK },
 }
 const FONT = 'Inter,"Noto Sans SC","Source Han Sans SC","PingFang SC",Helvetica,Arial,sans-serif'
 
@@ -130,13 +132,13 @@ const EDGE_STYLE = {
 	predicate: { width: 2.2, opacity: 0.46, marker: true, dash: null },
 	isa: { width: 1.9, opacity: 0.3, marker: false, dash: '7 5' },
 	instOf: { width: 1.9, opacity: 0.26, marker: false, dash: '7 5' },
-	assertion: { width: 2, opacity: 0.55, marker: false, dash: null, color: WARN },
+	assertion: { width: 2, opacity: 0.55, marker: false, dash: null, color: 'warn' },
 }
 
 function edgeSvg(theme, edge) {
 	const st = EDGE_STYLE[edge.kind]
 	const { start, end } = segmentOf(edge)
-	const color = st.color ?? theme.ink
+	const color = st.color === 'warn' ? theme.warn : (st.color ?? theme.ink)
 	return `<line x1="${n(start.x)}" y1="${n(start.y)}" x2="${n(end.x)}" y2="${n(end.y)}" stroke="${color}" stroke-opacity="${st.opacity}" stroke-width="${st.width}"${st.dash === null ? '' : ` stroke-dasharray="${st.dash}"`}${st.marker ? ' marker-end="url(#arrow)"' : ''}/>`
 }
 
@@ -145,7 +147,7 @@ function edgeSvg(theme, edge) {
  * 颜色即语义:`ink` 是这门语言(概念深、值形态浅),`emerald` 是已经落定的事实与实例。
  */
 function nodeSvg(theme, node) {
-	const color = node.fill === 'emerald' ? EMERALD : node.fill === 'warn' ? WARN : theme.ink
+	const color = node.fill === 'emerald' ? EMERALD : node.fill === 'warn' ? theme.warn : theme.ink
 	return `<circle cx="${n(node.x)}" cy="${n(node.y)}" r="${node.r}" fill="${color}" fill-opacity="${node.strength}"/>`
 }
 

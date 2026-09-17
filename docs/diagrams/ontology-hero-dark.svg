@@ -43,13 +43,13 @@
 		<line x1="884.53" y1="406.21" x2="1045.47" y2="303.79" stroke="#FBFAF7" stroke-opacity="0.3" stroke-width="1.9" stroke-dasharray="7 5"/>
 		<line x1="883.02" y1="445.98" x2="1037.99" y2="562.02" stroke="#FBFAF7" stroke-opacity="0.26" stroke-width="1.9" stroke-dasharray="7 5"/>
 		<line x1="1110" y1="285" x2="1266" y2="285" stroke="#FBFAF7" stroke-opacity="0.46" stroke-width="2.2" marker-end="url(#arrow)"/>
-		<line x1="1088.88" y1="566.67" x2="1276.71" y2="473.55" stroke="#D97706" stroke-opacity="0.55" stroke-width="2"/>
-		<line x1="1090.25" y1="590.09" x2="1275.51" y2="656.26" stroke="#D97706" stroke-opacity="0.55" stroke-width="2"/>
+		<line x1="1088.88" y1="566.67" x2="1276.71" y2="473.55" stroke="#F59E0B" stroke-opacity="0.55" stroke-width="2"/>
+		<line x1="1090.25" y1="590.09" x2="1275.51" y2="656.26" stroke="#F59E0B" stroke-opacity="0.55" stroke-width="2"/>
 		<circle cx="855" cy="425" r="26" fill="#FBFAF7" fill-opacity="0.85"/>
 		<circle cx="1075" cy="285" r="26" fill="#FBFAF7" fill-opacity="0.85"/>
 		<circle cx="1292" cy="285" r="17" fill="#FBFAF7" fill-opacity="0.27"/>
-		<circle cx="1300" cy="462" r="17" fill="#D97706" fill-opacity="0.5"/>
-		<circle cx="1300" cy="665" r="17" fill="#D97706" fill-opacity="0.5"/>
+		<circle cx="1300" cy="462" r="17" fill="#F59E0B" fill-opacity="0.5"/>
+		<circle cx="1300" cy="665" r="17" fill="#F59E0B" fill-opacity="0.5"/>
 		<circle cx="1062" cy="580" r="21" fill="#10B981" fill-opacity="0.55"/>
 		<circle cx="578.44" cy="325.06" r="20" fill="#10B981" fill-opacity="1"/>
 	</g>

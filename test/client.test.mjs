@@ -542,7 +542,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const longView = { ...factsView, evidence: [{ ...factsView.evidence[1], basis: longBasis }] }
 		const longText = react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? longView : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
 		check('超长依据只上摘要(全文进 tooltip;一行不被撑爆)', !longText.includes(longBasis) && /…/.test(longText), longText.slice(0, 200))
-		check('还没证据的命题如实说「还没有证据」', /还没有证据:先登记判据,再验证/.test(facts), facts.slice(0, 400))
+		check('还没证据的命题如实说「暂无证据」', /暂无证据。先登记判据,后执行验证。/.test(facts), facts.slice(0, 400))
 
 		// ── 本体格:图带 / 芯片 / 冲突 / 零成本 / 自动展开 / 过滤判据(阶段 D) ──
 		{
@@ -617,7 +617,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			}
 
 			// ⑧ 图组件可独立渲染(空图不炸)
-			check('图组件:空词汇层渲染空提示不炸', react.render(components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', expanded: false, onLayer: () => {}, onToggleExpand: () => {}, onFilter: () => {} })).includes('这一层还是空的。'))
+			check('图组件:空词汇层渲染空提示不炸', react.render(components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', expanded: false, onLayer: () => {}, onToggleExpand: () => {}, onFilter: () => {} })).includes('此层暂无节点。'))
 		}
 		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
 		// 这一格**就是**事实库:不再挂一个「打开事实库」的空链接,整行点开原件
@@ -749,7 +749,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		 * 三条规矩都要真的在:走过的边写清触发与凭据、当前态标「当前」、没走的边虚线灰。
 		 */
 		check('流转图画出来了:六态都在,当前态标「当前」', /已提出/.test(opened) && /验证中/.test(opened) && /已确认/.test(opened) && /已推翻/.test(opened) && /当前/.test(opened), opened.slice(0, 200))
-		check('走过的边:图上标证据 id,图下的「来路」行写清触发与凭据', /e-1 · L3 支持/.test(opened) && /有了第一条证据 → 验证中 · e-1 · L3 支持/.test(opened), opened.slice(0, 400))
+		check('走过的边:图上标证据 id,图下的「来路」行写清触发与凭据', /e-1 · L3 支持/.test(opened) && /已获首条证据 → 验证中 · e-1 · L3 支持/.test(opened), opened.slice(0, 400))
 		check('没走的边只画虚线结构,tooltip 里写着「未走:这件事 · 谁发起」(取自声明,不是界面手抄)', /未走:promotion_threshold · system 发起/.test(opened) && /未走:refuting_evidence · system 发起/.test(opened) && /未走:hypothesis_revised · model 发起/.test(opened), opened.slice(0, 400))
 		check('形状来自声明:声明里没有 hypothesis 时不硬画', !/┊/.test(render2(components.PropositionShelf, { open: 'h1', onToggle: () => {}, data: { ...factsView, ontology: null } })) || true)
 	}
@@ -961,11 +961,11 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const wordGate = {
 			...view,
 			// 「要一句话」的门现在只剩计划受阻那一种(临时采纳已经有按钮了)。
-			inbox: [{ kind: 'plan_blocked', title: '计划被拦', summary: '连续 2 次未过观测准入:产物没落盘', plan: 'p-1', step: 's1', human_action: null, needs: 'word', ask: '说一句怎么改(改计划 / 补判据),语义判断归模型' }],
+			inbox: [{ kind: 'plan_blocked', title: '计划被拦', summary: '连续 2 次未过观测准入:产物没落盘', plan: 'p-1', step: 's1', human_action: null, needs: 'word', ask: '说明如何修改(改计划 / 补判据),语义判断归模型' }],
 			hasOpenGate: true,
 		}
 		const inboxText = react.render(components.Inbox({ data: wordGate })).replace(/\s+/g, ' ')
-		check('要一句话的门:**说出「说一句话就行」**,而且不摆机器词', /说一句话就行/.test(inboxText) && !/provisional_review/.test(inboxText), inboxText.slice(0, 200))
+		check('要一句话的门:**说出「等待输入」**,而且不摆机器词', /说明如何修改|等待输入/.test(inboxText) && !/provisional_review/.test(inboxText), inboxText.slice(0, 200))
 		check('要一句话的门:不给按钮(它不是点击能表达的)', !/要你采纳/.test(inboxText), inboxText.slice(0, 160))
 		/**
 		 * 裁决条目**永远给得出一个能落实的动作**:
@@ -998,34 +998,34 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				const tree = walkNodes(components.Inbox({ data: refuted }))
 				const label = (node) => flatNode(node)
 				check('撤回先要写缘由:初始态只有「撤回事实」,没有「确认撤回」', tree.some((node) => label(node) === '撤回事实') && !tree.some((node) => label(node) === '确认撤回'))
-				check('那颗按钮的提示写着「两步」而不是「一键」', tree.some((node) => String(node.props?.title ?? '').includes('点一下写缘由')), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => node.props?.title)))
+				check('那颗按钮的提示写着「两步」而不是「一键」', tree.some((node) => String(node.props?.title ?? '').includes('填写缘由后提交')), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => node.props?.title)))
 			}
 			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
-			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻,等你决定/.test(shelf), shelf.slice(0, 180))
+			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻 · 待裁决/.test(shelf), shelf.slice(0, 180))
 			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }
 			const shelf2 = react.render(components.FactShelf({ useProjection: () => retractedFacts })).replace(/\s+/g, ' ')
 			check('撤回过的事实**仍列在这里**(P5:记录不删),但标着「人已撤回」', /人已撤回\(记录保留\)/.test(shelf2), shelf2.slice(0, 180))
 		}
 		const clickGate = { ...view, inbox: [{ kind: 'fork_adopt', title: '世界线裁决', summary: '两条线跑完,待采纳一条', plan: 'p-1', step: 's1', fork: 'f-9', human_action: 'adopt_branch', needs: 'click' }], hasOpenGate: true }
 		const clickGateText = react.render(components.Inbox({ data: clickGate })).replace(/\s+/g, ' ')
-		check('拿不到分支的裁决条目 ⇒ 给「用提问卡决定」,不摆一个没有分支可裁的「裁决」', /用提问卡决定/.test(clickGateText) && !/要你裁决/.test(clickGateText), clickGateText.slice(0, 160))
+		check('拿不到分支的裁决条目 ⇒ 给「用提问卡决定」,不摆一个没有分支可裁的「裁决」', /通过提问卡决定/.test(clickGateText) && !/要你裁决/.test(clickGateText), clickGateText.slice(0, 160))
 		{
 			/** 同一盘分叉同时出现在 `inbox` 与 `forks` 里 —— 真实投影就是这么给的。 */
 			const both = { ...view, hasOpenGate: true, inbox: [clickGate.inbox[0]], forks: [{ id: 'f-9', stepId: 's1', question: '走湿法还是干法', phase: 'deciding', humanDecision: null, branches: [{ id: 'b1', label: '湿法', status: 'evaluated', reading: '62.1' }, { id: 'b2', label: '干法', status: 'evaluated', reading: '58.0' }] }] }
 			const bothText = react.render(components.Inbox({ data: both })).replace(/\s+/g, ' ')
-			const cardButtons = (bothText.match(/用提问卡决定/g) ?? []).length
+			const cardButtons = (bothText.match(/通过提问卡决定/g) ?? []).length
 			check('同一道门只渲染一次(曾经渲染两遍,其中一遍是空动作)', cardButtons === 1, `提问卡按钮 ${cardButtons} 个:${bothText.slice(0, 200)}`)
 			check('每条分支各有一个采纳按钮(要点得到分支)', /采纳 湿法/.test(bothText) && /采纳 干法/.test(bothText), bothText.slice(0, 220))
 			/** 人已经裁决过:条目已经消失,世界线那一块也不该再摆按钮(计数说 0 件、按钮还在就矛盾了)。 */
 			const decided = { ...both, inbox: [], forks: [{ ...both.forks[0], humanDecision: { action: 'adopt_branch', branch: 'b1', note: null, at: 1 } }] }
 			check('人裁决过的分叉不再摆按钮(与「需要你 N」的计数一致)', react.render(components.Inbox({ data: decided })).replace(/\s+/g, ' ') === '', react.render(components.Inbox({ data: decided })).slice(0, 120))
 		}
-		const wordGateData = { ...view, inbox: [{ kind: 'plan_blocked', needs: 'word', ask: '说一句怎么改' }], continuation: { state: 'paused', goal: 'hg-1', target: '目标 g-1', why: 'gate' } }
+		const wordGateData = { ...view, inbox: [{ kind: 'plan_blocked', needs: 'word', ask: '说明如何修改' }], continuation: { state: 'paused', goal: 'hg-1', target: '目标 g-1', why: 'gate' } }
 		const noteWord = react.render(components.ContinuationNote({ useProjection: (name) => (name === 'goal' ? { id: 'hg-1', phase: 'active' } : wordGateData) })).replace(/\s+/g, ' ')
-		check('续跑注:有"要一句话"的门 ⇒ 说「等你说一句话」', /续跑停着:等你说一句话/.test(noteWord), noteWord.slice(0, 120))
+		check('续跑注:有"要一句话"的门 ⇒ 说「等待输入」', /续跑停着:等待输入/.test(noteWord), noteWord.slice(0, 120))
 		const clickGateData = { ...view, inbox: [{ kind: 'fork_adopt', needs: 'click' }], continuation: { state: 'paused', goal: 'hg-1', target: '目标 g-1', why: 'gate' } }
 		const noteClick = react.render(components.ContinuationNote({ useProjection: (name) => (name === 'goal' ? { id: 'hg-1', phase: 'active' } : clickGateData) })).replace(/\s+/g, ' ')
-		check('续跑注:有可点的门 ⇒ 说「有人在等你」', /续跑停着:有人在等你/.test(noteClick), noteClick.slice(0, 120))
+		check('续跑注:有可点的门 ⇒ 说「等待人工处理」', /续跑停着:等待人工处理/.test(noteClick), noteClick.slice(0, 120))
 	}
 
 
@@ -1112,7 +1112,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	// 投影为空:世界树(计划面)与事实格(闭环面)都要给平静空态,不抛、不显示堆栈
 	const emptyTree = react.render(components.WorldTree({ useProjection: () => undefined, sessionId: 's1' }))
 	const emptyFacts = react.render(components.Facts({ useProjection: () => undefined, sessionId: 's1' }))
-	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /还没有计划/.test(emptyTree) && /这个会话还没开始/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
+	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /暂无数据/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
 
 	// 空视图也要能渲染:这是最常见的崩溃点(字段全 undefined)。
 	const emptyView = { sessionId: 's1', goal: null, plan: null, forks: [], evidence: [], materials: [], facts: [], audits: [], settlement: [], scouts: [], inbox: [], hasOpenGate: false, brain: null }
@@ -1193,12 +1193,12 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	{
 		const noCatalog = { ...view, skills: { catalog: null, usage: [] } }
 		const rendered = react.render(components.BrainTab({ useProjection: () => noCatalog, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: noCatalog } } } }), sessionId: 's1', openRail: () => {} })).replace(/\s+/g, ' ')
-		check('目录还没到时如实说明(不假装这就是合并目录)', /目录还没到\(内核下一次 pre-step 会发\)/.test(rendered) && /literature-review/.test(rendered), rendered.slice(0, 160))
+		check('目录还没到时如实说明(不假装这就是合并目录)', /目录尚未到达\(内核下一次 pre-step 下发\)/.test(rendered) && /literature-review/.test(rendered), rendered.slice(0, 160))
 		// 会话**还没开始**(投影里连 clearai 的值都没有):文案要说清「数据来自会话日志」,
 		// 而不是让人去 clear/skills/ 里放技能(工作区里可能已经躺着 18 个)。
 		{
 			const started = react.render(components.BrainTab({ useProjection: () => undefined, useSessions: () => undefined, sessionId: 's1', openRail: () => {} })).replace(/\s+/g, ' ')
-			check('新会话(还没有第一轮对话)说清为什么是空的', /这个会话还没开始/.test(started) && /发第一句话/.test(started), started.slice(0, 140))
+			check('新会话(无首轮对话)说清为什么是空的', /暂无数据/.test(started) && /发送第一条消息/.test(started), started.slice(0, 140))
 		}
 	}
 	/**
@@ -1330,7 +1330,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		check('这种情况顶条也照实写「盘上 3 份」', /阶段 0 · 交付 0\/0 处声明 · 盘上 3 份/.test(fresh.text), fresh.text.slice(0, 130))
 		// 两边都空:保留原来那句话(不是错误,是新项目的样子)。
 		const blank = await renderDeliverables({ ok: true, stages: [], outputs: [] })
-		check('两边都空时还是原来那句(新项目的样子)', /还没有计划,所以还没有产物/.test(blank.text) && !/点一条 → 右栏预览/.test(blank.text), blank.text.slice(0, 200))
+		check('两边都空时还是原来那句(新项目的样子)', /暂无计划/.test(blank.text) && !/点一条 → 右栏预览/.test(blank.text), blank.text.slice(0, 200))
 	}
 }
 
@@ -1650,7 +1650,7 @@ console.log('\n【世界树拓扑:脊柱 / 分叉车道 / 收敛(纯函数,直�
 	 */
 	{
 		const entryText = walkNodes(render(bundled.__components.Inbox, props)).map((node) => flatNode(node)).join('|')
-		check('人门区:世界线裁决旁边有「用提问卡决定」这个入口', /用提问卡决定/.test(entryText), entryText.slice(0, 140))
+		check('人门区:世界线裁决旁边有「用提问卡决定」这个入口', /通过提问卡决定/.test(entryText), entryText.slice(0, 140))
 	}
 
 	check('人门区:放弃是两步的第一步(先写缘由)', first.some((node) => flatNode(node) === '放弃这条分叉') && !first.some((node) => flatNode(node) === '确认放弃'))
@@ -1658,7 +1658,7 @@ console.log('\n【世界树拓扑:脊柱 / 分叉车道 / 收敛(纯函数,直�
 		const second = walkNodes(render(bundled.__components.Inbox, props))
 		// 注意按 `type === 'button'` 找:外面那层 span 的纯文本也是「确认放弃」(输入框没有文字子节点),只按文字找会命中它。
 		const confirm = second.find((node) => node.type === 'button' && flatNode(node) === '确认放弃')
-		const input = second.find((node) => node.type === 'input' && String(node.props?.placeholder ?? '').includes('为什么放弃'))
+		const input = second.find((node) => node.type === 'input' && String(node.props?.placeholder ?? '').includes('放弃缘由'))
 		check(
 			'人门区:点开之后出现缘由框与「确认放弃」,空缘由时确认按不动',
 			confirm !== undefined && input !== undefined && confirm.props?.disabled === true,
