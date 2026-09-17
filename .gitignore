@@ -8,7 +8,8 @@ dist/
 
 # 运行产物:工作区骨架与账本证据(内核自己写,不是源码)
 clear/
-
+# 参考
+refs/
 # 长测归档:判读证据入库(trajectory.txt / summary.json / meta.json / index.json),
 # 重型现场留在盘上不入库(工作区现场、原始会话日志、stdout 快照)——`*.log` 已经在上面忽略。
 # 为什么这样分:轨迹解码后小且可 grep,是"模型到底做了什么"的可读记录;
