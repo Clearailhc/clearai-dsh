@@ -961,6 +961,29 @@ export function applyEvent(state, event) {
 			fact.review = { decision: gate.action === 'retract_fact' ? 'retracted' : 'kept', reason: gate.note ?? null, at, by: 'user' }
 			return next
 		}
+		/**
+		 * **本体四动词(人的通道)**:路由侧已按同一份判据校验过(表外的值进不了日志),
+		 * 折法只做两件事——落成带 `by:'user'` 的词汇事件,以及**幂等**(人可能点两下、
+		 * 消息也可能重放:同 id 再登记不重复落,修订/废止的幂等由 applyLexiconMutation 自己保证)。
+		 */
+		if (gate.action === 'register_term' || gate.action === 'register_predicate') {
+			const entry = gate.entry ?? {}
+			const taken = (next.lexicon.terms ?? []).some((item) => item.id === entry.id) || (next.lexicon.predicates ?? []).some((item) => item.id === entry.id)
+			if (taken === true) return next
+			next.lexicon = applyLexiconMutation(next.lexicon, { t: gate.action === 'register_term' ? 'ontology/term_added' : 'ontology/predicate_added', ...entry, by: 'user' }, at)
+			return next
+		}
+		if (gate.action === 'revise_term') {
+			const entry = gate.entry ?? {}
+			next.lexicon = applyLexiconMutation(next.lexicon, { t: 'ontology/term_revised', ...entry, by: 'user' }, at)
+			return next
+		}
+		if (gate.action === 'deprecate_entry') {
+			const entry = gate.entry ?? {}
+			const kind = (next.lexicon.terms ?? []).some((item) => item.id === entry.id) ? 'ontology/term_deprecated' : 'ontology/predicate_deprecated'
+			next.lexicon = applyLexiconMutation(next.lexicon, { t: kind, ...entry, by: 'user' }, at)
+			return next
+		}
 		const fork = next.forks.find((item) => item.id === (gate.fork ?? null))
 		if (fork === undefined) return next
 		fork.humanDecision = {
@@ -1361,7 +1384,24 @@ export function derive(state) {
  */
 export const HUMAN_GATE_MARK = '[clearai·人门]'
 /** 面板上允许出现的动词。表外的动词一律拒(与贡献表同一套「表外的名字不许出现」)。 */
-export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional']
+export const HUMAN_GATE_ACTIONS = [
+	'adopt_branch',
+	'abandon_fork',
+	'promote_skill',
+	'retract_fact',
+	'keep_fact',
+	'confirm_provisional',
+	/**
+	 * **本体四动词(人的通道)**:面板抽屉发的就是它们;模型有同名语义的工具
+	 * (`RegisterTerm` 等),但这两个面落的是**同一套判据与同一本账**——判据在宿主半的
+	 * `domain` 门里,词汇事件只有一种折法。这个数组在内核那一侧有一份**逐字镜像**
+	 * (预设面不能 import 这一层),两边相等由 authority-boundary 套件钉死。
+	 */
+	'register_term',
+	'register_predicate',
+	'revise_term',
+	'deprecate_entry',
+]
 /** 运行档的两个取值。**只用于读取旧日志**里的 `set_autonomy` 记录;当前没有写入口。 */
 export const AUTONOMY_VALUES = ['attended', 'unattended']
 

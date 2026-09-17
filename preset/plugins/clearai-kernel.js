@@ -401,7 +401,22 @@ export const HUMAN_GATE_MARK = '[clearai·人门]'
  * 两侧白名单一旦各自维护,摘动词时只改一侧 ⇒ 内核仍认、宿主不认 ⇒ **等价性用例立刻红** ✓。
  * 这正是那条用例存在的意义:两份实现漂移不许静默。
  */
-export const HUMAN_GATE_ACTIONS = ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional']
+/**
+ * **逐字镜像 `ui/lib/fold.js` 的同名清单**(预设面不能 import 宿主半,于是只能两份;
+ * 两份相等由 `test/authority-boundary.test.mjs` 钉死——它红的时候,是清单漂了,不是测试坏了)。
+ */
+export const HUMAN_GATE_ACTIONS = [
+	'adopt_branch',
+	'abandon_fork',
+	'promote_skill',
+	'retract_fact',
+	'keep_fact',
+	'confirm_provisional',
+	'register_term',
+	'register_predicate',
+	'revise_term',
+	'deprecate_entry',
+]
 export function parseHumanGateMessage(message) {
 	if (message === null || typeof message !== 'object') return null
 	// 署名必须是人:插件与模型来源的同名标记不算人门动作(与宿主半同一条纪律)。

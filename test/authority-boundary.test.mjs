@@ -70,6 +70,14 @@ console.log('\n【③ 人门动词不走变更通道(没有工具 schema)】')
 	const leaked = gateVerbs.filter((verb) => toolNames.some((name) => name.toLowerCase() === verb))
 	check('人门动词没有一个出现在工具目录里(模型工具面不存在它们)', leaked.length === 0, leaked.join(' '))
 	check('人门动词也不以 defineTool 形式存在', !gateVerbs.some((verb) => new RegExp(`defineTool\\(\\s*\\{[^}]*name: '${verb}'`).test(KERNEL)))
+	/**
+	 * 清单在**两个平面各有一份**(预设不能 import 宿主半,只能逐字镜像)——
+	 * 没有这条,其中一份悄悄少一个动词时,那个动词在一个入口变成「不存在的动作」,
+	 * 在另一个入口却仍然落账:同一个决定,两套真相。
+	 */
+	const kernelGateMatch = KERNEL.match(/export const HUMAN_GATE_ACTIONS = \[([\s\S]*?)\]/)
+	const kernelGateVerbs = kernelGateMatch === null ? [] : [...kernelGateMatch[1].matchAll(/'([a-z_]+)'/g)].map((match) => match[1])
+	check('内核那份人门清单与投影侧逐字一致(镜像不许漂)', [...gateVerbs].sort().join(',') === [...kernelGateVerbs].sort().join(','), `fold:${gateVerbs.join(',')} · kernel:${kernelGateVerbs.join(',')}`)
 }
 
 console.log('\n【④ 标记常量两侧同源】')

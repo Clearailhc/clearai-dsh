@@ -238,6 +238,18 @@ Notes:
 - The UI and the model tools give the same rejection reason for the same invalid input (one shared validation function).
 
 **Rollback**: revert the route and the client editing surface; read-only rendering (stage D) is unaffected.
+**Progress — done**
+
+> **Channel simplification (a revision of the original design)**: no new `POST /api/clearai/ontology` — the existing human-gate channel `/api/clearai/gate` is reused. It already *is* the human-only write entrance: user signature, whitelist, audit trail, and structural separation from the model's tool surface. The judging rules are **the same ones** the model's tools use (the route calls the `domain-language` pure functions against the current vocabulary; failures 400 with the problem list).
+
+- Whitelist +4: `register_term` / `register_predicate` / `revise_term` / `deprecate_entry` (fold and kernel each carry a copy of the list — forced by the plane split; **literal equality is pinned** by a new authority-boundary check).
+- Fold: a human-gate message becomes a vocabulary event with `by:'user'`; registration is **idempotent**, deprecation sticky, revision after deprecation ignored.
+- Route: `entry` accepts only whitelisted fields at the RPC boundary (with length caps); registration goes through validateTerm / validatePredicate, revision and deprecation check the target and the reason.
+- Panel: the vocabulary maintenance block gains a **registration drawer** (concept / predicate forms submitting through the human-gate verbs, problem list surfaced verbatim) and a per-entry **deprecate** affordance (prompted reason); the panel never writes files.
+- Tests: host +10, authority-boundary +1 (the mirrored list), client stays green at 211.
+
+Verification: `bash test/run.sh` → all 15 suites green (host 99 / boundary 15).
+
 
 ### Stage F: documents, case and quality checks
 
