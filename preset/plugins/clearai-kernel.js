@@ -3114,7 +3114,7 @@ export function apply(ctx, config = {}) {
 	 * 七个动词 = 领域词汇的**全部写入口**(注册 / 修订 / 废止,概念与谓词各一套)+ 一个读入口。
 	 *
 	 * 它们只做一件事:把「这个领域有哪些概念、哪些谓词、关系取什么值形态」写进账本事件,
-	 * 由折法折成 `state.lexicon`;再由同一份折法长出词汇图、冲突读数与货架。
+	 * 由折法折成 `state.lexicon`;再由同一份折法长出本体图、冲突读数与货架。
 	 *
 	 * 四条贯穿所有动词的纪律:
 	 *   · **判据只有一份**——校验经 `hostService.domain.*`(与折法、读面同源),预设侧不复制规则;
@@ -3125,7 +3125,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'RegisterTerm',
 		description:
-			'登记一个领域概念(词汇图上的节点)。id 用小写 slug;`gloss` 一句话说清它指什么;`basis` 必填——哪份材料、哪条事实或人说的哪句话让这个词成立。`parent` 可选(is_a,只能连概念)。登记是**约定**不是主张:它不需要证据等级,但从此可以出现在断言里。要改展示信息用 ReviseTerm,要作废用 DeprecateTerm(记录不会删)。',
+			'登记一个领域概念(本体图上的节点)。id 用小写 slug;`gloss` 一句话说清它指什么;`basis` 必填——哪份材料、哪条事实或人说的哪句话让这个词成立。`parent` 可选(is_a,只能连概念)。登记是**约定**不是主张:它不需要证据等级,但从此可以出现在断言里。要改展示信息用 ReviseTerm,要作废用 DeprecateTerm(记录不会删)。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3162,7 +3162,7 @@ export function apply(ctx, config = {}) {
 			return done({
 				ok: true,
 				code: 'term_registered',
-				message: `概念 ${String(args.id).trim()} 已登记。它现在是词汇图上的一个节点:新断言可以引用它。${note}`,
+				message: `概念 ${String(args.id).trim()} 已登记。它现在是本体图上的一个节点:新断言可以引用它。${note}`,
 			})
 		},
 	})
@@ -3170,7 +3170,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'RegisterPredicate',
 		description:
-			'登记一个领域谓词(词汇图上的边)。值域二选一:`range={form:"quantity"|"statement"|"formula"|"code"|"reference",unit?}` 说宾语是一个**字面值**,或 `range={term:"<概念 id>"}` 说宾语是**另一个概念的实例**。`domain` 可选(主词域,声明了它,断言的主体就必须写明类型)。`functional=true` 表示单值:同一主体出现两个不同取值时,投影会给出一对**冲突**(只暴露,不裁决)。',
+			'登记一个领域谓词(本体图上的边)。值域二选一:`range={form:"quantity"|"statement"|"formula"|"code"|"reference",unit?}` 说宾语是一个**字面值**,或 `range={term:"<概念 id>"}` 说宾语是**另一个概念的实例**。`domain` 可选(主词域,声明了它,断言的主体就必须写明类型)。`functional=true` 表示单值:同一主体出现两个不同取值时,投影会给出一对**冲突**(只暴露,不裁决)。',
 		parameters: {
 			type: 'object',
 			properties: {

@@ -207,7 +207,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 	const first = graphProjection(state)
 	const second = graphProjection(state)
 	check('两次投影逐字节相同(布局是纯函数)', JSON.stringify(first) === JSON.stringify(second))
-	check('词汇层与知识层都画出来了', first.nodes.some((node) => node.kind === 'concept') && first.nodes.some((node) => node.kind === 'instance'))
+	check('本体层与实体层都画出来了', first.nodes.some((node) => node.kind === 'concept') && first.nodes.some((node) => node.kind === 'instance'))
 	check('is_a 与谓词都在边上', first.edges.some((edge) => edge.kind === 'is_a') && first.edges.some((edge) => edge.kind === 'predicate'))
 	check('每条事实边带认识论读数(等级 + 事实 id)', first.edges.filter((edge) => edge.kind === 'assertion').every((edge) => edge.level !== undefined && edge.fact !== null))
 	check('概念按 is_a 深度分层(子比父深一行)', first.nodes.find((node) => node.ref === 'weno_scheme').y > first.nodes.find((node) => node.ref === 'numerical_scheme').y)

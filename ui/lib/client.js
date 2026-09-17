@@ -2808,7 +2808,7 @@ window.__ModuleLoader__.load({
 		const Ontology = ({ useProjection, openPreview }) => {
 			const data = useProjection('clearai')
 			const lexicon = data?.lexicon ?? null
-			/** 图分两层看:词汇层(允许表达什么)与知识层(已经表达什么)。 */
+			/** 图分两层看:本体层(允许表达什么)与实体层(已经表达什么)。 */
 			const [layer, setLayer] = React.useState('vocabulary')
 			const [picked, setPicked] = React.useState(null)
 			const bar = (note) =>
@@ -2961,7 +2961,7 @@ window.__ModuleLoader__.load({
 				'div',
 				{ style: S.wrap },
 				bar(`${terms.length} ${t('个概念')} · ${predicates.length} ${t('个谓词')}${conflicts.length > 0 ? ` · ${conflicts.length} ${t('对冲突')}` : ''}`),
-				h('div', { style: S.inline }, toggle('vocabulary', t('词汇图')), toggle('knowledge', t('知识图'))),
+				h('div', { style: S.inline }, toggle('vocabulary', t('本体图')), toggle('knowledge', t('实体图'))),
 				conflicts.length > 0
 					? h(
 							'div',

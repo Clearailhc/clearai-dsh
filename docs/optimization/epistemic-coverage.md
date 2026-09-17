@@ -120,7 +120,7 @@ currently rests on prompts or is missing.
 | Six vocabulary events fold into `state.lexicon` (revisions kept, deprecation sticky, no delete) | `ui/lib/domain-language.js` + `fold.js` | hard | implemented (the fold plus the seven verbs) | `test/domain-language.test.mjs` |
 | An assertion lands with promotion (references exist, form fits the range, one fact self-consistent) | `fact/promoted` + `validateAssertions` | hard | implemented (including the `SetGoal` / `CloseGoal` wiring) | `test/kernel.test.mjs` / `test/domain-language.test.mjs` |
 | Conflicts are surfaced, never adjudicated (single-valued predicate + same subject + different objects + neither retracted) | `deriveConflicts` + the runtime card | hard | implemented | same suite |
-| Vocabulary and knowledge graphs derive from one fold (deterministic layout, coordinates never ledgered) | `graphProjection` + `view().lexicon` | hard | fold implemented; the panel does not render yet (stages D–E) | same suite |
+| Vocabulary and entity graphs derive from one fold (deterministic layout, coordinates never ledgered) | `graphProjection` + `view().lexicon` | hard | fold implemented; the panel does not render yet (stages D–E) | same suite |
 
 ### Known non-coverage (listed honestly; destinations in §5)
 

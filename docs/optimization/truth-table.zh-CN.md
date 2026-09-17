@@ -59,7 +59,7 @@
 | `ontology-lexicon-events` | 领域词汇事件折成 state.lexicon | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js applyLexiconMutation` |
 | `assertion-validation` | 断言形态校验（落账之前） | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | 否 | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | 冲突派生（只暴露，不裁决） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js deriveConflicts` |
-| `knowledge-graph-projection` | 词汇图 / 知识图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js graphProjection` |
+| `graph-projection` | 本体图 / 实体图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js graphProjection` |
 | `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/clearai-kernel.js RegisterTerm` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/plugins/prompts.js exploration-rhythm` |
@@ -874,12 +874,12 @@
 - **测试**：test/domain-language.test.mjs · **配置**：—
 - **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
 
-### `knowledge-graph-projection` · 词汇图 / 知识图投影（确定性布局）
+### `graph-projection` · 本体图 / 实体图投影（确定性布局）
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：每次投影（view() 计算读面时）
 - **输入**：state.lexicon 与 state.facts
-- **输出**：{nodes, edges, bounds}：词汇层（概念 / is_a / 谓词）与知识层（实例 / 断言），节点带确定性坐标
+- **输出**：{nodes, edges, bounds}：本体层（概念 / is_a / 谓词）与实体层（实例 / 断言），节点带确定性坐标
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
 - **理由**：图是最自然的表现形式，但它是投影而不是存储：同一账本必得同一张图，坐标、缩放与筛选都不进账本。

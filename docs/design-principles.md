@@ -24,7 +24,7 @@ The system is append-only in meaning. Refinements retain prior criteria, superse
 
 ## A graph is a projection, not storage
 
-Both the ontology graph and the knowledge graph are computed from the same fold: `graphProjection()` is a deterministic pure function (the same ledger always yields the same nodes, edges and default layout), and coordinates, zoom and filters never enter the ledger. Editing on the panel only invokes verbs, and the shelf is rendered idempotently — **a read surface never turns back into authority**.
+Both the ontology graph and the entity graph are computed from the same fold: `graphProjection()` is a deterministic pure function (the same ledger always yields the same nodes, edges and default layout), and coordinates, zoom and filters never enter the ledger. Editing on the panel only invokes verbs, and the shelf is rendered idempotently — **a read surface never turns back into authority**.
 
 ## A semantic change must take a new id
 

@@ -20,7 +20,7 @@ It exists because of a self-diagnosis. After several rounds of fixing defects we
 | What the UI shows ("running / trusted / waiting on you") | **The projection (derived)** | No second copy of the judgement: computed from the two kinds of fact above. |
 | Which concepts and predicates exist in this domain, with what range and single-valuedness | **The ClearAI ledger** | Entries land only through named verbs (seven, implemented); the fold turns the six `ontology/*` events into `state.lexicon` — **there is no second vocabulary**. |
 | One fact's assertion (subject–predicate–object) | **The ClearAI ledger** (`fact/promoted.assertions`) | It lands **only at promotion**; old facts are never rewritten retroactively. |
-| Conflicts, the vocabulary graph, the knowledge graph, vocabulary health | **The projection (derived)** | All computed: a conflict is a paired reading rather than an object, the graphs are the output of `graphProjection()`, layout is a deterministic pure function, and coordinates never enter the ledger. |
+| Conflicts, the ontology graph, the entity graph, vocabulary health | **The projection (derived)** | All computed: a conflict is a paired reading rather than an object, the graphs are the output of `graphProjection()`, layout is a deterministic pure function, and coordinates never enter the ledger. |
 | `clear/ontology/domain.md` and the panel's ontology tab | **Rendering** | Not authority: the shelf is rewritten idempotently by the system and the panel only invokes verbs (the panel itself is stages D–E). |
 
 ### One consequence we got wrong last batch
@@ -107,7 +107,7 @@ The four fact classes the table above gained follow the same rule, spelled out o
 | Which concepts and predicates exist, with what range and single-valuedness | Ledger events (`ontology/term_added`, `ontology/predicate_added`, plus one revision and one deprecation event each) | The fold → `state.lexicon`; the model (assertion validation), the shelf `clear/ontology/domain.md`, the panel's ontology tab |
 | One fact's assertion | The ledger event `fact/promoted.assertions` (it travels with the fact) | The fold → `state.facts[].assertions`; the graph projection, the shelf, the panel |
 | A conflict (two un-retracted facts contradicting each other) | **Derived**: `deriveConflicts()` recomputes it on every replay | One line on the runtime card, a conflict section on the panel; **it enters no gate** — it is a reading, not a gate awaiting a person |
-| The vocabulary graph / knowledge graph | **Derived**: `graphProjection(state)` | The panel, the Mermaid shelf, the tests; layout is a pure function, so the same ledger always yields the same graph |
+| The ontology graph / entity graph | **Derived**: `graphProjection(state)` | The panel, the Mermaid shelf, the tests; layout is a pure function, so the same ledger always yields the same graph |
 
 Three boundaries (written down here so the next reader does not have to guess):
 

@@ -59,7 +59,7 @@ This section is exported from code, not written by hand:
 | `ontology-lexicon-events` | Domain vocabulary events fold into state.lexicon | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js applyLexiconMutation` |
 | `assertion-validation` | Assertion shape validation (before anything lands) | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | no | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js deriveConflicts` |
-| `knowledge-graph-projection` | Vocabulary and knowledge graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js graphProjection` |
+| `graph-projection` | Ontology and entity graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js graphProjection` |
 | `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/clearai-kernel.js RegisterTerm` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | no | `preset/plugins/prompts.js exploration-rhythm` |
@@ -874,12 +874,12 @@ This section is exported from code, not written by hand:
 - **Tests**: test/domain-language.test.mjs · **Config**: —
 - **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `knowledge-graph-projection` · Vocabulary and knowledge graph projection (deterministic layout)
+### `graph-projection` · Ontology and entity graph projection (deterministic layout)
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: 每次投影（view() 计算读面时）
 - **Input**: state.lexicon 与 state.facts
-- **Output**: {nodes, edges, bounds}：词汇层（概念 / is_a / 谓词）与知识层（实例 / 断言），节点带确定性坐标
+- **Output**: {nodes, edges, bounds}：本体层（概念 / is_a / 谓词）与实体层（实例 / 断言），节点带确定性坐标
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
 - **Rationale**: 图是最自然的表现形式，但它是投影而不是存储：同一账本必得同一张图，坐标、缩放与筛选都不进账本。

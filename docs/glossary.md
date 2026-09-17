@@ -33,10 +33,10 @@ The epistemic harness's own backend flow: which objects exist, which states they
 A project knowledge base's **language layer**: a governed set of conventions about which concepts exist in this domain, which predicates relate them, and what value form a relation takes. Its authority is ledger events (`ontology/*`), folded into `state.lexicon`; entries are admitted with a basis, revised with versions, and only ever deprecated (never deleted), and a semantic change must take a new id. It is not itself an empirical claim — empirical claims use it as vocabulary and pass the loop to become facts.
 
 ## concept (term)
-One entry in the domain ontology: a domain concept's name, gloss, aliases and parent. It is a node in the vocabulary graph and what an assertion's `subject.type` may reference; admission requires a basis.
+One entry in the domain ontology: a domain concept's name, gloss, aliases and parent. It is a node in the ontology graph and what an assertion's `subject.type` may reference; admission requires a basis.
 
 ## predicate
-A relation declaration in the domain ontology: its subject domain (a concept), its range (another concept, or one of the five value forms), and whether it is single-valued. It is an edge in the vocabulary graph; only multiple values on a single-valued predicate derive a **conflict**.
+A relation declaration in the domain ontology: its subject domain (a concept), its range (another concept, or one of the five value forms), and whether it is single-valued. It is an edge in the ontology graph; only multiple values on a single-valued predicate derive a **conflict**.
 
 ## assertion
 The content form of a fact: subject–predicate–object (plus qualifiers). It is **additive** — a fact without one stays valid and simply shows as "unstructured". An assertion lands with the fact at promotion and is never rewritten retroactively.
@@ -47,8 +47,11 @@ The form of an assertion's object: statement, quantity (a number plus a unit), f
 ## conflict
 The paired reading the projection produces when two **un-retracted** confirmed facts fall on the same single-valued predicate, the same subject, and different objects. It is **surfaced, never adjudicated**: it retracts no side, decides nothing about which is true, and enters no gate; handling one goes through the existing human gate.
 
-## knowledge graph
-The graph projected out of facts: instances are nodes, assertions are edges, and every edge carries that fact's support level and review state. It is drawn apart from the **vocabulary graph** (concepts and predicates) — one says "what may be expressed", the other "what has been expressed".
+## ontology graph
+The graphical reading of the domain ontology: concepts are nodes, `is_a` and predicates are edges. It answers what this language **may** express — which is why it can exist before any fact does (a language before its sentences). It is drawn apart from the [entity graph](#entity-graph): their edges look alike, but one is a **declaration** and the other a **claim**.
+
+## entity graph
+The graph projected out of facts: instances are nodes, assertions are edges, and every edge carries that fact's support level and review state. It is drawn apart from the **ontology graph** (concepts and predicates) — one says "what may be expressed", the other "what has been expressed".
 
 ## evidence
 Material used to support or challenge a proposition, such as a source, record, measurement, or other traceable artifact. Evidence is not itself a conclusion.

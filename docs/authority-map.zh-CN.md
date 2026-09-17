@@ -22,7 +22,7 @@
 | 界面显示的"在跑/已可信/等人" | **投影（派生）** | 不另存第二份判断：从上面两类事实现算。 |
 | 这个领域有哪些概念、哪些谓词、值域与单值性 | **ClearAI 账本** | 词条只能由具名动词落账（七个，已实现）；折法把六个 `ontology/*` 事件折成 `state.lexicon`——**没有第二份词汇表**。 |
 | 一条事实的断言（主词-谓词-宾语） | **ClearAI 账本**（`fact/promoted.assertions`） | 只在**升格那一刻**落地；旧事实不被回溯改写。 |
-| 冲突、词汇图、知识图、词汇健康度 | **投影（派生）** | 全部现算：冲突是成对读数不是对象，图是 `graphProjection()` 的输出，布局是确定性纯函数，坐标不进账本。 |
+| 冲突、本体图、实体图、词汇健康度 | **投影（派生）** | 全部现算：冲突是成对读数不是对象，图是 `graphProjection()` 的输出，布局是确定性纯函数，坐标不进账本。 |
 | `clear/ontology/domain.md` 与面板「本体」页签 | **渲染** | 不是权威：货架由系统幂等重写，面板只发动词（面板本身是阶段 D–E）。 |
 
 ### 一条推论（上一批写错过的）
@@ -127,7 +127,7 @@ admissions / dispatches / scouts / audits / hypotheses / support levels 一整�
 | 有哪些概念、哪些谓词、值域与单值性 | 账本事件（`ontology/term_added`、`ontology/predicate_added`、修订与废止各一条） | 折法 → `state.lexicon`;模型（断言校验）、货架 `clear/ontology/domain.md`、面板「本体」 |
 | 一条事实的断言 | 账本事件 `fact/promoted.assertions`（随事实走） | 折法 → `state.facts[].assertions`;图投影、货架、面板 |
 | 冲突（两条例外未撤回的事实互相矛盾） | **派生**：`deriveConflicts()` 每次重放现算 | 运行态卡一行、面板冲突节;**不进闸门**——它不是等人处置的门,是读数 |
-| 词汇图 / 知识图 | **派生**：`graphProjection(state)` | 面板、Mermaid 货架、测试;布局是纯函数,同一账本必得同一张图 |
+| 本体图 / 实体图 | **派生**：`graphProjection(state)` | 面板、Mermaid 货架、测试;布局是纯函数,同一账本必得同一张图 |
 
 三条边界（写在这里,免得下一个人再猜一遍）:
 

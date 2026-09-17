@@ -81,7 +81,7 @@ Full version: [The Epistemic Loop](docs/epistemic-loop.md)
 
 ## What it looks like
 
-The plugin contributes three surfaces on top of stock DSH: a **deliverables** view in the middle column, and **worldlines / propositions & facts / external brain** panes on the right.
+The plugin contributes these surfaces on top of stock DSH: a **deliverables** view and a **propositions & facts** view in the middle column (switchable), plus **worldlines** and **external brain** panes on the right.
 
 **Propositions and facts** — every claim is one row: its current standing, its level, and who judged it. Confirmed conclusions move to the shelf with their scope; refuted ones stay, with the evidence that refuted them.
 

@@ -1569,9 +1569,9 @@
       "known_mismatch": null
     },
     {
-      "id": "knowledge-graph-projection",
-      "name": "词汇图 / 知识图投影（确定性布局）",
-      "name_en": "Vocabulary and knowledge graph projection (deterministic layout)",
+      "id": "graph-projection",
+      "name": "本体图 / 实体图投影（确定性布局）",
+      "name_en": "Ontology and entity graph projection (deterministic layout)",
       "layer": "epistemic",
       "status": "implemented",
       "hardness": "hard",
@@ -1586,7 +1586,7 @@
       },
       "trigger": "每次投影（view() 计算读面时）",
       "input": "state.lexicon 与 state.facts",
-      "output": "{nodes, edges, bounds}：词汇层（概念 / is_a / 谓词）与知识层（实例 / 断言），节点带确定性坐标",
+      "output": "{nodes, edges, bounds}：本体层（概念 / is_a / 谓词）与实体层（实例 / 断言），节点带确定性坐标",
       "blocks_execution": false,
       "affected_by_autonomy": false,
       "native_dsh_alternative": null,

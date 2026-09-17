@@ -121,18 +121,18 @@ A predicate is a **first-class edge record** in the ontology graph, not a visibl
 
 Predicates are promoted to nodes only when relations *between predicates* genuinely need expressing. **No meta-model in advance.**
 
-### 3.3 Ontology graph and knowledge graph stay separate
+### 3.3 Ontology graph and entity graph stay separate
 
 ```mermaid
 flowchart LR
     accTitle: Ontology Graph Versus Knowledge Graph
-    accDescr: The ontology graph declares which concepts and predicates exist, while the knowledge graph shows the typed facts that were actually promoted.
+    accDescr: The ontology graph declares which concepts and predicates exist, while the entity graph shows the typed facts that were actually promoted.
 
     subgraph onto["Ontology graph · what may be said"]
         scheme["numerical scheme"] -->|is_a| method["scientific method"]
         scheme -->|"convergence order · quantity"| qty["quantity"]
     end
-    subgraph kg["Knowledge graph · what is said"]
+    subgraph kg["Entity graph · what is said"]
         weno["WENO5"] -->|"convergence order · L3"| five["5"]
         weno -->|"type"| scheme2["numerical scheme"]
     end
@@ -213,7 +213,7 @@ None of the following is authoritative storage; all of it is rendering:
 
 - `clear/ontology/domain.md`: the Markdown read surface for the domain ontology (with Mermaid), rendered idempotently by the system;
 - `clear/knowledge/facts/INDEX.md`: the fact shelf;
-- the vocabulary graph and knowledge graph in the UI;
+- the ontology graph and entity graph in the UI;
 - the statistics line on the runtime card;
 - the nodes and edges returned by `graphProjection(state)`.
 
@@ -223,7 +223,7 @@ None of the following is authoritative storage; all of it is rendering:
 
 Node coordinates, zoom and filters are not knowledge and do not enter the ledger. Layout is a **deterministic pure function**:
 
-- the vocabulary graph prefers `is_a` layering;
+- the ontology graph prefers `is_a` layering;
 - without hierarchy it uses a deterministic partitioned/circular layout;
 - the same ledger yields the same graph data and the same default layout (pinnable by tests);
 - a user's temporary drag only changes the current view.
@@ -279,7 +279,7 @@ Automatic ontology induction (inducing concepts from extracted material by frequ
 ```mermaid
 flowchart TD
     accTitle: Domain Ontology Inside The Epistemic Loop
-    accDescr: Each beat of the loop touches the domain vocabulary, and promoted typed facts project into the knowledge graph where conflicts are surfaced but never auto-adjudicated.
+    accDescr: Each beat of the loop touches the domain vocabulary, and promoted typed facts project into the entity graph where conflicts are surfaced but never auto-adjudicated.
 
     frame["Frame: pick concepts and value forms"] --> hyp["Hypothesise: register typed assertions"]
     hyp --> plan["Plan: criteria may cite relations"]
@@ -287,7 +287,7 @@ flowchart TD
     obs --> verify["Verify: check assertion and evidence"]
     verify --> evaluate["Evaluate: level · independence · conflict"]
     evaluate --> promote["Record: the typed fact lands"]
-    promote --> project["Project: ontology graph and knowledge graph"]
+    promote --> project["Project: ontology graph and entity graph"]
     project --> next["Next round: retrieve what is known by concept"]
     project --> conflict["Conflict is derived, only surfaced"]
     conflict --> human["A person or independent evaluator handles it"]
@@ -397,7 +397,7 @@ flowchart LR
 | `clear/knowledge/facts/INDEX.md` | Promoted facts (with assertions and boundaries) | The kernel, idempotently |
 | The runtime card | Vocabulary counts, typed-fact ratio, one conflict line | The fold, `renderCard` |
 | The panel's propositions-and-facts view | Facts and assertion chips | The projection, `view().facts` |
-| The panel's ontology view | Vocabulary graph / knowledge graph / entry detail | The projection, `view().lexicon` (rendered in stages D–E) |
+| The panel's ontology view | Ontology graph / entity graph / entry detail | The projection, `view().lexicon` (rendered in stages D–E) |
 
 ### 8.4 Where it stands today
 
@@ -413,19 +413,44 @@ flowchart LR
 
 ## 9. Interface
 
-A separate "Ontology" tab in the right sidebar, with three views:
+**The ontology does not get a tab of its own — it grows into the middle column's facts view** (`clearai-facts` in `conversation.view`).
 
-1. **Vocabulary graph**: concept nodes, `is_a` hierarchy, predicate edges, value forms;
-2. **Knowledge graph**: instances, fact edges, levels, evidence, conflict highlighting;
-3. **Entry detail**: gloss, version, basis, facts that use it, and the revise/deprecate entry points for the selected node or edge.
+Why: facts are that view's main question ("what do we know, and on what basis"), and the ontology is their **language and map**. Split across two columns, the reader has to carry context between them — and the right rail is only ~300px, where a graph is crippled. There is also a harder precedent: the "progress" tab was removed precisely because "the fewer tabs, the less each one has to be explained".
 
-**The ontology tab governs the domain ontology only.** The process ontology never appears here as editable content — it shows up as the steps and gates in the worldlines tree and as propositions grouped by state; the charter the model reads is the `clear/ontology/verification-loop.md` shelf.
+### 9.1 Layout (top to bottom)
 
-The first version uses a zero-dependency SVG client: zoom, pan, select, view switching, filtering by concept / predicate / level / state, conflict highlighting, ghost rendering for deprecated entries, and deterministic truncation with an explicit count when there are too many instances.
+| Block | When it appears | What it holds |
+|---|---|---|
+| Conflict line | **only when conflicts exist** | One pointer: predicate · subject → both sides' facts and values; click to open the pair |
+| **Graph band** | resident once vocabulary exists (one click collapses it; the choice is remembered) | Ontology graph ｜ entity graph toggle (~200px, zoom and pan); **clicking a node filters the shelves below by concept**; `⤢` expands to panorama |
+| Filter line | **only while a filter is active** | Filtered by "X": N/M · clear — N/M tells the truth, unmatched rows never vanish silently |
+| Confirmed facts | resident | The existing shelf (unchanged) + **assertion chips** that expand a term card in place |
+| Propositions | resident | The existing groups (unchanged) + assertion chips (marked "not yet promoted") |
+| Vocabulary maintenance | collapsed by default | Term table, health, deprecations, "open the shelf"; **auto-expands when there are 0 facts and 0 propositions but vocabulary exists** (a language before its sentences needs somewhere to stand) |
 
-**Editing uses a detail drawer plus apply**, not drag-to-connect: a drag gesture expresses semantics too loosely, while the drawer can require domain, range, value form and basis explicitly. Drag-to-connect is a later enhancement, not a precondition for the first version being usable.
+### 9.2 Six "no explosion" contracts
 
-Cross-navigation: an assertion chip on a fact row opens the ontology tab with the predicate selected; "facts that use it" on a concept opens the facts tab filtered by that concept; a knowledge-graph fact edge opens the fact, its evidence and the verification step in the worldlines; a conflict edge opens both facts side by side.
+1. **Zero cost**: with no vocabulary, this view is **pixel-for-pixel what it was**. The conflict line, the band, the chips and the maintenance block each exist only when there is something to say.
+2. **Confidence ordering**: confirmed facts on top, propositions in flight in the middle, language (maintenance) at the bottom. Reference material never blocks conclusions.
+3. **The graph is both a face and a tool**: the band is this view's **head** (like a header — it does not compete with the facts), and its nodes *are* the index: clicking a concept node filters, replacing a row of text chips.
+4. **Expand in place, never jump away**: an assertion chip expands its term card in situ (gloss / basis / subject domain / range / single-valuedness / uses; actions: filter by this concept, see it in the graph); conflicts are marked on the **affected fact row**. The only cross-view jump kept is "see this step in the worldlines".
+5. **Only exceptions interrupt**: conflicts and health warnings each get one pointer line; vocabulary maintenance lives in the collapsed block.
+6. **Filtering is visible, clearable, and honest**: one status line plus `✕`, with N/M stating how many rows did not match (including older, untyped facts).
+
+### 9.3 The two graphs in the band
+
+One toggle, sharing the same deterministic layout (`graphProjection()`: the same ledger always yields the same picture):
+
+- **Ontology graph** (default): concepts + `is_a` + predicates — **what this language looks like**. Clean and structural, which is why it is the face.
+- **Entity graph**: instances + assertion edges, coloured by support level, conflicts in red — **what has actually been verified**. Switch to it to read the situation.
+
+The panorama (`⤢`) expands in place to nearly the whole view: the shelves step aside, the **node cap is lifted** (the band draws only the first 40 nodes and says so), and a "fit" button frames the whole graph. Editing lands in this panorama in stage E.
+
+### 9.4 The read-only / editable boundary
+
+The first version is **read-only**: zero-dependency SVG (zoom, pan, select, switching, panorama, conflict highlighting, dashed ghosts for deprecated entries). Graph editing (stage E) is **a graphical front end for named verbs** — add a node = `RegisterTerm`, connect = `RegisterPredicate`, deprecate = `DeprecateTerm`; a drawer form rather than drag-to-connect (a drag gesture expresses semantics too loosely, while a drawer can require domain, range, value form and basis). Dragging and zooming **produce no ledger event**.
+
+**This view governs the domain ontology only.** The process ontology never appears here as editable content — it shows up as the steps and gates in the worldlines tree and as propositions grouped by state; the charter the model reads is the `clear/ontology/verification-loop.md` shelf.
 
 ---
 
@@ -462,6 +487,6 @@ The reference implementation Semantica (graph-native knowledge infrastructure, `
 2. A graph is the most natural presentation, but the graph is a projection, not authoritative storage.
 3. Nodes and edges are editable, and every edit must land as a named governance action.
 4. There is no delete — only versioned revision and sticky deprecation; a semantic change must take a new id.
-5. A fact carries epistemic metadata, and the knowledge graph may not erase its evidence chain.
+5. A fact carries epistemic metadata, and the entity graph may not erase its evidence chain.
 6. Every read surface comes from the same fold; no second account is maintained.
 7. Implement only the graph capability the current problem needs; do not build an enterprise knowledge-graph platform in advance.

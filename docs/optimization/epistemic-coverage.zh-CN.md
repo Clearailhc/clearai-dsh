@@ -106,7 +106,7 @@
 | 六个词汇事件折成 `state.lexicon`（修订留痕、废止黏性、没有删除） | `ui/lib/domain-language.js` + `fold.js` | 硬 | 已实现（折法 + 七个动词） | `test/domain-language.test.mjs` |
 | 断言随升格落地（引用必须存在、形态合域、同一事实自洽） | `fact/promoted` + `validateAssertions` | 硬 | 已实现（含 `SetGoal` / `CloseGoal` 接线） | `test/kernel.test.mjs` / `test/domain-language.test.mjs` |
 | 冲突只暴露不裁决（单值谓词 + 同主体 + 异客体 + 两侧未撤回） | `deriveConflicts` + 运行态卡 | 硬 | 已实现 | 同上 |
-| 词汇图 / 知识图由同一折法派生（确定性布局，坐标不进账本） | `graphProjection` + `view().lexicon` | 硬 | 折法已实现；面板未渲染（阶段 D–E） | 同上 |
+| 本体图 / 实体图由同一折法派生（确定性布局，坐标不进账本） | `graphProjection` + `view().lexicon` | 硬 | 折法已实现；面板未渲染（阶段 D–E） | 同上 |
 
 ### 已知不覆盖（如实列出，归宿见 §5）
 

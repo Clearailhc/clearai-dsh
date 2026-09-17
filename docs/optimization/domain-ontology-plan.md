@@ -9,7 +9,7 @@
 1. A project can build a **domain ontology graph**: concepts are nodes, predicates are directed edges with domain/range, and value forms and constraints are checkable.
 2. Facts gain **content form**: `fact = assertion + epistemic metadata`; plain text, formulae, code, numbers and references are the five value forms of an assertion, not five kinds of fact.
 3. Hypotheses and facts are linked **by id**, fixing today's fragile `text`-equality match.
-4. The graph can be **rendered** (a Markdown + Mermaid shelf, and the vocabulary/knowledge graphs in a right-sidebar ontology tab) and **edited** — and every edit lands as a **named governance verb**; graph editing writes no files and produces no layout events.
+4. The graph can be **rendered** (a Markdown + Mermaid shelf, and the **graph band inside the facts view**: ontology graph / entity graph) and **edited** — and every edit lands as a **named governance verb**; graph editing writes no files and produces no layout events.
 5. Add/revise/deprecate has exactly three semantics: **registration with a basis / versioned revision (a semantic change takes a new id) / sticky deprecation (no delete)**.
 6. Conflicts are **mechanically derived**: the same single-valued predicate, the same subject, different objects, neither side retracted. They are **surfaced only — never auto-adjudicated and never auto-retracted**.
 7. Every read surface (shelf / panels / runtime card / graph) comes from **the same fold projection**; no second account. Old ledgers (no ontology events, no assertions) replay unchanged.
@@ -40,7 +40,7 @@ These are **code facts** (as of `0.1.7`; line numbers drift, symbol names are au
 
 - **First principles**: the loop governs *why believe it*, the ontology governs *in what language it is said*. Anything computable (state, progress, conflict, layout) is neither spoken nor stored.
 - **Occam's razor**: no machinery for consumers that do not exist. No OWL/RDF/SHACL/SPARQL, graph databases, reasoners or entity resolution; no `Proposal/Review` state machine (this version has no batch induction).
-- **A graph is a projection, not storage**: both graphs are computed by `fold`; layout is a deterministic pure function and never enters the ledger.
+- **A graph is a projection, not storage**: the ontology and entity graphs are both computed by `fold`; layout is a deterministic pure function and never enters the ledger.
 - **Inexpressible beats unviolatable**: the ontology only lands through named verbs; neither the model nor the UI can structurally write `clear/ontology/`.
 - **No delete — only versioned revision and sticky deprecation**; a semantic change must take a new id, and the meaning of a stable id may not drift through history.
 - **Lenient plus validated**: assertions are optional; omission passes, and supplying one is checked strictly (unknown predicate/term, out-of-domain types, an invalid object form, or a self-conflicting fact is refused).
@@ -58,7 +58,7 @@ These are **code facts** (as of `0.1.7`; line numbers drift, symbol names are au
 
 **Acceptance**
 
-- A worked example explains concepts / predicates / assertions / facts / ontology graph / knowledge graph;
+- A worked example explains concepts / predicates / assertions / facts / ontology graph / entity graph;
 - The boundary is explicit: the process ontology is the backend flow — not ledgered, not runtime-editable, visible only as a state shape.
 
 **Rollback**: documents only; delete them.
@@ -173,22 +173,29 @@ Notes:
   and two card lines as read surfaces.
 
 
-### Stage D: read-only graph rendering
+### Stage D: the ontology fused into the facts view (band + index + chips)
+
+> **The settled design is [Domain ontology §9](../domain-ontology.md)**: the ontology gets no tab of its own; it grows into the middle column's facts view. The layout, the six "no explosion" contracts, and the defaults for the two graphs all live in that section.
 
 **Deliverables**
 
-- A fourth right-sidebar tab, "Ontology" (`sidebarRightTabs.register`): vocabulary graph / knowledge graph / entry detail;
-- Zero-dependency SVG rendering: zoom, pan, select, view switching, filtering by concept / predicate / level / state, deprecation ghosts, conflict highlighting, deterministic instance truncation with a stated count;
-- Assertion chips in the facts tab cross-navigate to the ontology tab; "facts that use it" on a concept filters the facts tab;
-- The Mermaid pair in `clear/ontology/domain.md`.
+- A **graph band** at the top of the facts view (middle column `conversation.view`, **no new tab or view**): ontology graph ｜ entity graph toggle (~200px, zoom and pan, `⤢` panorama that lifts the node cap and offers "fit"), where **clicking a node filters** the shelves below by concept;
+- Conflicts: one pointer line (only when they exist) plus **inline conflict marks on the affected fact rows**;
+- **Assertion chips** on fact and proposition rows that expand a term card **in place** (gloss / basis / subject domain / range / single-valuedness / uses; actions: filter by this concept, see it in the graph);
+- A collapsed **vocabulary maintenance block** (term table / health / deprecations / "open the shelf"; auto-expanded when there are 0 facts and 0 propositions but vocabulary exists);
+- A filter status line (N/M + clear);
+- Assertions exposed in the projection (`view().facts[].assertions`, `view().goal.hypotheses[].assertions`).
 
 **Acceptance**
 
-- The same ledger yields the same nodes, edges and states in the Markdown shelf, the runtime card and the ontology tab;
-- Empty ontology, concepts-without-predicates, predicates-without-facts and instance-overflow all have explicit copy;
-- Locale keys exist in both languages (covered by `test/client.test.mjs`).
+- **Zero-cost contract**: with no vocabulary this view is pixel-for-pixel what it was (pinned by a fixture whose projection has an empty lexicon);
+- The same ledger shows the **same nodes / edges / states** in the Markdown shelf, the runtime card and the band;
+- After a node click the N/M line tells the truth and `✕` clears in one action;
+- An assertion chip expands **in place**, never jumping to another view;
+- Deprecated entries are dashed ghosts in the graph and carry their reason in the maintenance block;
+- Locale keys exist in both languages.
 
-**Rollback**: revert the tab registration and client changes; the shelf remains (read-only, no side effects).
+**Rollback**: revert the stage commit; the facts view returns to its two shelves (the band and the chips are purely additive).
 
 ### Stage E: graph editing and the host route
 
@@ -229,7 +236,7 @@ Notes:
 
 **Deliverables**
 
-- Design and plan documents kept bilingual; glossary gains domain ontology / concept / predicate / assertion / value form / instance / knowledge graph / conflict;
+- Design and plan documents kept bilingual; glossary gains domain ontology / concept / predicate / assertion / value form / instance / ontology graph / entity graph / conflict;
 - `docs/epistemic-loop.*.md`, `docs/design-principles.*.md`, `docs/authority-map.*.md`, `docs/known-gaps.*.md` aligned;
 - New truth-table rows (admission / revision / deprecation / assertion validation / conflict derivation / graph projection / ontology route), each with a code anchor;
 - One case document (physical-experiment, bilingual): register concepts → typed hypothesis → promotion → a conflict on the graph → a human decision;
@@ -253,7 +260,7 @@ node tools/verify-clean-install.mjs
 node tools/e2e-parallel.mjs
 ```
 
-Real-browser walkthrough: register a concept and a predicate → edit on the graph → raise a typed hypothesis → promote → knowledge graph → conflict → retract → refresh.
+Real-browser walkthrough: register a concept and a predicate → edit on the graph → raise a typed hypothesis → promote → entity graph → conflict → retract → refresh.
 
 **Release conditions**: all of the above green; the built package is byte-identical to source; clean install passes; the end-to-end graph-editing chain passes; known gaps updated.
 
