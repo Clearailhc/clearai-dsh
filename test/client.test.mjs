@@ -608,6 +608,25 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			// ⑦ 过滤判据(纯函数):断言命中、文本兜底、无关不命中
 			const termMatches = bundle.exports.__ontology?.termMatches
 			check('测试缝在:termMatches 可直接调', typeof termMatches === 'function')
+		/**
+		 * **合并目录要有上限**:真机器上全局技能可以有一百多条,全列出来就是信息爆炸。
+		 * 这一段钉住三件事:封顶生效、截掉多少如实说、候选不因为封顶被吞掉(它是等人的出口)。
+		 */
+		{
+			const many = Array.from({ length: 40 }, (_, i) => ({ name: `skill-${String(i).padStart(2, '0')}`, description: '一句话说明这条技能做什么用', source: 'user-agents', model: true, user: false, dir: null, inside: null, file: null }))
+			const renderBrain = (entries) => {
+				const projected = { brain: { skills: [], memory: { count: 0, files: [] } }, skills: { catalog: { entries }, usage: [] } }
+				const useSessions = (selector) => selector({ byId: { s1: { projectionValues: { clearai: projected } } } })
+				return react.render(components.BrainTab({ sessionId: 's1', useSessions, openPreview: () => {} })).replace(/\s+/g, ' ')
+			}
+			const capped = renderBrain(many)
+			check('合并目录封顶:40 条不全上屏,前 8 条可见 + 一句话说清还有多少', capped.includes('skill-00') && !capped.includes('skill-12') && /还有 32 条未列出/.test(capped), capped.slice(0, 200))
+			const withCandidate = renderBrain([...many, { name: 'cand-1', description: '模型写的 SOP', source: 'clearai-workspace', model: true, user: false, dir: null, inside: null, file: null }])
+			check('封顶不吞候选:候选永远在列表里(它是等人的出口)', withCandidate.includes('cand-1'), withCandidate.slice(0, 200))
+		}
+
+		check('测试缝在:termMatches 可直接调', typeof termMatches === 'function')
+
 			if (typeof termMatches === 'function') {
 				const byAssertion = termMatches({ id: 'furnace_batch', label: '炉次', aliases: [] }, { text: '别的', assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } } ] })
 				const byText = termMatches({ id: 'furnace_batch', label: '炉次', aliases: ['熔次'] }, { text: '这条结论按熔次对齐', assertions: null })
