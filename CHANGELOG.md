@@ -2,6 +2,28 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] — 2026-09-16
+
+**同一件事实只有一个来源。** 一轮"按真值表逐条核对 → 按症状打补丁 → 发现自己在打补丁 →
+按权威归属复核 → 删掉补丁"的完整收敛。净效果是**更少的机制、更少的字段、更少的分支**。
+
+### Fixed
+
+- **"Ended" is not "lost": audits now have the same recovery path as scouts.** When the host's subagent catalog says an evaluator's run has ended, the kernel first **recovers the verdict from the child's own session log** (`recoverVerdictFromChildSession`) — the same path `sweepScouts` has always had — and only records `unknown` when recovery fails. Three honest outcomes replace the old single "lost, this verdict will have no result" (which induced re-delivery ⇒ the same evaluation was redone while its result lay on disk): recovered (verdict + audit card land), ended-but-incomplete (`audit_incomplete`), and log-unreadable (`auditor_ended_uncollected`). The settlement text no longer gives advice — whether to retry is a plan-level decision, not the ledger's to make.
+- **The ruler's scale must be a nameable reference, not prose.** `decide_by_scale_not_reference`: the right side of `量 = 口径` must reference **a file that actually exists in the workspace**; prose and dead paths are rejected. `评分 = 按本路线情况评分` passed the old format check and guaranteed nothing. Whether the branches actually *used* the measuring instrument remains the evaluator's job — the string check stops here and no longer pretends to verify.
+- **`runEvaluator`'s three `unknown` exits now push `audit/settled`.** An evaluator that crashed, didn't finish normally, or whose card could not be written previously left only a `audit/dispatched` on the ledger — looking like "still running" when it had already ended. All three paths now settle: a bad ending is still an ending.
+
+### Changed
+
+- **The host-invariant companion now advances state with the production fold.** It previously folded its own index of plans/steps/forks/branches/audits/hypotheses (ten Maps) — a second interpreter that needed two repairs in its first hour because its shapes disagreed with the main projection. It now calls `applyEvent` from `fold.js` on the same events, keeping only the five contract predicates and one `admitted` set (the fold deliberately keeps `admission/checked` as ledger-only). 386 → 190 lines. Two real contract holes fixed in the same pass: dispatch+settle and admission+advance legitimately occur **in the same batch** (the kernel emits them that way), so the judge now accumulates as it iterates.
+- **Turn-end bookkeeping shrank to a workspace snapshot.** The `clearai/turn-ended` event, `turnEnds` state, the in-flight list, and the run-state card's "their conclusions will not come back" (an inference with no evidence — a parent turn ending proves only that the parent turn ended) are all **deleted**. The closing beat (`agent/turn-stopping` / `agent/error`) now only records a ledger commit of the turn's writes — the one thing that belongs to us. `STATE_VERSION` 8 → 9.
+- **Sub-run settlement texts no longer give advice.** "Re-delivering this step dispatches a fresh evaluator" (audits) and "if you need that material, dispatch another scout" (scouts) are gone. The ledger states facts; retry decisions belong to the plan layer.
+
+### Added
+
+- **The authority map** (`docs/authority-map.zh-CN.md` + English): who produces each fact, where it lives, who consumes it, whether it can be derived — with the four confirmed findings (each now marked as fixed or under review) and the acceptance criterion: one failure class explained in one place; one fact one authority; the same run never re-executed because a read failed; the system can quietly say it does not know.
+- **`subagent/end` as a settlement channel** (in-process): fires on the same promise settlement as the handle we already trust, so settlement is not lost when the handle is gone (restart, mode switch, early return). Unknown child ids are ignored — someone else's sub-run is not our fact.
+
 ## [0.1.6] — 2026-09-16
 
 **机制不许再说自己没有的话。** 一轮「按真值表逐条核对文档 vs 代码」的清点,把三处
