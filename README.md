@@ -39,7 +39,7 @@ If it stops because **pnpm is not on your `PATH`**: DSH manages a profile by dri
 From a checkout (development, not the install path):
 
 ```bash
-npm test                       # 14 suites — the list lives in test/run.sh
+npm test                       # 15 suites — the list lives in test/run.sh
 node tools/build-package.mjs   # assemble dist/ from source
 node tools/verify-package.mjs  # rebuild and compare byte-for-byte
 node tools/verify-clean-install.mjs   # install into an empty DSH_HOME through the real CLI
@@ -122,6 +122,7 @@ They are illustrations of the mechanism, not shipped run records.
 - [Soul map: principle → mechanism → test](docs/soul-map.md)
 - [Glossary](docs/glossary.md)
 - [Loop philosophy](docs/loop-philosophy.md) · [Verification ontology](docs/verification-loop.md)
+- [Domain ontology](docs/domain-ontology.md) · [Development plan](docs/optimization/domain-ontology-plan.md)
 - [Known gaps](docs/known-gaps.md) · [Authority map](docs/authority-map.md) · [Release verification](docs/release-verification.md)
 - [Convergence and slimming plan](docs/optimization/plan.md) · [Full-coverage design](docs/optimization/epistemic-coverage.md) · [Execution progress](docs/optimization/progress.zh-CN.md)
 

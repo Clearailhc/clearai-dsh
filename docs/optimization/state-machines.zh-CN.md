@@ -154,7 +154,10 @@ stateDiagram-v2
     promoted --> [*]
 ```
 
-`retracted` 在验证本体里有定义，但**当前没有任何生产者**——属设计目标，不在本图里。
+`retracted` **不在本图里，因为它不是一个被存储的状态**：推翻证据只**标记**事实（`refuted`，派生），
+由人决定**撤回**或**维持原事实**——两种结局都落同一条 `fact/reviewed`（撤回是终态，记录保留），
+投影再从 `fact.review` 把它读成派生状态。生产者在 `HUMAN_GATE_ACTIONS` 的 `retract_fact` / `keep_fact`
+与内核的 `markFactReviewed`；真值表那一行是 `fact-retraction`（已实现）。
 
 ## 9. 世界线（fork / branch）· 已实现
 
@@ -254,7 +257,32 @@ stateDiagram-v2
 - 同一 id 的 `scout/settled` 在 fold 里幂等，重复发布不会长出第二条事实。
 - 侦察工具面只读（`scoutToolFilter`），`MapScouts` 有 `mapScoutMax` / `mapScoutConcurrency` 上限。
 
-## 12. 事件清单覆盖表
+## 12. 领域词汇（lexicon）· 已实现
+
+存储字段：`state.lexicon.{terms[], predicates[]}`——账本里的本体事件折出来的那个形状。
+
+```mermaid
+stateDiagram-v2
+    [*] --> admitted: ontology/term_added / ontology/predicate_added
+    admitted --> admitted: ontology/term_revised / ontology/predicate_revised（只改展示信息；版本 +1，旧值留痕）
+    admitted --> deprecated: ontology/term_deprecated / ontology/predicate_deprecated（黏性终态，带缘由）
+    deprecated --> [*]
+```
+
+要点：
+
+- **两种本体是两个字段、两种权威**：`state.ontology` 是**过程本体**的形状（插件自己的后台流转结构，随发布变、不可运行时编辑）；`state.lexicon` 是**领域本体**（项目自己的语言：概念、谓词、值形态），由账本事件治理。
+- **没有删除**：废止只把条目改成 `deprecated`；条目、旧版本，以及引用过它的事实全部留着（与「被推翻的假设保留」同一条）。
+- **语义变化不走修订**：含义、主词域、值域、单值性变了 ⇒ 废止 + 注册新 id。稳定 id 的含义在历史上不许悄悄改变，否则旧事实会被今天的释义重写。
+- 断言与冲突**不在这张图里**：断言随 `fact/promoted` 落在事实上；冲突由 `derive()` 现算（单值谓词 + 同一主体 + 不同客体 + 两侧都未撤回），只暴露、不裁决。
+
+### 联动：词汇层与过程层不互相推进
+
+- **词汇事件不推进任何过程对象**，过程事件也不改词汇——两个状态机不嵌套，它们之间只有**引用**这一种方向性关系（断言引用谓词与概念）。四处握手点见[领域本体 §8](../domain-ontology.zh-CN.md)。
+- **断言只在升格那一刻随事实落地**（`fact/promoted` 的 `hypothesis` 与 `assertions`）；冲突是 `derive()` 的现算读数，**不是状态，也不进闸门**。
+- **读面全是渲染**：`clear/ontology/domain.md`、`clear/knowledge/facts/INDEX.md`、运行态卡、面板本体图——同一份折法，没有第二本账。
+
+## 13. 事件清单覆盖表
 
 折法认识的**每一个**变更类型都在本节有归属；反过来，本文出现的每个 event 也都在折法词汇表里。
 `只留台账` 那一组不折进视图（它们是账本事实），因此不出现在任何状态机里：
@@ -306,12 +334,18 @@ stateDiagram-v2
 | `scout/dispatched` | §11 侦察 | 是 |
 | `scout/settled` | §11 侦察 | 是 |
 | `continuation/set` | §10 自动续跑 | 是 |
+| `ontology/term_added` | §12 领域词汇 | 是 |
+| `ontology/predicate_added` | §12 领域词汇 | 是 |
+| `ontology/term_revised` | §12 领域词汇 | 是 |
+| `ontology/predicate_revised` | §12 领域词汇 | 是 |
+| `ontology/term_deprecated` | §12 领域词汇 | 是 |
+| `ontology/predicate_deprecated` | §12 领域词汇 | 是 |
 | `admission/checked` | **只留台账** | 否 |
 | `git/committed` | **只留台账** | 否 |
 | `git/restored` | **只留台账** | 否 |
 | `git/snapshot` | **只留台账** | 否 |
 
-## 13. 与验证本体的关系
+## 14. 与验证本体的关系
 
 `docs/verification-loop.zh-CN.md` 描述的是一份**更完整的**验证本体（八状态机等）。
 它与本文件的区别必须在读的时候分清：
@@ -319,7 +353,7 @@ stateDiagram-v2
 | 本文件 | 验证本体 |
 |---|---|
 | 代码当前真的会走的转移 | 声明出来的完整形状 |
-| 每个状态都有生产者 | 部分状态目前没有生产者（如 `retracted`） |
+| 用到的状态都有生产者（含人复核落的 `retracted`） | 设计形状里仍有没生产者的状态（如八状态验证机的若干格，见 [known-gaps](../known-gaps.zh-CN.md)） |
 | 用于回答「现在到底保证什么」 | 用于回答「这套设计打算长成什么样」 |
 
 已确认的差异见 [`../known-gaps.zh-CN.md`](../known-gaps.zh-CN.md)。

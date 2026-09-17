@@ -108,7 +108,7 @@ console.log('\n【④ 不变量必须写在文档里,而不只在代码里】')
 	check('turnDemand 的判定顺序写明且不含 autonomy', zh.includes('turnDemand') && /这条链里没有 autonomy/.test(zh))
 	check('默认续跑额度 128 写明', zh.includes('DEFAULT_MAX_AUTO_TURNS = 128'))
 	check('「不是落选」的三种派生状态写明', zh.includes('failed') && zh.includes('orphaned') && zh.includes('unreturned'))
-	check('retracted 无生产者这件事写明', zh.includes('retracted') && /没有任何生产者/.test(zh))
+	check('retracted 的生产者写明(人的 fact/reviewed,不再声称没有生产者)', zh.includes('fact/reviewed') && !/retracted[^\n]{0,60}没有(任何)?生产者/.test(zh))
 }
 
 console.log('\n【⑤ 时序图:四条主路径与关键边界】')

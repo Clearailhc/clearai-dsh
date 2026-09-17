@@ -39,7 +39,7 @@ npx clearai-dsh install
 从仓库开发（这是开发路径，不是安装路径）：
 
 ```bash
-npm test                       # 14 份套件 —— 清单在 test/run.sh
+npm test                       # 15 份套件 —— 清单在 test/run.sh
 node tools/build-package.mjs   # 由源装配 dist/
 node tools/verify-package.mjs  # 现场重建并逐字节比对
 node tools/verify-clean-install.mjs   # 空 DSH_HOME + 真 CLI 装一遍(16 条断言)
@@ -122,6 +122,7 @@ ClearAI 把认识论层加在 DSH 的**组合面**上——一个宿主包、一
 - [灵魂映射：原则 → 机制 → 测试](docs/soul-map.zh-CN.md)
 - [术语表](docs/glossary.zh-CN.md)
 - [循环哲学](docs/loop-philosophy.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md)
+- [领域本体](docs/domain-ontology.zh-CN.md) · [开发计划](docs/optimization/domain-ontology-plan.zh-CN.md)
 - [已知缺口](docs/known-gaps.zh-CN.md) · [权威归属](docs/authority-map.zh-CN.md) · [发布验收](docs/release-verification.zh-CN.md)
 - [收敛与瘦身计划](docs/optimization/plan.zh-CN.md) · [认识论循环全覆盖设计](docs/optimization/epistemic-coverage.zh-CN.md) · [执行进度](docs/optimization/progress.zh-CN.md)
 

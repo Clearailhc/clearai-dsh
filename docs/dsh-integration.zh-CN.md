@@ -27,6 +27,8 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 | `preset/template/` | `presets/clearai/template/` |
 | `ui/lib/index.js` | `lib/host.js` |
 | `ui/lib/fold.js` | `lib/fold.js` |
+| `ui/lib/invariant.js` | `lib/invariant.js` |
+| `ui/lib/domain-language.js` | `lib/domain-language.js` |
 | `ui/lib/client.js` | `lib/client.js` |
 
 `dist/` 是生成物，不进版本库。
@@ -66,7 +68,7 @@ npx clearai-dsh install
 ## 构建与验证
 
 ```bash
-npm test                        # 14 份套件 —— 清单在 test/run.sh
+npm test                        # 15 份套件 —— 清单在 test/run.sh
 node tools/build-package.mjs    # 装配 dist/clearai-dsh
 node tools/verify-package.mjs   # 现场重建并逐字节比对
 node tools/verify-deploy.mjs    # 用部署出去的文件做一次真实装配（绕开 ESM 缓存）

@@ -162,8 +162,11 @@ stateDiagram-v2
     promoted --> [*]
 ```
 
-`retracted` exists in the verification ontology but **has no producer today** — it is a design goal and
-is deliberately absent from this diagram.
+`retracted` **is deliberately absent from this diagram because it is not a stored state**: refuting
+evidence only *marks* the fact (`refuted`, derived), and a person decides to **retract** or to **keep** it —
+both outcomes land as one `fact/reviewed` (a retraction is terminal; the record is kept), and the projection
+reads it back out of `fact.review` as a derived state. The producers are `retract_fact` / `keep_fact` in
+`HUMAN_GATE_ACTIONS` and `markFactReviewed` in the kernel; the truth-table row is `fact-retraction` (implemented).
 
 ## 9. Worldlines (fork / branch) · implemented
 
@@ -271,7 +274,32 @@ Notes:
 - The scout tool face is read-only (`scoutToolFilter`), and `MapScouts` is bounded by `mapScoutMax` /
   `mapScoutConcurrency`.
 
-## 12. Event coverage table
+## 12. Domain lexicon · implemented
+
+Stored field: `state.lexicon.{terms[], predicates[]}` — the shape folded out of the ontology events in the ledger.
+
+```mermaid
+stateDiagram-v2
+    [*] --> admitted: ontology/term_added / ontology/predicate_added
+    admitted --> admitted: ontology/term_revised / ontology/predicate_revised (display information only; version +1, old values kept)
+    admitted --> deprecated: ontology/term_deprecated / ontology/predicate_deprecated (sticky terminal, with a reason)
+    deprecated --> [*]
+```
+
+Points:
+
+- **The two ontologies are two fields with two kinds of authority**: `state.ontology` is the shape of the **process ontology** (the plugin's own backend flow — release-scoped, not editable at runtime); `state.lexicon` is the **domain ontology** (the project's own language: concepts, predicates, value forms), governed by ledger events.
+- **There is no delete**: deprecation only flips an entry to `deprecated`; the entry, its old versions and every fact that referenced it stay (the same rule as "a refuted hypothesis is kept").
+- **A semantic change does not go through revision**: if meaning, domain, range or single-valuedness changes, deprecate and register a new id. The meaning of a stable id may not drift through history, or old facts get rewritten by today's gloss.
+- Assertions and conflicts are **not in this diagram**: assertions land on facts with `fact/promoted`; conflicts are computed by `derive()` (single-valued predicate + same subject + different objects + neither side retracted) and are surfaced, never adjudicated.
+
+### Interaction: the vocabulary layer and the process layer never advance each other
+
+- **Vocabulary events advance no process object**, and process events never change the vocabulary — the two state machines do not nest, and the only directional relation between them is **reference** (an assertion references predicates and concepts). The four handshake points are in [Domain ontology §8](../domain-ontology.md).
+- **An assertion lands only at promotion** (`hypothesis` and `assertions` on `fact/promoted`); a conflict is a reading computed by `derive()` — **not a state, and it enters no gate**.
+- **Every read surface is a rendering**: `clear/ontology/domain.md`, `clear/knowledge/facts/INDEX.md`, the runtime card, the panel's ontology graph — one fold, no second account.
+
+## 13. Event coverage table
 
 **Every** mutation kind fold understands is assigned a home below; conversely, every event named in
 this document is in fold's vocabulary. The `ledger-only` group never folds into the view (they are
@@ -325,12 +353,18 @@ ledger facts), so it appears in no state machine:
 | `scout/dispatched` | §11 Scout | yes |
 | `scout/settled` | §11 Scout | yes |
 | `continuation/set` | §10 Auto continuation | yes |
+| `ontology/term_added` | §12 Domain lexicon | yes |
+| `ontology/predicate_added` | §12 Domain lexicon | yes |
+| `ontology/term_revised` | §12 Domain lexicon | yes |
+| `ontology/predicate_revised` | §12 Domain lexicon | yes |
+| `ontology/term_deprecated` | §12 Domain lexicon | yes |
+| `ontology/predicate_deprecated` | §12 Domain lexicon | yes |
 | `admission/checked` | **ledger only** | no |
 | `git/committed` | **ledger only** | no |
 | `git/restored` | **ledger only** | no |
 | `git/snapshot` | **ledger only** | no |
 
-## 13. Relationship to the verification ontology
+## 14. Relationship to the verification ontology
 
 `docs/verification-loop.md` describes a **more complete** verification ontology (an eight-state
 machine, among other things). The difference matters when reading:
@@ -338,7 +372,7 @@ machine, among other things). The difference matters when reading:
 | This file | Verification ontology |
 |---|---|
 | Transitions the code really takes today | The complete declared shape |
-| Every state has a producer | Some states have none yet (e.g. `retracted`) |
+| Every state in use has a producer (including `retracted`, landed by human review) | The designed shape still has states without producers (several cells of the eight-state machine; see [known-gaps](../known-gaps.md)) |
 | Answers "what is actually guaranteed now" | Answers "what this design intends to become" |
 
 Confirmed differences are tracked in [`../known-gaps.md`](../known-gaps.md).

@@ -16,6 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
+import { applyLexiconMutation, deriveConflicts, emptyLexicon, graphProjection, lexiconHealth, normalizeLexicon } from './domain-language.js'
 
 /** 世界线分支状态的秩。秩只增;一旦出现 adopted,整个分叉的分支状态冻结。 */
 const BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }
@@ -35,9 +36,12 @@ export const MUTATION_KIND = 'clearai'
  *   v6 → v7:那条账多一个 `label`:我们最后一次在平台对象上写下的那句身份文本。
  *           它的用途只有一个:**分清「身份变了」与「人改写过了」**——前者我们换窗口,
  *           后者以人为准、一个字都不动。没有它,这两种情形在外部长得一模一样。
+ *   v9 → v10:多了「领域词汇」(`lexicon`)与类型化事实:断言进 `fact.promoted`,
+ *           事实与假设按 id 关联(旧账本仍按主张文本)。旧日志折出来的 `lexicon` 是空表,
+ *           没有断言的事实照旧可读——形状变了才 +1,不是语义变了才 +1。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍——用量是**从日志折出来的**,重折才完整。
  */
-export const STATE_VERSION = 9
+export const STATE_VERSION = 10
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -108,6 +112,15 @@ export function emptyState() {
 		 * 抄一份就会漂移,而漂移的界面比没有界面更坏。它与目录同一条纪律:变了才发。
 		 */
 		ontology: null,
+		/**
+		 * **领域词汇**(概念与谓词)与它的读面。
+		 *
+		 * 为什么它与上面的 `ontology` 是两个字段:`ontology` 是**过程本体**的形状
+		 * (插件自己的后台流转结构,随版本走、不可编辑);`lexicon` 是**领域本体**的内容
+		 * (项目自己的语言:概念、谓词、值形态),由账本里的本体事件折出来、可增删改。
+		 * 名字分开,是因为权威不同——一个随发布变,一个随项目长。
+		 */
+		lexicon: emptyLexicon(),
 		/**
 		 * **续跑窗口的账**:我们向平台说过的那句话——「这个窗口归我布防 / 我按了暂停 /
 		 * 我收兵了 / 它不在了而那不是我们干的」。形状见 `applyMutation` 的 `continuation/set`。
@@ -194,6 +207,18 @@ function recordSkillUse(state, name, by, at, pointer) {
 /** 深拷贝(状态是纯 JSON,这是唯一需要的工具)。 */
 function clone(value) {
 	return value === undefined ? undefined : JSON.parse(JSON.stringify(value))
+}
+
+/**
+ * 假设 ↔ 事实的关联:优先按 `hypothesis` id(新账本),旧账本按主张文本——
+ * 那时的事实还没有那个字段。顺序不能反:id 是身份,文本只是当时的措辞,
+ * 改一次措辞就断链的关联迟早会把「这条假设已被升格」读成「还没升格」。
+ */
+function factFromHypothesis(facts, goalId, hypothesisId, claim) {
+	return (Array.isArray(facts) ? facts : []).some((fact) => {
+		if (typeof fact?.hypothesis === 'string' && fact.hypothesis !== '') return fact.hypothesis === hypothesisId
+		return fact?.goal === goalId && String(fact.text ?? '') === String(claim ?? '')
+	})
 }
 
 function appendSteps(plan, rawSteps) {
@@ -290,7 +315,7 @@ export function applyMutation(state, mutation) {
 			 * 前者说这条猜想错了,后者说这条猜想不再被提。后者不该改写前者。
 			 * 已经升格成事实的(`claim` 出现在 facts 里)同理:事实在,假设就不能被悄悄换掉。
 			 */
-			const promoted = next.facts.some((fact) => fact.goal === mutation.goal && fact.text === mutation.claim)
+			const promoted = factFromHypothesis(next.facts, mutation.goal, mutation.id, mutation.claim)
 			const row = next.hypotheses.find((item) => item.id === mutation.id && item.status !== 'superseded' && item.status !== 'refuted' && !promoted)
 			if (row !== undefined) {
 				row.status = 'superseded'
@@ -475,15 +500,19 @@ export function applyMutation(state, mutation) {
 			/**
 			 * 事实的字段:`scope` 是它的**边界**(推翻条件)——没有边界的事实下一轮没人敢用;
 			 * `level` 是它被支持到哪一级(判者可查)。两者都来自升格那一刻的假设,不事后补。
+			 * `hypothesis` 是产出它的那条假设(新账本才有),`assertions` 是类型化断言——
+			 * 没提供就是 null:**不提供放行,提供即严校**(校验发生在落账之前)。
 			 */
 			next.facts.push({
 				id: mutation.id,
 				goal: mutation.goal,
+				hypothesis: mutation.hypothesis ?? null,
 				text: mutation.text,
 				scope: mutation.scope ?? null,
 				level: mutation.level ?? null,
 				evidence: mutation.evidence ?? [],
 				path: mutation.path ?? null,
+				assertions: Array.isArray(mutation.assertions) ? clone(mutation.assertions) : null,
 				at,
 			})
 			break
@@ -748,6 +777,22 @@ export function applyMutation(state, mutation) {
 			}
 			break
 		}
+		/**
+		 * **领域词汇的六个事件**:接纳 / 版本化修订 / 黏性废止(概念与谓词各三条)。
+		 *
+		 * 折法在这里只做解释:把事件折成 `lexicon`。校验(引用是否存在、形状对不对、
+		 * 语义变化有没有偷偷走修订)全部发生在**落账之前**——预设侧的工具与宿主路由
+		 * 用的是 `domain-language.js` 的同一份判据;折法不重复判一遍,否则两份判据必然漂。
+		 */
+		case 'ontology/term_added':
+		case 'ontology/predicate_added':
+		case 'ontology/term_revised':
+		case 'ontology/predicate_revised':
+		case 'ontology/term_deprecated':
+		case 'ontology/predicate_deprecated': {
+			next.lexicon = applyLexiconMutation(next.lexicon ?? emptyLexicon(), mutation, at)
+			break
+		}
 		default: {
 			return state // 不认识:不感兴趣,原样返回
 		}
@@ -987,6 +1032,13 @@ export function derive(state) {
 	 * 读的是事实上的 `review`——人的动作落在事实那一侧,facts 是唯一事实源。
 	 */
 	const retractedClaims = new Set((state.facts ?? []).filter((item) => item.review?.decision === 'retracted').map((item) => String(item.text ?? '')))
+	/** 同一件事,新的关联方式:事实带 `hypothesis` 时按 id 撤(文本只是旧账本的退路)。 */
+	const retractedHypotheses = new Set(
+		(state.facts ?? [])
+			.filter((item) => item.review?.decision === 'retracted')
+			.map((item) => item.hypothesis)
+			.filter((id) => typeof id === 'string' && id !== ''),
+	)
 	const hypotheses = state.hypotheses.map((hypothesis) => {
 		const rows = []
 		for (const item of state.evidence) {
@@ -1000,7 +1052,7 @@ export function derive(state) {
 			.reduce((best, item) => Math.max(best, levelIndex(item.level)), -1)
 		let status = hypothesis.status
 		// 撤回优先于一切:那是人对已升格事实的裁决,后来的支持证据不复活它。
-		if (retractedClaims.has(String(hypothesis.claim ?? ''))) status = 'retracted'
+		if (retractedHypotheses.has(hypothesis.id) || retractedClaims.has(String(hypothesis.claim ?? ''))) status = 'retracted'
 		else if (status === 'proposed' && rows.length > 0) status = 'alive'
 		// 被推翻是黏性终态:「已被替代」不该改写「已被推翻」——两件事。
 		if (status !== 'superseded' && status !== 'refuted' && status !== 'retracted' && refutations > 0) status = 'refuted'
@@ -1053,6 +1105,11 @@ export function derive(state) {
 		 *   · **升格算数**:回落口径里,被升格成事实的假设也算「已确认」——升格本来就是它最硬的确认。
 		 */
 		const promotedClaims = new Set((state.facts ?? []).map((item) => String(item.text ?? '')))
+		const promotedHypotheses = new Set(
+			(state.facts ?? [])
+				.map((item) => item.hypothesis)
+				.filter((id) => typeof id === 'string' && id !== ''),
+		)
 		const live = activePlan?.steps.filter((step) => step.status !== 'void') ?? []
 		if (state.goal?.status === 'achieved') progress = 1
 		else if (state.goal?.status === 'abandoned') progress = 0
@@ -1060,7 +1117,7 @@ export function derive(state) {
 		else {
 			const effective = hypotheses.filter((item) => item.status !== 'superseded' && item.status !== 'retracted')
 			if (effective.length > 0) {
-				const done = effective.filter((item) => item.status === 'confirmed' || promotedClaims.has(String(item.claim ?? ''))).length
+				const done = effective.filter((item) => item.status === 'confirmed' || promotedHypotheses.has(item.id) || promotedClaims.has(String(item.claim ?? ''))).length
 				progress = done / effective.length
 			}
 		}
@@ -1196,9 +1253,23 @@ export function derive(state) {
 	 *   · `review` ——人已经审查过(撤回 / 维持),决定连缘由一起留着。
 	 */
 	const factRows = (state.facts ?? []).map((fact) => {
-		const owner = hypotheses.find((item) => String(item.claim ?? '') === String(fact.text ?? ''))
+		const linked = typeof fact.hypothesis === 'string' && fact.hypothesis !== ''
+		const owner = hypotheses.find((item) => (linked ? item.id === fact.hypothesis : String(item.claim ?? '') === String(fact.text ?? '')))
 		return { ...fact, refuted: (owner?.refutations ?? 0) > 0, review: fact.review ?? null }
 	})
+
+	/**
+	 * **领域词汇的派生读数**(两条,都不新存东西):
+	 *   · `conflicts`——同一个单值谓词、同一主体、两个不同客体的**成对**事实。它是读数,
+	 *     不是裁决:这里不撤回任何一侧,也不判断哪条为真(那是证据与人的事)。
+	 *   · `lexiconHealth`——悬空引用、父链成环、没人用的条目、被废止条目仍在使用。
+	 *     全是提示,不拦任何操作。
+	 * 两者都吃 `factRows` 而不是 `state.facts`:事实的复核态与推翻标记是派生的,
+	 * 在这里重算一遍就等于第二份判据。
+	 */
+	const lexicon = normalizeLexicon(state.lexicon)
+	const conflicts = deriveConflicts(factRows, lexicon)
+	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	for (const fact of factRows) {
 		/**
 		 * **推翻证据只标记事实,撤不撤由人定**(数据本身也可能是错的)。
@@ -1232,7 +1303,26 @@ export function derive(state) {
 		}
 	})
 
-	return { phase, progress, hypotheses, activePlan, closedPlans, pendingAudit, forks, factRows, settlement, stepOf, inbox, hasOpenGate, planConfirmationPending, planIsAuthorized }
+	return {
+		phase,
+		progress,
+		hypotheses,
+		activePlan,
+		closedPlans,
+		pendingAudit,
+		forks,
+		factRows,
+		settlement,
+		stepOf,
+		inbox,
+		hasOpenGate,
+		planConfirmationPending,
+		planIsAuthorized,
+		/** 领域词汇与它的两条派生读数(见上面那段:冲突与健康度都只是读数)。 */
+		lexicon,
+		conflicts,
+		lexiconIssues,
+	}
 }
 
 /**
@@ -1370,6 +1460,19 @@ export function view(state, sessionId) {
 		brain: state.brain ?? null,
 		/** 本体形状(面板页眉据此生成,不手抄)。 */
 		ontology: state.ontology ?? null,
+		/**
+		 * **领域词汇的读面**:概念、谓词、冲突、健康读数与图投影。
+		 *
+		 * 客户端不重算——它连折法都读不到(浏览器那半是独立模块),所以图在这里算好推下去。
+		 * 于是「同一份账本 ⇒ 同一张图」是投影的性质,不是两处渲染约定出来的巧合。
+		 */
+		lexicon: {
+			terms: derived.lexicon.terms,
+			predicates: derived.lexicon.predicates,
+			conflicts: derived.conflicts,
+			health: derived.lexiconIssues,
+			graph: graphProjection(state),
+		},
 		/**
 		 * 续跑窗口的账:面板读它,于是「续跑停着——等裁决」这种**平台说不出来的话**
 		 * 有地方说。轮数与相位仍然只在原生 dock 上出现(一个事实只在**一块**面上说),
@@ -1761,6 +1864,27 @@ export function renderCard(state) {
 		lines.push(`- 最近一条证据:${last.id} ${last.verdict}(${last.evaluator} · ${last.level})`)
 	}
 	if (state.facts.length > 0) lines.push(`- 已升格事实:${state.facts.length} 条`)
+	/**
+	 * **领域词汇与类型化事实**的一句话读数。
+	 *
+	 * 为什么要进卡片:模型要靠它决定「这条结论能不能写成断言、要不要先登记词」。而**冲突**
+	 * 必须说出来、但不许自动处置——卡片只报数并指向那两条事实,撤不撤由人(或由证据)定。
+	 * 事实没有断言时也报一句:那是「这门语言还没用起来」的读数,不是错误。
+	 */
+	{
+		const lexicon = derived.lexicon
+		const typed = state.facts.filter((fact) => Array.isArray(fact.assertions) && fact.assertions.length > 0).length
+		if (lexicon.terms.length > 0 || lexicon.predicates.length > 0) {
+			lines.push(`- 领域词汇:${lexicon.terms.length} 个概念 · ${lexicon.predicates.length} 个谓词;已升格事实里 ${typed}/${state.facts.length} 条带类型化断言`)
+			if (derived.lexiconIssues.some((issue) => issue.severity === 'warning')) lines.push(`  · 词汇健康度有 ${derived.lexiconIssues.filter((issue) => issue.severity === 'warning').length} 条待看(悬空引用 / 成环;在面板「本体」里)`)
+		}
+		if (derived.conflicts.length > 0) {
+			for (const conflict of derived.conflicts) {
+				const sides = conflict.sides.map((side) => `${side.fact ?? '?'}(${side.value})`).join(' 对 ')
+				lines.push(`- **冲突(${conflict.predicate} · ${conflict.subject})**:${sides}——两条都还没被撤回。它是读数不是裁决:要么用证据推翻一侧,要么由人撤回一侧;系统不替你选。`)
+			}
+		}
+	}
 	// 结案时留的痕:未判的假设不是「没问题」,是「没看过」——结案之后也要看得见。
 	if (Array.isArray(goal?.unjudged) && goal.unjudged.length > 0) lines.push(`- 结案留痕:有 ${goal.unjudged.length} 条假设没有被任何证据触及(${goal.unjudged.join(', ')})`)
 	/**

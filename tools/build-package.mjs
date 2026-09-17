@@ -98,6 +98,9 @@ if (existsSync(TEMPLATE_SRC)) {
 // ── ④ 宿主半 / 浏览器半:同一份源,两个出口 ─────────────────────────────────
 copy(join(PORT, 'ui', 'lib', 'index.js'), join(OUT, 'lib', 'host.js'))
 copy(join(PORT, 'ui', 'lib', 'fold.js'), join(OUT, 'lib', 'fold.js'))
+// 领域语言层的纯函数:折法与宿主路由都 import 它,所以它必须跟着走
+// (少拷这一个文件,包里的 fold 会在 import 那一刻就报模块找不到)。
+copy(join(PORT, 'ui', 'lib', 'domain-language.js'), join(OUT, 'lib', 'domain-language.js'))
 // 宿主不变量的伴生件:单独一个文件,按名字可挂(`clearai-dsh/invariant`)。
 copy(join(PORT, 'ui', 'lib', 'invariant.js'), join(OUT, 'lib', 'invariant.js'))
 copy(join(PORT, 'ui', 'lib', 'client.js'), join(OUT, 'lib', 'client.js'))
