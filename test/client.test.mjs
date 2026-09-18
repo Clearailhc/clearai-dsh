@@ -11,7 +11,7 @@
  * 跑法:node test/client.test.mjs
  */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -30,8 +30,23 @@ const check = (label, condition, detail = '') => {
 }
 
 const SOURCE = join(import.meta.dirname, '..', 'ui', 'lib', 'client.js')
+const VENDOR = join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js')
 const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib', 'client.js')
-const source = readFileSync(SOURCE, 'utf8')
+/**
+ * **发出去的那一份 = vendor 行 + 主文件**(见 tools/build-package.mjs)。
+ * 这里比的就是那个组合——不是「源里有一个文件」而已:xvflow 那一行如果没跟上,
+ * 浏览器里 `require('@xyflow/react')` 会当场解析失败,而面板会安静地退化成没有图。
+ */
+/**
+ * vendor 是**生成物**(ui/vendor/ 不入库)。没生成时如实跳过,不假装测过——
+ * 与「插件没装就跳过」同一条纪律;生成它的命令写在提示里。
+ */
+if (!existsSync(VENDOR)) {
+	console.log('· 跳过客户端套件:ui/vendor/xyflow.js 还没生成(它是生成物,不入库)。')
+	console.log('  生成它:node tools/build-vendor.mjs(或 npm run build)')
+	process.exit(0)
+}
+const source = `${readFileSync(VENDOR, 'utf8')}\n${readFileSync(SOURCE, 'utf8')}`
 let deployed = null
 try {
 	deployed = readFileSync(DEPLOYED, 'utf8')
@@ -72,6 +87,7 @@ function loadClientBundle() {
 		// 原生图标(§23):真机上由 dsh 的客户端模块加载器提供;这里给两个假组件,
 		// 好让「页签确实带原生图标」这条断言**真跑得动**,而不是恒为 undefined 的空转。
 		if (name === '@deepseek-ai/dsh-client-ui-primitives') return { IconBranchOutline16: () => null, IconSkillOutline16: () => null }
+		if (name === '@xyflow/react') return makeXyflowStub(React.createElement)
 		if (name === 'react') return React
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
@@ -283,6 +299,7 @@ function loadClientWithStringReact() {
 	globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 	const react = makeStringReact()
 	const require = (name) => {
+		if (name === '@xyflow/react') return makeXyflowStub(react.createElement)
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
@@ -324,6 +341,27 @@ function flatNode(node) {
 }
 
 /**
+ * **React Flow 桩**:渲染成一个带名字的元素,把 `nodes` / `edges` 原样留在 props 上。
+ *
+ * 为什么不用真的库:测试要钉的是**适配层**(投影 → React Flow 的 nodes/edges、
+ * 点击回调是不是接到了 Inspector),不是库自己怎么画。真库要 webgl/hooks,
+ * 在这类渲染桩里跑不动,而且它坏了也不是我们的 bug。
+ * 真的那一份走 `ui/vendor/xyflow.js`(build 时打进 client.js),另有断言钉住它。
+ */
+function makeXyflowStub(h) {
+	const element = (name) => (props) => {
+		const children = props?.children === undefined ? [] : Array.isArray(props.children) ? props.children : [props.children]
+		/**
+		 * 真库会把每个节点的 label 画在画布上。桩照做——于是「节点标签在不在」
+		 * 这类断言验的仍然是**用户看得见的东西**,而不是 props 里的一个字段。
+		 */
+		const labels = name === 'react-flow' && Array.isArray(props?.nodes) ? props.nodes.map((node, index) => h('span', { key: `label-${index}` }, String(node?.data?.label ?? ''))) : []
+		return h(name, props, ...children, ...labels)
+	}
+	return { ReactFlow: element('react-flow'), Controls: element('rf-controls'), MiniMap: element('rf-minimap'), Background: element('rf-background') }
+}
+
+/**
  * 带状态的 React 桩:同一批状态可以**反复渲染**,于是「点一下 → 再画一遍」这件事可测。
  * 用在需要两步交互的地方(比如「放弃要留缘由」:先点开输入框,写了才提交)。
  */
@@ -356,6 +394,7 @@ function loadClientWithStatefulReact() {
 	globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 	const react = makeStatefulReact()
 	const require = (name) => {
+		if (name === '@xyflow/react') return makeXyflowStub(react.createElement)
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
@@ -363,6 +402,24 @@ function loadClientWithStatefulReact() {
 	delete globalThis.window
 	const exports = registration.factory(require)
 	return { exports, react, render: (component, props) => { react.reset(); return component(props) } }
+}
+
+/**
+ * 载入 bundle,但**不给** `@xyflow/react`(模拟 vendor 那一行没装上):
+ * 用来钉「降级要如实、不要崩」——真机上宿主版本旧、或 vendor 没跟上时会走到这条路。
+ */
+function loadClientBundleWithoutXyflow() {
+	let registration = null
+	globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
+	const react = makeStringReact()
+	const require = (name) => {
+		if (name === 'react') return react
+		if (name === '@deepseek-ai/dsh-client-ui-primitives') return {}
+		throw new Error(`client bundle 不该 require "${name}"`)
+	}
+	new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+	delete globalThis.window
+	return { exports: registration.factory(require), react }
 }
 
 console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
@@ -374,6 +431,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 		const react = makeStringReact()
 		const require = (name) => {
+			if (name === '@xyflow/react') return makeXyflowStub(react.createElement)
 			if (name === 'react') return react
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
@@ -560,14 +618,14 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				health: [ { kind: 'unused', severity: 'info', id: 'narrow_batch', detail: '还没有任何谓词或事实引用它' } ],
 				/**
 				 * 投影夹具照 `graphProjection()` 的**真输出**写:`layer` 说这一层画不画,
-				 * `degree` 说先画谁,`claim` 是事实指回命题的那条身份链。
+				 * `claim` 是事实指回命题的那条身份链。
 				 * 夹具落后于生产者时,它测的就不再是要跑的那份代码。
 				 */
 				graph: {
 					nodes: [
-						{ id: 'term:furnace_batch', kind: 'concept', layer: 'ontology', ref: 'furnace_batch', label: '炉次', status: 'admitted', uses: 1, degree: 1, depth: 0, x: 0, y: 0 },
-						{ id: 'form:quantity', kind: 'value_type', layer: 'ontology', ref: 'quantity', label: 'quantity', status: 'admitted', uses: 0, degree: 2, depth: 0, x: 0, y: 132 },
-						{ id: 'furnace_batch|B1', kind: 'instance', layer: 'entity', ref: 'B1', label: 'B1', type: 'furnace_batch', status: 'live', degree: 1, facts: ['f-1'], x: 0, y: 264 },
+						{ id: 'term:furnace_batch', kind: 'concept', layer: 'ontology', ref: 'furnace_batch', label: '炉次', status: 'admitted', uses: 1, depth: 0, x: 0, y: 0 },
+						{ id: 'form:quantity', kind: 'value_type', layer: 'ontology', ref: 'quantity', label: 'quantity', status: 'admitted', uses: 0, depth: 0, x: 0, y: 132 },
+						{ id: 'furnace_batch|B1', kind: 'instance', layer: 'entity', ref: 'B1', label: 'B1', type: 'furnace_batch', status: 'live', facts: ['f-1'], x: 0, y: 264 },
 					],
 					edges: [
 						{ id: 'predicate:oxygen_ppm', kind: 'predicate', layer: 'ontology', predicate: 'oxygen_ppm', label: '氧含量', from: 'term:furnace_batch', to: 'form:quantity', status: 'admitted', functional: true },
@@ -642,14 +700,18 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			}
 
 			// ⑧ 图组件可独立渲染(空图不炸)
-			check('图组件:空词汇层渲染空提示不炸', react.render(components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', expanded: false, onLayer: () => {}, onToggleExpand: () => {}, onFilter: () => {} })).includes('此层暂无节点。'))
+			check(
+				'图组件:空词汇层渲染空提示不炸',
+				react.render(components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} })).includes('此层暂无节点。'),
+			)
 
 			/**
-			 * ⑨ **先画谁**:按投影给的连接度取前 N,不按数组截断。
+			 * ⑨ **适配层**:投影 → React Flow 的 nodes / edges。
 			 *
-			 * 旧写法切数组前 40 个,被切掉的节点仍连着边 ⇒ 图上出现没有端点的边——
-			 * 真跑里那条「图不清晰」的抱怨有一半来自这里。这里钉住两件事:
-			 * 排序依据是 degree(而不是数组顺序),以及截断时说清依据。
+			 * 这一层曾经自己算「先画谁」(按连接度截断前 40 个),那是**自己造轮子**:
+			 * 视口、缩放、可见性现在归 React Flow,所以客户端不再截断——
+			 * 全部节点进图,可读性由 fitView / MiniMap / 缩放负责。
+			 * 这里钉的是适配:**节点与边一条不少地交出去,标签与类型编码在 data 里**。
 			 */
 			{
 				const many = (count) => Array.from({ length: count }, (_, index) => ({
@@ -659,27 +721,50 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 					ref: `t${String(index).padStart(2, '0')}`,
 					label: `概念${String(index).padStart(2, '0')}`,
 					status: 'admitted',
-					/** 前 10 个互相连成一条链(度 ≥1),后面全是孤立节点(度 0)。 */
-					degree: index < 10 ? 2 : 0,
 					uses: 0,
 					depth: 0,
 					x: (index % 8) * 200,
 					y: Math.floor(index / 8) * 120,
 				}))
 				const ring = many(45)
-				const band = react.render(
+				const tree = expandTree(
 					components.GraphBand({
 						lexicon: { graph: { nodes: ring, edges: [], bounds: { width: 1600, height: 800 } }, conflicts: [] },
 						layer: 'ontology',
-						expanded: false,
+						fullscreen: false,
+						sessionId: 's1',
 						onLayer: () => {},
-						onToggleExpand: () => {},
+						onToggleFullscreen: () => {},
 						onFilter: () => {},
 					}),
-				).replace(/\s+/g, ' ')
-				check('截断时说清依据是连接度,不是「前 N 个」', band.includes('按连接度画了') && band.includes('40/45'), band.slice(0, 200))
-				check('未画入的如实说明它们不参与成边(所以图上没有断边)', band.includes('没有断边'))
-				check('画进去的正是连接度高的那批(孤立节点排在后面)', band.includes('概念00') && band.includes('概念09') && !band.includes('概念44'), band.includes('概念00') + '/' + band.includes('概念44'))
+				)
+				const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
+				check('图交给 React Flow 渲染(不再是手写 SVG)', flow !== undefined)
+				check('适配层不截断:全部节点一条不少地交出去(视口归库管)', flow?.props?.nodes?.length === 45, String(flow?.props?.nodes?.length))
+				check('节点的标签与初始坐标来自投影', flow?.props?.nodes?.[0]?.data?.label === '概念00' && flow.props.nodes[0].position.x === 0)
+				check('库的零件真的用上了(MiniMap / Controls / Background)', ['rf-minimap', 'rf-controls', 'rf-background'].every((name) => walkNodes(tree).some((item) => item.type === name)))
+				check('打开工作区 / 适配 都是显式动作', flatNode(tree).includes('打开图谱工作区') && flatNode(tree).includes('适配'))
+			}
+
+			/**
+			 * ⑨′ **降级如实**:React Flow 那一行没装上时,面板说清原因,
+			 * 不把整块面板炸掉(其余格子照常读)。
+			 */
+			{
+				const broken = loadClientBundleWithoutXyflow()
+				const rendered = broken.react
+					.render(broken.exports.__components.GraphBand({
+						lexicon: lexiconFixture,
+						layer: 'ontology',
+						fullscreen: false,
+						sessionId: 's1',
+						onLayer: () => {},
+						onToggleFullscreen: () => {},
+						onFilter: () => {},
+					}))
+					.replace(/\s+/g, ' ')
+				check('拿不到图组件时如实说,而不是崩', rendered.includes('图组件不可用'))
+				check('降级时其余读数照常(节点计数仍在)', rendered.includes('个节点'))
 			}
 
 			/**
@@ -757,63 +842,28 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			}
 
 			/**
-			 * ⑫ **真的驱动一遍指针事件**:结构断言抓不到「拖动键写成了对象」这类错——
-			 * 那个 bug 让节点在真浏览器里**根本不动**,而所有字符串断言照样全绿。
-			 * 这一组用带状态的渲染桩:按下 → 移动 → 再渲染一遍,看坐标有没有变。
+			 * ⑫ **点击与选中走库的回调**:拖动 / 平移 / 缩放是 React Flow 的行为,
+			 * 不再由我们实现,也不该由我们测(那是测库)。我们只需钉住**接进库的三根线**:
+			 * 点击节点 → Inspector;点击边 → Inspector;点击空白 → 收起 Inspector。
 			 */
 			{
-				const load = loadClientWithStatefulReact()
-				const graph = {
-					lexicon: {
-						graph: {
-							nodes: [{ id: 'term:a', kind: 'concept', layer: 'ontology', ref: 'a', label: 'A', status: 'admitted', degree: 1, uses: 0, depth: 0, x: 0, y: 0 }],
-							edges: [],
-							bounds: { width: 400, height: 200 },
-						},
-						conflicts: [],
-					},
-					layer: 'ontology',
-					expanded: false,
-					sessionId: 's1',
-					onLayer: () => {},
-					onToggleExpand: () => {},
-					onFilter: () => {},
-				}
-				const pointer = (x, y) => ({ button: 0, clientX: x, clientY: y, pointerId: 1, stopPropagation: () => {}, currentTarget: { setPointerCapture: () => {}, releasePointerCapture: () => {}, getBoundingClientRect: () => ({ left: 0, top: 0 }) } })
-				const draw = () => expandTree(load.render(load.exports.__components.GraphBand, graph))
-				const findNode = (tree) => walkNodes(tree).find((item) => item.type === 'g' && typeof item.props?.onPointerDown === 'function' && typeof item.props?.onPointerUp === 'function')
-				const findSvg = (tree) => walkNodes(tree).find((item) => item.type === 'svg')
-				const rectOf = (tree) => walkNodes(tree).find((item) => item.type === 'rect')
-
-				// ① 拖动:按下 → 移动 60/30 → 节点跟着走。
-				const first = draw()
-				findNode(first).props.onPointerDown(pointer(100, 100))
-				findSvg(first).props.onPointerMove(pointer(160, 130))
-				const dragged = rectOf(draw())
-				check('拖节点真的动(x 跟着位移走)', dragged.props.x === 60, `${String(dragged.props.x)}`)
-				check('拖节点真的动(y 也跟着)', dragged.props.y === 30, `${String(dragged.props.y)}`)
-
-				// ② 拖完**不算点击**:不能顺带把 Inspector 打开(「拖歪了」不该触发详情)。
-				check('拖完不当作点击(货架没被过滤)', true)
-
-				// ③ 只按下抬起、没有位移 ⇒ 这是一次点击:Inspector 出现。
-				const second = loadClientWithStatefulReact()
-				const tree = expandTree(second.render(second.exports.__components.GraphBand, graph))
-				const nodeGroup = findNode(tree)
-				nodeGroup.props.onPointerDown(pointer(100, 100))
-				nodeGroup.props.onPointerUp(pointer(101, 100))
-				const clicked = flatNode(expandTree(second.render(second.exports.__components.GraphBand, graph)))
-				check('点一下(没有位移)打开 Inspector,而不是直接过滤', clicked.includes('按此筛选'), clicked.slice(0, 160))
-				check('Inspector 打开时提示文案是「按此筛选」这个显式动作', clicked.includes('关闭'))
-
-				// ④ 画布平移:按在空白处拖动,viewport 平移。
-				const third = loadClientWithStatefulReact()
-				const panTree = expandTree(third.render(third.exports.__components.GraphBand, graph))
-				findSvg(panTree).props.onPointerDown(pointer(200, 200))
-				findSvg(panTree).props.onPointerMove(pointer(180, 210))
-				const svgAfter = findSvg(expandTree(third.render(third.exports.__components.GraphBand, graph)))
-				check('拖画布改的是 viewport(节点坐标不动)', svgAfter.props.viewBox.startsWith('20 ') && rectOf(expandTree(third.render(third.exports.__components.GraphBand, graph))).props.x === 0, String(svgAfter.props.viewBox))
+				const tree = expandTree(
+					components.GraphBand({
+						lexicon: lexiconFixture,
+						layer: 'ontology',
+						fullscreen: false,
+						sessionId: 's1',
+						onLayer: () => {},
+						onToggleFullscreen: () => {},
+						onFilter: () => {},
+					}),
+				)
+				const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
+				check('图带:点击回调交给了库(onNodeClick / onEdgeClick / onPaneClick)', typeof flow?.props?.onNodeClick === 'function' && typeof flow?.props?.onEdgeClick === 'function' && typeof flow?.props?.onPaneClick === 'function')
+				check('图带:拖动节点 / 画布平移 / 滚轮缩放 都由库承担', flow?.props?.nodesDraggable === true && flow?.props?.panOnDrag === true && flow?.props?.zoomOnScroll === true)
+				check('图带:没选之前不摆 Inspector(零成本)', !flatNode(tree).includes('按此筛选'))
 			}
+
 		}
 		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
 		// 这一格**就是**事实库:不再挂一个「打开事实库」的空链接,整行点开原件
@@ -1428,6 +1478,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		let registration = null
 		globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 		const requireStub = (name) => {
+			if (name === '@xyflow/react') return makeXyflowStub(reactStub.createElement)
 			if (name === 'react') return reactStub
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
@@ -1910,6 +1961,27 @@ console.log('\n【服务的声明面:用到的每一个都必须在 inject 里(2
 	const host = makeClientContext()
 	bundle.exports.apply(host.ctx)
 	check('照真实契约(属性形式)注册得下去', host.registrations.length > 0 && host.tabDefinitions.length === 2, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
+}
+
+console.log('\n【图谱渲染:React Flow 那一行真的在部署件里】')
+{
+	/**
+	 * 这一条守的是**装出去之后还能不能用**:`require('@xyflow/react')` 是模块系统按行名
+	 * 解析的,那一行由 `ui/vendor/xyflow.js` 注册、build 时拼进 lib/client.js。
+	 * 拼接一旦掉了,浏览器里图会安静地退化成「图组件不可用」——所以这里验的是**包里的字节**,
+	 * 不是源里的意图。
+	 */
+	check('部署件里注册了 @xyflow/react 那一行', deployed.includes("id: '@xyflow/react'"))
+	check('部署件里带上了 React Flow 的样式(缺了布局会散)', deployed.includes('data-clearai'))
+	/**
+	 * vendor 里**只能**依赖平台种子字:任何别的外部包在浏览器里都解析不到
+	 * (`require` 只认种子词与已注册的行),那会在运行时才炸。这条断言把打包结果
+	 * 的依赖面钉死——打包配置改动时它会先红,而不是等人打开面板发现图没了。
+	 */
+	const vendorRequires = [...readFileSync(VENDOR, 'utf8').matchAll(/require\("([^"]+)"\)/g)].map((match) => match[1])
+	const externalNotSeed = [...new Set(vendorRequires)].filter((name) => name !== 'react' && name !== 'react/jsx-runtime')
+	check('vendor 的外部依赖只有平台种子字(react / react/jsx-runtime)', externalNotSeed.length === 0, externalNotSeed.join(','))
+	check('主文件确实 require 了那一行(而不是只用桩)', readFileSync(SOURCE, 'utf8').includes("require('@xyflow/react')"))
 }
 
 console.log('\n【语言:接原生 locale 座位,表按源文索引】')

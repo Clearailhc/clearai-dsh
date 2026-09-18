@@ -35,6 +35,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@xyflow/react": "^12.11.6",
     "docx": "^9.7.1",
     "zod": "^4.6.1"
   },
@@ -60,7 +61,7 @@
     "worldline"
   ],
   "scripts": {
-    "test": "bash test/run.sh",
+    "test": "node tools/build-vendor.mjs && bash test/run.sh",
     "build": "node tools/build-package.mjs",
     "verify": "node tools/verify-package.mjs",
     "verify:deploy": "node tools/verify-deploy.mjs",
@@ -68,6 +69,10 @@
     "pack": "node tools/build-package.mjs && npm pack ./dist/clearai-dsh",
     "release": "node tools/build-package.mjs && node tools/verify-package.mjs && node tools/verify-clean-install.mjs && npm pack ./dist/clearai-dsh --pack-destination dist",
     "e2e": "node tools/e2e-run.mjs",
-    "e2e:long": "node tools/e2e-parallel.mjs"
+    "e2e:long": "node tools/e2e-parallel.mjs",
+    "vendor": "node tools/build-vendor.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

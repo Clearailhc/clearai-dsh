@@ -22,6 +22,21 @@ window.__ModuleLoader__.load({
 
 		const React = require('react')
 		/**
+		 * **图渲染交给 React Flow**(`@xyflow/react`):拖节点、拖画布、滚轮缩放、MiniMap、
+		 * 框选都是库的事。它由 `ui/vendor/xyflow.js` 注册成模块行(build 时打进去,见
+		 * `tools/build-vendor.mjs`),`require` 按行名解析——与 `require('react')` 同一个姿势。
+		 *
+		 * 拿不到时不炸整块面板:图退化成一句「图组件不可用」的读数,
+		 * 其余格子(事实 / 命题 / 词汇)照常——与我们「降级要如实、不要崩」同一条纪律。
+		 */
+		const XYFlow = (() => {
+			try {
+				return require('@xyflow/react')
+			} catch {
+				return null
+			}
+		})()
+		/**
 		 * **原生图标**(与本体页签同一族):dsh 右栏页签的 guide 吃一个 `icon` 组件,原生那几张页签用的是
 		 * `@deepseek-ai/dsh-client-ui-primitives` 里那套(文件页签 = FileTypeIcon ✓)。
 		 * 我们照同一套用,于是"面包屑"与"世界树"在视觉上属于同一个家族。
@@ -72,8 +87,8 @@ window.__ModuleLoader__.load({
 
 		/** 语言命名空间。表按**源文**索引:键就是中文原文,所以漏翻译一条只会退回中文,不会把 key 显示给人。 */
 		const LOCALE_NS = 'clearai'
-		const LOCALE_ZH = {"点节点看知识详情": "点节点看知识详情", "按此筛选": "按此筛选", "关闭": "关闭", "正在取这条知识的读数…": "正在取这条知识的读数…", "取不到读数": "取不到读数", "宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。": "宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。", "父概念": "父概念", "形态": "形态", "取值": "取值", "引用": "引用", "子概念": "子概念", "相关谓词": "相关谓词", "实例": "实例", "关系边": "关系边", "主词": "主词", "相关事实": "相关事实", "(还有更多,未列出)": "(还有更多,未列出)", "历史": "历史", "这条事实没有命题关联(旧账本):不拿文本相等去猜身份。": "这条事实没有命题关联(旧账本):不拿文本相等去猜身份。", "推翻条件": "推翻条件", "支持到": "支持到", "断言": "断言", "没有证据引用(旧事实或自判)。": "没有证据引用(旧事实或自判)。", "出处": "出处", "产生步骤": "产生步骤", "复核": "复核", "这条事实参与了一对冲突读数(只暴露,不裁决)": "这条事实参与了一对冲突读数(只暴露,不裁决)", "滚轮缩放 · 拖动平移 · 拖节点挪位": "滚轮缩放 · 拖动平移 · 拖节点挪位", "类型": "类型", "还有 ": "还有 ", " 条未列出 · 用 / 触发菜单选": " 条未列出 · 用 / 触发菜单选", "被推翻 · 待裁决": "被推翻 · 待裁决", "等待输入": "等待输入", "等待人工处理": "等待人工处理", "等待中": "等待中", "等待人工": "等待人工", "异常终止": "异常终止", "发送失败:": "发送失败:", "已获首条证据": "已获首条证据", "按判据推荐": "按判据推荐", "系统内部消息(非运行状态)": "系统内部消息(非运行状态)", "填写缘由后提交": "填写缘由后提交", "请填写缘由": "请填写缘由", "点击在右栏预览": "点击在右栏预览", "点击查看详情": "点击查看详情", "查看步骤详情": "查看步骤详情", "查看词条": "查看词条", "放弃需填写缘由后提交": "放弃需填写缘由后提交", "撤回需填写缘由后提交": "撤回需填写缘由后提交", "暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。": "暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。", "暂无数据。发送第一条消息后,此处显示技能目录与记忆。": "暂无数据。发送第一条消息后,此处显示技能目录与记忆。", "暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。": "暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。", "暂无目标。目标携带验收判据;判据在结果出现之前登记。": "暂无目标。目标携带验收判据;判据在结果出现之前登记。", "暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。": "暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。", "暂无计划。建立计划后,已交付步骤按阶段列于此处。": "暂无计划。建立计划后,已交付步骤按阶段列于此处。", "暂无计划。建立后此处显示计划拓扑:脊柱步、车道与收敛点。": "暂无计划。建立后此处显示计划拓扑:脊柱步、车道与收敛点。", "暂无记忆。": "暂无记忆。", "暂无证据。先登记判据,后执行验证。": "暂无证据。先登记判据,后执行验证。", "此层暂无节点。": "此层暂无节点。", "暂无技能或记忆。使用 `SaveSkill` / `WriteMemory`,或将技能放入 `clear/skills/`。": "暂无技能或记忆。使用 `SaveSkill` / `WriteMemory`,或将技能放入 `clear/skills/`。", "达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。": "达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。", "修改判据需重新建立世界线": "修改判据需重新建立世界线", "计划的拓扑与闸门:脊柱步、车道、收敛点、人工决策点": "计划的拓扑与闸门:脊柱步、车道、收敛点、人工决策点", "由内核执行 ConvergeFork 完成合并": "由内核执行 ConvergeFork 完成合并", "通过提问卡做出裁决(含判据与各分支读数)": "通过提问卡做出裁决(含判据与各分支读数)", "通过提问卡决定": "通过提问卡决定", "在世界树中查看此步骤": "在世界树中查看此步骤", "右栏预览": "右栏预览", "查看此步骤的证据": "查看此步骤的证据", "查看评估者": "查看评估者", "工作区现状(首轮对话后进入投影)": "工作区现状(首轮对话后进入投影)", "本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。": "本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。", "目录尚未到达(内核下一次 pre-step 下发)": "目录尚未到达(内核下一次 pre-step 下发)", "这些等级尚无证据:跳级不违规,但需说明原因": "这些等级尚无证据:跳级不违规,但需说明原因", "此谓词已不在词汇中(可能已废止);存量断言仍可读。": "此谓词已不在词汇中(可能已废止);存量断言仍可读。", "策略暂停(原因未记录,已告警)": "策略暂停(原因未记录,已告警)", "未升格:断言仍在命题上": "未升格:断言仍在命题上", "放弃缘由(必填)": "放弃缘由(必填)", "撤回缘由(必填)": "撤回缘由(必填)", "登记概念": "登记概念", "登记谓词": "登记谓词", "名称": "名称", "单位": "单位", "提交": "提交", "取消": "取消", "废止": "废止", "为什么?": "为什么?", "提交中…": "提交中…", "点节点按概念过滤 · 滚轮缩放 · 拖拽平移": "点节点按概念过滤 · 滚轮缩放 · 拖拽平移", "复位": "复位", "全景": "全景", "还原": "还原", "展开图带": "展开图带", "图里只画了前": "图里只画了前", " 个节点;全景可看全部": " 个节点;全景可看全部", "一条边": "一条边", "词汇": "词汇", "概念": "概念", "谓词": "谓词", "已废止": "已废止", "健康": "健康", "单值": "单值", "打开词汇货架(原生预览)": "打开词汇货架(原生预览)", "冲突": "冲突", " 对": " 对", "只暴露,不裁决;撤回或维持由人决定": "只暴露,不裁决;撤回或维持由人决定", "按": "按", "过滤": "", "清除": "清除", "按此谓词过滤": "按此谓词过滤", "在图里看": "在图里看", " · 未升格": " · 未升格", "释义": "释义", "主词域": "主词域", "值域": "值域", "本体": "本体", "本体货架 · ": "本体货架 · ", "这里会长出你的本体:已确立的条目与在验的命题。": "这里会长出你的本体:已确立的条目与在验的命题。", "本体图": "本体图", "实体图": "实体图", " · 交付 ": " · 交付 ", " · 人 ": " · 人 ", " · 在工作区外,面板不读正文": " · 在工作区外,面板不读正文", " · 尺子 ": " · 尺子 ", " · 执行没跑成": " · 执行没跑成", " · 支持到 ": " · 支持到 ", " · 最近 ": " · 最近 ", " · 证据 ": " · 证据 ", " · 车道 ": " · 车道 ", " · 随步骤作废而终止": " · 随步骤作废而终止", " 份)。": " 份)。", " 份产物,但没有任何计划声明过它们。点一条可以直接看(它们不计入交付)。": " 份产物,但没有任何计划声明过它们。点一条可以直接看(它们不计入交付)。", " 份没列出来(这一栏只列最近改动的 ": " 份没列出来(这一栏只列最近改动的 ", " 发起": " 发起", " 处声明": " 处声明", " 字节": " 字节", " 字节 · ": " 字节 · ", " 字节 · 未被任何计划声明": " 字节 · 未被任何计划声明", " 字节 · 资源 ": " 字节 · 资源 ", " 推翻:": " 推翻:", " 旁观 ": " 旁观 ", " 条": " 条", " 条)": " 条)", " 次侦察": " 次侦察", " 次评估者": " 次评估者", " 步": " 步", " 步)": " 步)", " 等 ": " 等 ", " 评估卡": " 评估卡", " 轮": " 轮", " 里打开": " 里打开", "(假设达到这一级且无推翻才升格为事实)": "(假设达到这一级且无推翻才升格为事实)", "(每次修订留痕,旧值不删)": "(每次修订留痕,旧值不删)", "(点一下开右栏「世界树」)": "(点一下开右栏「世界树」)", "(点一下开右栏「世界树」看拓扑)": "(点一下开右栏「世界树」看拓扑)", "(留档不删)": "(留档不删)", "(缺)": "(缺)", "(要独立评估)才达门槛": "(要独立评估)才达门槛", "),所以这个分叉没有归宿了:**随步骤作废而终止**——它既不是被人裁掉(没人做过这个决定),也不是被算术排掉(没有尺子排过它)。要收掉工作副本(保留 ref),对它调 AbandonFork(会弹人工确认)。": "),所以这个分叉没有归宿了:**随步骤作废而终止**——它既不是被人裁掉(没人做过这个决定),也不是被算术排掉(没有尺子排过它)。要收掉工作副本(保留 ref),对它调 AbandonFork(会弹人工确认)。", "),等目标验收时升格为事实": "),等目标验收时升格为事实", ")——它不是落选:落选意味着它跑完了、被尺子排到了后面;这一条是没跑成,所以也没有读数可以参与算术。": ")——它不是落选:落选意味着它跑完了、被尺子排到了后面;这一条是没跑成,所以也没有读数可以参与算术。", "**执行没跑成**(": "**执行没跑成**(", "**执行者未归**:这条世界线的执行者派出去之后没有回灌,而分叉已经收口——它再回来也没有归宿了,所以这里既不判它跑成也没跑成,也不再等它。它的产物(如果写过)还在它自己的工作副本里;要判断那条线到底做出了什么,直接看工作副本比看这条状态可靠。": "**执行者未归**:这条世界线的执行者派出去之后没有回灌,而分叉已经收口——它再回来也没有归宿了,所以这里既不判它跑成也没跑成,也不再等它。它的产物(如果写过)还在它自己的工作副本里;要判断那条线到底做出了什么,直接看工作副本比看这条状态可靠。", ":还差 ": ":还差 ", ";放弃缘由:": ";放弃缘由:", "clearai 面板:右栏页签类型注册失败 ": "clearai 面板:右栏页签类型注册失败 ", "clearai-loop: 席位跟着会话预设进出": "clearai-loop: 席位跟着会话预设进出", "世界树": "世界树", "世界线:": "世界线:", "事实": "事实", "产物": "产物", "人审查后决定撤回": "人审查后决定撤回", "人已撤回(记录保留)": "人已撤回(记录保留)", "撤回事实": "撤回事实", "维持原事实": "维持原事实", "未走过 ": "未走过 ", "认可,继续": "认可,继续", "确认撤回": "确认撤回", "确认撤回(记录保留,不再作为「已知」引用)": "确认撤回(记录保留,不再作为「已知」引用)", "人的裁决:": "人的裁决:", "仅人可引用": "仅人可引用", "会话日志里的原生审批对(不可伪造)": "会话日志里的原生审批对(不可伪造)", "依据": "依据", "侦 ": "侦 ", "侦察 · ": "侦察 · ", "候选": "候选", "做什么": "做什么", "做法": "做法", "其他(": "其他(", "出现推翻证据": "出现推翻证据", "出现推翻证据(终态,记录保留)": "出现推翻证据(终态,记录保留)", "分支": "分支", "切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)": "切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)", "判据": "判据", "判据:": "判据:", "判据待写": "判据待写", "升格门槛": "升格门槛", "原生预览打不开这条路(它在工作区外?)": "原生预览打不开这条路(它在工作区外?)", "原生预览打开它": "原生预览打开它", "原生预览打开它(计划声明的产物)": "原生预览打开它(计划声明的产物)", "合并目录、本会话用法、可引用可采纳": "合并目录、本会话用法、可引用可采纳", "命题": "命题", "命题 · ": "命题 · ", "在": "在", "在 ": "在 ", "声明的是目录;准入要求具体文件——目录不算物证": "声明的是目录;准入要求具体文件——目录不算物证", "多问我": "多问我", "完成度 ": "完成度 ", "完成度 —": "完成度 —", "审批记录": "审批记录", "工作区模板 · clear/skills": "工作区模板 · clear/skills", "已交付": "已交付", "已作废": "已作废", "已回灌": "已回灌", "已推翻": "已推翻", "已提出": "已提出", "已撤回": "已撤回", "已收尾 · 存档可看": "已收尾 · 存档可看", "已改版": "已改版", "已放弃": "已放弃", "已放弃探索:": "已放弃探索:", "已放弃的分叉": "已放弃的分叉", "已替代": "已替代", "已确认": "已确认", "已确认事实 · ": "已确认事实 · ", "已被下一版命题替代(版本留着,不参与当前推理)": "已被下一版命题替代(版本留着,不参与当前推理)", "已裁决": "已裁决", "已评估": "已评估", "已达成": "已达成", "已达门槛(": "已达门槛(", "已达门槛,已升格为事实": "已达门槛,已升格为事实", "已采纳": "已采纳", "待开计划": "待开计划", "待推进": "待推进", "待裁决": "待裁决", "我的 · ~/.dsh": "我的 · ~/.dsh", "打开 ": "打开 ", "打开「事实」那一格并展开这条命题": "打开「事实」那一格并展开这条命题", "打开世界树并选中产出这条事实的验证步": "打开世界树并选中产出这条事实的验证步", "打开世界树并选中产生这条证据的验证步": "打开世界树并选中产生这条证据的验证步", "打开失败:HTTP ": "打开失败:HTTP ", "打开计划文档(原生预览)": "打开计划文档(原生预览)", "技能 · 记忆": "技能 · 记忆", "探索中": "探索中", "推翻": "推翻", "推进中": "推进中", "提交中…": "提交中…", "提交失败:": "提交失败:", "支持": "支持", "支持到 ": "支持到 ", "收敛": "收敛", "收束:": "收束:", "收起": "收起", "收起详情": "收起详情", "放弃了这次探索": "放弃了这次探索", "放弃探索": "放弃探索", "放弃缘由(必填)": "Reason for abandoning (required)", "放弃这条分叉": "放弃这条分叉", "放弃这次探索(留档不删,ref 保留)": "放弃这次探索(留档不删,ref 保留)", "放行": "放行", "旁观写这条裁决的评估者子会话(论证过程)": "旁观写这条裁决的评估者子会话(论证过程)", "旁观评估者": "旁观评估者", "旁观这条世界线的评估者会话(只读)": "旁观这条世界线的评估者会话(只读)", "无法判定": "无法判定", "是目录(不算物证)": "是目录(不算物证)", "最后改动 ": "最后改动 ", "未分类": "未分类", "未声明": "未声明", "未收口(随步骤作废而终止)": "未收口(随步骤作废而终止)", "未知": "未知", "未走:": "未走:", "未采纳": "未采纳", "本会话 模型 ": "本会话 模型 ", "本项目 · .dsh / .agents": "本项目 · .dsh / .agents", "本项目写的 · clear/skills": "本项目写的 · clear/skills", "核心产物(": "核心产物(", "步 ": "步 ", "派出 ": "派出 ", "派生 · ": "派生 · ", "版本": "版本", "状态": "状态", "独立评估者": "独立评估者", "用原生预览打开章程(它每回合整份注入模型上下文)": "用原生预览打开章程(它每回合整份注入模型上下文)", "盘上已有(": "盘上已有(", "盘上没有": "盘上没有", "盘上没有这个文件": "盘上没有这个文件", "目录": "目录", "目录里已经没有(": "目录里已经没有(", "目标": "目标", "目标挂起": "目标挂起", "确认放弃": "确认放弃", "确认放弃(留档不删,ref 保留)": "确认放弃(留档不删,ref 保留)", "等独立裁决": "等独立裁决", "策略暂停": "策略暂停", "续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。": "续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。", "续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。": "续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。", "续跑停着:": "续跑停着:", "续跑已撤回": "续跑已撤回", "缘由必填": "缘由必填", "缺": "缺", "自判": "自判", "自定义": "自定义", "自己拿主意": "自己拿主意", "被 ": "被 ", "被下一版命题改写": "被下一版命题改写", "裁决": "裁决", "裁决:采纳 ": "裁决:采纳 ", "要你": "要你", "观测": "观测", "计划": "计划", "计划 ": "计划 ", "计划受阻,等人处置": "计划受阻,等人处置", "计划在建,**等你确认**": "计划在建,**等你确认**", "计划已交付 ": "计划已交付 ", "计划已收尾(": "计划已收尾(", "计划待确认": "计划待确认", "计划文档": "计划文档", "记忆(": "记忆(", "记忆索引": "记忆索引", "证据": "证据", "证据 ": "证据 ", "评 ": "评 ", "评估": "评估", "评估卡": "评估卡", "评估者": "评估者", "评估者 ": "评估者 ", "评估者会话 ": "评估者会话 ", "评估者在裁决": "评估者在裁决", "读不到交付物:": "读不到交付物:", "读取中…": "读取中…", "读数": "读数", "读数(尺子 ": "读数(尺子 ", "起过 ": "起过 ", "跑着": "跑着", "车道 · ": "车道 · ", "边界:": "边界:", "运行时注册": "运行时注册", "还有 ": "还有 ", "还没交付": "还没交付", "这一步已作废(缘由:": "这一步已作废(缘由:", "这一步没有声明产物。": "这一步没有声明产物。", "这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。": "这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。", "这个会话还没有 ClearAI 的状态。": "这个会话还没有 ClearAI 的状态。", "这个工作区盘上已经有 ": "这个工作区盘上已经有 ", "进度": "进度", "采纳": "采纳", "采纳 ": "采纳 ", "采纳:改写 frontmatter,模型从此加载得到它": "采纳:改写 frontmatter,模型从此加载得到它", "采纳了某条世界线": "采纳了某条世界线", "采纳此世界线": "采纳此世界线", "问题:": "问题:", "阶段": "阶段", "阶段 ": "阶段 ", "阶段交界": "阶段交界", "需要你 ": "需要你 ", "面板动作失败:": "面板动作失败:", "项目章程": "项目章程", "预设自带": "预设自带", "验证": "验证", "验证中": "验证中", "这次采纳没有合并:": "这次采纳没有合并:", "(决定已登记,产物由一次普通交付落位)": "(决定已登记,产物由一次普通交付落位)", "分支或工作副本已不在": "分支或工作副本已不在"}
-		const LOCALE_EN = {"点节点看知识详情": "Click a node to see what it means", "按此筛选": "Filter by this", "关闭": "Close", "正在取这条知识的读数…": "Fetching this entry’s readings…", "取不到读数": "Could not fetch the readings", "宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。": "The host has no readings for this object (it may have just been deprecated, or it is not in the current vocabulary).", "父概念": "Parent concept", "形态": "Value form", "取值": "Value", "引用": "Used by", "子概念": "Child concepts", "相关谓词": "Related predicates", "实例": "Instances", "关系边": "Relation edges", "主词": "Subjects", "相关事实": "Related facts", "(还有更多,未列出)": " (more not listed)", "历史": "History", "这条事实没有命题关联(旧账本):不拿文本相等去猜身份。": "This fact has no proposition link (old ledger); text equality is not used to guess identity.", "推翻条件": "Refutation condition", "支持到": "Supported to", "断言": "Assertion", "没有证据引用(旧事实或自判)。": "No evidence cites it (an old fact, or self-judged).", "出处": "Provenance", "产生步骤": "Producing step", "复核": "Review", "这条事实参与了一对冲突读数(只暴露,不裁决)": "This fact takes part in a conflict reading (surfaced, never adjudicated)", "滚轮缩放 · 拖动平移 · 拖节点挪位": "wheel to zoom · drag to pan · drag a node to move it", "类型": "Type", "还有 ": "and ", " 条未列出 · 用 / 触发菜单选": " more not listed · pick them from the / menu", "被推翻 · 待裁决": "refuted · awaiting decision", "等待输入": "awaiting input", "等待人工处理": "awaiting human action", "等待中": "waiting", "等待人工": "awaiting human", "异常终止": "terminated abnormally", "发送失败:": "send failed: ", "已获首条证据": "first evidence received", "按判据推荐": "recommended by criterion", "系统内部消息(非运行状态)": "system-internal message (not a run state)", "填写缘由后提交": "fill in the reason, then submit", "请填写缘由": "reason required", "点击在右栏预览": "click to preview in the right sidebar", "点击查看详情": "click for details", "查看步骤详情": "view step details", "查看词条": "view term", "放弃需填写缘由后提交": "fill in the reason before abandoning", "撤回需填写缘由后提交": "fill in the reason before retracting", "暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。": "No data yet. After your first message this shows established entries and propositions in verification.", "暂无数据。发送第一条消息后,此处显示技能目录与记忆。": "No data yet. After your first message this shows the skill catalogue and memory.", "暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。": "No propositions yet. Each needs a one-line claim and a refutation condition; verified ones are promoted to facts.", "暂无目标。目标携带验收判据;判据在结果出现之前登记。": "No goal yet. A goal carries its acceptance criterion; the criterion is registered before any result.", "暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。": "No goal yet. Verified propositions reaching the threshold without refutation are promoted at acceptance.", "暂无计划。建立计划后,已交付步骤按阶段列于此处。": "No plan yet. Delivered steps are listed here by stage once a plan exists.", "暂无计划。建立后此处显示计划拓扑:脊柱步、车道与收敛点。": "No plan yet. Once committed, this shows the plan topology: spine steps, lanes, and convergence.", "暂无记忆。": "No memory yet.", "暂无证据。先登记判据,后执行验证。": "No evidence yet. Register the criterion first, then verify.", "此层暂无节点。": "No nodes on this layer yet.", "暂无技能或记忆。使用 `SaveSkill` / `WriteMemory`,或将技能放入 `clear/skills/`。": "No skills or memory yet. Use `SaveSkill` / `WriteMemory`, or put a skill under `clear/skills/`.", "达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。": "Propositions reaching the threshold with no refutation are promoted to fact at goal acceptance (written under clear/knowledge/facts/).", "修改判据需重新建立世界线": "changing the criterion requires a new worldline", "计划的拓扑与闸门:脊柱步、车道、收敛点、人工决策点": "Plan topology and gates: spine steps, lanes, convergence, human decision points", "由内核执行 ConvergeFork 完成合并": "the kernel runs ConvergeFork to complete the merge", "通过提问卡做出裁决(含判据与各分支读数)": "decide via the question card (with the criterion and each branch's reading)", "通过提问卡决定": "decide via question card", "在世界树中查看此步骤": "see this step in Worldlines", "右栏预览": "preview in right sidebar", "查看此步骤的证据": "see the evidence for this step", "查看评估者": "view evaluator", "工作区现状(首轮对话后进入投影)": "workspace state (enters the projection after the first turn)", "本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。": "The ontology declaration has not reached the projection; a canonical-loop mirror is shown and will align at the next step.", "目录尚未到达(内核下一次 pre-step 下发)": "the catalogue has not arrived yet (the kernel sends it on the next pre-step)", "这些等级尚无证据:跳级不违规,但需说明原因": "no evidence at these levels: skipping is not a violation, but state why", "此谓词已不在词汇中(可能已废止);存量断言仍可读。": "this predicate is no longer in the vocabulary (possibly deprecated); existing assertions remain readable.", "策略暂停(原因未记录,已告警)": "paused by policy (reason not recorded; warned)", "未升格:断言仍在命题上": "not yet promoted: the assertion is still on a proposition", "放弃缘由(必填)": "Reason for abandoning (required)", "撤回缘由(必填)": "Reason for retracting (required)", "登记概念": "Register a concept", "登记谓词": "Register a predicate", "名称": "Label", "单位": "Unit", "提交": "Submit", "取消": "Cancel", "废止": "Deprecate", "为什么?": "Why?", "提交中…": "Submitting…", "点节点按概念过滤 · 滚轮缩放 · 拖拽平移": "Click a node to filter by concept · wheel to zoom · drag to pan", "复位": "Reset view", "全景": "Panorama", "还原": "Restore", "展开图带": "Show the graph band", "图里只画了前": "Showing the first", " 个节点;全景可看全部": " nodes; the panorama shows all", "一条边": "An edge", "词汇": "Vocabulary", "概念": "concepts", "谓词": "predicates", "已废止": "deprecated", "健康": "Health", "单值": "single-valued", "打开词汇货架(原生预览)": "Open the vocabulary shelf (native preview)", "冲突": "Conflict", " 对": " pair(s)", "只暴露,不裁决;撤回或维持由人决定": "surfaced, never adjudicated; retracting or keeping is a human decision", "按": "Filtered by", "过滤": "", "清除": "Clear", "按此谓词过滤": "Filter by this predicate", "在图里看": "See it in the graph", " · 未升格": " · not yet promoted", "释义": "Gloss", "主词域": "Subject domain", "值域": "Range", "本体": "Ontology", "本体货架 · ": "Ontology shelf · ", "这里会长出你的本体:已确立的条目与在验的命题。": "This is where your ontology grows: established entries and propositions still in verification.", "本体图": "Ontology graph", "实体图": "Entity graph", " · 交付 ": " · delivered ", " · 人 ": " · human ", " · 在工作区外,面板不读正文": " · outside the workspace; the panel will not read it", " · 尺子 ": " · metric ", " · 执行没跑成": " · execution did not complete", " · 支持到 ": " · supported to ", " · 最近 ": " · latest ", " · 证据 ": " · evidence ", " · 车道 ": " · lanes ", " · 随步骤作废而终止": " · ended when its step was voided", " 份)。": " files).", " 份产物,但没有任何计划声明过它们。点一条可以直接看(它们不计入交付)。": " artifacts on disk, but no plan declared them. Click one to open it (they do not count toward delivery).", " 份没列出来(这一栏只列最近改动的 ": " more not listed (this column lists only the ", " 发起": " started", " 处声明": " declared", " 字节": " bytes", " 字节 · ": " bytes · ", " 字节 · 未被任何计划声明": " bytes · declared by no plan", " 字节 · 资源 ": " bytes · resources ", " 推翻:": "refuted by:", " 旁观 ": " observe ", " 条": " entries", " 条)": " entries)", " 次侦察": " scouts", " 次评估者": " evaluators", " 步": " steps", " 步)": " steps)", " 等 ": " and ", " 评估卡": " evaluation card", " 轮": " rounds", " 里打开": "", "(假设达到这一级且无推翻才升格为事实)": " (a hypothesis is promoted to fact only at this level and with no refutation)", "(每次修订留痕,旧值不删)": " (every revision is kept; old values are not deleted)", "(点一下开右栏「世界树」)": " (click to open Worldlines)", "(点一下开右栏「世界树」看拓扑)": " (click to see the topology in Worldlines)", "(留档不删)": " (kept on record, not deleted)", "(缺)": " (missing)", "(要独立评估)才达门槛": " (independent evaluation required) to reach the threshold", "),所以这个分叉没有归宿了:**随步骤作废而终止**——它既不是被人裁掉(没人做过这个决定),也不是被算术排掉(没有尺子排过它)。要收掉工作副本(保留 ref),对它调 AbandonFork(会弹人工确认)。": "), so this fork has no destination left: **it ended when its step was voided** — it was neither decided by a person (nobody made that call) nor ranked out by arithmetic (no metric ever ranked it). To drop the working copy (keeping the ref), call AbandonFork on it (it asks for human confirmation).", "),等目标验收时升格为事实": "), and is promoted to fact when the goal is accepted", ")——它不是落选:落选意味着它跑完了、被尺子排到了后面;这一条是没跑成,所以也没有读数可以参与算术。": ") — this is not a loss: losing means it ran and was ranked behind; this one did not run, so it has no reading to enter into the arithmetic.", "**执行没跑成**(": "**Execution did not complete** (", "**执行者未归**:这条世界线的执行者派出去之后没有回灌,而分叉已经收口——它再回来也没有归宿了,所以这里既不判它跑成也没跑成,也不再等它。它的产物(如果写过)还在它自己的工作副本里;要判断那条线到底做出了什么,直接看工作副本比看这条状态可靠。": "**Executor never returned**: this worldline's executor was dispatched but never reported back, and the fork has already converged — if it returned now there would be nowhere to land, so it is neither judged done nor judged failed, and it is no longer awaited. Whatever it wrote still sits in its own working copy; to judge what that line actually produced, read the working copy rather than this status.", ":还差 ": ": short by ", ";放弃缘由:": "; reason for abandoning: ", "clearai 面板:右栏页签类型注册失败 ": "clearai panel: failed to register the right-sidebar tab type ", "clearai-loop: 席位跟着会话预设进出": "clearai-loop: seats come and go with the session's preset", "世界树": "Worldlines", "世界线:": "Worldline: ", "事实": "Facts", "产物": "Deliverables", "人审查后决定撤回": "withdrawn after human review", "人已撤回(记录保留)": "withdrawn by a person (record kept)", "撤回事实": "Retract the fact", "维持原事实": "Keep the fact", "未走过 ": "untouched: ", "认可,继续": "Approve, continue", "确认撤回": "Confirm retraction", "确认撤回(记录保留,不再作为「已知」引用)": "Confirm retraction (the record is kept; it can no longer be cited as known)", "人的裁决:": "Human decision: ", "仅人可引用": "user-invocable only", "会话日志里的原生审批对(不可伪造)": "the native approval pair in the session log (cannot be forged)", "依据": "Basis", "侦 ": "S", "侦察 · ": "Scout · ", "候选": "candidate", "做什么": "What it does", "做法": "Approach", "其他(": "Other (", "出现推翻证据": "refuting evidence appeared", "出现推翻证据(终态,记录保留)": "refuting evidence appeared (terminal; record kept)", "分支": "Branch", "切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)": "Switch back to an earlier worldline set (the plans are all still here, and their documents are archived under clear/goals/plans/)", "判据": "Criterion", "判据:": "Criterion: ", "判据待写": "criterion not written", "升格门槛": "Promotion threshold", "原生预览打不开这条路(它在工作区外?)": "The native preview cannot open this path (is it outside the workspace?)", "原生预览打开它": "Open it in the native preview", "原生预览打开它(计划声明的产物)": "Open it in the native preview (an artifact declared by the plan)", "合并目录、本会话用法、可引用可采纳": "Merged catalogue, usage in this session, invocable and adoptable", "命题": "Propositions", "命题 · ": "Propositions · ", "在": "in", "在 ": "in ", "声明的是目录;准入要求具体文件——目录不算物证": "This declares a directory; admission requires a concrete file — a directory is not physical evidence", "多问我": "Ask me more", "完成度 ": "Progress ", "完成度 —": "Progress —", "审批记录": "approval record", "工作区模板 · clear/skills": "Workspace template · clear/skills", "已交付": "delivered", "已作废": "voided", "已回灌": "reported back", "已推翻": "refuted", "已提出": "proposed", "已撤回": "withdrawn", "已收尾 · 存档可看": "closed · archived and readable", "已改版": "superseded", "已放弃": "abandoned", "已放弃探索:": "Exploration abandoned: ", "已放弃的分叉": "abandoned fork", "已替代": "superseded", "已确认": "confirmed", "已确认事实 · ": "Confirmed facts · ", "已被下一版命题替代(版本留着,不参与当前推理)": "superseded by a later version of the proposition (the version is kept but takes no part in current reasoning)", "已裁决": "decided", "已评估": "evaluated", "已达成": "achieved", "已达门槛(": "threshold reached (", "已达门槛,已升格为事实": "threshold reached; promoted to fact", "已采纳": "adopted", "待开计划": "no plan yet", "待推进": "to advance", "待裁决": "awaiting decision", "我的 · ~/.dsh": "Mine · ~/.dsh", "打开 ": "Open ", "打开「事实」那一格并展开这条命题": "Open the Facts pane and expand this proposition", "打开世界树并选中产出这条事实的验证步": "Open Worldlines and select the verification step that produced this fact", "打开世界树并选中产生这条证据的验证步": "Open Worldlines and select the verification step that produced this evidence", "打开失败:HTTP ": "Open failed: HTTP ", "打开计划文档(原生预览)": "Open the plan document (native preview)", "技能 · 记忆": "Skills · Memory", "探索中": "exploring", "推翻": "refute", "推进中": "in progress", "提交中…": "Submitting…", "提交失败:": "Submit failed: ", "支持": "support", "支持到 ": "supported to ", "收敛": "converge", "收束:": "Closed with: ", "收起": "Collapse", "收起详情": "Collapse details", "放弃了这次探索": "abandoned this exploration", "放弃探索": "Abandon exploration", "放弃缘由(必填)": "Reason for abandoning (required)", "放弃这条分叉": "Abandon this fork", "放弃这次探索(留档不删,ref 保留)": "Abandon this exploration (kept on record, ref preserved)", "放行": "release", "旁观写这条裁决的评估者子会话(论证过程)": "Observe the evaluator sub-session that wrote this verdict (the reasoning process)", "旁观评估者": "Observe evaluator", "旁观这条世界线的评估者会话(只读)": "Observe this worldline's evaluator session (read-only)", "无法判定": "inconclusive", "是目录(不算物证)": "is a directory (not physical evidence)", "最后改动 ": "Last changed ", "未分类": "Uncategorised", "未声明": "not declared", "未收口(随步骤作废而终止)": "not closed (ended when its step was voided)", "未知": "unknown", "未走:": "Not taken: ", "未采纳": "not adopted", "本会话 模型 ": "This session — model ", "本项目 · .dsh / .agents": "This project · .dsh / .agents", "本项目写的 · clear/skills": "Written by this project · clear/skills", "核心产物(": "Core deliverables (", "步 ": "step ", "派出 ": "dispatched ", "派生 · ": "derived · ", "版本": "Version", "状态": "Status", "独立评估者": "independent evaluator", "用原生预览打开章程(它每回合整份注入模型上下文)": "Open the charter in the native preview (it is injected whole into the model's context every turn)", "盘上已有(": "Already on disk (", "盘上没有": "not on disk", "盘上没有这个文件": "this file is not on disk", "目录": "directory", "目录里已经没有(": "no longer in the catalogue (", "目标": "Goal", "目标挂起": "goal suspended", "确认放弃": "Confirm abandon", "确认放弃(留档不删,ref 保留)": "Confirm abandon (kept on record, ref preserved)", "等独立裁决": "waiting for an independent verdict", "策略暂停": "paused by policy", "续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。": "Continuation: ask me more — it stops at the end of each stage and waits for you to give the next one (called \"attended\" in the docs). Click to switch to \"decide for yourself\".", "续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。": "Continuation: decide for yourself — committing a plan is the authorisation, and it keeps going for a set number of rounds, opening a gate only for decisions it cannot reduce (called \"unattended\" in the docs). Click to switch to \"ask me more\".", "续跑停着:": "Continuation is stopped: ", "续跑已撤回": "Continuation was withdrawn", "缘由必填": "A reason is required", "缺": "missing", "自判": "self-judged", "自定义": "custom", "自己拿主意": "Decide for yourself", "被 ": "by ", "被下一版命题改写": "rewritten by a later version of the proposition", "裁决": "Verdict", "裁决:采纳 ": "Verdict: adopt ", "要你": "needs you", "观测": "Observation", "计划": "Plan", "计划 ": "Plan ", "计划受阻,等人处置": "plan blocked, waiting for a person", "计划在建,**等你确认**": "plan is being built, **waiting for your confirmation**", "计划已交付 ": "Plan delivered ", "计划已收尾(": "Plan closed (", "计划待确认": "plan awaiting confirmation", "计划文档": "Plan document", "记忆(": "Memory (", "记忆索引": "Memory index", "证据": "Evidence", "证据 ": "Evidence ", "评 ": "E", "评估": "Evaluation", "评估卡": "evaluation card", "评估者": "Evaluator", "评估者 ": "Evaluator ", "评估者会话 ": "Evaluator session ", "评估者在裁决": "an evaluator is deciding", "读不到交付物:": "Cannot read deliverables: ", "读取中…": "Reading…", "读数": "Reading", "读数(尺子 ": "Reading (metric ", "起过 ": "ran ", "跑着": "running", "车道 · ": "Lane · ", "边界:": "Scope: ", "运行时注册": "registered at runtime", "还有 ": "and ", "还没交付": "not delivered yet", "这一步已作废(缘由:": "This step was voided (reason: ", "这一步没有声明产物。": "This step declares no artifacts.", "这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。": "This session has not started: the panels read the session log, so after your first message this will show confirmed facts and the propositions in flight.", "这个会话还没有 ClearAI 的状态。": "This session has no ClearAI state yet.", "这个工作区盘上已经有 ": "This workspace already has ", "进度": "Progress", "采纳": "Adopt", "采纳 ": "Adopt ", "采纳:改写 frontmatter,模型从此加载得到它": "Adopt: rewrites the frontmatter so the model can load it from then on", "采纳了某条世界线": "adopted one worldline", "采纳此世界线": "Adopt this worldline", "问题:": "Question: ", "阶段": "Stage", "阶段 ": "Stage ", "阶段交界": "at a stage boundary", "需要你 ": "needs you ", "面板动作失败:": "Panel action failed: ", "项目章程": "Project charter", "预设自带": "shipped with the preset", "验证": "Verification", "验证中": "verifying", "这次采纳没有合并:": "This adoption was not merged: ", "(决定已登记,产物由一次普通交付落位)": " (the decision is on record; a normal delivery places the artifacts)", "分支或工作副本已不在": "its branch or working copy is gone"}
+		const LOCALE_ZH = {"个节点": "个节点", "条边": "条边", "适配": "适配", "打开图谱工作区": "打开图谱工作区", "关闭工作区": "关闭工作区", "图组件不可用": "图组件不可用", "点节点看知识详情": "点节点看知识详情", "按此筛选": "按此筛选", "关闭": "关闭", "正在取这条知识的读数…": "正在取这条知识的读数…", "取不到读数": "取不到读数", "宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。": "宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。", "父概念": "父概念", "形态": "形态", "取值": "取值", "引用": "引用", "子概念": "子概念", "相关谓词": "相关谓词", "实例": "实例", "关系边": "关系边", "主词": "主词", "相关事实": "相关事实", "(还有更多,未列出)": "(还有更多,未列出)", "历史": "历史", "这条事实没有命题关联(旧账本):不拿文本相等去猜身份。": "这条事实没有命题关联(旧账本):不拿文本相等去猜身份。", "推翻条件": "推翻条件", "支持到": "支持到", "断言": "断言", "没有证据引用(旧事实或自判)。": "没有证据引用(旧事实或自判)。", "出处": "出处", "产生步骤": "产生步骤", "复核": "复核", "这条事实参与了一对冲突读数(只暴露,不裁决)": "这条事实参与了一对冲突读数(只暴露,不裁决)", "滚轮缩放 · 拖动平移 · 拖节点挪位": "滚轮缩放 · 拖动平移 · 拖节点挪位", "类型": "类型", "还有 ": "还有 ", " 条未列出 · 用 / 触发菜单选": " 条未列出 · 用 / 触发菜单选", "被推翻 · 待裁决": "被推翻 · 待裁决", "等待输入": "等待输入", "等待人工处理": "等待人工处理", "等待中": "等待中", "等待人工": "等待人工", "异常终止": "异常终止", "发送失败:": "发送失败:", "已获首条证据": "已获首条证据", "按判据推荐": "按判据推荐", "系统内部消息(非运行状态)": "系统内部消息(非运行状态)", "填写缘由后提交": "填写缘由后提交", "请填写缘由": "请填写缘由", "点击在右栏预览": "点击在右栏预览", "点击查看详情": "点击查看详情", "查看步骤详情": "查看步骤详情", "查看词条": "查看词条", "放弃需填写缘由后提交": "放弃需填写缘由后提交", "撤回需填写缘由后提交": "撤回需填写缘由后提交", "暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。": "暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。", "暂无数据。发送第一条消息后,此处显示技能目录与记忆。": "暂无数据。发送第一条消息后,此处显示技能目录与记忆。", "暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。": "暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。", "暂无目标。目标携带验收判据;判据在结果出现之前登记。": "暂无目标。目标携带验收判据;判据在结果出现之前登记。", "暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。": "暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。", "暂无计划。建立计划后,已交付步骤按阶段列于此处。": "暂无计划。建立计划后,已交付步骤按阶段列于此处。", "暂无计划。建立后此处显示计划拓扑:脊柱步、车道与收敛点。": "暂无计划。建立后此处显示计划拓扑:脊柱步、车道与收敛点。", "暂无记忆。": "暂无记忆。", "暂无证据。先登记判据,后执行验证。": "暂无证据。先登记判据,后执行验证。", "此层暂无节点。": "此层暂无节点。", "暂无技能或记忆。使用 `SaveSkill` / `WriteMemory`,或将技能放入 `clear/skills/`。": "暂无技能或记忆。使用 `SaveSkill` / `WriteMemory`,或将技能放入 `clear/skills/`。", "达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。": "达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。", "修改判据需重新建立世界线": "修改判据需重新建立世界线", "计划的拓扑与闸门:脊柱步、车道、收敛点、人工决策点": "计划的拓扑与闸门:脊柱步、车道、收敛点、人工决策点", "由内核执行 ConvergeFork 完成合并": "由内核执行 ConvergeFork 完成合并", "通过提问卡做出裁决(含判据与各分支读数)": "通过提问卡做出裁决(含判据与各分支读数)", "通过提问卡决定": "通过提问卡决定", "在世界树中查看此步骤": "在世界树中查看此步骤", "右栏预览": "右栏预览", "查看此步骤的证据": "查看此步骤的证据", "查看评估者": "查看评估者", "工作区现状(首轮对话后进入投影)": "工作区现状(首轮对话后进入投影)", "本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。": "本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。", "目录尚未到达(内核下一次 pre-step 下发)": "目录尚未到达(内核下一次 pre-step 下发)", "这些等级尚无证据:跳级不违规,但需说明原因": "这些等级尚无证据:跳级不违规,但需说明原因", "此谓词已不在词汇中(可能已废止);存量断言仍可读。": "此谓词已不在词汇中(可能已废止);存量断言仍可读。", "策略暂停(原因未记录,已告警)": "策略暂停(原因未记录,已告警)", "未升格:断言仍在命题上": "未升格:断言仍在命题上", "放弃缘由(必填)": "放弃缘由(必填)", "撤回缘由(必填)": "撤回缘由(必填)", "登记概念": "登记概念", "登记谓词": "登记谓词", "名称": "名称", "单位": "单位", "提交": "提交", "取消": "取消", "废止": "废止", "为什么?": "为什么?", "提交中…": "提交中…", "点节点按概念过滤 · 滚轮缩放 · 拖拽平移": "点节点按概念过滤 · 滚轮缩放 · 拖拽平移", "复位": "复位", "全景": "全景", "还原": "还原", "展开图带": "展开图带", "图里只画了前": "图里只画了前", " 个节点;全景可看全部": " 个节点;全景可看全部", "一条边": "一条边", "词汇": "词汇", "概念": "概念", "谓词": "谓词", "已废止": "已废止", "健康": "健康", "单值": "单值", "打开词汇货架(原生预览)": "打开词汇货架(原生预览)", "冲突": "冲突", " 对": " 对", "只暴露,不裁决;撤回或维持由人决定": "只暴露,不裁决;撤回或维持由人决定", "按": "按", "过滤": "", "清除": "清除", "按此谓词过滤": "按此谓词过滤", "在图里看": "在图里看", " · 未升格": " · 未升格", "释义": "释义", "主词域": "主词域", "值域": "值域", "本体": "本体", "本体货架 · ": "本体货架 · ", "这里会长出你的本体:已确立的条目与在验的命题。": "这里会长出你的本体:已确立的条目与在验的命题。", "本体图": "本体图", "实体图": "实体图", " · 交付 ": " · 交付 ", " · 人 ": " · 人 ", " · 在工作区外,面板不读正文": " · 在工作区外,面板不读正文", " · 尺子 ": " · 尺子 ", " · 执行没跑成": " · 执行没跑成", " · 支持到 ": " · 支持到 ", " · 最近 ": " · 最近 ", " · 证据 ": " · 证据 ", " · 车道 ": " · 车道 ", " · 随步骤作废而终止": " · 随步骤作废而终止", " 份)。": " 份)。", " 份产物,但没有任何计划声明过它们。点一条可以直接看(它们不计入交付)。": " 份产物,但没有任何计划声明过它们。点一条可以直接看(它们不计入交付)。", " 份没列出来(这一栏只列最近改动的 ": " 份没列出来(这一栏只列最近改动的 ", " 发起": " 发起", " 处声明": " 处声明", " 字节": " 字节", " 字节 · ": " 字节 · ", " 字节 · 未被任何计划声明": " 字节 · 未被任何计划声明", " 字节 · 资源 ": " 字节 · 资源 ", " 推翻:": " 推翻:", " 旁观 ": " 旁观 ", " 条": " 条", " 条)": " 条)", " 次侦察": " 次侦察", " 次评估者": " 次评估者", " 步": " 步", " 步)": " 步)", " 等 ": " 等 ", " 评估卡": " 评估卡", " 轮": " 轮", " 里打开": " 里打开", "(假设达到这一级且无推翻才升格为事实)": "(假设达到这一级且无推翻才升格为事实)", "(每次修订留痕,旧值不删)": "(每次修订留痕,旧值不删)", "(点一下开右栏「世界树」)": "(点一下开右栏「世界树」)", "(点一下开右栏「世界树」看拓扑)": "(点一下开右栏「世界树」看拓扑)", "(留档不删)": "(留档不删)", "(缺)": "(缺)", "(要独立评估)才达门槛": "(要独立评估)才达门槛", "),所以这个分叉没有归宿了:**随步骤作废而终止**——它既不是被人裁掉(没人做过这个决定),也不是被算术排掉(没有尺子排过它)。要收掉工作副本(保留 ref),对它调 AbandonFork(会弹人工确认)。": "),所以这个分叉没有归宿了:**随步骤作废而终止**——它既不是被人裁掉(没人做过这个决定),也不是被算术排掉(没有尺子排过它)。要收掉工作副本(保留 ref),对它调 AbandonFork(会弹人工确认)。", "),等目标验收时升格为事实": "),等目标验收时升格为事实", ")——它不是落选:落选意味着它跑完了、被尺子排到了后面;这一条是没跑成,所以也没有读数可以参与算术。": ")——它不是落选:落选意味着它跑完了、被尺子排到了后面;这一条是没跑成,所以也没有读数可以参与算术。", "**执行没跑成**(": "**执行没跑成**(", "**执行者未归**:这条世界线的执行者派出去之后没有回灌,而分叉已经收口——它再回来也没有归宿了,所以这里既不判它跑成也没跑成,也不再等它。它的产物(如果写过)还在它自己的工作副本里;要判断那条线到底做出了什么,直接看工作副本比看这条状态可靠。": "**执行者未归**:这条世界线的执行者派出去之后没有回灌,而分叉已经收口——它再回来也没有归宿了,所以这里既不判它跑成也没跑成,也不再等它。它的产物(如果写过)还在它自己的工作副本里;要判断那条线到底做出了什么,直接看工作副本比看这条状态可靠。", ":还差 ": ":还差 ", ";放弃缘由:": ";放弃缘由:", "clearai 面板:右栏页签类型注册失败 ": "clearai 面板:右栏页签类型注册失败 ", "clearai-loop: 席位跟着会话预设进出": "clearai-loop: 席位跟着会话预设进出", "世界树": "世界树", "世界线:": "世界线:", "事实": "事实", "产物": "产物", "人审查后决定撤回": "人审查后决定撤回", "人已撤回(记录保留)": "人已撤回(记录保留)", "撤回事实": "撤回事实", "维持原事实": "维持原事实", "未走过 ": "未走过 ", "认可,继续": "认可,继续", "确认撤回": "确认撤回", "确认撤回(记录保留,不再作为「已知」引用)": "确认撤回(记录保留,不再作为「已知」引用)", "人的裁决:": "人的裁决:", "仅人可引用": "仅人可引用", "会话日志里的原生审批对(不可伪造)": "会话日志里的原生审批对(不可伪造)", "依据": "依据", "侦 ": "侦 ", "侦察 · ": "侦察 · ", "候选": "候选", "做什么": "做什么", "做法": "做法", "其他(": "其他(", "出现推翻证据": "出现推翻证据", "出现推翻证据(终态,记录保留)": "出现推翻证据(终态,记录保留)", "分支": "分支", "切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)": "切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)", "判据": "判据", "判据:": "判据:", "判据待写": "判据待写", "升格门槛": "升格门槛", "原生预览打不开这条路(它在工作区外?)": "原生预览打不开这条路(它在工作区外?)", "原生预览打开它": "原生预览打开它", "原生预览打开它(计划声明的产物)": "原生预览打开它(计划声明的产物)", "合并目录、本会话用法、可引用可采纳": "合并目录、本会话用法、可引用可采纳", "命题": "命题", "命题 · ": "命题 · ", "在": "在", "在 ": "在 ", "声明的是目录;准入要求具体文件——目录不算物证": "声明的是目录;准入要求具体文件——目录不算物证", "多问我": "多问我", "完成度 ": "完成度 ", "完成度 —": "完成度 —", "审批记录": "审批记录", "工作区模板 · clear/skills": "工作区模板 · clear/skills", "已交付": "已交付", "已作废": "已作废", "已回灌": "已回灌", "已推翻": "已推翻", "已提出": "已提出", "已撤回": "已撤回", "已收尾 · 存档可看": "已收尾 · 存档可看", "已改版": "已改版", "已放弃": "已放弃", "已放弃探索:": "已放弃探索:", "已放弃的分叉": "已放弃的分叉", "已替代": "已替代", "已确认": "已确认", "已确认事实 · ": "已确认事实 · ", "已被下一版命题替代(版本留着,不参与当前推理)": "已被下一版命题替代(版本留着,不参与当前推理)", "已裁决": "已裁决", "已评估": "已评估", "已达成": "已达成", "已达门槛(": "已达门槛(", "已达门槛,已升格为事实": "已达门槛,已升格为事实", "已采纳": "已采纳", "待开计划": "待开计划", "待推进": "待推进", "待裁决": "待裁决", "我的 · ~/.dsh": "我的 · ~/.dsh", "打开 ": "打开 ", "打开「事实」那一格并展开这条命题": "打开「事实」那一格并展开这条命题", "打开世界树并选中产出这条事实的验证步": "打开世界树并选中产出这条事实的验证步", "打开世界树并选中产生这条证据的验证步": "打开世界树并选中产生这条证据的验证步", "打开失败:HTTP ": "打开失败:HTTP ", "打开计划文档(原生预览)": "打开计划文档(原生预览)", "技能 · 记忆": "技能 · 记忆", "探索中": "探索中", "推翻": "推翻", "推进中": "推进中", "提交中…": "提交中…", "提交失败:": "提交失败:", "支持": "支持", "支持到 ": "支持到 ", "收敛": "收敛", "收束:": "收束:", "收起": "收起", "收起详情": "收起详情", "放弃了这次探索": "放弃了这次探索", "放弃探索": "放弃探索", "放弃缘由(必填)": "Reason for abandoning (required)", "放弃这条分叉": "放弃这条分叉", "放弃这次探索(留档不删,ref 保留)": "放弃这次探索(留档不删,ref 保留)", "放行": "放行", "旁观写这条裁决的评估者子会话(论证过程)": "旁观写这条裁决的评估者子会话(论证过程)", "旁观评估者": "旁观评估者", "旁观这条世界线的评估者会话(只读)": "旁观这条世界线的评估者会话(只读)", "无法判定": "无法判定", "是目录(不算物证)": "是目录(不算物证)", "最后改动 ": "最后改动 ", "未分类": "未分类", "未声明": "未声明", "未收口(随步骤作废而终止)": "未收口(随步骤作废而终止)", "未知": "未知", "未走:": "未走:", "未采纳": "未采纳", "本会话 模型 ": "本会话 模型 ", "本项目 · .dsh / .agents": "本项目 · .dsh / .agents", "本项目写的 · clear/skills": "本项目写的 · clear/skills", "核心产物(": "核心产物(", "步 ": "步 ", "派出 ": "派出 ", "派生 · ": "派生 · ", "版本": "版本", "状态": "状态", "独立评估者": "独立评估者", "用原生预览打开章程(它每回合整份注入模型上下文)": "用原生预览打开章程(它每回合整份注入模型上下文)", "盘上已有(": "盘上已有(", "盘上没有": "盘上没有", "盘上没有这个文件": "盘上没有这个文件", "目录": "目录", "目录里已经没有(": "目录里已经没有(", "目标": "目标", "目标挂起": "目标挂起", "确认放弃": "确认放弃", "确认放弃(留档不删,ref 保留)": "确认放弃(留档不删,ref 保留)", "等独立裁决": "等独立裁决", "策略暂停": "策略暂停", "续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。": "续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。", "续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。": "续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。", "续跑停着:": "续跑停着:", "续跑已撤回": "续跑已撤回", "缘由必填": "缘由必填", "缺": "缺", "自判": "自判", "自定义": "自定义", "自己拿主意": "自己拿主意", "被 ": "被 ", "被下一版命题改写": "被下一版命题改写", "裁决": "裁决", "裁决:采纳 ": "裁决:采纳 ", "要你": "要你", "观测": "观测", "计划": "计划", "计划 ": "计划 ", "计划受阻,等人处置": "计划受阻,等人处置", "计划在建,**等你确认**": "计划在建,**等你确认**", "计划已交付 ": "计划已交付 ", "计划已收尾(": "计划已收尾(", "计划待确认": "计划待确认", "计划文档": "计划文档", "记忆(": "记忆(", "记忆索引": "记忆索引", "证据": "证据", "证据 ": "证据 ", "评 ": "评 ", "评估": "评估", "评估卡": "评估卡", "评估者": "评估者", "评估者 ": "评估者 ", "评估者会话 ": "评估者会话 ", "评估者在裁决": "评估者在裁决", "读不到交付物:": "读不到交付物:", "读取中…": "读取中…", "读数": "读数", "读数(尺子 ": "读数(尺子 ", "起过 ": "起过 ", "跑着": "跑着", "车道 · ": "车道 · ", "边界:": "边界:", "运行时注册": "运行时注册", "还有 ": "还有 ", "还没交付": "还没交付", "这一步已作废(缘由:": "这一步已作废(缘由:", "这一步没有声明产物。": "这一步没有声明产物。", "这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。": "这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。", "这个会话还没有 ClearAI 的状态。": "这个会话还没有 ClearAI 的状态。", "这个工作区盘上已经有 ": "这个工作区盘上已经有 ", "进度": "进度", "采纳": "采纳", "采纳 ": "采纳 ", "采纳:改写 frontmatter,模型从此加载得到它": "采纳:改写 frontmatter,模型从此加载得到它", "采纳了某条世界线": "采纳了某条世界线", "采纳此世界线": "采纳此世界线", "问题:": "问题:", "阶段": "阶段", "阶段 ": "阶段 ", "阶段交界": "阶段交界", "需要你 ": "需要你 ", "面板动作失败:": "面板动作失败:", "项目章程": "项目章程", "预设自带": "预设自带", "验证": "验证", "验证中": "验证中", "这次采纳没有合并:": "这次采纳没有合并:", "(决定已登记,产物由一次普通交付落位)": "(决定已登记,产物由一次普通交付落位)", "分支或工作副本已不在": "分支或工作副本已不在"}
+		const LOCALE_EN = {"个节点": " nodes", "条边": " edges", "适配": "Fit", "打开图谱工作区": "Open the graph workspace", "关闭工作区": "Close the workspace", "图组件不可用": "The graph component is unavailable", "点节点看知识详情": "Click a node to see what it means", "按此筛选": "Filter by this", "关闭": "Close", "正在取这条知识的读数…": "Fetching this entry’s readings…", "取不到读数": "Could not fetch the readings", "宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。": "The host has no readings for this object (it may have just been deprecated, or it is not in the current vocabulary).", "父概念": "Parent concept", "形态": "Value form", "取值": "Value", "引用": "Used by", "子概念": "Child concepts", "相关谓词": "Related predicates", "实例": "Instances", "关系边": "Relation edges", "主词": "Subjects", "相关事实": "Related facts", "(还有更多,未列出)": " (more not listed)", "历史": "History", "这条事实没有命题关联(旧账本):不拿文本相等去猜身份。": "This fact has no proposition link (old ledger); text equality is not used to guess identity.", "推翻条件": "Refutation condition", "支持到": "Supported to", "断言": "Assertion", "没有证据引用(旧事实或自判)。": "No evidence cites it (an old fact, or self-judged).", "出处": "Provenance", "产生步骤": "Producing step", "复核": "Review", "这条事实参与了一对冲突读数(只暴露,不裁决)": "This fact takes part in a conflict reading (surfaced, never adjudicated)", "滚轮缩放 · 拖动平移 · 拖节点挪位": "wheel to zoom · drag to pan · drag a node to move it", "类型": "Type", "还有 ": "and ", " 条未列出 · 用 / 触发菜单选": " more not listed · pick them from the / menu", "被推翻 · 待裁决": "refuted · awaiting decision", "等待输入": "awaiting input", "等待人工处理": "awaiting human action", "等待中": "waiting", "等待人工": "awaiting human", "异常终止": "terminated abnormally", "发送失败:": "send failed: ", "已获首条证据": "first evidence received", "按判据推荐": "recommended by criterion", "系统内部消息(非运行状态)": "system-internal message (not a run state)", "填写缘由后提交": "fill in the reason, then submit", "请填写缘由": "reason required", "点击在右栏预览": "click to preview in the right sidebar", "点击查看详情": "click for details", "查看步骤详情": "view step details", "查看词条": "view term", "放弃需填写缘由后提交": "fill in the reason before abandoning", "撤回需填写缘由后提交": "fill in the reason before retracting", "暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。": "No data yet. After your first message this shows established entries and propositions in verification.", "暂无数据。发送第一条消息后,此处显示技能目录与记忆。": "No data yet. After your first message this shows the skill catalogue and memory.", "暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。": "No propositions yet. Each needs a one-line claim and a refutation condition; verified ones are promoted to facts.", "暂无目标。目标携带验收判据;判据在结果出现之前登记。": "No goal yet. A goal carries its acceptance criterion; the criterion is registered before any result.", "暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。": "No goal yet. Verified propositions reaching the threshold without refutation are promoted at acceptance.", "暂无计划。建立计划后,已交付步骤按阶段列于此处。": "No plan yet. Delivered steps are listed here by stage once a plan exists.", "暂无计划。建立后此处显示计划拓扑:脊柱步、车道与收敛点。": "No plan yet. Once committed, this shows the plan topology: spine steps, lanes, and convergence.", "暂无记忆。": "No memory yet.", "暂无证据。先登记判据,后执行验证。": "No evidence yet. Register the criterion first, then verify.", "此层暂无节点。": "No nodes on this layer yet.", "暂无技能或记忆。使用 `SaveSkill` / `WriteMemory`,或将技能放入 `clear/skills/`。": "No skills or memory yet. Use `SaveSkill` / `WriteMemory`, or put a skill under `clear/skills/`.", "达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。": "Propositions reaching the threshold with no refutation are promoted to fact at goal acceptance (written under clear/knowledge/facts/).", "修改判据需重新建立世界线": "changing the criterion requires a new worldline", "计划的拓扑与闸门:脊柱步、车道、收敛点、人工决策点": "Plan topology and gates: spine steps, lanes, convergence, human decision points", "由内核执行 ConvergeFork 完成合并": "the kernel runs ConvergeFork to complete the merge", "通过提问卡做出裁决(含判据与各分支读数)": "decide via the question card (with the criterion and each branch's reading)", "通过提问卡决定": "decide via question card", "在世界树中查看此步骤": "see this step in Worldlines", "右栏预览": "preview in right sidebar", "查看此步骤的证据": "see the evidence for this step", "查看评估者": "view evaluator", "工作区现状(首轮对话后进入投影)": "workspace state (enters the projection after the first turn)", "本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。": "The ontology declaration has not reached the projection; a canonical-loop mirror is shown and will align at the next step.", "目录尚未到达(内核下一次 pre-step 下发)": "the catalogue has not arrived yet (the kernel sends it on the next pre-step)", "这些等级尚无证据:跳级不违规,但需说明原因": "no evidence at these levels: skipping is not a violation, but state why", "此谓词已不在词汇中(可能已废止);存量断言仍可读。": "this predicate is no longer in the vocabulary (possibly deprecated); existing assertions remain readable.", "策略暂停(原因未记录,已告警)": "paused by policy (reason not recorded; warned)", "未升格:断言仍在命题上": "not yet promoted: the assertion is still on a proposition", "放弃缘由(必填)": "Reason for abandoning (required)", "撤回缘由(必填)": "Reason for retracting (required)", "登记概念": "Register a concept", "登记谓词": "Register a predicate", "名称": "Label", "单位": "Unit", "提交": "Submit", "取消": "Cancel", "废止": "Deprecate", "为什么?": "Why?", "提交中…": "Submitting…", "点节点按概念过滤 · 滚轮缩放 · 拖拽平移": "Click a node to filter by concept · wheel to zoom · drag to pan", "复位": "Reset view", "全景": "Panorama", "还原": "Restore", "展开图带": "Show the graph band", "图里只画了前": "Showing the first", " 个节点;全景可看全部": " nodes; the panorama shows all", "一条边": "An edge", "词汇": "Vocabulary", "概念": "concepts", "谓词": "predicates", "已废止": "deprecated", "健康": "Health", "单值": "single-valued", "打开词汇货架(原生预览)": "Open the vocabulary shelf (native preview)", "冲突": "Conflict", " 对": " pair(s)", "只暴露,不裁决;撤回或维持由人决定": "surfaced, never adjudicated; retracting or keeping is a human decision", "按": "Filtered by", "过滤": "", "清除": "Clear", "按此谓词过滤": "Filter by this predicate", "在图里看": "See it in the graph", " · 未升格": " · not yet promoted", "释义": "Gloss", "主词域": "Subject domain", "值域": "Range", "本体": "Ontology", "本体货架 · ": "Ontology shelf · ", "这里会长出你的本体:已确立的条目与在验的命题。": "This is where your ontology grows: established entries and propositions still in verification.", "本体图": "Ontology graph", "实体图": "Entity graph", " · 交付 ": " · delivered ", " · 人 ": " · human ", " · 在工作区外,面板不读正文": " · outside the workspace; the panel will not read it", " · 尺子 ": " · metric ", " · 执行没跑成": " · execution did not complete", " · 支持到 ": " · supported to ", " · 最近 ": " · latest ", " · 证据 ": " · evidence ", " · 车道 ": " · lanes ", " · 随步骤作废而终止": " · ended when its step was voided", " 份)。": " files).", " 份产物,但没有任何计划声明过它们。点一条可以直接看(它们不计入交付)。": " artifacts on disk, but no plan declared them. Click one to open it (they do not count toward delivery).", " 份没列出来(这一栏只列最近改动的 ": " more not listed (this column lists only the ", " 发起": " started", " 处声明": " declared", " 字节": " bytes", " 字节 · ": " bytes · ", " 字节 · 未被任何计划声明": " bytes · declared by no plan", " 字节 · 资源 ": " bytes · resources ", " 推翻:": "refuted by:", " 旁观 ": " observe ", " 条": " entries", " 条)": " entries)", " 次侦察": " scouts", " 次评估者": " evaluators", " 步": " steps", " 步)": " steps)", " 等 ": " and ", " 评估卡": " evaluation card", " 轮": " rounds", " 里打开": "", "(假设达到这一级且无推翻才升格为事实)": " (a hypothesis is promoted to fact only at this level and with no refutation)", "(每次修订留痕,旧值不删)": " (every revision is kept; old values are not deleted)", "(点一下开右栏「世界树」)": " (click to open Worldlines)", "(点一下开右栏「世界树」看拓扑)": " (click to see the topology in Worldlines)", "(留档不删)": " (kept on record, not deleted)", "(缺)": " (missing)", "(要独立评估)才达门槛": " (independent evaluation required) to reach the threshold", "),所以这个分叉没有归宿了:**随步骤作废而终止**——它既不是被人裁掉(没人做过这个决定),也不是被算术排掉(没有尺子排过它)。要收掉工作副本(保留 ref),对它调 AbandonFork(会弹人工确认)。": "), so this fork has no destination left: **it ended when its step was voided** — it was neither decided by a person (nobody made that call) nor ranked out by arithmetic (no metric ever ranked it). To drop the working copy (keeping the ref), call AbandonFork on it (it asks for human confirmation).", "),等目标验收时升格为事实": "), and is promoted to fact when the goal is accepted", ")——它不是落选:落选意味着它跑完了、被尺子排到了后面;这一条是没跑成,所以也没有读数可以参与算术。": ") — this is not a loss: losing means it ran and was ranked behind; this one did not run, so it has no reading to enter into the arithmetic.", "**执行没跑成**(": "**Execution did not complete** (", "**执行者未归**:这条世界线的执行者派出去之后没有回灌,而分叉已经收口——它再回来也没有归宿了,所以这里既不判它跑成也没跑成,也不再等它。它的产物(如果写过)还在它自己的工作副本里;要判断那条线到底做出了什么,直接看工作副本比看这条状态可靠。": "**Executor never returned**: this worldline's executor was dispatched but never reported back, and the fork has already converged — if it returned now there would be nowhere to land, so it is neither judged done nor judged failed, and it is no longer awaited. Whatever it wrote still sits in its own working copy; to judge what that line actually produced, read the working copy rather than this status.", ":还差 ": ": short by ", ";放弃缘由:": "; reason for abandoning: ", "clearai 面板:右栏页签类型注册失败 ": "clearai panel: failed to register the right-sidebar tab type ", "clearai-loop: 席位跟着会话预设进出": "clearai-loop: seats come and go with the session's preset", "世界树": "Worldlines", "世界线:": "Worldline: ", "事实": "Facts", "产物": "Deliverables", "人审查后决定撤回": "withdrawn after human review", "人已撤回(记录保留)": "withdrawn by a person (record kept)", "撤回事实": "Retract the fact", "维持原事实": "Keep the fact", "未走过 ": "untouched: ", "认可,继续": "Approve, continue", "确认撤回": "Confirm retraction", "确认撤回(记录保留,不再作为「已知」引用)": "Confirm retraction (the record is kept; it can no longer be cited as known)", "人的裁决:": "Human decision: ", "仅人可引用": "user-invocable only", "会话日志里的原生审批对(不可伪造)": "the native approval pair in the session log (cannot be forged)", "依据": "Basis", "侦 ": "S", "侦察 · ": "Scout · ", "候选": "candidate", "做什么": "What it does", "做法": "Approach", "其他(": "Other (", "出现推翻证据": "refuting evidence appeared", "出现推翻证据(终态,记录保留)": "refuting evidence appeared (terminal; record kept)", "分支": "Branch", "切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)": "Switch back to an earlier worldline set (the plans are all still here, and their documents are archived under clear/goals/plans/)", "判据": "Criterion", "判据:": "Criterion: ", "判据待写": "criterion not written", "升格门槛": "Promotion threshold", "原生预览打不开这条路(它在工作区外?)": "The native preview cannot open this path (is it outside the workspace?)", "原生预览打开它": "Open it in the native preview", "原生预览打开它(计划声明的产物)": "Open it in the native preview (an artifact declared by the plan)", "合并目录、本会话用法、可引用可采纳": "Merged catalogue, usage in this session, invocable and adoptable", "命题": "Propositions", "命题 · ": "Propositions · ", "在": "in", "在 ": "in ", "声明的是目录;准入要求具体文件——目录不算物证": "This declares a directory; admission requires a concrete file — a directory is not physical evidence", "多问我": "Ask me more", "完成度 ": "Progress ", "完成度 —": "Progress —", "审批记录": "approval record", "工作区模板 · clear/skills": "Workspace template · clear/skills", "已交付": "delivered", "已作废": "voided", "已回灌": "reported back", "已推翻": "refuted", "已提出": "proposed", "已撤回": "withdrawn", "已收尾 · 存档可看": "closed · archived and readable", "已改版": "superseded", "已放弃": "abandoned", "已放弃探索:": "Exploration abandoned: ", "已放弃的分叉": "abandoned fork", "已替代": "superseded", "已确认": "confirmed", "已确认事实 · ": "Confirmed facts · ", "已被下一版命题替代(版本留着,不参与当前推理)": "superseded by a later version of the proposition (the version is kept but takes no part in current reasoning)", "已裁决": "decided", "已评估": "evaluated", "已达成": "achieved", "已达门槛(": "threshold reached (", "已达门槛,已升格为事实": "threshold reached; promoted to fact", "已采纳": "adopted", "待开计划": "no plan yet", "待推进": "to advance", "待裁决": "awaiting decision", "我的 · ~/.dsh": "Mine · ~/.dsh", "打开 ": "Open ", "打开「事实」那一格并展开这条命题": "Open the Facts pane and expand this proposition", "打开世界树并选中产出这条事实的验证步": "Open Worldlines and select the verification step that produced this fact", "打开世界树并选中产生这条证据的验证步": "Open Worldlines and select the verification step that produced this evidence", "打开失败:HTTP ": "Open failed: HTTP ", "打开计划文档(原生预览)": "Open the plan document (native preview)", "技能 · 记忆": "Skills · Memory", "探索中": "exploring", "推翻": "refute", "推进中": "in progress", "提交中…": "Submitting…", "提交失败:": "Submit failed: ", "支持": "support", "支持到 ": "supported to ", "收敛": "converge", "收束:": "Closed with: ", "收起": "Collapse", "收起详情": "Collapse details", "放弃了这次探索": "abandoned this exploration", "放弃探索": "Abandon exploration", "放弃缘由(必填)": "Reason for abandoning (required)", "放弃这条分叉": "Abandon this fork", "放弃这次探索(留档不删,ref 保留)": "Abandon this exploration (kept on record, ref preserved)", "放行": "release", "旁观写这条裁决的评估者子会话(论证过程)": "Observe the evaluator sub-session that wrote this verdict (the reasoning process)", "旁观评估者": "Observe evaluator", "旁观这条世界线的评估者会话(只读)": "Observe this worldline's evaluator session (read-only)", "无法判定": "inconclusive", "是目录(不算物证)": "is a directory (not physical evidence)", "最后改动 ": "Last changed ", "未分类": "Uncategorised", "未声明": "not declared", "未收口(随步骤作废而终止)": "not closed (ended when its step was voided)", "未知": "unknown", "未走:": "Not taken: ", "未采纳": "not adopted", "本会话 模型 ": "This session — model ", "本项目 · .dsh / .agents": "This project · .dsh / .agents", "本项目写的 · clear/skills": "Written by this project · clear/skills", "核心产物(": "Core deliverables (", "步 ": "step ", "派出 ": "dispatched ", "派生 · ": "derived · ", "版本": "Version", "状态": "Status", "独立评估者": "independent evaluator", "用原生预览打开章程(它每回合整份注入模型上下文)": "Open the charter in the native preview (it is injected whole into the model's context every turn)", "盘上已有(": "Already on disk (", "盘上没有": "not on disk", "盘上没有这个文件": "this file is not on disk", "目录": "directory", "目录里已经没有(": "no longer in the catalogue (", "目标": "Goal", "目标挂起": "goal suspended", "确认放弃": "Confirm abandon", "确认放弃(留档不删,ref 保留)": "Confirm abandon (kept on record, ref preserved)", "等独立裁决": "waiting for an independent verdict", "策略暂停": "paused by policy", "续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。": "Continuation: ask me more — it stops at the end of each stage and waits for you to give the next one (called \"attended\" in the docs). Click to switch to \"decide for yourself\".", "续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。": "Continuation: decide for yourself — committing a plan is the authorisation, and it keeps going for a set number of rounds, opening a gate only for decisions it cannot reduce (called \"unattended\" in the docs). Click to switch to \"ask me more\".", "续跑停着:": "Continuation is stopped: ", "续跑已撤回": "Continuation was withdrawn", "缘由必填": "A reason is required", "缺": "missing", "自判": "self-judged", "自定义": "custom", "自己拿主意": "Decide for yourself", "被 ": "by ", "被下一版命题改写": "rewritten by a later version of the proposition", "裁决": "Verdict", "裁决:采纳 ": "Verdict: adopt ", "要你": "needs you", "观测": "Observation", "计划": "Plan", "计划 ": "Plan ", "计划受阻,等人处置": "plan blocked, waiting for a person", "计划在建,**等你确认**": "plan is being built, **waiting for your confirmation**", "计划已交付 ": "Plan delivered ", "计划已收尾(": "Plan closed (", "计划待确认": "plan awaiting confirmation", "计划文档": "Plan document", "记忆(": "Memory (", "记忆索引": "Memory index", "证据": "Evidence", "证据 ": "Evidence ", "评 ": "E", "评估": "Evaluation", "评估卡": "evaluation card", "评估者": "Evaluator", "评估者 ": "Evaluator ", "评估者会话 ": "Evaluator session ", "评估者在裁决": "an evaluator is deciding", "读不到交付物:": "Cannot read deliverables: ", "读取中…": "Reading…", "读数": "Reading", "读数(尺子 ": "Reading (metric ", "起过 ": "ran ", "跑着": "running", "车道 · ": "Lane · ", "边界:": "Scope: ", "运行时注册": "registered at runtime", "还有 ": "and ", "还没交付": "not delivered yet", "这一步已作废(缘由:": "This step was voided (reason: ", "这一步没有声明产物。": "This step declares no artifacts.", "这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。": "This session has not started: the panels read the session log, so after your first message this will show confirmed facts and the propositions in flight.", "这个会话还没有 ClearAI 的状态。": "This session has no ClearAI state yet.", "这个工作区盘上已经有 ": "This workspace already has ", "进度": "Progress", "采纳": "Adopt", "采纳 ": "Adopt ", "采纳:改写 frontmatter,模型从此加载得到它": "Adopt: rewrites the frontmatter so the model can load it from then on", "采纳了某条世界线": "adopted one worldline", "采纳此世界线": "Adopt this worldline", "问题:": "Question: ", "阶段": "Stage", "阶段 ": "Stage ", "阶段交界": "at a stage boundary", "需要你 ": "needs you ", "面板动作失败:": "Panel action failed: ", "项目章程": "Project charter", "预设自带": "shipped with the preset", "验证": "Verification", "验证中": "verifying", "这次采纳没有合并:": "This adoption was not merged: ", "(决定已登记,产物由一次普通交付落位)": " (the decision is on record; a normal delivery places the artifacts)", "分支或工作副本已不在": "its branch or working copy is gone"}
 
 		/**
 		 * 翻译函数:**由原生 locale 座位绑定**(`ctx.locale.bind`),不是我们自建的一套 i18n。
@@ -3117,359 +3132,154 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * **图带**:本体格的门面。本体图(语言长什么样)与实体图(已验证出什么)一键切换。
+		 * **图带 / 图谱工作区(React Flow)**。
 		 *
-		 * **点击语义**:点节点 / 边 = 打开 Inspector(这是什么 / 凭什么信 / 谁改过它);
-		 * 过滤是 Inspector 里**显式**的一个动作,不再由点击直接触发——从前点一下就把货架过滤掉,
-		 * 读的人却还不知道那个词是什么意思。
+		 * 渲染交给 @xyflow/react——拖节点、拖画布、滚轮缩放、框选、MiniMap 都是库的事,
+		 * 我们不再手写 SVG 交互。这一层只做三件 ClearAI 自己的事:
+		 *   · **适配投影**:graphProjection() 的节点 / 边 → React Flow 的 nodes / edges,
+		 *     类型 / 冲突 / 状态的视觉编码在这里(不在投影里,投影是语义不是样式);
+		 *   · **点击语义**:点节点 / 边 = 打开 Inspector;过滤是 Inspector 里的显式动作;
+		 *   · **全屏工作区**:position: fixed 的真 overlay,打开时自动 fit。
 		 *
-		 * 只读契约不变:缩放、平移、拖动节点、选中都是**界面状态**,一个字节都不进账本。
-		 * 拖动一个节点只改这一份本地坐标(换层、刷新、重放都回到投影给的确定性布局)。
-		 *
-		 * 三条与「图看不清」直接对应的设计:
-		 *   · **先画谁**由投影给出的 `degree`(连接度)决定,**不按数组截断**。旧写法切前 40 个,
-		 *     被切掉的节点仍连着边 ⇒ 图上出现没有端点的边——**断边不是信息,是噪声**。
-		 *     这里的次序是投影算好的,同一份账本永远同一张图。
-		 *   · **交互走 Pointer Events + pointer capture**:鼠标、触摸、笔是同一条路;
-		 *     按下到抬起之间**位移超过阈值才算拖动**,否则算点击——不然「想点节点」会变成「拖歪了」。
-		 *   · **缩放以光标为中心**:只改 zoom 会让人觉得图在躲。
+		 * 数据不在这里拼:Inspector 的证据链住在宿主半(inspectGraphSelection),
+		 * 这一层只拿投影与路由的结果。所有交互状态(viewport / 选中 / 拖动)是界面状态,
+		 * 一个字节都不进账本。
 		 */
-		const GraphBand = ({ lexicon, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, onOpenFact }) => {
-			const [view, setView] = React.useState({ zoom: 1, pan: { x: 0, y: 0 } })
+		const GraphBand = ({ lexicon, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId }) => {
 			const [picked, setPicked] = React.useState(null)
-			const [selected, setSelected] = React.useState(null)
-			const [hovered, setHovered] = React.useState(null)
-			/** 本地拖动偏移:`{ [nodeId]: {dx, dy} }`。它刻意**不进投影**——布局不是知识。 */
-			const [moved, setMoved] = React.useState({})
-			/**
-			 * **画布尺寸**由容器量出来(`ResizeObserver`),不靠推算。
-			 * 「适配」必须知道真实可视区有多大——不知道就只能猜,而猜出来的 fit 会偏。
-			 */
-			const [box, setBox] = React.useState({ width: 0, height: 0 })
-			const boxRef = React.useRef(null)
-			React.useEffect(() => {
-				const element = boxRef.current
-				if (element === null || element === undefined) return undefined
-				const measure = () => setBox({ width: element.clientWidth ?? 0, height: element.clientHeight ?? 0 })
-				measure()
-				const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
-				observer?.observe?.(element)
-				return () => observer?.disconnect?.()
-			}, [fullscreen])
 			const graph = lexicon?.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
 			const conflicts = Array.isArray(lexicon?.conflicts) ? lexicon.conflicts : []
 			const conflicted = new Set(conflicts.flatMap((item) => item.sides.map((side) => side.fact)).filter((id) => typeof id === 'string'))
-			/** 层次由**投影**说(`node.layer` / `edge.layer`),客户端不再自己按 kind 猜一遍。 */
 			const allNodes = graph.nodes.filter((node) => node.layer === layer)
 			const allEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
-			/** 截断是**界面决定**,不进投影;被截掉多少如实写出来,不假装这就是全部。 */
-			const MAX_NODES = fullscreen === true ? 100000 : 40
-			/**
-			 * 排序键:**连接度降序 → 引用数降序 → id 升序**。第三条保证确定性
-			 * (前两条并列时不能靠数组顺序,那会随 fold 的遍历顺序漂)。
-			 */
-			const ranked = [...allNodes].sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0) || (b.uses ?? 0) - (a.uses ?? 0) || (a.id < b.id ? -1 : 1))
-			/**
-			 * **选中 / 悬停的邻域必须整个在场**:否则你点了 A,与 A 有关的那条边却不画——
-			 * 那正是「点了没反应」的来源。
-			 */
-			const anchor = selected ?? hovered
-			const neighborhood = new Set()
-			if (anchor !== null) {
-				neighborhood.add(anchor)
-				for (const edge of allEdges) {
-					if (edge.from === anchor) neighborhood.add(edge.to)
-					if (edge.to === anchor) neighborhood.add(edge.from)
-				}
+			const nodeById = new Map(allNodes.map((node) => [node.id, node]))
+
+			/** 视觉编码:类型 → 颜色(概念蓝 / 值形态橙 / 实例绿 / 字面值紫)。 */
+			const nodeStyle = (node) => ({
+				background: node.kind === 'concept' ? 'rgba(74,163,255,0.16)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.16)' : node.kind === 'instance' ? 'rgba(22,163,74,0.16)' : 'rgba(147,51,234,0.16)',
+				border: node.status === 'deprecated' ? '1px dashed rgba(127,127,127,0.4)' : `1px solid ${node.kind === 'concept' ? 'rgba(74,163,255,0.4)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.4)' : node.kind === 'instance' ? 'rgba(22,163,74,0.4)' : 'rgba(147,51,234,0.4)'}`,
+				borderRadius: 6,
+				padding: '4px 10px',
+				fontSize: 11,
+				width: 148,
+			})
+
+			/** 投影节点 → React Flow 节点(带确定性初始坐标,来自投影布局)。 */
+			const rfNodes = allNodes.map((node) => ({
+				id: node.id,
+				type: 'default',
+				position: { x: node.x ?? 0, y: node.y ?? 0 },
+				data: { label: `${node.label ?? node.ref ?? node.id}${node.uses > 0 ? ` (${node.uses})` : ''}` },
+				style: nodeStyle(node),
+				/** 冲突节点标红。 */
+				...(Array.isArray(node.facts) && node.facts.some((id) => conflicted.has(id)) ? { className: 'clearai-node-conflict' } : {}),
+			}))
+
+			/** 投影边 → React Flow 边(类型 / 冲突的视觉编码)。 */
+			const rfEdges = allEdges.map((edge) => ({
+				id: edge.id,
+				source: edge.from,
+				target: edge.to,
+				label: edge.label ?? '',
+				labelStyle: { fontSize: 9 },
+				labelBgStyle: { fill: 'var(--dsw-alias-bg-layer-1)', fillOpacity: 0.85 },
+				animated: edge.kind === 'assertion' && edge.status === 'live',
+				style: {
+					stroke: edge.kind === 'assertion' && conflicted.has(edge.fact) ? '#dc2626' : edge.kind === 'is_a' ? 'rgba(127,127,127,0.4)' : 'rgba(74,163,255,0.5)',
+					strokeWidth: edge.kind === 'assertion' ? 1.5 : 1,
+					...(edge.kind === 'is_a' ? { strokeDasharray: '4 3' } : {}),
+				},
+			}))
+
+			/** 点击语义:点节点 / 边 = 打开 Inspector。 */
+			const onNodeClick = (_event, node) => {
+				const original = nodeById.get(node.id)
+				if (original === undefined) return
+				setPicked({ kind: 'node', node: original })
 			}
-			const shownNodes = [...ranked.filter((node) => neighborhood.has(node.id)), ...ranked.filter((node) => !neighborhood.has(node.id))].slice(0, MAX_NODES)
-			const shownIds = new Set(shownNodes.map((node) => node.id))
-			const nodeById = new Map(shownNodes.map((node) => [node.id, node]))
-			/** **只画两端都在场上的边**:没有端点的边不是信息,是噪声。 */
-			const shownEdges = allEdges.filter((edge) => shownIds.has(edge.from) && shownIds.has(edge.to))
-			const NODE_W = 148
-			const NODE_H = 36
-			const at = (node) => {
-				const offset = moved[node.id] ?? null
-				return { x: node.x + (offset?.dx ?? 0), y: node.y + (offset?.dy ?? 0) }
+			const onEdgeClick = (_event, edge) => {
+				const original = allEdges.find((item) => item.id === edge.id)
+				if (original === undefined) return
+				setPicked({ kind: 'edge', edge: original })
 			}
-			const centerOf = (id) => {
-				const node = nodeById.get(id)
-				if (node === undefined) return null
-				const point = at(node)
-				return { x: point.x + NODE_W / 2, y: point.y + NODE_H / 2 }
-			}
-			const graphW = Math.max(graph.bounds?.width ?? 0, 240)
-			const graphH = Math.max(graph.bounds?.height ?? 0, 100)
-			/**
-			 * **画布尺寸与 viewBox 必须同一套数**:viewBox 说的是「这块画布显示图上的哪一块」,
-			 * 所以它的宽高得是**画布像素 ÷ 缩放**,不能再用图坐标的包围盒——
-			 * 两边一旦不同源,全屏里光标定位与适配会一起偏。
-			 */
-			const canvasW = fullscreen === true ? Math.max(box.width, 320) : graphW
-			const canvasH = fullscreen === true ? Math.max(box.height, 240) : graphH
-			const svgHeight = fullscreen === true ? canvasH : 208
-			const width = graphW
-			const height = graphH
-			/** 拖动状态放在 ref 里:它逐帧变,进 state 会让每次移动都重排整棵子树。 */
-			const dragRef = React.useRef(null)
-			const [dragging, setDragging] = React.useState(false)
-			const beginDrag = (event, mode, node) => {
-				if (event?.button !== undefined && event.button !== 0) return
-				const point = { x: Number(event?.clientX ?? 0), y: Number(event?.clientY ?? 0) }
-				/**
-				 * 键必须是 **node.id**。存 node 对象再拿它当计算键,对象会被字符串化成
-				 * `[object Object]`——于是 `moved[node.id]` 永远查不到,节点根本不动
-				 * (结构测试只渲染字符串,抓不到这种错;所以下面配了一条真的驱动指针事件的用例)。
-				 */
-				dragRef.current = { mode, nodeId: node === null ? null : node.id, origin: point, base: view, offset: node === null ? null : { ...(moved[node.id] ?? { dx: 0, dy: 0 }) }, moved: false }
-				try {
-					event?.currentTarget?.setPointerCapture?.(event.pointerId)
-				} catch {
-					// 拿不到指针捕获不影响主路径:下面的 move/up 仍然在 svg 上收得到。
-				}
-				setDragging(true)
-			}
-			const onMove = (event) => {
-				const drag = dragRef.current
-				if (drag === null) return
-				const point = { x: Number(event?.clientX ?? 0), y: Number(event?.clientY ?? 0) }
-				const dx = point.x - drag.origin.x
-				const dy = point.y - drag.origin.y
-				/** 位移阈值:小于它算点击,否则「想点一下」会变成「拖歪了」。 */
-				if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 4) return
-				drag.moved = true
-				if (drag.mode === 'pan') {
-					setView({ ...drag.base, pan: { x: drag.base.pan.x - dx / drag.base.zoom, y: drag.base.pan.y - dy / drag.base.zoom } })
-					return
-				}
-				setMoved((current) => ({ ...current, [drag.nodeId]: { dx: drag.offset.dx + dx / drag.base.zoom, dy: drag.offset.dy + dy / drag.base.zoom } }))
-			}
-			const endDrag = (event) => {
-				const drag = dragRef.current
-				dragRef.current = null
-				setDragging(false)
-				if (drag === null) return
-				try {
-					event?.currentTarget?.releasePointerCapture?.(event.pointerId)
-				} catch {
-					// 没捕获过就没什么可释放的。
-				}
-				/** 没位移 ⇒ 这是一次点击。pan 落在空白处 = 清空选中;节点按下则由节点自己处理。 */
-				if (drag.moved) return
-				if (drag.mode === 'pan') {
-					setSelected(null)
-					setPicked(null)
-				}
-			}
-			/** 以光标为中心缩放:把光标下的那个点钉在原地。 */
-			const zoomAt = (event, factor) => {
-				const box = event?.currentTarget?.getBoundingClientRect?.()
-				const nextZoom = Math.min(3, Math.max(0.3, view.zoom * factor))
-				if (box === undefined || box === null || nextZoom === view.zoom) {
-					setView({ ...view, zoom: nextZoom })
-					return
-				}
-				const localX = view.pan.x + (Number(event.clientX) - box.left) / view.zoom
-				const localY = view.pan.y + (Number(event.clientY) - box.top) / view.zoom
-				setView({ zoom: nextZoom, pan: { x: localX - (Number(event.clientX) - box.left) / nextZoom, y: localY - (Number(event.clientY) - box.top) / nextZoom } })
-			}
-			const HOT = (id) => hovered === id || selected === id
-			const onKeyDown = (event) => {
-				const key = String(event?.key ?? '')
-				const step = 40 / view.zoom
-				if (key === 'Escape') {
-					setSelected(null)
-					setPicked(null)
-					return
-				}
-				if (key === '+' || key === '=') {
-					zoomAt({ currentTarget: event.currentTarget, clientX: 0, clientY: 0 }, 1.2)
-					return
-				}
-				if (key === '-') {
-					zoomAt({ currentTarget: event.currentTarget, clientX: 0, clientY: 0 }, 1 / 1.2)
-					return
-				}
-				const moves = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }
-				const delta = moves[key]
-				if (delta === undefined) return
-				event?.preventDefault?.()
-				setView({ ...view, pan: { x: view.pan.x + delta[0], y: view.pan.y + delta[1] } })
-			}
-			/**
-			 * **适配**:把当前画出来的这批节点装进可视区。
-			 *
-			 * 这是「全景」真正的意思——不是把画布拉高、让内容散在更大的空白里,
-			 * 而是**让内容填满你看到的这一块**。没有它,超宽的图层永远要横向滚。
-			 */
-			const fit = (targetNodes = shownNodes, targetBox = box) => {
-				if (targetNodes.length === 0) return
-				const viewportW = targetBox.width > 0 ? targetBox.width : canvasW
-				const viewportH = targetBox.height > 0 ? targetBox.height : canvasH
-				const xs = targetNodes.map((node) => at(node).x)
-				const ys = targetNodes.map((node) => at(node).y)
-				const minX = Math.min(...xs)
-				const minY = Math.min(...ys)
-				const maxX = Math.max(...xs) + NODE_W
-				const maxY = Math.max(...ys) + NODE_H
-				const padding = 24
-				const zoom = Math.min(3, Math.max(0.3, Math.min((viewportW - padding * 2) / Math.max(1, maxX - minX), (viewportH - padding * 2) / Math.max(1, maxY - minY))))
-				setView({ zoom, pan: { x: minX - padding / zoom, y: minY - padding / zoom } })
-			}
-			/**
-			 * 打开工作区时**自动适配一次**:否则一进来还是那条超宽坐标,「全屏」等于白开。
-			 * 依赖只有 `fullscreen`——之后人怎么拖、怎么缩都不再被重算覆盖(那是他的视角)。
-			 */
+
+			/** Inspector 要看的对象。 */
+			const inspection =
+				picked === null
+					? null
+					: picked.kind === 'edge'
+						? { kind: 'edge', id: picked.edge.id, label: picked.edge.label }
+						: { kind: picked.node.kind, id: picked.node.kind === 'concept' ? String(picked.node.ref ?? '') : picked.node.id, label: picked.node.label ?? picked.node.ref ?? picked.node.id }
+			/** 「按此筛选」:概念筛概念、实例筛实体、断言边筛谓词。 */
+			const filterTarget = picked === null ? null : picked.kind === 'edge' ? picked.edge.predicate ?? null : String(picked.node.ref ?? '')
+
+			/** React Flow 的 ref:打开工作区时自动 fit。 */
+			const rfRef = React.useRef(null)
 			React.useEffect(() => {
-				if (fullscreen === true) fit()
+				if (fullscreen === true && rfRef.current?.fitView) {
+					/** 等一拍让 React Flow 完成挂载再 fit,否则量到的是空容器。 */
+					const timer = setTimeout(() => rfRef.current?.fitView({ padding: 0.15, duration: 200 }), 50)
+					return () => clearTimeout(timer)
+				}
+				return undefined
 			}, [fullscreen])
 
-			const pickNode = (node) => {
-				setSelected(node.id)
-				/** **点击 = 打开 Inspector**,不是直接过滤:过滤是 Inspector 里的一个显式动作。 */
-				setPicked({ kind: 'node', node })
-			}
-			/** 当前 Inspector 要看的对象:`{ kind, id, label }`;`null` = 没选。 */
-			const nodeSelection = (node) => ({ kind: node.kind, id: node.kind === 'concept' ? String(node.ref ?? '') : node.id, label: node.label ?? node.ref ?? node.id })
-			const inspection =
-				picked === null ? null : picked.kind === 'edge' ? { kind: 'edge', id: picked.edge.id, label: picked.edge.label } : nodeSelection(picked.node)
-			/** 「按此筛选」筛的**是什么**:概念筛概念、实例筛实例、断言边筛它的谓词。 */
-			const filterTarget = picked === null ? null : picked.kind === 'edge' ? picked.edge.predicate ?? null : picked.node.kind === 'concept' ? String(picked.node.ref ?? '') : String(picked.node.ref ?? '')
-			const layerHint = t('点节点看知识详情')
-			/**
-			 * **全屏是真正的工作区**:`position: fixed; inset: 0` 盖住整个窗口,
-			 * 而不是把事实格里的 SVG 拉高一点——后者只会在窄栏里多出一条横向滚动条,
-			 * 那不是「全景」。容器上挂 `boxRef` 量出可视区,「适配」据此装内容。
-			 */
 			const shell = fullscreen === true ? { position: 'fixed', inset: 0, zIndex: 40, background: 'var(--dsw-alias-bg-layer-1)', padding: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : { ...S.section, padding: 6 }
-			const canvasBox = fullscreen === true ? { flex: '1 1 auto', overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6, background: 'var(--dsw-alias-bg-layer-2)' } : { overflow: 'auto', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6, maxHeight: svgHeight + 8 }
+			const canvasBox = fullscreen === true ? { flex: '1 1 auto', minHeight: 240, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 } : { height: 208, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 }
+
 			return h(
 				'div',
 				{ style: shell },
 				h(
 					'div',
 					{ style: S.inline },
-					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'ontology' ? 1 : 0.5 }, onClick: () => onLayer('ontology') }, t('本体图')),
-					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'entity' ? 1 : 0.5 }, onClick: () => onLayer('entity') }, t('实体图')),
-					h('span', { style: { ...S.faint, flex: '1 1 auto' } }, `${layerHint} · ${t('滚轮缩放 · 拖动平移 · 拖节点挪位')}`),
-					h('span', { style: S.chipAction, onClick: () => { setView({ zoom: 1, pan: { x: 0, y: 0 } }); setMoved({}); setSelected(null) } }, t('复位')),
-					h('span', { style: S.chipAction, onClick: () => fit() }, t('适配')),
+					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'ontology' ? 1 : 0.5 }, onClick: () => { setPicked(null); onLayer('ontology') } }, t('本体图')),
+					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'entity' ? 1 : 0.5 }, onClick: () => { setPicked(null); onLayer('entity') } }, t('实体图')),
+					h('span', { style: { ...S.faint, flex: '1 1 auto' } }, t('点节点看知识详情')),
+					h('span', { style: S.chipAction, onClick: () => rfRef.current?.fitView({ padding: 0.15, duration: 200 }) }, t('适配')),
 					h('span', { style: S.chipAction, onClick: onToggleFullscreen }, fullscreen === true ? t('关闭工作区') : t('打开图谱工作区')),
 				),
-				shownNodes.length === 0
+				XYFlow === null || typeof XYFlow.ReactFlow !== 'function'
+					? h('div', { style: S.faint }, t('图组件不可用(React Flow 那一行没装上):投影还在,事实与命题照常可读。'))
+					: allNodes.length === 0
 					? h('div', { style: S.faint }, t('此层暂无节点。'))
 					: h(
 							'div',
-							{ ref: boxRef, style: canvasBox },
-							h(
-								'svg',
-								{
-									width: canvasW,
-									height: canvasH,
-									viewBox: `${view.pan.x} ${view.pan.y} ${canvasW / view.zoom} ${canvasH / view.zoom}`,
-									tabIndex: 0,
-									role: 'img',
-									'aria-label': layer === 'ontology' ? t('本体图') : t('实体图'),
-									style: { display: 'block', cursor: dragging ? 'grabbing' : 'grab', outline: 'none', touchAction: 'none' },
-									onWheel: (event) => {
-										const delta = typeof event?.deltaY === 'number' ? event.deltaY : 0
-										zoomAt(event, Math.min(3, Math.max(0.3, view.zoom * (1 - delta * 0.001))) / view.zoom)
-									},
-									onPointerDown: (event) => beginDrag(event, 'pan', null),
-									onPointerMove: onMove,
-									onPointerUp: endDrag,
-									onPointerCancel: endDrag,
-									onKeyDown,
-								},
-								h('defs', null, h('marker', { id: 'clearai-onto-arrow', markerWidth: 8, markerHeight: 8, refX: 7, refY: 3, orient: 'auto' }, h('path', { d: 'M0,0 L7,3 L0,6 z', fill: 'currentColor' }))),
-								...shownEdges.map((edge) => {
-									const from = centerOf(edge.from)
-									const to = centerOf(edge.to)
-									if (from === null || to === null) return null
-									const hot = edge.kind === 'assertion' && conflicted.has(edge.fact)
-									/** 边标签只在**够近或有人问**时画:常驻标签是这张图最吵的东西。 */
-									const loud = view.zoom >= 1.6 || HOT(edge.from) || HOT(edge.to) || picked?.edge?.id === edge.id
-									return h(
-										'g',
-										{ key: `e-${edge.id}`, style: { cursor: 'pointer' }, onClick: () => setPicked({ kind: 'edge', edge }) },
-										h('line', {
-											x1: from.x + NODE_W / 2 - 8,
-											y1: from.y,
-											x2: to.x - NODE_W / 2 + 8,
-											y2: to.y,
-											stroke: hot ? '#dc2626' : HOT(edge.from) || HOT(edge.to) ? 'rgba(74,163,255,0.95)' : 'rgba(127,127,127,0.55)',
-											strokeWidth: hot || HOT(edge.from) || HOT(edge.to) ? 2 : 1,
-											strokeDasharray: edge.kind === 'is_a' ? '4 3' : undefined,
-											markerEnd: 'url(#clearai-onto-arrow)',
-										}),
-										loud ? h('text', { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - 4, fontSize: 10, textAnchor: 'middle', opacity: 0.85, fill: hot ? '#dc2626' : 'currentColor' }, String(edge.label ?? '')) : null,
-									)
-								}),
-								...shownNodes.map((node) => {
-									const point = at(node)
-									const active = HOT(node.id)
-									const conflictedNode = layer === 'entity' && Array.isArray(node.facts) && node.facts.some((id) => conflicted.has(id))
-									return h(
-										'g',
-										{
-											key: `n-${node.id}`,
-											style: { cursor: 'pointer' },
-											onPointerDown: (event) => {
-												event?.stopPropagation?.()
-												beginDrag(event, 'node', node)
-											},
-											onPointerUp: (event) => {
-												event?.stopPropagation?.()
-												const drag = dragRef.current
-												const wasMoved = drag?.moved === true
-												endDrag(event)
-												/** 只有「没有位移」才算点击,拖完不该顺带把货架过滤掉。 */
-												if (!wasMoved) pickNode(node)
-											},
-											onMouseEnter: () => setHovered(node.id),
-											onMouseLeave: () => setHovered(null),
-										},
-										h('rect', {
-											x: point.x,
-											y: point.y,
-											width: NODE_W,
-											height: NODE_H,
-											rx: 7,
-											fill: node.kind === 'concept' ? 'rgba(74,163,255,0.16)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.16)' : node.kind === 'instance' ? 'rgba(22,163,74,0.16)' : 'rgba(147,51,234,0.16)',
-											stroke: conflictedNode ? '#dc2626' : active ? 'rgba(74,163,255,0.95)' : 'rgba(127,127,127,0.35)',
-											strokeWidth: active || conflictedNode ? 2 : 1,
-											strokeDasharray: node.status === 'deprecated' ? '4 3' : undefined,
-										}),
-										h('text', { x: point.x + NODE_W / 2, y: point.y + 16, fontSize: 11, textAnchor: 'middle' }, String(node.label ?? '').slice(0, 16)),
-										h(
-											'text',
-											{ x: point.x + NODE_W / 2, y: point.y + 29, fontSize: 9, textAnchor: 'middle', opacity: 0.6 },
-											node.kind === 'concept' ? `${node.ref ?? ''}${node.uses > 0 ? ` · ${node.uses}` : ''}` : node.kind === 'value_type' ? String(node.ref ?? '') : node.kind === 'instance' ? String(node.type ?? '') : String(node.ref ?? ''),
-										),
-									)
-								}),
-							),
+							{ style: canvasBox },
+							h(XYFlow.ReactFlow, {
+								ref: rfRef,
+								nodes: rfNodes,
+								edges: rfEdges,
+								onNodeClick,
+								onEdgeClick,
+								onPaneClick: () => setPicked(null),
+								fitView: true,
+								minZoom: 0.2,
+								maxZoom: 3,
+								proOptions: { hideAttribution: true },
+								style: { background: 'transparent' },
+								nodesDraggable: true,
+								nodesConnectable: false,
+								elementsSelectable: true,
+								panOnDrag: true,
+								zoomOnScroll: true,
+								zoomOnDoubleClick: false,
+							},
+							h(XYFlow.Controls, { showInteractive: false }),
+							h(XYFlow.MiniMap, { pannable: true, zoomable: true, style: { background: 'var(--dsw-alias-bg-layer-2)' } }),
+							h(XYFlow.Background, { variant: 'dots', gap: 20, size: 1, color: 'rgba(127,127,127,0.15)' }),
 						),
-				/**
-				 * 截断如实说,并且说清**为什么被截的是它们**:按连接度取前 N。
-				 * 「图里只画了前 40 个」不解释依据,读的人无法判断这张图可不可信。
-				 */
-				allNodes.length > shownNodes.length
-					? h('div', { style: S.faint }, `${t('按连接度画了')} ${shownNodes.length}/${allNodes.length}${t(' 个节点;未画入的节点不参与成边(所以图上没有断边)。全景可看全部。')}`)
+					),
+				allNodes.length > 0
+					? h('div', { style: S.faint }, `${allNodes.length} ${t('个节点')} · ${allEdges.length} ${t('条边')}${conflicts.length > 0 ? ` · ${t('冲突')} ${conflicts.length}` : ''}`)
 					: null,
 				picked === null
 					? null
 					: h(GraphInspector, {
 							selection: inspection,
 							sessionId,
-							onFilter: () => {
-								onFilter(filterTarget)
-							},
-							onClose: () => {
-								setPicked(null)
-								setSelected(null)
-							},
+							onFilter: () => onFilter(filterTarget),
+							onClose: () => setPicked(null),
 						}),
 			)
 		}

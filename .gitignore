@@ -19,3 +19,7 @@ docs/optimization/e2e-logs/*/*/session.jsonl.zstd
 
 # 会话分析临时物(本机审阅用,不入库)
 .analysis/
+
+# 图谱渲染的 vendor 行(@xyflow/react):由 tools/build-vendor.mjs 生成,
+# 随构建走(与 dist/ 同一条纪律——生成物不入库)。
+ui/vendor/

@@ -226,22 +226,13 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 	check('本体层节点是概念与值形态,实体层是实例与字面值', first.nodes.filter((node) => node.layer === 'ontology').every((node) => node.kind === 'concept' || node.kind === 'value_type') && first.nodes.filter((node) => node.layer === 'entity').every((node) => node.kind === 'instance' || node.kind === 'literal'))
 	check('每条边说得出自己在哪一层', first.edges.every((edge) => edge.layer === 'ontology' || edge.layer === 'entity'))
 	check('层次与边种一致(is_a/谓词在本体层,断言在实体层)', first.edges.filter((edge) => edge.kind === 'assertion').every((edge) => edge.layer === 'entity') && first.edges.filter((edge) => edge.kind === 'is_a' || edge.kind === 'predicate').every((edge) => edge.layer === 'ontology'))
-	check('连接度是派生的确定读数(有人连就有度)', first.nodes.every((node) => Number.isInteger(node.degree) && node.degree >= 0) && first.nodes.some((node) => node.degree > 0))
-	check(
-		'没人引用的概念度数为 0(孤立节点如实报 0,不是漏算)',
-		graphProjection({ lexicon: applyLexiconMutation(emptyLexicon(), { t: 'ontology/term_added', id: 'lonely', label: '没人用的概念', basis: 'b' }, 1) }).nodes.find((node) => node.ref === 'lonely').degree === 0,
-	)
-	check(
-		'连接度与边数自洽',
-		(() => {
-			const counted = new Map()
-			for (const edge of first.edges) {
-				if (typeof edge.from === 'string') counted.set(edge.from, (counted.get(edge.from) ?? 0) + 1)
-				if (typeof edge.to === 'string') counted.set(edge.to, (counted.get(edge.to) ?? 0) + 1)
-			}
-			return first.nodes.every((node) => node.degree === (counted.get(node.id) ?? 0))
-		})(),
-	)
+	/**
+	 * `degree`(连接度)**没有进投影**:它当初是给手写 SVG 的「先画谁」用的,
+	 * 那个轮子已经还给 React Flow(视口/可见性归库),所以这里不再产出无消费者的派生字段。
+	 * 「不为不存在的消费方引入机制」——这条断言就是那个删除的机械面。
+	 */
+	check('投影只给纯语义(节点 / 边 / 包围盒),不替渲染层排名', first.nodes.every((node) => node.degree === undefined))
+
 	check('事实边带着命题身份(事实指得回产出它的那条命题)', first.edges.filter((edge) => edge.kind === 'assertion').every((edge) => edge.claim === null || typeof edge.claim === 'string'))
 	check('没有命题关联的旧事实如实给 null,不编一个', graphProjection({ lexicon, facts: [{ id: 'old', text: 'x', level: 'L3', review: null, assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] }] }).edges.find((edge) => edge.kind === 'assertion').claim === null)
 	check('有命题关联的事实把它带出来', graphProjection({ lexicon, facts: [{ id: 'f9', hypothesis: 'h-9', text: 'x', level: 'L3', review: null, assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] }] }).edges.find((edge) => edge.kind === 'assertion').claim === 'h-9')

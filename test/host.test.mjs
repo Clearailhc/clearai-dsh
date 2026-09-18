@@ -7,7 +7,7 @@
  * 跑法:node test/host.test.mjs
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
@@ -23,8 +23,23 @@ import { pathToFileURL } from 'node:url'
 const SOURCE_DIR = join(import.meta.dirname, '..', 'ui', 'lib')
 const DEPLOYED_DIR = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib')
 // 源名 → 包里名:打包时 `ui/lib/index.js` 成了 `lib/host.js`(见 tools/build-package.mjs)
-for (const [file, packed] of [['index.js', 'host.js'], ['fold.js', 'fold.js'], ['client.js', 'client.js']]) {
-	const source = readFileSync(join(SOURCE_DIR, file), 'utf8')
+/**
+ * 源名 → 包里名,以及在包里它还该带上什么。
+ * `client.js` 出去的是**组合**(vendor 行 + 主文件,见 tools/build-package.mjs)——
+ * 比对也得比那个组合:vendor 没跟上时浏览器里 `require('@xyflow/react')` 会当场解析失败。
+ */
+if (!existsSync(join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js'))) {
+	console.log('· 跳过宿主半套件:ui/vendor/xyflow.js 还没生成(它是生成物,不入库)。')
+	console.log('  生成它:node tools/build-vendor.mjs(或 npm run build)')
+	process.exit(0)
+}
+const PACKED_SOURCES = [
+	['index.js', 'host.js', []],
+	['fold.js', 'fold.js', []],
+	['client.js', 'client.js', [join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js')]],
+]
+for (const [file, packed, prefixes] of PACKED_SOURCES) {
+	const source = `${prefixes.map((extra) => `${readFileSync(extra, 'utf8')}\n`).join('')}${readFileSync(join(SOURCE_DIR, file), 'utf8')}`
 	let deployed = null
 	try {
 		deployed = readFileSync(join(DEPLOYED_DIR, packed), 'utf8')

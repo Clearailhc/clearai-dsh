@@ -103,7 +103,17 @@ copy(join(PORT, 'ui', 'lib', 'fold.js'), join(OUT, 'lib', 'fold.js'))
 copy(join(PORT, 'ui', 'lib', 'domain-language.js'), join(OUT, 'lib', 'domain-language.js'))
 // 宿主不变量的伴生件:单独一个文件,按名字可挂(`clearai-dsh/invariant`)。
 copy(join(PORT, 'ui', 'lib', 'invariant.js'), join(OUT, 'lib', 'invariant.js'))
-copy(join(PORT, 'ui', 'lib', 'client.js'), join(OUT, 'lib', 'client.js'))
+/**
+ * 客户端半 = vendor 行(@xyflow/react,esbuild 打的) + 主文件,按序拼成**一份** client.js。
+ *
+ * 为什么拼而不是分两个文件:插件清单只认一个 `exports["./client"]`,模块系统也只装一行。
+ * 拼接顺序是 vendor 在前——它注册 `@xyflow/react` 那一行,主文件的
+ * `require('@xyflow/react')` 在工厂执行那一刻才解析,顺序是对的。
+ */
+await (await import('./build-vendor.mjs')).buildVendor()
+const vendorXyflow = readFileSync(join(PORT, 'ui', 'vendor', 'xyflow.js'), 'utf8')
+const clientSource = readFileSync(join(PORT, 'ui', 'lib', 'client.js'), 'utf8')
+writeFileSync(join(OUT, 'lib', 'client.js'), `${vendorXyflow}\n${clientSource}`)
 
 // ── ⑤ 产物清单:让人一眼看出包里有什么(也是 verify 的输入) ─────────────────
 const inventory = []

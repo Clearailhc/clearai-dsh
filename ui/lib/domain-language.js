@@ -508,18 +508,9 @@ export function graphProjection(state) {
 	const width = Math.max(...nodes.map((node) => (typeof node.x === 'number' ? node.x : 0)), 0) + COLUMN
 	const height = Math.max(...nodes.map((node) => (typeof node.y === 'number' ? node.y : 0)), 0) + ROW
 	/**
-	 * **连接度**(派生,确定性):客户端按它决定「先画谁」。
-	 *
-	 * 旧写法按数组前 40 个截断,被截掉的节点仍然连着边,于是图上出现**没有端点的边**——
-	 * 真跑里那条「图不清晰」的抱怨有一半来自这里。度数是这一层唯一有意义的排名依据,
-	 * 而且同一份账本永远算出同一个次序(它是纯函数,不是渲染时机的函数)。
+	 * 返回的是**纯语义**:节点、边、包围盒。视口该画哪一块、先画谁、怎么缩放,
+	 * 都是渲染层的事(现在是 React Flow)——投影不再替渲染做决定。
 	 */
-	const degree = new Map()
-	for (const edge of edges) {
-		if (typeof edge.from === 'string') degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1)
-		if (typeof edge.to === 'string') degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1)
-	}
-	for (const node of nodes) node.degree = degree.get(node.id) ?? 0
 	return { nodes, edges, bounds: { width, height } }
 }
 
