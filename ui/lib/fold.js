@@ -16,7 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, deriveConflicts, emptyLexicon, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon } from './domain-language.js'
+import { applyLexiconMutation, deriveConflicts, emptyLexicon, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, VALUE_FORMS } from './domain-language.js'
 
 /** 世界线分支状态的秩。秩只增;一旦出现 adopted,整个分叉的分支状态冻结。 */
 const BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }
@@ -1220,6 +1220,460 @@ export function knowledgePreflight(state, derived) {
 		/** 缺口读数(与卡里同一份:`deriveKnowledge` 的 gaps)。 */
 		gaps: knowledge.gaps,
 	}
+}
+
+// ── 知识 Inspector:一个选择 → 它的定义 / 关系 / 断言 / 证据链 / 历史 ──────────
+
+/**
+ * **图上的一个选择(节点或边),它的全部知识读数。**
+ *
+ * 为什么要有它:图能画出来不等于图是知识入口。点击一个节点却只得到「按此过滤」,
+ * 读的人仍然不知道这个词是什么意思、凭什么信、谁改过它。这一份投影把那条链补齐:
+ *
+ * ```text
+ * 概念   → 定义 / 父概念 / 子概念 / 用它的谓词 / 相关实例 / 相关事实 / 历史
+ * 谓词   → 主词域 / 值域 / 单值性 / 用它的事实 / 由它产生的冲突 / 历史
+ * 实例   → 类型 / 入边 / 出边 / 每条断言的完整链 / 冲突
+ * 字面值 → 值形态 / 取值 / 产生它的事实 / 出处
+ * 断言边 → 事实 → 命题 → 证据 → 出处 → 产生步骤 → 复核态
+ * ```
+ *
+ * 三条纪律与其余读面同一套:
+ *   · **只读**:纯函数,不产生变更、不新增状态;判据只有这一处(客户端不许自己拼链);
+ *   · **有界**:每一类列表都有上限,超出如实报 truncated;
+ *   · **不编**:关联不到就如实给空,不猜「大概相关」——旧账本没有 `hypothesis` 关联时
+ *     给 `null`,不拿文本相等去冒充身份(那条退路只属于折法,不属于读面)。
+ *
+ * 选择可以是 `{ kind, id }`,也可以直接给图上的 id 串(前缀即类型,见 `normalizeSelection`)。
+ */
+export function inspectGraphSelection(state, selection, derived) {
+	const picked = normalizeSelection(selection)
+	if (picked === null) return null
+	const rows = derived ?? derive(state)
+	const context = inspectorContext(state, rows)
+	switch (picked.kind) {
+		case 'concept':
+			return inspectConcept(context, picked.id)
+		case 'value_type':
+			return inspectValueType(context, picked.id)
+		case 'predicate':
+			return inspectPredicate(context, picked.id)
+		case 'instance':
+			return inspectInstance(context, picked.id)
+		case 'literal':
+			return inspectLiteral(context, picked.id)
+		case 'edge':
+			return inspectEdge(context, picked.id)
+		default:
+			return null
+	}
+}
+
+/** 列表上限:读面有界,超出如实报 truncated(与知识预检同一套纪律)。 */
+const INSPECT_LIMIT = 30
+const cut = (list, limit = INSPECT_LIMIT) => ({ rows: list.slice(0, limit), truncated: Math.max(0, list.length - limit) })
+
+/**
+ * 把选择归一到 `{ kind, id }`。
+ *
+ * 图上的 id 串自带类型前缀(`graphProjection` 定的形状),所以两种调用方式都认:
+ * 客户端手上有节点对象时给 `{ kind, id }` 最稳;只拿到 id 串时按前缀解析。
+ * 解析不出来**返回 null**,不猜一个类型——猜错会让 Inspector 端出一份别的东西的定义。
+ */
+function normalizeSelection(selection) {
+	const raw = typeof selection === 'string' ? { id: selection } : selection
+	if (raw === null || typeof raw !== 'object') return null
+	const id = String(raw.id ?? '')
+	if (id === '') return null
+	/** 调用方声明的类型优先认;声明了就必须对得上,不许「说 A 给 B」。 */
+	const declared = typeof raw.kind === 'string' ? raw.kind : ''
+	const ok = (kind) => declared === '' || declared === kind
+	if (id.startsWith('term:')) return ok('concept') ? { kind: 'concept', id: id.slice('term:'.length) } : null
+	if (id.startsWith('is_a:')) return ok('concept') ? { kind: 'concept', id: id.slice('is_a:'.length) } : null
+	if (id.startsWith('form:')) return ok('value_type') ? { kind: 'value_type', id: id.slice('form:'.length) } : null
+	if (id.startsWith('predicate:')) return ok('predicate') ? { kind: 'predicate', id: id.slice('predicate:'.length) } : null
+	if (id.startsWith('assertion:')) return ok('edge') ? { kind: 'edge', id } : null
+	if (declared === 'concept' || declared === 'predicate' || declared === 'value_type' || declared === 'edge') return { kind: declared, id }
+	/** 剩下的两种由图上的 id 形状定:实例是 `类型|名称`,字面值是 `谓词:值形态:取值`。 */
+	if (id.includes('|')) return ok('instance') ? { kind: 'instance', id } : null
+	if (id.includes(':')) return ok('literal') ? { kind: 'literal', id } : null
+	return null
+}
+
+/**
+ * Inspector 的**一次性的索引**:把状态里的几组东西按 id 归好,省得每个分支各建一遍。
+ * 它不缓存、不外传——每次询问建一次,免得读面带上一份会过期的索引。
+ */
+function inspectorContext(state, derived) {
+	const facts = Array.isArray(derived?.factRows) ? derived.factRows : Array.isArray(state?.facts) ? state.facts : []
+	const lexicon = normalizeLexicon(state?.lexicon)
+	const hypothesisById = new Map((state?.hypotheses ?? []).map((item) => [String(item.id ?? ''), item]))
+	/**
+	 * 命题**优先读派生的那一份**:`supportedLevel` / `refutations` / `inconclusive` 都是现算的,
+	 * 只读原始状态的话,Inspector 会写「支持到 —」而卡片上明明有等级——同一件事两处说法不同。
+	 */
+	const derivedHypothesisById = new Map((Array.isArray(derived?.hypotheses) ? derived.hypotheses : []).map((item) => [String(item.id ?? ''), item]))
+	const evidenceById = new Map((state?.evidence ?? []).map((item) => [String(item.id ?? ''), item]))
+	const materialById = new Map((state?.materials ?? []).map((item) => [String(item.id ?? ''), item]))
+	const stepOf = (planId, stepId) =>
+		(state?.plans ?? []).find((plan) => plan.id === planId)?.steps.find((step) => step.id === stepId) ?? null
+	return { state, derived, facts, lexicon, hypothesisById, derivedHypothesisById, evidenceById, materialById, stepOf, conflicts: Array.isArray(derived?.conflicts) ? derived.conflicts : [] }
+}
+
+/** 一条断言的一行人话(与货架 / 卡片同源:`domain-language` 的 `formatAssertion`)。 */
+const say = (lexicon, assertion) => formatAssertion(lexicon, assertion)
+
+/**
+ * **一条事实的完整链**:事实 → 命题 → 证据 → 出处 → 产生步骤 → 复核态。
+ *
+ * 这是阶段 5 的核心:图上一条边背后到底站着什么。每一段都来自账本已有的东西,
+ * 没有一段是这里推断出来的。
+ */
+function factChain(context, fact) {
+	const { lexicon, hypothesisById, derivedHypothesisById, evidenceById, stepOf, conflicts } = context
+	const evidenceIds = Array.isArray(fact?.evidence) ? fact.evidence : []
+	const evidence = evidenceIds
+		.map((id) => evidenceById.get(String(id)))
+		.filter((item) => item !== undefined)
+		.map((item) => {
+			const step = stepOf(item.plan, item.step) ?? null
+			return {
+				id: item.id,
+				verdict: item.verdict,
+				level: item.level,
+				evaluator: item.evaluator,
+				basis: item.basis ?? null,
+				anchor: item.anchor ?? null,
+				at: item.at ?? null,
+				/** 四类出处由账本记账时解析好,这里只搬运。 */
+				origins: Array.isArray(item.origins) ? item.origins : [],
+				refs: Array.isArray(item.refs) ? item.refs : [],
+				/** 材料(id 或路径)也带上摘要,读的人不必再开一次文件。 */
+				materials: (Array.isArray(item.refs) ? item.refs : [])
+					.map((ref) => context.materialById.get(String(ref)))
+					.filter((item2) => item2 !== undefined)
+					.map((item2) => ({ id: item2.id, source: item2.source ?? null, path: item2.path ?? null, note: (item2.note ?? '').slice(0, 200) })),
+				step: step === null ? null : { plan: item.plan, id: item.step, do: step.do ?? null, doneCriteria: step.done_criteria ?? null, status: step.status ?? null },
+			}
+		})
+	const hypothesisId = typeof fact?.hypothesis === 'string' && fact.hypothesis !== '' ? fact.hypothesis : null
+	const hypothesis = hypothesisId === null ? null : derivedHypothesisById.get(hypothesisId) ?? hypothesisById.get(hypothesisId) ?? null
+	const assertions = Array.isArray(fact?.assertions) ? fact.assertions : []
+	return {
+		id: fact?.id ?? null,
+		text: fact?.text ?? null,
+		level: fact?.level ?? null,
+		scope: fact?.scope ?? null,
+		path: fact?.path ?? null,
+		at: fact?.at ?? null,
+		/** `live` / `refuted`(有推翻证据待人裁决)/ `retracted`(人已撤回)。 */
+		status: fact?.review?.decision === 'retracted' ? 'retracted' : fact?.refuted === true ? 'refuted' : 'live',
+		review: fact?.review === undefined || fact?.review === null ? null : { decision: fact.review.decision ?? null, reason: fact.review.reason ?? null, at: fact.review.at ?? null },
+		assertions: assertions.map((assertion) => ({ ...assertion, chip: say(lexicon, assertion) })),
+		hypothesis:
+			hypothesis === null
+				? null
+				: { id: hypothesis.id, claim: hypothesis.claim ?? null, refuteWhen: hypothesis.refute_when ?? null, status: hypothesis.status ?? null, supportedLevel: hypothesis.supportedLevel ?? null, refutations: hypothesis.refutations ?? 0, inconclusive: hypothesis.inconclusive ?? 0 },
+		evidence,
+		/** 由这条事实参与构成的冲突(只暴露,不裁决——与投影同一句话)。 */
+		conflicts: conflicts
+			.filter((conflict) => (Array.isArray(conflict.sides) ? conflict.sides : []).some((side) => side.fact === fact?.id))
+			.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject, sides: conflict.sides.map((side) => ({ fact: side.fact ?? null, value: side.value ?? null })) })),
+		history: factHistory(fact, evidence),
+	}
+}
+
+/**
+ * 事实的**留痕**:升格 / 评审决定 / 每条证据什么时候到的。
+ * 它是「状态里真的留着的那几条记录」,不是完整事件流——完整事件流在会话日志里,
+ * 读面不假装自己有它(见 known-gaps)。
+ */
+function factHistory(fact, evidence) {
+	const events = []
+	if (fact?.at !== undefined && fact?.at !== null) events.push({ kind: 'fact/promoted', at: fact.at, summary: `升格为事实(支持到 ${fact.level ?? '—'})` })
+	if (fact?.review !== undefined && fact?.review !== null) {
+		events.push({
+			kind: 'fact/reviewed',
+			at: fact.review.at ?? null,
+			summary: fact.review.decision === 'retracted' ? '人审查后**撤回**(记录保留)' : '人审查后**维持**(判证据不可靠)',
+			reason: fact.review.reason ?? null,
+		})
+	}
+	for (const item of evidence) events.push({ kind: 'evidence/recorded', at: item.at ?? null, summary: `${item.verdict}(${item.evaluator} · ${item.level})`, reason: item.basis ?? null })
+	return events.filter((event) => event.at !== null).sort((left, right) => left.at - right.at)
+}
+
+/** 词汇条目的留痕:登记 / 历次修订 / 废止。登记与修订本来就存在词条里(折法保留的)。 */
+function entryHistory(entry, label) {
+	const events = []
+	if (entry?.at !== undefined && entry?.at !== null) events.push({ kind: `${label}_added`, at: entry.at, summary: `登记(依据:${entry.basis ?? '—'})`, by: entry.by ?? null })
+	for (const revision of Array.isArray(entry?.revisions) ? entry.revisions : []) {
+		events.push({ kind: `${label}_revised`, at: revision.at ?? null, summary: `修订到 v${revision.version ?? '?'}`, reason: revision.reason ?? null, by: revision.by ?? null })
+	}
+	if (entry?.deprecated !== undefined && entry?.deprecated !== null) {
+		events.push({ kind: `${label}_deprecated`, at: entry.deprecated.at ?? null, summary: '废止(黏性终态,没有复活)', reason: entry.deprecated.reason ?? null, by: entry.deprecated.by ?? null })
+	}
+	return events.filter((event) => event.at !== null || event.kind.endsWith('_deprecated')).sort((left, right) => (left.at ?? 0) - (right.at ?? 0))
+}
+
+/** 事实的断言是否碰到这个概念(主词类型 = 概念 id)。 */
+const assertsOn = (fact, termId) => (Array.isArray(fact?.assertions) ? fact.assertions : []).some((assertion) => String(assertion?.subject?.type ?? '') === termId)
+const usesPredicate = (fact, predicateId) => (Array.isArray(fact?.assertions) ? fact.assertions : []).some((assertion) => String(assertion?.predicate ?? '') === predicateId)
+
+/** 概念节点:语言里这个词是什么、它连着谁、哪些事实在用它。 */
+function inspectConcept(context, termId) {
+	const { lexicon, facts, conflicts, state } = context
+	const term = lexicon.terms.find((item) => item.id === termId)
+	if (term === undefined) return null
+	const children = lexicon.terms.filter((item) => String(item.parent ?? '') === termId)
+	const predicates = lexicon.predicates.filter((item) => String(item.domain ?? '') === termId || String(item.range?.term ?? '') === termId)
+	const relatedFacts = facts.filter((fact) => assertsOn(fact, termId))
+	/** 实例:这一概念下主词出现过的具体对象(从断言投影,与实体图同一份判据)。 */
+	const instances = new Map()
+	for (const fact of relatedFacts) {
+		for (const assertion of Array.isArray(fact.assertions) ? fact.assertions : []) {
+			if (String(assertion?.subject?.type ?? '') !== termId) continue
+			const key = String(assertion.subject.id ?? '')
+			if (key === '') continue
+			if (!instances.has(key)) instances.set(key, { id: `${termId}|${key}`, ref: key, label: key, facts: [] })
+			instances.get(key).facts.push(fact.id ?? null)
+		}
+	}
+	const chain = cut(relatedFacts)
+	return {
+		selection: { kind: 'concept', id: term.id, label: term.label ?? term.id },
+		definition: {
+			id: term.id,
+			label: term.label ?? term.id,
+			gloss: term.gloss ?? null,
+			aliases: Array.isArray(term.aliases) ? term.aliases : [],
+			parent: term.parent === null || term.parent === undefined ? null : String(term.parent),
+			status: term.status ?? 'admitted',
+			version: term.version ?? 1,
+			basis: term.basis ?? null,
+			by: term.by ?? null,
+			at: term.at ?? null,
+			uses: term.uses ?? 0,
+		},
+		relations: {
+			parent: term.parent === null || term.parent === undefined ? null : { id: String(term.parent), label: lexicon.terms.find((item) => item.id === String(term.parent))?.label ?? String(term.parent) },
+			children: children.map((item) => ({ id: item.id, label: item.label ?? item.id, status: item.status ?? 'admitted' })),
+			predicates: predicates.map((item) => ({ id: item.id, label: item.label ?? item.id, domain: item.domain ?? null, range: item.range ?? null, functional: item.functional === true, status: item.status ?? 'admitted' })),
+			instances: [...instances.values()].sort((left, right) => (left.id < right.id ? -1 : 1)).map((item) => ({ id: item.id, ref: item.ref, label: item.label, factCount: item.facts.length })),
+		},
+		facts: chain.rows.map((fact) => factChain(context, fact)),
+		factsTruncated: chain.truncated,
+		conflicts: conflicts
+			.filter((conflict) => String(conflict.subject ?? '').startsWith(`${termId}|`) || predicates.some((predicate) => predicate.id === conflict.predicate))
+			.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject, sides: conflict.sides.map((side) => ({ fact: side.fact ?? null, value: side.value ?? null })) })),
+		history: entryHistory(term, 'term'),
+		actions: { canFilter: true, canExpand: true, canEdit: true },
+		/** 词汇是**约定**,不需要证据等级——把它说清楚,免得读的人以为它「没验」。 */
+		note: '概念是约定,不是主张:它不带证据等级。用这个词写下的句子才需要。',
+	}
+}
+
+/** 值形态节点:系统固定的五种之一(不独立治理,所以它没有历史)。 */
+function inspectValueType(context, form) {
+	const { lexicon, facts } = context
+	const known = lexicon.predicates.filter((item) => String(item.range?.form ?? '') === form)
+	if (known.length === 0 && !VALUE_FORMS.includes(form)) return null
+	const used = facts.filter((fact) => (Array.isArray(fact.assertions) ? fact.assertions : []).some((assertion) => String(assertion?.object?.kind ?? '') === form))
+	const chain = cut(used)
+	return {
+		selection: { kind: 'value_type', id: form, label: form },
+		definition: { id: form, label: form, kind: 'value_type', status: 'builtin', gloss: VALUE_FORM_GLOSS[form] ?? null },
+		relations: { predicates: known.map((item) => ({ id: item.id, label: item.label ?? item.id, domain: item.domain ?? null, range: item.range ?? null })) },
+		facts: chain.rows.map((fact) => factChain(context, fact)),
+		factsTruncated: chain.truncated,
+		conflicts: [],
+		/** 值形态由系统固定,不进领域本体、也没有版本史——如实说空,不编一段。 */
+		history: [],
+		actions: { canFilter: true, canExpand: false, canEdit: false },
+		note: '值形态由系统固定(statement / quantity / formula / code / reference),不独立治理,所以没有版本史。',
+	}
+}
+
+/** 谓词节点:它允许什么关系、谁在用、用出了哪些冲突。 */
+function inspectPredicate(context, predicateId) {
+	const { lexicon, facts, conflicts } = context
+	const predicate = lexicon.predicates.find((item) => item.id === predicateId)
+	if (predicate === undefined) return null
+	const used = facts.filter((fact) => usesPredicate(fact, predicateId))
+	const chain = cut(used)
+	const range = predicate.range ?? null
+	return {
+		selection: { kind: 'predicate', id: predicate.id, label: predicate.label ?? predicate.id },
+		definition: {
+			id: predicate.id,
+			label: predicate.label ?? predicate.id,
+			gloss: predicate.gloss ?? null,
+			domain: predicate.domain ?? null,
+			/** 主词域的**名字**也带上:只给 id,读的人还要自己回词汇表里找。 */
+			domainLabel: predicate.domain === null || predicate.domain === undefined ? null : lexicon.terms.find((item) => item.id === String(predicate.domain))?.label ?? String(predicate.domain),
+			range,
+			functional: predicate.functional === true,
+			status: predicate.status ?? 'admitted',
+			version: predicate.version ?? 1,
+			basis: predicate.basis ?? null,
+			by: predicate.by ?? null,
+			at: predicate.at ?? null,
+			uses: predicate.uses ?? 0,
+		},
+		relations: {
+			valueForm: range?.form ?? null,
+			rangeTerm: range?.term ?? null,
+			/** 用这个谓词写下的**断言**(不是事实:一条事实可以带多条断言)。 */
+			assertions: used.length,
+			subjects: [...new Set(used.flatMap((fact) => (Array.isArray(fact.assertions) ? fact.assertions : []).filter((assertion) => String(assertion?.predicate ?? '') === predicateId).map((assertion) => `${String(assertion?.subject?.type ?? '')}|${String(assertion?.subject?.id ?? '')}`)))].map((key) => ({ key, ref: key.split('|')[1] ?? key, type: key.split('|')[0] ?? '' })),
+		},
+		facts: chain.rows.map((fact) => factChain(context, fact)),
+		factsTruncated: chain.truncated,
+		conflicts: conflicts
+			.filter((conflict) => conflict.predicate === predicateId)
+			.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject, sides: conflict.sides.map((side) => ({ fact: side.fact ?? null, value: side.value ?? null })) })),
+		history: entryHistory(predicate, 'predicate'),
+		actions: { canFilter: true, canExpand: true, canEdit: true },
+		note: predicate.functional === true ? '单值谓词:同一主词上两条未撤回的确认事实取值不同时,系统给出一对冲突读数(只暴露,不裁决)。' : null,
+	}
+}
+
+/** 实例节点:某个具体对象身上挂着的全部断言与它们的链。 */
+function inspectInstance(context, key) {
+	const { lexicon, facts, conflicts } = context
+	const separator = key.indexOf('|')
+	if (separator < 0) return null
+	const type = key.slice(0, separator)
+	const ref = key.slice(separator + 1)
+	if (ref === '') return null
+	const outgoing = []
+	const incoming = []
+	for (const fact of facts) {
+		for (const assertion of Array.isArray(fact.assertions) ? fact.assertions : []) {
+			const subjectMatches = String(assertion?.subject?.type ?? '') === type && String(assertion?.subject?.id ?? '') === ref
+			const objectMatches = String(assertion?.object?.kind ?? '') === 'instance' && String(assertion?.object?.value ?? '') === ref && (String(assertion?.object?.type ?? '') === type || String(assertion?.object?.type ?? '') === '')
+			if (subjectMatches) outgoing.push({ fact, assertion, direction: 'out' })
+			if (objectMatches) incoming.push({ fact, assertion, direction: 'in' })
+		}
+	}
+	if (outgoing.length === 0 && incoming.length === 0 && !lexicon.terms.some((item) => item.id === type)) return null
+	const touchedFacts = [...new Set([...outgoing, ...incoming].map((item) => item.fact))]
+	const chain = cut(touchedFacts)
+	const edges = [...outgoing, ...incoming].map((item) => ({
+		direction: item.direction,
+		predicate: String(item.assertion?.predicate ?? ''),
+		predicateLabel: lexicon.predicates.find((entry) => entry.id === String(item.assertion?.predicate ?? ''))?.label ?? null,
+		chip: say(lexicon, item.assertion),
+		fact: item.fact.id ?? null,
+		level: item.fact.level ?? null,
+		status: item.fact.review?.decision === 'retracted' ? 'retracted' : item.fact.refuted === true ? 'refuted' : 'live',
+	}))
+	return {
+		selection: { kind: 'instance', id: key, label: ref },
+		definition: {
+			id: key,
+			ref,
+			type: type === '' ? null : type,
+			typeLabel: type === '' ? null : lexicon.terms.find((item) => item.id === type)?.label ?? type,
+			/** 实例**不注册**(从断言投影出来),所以它没有独立生命周期与版本史。 */
+			status: 'projected',
+		},
+		relations: { edges, out: outgoing.length, in: incoming.length },
+		facts: chain.rows.map((fact) => factChain(context, fact)),
+		factsTruncated: chain.truncated,
+		conflicts: conflicts
+			.filter((conflict) => String(conflict.subject ?? '') === key)
+			.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject, sides: conflict.sides.map((side) => ({ fact: side.fact ?? null, value: side.value ?? null })) })),
+		history: [],
+		actions: { canFilter: true, canExpand: true, canEdit: false },
+		note: '实例由断言投影出来,不单独注册、也不做实体消解(同名即同节点);它没有自己的版本史。',
+	}
+}
+
+/** 字面值节点:一个取值,以及是谁写下它的。 */
+function inspectLiteral(context, key) {
+	const { lexicon, facts } = context
+	const separator = key.indexOf(':')
+	if (separator < 0) return null
+	const predicateId = key.slice(0, separator)
+	const objectPart = key.slice(separator + 1)
+	const holders = []
+	for (const fact of facts) {
+		for (const assertion of Array.isArray(fact.assertions) ? fact.assertions : []) {
+			if (String(assertion?.predicate ?? '') !== predicateId) continue
+			if (objectKey(assertion.object) !== objectPart) continue
+			holders.push({ fact, assertion })
+		}
+	}
+	if (holders.length === 0) return null
+	const predicate = lexicon.predicates.find((item) => item.id === predicateId) ?? null
+	const touchedFacts = [...new Set(holders.map((item) => item.fact))]
+	const chain = cut(touchedFacts)
+	return {
+		selection: { kind: 'literal', id: key, label: say(lexicon, holders[0].assertion) },
+		definition: {
+			id: key,
+			predicate: predicateId,
+			predicateLabel: predicate?.label ?? predicateId,
+			form: holders[0].assertion?.object?.kind ?? null,
+			value: holders[0].assertion?.object?.value ?? null,
+			unit: holders[0].assertion?.object?.unit ?? null,
+			/** 值形态决定「这个取值是什么东西」:数值 / 公式 / 代码路径 / 引用。 */
+			status: 'projected',
+		},
+		relations: { holders: holders.length, predicateRange: predicate?.range ?? null },
+		facts: chain.rows.map((fact) => factChain(context, fact)),
+		factsTruncated: chain.truncated,
+		conflicts: [],
+		history: [],
+		actions: { canFilter: true, canExpand: true, canEdit: false },
+		note: '字面值是断言里的客体,由事实投影出来;它没有独立生命周期。',
+	}
+}
+
+/** 断言边:一条事实边的完整链(图上点击一条边时看的就是它)。 */
+function inspectEdge(context, edgeId) {
+	const { lexicon, facts, conflicts } = context
+	const parts = edgeId.split(':')
+	if (parts[0] !== 'assertion' || parts.length < 4) return null
+	const factId = parts[1]
+	const predicateId = parts[2]
+	/** 主语键里有 `|`,而它自己可能带 `:`——所以从第 4 段起重新拼回去(不按段数硬切)。 */
+	const subjectKey = parts.slice(3).join(':')
+	const fact = facts.find((item) => String(item.id ?? '') === factId)
+	if (fact === undefined) return null
+	const predicate = lexicon.predicates.find((item) => item.id === predicateId) ?? null
+	const chain = factChain(context, fact)
+	const separator = subjectKey.indexOf('|')
+	return {
+		selection: { kind: 'edge', id: edgeId, label: `${predicate?.label ?? predicateId} · ${fact.text ?? ''}`.slice(0, 120) },
+		definition: {
+			kind: 'assertion',
+			predicate: predicateId,
+			predicateLabel: predicate?.label ?? predicateId,
+			predicateGloss: predicate?.gloss ?? null,
+			domain: predicate?.domain ?? null,
+			range: predicate?.range ?? null,
+			functional: predicate?.functional === true,
+			subject: separator < 0 ? { type: null, id: subjectKey } : { type: subjectKey.slice(0, separator), id: subjectKey.slice(separator + 1) },
+		},
+		/** 一条边就是一条事实:**链在 `facts[0]` 里**,读面不把它拆成两处说。 */
+		facts: [chain],
+		factsTruncated: 0,
+		conflicts: chain.conflicts,
+		history: chain.history,
+		actions: { canFilter: true, canExpand: true, canEdit: false },
+		note: predicate?.functional === true ? '这条边落在单值谓词上:同一主词出现第二个不同取值时会产生冲突(只暴露,不裁决)。' : null,
+	}
+}
+
+/** 五种值形态的名字与一句话解释(名字取自 `domain-language` 的枚举,这里只加给人读的说明)。 */
+const VALUE_FORM_GLOSS = {
+	statement: '短陈述字符串',
+	quantity: '数值 + 单位',
+	formula: '公式源码(LaTeX;本版不做语义解析)',
+	code: '指向工作区里真有的文件路径',
+	reference: '外部引用(文献 / URL / 编号)',
 }
 
 export function derive(state) {

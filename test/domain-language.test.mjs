@@ -490,6 +490,99 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 	check('view().preflight 与判据同源', fold.view(seededState, 's').preflight?.terms.some((term) => term.id === 'furnace_batch'))
 }
 
+console.log('\n【知识 Inspector:一个选择 → 定义 / 关系 / 断言 / 证据链 / 历史】')
+{
+	/**
+	 * 这一组钉的是阶段 5 的核心主张:**图上的对象是知识入口**。
+	 * 判据是「链真的串起来了」——事实 → 命题 → 证据 → 出处 → 产生步骤,
+	 * 每一段都指得出来源,而没有的东西如实给 null(不拿文本相等冒充身份)。
+	 */
+	const state = fold.applyMutations(fold.emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: '查清炉次氧含量', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: 'T2 炉次氧含量是 10ppm', refute_when: '复测不是 10ppm' }] },
+		{ t: 'ontology/term_added', id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' },
+		{ t: 'ontology/predicate_added', id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' },
+		{ t: 'plan/created', id: 'p1', goal: 'g1', brief: 'x'.repeat(300), steps: [{ id: 's1', do: '读仪表记录', done_criteria: 'lab/g1.txt 存在', artifacts: ['lab/g1.txt'], tests: { hypothesis: 'h1', level: 'L3' } }] },
+		{ t: 'evidence/recorded', id: 'e1', plan: 'p1', step: 's1', verdict: 'support', level: 'L3', evaluator: 'independent', basis: '读过产物', refs: ['lab/g1.txt'], origins: [{ kind: 'artifact', path: 'lab/g1.txt' }, { kind: 'audit-card', path: 'clear/evidence/audits/s1/a.json' }], at: 30 },
+		{
+			t: 'fact/promoted',
+			id: 'f1',
+			goal: 'g1',
+			hypothesis: 'h1',
+			text: 'T2 炉次氧含量是 10ppm',
+			scope: '复测不是 10ppm',
+			level: 'L3',
+			evidence: ['e1'],
+			path: 'clear/knowledge/facts/g1.md',
+			at: 40,
+			assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } }],
+		},
+	])
+	const inspect = (selection) => fold.inspectGraphSelection(state, selection)
+
+	// ① 概念:定义 + 关系 + 相关事实 + 历史。
+	const concept = inspect({ kind: 'concept', id: 'furnace_batch' })
+	check('概念:给得出定义(名字 / 释义 / 依据)', concept?.definition.label === '炉次' && concept.definition.gloss === '一次熔铸循环' && concept.definition.basis === '现场记录 R-01')
+	check('概念:说明它是**约定**,不带证据等级', typeof concept.note === 'string' && concept.note.includes('约定'))
+	check('概念:连出用它的谓词(带域)', concept.relations.predicates.some((item) => item.id === 'oxygen_ppm' && item.domain === 'furnace_batch'))
+	check('概念:连出它下面的实例', concept.relations.instances.some((item) => item.ref === 'T2'))
+	check('概念:相关事实带完整链', concept.facts.length === 1 && concept.facts[0].id === 'f1')
+	check('概念:历史有登记事件', concept.history.some((event) => event.kind === 'term_added'))
+
+	// ② 谓词:主词域给**名字**,不只给 id。
+	const predicate = inspect({ kind: 'predicate', id: 'oxygen_ppm' })
+	check('谓词:域给得出标签(读的人不必回词汇表里找)', predicate.definition.domain === 'furnace_batch' && predicate.definition.domainLabel === '炉次')
+	check('谓词:值域与单值性都在', predicate.definition.range?.form === 'quantity' && predicate.definition.functional === true)
+	check('谓词:说明单值谓词的冲突语义', typeof predicate.note === 'string' && predicate.note.includes('冲突'))
+	check('谓词:列出用到它的事实与主词', predicate.facts.length === 1 && predicate.relations.subjects.some((item) => item.ref === 'T2'))
+
+	// ③ 实例:入边 / 出边。
+	const instance = inspect('furnace_batch|T2')
+	check('实例:给得出类型与它的概念标签', instance.definition.type === 'furnace_batch' && instance.definition.typeLabel === '炉次')
+	check('实例:出边指向谓词', instance.relations.edges.some((edge) => edge.direction === 'out' && edge.predicate === 'oxygen_ppm'))
+	check('实例:边带事实读数(等级 / 状态)', instance.relations.edges[0].level === 'L3' && instance.relations.edges[0].status === 'live')
+	check('实例:如实说它由投影产生、没有版本史', instance.history.length === 0 && String(instance.note).includes('不单独注册'))
+
+	// ④ 字面值:值形态与取值。
+	const literal = inspect('oxygen_ppm:quantity:10:ppm')
+	check('字面值:给得出形态 / 取值 / 单位', literal.definition.form === 'quantity' && literal.definition.value === 10 && literal.definition.unit === 'ppm')
+	check('字面值:指得出写它的事实', literal.facts.length === 1 && literal.facts[0].id === 'f1')
+
+	// ⑤ 值形态:系统固定、没有版本史。
+	const form = inspect({ kind: 'value_type', id: 'quantity' })
+	check('值形态:说明是系统固定的内置形态', form.definition.status === 'builtin' && form.definition.gloss !== null)
+	check('值形态:如实说没有版本史', Array.isArray(form.history) && form.history.length === 0)
+
+	// ⑥ 断言边:**完整链**——这一步是阶段 5 的核心主张。
+	const edge = inspect({ kind: 'edge', id: 'assertion:f1:oxygen_ppm:furnace_batch|T2' })
+	const chain = edge.facts[0]
+	check('边:链到事实(带边界与等级)', chain.id === 'f1' && chain.level === 'L3' && chain.scope === '复测不是 10ppm')
+	check('边:事实指得回命题(按 id,不是按文本)', chain.hypothesis.id === 'h1' && chain.hypothesis.claim === 'T2 炉次氧含量是 10ppm')
+	check('边:命题带着推翻条件与已支持等级', chain.hypothesis.refuteWhen === '复测不是 10ppm' && chain.hypothesis.supportedLevel === 'L3')
+	check('边:链到证据(裁决 / 等级 / 判者)', chain.evidence.length === 1 && chain.evidence[0].verdict === 'support' && chain.evidence[0].evaluator === 'independent')
+	check('边:证据带四类出处', chain.evidence[0].origins.some((item) => item.kind === 'artifact') && chain.evidence[0].origins.some((item) => item.kind === 'audit-card'))
+	check('边:证据指得回产生它的步骤与判据', chain.evidence[0].step?.id === 's1' && chain.evidence[0].step?.doneCriteria === 'lab/g1.txt 存在')
+	check('边:历史按时间排出升格与证据', chain.history.map((event) => event.kind).join(',') === 'evidence/recorded,fact/promoted')
+	check('边:断言带一行人话芯片(与货架同一句)', chain.assertions[0].chip.includes('T2') && chain.assertions[0].chip.includes('10'))
+
+	// ⑦ 不编:关联不到就如实空,且旧事实不冒充身份。
+	const legacy = fold.applyMutations(state, [{ t: 'fact/promoted', id: 'f9', goal: 'g1', text: '旧事实', scope: 's', level: 'L2', evidence: [], path: 'p', at: 50, assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } }] }])
+	const legacyConcept = fold.inspectGraphSelection(legacy, { kind: 'concept', id: 'furnace_batch' })
+	const legacyFact = legacyConcept.facts.find((item) => item.id === 'f9')
+	check('旧事实没有 hypothesis 关联时如实给 null(不拿文本相等冒充身份)', legacyFact.hypothesis === null)
+	check('旧事实没有证据时如实给空数组', Array.isArray(legacyFact.evidence) && legacyFact.evidence.length === 0)
+
+	// ⑧ 未知对象与错配声明:返回 null,不编一份空的。
+	check('不存在的概念 → null', inspect({ kind: 'concept', id: 'no_such_term' }) === null)
+	check('声明与 id 前缀矛盾 → null(说 A 给 B 一律拒)', inspect({ kind: 'predicate', id: 'term:furnace_batch' }) === null)
+	check('解析不出类型的 id → null', inspect({ kind: 'concept', id: 'no_type_hint_at_all' }) === null)
+	check('空选择 → null', fold.inspectGraphSelection(state, null) === null && fold.inspectGraphSelection(state, { id: '' }) === null)
+
+	// ⑨ 有界与只读。
+	check('列表带 truncated 读数(有界,不假装这就是全部)', typeof concept.factsTruncated === 'number')
+	check('Inspector 是只读的:问一遍状态不变', JSON.stringify(fold.inspectGraphSelection(state, { kind: 'concept', id: 'furnace_batch' })) === JSON.stringify(fold.inspectGraphSelection(state, { kind: 'concept', id: 'furnace_batch' })))
+	check('Inspector 不往状态里加东西(还是那一条事实)', state.facts.length === 1 && state.hypotheses.length === 1)
+}
+
 console.log('\n【测试面:这一份测试进了 run.sh(否则它只是本地脚本)】')
 {
 	check('run.sh 里登记了领域语言这一套', suiteSource.includes('domain-language.test.mjs'))

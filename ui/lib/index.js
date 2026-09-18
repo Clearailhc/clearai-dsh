@@ -18,7 +18,7 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
-import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, renderCard, view } from './fold.js'
+import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
 import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { install as installInvariants } from './invariant.js'
 
@@ -655,6 +655,30 @@ export function apply(ctx) {
 			return reply(200, { ok: true, complete: true, entries })
 		})
 
+		/**
+		 * `GET /api/clearai/inspector?sessionId=…&kind=…&id=…`
+		 *
+		 * **知识 Inspector**:图上点了一个节点或边,把它的定义 / 关系 / 断言 / 证据链 / 历史取回来。
+		 *
+		 * 为什么走路由而不是塞进 `view()`:选择是**动态**的——把每个节点每条边的完整链都预先
+		 * 推进投影,等于对一张 61 节点 / 147 边的图各算一遍,而人一次只看一个。
+		 * 组装仍然只有一处实现(`inspectGraphSelection`,纯函数在宿主半),所以
+		 * 「客户端自己拼证据链」这条口子没有开。
+		 *
+		 * 只读:**不产生任何变更**,也拿不到写入口。
+		 */
+		route('/api/clearai/inspector', ['GET'], async (httpRequest) => {
+			const url = new URL(httpRequest.url)
+			const sessionId = url.searchParams.get('sessionId') ?? ''
+			if (ctx.sessions.get(sessionId) === undefined) return reply(404, { ok: false, error: 'no_live_session' })
+			const service = ctx.get('clearai')
+			if (service === undefined || typeof service.inspector !== 'function') return reply(200, { ok: false, error: 'no_inspector' })
+			const found = service.inspector(sessionId, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' })
+			/** 找不到不是错误:那个对象可能刚被废止或本来就不在(如实说 `found: false`,不编一份空的)。 */
+			if (found === null) return reply(200, { ok: true, found: false })
+			return reply(200, { ok: true, found: true, inspector: found })
+		})
+
 	})
 
 	ctx.effect(
@@ -719,6 +743,16 @@ export function apply(ctx) {
 					},
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
+				},
+				/**
+				 * **知识 Inspector**:一个选择 → 它的定义 / 关系 / 断言 / 证据链 / 历史。
+				 *
+				 * 组装住在纯函数里(`inspectGraphSelection`),这里只把当前状态喂给它——
+				 * 客户端因此永远拿不到「自己拼链」的机会,凡是读到链的地方都同源。
+				 */
+				inspector: (sessionId, selection) => {
+					const state = stateOf(sessionId)
+					return inspectGraphSelection(state, selection, derive(state))
 				},
 			}),
 		'clearai: read facade',
