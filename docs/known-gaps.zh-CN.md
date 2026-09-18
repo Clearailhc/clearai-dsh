@@ -48,6 +48,9 @@
   而是由 `tools/build-vendor.mjs` 打成**插件自己的一个模块行**,build 时与主文件拼成一份
   `lib/client.js`。所以升级 @xyflow/react 要走同一条路(`npm run vendor`),不能只改 package.json。
   vendor 是生成物、不入库;缺失时两套测试**如实跳过**而不是假红。
+  **已有一条真浏览器检查**(`npm run check:browser`):真 Chrome + 真 React + 真 vendored React Flow,
+  按宿主的装载契约把 `GraphBand` 挂到 DOM,断言画布/节点/边/控件/迷你地图/样式都在。
+  它挡的是**装载与形状**那两类错(两次真机失败都是这两类),不是观感。
   **没验的**:真浏览器里 React Flow 的连线标签/迷你地图在高节点数下的表现、
   触摸手势、以及「打开工作区时自动 fitView」的实际观感(它依赖库完成挂载,代码里等了 50ms)。
 - **旧的那条说法(图带交互只在测试里验过结构)已经作废**,由上面这条取代:

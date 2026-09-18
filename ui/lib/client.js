@@ -33,6 +33,10 @@ window.__ModuleLoader__.load({
 		 *
 		 * 拿不到时不炸整块面板:**把真实原因也说出来**——只说「不可用」而不说为什么,
 		 * 读的人(和下一次修它的人)就得自己猜。原因同时进 console,便于排查。
+		 *
+		 * 判「有没有」**不能写 `typeof === 'function'`**:React 的组件可以是函数、也可以是
+		 * `forwardRef` / `memo` 造出来的**对象**(v12 的 `ReactFlow` 正是 `forwardRef` 对象)。
+		 * 按函数判会把一个完全合法的组件判成不可用——而这个错会伪装成「依赖没装上」。
 		 */
 		const XYFLOW_LOAD = (() => {
 			try {
@@ -3253,7 +3257,7 @@ window.__ModuleLoader__.load({
 					h('span', { style: S.chipAction, onClick: () => rfRef.current?.fitView({ padding: 0.15, duration: 200 }) }, t('适配')),
 					h('span', { style: S.chipAction, onClick: onToggleFullscreen }, fullscreen === true ? t('关闭工作区') : t('打开图谱工作区')),
 				),
-				XYFlow === null || typeof XYFlow.ReactFlow !== 'function'
+				XYFlow === null || XYFlow.ReactFlow === undefined || XYFlow.ReactFlow === null
 					? h('div', { style: S.faint }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('投影还在,事实与命题照常可读。')}`)
 					: allNodes.length === 0
 					? h('div', { style: S.faint }, t('此层暂无节点。'))

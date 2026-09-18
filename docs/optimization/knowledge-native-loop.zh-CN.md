@@ -450,3 +450,26 @@ vendor 是生成物,**不入库**(与 `dist/` 同一条纪律);`npm run build` �
   三根回调接上了、降级如实、**部署件里真有那一行**、vendor 的依赖面只有种子字。
 
 15 套全绿:749/105/40/**237**/173/96/24/43/16/7/18/22/13/41/27 · verify-package 32/0
+
+### 阶段 6 补记 · 「图组件不可用」的真因,与一条真浏览器检查
+
+两次真机失败,两次都不是图本身的问题,而是**它怎么被装载 / 怎么被判在不在**:
+
+| 症状 | 真因 |
+|---|---|
+| 第一次:`require('@xyflow/react')` 不认 | 我把 vendor 注册成**运行时动态模块行**——模块系统的 require 只认平台种子字与**启动图里的行** |
+| 第二次:降级文案成了空括号 `图组件不可用()` | vendor 跑成功了,但守卫写成 `typeof ReactFlow !== 'function'`——而 v12 的 `ReactFlow` 是 `React.forwardRef` **对象**(`Controls`/`MiniMap`/`Background` 是 `memo` 对象)。**一个合法组件被判成「没装上」** |
+
+第二次为什么单测全绿也没抓到:**渲染桩里的组件全是函数**——桩的形状跟真库不一样,
+于是「按 typeof 判组件在不在」这个错在桩里永远成立。桩已经把形状改成真库那样
+(`forwardRef`/`memo` **对象**,带 `render`),两个渲染桩也都学会认识它们;
+把旧守卫放回去,单测当场红 9 条。
+
+**新增一条真浏览器检查**(`tools/browser-graph-check.mjs`,`npm run check:browser`):
+真 Chrome + 真 React 19 + 真 vendored React Flow,按宿主的**装载契约**
+(`window.__ModuleLoader__.load({ id, factory })` → 用两个种子字做 `require` → 调工厂)
+把 `GraphBand` 挂到 DOM 上,断言 `.react-flow` / 节点 / 边 / Controls / MiniMap / 样式注入都在。
+反例自检过:旧守卫在这个检查里当场红(`canvas=0` + 退化成「图组件不可用」)。
+
+它**不复刻 GUI**(GUI 有鉴权、要一场真实会话),复刻的是**装载那一步**——
+那正是两次翻车的地方。真浏览器里的整体观感仍然要人看(见 known-gaps)。

@@ -293,6 +293,15 @@ function makeStringReact() {
 			const produced = node.type({ ...(node.props ?? {}), children: node.children })
 			return render(produced)
 		}
+		/**
+		 * `forwardRef` / `memo` 是**对象**(带 render),不是函数——真 React 会调它们的 render。
+		 * 字符串桩照做:不然 React Flow 那种形状的组件在这条渲染路径上会**静默消失**,
+		 * 「节点标签在不在」这类断言就会假红(而它其实是好的)。
+		 */
+		if (typeof node === 'object' && node.type !== null && typeof node.type === 'object' && typeof node.type.render === 'function') {
+			const produced = node.type.render({ ...(node.props ?? {}), children: node.children })
+			return render(produced)
+		}
 		return render(node.children)
 	}
 	return {
@@ -337,6 +346,11 @@ function expandTree(node) {
 	if (node === null || node === undefined || typeof node !== 'object') return node
 	if (Array.isArray(node)) return node.map(expandTree)
 	if (typeof node.type === 'function') return expandTree(node.type({ ...(node.props ?? {}), children: node.children }))
+	/**
+	 * `forwardRef` / `memo` 是**对象**(带 render),不是函数——真 React 会调它们的 render。
+	 * 渲染桩照做:不然「形状跟真库一致」的桩就没法被测到。
+	 */
+	if (node.type !== null && typeof node.type === 'object' && typeof node.type.render === 'function') return expandTree(node.type.render({ ...(node.props ?? {}), children: node.children }))
 	return { ...node, children: (node.children ?? []).map(expandTree) }
 }
 
@@ -366,7 +380,19 @@ function makeXyflowStub(h) {
 		const labels = name === 'react-flow' && Array.isArray(props?.nodes) ? props.nodes.map((node, index) => h('span', { key: `label-${index}` }, String(node?.data?.label ?? ''))) : []
 		return h(name, props, ...children, ...labels)
 	}
-	return { ReactFlow: element('react-flow'), Controls: element('rf-controls'), MiniMap: element('rf-minimap'), Background: element('rf-background') }
+	/**
+	 * **形状必须跟真库一致**:v12 的 `ReactFlow` 是 `forwardRef` 对象、
+	 * `Controls`/`MiniMap`/`Background` 是 `memo` 对象——**都不是函数**。
+	 * 桩当初全给函数,于是「按 typeof 判组件在不在」那个错把真机判成不可用、而测试全绿。
+	 * 这里用一个 `$$typeof` 标记的对象复现真形状,让同类错在测试里就红。
+	 */
+	const component = (name, tag) => ({ $$typeof: Symbol.for(name), render: element(tag) })
+	return {
+		ReactFlow: component('react.forward_ref', 'react-flow'),
+		Controls: component('react.memo', 'rf-controls'),
+		MiniMap: component('react.memo', 'rf-minimap'),
+		Background: component('react.memo', 'rf-background'),
+	}
 }
 
 /**
@@ -747,6 +773,11 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				)
 				const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
 				check('图交给 React Flow 渲染(不再是手写 SVG)', flow !== undefined)
+				check(
+					'组件形状是 forwardRef/memo 对象也要认(按 typeof 判函数就会误判成不可用)',
+					typeof components.GraphBand === 'function' && flow !== undefined && !String(flatNode(tree)).includes('图组件不可用'),
+					String(flow === undefined),
+				)
 				check('适配层不截断:全部节点一条不少地交出去(视口归库管)', flow?.props?.nodes?.length === 45, String(flow?.props?.nodes?.length))
 				check('节点的标签与初始坐标来自投影', flow?.props?.nodes?.[0]?.data?.label === '概念00' && flow.props.nodes[0].position.x === 0)
 				check('库的零件真的用上了(MiniMap / Controls / Background)', ['rf-minimap', 'rf-controls', 'rf-background'].every((name) => walkNodes(tree).some((item) => item.type === name)))
