@@ -157,12 +157,12 @@ children.push(
 	new Paragraph({
 		alignment: AlignmentType.CENTER,
 		spacing: { after: 200 },
-		children: [t('在 DeepSeek Harness 上走通可信本体的构建路径', { size: 32, color: MUTED })],
+		children: [t('在 DeepSeek Harness 上构建可信本体', { size: 32, color: MUTED })],
 	}),
 	new Paragraph({
 		alignment: AlignmentType.CENTER,
 		spacing: { after: 400 },
-		children: [muted('认识论是路径 · 本体是终点 · 每条边都要挣得它的位置')],
+		children: [muted('认识论是路径 · 本体是结果 · 每条边都带来源与验证记录')],
 	}),
 	img('docs/diagrams/ontology-hero.zh-CN.png', 880),
 	caption('认识论循环（左）长出领域本体（右）——绿点是循环落定的事实，也是本体的第一个节点'),
@@ -171,7 +171,7 @@ children.push(
 		alignment: AlignmentType.CENTER,
 		spacing: { before: 200, after: 100 },
 		children: [
-			muted('15 套件 1372 条断言 · 29 个意图工具 · 6694 行内核 · Apache-2.0'),
+			muted('15 套件 1618 条断言 · 29 个意图工具 · 6808 行内核 · Apache-2.0'),
 		],
 	}),
 	new Paragraph({
@@ -208,7 +208,7 @@ children.push(para([
 	t('（epistemic loop）。ClearAI 把两者做成了一个 DSH 插件：'),
 ]))
 children.push(quote([
-	bold('AI 在你的项目里长出一个活的领域本体，每条边都通过验证循环挣得它的位置。'),
+	bold('AI 在你的项目中逐步建立领域本体。概念、关系和事实都带有来源，经过验证后才进入知识结构。'),
 ]))
 
 // ══════════════════════════════════════════════════════════════════════
@@ -305,10 +305,15 @@ children.push(para(''))
 
 children.push(h3('两张图'))
 children.push(para([bold('本体图'), t('：概念是节点，is_a 和谓词是边。回答"这个领域允许表达什么"。它可以在零事实的状态下存在——先立词，再提假设。语言先于句子。')]))
-children.push(para([bold('实体图'), t('：实例是节点，断言是边，每条边带支持等级。回答"已经验证出了什么"。它只在事实升格后才有内容。挣得多少，画多少。')]))
-children.push(para('两张图都是纯函数投影——从事件流算出来的。改不了，也不用同步。'))
-children.push(img('docs/shots/zh/facts.png', 660))
-children.push(caption('本体格：图带（本体图|实体图切换）+ 本体货架（已确立条目，每条带断言芯片与冲突标记）+ 命题'))
+children.push(para([bold('实体图'), t('：实例是节点，断言是边，每条边带支持等级。回答"已经验证出了什么"。只有经过验证的实例和关系才会出现在实体图中。')]))
+children.push(para('两张图都是纯函数投影——从事件流算出来的。改不了，也不用同步。点节点或边，右侧打开知识 Inspector。'))
+
+children.push(img('docs/marketing/zhihu/images/jepa-ontology.png', 880))
+children.push(caption('产品里真实的一张本体图——素材来自一场真会话的投影：23 个节点、18 条边，左上角「本体图 / 实体图」一键切换'))
+children.push(img('docs/marketing/zhihu/images/jepa-inspector.png', 880))
+children.push(caption('点节点或边：知识 Inspector 给出释义、依据、状态、子概念、相关谓词与登记 / 修订史'))
+children.push(img('docs/marketing/zhihu/images/panel-ontology.png', 620))
+children.push(caption('本体格：图带（本体图|实体图切换）+ 本体货架 + 在验命题（已提出 / 验证中 / 已推翻）'))
 
 // 循环主图
 children.push(img('docs/diagrams/epistemic-loop-hero.zh-CN.png', 880))
@@ -318,8 +323,6 @@ children.push(caption('认识论循环的读数面：L0–L4 等级轴、事先�
 // 第 5 节：认识论
 // ══════════════════════════════════════════════════════════════════════
 children.push(h2('5、认识论：让每条边"挣"到位置的那套工艺'))
-children.push(img('docs/shots/zh/worldlines.png', 620))
-children.push(caption('世界树：计划的拓扑与闸门——脊柱步、叉开的车道、收敛点、要你拍板的那一下'))
 children.push(para([t('认识论循环在 ClearAI 里'), bold('不是流程图，是写进工具 schema 的强制约束'), t('。')]))
 
 children.push(h3('判据先行（Pre-registration）'))
@@ -345,6 +348,14 @@ children.push(para('这在认识论里叫 inter-rater reliability。ClearAI 的�
 children.push(h3('证伪保留'))
 children.push(para('推翻 ≠ 删除。被推翻的假设留在原位，标"已推翻"，连同推翻它的证据一起展示。'))
 children.push(para([t('波普尔说一个理论的价值在于它能被证伪。ClearAI 的实现：'), bold('证伪了的结论也是知识'), t('——"哪条路不通"和"哪条路通"同样有价值。它们都留在本体里。')]))
+
+children.push(h3('知识任务是原生行为，不是另一个模式'))
+children.push(para('本体、实体、认识论早就在仓库里，但普通研究的最短路径仍然是「检索 → 总结 → 写报告」——要建本体，得用户先想起来说一句。这不是能力缺口，是接线缺口。'))
+children.push(para([t('修法不是多加一段提示词，而是把知识任务的判据做成'), bold('结构的'), t('：目标还开着，并且带着登记过的假设——立约本身就是模型已经做出的承诺。满足这条，系统自己进入知识模式：')]))
+children.push(bullet([bold('知识预检'), t('（只读）：现在有哪些可以复用的已知？')]))
+children.push(bullet([bold('缺口'), t('（只读、算出来的）：还缺什么形态，每条指得出一个能补的动作；')]))
+children.push(bullet([bold('知识门'), t('（拦截）：结案之前、派评估者之前，拦住没有形态的核心结论。')]))
+children.push(para([t('普通问答从不立约，于是从不进这一档——'), bold('零成本契约'), t('。真跑给了一个反直觉的结论：改变行为的其实是缺口的可见性，不是门。所以两者都留下：可见性负责让它想做，门负责不让它绕过。')]))
 
 // ══════════════════════════════════════════════════════════════════════
 // 第 6 节：冲突
@@ -376,15 +387,15 @@ children.push(para([
 children.push(h2('7、架构：三条纪律'))
 children.push(para('浅看源码结构：'))
 children.push(...codeBlock([
-	'ui/lib/domain-language.js        740 行   判据纯函数（词汇/断言/冲突/投影）',
-	'ui/lib/fold.js                  1971 行   事件折叠（44 个分支，纯函数）',
-	'ui/lib/client.js                3537 行   面板（React，只读投影）',
-	'preset/plugins/clearai-kernel.js  6694 行  内核（29 个意图工具 + 货架）',
-	'preset/plugins/prompts.js         370 行   提示词段（23 段在场）',
+	'ui/lib/domain-language.js        758 行   判据纯函数（词汇/断言/冲突/投影）',
+	'ui/lib/fold.js                  2675 行   事件折叠（50 个分支，纯函数）',
+	'ui/lib/client.js                3903 行   面板（React，只读投影）',
+	'preset/plugins/clearai-kernel.js  6808 行  内核（29 个意图工具 + 货架）',
+	'preset/plugins/prompts.js         385 行   提示词段（23 段在场）',
 ]))
 children.push(img('docs/diagrams/loop-to-dsh-planes.zh-CN.png', 800))
 children.push(caption('ClearAI 在 DSH 中的位置：认识论层加在组合面上——宿主包 + agent 预设 + 客户端模块'))
-children.push(para('总量 13,000 行出头。三条架构纪律挡住了大量复杂度：'))
+children.push(para('总量 14,500 行出头。三条架构纪律挡住了大量复杂度：'))
 
 children.push(h3('账本是唯一权威，面板只是投影'))
 children.push(para('所有状态变更落成事件（event sourcing）。面板读的是投影——fold.js 从事件流算出当前状态的纯函数。没有第二份存储。你看到的每一个数字都是现场算出来的。状态可从零重放，审计就是读事件流。'))
@@ -427,19 +438,22 @@ children.push(table([
 	dataRow(['日常代码生成', '不适用', '它是认识论工作台，Code Copilot 的活它不干'], fitW),
 ], fitW))
 children.push(para(''))
+children.push(img('docs/marketing/zhihu/images/panel-worldlines.png', 620))
+children.push(caption('世界树：计划的拓扑与闸门——脊柱步、叉开的车道、收敛点、要你拍板的那一下'))
 
 // ══════════════════════════════════════════════════════════════════════
 // 第 10 节：上手
 // ══════════════════════════════════════════════════════════════════════
-children.push(img('docs/shots/zh/deliverables.png', 660))
-children.push(caption('产物格：计划的声明交付与盘上真有的分开摆——按阶段排开，每步带判据'))
-
 children.push(h2('10、五分钟上手'))
 children.push(...codeBlock([
 	'npx clearai-dsh install',
 ]))
-children.push(para('装完重启 dsh web（插件两半在运行中的进程里按 URL 缓存），新建会话选 ClearAI 预设。'))
+children.push(para([t('装完重启 '), t('dsh web'), t('（插件两半在运行中的进程里按 URL 缓存）。然后'), bold('新建会话，点顶部的模式名，在预设列表里切换到 ClearAI'), t('——这是关键一步：默认的「标准模式」不会挂载认识论循环。ClearAI 的卡片描述就一句：「利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.」')]))
+children.push(img('docs/marketing/zhihu/images/jepa-ontology.png', 880))
+children.push(caption('切到 ClearAI 模式之后，研究会在循环里长出本体——这是真跑会话的投影（23 个节点、18 条边）'))
 children.push(para('发第一句话之前想好你的领域大概有哪几个概念。不用想全——词汇增量登记，漏了随时补。然后正常对话。该验证的时候系统走循环；该你裁决的时候（冲突、计划审阅），它在面板上等你。'))
+children.push(img('docs/marketing/zhihu/images/panel-deliverables.png', 620))
+children.push(caption('产物格：计划的声明交付与盘上真有的分开摆——每份产物多少字节、由哪一步交的，一眼可查'))
 
 // ══════════════════════════════════════════════════════════════════════
 // 第 11 节：边界
@@ -459,7 +473,7 @@ children.push(para('ClearAI 给出的答案：'))
 children.push(quote([
 	bold('用认识论循环（判据先行 + 独立评估 + 证伪保留）做质量体系，让每一条边都带着证据链和验证等级进入本体——这样的本体，你敢在上面推理。'),
 ]))
-children.push(para('13,000 行代码。29 个工具。44 种事件。1372 条断言。每一行都在回答同一个问题：'))
+children.push(para('14,500 行代码。29 个工具。50 种事件。1618 条断言。每一行都在回答同一个问题：'))
 children.push(para([accent('这条边是怎么挣来的。')], { alignment: AlignmentType.CENTER }))
 children.push(para(''))
 
