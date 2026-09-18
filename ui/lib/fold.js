@@ -1163,6 +1163,65 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 	}
 }
 
+/**
+ * **知识预检(preflight)**:进入知识模式那一刻,把「已知」主动送到模型面前。
+ *
+ * 解决的问题:真跑里模型不查就开工——不是因为不知道有 \`QueryKnowledge\`,
+ * 而是因为**没人提醒它此刻该查**。提示词会被读成建议;卡里的读数不会。
+ * 于是这里把相关性判断做成投影:从当前目标与命题的文本出发,圈出**有界**的一组
+ * 已有词汇、事实与冲突,随运行态卡注入。模型只在这份摘要不够用时才需要精确查询。
+ *
+ * 三条纪律(与缺口读数同一套):
+ *   · **只读**:不产生变更,不新增状态——它就是 \`derive\` 的另一个读面;
+ *   · **有界**:terms / predicates / facts 各有上限,超出如实说「还有 N 个未列出」;
+ *   · **不猜语义**:相关性是**词面命中**(label / id / alias 出现在主张文本里),
+ *     不是「系统认为相关」——命中的依据逐条可复核。
+ *
+ * 判据的形状:主张文本(去空白)包含词条的 label / id / alias(去空白),
+ * 或者命题已有的断言引用了该谓词。前者是「这个词已经在对话里出现了」,后者是「已经在用了」。
+ */
+export function knowledgePreflight(state, derived) {
+	const knowledge = derived?.knowledge ?? deriveKnowledge(state, derived?.hypotheses ?? [], derived?.factRows ?? [], derived?.lexicon)
+	if (knowledge.mode !== 'knowledge') return null
+	const terms = Array.isArray(derived?.lexicon?.terms) ? derived.lexicon.terms : []
+	const predicates = Array.isArray(derived?.lexicon?.predicates) ? derived.lexicon.predicates : []
+	const hypotheses = Array.isArray(derived?.hypotheses) ? derived.hypotheses : []
+	const factRows = Array.isArray(derived?.factRows) ? derived.factRows : []
+	const conflicts = Array.isArray(derived?.conflicts) ? derived.conflicts : []
+	/** 命题的文本面:目标主张 + 每条命题的主张(去空白后做包含判断)。 */
+	const claimText = [state?.goal?.claim, ...hypotheses.map((item) => item.claim)].filter((text) => typeof text === 'string' && text !== '').map((text) => String(text).replace(/\s+/g, ''))
+	/** 命题已经引用的谓词(断言在假设上时就该算「在用」)。 */
+	const usedPredicates = new Set(hypotheses.flatMap((item) => (Array.isArray(item.assertions) ? item.assertions : [])).map((assertion) => String(assertion?.predicate ?? '')))
+	const hits = (entry) => {
+		const candidates = [entry.id, entry.label, ...(Array.isArray(entry.aliases) ? entry.aliases : [])].filter((text) => typeof text === 'string' && text !== '').map((text) => String(text).replace(/\s+/g, ''))
+		return candidates.some((candidate) => claimText.some((text) => text.includes(candidate)))
+	}
+	const LIMIT = 20
+	const matchedTerms = terms.filter((term) => hits(term) && term.status !== 'deprecated')
+	const matchedPredicates = predicates.filter((predicate) => usedPredicates.has(predicate.id) || hits(predicate))
+	const matchedTermIds = new Set(matchedTerms.map((term) => term.id))
+	const matchedPredicateIds = new Set(matchedPredicates.map((predicate) => predicate.id))
+	/** 事实:断言引用了命中的谓词,或主词类型是命中的概念。 */
+	const matchedFacts = factRows.filter((fact) =>
+		(Array.isArray(fact.assertions) ? fact.assertions : []).some((assertion) => matchedPredicateIds.has(String(assertion?.predicate ?? '')) || matchedTermIds.has(String(assertion?.subject?.type ?? ''))),
+	)
+	return {
+		mode: 'knowledge',
+		/** 词面命中的词汇:模型接下来要写的结论大概率会用到它们。 */
+		terms: matchedTerms.slice(0, LIMIT).map((term) => ({ id: term.id, label: term.label, gloss: term.gloss, parent: term.parent ?? null, status: term.status, uses: term.uses ?? 0, basis: term.basis ?? null })),
+		termsTruncated: Math.max(0, matchedTerms.length - LIMIT),
+		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
+		predicatesTruncated: Math.max(0, matchedPredicates.length - LIMIT),
+		/** 命中的既有事实(可复用的「已知」)。 */
+		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: fact.scope ?? null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null })),
+		factsTruncated: Math.max(0, matchedFacts.length - LIMIT),
+		/** 冲突:有就带上(它们约束「哪些结论还不能随便写)。 */
+		conflicts: conflicts.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject })),
+		/** 缺口读数(与卡里同一份:`deriveKnowledge` 的 gaps)。 */
+		gaps: knowledge.gaps,
+	}
+}
+
 export function derive(state) {
 	const activePlan = state.plans.find((plan) => plan.status === 'active') ?? null
 	const closedPlans = state.plans.filter((plan) => plan.status === 'closed')
@@ -1641,6 +1700,11 @@ export function view(state, sessionId) {
 		 */
 		knowledge: derived.knowledge,
 		/**
+		 * **知识预检**:进入知识模式那一刻的相关已知(词汇 / 事实 / 冲突,有界)。
+		 * 面板可以画它,内核的 pre-step 把它送进卡——判据与缺口读数一样,只有这一处。
+		 */
+		preflight: knowledgePreflight(state, derived),
+		/**
 		 * 续跑窗口的账:面板读它,于是「续跑停着——等裁决」这种**平台说不出来的话**
 		 * 有地方说。轮数与相位仍然只在原生 dock 上出现(一个事实只在**一块**面上说),
 		 * 这里交出去的只有:状态、它服务的事实对象、以及停下来的真实理由。
@@ -1970,6 +2034,27 @@ export function renderCard(state) {
 	 */
 	if (derived.knowledge.mode === 'knowledge') {
 		lines.push(`- 知识模式:${derived.knowledge.why}`)
+		/**
+		 * **知识预检**:与缺口同一拍出现的相关已知。
+		 *
+		 * 它解决的是「模型不查就开工」——相关性判断在这里做完(词面命中,逐条可复核),
+		 * 模型拿到的是**可以直接引用的 id 清单**,而不是一句「去查 QueryKnowledge」。
+		 * 没有命中时如实说「没找到相关的」,不把空读数写成「世上没有」。
+		 */
+		const preflight = knowledgePreflight(state, derived)
+		if (preflight !== null) {
+			if (preflight.terms.length > 0 || preflight.predicates.length > 0) {
+				const more = (count) => (count > 0 ? `(还有 ${count} 个未列出)` : '')
+				lines.push(
+					`  · 相关已知(词面命中,可直接引用):概念 ${preflight.terms.map((term) => `${term.id}${term.label === term.id ? '' : `(${term.label})`}`).join('、') || '无'}${more(preflight.termsTruncated)};谓词 ${preflight.predicates.map((predicate) => `${predicate.id}${predicate.label === predicate.id ? '' : `(${predicate.label})`}`).join('、') || '无'}${more(preflight.predicatesTruncated)}`,
+				)
+				if (preflight.facts.length > 0) {
+					lines.push(`  · 可复用事实 ${preflight.facts.length} 条:${preflight.facts.map((fact) => `${fact.id}(${fact.level ?? '?'})`).join('、')}${preflight.factsTruncated > 0 ? `(还有 ${preflight.factsTruncated} 条未列出)` : ''}`)
+				}
+			} else {
+				lines.push('  · 相关已知:当前主张文本没有命中任何已有概念 / 谓词——要写断言就先立词(带依据),别把查不到当成不存在')
+			}
+		}
 		if (derived.knowledge.gaps.length === 0) {
 			lines.push('  · 结构完整:语言、断言的命题、带断言的已升格事实、证据覆盖这四项今天都不欠')
 		} else {

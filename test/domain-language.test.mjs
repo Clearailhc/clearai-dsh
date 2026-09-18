@@ -428,6 +428,68 @@ console.log('\n【假设身份:一个 id 只对应一条主张(真跑里卡上�
 	check('终态黏住:被替代过的命题不会因为再被列出而复活', sticky.hypotheses[0].status === 'superseded' && sticky.hypotheses.length === 1)
 }
 
+console.log('\n【知识预检:相关已知自动到面前,普通任务零成本】')
+{
+	/**
+	 * 预检解决的是「模型不查就开工」:相关性判断在投影里做完(词面命中,逐条可复核),
+	 * 模型拿到的是**可直接引用的 id 清单**,不是一句「去查 QueryKnowledge」。
+	 * 三条纪律与缺口读数同一套:只读、有界、不猜语义。
+	 */
+	const seededState = fold.applyMutations(fold.emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: '查清炉次氧含量', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: '炉次氧含量是 10ppm', refute_when: 'rw' }] },
+		{ t: 'ontology/term_added', id: 'furnace_batch', label: '炉次', gloss: '熔铸循环', basis: 'R-01' },
+		{ t: 'ontology/term_added', id: 'unrelated', label: '无关概念', gloss: 'g', basis: 'b' },
+		{ t: 'ontology/predicate_added', id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: 'R-01' },
+	])
+
+	// ① 普通任务:一个字节都不加。
+	check('普通任务 preflight = null(零成本契约)', fold.knowledgePreflight(fold.emptyState(), fold.derive(fold.emptyState())) === null)
+	check('普通任务的卡里不出现「相关已知」', !fold.renderCard(fold.emptyState()).includes('相关已知'))
+
+	// ② 知识模式:命中的进、不命中的不进。
+	const pf = fold.knowledgePreflight(seededState, fold.derive(seededState))
+	check('知识模式给出预检', pf !== null && pf.mode === 'knowledge')
+	check('主张文本命中的概念进预检(炉次)', pf.terms.some((term) => term.id === 'furnace_batch'))
+	check('没命中的概念不进(无关概念不在清单里)', !pf.terms.some((term) => term.id === 'unrelated'))
+	check('命中的谓词进预检(氧含量)', pf.predicates.some((predicate) => predicate.id === 'oxygen_ppm'))
+
+	// ③ 断言已引用的谓词即使词面不命中也算「在用」。
+	const withAssertions = fold.applyMutations(seededState, [
+		{
+			t: 'goal/set',
+			id: 'g1',
+			claim: '查清炉次氧含量',
+			done_criteria: 'D',
+			promote_at_level: 'L3',
+			revision: 2,
+			hypotheses: [{ id: 'h1', claim: '炉次氧含量是 10ppm', refute_when: 'rw', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } }] }],
+		},
+	])
+	const pf2 = fold.knowledgePreflight(withAssertions, fold.derive(withAssertions))
+	check('断言引用的谓词算「在用」(即使词面不命中)', pf2.predicates.some((predicate) => predicate.id === 'oxygen_ppm'))
+
+	// ④ 卡里真的说出来。
+	const card = fold.renderCard(seededState)
+	check('卡里有「相关已知」一行,带可直接引用的 id', card.includes('相关已知') && card.includes('furnace_batch') && card.includes('oxygen_ppm'))
+
+	// ⑤ 没命中时如实说,不把空读数写成「世上没有」。
+	const noVocab = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g1', claim: '全新领域', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: '全新主张', refute_when: 'rw' }] }])
+	const pf3 = fold.knowledgePreflight(noVocab, fold.derive(noVocab))
+	check('没有命中时 terms/predicates 为空数组(不是 null,不是 undefined)', Array.isArray(pf3.terms) && pf3.terms.length === 0 && Array.isArray(pf3.predicates) && pf3.predicates.length === 0)
+	check('卡里如实说「没命中」并指出动作', fold.renderCard(noVocab).includes('没有命中') && fold.renderCard(noVocab).includes('先立词'))
+
+	// ⑥ 废止的词条不进预检。
+	const deprecated = fold.applyMutations(seededState, [{ t: 'ontology/term_deprecated', id: 'furnace_batch', reason: '不再用' }])
+	const pf4 = fold.knowledgePreflight(deprecated, fold.derive(deprecated))
+	check('废止的概念不进预检(新断言不许再引用它)', !pf4.terms.some((term) => term.id === 'furnace_batch'))
+
+	// ⑦ 有界:超出上限如实报 truncated。
+	check('预检带 truncated 读数(有界,不假装这就是全部)', typeof pf.termsTruncated === 'number' && typeof pf.predicatesTruncated === 'number')
+
+	// ⑧ 读面(view)也带出同一份。
+	check('view().preflight 与判据同源', fold.view(seededState, 's').preflight?.terms.some((term) => term.id === 'furnace_batch'))
+}
+
 console.log('\n【测试面:这一份测试进了 run.sh(否则它只是本地脚本)】')
 {
 	check('run.sh 里登记了领域语言这一套', suiteSource.includes('domain-language.test.mjs'))
