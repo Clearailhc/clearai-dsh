@@ -131,9 +131,17 @@ RegisterPredicate({
 
 两张图都是纯函数投影——从事件流算出来的。改不了，也不用同步。
 
+![](docs/shots/zh/facts.png)
+
+*本体格：图带（本体图|实体图切换）+ 本体货架（已确立条目，每条带断言芯片与冲突标记）+ 命题*
+
 ---
 
 ## 5、认识论：让每条边"挣"到位置的那套工艺
+
+![](docs/shots/zh/worldlines.png)
+
+*世界树：计划的拓扑与闸门——脊柱步、叉开的车道、收敛点、要你拍板的那一下*
 
 现在说施工规范。认识论循环在 ClearAI 里不是流程图，是**写进工具 schema 的强制约束**。
 
@@ -213,6 +221,10 @@ preset/plugins/clearai-kernel.js  6694 行  内核（29 个意图工具 + 货架
 preset/plugins/prompts.js       370 行   提示词段（23 段在场）
 ```
 
+![](docs/diagrams/loop-to-dsh-planes.zh-CN.png)
+
+*ClearAI 在 DSH 中的位置：认识论层加在组合面上——宿主包 + agent 预设 + 客户端模块*
+
 总量 13,000 行出头。三条架构纪律挡住了大量复杂度：
 
 ### 账本是唯一权威，面板只是投影
@@ -260,6 +272,10 @@ ClearAI 的定位是**在单个项目里，让 AI 产出的知识经过验证后
 | 日常代码生成 | 不适用 | 它是认识论工作台，Code Copilot 的活它不干 |
 
 ---
+
+![](docs/shots/zh/deliverables.png)
+
+*产物格：计划的声明交付与盘上真有的分开摆——按阶段排开，每步带判据*
 
 ## 10、五分钟上手
 
