@@ -22,20 +22,34 @@ window.__ModuleLoader__.load({
 
 		const React = require('react')
 		/**
-		 * **图渲染交给 React Flow**(`@xyflow/react`):拖节点、拖画布、滚轮缩放、MiniMap、
-		 * 框选都是库的事。它由 `ui/vendor/xyflow.js` 注册成模块行(build 时打进去,见
-		 * `tools/build-vendor.mjs`),`require` 按行名解析——与 `require('react')` 同一个姿势。
+		 * **图渲染交给 React Flow**(`@xyflow/react`)。
 		 *
-		 * 拿不到时不炸整块面板:图退化成一句「图组件不可用」的读数,
-		 * 其余格子(事实 / 命题 / 词汇)照常——与我们「降级要如实、不要崩」同一条纪律。
+		 * 它由 `tools/build-vendor.mjs` 打包成 `ui/vendor/xyflow.js`,build 时与这一文件
+		 * **拼成同一份** lib/client.js——于是它是一个**同作用域的函数**,不是模块行。
+		 *
+		 * 为什么不做成模块行:模块系统的 `require` 只认**平台种子字**(react 之类)
+		 * 与**启动图里的行**;运行时动态 `load()` 的行不在启动图里,`require` 会直接不认。
+		 * 声明成函数就绕开了整张表,而它内部的 `require('react')` 绑定的正是宿主给工厂的那个。
+		 *
+		 * 拿不到时不炸整块面板:**把真实原因也说出来**——只说「不可用」而不说为什么,
+		 * 读的人(和下一次修它的人)就得自己猜。原因同时进 console,便于排查。
 		 */
-		const XYFlow = (() => {
+		const XYFLOW_LOAD = (() => {
 			try {
-				return require('@xyflow/react')
-			} catch {
-				return null
+				if (typeof __clearaiXyflow !== 'function') return { module: null, reason: 'vendor 没打进来(ui/vendor/xyflow.js 缺失?)' }
+				return { module: __clearaiXyflow(require), reason: null }
+			} catch (error) {
+				const reason = String(error?.message ?? error).slice(0, 160)
+				try {
+					console.warn('[clearai] React Flow 加载失败:', error)
+				} catch {
+					/* console 不在也不该让面板挂掉 */
+				}
+				return { module: null, reason }
 			}
 		})()
+		const XYFlow = XYFLOW_LOAD.module
+
 		/**
 		 * **原生图标**(与本体页签同一族):dsh 右栏页签的 guide 吃一个 `icon` 组件,原生那几张页签用的是
 		 * `@deepseek-ai/dsh-client-ui-primitives` 里那套(文件页签 = FileTypeIcon ✓)。
@@ -3240,7 +3254,7 @@ window.__ModuleLoader__.load({
 					h('span', { style: S.chipAction, onClick: onToggleFullscreen }, fullscreen === true ? t('关闭工作区') : t('打开图谱工作区')),
 				),
 				XYFlow === null || typeof XYFlow.ReactFlow !== 'function'
-					? h('div', { style: S.faint }, t('图组件不可用(React Flow 那一行没装上):投影还在,事实与命题照常可读。'))
+					? h('div', { style: S.faint }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('投影还在,事实与命题照常可读。')}`)
 					: allNodes.length === 0
 					? h('div', { style: S.faint }, t('此层暂无节点。'))
 					: h(

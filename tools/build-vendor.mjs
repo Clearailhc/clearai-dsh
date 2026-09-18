@@ -50,33 +50,32 @@ const css = readFileSync(join(PORT, 'node_modules', '@xyflow', 'react', 'dist', 
 const xyflowVersion = JSON.parse(readFileSync(join(PORT, 'node_modules', '@xyflow', 'react', 'package.json'), 'utf8')).version
 const banner = `/**
  * 这一文件由 tools/build-vendor.mjs 生成,**不要手改**。
- * 它把 @xyflow/react(${xyflowVersion})注册成一个模块行,
- * 插件客户端的 \`require('@xyflow/react')\` 解析到这里(含它那份必需的 style.css)。
- * react / react/jsx-runtime 是平台种子字(宿主提供),不在这一份里。
+ * 它把 @xyflow/react(${xyflowVersion})的 CJS 体声明成**同一脚本作用域里的一个函数**,
+ * 主文件(client.js)的工厂闭包直接调它。
+ *
+ * 为什么不用「注册成模块行」:模块系统的 \`require\` 只认**平台种子字**与**启动图里的行**,
+ * 而一个运行时动态 \`load()\` 的行不在启动图里——那正是「图组件不可用」那次的原因。
+ * 声明成函数就绕开了整张表:它的 \`require('react')\` 绑定到调用方传进来的那个 require
+ * (也就是宿主给工厂的那个),所以依赖面依然只有种子字。
  */
-`
-const wrapped = `${banner}
-window.__ModuleLoader__.load({
-	id: '@xyflow/react',
-	factory: (require) => {
-		/** 样式只注入一次(模块系统对 factory 有 memo,但同一页面重挂时也要幂等)。 */
-		if (typeof document !== 'undefined' && document.querySelector('style[data-clearai="xyflow"]') === null) {
-			const style = document.createElement('style')
-			style.setAttribute('data-clearai', 'xyflow')
-			style.textContent = ${JSON.stringify(css)}
-			document.head.appendChild(style)
-		}
-		var module = { exports: {} }
-		var exports = module.exports
-		Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' })
+function __clearaiXyflow(require) {
+	/** 样式只注入一次(这个函数可能被重新求值,幂等要有保证)。 */
+	if (typeof document !== 'undefined' && document.querySelector('style[data-clearai="xyflow"]') === null) {
+		const style = document.createElement('style')
+		style.setAttribute('data-clearai', 'xyflow')
+		style.textContent = ${JSON.stringify(css)}
+		document.head.appendChild(style)
+	}
+	var module = { exports: {} }
+	var exports = module.exports
+	Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' })
 ${body}
-		return module.exports
-	},
-})
+	return module.exports
+}
 `
-writeFileSync(OUT, wrapped)
-const kb = Math.round(wrapped.length / 1024)
-console.log(`【vendor】@xyflow/react@${xyflowVersion} → ui/vendor/xyflow.js(JS+CSS,${kb} KB · react 外部化)`)
+writeFileSync(OUT, banner)
+const kb = Math.round(banner.length / 1024)
+console.log(`【vendor】@xyflow/react@${xyflowVersion} → ui/vendor/xyflow.js(JS+CSS,${kb} KB · 函数形式,react 外部化)`)
 return OUT
 }
 

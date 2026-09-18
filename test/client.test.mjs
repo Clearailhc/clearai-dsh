@@ -35,7 +35,7 @@ const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles
 /**
  * **发出去的那一份 = vendor 行 + 主文件**(见 tools/build-package.mjs)。
  * 这里比的就是那个组合——不是「源里有一个文件」而已:xvflow 那一行如果没跟上,
- * 浏览器里 `require('@xyflow/react')` 会当场解析失败,而面板会安静地退化成没有图。
+ * 浏览器里就找不到 React Flow,面板会安静地退化成没有图。
  */
 /**
  * vendor 是**生成物**(ui/vendor/ 不入库)。没生成时如实跳过,不假装测过——
@@ -46,7 +46,17 @@ if (!existsSync(VENDOR)) {
 	console.log('  生成它:node tools/build-vendor.mjs(或 npm run build)')
 	process.exit(0)
 }
-const source = `${readFileSync(VENDOR, 'utf8')}\n${readFileSync(SOURCE, 'utf8')}`
+const VENDOR_SOURCE = readFileSync(VENDOR, 'utf8')
+const MAIN_SOURCE = readFileSync(SOURCE, 'utf8')
+/**
+ * **行为测试跑的是主文件**,vendor 由装载器以参数注入一个桩。
+ * 为什么不用真的:真库要真 React + 真 DOM(它坏了也不是我们的 bug),而我们钉的是**适配层**。
+ * 另外:vendor 里那句 `function __clearaiXyflow` 是**函数声明**——它会覆盖同名参数,
+ * 所以「拼在一起再注入」这条路根本走不通(试过,真库被跑起来、撞在桩 React 上)。
+ */
+const source = MAIN_SOURCE
+/** **部署件比对**用的是 build 真正拼出来的那一份(vendor 在前、主文件在后)。 */
+const expectedDeployed = `${VENDOR_SOURCE}\n${MAIN_SOURCE}`
 let deployed = null
 try {
 	deployed = readFileSync(DEPLOYED, 'utf8')
@@ -58,7 +68,7 @@ if (deployed === null) {
 	console.log('  装上再测:bash install.sh,或 node tools/install-native.mjs --profile web')
 	process.exit(0)
 }
-if (deployed !== source) {
+if (deployed !== expectedDeployed) {
 	console.log('✗ 部署的 client.js 与源不一致——先跑 bash install.sh(这份测试测的是要跑的那一份)。')
 	process.exit(1)
 }
@@ -87,13 +97,12 @@ function loadClientBundle() {
 		// 原生图标(§23):真机上由 dsh 的客户端模块加载器提供;这里给两个假组件,
 		// 好让「页签确实带原生图标」这条断言**真跑得动**,而不是恒为 undefined 的空转。
 		if (name === '@deepseek-ai/dsh-client-ui-primitives') return { IconBranchOutline16: () => null, IconSkillOutline16: () => null }
-		if (name === '@xyflow/react') return makeXyflowStub(React.createElement)
 		if (name === 'react') return React
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
 	// 先把 bundle 求值一遍(它自己会调 window.__ModuleLoader__.load 登记工厂),再取工厂跑。
-	const evaluate = new Function('window', 'require', 'console', source)
-	evaluate(globalThis.window, require, console)
+	const evaluate = new Function('window', 'require', 'console', '__clearaiXyflow', source)
+	evaluate(globalThis.window, require, console, () => makeXyflowStub(React.createElement))
 	if (registration === null) throw new Error('bundle 没有通过 __ModuleLoader__.load 登记工厂')
 	const exports = registration.factory(require)
 	delete globalThis.window
@@ -299,11 +308,10 @@ function loadClientWithStringReact() {
 	globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 	const react = makeStringReact()
 	const require = (name) => {
-		if (name === '@xyflow/react') return makeXyflowStub(react.createElement)
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
-	new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+	new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement))
 	delete globalThis.window
 	return { exports: registration.factory(require), react }
 }
@@ -394,19 +402,18 @@ function loadClientWithStatefulReact() {
 	globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 	const react = makeStatefulReact()
 	const require = (name) => {
-		if (name === '@xyflow/react') return makeXyflowStub(react.createElement)
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
-	new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+	new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement))
 	delete globalThis.window
 	const exports = registration.factory(require)
 	return { exports, react, render: (component, props) => { react.reset(); return component(props) } }
 }
 
 /**
- * 载入 bundle,但**不给** `@xyflow/react`(模拟 vendor 那一行没装上):
- * 用来钉「降级要如实、不要崩」——真机上宿主版本旧、或 vendor 没跟上时会走到这条路。
+ * 载入 bundle,但**不给** vendor 函数(模拟 ui/vendor/xyflow.js 没打进来):
+ * 用来钉「降级要如实、不要崩,而且要说出原因」——build 拼装掉了、或包不完整时会走到这条路。
  */
 function loadClientBundleWithoutXyflow() {
 	let registration = null
@@ -417,7 +424,8 @@ function loadClientBundleWithoutXyflow() {
 		if (name === '@deepseek-ai/dsh-client-ui-primitives') return {}
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
-	new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+	/** 这里**故意不注入**:客户端应当走如实降级那条路,而不是崩。 */
+	new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, undefined)
 	delete globalThis.window
 	return { exports: registration.factory(require), react }
 }
@@ -431,11 +439,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 		const react = makeStringReact()
 		const require = (name) => {
-			if (name === '@xyflow/react') return makeXyflowStub(react.createElement)
-			if (name === 'react') return react
+				if (name === 'react') return react
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
-		new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+		new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement))
 		delete globalThis.window
 		return { exports: registration.factory(require), react }
 	}
@@ -764,6 +771,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 					}))
 					.replace(/\s+/g, ' ')
 				check('拿不到图组件时如实说,而不是崩', rendered.includes('图组件不可用'))
+				check('降级时说得出**原因**(不然下一次修它还得自己猜)', /图组件不可用\(.+?\)/.test(rendered), rendered.slice(0, 200))
 				check('降级时其余读数照常(节点计数仍在)', rendered.includes('个节点'))
 			}
 
@@ -1478,11 +1486,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		let registration = null
 		globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 		const requireStub = (name) => {
-			if (name === '@xyflow/react') return makeXyflowStub(reactStub.createElement)
 			if (name === 'react') return reactStub
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
-		new Function('window', 'require', 'console', source)(globalThis.window, requireStub, console)
+		new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, requireStub, console, () => makeXyflowStub(reactStub.createElement))
 		delete globalThis.window
 		const loaded = registration.factory(requireStub)
 		const realFetch = globalThis.fetch
@@ -1966,12 +1973,13 @@ console.log('\n【服务的声明面:用到的每一个都必须在 inject 里(2
 console.log('\n【图谱渲染:React Flow 那一行真的在部署件里】')
 {
 	/**
-	 * 这一条守的是**装出去之后还能不能用**:`require('@xyflow/react')` 是模块系统按行名
-	 * 解析的,那一行由 `ui/vendor/xyflow.js` 注册、build 时拼进 lib/client.js。
+	 * 这一条守的是**装出去之后还能不能用**:React Flow 由 `ui/vendor/xyflow.js` 提供,
+	 * build 时与主文件拼成同一份 lib/client.js(它是一个**同作用域的函数**,不是模块行——
+	 * 运行时动态加载的模块行不在启动图里,`require` 不认它)。
 	 * 拼接一旦掉了,浏览器里图会安静地退化成「图组件不可用」——所以这里验的是**包里的字节**,
 	 * 不是源里的意图。
 	 */
-	check('部署件里注册了 @xyflow/react 那一行', deployed.includes("id: '@xyflow/react'"))
+	check('部署件里带着 vendor 函数(build 的拼接没掉)', deployed.includes('function __clearaiXyflow(require)'))
 	check('部署件里带上了 React Flow 的样式(缺了布局会散)', deployed.includes('data-clearai'))
 	/**
 	 * vendor 里**只能**依赖平台种子字:任何别的外部包在浏览器里都解析不到
@@ -1981,7 +1989,8 @@ console.log('\n【图谱渲染:React Flow 那一行真的在部署件里】')
 	const vendorRequires = [...readFileSync(VENDOR, 'utf8').matchAll(/require\("([^"]+)"\)/g)].map((match) => match[1])
 	const externalNotSeed = [...new Set(vendorRequires)].filter((name) => name !== 'react' && name !== 'react/jsx-runtime')
 	check('vendor 的外部依赖只有平台种子字(react / react/jsx-runtime)', externalNotSeed.length === 0, externalNotSeed.join(','))
-	check('主文件确实 require 了那一行(而不是只用桩)', readFileSync(SOURCE, 'utf8').includes("require('@xyflow/react')"))
+	check('主文件确实调用它(而不是只用桩)', readFileSync(SOURCE, 'utf8').includes('__clearaiXyflow(require)'))
+	check('依赖面仍然只有平台种子字(不 require 任何 npm 包)', !/require\('@xyflow/.test(readFileSync(SOURCE, 'utf8')))
 }
 
 console.log('\n【语言:接原生 locale 座位,表按源文索引】')
