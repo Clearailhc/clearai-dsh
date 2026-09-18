@@ -259,14 +259,21 @@ sequenceDiagram
     P->>P: derive：冲突对 · 词汇健康度 · graphProjection（layer / degree / claim）
     P-->>G: 渲染货架 / 运行态卡 / 面板视图
     G-->>M: 下一回合按概念取「已知」
+    Note over G: 图由 React Flow 渲染(节点/边来自 P,视口与拖动归库)
+    G->>K: 点节点 / 边 → GET /api/clearai/inspector(kind, id)
+    K->>P: inspectGraphSelection(state, selection)
+    P-->>G: 定义 / 关系 / 断言 / 证据链 / 历史
 ```
 
-四条边界（每条都有测试或写进[已知缺口](../known-gaps.zh-CN.md)）：
+五条边界（每条都有测试或写进[已知缺口](../known-gaps.zh-CN.md)）：
 
 1. **登记即拒**：引用不存在、已废止或值域不符的断言在**落账之前**被拒——不进账本，就没有「先污染后治理」。
 2. **冲突只暴露**：由 `derive()` 现算，不撤回任何一侧、不判断哪条为真、**不进闸门**；处置走既有的人门（`fact/reviewed`）。
 3. **图是渲染**：`graphProjection()` 是确定性纯函数（同一账本必得同一张图），坐标不进账本。
-4. **货架有主人**：`domain.md` 与 `facts/INDEX.md` 是**工作区级**读面，只有拥有账本的会话能铺——
+4. **图是渲染，不是第二本账**：`graphProjection()` 出的是纯语义（节点 / 边 / 包围盒），
+   视口 / 拖动 / 可见性归 React Flow；客户端的 Inspector 读数一律经
+   `GET /api/clearai/inspector` 向宿主取，自己不拼证据链。交互不产生任何 mutation。
+5. **货架有主人**：`domain.md` 与 `facts/INDEX.md` 是**工作区级**读面，只有拥有账本的会话能铺——
    写入口自带所有权判据，派出去的子会话（评估者 / 侦察 / 执行者）结构上写不进
    （它们与主线共享工作区、却各持一份投影；让它们铺，共享读面就会在「谁最后铺了一拍」之间摆动）。
    行为由 kernel 套件钉、结构由 authority-boundary 套件钉。

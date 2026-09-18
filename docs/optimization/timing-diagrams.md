@@ -271,14 +271,19 @@ sequenceDiagram
     P->>P: derive: conflict pairs · vocabulary health · graphProjection (layer / degree / claim)
     P-->>G: render shelf / runtime card / panel view
     G-->>M: next turn retrieves what is known by concept
+    Note over G: the graph is rendered by React Flow (nodes/edges from P; viewport and dragging are the library's)
+    G->>K: click a node / edge → GET /api/clearai/inspector (kind, id)
+    K->>P: inspectGraphSelection(state, selection)
+    P-->>G: definition / relations / assertions / evidence chain / history
 ```
 
-Four boundaries (each has a test, or is written into [Known gaps](../known-gaps.md)):
+Five boundaries (each has a test, or is written into [Known gaps](../known-gaps.md)):
 
 1. **Refused at registration**: an assertion that references an unknown or deprecated entry, or whose object form does not fit the range, is refused **before anything lands** — nothing enters the ledger, so there is nothing to clean up later.
 2. **Conflicts are surfaced only**: computed by `derive()`, they retract no side, decide nothing about which is true, and **enter no gate**; handling one goes through the existing human gate (`fact/reviewed`).
 3. **Graphs are renderings**: `graphProjection()` is a deterministic pure function (the same ledger always yields the same graph) and coordinates never enter the ledger.
-4. **The shelf has an owner**: `domain.md` and `facts/INDEX.md` are **workspace-level** read surfaces, and only the session that owns the ledger may lay them — the ownership check lives inside the write functions, so spawned children (evaluator / scout / executor) structurally cannot write them. Children share the workspace with the primary line yet hold a separate, empty projection; if they re-laid the shelf, the shared read surface would oscillate with whoever stepped last. Behavior is pinned by the kernel suite, structure by the authority-boundary suite.
+4. **The graph is a rendering, not a second ledger**: `graphProjection()` yields pure semantics (nodes / edges / bounds); the viewport, dragging and visibility belong to React Flow. The client's Inspector readings always come from `GET /api/clearai/inspector`, so it never assembles an evidence chain itself. Interaction produces no mutation at all.
+5. **The shelf has an owner**: `domain.md` and `facts/INDEX.md` are **workspace-level** read surfaces, and only the session that owns the ledger may lay them — the ownership check lives inside the write functions, so spawned children (evaluator / scout / executor) structurally cannot write them. Children share the workspace with the primary line yet hold a separate, empty projection; if they re-laid the shelf, the shared read surface would oscillate with whoever stepped last. Behavior is pinned by the kernel suite, structure by the authority-boundary suite.
 
 ## 6. Human gate path · implemented
 
