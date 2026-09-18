@@ -670,10 +670,16 @@ export function apply(ctx) {
 		route('/api/clearai/inspector', ['GET'], async (httpRequest) => {
 			const url = new URL(httpRequest.url)
 			const sessionId = url.searchParams.get('sessionId') ?? ''
-			if (ctx.sessions.get(sessionId) === undefined) return reply(404, { ok: false, error: 'no_live_session' })
-			const service = ctx.get('clearai')
-			if (service === undefined || typeof service.inspector !== 'function') return reply(200, { ok: false, error: 'no_inspector' })
-			const found = service.inspector(sessionId, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' })
+			const session = ctx.sessions.get(sessionId)
+			if (session === undefined) return reply(404, { ok: false, error: 'no_live_session' })
+			/**
+			 * 直接用本模块的折法读状态,不走 `ctx.get('clearai')`:那条门面是同一条 fiber 上
+			 * 提供给**预设侧**用的,而这条路由只是把同一个纯函数接到 HTTP 上——
+			 * 中间多一跳服务解析,只会多一种「服务没接上」的失败模式。
+			 */
+			const state = ctx.sessionProjections.stateOf(session, 'clearai')
+			if (state === null || state === undefined) return reply(200, { ok: true, found: false })
+			const found = inspectGraphSelection(state, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' }, derive(state))
 			/** 找不到不是错误:那个对象可能刚被废止或本来就不在(如实说 `found: false`,不编一份空的)。 */
 			if (found === null) return reply(200, { ok: true, found: false })
 			return reply(200, { ok: true, found: true, inspector: found })

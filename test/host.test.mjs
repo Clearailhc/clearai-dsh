@@ -179,6 +179,8 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	// 只挂 webServer 的话浏览器永远轮不到(会拿到 connection 的 404 "not found")。
 	check('路由挂在 connection 的 exact fetch 表上(/api/clearai/gate)', route !== undefined && route.path === '/api/clearai/gate' && route.methods.includes('POST') && route.requestBody === 'buffered', JSON.stringify({ path: route?.path, methods: route?.methods }))
 	check('三条面板路由都挂上了(人门 / 交付物 / 工作区现状)', ['/api/clearai/gate', '/api/clearai/deliverables', '/api/clearai/brain'].every((p) => host.routes.some((item) => item.path === p)), host.routes.map((item) => item.path).join(','))
+	// 知识 Inspector 那条读面:选择是动态的(点哪个节点问哪个),所以它不能预算进投影。
+	check('知识 Inspector 的只读路由挂上了', host.routes.some((item) => item.path === '/api/clearai/inspector' && item.methods.includes('GET')), host.routes.map((item) => item.path).join(','))
 	// 文件正文那条路由**删了**:预览走 DSH 原生(6 个实现:md/图片/pdf/html/code/text),
 	// 我们不再自己读盘、不再自己渲染——少一条读面 = 少一处要维护的路径守卫。
 	check('不再注册文件正文读面(预览走原生,不重复造)', host.routes.every((item) => item.path !== '/api/clearai/file'), host.routes.map((item) => item.path).join(','))
@@ -569,6 +571,25 @@ console.log('\n【两条只读读面:路径守卫 / 声明对实际 / 分页与�
 		other.projectionState = emptyState()
 		const none = await callRoute(other, '/api/clearai/deliverables', { method: 'GET', query: { sessionId: 'session-1' } })
 		check('没有 products/ 目录时给空数组(不是失败)', none.status === 200 && Array.isArray(none.payload?.outputs) && none.payload.outputs.length === 0, JSON.stringify(none.payload).slice(0, 120))
+	}
+
+	// ④ 知识 Inspector 读面:选择是动态的,所以走路由;组装仍只有一处实现。
+	{
+		host.projectionState = applyMutations(emptyState(), [
+			{ t: 'goal/set', id: 'g-1', claim: '查清炉次氧含量', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h-1', claim: 'T2 是 10ppm', refute_when: '复测不是' }] },
+			{ t: 'ontology/term_added', id: 'furnace_batch', label: '炉次', gloss: '熔铸循环', basis: 'R-01' },
+			{ t: 'ontology/predicate_added', id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: 'GB/T' },
+			{ t: 'fact/promoted', id: 'f-1', goal: 'g-1', hypothesis: 'h-1', text: 'T2 是 10ppm', scope: '复测不是', level: 'L3', evidence: [], path: 'p', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } }] },
+		])
+		const found = await get('/api/clearai/inspector', { sessionId: 'session-1', kind: 'concept', id: 'furnace_batch' })
+		check('Inspector:概念读得回来(定义 / 关系 / 事实链)', found.status === 200 && found.payload?.ok === true && found.payload.found === true && found.payload.inspector?.definition?.label === '炉次', JSON.stringify(found.payload).slice(0, 160))
+		check('Inspector:读面带出完整链(事实 → 命题 → 断言)', found.payload.inspector.facts[0]?.hypothesis?.id === 'h-1' && found.payload.inspector.facts[0].assertions.length === 1)
+		const missing = await get('/api/clearai/inspector', { sessionId: 'session-1', kind: 'concept', id: 'no_such_term' })
+		check('Inspector:找不到的对象如实给 found:false(不是错误,也不编一份空的)', missing.status === 200 && missing.payload?.ok === true && missing.payload.found === false)
+		const dead = await get('/api/clearai/inspector', { sessionId: 'no-such-session', kind: 'concept', id: 'furnace_batch' })
+		check('Inspector:会话不在 → 404 no_live_session', dead.status === 404 && dead.payload?.error === 'no_live_session', JSON.stringify(dead.payload))
+		/** 只读:问一遍之后账本一个字都没动。 */
+		check('Inspector 是只读的:问过之后状态不变(还是 1 条事实 / 1 个概念)', host.projectionState.facts.length === 1 && host.projectionState.lexicon.terms.length === 1)
 	}
 }
 
