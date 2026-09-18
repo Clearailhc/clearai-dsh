@@ -223,3 +223,58 @@ $ bash test/run.sh                     → 15 套全绿
 `node tools/build-package.mjs && node tools/install-native.mjs --profile web`,重启 `dsh web`,然后逐项看:
 图带两层切换、点节点过滤、拖节点、拖画布、光标居中缩放、悬停高亮、边详情里的命题 id、
 键盘(方向键 / `+` `-` / `Esc`)、以及**拖动与缩放一个字节都不进账本**(账本重放后回到同一张图)。
+
+### 真跑验收(阶段 2–5 的实测证据)
+
+`tools/e2e-run.mjs` 用的是**仓库里的预设源**,不用等部署同步——所以这几场跑的就是本分支的代码。
+
+**第一场(普通任务,1 回合)**:「算 1 到 5 的平方和,判断它是不是质数」。
+模型只用 `bash` 算完就答,**没有立目标、没有建计划、没有碰本体**——零成本契约成立:
+分诊没有把它拖进知识模式。这一场同时修好了 e2e 工具的启动器(见下「工具链」)。
+
+**第二场(`falsification` 剧本,175 秒,38/38 全过)**:两条互斥假设、一条被推翻。
+卡上每回合都出现知识模式与缺口读数(实测 28 次),但模型**没有登记任何词汇**——
+因为那条支持证据只到 L2,`promote_at_level` 是 L3,**没有任何命题会升格**,
+于是知识门没有可拦的对象。这一场证明:分诊与缺口可见性在真跑里成立;
+同时它也说明知识门是**条件门**——没有要升格的命题时它一声不响。
+
+**第三场(把门槛打到 L3,32/32 全过)**:任务要求第一步的 `tests.level = L3`。实测因果链:
+
+```text
+SetGoal → bash → CreatePlan
+  → RegisterTerm      python3_interpreter
+  → RegisterPredicate runs_inline_python(domain/range/functional 齐全)
+  → bash → write → AdvancePlan → write → AdvancePlan → VoidPlanStep
+  → SetGoal(rev2,把断言挂回原命题)
+  → ClosePlan → CloseGoal → fact/promoted
+```
+
+升格出来的那条事实:
+
+```json
+{ "hypothesis": "h-921hs7", "level": "L3", "evidence": ["e-zjtfak"],
+  "scope": "该命令退出码非 0,或 stderr 非空…", 
+  "assertions": [{ "predicate": "runs_inline_python",
+                   "subject": { "id": "python3", "type": "python3_interpreter" } }] }
+```
+
+链是完整的:事实 → 命题 id → 等级 → 证据 → 边界 → 断言 → 词汇。
+模型给谓词写的依据是「两条互斥假设均是对同一解释器同一命令结果的断言,**是该谓词的两个竞争取值**」——
+竞争假设本身成了立词的理由,这正是这套机制想要的形状。
+
+**这一场最值得记的读数**:`claims_untyped` **一次都没有出现**——门没有拦过任何东西。
+模型是在**看到卡上的缺口读数之后**主动去立词、并把断言挂回命题的。
+也就是说,这一轮里真正改变行为的是**阶段 1 的缺口可见性**,不是阶段 3 的门。
+这与设计时的猜测相反(当时认为提示词式的可见性不够、非门不可),所以两条都留着:
+可见性负责「让它想做」,门负责「不让它绕过」。
+
+**这一场是一份样本,不是统计。** 它证明这条路走得通,不证明模型每次都走。
+知识门本身的两条分支(拦下 / 放行)只有单元测试覆盖,真跑里还没有被触发过。
+
+### 工具链:真跑起不来,是启动器的问题(顺手修掉)
+
+`tools/e2e-run.mjs` 原来只用 `npx --no-install @deepseek-ai/dsh` 起进程。不带版本号时 npx 按
+registry 的 `latest` 标签解析,而本地缓存里那一份是**另一个版本**——两边一错开,npx 直接
+`canceled due to missing packages and no YES option`,整场以「读不到 profile 行清单」告终,
+看起来像产品坏了,其实是启动器挑错了。现在:**PATH 上有 `dsh` 就直接用**(产品安装形态、
+或 npx 缓存自己的 bin 都属于这种),没有才退回 npx。断言一条没动,换的只是怎么把进程起起来。

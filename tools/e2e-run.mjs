@@ -46,6 +46,18 @@ function discoverDshCheckout() {
 	}
 	throw new Error('找不到 DSH 宿主(查过 ~/.npm/_npx/*)。先 `npx @deepseek-ai/dsh --help` 让缓存就位。')
 }
+/**
+ * **怎么起 `dsh`**:PATH 上有就直接用,没有才退回 `npx --no-install`。
+ *
+ * 为什么不能只写 npx:不带版本号的 `npx --no-install @deepseek-ai/dsh` 会按 registry 的
+ * `latest` 标签解析,而缓存里那一份是**另一个版本**——两边一旦错开,npx 直接
+ * `canceled due to missing packages`,整场跑不起来(与代码无关的假红)。
+ * `dsh` 本来就在 PATH 上时(产品安装形态、或 npx 缓存自己的 bin)那才是该用的那个启动器。
+ */
+const DSH_LAUNCH = (() => {
+	if (spawnSync('dsh', ['--version'], { encoding: 'utf8' }).status === 0) return { command: 'dsh', prefix: [] }
+	return { command: 'npx', prefix: ['--no-install', '@deepseek-ai/dsh'] }
+})()
 const CHECKOUT = process.env.DSH_CHECKOUT ?? discoverDshCheckout()
 /** 预设来源:默认 = 仓库里那份;`--installed` 重指到**装出来的包**里那份(见下)。 */
 let PRESET_YML = join(PORT, 'preset', 'agent.cordis.yml')
@@ -270,7 +282,7 @@ const presetRows = parseYaml(readFileSync(PRESET_YML, 'utf8')).map((row) => ({
  * 已在的行跳过(不能重复插,id 会撞),预设特意**不挂**的那些行显式关掉(第二本账)。
  * 「已在的行」直接从 `dsh --dump-config` 读——不猜。
  */
-const dump = spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--profile', resident ? 'web' : 'headless', '--dump-config'], { encoding: 'utf8', timeout: 180000 })
+const dump = spawnSync(DSH_LAUNCH.command, [...DSH_LAUNCH.prefix, '--profile', resident ? 'web' : 'headless', '--dump-config'], { encoding: 'utf8', timeout: 180000 })
 const present = new Set([...String(dump.stdout ?? '').matchAll(/^- id: (\S+)/gm)].map((match) => match[1]))
 check(`读得到 ${resident ? 'web' : 'headless'} profile 的行清单(dump-config)`, present.size > 20, `${present.size} 行`)
 
@@ -421,7 +433,7 @@ console.log(`  跑之前:章程占位 ${before.constitution.placeholders}/${befo
 if (autonomy !== undefined || maxTurns !== undefined) console.log(`  覆盖:autonomy=${autonomy ?? '(预设)'} maxAutoTurns=${maxTurns ?? '(预设)'}`)
 const started = Date.now()
 const profileName = installedHome === null ? (resident ? 'web' : 'headless') : installedProfile
-const run = spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--patch', hostPatchFile, '--patch', patchFile, '--profile', profileName, task], {
+const run = spawnSync(DSH_LAUNCH.command, [...DSH_LAUNCH.prefix, '--patch', hostPatchFile, '--patch', patchFile, '--profile', profileName, task], {
 	cwd: workspace,
 	env: { ...process.env, DSH_HOME },
 	encoding: 'utf8',
