@@ -1009,7 +1009,8 @@ window.__ModuleLoader__.load({
 			const [manual, setManual] = React.useState(null)
 			/** 本体格的界面状态:图层次/全景/图带开关/过滤/芯片展开/词汇区开关。全是界面状态,不进账本。 */
 			const [layer, setLayer] = React.useState('ontology')
-			const [expanded, setExpanded] = React.useState(false)
+			/** 图谱工作区是否打开(真正的全屏 overlay,不是把图带拉高)。界面状态,不进账本。 */
+			const [workspace, setWorkspace] = React.useState(false)
 			const [bandOpen, setBandOpen] = React.useState(true)
 			const [filter, setFilter] = React.useState(null)
 			const [chipKey, setChipKey] = React.useState(null)
@@ -1079,7 +1080,7 @@ window.__ModuleLoader__.load({
 					: null,
 				bandOpen === false
 					? h('div', { style: S.section }, h('span', { style: S.chipAction, onClick: () => setBandOpen(true) }, t('展开图带')))
-					: h(GraphBand, { lexicon, layer, onLayer: setLayer, expanded, onToggleExpand: () => setExpanded(expanded !== true), onFilter: (id) => setFilter(filter === id ? null : id) }),
+					: h(GraphBand, { lexicon, layer, onLayer: setLayer, onFilter: (id) => setFilter(filter === id ? null : id), sessionId: data.sessionId, fullscreen: workspace, onToggleFullscreen: () => setWorkspace(workspace !== true) }),
 				/** 过滤状态行:仅当过滤激活;N/M 说真话,✕ 一键清除。 */
 				filterTerm === null
 					? null
@@ -3133,13 +3134,28 @@ window.__ModuleLoader__.load({
 		 *     按下到抬起之间**位移超过阈值才算拖动**,否则算点击——不然「想点节点」会变成「拖歪了」。
 		 *   · **缩放以光标为中心**:只改 zoom 会让人觉得图在躲。
 		 */
-		const GraphBand = ({ lexicon, layer, onLayer, expanded, onToggleExpand, onFilter, sessionId, onOpenFact }) => {
+		const GraphBand = ({ lexicon, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, onOpenFact }) => {
 			const [view, setView] = React.useState({ zoom: 1, pan: { x: 0, y: 0 } })
 			const [picked, setPicked] = React.useState(null)
 			const [selected, setSelected] = React.useState(null)
 			const [hovered, setHovered] = React.useState(null)
 			/** 本地拖动偏移:`{ [nodeId]: {dx, dy} }`。它刻意**不进投影**——布局不是知识。 */
 			const [moved, setMoved] = React.useState({})
+			/**
+			 * **画布尺寸**由容器量出来(`ResizeObserver`),不靠推算。
+			 * 「适配」必须知道真实可视区有多大——不知道就只能猜,而猜出来的 fit 会偏。
+			 */
+			const [box, setBox] = React.useState({ width: 0, height: 0 })
+			const boxRef = React.useRef(null)
+			React.useEffect(() => {
+				const element = boxRef.current
+				if (element === null || element === undefined) return undefined
+				const measure = () => setBox({ width: element.clientWidth ?? 0, height: element.clientHeight ?? 0 })
+				measure()
+				const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+				observer?.observe?.(element)
+				return () => observer?.disconnect?.()
+			}, [fullscreen])
 			const graph = lexicon?.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
 			const conflicts = Array.isArray(lexicon?.conflicts) ? lexicon.conflicts : []
 			const conflicted = new Set(conflicts.flatMap((item) => item.sides.map((side) => side.fact)).filter((id) => typeof id === 'string'))
@@ -3147,7 +3163,7 @@ window.__ModuleLoader__.load({
 			const allNodes = graph.nodes.filter((node) => node.layer === layer)
 			const allEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
 			/** 截断是**界面决定**,不进投影;被截掉多少如实写出来,不假装这就是全部。 */
-			const MAX_NODES = expanded === true ? 100000 : 40
+			const MAX_NODES = fullscreen === true ? 100000 : 40
 			/**
 			 * 排序键:**连接度降序 → 引用数降序 → id 升序**。第三条保证确定性
 			 * (前两条并列时不能靠数组顺序,那会随 fold 的遍历顺序漂)。
@@ -3183,9 +3199,18 @@ window.__ModuleLoader__.load({
 				const point = at(node)
 				return { x: point.x + NODE_W / 2, y: point.y + NODE_H / 2 }
 			}
-			const svgHeight = expanded === true ? 480 : 208
-			const width = Math.max(graph.bounds?.width ?? 0, 240)
-			const height = Math.max(graph.bounds?.height ?? 0, 100)
+			const graphW = Math.max(graph.bounds?.width ?? 0, 240)
+			const graphH = Math.max(graph.bounds?.height ?? 0, 100)
+			/**
+			 * **画布尺寸与 viewBox 必须同一套数**:viewBox 说的是「这块画布显示图上的哪一块」,
+			 * 所以它的宽高得是**画布像素 ÷ 缩放**,不能再用图坐标的包围盒——
+			 * 两边一旦不同源,全屏里光标定位与适配会一起偏。
+			 */
+			const canvasW = fullscreen === true ? Math.max(box.width, 320) : graphW
+			const canvasH = fullscreen === true ? Math.max(box.height, 240) : graphH
+			const svgHeight = fullscreen === true ? canvasH : 208
+			const width = graphW
+			const height = graphH
 			/** 拖动状态放在 ref 里:它逐帧变,进 state 会让每次移动都重排整棵子树。 */
 			const dragRef = React.useRef(null)
 			const [dragging, setDragging] = React.useState(false)
@@ -3272,6 +3297,34 @@ window.__ModuleLoader__.load({
 				event?.preventDefault?.()
 				setView({ ...view, pan: { x: view.pan.x + delta[0], y: view.pan.y + delta[1] } })
 			}
+			/**
+			 * **适配**:把当前画出来的这批节点装进可视区。
+			 *
+			 * 这是「全景」真正的意思——不是把画布拉高、让内容散在更大的空白里,
+			 * 而是**让内容填满你看到的这一块**。没有它,超宽的图层永远要横向滚。
+			 */
+			const fit = (targetNodes = shownNodes, targetBox = box) => {
+				if (targetNodes.length === 0) return
+				const viewportW = targetBox.width > 0 ? targetBox.width : canvasW
+				const viewportH = targetBox.height > 0 ? targetBox.height : canvasH
+				const xs = targetNodes.map((node) => at(node).x)
+				const ys = targetNodes.map((node) => at(node).y)
+				const minX = Math.min(...xs)
+				const minY = Math.min(...ys)
+				const maxX = Math.max(...xs) + NODE_W
+				const maxY = Math.max(...ys) + NODE_H
+				const padding = 24
+				const zoom = Math.min(3, Math.max(0.3, Math.min((viewportW - padding * 2) / Math.max(1, maxX - minX), (viewportH - padding * 2) / Math.max(1, maxY - minY))))
+				setView({ zoom, pan: { x: minX - padding / zoom, y: minY - padding / zoom } })
+			}
+			/**
+			 * 打开工作区时**自动适配一次**:否则一进来还是那条超宽坐标,「全屏」等于白开。
+			 * 依赖只有 `fullscreen`——之后人怎么拖、怎么缩都不再被重算覆盖(那是他的视角)。
+			 */
+			React.useEffect(() => {
+				if (fullscreen === true) fit()
+			}, [fullscreen])
+
 			const pickNode = (node) => {
 				setSelected(node.id)
 				/** **点击 = 打开 Inspector**,不是直接过滤:过滤是 Inspector 里的一个显式动作。 */
@@ -3284,9 +3337,16 @@ window.__ModuleLoader__.load({
 			/** 「按此筛选」筛的**是什么**:概念筛概念、实例筛实例、断言边筛它的谓词。 */
 			const filterTarget = picked === null ? null : picked.kind === 'edge' ? picked.edge.predicate ?? null : picked.node.kind === 'concept' ? String(picked.node.ref ?? '') : String(picked.node.ref ?? '')
 			const layerHint = t('点节点看知识详情')
+			/**
+			 * **全屏是真正的工作区**:`position: fixed; inset: 0` 盖住整个窗口,
+			 * 而不是把事实格里的 SVG 拉高一点——后者只会在窄栏里多出一条横向滚动条,
+			 * 那不是「全景」。容器上挂 `boxRef` 量出可视区,「适配」据此装内容。
+			 */
+			const shell = fullscreen === true ? { position: 'fixed', inset: 0, zIndex: 40, background: 'var(--dsw-alias-bg-layer-1)', padding: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : { ...S.section, padding: 6 }
+			const canvasBox = fullscreen === true ? { flex: '1 1 auto', overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6, background: 'var(--dsw-alias-bg-layer-2)' } : { overflow: 'auto', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6, maxHeight: svgHeight + 8 }
 			return h(
 				'div',
-				{ style: { ...S.section, padding: 6 } },
+				{ style: shell },
 				h(
 					'div',
 					{ style: S.inline },
@@ -3294,19 +3354,20 @@ window.__ModuleLoader__.load({
 					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'entity' ? 1 : 0.5 }, onClick: () => onLayer('entity') }, t('实体图')),
 					h('span', { style: { ...S.faint, flex: '1 1 auto' } }, `${layerHint} · ${t('滚轮缩放 · 拖动平移 · 拖节点挪位')}`),
 					h('span', { style: S.chipAction, onClick: () => { setView({ zoom: 1, pan: { x: 0, y: 0 } }); setMoved({}); setSelected(null) } }, t('复位')),
-					h('span', { style: S.chipAction, onClick: onToggleExpand }, expanded === true ? t('还原') : t('全景')),
+					h('span', { style: S.chipAction, onClick: () => fit() }, t('适配')),
+					h('span', { style: S.chipAction, onClick: onToggleFullscreen }, fullscreen === true ? t('关闭工作区') : t('打开图谱工作区')),
 				),
 				shownNodes.length === 0
 					? h('div', { style: S.faint }, t('此层暂无节点。'))
 					: h(
 							'div',
-							{ style: { overflow: 'auto', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6, maxHeight: svgHeight + 8 } },
+							{ ref: boxRef, style: canvasBox },
 							h(
 								'svg',
 								{
-									width,
-									height,
-									viewBox: `${view.pan.x} ${view.pan.y} ${width / view.zoom} ${height / view.zoom}`,
+									width: canvasW,
+									height: canvasH,
+									viewBox: `${view.pan.x} ${view.pan.y} ${canvasW / view.zoom} ${canvasH / view.zoom}`,
 									tabIndex: 0,
 									role: 'img',
 									'aria-label': layer === 'ontology' ? t('本体图') : t('实体图'),
