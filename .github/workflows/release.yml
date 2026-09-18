@@ -138,14 +138,20 @@ jobs:
         # 都要求 registry 上那一份与本 commit 构建的**逐文件一致**。
         # 没有它,一次静默的失败、或一次用手工发的**内容不同**的版本,都能让 tag 报绿。
         # 这条比对在 2026-09-15 用已发布的 0.1.2 实测过:与 v0.1.2 那棵树逐文件相同。
+        #
+        # 重试窗口**必须够长**:npm 接受发布之后会明说「Your package is being processed and may
+        # take a few minutes to become available」,而 packument 在那几分钟里查不到这个版本。
+        # 0.2.2 就撞上了:发布本身成功(`+ clearai-dsh@0.2.2`,provenance 也落了透明度日志),
+        # 但这道闸只有 5×5 秒,窗口用完就红,连带后面的 GitHub Release 一起跳过。
+        # 现在给 6 分钟(18 × 20 秒)——闸门该等的是**事实**,不是自己的耐心。
         run: |
           version="$(node -p "require('./package.json').version")"
           ok=0
-          for attempt in 1 2 3 4 5; do
+          for attempt in $(seq 1 18); do
             url="$(npm view "clearai-dsh@$version" dist.tarball 2>/dev/null || true)"
             if [ -n "$url" ] && curl -fsSL "$url" -o "$RUNNER_TEMP/published.tgz"; then ok=1; break; fi
-            echo "registry 上还拿不到 $version 的 tarball,5 秒后重试($attempt/5)"
-            sleep 5
+            echo "registry 上还拿不到 $version 的 tarball,20 秒后重试($attempt/18)"
+            sleep 20
           done
           [ "$ok" = 1 ] || { echo "::error::registry 上没有 $version 的可下载 tarball —— 这一步没有发布成功"; exit 1; }
           mkdir -p "$RUNNER_TEMP/published"
