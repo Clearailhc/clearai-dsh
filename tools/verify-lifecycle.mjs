@@ -92,7 +92,8 @@ console.log('\n① 用户 fork(把预设播种到用户根,改过的不覆盖)')
 build(V1, '0.1.0')
 const bin = join(V1, 'bin', 'clearai.mjs')
 const seedEnv = { ...process.env, DSH_HOME: HOME }
-const seed = (extra = []) => spawnSync('node', [bin, 'seed', '--root', FORK_ROOT, ...extra], { encoding: 'utf8', env: seedEnv })
+/** `--lang zh`:①下面的断言读中文文案,而 CLI 从 0.2.2 起跟系统语言走。语言判据本身在 ④′ 单独验。 */
+const seed = (extra = []) => spawnSync('node', [bin, 'seed', '--root', FORK_ROOT, '--lang', 'zh', ...extra], { encoding: 'utf8', env: seedEnv })
 const first = seed()
 check('播种成功并报出条数', first.status === 0 && /播种到/.test(String(first.stdout)), String(first.stdout ?? '').split('\n')[0])
 const seededFile = join(FORK_ROOT, 'clearai', 'preset.yml')
@@ -107,7 +108,7 @@ check('再播一次:改过的文件**没被覆盖**(哈希不变)', sha(seededFi
 check('并且如实报出漂移', /你改过|没覆盖/.test(String(second.stdout)), String(second.stdout ?? '').split('\n').filter((line) => line.includes('漂移') || line.includes('改过')).join(' '))
 const otherFile = join(FORK_ROOT, 'clearai', 'plugins', 'prompts.js')
 const otherHash = sha(otherFile)
-const unseed = spawnSync('node', [bin, 'unseed', '--root', FORK_ROOT], { encoding: 'utf8', env: seedEnv })
+const unseed = spawnSync('node', [bin, 'unseed', '--root', FORK_ROOT, '--lang', 'zh'], { encoding: 'utf8', env: seedEnv })
 check('撤销播种:没改过的删掉,改过的保留', !existsSync(otherFile) && existsSync(seededFile), JSON.stringify({ 其他: existsSync(otherFile), 改过的: existsSync(seededFile) }))
 check('撤销时如实报「保留了你改过的」', /保留/.test(String(unseed.stdout)), String(unseed.stdout ?? '').replace(/\n/g, ' ').slice(0, 120))
 rmSync(FORK_ROOT, { recursive: true, force: true })
@@ -183,7 +184,11 @@ const HOME2 = mkdtempSync(join(tmpdir(), 'clearai-verb-'))
 for (const name of ['.credentials.yaml', 'settings.yaml']) {
 	if (existsSync(join(realHome, name))) cpSync(join(realHome, name), join(HOME2, name))
 }
-const verb = spawnSync('node', [join(V2, 'bin', 'clearai.mjs'), 'install', '--home', HOME2, '--profile', 'web', '--dist', V2], { encoding: 'utf8', env: { ...process.env, DSH_HOME: HOME2 }, timeout: 900000 })
+/**
+ * `--lang zh` 是**刻意**的:下面两条断言读的是中文文案,而安装侧输出从 0.2.2 起跟系统语言走
+ * (CI runner 的 locale 是 C.UTF-8 ⇒ 默认英文)。语言判据本身在 ④′ 单独验,两条各管一件事。
+ */
+const verb = spawnSync('node', [join(V2, 'bin', 'clearai.mjs'), 'install', '--home', HOME2, '--profile', 'web', '--dist', V2, '--lang', 'zh'], { encoding: 'utf8', env: { ...process.env, DSH_HOME: HOME2 }, timeout: 900000 })
 check('install 动词成功退出', verb.status === 0, String(verb.stderr ?? '').slice(-200))
 const verbProfile = join(HOME2, 'profiles', 'web', 'package.json')
 const verbManifest = existsSync(verbProfile) ? JSON.parse(readFileSync(verbProfile, 'utf8')) : null
@@ -192,6 +197,17 @@ check('bundles 里有它(宿主自己对的账)', (verbManifest?.dsh?.profile?.b
 /** 两件事分开验:它给了**读数**(宿主行进了组合),也给了**下一步**(重启),不是只说一句成功。 */
 check('它报出宿主行真的进了组合(读数,不是断言)', /宿主行\s+在组合里/.test(String(verb.stdout)), String(verb.stdout ?? '').split('\n').filter((line) => line.includes('宿主行')).join(' '))
 check('它报出下一步(重启)', /下一步/.test(String(verb.stdout)))
+
+/**
+ * ④′ 安装侧输出**跟系统语言走**。0.2.1 的 CLI 无论系统是什么都说中文;这里钉住判据的优先级:
+ * `--lang` > 环境变量;`C` / `POSIX` 是「没有语言信息」,按英文。
+ * 用 `unseed` 验(它不碰网络、不碰 profile),不为了验一句话再装一遍。
+ */
+const langOut = (args, env) => String(spawnSync('node', [join(V2, 'bin', 'clearai.mjs'), 'unseed', ...args], { encoding: 'utf8', env: { ...process.env, DSH_HOME: HOME2, ...env }, timeout: 60000 }).stdout ?? '')
+check('--lang zh 说中文(系统是 C 也一样)', /没有播种记账/.test(langOut(['--lang', 'zh'], { LC_ALL: 'C' })), langOut(['--lang', 'zh'], { LC_ALL: 'C' }))
+check('--lang en 说英文(系统是中文也一样)', /nothing was seeded/.test(langOut(['--lang', 'en'], { LC_ALL: 'zh_CN.UTF-8' })), langOut(['--lang', 'en'], { LC_ALL: 'zh_CN.UTF-8' }))
+check('LC_ALL=zh_CN.UTF-8 ⇒ 自动中文', /没有播种记账/.test(langOut([], { LC_ALL: 'zh_CN.UTF-8' })), langOut([], { LC_ALL: 'zh_CN.UTF-8' }))
+check('LC_ALL=C ⇒ 自动英文(没有语言信息)', /nothing was seeded/.test(langOut([], { LC_ALL: 'C' })), langOut([], { LC_ALL: 'C' }))
 rmSync(HOME2, { recursive: true, force: true })
 
 // ── 收尾 ────────────────────────────────────────────────────────────────────

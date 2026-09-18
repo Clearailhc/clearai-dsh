@@ -44,6 +44,143 @@ const value = (name, fallback) => {
 }
 const profile = value('profile', 'web')
 
+/**
+ * 语言:**跟系统走,不猜**。
+ *
+ * 判据顺序:`--lang zh|en` > `CLEARAI_LANG` > `LC_ALL` / `LC_MESSAGES` / `LANG` > ICU 的默认 locale。
+ * `C` / `POSIX` 是「没有语言信息」,按英文处理(它们是 CI 与最小容器的默认值,不代表中文)。
+ * 为什么认不出来时说英文:这是发给陌生人的第一条命令输出,不该假设对方读中文。
+ * 两边的文案**并排放在一张表里**——同一句话的两个版本挨着,改的时候不会只改一边。
+ */
+const lang = (() => {
+	const candidates = [value('lang', null), process.env.CLEARAI_LANG, process.env.LC_ALL, process.env.LC_MESSAGES, process.env.LANG, Intl.DateTimeFormat().resolvedOptions().locale]
+	for (const candidate of candidates) {
+		if (typeof candidate !== 'string' || candidate === '') continue
+		const tag = candidate.toLowerCase()
+		if (tag.startsWith('zh')) return 'zh'
+		if (tag === 'c' || tag === 'posix' || tag.startsWith('en')) return 'en'
+	}
+	return 'en'
+})()
+
+const TEXT = {
+	zh: {
+		pkgDir: '包目录        ',
+		presetSrc: '预设源        ',
+		presetOk: '(agent.cordis.yml ✓)',
+		presetMissing: '(缺 agent.cordis.yml ✗)',
+		dshHome: 'DSH_HOME      ',
+		userRoot: '用户根        ',
+		rosterVisible: '✓ 名册看得见',
+		rosterAbsent: '✗ 还没有(用 seed 播种,或把 root-yaml 那一行粘进 profile)',
+		shadowCopy: '  ⚠️ 影子副本     {path} 与包里的那份**不一致**,而它被包的 root 遮住、永远不会被读到(自检却会优先读它)。删掉它,或用它来承载你自己的改动并换一个 id。',
+		profileRow: 'profile       ',
+		profileAbsent: '(不存在:先跑一次 dsh --profile {profile})',
+		composeRow: '组合          ',
+		composeUnreachable: '(问不到:dsh 不可用或超时 —— 下面两条无法判定)',
+		hostRow: '宿主行        ',
+		hostIn: '在组合里 ✓',
+		hostOut: '不在组合里(先 dsh plugin --profile {profile} add <本包>)',
+		rosterRootRow: '名册 root     ',
+		rosterNoRoots: '组合里没看到 roots(这个部署可能不挂名册)',
+		rosterExpr: '{expr}(dump 打的是表达式原文,求值在装载时)',
+		seedLedgerRow: '播种记账      ',
+		ledgerEmpty: '(空)',
+		ledgerCount: '{count} 个条目 · {path}',
+		doctorHint: '\n提示:doctor 只读;它不会替你改 profile,也不会替你播种。',
+		installHeader: '【安装】{name}@{version}',
+		installWhat: '装什么      ',
+		installWhere: '装到哪      ',
+		installWho: '谁来跑      ',
+		hostRowShort: '宿主行      ',
+		sourceSpec: '你给的 spec',
+		sourceTarball: '本地 tarball',
+		sourceDir: '本地目录',
+		sourceRegistry: 'registry',
+		routeNpx: 'npx --yes @deepseek-ai/dsh(PATH 上没有 dsh)',
+		pnpmMissing: '\n✗ PATH 上没有 pnpm,而 DSH 管理一个 profile 就是靠它:`dsh plugin …` 把参数转发给 pnpm。\n  装一个再来:npm install -g pnpm(或用系统包管理器,如 brew install pnpm)。\n  别用 corepack enable 抄近路 —— 它装的是版本**转发器**而不是 pnpm,而当前 Node 自带的\n  那份 corepack 可能下载一个它自己启动不了的 pnpm。\n  这里刻意不手工改 profile:那等于把宿主的 reconcile 抄成第二份实现,与宿主漂移时坏的是你的部署。',
+		installFailed: '\n✗ 安装失败:见上面的输出。',
+		hostUnknown: '(问不到组合:CLI 不可用或超时 —— 装没装进去,从这里确认不了;用 doctor 再看)',
+		hostAbsent: '**不在组合里** —— 装是装上了,但组合里没看到它(用 doctor 查)',
+		nextStep: '\n  下一步      重启 dsh web(两半都在进程里按模块 URL 缓存,只刷新浏览器不够),然后在预设选择器里选 ClearAI。',
+		uninstall: '  卸载        dsh plugin --profile {profile} remove {name}(同样可以冠 npx)',
+		rootYamlComment1: '# ClearAI 预设的 root(由 clearai-dsh 的 bin 打印,路径已算成绝对路径)',
+		rootYamlComment2: '    # ⚠️ 补丁层会**替换整份 config**:下面这些键必须与你部署里那份一致,否则会丢。',
+		rootYamlComment3: '    #    先 `dsh --profile <p> --dump-config | grep -A 20 agent-presets` 看一眼当前值再粘。',
+		noPresetInPackage: '✗ 包里没有预设:{path}',
+		seededTo: '  播种到        {dest}',
+		seedCounts: '  新增 {seeded} · 刷新 {refreshed}',
+		seedDrifted: ' · **你改过、没覆盖** {count}({list})',
+		seedNext: '  下一步:重启 dsh(或刷新页面)后,预设选择器里应出现「ClearAI」。',
+		noSeedLedger: '  没有播种记账:什么都不做(不知道哪些是我们播的,就不删)。',
+		unseedRemoved: '  删掉 {count} 个「我们播的、没被改过」的文件',
+		unseedKept: '  **保留** {count} 个你改过的文件(它们现在是你的):{list}',
+		unknownCommand: 'unknown command: {command}',
+		usage: '用法:clearai-dsh [doctor|install|root-yaml|seed|unseed] [--profile web] [--home <dir>] [--lang zh|en]\n     install 还可以:--dist <dir> | --tarball <tgz> | --spec <spec>',
+	},
+	en: {
+		pkgDir: 'package       ',
+		presetSrc: 'preset src    ',
+		presetOk: '(agent.cordis.yml ✓)',
+		presetMissing: '(no agent.cordis.yml ✗)',
+		dshHome: 'DSH_HOME      ',
+		userRoot: 'user root     ',
+		rosterVisible: '✓ visible to the roster',
+		rosterAbsent: '✗ not there yet (seed it, or paste the root-yaml line into the profile)',
+		shadowCopy: '  ⚠️ shadow copy  {path} differs from the copy in the package, and the package root shadows it — it will never be read (while the self-check reads it first). Delete it, or keep your changes there under a different id.',
+		profileRow: 'profile       ',
+		profileAbsent: '(does not exist yet: run dsh --profile {profile} once)',
+		composeRow: 'composition   ',
+		composeUnreachable: '(could not ask: dsh unavailable or timed out — the next two rows cannot be decided)',
+		hostRow: 'host row      ',
+		hostIn: 'is in the composition ✓',
+		hostOut: 'is NOT in the composition (run dsh plugin --profile {profile} add <this package>)',
+		rosterRootRow: 'roster root   ',
+		rosterNoRoots: 'no roots in the composition (this deployment may not mount the roster)',
+		rosterExpr: '{expr}(the dump prints the expression verbatim; it is evaluated at load time)',
+		seedLedgerRow: 'seed ledger   ',
+		ledgerEmpty: '(empty)',
+		ledgerCount: '{count} entries · {path}',
+		doctorHint: '\ndoctor only reads. It will not change your profile and will not seed anything for you.',
+		installHeader: '[install] {name}@{version}',
+		installWhat: 'what        ',
+		installWhere: 'where       ',
+		installWho: 'who runs it ',
+		hostRowShort: 'host row    ',
+		sourceSpec: 'the spec you gave',
+		sourceTarball: 'local tarball',
+		sourceDir: 'local directory',
+		sourceRegistry: 'registry',
+		routeNpx: 'npx --yes @deepseek-ai/dsh (no dsh on PATH)',
+		pnpmMissing: '\n✗ pnpm is not on PATH, and it is how DSH manages a profile: `dsh plugin …` forwards to it.\n  Install one and come back: npm install -g pnpm (or your package manager, e.g. brew install pnpm).\n  Do not take the corepack enable shortcut — that installs a version *forwarder*, not pnpm, and the\n  corepack bundled with current Node may fetch a pnpm it is unable to launch.\n  This verb deliberately does not edit the profile by hand: that would be a second implementation of the host\'s reconcile, and yours is the deployment that breaks when it drifts.',
+		installFailed: '\n✗ install failed: see the output above.',
+		hostUnknown: '(could not ask the composition: CLI unavailable or timed out — whether it landed cannot be decided here; run doctor)',
+		hostAbsent: '**NOT in the composition** — it installed, but the composition does not show it (run doctor)',
+		nextStep: '\n  next        restart dsh web (both halves are cached in the running process by module URL, so a browser refresh is not enough), then pick ClearAI in the preset picker.',
+		uninstall: '  uninstall   dsh plugin --profile {profile} remove {name}(npx works too)',
+		rootYamlComment1: '# ClearAI preset root (printed by clearai-dsh; the path is already absolute)',
+		rootYamlComment2: '    # ⚠️ a patch layer **replaces the whole config**: these keys must match the ones in your deployment, or they are lost.',
+		rootYamlComment3: '    #    Run `dsh --profile <p> --dump-config | grep -A 20 agent-presets` first and paste over the current values.',
+		noPresetInPackage: '✗ no preset in the package: {path}',
+		seededTo: '  seeded to   {dest}',
+		seedCounts: '  added {seeded} · refreshed {refreshed}',
+		seedDrifted: ' · **kept your edits** {count}({list})',
+		seedNext: '  next: restart dsh (or refresh the page) — ClearAI should now appear in the preset picker.',
+		noSeedLedger: '  nothing was seeded: doing nothing (without the ledger there is no way to tell which files are ours, so nothing is deleted).',
+		unseedRemoved: '  removed {count} file(s) we seeded and you did not edit',
+		unseedKept: '  **kept** {count} file(s) you edited (they are yours now): {list}',
+		unknownCommand: 'unknown command: {command}',
+		usage: 'usage: clearai-dsh [doctor|install|root-yaml|seed|unseed] [--profile web] [--home <dir>] [--lang zh|en]\n       install also takes: --dist <dir> | --tarball <tgz> | --spec <spec>',
+	},
+}
+
+/** `{name}` 是占位符;需要拼计数与列表的句子写成函数(见 doctor / seed / unseed)。 */
+function t(key, params) {
+	const text = TEXT[lang][key] ?? TEXT.zh[key]
+	if (text === undefined) throw new Error(`missing text: ${key}`)
+	return typeof text === 'function' ? text(params ?? {}) : text.replace(/\{(\w+)\}/g, (_, name) => String(params?.[name] ?? ''))
+}
+
 /** 递归列出文件(相对路径 → sha256 前 16 位)。只为记账,不为校验完整性。 */
 function hashTree(root) {
 	const out = {}
@@ -128,14 +265,14 @@ function composeQuery(profileName, env) {
 
 function doctor() {
 	const rows = []
-	rows.push(`包目录        ${PKG_DIR}`)
-	rows.push(`预设源        ${PRESET_SRC}${existsSync(join(PRESET_SRC, 'agent.cordis.yml')) ? '(agent.cordis.yml ✓)' : '(缺 agent.cordis.yml ✗)'}`)
-	rows.push(`DSH_HOME      ${DSH_HOME}`)
+	rows.push(`${t('pkgDir')}${PKG_DIR}`)
+	rows.push(`${t('presetSrc')}${PRESET_SRC}${existsSync(join(PRESET_SRC, 'agent.cordis.yml')) ? t('presetOk') : t('presetMissing')}`)
+	rows.push(`${t('dshHome')}${DSH_HOME}`)
 	const roots = rosterRoots()
 	for (const root of roots) {
 		const dir = join(root, PRESET_ID)
 		const present = existsSync(join(dir, 'agent.cordis.yml'))
-		rows.push(`用户根        ${dir} ${present ? '✓ 名册看得见' : '✗ 还没有(用 seed 播种,或把 root-yaml 那一行粘进 profile)'}`)
+		rows.push(`${t('userRoot')}${dir} ${present ? t('rosterVisible') : t('rosterAbsent')}`)
 		/**
 		 * 用户根里那份**会不会被包的 root 遮住**。
 		 *
@@ -152,10 +289,10 @@ function doctor() {
 		} catch {
 			same = false
 		}
-		if (!same) rows.push(`  ⚠️ 影子副本     ${theirs} 与包里的那份**不一致**,而它被包的 root 遮住、永远不会被读到(自检却会优先读它)。删掉它,或用它来承载你自己的改动并换一个 id。`)
+		if (!same) rows.push(t('shadowCopy', { path: theirs }))
 	}
 	const profileDir = join(DSH_HOME, 'profiles', profile)
-	rows.push(`profile       ${profileDir}${existsSync(profileDir) ? '' : '(不存在:先跑一次 dsh --profile ' + profile + ')'}`)
+	rows.push(`${t('profileRow')}${profileDir}${existsSync(profileDir) ? '' : t('profileAbsent', { profile })}`)
 	/**
 	 * 宿主行与名册 root **问组合**,不问某个文件(2026-09-11 修:装出来的形态下这两行来自
 	 * **包的补丁层**,不在 profile 的 cordis.patch.yml 里 —— 读文件的写法会误报「还没挂」)。
@@ -163,18 +300,18 @@ function doctor() {
 	 */
 	const composed = composeQuery(profile, { ...process.env, DSH_HOME })
 	if (composed === null) {
-		rows.push('组合          (问不到:dsh 不可用或超时 —— 下面两条无法判定)')
+		rows.push(`${t('composeRow')}${t('composeUnreachable')}`)
 	} else {
 		const rowIds = [...composed.matchAll(/^- id: (\S+)$/gm)].map((match) => match[1])
-		rows.push(`宿主行        ${rowIds.includes('clearai-host') ? '在组合里 ✓' : '不在组合里(先 dsh plugin --profile ' + profile + ' add <本包>)'}`)
+		rows.push(`${t('hostRow')}${rowIds.includes('clearai-host') ? t('hostIn') : t('hostOut', { profile })}`)
 		const roster = /- id: agent-presets[\s\S]{0,600}?\n\s*- path:[^\n]*/.exec(composed)
 		const expr = roster === null ? null : roster[0].split('\n').pop().trim()
-		rows.push(`名册 root     ${expr === null ? '组合里没看到 roots(这个部署可能不挂名册)' : `${expr}(dump 打的是表达式原文,求值在装载时)`}`)
+		rows.push(`${t('rosterRootRow')}${expr === null ? t('rosterNoRoots') : t('rosterExpr', { expr })}`)
 	}
 	const ledger = readLedger()
-	rows.push(`播种记账      ${Object.keys(ledger).length === 0 ? '(空)' : `${Object.keys(ledger).length} 个条目 · ${LEDGER}`}`)
+	rows.push(`${t('seedLedgerRow')}${Object.keys(ledger).length === 0 ? t('ledgerEmpty') : t('ledgerCount', { count: Object.keys(ledger).length, path: LEDGER })}`)
 	for (const row of rows) console.log(`  ${row}`)
-	console.log('\n提示:doctor 只读;它不会替你改 profile,也不会替你播种。')
+	console.log(t('doctorHint'))
 }
 
 /**
@@ -204,28 +341,24 @@ function install() {
 	 * npx 缓存还在。`--dist` / `--tarball` / `--spec` 是给开发与 E2E 用的另一条入口。
 	 */
 	const spec = explicit ?? (tarball !== null ? resolve(tarball) : dist !== null ? `file:${resolve(dist)}` : `${manifest.name}@${manifest.version}`)
-	const source = explicit !== null ? '你给的 spec' : tarball !== null ? '本地 tarball' : dist !== null ? '本地目录' : 'registry'
+	const source = explicit !== null ? t('sourceSpec') : tarball !== null ? t('sourceTarball') : dist !== null ? t('sourceDir') : t('sourceRegistry')
 	/** PATH 上有 `dsh` 就用它;没有就用 npx 取官方 CLI(`--yes`:一键安装不该卡在一个确认提示上)。 */
 	const dshPath = findOnPath('dsh')
-	const route = dshPath === null ? 'npx --yes @deepseek-ai/dsh(PATH 上没有 dsh)' : dshPath
+	const route = dshPath === null ? t('routeNpx') : dshPath
 	/**
 	 * 子进程**继承 stdio**:安装进度、以及 CLI 那句 `initialized profile …` 都如实流到用户眼前;
 	 * 失败时他看到的也是真实报错,而不是我截出来的尾巴。
 	 */
 	const dsh = (args) => (dshPath === null ? spawnSync('npx', ['--yes', '@deepseek-ai/dsh', ...args], { env, stdio: 'inherit', timeout: 900000 }) : spawnSync(dshPath, args, { env, stdio: 'inherit', timeout: 900000 }))
 
-	console.log(`【安装】${manifest.name}@${manifest.version}`)
-	console.log(`  装什么      ${spec}(${source})`)
-	console.log(`  装到哪      ${profileDir}`)
-	console.log(`  谁来跑      ${route}`)
+	console.log(t('installHeader', { name: manifest.name, version: manifest.version }))
+	console.log(`  ${t('installWhat')}${spec}(${source})`)
+	console.log(`  ${t('installWhere')}${profileDir}`)
+	console.log(`  ${t('installWho')}${route}`)
 
 	const pnpmPath = findOnPath('pnpm')
 	if (pnpmPath === null) {
-		console.error('\n✗ PATH 上没有 pnpm,而 DSH 管理一个 profile 就是靠它:`dsh plugin …` 把参数转发给 pnpm。')
-		console.error('  装一个再来:npm install -g pnpm(或用系统包管理器,如 brew install pnpm)。')
-		console.error('  别用 corepack enable 抄近路 —— 它装的是版本**转发器**而不是 pnpm,而当前 Node 自带的')
-		console.error('  那份 corepack 可能下载一个它自己启动不了的 pnpm。')
-		console.error('  这里刻意不手工改 profile:那等于把宿主的 reconcile 抄成第二份实现,与宿主漂移时坏的是你的部署。')
+		console.error(t('pnpmMissing'))
 		process.exit(1)
 	}
 
@@ -238,28 +371,28 @@ function install() {
 	 */
 	const added = dsh(['plugin', '--profile', profile, 'add', spec])
 	if (added.status !== 0) {
-		console.error('\n✗ 安装失败:见上面的输出。')
+		console.error(t('installFailed'))
 		process.exit(1)
 	}
 
 	const composed = composeQuery(profile, env)
 	if (composed === null) {
-		console.log('  宿主行      (问不到组合:CLI 不可用或超时 —— 装没装进去,从这里确认不了;用 doctor 再看)')
+		console.log(`  ${t('hostRowShort')}${t('hostUnknown')}`)
 	} else {
 		const inCompose = /^- id: clearai-host$/m.test(composed)
-		console.log(`  宿主行      ${inCompose ? '在组合里 ✓' : '**不在组合里** —— 装是装上了,但组合里没看到它(用 doctor 查)'}`)
+		console.log(`  ${t('hostRowShort')}${inCompose ? t('hostIn') : t('hostAbsent')}`)
 	}
-	console.log('\n  下一步      重启 dsh web(两半都在进程里按模块 URL 缓存,只刷新浏览器不够),然后在预设选择器里选 ClearAI。')
-	console.log(`  卸载        dsh plugin --profile ${profile} remove ${manifest.name}(同样可以冠 npx)`)
+	console.log(t('nextStep'))
+	console.log(t('uninstall', { profile, name: manifest.name }))
 }
 
 function rootYaml() {
 	const line = [
-		'# ClearAI 预设的 root(由 clearai-dsh 的 bin 打印,路径已算成绝对路径)',
+		t('rootYamlComment1'),
 		'- id: \'@deepseek-ai/dsh-agent-presets\'',
 		'  config:',
-		'    # ⚠️ 补丁层会**替换整份 config**:下面这些键必须与你部署里那份一致,否则会丢。',
-		'    #    先 `dsh --profile <p> --dump-config | grep -A 20 agent-presets` 看一眼当前值再粘。',
+		t('rootYamlComment2'),
+		t('rootYamlComment3'),
 		'    default: standard',
 		'    includeShippedRoot: true',
 		'    includeUserRoot: true',
@@ -272,7 +405,7 @@ function rootYaml() {
 
 function seed() {
 	if (!existsSync(join(PRESET_SRC, 'agent.cordis.yml'))) {
-		console.error(`✗ 包里没有预设:${PRESET_SRC}`)
+		console.error(t('noPresetInPackage', { path: PRESET_SRC }))
 		process.exit(1)
 	}
 	const root = value('root', rosterRoots()[0])
@@ -303,16 +436,16 @@ function seed() {
 	}
 	before[PRESET_ID] = { files: next, at: new Date().toISOString(), dest }
 	writeLedger(before)
-	console.log(`  播种到        ${dest}`)
-	console.log(`  新增 ${seeded.length} · 刷新 ${refreshed.length}${drifted.length === 0 ? '' : ` · **你改过、没覆盖** ${drifted.length}(${drifted.slice(0, 5).join('、')})`}`)
-	console.log('  下一步:重启 dsh(或刷新页面)后,预设选择器里应出现「ClearAI」。')
+	console.log(t('seededTo', { dest }))
+	console.log(`${t('seedCounts', { seeded: seeded.length, refreshed: refreshed.length })}${drifted.length === 0 ? '' : t('seedDrifted', { count: drifted.length, list: drifted.slice(0, 5).join(lang === 'zh' ? '、' : ', ') })}`)
+	console.log(t('seedNext'))
 }
 
 function unseed() {
 	const ledger = readLedger()
 	const entry = ledger[PRESET_ID]
 	if (entry === undefined) {
-		console.log('  没有播种记账:什么都不做(不知道哪些是我们播的,就不删)。')
+		console.log(t('noSeedLedger'))
 		return
 	}
 	const dest = entry.dest ?? join(rosterRoots()[0], PRESET_ID)
@@ -331,8 +464,8 @@ function unseed() {
 	}
 	delete ledger[PRESET_ID]
 	writeLedger(ledger)
-	console.log(`  删掉 ${removed.length} 个「我们播的、没被改过」的文件`)
-	if (kept.length > 0) console.log(`  **保留** ${kept.length} 个你改过的文件(它们现在是你的):${kept.slice(0, 5).join('、')}`)
+	console.log(t('unseedRemoved', { count: removed.length }))
+	if (kept.length > 0) console.log(t('unseedKept', { count: kept.length, list: kept.slice(0, 5).join(lang === 'zh' ? '、' : ', ') }))
 	// 空目录收掉(只收我们知道的那些;非空绝不动)
 	try {
 		if (existsSync(dest) && readdirSync(dest).length === 0) rmSync(dest, { recursive: true })
@@ -348,10 +481,6 @@ else if (command === 'seed') seed()
 else if (command === 'unseed') unseed()
 else if (command === 'version' || flag('version')) console.log(JSON.parse(readFileSync(join(PKG_DIR, 'package.json'), 'utf8')).version)
 else {
-	console.error(
-		`unknown command: ${command}\n` +
-			'用法:clearai-dsh [doctor|install|root-yaml|seed|unseed] [--profile web] [--home <dir>]\n' +
-			'     install 还可以:--dist <dir> | --tarball <tgz> | --spec <spec>',
-	)
+	console.error(`${t('unknownCommand', { command })}\n${t('usage')}`)
 	process.exit(2)
 }
