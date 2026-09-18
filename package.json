@@ -1,6 +1,6 @@
 {
   "name": "clearai-dsh",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "ClearAI: The Epistemic Loop, native to DSH.",
   "type": "module",
   "private": false,
@@ -35,10 +35,6 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@xyflow/react": "^12.11.6",
-    "docx": "^9.7.1",
-    "graphology": "^0.26.0",
-    "graphology-layout-forceatlas2": "^0.10.1",
     "zod": "^4.6.1"
   },
   "dsh": {
@@ -77,7 +73,11 @@
     "shots": "node tools/graph-shots.mjs"
   },
   "devDependencies": {
+    "@xyflow/react": "^12.11.6",
+    "docx": "^9.7.1",
     "esbuild": "^0.28.2",
+    "graphology": "^0.26.0",
+    "graphology-layout-forceatlas2": "^0.10.1",
     "playwright-core": "^1.63.0"
   }
 }

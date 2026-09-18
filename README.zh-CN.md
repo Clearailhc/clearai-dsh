@@ -65,6 +65,8 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 npx clearai-dsh install
 ```
 
+安装侧的输出**跟系统语言走**（`--lang zh|en` 可覆盖；`doctor` / `seed` / `unseed` 同样认这个开关）。运行时依赖只有 `zod`——图谱那套栈在构建期就打进客户端半了。
+
 装完重启 `dsh web`（`npx @deepseek-ai/dsh web`），然后**新建会话，在顶部的模式选择器里切换到 `ClearAI`**：
 
 1. 打开 `dsh web`，点「新建会话」；

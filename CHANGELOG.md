@@ -2,6 +2,15 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] — 2026-09-18
+
+**装的时候不再吓人。** 0.2.1 的 `npx clearai-dsh install` 会打出一串 peer 警告(react / graphology-types …),读起来像装坏了——而它们一个字都不影响运行。这一版把安装面收窄到运行时真正需要的那一个依赖,并让安装侧 CLI 按系统语言出话。
+
+### Changed
+
+- **安装面只剩一个运行时依赖。** `@xyflow/react` / `graphology` / `graphology-layout-forceatlas2` / `docx` 挪进 `devDependencies`:前三个只在构建期打 vendor(`lib/client.js` 里是**内联**的,装机后不解析 npm),`docx` 只给营销 docx 脚本用。于是 profile 里不再多装一批包,也不会再有那些注定填不上的 peer 警告——React 由 **DSH 宿主**提供(客户端半 `require('react')` 是问宿主拿的),`graphology-types` 只是类型包。运行时唯一保留的是 `zod`(宿主半 `lib/host.js` 真的 `from 'zod'`)。
+- **安装侧 CLI 跟系统语言走。** `doctor` / `install` / `root-yaml` / `seed` / `unseed` 的每一句都在中英两份文案表里(并排放在一处,改的时候不会只改一边);判据是 `--lang zh|en` > `CLEARAI_LANG` > `LC_ALL` / `LC_MESSAGES` / `LANG` > ICU 的默认 locale,`C` / `POSIX` 当「没有语言信息」按英文处理。0.2.1 之前是无论系统是什么都说中文。
+
 ## [0.2.1] — 2026-09-18
 
 **知识任务是循环的原生行为,不是另一个模式。** 本体、实体、认识论早就在,但普通研究的最短路径仍然是「检索 → 总结 → 写报告」——要建本体得用户先想起来说一句。这一版修的是**接线缺口**:把知识任务的判据做成结构的(目标还开着 + 带着登记过的假设),系统自己进知识模式;并把图从手写 SVG 换成 React Flow,给了它一个真正的全屏工作区。

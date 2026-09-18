@@ -65,6 +65,8 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 npx clearai-dsh install
 ```
 
+The installer's output follows your system language (`--lang zh|en` overrides it, `doctor` / `seed` / `unseed` take the same flag). Its only runtime dependency is `zod`; the graph stack is bundled into the client half at build time.
+
 Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), then **create a session and switch to the `ClearAI` mode in the picker at the top**:
 
 1. Open `dsh web` and click "New session";
