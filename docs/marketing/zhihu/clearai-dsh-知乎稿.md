@@ -1,5 +1,7 @@
 # clearai-dsh：在 DeepSeek Harness 上构建可信本体
 
+**GitHub：** [Clearailhc/clearai-dsh](https://github.com/Clearailhc/clearai-dsh)
+
 > Clearailhc/clearai-dsh @ v0.2.0 · DSH 原生插件
 > 15 套件 1372 条断言 · 29 个意图工具 · 6694 行内核 · Apache-2.0
 
@@ -310,6 +312,5 @@ npx clearai-dsh install
 
 ![clearai-dsh](images/logo-lockup.png)
 
-[GitHub — Clearailhc/clearai-dsh](https://github.com/Clearailhc/clearai-dsh)
 
 工作署名单位：[基点起源](https://jidianqiyuan.com/)
