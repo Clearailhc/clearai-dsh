@@ -461,6 +461,7 @@ export const CONFIG_KEYS = [
 	'templateDir',
 	'l4RejectSelfWritten',
 	'minHypotheses',
+	'requireTypedPromotion',
 	'bashDenyRules',
 	'auditProvider',
 	'auditTimeoutMs',
@@ -642,6 +643,14 @@ export function apply(ctx, config = {}) {
 		l4RejectSelfWritten: config.l4RejectSelfWritten !== false,
 		/** ClearAI 代码里「≥2 条假设」只是文案;默认不强制。 */
 		minHypotheses: config.minHypotheses ?? 0,
+		/**
+		 * **知识门**:将要升格的命题必须已有断言的形态,否则结案被拒。
+		 *
+		 * 与 `minHypotheses` 是**两条不同的立场**,所以是两个键,不是一个:
+		 * 前者说「开工要有候选对比」,这条说「结论要有形态」。一个部署完全可以只要前者。
+		 * 机制侧缺省关(= 断言始终是加法),preset 里写 true——与 `blockedThreshold` 同一个模式。
+		 */
+		requireTypedPromotion: config.requireTypedPromotion === true,
 		bashDenyRules: config.bashDenyRules !== false,
 		auditProvider: config.auditProvider ?? 'spawn',
 		auditTimeoutMs: config.auditTimeoutMs ?? 240000,
@@ -2973,6 +2982,43 @@ export function apply(ctx, config = {}) {
 				)
 			}
 			const derived = hostService.derive(sessionId)
+			/**
+			 * **知识门:核心结论不许以纯散文升格。**
+			 *
+			 * 位置有讲究——它坐在「计划已收尾」之后、**派评估者之前**。判据与准入同一条顺序纪律:
+			 * 先把能做的前提查完,再花钱请人裁决;等评估卡回来才发现没形态,那一次子 run 就白花了。
+			 *
+			 * 为什么需要它:断言一直是「加法,不是门槛」,于是真跑里模型的最优策略就是
+			 * 「检索 → 总结 → 写报告」——本体、实体、认识论三张图都长不出来,因为完成函数里没有它们。
+			 * 让缺口进卡(见 `renderCard`)只解决「看得见」;这一道解决「绕不过」。
+			 *
+			 * **判据是结构谓词,不是词面**:将要升格的命题里,只要有一条没有断言就拦。
+			 * 出口有两条,都是诚实的:补上断言的形态再结,或者如实 `abandoned`。
+			 * 缺口不许被伪装成 support(那是「造证」,比不结案坏得多)。
+			 *
+			 * 开关是 `requireTypedPromotion`(机制缺省关,preset 里开):它与 `minHypotheses`
+			 * 是两条不同的立场,所以不共用一个键。另外它**只在知识模式下生效**——
+			 * 没有登记的命题就没有「形态」可谈,那时拦下来的只是一句空话。
+			 */
+			if (CFG.requireTypedPromotion && derived.knowledge.mode === 'knowledge') {
+				const threshold = levelIndexOf(goal.promote_at_level)
+				/** 与下面那段升格循环**逐字同一套谓词**:将要升格的就是这几条,一条不多一条不少。 */
+				const promotable = derived.hypotheses.filter(
+					(hypothesis) =>
+						(hypothesis.status === 'alive' || hypothesis.status === 'proposed') &&
+						(hypothesis.refutations ?? 0) === 0 &&
+						levelIndexOf(hypothesis.supportedLevel) >= threshold,
+				)
+				const untyped = promotable.filter((hypothesis) => !Array.isArray(hypothesis.assertions) || hypothesis.assertions.length === 0)
+				if (untyped.length > 0) {
+					return fail(
+						'claims_untyped',
+						`有 ${untyped.length} 条命题已经验到门槛、却**没有断言的形态**,再往下就是散文升格:\n${untyped
+							.map((hypothesis) => `- ${hypothesis.id}(${hypothesis.supportedLevel}):${hypothesis.claim}`)
+							.join('\n')}\n把结论写成「主词 · 谓词 = 宾语」才进得了实体图,下一轮也才按概念取用得到。两条路:\n① **补形态再结**:词汇里没有对应的概念 / 谓词就先 \`RegisterTerm\` / \`RegisterPredicate\`,再用 \`SetGoal\` 修订目标、把这些命题连断言一起重列一遍(主张原文一字不动就会用回原 id,验到哪一级接着算),然后重新结案;\n② **如实放弃**:这些结论不值得留下形态,就用 \`CloseGoal(outcome="abandoned")\` 说清阻塞收兵。\n别为了让门放行而编一个词——词汇是约定,它将长期约束这个项目怎么写结论。`,
+					)
+				}
+			}
 			const unfinished = plan === null ? [] : plan.steps.filter((step) => step.status === 'open')
 			const syntheticStep = { id: `goal:${goal.id}`, ordinal: 0, do: `核验目标 ${goal.id} 的判据与转写忠实度`, done_criteria: goal.done_criteria, artifacts: [], tests: null }
 			const gate = {

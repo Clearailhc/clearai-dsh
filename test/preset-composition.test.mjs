@@ -45,6 +45,13 @@ console.log('\n【① 挂载表:工作方式回来了,第二本账没有】')
 	check('command-goal 仍未挂载(原生 /goal 与 ClearAI 目标撞名)', !/dsh-command-goal/.test(PRESET))
 	check('plan-mode 仍未挂载(两套计划纪律不并存)', !/dsh-plan-mode/.test(PRESET))
 	check('clearai-commands 插件挂载', /\.\/plugins\/commands\.js/.test(PRESET))
+	/**
+	 * 知识门是本部署的**产品立场**(内核缺省 false ⇒ 断言始终是加法)。
+	 * 它必须真的写在 preset 里,否则「结论要有形态」这条纪律在真跑里根本不存在——
+	 * 而那正是长跑里本体三张图长不出来的原因:完成函数里没有它们。
+	 */
+	check('知识门在本部署里是开的(内核缺省关,立场写在 preset)', /requireTypedPromotion: true/.test(PRESET))
+	check('假设数量下限 2 仍在(开工要有候选对比,与知识门是两条立场)', /minHypotheses: 2/.test(PRESET))
 }
 
 console.log('\n【② 命令注册形状】')

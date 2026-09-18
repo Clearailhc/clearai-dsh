@@ -1783,7 +1783,81 @@ console.log('\n【完成度:终局优先,升格算数(2026-09-11 长测抓到的
 	check('终局优先:目标 achieved ⇒ 完成度 100%(不再回落到假设口径的 0%)', host.service.view(S).goal?.progress === 1, String(host.service.view(S).goal?.progress))
 }
 
-console.log('\n【执行者未归:分叉收口之后,「结论会自动回灌」这句承诺就作废了(2026-09-11 R3-a 抓到的)】')
+console.log('\n【知识门:核心结论不许以纯散文升格(机制缺省关,preset 里开)】')
+{
+	/**
+	 * 为什么要有这道门:断言一直是「加法,不是门槛」,于是模型的最优策略就是
+	 * 「检索 → 总结 → 写报告」——本体图、实体图、认识论三张图都长不出来,因为**完成函数里没有它们**。
+	 * 让缺口进卡只解决「看得见」;这一道解决「绕不过」。
+	 *
+	 * 两个形态都要验:**缺省关**(机制中立,断言始终是加法 ⇒ 老账本照旧结案)
+	 * 和**开了之后**(将要升格的命题没形态就拦,而且**在派评估者之前**就拦)。
+	 */
+	const setup = async (config) => {
+		const host = makeHost()
+		const ws = tempDir('clearai-typed-gate-')
+		execFileSync('git', ['init', '-q'], { cwd: ws })
+		execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: ws })
+		host.cwd = ws
+		apply(host.ctx, { blockedThreshold: 3, ...config })
+		const S = `session-typed-${String(config.requireTypedPromotion)}`
+		await callOn(host, S, 'SetGoal', {
+			claim: '把炉次氧含量查清',
+			done_criteria: '氧含量有读数与出处',
+			hypotheses: [{ claim: 'T2 炉次氧含量是 10ppm', refute_when: '复测不是 10ppm' }],
+		})
+		await callOn(host, S, 'CreatePlan', {
+			steps: [{ id: 'g1', do: '读仪表记录', artifacts: ['lab/g1.txt'], done_criteria: 'lab/g1.txt 存在', tests: { hypothesis: host.service.state(S).hypotheses[0].id, level: 'L3' } }],
+		})
+		writeText(join(ws, 'lab', 'g1.txt'), '氧含量 10ppm\n')
+		host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '10', validity: 'usable' }
+		await callOn(host, S, 'AdvancePlan', { step_id: 'g1', observations: [{ ref: 'lab/g1.txt' }] })
+		await callOn(host, S, 'ClosePlan', { summary: '这一阶段做完了' })
+		return { host, S }
+	}
+
+	// ① 缺省(=机制中立):没形态照旧结案。
+	{
+		const { host, S } = await setup({})
+		const closed = await callOn(host, S, 'CloseGoal', { outcome: 'achieved' })
+		check('缺省不装知识门 ⇒ 无断言的命题照旧升格(断言始终是加法)', closed.ok === true, String(closed.code))
+		check('升格后事实真的没有断言(那条缺口如实留在读数里)', (host.service.state(S).facts[0]?.assertions ?? null) === null)
+	}
+
+	// ② 装了门:拦下,而且**不白花一次评估者**。
+	{
+		const { host, S } = await setup({ requireTypedPromotion: true })
+		/** 交付到 L3 那一步已经派过一次评估者——数的增量,不是总数。 */
+		const dispatchedBefore = host.service.state(S).audits.length
+		const blocked = await callOn(host, S, 'CloseGoal', { outcome: 'achieved' })
+		check('将升格的命题没有形态 ⇒ 拒', blocked.ok === false && blocked.code === 'claims_untyped', String(blocked.code))
+		check('拒在**派评估者之前**(那一次子 run 没有白花)', host.service.state(S).audits.length === dispatchedBefore, `${dispatchedBefore} → ${host.service.state(S).audits.length} 次派发`)
+		check('门说清了是哪几条命题、也给了两条出路', /补形态再结/.test(String(blocked.message)) && /abandoned/.test(String(blocked.message)), String(blocked.message).slice(0, 120))
+		check('目标保持开放(不许靠改判据绕过)', host.service.state(S).goal.status === 'open')
+
+		// 补形态:词汇 + 修订目标(主张原文一字不动 ⇒ 用回原 id,验到哪一级接着算)。
+		const term = await callOn(host, S, 'RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+		const pred = await callOn(host, S, 'RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: '现场记录 R-01' })
+		check('先立词汇(没有词就写不出断言)', term.ok === true && pred.ok === true, `${term.code}/${pred.code}`)
+		const hypothesisId = host.service.state(S).hypotheses[0].id
+		const revised = await callOn(host, S, 'SetGoal', {
+			claim: '把炉次氧含量查清',
+			done_criteria: '氧含量有读数与出处',
+			reason: '补上断言的形态',
+			hypotheses: [{ claim: 'T2 炉次氧含量是 10ppm', refute_when: '复测不是 10ppm', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } }] }],
+		})
+		check('修订目标 → 立起', revised.ok === true, String(revised.code))
+		check('补上的断言落在**原来那条**命题上(不是新开一条)', host.service.state(S).hypotheses.length === 1 && host.service.state(S).hypotheses[0].id === hypothesisId)
+		check('验到哪一级接着算(修订没有抹掉已支持等级)', host.service.derive(S).hypotheses[0].supportedLevel === 'L3')
+
+		const passed = await callOn(host, S, 'CloseGoal', { outcome: 'achieved' })
+		check('补上形态之后放行', passed.ok === true, String(passed.code))
+		check('升格的事实带着断言(这一次本体真的长出来了)', Array.isArray(host.service.state(S).facts[0]?.assertions) && host.service.state(S).facts[0].assertions.length === 1)
+		check('事实仍然指得回它的命题(身份与内容一起定型)', host.service.state(S).facts[0].hypothesis === hypothesisId)
+		check('结案后缺口读数清空(它不再是欠账)', !host.service.derive(S).knowledge.gaps.some((gap) => gap.code === 'unstructured_facts'))
+	}
+}
+
 {
 	/**
 	 * 长测现场(chain-2):四条世界线里只有甲的执行者结论回灌了,乙/丙/丁三条**永远停在
