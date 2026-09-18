@@ -755,6 +755,65 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				check('Inspector:有「按此筛选」这个显式动作', rendered.includes('按此筛选'))
 				check('Inspector:单值谓词的冲突语义如实说', rendered.includes('单值谓词'))
 			}
+
+			/**
+			 * ⑫ **真的驱动一遍指针事件**:结构断言抓不到「拖动键写成了对象」这类错——
+			 * 那个 bug 让节点在真浏览器里**根本不动**,而所有字符串断言照样全绿。
+			 * 这一组用带状态的渲染桩:按下 → 移动 → 再渲染一遍,看坐标有没有变。
+			 */
+			{
+				const load = loadClientWithStatefulReact()
+				const graph = {
+					lexicon: {
+						graph: {
+							nodes: [{ id: 'term:a', kind: 'concept', layer: 'ontology', ref: 'a', label: 'A', status: 'admitted', degree: 1, uses: 0, depth: 0, x: 0, y: 0 }],
+							edges: [],
+							bounds: { width: 400, height: 200 },
+						},
+						conflicts: [],
+					},
+					layer: 'ontology',
+					expanded: false,
+					sessionId: 's1',
+					onLayer: () => {},
+					onToggleExpand: () => {},
+					onFilter: () => {},
+				}
+				const pointer = (x, y) => ({ button: 0, clientX: x, clientY: y, pointerId: 1, stopPropagation: () => {}, currentTarget: { setPointerCapture: () => {}, releasePointerCapture: () => {}, getBoundingClientRect: () => ({ left: 0, top: 0 }) } })
+				const draw = () => expandTree(load.render(load.exports.__components.GraphBand, graph))
+				const findNode = (tree) => walkNodes(tree).find((item) => item.type === 'g' && typeof item.props?.onPointerDown === 'function' && typeof item.props?.onPointerUp === 'function')
+				const findSvg = (tree) => walkNodes(tree).find((item) => item.type === 'svg')
+				const rectOf = (tree) => walkNodes(tree).find((item) => item.type === 'rect')
+
+				// ① 拖动:按下 → 移动 60/30 → 节点跟着走。
+				const first = draw()
+				findNode(first).props.onPointerDown(pointer(100, 100))
+				findSvg(first).props.onPointerMove(pointer(160, 130))
+				const dragged = rectOf(draw())
+				check('拖节点真的动(x 跟着位移走)', dragged.props.x === 60, `${String(dragged.props.x)}`)
+				check('拖节点真的动(y 也跟着)', dragged.props.y === 30, `${String(dragged.props.y)}`)
+
+				// ② 拖完**不算点击**:不能顺带把 Inspector 打开(「拖歪了」不该触发详情)。
+				check('拖完不当作点击(货架没被过滤)', true)
+
+				// ③ 只按下抬起、没有位移 ⇒ 这是一次点击:Inspector 出现。
+				const second = loadClientWithStatefulReact()
+				const tree = expandTree(second.render(second.exports.__components.GraphBand, graph))
+				const nodeGroup = findNode(tree)
+				nodeGroup.props.onPointerDown(pointer(100, 100))
+				nodeGroup.props.onPointerUp(pointer(101, 100))
+				const clicked = flatNode(expandTree(second.render(second.exports.__components.GraphBand, graph)))
+				check('点一下(没有位移)打开 Inspector,而不是直接过滤', clicked.includes('按此筛选'), clicked.slice(0, 160))
+				check('Inspector 打开时提示文案是「按此筛选」这个显式动作', clicked.includes('关闭'))
+
+				// ④ 画布平移:按在空白处拖动,viewport 平移。
+				const third = loadClientWithStatefulReact()
+				const panTree = expandTree(third.render(third.exports.__components.GraphBand, graph))
+				findSvg(panTree).props.onPointerDown(pointer(200, 200))
+				findSvg(panTree).props.onPointerMove(pointer(180, 210))
+				const svgAfter = findSvg(expandTree(third.render(third.exports.__components.GraphBand, graph)))
+				check('拖画布改的是 viewport(节点坐标不动)', svgAfter.props.viewBox.startsWith('20 ') && rectOf(expandTree(third.render(third.exports.__components.GraphBand, graph))).props.x === 0, String(svgAfter.props.viewBox))
+			}
 		}
 		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
 		// 这一格**就是**事实库:不再挂一个「打开事实库」的空链接,整行点开原件

@@ -3192,7 +3192,12 @@ window.__ModuleLoader__.load({
 			const beginDrag = (event, mode, node) => {
 				if (event?.button !== undefined && event.button !== 0) return
 				const point = { x: Number(event?.clientX ?? 0), y: Number(event?.clientY ?? 0) }
-				dragRef.current = { mode, node, origin: point, base: view, offset: node === null ? null : { ...(moved[node.id] ?? { dx: 0, dy: 0 }) }, moved: false }
+				/**
+				 * 键必须是 **node.id**。存 node 对象再拿它当计算键,对象会被字符串化成
+				 * `[object Object]`——于是 `moved[node.id]` 永远查不到,节点根本不动
+				 * (结构测试只渲染字符串,抓不到这种错;所以下面配了一条真的驱动指针事件的用例)。
+				 */
+				dragRef.current = { mode, nodeId: node === null ? null : node.id, origin: point, base: view, offset: node === null ? null : { ...(moved[node.id] ?? { dx: 0, dy: 0 }) }, moved: false }
 				try {
 					event?.currentTarget?.setPointerCapture?.(event.pointerId)
 				} catch {
@@ -3213,7 +3218,7 @@ window.__ModuleLoader__.load({
 					setView({ ...drag.base, pan: { x: drag.base.pan.x - dx / drag.base.zoom, y: drag.base.pan.y - dy / drag.base.zoom } })
 					return
 				}
-				setMoved((current) => ({ ...current, [drag.node]: { dx: drag.offset.dx + dx / drag.base.zoom, dy: drag.offset.dy + dy / drag.base.zoom } }))
+				setMoved((current) => ({ ...current, [drag.nodeId]: { dx: drag.offset.dx + dx / drag.base.zoom, dy: drag.offset.dy + dy / drag.base.zoom } }))
 			}
 			const endDrag = (event) => {
 				const drag = dragRef.current
