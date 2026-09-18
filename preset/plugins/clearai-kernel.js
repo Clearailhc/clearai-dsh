@@ -2834,6 +2834,35 @@ export function apply(ctx, config = {}) {
 			const goalId = isRevision ? state.goal.id : uniqueId('g')
 			const revision = isRevision ? state.goal.revision + 1 : 1
 			const promoteAtLevel = LEVELS.includes(args.promote_at_level) ? args.promote_at_level : 'L3'
+			/**
+			 * **修订不许给同一句话发新身份。**
+			 *
+			 * 真跑踩出来的:一轮长跑里目标改过一次版,卡上就出现 4 条主张的 6~8 行读数——
+			 * 同一句话挂着两个 id、各报一个状态(一个「已支持」、另一个「未触及」),
+			 * 模型得自己去调和两份自相矛盾的读数。而 id 是身份:主张原文没变就该用回原来的 id,
+			 * 这样「这条猜想被验到哪一级」跨版本仍然接着算。
+			 *
+			 * 反过来,**这一版没再列出来的**要如实落成 `hypothesis/superseded`:
+			 * 折法早就认识这条变更,只是从来没有人发过它(与 `retracted` 当年那个「声明了没有生产者」
+			 * 是同一种病)。不发它,被放弃的猜想会永远挂在 `proposed` 上,结案时又变成一条假的「没看过」。
+			 */
+			const existing = state.hypotheses.filter((item) => item.goal === goalId)
+			const claimKey = (text) => String(text ?? '').trim().replace(/\s+/g, ' ')
+			const idByClaim = new Map(existing.map((item) => [claimKey(item.claim), item.id]))
+			const reused = new Set()
+			const nextHypotheses = hypotheses.map((hypothesis, index) => {
+				const claim = hypothesis.claim.trim()
+				const carried = idByClaim.get(claimKey(claim))
+				if (carried !== undefined) reused.add(carried)
+				return {
+					id: carried ?? `h-${Math.random().toString(36).slice(2, 8)}`,
+					claim,
+					refute_when: hypothesis.refute_when.trim(),
+					/** 断言随假设落账;没写就是 null(加法,不是门槛)。 */
+					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
+					version: index + 1,
+				}
+			})
 			mutations.push({
 				t: 'goal/set',
 				id: goalId,
@@ -2842,15 +2871,14 @@ export function apply(ctx, config = {}) {
 				promote_at_level: promoteAtLevel,
 				revision,
 				reason: isRevision ? String(args.reason).trim() : null,
-				hypotheses: hypotheses.map((hypothesis, index) => ({
-					id: `h-${Math.random().toString(36).slice(2, 8)}`,
-					claim: hypothesis.claim.trim(),
-					refute_when: hypothesis.refute_when.trim(),
-					/** 断言随假设落账;没写就是 null(加法,不是门槛)。 */
-					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
-					version: index + 1,
-				})),
+				hypotheses: nextHypotheses,
 			})
+			for (const dropped of existing) {
+				if (reused.has(dropped.id)) continue
+				const promoted = (state.facts ?? []).some((fact) => fact.hypothesis === dropped.id)
+				if (promoted) continue
+				mutations.push({ t: 'hypothesis/superseded', goal: goalId, id: dropped.id, claim: dropped.claim, by: `rev${revision}` })
+			}
 			let scoutNote = ''
 			if (!isRevision && CFG.precommitRecon) {
 				// 立约前侦察:harness 发起(不是模型请求),一生一次,且只在真的有人给过材料时做

@@ -290,6 +290,113 @@ console.log('\n【折法:冲突与健康度是派生读数,进读面不进闸门
 	check('撤回一侧之后冲突消失', fold.derive(fold.applyMutations(state, [{ t: 'fact/reviewed', fact: 'f2', decision: 'retracted', reason: 'bad' }])).conflicts.length === 0)
 }
 
+console.log('\n【知识模式:结构判据 + 缺口是读数,不是拦截】')
+{
+	/**
+	 * 这一组的判据只有一条:**分诊不猜词面**。
+	 * 立约并用相互竞争的假设登记它,是模型自己已经做出的承诺;词面启发式猜错了没人能复核。
+	 * 缺口四条各自只算**今天还补得上**的那些(旧事实补不上断言,就不算欠账)。
+	 */
+	const labelled = (state) => fold.derive(state).knowledge
+	const codes = (state) => labelled(state).gaps.map((gap) => gap.code)
+	const goalOnly = fold.applyMutations(fold.emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: 'C', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: 'c1', refute_when: 'rw', version: 1 }, { id: 'h2', claim: 'c2', refute_when: 'rw', version: 1 }] },
+	])
+
+	check('没有目标 ⇒ 普通任务(也没有缺口)', labelled(fold.emptyState()).mode === 'ordinary' && labelled(fold.emptyState()).gaps.length === 0)
+	check('普通任务的卡片里不出现「知识模式」', !fold.renderCard(fold.emptyState()).includes('知识模式'))
+	check('目标开着且有登记命题 ⇒ 知识模式', labelled(goalOnly).mode === 'knowledge', JSON.stringify(labelled(goalOnly)))
+	check(
+		'一个部署不要求假设(minHypotheses=0)时,光有目标不算知识模式',
+		labelled(fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g1', claim: 'C', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [] }])).mode === 'ordinary',
+	)
+	check(
+		'目标结了 ⇒ 回到普通任务(报告期不再催结构)',
+		labelled(fold.applyMutations(goalOnly, [{ t: 'goal/closed', id: 'g1', status: 'achieved', verdict: 'achieved' }])).mode === 'ordinary',
+	)
+
+	const withLanguage = fold.applyMutations(goalOnly, [
+		{ t: 'ontology/term_added', id: 'numerical_scheme', label: '数值格式', basis: 'b', version: 1 },
+		{ t: 'ontology/predicate_added', id: 'convergence_order', label: '收敛阶', domain: 'numerical_scheme', range: { form: 'quantity' }, basis: 'b' },
+	])
+	check('语言还没立起来 ⇒ 报 no_language', codes(goalOnly).includes('no_language'))
+	check('立了概念与谓词 ⇒ no_language 消失(否则它是一条永远擦不掉的抱怨)', !codes(withLanguage).includes('no_language'))
+	check('只有散文主张 ⇒ 报 prose_only_claims', codes(goalOnly).includes('prose_only_claims'))
+
+	const typed = fold.applyMutations(withLanguage, [
+		{
+			t: 'goal/set',
+			id: 'g1',
+			claim: 'C',
+			done_criteria: 'D',
+			promote_at_level: 'L3',
+			revision: 2,
+			hypotheses: [
+				{ id: 'h1', claim: 'c1', refute_when: 'rw', version: 1, assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] },
+				{ id: 'h2', claim: 'c2', refute_when: 'rw', version: 1, assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(2) }] },
+			],
+		},
+	])
+	check('两条命题都带上断言 ⇒ prose_only_claims 消失', !codes(typed).includes('prose_only_claims'), JSON.stringify(labelled(typed).gaps))
+
+	// ③ 升格时没带断言:只算 0.2.0 那条路(有 hypothesis 关联)的,旧事实不算欠账。
+	const promoted = fold.applyMutations(typed, [
+		{ t: 'fact/promoted', id: 'f1', goal: 'g1', hypothesis: 'h1', text: 'c1', scope: 's', level: 'L3', evidence: [], path: 'p', assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] },
+	])
+	check('升格带了断言 ⇒ 不报 unstructured_facts', !codes(promoted).includes('unstructured_facts'))
+	const bare = fold.applyMutations(typed, [{ t: 'fact/promoted', id: 'f9', goal: 'g1', hypothesis: 'h1', text: 'c1', scope: 's', level: 'L3', evidence: [], path: 'p', assertions: null }])
+	check('升格没带断言(0.2.0 那条路)⇒ 报 unstructured_facts', codes(bare).includes('unstructured_facts'))
+	const legacy = fold.applyMutations(typed, [{ t: 'fact/promoted', id: 'f0', goal: 'g1', text: '旧事实', scope: 's', level: 'L3', evidence: [], path: 'p' }])
+	check('更早的事实(没有 hypothesis 关联)补不上断言 ⇒ 不算欠账', !codes(legacy).includes('unstructured_facts'))
+
+	// ④ 从没被证据碰过:只在这次会话真的跑出过证据之后才报(计划刚立不是缺口)。
+	check('一步都还没走 ⇒ 不报 untouched_claims(那是起点,不是缺口)', !codes(typed).includes('untouched_claims'))
+	const worked = fold.applyMutations(typed, [
+		{
+			t: 'plan/created',
+			id: 'p1',
+			goal: 'g1',
+			brief: 'x'.repeat(300),
+			steps: [
+				{ id: 's1', do: 'r', done_criteria: 'd', tests: { hypothesis: 'h1', level: 'L2' } },
+				{ id: 's2', do: 'r2', done_criteria: 'd2' },
+			],
+		},
+		{ t: 'evidence/recorded', id: 'e1', plan: 'p1', step: 's1', verdict: 'support', level: 'L2', evaluator: 'self', basis: 'b', refs: [], origins: [] },
+	])
+	check('已经跑出证据、而有命题没被碰过 ⇒ 报 untouched_claims', codes(worked).includes('untouched_claims'), JSON.stringify(labelled(worked).gaps))
+	check('被碰过的命题不算在内(只剩没碰过的那条)', labelled(worked).gaps.find((gap) => gap.code === 'untouched_claims')?.count === 1)
+
+	check('缺口是读数:一条也不拦(没有闸门)', fold.derive(goalOnly).hasOpenGate === false)
+	check('读面带出知识模式(与卡片同一份派生)', fold.view(goalOnly, 's').knowledge.mode === 'knowledge')
+	check('卡片把缺口逐条说出来', fold.renderCard(goalOnly).includes('知识模式') && fold.renderCard(goalOnly).includes('缺口'))
+	check('结构完整时如实说不欠,而不是沉默', fold.renderCard(promoted).includes('结构完整') || fold.renderCard(promoted).includes('缺口'), fold.renderCard(promoted).split('\n').filter((line) => line.includes('知识模式')).join('|'))
+}
+
+console.log('\n【假设身份:一个 id 只对应一条主张(真跑里卡上出现 6~8 行读数的那条)】')
+{
+	/**
+	 * 真跑现场:目标改过一次版,运行态卡上就有 4 条主张的 6~8 行读数——同一句话挂着两个 id、
+	 * 各报一个状态。判据是**身份**:id 不变则主张不许换,主张不变则 id 不许换。
+	 */
+	const set = (hypotheses, revision = 1) => ({ t: 'goal/set', id: 'g1', claim: 'C', done_criteria: 'D', promote_at_level: 'L3', revision, hypotheses })
+	const line = { predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }
+	const first = fold.applyMutations(fold.emptyState(), [set([{ id: 'h1', claim: 'c1', refute_when: 'rw', version: 1 }])])
+	const restated = fold.applyMutations(first, [set([{ id: 'h1', claim: 'c1', refute_when: 'rw 改过', version: 1, assertions: [line] }], 2)])
+
+	check('再一次 goal/set 同一 id + 同一主张 ⇒ 不新增行(id 是身份)', restated.hypotheses.length === 1, `${restated.hypotheses.length} 行`)
+	check('补上的断言当真落进那条老命题(修订加断言是正当的更新)', Array.isArray(restated.hypotheses[0].assertions) && restated.hypotheses[0].assertions.length === 1)
+	check('推翻条件也按新版更新', restated.hypotheses[0].refute_when === 'rw 改过')
+
+	const rewritten = fold.applyMutations(first, [set([{ id: 'h1', claim: '完全另一句话', refute_when: 'rw', version: 1 }], 2)])
+	check('同一个 id 换主张 ⇒ 拒(拿旧 id 说新话是对所有旧读数说假话)', rewritten.hypotheses.length === 1 && rewritten.hypotheses[0].claim === 'c1', JSON.stringify(rewritten.hypotheses.map((h) => h.claim)))
+
+	const refuted = fold.applyMutations(first, [{ t: 'hypothesis/superseded', goal: 'g1', id: 'h1', claim: 'c1', by: 'rev2' }])
+	check('hypothesis/superseded 折得出终态(这条变更过去没有生产者)', refuted.hypotheses[0].status === 'superseded')
+	const sticky = fold.applyMutations(refuted, [set([{ id: 'h1', claim: 'c1', refute_when: 'rw', version: 1, assertions: [line] }], 3)])
+	check('终态黏住:被替代过的命题不会因为再被列出而复活', sticky.hypotheses[0].status === 'superseded' && sticky.hypotheses.length === 1)
+}
+
 console.log('\n【测试面:这一份测试进了 run.sh(否则它只是本地脚本)】')
 {
 	check('run.sh 里登记了领域语言这一套', suiteSource.includes('domain-language.test.mjs'))

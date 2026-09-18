@@ -16,3 +16,6 @@ refs/
 # 工作区与会话原件可能很大,留在归档目录里供本地复算(tools/e2e-replay.mjs)。
 docs/optimization/e2e-logs/*/*/workspace/
 docs/optimization/e2e-logs/*/*/session.jsonl.zstd
+
+# 会话分析临时物(本机审阅用,不入库)
+.analysis/

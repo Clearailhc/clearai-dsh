@@ -285,10 +285,30 @@ export function applyMutation(state, mutation) {
 				}
 			}
 			for (const hypothesis of mutation.hypotheses ?? []) {
+				/**
+				 * **一个 id 只对应一条主张,永远**(与领域词汇那条「语义变化必须换 id」同一条纪律)。
+				 *
+				 * 真跑里这条缺失的代价很大:修订目标时内核给**同一句话**发了新 id,而这里照单全收,
+				 * 于是一张运行态卡上出现 4 条主张的 6~8 行读数——同一句话挂着两个 id、各报一个状态
+				 * (一个「已支持」、另一个「未触及」),模型得自己去调和两份打架的读数。
+				 *
+				 * 所以这里按 id **upsert**,但**只更新不改变身份的那些字段**(断言、推翻条件、版本):
+				 * 修订时给一条老命题补上断言是正当的更新;而换掉它的 `claim` 就是拿旧 id 说新话——
+				 * 那一律拒(内核已在源头保证换主张必换 id),终态(`superseded` / `refuted`)同样黏住。
+				 */
+				const claim = String(hypothesis.claim ?? '')
+				const known = next.hypotheses.find((item) => item.id === hypothesis.id)
+				if (known !== undefined) {
+					if (String(known.claim ?? '') !== claim) continue
+					known.refute_when = hypothesis.refute_when
+					known.version = hypothesis.version ?? known.version
+					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
+					continue
+				}
 				next.hypotheses.push({
 					id: hypothesis.id,
 					goal: mutation.id,
-					claim: hypothesis.claim,
+					claim,
 					refute_when: hypothesis.refute_when,
 					status: 'proposed',
 					version: hypothesis.version ?? 1,
@@ -1048,6 +1068,101 @@ export function applyEvent(state, event) {
 
 // ── 派生:阶段 / 完成度 / 假设状态 / 世界线阶段,全部现算,状态里不存 ──────────
 
+/** 假设的终态:到了这里就不再是「还要继续做的活」。 */
+const TERMINAL_HYPOTHESIS = new Set(['refuted', 'superseded', 'retracted'])
+
+/**
+ * **知识模式(分诊)与缺口读数。**
+ *
+ * 判据是**结构的,不是词法的**:这里不猜「这句话像不像研究任务」。立约(`SetGoal`)并用
+ * 相互竞争的假设登记它,是模型自己已经做出的那次承诺——它意味着这件事要跨多轮、要有依据、
+ * 要有可复核的结论。日常问答从不立约,于是从不进这一档。用词面启发式去猜任务类型,
+ * 正是真跑里评估者抓到的那类「硬编码比例」的老路:猜错了没人能复核,而结构判据可以。
+ *
+ * 缺口(`gaps`)是**读数,不是拦截**,也不新增账本:每一条都从已有事实算出来,并且指得出
+ * 一个今天就能补的动作。它们要进运行态卡——模型每一步唯一读到的那个窗口。让缺口每回合可见,
+ * 比让提示词多叮嘱一句可靠:提示词会被读成建议,而卡里的读数不会。
+ */
+export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
+	const goal = state?.goal ?? null
+	const open = goal !== null && goal.status !== 'achieved' && goal.status !== 'abandoned'
+	const registered = hypotheses.filter((item) => !TERMINAL_HYPOTHESIS.has(item.status))
+	/**
+	 * 模式的**唯一**判据:目标还开着,而且它带着登记过的假设。
+	 *
+	 * 为什么不是「目标存在」就够:`minHypotheses` 是部署自己的产品立场(内核缺省是 0 = 机制中立)。
+	 * 一个把下限设成 0 的部署明确说了「我不要这条纪律」,那时它也不该收到知识模式的读数。
+	 */
+	const mode = open && registered.length > 0 ? 'knowledge' : 'ordinary'
+	const terms = Array.isArray(lexicon?.terms) ? lexicon.terms : []
+	const predicates = Array.isArray(lexicon?.predicates) ? lexicon.predicates : []
+	const gaps = []
+	if (mode === 'knowledge') {
+		/**
+		 * ① 语言还没立起来:跨轮复用与「按概念取用已知」都要求先有词汇。
+		 *    判据是**两个都空**——只有概念没有谓词时,关系还说不出来,但语言已经开张了,
+		 *    那是进展不是缺口(否则每注册一个概念就多一条永远擦不掉的抱怨)。
+		 */
+		if (terms.length === 0 && predicates.length === 0) {
+			gaps.push({
+				code: 'no_language',
+				count: registered.length,
+				detail: `${registered.length} 条在验命题,但还没有任何概念与谓词:换一轮只能靠重读散文取用它们`,
+			})
+		}
+		/**
+		 * ② 只有散文主张的命题:断言是可选的(「加法,不是门槛」),所以这里**不是违规**,
+		 *    而是「这条主张还不能被机器比对」。只算非终态的:被推翻/被替代的不再欠这一笔。
+		 */
+		const proseOnly = registered.filter((item) => !Array.isArray(item.assertions) || item.assertions.length === 0)
+		if (proseOnly.length > 0) {
+			gaps.push({
+				code: 'prose_only_claims',
+				count: proseOnly.length,
+				detail: `${proseOnly.length} 条在验命题只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
+			})
+		}
+		/**
+		 * ③ **升格时没带断言**。只算 0.2.0 那条路走出来的事实(`hypothesis` 已关联)——
+		 *    更早的事实补不上断言(见已知缺口),把它们算成欠账就是一条永远还不掉的抱怨。
+		 */
+		const unstructured = factRows.filter((fact) => typeof fact.hypothesis === 'string' && fact.hypothesis !== '' && (!Array.isArray(fact.assertions) || fact.assertions.length === 0))
+		if (unstructured.length > 0) {
+			gaps.push({
+				code: 'unstructured_facts',
+				count: unstructured.length,
+				detail: `${unstructured.length} 条已升格事实没有断言:它们进不了实体图,也不能按概念取用`,
+			})
+		}
+		/**
+		 * ④ **从没被证据碰过的命题**。只在这次会话已经真的跑出过证据之后才报——计划刚立、
+		 *    一步都还没走时,所有假设都是「没碰过」,那是正常的起点而不是缺口。
+		 *    它和结案时那条 `unjudged` 是同一条先例:**不逼裁决,但不许把「没看过」写成「没问题」**。
+		 */
+		if (Array.isArray(state?.evidence) && state.evidence.length > 0) {
+			const untouched = registered.filter((item) => item.refutations + item.inconclusive === 0 && item.supportedLevel === null)
+			if (untouched.length > 0) {
+				gaps.push({
+					code: 'untouched_claims',
+					count: untouched.length,
+					detail: `${untouched.length} 条在验命题还没有任何证据碰过(支持 / 推翻 / 无法判定都算碰过)`,
+				})
+			}
+		}
+	}
+	return {
+		mode,
+		/** 一句人话:为什么进了这一档(或为什么没进)。它进卡,所以不许写成术语。 */
+		why:
+			mode === 'knowledge'
+				? `目标还开着,带着 ${registered.length} 条登记过的命题——这是跨轮、要依据、要可复核结论的活`
+				: open
+					? '目标还开着,但没有登记命题:按普通任务推进'
+					: '没有开着的目标:按普通任务推进',
+		gaps,
+	}
+}
+
 export function derive(state) {
 	const activePlan = state.plans.find((plan) => plan.status === 'active') ?? null
 	const closedPlans = state.plans.filter((plan) => plan.status === 'closed')
@@ -1350,6 +1465,8 @@ export function derive(state) {
 		lexicon,
 		conflicts,
 		lexiconIssues,
+		/** 知识模式(分诊)与缺口读数:结构判据,不猜词面(见 `deriveKnowledge`)。 */
+		knowledge: deriveKnowledge(state, hypotheses, factRows, lexicon),
 	}
 }
 
@@ -1518,6 +1635,11 @@ export function view(state, sessionId) {
 			health: derived.lexiconIssues,
 			graph: graphProjection(state),
 		},
+		/**
+		 * **知识模式(分诊)**:面板据此把「这一格是知识主场还是普通进展」说清楚,
+		 * 与卡片读的是同一份派生(判据只有一处:`deriveKnowledge`)。
+		 */
+		knowledge: derived.knowledge,
 		/**
 		 * 续跑窗口的账:面板读它,于是「续跑停着——等裁决」这种**平台说不出来的话**
 		 * 有地方说。轮数与相位仍然只在原生 dock 上出现(一个事实只在**一块**面上说),
@@ -1838,10 +1960,27 @@ export function renderCard(state) {
 			lines.push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}`)
 		}
 	}
+	/**
+	 * **知识模式与缺口**:这一行是「分诊」在模型侧的全部可见面。
+	 *
+	 * 普通任务**一个字都不加**(提示词与卡片同一条零成本纪律:不立约的会话不长出新字节)。
+	 * 进了这一档才报,而且报的是**缺口 + 指得出动作的读数**,不是纪律条文——
+	 * 真跑里模型跳过本体步骤不是因为不知道有这件工具,而是因为完成函数里没有它;
+	 * 缺口逐回合摆在卡上,那件事才进得了它的视野。
+	 */
+	if (derived.knowledge.mode === 'knowledge') {
+		lines.push(`- 知识模式:${derived.knowledge.why}`)
+		if (derived.knowledge.gaps.length === 0) {
+			lines.push('  · 结构完整:语言、断言的命题、带断言的已升格事实、证据覆盖这四项今天都不欠')
+		} else {
+			const total = derived.knowledge.gaps.reduce((sum, gap) => sum + gap.count, 0)
+			lines.push(`  · 缺口 ${total} 条(${derived.knowledge.gaps.map((gap) => `${gap.code} ${gap.count}`).join(' · ')}):`)
+			for (const gap of derived.knowledge.gaps) lines.push(`    - ${gap.detail}`)
+		}
+	}
 	if (plan === null) {
 		lines.push('- 当前计划:无活动计划')
-	} else {
-		if (derived.planConfirmationPending) {
+	} else {		if (derived.planConfirmationPending) {
 			/**
 			 * 授权记号的语义:它是**归属**,不是闸门。
 			 *

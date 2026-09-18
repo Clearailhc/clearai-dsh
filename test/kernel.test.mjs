@@ -726,6 +726,58 @@ console.log('\n【假设数量下限:首次立约就要候选对比(preset 立 2
 
 const HYP = eventsOf('goal/set')[0].hypotheses[0].id
 
+console.log('\n【修订不许给同一句话发新身份(真跑里卡上出现 6~8 行读数的那条)】')
+{
+	/**
+	 * 真跑现场:一场长跑里目标改过版,运行态卡上就有 4 条主张的 6~8 行读数——
+	 * 同一句话挂着两个 id、各报一个状态(一个「已支持」、另一个「未触及」)。
+	 * 下面钉两件事:主张原文没变 ⇒ 用回原 id;这一版没再列 ⇒ 如实落 superseded。
+	 */
+	const idHost = makeHost()
+	apply(idHost.ctx, { minHypotheses: 2 })
+	const I = 'session-hyp-identity'
+	const before = {
+		claim: 'JEPA 的分化轴是机制',
+		done_criteria: '按机制分组与按代际分组各出一张交叉表',
+		hypotheses: [
+			{ claim: '分化轴是防坍缩机制', refute_when: '机制与代际完全同构' },
+			{ claim: '分界可由谓词机械判定', refute_when: '过半无法判定' },
+		],
+	}
+	const i1 = await callOn(idHost, I, 'SetGoal', before)
+	check('首次立约 → 立起', i1.ok === true && i1.code === 'goal_set', String(i1.code))
+	const firstIds = idHost.service.state(I).hypotheses.map((item) => item.id)
+	check('两条假设各有身份', firstIds.length === 2 && firstIds.every((id) => typeof id === 'string' && id !== ''))
+
+	// 改判据、但两条主张原文一字不动(真跑里 rev2 就是这个形状)。
+	const i2 = await callOn(idHost, I, 'SetGoal', { ...before, done_criteria: '判据换成可稳定复核的锚点', reason: '原判据依赖系统所有的读面' })
+	check('修订 → 版本 +1', i2.ok === true && i2.code === 'goal_revised', String(i2.code))
+	check('主张原文没变 ⇒ 用回原 id(不是给同一句话发新身份)', JSON.stringify(idHost.service.state(I).hypotheses.map((item) => item.id)) === JSON.stringify(firstIds), idHost.service.state(I).hypotheses.map((item) => item.id).join(','))
+	check('修订不新增重复行(卡上不再出现同一句话两遍)', idHost.service.state(I).hypotheses.length === 2, `${idHost.service.state(I).hypotheses.length} 行`)
+
+	// 这一版只留一条 ⇒ 另一条如实落 superseded(这条变更过去没有生产者)。
+	const i3 = await callOn(idHost, I, 'SetGoal', {
+		claim: before.claim,
+		done_criteria: before.done_criteria,
+		reason: '第二条不再需要',
+		hypotheses: [{ claim: '分化轴是防坍缩机制', refute_when: '机制与代际完全同构' }],
+	})
+	check('只留一条 → 立起', i3.ok === true, String(i3.code))
+	const dropped = idHost.service.state(I).hypotheses.find((item) => item.id === firstIds[1])
+	check('没再列出来的那条落成 superseded(而不是永远挂在 proposed 上)', dropped?.status === 'superseded', String(dropped?.status))
+	check('留下的那条仍是 proposed(它没有被这一版放弃)', idHost.service.state(I).hypotheses.find((item) => item.id === firstIds[0])?.status === 'proposed')
+	check('落账上真有这条变更(hypothesis/superseded 过去在折法里有、在生产侧没有)', idHost.service.state(I).hypotheses.length === 2)
+
+	// 换一句话就是换一条主张 ⇒ 必须是新 id。
+	const i4 = await callOn(idHost, I, 'SetGoal', {
+		claim: before.claim,
+		done_criteria: before.done_criteria,
+		reason: '换一条猜想',
+		hypotheses: [{ claim: '分化轴其实是代际年份', refute_when: '同代内出现两种机制' }],
+	})
+	check('换主张 ⇒ 发新 id(同一 id 不许在历史上换含义)', i4.ok === true && !idHost.service.state(I).hypotheses.some((item) => item.id === firstIds[0] && item.claim === '分化轴其实是代际年份'))
+}
+
 console.log('\n【计划:判据强制 + 步骤 id 唯一 + 判据自指 + 约立起便锁定】')
 {
 	const bad1 = await call('CreatePlan', { steps: [{ id: 's1', do: '跑实验', artifacts: ['lab/yield.csv'] }] })
