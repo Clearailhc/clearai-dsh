@@ -730,6 +730,24 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
+	 * 这个会话是不是**派出去的子会话**(评估者 / 侦察 / 执行者 / 横评仲裁)。
+	 *
+	 * 判据读宿主的会话头:`dsh-subagent` 生成子会话时写死 `parentSession`——与它写死
+	 * `cwd: parentHeader.cwd` 是同一处,所以「共享工作区」与「身份是子会话」总是一起出现。
+	 * 会话服务问不出来时按「不是子会话」处理:与 `sessionCwd` 的退路同一个方向,
+	 * 拿不到证据时维持既有行为,不新增一条静默分支。
+	 */
+	function isSpawnedChild(sessionId) {
+		try {
+			const header = ctx.get('sessions')?.get?.(sessionId)?.header
+			if (header === null || typeof header !== 'object') return false
+			return header.origin === 'subagent' || header.parentSession !== undefined
+		} catch {
+			return false
+		}
+	}
+
+	/**
 	 * 认一条假设:`id` 最稳,**原文**与**唯一前缀**(≥8 字)也认。
 	 *
 	 * 为什么放宽:模型会把假设**原文**整句填进 `tests.hypothesis`(真跑里连着三轮都是),
@@ -2614,6 +2632,11 @@ export function apply(ctx, config = {}) {
 	/** 写货架;内容没变就返回 null(调用方据此决定要不要在卡里提一句)。 */
 	function ensureFactsShelf(sessionId, state) {
 		/**
+		 * 与词汇货架**同一条所有权规则,同一个位置**(写入口):子会话的投影里
+		 * 没有主线的事实,让它铺只会按它自己那份重写 `INDEX.md`。
+		 */
+		if (isSpawnedChild(sessionId)) return null
+		/**
 		 * 货架要显示「被推翻」那个读数,而它是**派生的**(fold 的 derive),不在原始状态里。
 		 * 所以这里问一次读面,而不是在货架里重算一遍(重算 = 第二份判据,必然漂)。
 		 */
@@ -2640,8 +2663,23 @@ export function apply(ctx, config = {}) {
 	 *
 	 * 带 `mutations` 时按**这一步之后**的样子渲染:工具返回前货架就已更新,读的人不必等下一回合。
 	 */
+	/**
+	 * 铺领域词汇货架(幂等)。
+	 *
+	 * **写入口自带所有权判据:派出去的子会话结构上写不进这份文件。**
+	 *
+	 * 规则一句话:工作区级读面属于拥有账本的会话。子会话(评估者 / 侦察 / 执行者)与主线
+	 * 共享同一个工作区,却持有**另一份(空的)投影**——让它照自己的投影重铺,
+	 * `renderShelf(子会话)` 渲染出的就是「还没有词条」的占位版。真跑里评估者两次读到
+	 * 7 行占位版、主线连读三次都是 96 行 21 词条,两边各自稳定:文件在「谁最后铺了一拍」
+	 * 之间摆动,而两边谁都没说谎。子会话**读**这份货架(评估者核对判据正要读它),但不写。
+	 *
+	 * 判据放在**写函数里**而不是调用点,与 `tools/pre-execute` 拒模型写 `clear/` 是同一条
+	 * 纪律:边界住在咽喉点,新增多少调用点都绕不过(不可表达优于不可违反)。
+	 */
 	function ensureDomainShelf(hostService, sessionId, mutations = []) {
 		if (hostService?.domain?.renderShelf === undefined) return ''
+		if (isSpawnedChild(sessionId)) return ''
 		try {
 			const body = hostService.domain.renderShelf(sessionId, Array.isArray(mutations) ? mutations : [])
 			const file = join(sessionCwd(sessionId), 'clear', 'ontology', 'domain.md')
@@ -6513,6 +6551,7 @@ export function apply(ctx, config = {}) {
 		 * 为什么不像过程本体那样只铺一次:那一份随**发布版本**,这一份随**会话**——
 		 * 一个项目今天没用词汇、明天开始用,货架必须自己长出来,而不是等人记得去建。
 		 * 它也不进卡:货架的位置在提示词里说一次就够,每拍重复就是往上下文里灌水。
+		 * 所有权判据(子会话不写)在写入口——见 `ensureDomainShelf`。
 		 */
 		ensureDomainShelf(host(), sessionId)
 		let brainNote = ''
@@ -6637,6 +6676,7 @@ export function apply(ctx, config = {}) {
 			/**
 			 * **事实货架**:事实变了才重写、才在卡里提一句——**变了才发**,与目录同一条纪律。
 			 * 事实很少变(升格一次),所以这句话在大多数回合里都不出现。
+			 * 所有权判据(子会话不写)在写入口——见 `ensureFactsShelf`。
 			 */
 			const shelf = ensureFactsShelf(sessionId, state)
 			if (shelf !== null) factsNote = `\n- 事实库多了一条(或边界改了):${shelf}——引用前先看它的边界(推翻条件)。`

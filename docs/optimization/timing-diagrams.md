@@ -233,13 +233,13 @@ Key points:
   reversal depends on them staying readable forever.
 - A fork closed while an executor has not returned → derived `unreturned`; stop waiting.
 
-## 5. Domain-ontology path · partially implemented (the fold half ships)
+## 5. Domain-ontology path · implemented (fold, verbs and panel all ship)
 
-**Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. **Only the
-fold half runs today**: the six vocabulary events fold, assertions fold, and conflicts and graphs are derived;
-the **seven verbs are wired** (register / revise / deprecate / query) and only the panel is not (stages D–E).
-The only design-target step in the diagram is therefore the panel; the verbs and event names can be checked
-line by line today.
+**Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. The **fold
+half** (six vocabulary events, assertions, conflict and graph derivation) and the **seven verbs**
+(register / revise / deprecate / query) are wired; **so is the panel** (graph band / assertion chips /
+conflict row / vocabulary maintenance zone, plus graph editing through the human-gate route — the same
+criteria and the same ledger as the model's verbs).
 
 ```mermaid
 sequenceDiagram
@@ -260,16 +260,17 @@ sequenceDiagram
     Note over K,L: everything below is the fold as it stands today
     K-->>L: mutation fact/promoted (hypothesis + assertions)
     L->>P: fold: events → state.lexicon / state.facts
-    P->>P: derive: conflict pairs · vocabulary health · graphProjection (deterministic layout)
+    P->>P: derive: conflict pairs · vocabulary health · graphProjection (layer / degree / claim)
     P-->>G: render shelf / runtime card / panel view
     G-->>M: next turn retrieves what is known by concept
 ```
 
-Three boundaries (each has a test, or is written into [Known gaps](../known-gaps.md)):
+Four boundaries (each has a test, or is written into [Known gaps](../known-gaps.md)):
 
 1. **Refused at registration**: an assertion that references an unknown or deprecated entry, or whose object form does not fit the range, is refused **before anything lands** — nothing enters the ledger, so there is nothing to clean up later.
 2. **Conflicts are surfaced only**: computed by `derive()`, they retract no side, decide nothing about which is true, and **enter no gate**; handling one goes through the existing human gate (`fact/reviewed`).
 3. **Graphs are renderings**: `graphProjection()` is a deterministic pure function (the same ledger always yields the same graph) and coordinates never enter the ledger.
+4. **The shelf has an owner**: `domain.md` and `facts/INDEX.md` are **workspace-level** read surfaces, and only the session that owns the ledger may lay them — the ownership check lives inside the write functions, so spawned children (evaluator / scout / executor) structurally cannot write them. Children share the workspace with the primary line yet hold a separate, empty projection; if they re-laid the shelf, the shared read surface would oscillate with whoever stepped last. Behavior is pinned by the kernel suite, structure by the authority-boundary suite.
 
 ## 6. Human gate path · implemented
 

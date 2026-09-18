@@ -1858,6 +1858,58 @@ console.log('\n【知识门:核心结论不许以纯散文升格(机制缺省关
 	}
 }
 
+console.log('\n【货架所有权:派出去的子会话不许重铺主线的读面】')
+{
+	/**
+	 * 真跑里评估者两次报 `clear/ontology/domain.md` 是 7 行占位版,主线连读三次都是
+	 * 96 行 21 词条、md5 稳定——两边各自稳定,谁都没说谎。根因:子会话与主线**共享工作区**,
+	 * 但它自己的投影里没有词汇;它的 pre-step 也走 `ensureDomainShelf`,
+	 * `renderShelf(子会话)` 渲染出的正是「(还没有词条…)」占位版,于是把共享货架重写掉。
+	 * 文件在「谁最后铺了一拍」之间摆动。事实货架(`facts/INDEX.md`)是同一种病。
+	 *
+	 * 规则一句话:**工作区级读面属于拥有账本的会话;子会话只读,永远不写。**
+	 */
+	const host = makeHost()
+	const ws = tempDir('clearai-shelf-owner-')
+	execFileSync('git', ['init', '-q'], { cwd: ws })
+	execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: ws })
+	host.cwd = ws
+	apply(host.ctx, {})
+	const P = 'session-shelf-owner'
+	const term = await callOn(host, P, 'RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+	const pred = await callOn(host, P, 'RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: 'GB/T 5121' })
+	check('前置:词汇真的立起来了', term.ok === true && pred.ok === true, `${term.code}/${pred.code}`)
+	const domain = join(ws, 'clear', 'ontology', 'domain.md')
+	const factsIndex = join(ws, 'clear', 'knowledge', 'facts', 'INDEX.md')
+	const domainBefore = readFileSync(domain, 'utf8')
+	check('前置:主线的词汇货架真有内容(不是占位版)', domainBefore.includes('furnace_batch') && !domainBefore.includes('还没有词条'), domainBefore.slice(0, 60))
+
+	// ① 子会话:同一份工作区,但身份是派生会话(评估者就是这个形状)。
+	//    给它自己的投影塞一条事实、事实货架放一个哨兵:没有护栏时,它会按**自己的**
+	//    投影重写这两份读面(词汇 → 占位版;事实 → 它那条)。
+	host.childSessions = {
+		'child-evaluator': { header: { cwd: ws, parentSession: P, origin: 'subagent' }, ownEvents: () => [] },
+	}
+	host.states.set(
+		'child-evaluator',
+		applyMutations(emptyState(), [{ t: 'fact/promoted', id: 'f-child', goal: 'g-x', text: '子会话自己的一条', scope: 's', level: 'L2', evidence: [], path: 'p' }]),
+	)
+	writeText(factsIndex, 'SENTINEL:主线的事实货架\n')
+	await preStep(host, 'child-evaluator', 1)
+	check('子会话的 pre-step **不重写**词汇货架', readFileSync(domain, 'utf8') === domainBefore)
+	check('子会话的 pre-step 也不重写事实货架(同一条所有权规则)', readFileSync(factsIndex, 'utf8') === 'SENTINEL:主线的事实货架\n')
+
+	// ② 对照:拥有账本的会话照常维护——词汇变了,货架跟着长。
+	host.childSessions = {}
+	await callOn(host, P, 'RegisterTerm', { id: 'heating_rate', label: '升温速率', gloss: 'g', basis: 'b' })
+	await preStep(host, P, 1)
+	check('主线自己的 pre-step 照常维护货架(新词条长出来了)', readFileSync(domain, 'utf8').includes('heating_rate') && readFileSync(domain, 'utf8') !== domainBefore)
+
+	// ③ 反例自检:护栏拦的是真实会发生的重写(子会话的投影里确实另有内容)。
+	check('子会话的投影里没有主线的词汇(不带护栏时它会写出占位版)', (host.service.state('child-evaluator').lexicon?.terms ?? []).length === 0)
+	check('子会话的投影里有它自己的事实(不带护栏时它会重写事实货架)', host.service.state('child-evaluator').facts.length === 1)
+}
+
 {
 	/**
 	 * 长测现场(chain-2):四条世界线里只有甲的执行者结论回灌了,乙/丙/丁三条**永远停在

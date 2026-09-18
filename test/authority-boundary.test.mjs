@@ -96,6 +96,25 @@ console.log('\n【⑤ 非权威写面与权威写面在文件层面就是分开�
 	check('投影只读账本:fold.js 里没有任何写文件调用', !/writeFileSync|appendFileSync/.test(FOLD))
 }
 
+console.log('\n【⑥ 工作区级读面:所有权判据住在写入口(子会话结构上写不进)】')
+{
+	/**
+	 * 词汇货架与事实货架是**工作区级**读面,而子会话与主线共享工作区、却各持一份投影。
+	 * 「只有拥有账本的会话能铺」这条规则如果摆在调用点,新增一个调用点就能绕过;
+	 * 摆在写函数里,它就成了这条写路径的性质本身(与 ① 里「变更只在内核产」同一形状)。
+	 * 行为面(子会话的 pre-step 不改写这两份文件)由 kernel 套件钉;这里钉结构。
+	 */
+	const bodyOf = (name) => {
+		const start = KERNEL.indexOf(`function ${name}`)
+		if (start < 0) return ''
+		const next = KERNEL.indexOf('\n\tfunction ', start + 1)
+		return next < 0 ? KERNEL.slice(start) : KERNEL.slice(start, next)
+	}
+	check('词汇货架的写入口自带所有权判据(isSpawnedChild)', bodyOf('ensureDomainShelf').includes('isSpawnedChild('))
+	check('事实货架的写入口自带所有权判据(同一条规则,同一个位置)', bodyOf('ensureFactsShelf').includes('isSpawnedChild('))
+	check('判据读的是宿主会话头(谁派出去了,由宿主说了算)', /function isSpawnedChild\(/.test(KERNEL) && /parentSession/.test(KERNEL) && /origin === 'subagent'/.test(KERNEL))
+}
+
 console.log('\n【⑧ 平面互不依赖:预设不 import 宿主平面】')
 {
 	// 发行物里预设与 ui/ 的相对位置和仓库不一样;跨平面 import 在装上之后才炸
