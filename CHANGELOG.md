@@ -2,9 +2,36 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Changelog
+## [0.2.1] — 2026-09-18
 
-All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+**知识任务是循环的原生行为,不是另一个模式。** 本体、实体、认识论早就在,但普通研究的最短路径仍然是「检索 → 总结 → 写报告」——要建本体得用户先想起来说一句。这一版修的是**接线缺口**:把知识任务的判据做成结构的(目标还开着 + 带着登记过的假设),系统自己进知识模式;并把图从手写 SVG 换成 React Flow,给了它一个真正的全屏工作区。
+
+### Added
+
+- **知识模式(分诊)**:判据是**结构的**——目标还开着,而且它带着登记过的命题。立约(`SetGoal`)本身就是模型已经做出的承诺;普通问答从不立约,于是从不进这一档(**零成本契约**)。词面启发式猜错了没人能复核,结构判据可以。
+- **知识预检**:把「已知」自动送到模型面前——只读、有界、**词面命中不猜语义**;每条读数说得出它来自哪条事实。
+- **缺口读数**:从已有事实算出还缺什么形态,每条指得出一个能补的动作。真跑的反直觉结论:改变行为的其实是**缺口的可见性**,不是门——所以两者都留(可见性让它想做,门不让它绕过)。
+- **知识门**:结案之前、派评估者之前拦住**没有形态的核心结论**——纯散文不许升格。
+- **知识 Inspector**:点节点或边 → 定义 / 关系 / 断言 / 证据链 / 登记与修订史;「按此筛选」是详情里的**显式动作**,不猜你点它的意思。新增宿主只读路由 `/api/clearai/inspector` 与行为测试。
+- **图谱工作区**:图带可展开成全屏工作区,布局是力导向(知识图谱的原生形状);渲染交给 React Flow(`@xyflow/react` 12,vendor 行随构建走,与 `dist/` 同一条纪律)。
+- **哲学 P6**:「本体生长是循环的原生行为,不是另一个模式」——写进[循环哲学](docs/loop-philosophy.zh-CN.md)与[认识论循环](docs/epistemic-loop.zh-CN.md)(中英)。
+- **素材工具** `tools/panel-shots.mjs`:折一场真会话 → 挂**真组件** → 真 Chrome 截图(与 `tools/graph-shots.mjs` 同一条口径)——面板截图从此可复现,不用人去界面里手点。
+
+### Changed
+
+- **图 DTO 统一**:图带与工作区共用同一份投影,判据只有一处(`fold` → `view()` → `graphProjection()`);「同一份账本 ⇒ 同一张图」是投影的性质。
+- **预设描述**收敛成一句中英并排:「利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.」——名册只有这两行元数据,宿主不会替我们本地化,所以只能自己写死。
+- **README 的「安装」改为「安装与使用」**:写明怎么在模式选择器里切到 `ClearAI`(默认标准模式不挂认识论循环),并把本体图 / 图带 / Inspector 的真机截图放进去。
+- 营销物料换掉全部陈旧面板截图:知乎稿与 docx、小红书 9 张卡片改用真机会话的投影(统计同步为 15 套件 1618 条断言 · 29 个意图工具 · 6808 行内核 · 50 种事件分支)。
+
+### Fixed
+
+- **命题身份在修订时被重新签发**:同一句话在 id 空间里躺着两份读数(一份「已支持」、一份「未触及」),真会话的卡实测 4 条主张显示成 6~8 行。现在主张原文不变就复用原 id,换了主张才发新 id;并补上 `hypothesis/superseded` 一直缺席的生产者。
+- **节点拖不动**(两次):受控 `nodes` 没接 `onNodesChange`;拖动键写成了对象,`[object Object]` 查不到。
+- **React Flow 是 forwardRef 对象,不是函数**——守卫把合法组件判成「没装上」;并改为同作用域注入,不再依赖运行时模块行。
+- **图带收不到 sessionId**;时间戳不再显示 1970。
+- **工作区读面有主人**:子会话结构上写不进词汇 / 事实货架。
+- 力导向布局的四个真机缺陷(评估者独立复核后逐条修掉)。
 
 ## [0.2.0] — 2026-09-17
 
