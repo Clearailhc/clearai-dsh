@@ -834,6 +834,22 @@ export function applyMutations(state, mutations) {
 }
 
 /**
+ * **给一批变更盖上事件时间**。
+ *
+ * 产出方(内核)只写「发生了什么」,不读时钟;时间属于**日志里的那一刻**(`event.time`)。
+ * 变更自己带了 `at` 就以它为准(有些路径确实知道更准的时刻),否则用事件时间。
+ * 事件也没时间(旧日志/合成事件)时**不动它**——那里本来就是 0,不假装知道。
+ */
+function stampAt(mutations, time) {
+	if (time === null || !Array.isArray(mutations) || mutations.length === 0) return mutations
+	return mutations.map((mutation) => {
+		if (mutation === null || typeof mutation !== 'object') return mutation
+		if (typeof mutation.at === 'number') return mutation
+		return { ...mutation, at: time }
+	})
+}
+
+/**
  * 会话日志事件 → 状态。这是投影的入口:除了工具结果里的变更记录,
  * 还吃三条**关于过程本身的事实**——
  *   · `tool/call` 在飞 → 「评估者在裁决」这个阶段(不用等结果就能看见)
@@ -913,7 +929,7 @@ export function applyEvent(state, event) {
 					try {
 						const payload = JSON.parse(facts.text)
 						if (Array.isArray(payload?.mutations) && payload.mutations.length > 0) {
-							next = applyMutations(next, payload.mutations)
+							next = applyMutations(next, stampAt(payload.mutations, typeof event.time === 'number' ? event.time : null))
 							touched = true
 						}
 					} catch {
@@ -1054,7 +1070,17 @@ export function applyEvent(state, event) {
 		const meta = event.data === undefined || event.data === null ? undefined : event.data.meta
 		let next = state
 		if (meta !== null && meta !== undefined && typeof meta === 'object' && meta.kind === MUTATION_KIND) {
-			next = applyMutations(next, Array.isArray(meta.mutations) ? meta.mutations : meta.mutation === undefined ? [] : [meta.mutation])
+			/**
+			 * **时间由折法盖上去,不由产出方写**:内核只写「发生了什么」,不知道也不该关心
+			 * 这条记录落在日志的哪一刻;而事件本身带着 `time`,那才是权威。
+			 *
+			 * 不盖的后果是全局性的:每条变更的 `at` 都取 `mutation.at ?? 0`,于是凡是显示时间的
+			 * 地方——Inspector 的历史、计划开合、证据时刻——一律是 **1970-01-01**。
+			 * 盖在这里(而不是让内核每条都写一遍时间)同时满足两件事:内核不必读时钟,
+			 * 折法仍然只有一个入口。
+			 */
+			const stamped = stampAt(Array.isArray(meta.mutations) ? meta.mutations : meta.mutation === undefined ? [] : [meta.mutation], typeof event.time === 'number' ? event.time : null)
+			next = applyMutations(next, stamped)
 		}
 		if (next.inFlight !== null) {
 			const cleared = next === state ? clone(state) : next

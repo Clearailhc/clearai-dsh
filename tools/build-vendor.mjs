@@ -11,7 +11,7 @@
  * react / react/jsx-runtime 标成 external(宿主提供,不是我们的事)。
  */
 import { build } from 'esbuild'
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -19,6 +19,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
 const OUT_DIR = join(PORT, 'ui', 'vendor')
 const OUT = join(OUT_DIR, 'xyflow.js')
+const OUT_FORCE = join(OUT_DIR, 'force.js')
 
 /**
  * 跑一次打包。**导出成函数**是为了让 `build-package.mjs` 能直接调它:
@@ -80,4 +81,42 @@ return OUT
 }
 
 /** 直接 `node tools/build-vendor.mjs` 时跑一次(独立可跑,便于排查)。 */
-if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.argv[1]) await buildVendor()
+
+
+/**
+ * **布局**用知识图谱的原生做法:graphology + ForceAtlas2(力导向)。
+ *
+ * 为什么不是分层布局:分层只认得「父子」这一种关系,而知识图谱里大量边是**非层级**的
+ * (谓词、断言、证据)。真数据里 21 个概念只有 9 条 `is_a`——按层排就退化成一排,
+ * 那不是图的形状,是硬套的形状。力导向让**结构自己长出形状**:枢纽聚成中心、
+ * 相关的聚成簇。这与参考实现 `refs/semantica/explorer` 同一套(它也用 FA2)。
+ *
+ * 同样是同作用域函数,依赖面只有种子字。
+ */
+export async function buildForceVendor() {
+	const entry = join(OUT_DIR, 'force-entry.tmp.js')
+	writeFileSync(entry, `import Graph from 'graphology'\nimport forceAtlas2 from 'graphology-layout-forceatlas2'\nexport { Graph, forceAtlas2 }\n`)
+	const result = await build({ entryPoints: [entry], bundle: true, format: 'cjs', platform: 'browser', minify: true, write: false })
+	rmSync(entry, { force: true })
+	const version = JSON.parse(readFileSync(join(PORT, 'node_modules', 'graphology-layout-forceatlas2', 'package.json'), 'utf8')).version
+	const wrapped = `/**
+ * 这一文件由 tools/build-vendor.mjs 生成,**不要手改**。
+ * graphology + graphology-layout-forceatlas2(${version}),声明成同一脚本作用域里的函数。
+ * 力导向布局是知识图谱的原生形状来源;分层布局只认得父子关系,会把非层级的边压成横穿线。
+ */
+function __clearaiForce(require) {
+	var module = { exports: {} }
+	var exports = module.exports
+${result.outputFiles[0].text}
+	return module.exports
+}
+`
+	writeFileSync(OUT_FORCE, wrapped)
+	console.log(`【vendor】graphology + FA2@${version} → ui/vendor/force.js(${Math.round(wrapped.length / 1024)} KB · 函数形式)`)
+	return OUT_FORCE
+}
+
+if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.argv[1]) {
+	await buildVendor()
+	await buildForceVendor()
+}

@@ -479,32 +479,46 @@ export function graphProjection(state) {
 		}
 	}
 	for (const instance of [...instances.values()].sort((a, b) => (a.id < b.id ? -1 : 1))) nodes.push(instance)
-	const maxDepth = nodes.reduce((best, node) => (node.kind === 'concept' ? Math.max(best, node.depth) : best), 0)
+	/**
+	 * **确定性布局:按层分段,层内折行。**
+	 *
+	 * 「层」= `is_a` 深度(概念)、值形态、实例/字面值各成一段,段与段依次向下排。
+	 * 关键的一步是**折行**:早先每一层只铺一行,于是一堆没有父概念的根被排成一条
+	 * 极宽极扁的带子(真数据:23 个节点铺出 3800×180),任何视口里都只能缩到看不清。
+	 * 折行之后同一层在有限宽度内往下堆,整体接近屏幕比例,读得清。
+	 *
+	 * 它仍然是**纯函数、确定性**:同一份账本永远算出同一套坐标(层内按 id 排,不靠遍历顺序)。
+	 */
 	const COLUMN = 220
 	const ROW = 132
+	const PER_ROW = 6
+	let cursorY = 0
+	const band = (list) => {
+		const top = cursorY
+		cursorY += Math.max(1, Math.ceil(list.length / PER_ROW)) * ROW
+		return top
+	}
+	const place = (list, top) => {
+		list.forEach((node, index) => {
+			node.x = (index % PER_ROW) * COLUMN
+			node.y = top + Math.floor(index / PER_ROW) * ROW
+		})
+	}
 	const byDepth = new Map()
 	for (const node of nodes.filter((item) => item.kind === 'concept')) {
 		const list = byDepth.get(node.depth) ?? []
 		list.push(node)
 		byDepth.set(node.depth, list)
 	}
-	const widest = Math.max(...[...byDepth.values()].map((list) => list.length), 1)
-	for (const [depth, list] of byDepth) {
-		list.forEach((node, index) => {
-			node.x = Math.round(index * COLUMN + (widest - list.length) * (COLUMN / 2))
-			node.y = depth * ROW
-		})
+	/** 深度小的在上(父在上、子在下),同深度内按 id——两条都为了确定性。 */
+	for (const depth of [...byDepth.keys()].sort((left, right) => left - right)) {
+		const list = byDepth.get(depth)
+		place(list, band(list))
 	}
-	nodes.filter((item) => item.kind === 'value_type').forEach((node) => {
-		node.x = Math.round(node.formIndex * COLUMN)
-		node.y = (maxDepth + 1) * ROW
-	})
-	const instanceBand = (maxDepth + 2) * ROW
-	const perRow = 6
-	nodes.filter((item) => item.kind === 'instance' || item.kind === 'literal').forEach((node, index) => {
-		node.x = (index % perRow) * COLUMN
-		node.y = instanceBand + Math.floor(index / perRow) * ROW
-	})
+	const forms = nodes.filter((item) => item.kind === 'value_type')
+	if (forms.length > 0) place(forms, band(forms))
+	const leaves = nodes.filter((item) => item.kind === 'instance' || item.kind === 'literal')
+	if (leaves.length > 0) place(leaves, band(leaves))
 	const width = Math.max(...nodes.map((node) => (typeof node.x === 'number' ? node.x : 0)), 0) + COLUMN
 	const height = Math.max(...nodes.map((node) => (typeof node.y === 'number' ? node.y : 0)), 0) + ROW
 	/**

@@ -37,6 +37,8 @@
   "dependencies": {
     "@xyflow/react": "^12.11.6",
     "docx": "^9.7.1",
+    "graphology": "^0.26.0",
+    "graphology-layout-forceatlas2": "^0.10.1",
     "zod": "^4.6.1"
   },
   "dsh": {
@@ -71,9 +73,11 @@
     "e2e": "node tools/e2e-run.mjs",
     "e2e:long": "node tools/e2e-parallel.mjs",
     "vendor": "node tools/build-vendor.mjs",
-    "check:browser": "node tools/browser-graph-check.mjs"
+    "check:browser": "node tools/browser-graph-check.mjs",
+    "shots": "node tools/graph-shots.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.63.0"
   }
 }

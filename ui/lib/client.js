@@ -3013,6 +3013,81 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
+		 * **力导向布局**(graphology + ForceAtlas2),与参考实现 `refs/semantica/explorer` 同一套。
+		 *
+		 * 为什么不是分层布局:分层只认得「父子」这一种关系,而知识图谱里大量边是**非层级**的
+		 * (谓词、断言)。真数据里 21 个概念只有 9 条 `is_a`,按层排就退化成一排——那不是图的形状,
+		 * 是硬套的形状。力导向让**结构自己长出形状**:枢纽聚成中心、相关的东西聚成簇。
+		 *
+		 * **确定性**:起点用投影给的坐标(`graphProjection` 的按层折行排布)。
+		 * FA2 从同一起点、同一参数出发必得同一结果,所以「同一份账本 ⇒ 同一张图」仍然成立;
+		 * 而且首屏不用先看一团随机散点——它从一个读得懂的排布**松弛**到自然的形状。
+		 *
+		 * 拿不到它时退回投影坐标:图照样画得出来(同一条「降级要如实、不要崩」)。
+		 */
+		const Force = (() => {
+			try {
+				if (typeof __clearaiForce !== 'function') return null
+				const loaded = __clearaiForce(require)
+				return typeof loaded?.forceAtlas2?.assign === 'function' && typeof loaded?.Graph === 'function' ? loaded : null
+			} catch (error) {
+				try {
+					console.warn('[clearai] 力导向布局加载失败:', error)
+				} catch {
+					/* console 不在也不该让面板挂掉 */
+				}
+				return null
+			}
+		})()
+		/**
+		 * 跑一次力导向。参数照参考实现(`FORCE_ATLAS_SETTINGS`);
+		 * 迭代数按规模给,但有上限——大图上一次别把整帧卡住。
+		 */
+		const forceLayout = (nodes, edges) => {
+			if (Force === null || nodes.length < 2) return nodes
+			try {
+				const graph = new Force.Graph({ multi: true, type: 'directed' })
+				for (const node of nodes) graph.addNode(node.id, { x: node.position.x, y: node.position.y, size: 34 })
+				for (const edge of edges) {
+					if (edge.source === edge.target) continue
+					if (!graph.hasNode(edge.source) || !graph.hasNode(edge.target)) continue
+					try {
+						graph.addEdge(edge.source, edge.target)
+					} catch {
+						/* 平行边之类:真发生了也不该让整张图排不出来 */
+					}
+				}
+				Force.forceAtlas2.assign(graph, {
+					iterations: Math.min(300, Math.max(60, nodes.length * 3)),
+					settings: {
+						barnesHutOptimize: true,
+						barnesHutTheta: 0.6,
+						linLogMode: true,
+						outboundAttractionDistribution: true,
+						strongGravityMode: false,
+						gravity: 0.14,
+						scalingRatio: 4.8,
+						slowDown: 6,
+						edgeWeightInfluence: 1,
+						adjustSizes: true,
+					},
+				})
+				return nodes.map((node) => {
+					const x = graph.getNodeAttribute(node.id, 'x')
+					const y = graph.getNodeAttribute(node.id, 'y')
+					return Number.isFinite(x) && Number.isFinite(y) ? { ...node, position: { x, y } } : node
+				})
+			} catch (error) {
+				try {
+					console.warn('[clearai] 力导向布局失败,退回投影坐标:', error)
+				} catch {
+					/* 同上 */
+				}
+				return nodes
+			}
+		}
+
+		/**
 		 * **知识 Inspector**:点击图上的节点或边之后,回答「这是什么、凭什么信、谁改过它」。
 		 *
 		 * 为什么要有它:图能画出来不等于图是知识入口。从前点一个节点只得到「按此过滤」——
@@ -3172,26 +3247,46 @@ window.__ModuleLoader__.load({
 			const allEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
 			const nodeById = new Map(allNodes.map((node) => [node.id, node]))
 
+		/** 图上的标签只放得下一小段:截断加省略号,全文在 Inspector 里(点开就有)。 */
+		const trimLabel = (text, limit) => {
+			const value = String(text ?? '')
+			return value.length <= limit ? value : `${value.slice(0, limit - 1)}…`
+		}
+
 			/** 视觉编码:类型 → 颜色(概念蓝 / 值形态橙 / 实例绿 / 字面值紫)。 */
 			const nodeStyle = (node) => ({
 				background: node.kind === 'concept' ? 'rgba(74,163,255,0.16)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.16)' : node.kind === 'instance' ? 'rgba(22,163,74,0.16)' : 'rgba(147,51,234,0.16)',
 				border: node.status === 'deprecated' ? '1px dashed rgba(127,127,127,0.4)' : `1px solid ${node.kind === 'concept' ? 'rgba(74,163,255,0.4)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.4)' : node.kind === 'instance' ? 'rgba(22,163,74,0.4)' : 'rgba(147,51,234,0.4)'}`,
 				borderRadius: 6,
-				padding: '4px 10px',
-				fontSize: 11,
-				width: 148,
+				padding: '6px 12px',
+				fontSize: 12,
+				width: 168,
+				textAlign: 'center',
 			})
 
-			/** 投影节点 → React Flow 节点(带确定性初始坐标,来自投影布局)。 */
-			const rfNodes = allNodes.map((node) => ({
+			/**
+			 * 投影节点 → React Flow 节点。
+			 *
+			 * 坐标 = **力导向松弛过的投影坐标**:投影给的按层折行排布作起点(确定性、读得懂),
+			 * FA2 再把它松弛成这个图**自己的形状**(枢纽、簇)。拿不到 FA2 时就是起点本身。
+			 */
+			const rfNodes = forceLayout(allNodes.map((node) => ({
 				id: node.id,
 				type: 'default',
 				position: { x: node.x ?? 0, y: node.y ?? 0 },
-				data: { label: `${node.label ?? node.ref ?? node.id}${node.uses > 0 ? ` (${node.uses})` : ''}` },
+				/**
+				 * **尺寸要显式给**。只写在 `style` 里的话,React Flow 要等测量完成才知道它多大,
+				 * 而 **MiniMap 在测量完成之前拿不到宽高就直接跳过这些节点**——缩略图因此是一块空白
+				 * (真机截图里就是那样)。`initialWidth/initialHeight` 是官方的「测量前尺寸」。
+				 */
+				initialWidth: 168,
+				initialHeight: 34,
+				/** 图上只放得下一小段;全文在 Inspector 里,点开就有。 */
+				data: { label: trimLabel(`${node.label ?? node.ref ?? node.id}${node.uses > 0 ? ` (${node.uses})` : ''}`, 22) },
 				style: nodeStyle(node),
 				/** 冲突节点标红。 */
 				...(Array.isArray(node.facts) && node.facts.some((id) => conflicted.has(id)) ? { className: 'clearai-node-conflict' } : {}),
-			}))
+			})), allEdges.map((edge) => ({ source: edge.from, target: edge.to })))
 
 			/** 投影边 → React Flow 边(类型 / 冲突的视觉编码)。 */
 			const rfEdges = allEdges.map((edge) => ({
@@ -3231,19 +3326,40 @@ window.__ModuleLoader__.load({
 			/** 「按此筛选」:概念筛概念、实例筛实体、断言边筛谓词。 */
 			const filterTarget = picked === null ? null : picked.kind === 'edge' ? picked.edge.predicate ?? null : String(picked.node.ref ?? '')
 
-			/** React Flow 的 ref:打开工作区时自动 fit。 */
+			/**
+			 * React Flow 的**实例**(用来 fit / 重新适配)。
+			 *
+			 * 注意:v12 里给 `<ReactFlow ref={…}>` 传 ref 拿到的是 DOM 节点,不是带 `fitView` 的
+			 * 实例——这样写调用会**静默变成空操作**。实例要从 `onInit` 拿。
+			 * 真机上踩到过:内联图带先按小画布 fit 了一次,切到全屏后画布大了十倍却没重新适配,
+			 * 于是图缩在左上角一小块(截图里一眼可见)。
+			 */
 			const rfRef = React.useRef(null)
+			/**
+			 * **什么时候重新适配**:画布的**几何**或**内容**变了就得重来一次。
+			 *
+			 * 三件都会让刚才那张图不在眼前:打开/关闭工作区(画布尺寸变了)、
+			 * 切层(整套节点换了)、开/关详情抽屉(画布变窄)。
+			 * React Flow 的视口变换**不会自己跟**这些变化——不重算就得到「详情读得到、图却空了」
+			 * (真机截图里就是这个样子)。这里只在**这几件事发生**时重算,人自己拖过/缩过的视角
+			 * 不会因为数据刷新被夺走。
+			 */
 			React.useEffect(() => {
-				if (fullscreen === true && rfRef.current?.fitView) {
-					/** 等一拍让 React Flow 完成挂载再 fit,否则量到的是空容器。 */
-					const timer = setTimeout(() => rfRef.current?.fitView({ padding: 0.15, duration: 200 }), 50)
-					return () => clearTimeout(timer)
-				}
-				return undefined
-			}, [fullscreen])
+				const timer = setTimeout(() => rfRef.current?.fitView?.({ padding: 0.15, duration: 200 }), 60)
+				return () => clearTimeout(timer)
+			}, [fullscreen, layer, picked !== null, allNodes.length])
 
 			const shell = fullscreen === true ? { position: 'fixed', inset: 0, zIndex: 40, background: 'var(--dsw-alias-bg-layer-1)', padding: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : { ...S.section, padding: 6 }
-			const canvasBox = fullscreen === true ? { flex: '1 1 auto', minHeight: 240, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 } : { height: 208, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 }
+			const canvasBox = fullscreen === true ? { flex: '1 1 auto', minHeight: 240, minWidth: 0, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 } : { height: 208, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 }
+			/**
+			 * **工作区里详情走右侧抽屉,不占画布的高度。**
+			 *
+			 * 这条不是审美:详情摆在画布下方时,它一出现画布就变矮,而 React Flow 的视口变换
+			 * 不会跟着变——于是**刚点开的那个节点直接掉出可视区**(真机上就是这样:详情读得到,
+			 * 图却空了)。侧栏只压缩宽度,而宽度方向的适配本来就有 `fitView` 管。
+			 * 内联图带不适用:那里只有两百来像素高,横向没地方放抽屉。
+			 */
+			const sideBySide = fullscreen === true
 
 			return h(
 				'div',
@@ -3257,6 +3373,12 @@ window.__ModuleLoader__.load({
 					h('span', { style: S.chipAction, onClick: () => rfRef.current?.fitView({ padding: 0.15, duration: 200 }) }, t('适配')),
 					h('span', { style: S.chipAction, onClick: onToggleFullscreen }, fullscreen === true ? t('关闭工作区') : t('打开图谱工作区')),
 				),
+				h(
+					'div',
+					{ style: { display: 'flex', flexDirection: sideBySide ? 'row' : 'column', gap: 8, flex: '1 1 auto', minHeight: 0, alignItems: 'stretch' } },
+					h(
+						'div',
+						{ style: { display: 'flex', flexDirection: 'column', gap: 6, flex: '1 1 auto', minWidth: 0, minHeight: 0 } },
 				XYFlow === null || XYFlow.ReactFlow === undefined || XYFlow.ReactFlow === null
 					? h('div', { style: S.faint }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('投影还在,事实与命题照常可读。')}`)
 					: allNodes.length === 0
@@ -3265,7 +3387,9 @@ window.__ModuleLoader__.load({
 							'div',
 							{ style: canvasBox },
 							h(XYFlow.ReactFlow, {
-								ref: rfRef,
+								onInit: (instance) => {
+									rfRef.current = instance
+								},
 								nodes: rfNodes,
 								edges: rfEdges,
 								onNodeClick,
@@ -3284,21 +3408,46 @@ window.__ModuleLoader__.load({
 								zoomOnDoubleClick: false,
 							},
 							h(XYFlow.Controls, { showInteractive: false }),
-							h(XYFlow.MiniMap, { pannable: true, zoomable: true, style: { background: 'var(--dsw-alias-bg-layer-2)' } }),
+							h(XYFlow.MiniMap, {
+								pannable: true,
+								zoomable: true,
+								/**
+								 * **缩略图要看得懂**:默认节点是灰白的,在大图上等于一块空白方块——
+								 * 这里按类型给实色(与画布上的淡色底不同:缩略图里小块面积小,淡色看不见)。
+								 * 遮罩(视口指示)也调淡一点,别把整张缩略图盖成一个白框。
+								 */
+								nodeColor: (node) => {
+									const layerKind = nodeById.get(node.id)?.kind ?? ''
+									if (layerKind === 'concept') return '#6ea8fe'
+									if (layerKind === 'value_type') return '#e0a458'
+									if (layerKind === 'instance') return '#4caf7d'
+									if (layerKind === 'literal') return '#a97fe0'
+									return '#9aa4b2'
+								},
+								maskColor: 'rgba(127,127,127,0.18)',
+								maskStrokeColor: 'rgba(127,127,127,0.45)',
+								style: { background: 'var(--dsw-alias-bg-layer-2)', border: '1px solid rgba(127,127,127,0.25)' },
+							}),
 							h(XYFlow.Background, { variant: 'dots', gap: 20, size: 1, color: 'rgba(127,127,127,0.15)' }),
 						),
 					),
 				allNodes.length > 0
 					? h('div', { style: S.faint }, `${allNodes.length} ${t('个节点')} · ${allEdges.length} ${t('条边')}${conflicts.length > 0 ? ` · ${t('冲突')} ${conflicts.length}` : ''}`)
 					: null,
-				picked === null
-					? null
-					: h(GraphInspector, {
-							selection: inspection,
-							sessionId,
-							onFilter: () => onFilter(filterTarget),
-							onClose: () => setPicked(null),
-						}),
+					),
+					picked === null
+						? null
+						: h(
+								'div',
+								{ style: sideBySide ? { width: 380, flex: '0 0 auto', overflowY: 'auto', minHeight: 0 } : { flex: '0 0 auto' } },
+								h(GraphInspector, {
+									selection: inspection,
+									sessionId,
+									onFilter: () => onFilter(filterTarget),
+									onClose: () => setPicked(null),
+								}),
+							),
+				),
 			)
 		}
 

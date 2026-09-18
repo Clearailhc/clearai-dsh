@@ -37,9 +37,9 @@ if (!existsSync(CLIENT)) {
 
 let chromium = null
 try {
-	;({ chromium } = await import('playwright'))
+	;({ chromium } = await import('playwright-core'))
 } catch {
-	console.log('· 跳过:没有 playwright(它是可选依赖,npm install --no-save playwright)。')
+	console.log('· 跳过:没有 playwright(它是可选依赖,npm install(playwright-core 是 devDependency))。')
 	process.exit(0)
 }
 

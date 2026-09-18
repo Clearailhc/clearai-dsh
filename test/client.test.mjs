@@ -31,6 +31,7 @@ const check = (label, condition, detail = '') => {
 
 const SOURCE = join(import.meta.dirname, '..', 'ui', 'lib', 'client.js')
 const VENDOR = join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js')
+const VENDOR_FORCE = join(import.meta.dirname, '..', 'ui', 'vendor', 'force.js')
 const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib', 'client.js')
 /**
  * **发出去的那一份 = vendor 行 + 主文件**(见 tools/build-package.mjs)。
@@ -41,7 +42,7 @@ const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles
  * vendor 是**生成物**(ui/vendor/ 不入库)。没生成时如实跳过,不假装测过——
  * 与「插件没装就跳过」同一条纪律;生成它的命令写在提示里。
  */
-if (!existsSync(VENDOR)) {
+if (!existsSync(VENDOR) || !existsSync(VENDOR_FORCE)) {
 	console.log('· 跳过客户端套件:ui/vendor/xyflow.js 还没生成(它是生成物,不入库)。')
 	console.log('  生成它:node tools/build-vendor.mjs(或 npm run build)')
 	process.exit(0)
@@ -56,7 +57,7 @@ const MAIN_SOURCE = readFileSync(SOURCE, 'utf8')
  */
 const source = MAIN_SOURCE
 /** **部署件比对**用的是 build 真正拼出来的那一份(vendor 在前、主文件在后)。 */
-const expectedDeployed = `${VENDOR_SOURCE}\n${MAIN_SOURCE}`
+const expectedDeployed = `${VENDOR_SOURCE}\n${readFileSync(VENDOR_FORCE, 'utf8')}\n${MAIN_SOURCE}`
 let deployed = null
 try {
 	deployed = readFileSync(DEPLOYED, 'utf8')
@@ -101,7 +102,7 @@ function loadClientBundle() {
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
 	// 先把 bundle 求值一遍(它自己会调 window.__ModuleLoader__.load 登记工厂),再取工厂跑。
-	const evaluate = new Function('window', 'require', 'console', '__clearaiXyflow', source)
+	const evaluate = new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)
 	evaluate(globalThis.window, require, console, () => makeXyflowStub(React.createElement))
 	if (registration === null) throw new Error('bundle 没有通过 __ModuleLoader__.load 登记工厂')
 	const exports = registration.factory(require)
@@ -320,7 +321,7 @@ function loadClientWithStringReact() {
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
-	new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement))
+	new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement), makeForceStub())
 	delete globalThis.window
 	return { exports: registration.factory(require), react }
 }
@@ -396,6 +397,35 @@ function makeXyflowStub(h) {
 }
 
 /**
+ * **力导向桩**:把每个节点按插入顺序摆到一条确定的对角线上。
+ *
+ * 布局质量属于**库**(FA2)与真浏览器检查,不是这一层要验的东西;这里只钉两件事:
+ * 它**被调用过**,而且它的返回值**真的进了节点 position**。
+ * 桩确定且可断言——「同一份账本 ⇒ 同一张图」这条因此仍能在这层验。
+ */
+function makeForceStub() {
+	class Graph {
+		constructor() {
+			this.nodes = new Map()
+			this.order = []
+		}
+		addNode(id, attributes) {
+			this.nodes.set(id, { ...attributes })
+			this.order.push(id)
+		}
+		hasNode(id) {
+			return this.nodes.has(id)
+		}
+		addEdge() {}
+		getNodeAttribute(id, key) {
+			const index = this.order.indexOf(id)
+			return key === 'x' ? 40 * index : key === 'y' ? 30 * index : undefined
+		}
+	}
+	return { Graph, forceAtlas2: { assign() {} } }
+}
+
+/**
  * 带状态的 React 桩:同一批状态可以**反复渲染**,于是「点一下 → 再画一遍」这件事可测。
  * 用在需要两步交互的地方(比如「放弃要留缘由」:先点开输入框,写了才提交)。
  */
@@ -431,7 +461,7 @@ function loadClientWithStatefulReact() {
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
-	new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement))
+	new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement), makeForceStub())
 	delete globalThis.window
 	const exports = registration.factory(require)
 	return { exports, react, render: (component, props) => { react.reset(); return component(props) } }
@@ -451,7 +481,7 @@ function loadClientBundleWithoutXyflow() {
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
 	/** 这里**故意不注入**:客户端应当走如实降级那条路,而不是崩。 */
-	new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, undefined)
+	new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, undefined, makeForceStub())
 	delete globalThis.window
 	return { exports: registration.factory(require), react }
 }
@@ -468,7 +498,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				if (name === 'react') return react
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
-		new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement))
+		new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement), makeForceStub())
 		delete globalThis.window
 		return { exports: registration.factory(require), react }
 	}
@@ -1520,7 +1550,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			if (name === 'react') return reactStub
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
-		new Function('window', 'require', 'console', '__clearaiXyflow', source)(globalThis.window, requireStub, console, () => makeXyflowStub(reactStub.createElement))
+		new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, requireStub, console, () => makeXyflowStub(reactStub.createElement))
 		delete globalThis.window
 		const loaded = registration.factory(requireStub)
 		const realFetch = globalThis.fetch

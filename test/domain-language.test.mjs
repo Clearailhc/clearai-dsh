@@ -574,6 +574,42 @@ console.log('\n【知识 Inspector:一个选择 → 定义 / 关系 / 断言 / �
 	check('Inspector 不往状态里加东西(还是那一条事实)', state.facts.length === 1 && state.hypotheses.length === 1)
 }
 
+console.log('\n【时间:折法从事件盖上,不由产出方写】')
+{
+	/**
+	 * 病灶:每条变更的 `at` 都取 `mutation.at ?? 0`,而内核**不写** `at`——于是凡是显示时间的
+	 * 地方(Inspector 的历史、计划开合、证据时刻)一律 **1970-01-01**。
+	 * 修法:时间属于**日志里的那一刻**(`event.time`),由折法在入口盖上去;内核不必读时钟。
+	 */
+	const viaTool = fold.applyEvent(fold.emptyState(), {
+		type: 'tool/result',
+		time: 1789698592175,
+		data: { meta: { kind: 'clearai', mutations: [{ t: 'ontology/term_added', id: 'x', label: 'X', gloss: 'g', basis: 'b' }] } },
+	})
+	check('变更自己不带时间 ⇒ 用事件时间(不再是 1970)', viaTool.lexicon.terms[0].at === 1789698592175, String(viaTool.lexicon.terms[0].at))
+
+	const explicit = fold.applyEvent(fold.emptyState(), {
+		type: 'tool/result',
+		time: 111,
+		data: { meta: { kind: 'clearai', mutations: [{ t: 'ontology/term_added', id: 'y', label: 'Y', gloss: 'g', basis: 'b', at: 222 }] } },
+	})
+	check('变更自己带了时间 ⇒ 以它为准(有些路径知道更准的时刻)', explicit.lexicon.terms[0].at === 222)
+
+	const oldLog = fold.applyEvent(fold.emptyState(), {
+		type: 'tool/result',
+		data: { meta: { kind: 'clearai', mutations: [{ t: 'ontology/term_added', id: 'z', label: 'Z', gloss: 'g', basis: 'b' }] } },
+	})
+	check('事件也没时间(旧日志)⇒ 保持原样,不假装知道', oldLog.lexicon.terms[0].at === 0)
+
+	/** 插件消息那条路(世界线结论回灌)同样要盖。 */
+	const viaPlugin = fold.applyEvent(fold.emptyState(), {
+		type: 'user/message',
+		time: 333,
+		data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'goal/set', id: 'g1', claim: 'c', done_criteria: 'd', promote_at_level: 'L3', revision: 1, hypotheses: [] }] }) }] } },
+	})
+	check('插件消息里的变更也盖上时间(同一条规矩,两个入口)', viaPlugin.goal.openedAt === 333, String(viaPlugin.goal.openedAt))
+}
+
 console.log('\n【测试面:这一份测试进了 run.sh(否则它只是本地脚本)】')
 {
 	check('run.sh 里登记了领域语言这一套', suiteSource.includes('domain-language.test.mjs'))

@@ -110,10 +110,13 @@ copy(join(PORT, 'ui', 'lib', 'invariant.js'), join(OUT, 'lib', 'invariant.js'))
  * 拼接顺序是 vendor 在前——它注册 `@xyflow/react` 那一行,主文件的
  * `require('@xyflow/react')` 在工厂执行那一刻才解析,顺序是对的。
  */
-await (await import('./build-vendor.mjs')).buildVendor()
+const vendorBuild = await import('./build-vendor.mjs')
+await vendorBuild.buildVendor()
+await vendorBuild.buildForceVendor()
 const vendorXyflow = readFileSync(join(PORT, 'ui', 'vendor', 'xyflow.js'), 'utf8')
+const vendorForce = readFileSync(join(PORT, 'ui', 'vendor', 'force.js'), 'utf8')
 const clientSource = readFileSync(join(PORT, 'ui', 'lib', 'client.js'), 'utf8')
-writeFileSync(join(OUT, 'lib', 'client.js'), `${vendorXyflow}\n${clientSource}`)
+writeFileSync(join(OUT, 'lib', 'client.js'), `${vendorXyflow}\n${vendorForce}\n${clientSource}`)
 
 // ── ⑤ 产物清单:让人一眼看出包里有什么(也是 verify 的输入) ─────────────────
 const inventory = []

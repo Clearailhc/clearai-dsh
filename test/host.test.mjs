@@ -36,7 +36,7 @@ if (!existsSync(join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js'))) {
 const PACKED_SOURCES = [
 	['index.js', 'host.js', []],
 	['fold.js', 'fold.js', []],
-	['client.js', 'client.js', [join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js')]],
+	['client.js', 'client.js', [join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js'), join(import.meta.dirname, '..', 'ui', 'vendor', 'force.js')]],
 ]
 for (const [file, packed, prefixes] of PACKED_SOURCES) {
 	const source = `${prefixes.map((extra) => `${readFileSync(extra, 'utf8')}\n`).join('')}${readFileSync(join(SOURCE_DIR, file), 'utf8')}`
