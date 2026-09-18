@@ -59,13 +59,26 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ---
 
-## Install
+## Install and use
 
 ```bash
 npx clearai-dsh install
 ```
 
-Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), create a session, and pick the **ClearAI** preset. If pnpm is not on PATH: `npm install -g pnpm` (do not `corepack enable` — it installs a version forwarder that may download a pnpm it cannot launch).
+Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), then **create a session and switch to the `ClearAI` mode in the picker at the top**:
+
+1. Open `dsh web` and click "New session";
+2. Click the current mode name at the top (default: **Standard mode**) to open the preset list;
+3. Pick **ClearAI** — its card reads "利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.";
+4. Just ask your question. Ordinary Q&A runs as usual; once you set a goal and register hypotheses, the system enters knowledge mode by itself: known facts come to you, gaps stay visible, and conclusions earn their place.
+
+<picture>
+  <img src="docs/shots/zh/jepa-ontology.png" alt="The knowledge graph in ClearAI mode" width="820">
+</picture>
+
+*The ontology graph in ClearAI mode — this real session grew 21 concepts and 9 predicates; the same ledger always yields the same picture. (UI shown is Chinese.)*
+
+If pnpm is not on PATH: `npm install -g pnpm` (do not `corepack enable` — it installs a version forwarder that may download a pnpm it cannot launch).
 
 From the repository:
 
@@ -84,7 +97,19 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 The middle column has two switchable views: **Deliverables** and **Ontology**. The right sidebar: **Worldlines** and **External Brain**.
 
-**Ontology** — this view is your knowledge home. At the top, a **graph band**: the ontology graph (what your domain looks like) and the entity graph (what you have actually verified) toggle with one click; clicking a concept node filters the shelves below. Below that, the **ontology shelf**: established entries, each with assertion chips (click to see what the term means), boundary, and support level; contradictions surface automatically. The vocabulary maintenance block sits collapsed at the bottom — it auto-expands when a language exists before any sentence does.
+**Ontology** — this view is your knowledge home. At the top, a **graph band**: the ontology graph (what your domain looks like) and the entity graph (what you have actually verified) toggle with one click; clicking a node or edge opens the **knowledge inspector** (definition / relations / assertions / evidence chain / history), and "filter by this" is an explicit action inside the detail view. Below that, the **ontology shelf**: established entries, each with assertion chips (click to see what the term means), boundary, and support level; contradictions surface automatically. The vocabulary maintenance block sits collapsed at the bottom — it auto-expands when a language exists before any sentence does.
+
+<picture>
+  <img src="docs/shots/zh/jepa-band.png" alt="The graph band: ontology graph and entity graph" width="820">
+</picture>
+
+*The band — the ontology graph and the entity graph share one deterministic projection, so the same ledger always yields the same picture (captured from a real session: 21 concepts, 9 predicates).*
+
+<picture>
+  <img src="docs/shots/zh/jepa-inspector.png" alt="Knowledge inspector: definition, relations, assertions, evidence chain" width="820">
+</picture>
+
+*Open any node or edge: definition, relations, assertions, evidence chain, registration and revision history, all in one place. (UI shown is Chinese.)*
 
 **Worldlines** — when two routes genuinely disagree, they run as separate branches with their own readings; the losing one stays on record, and adoption is a human press.
 
@@ -107,6 +132,7 @@ The middle column has two switchable views: **Deliverables** and **Ontology**. T
 - [Positioning](docs/positioning.md) · [Domain ontology design](docs/domain-ontology.md)
 - [Epistemic loop](docs/epistemic-loop.md) · [Verification ontology](docs/verification-loop.md) · [Loop philosophy](docs/loop-philosophy.md)
 - [Design principles](docs/design-principles.md) · [Soul map](docs/soul-map.md) · [Glossary](docs/glossary.md)
+- [Knowledge-native loop ledger](docs/optimization/knowledge-native-loop.zh-CN.md) (this round: triage / preflight / knowledge gate / graph / inspector; zh-CN)
 - [Development plan](docs/optimization/domain-ontology-plan.md) (with real-run evidence from the Hengtong project)
 - [Known gaps](docs/known-gaps.md) · [Authority map](docs/authority-map.md) · [Release verification](docs/release-verification.md)
 

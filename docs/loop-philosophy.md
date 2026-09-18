@@ -19,7 +19,7 @@ A conclusion is trustworthy exactly when it has survived a test that could have 
 
 ---
 
-## 1. Five principles that land in mechanisms
+## 1. Six principles that land in mechanisms
 
 ### P1 · Mechanism over exhortation
 
@@ -71,6 +71,22 @@ Refuted hypotheses, rejected observations, retracted facts, losing worldlines �
 - Goal revisions keep their version and reason (`SetGoal` requires a reason; superseded sections are marked, not deleted), and the goal document is **not cleared** when it closes.
 
 A refuted hypothesis is a valuable asset: it records one road that did not work, and that is a real product of exploration.
+
+### P6 · Growing an ontology is native loop behaviour, not another mode
+
+**A mechanism that is not in the task's completion function is merely "available on request".** Ontology, entities and the epistemic loop were all there, yet the shortest path for ordinary research was still "retrieve → summarise → write a report"; building an ontology required the user to remember to ask. That is not a capability gap — it is a **wiring gap**.
+
+The fix is not another prompt paragraph but making the test for knowledge work **structural**: a goal is still open and carries registered (hypothesis) propositions — the act of that commitment is itself a promise the model has already made. When it holds, the system enters **knowledge mode**:
+
+| Face | Shape | Answers |
+|---|---|---|
+| Knowledge preflight | Reading (read-only, bounded, literal hit, no semantic guessing) | What is already known that can be reused? |
+| Gaps | Reading (computed from existing facts, each naming one action that can close it) | What form is still missing? |
+| Knowledge gate | Block (before close, before dispatching an evaluator) | May a core conclusion be promoted with no typed assertion? |
+
+Ordinary Q&A never makes that commitment and never enters this mode — the **zero-cost contract**. Real runs produced a counter-intuitive finding: what changed behaviour was the **visibility of gaps**, not the gate (models registered terms and attached assertions after seeing the gaps on the card). So both stay: **visibility makes it want to; the gate stops it from going around.**
+
+**Test**: if a discipline only works when the user or model remembers it, it has not entered the task's completion function; either wire it to a structural test, or admit it is a preference.
 
 ---
 

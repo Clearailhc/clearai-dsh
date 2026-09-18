@@ -59,13 +59,26 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 ---
 
-## 安装
+## 安装与使用
 
 ```bash
 npx clearai-dsh install
 ```
 
-装完重启 `dsh web`（`npx @deepseek-ai/dsh web`），新建会话选 **ClearAI** 预设。如果 PATH 上没有 pnpm：`npm install -g pnpm`（别用 `corepack enable`——它装的是版本转发器，可能下载一个自己启动不了的 pnpm）。
+装完重启 `dsh web`（`npx @deepseek-ai/dsh web`），然后**新建会话，在顶部的模式选择器里切换到 `ClearAI`**：
+
+1. 打开 `dsh web`，点「新建会话」；
+2. 点顶部当前的模式名（默认是「标准模式」），展开预设列表；
+3. 选 **ClearAI**——卡片描述就一句:「利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.」；
+4. 像平常一样提问。普通问答照常走；一旦你立了目标并登记假设，系统自动进入知识模式：预检把已知送上来，缺口如实读出来，结论过证据才准入。
+
+<picture>
+  <img src="docs/shots/zh/jepa-ontology.png" alt="ClearAI 模式下的知识图谱" width="820">
+</picture>
+
+*ClearAI 模式下的本体图——这场真实会话长出 21 个概念、9 条谓词；同一份账本永远得到同一张图。*
+
+如果 PATH 上没有 pnpm：`npm install -g pnpm`（别用 `corepack enable`——它装的是版本转发器，可能下载一个自己启动不了的 pnpm）。
 
 从仓库开发：
 
@@ -84,7 +97,19 @@ node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
 
 中栏两格可切：**产物**与**本体**。右栏：**世界树**与**外脑**。
 
-**本体**——这一格是你的知识主场。顶部是**图带**：本体图（你的领域长什么样）与实体图（已经验证出了什么）一键切换，点概念节点按概念过滤。下面是**本体货架**：已确立的条目，每条带断言芯片（点开看这个词什么意思）、边界与等级；互相矛盾的自动亮出来。词汇维护区收在最底下——语言先于句子时它自动展开。
+**本体**——这一格是你的知识主场。顶部是**图带**：本体图（你的领域长什么样）与实体图（已经验证出了什么）一键切换；点节点或边打开**知识 Inspector**（定义 / 关系 / 断言 / 证据链 / 历史），「按此过滤」是详情里的显式动作。下面是**本体货架**：已确立的条目，每条带断言芯片（点开看这个词什么意思）、边界与等级；互相矛盾的自动亮出来。词汇维护区收在最底下——语言先于句子时它自动展开。
+
+<picture>
+  <img src="docs/shots/zh/jepa-band.png" alt="本体图带：本体图与实体图切换" width="820">
+</picture>
+
+*图带——本体图与实体图共用同一份确定性投影，同一份账本永远得到同一张图；素材来自一场真实会话（21 概念 · 9 谓词）。*
+
+<picture>
+  <img src="docs/shots/zh/jepa-inspector.png" alt="知识 Inspector：定义、关系、断言、证据链" width="820">
+</picture>
+
+*点开任一节点或边：定义、关系、断言、证据链、登记与修订史，一处读完。*
 
 **世界树**——两条路线真的分歧时，各自独立跑、各自带读数；落选的那条留在记录里，采纳是人按的那一下。
 
@@ -107,6 +132,7 @@ node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
 - [定位](docs/positioning.zh-CN.md) · [领域本体设计](docs/domain-ontology.zh-CN.md)
 - [认识论循环](docs/epistemic-loop.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md) · [循环哲学](docs/loop-philosophy.zh-CN.md)
 - [设计原则](docs/design-principles.zh-CN.md) · [灵魂映射](docs/soul-map.zh-CN.md) · [术语表](docs/glossary.zh-CN.md)
+- [知识原生循环执行账本](docs/optimization/knowledge-native-loop.zh-CN.md)（本轮：分诊 / 预检 / 知识门 / 图 / Inspector）
 - [开发计划](docs/optimization/domain-ontology-plan.zh-CN.md)（含亨通真跑读数）
 - [已知缺口](docs/known-gaps.zh-CN.md) · [权威归属](docs/authority-map.zh-CN.md) · [发布验收](docs/release-verification.zh-CN.md)
 
