@@ -592,7 +592,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('零成本:没有词条就没有图带/冲突行/维护区(与从前同形)', !plain.includes('本体图') && !plain.includes('实体图') && !plain.includes('冲突') && !plain.includes('词汇('), plain.slice(0, 120))
 
 			// ② 图带:本体图/实体图切换在,节点标签在,截断说明的措辞在(有节点就不会出现)
-			check('图带:层次切换与节点都在(本体图默认)', typed.includes('本体图') && typed.includes('实体图') && typed.includes('炉次') && typed.includes('点节点按概念过滤'), typed.slice(0, 200))
+			check('图带:层次切换与节点都在(本体图默认)', typed.includes('本体图') && typed.includes('实体图') && typed.includes('炉次') && typed.includes('点节点看知识详情'), typed.slice(0, 200))
+			check('图带:提示写的是「看知识详情」而不是「过滤」(点击语义变了,提示得跟着变)', !typed.includes('点节点按概念过滤'))
 			check('图带:废止节点是虚线幽灵的来源数据(status=deprecated 的词条在维护区带缘由)', lexiconFixture.terms[1].status === 'deprecated' && String(lexiconFixture.terms[1].deprecated.reason).includes('与父概念无法区分'))
 
 			// ③ 冲突:一行指针 + 受害条目的内联标记
@@ -679,6 +680,80 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				check('截断时说清依据是连接度,不是「前 N 个」', band.includes('按连接度画了') && band.includes('40/45'), band.slice(0, 200))
 				check('未画入的如实说明它们不参与成边(所以图上没有断边)', band.includes('没有断边'))
 				check('画进去的正是连接度高的那批(孤立节点排在后面)', band.includes('概念00') && band.includes('概念09') && !band.includes('概念44'), band.includes('概念00') + '/' + band.includes('概念44'))
+			}
+
+			/**
+			 * ⑩ **点击语义**:点节点是「看知识详情」,不是「按概念过滤」。
+			 *
+			 * 从前点一下就把货架过滤掉,读的人却还不知道那个词是什么意思。
+			 * 过滤改成 Inspector 里的一个显式动作——所以组件必须**收得到 sessionId**
+			 * (Inspector 要拿它去问宿主),而且不能再出现「已选中 · 名字」那种只报名字的卡。
+			 */
+			{
+				const band = react.render(
+					components.GraphBand({
+						lexicon: lexiconFixture,
+						layer: 'ontology',
+						expanded: false,
+						sessionId: 's1',
+						onLayer: () => {},
+						onToggleExpand: () => {},
+						onFilter: () => {},
+					}),
+				).replace(/\s+/g, ' ')
+				check('图带:提示说明点击是看知识详情', band.includes('点节点看知识详情'))
+				check('图带:没有选中时不摆 Inspector(零成本)', !band.includes('按此筛选'))
+				check('图带:零件与文案都不再承诺「点一下即过滤」', !band.includes('按概念过滤'))
+			}
+
+			/**
+			 * ⑪ **Inspector 组件本身**:它只渲染宿主给的读数,不在客户端拼链。
+			 * 这里直接喂一份投影输出,钉住「链的每一段都画得出来」。
+			 */
+			{
+				const inspector = {
+					selection: { kind: 'edge', id: 'assertion:f-1:oxygen_ppm:furnace_batch|B1', label: '氧含量' },
+					definition: { kind: 'assertion', predicate: 'oxygen_ppm', predicateLabel: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, subject: { type: 'furnace_batch', id: 'B1' } },
+					facts: [
+						{
+							id: 'f-1',
+							text: 'B1 氧含量是 8 ppm',
+							level: 'L3',
+							scope: '均值差 < 5% 即作废',
+							status: 'live',
+							at: 1700000000000,
+							review: null,
+							assertions: [{ chip: 'B1 · 氧含量 = 8 ppm' }],
+							hypothesis: { id: 'h-1', claim: 'B1 氧含量是 8 ppm', refuteWhen: '复测不是', status: 'alive', supportedLevel: 'L3', refutations: 0, inconclusive: 0 },
+							evidence: [
+								{
+									id: 'e-1',
+									verdict: 'support',
+									level: 'L3',
+									evaluator: 'independent',
+									basis: '读过产物',
+									origins: [{ kind: 'artifact', path: 'lab/g1.txt' }],
+									refs: ['lab/g1.txt'],
+									materials: [],
+									step: { plan: 'p-1', id: 's-1', do: '读仪表', doneCriteria: 'lab/g1.txt 存在', status: 'advanced' },
+								},
+							],
+							conflicts: [],
+						},
+					],
+					factsTruncated: 0,
+					relations: {},
+					conflicts: [],
+					history: [{ kind: 'fact/promoted', at: 1700000000000, summary: '升格为事实(支持到 L3)' }],
+					actions: { canFilter: true },
+					note: '这条边落在单值谓词上。',
+				}
+				const rendered = react.render(components.GraphInspector({ selection: { kind: 'edge', id: inspector.selection.id, label: '氧含量' }, inspector, sessionId: 's1', onFilter: () => {}, onClose: () => {} })).replace(/\s+/g, ' ')
+				check('Inspector:链的每一段都画得出来(事实 / 命题 / 证据 / 出处 / 步骤)', rendered.includes('f-1') && rendered.includes('h-1') && rendered.includes('e-1') && rendered.includes('lab/g1.txt') && rendered.includes('s-1'))
+				check('Inspector:命题带推翻条件与支持等级', rendered.includes('复测不是') && rendered.includes('L3'))
+				check('Inspector:历史画成一行', rendered.includes('升格为事实'))
+				check('Inspector:有「按此筛选」这个显式动作', rendered.includes('按此筛选'))
+				check('Inspector:单值谓词的冲突语义如实说', rendered.includes('单值谓词'))
 			}
 		}
 		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
