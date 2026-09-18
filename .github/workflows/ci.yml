@@ -18,6 +18,11 @@ jobs:
           # CI 跑 engines 的下界(22)。发布那条流水线用 Node 24,因为 trusted publishing 要求
           # npm ≥ 11.5.1,而 Node 22 自带 10.9.8 —— 两处刻意不同,别顺手统一。
           node-version: '22'
+      - name: Install dependencies
+        # `npm test` 的第一步是 `build-vendor`(esbuild),打包自检(build-package → buildVendor)
+        # 也要它。0.2.1 之前 `test` 只是 `bash test/run.sh`(纯 Node、零依赖),所以这里一直没有
+        # 安装步骤;图谱那一版给 test 加了 vendor 构建,于是缺依赖会在第一秒就红(2026-09-18 撞到)。
+        run: npm ci
       - name: Enable pnpm (the CLI forwards to it)
         run: |
           corepack enable

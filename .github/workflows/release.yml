@@ -38,6 +38,10 @@ jobs:
         with:
           # Node 24 自带 npm ≥ 11.5.1;trusted publishing 的硬要求就是它。
           node-version: '24'
+      - name: Install dependencies
+        # 与 CI 同一条:`npm test` 的第一步与打包自检都要 esbuild(devDependency),
+        # 不装依赖会在 Suites 这一步直接 ERR_MODULE_NOT_FOUND。
+        run: npm ci
       - name: npm 必须够新(OIDC trusted publishing 的最低要求)
         # 明写这道门:达不到就**现在**红,而不是等到最后甩一句 ENEEDAUTH 让人回查半天。
         run: |
