@@ -250,6 +250,14 @@ sequenceDiagram
     participant P as Projection
     participant G as Read surfaces (shelf / card / panel)
 
+    Note over M,P: knowledge preflight (implemented: no user reminder needed)
+    M->>K: SetGoal (registering propositions)
+    K-->>L: mutation goal/set
+    L->>P: fold → derive
+    P->>P: knowledgePreflight: claim text matches entry label/id/alias (bounded, auditable)
+    P-->>G: runtime card gains a "relevant known (directly referenceable)" line
+    G-->>M: model receives referenceable ids — reuse first, register only what's missing
+
     Note over M,K: vocabulary verbs (implemented)
     M->>K: RegisterTerm / RegisterPredicate (with a basis)
     K->>K: validate: unique id · references exist · acyclic is_a · legal range

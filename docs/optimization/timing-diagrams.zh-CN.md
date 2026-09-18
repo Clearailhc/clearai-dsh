@@ -238,6 +238,14 @@ sequenceDiagram
     participant P as 投影
     participant G as 读面（货架 / 卡片 / 面板）
 
+    Note over M,P: 知识预检（已实现：不等用户提醒）
+    M->>K: SetGoal（登记命题）
+    K-->>L: mutation goal/set
+    L->>P: fold → derive
+    P->>P: knowledgePreflight：主张文本命中词条 label/id/alias（有界，逐条可复核）
+    P-->>G: 运行态卡多一行「相关已知（可直接引用）」
+    G-->>M: 模型拿到可直接引用的 id 清单——先复用，缺才立词
+
     Note over M,K: 词汇动词（已实现）
     M->>K: RegisterTerm / RegisterPredicate（带依据）
     K->>K: 校验：id 唯一 · 引用存在 · is_a 不成环 · 值域合法
