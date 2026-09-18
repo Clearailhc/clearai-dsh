@@ -172,6 +172,34 @@ try {
 	await page.goto(base, { waitUntil: 'load' })
 	await page.waitForFunction(() => window.__PROBE__ !== undefined, { timeout: 15000 }).catch(() => {})
 	const probe = await page.evaluate(() => window.__PROBE__ ?? null)
+
+	/**
+	 * **拖一次,用真实鼠标序列**。
+	 * 为什么不能用合成事件:React Flow 的拖动走 d3-drag,它只认**真实输入序列**——
+	 * 页面里 `dispatchEvent(new PointerEvent(...))` 它一概不理(试过:纹丝不动,
+	 * 与「受控 nodes 没接 onNodesChange」的症状一模一样,分不清是哪个原因)。
+	 * 所以这一段必须留在 Node 侧,由 Playwright 发真事件。
+	 * 拖完再点另一个节点触发一次重渲染,确认界面状态**没被覆盖**。
+	 */
+	const drag = { before: null, moved: null, kept: null, error: null }
+	try {
+		const box = await page.locator('.react-flow__node').first().boundingBox()
+		drag.before = await page.evaluate(() => document.querySelector('.react-flow__node').style.transform)
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+		await page.mouse.down()
+		await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2 + 80, { steps: 12 })
+		await page.mouse.up()
+		await page.waitForTimeout(350)
+		drag.moved = await page.evaluate(() => document.querySelector('.react-flow__node').style.transform)
+		await page.evaluate(() => {
+			const other = document.querySelectorAll('.react-flow__node')[1]
+			if (other !== undefined) other.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+		})
+		await page.waitForTimeout(500)
+		drag.kept = await page.evaluate(() => document.querySelector('.react-flow__node').style.transform)
+	} catch (error) {
+		drag.error = String(error?.message ?? error)
+	}
 	await browser.close()
 	server.close()
 
@@ -194,6 +222,8 @@ try {
 		check('边画出来了', probe.edges > 0, `edges=${probe.edges}`)
 		check('控件与迷你地图都在(库的零件真的用上了)', probe.controls > 0 && probe.minimap > 0, `controls=${probe.controls} minimap=${probe.minimap}`)
 		check('样式注入进去了(缺了布局会散)', probe.styleInjected === true)
+		check('拖得动(受控 nodes 必须接住 onNodesChange)', drag.moved !== null && drag.moved !== drag.before, `${String(drag.before)} → ${String(drag.moved)}${drag.error === null ? '' : ` (${drag.error})`}`)
+		check('拖完还在(重渲染不覆盖界面状态)', drag.kept === drag.moved, `${String(drag.moved)} → ${String(drag.kept)}`)
 	}
 	if (consoleErrors.length > 0) console.log(`  · 页面错误:${consoleErrors.slice(0, 3).join(' | ')}`)
 

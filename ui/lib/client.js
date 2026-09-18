@@ -3264,6 +3264,31 @@ window.__ModuleLoader__.load({
 				textAlign: 'center',
 			})
 
+		/**
+		 * **节点位置是受控的,所以必须自己接住拖动**。
+		 *
+		 * React Flow 的 `nodes` 是受控 prop:不给 `onNodesChange`,它内部的拖动**没有地方落地**——
+		 * 表现就是**节点根本拖不动**(拖前拖后 transform 一模一样)。
+		 * 位置是**界面状态**(布局不是知识,不进账本),所以它住在这里;
+		 * 换层或图变了就清掉,免得上一张图的拖动痕迹贴到新图上。
+		 */
+		const [dragged, setDragged] = React.useState({})
+		const graphKey = `${layer}|${allNodes.length}|${allEdges.length}`
+		React.useEffect(() => {
+			setDragged({})
+		}, [graphKey])
+		const onNodesChange = React.useCallback((changes) => {
+			setDragged((current) => {
+				let next = current
+				for (const change of changes) {
+					if (change?.type !== 'position' || change.position === undefined) continue
+					if (next === current) next = { ...current }
+					next[change.id] = change.position
+				}
+				return next
+			})
+		}, [])
+
 			/**
 			 * 投影节点 → React Flow 节点。
 			 *
@@ -3271,9 +3296,10 @@ window.__ModuleLoader__.load({
 			 * FA2 再把它松弛成这个图**自己的形状**(枢纽、簇)。拿不到 FA2 时就是起点本身。
 			 */
 			const rfNodes = forceLayout(allNodes.map((node) => ({
-				id: node.id,
+								id: node.id,
 				type: 'default',
-				position: { x: node.x ?? 0, y: node.y ?? 0 },
+				/** 拖过的以拖动为准(界面状态);没拖过的用布局算出来的。 */
+				position: dragged[node.id] ?? { x: node.x ?? 0, y: node.y ?? 0 },
 				/**
 				 * **尺寸要显式给**。只写在 `style` 里的话,React Flow 要等测量完成才知道它多大,
 				 * 而 **MiniMap 在测量完成之前拿不到宽高就直接跳过这些节点**——缩略图因此是一块空白
@@ -3390,6 +3416,7 @@ window.__ModuleLoader__.load({
 								onInit: (instance) => {
 									rfRef.current = instance
 								},
+								onNodesChange,
 								nodes: rfNodes,
 								edges: rfEdges,
 								onNodeClick,
