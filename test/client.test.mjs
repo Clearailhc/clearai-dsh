@@ -558,15 +558,20 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 					{ predicate: 'oxygen_ppm', subject: 'furnace_batch|B1', sides: [ { fact: 'f-1', value: 'quantity:8:ppm', text: 'a', level: 'L3', count: 1 }, { fact: 'f-2', value: 'quantity:12:ppm', text: 'b', level: 'L3', count: 1 } ] },
 				],
 				health: [ { kind: 'unused', severity: 'info', id: 'narrow_batch', detail: '还没有任何谓词或事实引用它' } ],
+				/**
+				 * 投影夹具照 `graphProjection()` 的**真输出**写:`layer` 说这一层画不画,
+				 * `degree` 说先画谁,`claim` 是事实指回命题的那条身份链。
+				 * 夹具落后于生产者时,它测的就不再是要跑的那份代码。
+				 */
 				graph: {
 					nodes: [
-						{ id: 'term:furnace_batch', kind: 'concept', ref: 'furnace_batch', label: '炉次', status: 'admitted', uses: 1, depth: 0, x: 0, y: 0 },
-						{ id: 'v_quantity', kind: 'value_type', ref: 'quantity', label: 'quantity', status: 'admitted', uses: 0, depth: 0, x: 0, y: 132 },
-						{ id: 'furnace_batch|B1', kind: 'instance', ref: 'B1', label: 'B1', type: 'furnace_batch', status: 'live', facts: ['f-1'], x: 0, y: 264 },
+						{ id: 'term:furnace_batch', kind: 'concept', layer: 'ontology', ref: 'furnace_batch', label: '炉次', status: 'admitted', uses: 1, degree: 1, depth: 0, x: 0, y: 0 },
+						{ id: 'form:quantity', kind: 'value_type', layer: 'ontology', ref: 'quantity', label: 'quantity', status: 'admitted', uses: 0, degree: 2, depth: 0, x: 0, y: 132 },
+						{ id: 'furnace_batch|B1', kind: 'instance', layer: 'entity', ref: 'B1', label: 'B1', type: 'furnace_batch', status: 'live', degree: 1, facts: ['f-1'], x: 0, y: 264 },
 					],
 					edges: [
-						{ id: 'predicate:oxygen_ppm', kind: 'predicate', predicate: 'oxygen_ppm', label: '氧含量', from: 'term:furnace_batch', to: 'v_quantity', status: 'admitted', functional: true },
-						{ id: 'assertion:f-1:oxygen_ppm', kind: 'assertion', predicate: 'oxygen_ppm', label: '氧含量', from: 'furnace_batch|B1', to: 'v_quantity', status: 'live', level: 'L3', fact: 'f-1', scope: null },
+						{ id: 'predicate:oxygen_ppm', kind: 'predicate', layer: 'ontology', predicate: 'oxygen_ppm', label: '氧含量', from: 'term:furnace_batch', to: 'form:quantity', status: 'admitted', functional: true },
+						{ id: 'assertion:f-1:oxygen_ppm', kind: 'assertion', layer: 'entity', predicate: 'oxygen_ppm', label: '氧含量', from: 'furnace_batch|B1', to: 'form:quantity', status: 'live', level: 'L3', fact: 'f-1', scope: null, claim: 'h-1' },
 					],
 					bounds: { width: 400, height: 380 },
 				},
@@ -637,6 +642,44 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 
 			// ⑧ 图组件可独立渲染(空图不炸)
 			check('图组件:空词汇层渲染空提示不炸', react.render(components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', expanded: false, onLayer: () => {}, onToggleExpand: () => {}, onFilter: () => {} })).includes('此层暂无节点。'))
+
+			/**
+			 * ⑨ **先画谁**:按投影给的连接度取前 N,不按数组截断。
+			 *
+			 * 旧写法切数组前 40 个,被切掉的节点仍连着边 ⇒ 图上出现没有端点的边——
+			 * 真跑里那条「图不清晰」的抱怨有一半来自这里。这里钉住两件事:
+			 * 排序依据是 degree(而不是数组顺序),以及截断时说清依据。
+			 */
+			{
+				const many = (count) => Array.from({ length: count }, (_, index) => ({
+					id: `term:t${String(index).padStart(2, '0')}`,
+					kind: 'concept',
+					layer: 'ontology',
+					ref: `t${String(index).padStart(2, '0')}`,
+					label: `概念${String(index).padStart(2, '0')}`,
+					status: 'admitted',
+					/** 前 10 个互相连成一条链(度 ≥1),后面全是孤立节点(度 0)。 */
+					degree: index < 10 ? 2 : 0,
+					uses: 0,
+					depth: 0,
+					x: (index % 8) * 200,
+					y: Math.floor(index / 8) * 120,
+				}))
+				const ring = many(45)
+				const band = react.render(
+					components.GraphBand({
+						lexicon: { graph: { nodes: ring, edges: [], bounds: { width: 1600, height: 800 } }, conflicts: [] },
+						layer: 'ontology',
+						expanded: false,
+						onLayer: () => {},
+						onToggleExpand: () => {},
+						onFilter: () => {},
+					}),
+				).replace(/\s+/g, ' ')
+				check('截断时说清依据是连接度,不是「前 N 个」', band.includes('按连接度画了') && band.includes('40/45'), band.slice(0, 200))
+				check('未画入的如实说明它们不参与成边(所以图上没有断边)', band.includes('没有断边'))
+				check('画进去的正是连接度高的那批(孤立节点排在后面)', band.includes('概念00') && band.includes('概念09') && !band.includes('概念44'), band.includes('概念00') + '/' + band.includes('概念44'))
+			}
 		}
 		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
 		// 这一格**就是**事实库:不再挂一个「打开事实库」的空链接,整行点开原件

@@ -431,20 +431,20 @@ export function graphProjection(state) {
 	}
 	const terms = [...lexicon.terms].sort((a, b) => (a.id < b.id ? -1 : 1))
 	const predicates = [...lexicon.predicates].sort((a, b) => (a.id < b.id ? -1 : 1))
-	for (const term of terms) nodes.push({ id: `term:${term.id}`, kind: 'concept', ref: term.id, label: term.label ?? term.id, status: term.status ?? 'admitted', parent: text(term.parent) === '' ? null : text(term.parent), uses: uses.get(term.id) ?? 0, depth: depthOf(term) })
+	for (const term of terms) nodes.push({ id: `term:${term.id}`, kind: 'concept', layer: 'ontology', ref: term.id, label: term.label ?? term.id, status: term.status ?? 'admitted', parent: text(term.parent) === '' ? null : text(term.parent), uses: uses.get(term.id) ?? 0, depth: depthOf(term) })
 	const formsUsed = VALUE_FORMS.filter((form) => predicates.some((item) => text(item.range?.form) === form))
-	for (const [index, form] of formsUsed.entries()) nodes.push({ id: `form:${form}`, kind: 'value_type', ref: form, label: form, status: 'admitted', uses: 0, depth: 0, formIndex: index })
+	for (const [index, form] of formsUsed.entries()) nodes.push({ id: `form:${form}`, kind: 'value_type', layer: 'ontology', ref: form, label: form, status: 'admitted', uses: 0, depth: 0, formIndex: index })
 	for (const term of terms) {
 		if (text(term.parent) === '') continue
 		if (!termById.has(text(term.parent))) continue
-		edges.push({ id: `is_a:${term.id}`, kind: 'is_a', predicate: null, label: 'is_a', from: `term:${term.id}`, to: `term:${term.parent}`, status: term.status ?? 'admitted' })
+		edges.push({ id: `is_a:${term.id}`, kind: 'is_a', layer: 'ontology', predicate: null, label: 'is_a', from: `term:${term.id}`, to: `term:${term.parent}`, status: term.status ?? 'admitted' })
 	}
 	for (const predicate of predicates) {
 		const range = isPlainObject(predicate.range) ? predicate.range : {}
 		const rangeTerm = text(range.term)
 		const form = text(range.form)
 		const to = rangeTerm !== '' ? `term:${rangeTerm}` : form !== '' ? `form:${form}` : null
-		if (to !== null) edges.push({ id: `predicate:${predicate.id}`, kind: 'predicate', predicate: predicate.id, label: predicate.label ?? predicate.id, from: text(predicate.domain) === '' ? null : `term:${text(predicate.domain)}`, to, status: predicate.status ?? 'admitted', functional: predicate.functional === true })
+		if (to !== null) edges.push({ id: `predicate:${predicate.id}`, kind: 'predicate', layer: 'ontology', predicate: predicate.id, label: predicate.label ?? predicate.id, from: text(predicate.domain) === '' ? null : `term:${text(predicate.domain)}`, to, status: predicate.status ?? 'admitted', functional: predicate.functional === true })
 	}
 	const instances = new Map()
 	for (const fact of facts) {
@@ -454,7 +454,7 @@ export function graphProjection(state) {
 			const subjectId = text(subject.id)
 			if (subjectId === '') continue
 			const key = `${text(subject.type)}|${subjectId}`
-			if (!instances.has(key)) instances.set(key, { id: key, kind: 'instance', ref: subjectId, label: subjectId, type: text(subject.type) === '' ? null : text(subject.type), facts: [] })
+			if (!instances.has(key)) instances.set(key, { id: key, kind: 'instance', layer: 'entity', ref: subjectId, label: subjectId, type: text(subject.type) === '' ? null : text(subject.type), facts: [] })
 			instances.get(key).facts.push(fact.id ?? null)
 			const predicateId = text(assertion?.predicate)
 			const object = isPlainObject(assertion?.object) ? assertion.object : {}
@@ -465,17 +465,17 @@ export function graphProjection(state) {
 				const objectType = text(object.type) === '' ? text(predicateById.get(predicateId)?.range?.term) : text(object.type)
 				const objectKeyId = `${objectType}|${objectLabel}`
 				if (objectLabel !== '') {
-					if (!instances.has(objectKeyId)) instances.set(objectKeyId, { id: objectKeyId, kind: 'instance', ref: objectLabel, label: objectLabel, type: objectType === '' ? null : objectType, facts: [] })
+					if (!instances.has(objectKeyId)) instances.set(objectKeyId, { id: objectKeyId, kind: 'instance', layer: 'entity', ref: objectLabel, label: objectLabel, type: objectType === '' ? null : objectType, facts: [] })
 					instances.get(objectKeyId).facts.push(fact.id ?? null)
 					to = objectKeyId
 				}
 			} else if (predicateId !== '') {
 				const literalId = `${predicateId}:${objectKey(assertion.object)}`
-				if (!instances.has(literalId)) instances.set(literalId, { id: literalId, kind: 'literal', ref: objectKey(assertion.object), label: formatObject(object), type: null, facts: [] })
+				if (!instances.has(literalId)) instances.set(literalId, { id: literalId, kind: 'literal', layer: 'entity', ref: objectKey(assertion.object), label: formatObject(object), type: null, facts: [] })
 				instances.get(literalId).facts.push(fact.id ?? null)
 				to = literalId
 			}
-			if (to !== null) edges.push({ id: `assertion:${fact.id ?? ''}:${predicateId}:${subjectKey(assertion)}`, kind: 'assertion', predicate: predicateId, label: text(lexicon.predicates.find((item) => item.id === predicateId)?.label) || predicateId, from: key, to, status, level: fact.level ?? null, fact: fact.id ?? null, scope: fact.scope ?? null })
+			if (to !== null) edges.push({ id: `assertion:${fact.id ?? ''}:${predicateId}:${subjectKey(assertion)}`, kind: 'assertion', layer: 'entity', predicate: predicateId, label: text(lexicon.predicates.find((item) => item.id === predicateId)?.label) || predicateId, from: key, to, status, level: fact.level ?? null, fact: fact.id ?? null, scope: fact.scope ?? null, claim: text(fact.hypothesis) === '' ? null : text(fact.hypothesis) })
 		}
 	}
 	for (const instance of [...instances.values()].sort((a, b) => (a.id < b.id ? -1 : 1))) nodes.push(instance)
@@ -507,6 +507,19 @@ export function graphProjection(state) {
 	})
 	const width = Math.max(...nodes.map((node) => (typeof node.x === 'number' ? node.x : 0)), 0) + COLUMN
 	const height = Math.max(...nodes.map((node) => (typeof node.y === 'number' ? node.y : 0)), 0) + ROW
+	/**
+	 * **连接度**(派生,确定性):客户端按它决定「先画谁」。
+	 *
+	 * 旧写法按数组前 40 个截断,被截掉的节点仍然连着边,于是图上出现**没有端点的边**——
+	 * 真跑里那条「图不清晰」的抱怨有一半来自这里。度数是这一层唯一有意义的排名依据,
+	 * 而且同一份账本永远算出同一个次序(它是纯函数,不是渲染时机的函数)。
+	 */
+	const degree = new Map()
+	for (const edge of edges) {
+		if (typeof edge.from === 'string') degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1)
+		if (typeof edge.to === 'string') degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1)
+	}
+	for (const node of nodes) node.degree = degree.get(node.id) ?? 0
 	return { nodes, edges, bounds: { width, height } }
 }
 

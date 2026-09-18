@@ -214,6 +214,37 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 	check('所有节点都有坐标(布局没有漏项)', first.nodes.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y)))
 	check('包围盒算得出来', first.bounds.width > 0 && first.bounds.height > 0)
 	check('空词汇投影为空图而不是崩', graphProjection({}).nodes.length === 0)
+
+	/**
+	 * 图 DTO 的三件:层次、连接度、命题身份。
+	 *
+	 * 它们都是为了**让客户端不再自己猜**——旧写法客户端按 `kind` 数组重推一遍「这一层画不画」,
+	 * 按数组前 N 截断(于是出现没有端点的边),而事实指不回命题(同一句话挂两个 id 的账本
+	 * 更让它指不回)。判据只有一处:投影。
+	 */
+	check('每个节点都说出自己在哪一层(客户端不再按 kind 猜)', first.nodes.every((node) => node.layer === 'ontology' || node.layer === 'entity'))
+	check('本体层节点是概念与值形态,实体层是实例与字面值', first.nodes.filter((node) => node.layer === 'ontology').every((node) => node.kind === 'concept' || node.kind === 'value_type') && first.nodes.filter((node) => node.layer === 'entity').every((node) => node.kind === 'instance' || node.kind === 'literal'))
+	check('每条边说得出自己在哪一层', first.edges.every((edge) => edge.layer === 'ontology' || edge.layer === 'entity'))
+	check('层次与边种一致(is_a/谓词在本体层,断言在实体层)', first.edges.filter((edge) => edge.kind === 'assertion').every((edge) => edge.layer === 'entity') && first.edges.filter((edge) => edge.kind === 'is_a' || edge.kind === 'predicate').every((edge) => edge.layer === 'ontology'))
+	check('连接度是派生的确定读数(有人连就有度)', first.nodes.every((node) => Number.isInteger(node.degree) && node.degree >= 0) && first.nodes.some((node) => node.degree > 0))
+	check(
+		'没人引用的概念度数为 0(孤立节点如实报 0,不是漏算)',
+		graphProjection({ lexicon: applyLexiconMutation(emptyLexicon(), { t: 'ontology/term_added', id: 'lonely', label: '没人用的概念', basis: 'b' }, 1) }).nodes.find((node) => node.ref === 'lonely').degree === 0,
+	)
+	check(
+		'连接度与边数自洽',
+		(() => {
+			const counted = new Map()
+			for (const edge of first.edges) {
+				if (typeof edge.from === 'string') counted.set(edge.from, (counted.get(edge.from) ?? 0) + 1)
+				if (typeof edge.to === 'string') counted.set(edge.to, (counted.get(edge.to) ?? 0) + 1)
+			}
+			return first.nodes.every((node) => node.degree === (counted.get(node.id) ?? 0))
+		})(),
+	)
+	check('事实边带着命题身份(事实指得回产出它的那条命题)', first.edges.filter((edge) => edge.kind === 'assertion').every((edge) => edge.claim === null || typeof edge.claim === 'string'))
+	check('没有命题关联的旧事实如实给 null,不编一个', graphProjection({ lexicon, facts: [{ id: 'old', text: 'x', level: 'L3', review: null, assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] }] }).edges.find((edge) => edge.kind === 'assertion').claim === null)
+	check('有命题关联的事实把它带出来', graphProjection({ lexicon, facts: [{ id: 'f9', hypothesis: 'h-9', text: 'x', level: 'L3', review: null, assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] }] }).edges.find((edge) => edge.kind === 'assertion').claim === 'h-9')
 	check('一条事实人话读得出来', formatAssertion(lexicon, facts[0].assertions[0]) === 'WENO5 · 收敛阶 = 5 order', formatAssertion(lexicon, facts[0].assertions[0]))
 }
 

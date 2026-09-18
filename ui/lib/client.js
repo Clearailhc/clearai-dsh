@@ -2981,32 +2981,158 @@ window.__ModuleLoader__.load({
 		/**
 		 * **图带**:本体格的门面。本体图(语言长什么样)与实体图(已验证出什么)一键切换;
 		 * 点概念节点 = 按概念过滤下方货架——**图上的节点就是索引**,取代一行文字芯片。
-		 * 只读:缩放(滚轮)、平移(拖拽)、全景(⤢,解除节点截断)都是界面状态,不进账本。
+		 *
+		 * 只读契约不变:缩放、平移、拖动节点、选中都是**界面状态**,一个字节都不进账本。
+		 * 拖动一个节点只改这一份本地坐标(换层、刷新、重放都回到投影给的确定性布局)。
+		 *
+		 * 三条与「图看不清」直接对应的设计:
+		 *   · **先画谁**由投影给出的 `degree`(连接度)决定,**不按数组截断**。旧写法切前 40 个,
+		 *     被切掉的节点仍连着边 ⇒ 图上出现没有端点的边——**断边不是信息,是噪声**。
+		 *     这里的次序是投影算好的,同一份账本永远同一张图。
+		 *   · **交互走 Pointer Events + pointer capture**:鼠标、触摸、笔是同一条路;
+		 *     按下到抬起之间**位移超过阈值才算拖动**,否则算点击——不然「想点节点」会变成「拖歪了」。
+		 *   · **缩放以光标为中心**:只改 zoom 会让人觉得图在躲。
 		 */
-		const GraphBand = ({ lexicon, layer, onLayer, expanded, onToggleExpand, onFilter }) => {
+		const GraphBand = ({ lexicon, layer, onLayer, expanded, onToggleExpand, onFilter, onOpenFact }) => {
 			const [view, setView] = React.useState({ zoom: 1, pan: { x: 0, y: 0 } })
 			const [picked, setPicked] = React.useState(null)
+			const [selected, setSelected] = React.useState(null)
+			const [hovered, setHovered] = React.useState(null)
+			/** 本地拖动偏移:`{ [nodeId]: {dx, dy} }`。它刻意**不进投影**——布局不是知识。 */
+			const [moved, setMoved] = React.useState({})
 			const graph = lexicon?.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
 			const conflicts = Array.isArray(lexicon?.conflicts) ? lexicon.conflicts : []
 			const conflicted = new Set(conflicts.flatMap((item) => item.sides.map((side) => side.fact)).filter((id) => typeof id === 'string'))
-			const kinds = layer === 'ontology' ? ['concept', 'value_type'] : ['instance', 'literal']
-			const edgeKinds = layer === 'ontology' ? ['is_a', 'predicate'] : ['assertion']
+			/** 层次由**投影**说(`node.layer` / `edge.layer`),客户端不再自己按 kind 猜一遍。 */
+			const allNodes = graph.nodes.filter((node) => node.layer === layer)
+			const allEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
 			/** 截断是**界面决定**,不进投影;被截掉多少如实写出来,不假装这就是全部。 */
 			const MAX_NODES = expanded === true ? 100000 : 40
-			const allNodes = graph.nodes.filter((node) => kinds.includes(node.kind))
-			const shownNodes = allNodes.slice(0, MAX_NODES)
+			/**
+			 * 排序键:**连接度降序 → 引用数降序 → id 升序**。第三条保证确定性
+			 * (前两条并列时不能靠数组顺序,那会随 fold 的遍历顺序漂)。
+			 */
+			const ranked = [...allNodes].sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0) || (b.uses ?? 0) - (a.uses ?? 0) || (a.id < b.id ? -1 : 1))
+			/**
+			 * **选中 / 悬停的邻域必须整个在场**:否则你点了 A,与 A 有关的那条边却不画——
+			 * 那正是「点了没反应」的来源。
+			 */
+			const anchor = selected ?? hovered
+			const neighborhood = new Set()
+			if (anchor !== null) {
+				neighborhood.add(anchor)
+				for (const edge of allEdges) {
+					if (edge.from === anchor) neighborhood.add(edge.to)
+					if (edge.to === anchor) neighborhood.add(edge.from)
+				}
+			}
+			const shownNodes = [...ranked.filter((node) => neighborhood.has(node.id)), ...ranked.filter((node) => !neighborhood.has(node.id))].slice(0, MAX_NODES)
 			const shownIds = new Set(shownNodes.map((node) => node.id))
 			const nodeById = new Map(shownNodes.map((node) => [node.id, node]))
-			const shownEdges = graph.edges.filter((edge) => edgeKinds.includes(edge.kind) && shownIds.has(edge.from) && shownIds.has(edge.to))
+			/** **只画两端都在场上的边**:没有端点的边不是信息,是噪声。 */
+			const shownEdges = allEdges.filter((edge) => shownIds.has(edge.from) && shownIds.has(edge.to))
 			const NODE_W = 148
 			const NODE_H = 36
+			const at = (node) => {
+				const offset = moved[node.id] ?? null
+				return { x: node.x + (offset?.dx ?? 0), y: node.y + (offset?.dy ?? 0) }
+			}
 			const centerOf = (id) => {
 				const node = nodeById.get(id)
-				return node === undefined ? null : { x: node.x + NODE_W / 2, y: node.y + NODE_H / 2 }
+				if (node === undefined) return null
+				const point = at(node)
+				return { x: point.x + NODE_W / 2, y: point.y + NODE_H / 2 }
 			}
 			const svgHeight = expanded === true ? 480 : 208
 			const width = Math.max(graph.bounds?.width ?? 0, 240)
 			const height = Math.max(graph.bounds?.height ?? 0, 100)
+			/** 拖动状态放在 ref 里:它逐帧变,进 state 会让每次移动都重排整棵子树。 */
+			const dragRef = React.useRef(null)
+			const [dragging, setDragging] = React.useState(false)
+			const beginDrag = (event, mode, node) => {
+				if (event?.button !== undefined && event.button !== 0) return
+				const point = { x: Number(event?.clientX ?? 0), y: Number(event?.clientY ?? 0) }
+				dragRef.current = { mode, node, origin: point, base: view, offset: node === null ? null : { ...(moved[node.id] ?? { dx: 0, dy: 0 }) }, moved: false }
+				try {
+					event?.currentTarget?.setPointerCapture?.(event.pointerId)
+				} catch {
+					// 拿不到指针捕获不影响主路径:下面的 move/up 仍然在 svg 上收得到。
+				}
+				setDragging(true)
+			}
+			const onMove = (event) => {
+				const drag = dragRef.current
+				if (drag === null) return
+				const point = { x: Number(event?.clientX ?? 0), y: Number(event?.clientY ?? 0) }
+				const dx = point.x - drag.origin.x
+				const dy = point.y - drag.origin.y
+				/** 位移阈值:小于它算点击,否则「想点一下」会变成「拖歪了」。 */
+				if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 4) return
+				drag.moved = true
+				if (drag.mode === 'pan') {
+					setView({ ...drag.base, pan: { x: drag.base.pan.x - dx / drag.base.zoom, y: drag.base.pan.y - dy / drag.base.zoom } })
+					return
+				}
+				setMoved((current) => ({ ...current, [drag.node]: { dx: drag.offset.dx + dx / drag.base.zoom, dy: drag.offset.dy + dy / drag.base.zoom } }))
+			}
+			const endDrag = (event) => {
+				const drag = dragRef.current
+				dragRef.current = null
+				setDragging(false)
+				if (drag === null) return
+				try {
+					event?.currentTarget?.releasePointerCapture?.(event.pointerId)
+				} catch {
+					// 没捕获过就没什么可释放的。
+				}
+				/** 没位移 ⇒ 这是一次点击。pan 落在空白处 = 清空选中;节点按下则由节点自己处理。 */
+				if (drag.moved) return
+				if (drag.mode === 'pan') {
+					setSelected(null)
+					setPicked(null)
+				}
+			}
+			/** 以光标为中心缩放:把光标下的那个点钉在原地。 */
+			const zoomAt = (event, factor) => {
+				const box = event?.currentTarget?.getBoundingClientRect?.()
+				const nextZoom = Math.min(3, Math.max(0.3, view.zoom * factor))
+				if (box === undefined || box === null || nextZoom === view.zoom) {
+					setView({ ...view, zoom: nextZoom })
+					return
+				}
+				const localX = view.pan.x + (Number(event.clientX) - box.left) / view.zoom
+				const localY = view.pan.y + (Number(event.clientY) - box.top) / view.zoom
+				setView({ zoom: nextZoom, pan: { x: localX - (Number(event.clientX) - box.left) / nextZoom, y: localY - (Number(event.clientY) - box.top) / nextZoom } })
+			}
+			const HOT = (id) => hovered === id || selected === id
+			const onKeyDown = (event) => {
+				const key = String(event?.key ?? '')
+				const step = 40 / view.zoom
+				if (key === 'Escape') {
+					setSelected(null)
+					setPicked(null)
+					return
+				}
+				if (key === '+' || key === '=') {
+					zoomAt({ currentTarget: event.currentTarget, clientX: 0, clientY: 0 }, 1.2)
+					return
+				}
+				if (key === '-') {
+					zoomAt({ currentTarget: event.currentTarget, clientX: 0, clientY: 0 }, 1 / 1.2)
+					return
+				}
+				const moves = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }
+				const delta = moves[key]
+				if (delta === undefined) return
+				event?.preventDefault?.()
+				setView({ ...view, pan: { x: view.pan.x + delta[0], y: view.pan.y + delta[1] } })
+			}
+			const pickNode = (node) => {
+				setSelected(node.id)
+				if (node.kind === 'concept' || node.kind === 'instance') onFilter(node.ref ?? null, node.kind)
+				else setPicked({ kind: 'node', node })
+			}
+			const layerHint = layer === 'ontology' ? t('点节点按概念过滤') : t('点节点按实例过滤')
 			return h(
 				'div',
 				{ style: { ...S.section, padding: 6 } },
@@ -3015,8 +3141,8 @@ window.__ModuleLoader__.load({
 					{ style: S.inline },
 					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'ontology' ? 1 : 0.5 }, onClick: () => onLayer('ontology') }, t('本体图')),
 					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'entity' ? 1 : 0.5 }, onClick: () => onLayer('entity') }, t('实体图')),
-					h('span', { style: { ...S.faint, flex: '1 1 auto' } }, t('点节点按概念过滤 · 滚轮缩放 · 拖拽平移')),
-					h('span', { style: S.chipAction, onClick: () => setView({ zoom: 1, pan: { x: 0, y: 0 } }) }, t('复位')),
+					h('span', { style: { ...S.faint, flex: '1 1 auto' } }, `${layerHint} · ${t('滚轮缩放 · 拖动平移 · 拖节点挪位')}`),
+					h('span', { style: S.chipAction, onClick: () => { setView({ zoom: 1, pan: { x: 0, y: 0 } }); setMoved({}); setSelected(null) } }, t('复位')),
 					h('span', { style: S.chipAction, onClick: onToggleExpand }, expanded === true ? t('还原') : t('全景')),
 				),
 				shownNodes.length === 0
@@ -3030,26 +3156,19 @@ window.__ModuleLoader__.load({
 									width,
 									height,
 									viewBox: `${view.pan.x} ${view.pan.y} ${width / view.zoom} ${height / view.zoom}`,
-									style: { display: 'block', cursor: 'grab' },
+									tabIndex: 0,
+									role: 'img',
+									'aria-label': layer === 'ontology' ? t('本体图') : t('实体图'),
+									style: { display: 'block', cursor: dragging ? 'grabbing' : 'grab', outline: 'none', touchAction: 'none' },
 									onWheel: (event) => {
 										const delta = typeof event?.deltaY === 'number' ? event.deltaY : 0
-										const zoom = Math.min(3, Math.max(0.3, view.zoom * (1 - delta * 0.001)))
-										setView({ ...view, zoom })
+										zoomAt(event, Math.min(3, Math.max(0.3, view.zoom * (1 - delta * 0.001))) / view.zoom)
 									},
-									onMouseDown: (event) => {
-										const startX = typeof event?.clientX === 'number' ? event.clientX : 0
-										const startY = typeof event?.clientY === 'number' ? event.clientY : 0
-										const base = view
-										const move = (moveEvent) => {
-											setView({ ...base, pan: { x: base.pan.x - ((moveEvent?.clientX ?? startX) - startX) / base.zoom, y: base.pan.y - ((moveEvent?.clientY ?? startY) - startY) / base.zoom } })
-										}
-										const up = () => {
-											window?.removeEventListener?.('mousemove', move)
-											window?.removeEventListener?.('mouseup', up)
-										}
-										window?.addEventListener?.('mousemove', move)
-										window?.addEventListener?.('mouseup', up)
-									},
+									onPointerDown: (event) => beginDrag(event, 'pan', null),
+									onPointerMove: onMove,
+									onPointerUp: endDrag,
+									onPointerCancel: endDrag,
+									onKeyDown,
 								},
 								h('defs', null, h('marker', { id: 'clearai-onto-arrow', markerWidth: 8, markerHeight: 8, refX: 7, refY: 3, orient: 'auto' }, h('path', { d: 'M0,0 L7,3 L0,6 z', fill: 'currentColor' }))),
 								...shownEdges.map((edge) => {
@@ -3057,6 +3176,8 @@ window.__ModuleLoader__.load({
 									const to = centerOf(edge.to)
 									if (from === null || to === null) return null
 									const hot = edge.kind === 'assertion' && conflicted.has(edge.fact)
+									/** 边标签只在**够近或有人问**时画:常驻标签是这张图最吵的东西。 */
+									const loud = view.zoom >= 1.6 || HOT(edge.from) || HOT(edge.to) || picked?.edge?.id === edge.id
 									return h(
 										'g',
 										{ key: `e-${edge.id}`, style: { cursor: 'pointer' }, onClick: () => setPicked({ kind: 'edge', edge }) },
@@ -3065,49 +3186,96 @@ window.__ModuleLoader__.load({
 											y1: from.y,
 											x2: to.x - NODE_W / 2 + 8,
 											y2: to.y,
-											stroke: hot ? '#dc2626' : 'rgba(127,127,127,0.55)',
-											strokeWidth: hot ? 2 : 1,
+											stroke: hot ? '#dc2626' : HOT(edge.from) || HOT(edge.to) ? 'rgba(74,163,255,0.95)' : 'rgba(127,127,127,0.55)',
+											strokeWidth: hot || HOT(edge.from) || HOT(edge.to) ? 2 : 1,
 											strokeDasharray: edge.kind === 'is_a' ? '4 3' : undefined,
 											markerEnd: 'url(#clearai-onto-arrow)',
 										}),
-										h('text', { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - 4, fontSize: 10, textAnchor: 'middle', opacity: 0.75, fill: hot ? '#dc2626' : 'currentColor' }, String(edge.label ?? '')),
+										loud ? h('text', { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - 4, fontSize: 10, textAnchor: 'middle', opacity: 0.85, fill: hot ? '#dc2626' : 'currentColor' }, String(edge.label ?? '')) : null,
 									)
 								}),
-								...shownNodes.map((node) =>
-									h(
+								...shownNodes.map((node) => {
+									const point = at(node)
+									const active = HOT(node.id)
+									const conflictedNode = layer === 'entity' && Array.isArray(node.facts) && node.facts.some((id) => conflicted.has(id))
+									return h(
 										'g',
 										{
 											key: `n-${node.id}`,
-											style: { cursor: node.kind === 'concept' || node.kind === 'instance' ? 'pointer' : 'default' },
-											onClick: () => {
-												if (node.kind === 'concept' || node.kind === 'instance') onFilter(node.ref ?? null, node.kind)
-												else setPicked({ kind: 'node', node })
+											style: { cursor: 'pointer' },
+											onPointerDown: (event) => {
+												event?.stopPropagation?.()
+												beginDrag(event, 'node', node)
 											},
+											onPointerUp: (event) => {
+												event?.stopPropagation?.()
+												const drag = dragRef.current
+												const wasMoved = drag?.moved === true
+												endDrag(event)
+												/** 只有「没有位移」才算点击,拖完不该顺带把货架过滤掉。 */
+												if (!wasMoved) pickNode(node)
+											},
+											onMouseEnter: () => setHovered(node.id),
+											onMouseLeave: () => setHovered(null),
 										},
 										h('rect', {
-											x: node.x,
-											y: node.y,
+											x: point.x,
+											y: point.y,
 											width: NODE_W,
 											height: NODE_H,
 											rx: 7,
 											fill: node.kind === 'concept' ? 'rgba(74,163,255,0.16)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.16)' : node.kind === 'instance' ? 'rgba(22,163,74,0.16)' : 'rgba(147,51,234,0.16)',
-											stroke: 'rgba(127,127,127,0.35)',
+											stroke: conflictedNode ? '#dc2626' : active ? 'rgba(74,163,255,0.95)' : 'rgba(127,127,127,0.35)',
+											strokeWidth: active || conflictedNode ? 2 : 1,
 											strokeDasharray: node.status === 'deprecated' ? '4 3' : undefined,
 										}),
-										h('text', { x: node.x + NODE_W / 2, y: node.y + 16, fontSize: 11, textAnchor: 'middle' }, String(node.label ?? '').slice(0, 16)),
-										h('text', { x: node.x + NODE_W / 2, y: node.y + 29, fontSize: 9, textAnchor: 'middle', opacity: 0.6 }, node.kind === 'concept' ? `${node.ref ?? ''}${node.uses > 0 ? ` · ${node.uses}` : ''}` : node.kind === 'value_type' ? String(node.ref ?? '') : node.kind === 'instance' ? String(node.type ?? '') : String(node.ref ?? '')),
-									),
-								),
+										h('text', { x: point.x + NODE_W / 2, y: point.y + 16, fontSize: 11, textAnchor: 'middle' }, String(node.label ?? '').slice(0, 16)),
+										h(
+											'text',
+											{ x: point.x + NODE_W / 2, y: point.y + 29, fontSize: 9, textAnchor: 'middle', opacity: 0.6 },
+											node.kind === 'concept' ? `${node.ref ?? ''}${node.uses > 0 ? ` · ${node.uses}` : ''}` : node.kind === 'value_type' ? String(node.ref ?? '') : node.kind === 'instance' ? String(node.type ?? '') : String(node.ref ?? ''),
+										),
+									)
+								}),
 							),
 						),
-				allNodes.length > shownNodes.length ? h('div', { style: S.faint }, `${t('图里只画了前')} ${shownNodes.length}/${allNodes.length}${t(' 个节点;全景可看全部')}`) : null,
-				picked === null
+				/**
+				 * 截断如实说,并且说清**为什么被截的是它们**:按连接度取前 N。
+				 * 「图里只画了前 40 个」不解释依据,读的人无法判断这张图可不可信。
+				 */
+				allNodes.length > shownNodes.length
+					? h('div', { style: S.faint }, `${t('按连接度画了')} ${shownNodes.length}/${allNodes.length}${t(' 个节点;未画入的节点不参与成边(所以图上没有断边)。全景可看全部。')}`)
+					: null,
+				picked === null && selected === null
 					? null
-					: h('div', { style: S.chipCard },
-							h('div', { style: S.chipCardTitle }, picked.kind === 'edge' ? `${t('一条边')} · ${String(picked.edge.predicate ?? picked.edge.label ?? '')}` : `${String(picked.node.label ?? '')} · ${String(picked.node.ref ?? '')}`),
-							picked.kind === 'edge' && picked.edge.kind === 'assertion'
-								? h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('事实')}:`), ` ${String(picked.edge.fact ?? '—')} · ${String(picked.edge.level ?? '—')}`)
-								: null,
+					: h(
+							'div',
+							{ style: S.chipCard },
+							picked === null
+								? h('div', { style: S.chipCardTitle }, `${t('已选中')} · ${String(nodeById.get(selected)?.label ?? selected)}`)
+								: picked.kind === 'edge'
+									? h(
+											'div',
+											null,
+											h('div', { style: S.chipCardTitle }, `${t('一条边')} · ${String(picked.edge.predicate ?? picked.edge.label ?? '')}`),
+											picked.edge.kind === 'assertion'
+												? h(
+														'div',
+														null,
+														h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('事实')}:`), ` ${String(picked.edge.fact ?? '—')} · ${String(picked.edge.level ?? '—')} · ${String(picked.edge.status ?? '—')}`),
+														/** **命题身份**:事实不是凭空来的,它指得回产出它的那条命题。 */
+														h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('命题')}:`), ` ${String(picked.edge.claim ?? t('(旧事实没有这条关联)'))}`),
+														picked.edge.scope === null || picked.edge.scope === undefined ? null : h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('边界')}:`), ` ${String(picked.edge.scope)}`),
+													)
+												: h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('声明')}:`), ` ${String(picked.edge.from ?? '')} → ${String(picked.edge.to ?? '')}`),
+											h('span', { style: S.chipAction, onClick: () => { onFilter(picked.edge.predicate ?? null); setPicked(null) } }, t('按此谓词过滤')),
+										)
+									: h(
+											'div',
+											null,
+											h('div', { style: S.chipCardTitle }, `${String(picked.node.label ?? '')} · ${String(picked.node.ref ?? '')}`),
+											h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('连接度')}:`), ` ${String(picked.node.degree ?? 0)}${picked.node.type === null || picked.node.type === undefined ? '' : ` · ${t('类型')} ${String(picked.node.type)}`}`),
+										),
 						),
 			)
 		}
