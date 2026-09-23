@@ -16,6 +16,14 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 
 > 别的知识图谱靠抽取与断言堆边；这里的每一条边都要通过循环挣得。
 
+```bash
+# 安装（npm 包，预构建——无需构建步骤，不会触发 allowBuilds 授权）
+dsh plugin --profile web add clearai-dsh
+```
+
+重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
+
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/ontology-hero-dark.zh-CN.png">
   <img src="docs/diagrams/ontology-hero.zh-CN.png" alt="认识论循环（左）长出领域本体（右）" width="1200">
@@ -61,11 +69,34 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 ## 安装与使用
 
+## 安装与使用
+
+**推荐——从 npm 安装：**
+
+```bash
+dsh plugin --profile web add clearai-dsh
+```
+
+从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。
+
+**也提供——一条命令的安装器：**
+
 ```bash
 npx clearai-dsh install
 ```
 
-安装侧的输出**跟系统语言走**（`--lang zh|en` 可覆盖；`doctor` / `seed` / `unseed` 同样认这个开关）。运行时依赖只有 `zod`——图谱那套栈在构建期就打进客户端半了。
+底层是同一个安装；它会从 PATH（或经 npx）解析出 DSH CLI，装进 `web` profile，再把合成后的配置读回来验证，所以「成功」不是靠信。想走引导式流程就用它，`--lang zh|en` 可指定安装器输出语言。
+
+**从源码安装（开发用，不是常规路径）：**
+
+```bash
+dsh plugin --profile web add github:Clearailhc/clearai-dsh
+```
+
+Git 拉的是源码而不是构建产物，所以 pnpm ≥10 会拒绝运行 `prepare` 脚本，直到你在该 profile 的 `pnpm-workspace.yaml` 里加上 `allowBuilds` 条目。那条授权的含义是**允许该包代码在安装时于你机器上执行**——只在你读过源码后再授权，并且固定 commit。如果你只是想用 ClearAI，请用上面的 npm 安装。
+
+安装侧的输出**跟系统语言走**（`--lang zh|en` 可覆盖；`doctor` / `seed` / `unseed` 同样认这个开关）。运行时依赖只有 `zod`——图谱那套栈在构建期就打进客户端了。
+
 
 装完重启 `dsh web`（`npx @deepseek-ai/dsh web`），然后**新建会话，在顶部的模式选择器里切换到 `ClearAI`**：
 
