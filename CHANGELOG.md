@@ -2,6 +2,16 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] — 2026-09-23
+
+**文档与版本信息更新。**
+
+### Changed
+
+- 更新项目版本至 `0.2.3`。
+- 更新中文 README。
+- 更新 README。
+
 ## [0.2.2] — 2026-09-18
 
 **装的时候不再吓人。** 0.2.1 的 `npx clearai-dsh install` 会打出一串 peer 警告(react / graphology-types …),读起来像装坏了——而它们一个字都不影响运行。这一版把安装面收窄到运行时真正需要的那一个依赖,并让安装侧 CLI 按系统语言出话。
