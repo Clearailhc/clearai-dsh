@@ -16,6 +16,14 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 > Other knowledge graphs pile up edges by extraction and assertion; here every edge has to be earned through the loop.
 
+```bash
+# Install (npm package, prebuilt — no build step, no allowBuilds prompt)
+dsh plugin --profile web add clearai-dsh
+```
+
+Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
+
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/ontology-hero-dark.png">
   <img src="docs/diagrams/ontology-hero.png" alt="The epistemic loop (left) growing a domain ontology (right)" width="1200">
@@ -61,9 +69,29 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
+**Recommended — install from npm:**
+
+```bash
+dsh plugin --profile web add clearai-dsh
+```
+
+This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
+
+**Also available — one-command installer:**
+
 ```bash
 npx clearai-dsh install
 ```
+
+Same install underneath; it resolves the DSH CLI from your PATH (or through npx), installs into the `web` profile, and reads the composed config back so you are not taking "success" on faith. Use this if you prefer a guided path, or `--lang zh|en` to force the installer's output language.
+
+**Install from source (for development, not the normal path):**
+
+```bash
+dsh plugin --profile web add github:Clearailhc/clearai-dsh
+```
+
+Git fetches source rather than build artifacts, so pnpm ≥10 will refuse to run the `prepare` script until you add an `allowBuilds` entry to the profile's `pnpm-workspace.yaml`. That grant means *permission for this package's code to execute on your machine at install time* — grant it only if you have read the source, and pin a commit. If you just want to use ClearAI, use the npm install above.
 
 The installer's output follows your system language (`--lang zh|en` overrides it, `doctor` / `seed` / `unseed` take the same flag). Its only runtime dependency is `zod`; the graph stack is bundled into the client half at build time.
 
