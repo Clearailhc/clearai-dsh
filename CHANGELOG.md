@@ -2,7 +2,30 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.3] — 2026-09-23
+## [0.2.4] — 2026-09-28
+
+**跟上了宿主的预设换代。** 宿主 `0.1.7-alpha.1` 起把 agent 预设的注册从「root 目录扫描」换成了「组合里的声明行」,而 clearai-dsh 一直靠一条覆盖 `agent-presets` 行的补丁,把名册的 root 指到包内 `presets/`。那行 id 在新宿主里**已经不存在**,补丁没有落点——包照样装得上、宿主行照样起得来,但 **ClearAI 不进模式选择器**。这一版把它接上。
+
+**`0.2.3` 没有发布。** 它以 `v0.2.3` 触发了发布流水线,在「干净安装」那道门被拦下(拦的正是上面这个断裂),publish、registry 回查、建 Release 三步全部 skipped——npm 上半点副作用都没有。它原本要带的三条文档改动(版本号、中英 README)并入本版,所以这一版也包含 0.2.3 的账。
+
+> ⚠️ **宿主支持边界:本版要求宿主 ≥ `0.1.7-alpha.1`。** 在更早的宿主(≤ `0.1.6-alpha.2`,包括曾被当作 `latest` 的 `0.1.5-rc.3`)上,本版会因为找不到 `@deepseek-ai/dsh-agent-preset` 而**让 profile 起不来**。仍留在旧宿主的部署请继续用 `0.2.2`。
+
+### Added
+
+- **预设声明行**:`presets/clearai/clearai.patch.yml` —— 一条 `- id: preset-clearai` 声明行,`config.plugins` 里放整份插件列表。它由 `preset/agent.cordis.yml` **构建期派生**(与 `ui/vendor/*.js` 同一条纪律:生成物进仓库,包 = 源的纯函数),不手抄第二份。`package.json` 的 `dsh.bundle.patch` 随之由单文件改为**数组**。
+- **干净安装验收新增两条运行态断言**:boot 一次 profile,直接读 `agentPresets.list()`,要求 `clearai` 在列表里**且没有 `broken`**。静态的 `--dump-config` 看不出这件事——探针实测过:preset 里放一个**根本不存在的插件**,boot 依然完全正常,只有名册记一条 broken,界面就不显示这个预设。
+
+### Changed
+
+- **包内插件改用包内子路径**:`clearai-kernel` 与 `clearai-commands` 由 `./plugins/*.js` 改为 `clearai-dsh/presets/clearai/plugins/*.js`(`exports` 里加 `"./presets/*"` 放行)。声明行 `plugins` 的相对基准与原来的 `agent.cordis.yml` 不同,不改就会在名册里一直记着「never started」。
+- **workflow 引擎换包**:预设里那条 `@deepseek-ai/dsh-workflow-worker-thread` 在新宿主里**已经下线**,改为同 group 内的 `@deepseek-ai/dsh-workflow-ptc`(与官方 standard 预设同形,且必须与 `tool-workflow` / `tool-ralph` 同处那个 `isolate: { workflowEngine: true }` 的 realm,否则两条工具会一直「waiting for workflowEngine」)。
+- `pack/cordis.patch.yml` 里那段 `- id: agent-presets` 覆盖**已删除**:它在新宿主上没有目标行,留着只会让下一个人以为预设还靠目录扫描。
+- 文档与版本信息:项目版本更新至 `0.2.4`,中英 README 更新(原 0.2.3 的三条改动)。
+
+## [0.2.3] — 2026-09-23(未发布)
+
+> 本版**从未发布到 npm**。它是纯文档版本(版本号 + 中英 README),在发布流水线上被宿主换代造成的断裂拦下——原样发出去的话,用户在新宿主上装到的包不进预设选择器。改动已并入 [0.2.4]。
+
 
 **文档与版本信息更新。**
 
