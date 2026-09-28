@@ -60,7 +60,22 @@ console.log(`【发行物自检】${manifest.name}@${manifest.version} · ${inve
 
 // ── ① 平面三分 ──────────────────────────────────────────────────────────────
 console.log('\n① 平面三分:同一个包,三样东西各落到自己的平面')
-check('清单声明了宿主 bundle(patch)', typeof manifest.dsh?.bundle?.patch === 'string' && manifest.dsh.bundle.patch !== '', JSON.stringify(manifest.dsh?.bundle ?? null))
+/**
+ * `patch` 在 0.2.4 起由**字符串改为数组**(宿主 ≥0.1.7-alpha.1 的 web-app 自己就是数组:
+ * 每个预设一个补丁文件)。两种形态都接受;并且——比形态更要紧的——**声明的每个补丁文件
+ * 都必须真的在包里**:声明一个不存在的文件,宿主加载时会直接失败。
+ */
+const patchList = Array.isArray(manifest.dsh?.bundle?.patch)
+	? manifest.dsh.bundle.patch
+	: typeof manifest.dsh?.bundle?.patch === 'string' && manifest.dsh.bundle.patch !== ''
+		? [manifest.dsh.bundle.patch]
+		: []
+check('清单声明了宿主 bundle(patch)', patchList.length > 0, JSON.stringify(manifest.dsh?.bundle ?? null))
+check(
+	'声明的每个补丁文件都真的在包里',
+	patchList.every((rel) => has(String(rel).replace(/^\.\//, ''))),
+	patchList.map((rel) => `${rel}${has(String(rel).replace(/^\.\//, '')) ? '' : ' (缺)'}`).join(', '),
+)
 check('清单声明了浏览器半(platform + inject)', manifest.dsh?.client?.platform === 'web' && Array.isArray(manifest.dsh.client.inject) && manifest.dsh.client.inject.length > 0, JSON.stringify(manifest.dsh?.client ?? null))
 check('出口齐:宿主半 / 浏览器半 / 补丁 / 清单', ['exports', 'main', 'bin'].every((key) => manifest[key] !== undefined) && manifest.exports['./client'] !== undefined && manifest.exports['./cordis.patch.yml'] !== undefined, Object.keys(manifest.exports ?? {}).join(','))
 check('宿主半与浏览器半都真的在包里', has('lib/host.js') && has('lib/client.js') && has('lib/fold.js'))
