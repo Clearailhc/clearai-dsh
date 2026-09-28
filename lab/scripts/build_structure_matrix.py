@@ -467,9 +467,17 @@ def main() -> None:
     lines.append("")
     lines.append("  —— 各口径下的未覆盖真例 ——")
     for label, f_ in ((">=1.5", fn_center), (">=1.0", fn_impl), (">=0.5", fn_text)):
-        lines.append(f"    [阈值 {label}] {len(f_)} 条: " +
-                     ("无" if not f_ else "、".join(f"{r['id']}{r['name']}" for r in f_[:6])
-                      + ("..." if len(f_) > 6 else "")))
+        lines.append(f"    [阈值 {label}] {len(f_)} 条(完整清单,不截断):")
+        if not f_:
+            lines.append("      (无)")
+        for r in f_:
+            lines.append(f"      - {r['id']} {r['name']}  (脱义度={r['dereference']}, "
+                         f"条件A={r['cond_a']})")
+    lines.append(f"    [A∨B 口径] {len(fn)} 条(完整清单):")
+    for r in fn:
+        lines.append(f"      - {r['id']} {r['name']}  (脱义度={r['dereference']}, 条件B={r['cond_b']})")
+    lines.append("    [修订前基线] 仅 A∨B 时的误判假例数见下方 FP(修订前);"
+                 "硬假阳性 0 是加入条件 C 后的结果,单独引用 0 会高估判据。")
     lines.append("")
     lines.append(f"  —— 修订前口径(仅 A 或 B) ——")
     fp_old = [r for r in neg if mech_abstract(r)]
