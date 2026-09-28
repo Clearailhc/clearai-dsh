@@ -24,6 +24,7 @@ from collections import Counter
 REPORT = os.path.join("products", "reports", "抽象-heat-memes-2026.md")
 SAMPLES = os.path.join("lab", "data", "meme_samples.csv")
 MATRIX = os.path.join("lab", "data", "structure_matrix.csv")
+MANUAL = os.path.join("lab", "data", "manual_codes.csv")
 
 CTX_SHORT = {"完全剥离": "完全剥离", "剥离但可回溯": "可回溯", "语境保留": "语境保留"}
 AGG_SHORT = {"攻击性": "攻击性", "攻击性已剥离": "已剥离", "无攻击性": "无"}
@@ -32,6 +33,20 @@ AGG_SHORT = {"攻击性": "攻击性", "攻击性已剥离": "已剥离", "无�
 def build_appendix() -> str:
     samples = list(csv.DictReader(open(SAMPLES, encoding="utf-8-sig")))
     rows = list(csv.DictReader(open(MATRIX, encoding="utf-8-sig")))
+    manual = {r["id"]: r for r in csv.DictReader(open(MANUAL, encoding="utf-8-sig"))}
+    for r in rows:
+        opposed = bool(manual.get(r["id"], {}).get("label_opposed"))
+        mech = (r["cond_a"] in ("靠近中心", "边缘")) or (r["cond_b"] == "形式驱动")
+        r["verdict"] = ("边界（公共标签反对）" if (mech and opposed) else
+                        "抽象" if mech else "非抽象")
+        reasons = []
+        if r["cond_a"] in ("靠近中心", "边缘"):
+            reasons.append(f"条件A={r['cond_a']}")
+        if r["cond_b"] == "形式驱动":
+            reasons.append("条件B=形式驱动")
+        if opposed:
+            reasons.append("条件C=公共标签反对")
+        r["reason"] = " + ".join(reasons) if reasons else "三条件均不满足"
     n = len(rows)
     L: list[str] = []
 
@@ -87,6 +102,14 @@ def build_appendix() -> str:
     dev = [r for r in rows
            if r["primary_family"] in ("F0", "F1", "F3", "F5", "F6", "F7", "F8")
            and r["dereference"] not in _expected(r["primary_family"])]
+    vc = Counter(r["verdict"] for r in rows)
+    L.append("**逐条判定的汇总**（判定规则见 §3；附录 B 每行都带「判定」与「判定理由」两列）：")
+    L.append("")
+    L.append("| 判定 | 条数 |")
+    L.append("|---|---|")
+    for k in ("抽象", "边界（公共标签反对）", "非抽象"):
+        L.append(f"| {k} | {vc.get(k, 0)} |")
+    L.append("")
     L.append(f"**族定义偏离特例**：{len(dev)} 条")
     for r in dev:
         L.append(f"- {r['id']} {r['name']}：属 {r['primary_family']} 但脱义度为「{r['dereference']}」")
@@ -101,13 +124,13 @@ def build_appendix() -> str:
              "A＝判别条件 A；B＝判别条件 B。**表中 A/B/语境/攻击性四列均为上述缩写**，"
              "全称见 `structure_matrix.csv` 与 `manual_codes.csv`。")
     L.append("")
-    L.append("| id | 名称 | 主族 | 参与门槛 | 脱义度 | 语境 | 成本 | 攻击性 | A | B |")
-    L.append("|---|---|---|---|---|---|---|---|---|---|")
+    L.append("| id | 名称 | 主族 | 参与门槛 | 脱义度 | 语境 | 成本 | 攻击性 | A | B | **判定** | **判定理由** |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
         L.append(f"| {r['id']} | {r['name']} | {r['primary_family']} | {r['axis0_gate']} | "
                  f"{r['dereference']} | {CTX_SHORT.get(r['axis2_context'], r['axis2_context'])} | "
                  f"{r['axis3_cost']} | {AGG_SHORT.get(r['axis4_aggression'], r['axis4_aggression'])} | "
-                 f"{r['cond_a']} | {r['cond_b']} |")
+                 f"{r['cond_a']} | {r['cond_b']} | **{r['verdict']}** | {r['reason']} |")
     L.append("")
     L.append("**统计口径说明**：")
     L.append("")
