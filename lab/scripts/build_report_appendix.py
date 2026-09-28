@@ -100,10 +100,10 @@ def render() -> str:
              "攻击性＝轴 4（攻击性／**已剥离**＝攻击性已剥离／无＝无攻击性）。"
              "**「判定」为三分类，「二元判定」为判据要求的二分类**（边界成员归入「非抽象」）。")
     L.append("")
-    L.append("| id | 名称 | 主族 | 二元判定 | 判定 | 判定理由 | 参与门槛 | 脱义度 | 语境 | 成本 | 攻击性 | A | B |")
-    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+    L.append("| id | 名称 | 主族 | **等级** | 二元判定 | 判定 | 判定理由 | 参与门槛 | 脱义度 | 语境 | 成本 | 攻击性 | A | B |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
-        L.append(f"| {r['id']} | {r['name']} | {r['primary_family']} | **{r['verdict_binary']}** | "
+        L.append(f"| {r['id']} | {r['name']} | {r['primary_family']} | {r.get('evidence_level','—')} | **{r['verdict_binary']}** | "
                  f"{r['verdict']} | {r.get('verdict_reason', '')} | {r['axis0_gate']} | "
                  f"{r['dereference']} | {CTX_SHORT.get(r['axis2_context'], r['axis2_context'])} | "
                  f"{r['axis3_cost']} | {AGG_SHORT.get(r['axis4_aggression'], r['axis4_aggression'])} | "
