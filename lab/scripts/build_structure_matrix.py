@@ -248,6 +248,7 @@ def classify(row: dict) -> dict:
         deref_score=d_score if d_score is not None else "NA",
         context_score=c_score if c_score is not None else "NA",
         cond_a=cond_a,
+        cond_b=COND_B_MAP.get(row["id"], "未编码"),
         serious_source="是" if is_serious else "否",
     )
 
