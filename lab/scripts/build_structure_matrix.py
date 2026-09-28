@@ -278,6 +278,9 @@ def classify(row: dict) -> dict:
         cond_a=cond_a,
         cond_b=COND_B_MAP.get(row["id"], "未编码"),
         serious_source="是" if is_serious else "否",
+        axis0_gate=("需要理解才能参与" if deref == "原义完整" else
+                    "理解后不影响参与" if deref in ("弱脱义", "语义反转") else
+                    "不需要理解即可参与"),
         axis2_context=CONTEXT_LEVEL.get(deref, "未编码"),
         axis3_cost=COST_BY_MECHANISM.get(mech, "未编码"),
         axis4_aggression=aggress(row),
@@ -319,7 +322,7 @@ def main() -> None:
     fields = list(rows[0].keys()) + [
         "primary_family", "family_name", "candidate_families",
         "deref_score", "context_score", "cond_a", "cond_b", "serious_source",
-        "axis2_context", "axis3_cost", "axis4_aggression",
+        "axis0_gate", "axis2_context", "axis3_cost", "axis4_aggression",
     ]
 
     mp = os.path.join("lab", "data", "structure_matrix.csv")
@@ -364,6 +367,13 @@ def main() -> None:
     lines.append("[零成员的族]")
     lines.append("  " + ("无" if not family_empty else ", ".join(family_empty)))
     lines.append("")
+    lines.append("[轴 2/3/4 与参与门槛的分布]")
+    for col, name in (("axis0_gate", "参与门槛(轴0)"), ("axis2_context", "轴2 语境"),
+                      ("axis3_cost", "轴3 成本"), ("axis4_aggression", "轴4 攻击性")):
+        dist = "、".join(f"{k} {v}" for k, v in Counter(r[col] for r in out_rows).most_common())
+        lines.append(f"  {name}: {dist}")
+    lines.append("")
+
     lines.append("[族定义 vs 族成员:脱义度偏离的待说明特例]")
     deviations = []
     for r in out_rows:
@@ -524,8 +534,13 @@ def main() -> None:
             rule="原型+家族相似:一个现象属于该族,只要它与该族原型在至少两个属性轴上接近,不必满足任何充要条件",
         ),
         axes=[
-            dict(id="axis1", name="脱义度", levels=["零所指", "完全脱义", "部分脱义", "弱脱义", "零脱义"]),
-            dict(id="axis2", name="去语境化度", levels=["完全剥离", "剥离但可回溯", "语境保留"]),
+            dict(id="axis0", name="参与门槛",
+                 levels=sorted(set(r["axis0_gate"] for r in out_rows))),
+            dict(id="axis1", name="脱义度",
+                 levels=[k for k, _ in Counter(r["dereference"] for r in out_rows).most_common()]),
+            dict(id="axis2", name="去语境化度",
+                 levels=["完全剥离", "剥离但可回溯", "语境保留"],
+                 note="经检验由 axis1 一一映射决定,无独立信息量"),
             dict(id="axis3", name="参与成本", levels=["极低", "低", "中", "高"]),
             dict(id="axis4", name="攻击性", levels=["攻击性", "攻击性已剥离", "无攻击性"]),
         ],
@@ -543,7 +558,8 @@ def main() -> None:
         families={k: dict(**v, member_count=fam_counts.get(k, 0),
                           members=by_fam.get(k, [])) for k, v in FAMILIES.items()},
         inference_conditions=[
-            "A 脱义/去语境测试:≥1.5 靠近中心 / 0.5–1 边缘 / 0 不属于",
+            "A 脱义/去语境测试:≥1.5 靠近中心 / 1.0–1.5 边缘 / <1.0 不属于"
+            "(实现阈值 ≥1.0;阈值敏感性见 structure_check.txt)",
             "B 替换测试:保留形式替换意义,仍能用则属抽象机制,否则只是普通热梗",
         ],
         corpus=dict(source="lab/data/meme_samples.csv", n=len(out_rows)),
