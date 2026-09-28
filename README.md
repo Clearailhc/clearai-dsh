@@ -77,6 +77,8 @@ dsh plugin --profile web add clearai-dsh
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
 
+**No terminal needed:** open **Settings → Plugins** and enter the package name `clearai-dsh`; that is the host's own install path. Once the package is listed in the [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog it also appears in **[dsh-market](https://github.com/dsh-market/dsh-market)**'s search, where it installs in one click — that market installs only what the catalog lists.
+
 **Also available — one-command installer:**
 
 ```bash

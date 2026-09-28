@@ -30,28 +30,43 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 | `ui/lib/invariant.js` | `lib/invariant.js` |
 | `ui/lib/domain-language.js` | `lib/domain-language.js` |
 | `ui/lib/client.js` | `lib/client.js` |
+| `locale/` | `locale/` —— 插件列表里的标题与一句话介绍，一个语言一个文件 |
+| `brand/` | `brand/` —— README 的位图，加上插件列表的图标 `brand/icon.svg` |
 
 `dist/` 是生成物，不进版本库。
 
-## 预设怎么进名册
+## 预设怎么进选择器
 
-宿主半随补丁层自动生效；agent 预设不能——DSH 的预设名册**只扫 root 目录**，而后端包没法自己声明一个 root。
+宿主半随补丁层自动生效；agent 预设不能——预设是**组合里的一条声明行**，这条行得由包自己贡献。
 
-于是补丁层现场把 root 算出来：
+宿主 `0.1.7-alpha.1` 起名册不再扫 root 目录：一个预设就是一条 `- id: preset-<id>` 行（`@deepseek-ai/dsh-agent-preset`），插件列表整个放在它的 `config.plugins` 里：
 
 ```yaml
-- id: agent-presets
-  config:
-    roots:
-      - path: !!js "…new URL('node_modules/clearai-dsh/presets/', baseUrl)…"
-        trust: system
+- insert:
+    - id: preset-clearai
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: clearai
+        plugins:
+          - name: clearai-dsh/presets/clearai/plugins/clearai-kernel.js
+          # …
 ```
 
-经 `dsh plugin add` 装的包一定落在 profile 的 `node_modules` 里，所以这个路径是可预测的。它不需要任何安装期写入、不往用户家目录塞副本，归属落在 `system` 信任层。想改预设的人可以把它复制到自己的预设根（或用 `bin/clearai.mjs seed` 播种——它记哈希、**不覆盖**人改过的文件）。
+这份文件（`presets/clearai/clearai.patch.yml`）**由 `preset/agent.cordis.yml` 在构建期派生**（一个源，不手抄第二份），经清单里的 `dsh.bundle.patch` 挂上。安装期不写任何东西，也不往用户家目录塞副本。
 
-补丁层会替换**整份** `agent-presets` config，所以那里列的键要与部署里那份保持一致。
+`0.1.6-alpha.2` 及更早的宿主没有这条行、只扫 root 目录；`0.2.3` 是最后能服务它们的版本。想改预设的人仍然可以用 `bin/clearai.mjs seed` 播种到自己的根——它记哈希、**不覆盖**人改过的文件。
 
 ## 安装
+
+不开终端：**设置 → 插件列表**里填包名 `clearai-dsh`，走的是宿主自己那条安装路径。等这个包进了 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录之后，也可以在 **dsh-market** 里搜到并一键安装——那个市场只装目录里有的东西。
+
+开终端：
+
+```bash
+dsh plugin --profile web add clearai-dsh
+```
+
+下面这条引导式的是同一次安装，只是装完把组合读回来报一遍：
 
 ```bash
 npx clearai-dsh install

@@ -1,0 +1,17 @@
+<!--
+  ClearAI 插件图标 —— 与 logo.svg 同一套几何,只把主笔的颜色**写死**。
+
+  为什么单开一份而不是直接指 logo.svg:主笔是 currentColor,而在插件列表里它是以
+  `<img>`/data URL 读进来的,**没有可以继承的 CSS 上下文**——currentColor 落到默认的
+  黑色,暗色卡片上就只剩那颗点。品牌位图又有明暗两版(logo-512 / logo-512-dark),
+  而 `icon` 只能给一个文件。所以这里取一个明暗都读得出的中性色:环 #98A2B3 打底,
+  点仍是产品里「采纳 / 落定」的 emerald。
+
+  几何与 logo.svg 逐字相同(环心线 R=326、笔画 118、开口 90° 以 -35° 为中心;点 r=104),
+  改主标时这一份也要跟着改。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <circle cx="512" cy="512" r="326" stroke="#98A2B3" stroke-width="118" pathLength="360"
+          stroke-dasharray="270 90" stroke-linecap="round" transform="rotate(10 512 512)"/>
+  <circle cx="792" cy="308" r="104" fill="#10B981"/>
+</svg>

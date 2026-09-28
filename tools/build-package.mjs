@@ -15,6 +15,8 @@
  *   ui/lib/fold.js               → lib/fold.js             (纯 fold,宿主半 import 它)
  *   ui/lib/invariant.js          → lib/invariant.js        (宿主不变量伴生件;宿主那侧 import 它)
  *   ui/lib/client.js             → lib/client.js           (浏览器半)
+ *   locale/                      → locale/                  (插件列表的显示文案:标题 + 一句话介绍,按语言分文件)
+ *   brand/                       → brand/                   (README 位图 + 插件列表图标 brand/icon.svg)
  *   preset/template/              → presets/clearai/template/
  *                                  (工作区模板:随包走,内核缺省从这里找)
  *
@@ -80,6 +82,10 @@ if (existsSync(join(PORT, 'brand'))) {
 		copy(join(PORT, 'brand', name), join(OUT, 'brand', name))
 	}
 }
+// 插件列表的显示文案随包走:宿主按 `<包名>/locale/<语言>.json` 读 `meta.title` / `meta.description`,
+// 缺了才回退到清单的 name / description(那时列表里显示的是包名 —— 也就是「没写介绍」)。
+// 语言由文件名决定,所以整目录拷,不在构建期挑语言。
+if (existsSync(join(PORT, 'locale'))) copy(join(PORT, 'locale'), join(OUT, 'locale'))
 
 // ── ② 预设:整份随包走(skills 走 baseUrl,所以自洽) ─────────────────────────
 for (const name of readdirSync(join(PORT, 'preset'))) {

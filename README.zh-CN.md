@@ -77,6 +77,8 @@ dsh plugin --profile web add clearai-dsh
 
 从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。
 
+**不想开终端**：打开**设置 → 插件列表**，填包名 `clearai-dsh` 即可，走的是宿主自己那条安装路径。等它进了 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录，也能在 **[dsh-market](https://github.com/dsh-market/dsh-market)** 里搜到并一键安装——那个市场只装目录里有的东西。
+
 **也提供——一条命令的安装器：**
 
 ```bash

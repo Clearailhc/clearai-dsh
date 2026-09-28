@@ -2,6 +2,25 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6] — 2026-09-28
+
+**插件列表里终于写了介绍。** 宿主从 `locale/<语言>.json` 的 `meta.title` / `meta.description` 与清单顶层的 `icon` 读一个插件的显示文字和图标;**三样都缺时回退到包名 + npm 的 description + 默认图**——而那正是我们一直显示的东西:标题 `clearai-dsh`(包名)、介绍 "ClearAI: The Epistemic Loop, native to DSH."(README 的 tagline)、一个通用图标。装上它的人在一个「插件市场」式的列表里看到的,是一句没有说清装上得到什么的英文。
+
+这一版把这三样补上,并给顺带发现的两处过时改了账:`docs/dsh-integration` 里「预设怎么进名册」还写着 `0.2.4` 之前的 root 目录机制(名册换代时它没跟上);README 的安装段也没提现在这条官方路径。
+
+### Added
+
+- **`locale/en.json` + `locale/zh.json`**:标题 `ClearAI`,一句话介绍分中英两份(界面是中文时不读英文)。宿主按文件名认语言,`en.json` 是基准。
+- **`brand/icon.svg`**:插件列表的图标。与 `logo.svg` 同一套几何,只把主笔颜色**写死**——主标那支是 `currentColor`,而列表里它是以 data URL 读进来的、没有可继承的 CSS 上下文,`currentColor` 会落到黑色,暗色卡片上只剩那颗点;品牌位图虽有两版,`icon` 却只能给一个文件。取中性环色 + emerald 点,明暗两套主题都读得出。
+- **`engines.dsh: ">=0.1.7-alpha.1"`**:宿主下界写进清单,市场据此显示要求(此前只有描述里那句话)。
+- **`screenshots.json`**:给市场卡片声明 5 张截图(四张英文面板 + 一张本体图工作区)。不声明时市场从 README 自动抽取,而我们的 README 里只有 logo 与星标图。
+
+### Changed
+
+- **构建把 `locale/` 打进发行物**(装配表与 `package.json` 的 `files` / `exports` 同步):`exports` 不放行 `./locale/*.json`,宿主解析不到;不进 `files`,发出去的包里就没有。图标走已有的 `brand/` 整目录拷贝。
+- **自检门加了「可被发现」这一关**:`verify-package` 判文件在不在、标题是不是包名、`exports` / `files` / `engines.dsh` 齐不齐;`verify-clean-install` 则**调宿主自己的 `readPluginMeta`** 对装好的那个包算一遍——「插件列表里会显示什么」从此是算出来的,不是我们复述的规则。这一关是先有的诊断:同一段宿主代码在我们补之前返回的正是 `{title: "clearai-dsh", description: "ClearAI: The Epistemic Loop, native to DSH."}`。
+- **文档跟上现状**:`docs/dsh-integration` 的「预设怎么进名册」按**声明行**重写(`preset-clearai` 那一条,构建期由 `preset/agent.cordis.yml` 派生,宿主 ≥ `0.1.7-alpha.1`),并给「源 → 包」表补上 `locale/` 与 `brand/` 两行;README(中英)的安装段补上不开终端的那条路(设置 → 插件列表填包名)与市场收录后的那条。
+
 ## [0.2.5] — 2026-09-28
 
 **跟上了宿主的会话格式 v4(消息来源改成生产者自有)。** 宿主 `0.1.7-rc.2` 起,`source.kind` 就是**生产者自己的身份**:共享包装 `{ kind: 'plugin', plugin }` 已退役,原生接纳在落账那一步**当场拒绝**它,报 `format v4 message requires a producer-owned source kind`。内核一直用旧包装下发运行态卡与外脑事实(合并目录 / 运行档 / 候选技能 / 世界线回灌),于是**每一轮都在落账那一步整轮失败**——卡片与事实一条都进不去。而单测当时全绿:它们直接调 fold,不经过宿主的接纳。

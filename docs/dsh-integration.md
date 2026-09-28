@@ -30,28 +30,43 @@ The package is a pure function of the source; `node tools/build-package.mjs` per
 | `ui/lib/invariant.js` | `lib/invariant.js` |
 | `ui/lib/domain-language.js` | `lib/domain-language.js` |
 | `ui/lib/client.js` | `lib/client.js` |
+| `locale/` | `locale/` — the plugin list's title and one-line description, one file per language |
+| `brand/` | `brand/` — README artwork plus the plugin-list icon (`brand/icon.svg`) |
 
 `dist/` is generated and never committed.
 
-## How the preset reaches the roster
+## How the preset reaches the picker
 
-The host half travels in the patch layer automatically. The agent preset does not: DSH's preset roster only scans **root directories**, and a package cannot declare one by itself.
+The host half travels in the patch layer automatically. The agent preset does not: a preset is a **declaration line in the composition**, and the package has to contribute that line itself.
 
-The patch therefore computes the root on the spot:
+Since host `0.1.7-alpha.1` the roster no longer scans root directories. Each preset is one `- id: preset-<id>` row (`@deepseek-ai/dsh-agent-preset`) whose `config.plugins` carries the whole plugin list:
 
 ```yaml
-- id: agent-presets
-  config:
-    roots:
-      - path: !!js "…new URL('node_modules/clearai-dsh/presets/', baseUrl)…"
-        trust: system
+- insert:
+    - id: preset-clearai
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: clearai
+        plugins:
+          - name: clearai-dsh/presets/clearai/plugins/clearai-kernel.js
+          # …
 ```
 
-A package installed through `dsh plugin add` always lands in the profile's `node_modules`, so that path is predictable. This needs no install-time writes, no seeding into the user's home, and keeps provenance in the `system` trust layer. Users who want to edit the preset can copy it to their own preset root (or use `bin/clearai.mjs seed`, which records hashes and never overwrites edits).
+That file — `presets/clearai/clearai.patch.yml` — is **derived from `preset/agent.cordis.yml` at build time** (one source, never a hand-copied second list) and is mounted through the manifest's `dsh.bundle.patch`. Nothing is written at install time and no copy lands in the user's home.
 
-The patch layer replaces the whole `agent-presets` config, so the keys listed there must stay aligned with the deployment's own values.
+Hosts at or below `0.1.6-alpha.2` have no such row and scan a root directory instead; `0.2.3` is the last release that could serve them. Users who want to edit the preset can still seed it into their own root with `bin/clearai.mjs seed`, which records hashes and never overwrites edits.
 
 ## Install
+
+Without a terminal: **Settings → Plugins** takes the package name `clearai-dsh` and installs it through the host's own path. Once the package is in the [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog, it can also be installed from **dsh-market**'s search in one click — that market installs only what the catalog lists.
+
+With a terminal:
+
+```bash
+dsh plugin --profile web add clearai-dsh
+```
+
+The guided variant below is the same install with the composition read back afterwards:
 
 ```bash
 npx clearai-dsh install

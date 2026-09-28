@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -107,7 +107,7 @@ check('bin 的值是 npm 规范化过的写法(不带 ./)', binValues.every((val
 
 // ── ② 发行物干净 ────────────────────────────────────────────────────────────
 console.log('\n② 发行物干净:只带该带的')
-const allowedRoots = ['package.json', 'cordis.patch.yml', 'INVENTORY.txt', 'README.md', 'README.zh-CN.md', 'LICENSE', 'CHANGELOG.md', 'brand', 'lib', 'presets', 'bin']
+const allowedRoots = ['package.json', 'cordis.patch.yml', 'INVENTORY.txt', 'README.md', 'README.zh-CN.md', 'LICENSE', 'CHANGELOG.md', 'brand', 'lib', 'locale', 'presets', 'bin']
 const stray = inventory.filter((rel) => !allowedRoots.some((root) => rel === root || rel.startsWith(`${root}/`)))
 check('包内没有白名单之外的文件', stray.length === 0, stray.slice(0, 5).join(', '))
 const forbidden = /(^|\/)(\.env|\.git|node_modules|coverage|__pycache__|\.pytest_cache)(\/|$)|\.(zst|tgz|log)$/
@@ -241,6 +241,44 @@ try {
 } catch (error) {
 	check('npm pack 能跑通', false, String(error?.message ?? error).slice(0, 200))
 }
+
+// ── 工程判据三:可被发现(插件列表读的就是这些) ─────────────────────────────
+/**
+ * 宿主读的是 `<包名>/locale/<语言>.json` 的 `meta.title` / `meta.description`,以及清单顶层的
+ * `icon`;三者缺一就回退到包名 / npm 的 description / 默认图 —— 列表里看起来就是「没写介绍」。
+ * 这几条只判「有没有、对不对」;**宿主真读出来的是什么**由 `verify-clean-install.mjs`
+ * 调宿主的 `readPluginMeta` 现场验(那一步才是这一页的判据)。
+ */
+console.log('\n⑧ 可被发现:插件列表的标题 / 介绍 / 图标')
+const ICON_EXTENSIONS = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp'])
+const MAX_ICON_BYTES = 256 * 1024
+{
+	const iconRel = typeof manifest.icon === 'string' ? manifest.icon : ''
+	const iconFile = iconRel === '' ? '' : join(DIST, iconRel)
+	const iconOk = iconRel !== '' && !iconRel.startsWith('/') && !/^[A-Za-z][A-Za-z\d+.-]*:/.test(iconRel) && !iconRel.split('/').includes('..') && existsSync(iconFile) && statSync(iconFile).isFile()
+	check('清单声明了 icon,且是包内真实存在的相对路径', iconOk, iconRel === '' ? '(没声明)' : iconRel)
+	check('图标是 SVG/PNG/JPEG/WebP,且 ≤256 KiB(宿主只收这四种)', iconOk && ICON_EXTENSIONS.has(extname(iconRel).toLowerCase()) && statSync(iconFile).size <= MAX_ICON_BYTES, iconOk ? `${extname(iconRel)} · ${statSync(iconFile).size} 字节` : '(没有可读的图标)')
+}
+{
+	const localeDir = join(DIST, 'locale')
+	const names = existsSync(localeDir) ? readdirSync(localeDir).filter((name) => name.endsWith('.json')) : []
+	const languages = names.map((name) => {
+		let meta = null
+		try {
+			meta = JSON.parse(readFileSync(join(localeDir, name), 'utf8')).meta ?? null
+		} catch {
+			meta = null
+		}
+		return { lang: name.slice(0, -5), title: meta?.title ?? null, description: meta?.description ?? null }
+	})
+	check('带了 locale/en.json(宿主从它开始认语言)', names.includes('en.json'), names.join(', ') || '(没有 locale/)')
+	check('带了 locale/zh.json(中文界面不必读英文)', names.includes('zh.json'), names.join(', ') || '(没有 locale/)')
+	check('每种语言的标题与介绍都非空', languages.length > 0 && languages.every((item) => typeof item.title === 'string' && item.title.trim() !== '' && typeof item.description === 'string' && item.description.trim() !== ''), JSON.stringify(languages))
+	check('标题不是包名(那是「没写介绍」的回退值)', languages.every((item) => item.title !== manifest.name), JSON.stringify(languages.map((item) => `${item.lang}:${item.title}`)))
+}
+check('exports 放行 ./locale/*.json(不放行宿主解析不到)', manifest.exports?.['./locale/*.json'] === './locale/*.json', String(manifest.exports?.['./locale/*.json'] ?? '(没有这条)'))
+check('files 带上 locale(不带就发不出去)', (manifest.files ?? []).includes('locale'))
+check('engines.dsh 声明了宿主下界(市场据此显示要求)', typeof manifest.engines?.dsh === 'string' && manifest.engines.dsh.trim() !== '', String(manifest.engines?.dsh ?? '(没声明)'))
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failures.length > 0) {

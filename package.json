@@ -1,10 +1,11 @@
 {
   "name": "clearai-dsh",
-  "version": "0.2.5",
-  "description": "ClearAI: The Epistemic Loop, native to DSH.",
+  "version": "0.2.6",
+  "description": "ClearAI: an ontology-first DSH agent preset — evidence-checked research that grows into a domain ontology.",
   "type": "module",
   "private": false,
   "license": "Apache-2.0",
+  "icon": "./brand/icon.svg",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Clearailhc/clearai-dsh.git"
@@ -15,6 +16,7 @@
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
     "./invariant": "./lib/invariant.js",
     "./presets/*": "./presets/*"
   },
@@ -25,6 +27,7 @@
     "lib",
     "presets",
     "bin",
+    "locale",
     "cordis.patch.yml",
     "CHANGELOG.md",
     "README.md",
@@ -33,7 +36,8 @@
     "brand"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "dsh": ">=0.1.7-alpha.1"
   },
   "dependencies": {
     "zod": "^4.6.1"
@@ -62,6 +66,8 @@
     "plugin",
     "clearai",
     "agent-preset",
+    "ontology",
+    "epistemic-loop",
     "evidence",
     "worldline"
   ],

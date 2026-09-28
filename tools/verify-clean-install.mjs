@@ -32,7 +32,7 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
@@ -281,6 +281,31 @@ if (spec === null) {
 		return (hit.stdout ?? '').trim() !== ''
 	})
 	check('⑥ 包内没有本机路径(仓库根 / 这次装到哪儿)', leaks.length === 0, leaks.join(', '))
+	/**
+	 * **插件列表里会显示什么**:判据不是我们复述规则,而是叫宿主自己的 `readPluginMeta`
+	 * 拿**装好的这个包**算一遍。它读 `<包名>/locale/<语言>.json` 的 `meta.title` /
+	 * `meta.description` 与清单顶层的 `icon`;全缺时回退成包名 + npm 的 description
+	 * (2026-09-28 实测到的就是那个形状:标题 `clearai-dsh`、介绍是 README 的 tagline)。
+	 * 所以这里同时钉住「有」与「不是回退值」——标题等于包名就是没写介绍。
+	 */
+	{
+		const installRoot = CLI_PREFIX ?? CHECKOUT
+		const bootPath = join(installRoot, 'node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js')
+		if (!existsSync(bootPath)) {
+			check('⑦ 拿得到宿主的 @deepseek-ai/dsh-app-boot(显示元数据要靠它算)', false, bootPath)
+		} else {
+			const { readPluginMeta } = await import(pathToFileURL(bootPath).href)
+			const meta = readPluginMeta('clearai-dsh', pathToFileURL(join(PROFILE, 'package.json')).href)
+			check('⑦ 宿主读显示元数据不报诊断', meta?.error === undefined, String(meta?.error ?? '').slice(0, 160))
+			check('⑦′ 标题是产品名,不是包名(不是回退值)', meta?.title?.en === 'ClearAI' && meta?.title?.zh === 'ClearAI', JSON.stringify(meta?.title ?? null))
+			check(
+				'⑦″ 介绍按语言各有一份(中文界面不必读英文)',
+				typeof meta?.description?.en === 'string' && meta.description.en.trim() !== '' && typeof meta?.description?.zh === 'string' && meta.description.zh.trim() !== '',
+				JSON.stringify(meta?.description ?? null).slice(0, 160),
+			)
+			check('⑦‴ 图标被宿主收下(data URL,不是默认图)', typeof meta?.icon === 'string' && meta.icon.startsWith('data:image/'), String(meta?.icon ?? '').slice(0, 24))
+		}
+	}
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
