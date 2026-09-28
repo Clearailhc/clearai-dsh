@@ -3625,11 +3625,32 @@ window.__ModuleLoader__.load({
 			// 面板的 CSS(原生那套药丸按钮与主题令牌):带 data-plugin 标记,插件卸载时一起收掉。
 			ctx.effect(installStyles, 'clearai: panel css')
 
-			const isCurrentPreset = () => {
+			/**
+			 * **当前主视图里的那个会话**。
+			 *
+			 * 这里原来是 `sessions.list.getSnapshot().current`(照抄当年的原生 chat)。宿主的
+			 * `SessionListState` 现在只有 `{ ids, byId, phase, projectionsBySession }` —— **没有
+			 * `current`**:读到的永远是 `undefined`,于是 `isCurrentPreset()` 恒为 false,
+			 * `occupy()` / `syncRail()` **一个座位都不注册**。失效形态:模式在、宿主半一切正常、
+			 * 右栏只剩宿主自带的页签、中栏没有「产物」——而且不报错。
+			 *
+			 * 宿主自己的取法(两处都用它):在 `byId` 里找 `retainedBy.mainView > 0` 的那一行
+			 * (`dsh-client-ui-open-in-app`、`dsh-client-ui-agent-preset`)。老宿主若还留着
+			 * `current`,照旧认它——那一份更精确。
+			 */
+			const currentSessionRow = () => {
 				try {
 					const state = sessions.list.getSnapshot()
-					const session = state === undefined || state.current === undefined ? undefined : state.byId[state.current]
-					const preset = session === undefined || session === null ? undefined : session.projectionValues?.agentPreset
+					if (state === undefined || state === null) return undefined
+					if (typeof state.current === 'string' && state.current !== '') return state.byId?.[state.current]
+					return Object.values(state.byId ?? {}).find((row) => (row?.retainedBy?.mainView ?? 0) > 0)
+				} catch {
+					return undefined
+				}
+			}
+			const isCurrentPreset = () => {
+				try {
+					const preset = currentSessionRow()?.projectionValues?.agentPreset
 					return typeof preset === 'string' && preset === PRESET_ID
 				} catch {
 					return false
@@ -3803,19 +3824,15 @@ window.__ModuleLoader__.load({
 			 * 三处入口(产物 / 技能 / 记忆文件)共用这一个闭包,所以是一处坏、三处全坏。
 			 *
 			 * 取法:座位自己的 `props.sessionId` 优先(更精确);props 没有时兜底读当前会话
-			 * (原生 chat 同款:`sessions.list.getSnapshot().current`)。兜底在这里成立,是因为
-			 * 面板**只在当前会话的预设是 clearai 时挂载**(`isCurrentPreset`,见上),会话切走
-			 * 时面板先注销 —— 不存在「面板还挂着、行的会话已经换了」的窗口。
+			 * (`currentSessionRow`,见上)。兜底在这里成立,是因为面板**只在当前会话的预设是
+			 * clearai 时挂载**(`isCurrentPreset`,见上),会话切走时面板先注销 ——
+			 * 不存在「面板还挂着、行的会话已经换了」的窗口。
 			 */
 			const sessionIdFor = (props) => {
 				const fromProps = props === null || props === undefined ? undefined : props.sessionId
 				if (typeof fromProps === 'string' && fromProps !== '') return fromProps
-				try {
-					const current = sessions.list.getSnapshot()?.current
-					return typeof current === 'string' && current !== '' ? current : undefined
-				} catch {
-					return undefined
-				}
+				const id = currentSessionRow()?.id
+				return typeof id === 'string' && id !== '' ? id : undefined
 			}
 			/** 每个座位按自己的 props 造一个打开器:共用一个「反正差不多」的闭包就是上面那个 bug。 */
 			const openPreviewFor = (props) => (path) => openNativePreview(sidebarRight, sessionIdFor(props), path)

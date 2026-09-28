@@ -3,7 +3,7 @@
 """结构解剖(s3)与本体论快照(s9)。
 
 读取 lab/data/meme_samples.csv,输出:
-  1. lab/data/structure_matrix.csv —— 66 条逐条的结构判定矩阵
+  1. lab/data/structure_matrix.csv —— 逐条的结构判定矩阵(条数随语料库)
   2. lab/data/structure_matrix.md  —— 人读版
   3. lab/data/ontology.json        —— 本体论机器可查快照(族/轴/规则/成员)
 
@@ -155,6 +155,13 @@ DEREF_SCORE = {
     "语义反转": 0.5,
 }
 # 去语境化度 → 分数档(由脱义度与是否为挪用型动作/复读推出,保守)
+# 轴 2(去语境化度)显式档位:与脱义度分开成列,不再只由分数推导
+CONTEXT_LEVEL = {
+    "零所指": "完全剥离", "完全脱义": "完全剥离", "脱义": "完全剥离",
+    "部分脱义": "剥离但可回溯", "半脱义": "剥离但可回溯",
+    "弱脱义": "语境保留", "原义完整": "语境保留", "语义反转": "剥离但可回溯",
+}
+
 CONTEXT_SCORE = {
     "零所指": 1.0,
     "完全脱义": 1.0,
@@ -179,6 +186,33 @@ SECURITY_SOURCES = ("非遗", "教材", "国家级", "文旅部", "舞协")
 LABEL_OPPOSED = {
     "m023": True,  # 你好唐 —— 攻击性贬损用语
     "m024": True,  # 你个双肩包 —— 攻击性贬损用语
+}
+
+# 轴 3(参与成本):复现一次所需的资源。由机制类型机械推导。
+COST_BY_MECHANISM = {
+    "空耳": "极低", "空耳/鬼畜": "极低", "空耳/音效": "极低",
+    "谐音": "极低", "谐音/外来借用": "极低", "谐音/人名误写": "极低",
+    "谐音/贬义改编": "极低", "谐音/回避审查": "极低",
+    "句式模板": "极低", "缩写": "极低", "话语体系": "中", "机构命名": "极低",
+    "动作模仿": "低", "动作模仿/场景复用": "低",
+    "行为整活": "高",
+    "台词复用": "中", "台词复用/鬼畜": "中",
+    "鬼畜": "高", "鬼畜/空耳": "高", "恶搞/解构": "高",
+    "AI二创": "高", "AI二创/台词复用": "高", "二创衍生": "中",
+    "外来借用": "极低", "事件驱动": "中", "文艺形态": "中",
+    "术语挪用": "中", "学术义项": "极低", "跨语言对照": "极低",
+}
+# 轴 4(攻击性):是否用于贬低或排斥。依据来源关键词 + 显式名单。
+AGGRESSION_KEYWORDS = {
+    "攻击性": ("霸凌", "贬损", "侮辱", "脏话"),
+    "攻击性已剥离": ("攻击性", "去攻击性", "粗鄙", "网络暴力", "嘴臭"),
+}
+AGGRESSION_EXPLICIT = {
+    "m023": "攻击性", "m024": "攻击性",       # 新华社点名
+    "m029": "攻击性", "m028": "攻击性",       # 针对具体人
+    "m035": "攻击性已剥离", "m036": "攻击性已剥离", "m039": "攻击性已剥离",
+    "m051": "无攻击性", "m059": "无攻击性", "m060": "无攻击性",
+    "m032": "无攻击性",
 }
 
 COND_B_MAP = {    "m001": "形式驱动", "m002": "形式驱动", "m003": "形式驱动", "m004": "形式驱动",
@@ -225,6 +259,17 @@ FAMILY_EXPECTED_DEREF = {
 }
 
 
+def aggress(row: dict) -> str:
+    """轴 4(攻击性)判定:显式名单优先,其次依据来源/备注关键词。"""
+    if row["id"] in AGGRESSION_EXPLICIT:
+        return AGGRESSION_EXPLICIT[row["id"]]
+    blob = row.get("origin", "") + row.get("note", "")
+    for level, kws in AGGRESSION_KEYWORDS.items():
+        if any(k in blob for k in kws):
+            return level
+    return "无攻击性"
+
+
 def classify(row: dict) -> dict:
     mech = (row.get("mechanism") or "").strip()
     cands = MECHANISM_TO_FAMILY.get(mech, [])
@@ -261,6 +306,9 @@ def classify(row: dict) -> dict:
         cond_a=cond_a,
         cond_b=COND_B_MAP.get(row["id"], "未编码"),
         serious_source="是" if is_serious else "否",
+        axis2_context=CONTEXT_LEVEL.get(deref, "未编码"),
+        axis3_cost=COST_BY_MECHANISM.get(mech, "未编码"),
+        axis4_aggression=aggress(row),
     )
 
 
@@ -279,6 +327,7 @@ def main() -> None:
     fields = list(rows[0].keys()) + [
         "primary_family", "family_name", "candidate_families",
         "deref_score", "context_score", "cond_a", "cond_b", "serious_source",
+        "axis2_context", "axis3_cost", "axis4_aggression",
     ]
 
     mp = os.path.join("lab", "data", "structure_matrix.csv")
