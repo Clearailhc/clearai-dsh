@@ -1,0 +1,38 @@
+# v0.2.3 tag 推送记录
+
+采集时间: 2026-09-28T10:32:25+08:00
+
+==================================================================
+1) 预演(确认凭证与将要推送的 ref,不改变远端)
+$ git push --dry-run origin v0.2.3
+To https://github.com/Clearailhc/clearai-dsh.git
+ * [new tag]         v0.2.3 -> v0.2.3
+退出码: 0
+
+==================================================================
+2) 真推(触发 .github/workflows/release.yml,on: push tags v*)
+$ git push origin v0.2.3
+To https://github.com/Clearailhc/clearai-dsh.git
+ * [new tag]         v0.2.3 -> v0.2.3
+退出码: 0
+
+==================================================================
+3) 远端回查:refs/tags/v0.2.3 是否存在、解引用是否指向 e362acc
+$ git ls-remote --tags origin v0.2.3
+41e6f7450c8fa4dbf67d40075fd60d8d3f17001d	refs/tags/v0.2.3
+
+本地 tag 对象 id:  41e6f7450c8fa4dbf67d40075fd60d8d3f17001d
+本地解引用目标:    e362acc1832006d92c8e29838233510c42b55c23
+期望解引用目标:    e362acc1832006d92c8e29838233510c42b55c23
+
+==================================================================
+4) 远端全部 v0.2.* tag 现状
+$ git ls-remote --tags origin 'v0.2.*'
+24be58ccce6d5223837dad12a9edb046ef96f980	refs/tags/v0.2.0
+b3969650760e216831fd9b5bf48aa3974ec0afc7	refs/tags/v0.2.0^{}
+c38143dd14c393220c36ef322df1ca229cda7097	refs/tags/v0.2.1
+b870978a1bd1c17913943c361a951654a2dac29f	refs/tags/v0.2.1^{}
+689d5c71d22e275ad1b01ad33f0ebe97d78a5a85	refs/tags/v0.2.2
+91dcb2ab11d1a4d8fe8d5d8ff4697447bb190c25	refs/tags/v0.2.2^{}
+41e6f7450c8fa4dbf67d40075fd60d8d3f17001d	refs/tags/v0.2.3
+e362acc1832006d92c8e29838233510c42b55c23	refs/tags/v0.2.3^{}
