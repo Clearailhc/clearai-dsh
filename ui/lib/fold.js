@@ -850,6 +850,20 @@ function stampAt(mutations, time) {
 }
 
 /**
+ * ClearAI 自己署名的上下文消息吗。
+ *
+ * 宿主从 session 格式 v4 起把消息来源改成生产者自有:内核署 `plugin:clearai`
+ * (`kind` 就是生产者身份),共享包装 `{ kind: 'plugin', plugin }` 已退役。
+ * 退回到旧形状时**身份在 `plugin` 字段上**——只认 `clearai`,别的插件冒名不进这道门。
+ * 宿主读已发布 V3 日志时把旧形状抬升成 `plugin:clearai`;但事件被**直接**喂进这个纯函数时
+ * (测试、旧导出、重放工具)仍带着旧形状,所以两侧都认。
+ */
+function isClearaiSource(source) {
+	if (source === null || typeof source !== 'object' || !Array.isArray(source.sections)) return false
+	return source.kind === 'plugin:clearai' || (source.kind === 'plugin' && source.plugin === 'clearai')
+}
+
+/**
  * 会话日志事件 → 状态。这是投影的入口:除了工具结果里的变更记录,
  * 还吃三条**关于过程本身的事实**——
  *   · `tool/call` 在飞 → 「评估者在裁决」这个阶段(不用等结果就能看见)
@@ -874,7 +888,7 @@ export function applyEvent(state, event) {
 		 * 将来真要消费它,记住一个坑:结论在「closing message:」之后——运行时前面那行摘要是
 		 * **它自己写的**,不是子会话说的话。
 		 */
-		if (source !== null && typeof source === 'object' && source.kind === 'plugin' && Array.isArray(source.sections)) {
+		if (isClearaiSource(source)) {
 			/**
 			 * 一条插件消息里可能**同时**带好几件事实(内核一次 pre-step 把目录、运行档、候选一起发)。
 			 * 所以这里是「逐件折」而不是「找到一件就 return」——早退会漏掉后面的事件:

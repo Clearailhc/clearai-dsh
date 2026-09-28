@@ -602,10 +602,22 @@ console.log(`  日志:${logPath} · ${events.length} 条事件`)
 const toolCalls = events.filter((event) => event.type === 'tool/call')
 const toolResults = events.filter((event) => event.type === 'tool/result')
 const called = (name) => toolCalls.some((event) => event.data?.name === name)
+/**
+ * 一次工具调用的结果。
+ *
+ * `toolCallId` 在 session 格式 v4 里挂在**结果消息本身**上(工具结果成了一等 tool-role 消息),
+ * 退役前它嵌在第一个 content 块里。两种都认:这份工具既读今天的日志,也拿去重放旧日志。
+ */
 const resultOf = (name) => {
 	const call = toolCalls.find((event) => event.data?.name === name)
 	if (call === undefined) return null
-	return toolResults.find((event) => event.data?.message?.content?.[0]?.toolCallId === call.data.callId) ?? null
+	return (
+		toolResults.find((event) => {
+			const message = event.data?.message
+			const paired = message?.toolCallId ?? message?.content?.[0]?.toolCallId ?? message?.source?.callId
+			return paired === call.data.callId
+		}) ?? null
+	)
 }
 
 const planShaped = !skillsScenario && !freeform
@@ -649,8 +661,8 @@ const allMutations = toolResults.flatMap((event) => event.data?.meta?.mutations 
 {
 	const mutations = allMutations
 	console.log(`  变更记录:${mutations.length} 条(${[...new Set(mutations.map((mutation) => mutation.t))].join(',')})`)
-	check('变更记录真的落了(goal/set)', skillsScenario || mutations.some((mutation) => mutation.t === 'goal/set'), mutations.map((mutation) => mutation.t).join(','))
-	check('变更记录真的落了(plan/created)', skillsScenario || mutations.some((mutation) => mutation.t === 'plan/created'), mutations.map((mutation) => mutation.t).join(','))
+	check('变更记录真的落了(goal/set)', planShaped ? mutations.some((mutation) => mutation.t === 'goal/set') : true, mutations.map((mutation) => mutation.t).join(','))
+	check('变更记录真的落了(plan/created)', planShaped ? mutations.some((mutation) => mutation.t === 'plan/created') : true, mutations.map((mutation) => mutation.t).join(','))
 }
 
 // ── ③b 工作区引导(真跑之后目录真的长出来了) ───────────────────────────────

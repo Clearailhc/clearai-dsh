@@ -1548,7 +1548,7 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 		const messages = [
 			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"adopt_branch","fork":"f-1","branch":"b-1"}\n人在面板上裁决` }] },
 			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK}{"action":"promote_skill","skill":"my-sop"}` }] },
-			{ source: { kind: 'plugin', plugin: 'clearai' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"adopt_branch","fork":"f-1","branch":"b-2"}` }] },
+			{ source: { kind: 'plugin:clearai' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"adopt_branch","fork":"f-1","branch":"b-2"}` }] },
 			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} 不是 JSON` }] },
 			{ source: { kind: 'user' }, content: [{ type: 'text', text: '没有标记的一句话' }] },
 			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK}{"action":"abandon_fork","fork":"f-1"}` }] },
@@ -2532,6 +2532,29 @@ console.log('\n【技能目录:面板与模型看同一张表(合并目录随投
 		await preStep(host, S, 5, [gate])
 		check('invoke_skill 不被内核当成采纳(两条路各管各的)', !(host.service.state(S).skillPromotions ?? []).some((entry) => entry.name === 'agent-written'))
 	}
+}
+
+console.log('\n【消息署名:生产者自有的 source kind(session 格式 v4 的接纳条件)】')
+{
+	/**
+	 * 宿主从 session 格式 v4 起,原生接纳只认**生产者自有**的 `source.kind`:非空字符串、
+	 * 且不是已退役的共享包装 `plugin`——带 `plugin` 的消息会被当场拒绝(整轮报错)。
+	 * 这一节钉住内核下发的那两条通道(运行态卡 / 无卡的通知)都不再写旧包装,
+	 * 且署名与宿主读取已发布 V3 日志时抬升出来的值一致。
+	 */
+	const host = makeHost()
+	apply(host.ctx, { blockedThreshold: 3 })
+	const decision = await preStep(host, 'session-source-kind', 1)
+	const sources = (decision?.messages ?? []).map((message) => message?.source)
+	check('内核真的下发了消息(否则这一节什么都没验)', sources.length > 0, String(sources.length))
+	check(
+		'署名是生产者自有的 kind(不是已退役的共享包装 plugin,也不是空)',
+		sources.every((source) => typeof source?.kind === 'string' && source.kind !== '' && source.kind !== 'plugin'),
+		JSON.stringify(sources.map((source) => source?.kind)),
+	)
+	check('署名与旧日志的抬升值同一个(plugin:clearai)', sources.every((source) => source?.kind === 'plugin:clearai'), JSON.stringify(sources.map((source) => source?.kind)))
+	check('退役的 plugin 身份字段不再出现(宿主不许它再当署名)', sources.every((source) => source?.plugin === undefined))
+	check('形态字段照旧(snapshot + sections):面板仍按 form 渲染', sources.every((source) => source?.form === 'snapshot' && Array.isArray(source?.sections)))
 }
 
 console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不是 reject(2026-09-11 用户实测的 bug)】')

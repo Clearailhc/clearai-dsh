@@ -2,6 +2,22 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] — 2026-09-28
+
+**跟上了宿主的会话格式 v4(消息来源改成生产者自有)。** 宿主 `0.1.7-rc.2` 起,`source.kind` 就是**生产者自己的身份**:共享包装 `{ kind: 'plugin', plugin }` 已退役,原生接纳在落账那一步**当场拒绝**它,报 `format v4 message requires a producer-owned source kind`。内核一直用旧包装下发运行态卡与外脑事实(合并目录 / 运行档 / 候选技能 / 世界线回灌),于是**每一轮都在落账那一步整轮失败**——卡片与事实一条都进不去。而单测当时全绿:它们直接调 fold,不经过宿主的接纳。
+
+**为什么是 `plugin:clearai` 这个值**:宿主读取已发布 V3 日志时,未知名插件正是按 `plugin:<插件名>` 抬升的。选同一个值,老会话折得出来、新会话写得进去,两侧只认一个名字;另起一个名字则要永远维护新旧两套(而且旧会话在面板上的署名会和新会话长得不一样)。
+
+### Changed
+
+- **内核署 `plugin:clearai`,不再写 `plugin` 字段**:`MESSAGE_SOURCE_KIND` 一处定义,运行态卡与无卡通知两条通道共用。
+- **折叠层同时认两种署名**:`plugin:clearai`(现在写的)与退役前的 `{ kind: 'plugin', plugin: 'clearai' }`(事件被**直接**喂进来时仍带着它:测试、旧导出、重放工具)。退回到旧形状时身份在 `plugin` 字段上,**只认 `clearai`**——别的插件冒名不进这道门。
+- 形态字段没动:`form: 'snapshot'` + `sections` 照旧,面板的上下文注入行仍按 `form` 渲染(署名只换了个名字,呈现不变)。
+- **e2e 里按 v3 形状找工具结果的地方跟着改到 v4**:`toolCallId` 在 v4 挂在**结果消息本身**上(退役前嵌在第一个 content 块里),旧写法让 `CreatePlan` 的两条断言**永远假红**(进程 exit 0、变更记录也落了,断言却报「契约错误」);`--freeform` 那两场的目标/计划断言也改成随形态跳过——与同一份工具里其余断言的判据对齐。
+- **本地「干净安装」门不再随手挑一份 npx 缓存里的宿主**:这台机器的缓存里躺着 0.1.5-rc.1 与 0.1.7-rc.2 两份,`readdir` 挑到旧的那份时 `--dump-config` 会因为我们的 bundle patch 是数组(宿主 0.1.7-alpha.1 起才支持)当场崩,四条组合断言全红——而真正的原因(验的根本不是要支持的宿主)一个字都不在输出里。现在按版本挑最新的一份,并把「dsh 来自哪里、是哪个版本」念出来(CI 走 `DSH_CLI_PREFIX`,不受影响)。
+
+**证据**:拿宿主真代码(`dsh-session-format-v3-to-v4` 的 `assertV4RowAdmission`)验过——新署名接纳,旧署名以那条原话被拒;并确认转换表里没有 `clearai`(所以旧日志正好抬升成同一个值)。内核侧新增一节断言钉住每一条下发消息的署名(非空、不是 `plugin`、等于 `plugin:clearai`、无 `plugin` 字段、form/sections 照旧);旧署名在 `test/host.test.mjs` 与 `test/invariant.test.mjs` 各留一条「仍折得出来」的正向用例。真跑一场(`node tools/e2e-run.mjs --installed`:真宿主 + 装出来的包 + 真模型 + 真会话日志):运行态卡以 `plugin:clearai` 落在日志里、没有接纳报错,`goal/set` 与 `plan/created` 照旧落账、投影长出计划,跨机制不变量全绿(35 通过 / 0 失败)。干净安装门(真 pnpm + 真 `dsh plugin add` + 真宿主 0.1.7-rc.2)18 通过 / 0 失败:装到的是 `clearai-dsh@0.2.5`,组合里 `clearai-host` 恰好一行,名册里 `clearai` 在列表里且没有 broken。
+
 ## [0.2.4] — 2026-09-28
 
 **跟上了宿主的预设换代。** 宿主 `0.1.7-alpha.1` 起把 agent 预设的注册从「root 目录扫描」换成了「组合里的声明行」,而 clearai-dsh 一直靠一条覆盖 `agent-presets` 行的补丁,把名册的 root 指到包内 `presets/`。那行 id 在新宿主里**已经不存在**,补丁没有落点——包照样装得上、宿主行照样起得来,但 **ClearAI 不进模式选择器**。这一版把它接上。

@@ -605,7 +605,7 @@ console.log('\n【时间:折法从事件盖上,不由产出方写】')
 	const viaPlugin = fold.applyEvent(fold.emptyState(), {
 		type: 'user/message',
 		time: 333,
-		data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'goal/set', id: 'g1', claim: 'c', done_criteria: 'd', promote_at_level: 'L3', revision: 1, hypotheses: [] }] }) }] } },
+		data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'goal/set', id: 'g1', claim: 'c', done_criteria: 'd', promote_at_level: 'L3', revision: 1, hypotheses: [] }] }) }] } },
 	})
 	check('插件消息里的变更也盖上时间(同一条规矩,两个入口)', viaPlugin.goal.openedAt === 333, String(viaPlugin.goal.openedAt))
 }

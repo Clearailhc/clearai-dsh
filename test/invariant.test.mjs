@@ -38,7 +38,7 @@ function catcher() {
 function stateOf(mutations) {
 	let state = emptyState()
 	for (const mutation of mutations) {
-		state = applyEvent(state, { type: 'user/message', time: 1, data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [mutation] }) }] } } })
+		state = applyEvent(state, { type: 'user/message', time: 1, data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [mutation] }) }] } } })
 	}
 	return state
 }
@@ -213,12 +213,19 @@ console.log('\n【⑥ 契约五:事实棘轮(生产折法静默忽略降级;这�
 
 console.log('\n【⑦ 事件的装载点与安装件】')
 {
-	const message = { type: 'user/message', time: 1, data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'goal/set', id: 'g-1', promote_at_level: 'L3', hypotheses: [] }] }) }] } } }
+	const message = { type: 'user/message', time: 1, data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'goal/set', id: 'g-1', promote_at_level: 'L3', hypotheses: [] }] }) }] } } }
 	check('插件消息里的 clearai/mutations 段读得出来', mutationsOf(message).length === 1 && mutationsOf(message)[0].t === 'goal/set')
+	/**
+	 * **已发布 V3 的署名形状**(`{ kind: 'plugin', plugin: 'clearai' }`)。宿主读旧日志时把它
+	 * 抬升成 `plugin:clearai`,但事件被直接喂进来时(测试、旧导出、重放)仍带着它——
+	 * 旧会话的账不许因为换代而折不出来。
+	 */
+	const released = { type: 'user/message', time: 1, data: { source: { kind: 'plugin', plugin: 'clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'goal/set', id: 'g-1', promote_at_level: 'L3', hypotheses: [] }] }) }] } } }
+	check('已发布 V3 的署名形状仍读得出变更(旧日志不因换代变瞎)', mutationsOf(released).length === 1 && mutationsOf(released)[0].t === 'goal/set')
 	const toolResult = { type: 'tool/result', data: { meta: { kind: 'clearai', mutations: [{ t: 'plan/created', id: 'p-1', steps: [] }] } } }
 	check('工具结果 meta 里的变更读得出来', mutationsOf(toolResult).length === 1 && mutationsOf(toolResult)[0].t === 'plan/created')
 	check('不相干的事件读不出变更(不猜)', mutationsOf({ type: 'user/message', data: { source: { kind: 'user' } } }).length === 0)
-	const hostile = { type: 'user/message', data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: '{坏 JSON' }] } } }
+	const hostile = { type: 'user/message', data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: '{坏 JSON' }] } } }
 	check('坏 payload 不炸(由折法决定怎么办,这里不猜)', mutationsOf(hostile).length === 0)
 
 	const { caught, fail } = catcher()
@@ -230,14 +237,14 @@ console.log('\n【⑦ 事件的装载点与安装件】')
 	check('安装件要求注入 sessions(没有它这条不变量无从谈起)', JSON.stringify(install.inject) === JSON.stringify(['sessions']))
 	const session = { snapshotEvents: () => [] }
 	listeners.get('session/created').handler(session)
-	const seeded = { type: 'user/message', data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'plan/created', id: 'p-1', steps: [{ id: 's1', status: 'open' }] }] }) }] } } }
+	const seeded = { type: 'user/message', data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'plan/created', id: 'p-1', steps: [{ id: 's1', status: 'open' }] }] }) }] } } }
 	listeners.get('internal/dispatch').handler('emit', 'session/event', [session, seeded])
 	listeners.get('session/event').handler(session, seeded)
-	const good = { type: 'user/message', data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'admission/checked', plan: 'p-1', step: 's1' }, { t: 'step/advanced', plan: 'p-1', step: 's1' }] }) }] } } }
+	const good = { type: 'user/message', data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'admission/checked', plan: 'p-1', step: 's1' }, { t: 'step/advanced', plan: 'p-1', step: 's1' }] }) }] } } }
 	listeners.get('internal/dispatch').handler('emit', 'session/event', [session, good])
 	listeners.get('session/event').handler(session, good)
 	check('合法事件:落账前判过、落账后提交(没有异常)', caught.length === 0, caught.join(' | '))
-	const bad = { type: 'user/message', data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'evidence/recorded', plan: 'p-1', step: 'ghost', verdict: 'support', level: 'L3' }] }) }] } } }
+	const bad = { type: 'user/message', data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'evidence/recorded', plan: 'p-1', step: 'ghost', verdict: 'support', level: 'L3' }] }) }] } } }
 	let rejected = false
 	try {
 		listeners.get('internal/dispatch').handler('emit', 'session/event', [session, bad])
@@ -247,7 +254,7 @@ console.log('\n【⑦ 事件的装载点与安装件】')
 	check('**落账之前**就拦下:不合法的事实根本进不了日志', rejected && caught.length === 1 && caught[0].includes('引用完整性'), caught.join(' | '))
 	let polluted = false
 	try {
-		const another = { type: 'user/message', data: { source: { kind: 'plugin', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'plan/closed', plan: 'p-1' }] }) }] } } }
+		const another = { type: 'user/message', data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'plan/closed', plan: 'p-1' }] }) }] } } }
 		listeners.get('internal/dispatch').handler('emit', 'session/event', [session, another])
 		listeners.get('session/event').handler(session, another)
 	} catch {

@@ -39,16 +39,32 @@ const ROOT = resolve(HERE, '..')
 /**
  * dsh checkout 在哪:那是 `npx --no-install` 的工作目录(让它优先解析到 checkout 里的
  * 那份 CLI)。曾经在代码里写死了一台机器的绝对路径——换台机器,spawn 的 cwd 不存在,
- * 后面每一步都报一个看不懂的错。现在从 npx 缓存现找,找不到就退回仓库根(缓存解析照样工作)。
+ * 后面每一步都报一个看不懂的错。现在从 npx 缓存现找。
+ *
+ * **按版本挑,并把用的是哪一份念出来**(2026-09-28 的教训):这台机器的缓存里躺着两份
+ * (0.1.5-rc.1 与 0.1.7-rc.2),而 `readdir` 的顺序不保证挑到哪一份。挑到旧的那份时,
+ * `--dump-config` 会因为我们的 bundle patch 是数组(宿主 0.1.7-alpha.1 起才支持)当场崩,
+ * 四条组合断言全红——而真正的原因(验的根本不是我们要支持的宿主)一个字都不在输出里。
  */
 function discoverDshCheckout() {
 	const cache = join(process.env.HOME ?? homedir(), '.npm', '_npx')
+	const candidates = []
 	if (existsSync(cache)) {
 		for (const entry of readdirSync(cache)) {
-			if (existsSync(join(cache, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'))) return join(cache, entry)
+			const manifest = join(cache, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+			if (!existsSync(manifest)) continue
+			candidates.push({ dir: join(cache, entry), version: JSON.parse(readFileSync(manifest, 'utf8')).version })
 		}
 	}
-	return ROOT
+	if (candidates.length === 0) return ROOT
+	const rank = (version) => String(version).split('-')[0].split('.').map(Number)
+	const newest = candidates.sort((a, b) => {
+		const [left, right] = [rank(a.version), rank(b.version)]
+		for (let index = 0; index < 3; index += 1) if ((left[index] ?? 0) !== (right[index] ?? 0)) return (right[index] ?? 0) - (left[index] ?? 0)
+		return 0
+	})[0]
+	console.log(`  dsh 来自:${newest.dir}(@deepseek-ai/dsh ${newest.version})`)
+	return newest.dir
 }
 const CHECKOUT = process.env.DSH_CHECKOUT ?? discoverDshCheckout()
 /**

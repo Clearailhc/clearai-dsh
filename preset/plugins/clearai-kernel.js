@@ -248,6 +248,16 @@ export function syncTemplateSkills({ skillsDir, templateDir, record }) {
 /** 变更记录的封套标记:宿主投影只认它。 */
 const MUTATION_KIND = 'clearai'
 
+/**
+ * 内核下发的上下文消息**署名**。
+ *
+ * 宿主从 session 格式 v4 起把消息来源改成生产者自有:共享包装 `{ kind: 'plugin', plugin }`
+ * 已退役,原生接纳当场拒绝它(报 `format v4 message requires a producer-owned source kind`)。
+ * `plugin:clearai` 正是宿主读取已发布 V3 日志时给 clearai 抬升出来的那个值——
+ * 于是老会话折得出来、新会话写得进去,两侧只认一个名字。
+ */
+const MESSAGE_SOURCE_KIND = 'plugin:clearai'
+
 /** 自指检测:账本自指四条 + 对话自指三条。 */
 const SELF_REFERENCE = [
 	[/ClosePlan\s*成功/, '判据不得引用「ClosePlan 成功」——那是系统的动作,不是可核对的产物'],
@@ -5947,7 +5957,7 @@ export function apply(ctx, config = {}) {
 			id: `clearai-brain-${payload.turn}-${payload.step}-${Date.now().toString(36)}`,
 			role: 'user',
 			content: text(note),
-			source: { kind: 'plugin', plugin: 'clearai', form: 'snapshot', sections },
+			source: { kind: MESSAGE_SOURCE_KIND, form: 'snapshot', sections },
 		}
 	}
 
@@ -6768,8 +6778,7 @@ export function apply(ctx, config = {}) {
 					role: 'user',
 					content: text(card),
 					source: {
-						kind: 'plugin',
-						plugin: 'clearai',
+						kind: MESSAGE_SOURCE_KIND,
 						form: 'snapshot',
 						sections: [{ name: 'clearai', text: card }, ...brainSections],
 					},
