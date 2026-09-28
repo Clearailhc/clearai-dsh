@@ -1,164 +1,135 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""生成 products/reports/抽象-heat-memes-2026.md 的附录 A 与附录 B。
+"""渲染 products/reports/抽象-heat-memes-2026.md 的附录 A 与附录 B。
 
-为什么要有这个脚本：此前附录是"由脚本输出后手工贴入"，表头却写着"自动生成"，
-这个标注无法核验。本脚本把附录的产出变成可复跑的一步：
-数据只来自 lab/data/ 下的两个 CSV，改数据即改附录。
+架构约定(此前踩过的坑,写在这里防止重犯):
+  - **本脚本不做任何统计**。所有数字来自 lab/data/stats.json,后者由
+    lab/scripts/build_structure_matrix.py 产出。此前本脚本曾把覆盖率数字写成
+    字面字符串,导致「标注为自动生成、实际是常量」——那正是它本要修的病。
+  - 本脚本只做一件事:把已有数据渲染成 Markdown。
 
-用法：
+用法:
     python3 lab/scripts/build_report_appendix.py
-
-行为：
-  1. 读 lab/data/meme_samples.csv（来源/证据等级）与 lab/data/structure_matrix.csv（结构判定）；
-  2. 生成附录 A（语料库统计，含各轴分布与来源标注）与附录 B（74 条逐条矩阵）；
-  3. 在报告里定位 "## 附录 A" 起至文件末尾，整体替换；报告其余部分不动。
 """
 
 from __future__ import annotations
 
 import csv
+import json
 import os
-from collections import Counter
 
 REPORT = os.path.join("products", "reports", "抽象-heat-memes-2026.md")
-SAMPLES = os.path.join("lab", "data", "meme_samples.csv")
 MATRIX = os.path.join("lab", "data", "structure_matrix.csv")
-MANUAL = os.path.join("lab", "data", "manual_codes.csv")
+STATS = os.path.join("lab", "data", "stats.json")
 
 CTX_SHORT = {"完全剥离": "完全剥离", "剥离但可回溯": "可回溯", "语境保留": "语境保留"}
 AGG_SHORT = {"攻击性": "攻击性", "攻击性已剥离": "已剥离", "无攻击性": "无"}
 
 
-def build_appendix() -> str:
-    samples = list(csv.DictReader(open(SAMPLES, encoding="utf-8-sig")))
+def render() -> str:
     rows = list(csv.DictReader(open(MATRIX, encoding="utf-8-sig")))
-    manual = {r["id"]: r for r in csv.DictReader(open(MANUAL, encoding="utf-8-sig"))}
-    for r in rows:
-        opposed = bool(manual.get(r["id"], {}).get("label_opposed"))
-        mech = (r["cond_a"] in ("靠近中心", "边缘")) or (r["cond_b"] == "形式驱动")
-        r["verdict"] = ("边界（公共标签反对）" if (mech and opposed) else
-                        "抽象" if mech else "非抽象")
-        reasons = []
-        if r["cond_a"] in ("靠近中心", "边缘"):
-            reasons.append(f"条件A={r['cond_a']}")
-        if r["cond_b"] == "形式驱动":
-            reasons.append("条件B=形式驱动")
-        if opposed:
-            reasons.append("条件C=公共标签反对")
-        r["reason"] = " + ".join(reasons) if reasons else "三条件均不满足"
-    n = len(rows)
+    st = json.load(open(STATS, encoding="utf-8"))
     L: list[str] = []
 
-    # ---------------- 附录 A ----------------
     L.append("## 附录 A：语料库统计")
     L.append("")
-    L.append("> **来源标注**：本附录由 `lab/scripts/build_report_appendix.py` 自动生成，"
-             "数据来自 `lab/data/meme_samples.csv` 与 `lab/data/structure_matrix.csv`。"
-             "复跑该脚本即可校验本附录的每一个数字。")
+    L.append("> **来源标注**：本附录由 `lab/scripts/build_report_appendix.py` 渲染，"
+             "**所有数字取自 `lab/data/stats.json`**（由其上游 `build_structure_matrix.py` 计算）。"
+             "本脚本不做统计，复跑上游脚本后再跑本脚本即可校验每一个数字。")
     L.append("")
-    L.append(f"- 样本总数：**{n}** 条")
-    L.append("- 证据等级分布：" + "、".join(
-        f"{k} {v}" for k, v in sorted(Counter(r["evidence_level"] for r in rows).items())))
-    n_url = sum(1 for r in rows if r["url"] != "UNKNOWN")
-    L.append(f"- 带可访问来源 URL：{n_url}/{n}")
-    unk = [f"{r['id']} {r['name']}" for r in rows if r["url"] == "UNKNOWN"]
-    L.append(f"- UNKNOWN（未取到正文）：{len(unk)} 条 —— " + "、".join(unk))
+    L.append(f"- 样本总数：**{st['n']}** 条")
+    L.append("- 证据等级分布：" + "、".join(f"{k} {v}" for k, v in sorted(st["evidence"].items())))
+    L.append(f"- 带可访问来源 URL：{st['n_url']}/{st['n']}")
+    L.append(f"- UNKNOWN（未取到正文）：{len(st['unknown'])} 条 —— " + "、".join(st["unknown"]))
     L.append("")
+
+    L.append("**逐条判定的汇总**（判定规则见 §3；附录 B 每行带「二元判定」「判定」「判定理由」三列）：")
+    L.append("")
+    L.append("| 判定 | 条数 |")
+    L.append("|---|---|")
+    for k in ("抽象", "边界", "非抽象"):
+        L.append(f"| {k} | {st['verdicts'].get(k, 0)} |")
+    binary = sum(st["verdicts"].get(k, 0) for k in ("边界", "非抽象"))
+    L.append(f"| **二元还原后判为「非抽象」** | **{binary}**（＝边界 "
+             f"{st['verdicts'].get('边界', 0)} + 非抽象 {st['verdicts'].get('非抽象', 0)}） |")
+    L.append("")
+
     L.append("**轴 1 脱义度的实际档位**（与 §1.2 词表一致）：")
     L.append("")
     L.append("| 档位 | 条数 |")
     L.append("|---|---|")
-    for k, v in Counter(r["dereference"] for r in rows).most_common():
+    for k, v in sorted(st["deref"].items(), key=lambda kv: -kv[1]):
         L.append(f"| {k} | {v} |")
     L.append("")
+
+    axis_label = {"axis0_gate": "轴 0 参与门槛", "axis2_context": "轴 2 去语境化度",
+                  "axis3_cost": "轴 3 参与成本", "axis4_aggression": "轴 4 攻击性"}
     L.append("**轴 0／轴 2／轴 3／轴 4 的实际档位**：")
     L.append("")
-    for col, name in (("axis0_gate", "轴 0 参与门槛"), ("axis2_context", "轴 2 去语境化度"),
-                      ("axis3_cost", "轴 3 参与成本"), ("axis4_aggression", "轴 4 攻击性")):
+    for col, name in axis_label.items():
         L.append(f"- {name}：" + "、".join(
-            f"{k} {v}" for k, v in Counter(r[col] for r in rows).most_common()))
+            f"{k} {v}" for k, v in sorted(st["axes"][col].items(), key=lambda kv: -kv[1])))
     L.append("")
+
     L.append("**主族分布**：")
     L.append("")
     L.append("| 族 | 名称 | 条数 |")
     L.append("|---|---|---|")
-    fam = {}
-    for r in rows:
-        fam.setdefault((r["primary_family"], r["family_name"]), []).append(r)
-    for (code, name), members in sorted(fam.items(), key=lambda kv: (-len(kv[1]), kv[0][0])):
-        L.append(f"| {code} | {name} | {len(members)} |")
+    for code, cnt in sorted(st["families"].items(), key=lambda kv: (-kv[1], kv[0])):
+        L.append(f"| {code} | {st['family_names'].get(code, '未归类')} | {cnt} |")
     L.append("")
-    empty = [k for k in ("F0", "F1", "F2a", "F2b", "F3", "F4a", "F4b", "F4c", "F5",
-                         "F6", "F7", "F8", "F9") if not any(code == k for code, _ in fam)]
-    L.append(f"**零成员的族**：{len(empty)} 个" + ("（无）" if not empty else "：" + "、".join(empty)))
+    L.append(f"**零成员的族**：{len(st['empty_families'])} 个"
+             + ("（无）" if not st["empty_families"] else "：" + "、".join(st["empty_families"])))
     L.append("")
-    L.append("**无法归类的样本**：0 条 —— **但这是构造保证，不是观测结果**。"
-             "族映射表覆盖语料库出现的全部 mechanism，故「未归类」分支不可达"
-             "（覆盖率读数因此同样是恒真的，不构成独立证据）。"
-             "**真正能独立失败的读数是上面两条**：零成员的族、以及下表的族定义偏离特例——"
-             "两者都是从数据算出、可以不为空的。")
+    L.append(f"**族定义偏离特例**：{len(st['deviations'])} 条")
+    for d in st["deviations"]:
+        L.append(f"- {d}")
     L.append("")
-    dev = [r for r in rows
-           if r["primary_family"] in ("F0", "F1", "F3", "F5", "F6", "F7", "F8")
-           and r["dereference"] not in _expected(r["primary_family"])]
-    vc = Counter(r["verdict"] for r in rows)
-    L.append("**逐条判定的汇总**（判定规则见 §3；附录 B 每行都带「判定」与「判定理由」两列）：")
-    L.append("")
-    L.append("| 判定 | 条数 |")
-    L.append("|---|---|")
-    for k in ("抽象", "边界（公共标签反对）", "非抽象"):
-        L.append(f"| {k} | {vc.get(k, 0)} |")
-    L.append("")
-    L.append(f"**族定义偏离特例**：{len(dev)} 条")
-    for r in dev:
-        L.append(f"- {r['id']} {r['name']}：属 {r['primary_family']} 但脱义度为「{r['dereference']}」")
+    L.append("**无法归类的样本**：0 条 —— **但这是构造保证，不是观测结果**。族映射表覆盖语料库"
+             "出现的全部 mechanism，故「未归类」分支不可达；覆盖率读数因此同样是恒真的，"
+             "不构成独立证据。**真正能独立失败的是上面两条**：零成员的族与族定义偏离特例——"
+             "两者都从数据算出、可以不为空。")
     L.append("")
 
-    # ---------------- 附录 B ----------------
     L.append("## 附录 B：逐条结构判定矩阵")
     L.append("")
-    L.append(f"共 {n} 条，与 `lab/data/structure_matrix.csv` 同源。**轴值缩写图例**："
+    L.append(f"共 {st['n']} 条，与 `lab/data/structure_matrix.csv` 同源。**轴值缩写图例**："
              "语境＝轴 2（完全剥离／**可回溯**＝剥离但可回溯／语境保留）；"
-             "攻击性＝轴 4（攻击性／**已剥离**＝攻击性已剥离／无＝无攻击性）；"
-             "A＝判别条件 A；B＝判别条件 B。**表中 A/B/语境/攻击性四列均为上述缩写**，"
-             "全称见 `structure_matrix.csv` 与 `manual_codes.csv`。")
+             "攻击性＝轴 4（攻击性／**已剥离**＝攻击性已剥离／无＝无攻击性）。"
+             "**「判定」为三分类，「二元判定」为判据要求的二分类**（边界成员归入「非抽象」）。")
     L.append("")
-    L.append("| id | 名称 | 主族 | 参与门槛 | 脱义度 | 语境 | 成本 | 攻击性 | A | B | **判定** | **判定理由** |")
-    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    L.append("| id | 名称 | 主族 | 二元判定 | 判定 | 判定理由 | 参与门槛 | 脱义度 | 语境 | 成本 | 攻击性 | A | B |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
-        L.append(f"| {r['id']} | {r['name']} | {r['primary_family']} | {r['axis0_gate']} | "
+        L.append(f"| {r['id']} | {r['name']} | {r['primary_family']} | **{r['verdict_binary']}** | "
+                 f"{r['verdict']} | {r.get('verdict_reason', '')} | {r['axis0_gate']} | "
                  f"{r['dereference']} | {CTX_SHORT.get(r['axis2_context'], r['axis2_context'])} | "
                  f"{r['axis3_cost']} | {AGG_SHORT.get(r['axis4_aggression'], r['axis4_aggression'])} | "
-                 f"{r['cond_a']} | {r['cond_b']} | **{r['verdict']}** | {r['reason']} |")
+                 f"{r['cond_a']} | {r['cond_b']} |")
     L.append("")
+
+    cov = st["coverage"]
     L.append("**统计口径说明**：")
     L.append("")
-    L.append("- 对照组 = 硬假阳性 + 边界案例 + 真阴性（排他口径，三者不重复计数）。")
-    L.append("- 覆盖率必须按阈值并列（条件 A 对阈值极敏感）：≥1.5 → 39/57 = 68.4%；"
-             "≥1.0 → 40/57 = 70.2%；≥0.5 → 56/57 = 98.2%；A∨B → 55/57 = 96.5%。"
+    L.append(f"- 对照组 {st['neg']} 条 = 硬假阳性 {st['fp']} + 边界案例 {st['borderline']} "
+             f"+ 真阴性 {st['tn']}（排他口径）。")
+    L.append("- 覆盖率必须按阈值并列（条件 A 对阈值极敏感）："
+             f"≥1.5 → {cov['ge1.5'][0]}/{cov['ge1.5'][1]} = {cov['ge1.5'][0]/cov['ge1.5'][1]*100:.1f}%；"
+             f"≥1.0 → {cov['ge1.0'][0]}/{cov['ge1.0'][1]} = {cov['ge1.0'][0]/cov['ge1.0'][1]*100:.1f}%；"
+             f"≥0.5 → {cov['ge0.5'][0]}/{cov['ge0.5'][1]} = {cov['ge0.5'][0]/cov['ge0.5'][1]*100:.1f}%；"
+             f"A∨B → {cov['A_or_B'][0]}/{cov['A_or_B'][1]} = {cov['A_or_B'][0]/cov['A_or_B'][1]*100:.1f}%。"
              "任一单值都不可单独引用。")
     L.append("- 条件 A 的实现阈值为 **≥1.0 才算「边缘」**（见 §3）。")
     L.append("")
     return "\n".join(L) + "\n"
 
 
-def _expected(fam: str) -> set:
-    return {
-        "F0": {"原义完整"}, "F1": {"完全脱义"}, "F3": {"部分脱义", "弱脱义", "脱义", "完全脱义"},
-        "F5": {"弱脱义", "部分脱义", "半脱义"}, "F6": {"部分脱义", "弱脱义"},
-        "F7": {"部分脱义", "原义完整"}, "F8": {"部分脱义", "弱脱义", "半脱义"},
-    }.get(fam, set())
-
-
 def main() -> None:
     s = open(REPORT, encoding="utf-8").read()
-    marker = "## 附录 A"
-    idx = s.index(marker)
-    s = s[:idx] + build_appendix()
+    idx = s.index("## 附录 A")
+    s = s[:idx] + render()
     open(REPORT, "w", encoding="utf-8").write(s)
-    print(f"已重写 {REPORT} 的附录部分（附录 A + B）")
-    print(f"报告现 {len(s.splitlines())} 行")
+    print(f"已渲染 {REPORT} 的附录（附录 A + B），共 {len(s.splitlines())} 行")
 
 
 if __name__ == "__main__":
