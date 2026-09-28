@@ -448,7 +448,7 @@ def main() -> None:
     lines.append("[覆盖度与假阳性检验]")
     lines.append(f"  正例(被公开称作抽象): {len(pos)}")
     lines.append(f"  对照组(不被称抽象或待判): {len(neg)}")
-    lines.append("  —— 阈值敏感性:条件 A 的覆盖率随阈值剧烈变化 ——")
+    lines.append("  —— 阈值敏感性:覆盖率(sc = 脱义度分 + 去语境分)随阈值剧烈变化 ——")
     for label, (t_, f_), note in (
         ("阈值 >=1.5(仅『靠近中心』)", (tp_center, fn_center), "最严"),
         ("阈值 >=1.0(『边缘』起点,实现采用)", (tp_impl, fn_impl), "本报告实现"),
