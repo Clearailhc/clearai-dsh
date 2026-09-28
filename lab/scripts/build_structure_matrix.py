@@ -322,12 +322,20 @@ def main() -> None:
         mech = (r["cond_a"] in ("靠近中心", "边缘")) or (r["cond_b"] == "形式驱动")
         r["verdict"] = ("边界" if (mech and opposed) else "抽象" if mech else "非抽象")
         r["verdict_binary"] = "非抽象" if r["verdict"] in ("边界", "非抽象") else "抽象"
+        rr = []
+        if r["cond_a"] in ("靠近中心", "边缘"):
+            rr.append(f"条件A={r['cond_a']}")
+        if r["cond_b"] == "形式驱动":
+            rr.append("条件B=形式驱动")
+        if opposed:
+            rr.append("条件C=公共标签反对")
+        r["verdict_reason"] = " + ".join(rr) if rr else "三条件均不满足"
 
     fields = list(rows[0].keys()) + [
         "primary_family", "family_name", "candidate_families",
         "deref_score", "context_score", "cond_a", "cond_b", "serious_source",
         "axis0_gate", "axis2_context", "axis3_cost", "axis4_aggression",
-        "verdict", "verdict_binary",
+        "verdict", "verdict_binary", "verdict_reason",
     ]
 
     mp = os.path.join("lab", "data", "structure_matrix.csv")
