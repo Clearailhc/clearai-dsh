@@ -211,8 +211,14 @@ SAMPLES = [
          mechanism="鬼畜/空耳", dereference="完全脱义", called_abstract="否", evidence_level="H",
          url="https://www.bianews.com/news/details?id=238808", note="反例候选:'我从河北省来'是经典空耳"),
     dict(id="m050", name="蓝瘦香菇", year="2016", origin="方言口音视频",
-         mechanism="谐音", dereference="部分脱义", called_abstract="否", evidence_level="L",
-         url="UNKNOWN", note="反例候选:谐音梗但通常不被称抽象"),
+         mechanism="谐音", dereference="部分脱义", called_abstract="否", evidence_level="H",
+         url="http://m.cnr.cn/tech/20161215/t20161215_523342987_tt.html",
+         note="反例候选。**标签已由外部证据补正**(此前 url=UNKNOWN、等级 L):《咬文嚼字》编辑部 "
+              "2016-12-14 公布「2016 年十大流行语」,「蓝瘦,香菇」入选——央广网转《新闻晨报》"
+              "2016-12-15 报道;中新网 2016-12-16 发表《「蓝瘦,香菇」凭什么入选今年流行语?》。"
+              "故其公众标签是**「2016 年度十大流行语」**,而非此前所写的「普通热梗」(那四字无出处)。"
+              "该刊评语称其为「因方言谐音而走红」「迎合了年轻人在表达上的游戏化心理」——"
+              "正是本报告所说的「形式驱动」"),
 
     # ---------- 补齐广度:其他被称抽象的现象 ----------
     dict(id="m051", name="抽象喜剧", year="2026", origin="综艺《喜人奇妙夜》等的新喜剧风格",
