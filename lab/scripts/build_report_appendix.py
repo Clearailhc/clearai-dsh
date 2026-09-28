@@ -17,6 +17,8 @@ from __future__ import annotations
 import csv
 import json
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 REPORT = os.path.join("products", "reports", "抽象-heat-memes-2026.md")
 MATRIX = os.path.join("lab", "data", "structure_matrix.csv")
@@ -125,11 +127,17 @@ def render() -> str:
 
 
 def main() -> None:
+    import importlib
+    sl = importlib.import_module("build_source_list")
+
     s = open(REPORT, encoding="utf-8").read()
     idx = s.index("## 附录 A")
-    s = s[:idx] + render()
+    # 从「## 附录 A」起至文件末尾整体替换为 A + B + C。
+    # 注意：本脚本会吞掉附录 A 之后的一切，所以附录 C 必须在这里一起生成
+    # （此前把 C 单独追加到文末，被本脚本的下一次运行吃掉了——已修）。
+    s = s[:idx] + render() + "\n" + sl.build()
     open(REPORT, "w", encoding="utf-8").write(s)
-    print(f"已渲染 {REPORT} 的附录（附录 A + B），共 {len(s.splitlines())} 行")
+    print(f"已渲染 {REPORT} 的附录 A + B + C，共 {len(s.splitlines())} 行")
 
 
 if __name__ == "__main__":
