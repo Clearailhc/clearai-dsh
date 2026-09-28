@@ -1,3 +1,2 @@
-2026/09/28-10:51:01.177 1d Reusing MANIFEST /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/shared_proto_db/MANIFEST-000001
-2026/09/28-10:51:01.177 1d Recovering log #3
-2026/09/28-10:51:01.177 1d Reusing old log /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/shared_proto_db/000003.log 
+2026/09/28-10:56:39.430 1b Creating DB /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/shared_proto_db since it was missing.
+2026/09/28-10:56:39.432 1b Reusing MANIFEST /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/shared_proto_db/MANIFEST-000001

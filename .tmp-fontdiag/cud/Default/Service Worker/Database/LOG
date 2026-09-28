@@ -1,3 +1,2 @@
-2026/09/28-10:51:01.122 27 Reusing MANIFEST /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/Service Worker/Database/MANIFEST-000001
-2026/09/28-10:51:01.123 27 Recovering log #3
-2026/09/28-10:51:01.124 27 Reusing old log /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/Service Worker/Database/000003.log 
+2026/09/28-10:56:39.452 1c Creating DB /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/Service Worker/Database since it was missing.
+2026/09/28-10:56:39.453 1c Reusing MANIFEST /home/lhc/Project/clearai-dsh/.tmp-fontdiag/cud/Default/Service Worker/Database/MANIFEST-000001

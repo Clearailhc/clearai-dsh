@@ -86,6 +86,83 @@ for (const name of readdirSync(join(PORT, 'preset'))) {
 	copy(join(PORT, 'preset', name), join(OUT, 'presets', 'clearai', name))
 }
 
+// ── ②′ 预设声明行:宿主 ≥0.1.7-alpha.1 的注册形态 ───────────────────────────
+/**
+ * 同一个预设从此有**两个消费者、一份源**:
+ *   · 旧机制(≤0.1.6-alpha.2)读 `presets/clearai/agent.cordis.yml`(名册扫 root 目录);
+ *   · 新机制(≥0.1.7-alpha.1)读**这里生成的** `presets/clearai/clearai.patch.yml` ——
+ *     一条 `- id: preset-clearai` 声明行,`config.plugins` 里放整份插件列表。
+ * 两者都由 `preset/agent.cordis.yml` 派生,不手抄第二份(手抄就是第二本账)。
+ *
+ * 为什么声明行文件放在 `presets/clearai/` 里:声明行 plugins 里的**相对基准**
+ * (`name: './plugins/*.js'` 与 `!!js` 的 `baseUrl`)以该补丁文件所在目录为准。
+ * 放在与 `agent.cordis.yml` 同一目录,两类相对写法都不用改一个字。
+ * 依据与实测:`lab/adapter/0.2.4-design.md` 第一节。
+ */
+const readPresetMeta = (file) => {
+	// 不引 YAML 依赖:`preset.yml` 只有两个键,而 description 必须是块标量
+	// (里面有「冒号 + 空格」,写成普通标量会被读成嵌套映射,而名册对读失败是静默降级)。
+	const lines = readFileSync(file, 'utf8').split('\n')
+	let name = 'ClearAI'
+	const description = []
+	let inDescription = false
+	for (const line of lines) {
+		if (inDescription) {
+			if (/^\S/.test(line)) break // 下一个顶层键
+			description.push(line.replace(/^\s{2}/, '').replace(/\s+$/, ''))
+			continue
+		}
+		const named = /^name:\s*(.+?)\s*$/.exec(line)
+		if (named !== null) {
+			name = named[1]
+			continue
+		}
+		if (/^description:\s*\|-?\s*$/.test(line)) inDescription = true
+	}
+	while (description.length > 0 && description[description.length - 1] === '') description.pop()
+	if (description.length === 0) throw new Error(`preset.yml 里没读到块标量 description:${file}`)
+	return { name, description }
+}
+
+{
+	const PRESET_DIR = join(PORT, 'preset')
+	const meta = readPresetMeta(join(PRESET_DIR, 'preset.yml'))
+	const rows = readFileSync(join(PRESET_DIR, 'agent.cordis.yml'), 'utf8').replace(/\n+$/, '').split('\n')
+	// `plugins:` 在 8 格,其下的列表项在 10 格 —— 整份组合平移过来,注释一并留下。
+	const row = (line) => (line.trim() === '' ? '' : `          ${line}`)
+	// 生成物进仓库(与 ui/vendor/*.js 同一条纪律):源是 preset/agent.cordis.yml,
+	// 这份是它的派生件,**手改会在下次构建被覆盖**。它同时是发行物里那一份的来源。
+	const packPath = join(PORT, 'pack', 'presets', 'clearai.patch.yml')
+	mkdirSync(dirname(packPath), { recursive: true })
+	writeFileSync(
+		packPath,
+		[
+			'# 自动生成,不要手改 —— 源是 preset/agent.cordis.yml 与 preset/preset.yml,',
+			'# 由 tools/build-package.mjs 装配(包 = 源的纯函数;verify-package 会现场重建再比对)。',
+			'#',
+			'# 宿主 ≥0.1.7-alpha.1 的 agent-preset-registry 读的就是它:',
+			'# 预设 = 组合里的一条声明行,plugins 是下面这份插件列表。',
+			'# 0.2.3 及以前靠 root 目录扫描,那条路在新宿主上已经不存在了。',
+			'',
+			'- insert:',
+			'    - id: preset-clearai',
+			"      name: '@deepseek-ai/dsh-agent-preset'",
+			'      config:',
+			'        id: clearai',
+			`        name: ${meta.name}`,
+			'        description: |-',
+			...meta.description.map((line) => `          ${line}`),
+			'        order: 10',
+			'        plugins:',
+			...rows.map(row),
+			'',
+		].join('\n'),
+		'utf8',
+	)
+	copy(packPath, join(OUT, 'presets', 'clearai', 'clearai.patch.yml'))
+	console.log(`  预设声明行:preset-clearai(${rows.filter((line) => /^- id:/.test(line)).length} 个顶层行)`)
+}
+
 // ── ③ 工作区模板:装进预设旁边(内核缺省读 `../template`) ──────────────────
 if (existsSync(TEMPLATE_SRC)) {
 	copy(TEMPLATE_SRC, join(OUT, 'presets', 'clearai', 'template'))

@@ -39,7 +39,10 @@
   },
   "dsh": {
     "bundle": {
-      "patch": "./cordis.patch.yml"
+      "patch": [
+        "./cordis.patch.yml",
+        "./presets/clearai/clearai.patch.yml"
+      ]
     },
     "client": {
       "platform": "web",
