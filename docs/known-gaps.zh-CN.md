@@ -128,7 +128,16 @@
 ## 跑起来之前
 
 - **pnpm 是前置条件，而且它是 DSH 的，不是本插件的。** `dsh plugin …` 转发给 pnpm，所以 `PATH` 上必须有一个可执行的 `pnpm`；没有它，CLI 会停在 `pnpm not found on PATH`，profile 也就完全管不了。直接装它（`npm install -g pnpm`，或用系统包管理器）。`corepack enable` 是那条诱人的近路，但它**不是安装**：它往 `PATH` 上放一个版本**转发器**，首次调用时才去下载某一版 pnpm。Node 24 自带的那份 corepack 0.34 靠找 `bin/pnpm.cjs` 来启动 pnpm，而 pnpm 从 11 起就不再提供这个文件（改成 `bin/pnpm.mjs`，再往后是包根目录的原生二进制），于是它可能下载一个自己启动不了的版本；它的 shim 还可能排在**本来就可用**的那份 pnpm 前面，把它遮住。
-- **装插件靠的是 DSH CLI 本身，它随 npm 包 `@deepseek-ai/dsh` 发行。** 用 `npx` 起 harness **不会**把 `dsh` 放到你的 `PATH` 上——那一份住在 npx 缓存里，只对那一个进程有效。所以要么借它来装（`npx @deepseek-ai/dsh plugin --profile web add clearai-dsh`），要么用 `npm install -g @deepseek-ai/dsh` 把 CLI 装一次。
+- **装插件靠的是 DSH CLI 本身，它随 npm 包 `@deepseek-ai/dsh` 发行。** 用 `npx` 起 harness **不会**把 `dsh` 放到你的 `PATH` 上——那一份住在 npx 缓存里，只对那一个进程有效。所以要么借它来装（`npx @deepseek-ai/dsh plugin --profile web add clearai-dsh@<版本>`），要么用 `npm install -g @deepseek-ai/dsh` 把 CLI 装一次。
+- **pnpm ≥ 11 不会装一天内发布的版本，而且它不说。** `minimumReleaseAge` 默认 1440 分钟，而这条内置默认是**非严格**的：裸包名或 `@latest` **静默解析到一天以前的最新版**，不报错。写死版本（pnpm 会自己记下例外），或者在 profile 的 `pnpm-workspace.yaml` 里一次性豁免这个包：
+
+  ```yaml
+  minimumReleaseAgeExclude:
+    - clearai-dsh
+  ```
+
+  pnpm 12.4.1 在干净工作区实测，0.2.6 发布数分钟后：裸 `pnpm add clearai-dsh` 装到 **0.2.2**，而 `pnpm add clearai-dsh@0.2.6` 装到 0.2.6。包自带的安装器（`npx clearai-dsh install`）会解析当前版本并把那个确切版本传下去，所以不受影响。
+- **在版本切换的中途刷新插件列表，可能看到一次 `locale` 元信息错误。** 那是宿主读到了一个换了一半的包——清单已经声明 `locale/`，目录还没铺上。装稳之后不再出现：装稳的 0.2.5 读出来是纯回退值（包名 + npm 的 description），装稳的 0.2.6 读出来是中英标题、介绍与图标。
 - **装完要重启 `dsh web`。** 宿主半与客户端半都缓存在运行中的进程里；只刷新浏览器不够，而在包被替换之后继续跑着的进程会端出一份坏掉的客户端 bundle。
 
 ## 运行期的两个坑

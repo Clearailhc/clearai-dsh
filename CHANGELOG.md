@@ -2,6 +2,21 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] — 2026-09-28
+
+**装完显示「成功」,装到的却是上一版——原因不在我们,但句子在我们这边。** pnpm ≥ 11 起 `minimumReleaseAge` 默认 **1440 分钟(一天)**,而这条内置默认是**非严格**的:一天内发布的版本不会被选中,但**不报错**——它静默回退到**一天以前的最新版**。于是刚发完 `0.2.6`,三条路装到的都是 **`0.2.2`**(2026-09-18):`dsh plugin --profile web add clearai-dsh`(裸包名)、`@latest`、以及**设置 → 插件列表**里填包名。一台 Mac 上实测如此,本机也用 pnpm 12.4.1 在干净工作区复现过(裸名 → 0.2.2;`clearai-dsh@0.2.6` → 0.2.6)。
+
+这一版**不改包的行为**,只改用户会照抄的那几句,并加一条判据钉住它。
+
+### Changed
+
+- **README(中英)的推荐安装命令改成钉版本的** `dsh plugin --profile web add clearai-dsh@0.2.7`,并新增一段「为什么要钉版本」:机制、两种解法——写死版本(pnpm 会自己记下例外),或在 profile 的 `pnpm-workspace.yaml` 里 `minimumReleaseAgeExclude: [clearai-dsh]` 按**包名**豁免所有版本。「设置 → 插件列表」那条也改成填 `clearai-dsh@0.2.7`。
+- **「一条命令的安装器」标注清楚**:`npx clearai-dsh install` 自己解析当前版本并钉住它(`bin/clearai.mjs` 一直传的是 `clearai-dsh@<自己的版本>`),本来就不受这条延迟影响。
+- `docs/dsh-integration`(中英)的安装段同步;`docs/known-gaps`(中英)的「跑起来之前」补两条:pnpm 的这条年龄策略,以及**版本切换中途刷新插件列表可能看到的一次 `locale` 元信息错误**——那是宿主读到了换了一半的包(清单已声明 `locale/`、目录还没铺上),装稳后消失(装稳的 0.2.5 读出纯回退值,装稳的 0.2.6 读出中英标题、介绍与图标)。
+- **自检门新增一条**:发行物里的 `README.md` / `README.zh-CN.md` 必须出现钉到**本版版本号**的安装命令,且不许出现教人敲裸包名的命令行。
+
+**证据**:pnpm 12.4.1 干净工作区实测——裸名与 `@latest` → `0.2.2`;`clearai-dsh@0.2.6` → `0.2.6`,且 pnpm 自动往 `pnpm-workspace.yaml` 写入 `minimumReleaseAgeExclude: clearai-dsh@0.2.6`;把豁免改成按包名(`- clearai-dsh`)之后,裸名 → `0.2.6`。机制出处:pnpm 文档 `minimumReleaseAge`(默认 `1440`,v11 起)与 `minimumReleaseAgeStrict`(内置默认下为 false)。
+
 ## [0.2.6] — 2026-09-28
 
 **插件列表里终于写了介绍。** 宿主从 `locale/<语言>.json` 的 `meta.title` / `meta.description` 与清单顶层的 `icon` 读一个插件的显示文字和图标;**三样都缺时回退到包名 + npm 的 description + 默认图**——而那正是我们一直显示的东西:标题 `clearai-dsh`(包名)、介绍 "ClearAI: The Epistemic Loop, native to DSH."(README 的 tagline)、一个通用图标。装上它的人在一个「插件市场」式的列表里看到的,是一句没有说清装上得到什么的英文。

@@ -18,7 +18,7 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 
 ```bash
 # 安装（npm 包，预构建——无需构建步骤，不会触发 allowBuilds 授权）
-dsh plugin --profile web add clearai-dsh
+dsh plugin --profile web add clearai-dsh@0.2.7
 ```
 
 重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
@@ -69,17 +69,24 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 ## 安装与使用
 
-**推荐——从 npm 安装：**
+**推荐——从 npm 安装，并把版本钉住：**
 
 ```bash
-dsh plugin --profile web add clearai-dsh
+dsh plugin --profile web add clearai-dsh@0.2.7
 ```
 
 从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。
 
-**不想开终端**：打开**设置 → 插件列表**，填包名 `clearai-dsh` 即可，走的是宿主自己那条安装路径。等它进了 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录，也能在 **[dsh-market](https://github.com/dsh-market/dsh-market)** 里搜到并一键安装——那个市场只装目录里有的东西。
+> **为什么要钉版本。** pnpm ≥ 11 会**压住刚发布的版本**：`minimumReleaseAge` 默认 1440 分钟，而这条内置默认是**非严格**的，于是裸包名（或 `@latest`）会**静默回退到一天以前的最新版**——刚发完新版时，那就是**上一版**，装完还显示成功。钉版本（pnpm 会自己记下例外），或者在 profile 的 `pnpm-workspace.yaml` 里一次性豁免这个包：
+>
+> ```yaml
+> minimumReleaseAgeExclude:
+>   - clearai-dsh
+> ```
 
-**也提供——一条命令的安装器：**
+**不想开终端**：打开**设置 → 插件列表**，填 `clearai-dsh@0.2.7`（原因同上：裸包名会被压住），走的是宿主自己那条安装路径。等它进了 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录，也能在 **[dsh-market](https://github.com/dsh-market/dsh-market)** 里搜到并一键安装——那个市场只装目录里有的东西。
+
+**也提供——一条命令的安装器**（它自己解析当前版本并钉住，因此不受这条延迟影响）：
 
 ```bash
 npx clearai-dsh install

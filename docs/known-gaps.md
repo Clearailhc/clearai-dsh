@@ -58,7 +58,16 @@ with `design goal` in the same tense was this documentation set's worst habit.
 ## Before you can run it
 
 - **pnpm is a prerequisite — and it is DSH's, not ours.** `dsh plugin …` forwards to pnpm, so an executable `pnpm` has to be on `PATH`; without it the CLI stops with `pnpm not found on PATH` and no profile can be managed. Install it directly (`npm install -g pnpm`, or your system package manager). `corepack enable` is the tempting shortcut, and it is not an install: it drops a version **router** on `PATH` that fetches a pnpm the first time it is invoked. Corepack 0.34 — the one Node 24 ships — launches pnpm by looking for `bin/pnpm.cjs`, which pnpm 11 onwards no longer ships (`bin/pnpm.mjs`, then a native binary at the package root), so it can fetch a version it is unable to run; and its shims can sit earlier on `PATH` than a pnpm that already worked, shadowing it.
-- **The DSH CLI is what adds the plugin, and it ships in the npm package `@deepseek-ai/dsh`.** Starting the harness with `npx` does **not** put `dsh` on your `PATH` — that copy lives in the npx cache and exists only for that one process. So either borrow it for the install (`npx @deepseek-ai/dsh plugin --profile web add clearai-dsh`), or install the CLI once with `npm install -g @deepseek-ai/dsh`.
+- **The DSH CLI is what adds the plugin, and it ships in the npm package `@deepseek-ai/dsh`.** Starting the harness with `npx` does **not** put `dsh` on your `PATH` — that copy lives in the npx cache and exists only for that one process. So either borrow it for the install (`npx @deepseek-ai/dsh plugin --profile web add clearai-dsh@<version>`), or install the CLI once with `npm install -g @deepseek-ai/dsh`.
+- **pnpm ≥ 11 will not install a version published in the last day, and it does not say so.** `minimumReleaseAge` defaults to 1440 minutes; because that built-in default is *non-strict*, a bare package name or `@latest` **silently resolves to the newest version older than a day** instead of failing. Install an exact version — pnpm then records the exception itself — or exempt the package once in the profile's `pnpm-workspace.yaml`:
+
+  ```yaml
+  minimumReleaseAgeExclude:
+    - clearai-dsh
+  ```
+
+  Measured with pnpm 12.4.1 on a clean workspace, minutes after the 0.2.6 release: a bare `pnpm add clearai-dsh` installed **0.2.2**, while `pnpm add clearai-dsh@0.2.6` installed 0.2.6. The npm package's own installer (`npx clearai-dsh install`) resolves the current release and passes that exact version, so it is not affected.
+- **Reloading the plugin list in the middle of a version swap can show one `locale` metadata error.** That is the host reading a half-replaced package — a manifest that already declares `locale/`, a directory that is not there yet. It clears once the install settles: a settled 0.2.5 reads as the plain fallback (package name + npm description), and a settled 0.2.6 reads the bilingual title, description and icon.
 - **Restart `dsh web` after installing.** The host half and the client half are both cached inside the running process; refreshing the browser is not enough, and a process that keeps running while its package is replaced will serve a broken client bundle.
 
 ## Fixed after the first release

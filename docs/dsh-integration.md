@@ -58,21 +58,23 @@ Hosts at or below `0.1.6-alpha.2` have no such row and scan a root directory ins
 
 ## Install
 
-Without a terminal: **Settings → Plugins** takes the package name `clearai-dsh` and installs it through the host's own path. Once the package is in the [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog, it can also be installed from **dsh-market**'s search in one click — that market installs only what the catalog lists.
+Without a terminal: **Settings → Plugins** takes `clearai-dsh@0.2.7` and installs it through the host's own path. Once the package is in the [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog, it can also be installed from **dsh-market**'s search in one click — that market installs only what the catalog lists.
 
 With a terminal:
 
 ```bash
-dsh plugin --profile web add clearai-dsh
+dsh plugin --profile web add clearai-dsh@0.2.7
 ```
 
-The guided variant below is the same install with the composition read back afterwards:
+Both forms pin the version on purpose: pnpm ≥ 11 holds back versions published within the last day, and a bare package name falls back to the previous release instead of failing. The README's *Why the version is pinned* has the mechanism and the one-line exemption that makes a bare name work.
+
+The guided variant is the same install with the composition read back afterwards, and it resolves and pins the current release itself:
 
 ```bash
 npx clearai-dsh install
 ```
 
-The shipped `bin/clearai.mjs` grows exactly one mutating verb for this. It resolves the DSH CLI (a `dsh` on `PATH`, else `npx --yes @deepseek-ai/dsh`), runs the host's own install against the default `web` profile, then reads the composed config back and reports whether the `clearai-host` row actually landed. `--dist` / `--tarball` / `--spec` point it at a local build instead of the registry, `--profile` / `--home` override the defaults, and `dsh plugin --profile web add clearai-dsh` stays the equivalent command if you would rather drive the CLI yourself.
+The shipped `bin/clearai.mjs` grows exactly one mutating verb for this. It resolves the DSH CLI (a `dsh` on `PATH`, else `npx --yes @deepseek-ai/dsh`), runs the host's own install against the default `web` profile, then reads the composed config back and reports whether the `clearai-host` row actually landed. `--dist` / `--tarball` / `--spec` point it at a local build instead of the registry, `--profile` / `--home` override the defaults, and `dsh plugin --profile web add clearai-dsh@<version>` stays the equivalent command if you would rather drive the CLI yourself.
 
 It deliberately does **not** bootstrap a profile or hand-reconcile one. The CLI initializes a profile the first time it is used for one (`initialized profile web at …`), and a second implementation of the host's reconcile step is exactly the duplication this project rejects. For the same reason it stops when `pnpm` is missing instead of working around it: pnpm is DSH's prerequisite, not this plugin's. The degraded, pnpm-less path stays in `tools/install-native.mjs`, where it exists for one-shot E2E homes and labels itself as degraded.
 

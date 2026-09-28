@@ -279,6 +279,22 @@ const MAX_ICON_BYTES = 256 * 1024
 check('exports 放行 ./locale/*.json(不放行宿主解析不到)', manifest.exports?.['./locale/*.json'] === './locale/*.json', String(manifest.exports?.['./locale/*.json'] ?? '(没有这条)'))
 check('files 带上 locale(不带就发不出去)', (manifest.files ?? []).includes('locale'))
 check('engines.dsh 声明了宿主下界(市场据此显示要求)', typeof manifest.engines?.dsh === 'string' && manifest.engines.dsh.trim() !== '', String(manifest.engines?.dsh ?? '(没声明)'))
+/**
+ * 发出去的 README 里,推荐的安装命令**必须钉住本版版本号**。
+ *
+ * 为什么值得一条机械判据:pnpm ≥ 11 的 `minimumReleaseAge`(默认 1440 分钟,内置默认**非严格**)
+ * 会压住一天内发布的版本,而且不报错 —— 它**静默回退到一天前的最新版**。2026-09-28 实测:
+ * 0.2.6 发布十分钟后,干净的 pnpm 工作区里 `pnpm add clearai-dsh` 装到的是 **0.2.2**;
+ * 同一台机器上把版本写死(`clearai-dsh@0.2.6`)就装对了。README 是用户唯一会照抄的东西,
+ * 所以「教人敲裸包名」这一句不许再回来。
+ */
+for (const name of ['README.md', 'README.zh-CN.md']) {
+	const text = existsSync(join(DIST, name)) ? readFileSync(join(DIST, name), 'utf8') : ''
+	const commands = [...text.matchAll(/(?:dsh plugin --profile web add|pnpm add)\s+clearai-dsh(@\S+)?/g)]
+	const versions = commands.map((match) => match[1] ?? '(裸包名)')
+	const wrong = versions.filter((version) => version !== `@${manifest.version}`)
+	check(`${name}:每个安装命令都钉到本版版本号(${manifest.version})`, commands.length > 0 && wrong.length === 0, versions.join(', ') || '(没找到安装命令)')
+}
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failures.length > 0) {
