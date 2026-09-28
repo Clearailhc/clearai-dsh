@@ -7,8 +7,13 @@
   2. lab/data/structure_matrix.md  —— 人读版
   3. lab/data/ontology.json        —— 本体论机器可查快照(族/轴/规则/成员)
 
-判定完全由 meme_samples.csv 的 mechanism / dereference / called_abstract 字段推出,
-不引入任何 CSV 之外的新事实,以保证可复算。
+判定分两层,来源必须在产物里分得清:
+  (a) **字段推导层**——现象族、轴 2 语境、轴 3 成本、条件 A、轴 4 的默认值,
+      完全由 meme_samples.csv 的 mechanism / dereference 字段推导,可逐条复算;
+  (b) **人工编码层**——条件 B(替换测试)、条件 C 的 label_opposed、轴 4 的显式例外,
+      是逐条人工判定,存放在 lab/data/manual_codes.csv,不由字段推导。
+      它们与 (a) 同为输入数据,但性质不同:**改动 (b) 就会改动结论**,这一点必须在
+      报告中如实披露,不能把 (b) 说成"从字段推出"。
 """
 
 from __future__ import annotations
@@ -183,19 +188,7 @@ SECURITY_SOURCES = ("非遗", "教材", "国家级", "文旅部", "舞协", "秧
 # 条件 C(公共标签测试):这些样本在机制上靠近抽象,但公共标签明确把它们归入
 # 既有邻近范畴(校园烂梗/攻击性用语)而非"抽象"。它们是边界案例,不计入假阳性。
 # 依据:新华社 2025-11-04 将"你好唐""你个双肩包"定性为校园语言霸凌类烂梗。
-LABEL_OPPOSED = {
-    "m023": True,  # 你好唐 —— 攻击性贬损用语(新华社定性)
-    "m024": True,  # 你个双肩包 —— 攻击性贬损用语(新华社定性)
-    # 以下 6 条的公共标签是「鬼畜」或「普通热梗」,不是「抽象」。
-    # 报告 §3 条件 C 的规则是「命名势力范围被既有邻近范畴占据即判边界」,
-    # 因此它们必须计入边界案例,而不是硬假阳性。
-    "m045": True,  # 火星文 —— 网络语言学范畴,学者称其为抽象文化前身而非抽象
-    "m046": True,  # Duang —— B 站鬼畜区
-    "m047": True,  # Are you OK —— B 站鬼畜区
-    "m048": True,  # 金坷垃 —— B 站鬼畜区
-    "m049": True,  # 元首的愤怒 —— B 站鬼畜区
-    "m050": True,  # 蓝瘦香菇 —— 普通热梗
-}
+LABEL_OPPOSED = {}  # 由 load_manual_codes() 从 lab/data/manual_codes.csv 填充
 
 # 轴 3(参与成本):复现一次所需的资源。由机制类型机械推导。
 COST_BY_MECHANISM = {
@@ -216,40 +209,9 @@ AGGRESSION_KEYWORDS = {
     "攻击性": ("霸凌", "贬损", "侮辱", "脏话"),
     "攻击性已剥离": ("攻击性", "去攻击性", "粗鄙", "网络暴力", "嘴臭"),
 }
-AGGRESSION_EXPLICIT = {
-    "m023": "攻击性", "m024": "攻击性",       # 新华社点名
-    "m029": "攻击性", "m028": "攻击性",       # 针对具体人
-    "m035": "攻击性已剥离", "m036": "攻击性已剥离", "m039": "攻击性已剥离",
-    "m051": "无攻击性", "m059": "无攻击性", "m060": "无攻击性",
-    "m032": "无攻击性",
-}
+AGGRESSION_EXPLICIT = {}  # 由 load_manual_codes() 从 lab/data/manual_codes.csv 填充
 
-COND_B_MAP = {    "m001": "形式驱动", "m002": "形式驱动", "m003": "形式驱动", "m004": "形式驱动",
-    "m004b": "形式驱动", "m004c": "形式驱动", "m004d": "形式驱动",
-    "m005": "形式驱动", "m006": "形式驱动", "m007": "形式驱动", "m008": "形式驱动",
-    "m009": "形式驱动", "m010": "意义驱动", "m011": "形式驱动", "m012": "形式驱动",
-    "m013": "形式驱动", "m014": "形式驱动", "m015": "形式驱动", "m016": "形式驱动",
-    "m017": "形式驱动",
-    "m018": "意义驱动", "m019": "意义驱动", "m020": "形式驱动", "m021": "意义驱动",
-    "m022": "意义驱动", "m023": "意义驱动", "m024": "意义驱动", "m025": "意义驱动",
-    "m026": "意义驱动", "m027": "意义驱动",
-    "m028": "形式驱动", "m029": "形式驱动",
-    "m030": "意义驱动", "m031": "意义驱动",
-    "m032": "外来对照", "m033": "形式驱动", "m034": "形式驱动",
-    "m035": "形式驱动", "m036": "形式驱动", "m037": "形式驱动", "m038": "意义驱动",
-    "m039": "形式驱动", "m040": "形式驱动",
-    "m041": "形式驱动", "m042": "形式驱动", "m043": "形式驱动", "m044": "形式驱动",
-    "m045": "形式驱动",
-    "m046": "特定形式", "m047": "特定形式", "m048": "特定形式", "m049": "特定形式",
-    "m050": "形式驱动",
-    "m051": "形式驱动", "m052": "形式驱动", "m053": "形式驱动", "m054": "形式驱动",
-    "m055": "形式驱动", "m056": "形式驱动", "m057": "形式驱动", "m058": "形式驱动",
-    "m059": "不适用", "m060": "不适用",
-    "m004e": "形式驱动", "m004f": "形式驱动", "m004g": "形式驱动",
-    "m061": "形式驱动", "m062": "形式驱动", "m063": "形式驱动",
-    "m064": "形式驱动", "m065": "形式驱动", "m066": "形式驱动",
-    "m067": "形式驱动", "m068": "意义驱动",
-}
+COND_B_MAP = {}  # 由 load_manual_codes() 从 lab/data/manual_codes.csv 填充
 
 # 各族按定义允许的脱义度档位:成员落在允许集之外即为"需说明的特例",不静默放过
 FAMILY_EXPECTED_DEREF = {
@@ -322,7 +284,27 @@ def classify(row: dict) -> dict:
     )
 
 
+def load_manual_codes(path="lab/data/manual_codes.csv"):
+    """加载人工编码表(条件 B / 条件 C / 轴 4 显式例外)。
+
+    这些值不来自字段推导,是人逐条判定的,单独落盘以便:
+      - 复核者能直接看到"哪些结论依赖人工判定";
+      - 修改编码不必改代码。
+    """
+    global COND_B_MAP, LABEL_OPPOSED, AGGRESSION_EXPLICIT
+    COND_B_MAP, LABEL_OPPOSED, AGGRESSION_EXPLICIT = {}, {}, {}
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        for r in csv.DictReader(f):
+            if r.get("cond_b"):
+                COND_B_MAP[r["id"]] = r["cond_b"]
+            if r.get("label_opposed"):
+                LABEL_OPPOSED[r["id"]] = True
+            if r.get("axis4_aggression"):
+                AGGRESSION_EXPLICIT[r["id"]] = r["axis4_aggression"]
+
+
 def main() -> None:
+    load_manual_codes()
     src = os.path.join("lab", "data", "meme_samples.csv")
     with open(src, encoding="utf-8-sig", newline="") as f:
         rows = list(csv.DictReader(f))
