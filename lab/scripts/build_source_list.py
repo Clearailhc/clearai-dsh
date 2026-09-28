@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""从语料库生成报告的「附录 C：来源清单」。
+"""从语料库生成「附录 C：来源清单」的内容。
+
+**注意**：本脚本写出 `lab/data/source_list.md`，**不直接写报告**——报告由
+`build_report_appendix.py` 调用本模块的 build()，把 A+B+C 一次渲染进去。
+（此前本脚本被单独调用、内容手工贴进报告，结果被 build_report_appendix.py 的下一次
+运行吞掉——根因是后者从「## 附录 A」替换到文件末尾。已修。）
+
+覆盖面限定：只收录**语料库 url 列**里的来源；报告正文引用的外部文献（SEP、文汇报、
+12 条官方媒体文章等）**不在其中**，它们在正文各节就地带链接。
 
 与 build_report_appendix.py 同一架构约定：本脚本只做渲染，不做统计之外的判断。
 数据源为 lab/data/meme_samples.csv 的 url 列——报告引用的每个来源都在这里。
