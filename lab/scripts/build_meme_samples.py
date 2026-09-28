@@ -133,8 +133,8 @@ SAMPLES = [
          mechanism="谐音", dereference="弱脱义", called_abstract="否", evidence_level="H",
          url="https://finance.sina.com.cn/jjxw/2025-11-05/doc-infwismz2962038.shtml", note="央视新闻热评点名"),
     dict(id="m028", name="鸡你太美", year="2019", origin="蔡徐坤选秀节目台词空耳",
-         mechanism="空耳/鬼畜", dereference="部分脱义", called_abstract="是", evidence_level="H",
-         url="https://www.bianews.com/news/details?id=238808", note="差评文列为鬼畜区黄金期代表作;2019年律师函导致下架"),
+         mechanism="空耳/鬼畜", dereference="完全脱义", called_abstract="是", evidence_level="H",
+         url="https://www.bianews.com/news/details?id=238808", note="差评文列为鬼畜区黄金期代表作;2019年律师函导致下架。中文形式不构成合法语义,判为完全脱义"),
 
     # ---------- E 事件驱动族 ----------
     dict(id="m029", name="马保国/接化发/不讲武德", year="2020", origin="武术界人物采访视频",
