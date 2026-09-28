@@ -253,7 +253,7 @@ def classify(row: dict) -> dict:
 
     deref = (row.get("dereference") or "").strip()
     d_score = DEREF_SCORE.get(deref, None)
-    c_score = CONTEXT_SCORE.get(deref, None)
+    c_score = CONTEXT_SCORE.get(CONTEXT_LEVEL.get(deref, ""), None)
 
     # 判别条件 A:脱义/去语境测试
     if d_score is None or c_score is None:
