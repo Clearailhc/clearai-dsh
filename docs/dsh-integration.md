@@ -58,21 +58,21 @@ Hosts at or below `0.1.6-alpha.2` have no such row and scan a root directory ins
 
 ## Install
 
-Without a terminal: **Settings → Plugins** takes `clearai-dsh@0.2.7` and installs it through the host's own path. Once the package is in the [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog, it can also be installed from **dsh-market**'s search in one click — that market installs only what the catalog lists.
-
-With a terminal:
+In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.2.7` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
 
 ```bash
 dsh plugin --profile web add clearai-dsh@0.2.7
 ```
 
-Both forms pin the version on purpose: pnpm ≥ 11 holds back versions published within the last day, and a bare package name falls back to the previous release instead of failing. The README's *Why the version is pinned* has the mechanism and the one-line exemption that makes a bare name work.
+The version is pinned on purpose: pnpm ≥ 11 holds back versions published within the last day, and a bare package name falls back to the previous release instead of failing. The plugin manager forwards the spec unchanged (`pnpm add <spec>` in `@deepseek-ai/dsh-plugin-manager`) and never compares the version that landed with the one asked for, so that downgrade is reported as a success. The README's *Why the version is pinned* has the mechanism and the one-line exemption that makes a bare name work.
 
 The guided variant is the same install with the composition read back afterwards, and it resolves and pins the current release itself:
 
 ```bash
 npx clearai-dsh install
 ```
+
+The community market ([dsh-market](https://github.com/dsh-market/dsh-market)) is a third-party bundle that lists what the curated [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog carries; ClearAI's entry is in review there. It is not part of DSH and not needed for this install.
 
 The shipped `bin/clearai.mjs` grows exactly one mutating verb for this. It resolves the DSH CLI (a `dsh` on `PATH`, else `npx --yes @deepseek-ai/dsh`), runs the host's own install against the default `web` profile, then reads the composed config back and reports whether the `clearai-host` row actually landed. `--dist` / `--tarball` / `--spec` point it at a local build instead of the registry, `--profile` / `--home` override the defaults, and `dsh plugin --profile web add clearai-dsh@<version>` stays the equivalent command if you would rather drive the CLI yourself.
 

@@ -294,6 +294,13 @@ for (const name of ['README.md', 'README.zh-CN.md']) {
 	const versions = commands.map((match) => match[1] ?? '(裸包名)')
 	const wrong = versions.filter((version) => version !== `@${manifest.version}`)
 	check(`${name}:每个安装命令都钉到本版版本号(${manifest.version})`, commands.length > 0 && wrong.length === 0, versions.join(', ') || '(没找到安装命令)')
+	/**
+	 * 主要安装入口必须是**宿主自己的插件管理器**(侧栏「插件」→ 添加插件),
+	 * 不能只剩下终端命令 —— 官方那条路是本项目写明的首选,而且它的 spec 是钉过版本的。
+	 * 标签取自宿主自己的文案(ui-plugin-manager 的 locales):en `Add plugin` / zh `添加插件`。
+	 */
+	const entry = name === 'README.md' ? 'Add plugin' : '添加插件'
+	check(`${name}:给出了宿主自带的安装入口(${entry})`, text.includes(entry))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

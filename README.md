@@ -19,6 +19,7 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
 dsh plugin --profile web add clearai-dsh@0.2.7
+# or in the app: Plugins → Add plugin → clearai-dsh@0.2.7
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
@@ -69,7 +70,11 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
-**Recommended — install from npm, with the version pinned:**
+**Recommended — install it in the app, with the version pinned:**
+
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.2.7`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+
+**Or from a terminal — the same install:**
 
 ```bash
 dsh plugin --profile web add clearai-dsh@0.2.7
@@ -77,14 +82,15 @@ dsh plugin --profile web add clearai-dsh@0.2.7
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
 
-> **Why the version is pinned.** pnpm ≥ 11 holds back newly published versions: `minimumReleaseAge` defaults to 1440 minutes, and because that built-in default is non-strict, a bare package name (or `@latest`) **silently falls back to the newest version older than a day**. Right after a release that is the *previous* release, so a bare name can install something a version or two old and look like it worked. Pin the version — pnpm then records the exclusion itself — or exempt the package once in your profile's `pnpm-workspace.yaml`:
+> **Why the version is pinned.** pnpm ≥ 11 holds back newly published versions: `minimumReleaseAge` defaults to 1440 minutes, and because that built-in default is non-strict, a bare package name (or `@latest`) **silently falls back to the newest version older than a day** — right after a release, the *previous* release. DSH's plugin manager forwards your spec to pnpm unchanged and does **not** compare what landed against what you asked for, so this downgrade is reported as a success. Its preview card is no help either: it reads the package with `pnpm view`, which ignores the age policy, so it can show the newest release while pnpm installs the one before it. Two ways to be exact:
 >
-> ```yaml
-> minimumReleaseAgeExclude:
->   - clearai-dsh
-> ```
-
-**No terminal needed:** open **Settings → Plugins** and enter `clearai-dsh@0.2.7` (the same reason as above: a bare name is held back); that is the host's own install path. Once the package is listed in the [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog it also appears in **[dsh-market](https://github.com/dsh-market/dsh-market)**'s search, where it installs in one click — that market installs only what the catalog lists.
+> - **Pin the version**, as both commands above do — pnpm then records the exception itself.
+> - **Or exempt the package once** in the profile's `pnpm-workspace.yaml`; a bare name works from then on:
+>
+>   ```yaml
+>   minimumReleaseAgeExclude:
+>     - clearai-dsh
+>   ```
 
 **Also available — one-command installer** (it resolves the current release and pins that version for you, so it is immune to the delay):
 
@@ -93,6 +99,8 @@ npx clearai-dsh install
 ```
 
 Same install underneath; it resolves the DSH CLI from your PATH (or through npx), installs into the `web` profile, and reads the composed config back so you are not taking "success" on faith. Use this if you prefer a guided path, or `--lang zh|en` to force the installer's output language.
+
+**Community market (third-party):** [dsh-market](https://github.com/dsh-market/dsh-market) lists whatever the curated [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) catalog carries and installs a pinned version for you; ClearAI's catalog entry is in review there. It is not part of DSH, and it is not needed to install this plugin.
 
 **Install from source (for development, not the normal path):**
 

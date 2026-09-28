@@ -58,21 +58,21 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 ## 安装
 
-不开终端：**设置 → 插件列表**里填 `clearai-dsh@0.2.7`，走的是宿主自己那条安装路径。等这个包进了 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录之后，也可以在 **dsh-market** 里搜到并一键安装——那个市场只装目录里有的东西。
-
-开终端：
+在应用里：侧栏**「插件」→ 添加插件**填 `clearai-dsh@0.2.7`，走的是 DSH 自己的插件管理器——设置里的**插件列表**是**只读清单**，不是安装入口。开终端则是同一次安装：
 
 ```bash
 dsh plugin --profile web add clearai-dsh@0.2.7
 ```
 
-两种写法都**刻意钉住版本**：pnpm ≥ 11 会压住一天内发布的版本，而裸包名不会报错、会**回退到上一版**。机制与那句一次性豁免写在 README 的「为什么要钉版本」里。
+版本是**刻意钉住**的：pnpm ≥ 11 会压住一天内发布的版本，而裸包名不会报错、会**回退到上一版**。插件管理器把 spec 原样转下去（`@deepseek-ai/dsh-plugin-manager` 里就是 `pnpm add <spec>`），并且**不比对**装到的是不是你要求的，于是这次降级被报成安装成功。机制与那句一次性豁免写在 README 的「为什么要钉版本」里。
 
 下面这条引导式的是同一次安装，只是装完把组合读回来报一遍；它自己解析并钉住当前版本：
 
 ```bash
 npx clearai-dsh install
 ```
+
+社区市场（[dsh-market](https://github.com/dsh-market/dsh-market)）是第三方 bundle，只列 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录里的条目；ClearAI 的条目正在那边评审。它不属于 DSH，也不是这次安装的必要步骤。
 
 随包的 `bin/clearai.mjs` 为此只长了**一个会动 profile 的动词**:它自己解析 DSH CLI(PATH 上有 `dsh` 就用,没有走 `npx --yes @deepseek-ai/dsh`),对缺省的 `web` profile 调宿主自己的安装动作,然后把组合读回来,报出 `clearai-host` 那一行到底有没有进去。`--dist` / `--tarball` / `--spec` 让它改从本地构建装(开发用),`--profile` / `--home` 覆盖缺省;想自己驱动 CLI 的话,`dsh plugin --profile web add clearai-dsh@<版本>` 仍然是等价的那条命令。
 

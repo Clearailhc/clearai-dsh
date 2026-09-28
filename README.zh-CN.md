@@ -19,6 +19,7 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 ```bash
 # 安装（npm 包，预构建——无需构建步骤，不会触发 allowBuilds 授权）
 dsh plugin --profile web add clearai-dsh@0.2.7
+# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.2.7
 ```
 
 重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
@@ -69,7 +70,11 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 ## 安装与使用
 
-**推荐——从 npm 安装，并把版本钉住：**
+**推荐——在应用里装，并把版本钉住：**
+
+侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.2.7`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
+
+**或者开终端——同一次安装：**
 
 ```bash
 dsh plugin --profile web add clearai-dsh@0.2.7
@@ -77,14 +82,15 @@ dsh plugin --profile web add clearai-dsh@0.2.7
 
 从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。
 
-> **为什么要钉版本。** pnpm ≥ 11 会**压住刚发布的版本**：`minimumReleaseAge` 默认 1440 分钟，而这条内置默认是**非严格**的，于是裸包名（或 `@latest`）会**静默回退到一天以前的最新版**——刚发完新版时，那就是**上一版**，装完还显示成功。钉版本（pnpm 会自己记下例外），或者在 profile 的 `pnpm-workspace.yaml` 里一次性豁免这个包：
+> **为什么要钉版本。** pnpm ≥ 11 会**压住刚发布的版本**：`minimumReleaseAge` 默认 1440 分钟，而这条内置默认是**非严格**的，于是裸包名（或 `@latest`）会**静默回退到一天以前的最新版**——刚发完新版时，那就是**上一版**。DSH 的插件管理器把你填的 spec **原样**转给 pnpm，而且**不比对**装到的是不是你要求的，所以这次降级会显示成安装成功；它的预览卡也帮不上忙：预览走 `pnpm view`，**不受**这条策略过滤，于是可能出现「预览显示最新版、装下去是上一版」。两种写确切版本的办法：
 >
-> ```yaml
-> minimumReleaseAgeExclude:
->   - clearai-dsh
-> ```
-
-**不想开终端**：打开**设置 → 插件列表**，填 `clearai-dsh@0.2.7`（原因同上：裸包名会被压住），走的是宿主自己那条安装路径。等它进了 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录，也能在 **[dsh-market](https://github.com/dsh-market/dsh-market)** 里搜到并一键安装——那个市场只装目录里有的东西。
+> - **把版本钉住**（上面两条命令都是）——pnpm 会自己记下例外。
+> - **或者一次性豁免这个包**，写在 profile 的 `pnpm-workspace.yaml` 里；之后裸包名也能装：
+>
+>   ```yaml
+>   minimumReleaseAgeExclude:
+>     - clearai-dsh
+>   ```
 
 **也提供——一条命令的安装器**（它自己解析当前版本并钉住，因此不受这条延迟影响）：
 
@@ -93,6 +99,8 @@ npx clearai-dsh install
 ```
 
 底层是同一个安装；它会从 PATH（或经 npx）解析出 DSH CLI，装进 `web` profile，再把合成后的配置读回来验证，所以「成功」不是靠信。想走引导式流程就用它，`--lang zh|en` 可指定安装器输出语言。
+
+**社区市场（第三方）**：[dsh-market](https://github.com/dsh-market/dsh-market) 只列 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 目录里的条目，并且会替你钉住版本；ClearAI 的条目正在那边评审。它不属于 DSH，也不是装本插件的必要步骤。
 
 **从源码安装（开发用，不是常规路径）：**
 
