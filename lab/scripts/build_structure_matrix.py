@@ -316,6 +316,37 @@ def main() -> None:
     for d in deviations:
         lines.append(f"    - {d}")
     lines.append("")
+
+    # ---------- 覆盖度与假阳性检验(联合判定 A + B) ----------
+    def judged_abstract(r) -> bool:
+        return (r["cond_a"] in ("靠近中心", "边缘")) or (r["cond_b"] == "形式驱动")
+
+    pos = [r for r in out_rows if r["called_abstract"] in ("是", "是(回溯)")]
+    neg = [r for r in out_rows if r["called_abstract"] in ("否", "待判")]
+    tp = [r for r in pos if judged_abstract(r)]
+    fn = [r for r in pos if not judged_abstract(r)]
+    fp = [r for r in neg if judged_abstract(r)]
+    tn = [r for r in neg if not judged_abstract(r)]
+
+    lines.append("[覆盖度与假阳性检验(联合判定:条件A 靠近中心/边缘,或条件B 形式驱动)]")
+    lines.append(f"  正例(被公开称作抽象): {len(pos)}")
+    lines.append(f"  对照组(不被称抽象或待判): {len(neg)}")
+    lines.append(f"  真阳性 TP: {len(tp)}")
+    lines.append(f"  假阴性 FN(未覆盖的真例): {len(fn)}")
+    lines.append(f"  假阳性 FP(误判的假例): {len(fp)}")
+    lines.append(f"  真阴性 TN: {len(tn)}")
+    lines.append(f"  覆盖率(TP/正例): {len(tp)}/{len(pos)} = {len(tp)/len(pos)*100:.1f}%")
+    lines.append(f"  假阳性率(FP/对照组): {len(fp)}/{len(neg)} = {len(fp)/len(neg)*100:.1f}%")
+    lines.append("")
+    lines.append("  [未覆盖的真例 FN]")
+    lines.append("    " + ("无" if not fn else ""))
+    for r in fn:
+        lines.append(f"      - {r['id']} {r['name']} (A={r['cond_a']}, B={r['cond_b']})")
+    lines.append("  [误判的假例 FP]")
+    lines.append("    " + ("无" if not fp else ""))
+    for r in fp:
+        lines.append(f"      - {r['id']} {r['name']} (A={r['cond_a']}, B={r['cond_b']}, deref={r['dereference']})")
+    lines.append("")
     lines.append("[各族内的脱义度分布]")
     for k in sorted(deref_by_fam):
         dist = ", ".join(f"{a}={b}" for a, b in deref_by_fam[k].most_common())
