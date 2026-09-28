@@ -267,7 +267,7 @@ def main() -> None:
 
     fields = list(rows[0].keys()) + [
         "primary_family", "family_name", "candidate_families",
-        "deref_score", "context_score", "cond_a", "serious_source",
+        "deref_score", "context_score", "cond_a", "cond_b", "serious_source",
     ]
 
     mp = os.path.join("lab", "data", "structure_matrix.csv")
