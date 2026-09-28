@@ -317,10 +317,17 @@ def main() -> None:
         merged.update(c)
         out_rows.append(merged)
 
+    for r in out_rows:
+        opposed = bool(LABEL_OPPOSED.get(r["id"]))
+        mech = (r["cond_a"] in ("靠近中心", "边缘")) or (r["cond_b"] == "形式驱动")
+        r["verdict"] = ("边界" if (mech and opposed) else "抽象" if mech else "非抽象")
+        r["verdict_binary"] = "非抽象" if r["verdict"] in ("边界", "非抽象") else "抽象"
+
     fields = list(rows[0].keys()) + [
         "primary_family", "family_name", "candidate_families",
         "deref_score", "context_score", "cond_a", "cond_b", "serious_source",
         "axis0_gate", "axis2_context", "axis3_cost", "axis4_aggression",
+        "verdict", "verdict_binary",
     ]
 
     mp = os.path.join("lab", "data", "structure_matrix.csv")
@@ -628,8 +635,35 @@ def main() -> None:
     with open(os.path.join("lab", "data", "ontology.json"), "w", encoding="utf-8") as f:
         json.dump(ontology, f, ensure_ascii=False, indent=2)
 
+    # ---------- 统一统计摘要(唯一计算源,附录生成器只渲染不重算) ----------
+    def _cov(edge):
+        t = [r for r in pos if sc(r) is not None and sc(r) >= edge]
+        return len(t), len(pos)
+
+    stats = dict(
+        n=len(out_rows),
+        evidence=dict(Counter(r["evidence_level"] for r in out_rows)),
+        n_url=sum(1 for r in out_rows if r["url"] != "UNKNOWN"),
+        unknown=[f"{r['id']} {r['name']}" for r in out_rows if r["url"] == "UNKNOWN"],
+        axes={c: dict(Counter(r[c] for r in out_rows))
+              for c in ("axis0_gate", "axis2_context", "axis3_cost", "axis4_aggression")},
+        deref=dict(Counter(r["dereference"] for r in out_rows)),
+        families={f"{k[0]} {k[1]}": len(v) for k, v in fam.items()},
+        empty_families=family_empty,
+        deviations=[f"{r['id']} {r['name']}：属 {r['primary_family']} 但脱义度为「{r['dereference']}」"
+                    for r in out_rows if r["primary_family"] in FAMILY_EXPECTED_DEREF
+                    and r["dereference"] not in FAMILY_EXPECTED_DEREF[r["primary_family"]]],
+        coverage={"ge1.5": _cov(1.5), "ge1.0": _cov(1.0), "ge0.5": _cov(0.5),
+                  "A_or_B": (len(tp), len(pos))},
+        fp=len(fp), borderline=len(borderline), tn=len(tn_excl), neg=len(neg),
+        verdicts=dict(Counter(r["verdict"] for r in out_rows)),
+    )
+    with open(os.path.join("lab", "data", "stats.json"), "w", encoding="utf-8") as f:
+        json.dump(stats, f, ensure_ascii=False, indent=2)
+
     print(report)
     print()
+    print("已写出: lab/data/stats.json")
     print("已写出: lab/data/structure_matrix.csv")
     print("已写出: lab/data/structure_matrix.md")
     print("已写出: lab/data/ontology.json")
