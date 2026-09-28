@@ -35,6 +35,8 @@ def render() -> str:
 
     L.append("## 附录 A：语料库统计")
     L.append("")
+    L.append("> **族计数的读法**：下表保留 13 个族编号（对语料库的**忠实计数**）。但按本报告 §1.3 的**立族门槛（典型样本 ≥2 条）**，**F8（事件驱动）与 F9（术语挪用）各仅 1 条，已降级为「边缘现象」**——故本稿的族读作 **11 族 + 2 边缘现象**。计数是事实，立族是判断，二者不混。")
+    L.append("")
     L.append("> **来源标注**：本附录由 `lab/scripts/build_report_appendix.py` 渲染，"
              "**所有数字取自 `lab/data/stats.json`**（由其上游 `build_structure_matrix.py` 计算）。"
              "本脚本不做统计，复跑上游脚本后再跑本脚本即可校验每一个数字。**本附录全部读数的来源为 `lab/data/stats.json` 与 `lab/scripts/build_structure_matrix.py`（可复跑），等级：高；`[非URL来源]`**——因这类实现读数物理上不存在 URL。")
