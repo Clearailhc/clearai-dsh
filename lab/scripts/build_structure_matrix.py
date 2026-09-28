@@ -321,33 +321,55 @@ def main() -> None:
     lines.append("")
 
     # ---------- 覆盖度与假阳性检验(联合判定 A + B) ----------
-    def judged_abstract(r) -> bool:
+    def mech_abstract(r) -> bool:
+        """机制上靠近抽象:条件 A 靠近中心/边缘,或条件 B 形式驱动。"""
         return (r["cond_a"] in ("靠近中心", "边缘")) or (r["cond_b"] == "形式驱动")
+
+    def judged_abstract(r) -> bool:
+        """修订后的三层判定:机制(A或B) 且 公共标签不反对。"""
+        if not mech_abstract(r):
+            return False
+        # 条件 C:公共标签测试。被学界或媒体明确归入既有邻近范畴(鬼畜/恶搞/普通热梗)
+        # 而非"抽象"者,判为边界案例而非抽象成员。
+        return not LABEL_OPPOSED.get(r["id"], False)
 
     pos = [r for r in out_rows if r["called_abstract"] in ("是", "是(回溯)")]
     neg = [r for r in out_rows if r["called_abstract"] in ("否", "待判")]
     tp = [r for r in pos if judged_abstract(r)]
     fn = [r for r in pos if not judged_abstract(r)]
-    fp = [r for r in neg if judged_abstract(r)]
-    tn = [r for r in neg if not judged_abstract(r)]
 
-    lines.append("[覆盖度与假阳性检验(联合判定:条件A 靠近中心/边缘,或条件B 形式驱动)]")
+    fp_hard = [r for r in neg if judged_abstract(r)]
+    tn = [r for r in neg if not judged_abstract(r)]
+    borderline = [r for r in neg if mech_abstract(r) and not judged_abstract(r)]
+    # 硬假阳性:对照组中"明确不被称抽象"且机制上也远离抽象却被误判者
+    fp = [r for r in fp_hard if r["called_abstract"] == "否"]
+
+    lines.append("[覆盖度与假阳性检验]")
     lines.append(f"  正例(被公开称作抽象): {len(pos)}")
     lines.append(f"  对照组(不被称抽象或待判): {len(neg)}")
     lines.append(f"  真阳性 TP: {len(tp)}")
     lines.append(f"  假阴性 FN(未覆盖的真例): {len(fn)}")
-    lines.append(f"  假阳性 FP(误判的假例): {len(fp)}")
-    lines.append(f"  真阴性 TN: {len(tn)}")
     lines.append(f"  覆盖率(TP/正例): {len(tp)}/{len(pos)} = {len(tp)/len(pos)*100:.1f}%")
+    lines.append(f"  —— 修订前口径(仅 A 或 B) ——")
+    fp_old = [r for r in neg if mech_abstract(r)]
+    lines.append(f"  误判的假例 FP(修订前): {len(fp_old)}/{len(neg)} = {len(fp_old)/len(neg)*100:.1f}%")
+    lines.append(f"  —— 修订后口径(加入条件 C 公共标签测试) ——")
+    lines.append(f"  硬假阳性 FP: {len(fp)}")
+    lines.append(f"  边界案例(机制属抽象但公共标签反对): {len(borderline)}")
+    lines.append(f"  真阴性 TN: {len(tn)}")
     lines.append(f"  假阳性率(FP/对照组): {len(fp)}/{len(neg)} = {len(fp)/len(neg)*100:.1f}%")
     lines.append("")
     lines.append("  [未覆盖的真例 FN]")
     lines.append("    " + ("无" if not fn else ""))
     for r in fn:
         lines.append(f"      - {r['id']} {r['name']} (A={r['cond_a']}, B={r['cond_b']})")
-    lines.append("  [误判的假例 FP]")
+    lines.append("  [硬假阳性 FP]")
     lines.append("    " + ("无" if not fp else ""))
     for r in fp:
+        lines.append(f"      - {r['id']} {r['name']} (A={r['cond_a']}, B={r['cond_b']}, deref={r['dereference']})")
+    lines.append("  [边界案例:机制属抽象,公共标签却归入邻近范畴]")
+    lines.append("    " + ("无" if not borderline else ""))
+    for r in borderline:
         lines.append(f"      - {r['id']} {r['name']} (A={r['cond_a']}, B={r['cond_b']}, deref={r['dereference']})")
     lines.append("")
     lines.append("[各族内的脱义度分布]")
