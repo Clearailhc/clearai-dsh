@@ -135,7 +135,9 @@ def main() -> None:
     # 从「## 附录 A」起至文件末尾整体替换为 A + B + C。
     # 注意：本脚本会吞掉附录 A 之后的一切，所以附录 C 必须在这里一起生成
     # （此前把 C 单独追加到文末，被本脚本的下一次运行吃掉了——已修）。
-    s = s[:idx] + render() + "\n" + sl.build()
+    ext_path = os.path.join("lab", "data", "external_sources.md")
+    ext = open(ext_path, encoding="utf-8").read() if os.path.exists(ext_path) else ""
+    s = s[:idx] + render() + "\n" + sl.build() + "\n" + ext
     open(REPORT, "w", encoding="utf-8").write(s)
     print(f"已渲染 {REPORT} 的附录 A + B + C，共 {len(s.splitlines())} 行")
 
