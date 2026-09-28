@@ -249,7 +249,7 @@ def classify(row: dict) -> dict:
         a_score = (1.0 if total == "不需要理解即可参与" else
                    0.5 if total == "理解后不影响参与" else 0.0) + c_score
         cond_a = ("靠近中心" if a_score >= 1.5 else
-                  "边缘" if a_score >= 0.5 else "不属于")
+                  "边缘" if a_score >= 1.0 else "不属于")
 
     return dict(
         primary_family=primary,
