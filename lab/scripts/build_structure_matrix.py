@@ -352,12 +352,29 @@ def main() -> None:
     # 硬假阳性:对照组中"明确不被称抽象"且机制上也远离抽象却被误判者
     fp = [r for r in fp_hard if r["called_abstract"] == "否"]
 
+    # 两种口径必须并列披露(A 单判 vs A∨B 析取),否则覆盖率会被高估
+    tp_a = [r for r in pos if r["cond_a"] in ("靠近中心", "边缘")]
+    fn_a = [r for r in pos if r["cond_a"] not in ("靠近中心", "边缘")]
+
     lines.append("[覆盖度与假阳性检验]")
     lines.append(f"  正例(被公开称作抽象): {len(pos)}")
     lines.append(f"  对照组(不被称抽象或待判): {len(neg)}")
-    lines.append(f"  真阳性 TP: {len(tp)}")
-    lines.append(f"  假阴性 FN(未覆盖的真例): {len(fn)}")
-    lines.append(f"  覆盖率(TP/正例): {len(tp)}/{len(pos)} = {len(tp)/len(pos)*100:.1f}%")
+    lines.append("  —— 口径 1:仅条件 A(脱义/去语境测试) ——")
+    lines.append(f"  真阳性 TP_A: {len(tp_a)}")
+    lines.append(f"  假阴性 FN_A(未覆盖的真例): {len(fn_a)}")
+    lines.append(f"  覆盖率_A(TP_A/正例): {len(tp_a)}/{len(pos)} = {len(tp_a)/len(pos)*100:.1f}%")
+    lines.append("  —— 口径 2:条件 A 或 条件 B(析取式,本报告采用) ——")
+    lines.append(f"  真阳性 TP_AB: {len(tp)}")
+    lines.append(f"  假阴性 FN_AB(未覆盖的真例): {len(fn)}")
+    lines.append(f"  覆盖率_AB(TP_AB/正例): {len(tp)}/{len(pos)} = {len(tp)/len(pos)*100:.1f}%")
+    lines.append("  [口径说明] 报告正文若只写一个数字,必须写明是哪个口径;两口径差"
+                 f" {len(tp)-len(tp_a)} 条,全部是条件 A 判『不属于』而条件 B 判『形式驱动』者。")
+    lines.append("")
+    lines.append(f"  —— 口径 1 下的未覆盖真例 FN_A ——")
+    lines.append("    " + ("无" if not fn_a else ""))
+    for r in fn_a:
+        lines.append(f"      - {r['id']} {r['name']} (A={r['cond_a']}, B={r['cond_b']}, deref={r['dereference']})")
+    lines.append("")
     lines.append(f"  —— 修订前口径(仅 A 或 B) ——")
     fp_old = [r for r in neg if mech_abstract(r)]
     lines.append(f"  误判的假例 FP(修订前): {len(fp_old)}/{len(neg)} = {len(fp_old)/len(neg)*100:.1f}%")
