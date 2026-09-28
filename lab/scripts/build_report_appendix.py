@@ -37,7 +37,7 @@ def render() -> str:
     L.append("")
     L.append("> **来源标注**：本附录由 `lab/scripts/build_report_appendix.py` 渲染，"
              "**所有数字取自 `lab/data/stats.json`**（由其上游 `build_structure_matrix.py` 计算）。"
-             "本脚本不做统计，复跑上游脚本后再跑本脚本即可校验每一个数字。")
+             "本脚本不做统计，复跑上游脚本后再跑本脚本即可校验每一个数字。**本附录全部读数的来源为 `lab/data/stats.json` 与 `lab/scripts/build_structure_matrix.py`（可复跑），等级：高；`[非URL来源]`**——因这类实现读数物理上不存在 URL。")
     L.append("")
     L.append(f"- 样本总数：**{st['n']}** 条")
     L.append("- 证据等级分布：" + "、".join(f"{k} {v}" for k, v in sorted(st["evidence"].items())))
