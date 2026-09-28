@@ -275,6 +275,17 @@ def main() -> None:
     lines.append("[零成员的族]")
     lines.append("  " + ("无" if not family_empty else ", ".join(family_empty)))
     lines.append("")
+    lines.append("[族定义 vs 族成员:脱义度偏离的待说明特例]")
+    deviations = []
+    for r in out_rows:
+        fam = r["primary_family"]
+        expected = FAMILY_EXPECTED_DEREF.get(fam)
+        if expected and r["dereference"] not in expected:
+            deviations.append(f"{r['id']} {r['name']} 属 {fam} 但脱义度={r['dereference']}")
+    lines.append("  " + ("无" if not deviations else ""))
+    for d in deviations:
+        lines.append(f"    - {d}")
+    lines.append("")
     lines.append("[各族内的脱义度分布]")
     for k in sorted(deref_by_fam):
         dist = ", ".join(f"{a}={b}" for a, b in deref_by_fam[k].most_common())
