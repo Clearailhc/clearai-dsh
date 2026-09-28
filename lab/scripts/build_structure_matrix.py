@@ -648,7 +648,9 @@ def main() -> None:
         axes={c: dict(Counter(r[c] for r in out_rows))
               for c in ("axis0_gate", "axis2_context", "axis3_cost", "axis4_aggression")},
         deref=dict(Counter(r["dereference"] for r in out_rows)),
-        families={f"{k[0]} {k[1]}": len(v) for k, v in fam.items()},
+        families=dict(Counter(r["primary_family"] for r in out_rows)),
+        family_names={k: FAMILIES.get(k, {}).get("name", "未归类")
+                      for k in set(r["primary_family"] for r in out_rows)},
         empty_families=family_empty,
         deviations=[f"{r['id']} {r['name']}：属 {r['primary_family']} 但脱义度为「{r['dereference']}」"
                     for r in out_rows if r["primary_family"] in FAMILY_EXPECTED_DEREF
