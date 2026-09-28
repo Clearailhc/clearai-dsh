@@ -2,11 +2,11 @@
  * verify-lifecycle —— preset 与包的**生命周期**验收(S4):升级 / 卸载 / 用户 fork。
  *
  * 为什么单开一个工具:这三件事都不是「装一次能不能用」,而是**时间轴上的行为**——
- *   · 升级:换版本重装,层栈不能重复、组合不能丢行、名册 root 不能断;
- *   · 卸载:行、bundles、node_modules、名册 root 四处都要回到装之前,不留悬空引用;
+ *   · 升级:换版本重装,层栈不能重复、组合不能丢行、预设归属不能断;
+ *   · 卸载:行、bundles、node_modules、预设归属四处都要回到装之前,不留悬空引用;
  *   · 用户 fork:播种出去的副本,**用户改过的文件永远不被覆盖**,卸载时也只删自己播的。
  *
- * 判据全部是机械的(文件哈希、bundles 列表、组合里的行、名册 root 表达式),
+ * 判据全部是机械的(文件哈希、bundles 列表、组合里的行、预设归属行/表达式),
  * 全部在一个**一次性 DSH_HOME** 里跑,不碰真实部署。
  *
  * 跑法:node tools/verify-lifecycle.mjs [--keep]
@@ -46,8 +46,8 @@ const realHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
 for (const name of ['.credentials.yaml', 'settings.yaml']) {
 	if (existsSync(join(realHome, name))) cpSync(join(realHome, name), join(HOME, name))
 }
-console.log(`【生命周期验收】DSH_HOME=${HOME}(profile 用官方 **web** 模板:名册只在挂它的部署里存在,`)
-console.log('                       而 S4 要验的正是「名册 root 在升级/卸载后还在不在」)')
+console.log(`【生命周期验收】DSH_HOME=${HOME}(profile 用官方 **web** 模板:预设归属只在挂它的部署里存在,`)
+console.log('                       而 S4 要验的正是「预设归属在升级/卸载后还在不在」)')
 console.log(`  v1=${V1}\n  v2=${V2}`)
 
 const build = (out, version) => {
@@ -85,6 +85,21 @@ const composedRows = () => {
 	return String(run.stdout ?? '')
 }
 const profileManifest = () => JSON.parse(readFileSync(join(HOME, 'profiles', 'life', 'package.json'), 'utf8'))
+/**
+ * 预设的**归属**在组合里(装上了/还在/已经没了,看的就是它)。
+ *
+ * 名册注册在宿主 0.1.7-alpha.1 换代了:「root 目录扫描」→「组合里的声明行」。判据按组合里
+ * 出现哪一代的名册行分档,旧判据不删、只在新宿主上让位(与 `tools/verify-clean-install.mjs`
+ * 的 ④/④′ 同一套读法)——2026-09-28 实测:这四条断言里留在旧机制上的那两条,在新宿主上**必红**,
+ * 而红的原因(机制换了,不是包坏了)从输出里看不出来。
+ */
+const presetAnchored = (rows) => {
+	if (rows.includes('- id: agent-preset-registry')) {
+		const at = rows.indexOf('- id: preset-clearai')
+		return at >= 0 && /name:\s*'@deepseek-ai\/dsh-agent-preset'/.test(rows.slice(at, at + 600)) && rows.includes('clearai-dsh/presets/')
+	}
+	return /agent-presets[\s\S]{0,400}node_modules\/clearai-dsh\/presets\//.test(rows)
+}
 const pkgDir = join(HOME, 'profiles', 'life', 'node_modules', 'clearai-dsh')
 
 // ── ① 用户 fork:播种 / 改过不覆盖 / 卸载只删自己播的 ──────────────────────
@@ -115,7 +130,7 @@ rmSync(FORK_ROOT, { recursive: true, force: true })
 writeFileSync(ledgerPath, '{}\n', 'utf8')
 void otherHash
 
-// ── ② 升级:换版本重装,层栈/行/root 都不许坏 ──────────────────────────────
+// ── ② 升级:换版本重装,层栈/行/预设归属都不许坏 ────────────────────────────
 console.log('\n② 升级(0.1.0 → 0.1.1 重装)')
 const v1 = install(V1)
 check('0.1.0 装上了', v1.status === 0, String(v1.stderr ?? '').slice(-200))
@@ -136,7 +151,7 @@ const hashTree = (root) => {
 }
 check('层栈里有 clearai-dsh(且只一次)', beforeBundles.filter((name) => name === 'clearai-dsh').length === 1, beforeBundles.join(' · '))
 check('组合里有 clearai-host 行', /^- id: clearai-host$/m.test(beforeRows))
-check('名册 root 指向包内 presets(表达式已在补丁层)', /agent-presets[\s\S]{0,400}node_modules\/clearai-dsh\/presets\//.test(beforeRows))
+check('预设归属在组合里(新宿主:preset-clearai 声明行;旧宿主:名册 root 表达式)', presetAnchored(beforeRows))
 
 build(V2, '0.1.1')
 const v2 = install(V2)
@@ -154,7 +169,7 @@ const builtTree = hashTree(V2)
 delete builtTree['INVENTORY.txt']
 check('层栈没有重复(升级后仍只有一次)', afterBundles.filter((name) => name === 'clearai-dsh').length === 1, afterBundles.join(' · '))
 check('组合里 clearai-host 行仍在', /^- id: clearai-host$/m.test(afterRows))
-check('名册 root 仍在且仍指向包内', /agent-presets[\s\S]{0,400}node_modules\/clearai-dsh\/presets\//.test(afterRows))
+check('升级后预设归属仍在(同一条判据)', presetAnchored(afterRows))
 {
 	const differing = Object.keys(builtTree).filter((rel) => installedTree[rel] !== builtTree[rel])
 	const missing = Object.keys(builtTree).filter((rel) => installedTree[rel] === undefined)
@@ -167,7 +182,7 @@ check('名册 root 仍在且仍指向包内', /agent-presets[\s\S]{0,400}node_mo
 check('包内清单版本是新的', JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')).version === '0.1.1')
 
 // ── ③ 卸载:四处都要回到装之前 ──────────────────────────────────────────────
-console.log('\n③ 卸载(行 / bundles / node_modules / 名册 root)')
+console.log('\n③ 卸载(行 / bundles / node_modules / 预设归属)')
 const removed = install(V2, ['--uninstall'])
 const finalBundles = profileManifest().dsh?.profile?.bundles ?? []
 const finalRows = composedRows()
@@ -176,7 +191,7 @@ check('bundles 里没有它了', !finalBundles.includes('clearai-dsh'), finalBun
 check('dependencies 里也没有了', profileManifest().dependencies?.['clearai-dsh'] === undefined)
 check('组合里没有 clearai-host 行(不留悬空引用)', !/^- id: clearai-host$/m.test(finalRows))
 check('包目录已删', !existsSync(pkgDir))
-check('名册 root 也随包一起没了', !/node_modules\/clearai-dsh\/presets\//.test(finalRows))
+check('预设归属也随包一起没了(不留悬空引用)', !presetAnchored(finalRows) && !/node_modules\/clearai-dsh\/presets\//.test(finalRows))
 
 // ── ④ 随包的 install 动词:读者会敲的那一条命令,走的是同一条原生路 ───────────
 console.log('\n④ 随包的 install 动词(node bin/clearai.mjs install)')
