@@ -365,6 +365,15 @@ def main() -> None:
     lines.append("[零成员的族]")
     lines.append("  " + ("无" if not family_empty else ", ".join(family_empty)))
     lines.append("")
+    lines.append("[轴1 × 轴3 列联表]")
+    costs_all = [c for c, _ in Counter(r["axis3_cost"] for r in out_rows).most_common()]
+    ctab = Counter((r["dereference"], r["axis3_cost"]) for r in out_rows)
+    lv1_all = [d for d, _ in Counter(r["dereference"] for r in out_rows).most_common()]
+    lines.append("    脱义度\\成本  " + "  ".join(f"{c:>4}" for c in costs_all))
+    for d in lv1_all:
+        lines.append(f"    {d:<12}" + "  ".join(f"{ctab.get((d, c), 0):>4}" for c in costs_all))
+    lines.append("")
+
     lines.append("[轴 2/3/4 与参与门槛的分布]")
     for col, name in (("axis0_gate", "参与门槛(轴0)"), ("axis2_context", "轴2 语境"),
                       ("axis3_cost", "轴3 成本"), ("axis4_aggression", "轴4 攻击性")):
@@ -513,8 +522,42 @@ def main() -> None:
         m3[r["mechanism"]].add(r["dereference"])
     n_multi = sum(1 for v in m3.values() if len(v) > 1)
     lines.append(f"  轴1 vs 机制: 26 种 mechanism 中 {n_multi} 种对应多个脱义度 → 轴1 相对独立 ✓")
-    lines.append("  [结论] 本框架实际独立维度数 = 脱义度 + 参与成本 = 2;"
-                 "轴2 与条件 A 均为脱义度的确定性函数,只提供可读性,不提供新证据。")
+
+    # 轴3 的母字段是 mechanism 而非 dereference
+    m4 = defaultdict(set)
+    for r in out_rows:
+        m4[r["mechanism"]].add(r["axis3_cost"])
+    multi4 = {k: v for k, v in m4.items() if len(v) > 1}
+    if multi4:
+        lines.append(f"  轴3 vs 机制: {len(multi4)} 种机制对应多个成本档 → 非严格函数")
+    else:
+        lines.append(f"  轴3 vs 机制: **不独立 ✗** — 成本是按 mechanism 查表得到,"
+                     "是机制字段的 4 档粗化,不是新证据")
+
+    # 轴4 / 条件B 是否冗余:用"同 (轴1,轴3) 不同取值"的见证对检验
+    def witness(col):
+        g = defaultdict(set)
+        for r in out_rows:
+            g[(r["dereference"], r["axis3_cost"])].add(r[col])
+        w = {k: v for k, v in g.items() if len(v) > 1}
+        return w
+
+    for col, name in (("axis4_aggression", "轴4 攻击性"), ("cond_b", "条件B"),
+                      ("axis0_gate", "轴0 参与门槛"), ("cond_a", "条件A")):
+        w = witness(col)
+        if w:
+            k = next(iter(w))
+            ex = "、".join(sorted(w[k]))
+            lines.append(f"  {name} vs (轴1×轴3): 独立 ✓ — 存在同脱义度同成本而取值不同者"
+                         f"(如 {k[0]}+{k[1]} 下有:{ex})")
+        else:
+            lines.append(f"  {name} vs (轴1×轴3): **不独立 ✗** — 完全由脱义度与成本决定")
+
+    lines.append("  [结论] 真正互不决定的量只有两个,且**两个都是语料库的人工编码字段**:"
+                 "dereference(7 档) 与 mechanism(26 档)。"
+                 "轴0/轴2/条件A 是 dereference 的函数;轴3 是 mechanism 的粗化(4 档);"
+                 "轴4 与条件B 是独立的人工编码,但同样不是从字段推导出来的。"
+                 "故『可由语料库字段复算』的准确含义是:给定脚本(含其手写表)与语料 CSV,可确定性重算。")
     lines.append("")
 
     lines.append("[断言:同一标签下脱义度是否取遍全谱]")
