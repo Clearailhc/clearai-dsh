@@ -172,7 +172,7 @@ CONTEXT_SCORE = {
     "原义完整": 0.0,
     "语义反转": 0.5,
 }
-SECURITY_SOURCES = ("非遗", "教材", "国家级", "文旅部", "舞协")
+SECURITY_SOURCES = ("非遗", "教材", "国家级", "文旅部", "舞协", "秧歌", "花鼓灯", "大染坊")
 
 # 判别条件 B(替换测试):保留形式、替换意义,是否仍然能用?
 #   形式驱动 = 换掉意义与具体形式仍可用(任意三字/任意动作都行)→ 属抽象机制
@@ -184,8 +184,17 @@ SECURITY_SOURCES = ("非遗", "教材", "国家级", "文旅部", "舞协")
 # 既有邻近范畴(校园烂梗/攻击性用语)而非"抽象"。它们是边界案例,不计入假阳性。
 # 依据:新华社 2025-11-04 将"你好唐""你个双肩包"定性为校园语言霸凌类烂梗。
 LABEL_OPPOSED = {
-    "m023": True,  # 你好唐 —— 攻击性贬损用语
-    "m024": True,  # 你个双肩包 —— 攻击性贬损用语
+    "m023": True,  # 你好唐 —— 攻击性贬损用语(新华社定性)
+    "m024": True,  # 你个双肩包 —— 攻击性贬损用语(新华社定性)
+    # 以下 6 条的公共标签是「鬼畜」或「普通热梗」,不是「抽象」。
+    # 报告 §3 条件 C 的规则是「命名势力范围被既有邻近范畴占据即判边界」,
+    # 因此它们必须计入边界案例,而不是硬假阳性。
+    "m045": True,  # 火星文 —— 网络语言学范畴,学者称其为抽象文化前身而非抽象
+    "m046": True,  # Duang —— B 站鬼畜区
+    "m047": True,  # Are you OK —— B 站鬼畜区
+    "m048": True,  # 金坷垃 —— B 站鬼畜区
+    "m049": True,  # 元首的愤怒 —— B 站鬼畜区
+    "m050": True,  # 蓝瘦香菇 —— 普通热梗
 }
 
 # 轴 3(参与成本):复现一次所需的资源。由机制类型机械推导。
@@ -236,6 +245,7 @@ COND_B_MAP = {    "m001": "形式驱动", "m002": "形式驱动", "m003": "形�
     "m051": "形式驱动", "m052": "形式驱动", "m053": "形式驱动", "m054": "形式驱动",
     "m055": "形式驱动", "m056": "形式驱动", "m057": "形式驱动", "m058": "形式驱动",
     "m059": "不适用", "m060": "不适用",
+    "m004e": "形式驱动", "m004f": "形式驱动", "m004g": "形式驱动",
     "m061": "形式驱动", "m062": "形式驱动", "m063": "形式驱动",
     "m064": "形式驱动", "m065": "形式驱动", "m066": "形式驱动",
     "m067": "形式驱动", "m068": "意义驱动",
@@ -361,6 +371,13 @@ def main() -> None:
     lines.append("[无族可归的样本]")
     lines.append("  " + ("无" if not unclassified else
                          ", ".join(f"{r['id']} {r['name']}" for r in unclassified)))
+    lines.append("  ⚠ 口径说明：0 条是**构造保证**而非观测结果——MECHANISM_TO_FAMILY 覆盖语料库"
+                 "出现的全部 mechanism，故 UNCLASSIFIED 分支不可达，零信息量。"
+                 "真正有信息量的是『映射表覆盖率』，见下。")
+    lines.append(f"  [映射表覆盖率] 语料库出现 {len(set(r['mechanism'] for r in out_rows))} 种 mechanism，"
+                 f"映射表 {len(MECHANISM_TO_FAMILY)} 个键，未被映射的 mechanism："
+                 + (", ".join(sorted(set(r['mechanism'] for r in out_rows) - set(MECHANISM_TO_FAMILY)))
+                    or "无"))
     lines.append("")
     lines.append("[零成员的族]")
     lines.append("  " + ("无" if not family_empty else ", ".join(family_empty)))
@@ -428,9 +445,12 @@ def main() -> None:
     fp_old = [r for r in neg if mech_abstract(r)]
     lines.append(f"  误判的假例 FP(修订前): {len(fp_old)}/{len(neg)} = {len(fp_old)/len(neg)*100:.1f}%")
     lines.append(f"  —— 修订后口径(加入条件 C 公共标签测试) ——")
+    tn_excl = [r for r in tn if not (mech_abstract(r) and LABEL_OPPOSED.get(r["id"], False))]
     lines.append(f"  硬假阳性 FP: {len(fp)}")
     lines.append(f"  边界案例(机制属抽象但公共标签反对): {len(borderline)}")
-    lines.append(f"  真阴性 TN: {len(tn)}")
+    lines.append(f"  真阴性 TN(排他口径): {len(tn_excl)}")
+    lines.append(f"  [口径校验] FP + 边界 + TN(排他) = {len(fp)} + {len(borderline)} + {len(tn_excl)}"
+                 f" = {len(fp) + len(borderline) + len(tn_excl)}，应等于对照组 {len(neg)}")
     lines.append(f"  假阳性率(FP/对照组): {len(fp)}/{len(neg)} = {len(fp)/len(neg)*100:.1f}%")
     lines.append("")
     lines.append("  [未覆盖的真例 FN]")
