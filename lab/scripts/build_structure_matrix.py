@@ -318,6 +318,9 @@ def main() -> None:
         mech = (r["cond_a"] in ("靠近中心", "边缘")) or (r["cond_b"] == "形式驱动")
         r["verdict"] = ("边界" if (mech and opposed) else "抽象" if mech else "非抽象")
         r["verdict_binary"] = "非抽象" if r["verdict"] in ("边界", "非抽象") else "抽象"
+        # 条件 C 生效前的判定（mech_abstract 单独决定），落盘留档——
+        # 使「修订前判定」成为可复核的列，而不是事后重建值。
+        r["verdict_preC"] = "抽象" if mech else "非抽象"
         rr = []
         if r["cond_a"] in ("靠近中心", "边缘"):
             rr.append(f"条件A={r['cond_a']}")
@@ -331,7 +334,7 @@ def main() -> None:
         "primary_family", "family_name", "candidate_families",
         "deref_score", "context_score", "cond_a", "cond_b", "serious_source",
         "axis0_gate", "axis2_context", "axis3_cost", "axis4_aggression",
-        "verdict", "verdict_binary", "verdict_reason",
+        "verdict", "verdict_binary", "verdict_reason", "verdict_preC",
     ]
 
     mp = os.path.join("lab", "data", "structure_matrix.csv")
