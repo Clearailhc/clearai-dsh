@@ -137,9 +137,9 @@ SAMPLES = [
          url="https://www.bianews.com/news/details?id=238808", note="差评文列为鬼畜区黄金期代表作;2019年律师函导致下架。中文形式不构成合法语义,判为完全脱义"),
 
     # ---------- E 事件驱动族 ----------
-    dict(id="m029", name="马保国/接化发/不讲武德", year="2020", origin="武术界人物采访视频",
-         mechanism="台词复用/鬼畜", dereference="部分脱义", called_abstract="是", evidence_level="H",
-         url="https://www.bianews.com/news/details?id=238808", note="差评文列为鬼畜区山头之一;2020年11月人民日报批评后B站限制审核"),
+    dict(id="m029", name="马保国/接化发/不讲武德", year="2020", origin="武术界人物马保国的真实比赛与采访视频(事件驱动)",
+         mechanism="事件驱动", dereference="部分脱义", called_abstract="是", evidence_level="H",
+         url="https://www.bianews.com/news/details?id=238808", note="差评文列为鬼畜区山头之一;2020年11月人民日报批评后B站限制审核。以真实人物真实事件为素材,故主族为事件驱动族而非鬼畜"),
     dict(id="m030", name="听我说谢谢你", year="2022", origin="抗疫手势舞儿歌",
          mechanism="动作模仿/场景复用", dereference="弱脱义", called_abstract="否", evidence_level="L",
          url="UNKNOWN", note="反例候选:由明确语境驱动,含义清晰,通常被称'烂梗'而非'抽象'"),
@@ -149,8 +149,8 @@ SAMPLES = [
 
     # ---------- F 外来借用族 ----------
     dict(id="m032", name="What the dog doing?", year="2024", origin="英文母梗,我的刀盾的源头",
-         mechanism="外来借用", dereference="原义完整", called_abstract="否", evidence_level="H",
-         url="https://tidenews.com.cn/news.html?id=3439614", note="跨语言证据:同一形式在英语圈指'那只狗在干什么',进入中文后脱义成'我的刀盾'"),
+         mechanism="跨语言对照", dereference="原义完整", called_abstract="否", evidence_level="H",
+         url="https://tidenews.com.cn/news.html?id=3439614", note="跨语言证据:同一形式在英语圈指'那只狗在干什么',进入中文后脱义成'我的刀盾'。归属参照族 F0 而非 F1——它是镜子的另一面,不是抽象现象成员"),
     dict(id="m033", name="比博燃", year="2020", origin="日语借用/谐音",
          mechanism="外来借用", dereference="部分脱义", called_abstract="是", evidence_level="L",
          url="UNKNOWN", note="待补证"),
