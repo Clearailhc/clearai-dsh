@@ -149,7 +149,12 @@
           # 达成→收回,触礁/放弃→置阻塞,重启后自动补防。
           # 配置项就是机制的旋钮:
           - id: clearai-kernel
-            name: ./plugins/clearai-kernel.js
+            # 用**包内子路径**而不是 `./plugins/…`:宿主 ≥0.1.7-alpha.1 起,预设是声明行
+            # (presets/clearai/clearai.patch.yml)里的 plugins 列表,相对基准不再是本文件所在目录 ——
+            # 实测 `./plugins/clearai-kernel.js` 会以「never started」出现在名册的 broken 里。
+            # 包名 + 子路径从 profile 的 node_modules 解析,与宿主解析其它插件名同一条路,
+            # 由 package.json 的 `"./presets/*"` 导出放行。
+            name: 'clearai-dsh/presets/clearai/plugins/clearai-kernel.js'
             config:
               # 连拦阈值:同一件事连续冲闸这么多次没过,计划置 blocked、停下等人。
               # 默认 3;这里写 2 是产品立场「人就在旁边,早点回来问」。它是**质量闸,不随运行档变**。
@@ -234,7 +239,8 @@
           # 一个字都不落账) + 一个呈审捷径(plan-review,把「重新呈审」steer 给模型,
           # 授权记号仍走 RequestPlanReview 工具落账——命令处理器没有变更通道,这是权威边界)。
           - id: clearai-commands
-            name: ./plugins/commands.js
+            # 同上:改用包内子路径(见 clearai-kernel 那一行的说明)。
+            name: 'clearai-dsh/presets/clearai/plugins/commands.js'
 
           # ── 工作方式(非权威能力,交还原生) ──────────────────────────────────────────
 
@@ -277,8 +283,13 @@
                   toolName: subagent_fork
                   backgroundMode: continuable
 
-              - id: workflow-worker-thread
-                name: '@deepseek-ai/dsh-workflow-worker-thread'
+              # 2026-09-28:workflow 引擎换代 —— 旧宿主是 `dsh-workflow-worker-thread`,
+              # 宿主 ≥0.1.7-alpha.1 里换成 `dsh-workflow-ptc`(前者已下线,是另一支实现)。
+              # 它必须与下面两条工具**同处这个 `isolate: { workflowEngine: true }` 的 realm**,
+              # 否则 tool-workflow / tool-ralph 会一直「waiting for workflowEngine」——
+              # 名册会给这个预设记一条 broken(实测实录)。
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
                 config:
                   provider: spawn
 

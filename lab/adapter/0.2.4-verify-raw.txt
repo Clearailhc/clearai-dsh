@@ -1,0 +1,97 @@
+# 0.2.4 本地验证 — 原始输出留档
+# 采集时间: 2026-09-28T11:24:13+08:00
+# DSH_HOME: /tmp/verify-home-024c (空 home 起步,经 dsh plugin add 装入本包 tgz)
+# 宿主: 0.1.7-rc.2  (路径 /tmp/dsh-cli-017/node_modules/.bin/dsh)
+
+===================================================================
+§1 装到的是哪一份 / profile 依赖与 bundles
+$ node -p "require('/tmp/verify-home-024c/profiles/web/package.json')"
+{
+  "dependencies": {
+    "clearai-dsh": "file:/tmp/rel024c/clearai-dsh-0.2.3.tgz"
+  },
+  "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "clearai-dsh",
+    "@deepseek-ai/dsh-experimental-agent-team-profile",
+    "@deepseek-ai/dsh-experimental-auto-review"
+  ]
+}
+
+$ node -p "require('/tmp/verify-home-024c/profiles/web/node_modules/clearai-dsh/package.json').version"
+0.2.3
+
+===================================================================
+§2 组合层面:dump-config 里的名册行清单
+$ DSH_HOME=... dsh --profile web --dump-config | grep -n 'id: preset-'
+608:- id: agent-preset-registry
+612:- id: preset-standard
+794:- id: preset-ptc
+982:- id: preset-minimal
+1062:- id: preset-cordis
+1254:- id: preset-clearai
+
+§3 组合层面:preset-clearai 声明行原文(前 24 行)
+$ DSH_HOME=... dsh --profile web --dump-config | grep -A23 'id: preset-clearai'
+- id: preset-clearai
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: clearai
+    name: ClearAI
+    description: 利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.
+    order: 10
+    plugins:
+      - id: persona
+        name: '@deepseek-ai/dsh-persona'
+        config:
+          prefix: >-
+            你是 ClearAI 的主人格,运行在 DeepSeek Harness 上。
+
+
+            你以**单循环**工作:计划 → 执行 → 观察 → 反思,一个循环推进,不做多 Agent
+            编排。子角色(评估者)由系统按触发派生,不是自由委派。
+
+
+            你的判断是智能的部分:理解材料、提出假设、选择路线、判断哪条证据更可信。事实的部分由系统持有:什么算完成、进度是多少、一个事实能不能写进知识库、谁的裁决有效——这些都不由你声明,只由系统算出来。
+
+
+            你不靠提示词约束自己:完成要过观测准入,推进只能通过唯一完成动词,L3
+            以上的裁决由独立评估者写。你要做的是把智能用在判断上,而不是用在描述状态上。
+
+===================================================================
+§4 运行态:agentPresets.list() 原始结果(这是判据②的主证据)
+$ DSH_HOME=... node lab/scripts/read_preset_roster.mjs
+DSH_HOME=/tmp/verify-home-024c  profile=web
+dsh web: http://127.0.0.1:38079/?token=8Iu8qBgE58tsD_GxTL0s3LZfADn--54-z6qRew7gtkU
+
+=== agentPresets.list() 原始结果 ===
+[
+  {
+    "id": "standard",
+    "order": 1
+  },
+  {
+    "id": "ptc",
+    "order": 2
+  },
+  {
+    "id": "minimal",
+    "order": 3
+  },
+  {
+    "id": "cordis",
+    "order": 4
+  },
+  {
+    "id": "clearai",
+    "name": "ClearAI",
+    "description": "利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.",
+    "order": 10
+  }
+]
+
+=== 摘要 ===
+条目:standard, ptc, minimal, cordis, clearai
+含 clearai:true
+clearai 条目原文:{"id":"clearai","name":"ClearAI","description":"利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.","order":10}

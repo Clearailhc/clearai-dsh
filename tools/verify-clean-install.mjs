@@ -186,9 +186,71 @@ if (spec === null) {
 	const composed = dump.stdout ?? ''
 	check('③ 组合里 clearai-host 恰好一行', (composed.match(/- id: clearai-host/g) ?? []).length === 1, String((composed.match(/- id: clearai-host/g) ?? []).length))
 	check('③′ 宿主行用的是包名(不是路径)', /name:\s*'?clearai-dsh'?/.test(composed.slice(composed.indexOf('clearai-host'), composed.indexOf('clearai-host') + 120)))
-	const rosterLine = composed.slice(composed.indexOf('includeShippedRoot'), composed.indexOf('includeShippedRoot') + 600)
-	check('④ 名册 root 指向包内 presets/,且 trust 是 system', /node_modules\/clearai-dsh\/presets\//.test(rosterLine) && /trust:\s*system/.test(rosterLine), rosterLine.replace(/\s+/g, ' ').slice(0, 120))
-	check('④′ 没有把发行版 root 挤掉(includeShippedRoot 仍为 true)', /includeShippedRoot:\s*true/.test(composed))
+	/**
+	 * 预设注册在宿主 0.1.7-alpha.1 换代了:旧的「root 目录扫描」→「组合里的声明行」。
+	 * 断言按**组合里出现哪一代的名册行**分档;旧断言不删,只在新宿主上让位。
+	 * 依据与实测:lab/release/0.2.3-release-blocker.md、lab/adapter/0.2.4-design.md。
+	 */
+	const legacyRoster = composed.includes('- id: agent-presets')
+	const modernRegistry = composed.includes('- id: agent-preset-registry')
+	console.log(`  · 宿主的名册机制:${modernRegistry ? '声明行(≥0.1.7-alpha.1)' : legacyRoster ? 'root 目录(≤0.1.6-alpha.2)' : '都没找到'}`)
+
+	if (modernRegistry) {
+		check('④ 新机制:名册注册表行在(agent-preset-registry)', true)
+		const at = composed.indexOf('- id: preset-clearai')
+		const decl = at < 0 ? '' : composed.slice(at, at + 600)
+		check(
+			'④′ 新机制:预设声明行在,且 id/name/description/order/plugins 齐备',
+			at >= 0 && /name:\s*'@deepseek-ai\/dsh-agent-preset'/.test(decl) && /\bid: clearai\b/.test(decl) && /\border:\s*\d+/.test(decl) && /\bplugins:/.test(decl),
+			decl.replace(/\s+/g, ' ').slice(0, 120),
+		)
+		/**
+		 * **运行态那一条才是这一版最要紧的判据。**
+		 *
+		 * `--dump-config` 是静态的:探针实测过——preset 里放一个**根本不存在的插件**,
+		 * boot 依然完全正常,只有名册记一条 broken,界面就不显示这个预设。
+		 * 所以这里 boot 一次 profile,直接读 `agentPresets.list()`。
+		 * 用宿主的 profile-boot 接口(不需要模型凭据),web 起在随机端口并立即收尾。
+		 */
+		const INSTALL_ROOT = CLI_PREFIX ?? CHECKOUT
+		const rosterScript = [
+			"const install = process.env.CLEARAI_DSH_INSTALL",
+			"const { runProfile } = await import(install + '/node_modules/@deepseek-ai/dsh/lib/profile-boot.js')",
+			"const { createLaunchEnvironmentSnapshot } = await import(install + '/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js')",
+			"const environment = createLaunchEnvironmentSnapshot([{ source: 'process', values: { ...process.env } }])",
+			"const { ctx } = await runProfile({ environment, profile: 'web', patchFiles: [], args: ['--port', '0', '--no-open'] })",
+			'const list = await ctx.agentPresets.list()',
+			"const entry = list.find((item) => item.id === 'clearai')",
+			"process.stdout.write('ROSTER ' + JSON.stringify({ ids: list.map((i) => i.id), entry: entry === undefined ? null : entry }) + '\\n')",
+			'process.exit(entry !== undefined && entry.broken === undefined ? 0 : 3)',
+		].join('\n')
+		const roster = spawnSync(process.execPath, ['--input-type=module', '-e', rosterScript], {
+			encoding: 'utf8',
+			env: { ...process.env, DSH_HOME: HOME_DIR, CLEARAI_DSH_INSTALL: INSTALL_ROOT },
+			timeout: 300000,
+		})
+		const reported = (roster.stdout ?? '').split('\n').find((line) => line.startsWith('ROSTER '))
+		let ids = []
+		let entry = null
+		try {
+			const parsed = JSON.parse(reported.slice('ROSTER '.length))
+			ids = parsed.ids ?? []
+			entry = parsed.entry
+		} catch {
+			console.log(`  · 名册读不到(退出码 ${roster.status})——stderr 尾部:${String(roster.stderr ?? '').split('\n').filter((line) => line.trim() !== '').slice(-2).join(' | ').slice(0, 200)}`)
+		}
+		if (ids.length > 0) console.log(`  · 名册条目:${ids.join(', ')}`)
+		check('④″ 名册运行态:clearai 在列表里', ids.includes('clearai'), ids.join(', ') || '(空)')
+		check(
+			'④‴ 名册运行态:clearai 没有 broken(子插件真的起来了)',
+			entry !== null && entry.broken === undefined,
+			entry === null ? '(没有 clearai 条目)' : String(entry.broken ?? '').replace(/\s+/g, ' ').slice(0, 220),
+		)
+	} else {
+		const rosterLine = composed.slice(composed.indexOf('includeShippedRoot'), composed.indexOf('includeShippedRoot') + 600)
+		check('④ 名册 root 指向包内 presets/,且 trust 是 system', /node_modules\/clearai-dsh\/presets\//.test(rosterLine) && /trust:\s*system/.test(rosterLine), rosterLine.replace(/\s+/g, ' ').slice(0, 120))
+		check('④′ 没有把发行版 root 挤掉(includeShippedRoot 仍为 true)', /includeShippedRoot:\s*true/.test(composed))
+	}
 
 	const presetDir = join(PROFILE, 'node_modules', 'clearai-dsh', 'presets', 'clearai')
 	const skills = existsSync(join(presetDir, 'template', 'skills')) ? readFileSync(join(presetDir, 'template', 'skills', 'README.md'), 'utf8') : ''
