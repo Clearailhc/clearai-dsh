@@ -480,7 +480,14 @@ def main() -> None:
     lines.append("")
     lines.append(f"  —— 修订前口径(仅 A 或 B) ——")
     fp_old = [r for r in neg if mech_abstract(r)]
-    lines.append(f"  误判的假例 FP(修订前): {len(fp_old)}/{len(neg)} = {len(fp_old)/len(neg)*100:.1f}%")
+    lines.append(f"  误判的假例 FP(修订前, = 边界案例同一集合): {len(fp_old)}/{len(neg)} "
+                 f"= {len(fp_old)/len(neg)*100:.1f}%")
+    lines.append("  [误判假例 FP(修订前) 完整名单 —— 以该名目直列]")
+    for r in fp_old:
+        lines.append(f"      - {r['id']} {r['name']}  (A={r['cond_a']}, B={r['cond_b']}, "
+                     f"label_opposed={bool(LABEL_OPPOSED.get(r['id']))})")
+    lines.append("  [说明] 因硬假阳性=0,『修订前误判假例』与『边界案例』是**同一个集合**,"
+                 "不是数值相等——无一条误判是靠机制信息排除的。")
     lines.append(f"  —— 修订后口径(加入条件 C 公共标签测试) ——")
     tn_excl = [r for r in tn if not (mech_abstract(r) and LABEL_OPPOSED.get(r["id"], False))]
     lines.append(f"  硬假阳性 FP: {len(fp)}")
@@ -673,6 +680,7 @@ def main() -> None:
         coverage={"ge1.5": _cov(1.5), "ge1.0": _cov(1.0), "ge0.5": _cov(0.5),
                   "A_or_B": (len(tp), len(pos))},
         fp=len(fp), borderline=len(borderline), tn=len(tn_excl), neg=len(neg),
+        fp_old=[f"{r['id']} {r['name']}" for r in fp_old],
         verdicts=dict(Counter(r["verdict"] for r in out_rows)),
     )
     with open(os.path.join("lab", "data", "stats.json"), "w", encoding="utf-8") as f:
