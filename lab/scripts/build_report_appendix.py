@@ -125,4 +125,30 @@ def render() -> str:
              "任一单值都不可单独引用。")
     L.append("- 条件 A 的实现阈值为 **≥1.0 才算「边缘」**（见 §3）。")
     L.append("")
-    
+
+    return "\n".join(L)
+
+
+def main() -> None:
+    """把附录 A + B + C + D 一次渲染进报告。
+
+    注意：本脚本从「## 附录 A」起截断到文件末尾再整体覆写——所以附录 C（语料库来源清单）
+    与附录 D（外部文献清单）必须在这里一起生成，手工贴在附录 A 之后的内容会被下一次运行吞掉。
+    """
+    import importlib
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    sl = importlib.import_module("build_source_list")
+
+    ext_path = os.path.join("lab", "data", "external_sources.md")
+    ext = open(ext_path, encoding="utf-8").read() if os.path.exists(ext_path) else ""
+
+    s = open(REPORT, encoding="utf-8").read()
+    idx = s.index("## 附录 A")
+    s = s[:idx] + render() + "\n" + sl.build() + "\n" + ext
+    open(REPORT, "w", encoding="utf-8").write(s)
+    print(f"已渲染 {REPORT} 的附录 A + B + C + D，共 {len(s.splitlines())} 行")
+
+
+if __name__ == "__main__":
+    main()
