@@ -30,13 +30,13 @@ FAMILIES = {
         name="空耳族",
         prototype="我的刀盾",
         defining="形式=母语对另一语言语音的误听转写;存在可指认的外语/方言源;中文形式本身不构成合法语义",
-        trait="脱义度=零所指或完全脱义",
+        trait="脱义度=完全脱义",
     ),
     "F2a": dict(
         name="动作族·挪用型",
         prototype="闪身步",
         defining="形式=身体动律,且动作出自严肃语料(非遗/教材/官方);因被抽离原语境而成为梗",
-        trait="脱义度可为零脱义;去语境化度=剥离但可回溯;参与成本=低",
+        trait="脱义度=部分脱义;去语境化度=剥离但可回溯;参与成本=低",
     ),
     "F2b": dict(
         name="动作族·原生型",
@@ -150,7 +150,6 @@ PRIMARY_OVERRIDE = {
 
 # 脱义度 → 分数档
 DEREF_SCORE = {
-    "零所指": 2.0,
     "完全脱义": 2.0,
     "部分脱义": 1.5,
     "半脱义": 1.5,
@@ -162,13 +161,12 @@ DEREF_SCORE = {
 # 去语境化度 → 分数档(由脱义度与是否为挪用型动作/复读推出,保守)
 # 轴 2(去语境化度)显式档位:与脱义度分开成列,不再只由分数推导
 CONTEXT_LEVEL = {
-    "零所指": "完全剥离", "完全脱义": "完全剥离", "脱义": "完全剥离",
+    "完全脱义": "完全剥离", "脱义": "完全剥离",
     "部分脱义": "剥离但可回溯", "半脱义": "剥离但可回溯",
     "弱脱义": "语境保留", "原义完整": "语境保留", "语义反转": "剥离但可回溯",
 }
 
 CONTEXT_SCORE = {
-    "零所指": 1.0,
     "完全脱义": 1.0,
     "脱义": 1.0,
     "部分脱义": 1.0,
@@ -215,7 +213,7 @@ COND_B_MAP = {}  # 由 load_manual_codes() 从 lab/data/manual_codes.csv 填充
 
 # 各族按定义允许的脱义度档位:成员落在允许集之外即为"需说明的特例",不静默放过
 FAMILY_EXPECTED_DEREF = {
-    "F1": {"零所指", "完全脱义"},
+    "F1": {"完全脱义"},
     "F2a": {"部分脱义", "弱脱义", "原义完整"},
     "F2b": {"部分脱义", "弱脱义", "脱义"},
     "F3": {"部分脱义", "弱脱义", "脱义", "完全脱义"},
@@ -490,6 +488,26 @@ def main() -> None:
             lines.append(f"  {name}: 独立 ✓ (同一脱义度横跨 {max(len(v) for v in multi.values())} 档)")
         else:
             lines.append(f"  {name}: **不独立 ✗** — 完全由轴1决定,只是重编码,无新信息")
+    # 轴1 → 轴2 的映射数(澄清:是 N 个脱义度值映射到 M 个语境值,不是 1:1)
+    lv1 = set(r["dereference"] for r in out_rows)
+    lv2 = set(r["axis2_context"] for r in out_rows)
+    lines.append(f"  轴1→轴2 映射: {len(lv1)} 个脱义度值 → {len(lv2)} 个语境值"
+                 f"(确定性映射,故轴2 无独立信息量)")
+    # 轴1 × 轴3 列联表:正交性不能只靠取值多样性论证
+    lines.append("  轴1 × 轴3 列联表(检验正交性;若集中于单一档位则正交性未获支持):")
+    inner = Counter((r["dereference"], r["axis3_cost"]) for r in out_rows)
+    costs = [c for c, _ in Counter(r["axis3_cost"] for r in out_rows).most_common()]
+    lines.append("    脱义度\\成本  " + "  ".join(f"{c:>4}" for c in costs))
+    for d in sorted(lv1, key=lambda x: -sum(v for (a, _), v in inner.items() if a == x)):
+        row = "  ".join(f"{inner.get((d, c), 0):>4}" for c in costs)
+        lines.append(f"    {d:<12}{row}")
+    n_all = len(out_rows)
+    n_low = sum(v for (_, c), v in inner.items() if c == "极低")
+    lines.append(f"  ⚠ 两轴均向「极低」集中(占 {n_low}/{n_all} = {n_low/n_all*100:.0f}%),"
+                 "故「正交」只是取值多样性的观察,未做关系统计检验——"
+                 "本报告不断言二轴正交,只断言它们**不由彼此决定**。")
+    lines.append("")
+
     m3 = defaultdict(set)
     for r in out_rows:
         m3[r["mechanism"]].add(r["dereference"])
