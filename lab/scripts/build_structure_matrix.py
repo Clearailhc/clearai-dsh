@@ -456,8 +456,8 @@ def main() -> None:
     ):
         lines.append(f"  · {label}: TP={len(t_)}/{len(pos)} = {len(t_)/len(pos)*100:.1f}% ;"
                      f" FN={len(f_)}  [{note}]")
-    _lo = min(len(t_) for t_, _ in (tp_center, tp_impl, tp_text)) / len(pos) * 100
-    _hi = max(len(t_) for t_, _ in (tp_center, tp_impl, tp_text)) / len(pos) * 100
+    _lo = min(len(tp) for tp in (tp_center, tp_impl, tp_text)) / len(pos) * 100
+    _hi = max(len(tp) for tp in (tp_center, tp_impl, tp_text)) / len(pos) * 100
     lines.append(f"  ⚠ 同一判据在阈值从 0.5 挪到 1.5 时给出 {_lo:.1f}%～{_hi:.1f}% 的任意答案"
                  "(上下界由上方三行算出,不硬编码)。"
                  "这不是实现瑕疵,而是『抽象无法用单一判据圈定』的直接证据。")
