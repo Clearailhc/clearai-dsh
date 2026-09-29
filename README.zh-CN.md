@@ -7,6 +7,10 @@
 
 <p align="center"><a href="README.md">English</a> · <b>中文</b></p>
 
+<p align="center">
+  <a href="https://trendshift.io/repositories/248415?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-248415" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/248415/weekly?language=JavaScript" alt="Clearailhc%2Fclearai-dsh | Trendshift" width="250" height="55"/></a>
+</p>
+
 **你的研究，长成一个本体。**
 
 ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑：
@@ -18,8 +22,8 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 
 ```bash
 # 安装（npm 包，预构建——无需构建步骤，不会触发 allowBuilds 授权）
-dsh plugin --profile web add clearai-dsh@0.2.7
-# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.2.7
+dsh plugin --profile web add clearai-dsh@0.2.8
+# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.2.8
 ```
 
 重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
@@ -70,14 +74,16 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 ## 安装与使用
 
+**要求：** DSH ≥ `0.1.7-alpha.1`——预设靠的是那一代引入的组合声明行。已在宿主的 `0.1.7-rc.2` 与 `0.2.0-rc.1` 上验过。
+
 **推荐——在应用里装，并把版本钉住：**
 
-侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.2.7`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
+侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.2.8`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
 
 **或者开终端——同一次安装：**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.2.7
+dsh plugin --profile web add clearai-dsh@0.2.8
 ```
 
 从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。

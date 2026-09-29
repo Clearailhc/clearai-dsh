@@ -2,6 +2,27 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.8] — 2026-09-28
+
+**四个面板消失的那条 bug:客户端半读了一个已经不存在的字段。** 客户端拿「当前会话」用的是 `sessions.list.getSnapshot().current`;宿主的 `SessionListState` 现在只有 `{ ids, byId, phase, projectionsBySession }` —— **没有 `current`**。读到 `undefined`,`isCurrentPreset()` 就恒为 `false`,`occupy()` / `syncRail()` **一个座位都不注册**。失效形态与症状完全一致:模式在、宿主半一切正常,中栏只剩「对话 / 轨迹」、右栏只剩宿主自带的页签,**而且不报错**(0.1.7-rc.2 与 0.2.0-rc.1 的宿主都是这个形状)。
+
+### Fixed
+
+- **客户端:当前会话的取法改成宿主自己的那一套** —— 在 `byId` 里找 `retainedBy.mainView > 0` 的那一行(`dsh-client-ui-open-in-app`、`dsh-client-ui-agent-preset` 都这么写);老宿主若还留着 `current`,照旧认它。`isCurrentPreset()` 与 `sessionIdFor()` 两处共用一个 `currentSessionRow()`。
+
+### Changed
+
+- **测试桩与宿主同形**(`test/client.test.mjs`):旧桩自己造了 `current: 's1'`,于是 240 条检查全绿,而真宿主上四个面板静默消失 —— 桩和宿主不一样,测的就是桩。现在桩用宿主的真实形状(`ids / byId / phase / projectionsBySession` + `retainedBy.mainView`),这条路径从此有断言看着。
+- 版本 0.2.8。
+
+### Verified on DSH 0.2.0-rc.1
+
+- **会话格式仍是 v4**(没有 v4→v5),0.2.5 那次的消息署名改动不用再动;
+- **预设声明行照旧**:名册读到 `standard, ptc, minimal, cordis, clearai`,且 clearai **没有 broken** —— `verify-clean-install` 指向 0.2.0-rc.1 是 22 通过 / 0 失败;
+- **真会话**:`node tools/e2e-run.mjs --installed` 在 0.2.0-rc.1 上 35 通过 / 0 失败(工具、`goal/set`、`plan/created`、投影、跨机制不变量);
+- **真浏览器**(隔离 DSH_HOME + 真 Chrome + 一轮真模型):中栏 `对话 | 轨迹 | 产物 | 本体`,右栏「新标签页」里有 `世界树` 与 `技能 · 记忆`;
+- 0.2 **没有删掉**我们预设用到的官方包;客户端插座与服务名(`conversation.view`、`conversation.input.*`、`sidebarRightTabs`、`sidebarRight`、`sidebar.right.pane.tab(.title)`、`layout`)在 0.2 源码里都还在。
+
 ## [0.2.7] — 2026-09-28
 
 **装完显示「成功」,装到的却是上一版——原因不在我们,但句子在我们这边。** pnpm ≥ 11 起 `minimumReleaseAge` 默认 **1440 分钟(一天)**,而这条内置默认是**非严格**的:一天内发布的版本不会被选中,但**不报错**——它静默回退到**一天以前的最新版**。于是刚发完 `0.2.6`,三条路装到的都是 **`0.2.2`**(2026-09-18):`dsh plugin --profile web add clearai-dsh`(裸包名)、`@latest`、以及**设置 → 插件列表**里填包名。一台 Mac 上实测如此,本机也用 pnpm 12.4.1 在干净工作区复现过(裸名 → 0.2.2;`clearai-dsh@0.2.6` → 0.2.6)。

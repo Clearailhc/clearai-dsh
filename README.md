@@ -7,6 +7,10 @@
 
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 
+<p align="center">
+  <a href="https://trendshift.io/repositories/248415?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-248415" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/248415/weekly?language=JavaScript" alt="Clearailhc%2Fclearai-dsh | Trendshift" width="250" height="55"/></a>
+</p>
+
 **Your research, grown into an ontology.**
 
 ClearAI is an **ontology discovery and exploration platform**, built on two core concepts:
@@ -18,8 +22,8 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.2.7
-# or in the app: Plugins → Add plugin → clearai-dsh@0.2.7
+dsh plugin --profile web add clearai-dsh@0.2.8
+# or in the app: Plugins → Add plugin → clearai-dsh@0.2.8
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
@@ -70,14 +74,16 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
+**Requirements:** DSH ≥ `0.1.7-alpha.1` — that generation introduced the composition declaration line this preset rides on. Verified against the host's `0.1.7-rc.2` and `0.2.0-rc.1`.
+
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.2.7`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.2.8`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.2.7
+dsh plugin --profile web add clearai-dsh@0.2.8
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.

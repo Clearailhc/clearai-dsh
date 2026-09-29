@@ -125,7 +125,19 @@ function makeClientContext({ preset = 'clearai' } = {}) {
 	const scopes = []
 	const tabDefinitions = []
 	const opened = []
-	const snapshot = { current: 's1', byId: { s1: { projectionValues: { agentPreset: preset } } } }
+	/**
+	 * 会话列表快照:形状**照抄宿主**(`SessionListState`)——`{ ids, byId, phase, projectionsBySession }`,
+	 * **没有 `current`**;谁是「当前会话」由 `byId` 行上的 `retainedBy.mainView` 表达。
+	 *
+	 * 旧桩自己造了一个 `current: 's1'`,于是 240 条检查全绿,而真宿主上四个面板**静默消失**:
+	 * 我们的客户端半读的正是那个字段,而它早就不存在了。桩必须与宿主同形,否则测的是桩不是产品。
+	 */
+	const snapshot = {
+		ids: ['s1'],
+		byId: { s1: { id: 's1', retainedBy: { mainView: 1 }, projectionValues: { agentPreset: preset } } },
+		phase: 'ready',
+		projectionsBySession: {},
+	}
 	const listeners = []
 	/**
 	 * 注销必须**真的生效**(§23 修):旧桩的 disposer 是空的,于是「会话切走、席位收回」
@@ -1475,10 +1487,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		addresses.length = 0
 		const withoutProps = seat.component({ useProjection: () => view, useSessions })
 		withoutProps.props.openPreview('lab/evidence.csv')
-		check('座位 props 没有 sessionId 时兜底用当前会话(原生 chat 同款读法)', addresses.join('|') === 'dsh-resource://file/session/s1/lab/evidence.csv', addresses.join('|'))
+		check('座位 props 没有 sessionId 时兜底用当前会话(与宿主同一个读法:retainedBy.mainView)', addresses.join('|') === 'dsh-resource://file/session/s1/lab/evidence.csv', addresses.join('|'))
 		// 当前会话也拿不到(服务卸载):**不打开**,返回 false —— 不编一个会话 id 去撞读面。
 		addresses.length = 0
-		host.ctx.sessions.list.getSnapshot = () => ({ current: undefined, byId: {} })
+		host.ctx.sessions.list.getSnapshot = () => ({ ids: [], byId: {}, phase: 'ready', projectionsBySession: {} })
 		const noSession = seat.component({ useProjection: () => view, useSessions })
 		check('连当前会话都拿不到时不打开(返回 false,零调用)', noSession.props.openPreview('lab/evidence.csv') === false && addresses.length === 0, `${addresses.length}`)
 	}
