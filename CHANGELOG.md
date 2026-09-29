@@ -2,6 +2,21 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — 2026-09-29
+
+**两个死结:计划置 blocked 后再也解不开,续跑窗口的阻塞码收不了兵。** 两条都不是措辞问题,是机制自己在文档承诺的出口上焊死了——0.3.0 的「连拦达阈值 ⇒ 置 blocked、停下等人」写得没错,可人按卡上说的三条出路走,一条也走不出去。
+
+### Fixed
+
+- **`block/cleared` 只清了连拦计数,没清 `plan.blocked`**:计划一旦置 blocked,`AmendPlan`(换一条能过闸的路)与 `RefinePlan`(补齐判据)把话说得再对也解不开,`plan.blocked` 会一直挂着,收件箱那条等人处置的条目成了死结。现在 `block/cleared` 同时删掉 `blocks[plan:step]` 与指向该步的 `plan.blocked`;三条出路各自**真的**能解拦——`AmendPlan`、`RefinePlan`,以及 `VoidPlanStep`(只作废被拦的那一步时才清)。阻塞守卫的文案也随之只列**可执行**的动词(去掉「让人介入后重开」,补上 `VoidPlanStep`)。
+- **续跑窗口的阻塞码用了下划线**:`clearai_loop_stalled` / `clearai_loop_abandoned` 不合宿主契约 —— `@deepseek-ai/dsh-goal` 要求 lower-kebab-case(`/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/`),`goals.block(...)` 当场拒收 ⇒ 收兵失败,窗口留在 `active` 上继续叫醒一个已经收尾的目标。现在改成 `clearai-loop-stalled` / `clearai-loop-abandoned`。测试桩 `makeHost().block` 也按同一条宿主规则抛错——桩与宿主同形,不然测的只是桩。
+- **目录被声明成物证时报「空目录」**:目录不是空文件,两件事不一样,而错的那句话会把下一步动作指错。准入现在把目录**单独判为不可作为物证**(`verified_by: 'l1'`),并如实报出目录里的**文件数与字节数**;`CreatePlan` 的 `artifacts` 契约描述与 `clearai-loop` 技能文档同步写明「目录不是物证,要声明具体文件」。
+
+### Verified
+
+- **18 套件 1886 项检查全绿**(内核 834 · 宿主 119 · 客户端 248 · 领域语言 234 · 本体 96 · 长测 41 · 对照 41 · 可读性 35 …);`verify-package` 44 通过 / 1 失败,唯一那条仍是沙箱里 `npm pack` 的 `EROFS`(只读 `~/.npm/_cacache`),与 0.3.0 记录的是同一处环境限制。
+- 续跑码那一条是**拿真宿主的契约核过**的:`node_modules/@deepseek-ai/dsh-goal/lib/index.js` 里就是那条 lower-kebab-case 正则,不是照着测试桩猜的。
+
 ## [0.3.0] — 2026-09-29
 
 **从一次真跑的三条症状出发,把三件事从劝告变成机制。** 一位用户在真实会话里遇到的三个问题——`CloseGoal` 运行失败且要跑很久;命题晦涩、而且**从没走过认识论循环的便宜层级**;本体建得不错、**查到的实体却没进实体图谱**——每一条都追到了代码行:宿主半用**属性式**取服务(宿主 fiber 瞬态掉线就抛,而评估者刚跑完的那两分钟评审随栈帧一起没了);实体层的节点与边**唯一**来自「整条目标被独立裁决判 support」之后的升格;`supportedLevel` 只是支持证据的最大值,跳级**零代价**。这一版不是把话说重一点,而是把这三条各自换成一道**可清点的机制**——并在两场真模型 headless 长测里验过。
