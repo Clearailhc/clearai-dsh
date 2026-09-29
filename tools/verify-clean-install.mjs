@@ -29,7 +29,7 @@
  */
 
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, realpathSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -172,15 +172,35 @@ if (spec === null) {
 	execFileSync('node', [join(ROOT, 'tools', 'build-package.mjs')], { stdio: 'pipe' })
 	const packDir = mkdtempSync(join(tmpdir(), 'clearai-pack-'))
 	const packed = spawnSync('npm', ['pack', join(ROOT, 'dist', 'clearai-dsh'), '--pack-destination', packDir], { encoding: 'utf8' })
-	const tgz = (packed.stdout ?? '').trim().split('\n').pop()
-	spec = join(packDir, tgz)
-	check('构建并打出了 tgz', existsSync(spec), spec)
+	const tgz = (packed.stdout ?? '').trim().split('\n').filter((line) => line.trim() !== '').pop() ?? ''
+	spec = tgz === '' ? packDir : join(packDir, tgz)
+	/**
+	 * **判据必须是"文件真的在",不是"这个路径存在"**:`npm pack` 失败(例如 npm 自己的缓存
+	 * 只读、EROFS)时 stdout 是空的,拼出来的 `spec` 就成了那个**目录**——`existsSync` 照样为真,
+	 * 于是这里报"✓ 打出了 tgz",而下一条 `dsh plugin add` 会把目录名当组合包名去解析,
+	 * 报出一句与真实原因毫无关系的 `cannot resolve profile bundle "clearai-pack-XXXX"`。
+	 * 所以:必须是 `.tgz` 结尾的**文件**;拿不到就把 npm 的原话打出来。
+	 */
+	const packedOk = spec.endsWith('.tgz') && existsSync(spec) && statSync(spec).isFile()
+	check('构建并打出了 tgz', packedOk, packedOk ? spec : `npm pack 没产出 tgz(stdout=${JSON.stringify((packed.stdout ?? '').slice(-120))} stderr=${JSON.stringify((packed.stderr ?? '').slice(-200))})`)
+	if (!packedOk) process.exit(1)
 }
 
 // ── ⑤ 真 CLI + 真 pnpm ─────────────────────────────────────────────────────
 {
 	const add = dsh(['plugin', '--profile', 'web', 'add', spec], HOME_DIR)
 	check(`dsh plugin add ${SPEC === null ? '<tgz>' : SPEC} 成功`, add.status === 0, `${String(add.stderr ?? '').slice(-200)}`)
+	/**
+	 * **失败时先把它说的话说完,再干净退出**。
+	 *
+	 * 为什么加这一段:装不上时,后面那七条机械断言会去读一个**不存在的** `package.json`,
+	 * 于是整场以一条 ENOENT 堆栈收尾——真正的失败原因(CLI / pnpm 那段 stderr)被埋在中间,
+	 * 读的人要自己往回翻。装不上就该在这里停:把 stderr 原样打出来,并以非零退出。
+	 */
+	if (add.status !== 0) {
+		console.log(`\n⛔ dsh plugin add 失败,后面的断言无从谈起。CLI 的原话:\n${String(add.stderr ?? '').trim() || '(stderr 为空)'}\n`)
+		process.exit(1)
+	}
 }
 
 // ── ⑥ 七条机械断言 ─────────────────────────────────────────────────────────

@@ -148,6 +148,8 @@ ClearAI 里的关系要经过：
 
 ## 现在的项目状态
 
+> **时点声明**：这一节是 v0.2.1 当时的读数（工具数、测试套数与断言数都是当时的）；现行读数以 `CHANGELOG.md` 与 `docs/optimization/truth-table.zh-CN.md` 为准。
+
 - 版本：0.2.1
 - DSH 原生插件
 - 29 个意图工具

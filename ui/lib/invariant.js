@@ -160,7 +160,13 @@ const install = Object.assign(
 			admitted.set(session, adm)
 			return state
 		}
-		ctx.sessions.list().forEach(seed)
+		/**
+		 * **方法式取服务**:属性式(`ctx.sessions`)在访问者 fiber 不是 ACTIVE 时会抛
+		 * `cannot get required service … in inactive context`,而这里只是"把已有会话喂一遍",
+		 * 读不到就少做一次种子,不该让整个不变量伴生件崩掉。
+		 */
+		const sessions = ctx.get('sessions')
+		if (sessions !== undefined && typeof sessions.list === 'function') sessions.list().forEach(seed)
 		ctx.on('session/created', (session) => seed(session), { global: true })
 		ctx.on(
 			'internal/dispatch',

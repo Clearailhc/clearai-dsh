@@ -1,5 +1,6 @@
 # ClearAI: Converging on the Epistemic Core and Slimming the Harness
 
+> **Point-in-time note**: this was the plan of record at the time, including its frozen contract counts; the numbers in the body are kept as written. For current readings see `truth-table.zh-CN.md` and `CHANGELOG.md`.
 > This file is the **approved execution plan**. It is the basis for all follow-up work and the source
 > for the progress ledger. Progress and the commands run in each phase live in
 > [`progress.zh-CN.md`](progress.zh-CN.md). The Chinese version is

@@ -8,10 +8,10 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **64**
-- By status: Implemented 57 · Partial 1 · Design only 2 · Removed 4
-- By strength: Hard boundary 46 · Advisory 10 · Native 3 · Prompt only 1 · Deprecated 4
-- By destination: becomes a mechanism 1 · stays design-only 2 · deleted and accounted 4
+- Mechanisms: **71**
+- By status: Implemented 65 · Partial 1 · Design only 1 · Removed 4
+- By strength: Hard boundary 53 · Advisory 10 · Native 3 · Prompt only 1 · Deprecated 4
+- By destination: stays design-only 2 · deleted and accounted 4
 - Actually blocking execution: **19**
 - Affected by autonomy: **2**
 - Carrying a known mismatch between docs/comments and code: **2**
@@ -21,8 +21,8 @@ This table answers one question: **what the current code actually guarantees**. 
 This section is exported from code, not written by hand:
 
 - Mechanisms: 7 (goal / plan / worldline / scout / brain / ledger / ontology)
-- Intent tools: 29 (SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate QueryKnowledge)
-- Config keys: 24
+- Intent tools: 32 (SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate RegisterInstance Assert ExplainLevelSkip QueryKnowledge)
+- Config keys: 28
 - Prompt sections: 24 defined, 23 mounted at any moment (the clarification slot picks one of two)
 
 ## Summary
@@ -61,6 +61,11 @@ This section is exported from code, not written by hand:
 | `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | Ontology and entity graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/domain-language.js graphProjection` |
 | `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/clearai-kernel.js RegisterTerm` |
+| `entity-registration` | Entity registration (instances as a first-class write path) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/clearai-kernel.js RegisterInstance` |
+| `entity-assertion` | Entity assertion (edge holds on record) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/clearai-kernel.js Assert` |
+| `level-skip-reason` | Level skips need a named reason | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/clearai-kernel.js ExplainLevelSkip` |
+| `criteria-revision-gate` | Criterion revisions need an independent verdict | Epistemic | Implemented | Hard boundary | Authoritative | model | no | no | `preset/plugins/clearai-kernel.js SetGoal` |
+| `audit-digest-reuse` | Verdicts are reused by material digest (same state, no re-dispatch) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js auditDigest` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | no | `preset/plugins/prompts.js exploration-rhythm` |
 | `scout-precommit` | Pre-commit reconnaissance | Harness | Implemented | Advisory | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js runScout / precommitRecon / scoutDigest / sweepScouts / persistMaterial / noticeBlock` |
@@ -88,11 +93,13 @@ This section is exported from code, not written by hand:
 | `budget-tiers` | Removed: 6-round / 512-round budget tiers | Harness | Removed | Deprecated | None | system | no | no | — |
 | `non-authoritative-isolation` | Non-authoritative paths cannot write the authoritative ledger | Harness | Implemented | Hard boundary | None | system | yes | no | `test/authority-boundary.test.mjs` |
 | `ledger-exploration-snapshots` | Workspace snapshot at the turn boundary | Harness | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js snapshotWorkspace` |
+| `durable-dispatch-facts` | Dispatch facts land independently, before the first await | Harness | Implemented | Hard boundary | Authoritative | system | no | no | `preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts` |
 | `human-gate-actions` | Human-gate action whitelist | Host | Implemented | Hard boundary | Authoritative | human | no | no | `ui/lib/index.js 人门通道` |
 | `context-pruning` | Context pruning and compaction, native to the host | Host | Implemented | Native | None | system | no | no | `preset/agent.cordis.yml compaction` |
 | `model-routing` | Model routing and switching, host-native and not owned by ClearAI | Host | Implemented | Native | None | host | no | no | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
+| `host-read-face-degradation` | Host read faces degrade to empty state instead of throwing | Host | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/index.js sessionsOf` |
 | `commands-menu` | Human `/` command menu | UX | Implemented | Native | None | human | no | no | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
-| `ontology-panel-graph` | Design target: the ontology tab and graph editing | UX | Design only | Advisory | None | human | no | no | — |
+| `ontology-panel-graph` | Ontology panel: rendering plus entry editing over the human gate (no canvas drag-to-connect) | UX | Implemented | Advisory | None | human | no | no | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
 
 ## Detail
 
@@ -878,8 +885,8 @@ This section is exported from code, not written by hand:
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: 每次投影（view() 计算读面时）
-- **Input**: state.lexicon 与 state.facts
-- **Output**: {nodes, edges, bounds}：本体层（概念 / is_a / 谓词）与实体层（实例 / 断言），节点带确定性坐标
+- **Input**: state.lexicon 与 state.facts 与 state.entities 与 state.entityAssertions
+- **Output**: {nodes, edges, bounds}：本体层（概念 / is_a / 谓词）与实体层（实例 / 断言，边带 source=promoted|asserted），节点带确定性坐标
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
 - **Rationale**: 图是最自然的表现形式，但它是投影而不是存储：同一账本必得同一张图，坐标、缩放与筛选都不进账本。
@@ -900,17 +907,109 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/domain-language · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `ontology-panel-graph` · Design target: the ontology tab and graph editing
+### `ontology-panel-graph` · Ontology panel: rendering plus entry editing over the human gate (no canvas drag-to-connect)
 
-- **Layer**: UX · **Status**: Design only · **Strength**: Advisory · **Authority**: None · **Actor**: human
-- **Trigger**: —
+- **Layer**: UX · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: human
+- **Trigger**: 人在面板的词条行 / 抽屉里提交人门动作（登记 / 修订 / 废止）
+- **Input**: POST /api/clearai/gate 的 {action, entry:{id,label,gloss,basis,parent,domain,range,reason,…}}
+- **Output**: 一条署名 human 的人门消息 → 折法落成 ontology/term_added / ontology/predicate_added / ontology/term_revised / ontology/term_deprecated / ontology/predicate_deprecated（by:'user'），图与货架随投影刷新
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 图编辑只是具名动词的图形前端：新增节点 = RegisterTerm、连线 = RegisterPredicate、废止 = DeprecateTerm；拖动与缩放不产生任何账本事件。
-- **Destination**: becomes a mechanism
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/optimization/domain-ontology-plan.zh-CN.md
+- **Rationale**: 编辑面是**具名动词的图形前端**，不是第二套写入路径：人门通道复用与模型工具同一份纯函数判据（表外的动词与取值都进不了日志），落账一律 by:'user'。**编辑 = 经人门通道的词条增删改**（登记概念 / 登记谓词两个表单抽屉，条目行上的修订 / 废止）；画布上只有点选、缩放、平移与筛选，**不做拖拽连线**——拖动表达语义太松，而抽屉表单能强制要 domain / range / 值形态 / 依据，且拖动与缩放不产生任何账本事件。
+- **Code**: ui/lib/index.js ONTOLOGY_GATE_ACTIONS; ui/lib/client.js submitOnto register_term register_predicate deprecate_entry; ui/lib/fold.js applyLexiconMutation ontology/term_added
+- **Tests**: test/host.test.mjs（人门通道:登记 / 修订 / 废止的取值校验与落账、白名单逐字等价） · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
+
+### `entity-registration` · Entity registration (instances as a first-class write path)
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 模型调 RegisterInstance
+- **Input**: {id, type, label, basis, provenance:{kind,ref}}
+- **Output**: entity/registered 变更 → state.entities[]（实体图节点，带出处）
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 概念是约定（不要依据），实例是观测（必须带出处）。把实体层绑在目标级裁决上时，"本体写得好、实体图是空的"会变成最省力的完成方式。
+- **Code**: preset/plugins/clearai-kernel.js RegisterInstance; ui/lib/domain-language.js validateTerm; ui/lib/fold.js applyMutations
+- **Tests**: test/kernel.test.mjs · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/domain-language · **Docs**: docs/domain-ontology.zh-CN.md
+
+### `entity-assertion` · Entity assertion (edge holds on record)
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 模型调 Assert
+- **Input**: {subject:{id,type}, predicate, object, evidence:{kind,ref}}
+- **Output**: entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 边在观测那一刻成立，与"独立裁决后才升格"的事实边并存但可区分（promoted 带等级与边界，asserted 带出处）。
+- **Code**: preset/plugins/clearai-kernel.js Assert; ui/lib/domain-language.js graphProjection; ui/lib/fold.js applyMutations
+- **Tests**: test/kernel.test.mjs · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/domain-language · **Docs**: docs/domain-ontology.zh-CN.md
+
+### `level-skip-reason` · Level skips need a named reason
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 模型调 ExplainLevelSkip；或结案时缺口 levels_skipped 存在
+- **Input**: {hypothesis, levels[], reason}
+- **Output**: level/skipped 变更 → hypotheses[].skips[]；缺口 levels_skipped 随之消失
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: supportedLevel 只是支持证据的最大值，所以"一路只在最贵那一级交付"本来零代价；跳级不违规，但必须说清这一级为什么不适用，理由要点到该检查的对象名。
+- **Code**: preset/plugins/clearai-kernel.js ExplainLevelSkip; ui/lib/fold.js deriveKnowledge
+- **Tests**: test/contrast.test.mjs · **Config**: requireLevelReasons
+- **Prompt**: preset/plugins/prompts.js clearai/loop-contract · **Docs**: docs/verification-loop.zh-CN.md
+
+### `criteria-revision-gate` · Criterion revisions need an independent verdict
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: SetGoal 修订且 done_criteria 文本变了
+- **Input**: criteria_verdict = 一份已落定独立裁决的 auditKey
+- **Output**: criteria/revised 变更 → goal.criteriaHistory[]；无裁决则拒（criteria_verdict_required）
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 判据是"怎样算完成"，它一变前面所有工作的验收含义跟着变；允许在同一次调用里顺手改掉，等于允许把"做不到"重新定义成"做到了"。
+- **Code**: preset/plugins/clearai-kernel.js SetGoal; ui/lib/fold.js applyMutations
+- **Tests**: test/kernel.test.mjs · **Config**: requireCriteriaVerdict
+- **Prompt**: preset/plugins/prompts.js clearai/loop-contract · **Docs**: docs/epistemic-loop.zh-CN.md
+
+### `durable-dispatch-facts` · Dispatch facts land independently, before the first await
+
+- **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 派评估者（audit/dispatched）或派侦察（scout/dispatched）时
+- **Input**: sessionId + 一条已经发生的事实（派发动作本身,不依赖子任务返回什么）
+- **Output**: pendingFacts 里一条待落账事实：本拍的 pre-step 兜底落账（drainPendingFacts）,同一个工具结果的 mutations 里也并进同一条（withPendingFacts,pending 在前、按 id 去重）
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: 事实寄存在「工具成功返回」这个易失载体上时,一次已经算完的评审会随栈帧消失：子代理是异步的,工具进了 await 之后进程可能被 abort、宿主服务可能瞬态不可得,而那批 mutations 还没落账——`turnDemand` 的「有裁决在飞 ⇒ hold」不触发,`sweepEndedAudits` 看不见,账上没有这一笔。模型这一侧只会原样重试,于是同一份评审按分钟计地重烧,而每次都可能同样丢。所以「派发」这类事实在 await 之前写进独立通道,两条通道同源同形,宿主那一侧只有一个折法。
+- **Code**: preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts
+- **Tests**: test/kernel.test.mjs（派遣事实立刻落账,不随工具结果的成败起落）; test/contrast.test.mjs（结构判据:第一次 await 之前就有独立落账调用） · **Config**: —
+- **Prompt**: — · **Docs**: docs/optimization/2026-09-diagnosis.zh-CN.md
+
+### `audit-digest-reuse` · Verdicts are reused by material digest (same state, no re-dispatch)
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 同一状态再次结案（CloseGoal / 证据审计）,算出来的 digest 与上一次相同
+- **Input**: 裁决种类 + 步 id + 目标修订号 + 计划步与产物 + 观测 + 原始假设 + 已升格事实 + 非审计来源证据 + 准入坐标里的产物
+- **Output**: 复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不再派评估者;材料一变 digest 就变,必然重派
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: none
+- **Rationale**: digest 只盖材料,所以「重试一次就重烧两三分钟」这件事在机制上不可能发生。一次不确定的结案自己会落一条证据（anchor='auditor'）:把证据集合整个算进 digest,每重试一次 digest 就变一次,复用永远命中不了——而两次之间模型什么都没改,那不是新证据,是同一条评审自己的回声。派生读数（supportedLevel / refutations / inconclusive）同理被排除:它们由证据算出来,算进去等于把回声再算一遍。只有落定过、且真的给出了裁决的那一条才可复用:unknown 不是裁决,它说明那一次没成,正是该重派的理由。
+- **Code**: preset/plugins/clearai-kernel.js auditDigest; preset/plugins/clearai-kernel.js reuseAudit pendingAudits
+- **Tests**: test/kernel.test.mjs（状态逐字未变 ⇒ 第二次结案复用旧裁决,账上留 audit/reused） · **Config**: —
+- **Prompt**: — · **Docs**: docs/optimization/state-machines.zh-CN.md
+
+### `host-read-face-degradation` · Host read faces degrade to empty state instead of throwing
+
+- **Layer**: Host · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 宿主读面取不到服务（取 sessions / sessionProjections 回 undefined,或取服务时抛错）
+- **Input**: 服务名 + 会话 id；内核那一侧再吃宿主交出的观测 {id, scope, detail, at}
+- **Output**: ①读面返回空态（emptyState）而不是异常;②宿主半把降级记成观测,id 由**内容**算出来（scope + detail ⇒ hostHealthId,同一条只记一次,封顶 20 条）;③内核在 pre-step 把还没上账的那几条落成 host/inactive 变更（landedHostHealth 挡重复）;④折法按 id 幂等折进 state.hostHealth[],宿主半只把还没上账的本地那几条随 state() / view() 合并交出——同一条事实在账上一条、读数上也一条
+- **Blocks execution**: no · **Affected by autonomy**: no
+- **Native alternative**: Cordis 的方法式取服务 ctx.get(name)（取不到只回 undefined;属性式访问在 fiber 非 ACTIVE 时当场抛 cannot get required service in inactive context）
+- **Rationale**: 「这一刻读不到」与「世上没有这件事」在界面上长得一模一样:降级抛出去会把一次跑了几分钟的评审整个作废,静默给 undefined 又会让空读数被读成「世上没有这件事」。所以读面一律走方法式取服务、取不到返回空态,并把降级这件事本身记成可观测的事实。只记在进程内还不够——**重启、换进程、离线复判都读不到它**,而这恰恰是最需要事后解释的一条;所以内核在 pre-step 把它落成账本事实,幂等靠内容寻址的 id,而不是靠「记得别写两次」。
+- **Code**: ui/lib/index.js sessionsOf; ui/lib/index.js projectionsOf; ui/lib/index.js hostHealth hostHealthId; preset/plugins/clearai-kernel.js landedHostHealth; ui/lib/fold.js case 'host/inactive'
+- **Tests**: test/host.test.mjs（A1/A6:降级不抛、给的就是空态、两个服务各一条健康事实、view() 同源）; test/kernel.test.mjs（pre-step 把观测落成 host/inactive,同一条反复观察只落一条）; test/contrast.test.mjs（属性式服务访问清零） · **Config**: —
+- **Prompt**: — · **Docs**: docs/optimization/state-machines.zh-CN.md
 
 ---
 

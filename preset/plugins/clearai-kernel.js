@@ -472,6 +472,9 @@ export const CONFIG_KEYS = [
 	'l4RejectSelfWritten',
 	'minHypotheses',
 	'requireTypedPromotion',
+	'requireCriteriaVerdict',
+	'requireLandedEntities',
+	'requireLevelReasons',
 	'bashDenyRules',
 	'auditProvider',
 	'auditTimeoutMs',
@@ -504,8 +507,11 @@ export const MECHANISM_TOOLS = {
 	brain: ['SaveSkill', 'WriteMemory'],
 	/** 账本两件:它长在 git 上(A 层用工作区自己的仓库,B 层用数据区的旁路账本,与世界线共用一本)。 */
 	ledger: ['FileHistory', 'RestoreFile'],
-	/** 领域语言:七个动词 = 词汇的全部写入口(注册/修订/废止) + 一个读入口(按概念取已知)。 */
-	ontology: ['RegisterTerm', 'RegisterPredicate', 'ReviseTerm', 'RevisePredicate', 'DeprecateTerm', 'DeprecatePredicate', 'QueryKnowledge'],
+	/**
+	 * 领域语言:九个写入口(概念注册/修订/废止 · **实例登记** · **带出处的断言** · 跳级理由)
+	 * + 一个读入口(按概念取已知)。「约定」与「观测」各走各的门:概念不需依据,实例与断言必须带出处。
+	 */
+	ontology: ['RegisterTerm', 'RegisterPredicate', 'ReviseTerm', 'RevisePredicate', 'DeprecateTerm', 'DeprecatePredicate', 'RegisterInstance', 'Assert', 'ExplainLevelSkip', 'QueryKnowledge'],
 }
 const TOOL_CATALOG = new Set(Object.values(MECHANISM_TOOLS).flat())
 
@@ -661,6 +667,18 @@ export function apply(ctx, config = {}) {
 		 * 机制侧缺省关(= 断言始终是加法),preset 里写 true——与 `blockedThreshold` 同一个模式。
 		 */
 		requireTypedPromotion: config.requireTypedPromotion === true,
+		/**
+		 * 两道与它对称的门(机制缺省关,preset 里开):
+		 *   · `requireLandedEntities`:断言主体还没落到实体图上 ⇒ 结案被拒。
+		 *     它挡的是「本体写得漂亮、实体图是空的」——那是把结论停在散文上的另一种形态。
+		 *   · `requireLevelReasons`:有等级被跳过而没写理由 ⇒ 结案被拒。
+		 *     它挡的是「一路只在最贵的那一级交付」——便宜的检查从未被走过,却没人知道为什么。
+		 * 两条出口都诚实:补齐(RegisterInstance / Assert / ExplainLevelSkip)或如实 abandoned。
+		 */
+		/** 判据修订门:改「怎样算完成」要带一份独立裁决的 auditKey(机制缺省关,preset 里开)。 */
+		requireCriteriaVerdict: config.requireCriteriaVerdict === true,
+		requireLandedEntities: config.requireLandedEntities === true,
+		requireLevelReasons: config.requireLevelReasons === true,
 		bashDenyRules: config.bashDenyRules !== false,
 		auditProvider: config.auditProvider ?? 'spawn',
 		auditTimeoutMs: config.auditTimeoutMs ?? 240000,
@@ -724,19 +742,78 @@ export function apply(ctx, config = {}) {
 	/** 宿主读面。缺了它整件事不成立——所以每个工具都显式报错,不静默降级。 */
 	const host = () => ctx.get('clearai')
 
+	/**
+	 * ═══ 事实的独立落账通道(pendingFacts) ═══════════════════════════════════
+	 *
+	 * **要解决的问题**:`audit/dispatched` 原来只写在**工具结果的 `mutations` 数组**里。
+	 * 子代理是异步的:工具进入 `await` 之后,进程可能被 abort、宿主服务可能瞬态不可得。
+	 * 一旦这条路出问题,整批变更随栈帧一起消失——`turnDemand` 的「有裁决在飞 ⇒ hold」不触发,
+	 * `sweepEndedAudits` 也看不见,而模型只会原样重试。代价是一次已经算完的评审
+	 * (耗时以分钟计)从账本上不存在。
+	 *
+	 * **修法的第一性原理**:事实不能寄存在"工具调用成功返回"这个易失载体上。
+	 * 所以「派发」这一类事实在 **`await` 之前**写进这里,由两个通道各自落账:
+	 *   · 同一个工具结果的 `mutations`(及时:这一拍就进投影、卡就能说);
+	 *   · 下一拍的 pre-step(兜底:工具抛错/被 abort 也丢不掉)。
+	 * 两条通道同源同形,宿主那一侧只有一个折法。
+	 *
+	 * **幂等**:同一个 id 只落一次(下表记已入账的 id),免得两条通道同一条事实落两遍。
+	 */
+	const pendingFacts = new Map()
+	const pendingFactIds = new Set()
+	/** 把一条事实推进独立落账通道(返回它自己,方便调用方同时塞进工具结果的 mutations)。 */
+	function landFact(sessionId, mutation) {
+		if (mutation === null || typeof mutation !== 'object') return mutation
+		const key = `${sessionId}:${String(mutation.t)}:${String(mutation.id ?? mutation.step ?? '')}`
+		if (pendingFactIds.has(key)) return mutation
+		pendingFactIds.add(key)
+		const list = pendingFacts.get(sessionId) ?? []
+		list.push(mutation)
+		pendingFacts.set(sessionId, list)
+		return mutation
+	}
+	/** 取出并清空这一拍的兜底事实(只有 pre-step 调;重复取到空数组是正常的)。 */
+	function drainPendingFacts(sessionId) {
+		const list = pendingFacts.get(sessionId) ?? []
+		pendingFacts.delete(sessionId)
+		return list
+	}
+
 	function hasState(state) {
 		return state.goal !== null || state.plans.length > 0 || state.evidence.length > 0 || state.materials.length > 0
 	}
 
+	/**
+	 * 会话工作目录。**拿不到就返回 `null`,绝不回退 `process.cwd()`**。
+	 *
+	 * 为什么删掉那条回退:会话服务瞬态不可得时,回退会把 `clear/` 下的读面写进
+	 * **dsh 进程自己的目录**——评估卡落到进程目录、而工具随后抛错,读账的人再也找不到它。
+	 * **"写不出去"与"写到别处"是两件事**:前者是诚实的降级,后者是悄悄改了账本的位置。
+	 * 删掉回退之后,「错地方」在类型上不可表示。
+	 *
+	 * 调用方纪律:纯展示用 `sessionCwdLabel()`;要拼路径用 `sessionFile()`;
+	 * 需要裸 cwd 的(快照 / 引导铺设)自己判 `null` 并如实少做一件事。
+	 */
 	function sessionCwd(sessionId) {
 		try {
 			const session = ctx.get('sessions')?.get?.(sessionId)
 			const cwd = session?.header?.cwd ?? session?.cwd
 			if (typeof cwd === 'string' && cwd !== '') return cwd
 		} catch {
-			/* 会话服务不可用时退回进程目录 */
+			/* 服务不可得:如实返回 null,由调用方决定少做哪件事 */
 		}
-		return process.cwd()
+		return null
+	}
+
+	/** 卡片 / 提示文案里那个"工作目录":拿不到就如实说拿不到,不写一个假路径。 */
+	function sessionCwdLabel(sessionId) {
+		return sessionCwd(sessionId) ?? '(会话工作目录这一刻不可得)'
+	}
+
+	/** 会话工作区下的一个绝对路径;拿不到会话目录时返回 `null`(调用方跳过这次写入)。 */
+	function sessionFile(sessionId, ...parts) {
+		const cwd = sessionCwd(sessionId)
+		return cwd === null ? null : join(cwd, ...parts)
 	}
 
 	/**
@@ -792,7 +869,7 @@ export function apply(ctx, config = {}) {
 	/** 一次工具调用的收尾:预演变更 → 卡片 → 返回值。 */
 	function finish(hostService, sessionId, mutations) {
 		return (value) => {
-			const preview = hostService.preview(sessionId, mutations)
+			const preview = previewOf(hostService, sessionId, mutations)
 			const result = {
 				...value,
 				mutations,
@@ -830,6 +907,15 @@ export function apply(ctx, config = {}) {
 		}
 
 		for (const artifact of artifacts) {
+			/**
+			 * **目录不可得 ⇒ 按「读不到」处理**,不拿 `null` 去 `resolve`:
+			 * 准入回答的是"这份观测收不收",而"我看不到工作区"不是"这份产物不存在"。
+			 * 这时候把它记为缺失、如实说清原因,比让工具崩掉诚实。
+			 */
+			if (typeof cwd !== 'string' || cwd === '') {
+				result.missing.push(artifact)
+				continue
+			}
 			const absolute = isAbsolute(artifact) ? artifact : resolvePath(cwd, artifact)
 			let stat = null
 			try {
@@ -922,6 +1008,11 @@ export function apply(ctx, config = {}) {
 		'- 只核对不发挥:你的职责是对照标准验收,不是重做方案、不是提改进建议。',
 		'- 你没有写入权限:任何需要产出文件的事都不是你的事。',
 		'- 对假设的裁决只有三个词:support 表示观测满足判定标准且不满足推翻条件,refute 表示满足推翻条件,inconclusive 表示无法判定。推翻是有价值的结果——不要为了让步骤通过而写 support。',
+		'',
+		'**回包的形状就是你的动作空间(字段长度由 schema 校验,超了会被拒):**',
+		'- `basis` 是**一句话结论**,≤1200 字。**不要在这里写论证**——论证放 `refs`:逐条 `{path, line}` 指到你实际读过的文件与行,让第三方照着就能复核。',
+		'- `shortfalls` 每条**必须**写成三格:`{criterion, what, missing}`——`criterion` 指明**判据的哪一条**(引它的编号或原文前 20 字),`what` 是你实际读到的(带 `path:line`),`missing` 是还缺什么才算满足。**一段散文不算一条缺口**:读的人无法逐条对照。',
+		'- 没有缺口就给空数组;有缺口却只写"整体不足"等于没写。',
 	].join('\n')
 
 	const WORLDLINE_EXECUTOR_PERSONA = `## Executor人格：世界线执行者 (Worldline Executor)
@@ -971,15 +1062,58 @@ export function apply(ctx, config = {}) {
 - **收敛就答**:够回答任务就停,不要为完整性把整个仓库读一遍。回灌的是**结论**,不是过程
   流水账——父任务的上下文正是你被派出来节省的东西。`
 
+	/**
+	 * **裁决卡的形状 = 预算**。
+	 *
+	 * 一篇数千字的 `basis` 会让评估者的单步生成吃掉一兩分钟,而这论证本该由父会话展开。
+	 * **耗时不是靠提示词劝下来的**,而是靠协议的形状:`basis` 是给一句话的,
+	 * 论证放 `refs` 逐条指到文件与行;每条缺口写成「哪条判据 / 你看到什么 / 还缺什么」三格。
+	 * 字段长度由 schema 校验,runtime 会拒绝越界产出——这才叫机制。
+	 */
 	const VERDICT_SCHEMA = {
 		type: 'object',
 		properties: {
 			verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
-			basis: { type: 'string' },
-			shortfalls: { type: 'array', items: { type: 'string' } },
+			basis: { type: 'string', maxLength: 1200, description: '一句话结论(≤1200 字);展开的论证放 refs,不要写在这里' },
+			shortfalls: {
+				type: 'array',
+				description: '每条缺口一格:哪条判据、你看到什么、还缺什么。不要写散文。',
+				items: {
+					type: 'object',
+					properties: {
+						criterion: { type: 'string', maxLength: 200, description: '判据的哪一条(引它自己的编号或原文前 20 字)' },
+						what: { type: 'string', maxLength: 400, description: '你实际读到的是什么(带 path:line)' },
+						missing: { type: 'string', maxLength: 200, description: '还缺什么才算满足' },
+					},
+					required: ['criterion', 'what', 'missing'],
+					additionalProperties: false,
+				},
+			},
+			refs: {
+				type: 'array',
+				description: '逐条证据引用:文件与行号。裁决要能被第三方照着复核。',
+				items: {
+					type: 'object',
+					properties: {
+						path: { type: 'string', maxLength: 300 },
+						line: { type: 'integer' },
+					},
+					required: ['path'],
+					additionalProperties: false,
+				},
+			},
 			reading: { type: 'string', description: '按裁决指标报出的读数:整串必须就是一个数(如 62.1 或 12%)' },
 			validity: { type: 'string', enum: ['usable', 'unusable'], description: '这份读数可不可用;不可用的世界线不参赛' },
 		},
+		/**
+		 * `refs` **声明但不强制**。
+		 *
+		 * 它是我们想要的形状(逐条可复核),但把它写进 `required` 会让一份**完全可用**的裁决
+		 * 因为少一个数组而被 runtime 丢掉——那时"有没有裁决"就变成了抛硬币。这不是假设:
+		 * 一次真跑的评估者在正文里写清了 `verdict: support`,而结构化通道被 schema 拒收,
+		 * 目标于是永远结不了案。**先保证裁决到得了,再要求它可复核**;没给 refs 时,
+		 * 下面的正文兜底会把裁决从 markdown 卡片里取回来(并且如实标注它是被救回来的)。
+		 */
 		required: ['verdict', 'basis'],
 		additionalProperties: false,
 	}
@@ -1003,7 +1137,7 @@ export function apply(ctx, config = {}) {
 			...(gate.confirmed.length === 0 ? ['- (无)'] : gate.confirmed.map((item) => `- ${item.ref} — ${item.bytes} 字节 — ${item.digest ?? 'digest 不可得'}`)),
 			...(Array.isArray(gate.extra) && gate.extra.length > 0 ? ['', ...gate.extra] : []),
 			'',
-			`工作目录:${sessionCwd(sessionId)}`,
+			`工作目录:${sessionCwdLabel(sessionId)}`,
 			'',
 			'请只读上述坐标与执行记录,拿**已登记的判定标准**对照观测,给出裁决。',
 			'准入只核验了「坐标存在且非空」——齐备不等于这一步做完了;判据里的断言(数值、口径、一致性)必须由你逐条核对。',
@@ -1011,15 +1145,67 @@ export function apply(ctx, config = {}) {
 		].join('\n')
 	}
 
+	/**
+	 * 裁决归一化。**两种形状都认**:新形状是
+	 * `shortfalls[{criterion, what, missing}]`,旧形状是 `shortfalls: string[]`
+	 * (老评估者、老账本、以及某些 provider 不校验 schema 时都会给旧形状)。
+	 *
+	 * 为什么必须显式兼容:契约升级时最坏的做法是"新形状之外一律丢"——
+	 * 那会让一份合法但旧式的裁决在账上变成"没有缺口"。两种都在,各自如实。
+	 */
 	function normalizeVerdict(value) {
 		const verdict = typeof value?.verdict === 'string' ? value.verdict.toLowerCase() : 'inconclusive'
+		const shortfalls = []
+		for (const item of Array.isArray(value?.shortfalls) ? value.shortfalls : []) {
+			if (typeof item === 'string') {
+				const plain = item.trim()
+				// 旧形状:一整段散文。**不丢**,但把它按"还没有结构"如实标注,而不是硬塞成三格。
+				if (plain !== '') shortfalls.push({ criterion: '未结构化(旧式裁决)', what: plain.slice(0, 400), missing: '' })
+				continue
+			}
+			if (item === null || typeof item !== 'object') continue
+			const criterion = String(item.criterion ?? '').trim()
+			const what = String(item.what ?? '').trim()
+			const missing = String(item.missing ?? '').trim()
+			if (criterion === '' && what === '' && missing === '') continue
+			shortfalls.push({ criterion: criterion.slice(0, 200), what: what.slice(0, 400), missing: missing.slice(0, 200) })
+		}
+		const refs = []
+		for (const item of Array.isArray(value?.refs) ? value.refs : []) {
+			if (item === null || typeof item !== 'object') continue
+			const path = String(item.path ?? '').trim()
+			if (path === '') continue
+			const line = Number.isInteger(item.line) ? item.line : null
+			refs.push({ path: path.slice(0, 300), line })
+		}
+		const basis = typeof value?.basis === 'string' && value.basis.trim() !== '' ? value.basis.trim() : '评估者未给出依据'
 		return {
 			verdict: ['support', 'refute', 'inconclusive'].includes(verdict) ? verdict : 'inconclusive',
-			basis: typeof value?.basis === 'string' && value.basis.trim() !== '' ? value.basis.trim() : '评估者未给出依据',
-			shortfalls: Array.isArray(value?.shortfalls) ? value.shortfalls.filter((item) => typeof item === 'string') : [],
+			// 截断是**兜底**:schema 已声明 maxLength,越界的产出本不该到这里;真到了也不能让账本吃下五千字。
+			// 截断标记**算在预算内**:申报多少就必须是多少。
+			basis: basis.length > 1200 ? `${basis.slice(0, 1170)}…(裁到 1200 字;完整论证应由 refs 指认)` : basis,
+			shortfalls,
+			refs,
 			reading: typeof value?.reading === 'string' && value.reading.trim() !== '' ? value.reading.trim() : null,
 			validity: value?.validity === 'usable' || value?.validity === 'unusable' ? value.validity : null,
 		}
+	}
+
+	/**
+	 * 缺口的**一行话**。两种形状都认:新形状是 `{criterion, what, missing}` 三格,
+	 * 旧形状是纯字符串(老裁决/内核自己落的 code)。**一行一条**,不再把几段散文拼成一段。
+	 */
+	function verdictText(shortfalls) {
+		if (!Array.isArray(shortfalls)) return ''
+		return shortfalls
+			.map((item) => {
+				if (typeof item === 'string') return item
+				if (item === null || typeof item !== 'object') return ''
+				const parts = [String(item.criterion ?? '').trim(), String(item.what ?? '').trim(), String(item.missing ?? '').trim()].filter((part) => part !== '')
+				return parts.join(' · ')
+			})
+			.filter((line) => line !== '')
+			.join('; ')
 	}
 
 	function parseLooseJson(output) {
@@ -1028,11 +1214,36 @@ export function apply(ctx, config = {}) {
 			.map((block) => block.text)
 			.join('\n')
 		const match = raw.match(/\{[\s\S]*\}/)
-		if (match === null) return { verdict: 'inconclusive', basis: '评估者没有返回可解析的裁决', shortfalls: ['card_unparsable'] }
-		try {
-			return JSON.parse(match[0])
-		} catch {
-			return { verdict: 'inconclusive', basis: '评估者的裁决无法解析', shortfalls: ['card_unparsable'] }
+		if (match !== null) {
+			try {
+				return JSON.parse(match[0])
+			} catch {
+				/* 不是 JSON:落到下面的正文卡片形态 */
+			}
+		}
+		/**
+		 * **正文卡片兜底**。
+		 *
+		 * 为什么必须有:评估者经常不吐 JSON,而是写一张 markdown 评估卡
+		 * (`## 评估卡 · …` / `**verdict: support**` / `**basis**:…`)。那时结构化通道可能整个是空的
+		 * (模型没走结构化输出,或形状不合 schema),只认 JSON 就等于**把一份写得清清楚楚的裁决丢掉**
+		 * ——账上只剩下"无法判定",而真实原因是我们没读。这不是评估者没说,是我们没听。
+		 *
+		 * 取法刻意保守:只认 `verdict:` 后面紧跟的那三个词之一(允许 markdown 加粗),
+		 * `basis` 取它之后到下一个标题/表格前的一段(有长度上限)。取不到就如实说取不到——
+		 * 猜一份 support 比丢掉一份 refute 坏得多。
+		 */
+		const verdictMatch = raw.match(/verdict\s*[:：]\s*\**\s*(support|refute|inconclusive)\b/i)
+		if (verdictMatch === null) return { verdict: 'inconclusive', basis: '评估者没有返回可解析的裁决', shortfalls: ['card_unparsable'] }
+		const after = raw.slice(verdictMatch.index + verdictMatch[0].length)
+		const basisMatch = after.match(/basis\s*\*{0,2}\s*[:：]\s*\**\s*([\s\S]{4,1200}?)(?=\n\s*\n|\n#{1,6}\s|\n\|)/i)
+		const basis = (basisMatch === null ? after.slice(0, 400) : basisMatch[1]).replace(/\s+/g, ' ').trim()
+		return {
+			verdict: verdictMatch[1].toLowerCase(),
+			basis: basis === '' ? '评估者给了裁决但没写依据(正文卡片里没有可取的 basis)' : basis,
+			shortfalls: [],
+			/** 读的人要能分辨:这条裁决是从正文里救回来的,不是结构化通道给的。 */
+			salvaged_from_text: true,
 		}
 	}
 
@@ -1625,16 +1836,16 @@ export function apply(ctx, config = {}) {
 			if (recovered !== null && recovered.ok === true) {
 				const card = { schema_version: 'clearai.audit.v1', kind: audit.kind ?? 'evidence_audit', step_id: audit.step, auditor_run_id: String(audit.child), verdict: recovered.verdict.verdict, shortfalls: recovered.verdict.shortfalls, card: recovered.verdict.basis, created_at: Date.now() }
 				const cardPath = writeAuditCard(sessionId, audit.step, card)
-				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: recovered.verdict.verdict, basis: recovered.verdict.basis, shortfalls: recovered.verdict.shortfalls, card_path: cardPath })
+				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: recovered.verdict.verdict, basis: recovered.verdict.basis, shortfalls: recovered.verdict.shortfalls, card_path: cardPath, digest: audit.digest ?? null })
 				lines.push(`${audit.step}:裁决从子会话日志取回(${recovered.verdict.verdict})`)
 				continue
 			}
 			if (recovered !== null && recovered.ok !== true) {
-				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: `评估者已结束,但未正常完成(${recovered.stopReason})。`, shortfalls: ['audit_incomplete'], card_path: null })
+				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: `评估者已结束,但未正常完成(${recovered.stopReason})。`, shortfalls: ['audit_incomplete'], card_path: null, digest: audit.digest ?? null })
 				lines.push(`${audit.step}:评估者已结束、未正常完成(记为 unknown)`)
 				continue
 			}
-			mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: '评估者已结束(宿主目录报告),但其结论未能从子会话日志取回。', shortfalls: ['auditor_ended_uncollected'], card_path: null })
+			mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: '评估者已结束(宿主目录报告),但其结论未能从子会话日志取回。', shortfalls: ['auditor_ended_uncollected'], card_path: null, digest: audit.digest ?? null })
 			lines.push(`${audit.step}:评估者已结束、结论未取回(记为 unknown)`)
 		}
 		return { mutations, settled: mutations.length, lines }
@@ -1740,6 +1951,88 @@ export function apply(ctx, config = {}) {
 		return null
 	}
 
+	/**
+	 * ═══ 裁决复用:同态不重派 ═════════════════════════════════════════════════
+	 *
+	 * **代价**:同一个目标在零工具调用、状态逐字未变的情况下可以被反复结案,
+	 * 每次都从头派一个评估者、各烧掉一两分钟;而上一次的结论被平台错误丢掉之后,
+	 * 模型只会原样再烧一遍。**没有算术依据的重派,就是把等待当成进展。**
+	 *
+	 * **修法**:复用判据是**状态内容**,不是"模型又喊了一次结案"。
+	 * digest 覆盖:裁决种类、被裁决的步、目标修订号、准入坐标、证据集合。
+	 * 只要这五项一字不变,无论 CloseGoal 喊多少次都只评审一次;证据一变 digest 就变,
+	 * **必然**重派。两种语义都由算术决定,不靠模型自觉。
+	 *
+	 * 只有**落定过的裁决**才可复用(`verdict` 非 null 且不是 unknown):
+	 * `unknown` 不是裁决,它只说明"那一次没成",那正是应该重派的理由。
+	 */
+	function auditDigest(kind, step, plan, state, gate) {
+		/**
+		 * **digest 只盖「材料」,不盖「上一次裁决留下的东西」。**
+		 *
+		 * 为什么这一条是这套复用能不能用的分水岭:一次不确定的结案自己会落一条
+		 * `evidence/recorded`(`anchor:'auditor'`)。原来 digest 把证据集合整个算进去,
+		 * 于是**每重试一次 digest 就变一次**,复用永远命中不了——模型每喊一次结案就再烧两三分钟,
+		 * 而两次之间它什么都没改。这不是"新证据",是同一条评审自己的回声。
+		 *
+		 * 所以这里只取**可能改变结论的材料**:
+		 *   · 目标修订号(判据/假设换了内容才会变);
+		 *   · 计划的步与产物(交付了什么);
+		 *   · 观测(state.materials);
+		 *   · 原始假设(claim / status / 断言)——**刻意不用派生读数**:
+		 *     `supportedLevel` / `refutations` / `inconclusive` 都是证据算出来的,
+		 *     而审计留下的那条证据会把它们改掉,用它就等于把回声又算进来一次;
+		 *   · 已升格事实;
+		 *   · **非审计来源**的证据(自判的 L0–L2 是真材料,保留)。
+		 *
+		 * 于是语义变成:材料变了 ⇒ 必然重审;材料没变 ⇒ 复用上次裁决,并把这件事说明白。
+		 */
+		const material = (Array.isArray(state?.evidence) ? state.evidence : [])
+			.filter((item) => String(item?.anchor ?? '') !== 'auditor')
+			.map((item) => `${String(item?.id ?? '')}:${String(item?.verdict ?? '')}:${String(item?.level ?? '')}`)
+		const hypotheses = (Array.isArray(state?.hypotheses) ? state.hypotheses : []).map((item) =>
+			[String(item?.id ?? ''), String(item?.status ?? ''), String(item?.claim ?? '').replace(/\s+/g, ' '), JSON.stringify(item?.assertions ?? null)].join(':'),
+		)
+		const materials = (Array.isArray(state?.materials) ? state.materials : []).map((item) => `${String(item?.id ?? '')}:${String(item?.digest ?? '')}`)
+		const facts = (Array.isArray(state?.facts) ? state.facts : []).map((item) => `${String(item?.id ?? '')}:${String(item?.level ?? '')}:${JSON.stringify(item?.assertions ?? null)}`)
+		/**
+		 * 步的**判据**与产物一起算材料:判据一变,"这一步算不算做完"就是另一个问题
+		 * (`evaluatorPrompt` 会把判据逐字交给评估者)——不把它算进来会出现
+		 * "改了判据却复用旧裁决"这种明显错的复用。
+		 */
+		const steps = (Array.isArray(plan?.steps) ? plan.steps : []).map((item) => `${String(item?.id ?? '')}:${String(item?.status ?? '')}:${String(item?.done_criteria ?? '')}:${(Array.isArray(item?.artifacts) ? item.artifacts : []).join('|')}`)
+		const goal = `${String(state?.goal?.id ?? '')}:${Number(state?.goal?.revision ?? 0)}`
+		/**
+		 * **准入坐标里只有"产物"算材料**。
+		 *
+		 * `gate.confirmed` 在两条路上形状不同:证据审计那一侧是**产物路径 + 字节数 + 内容摘要**
+		 * (文件内容一变,digest 就变——这是"交付的东西真的改了吗"的唯一硬信号);
+		 * 目标审计那一侧是 `evidence:` / `hypothesis:` 两类引用(证据集合与派生读数)——
+		 * 把它们算进来,就等于又把上一次评审的回声算进来一次。
+		 * 所以:留下产物,去掉回声。
+		 */
+		const artifacts = (Array.isArray(gate?.confirmed) ? gate.confirmed : [])
+			.filter((item) => {
+				const ref = String(item?.ref ?? '')
+				return !ref.startsWith('evidence:') && !ref.startsWith('hypothesis:')
+			})
+			.map((item) => `${String(item?.ref ?? '')}:${String(item?.bytes ?? '')}:${String(item?.digest ?? '')}`)
+		const root = createHash('sha256').update(JSON.stringify([kind, step.id, goal, steps, materials, hypotheses, facts, material, artifacts])).digest('hex')
+		return root.slice(0, 16)
+	}
+
+	/** 投影里最近一条与该 digest 相同、且**真的给出了裁决**的结算事实。 */
+	function reuseAudit(state, stepId, digest) {
+		const matched = (state?.audits ?? []).filter((audit) => String(audit?.step ?? '') === String(stepId) && String(audit?.digest ?? '') === digest)
+		for (let index = matched.length - 1; index >= 0; index -= 1) {
+			const audit = matched[index]
+			const verdict = String(audit?.verdict ?? '')
+			if (!['support', 'refute', 'inconclusive'].includes(verdict)) continue
+			return audit
+		}
+		return null
+	}
+
 	/** 侦察的子 run:只读、fresh context、无人盯(与评估者共用同一条派遣原语)。 */
 	async function runScout(sessionId, agent, plan, step, brief, trigger, signal) {
 		const mutations = []
@@ -1749,7 +2042,12 @@ export function apply(ctx, config = {}) {
 		if (reusedFrom !== null) {
 			return { ok: true, conclusion: reusedFrom.conclusion, reused: true, digest, from: reusedFrom.id, mutations }
 		}
-		const scoutId = `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+		/**
+		 * **派发事实在 `await` 之前落账**。`id` 与任务摘要绑定:同一件事重复派遣得到同一个键,
+		 * 于是下面那条带上子会话 id 的完整事实按 id **覆盖**它,账上不会留两条。
+		 */
+		const scoutId = `scout:pending:${step.id}:${digest}`
+		landFact(sessionId, { t: 'scout/dispatched', id: scoutId, step: step.id, plan: plan?.id ?? null, goal: step.goal ?? null, trigger, child: null, capability: null, digest, degraded_reason: null, status: 'dispatching' })
 		const dispatched = await dispatchSubRun({
 			label: `侦察 · ${trigger} · ${step.id}`,
 			persona: SCOUT_PERSONA,
@@ -1765,7 +2063,7 @@ export function apply(ctx, config = {}) {
 				'# 要你去查的缺口',
 				brief === '' ? '(评估者没给具体缺口:请找出这一步还差哪些一手证据)' : brief,
 				'',
-				`工作目录:${sessionCwd(sessionId)}`,
+				`工作目录:${sessionCwdLabel(sessionId)}`,
 				'',
 				'只读上述范围,把**结论**作为最终答复回灌(不是过程流水账)。查不到就如实说查过哪里。',
 			].join('\n'),
@@ -1779,7 +2077,7 @@ export function apply(ctx, config = {}) {
 			return { ok: false, note: `侦察派不出去(${dispatched.reason})`, mutations }
 		}
 		const childId = String(dispatched.run.id)
-		mutations.push({ t: 'scout/dispatched', id: scoutId, step: step.id, plan: plan?.id ?? null, goal: step.goal ?? null, trigger, child: childId, capability: dispatched.capability, digest, degraded_reason: dispatched.degraded ?? null })
+		mutations.push({ t: 'scout/dispatched', id: scoutId, step: step.id, plan: plan?.id ?? null, goal: step.goal ?? null, trigger, child: childId, capability: dispatched.capability, digest, degraded_reason: dispatched.degraded ?? null, status: 'dispatched' })
 		/**
 		 * **派出去就返回**(与「世界线执行者」同一个病,同一个修法)。
 		 *
@@ -1818,8 +2116,68 @@ export function apply(ctx, config = {}) {
 		const mutations = []
 		const auditKey = `a-${step.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 		const key = `${sessionId}:${kind}:${step.id}`
+		const digest = auditDigest(kind, step, plan, stateOf(sessionId), gate)
 		let entry = pendingAudits.get(key)
+		/**
+		 * **同态复用**:先看在飞的(pendingAudits),再看**已经落定的**(投影里 digest 相同且给出了裁决的那一条)。
+		 * 顺序不能反:在飞的那一次还没结论,复用一条更早的裁决会让"刚派出去的"变成孤儿。
+		 */
+		/**
+		 * **三类裁决都能复用**——判据是"材料变没变",与"谁在问"无关。
+		 *
+		 * 交付那一步(`evidence_audit`)原来被排除在外,理由是"每次交付都该留一条自己的裁决行"。
+		 * 那条理由只对了一半:该留的是**这次交付发生过**,而不是"又烧了一次评估者"。
+		 * 所以复用照样说话——落一条 `audit/reused`(谁复用了谁的裁决、凭哪个 digest),
+		 * 而"重复交付"这件事由**连拦计数**接着管(见 `AdvancePlan` 里那条 `audit_reused` 分支):
+		 * 材料没变就重来 ⇒ 计数 +1,达阈值把计划置 blocked 停下等人。
+		 * 于是"每次交付都被记下来"与"不重复花钱"两件事同时成立。
+		 */
 		if (entry === undefined) {
+			const reused = reuseAudit(stateOf(sessionId), step.id, digest)
+			if (reused !== null) {
+				/**
+				 * 落一条 `audit/reused` 而不是静默返回:**"这次没花钱"也要是账上的事实**,
+				 * 否则读账的人分不清"复用了一次裁决"和"这次根本没派"。
+				 */
+				mutations.push({
+					t: 'audit/reused',
+					id: auditKey,
+					step: step.id,
+					plan: plan?.id ?? 'goal',
+					kind,
+					digest,
+					by: String(reused.id ?? ''),
+				})
+				return {
+					verdict: String(reused.verdict ?? 'inconclusive'),
+					basis: String(reused.basis ?? ''),
+					shortfalls: Array.isArray(reused.shortfalls) ? reused.shortfalls : [],
+					cardPath: reused.card_path ?? null,
+					/**
+					 * **出处不因复用而消失**:这份裁决当初是哪张卡、哪个评估者会话写的,
+					 * 照旧带出来——否则复用会让证据变成一个点不开的东西,而"可复核"正是它的全部价值。
+					 */
+					evaluatorSession: reused.child ?? null,
+					reusedFrom: String(reused.id ?? ''),
+					reused: true,
+					digest,
+					mutations,
+				}
+			}
+		}
+		if (entry === undefined) {
+			/**
+			 * **派发事实在 `await` 之前就落账**——这是这条通道存在的全部理由。
+			 *
+			 * 工具在 `await` 期间可能被 abort、宿主 fiber 可能瞬态掉线;那时结果永远不回来,
+			 * 而"我派过一个评估者"是**已经发生的事实**。把它写在 await 之后,等于把事实寄存在
+			 * 一个会被撤销的栈帧里:`hold` 不触发、`sweepEndedAudits` 看不见,模型只会原样重试。
+			 *
+			 * `id` 取一个与裁决 digest 绑定的**稳定键**:同一个状态反复结案得到同一个键,
+			 * 于是下面那次"带上子会话 id 的完整事实"按 id 覆盖它,而不是在账上留两条。
+			 */
+			const pendingId = `audit:pending:${kind}:${step.id}:${digest}`
+			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, capability: null, evaluator_session: null, status: 'dispatching' })
 			const dispatched = await dispatchSubRun({
 				label: `${kind === 'goal_audit' ? '目标评估者' : kind === 'worldline_audit' ? '世界线评估者' : '评估者'} · ${step.id}`,
 				persona: EVALUATOR_DISCIPLINE,
@@ -1830,10 +2188,16 @@ export function apply(ctx, config = {}) {
 				signal,
 			})
 			if (dispatched.ok !== true) {
+				/**
+				 * 派不出去:把那条"正在派"如实结掉。结算与派发**同 id**,且上面那条 pending
+				 * 走的是独立落账通道、在 `withPendingFacts` 的合并结果里排在前面,所以折法先建记录、
+				 * 再结它——账上不会留一条永远 `verdict=null` 的悬空派发。
+				 */
+				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', basis: `独立评估者无法派遣(${dispatched.reason})`, shortfalls: ['audit_dispatch_failed'], card_path: null, digest })
 				return { verdict: 'unknown', basis: `独立评估者无法派遣(${dispatched.reason})`, shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
-			mutations.push({ t: 'audit/dispatched', id: auditKey, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability })
-			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey, step: step.id, plan: plan?.id ?? 'goal', kind, settled: undefined }
+			mutations.push({ t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' })
+			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, settled: undefined }
 			pendingAudits.set(key, entry)
 			entry.settled = dispatched.run.result.then(
 				(value) => ({ ok: true, value }),
@@ -1865,8 +2229,8 @@ export function apply(ctx, config = {}) {
 		 * 而"评估者没有悬空"这条不变量也只能红着,连解释都拿不出证据。
 		 */
 		const settleUnknown = (basis, shortfalls) => {
-			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', basis, shortfalls, card_path: null })
-			return { verdict: 'unknown', basis, shortfalls, cardPath: null, mutations }
+			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', basis, shortfalls, card_path: null, digest })
+			return { verdict: 'unknown', basis, shortfalls, cardPath: null, digest, mutations }
 		}
 		const settled = outcome.value
 		const stopReason = String(settled?.stopReason ?? 'completed')
@@ -1884,13 +2248,14 @@ export function apply(ctx, config = {}) {
 		if (cardPath === null) {
 			return settleUnknown('评估卡落盘失败:裁决降级', ['card_persist_failed'])
 		}
-		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.verdict, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath })
-		return { ...verdict, cardPath, mutations }
+		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.verdict, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
+		return { ...verdict, cardPath, digest, mutations }
 	}
 
 	/** 评估卡落盘(系统的面)。写不进 → 返回 null,调用方 fail-closed。 */
 	function writeAuditCard(sessionId, stepId, card) {
-		const file = join(sessionCwd(sessionId), 'clear', 'evidence', 'audits', String(stepId), `${String(card.auditor_run_id)}.json`)
+		const file = sessionFile(sessionId, 'clear', 'evidence', 'audits', String(stepId), `${String(card.auditor_run_id)}.json`)
+		if (file === null) return null
 		try {
 			writeTextFile(file, `${JSON.stringify(card, null, 2)}\n`)
 			return file
@@ -2080,7 +2445,45 @@ export function apply(ctx, config = {}) {
 			return { ok: false, response: fail('host_missing', '宿主包 clearai-dsh 没有挂载:状态机不在(它是会话日志的投影)。先装上它,再谈工具。') }
 		}
 		const sessionId = String(exec.agent?.id ?? 'unknown')
+		/**
+		 * **入口检查宿主的两件纯读面**(`state` / `derive`)。宿主 fiber 可以在一次调用的
+		 * `await` 期间瞬态掉出 ACTIVE:`derive` 在派发前成功、评估者跑完之后再读宿主就抛,
+		 * 工具抛错时 `mutations` 里那条 `audit/dispatched` 随栈帧一起没了。
+		 *
+		 * 宿主半的属性式访问已改成降级(见 `ui/lib/index.js`),但**这一侧不能赌别人修好了**:
+		 * 不通就当场把已经落账的事实交出去(而不是抛),`withPendingFacts` 会把独立落账通道里的事实
+		 * 并进这个失败结果,所以"派过"这件事不丢。
+		 *
+		 * **刻意不摸 `preview`**:它是"假定这批变更已落账会怎样"的读面,测试的宿主桩里它会把状态推进一次
+		 * (`applyMutations`),拿它当体检会把状态推进一次。真正需要它的那几处(结案裁决)自己带兜底。
+		 */
+		try {
+			hostService.state(sessionId)
+			hostService.derive(sessionId)
+		} catch (error) {
+			return {
+				ok: false,
+				response: fail(
+					'host_unavailable',
+					`宿主读面这一刻不可用(${String(error?.message ?? error).slice(0, 200)})。**已经发生的事实照旧落账**(派发记录不丢);现在先看当前账本,再谈重试——不要重做一遍已经做过的事。`,
+					{ mutations: [] },
+				),
+			}
+		}
 		return { ok: true, hostService, sessionId, state: hostService.state(sessionId), mutations: [], done: null }
+	}
+
+	/**
+	 * **读面兜底**:`preview` 在真实运行里是"宿主 fiber 已经掉线"时的抛出点(见 `open` 的注释)。
+	 * 拿不到就返回 null,调用方如实降级——**绝不把整批已经落账的变更丢掉**。
+	 */
+	function previewOf(hostService, sessionId, mutations) {
+		try {
+			return hostService.preview(sessionId, mutations)
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 读面不可用 ${String(error?.message ?? error).slice(0, 160)}`)
+			return null
+		}
 	}
 
 	// ═══ 无人值守续跑窗口(autonomy=unattended) ═══════════════════════════════
@@ -2653,7 +3056,8 @@ export function apply(ctx, config = {}) {
 		const rows = host()?.derive?.(sessionId)?.factRows
 		const body = renderFactsIndex(Array.isArray(rows) ? { ...state, facts: rows } : state)
 		if (body === null) return null
-		const file = join(sessionCwd(sessionId), 'clear', 'knowledge', 'facts', 'INDEX.md')
+		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', 'INDEX.md')
+		if (file === null) return null
 		try {
 			if (existsSync(file) && readFileSync(file, 'utf8') === body) return null
 			writeTextFile(file, body)
@@ -2692,12 +3096,67 @@ export function apply(ctx, config = {}) {
 		if (isSpawnedChild(sessionId)) return ''
 		try {
 			const body = hostService.domain.renderShelf(sessionId, Array.isArray(mutations) ? mutations : [])
-			const file = join(sessionCwd(sessionId), 'clear', 'ontology', 'domain.md')
+			const file = sessionFile(sessionId, 'clear', 'ontology', 'domain.md')
+		if (file === null) return null
 			if (existsSync(file) && readFileSync(file, 'utf8') === body) return ''
 			writeTextFile(file, body)
 			return `\n词汇货架已更新:${join('clear', 'ontology', 'domain.md')}(概念 / 谓词 / 图 / 引用)。**它是读面,不是权威**——要改词汇就调注册 / 修订 / 废止动词。`
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai domain shelf: 写入失败 ${String(error?.message ?? error).slice(0, 160)}`)
+			return ''
+		}
+	}
+
+	/**
+	 * **目标文档**:把当前目标(一句话、判据全文、假设、修订留痕)落成
+	 * `clear/goals/{goalId}.md`——本体声明里 `goal.persistence` 早就写了这个落点,
+	 * 只是从前没有人写它。
+	 *
+	 * 为什么需要它:判据全文是每一拍都要用的东西,但**不该每一拍都进上下文**——
+	 * 卡里给压缩版 + 一个"全文在哪"的指针,需要逐字核对的场合(评估者、人复核、模型自己重读)
+	 * 去读这份文件。这样"卡瘦了"不会变成"判据丢了"。
+	 *
+	 * 幂等:内容没变就不重写(与两份货架同一条纪律)。
+	 */
+	function ensureGoalDoc(sessionId, state, derived) {
+		const goal = state?.goal ?? null
+		if (goal === null) return ''
+		if (isSpawnedChild(sessionId)) return ''
+		try {
+			const hypotheses = Array.isArray(state?.hypotheses) ? state.hypotheses : []
+			const history = Array.isArray(goal.criteriaHistory) ? goal.criteriaHistory : []
+			const lines = [
+				`# 目标 ${goal.id}(rev${goal.revision} · ${goal.status})`,
+				'',
+				`- **一句话**:${goal.headline ?? '(未写)'}`,
+				`- **主张**:${goal.claim}`,
+				`- **升格门槛**:${goal.promote_at_level ?? 'L3'}`,
+				`- **判据(全文)**${Array.isArray(goal.criteria) && goal.criteria.length > 0 ? '' : '(未逐条拆分)'}:`,
+				...(Array.isArray(goal.criteria) && goal.criteria.length > 0 ? goal.criteria.map((item, index) => `  ${index + 1}. ${item}`) : [`  ${goal.done_criteria}`]),
+				goal.criteria_note === null || goal.criteria_note === undefined ? '' : `- **判据背景**(不参与判定):${goal.criteria_note}`,
+				'',
+				'> 这份文件由系统按账本落盘(投影产物);权威是账本里的 `goal/set` 与 `criteria/revised`。',
+				'',
+				`## 假设(${hypotheses.length})`,
+				'',
+			]
+			for (const hypothesis of hypotheses) {
+				lines.push(`- \`${hypothesis.id}\` [${hypothesis.status}] ${hypothesis.claim}`)
+				lines.push(`  - 推翻条件:${hypothesis.refute_when}`)
+				if (Array.isArray(hypothesis.assertions) && hypothesis.assertions.length > 0) lines.push(`  - 断言:${hypothesis.assertions.length} 条`)
+			}
+			if (history.length > 0) {
+				lines.push('', `## 判据修订留痕(${history.length})`, '')
+				for (const item of history) lines.push(`- rev${item.revision}:${item.reason ?? '(未写缘由)'}(独立裁决 ${item.audit ?? '—'})`)
+			}
+			const body = `${lines.filter((line) => line !== '').join('\n')}\n`
+			const file = sessionFile(sessionId, 'clear', 'goals', `${goal.id}.md`)
+			if (file === null) return ''
+			if (existsSync(file) && readFileSync(file, 'utf8') === body) return ''
+			writeTextFile(file, body)
+			return join('clear', 'goals', `${goal.id}.md`)
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai goal doc: 写入失败 ${String(error?.message ?? error).slice(0, 160)}`)
 			return ''
 		}
 	}
@@ -2742,6 +3201,7 @@ export function apply(ctx, config = {}) {
 	 * 幂等:内容一样就不重写(与模板技能同步同一条纪律——文件时间戳是给人的读数)。
 	 */
 	function ensureOntologyShelf(cwd) {
+		if (typeof cwd !== 'string' || cwd === '') return null
 		if (CONTRIB.ontology === null || CONTRIB.ontology === undefined) return null
 		const file = join(cwd, 'clear', 'ontology', `${CONTRIB.ontology.id}.md`)
 		const body = describeOntology(CONTRIB.ontology)
@@ -2798,6 +3258,36 @@ export function apply(ctx, config = {}) {
 		TOOL_DEFS.set(definition.name, definition)
 	}
 
+	/**
+	 * **工具结果的统一出口**:把独立落账通道里这一拍的事实并进结果。
+	 *
+	 * 顺序是刻意的——`pendingFacts` 里的是**已经发生的事实**(派发在 `await` 之前就落了),
+	 * 而工具自己的 `mutations` 是这一拍的结算。两者同形、同一个折法,
+	 * 所以并起来交给宿主不会多一条通道,只是让"事实比工具结果活得更久"。
+	 */
+	function withPendingFacts(exec, value) {
+		const sessionId = String(exec?.agent?.id ?? 'unknown')
+		const pending = drainPendingFacts(sessionId)
+		if (pending.length === 0) return value
+		if (value === null || typeof value !== 'object') return value
+		const own = Array.isArray(value.mutations) ? value.mutations : []
+		/**
+		 * **顺序有意义:`pending` 在前,工具自己那批在后。**
+		 *
+		 * 独立落账通道里的第一条永远是"派发/派遣发生"(那件事先发生),工具自己的那批里则是
+		 * "这次调用怎么了结的"(可能带同一条 id 的覆盖,或一条 `audit/settled`)。
+		 * 折法是**按顺序**吃的:先有那条 `audit/dispatched`,后面的 `audit/settled` 才找得到它
+		 * 要结的那条记录。反过来放,结算会落在一条还不存在的记录上,变成一次 no-op——
+		 * 账上就留下一条永远 verdict=null 的悬空派发,派生阶段也跟着永远停在"等裁决"。
+		 *
+		 * 去重只挡**同一条事实被两条通道各送一次**;顺序不因此改变。
+		 */
+		const key = (mutation) => `${String(mutation?.t)}:${String(mutation?.id ?? mutation?.step ?? '')}`
+		const seen = new Set(own.filter((mutation) => mutation !== null && typeof mutation === 'object').map(key))
+		const merged = [...pending.filter((mutation) => !seen.has(key(mutation))), ...own]
+		return { ...value, mutations: merged }
+	}
+
 	// ── SetGoal ────────────────────────────────────────────────────────────
 
 	defineTool({
@@ -2807,8 +3297,20 @@ export function apply(ctx, config = {}) {
 		parameters: {
 			type: 'object',
 			properties: {
-				claim: { type: 'string', description: '目标:项目要回答的问题' },
-				done_criteria: { type: 'string', description: '怎样算回答了——必须是可核对的判据' },
+				headline: { type: 'string', maxLength: 120, description: '一句话目标(≤120 字):卡上 / 面板 / 续跑文案反复出现的那一句。首次立约必填' },
+				claim: { type: 'string', description: '目标:项目要回答的问题(可以长;身份与判据的落点)' },
+				done_criteria: { type: 'string', description: '怎样算回答了——必须是可核对的判据,至少含一处能清点的形态(数字 / 条数 / "存在一份文件")' },
+				legacy: { type: 'boolean', description: '旧会话迁移:一次性放行长文本与缺 headline(新目标不要用)' },
+				criteria: {
+					type: 'array',
+					items: { type: 'string' },
+					description: '判据逐条写(每条一句话,含可清点数或"存在一份文件"这类能核的形态)。给了它就按条记,不给则用 done_criteria 的全文',
+				},
+				criteria_note: { type: 'string', description: '判据的背景说明(不参与判定,只解释为什么这么定)' },
+				criteria_verdict: {
+					type: 'string',
+					description: '改判据文本时要带的独立裁决 auditKey:改「怎样算完成」不能被顺手做掉',
+				},
 				promote_at_level: { type: 'string', enum: LEVELS, description: '升格门槛(默认 L3)' },
 				hypotheses: {
 					type: 'array',
@@ -2861,6 +3363,10 @@ export function apply(ctx, config = {}) {
 			const selfRef = SELF_REFERENCE.find(([pattern]) => pattern.test(criteria))
 			if (selfRef !== undefined) return fail('criteria_self_reference', selfRef[1])
 			if (typeof args.claim !== 'string' || args.claim.trim() === '') return fail('claim_required', '目标要有主张。')
+			// 迁移开关要在假设校验**之前**就有值:下面那条「主体必须可指认」对它放行。
+			const legacy = args.legacy === true
+			const criteriaList = (Array.isArray(args.criteria) ? args.criteria : []).map((item) => String(item ?? '').trim()).filter((item) => item !== '')
+			const criteriaNote = typeof args.criteria_note === 'string' && args.criteria_note.trim() !== '' ? args.criteria_note.trim() : null
 			const hypotheses = Array.isArray(args.hypotheses) ? args.hypotheses : []
 			for (const hypothesis of hypotheses) {
 				if (typeof hypothesis?.claim !== 'string' || hypothesis.claim.trim() === '') return fail('hypothesis_claim_required', '每条假设要有一句话主张。')
@@ -2873,7 +3379,9 @@ export function apply(ctx, config = {}) {
 				if (hypothesis.assertions !== undefined && hypothesis.assertions !== null) {
 					const judge = domainJudge(hostService)
 					if (judge === null) return fail('domain_unavailable', '这一层的宿主没有提供领域判据(domain facade):无法校验断言。请检查宿主半与预设是否同版本。')
-					const problems = judge.validateAssertions(sessionId, hypothesis.assertions)
+					// `legacy`:迁移期一次性放行「主体还没登记」这条(`SetGoal` 的 `legacy:true`)——
+					// 旧会话的断言主体在登记实例这条路存在之前就写下了,不该因为补上了机制而追溯失败。
+					const problems = judge.validateAssertions(sessionId, hypothesis.assertions, { legacy })
 					if (problems.length > 0) {
 						return fail('assertions_rejected', `这条假设的断言不能成立(先注册词汇,或改断言):\n${problems.map((item) => `- ${item}`).join('\n')}`)
 					}
@@ -2888,8 +3396,74 @@ export function apply(ctx, config = {}) {
 			if (isRevision && (typeof args.reason !== 'string' || args.reason.trim() === '')) {
 				return fail('reason_required', '修订目标必须带一句原因:改了什么、为什么改。旧版本会留在日志里。')
 			}
+			/**
+			 * **标识先算,再谈改什么**:`goalId` / `revision` 既要在判据修订那条变更里用,
+			 * 也要在下面的 `goal/set` 里用。**声明必须在使用之前**——JS 的时间死区,
+			 * 顺序写反了,门的**成功路径**会在跑起来那一刻抛 ReferenceError
+			 * (失败路径永远不碰它们,所以单测很容易漏过去)。
+			 */
 			const goalId = isRevision ? state.goal.id : uniqueId('g')
 			const revision = isRevision ? state.goal.revision + 1 : 1
+			/**
+			 * **改判据文本要有一份独立裁决**(`criteria_verdict` = 一个 auditKey)。
+			 *
+			 * 判据是"怎样算完成"——它一变,前面所有工作的验收含义跟着变。允许在同一次
+			 * `SetGoal` 里顺手改掉,等于允许把"做不到"重新定义成"做到了"。补的正是那一"眼"外部裁决。
+			 * 出口两条:拿到一份落定的独立裁决再改,或如实 `CloseGoal(outcome="abandoned")`。
+			 * 迁移期用 `legacy:true` 放行(旧会话没有这条路)。
+			 */
+			if (CFG.requireCriteriaVerdict && isRevision && !legacy && criteria !== String(state.goal.done_criteria ?? '').trim()) {
+				const wanted = String(args.criteria_verdict ?? '').trim()
+				if (wanted === '') {
+					return fail(
+						'criteria_verdict_required',
+						'改判据文本要带一份独立裁决的 `criteria_verdict`(auditKey)。\n为什么:判据是"怎样算完成";它一变,前面所有工作的验收含义跟着变。允许在同一次调用里顺手改掉,等于允许把"做不到"重新定义成"做到了"。\n两条出口:先派一次独立评估拿到裁决再改,或如实 `CloseGoal(outcome="abandoned")`(放弃不需要动判据)。',
+					)
+				}
+				const settled = (state.audits ?? []).filter((audit) => String(audit.id) === wanted)
+				const usable = settled.find((audit) => ['support', 'refute', 'inconclusive'].includes(String(audit.verdict)))
+				if (usable === undefined) {
+					const inFlight = settled.some((audit) => audit.verdict === null)
+					return fail(
+						'criteria_verdict_unknown',
+						inFlight
+							? `那份裁决(${wanted})还在飞:等它落定再改判据。`
+							: `账上找不到 ${wanted} 这份**已落定**的独立裁决。最近几条:${(state.audits ?? []).slice(-5).map((audit) => `${audit.id}(${audit.verdict ?? '在飞'})`).join('、') || '(当前没有裁决)'}。`,
+					)
+				}
+				mutations.push({ t: 'criteria/revised', goal: goalId, revision, from: String(state.goal.done_criteria ?? ''), to: criteria, reason: String(args.reason ?? '').trim(), audit: wanted })
+			}
+			/**
+			 * **一句话的目标**(`headline`)与**可清点的判据**。
+			 *
+			 * 为什么单独立这个字段:目标与判据是每一拍都进上下文的那两句,而它们此前是**一整段散文**——
+			 * 长到卡里占几百字、长到"这一版改了哪一条"没法逐条对。人读不动,机器也没法清点。
+			 *
+			 * 纪律落在这里而不是提示词里:
+			 *   · `headline` ≤120 字:它才是卡上、面板上、续跑文案里反复出现的那一句。
+			 */
+			/**
+			 * `headline` 可以省略——**省略时由 `claim` 的第一句现算**,所以老调用方照旧可用。
+			 * 但现算出来的那一句**必须**在 120 字以内:超了就是"你的目标一句话说不完",
+			 * 那时要么自己给一个 `headline`,要么把问题收窄。这样"一句话的目标"是硬的,
+			 * 而"必须多传一个字段"不是——机制挡的是长文,不是调用方的记性。
+			 */
+			const firstSentence = (raw) => {
+				const text = String(raw ?? '').trim()
+				if (text === '') return ''
+				const cut = text.search(/[。!?;;\n]/)
+				return (cut === -1 ? text : text.slice(0, cut)).trim()
+			}
+			const headline = String(args.headline ?? '').trim() === '' ? firstSentence(args.claim) : String(args.headline).trim()
+			if (!legacy) {
+				if (headline === '') return fail('headline_required', '目标要有一句话的说法(`headline`,≤120 字):它是卡上、面板上、续跑文案里反复出现的那一句。')
+				if (headline.length > 120) {
+					return fail(
+						'headline_too_long',
+						`目标的一句话有 ${headline.length} 字,超过 120 字上限。\n一句话说不完的问题,通常是把两三个问题捆在了一起:要么显式给一个 ≤120 字的 \`headline\`,要么把问题收窄到能一句话说清的那一个。长的主张照旧放 \`claim\`。`,
+					)
+				}
+			}
 			const promoteAtLevel = LEVELS.includes(args.promote_at_level) ? args.promote_at_level : 'L3'
 			/**
 			 * **修订不许给同一句话发新身份。**
@@ -2923,8 +3497,12 @@ export function apply(ctx, config = {}) {
 			mutations.push({
 				t: 'goal/set',
 				id: goalId,
+				headline: headline === '' ? null : headline,
+				legacy,
 				claim: args.claim.trim(),
 				done_criteria: criteria,
+				criteria: criteriaList,
+				criteria_note: criteriaNote,
 				promote_at_level: promoteAtLevel,
 				revision,
 				reason: isRevision ? String(args.reason).trim() : null,
@@ -2937,7 +3515,9 @@ export function apply(ctx, config = {}) {
 				mutations.push({ t: 'hypothesis/superseded', goal: goalId, id: dropped.id, claim: dropped.claim, by: `rev${revision}` })
 			}
 			let scoutNote = ''
-			if (!isRevision && CFG.precommitRecon) {
+			// **取不到会话目录就不做立约前侦察**:那是「这一刻读不到」,不是「没有材料」——
+			// 诚实少做一件事,而不是拿一个假路径去 join(null 会让整个立约炸掉)。
+			if (!isRevision && CFG.precommitRecon && typeof cwd === 'string' && cwd !== '') {
 				// 立约前侦察:harness 发起(不是模型请求),一生一次,且只在真的有人给过材料时做
 				// ——`input/` 是空的就没什么可侦察的,白花一次子 run。
 				const inputDir = join(cwd, 'input')
@@ -2968,7 +3548,7 @@ export function apply(ctx, config = {}) {
 					applyContinuationPolicy(exec.agent, state, hostService.derive(sessionId), {
 						goalOpen: true,
 						// 平台上那句话（给人看）用**目标的主张**说，不写 id；身份与额度由账上那枚窗口负责。
-						target: `继续做完:${clip(String(args.claim ?? ''), 26)}`,
+						target: `继续做完:${clip(headline === '' ? String(args.claim ?? '') : headline, 26)}`,
 						mutations,
 					}),
 			})
@@ -3048,6 +3628,37 @@ export function apply(ctx, config = {}) {
 			 * 是两条不同的立场,所以不共用一个键。另外它**只在知识模式下生效**——
 			 * 没有登记的命题就没有「形态」可谈,那时拦下来的只是一句空话。
 			 */
+			/**
+			 * **结构缺口的两道门**(与上面的知识门同一族、同一条顺序纪律:先拦便宜能补的,
+			 * 再花钱请人裁决)。
+			 *
+			 * 两道都是「可清点的整数 + 两条诚实出口」,判据来自投影的 `gaps`,不另算一套:
+			 *   · `entities_unlanded`:N 个断言主体还没落到实体图。补法是 `RegisterInstance`
+			 *     (登记节点)或 `Assert`(连出处把边也落下来);不值当就如实 abandoned。
+			 *   · `levels_skipped`:N 处跳级没有理由。补法是 `ExplainLevelSkip`。
+			 * 提示词只会被读成建议;这两道进的是完成函数。
+			 */
+			const gapOf = (code) => (derived.knowledge.gaps ?? []).find((gap) => gap.code === code) ?? null
+			if (CFG.requireLandedEntities && derived.knowledge.mode === 'knowledge') {
+				const gap = gapOf('entities_unlanded')
+				if (gap !== null) {
+					return fail(
+						'entities_unlanded',
+						`${gap.detail}\n${gap.nextAction}\n为什么不让跳过:断言停在命题上时,图是空的——而"查到的实体"没有落成图,等于这一轮没有留下可复用的东西。两条出口:补登记,或如实 \`CloseGoal(outcome="abandoned")\`。`,
+						{ mutations },
+					)
+				}
+			}
+			if (CFG.requireLevelReasons && derived.knowledge.mode === 'knowledge') {
+				const gap = gapOf('levels_skipped')
+				if (gap !== null) {
+					return fail(
+						'levels_skipped',
+						`${gap.detail}\n${gap.nextAction}\n为什么不让跳过:等级是"这条结论多大程度只能靠信任做的人";跳过便宜的那几级本身不违规,但**没有理由**的跳级等于没人知道为什么。两条出口:补理由,或如实 \`CloseGoal(outcome="abandoned")\`。`,
+						{ mutations },
+					)
+				}
+			}
 			if (CFG.requireTypedPromotion && derived.knowledge.mode === 'knowledge') {
 				const threshold = levelIndexOf(goal.promote_at_level)
 				/** 与下面那段升格循环**逐字同一套谓词**:将要升格的就是这几条,一条不多一条不少。 */
@@ -3077,8 +3688,23 @@ export function apply(ctx, config = {}) {
 			}
 			const audit = await runEvaluator(sessionId, exec.agent, plan, syntheticStep, gate, 'goal_audit', exec.signal)
 			mutations.push(...audit.mutations)
-			if (audit.verdict === 'pending') return fail('audit_pending', `目标评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试。`)
+			if (audit.verdict === 'pending') return fail('audit_pending', `目标评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试。`, { mutations: audit.mutations })
 			if (audit.verdict !== 'support') {
+				/**
+				 * **复用来的裁决不落第二条证据**。
+				 *
+				 * 复用意味着"这一次没有新的判断发生"——它只是同一条评审对同一批材料再说了一遍。
+				 * 再落一条 `evidence/recorded` 会有两个坏处:账上多一条同义行,而且它会进下一次
+				 * digest 的输入面(那条正是"回声"本身)。所以复用只如实说清:裁决是什么、为什么复用、
+				 * 要改什么才能得到新判断。真正的结案事实(`audit/reused`)已经在 `audit.mutations` 里。
+				 */
+				if (audit.reused === true) {
+					return fail(
+						'goal_not_achieved',
+						`目标未达成,保持开放。**这一步与上一次是同一份材料,所以复用了上一条独立裁决**(不再重复花钱请人):裁决 ${audit.verdict}。依据:${audit.basis}\n要拿到新判断,先改材料:补观测 / 交付产物 / 修订假设或判据;只是再喊一次结案不会产生新判断。\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}`,
+						{ mutations },
+					)
+				}
 				/**
 				 * 目标级裁决也要带得出出处:那条审计自己写了一张卡、也有它的评估者会话。
 				 * 这一处原先 `refs: []` ⇒ 面板上这条证据一个可点的东西都没有 ✗。
@@ -3105,10 +3731,14 @@ export function apply(ctx, config = {}) {
 					anchor: 'auditor',
 					basis_reviewable: true,
 				})
-				const preview = hostService.preview(sessionId, mutations)
+				/**
+				 * 读面兜底:`preview` 是本次真实运行里"宿主 fiber 掉线"的抛出点。
+				 * 拿不到就**不带卡**返回,而不是把这一批事实(含 `audit/dispatched`/`audit/settled`)丢掉。
+				 */
+				const preview = previewOf(hostService, sessionId, mutations)
 				return fail(
 					'goal_not_achieved',
-					`目标未达成,保持开放。评估者裁决:${audit.verdict}。依据:${audit.basis}${audit.shortfalls.length > 0 ? `\n缺口:${audit.shortfalls.join('; ')}` : ''}\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}\n\n${preview.card}`,
+					`目标未达成,保持开放。评估者裁决:${audit.verdict}。依据:${audit.basis}${audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : ''}\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}${preview === null ? '\n(运行态卡这一刻取不到:宿主读面不可用。已经发生的事实照旧落账;先看当前账本再谈重试。)' : `\n\n${preview.card}`}`,
 					{ mutations },
 				)
 			}
@@ -3180,7 +3810,8 @@ export function apply(ctx, config = {}) {
 	 * 失败只 warn(照 `persistFact` 的做法):投递仍走消息,只是少了那份可读副本。
 	 */
 	function persistMaterial(sessionId, scoutId, meta, conclusion) {
-		const file = join(sessionCwd(sessionId), 'clear', 'knowledge', 'materials', `${scoutId}.md`)
+		const file = sessionFile(sessionId, 'clear', 'knowledge', 'materials', `${scoutId}.md`)
+		if (file === null) return null
 		try {
 			writeTextFile(
 				file,
@@ -3209,7 +3840,8 @@ export function apply(ctx, config = {}) {
 	}
 
 	function persistFact(sessionId, goal, hypothesis, factId) {
-		const file = join(sessionCwd(sessionId), 'clear', 'knowledge', 'facts', `${goal.id}.md`)
+		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${goal.id}.md`)
+		if (file === null) return null
 		try {
 			appendTextFile(
 				file,
@@ -3540,6 +4172,232 @@ export function apply(ctx, config = {}) {
 		},
 	})
 
+	/**
+	 * ── 实体两件:实例与关于它的断言 ──────────────────────────────────────────
+	 *
+	 * **为什么要单独立这两件**:原来实体层的节点与边**只**来自
+	 * 已升格事实,而事实是"目标级独立裁决判 support"之后才发的奖励。于是一条观察要变成实体,
+	 * 必须同时满足「命题登记了 + 断言类型合法 + 证据够门槛 + 无推翻 + **整条目标的四条散文判据
+	 * 都被评估者认可**」——最后那一条与这条观察毫无关系,却握着实体层的存在性。
+	 * 失效模式是**比例失衡**:本体层可以堆出几十个词(登记是约定,不花代价),而实体图可能
+	 * 一个节点都没有——账面上"本体建好了",实际上一条可复核的观测都没留下来。
+	 *
+	 * 修法是把「约定」与「观测」分开,各给一个写入口:
+	 *   · `RegisterTerm` = 约定(概念,不需要依据);
+	 *   · `RegisterInstance` = 观测(实例,**必须**带依据与出处);
+	 *   · `Assert` = 关于某个实例的一句话(**必须**带出处),它**在落账那一刻就进实体图**。
+	 * 事实层照旧:独立裁决过的结论仍然升格成事实,实体图因此有两类边
+	 * (带等级的 `promoted` 与带出处的 `asserted`),两条都看得见。
+	 */
+	defineTool({
+		name: 'RegisterInstance',
+		description:
+			'登记一个**实例**(实体图上的节点):某个具体的人 / 作品 / 事件 / 样本。与 `RegisterTerm` 的分工是硬的——概念是**约定**(不需要依据),实例是**观测**(`basis` 与 `provenance` 必填)。`type` 必须是已登记的概念。实例自己不带关系;要让它连上别的节点就用 `Assert`。',
+		parameters: {
+			type: 'object',
+			properties: {
+				id: { type: 'string', description: '实例 id:小写 slug 或原文名(字母/数字/下划线/短横,≤60)' },
+				type: { type: 'string', description: '它是什么概念的实例(已登记的 term id)' },
+				label: { type: 'string', description: '给人看的名字' },
+				basis: { type: 'string', description: '依据:哪份材料 / 哪条观测让这个实例成立' },
+				provenance: {
+					type: 'object',
+					description: '出处:能指认到的东西。url = 可打开的链接;named = 具名文献 / 条目;backref = 工作区里已有的文件或条目 id',
+					properties: {
+						kind: { type: 'string', enum: ['url', 'named', 'backref'] },
+						ref: { type: 'string', description: '链接、文献名或文件路径' },
+					},
+					required: ['kind', 'ref'],
+					additionalProperties: false,
+				},
+			},
+			required: ['id', 'type', 'label', 'basis', 'provenance'],
+			additionalProperties: false,
+		},
+		output: CARD_OUTPUT,
+		async execute(args, exec) {
+			const call = open(exec)
+			if (call.ok !== true) return call.response
+			const { hostService, sessionId, state, mutations } = call
+			const done = finish(hostService, sessionId, mutations)
+			const id = String(args.id ?? '').trim()
+			const type = String(args.type ?? '').trim()
+			const label = String(args.label ?? '').trim()
+			const basis = String(args.basis ?? '').trim()
+			const kind = String(args.provenance?.kind ?? '').trim()
+			const ref = String(args.provenance?.ref ?? '').trim()
+			if (!/^[A-Za-z0-9_-]{1,60}$/.test(id)) return fail('instance_id_invalid', 'id 只能用字母/数字/下划线/短横(≤60):它是图上的稳定键,不能含空格与标点。')
+			if (label === '') return fail('instance_label_required', '实例要有一个人能读的名字。')
+			if (basis === '') return fail('instance_basis_required', '实例是**观测**不是约定:写清哪份材料让它可以被指认。')
+			if (!['url', 'named', 'backref'].includes(kind) || ref === '') {
+				return fail('instance_provenance_required', '出处必填:`{kind:"url"|"named"|"backref", ref:"…"}`。没有出处的实例进不了实体图——那是它与概念的区别。')
+			}
+			const terms = Array.isArray(stateOf(sessionId)?.lexicon?.terms) ? stateOf(sessionId).lexicon.terms : []
+			const known = terms.find((term) => String(term.id) === type)
+			if (known === undefined) return fail('instance_type_unknown', `type ${type} 不是已登记的概念。先 RegisterTerm 立这个概念(它才是约定那一侧),再登记实例。`)
+			if (String(known.status ?? 'admitted') === 'deprecated') return fail('instance_type_deprecated', `概念 ${type} 已废止:新断言不许再引用它。`)
+			mutations.push({ t: 'entity/registered', id, type, label, basis, provenance: { kind, ref } })
+			const note = ensureDomainShelf(hostService, sessionId, mutations)
+			return done({
+				ok: true,
+				code: 'instance_registered',
+				message: `实例 ${id} 已登记为 ${type} 的实例(出处:${kind} · ${ref})。它现在是实体图上的一个节点——**还没有边**:要让它连上别的节点,用 \`Assert\` 写一句带出处的话。${note}`,
+			})
+		},
+	})
+
+	defineTool({
+		name: 'Assert',
+		description:
+			'说一句关于某个**已登记实例**的话(主词–谓词–宾语),并带上出处。它**在落账那一刻就进实体图**:不需要等目标级独立裁决。这是把"查到的实体"变成"实体图谱"的那条路。带等级的结论仍走假设 → 证据 → 升格那条路(那才叫事实);`Assert` 记的是**观测**,图上的边会标成 `asserted` 与事实边区分。',
+		parameters: {
+			type: 'object',
+			properties: {
+				subject: {
+					type: 'object',
+					properties: { id: { type: 'string' }, type: { type: 'string' } },
+					required: ['id', 'type'],
+					additionalProperties: false,
+				},
+				predicate: { type: 'string', description: '已登记的谓词 id' },
+				object: {
+					type: 'object',
+					properties: {
+						kind: { type: 'string', enum: ['instance', 'statement', 'quantity', 'formula', 'code', 'reference'] },
+						value: {},
+						type: { type: 'string', description: 'kind=instance 时,宾语所属概念 id' },
+						unit: { type: 'string' },
+					},
+					required: ['kind'],
+					additionalProperties: false,
+				},
+				evidence: {
+					type: 'object',
+					properties: { kind: { type: 'string', enum: ['url', 'named', 'backref'] }, ref: { type: 'string' } },
+					required: ['kind', 'ref'],
+					additionalProperties: false,
+				},
+			},
+			required: ['subject', 'predicate', 'object', 'evidence'],
+			additionalProperties: false,
+		},
+		output: CARD_OUTPUT,
+		async execute(args, exec) {
+			const call = open(exec)
+			if (call.ok !== true) return call.response
+			const { hostService, sessionId, state, mutations } = call
+			const done = finish(hostService, sessionId, mutations)
+			const judge = domainJudge(hostService)
+			if (judge === null) return fail('domain_unavailable', '这一层的宿主没有提供领域判据(domain facade):无法校验断言。请检查宿主半与预设是否同版本。')
+			const subjectId = String(args.subject?.id ?? '').trim()
+			const subjectType = String(args.subject?.type ?? '').trim()
+			const predicateId = String(args.predicate ?? '').trim()
+			const kind = String(args.evidence?.kind ?? '').trim()
+			const ref = String(args.evidence?.ref ?? '').trim()
+			if (subjectId === '' || subjectType === '') return fail('assert_subject_required', '主词要同时给 `id` 与 `type`(type 是它所属的概念)。')
+			if (predicateId === '') return fail('assert_predicate_required', '谓词必填:先 `RegisterPredicate` 立一条关系,再说这句话。')
+			if (!['url', 'named', 'backref'].includes(kind) || ref === '') return fail('assert_evidence_required', '出处必填:`{kind:"url"|"named"|"backref", ref:"…"}`。**没有出处的话是意见,不是观测**——它不进实体图。')
+			const projection = hostService.domain.graph?.(sessionId) ?? null
+			const registered = Array.isArray(stateOf(sessionId)?.entities) ? stateOf(sessionId).entities : []
+			if (!registered.some((entity) => String(entity.id) === subjectId && String(entity.type) === subjectType)) {
+				return fail('assert_subject_not_registered', `主词 ${subjectType}|${subjectId} 还不是实体图上的节点。先 \`RegisterInstance\` 把它连出处登记下来,再说关于它的话——**主词可指认**是这句话能被复核的前提。`)
+			}
+			if (projection !== null && Array.isArray(projection.nodes)) {
+				const types = new Set(projection.nodes.filter((node) => node?.kind === 'concept').map((node) => String(node.ref)))
+				if (!types.has(subjectType)) return fail('assert_subject_type_unknown', `主词的类型 ${subjectType} 不是已登记的概念。`)
+				const objectType = String(args.object?.type ?? '').trim()
+				if (String(args.object?.kind) === 'instance' && objectType !== '' && !types.has(objectType)) return fail('assert_object_type_unknown', `宾语的类型 ${objectType} 不是已登记的概念。`)
+			}
+			const problems = judge.validateAssertions(sessionId, [{ predicate: predicateId, subject: { id: subjectId, type: subjectType }, object: args.object }])
+			if (problems.length > 0) return fail('assertion_rejected', `这句话不能成立:\n${problems.map((item) => `- ${item}`).join('\n')}`)
+			const assertionId = `as-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+			mutations.push({
+				t: 'entity/asserted',
+				id: assertionId,
+				subject: { id: subjectId, type: subjectType },
+				predicate: predicateId,
+				object: args.object,
+				evidence: { kind, ref },
+			})
+			const note = ensureDomainShelf(hostService, sessionId, mutations)
+			return done({
+				ok: true,
+				code: 'entity_asserted',
+				message: `${subjectType}|${subjectId} —${predicateId}→ 已落账(出处:${kind} · ${ref})。它现在**在实体图上有一条边**;这条边走的是"带出处的观测",与升格事实那条"带等级的结论"分开标注。${note}`,
+			})
+		},
+	})
+
+	/**
+	 * ── ExplainLevelSkip:跳级要记账 ─────────────────────────────────────────
+	 *
+	 * 等级衡量的是「这条结论在多大程度上只能靠信任做的人」。便宜的那几级(L0 自洽检查、
+	 * L1 已有知识、L2 已有数据)不是形式:它们能在花掉一次独立裁决之前先把问题问清。
+	 * 但 `supportedLevel` 只是 support 证据的最大值,**跳级不违规、也没有任何代价**——
+	 * 于是"一路只在最贵的那一级交付"成了最优策略:结论全部停在 L3,而 L0 证据一条都没有。
+	 *
+	 * 不逼模型补读数(首次测量确实可能没有廉价路),但**跳级必须留下理由**:
+	 * 理由是「这一级在本项目里为什么不适用」,不是「时间不够」。
+	 */
+	defineTool({
+		name: 'ExplainLevelSkip',
+		description:
+			'为**没走过的验证等级**留下理由。`levels` 必须是这条命题当前"未走过"的等级(卡上会列出来);`reason` 要写成"这一级在本项目里为什么不适用",并**点到该等级要检查的对象名**——写"时间不够"不算理由。它不改等级、也不替代读数:它只让"跳过"从默许变成账上的一条事实。',
+		parameters: {
+			type: 'object',
+			properties: {
+				hypothesis: { type: 'string', description: '命题 id(也认原文与唯一前缀)' },
+				levels: { type: 'array', items: { type: 'string', enum: LEVELS }, description: '未走过的等级' },
+				reason: { type: 'string', description: '为什么这一级在本项目里不适用(必须点到该等级要检查的对象名)' },
+			},
+			required: ['hypothesis', 'levels', 'reason'],
+			additionalProperties: false,
+		},
+		output: CARD_OUTPUT,
+		async execute(args, exec) {
+			const call = open(exec)
+			if (call.ok !== true) return call.response
+			const { hostService, sessionId, state, mutations } = call
+			const done = finish(hostService, sessionId, mutations)
+			const derived = hostService.derive(sessionId)
+			const hypothesis = matchHypothesis(derived.hypotheses, args.hypothesis)
+			if (hypothesis === null) return fail('hypothesis_unknown', `认不出这条命题:${String(args.hypothesis)}。有效 id:${derived.hypotheses.map((item) => item.id).join('、') || '(当前没有命题)'}。`)
+			const levels = (Array.isArray(args.levels) ? args.levels : []).map((level) => String(level)).filter((level) => LEVELS.includes(level))
+			if (levels.length === 0) return fail('levels_required', `levels 必填,取值 ${LEVELS.join('/')}。`)
+			const untouched = Array.isArray(hypothesis.untouchedLevels) ? hypothesis.untouchedLevels : []
+			const notUntouched = levels.filter((level) => !untouched.includes(level))
+			if (notUntouched.length > 0) {
+				return fail(
+					'levels_not_untouched',
+					`${notUntouched.join('/')} 不是"未走过"的等级,不能给它写跳过理由(${hypothesis.id} 当前未走过:${untouched.join('/') || '无'})。见卡上那行读数。`,
+				)
+			}
+			const reason = String(args.reason ?? '').trim()
+			if (reason.length < 24) return fail('skip_reason_too_short', '理由太短:写明"这一级要检查什么、为什么在本项目里不适用"。')
+			/**
+			 * **可清点的理由判据**:理由里必须出现该等级要检查的对象名(取自这条命题自己的断言主体)。
+			 * 这不是文字游戏——它挡住的是"随便写一句「不适用」就把门过了"这条捷径。
+			 */
+			const subjects = (Array.isArray(hypothesis.assertions) ? hypothesis.assertions : [])
+				.map((assertion) => String(assertion?.object?.value ?? '').trim())
+				.concat((Array.isArray(hypothesis.assertions) ? hypothesis.assertions : []).map((assertion) => String(assertion?.subject?.id ?? '').trim()))
+				.filter((token) => token !== '')
+			if (subjects.length > 0 && !subjects.some((token) => reason.includes(token))) {
+				return fail(
+					'skip_reason_missing_object',
+					`理由里必须点到这一级要检查的对象名:${subjects.slice(0, 6).join('、')}。\n为什么要求这个:一句"不适用"谁都会写,而写清"看的是哪个对象、为什么不适用于它"才是一次可复核的判断。`,
+				)
+			}
+			mutations.push({ t: 'level/skipped', goal: state.goal?.id ?? null, hypothesis: hypothesis.id, levels, reason })
+			const left = untouched.filter((level) => !levels.includes(level))
+			return done({
+				ok: true,
+				code: 'level_skip_recorded',
+				message: `${hypothesis.id} 的 ${levels.join('/')} 已记下跳过理由。${left.length === 0 ? '这条命题的跳级现在都有理由了。' : `还剩 ${left.join('/')} 没有理由——卡上会继续报。`}`,
+			})
+		},
+	})
+
 	defineTool({
 		name: 'CreatePlan',
 		description:
@@ -3784,7 +4642,8 @@ export function apply(ctx, config = {}) {
 
 	/** 归档路径取实现事实 `clear/goals/plans/{plan_id}.md`。 */
 	function persistArchive(sessionId, plan, summary) {
-		const file = join(sessionCwd(sessionId), 'clear', 'goals', 'plans', `${plan.id}.md`)
+		const file = sessionFile(sessionId, 'clear', 'goals', 'plans', `${plan.id}.md`)
+		if (file === null) return null
 		const lines = [`# 阶段归档 · ${plan.id}`, '', `- 收束时间:${new Date().toISOString()}`, `- 所属目标:${plan.goal ?? '—'}`, summary === null ? '' : `- 收束之辞:${summary}`, '', '## 步骤']
 		for (const step of plan.steps) {
 			lines.push(`- [${step.status}] ${step.ordinal}. ${step.do} → ${step.artifacts.join(', ') || '(未声明)'}${step.voidReason === null ? '' : ` (作废:${step.voidReason})`}`)
@@ -3861,18 +4720,26 @@ export function apply(ctx, config = {}) {
 
 			// ① 登记观测(只追加)
 			const accepted = []
+			// 目录不可得时(digest / 字节数都无从算起)不在循环里拼路径:那是"这一刻读不到",
+			// 不是"这份观测有问题"。观测照旧落账(它是模型报的),只是**读数缺失**如实为 null——
+			// 让调用崩掉会把这一批 observation/recorded 一起丢进可撤销的栈帧,那才是真的损失。
+			const readableCwd = typeof cwd === 'string' && cwd !== ''
 			for (const observation of Array.isArray(args.observations) ? args.observations : []) {
 				if (typeof observation?.ref !== 'string' || observation.ref.trim() === '') continue
 				const ref = observation.ref.trim()
-				const absolute = isAbsolute(ref) ? ref : resolvePath(cwd, ref)
 				let bytes = null
-				try {
-					bytes = statSync(absolute).size
-				} catch {
-					bytes = null
+				let digest = null
+				if (readableCwd) {
+					const absolute = isAbsolute(ref) ? ref : resolvePath(cwd, ref)
+					try {
+						bytes = statSync(absolute).size
+					} catch {
+						bytes = null
+					}
+					digest = sha256File(absolute)
 				}
 				const materialId = `m-${Math.random().toString(36).slice(2, 8)}`
-				mutations.push({ t: 'observation/recorded', id: materialId, ref, source: 'self', digest: sha256File(absolute), bytes, note: observation.note ?? null, step: step.id })
+				mutations.push({ t: 'observation/recorded', id: materialId, ref, source: 'self', digest, bytes, note: observation.note ?? null, step: step.id })
 				accepted.push({ id: materialId, ref })
 			}
 
@@ -3912,7 +4779,7 @@ export function apply(ctx, config = {}) {
 					count >= CFG.blockedThreshold
 						? stopContinuation(exec.agent, CONTINUATION_CODES.stalled, `计划 ${plan.id} 第 ${count} 次未过准入(${gate.verified_by}:${gate.hint})`, mutations)
 						: ''
-				const preview = hostService.preview(sessionId, mutations)
+				const preview = previewOf(hostService, sessionId, mutations)
 				return fail(
 					`evidence_${gate.verified_by}`,
 					`未过观测准入(${gate.verified_by},第 ${count} 次):${gate.hint}${count >= CFG.blockedThreshold ? '\n已达阈值,计划置 blocked——停下等人,不要继续交付。' : ''}${stalledNote}\n\n${preview.card}`,
@@ -3949,6 +4816,8 @@ export function apply(ctx, config = {}) {
 			/** 独立裁决的两件凭据(自判路径下保持 null):评估卡文件与写它的**评估者子会话**。 */
 			let auditCardPath = null
 			let auditSessionId = null
+			/** 复用说明(模型与人都看得到的那一句);不复用时为空串。 */
+			let reuseNote = ''
 			if (levelIndex > SELF_JUDGE_MAX_INDEX) {
 				if (typeof args.verdict === 'string' && args.verdict !== '') {
 					return fail('verdict_not_accepted', `${level} 的证据只能由机器或独立评估者写:做的人不判自己。去掉 verdict/basis 重新交付,系统会派评估者。`)
@@ -3960,7 +4829,7 @@ export function apply(ctx, config = {}) {
 					const count = countBlock('audit_unavailable', audit.basis)
 					const stalled = count >= CFG.blockedThreshold
 					const stalledNote = stalled ? stopContinuation(exec.agent, CONTINUATION_CODES.stalled, `计划 ${plan.id} 第 ${count} 次拿不到独立裁决`, mutations) : ''
-					const preview = hostService.preview(sessionId, mutations)
+					const preview = previewOf(hostService, sessionId, mutations)
 					return fail(
 						'evidence_audit_unavailable',
 						`没有拿到独立裁决,这一步不推进(fail-closed):${audit.basis}` +
@@ -3972,13 +4841,23 @@ export function apply(ctx, config = {}) {
 				verdict = audit.verdict
 				evaluator = 'independent'
 				basis = audit.basis
-				/** 两件凭据从**这一次**的审计结果里取(卡文件 + 评估者子会话)。 */
+				/** 两件凭据从**这一次**的审计结果里取(卡文件 + 评估者子会话);复用也照样带出来。 */
 				auditCardPath = audit.cardPath ?? null
-				auditSessionId = audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? null
+				auditSessionId = audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? audit.evaluatorSession ?? null
+				/**
+				 * **复用改的是"花不花一次评估",不是"这次交付算不算发生过"**。
+				 *
+				 * 所以证据照旧落(这一步的历史、以及仓库既有的「同一步连续两次无法判定 ⇒ 必须先改法」
+				 * 都靠它),只在依据里说清这一次没有新判断。省下的正好是那两分钟子 run。
+				 */
+				if (audit.reused === true) {
+					reuseNote = `\n**同一条材料**:这次**复用了上一条独立裁决**,没有重复请人。要拿到新判断先改材料——换产物内容、补观测,或用 RefinePlan 改这一步的判据。`
+					basis = `${basis}\n[同一条材料:这次复用了上一条独立裁决,没有重复请人。要拿到新判断,先改材料——换产物内容、补观测,或用 RefinePlan 改这一步的判据。]`
+				}
 				// 审计缺口定点侦察:评估者说这一步不成,系统自己派一个只读侦察去补它指出的缺口
 				// (子角色由 Harness 按触发派生,不是模型的自由委派)
-				if (audit.verdict === 'refute') {
-					const scout = await runScout(sessionId, exec.agent, plan, step, audit.shortfalls.join('; '), `audit_shortfall:${audit.shortfalls[0] ?? '未指明'}`, exec.signal)
+				if (audit.verdict === 'refute' && audit.reused !== true) {
+					const scout = await runScout(sessionId, exec.agent, plan, step, verdictText(audit.shortfalls), `audit_shortfall:${verdictText([audit.shortfalls[0]]) || '未指明'}`, exec.signal)
 					mutations.push(...scout.mutations)
 					// 派出去就不等:结论会在下一个回合边界回灌到资料面。
 					if (scout.pending === true) basis = `${basis}\n[已派出只读侦察补缺口 ${scout.scoutId}:结论会作为观测回灌到资料面,不在这次回执里]`
@@ -4096,7 +4975,7 @@ export function apply(ctx, config = {}) {
 				blocked: false,
 				message:
 					`步骤 ${step.id} ${verdict === 'support' ? '已交付并推进' : `未收敛(${verdict})`}` +
-					`(${evaluator === 'independent' ? '独立评估者裁决' : '自判,依据已记账'})。观测准入:${gate.verified_by};坐标:${gate.confirmed.map((item) => item.ref).join(', ') || '(无)'}。${tail}${ledgerNote}`,
+					`(${evaluator === 'independent' ? '独立评估者裁决' : '自判,依据已记账'})。观测准入:${gate.verified_by};坐标:${gate.confirmed.map((item) => item.ref).join(', ') || '(无)'}。${tail}${reuseNote}${ledgerNote}`,
 			})
 		},
 	})
@@ -4233,6 +5112,8 @@ export function apply(ctx, config = {}) {
 	 * 失败如实告警并返回空串:账本没记上就说没记上,不假装记过。
 	 */
 	function snapshotWorkspace(sessionId, cwd, state, mutations, turn, phase = 'mid') {
+		// 会话目录不可得(服务瞬态掉线)时**不猜目录**:少记一次快照,也不要写到别处。
+		if (typeof cwd !== 'string' || cwd === '') return ''
 		const calls = Number(state?.writeCalls ?? 0)
 		if (calls <= 0 || lastWorkspaceSnapshot.get(sessionId) === calls) return ''
 		lastWorkspaceSnapshot.set(sessionId, calls)
@@ -5134,7 +6015,7 @@ export function apply(ctx, config = {}) {
 				reading = audit.reading ?? reading
 				validity = audit.validity ?? validity
 				auditCardPath = audit.cardPath ?? null
-				auditSessionId = audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? null
+				auditSessionId = audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? audit.evaluatorSession ?? null
 			} else {
 				if (typeof args.verdict !== 'string' || args.verdict === '') return fail('verdict_required', `${branch.level} 的世界线要你自己给裁决与依据。`)
 				if (typeof args.basis !== 'string' || args.basis.trim().length < 8) return fail('basis_required', '依据必须可复查:写清你引用了哪个产物里的哪个事实。')
@@ -5268,7 +6149,7 @@ export function apply(ctx, config = {}) {
 			}
 			if (outcome.undecidable !== undefined) {
 				mutations.push({ t: 'fork/undecidable', fork: fork.id, code: outcome.undecidable.code, reason: outcome.undecidable.reason, readings: outcome.undecidable.readings ?? [] })
-				const preview = hostService.preview(sessionId, mutations)
+				const preview = previewOf(hostService, sessionId, mutations)
 				return fail(
 					outcome.undecidable.code,
 					`算不出胜负:${outcome.undecidable.reason}${arbiterNote}\n这是**异常**,归你处置,不是死路;只有确属价值判断时才升给人。\n\n${preview.card}`,
@@ -5318,7 +6199,7 @@ export function apply(ctx, config = {}) {
 			if (mergeable === true) {
 				const commit = commitWorldline(winner.worktree_path, `worldline ${winner.git_branch}: 采纳前的最后状态`)
 				if (commit.ok !== true) {
-					const preview = hostService.preview(sessionId, mutations)
+					const preview = previewOf(hostService, sessionId, mutations)
 					return fail('merge_prepare_failed', `采纳前提交赢家世界线失败:${commit.reason}\n\n${preview.card}`, { mutations })
 				}
 				const message = [
@@ -5338,7 +6219,7 @@ export function apply(ctx, config = {}) {
 					if (merged.snapshotCommit !== null && merged.snapshotCommit !== undefined) {
 						mutations.push({ t: 'git/snapshot', commit: merged.snapshotCommit, reason: '采纳前先把工作区手上的改动存成一条提交(否则会被合并覆盖)' })
 					}
-					const preview = hostService.preview(sessionId, mutations)
+					const preview = previewOf(hostService, sessionId, mutations)
 					return fail(
 						'merge_conflict',
 						`算术算出了赢家「${winner.label}」,但**合并冲突**了(两个方案改了同一个地方)。这是决策门,已经在世界树上等你:请决定保留哪一边,或让模型改判据重做一条世界线。\n细节:${merged.detail ?? ''}` +
@@ -6019,6 +6900,10 @@ export function apply(ctx, config = {}) {
 			const pathProblem = validateSkillPath(args.path ?? 'SKILL.md')
 			if (pathProblem !== null) return fail(pathProblem, '路径只能是技能目录内的相对路径,不许 `..`。')
 			if (typeof args.content !== 'string' || args.content.trim() === '') return fail('content_required', '写全文,不是 diff。')
+			// 与 WriteMemory 同一条纪律:目录不可得就**如实说写不了**,不拿假路径去 join。
+			if (typeof cwd !== 'string' || cwd === '') {
+				return fail('skill_cwd_unavailable', '这一刻读不到会话的工作目录,技能写不出去。**这不是你的参数错**:宿主会话服务瞬态不可得。先看当前账本,再谈重试。')
+			}
 			const target = join(brainPaths(cwd).skills, String(args.skill).trim(), args.path ?? 'SKILL.md')
 			const isSkillFile = (args.path ?? 'SKILL.md') === 'SKILL.md'
 			let text = args.content
@@ -6088,6 +6973,11 @@ export function apply(ctx, config = {}) {
 			if (args.target !== undefined && args.target !== null) {
 				const problem = validateMemoryFile(args.target)
 				if (problem !== null) return fail(problem, 'target 只能是扁平的 .md 文件名。')
+			}
+			// 目录不可得就不写:记忆是往工作区落盘的,拿不到工作区时**如实说写不了**,
+			// 而不是拿一个假路径去 join(null 会让整个工具崩掉,模型看到的是"我参数错了")。
+			if (typeof cwd !== 'string' || cwd === '') {
+				return fail('memory_cwd_unavailable', '这一刻读不到会话的工作目录,记忆写不出去。**这不是你的参数错**:宿主会话服务瞬态不可得。先看当前账本,再谈重试。')
 			}
 			const written = appendMemory(cwd, { kind, title, fields, source: args.source ?? null, target: args.target ?? null })
 			if (written.ok !== true) return fail(String(written.reason ?? 'memory_write_failed'), '记忆写入失败。')
@@ -6519,6 +7409,16 @@ export function apply(ctx, config = {}) {
 	// ═══ 每回合派生的运行态卡 ═══════════════════════════════════════════════
 
 	const lastCard = new Map()
+	/**
+	 * **判据全文只在修订后注入一次**(每个会话记最后一次发过的修订号)。
+	 *
+	 * 卡里给的是压缩版 + `clear/goals/{goalId}.md` 指针;但刚改完判据的那一拍,
+	 * 模型必须**逐字看到**新判据——否则它会照着旧判据干活,而账上已经换了尺子。
+	 * 所以修订后的第一张卡补一段全文,之后各拍只留压缩版。
+	 */
+	const lastCriteriaSent = new Map()
+	/** 已经落过账的宿主降级观测(按内容寻址 id);重启后重建一次,折法那侧幂等。 */
+	const landedHostHealth = new Set()
 
 	ctx.on('agent/pre-step', async (payload, next) => {
 		const decision = await next()
@@ -6623,6 +7523,49 @@ export function apply(ctx, config = {}) {
 		 * 当档一样自己回到投影里;靠模型轮询 WorldlineStatus 等于把「系统知道的事」压在模型的记性上。
 		 */
 		let factMutations = []
+		/**
+		 * **宿主读面降级:把观测落成账本事实**(`host/inactive`)。
+		 *
+		 * 宿主半取不到 `sessions` / `sessionProjections` 时会在**进程内**记一条观测,随 `state()`/`view()`
+		 * 暴露出来——那是"看得见",但**不在账本上**:重启、换进程、离线复判都读不到它,
+		 * 而"这一刻读不到投影"恰恰是最需要能事后解释的一条事实。
+		 *
+		 * 谁合适写:变更记录只能由内核与宿主人门通道产生(权威边界),所以**内核来写**——
+		 * 它在每个 pre-step 读到宿主的观测,把还没上账的那几条落成变更。
+		 * id 用宿主给的**内容寻址 id**,折法按 id 幂等 ⇒ 反复观察到同一条也只落一条;
+		 * 进程重启后内核会重新观察一次(那时账上已经有一条同 id,折法照样幂等)。
+		 */
+		try {
+			const observed = hostService.state(sessionId)?.hostHealth
+			for (const entry of Array.isArray(observed) ? observed : []) {
+				const id = entry?.id
+				if (typeof id !== 'string' || id === '') continue
+				if (landedHostHealth.has(id)) continue
+				landedHostHealth.add(id)
+				factMutations.push({ t: 'host/inactive', id, scope: entry.scope ?? null, detail: entry.detail ?? null })
+			}
+		} catch {
+			// 读不到就不落:这条机制本身不允许成为新的故障点。
+		}
+		/**
+		 * **目标文档**(`clear/goals/{goalId}.md`):判据全文的家。
+		 *
+		 * 卡里现在只给压缩版判据 + 一个指针(见 `knowledge-view.js` 的目标那一段),
+		 * 所以这份文件必须真的在盘上——否则"卡瘦了"就变成"判据找不着了"。
+		 * 幂等:内容没变就不重写。
+		 */
+		try {
+			ensureGoalDoc(sessionId, hostService.state(sessionId), hostService.derive(sessionId))
+		} catch {
+			// 写不出来不影响这一拍:卡里的指针会指向一个还不存在的文件,下拍再试。
+		}
+		/**
+		 * **独立落账通道的兜底**:上一步在 `await` 之前落下的派发/派遣事实,如果没赶上
+		 * 那一次工具结果(工具抛错、被 abort、或结果丢失),在这里补折一次。
+		 * 放在 `factMutations` 初始化之后、别的事实之前——它是**已经发生**的事,
+		 * 语义上早于这一拍新收上来的结论。
+		 */
+		factMutations.push(...drainPendingFacts(sessionId))
 		try {
 			// 两级一起收:内存表里那些落定的,以及表里没有、只能从执行者自己的会话日志里读回来的。
 			const swept = collectExecutors(factMutations, hostService.state(sessionId), sessionId)
@@ -6748,6 +7691,21 @@ export function apply(ctx, config = {}) {
 		} catch (error) {
 			return decision
 		}
+		/**
+		 * 判据全文的一次性注入(见 `lastCriteriaSent` 的注释):只在修订号变过时补,
+		 * 补完记住修订号。它走的是同一条卡通道,不另开消息。
+		 */
+		try {
+			const cardState = hostService.state(sessionId)
+			const cardGoal = cardState?.goal ?? null
+			if (cardGoal !== null && String(cardGoal.status) === 'open' && lastCriteriaSent.get(sessionId) !== cardGoal.revision) {
+				lastCriteriaSent.set(sessionId, cardGoal.revision)
+				const full = Array.isArray(cardGoal.criteria) && cardGoal.criteria.length > 0 ? cardGoal.criteria.map((item, index) => `  ${index + 1}. ${item}`).join('\n') : `  ${String(cardGoal.done_criteria ?? '')}`
+				card = `${card}\n\n- **判据全文(rev${cardGoal.revision},只在修订后发这一次)**:\n${full}`
+			}
+		} catch {
+			// 读不到状态就不补:卡里仍有压缩版与指针。
+		}
 		if (rearmNote !== '') card = `${card}\n${rearmNote}`
 		if (brainNote !== '') card = `${card}\n${brainNote}`
 		if (workspaceNote !== '') card = `${card}${workspaceNote}`
@@ -6794,7 +7752,9 @@ export function apply(ctx, config = {}) {
 	// 而不是运行到某一轮才发现少装了一件工具。清单缺省 = 全开;要裁剪只改清单。
 
 	for (const toolName of CONTRIB.tools) {
-		ctx.tools.register(TOOL_DEFS.get(toolName))
+		const definition = TOOL_DEFS.get(toolName)
+		// 每一个工具的输出都过一遍统一出口:独立落账通道里的事实不会因为工具抛错/被 abort 而丢。
+		ctx.tools.register({ ...definition, execute: async (args, exec) => withPendingFacts(exec, await definition.execute(args, exec)) })
 	}
 
 	// 提示词段由当前 ClearAI DSH 预设提供，围绕认识论循环与事实边界组织。

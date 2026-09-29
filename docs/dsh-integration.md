@@ -58,10 +58,10 @@ Hosts at or below `0.1.6-alpha.2` have no such row and scan a root directory ins
 
 ## Install
 
-In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.2.8` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
+In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.3.0` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.2.8
+dsh plugin --profile web add clearai-dsh@0.3.0
 ```
 
 The version is pinned on purpose: pnpm ≥ 11 holds back versions published within the last day, and a bare package name falls back to the previous release instead of failing. The plugin manager forwards the spec unchanged (`pnpm add <spec>` in `@deepseek-ai/dsh-plugin-manager`) and never compares the version that landed with the one asked for, so that downgrade is reported as a success. The README's *Why the version is pinned* has the mechanism and the one-line exemption that makes a bare name work.
@@ -85,7 +85,7 @@ For development, `install.sh` lays the repository's source directly into a real 
 ## Build and verify
 
 ```bash
-npm test                        # 15 suites — the list lives in test/run.sh
+npm test                        # 18 suites — the list lives in test/run.sh
 node tools/build-package.mjs    # assemble dist/clearai-dsh
 node tools/verify-package.mjs   # rebuild and compare byte-for-byte
 node tools/verify-deploy.mjs    # compose the deployed files for real (bypasses the ESM cache)

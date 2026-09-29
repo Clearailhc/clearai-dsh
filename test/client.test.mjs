@@ -529,6 +529,21 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	const view = {
 		sessionId: 's1',
 		goal: { id: 'g1', claim: '催化剂 A 是否优于 B', doneCriteria: '均值差 ≥ 5%', status: 'open', phase: 'executing', progress: 0.5, revision: 2, hypotheses: [] },
+		/**
+		 * 判据逐条的**同一份**(`knowledgeView`):面板与运行态卡读它,面板不再自己拼一套。
+		 * 这一份在真宿主里由 `fold.view()` 挂出来;测试里给的就是那个形状。
+		 */
+		knowledgeView: {
+			goal: {
+				id: 'g1',
+				criteriaLines: ['均值差 ≥ 5%', '留出集实测有读数', '语料每条带可追溯出处'],
+				criteriaTotal: 3,
+				criteriaNote: '口径可随复核改',
+				criteriaChanged: true,
+				criteriaHistory: [{ revision: 1, audit: 'audit-7' }],
+				docPath: 'clear/goals/g1.md',
+			},
+		},
 		plan: {
 			id: 'p-1',
 			status: 'active',
@@ -607,6 +622,28 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('世界树画出世界线与读数(计划的一切在这一格)', /湿法/.test(treePanel) && /62\.1/.test(treePanel), treePanel.slice(0, 160))
 	check('要你拍板的那一下在世界树里(人门区在最前)', /需要你|计划待确认/.test(treePanel), treePanel.slice(0, 120))
 	check('世界树不再重复闭环那一格的东西(假设/观测/事实不在这)', !/观测 ·/.test(treePanel) && !/事实 · 1/.test(treePanel), treePanel.slice(0, 160))
+	/**
+	 * **判据逐条**:`SetGoal` 收的是 `criteria: string[]`(每条一句话、每条可清点),
+	 * 挤成一句「判据:均值差…」会把「第 3 条没做到」抹平。面板与**运行态卡读同一份**
+	 * (`knowledgeView.goal.criteriaLines`),所以这里断言的是那份投影在屏上的形状:
+	 * 序号、修订史与谁裁的、全文指针、以及哪一段不参与判定。
+	 */
+	check('目标那块把判据逐条列出来(带序号,不是压成一句)', /1\. 均值差 ≥ 5%/.test(treePanel) && /2\. 留出集实测有读数/.test(treePanel) && /3\. 语料每条带可追溯出处/.test(treePanel), treePanel.slice(0, 220))
+	check('判据小节标出条数、改过几次与最近一次独立裁决', /判据 · 3/.test(treePanel) && /改过 1 次/.test(treePanel) && /audit-7/.test(treePanel), treePanel.slice(0, 220))
+	check('判据小节给出全文指引(沿用目标文档那条既有做法)', /全文在 clear\/goals\/g1\.md/.test(text(components.WorldTree, { openPreview: () => true })), treePanel.slice(0, 240))
+	check('criteria_note 单独标成不参与判定的背景', /背景\(不参与判定\)/.test(treePanel) && /口径可随复核改/.test(treePanel), treePanel.slice(0, 260))
+	/** 投影里没有逐条那一份(旧宿主 / 这个字段出现之前的目标)时:退回原来那句摘要,不空白、不另拼一套。 */
+	const noCriteria = { ...view, knowledgeView: undefined }
+	const fallbackPanel = react
+		.render(components.WorldTree({ useProjection: () => noCriteria, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: noCriteria } } } }), sessionId: 's1', openRail: () => {}, openSpectator: () => {}, openPreview: () => true }))
+		.replace(/\s+/g, ' ')
+	check('拿不到逐条那一份:退回一句摘要 + 全文进 tooltip(旧投影不被新语义打空)', /判据:均值差 ≥ 5%/.test(fallbackPanel) && !/背景\(不参与判定\)/.test(fallbackPanel), fallbackPanel.slice(0, 160))
+	/** `criteria: []`(立了目标但清单空)与「没有这一份」同一处置:不许显示一个「判据 · 0」的小节。 */
+	const emptyList = { ...view, knowledgeView: { goal: { ...view.knowledgeView.goal, criteriaLines: [], criteriaTotal: 0 } } }
+	const emptyPanel = react
+		.render(components.WorldTree({ useProjection: () => emptyList, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: emptyList } } } }), sessionId: 's1', openRail: () => {}, openSpectator: () => {}, openPreview: () => true }))
+		.replace(/\s+/g, ' ')
+	check('判据清单是空数组:退回摘要,不出现「判据 · 0」小节', /判据:均值差 ≥ 5%/.test(emptyPanel) && !/判据 · 0/.test(emptyPanel), emptyPanel.slice(0, 160))
 
 	/**
 	 * §24「事实」那一格:一个**知识货架**(上架=已确认事实,下架=命题)。
@@ -775,10 +812,24 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			}
 
 			// ⑧ 图组件可独立渲染(空图不炸)
-			check(
-				'图组件:空词汇层渲染空提示不炸',
-				react.render(components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} })).includes('此层暂无节点。'),
-			)
+			/**
+			 * **实体层的空态必须给通道,不能只给一句"暂无"**。
+			 *
+			 * 「实体图是空的」是这套系统最需要说话的一刻:用户看到的是"我查了那么多实体,
+			 * 图上什么都没有"。一句「此层暂无节点」把原因和下一步都藏起来了。
+			 * 判据落在**可执行**上:必须点名 `RegisterInstance`,并说清"断言挂在命题上不算已知"。
+			 */
+			{
+				const entityEmpty = react.render(
+					components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }),
+				)
+				check('实体层空态给通道(点名 RegisterInstance)', entityEmpty.includes('RegisterInstance'), entityEmpty.slice(0, 200))
+				check('实体层空态说清「断言挂在命题上不算已知」', entityEmpty.includes('不算'), entityEmpty.slice(0, 200))
+				const ontoEmpty = react.render(
+					components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'ontology', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }),
+				)
+				check('本体层空态仍是那句短话(两层空态可区分)', ontoEmpty.includes('此层暂无节点。'), ontoEmpty.slice(0, 200))
+			}
 
 			/**
 			 * ⑨ **适配层**:投影 → React Flow 的 nodes / edges。

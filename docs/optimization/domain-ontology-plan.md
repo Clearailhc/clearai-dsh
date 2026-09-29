@@ -1,5 +1,6 @@
 # Domain Ontology and Typed Facts: the execution plan
 
+> **Point-in-time note**: this was the `0.2.0` execution plan and its ledger; the command output and counts below (15 suites, 29 tools, truth table 25 checks / 64 mechanisms) are the readings **at that time** and are kept as written. For current readings see `truth-table.zh-CN.md` and `CHANGELOG.md`.
 > This is the **approved execution plan** and the basis for all `0.2.0` work.
 > Concept and design live in [`domain-ontology.md`](../domain-ontology.md); at the end of each stage **append one line to that stage's section below** — deliverables / commands run / actual output / blockers. No second progress ledger is kept.
 > Chinese master: [`domain-ontology-plan.zh-CN.md`](domain-ontology-plan.zh-CN.md).

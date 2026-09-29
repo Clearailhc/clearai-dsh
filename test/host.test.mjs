@@ -59,7 +59,7 @@ for (const [file, packed, prefixes] of PACKED_SOURCES) {
 
 const bust = `?test=${Date.now()}`
 const { apply } = await import(pathToFileURL(join(DEPLOYED_DIR, 'host.js')).href + bust)
-const { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, applyEvent, applyMutations, emptyState, parseHumanGate, view } = await import(
+const { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, view } = await import(
 	pathToFileURL(join(DEPLOYED_DIR, 'fold.js')).href + bust
 )
 
@@ -84,6 +84,7 @@ function makeHost(options = {}) {
 	const routes = []
 	const disposers = []
 	const sent = []
+	const listeners = []
 	const agent = {
 		id: 'session-1',
 		status: options.status ?? 'idle',
@@ -96,15 +97,19 @@ function makeHost(options = {}) {
 	}
 	const hostRef = {}
 	const provided = new Map()
+	/**
+	 * 两个注入服务:真实 Cordis 里**同一个实现**既可按属性读、也可按方法读。
+	 * 宿主半的契约是只走方法式 `ctx.get(名字)`——属性式那条 walk 在 fiber 非 ACTIVE 时当场抛。
+	 * 桩把两种读法都给上,再用 `inactive` 变体把那条抛复现出来:于是「宿主半有没有偷偷
+	 * 用属性式」是可以被验证的事实,而不是一句约定。
+	 */
+	const projections = {
+		register: () => () => {},
+		// 测试可以设定它,好验「读面把投影算成了什么」。
+		stateOf: () => hostRef.projectionState ?? emptyState(),
+	}
+	const sessions = { get: (id) => (options.cwd === undefined || id !== 'session-1' ? undefined : { header: { cwd: options.cwd } }) }
 	const ctx = {
-		// 宿主半声明了 inject: ['sessionProjections', 'sessions'],所以这两个是**属性**,
-		// 不是 ctx.get 的产物——按真实契约喂。
-		sessionProjections: {
-			register: () => () => {},
-			// 测试可以设定它,好验「读面把投影算成了什么」。
-			stateOf: () => hostRef.projectionState ?? emptyState(),
-		},
-		sessions: { get: (id) => (options.cwd === undefined || id !== 'session-1' ? undefined : { header: { cwd: options.cwd } }) },
 		logger: { info() {}, warn() {}, error() {} },
 		// connection 的 exact fetch route 表:浏览器那侧的 /api/* 只有挂在这里才到得了。
 		connection: {
@@ -127,6 +132,9 @@ function makeHost(options = {}) {
 			return () => {}
 		},
 		get(name) {
+			// `inactive` = 「provider fiber 不是 ACTIVE」那一刻:方法式只回 undefined(不抛)。
+			if (name === 'sessions') return options.inactive === true ? undefined : sessions
+			if (name === 'sessionProjections') return options.inactive === true ? undefined : projections
 			if (name === 'agents') return { get: (id) => (id === 'session-1' && options.live !== false ? agent : undefined) }
 			// 技能注册表:工作区外那条读面只认它报出来的目录(见 resolveSkillFile)。
 			if (name === 'skills') {
@@ -138,7 +146,8 @@ function makeHost(options = {}) {
 			}
 			return undefined
 		},
-		on() {
+		on(event, handler) {
+			listeners.push({ event, handler })
 			return () => {}
 		},
 		effect(callback) {
@@ -151,7 +160,25 @@ function makeHost(options = {}) {
 			return () => {}
 		},
 	}
-	Object.assign(hostRef, { ctx, routes, disposers, sent, agent, projectionState: null, provided })
+	// 属性面:真实 Cordis 在 fiber 非 ACTIVE 时当场抛(Proxy walk 命中了 inject 声明)。
+	if (options.inactive === true) {
+		Object.defineProperty(ctx, 'sessions', {
+			get() {
+				throw new Error('cannot get required service "sessions" in inactive context')
+			},
+		})
+		Object.defineProperty(ctx, 'sessionProjections', {
+			get() {
+				throw new Error('cannot get required service "sessionProjections" in inactive context')
+			},
+		})
+	} else {
+		ctx.sessions = sessions
+		ctx.sessionProjections = projections
+	}
+	// 本插件 fiber:`internal/status` 的观测靠**身份**过滤,所以这条必须有。
+	ctx.fiber = { uid: 7, name: 'clearai-host', state: 2 }
+	Object.assign(hostRef, { ctx, routes, disposers, sent, listeners, agent, projectionState: null, provided })
 	return hostRef
 }
 
@@ -807,6 +834,95 @@ console.log('\n【技能面:合并目录折进投影,用量从日志里折出来
 	check('在跑的侦察也列出来(模型知道有东西在路上)', /\[在跑\] 侦察 s-2/.test(renderCard(pending)), renderCard(pending).split('\n').filter((line) => line.includes('在跑')).join(' ').slice(0, 120))
 	const selfOnly = applyMutations(emptyState(), [{ t: 'observation/recorded', id: 'm-2', ref: 'lab/a.txt', source: 'self', digest: null, bytes: 10, note: '我自己写的观测', step: 's1' }])
 	check('只有自己的观测 ⇒ 不出「资料面」段(不制造噪声)', !/资料面/.test(renderCard(selfOnly)))
+}
+
+/**
+ * 宿主半读面最危险的那一种失败:注入服务在某一刻读不到。
+ *
+ * 属性式读服务撞上 fiber 非 ACTIVE 时是**当场抛**,而那一刻可能正好落在一次跑了几分钟的
+ * 评审的收尾上——抛出去就把整批结论作废。结构上修掉它只有一条路:源码里不再有属性式访问,
+ * 读不到就降级成空态;降级这件事本身也要留下可观测的痕迹(宿主健康事实)。
+ */
+console.log('\n【A1/A6:注入服务只走方法式,读不到就降级(不抛)】')
+{
+	/** 结构断言比行为断言更硬:那个错误串**只在** Proxy walk 里生成。 */
+	const source = readFileSync(join(SOURCE_DIR, 'index.js'), 'utf8')
+	const propertyReads = source.match(/\bctx\.(sessions|sessionProjections)\b/g) ?? []
+	check('结构:宿主半源码里没有属性式服务访问(ctx.get 不算)', propertyReads.length === 0, propertyReads.join(','))
+
+	// 桩忠实:这一刻属性式访问确实会抛(否则下面几条什么也证明不了)。
+	const inactive = makeHost({ cwd: tempDir('clearai-host-inactive-'), inactive: true })
+	apply(inactive.ctx)
+	let propertyError = null
+	try {
+		void inactive.ctx.sessions
+	} catch (error) {
+		propertyError = error
+	}
+	check('桩忠实:属性式访问当场抛 inactive,方法式只回 undefined', /cannot get required service "sessions" in inactive context/.test(String(propertyError?.message ?? '')), String(propertyError?.message ?? ''))
+
+	const facade = inactive.provided.get('clearai')
+	check('服务瞬态不可得时装配照常(apply 不抛,门面仍在)', facade !== undefined)
+
+	let derived = null
+	let deriveError = null
+	try {
+		derived = facade.derive('session-1')
+	} catch (error) {
+		deriveError = error
+	}
+	check(
+		'服务瞬态不可得时 derive 不抛,且给的就是空态',
+		deriveError === null && JSON.stringify(derived) === JSON.stringify(derive(emptyState())),
+		String(deriveError?.message ?? JSON.stringify(derived ?? null).slice(0, 120)),
+	)
+
+	const state = facade.state('session-1')
+	check('降级给的是空态(不是 undefined,也不是半份状态)', state !== undefined && state.goal === null && state.hypotheses.length === 0, JSON.stringify(state ?? null).slice(0, 120))
+	const health = state.hostHealth ?? []
+	check(
+		'A6:降级落一条宿主健康事实(scope / detail / at 齐全)',
+		health.some((entry) => entry.scope === 'sessions' && typeof entry.detail === 'string' && entry.detail !== '' && typeof entry.at === 'number'),
+		JSON.stringify(health).slice(0, 160),
+	)
+	check(
+		'A6:两个服务各落一条(不是只记了其中一个)',
+		health.length === 2 && new Set(health.map((entry) => entry.scope)).size === 2 && health.every((entry) => entry.scope === 'sessions' || entry.scope === 'sessionProjections'),
+		JSON.stringify(health.map((entry) => entry.scope)),
+	)
+	const projected = facade.view('session-1')
+	check('A6:view() 也把 hostHealth 交出去(面板与卡读同一份)', Array.isArray(projected?.hostHealth) && projected.hostHealth.length === health.length, JSON.stringify(projected?.hostHealth ?? null).slice(0, 120))
+	// 反复读:既不抛,也不再堆积(同一条事实连着来只记一次)。
+	facade.derive('session-1')
+	facade.view('session-1')
+	check('反复读不抛也不重复堆积事实', (facade.state('session-1').hostHealth ?? []).length === health.length, String((facade.state('session-1').hostHealth ?? []).length))
+}
+
+/**
+ * 读面降级只解释「这一刻读不到」,解释不了「为什么会读不到」——后半句要看 fiber 生命周期。
+ * 所以宿主半订阅 Cordis 的 `internal/status`,在本插件 fiber 掉出 ACTIVE 时留下一条观测。
+ */
+console.log('\n【P7:本插件 fiber 掉出 ACTIVE 留下观测】')
+{
+	const host = makeHost({ cwd: tempDir('clearai-host-status-') })
+	apply(host.ctx)
+	const facade = host.provided.get('clearai')
+	const statusListeners = host.listeners.filter((item) => item.event === 'internal/status')
+	check('订阅了 fiber 生命周期(internal/status)', statusListeners.length === 1 && typeof statusListeners[0].handler === 'function', String(statusListeners.length))
+	const status = statusListeners[0]?.handler
+	// 事件面是所有 fiber 共用的:别的 fiber 掉状态不算在宿主半头上(过滤靠身份)。
+	status?.({ uid: 999, name: 'other', state: 0 }, 2)
+	check('别的 fiber 掉状态不记在宿主半头上(过滤靠身份)', (facade.state('session-1').hostHealth ?? []).length === 0, JSON.stringify(facade.state('session-1').hostHealth ?? null))
+	// 本插件 fiber 从 ACTIVE(2) 掉出去 ⇒ 两个注入服务这一刻都读不到。
+	status?.(host.ctx.fiber, 2)
+	const health = facade.state('session-1').hostHealth ?? []
+	check('本插件 fiber 掉出 ACTIVE ⇒ 落一条带过渡的观测事实', health.length === 2 && health.every((entry) => /掉出 ACTIVE/.test(entry.detail)), JSON.stringify(health).slice(0, 160))
+	// 不是「从 ACTIVE 掉出去」的过渡不算:启动路径(LOADING → ACTIVE)不该报故障。
+	const fresh = makeHost({ cwd: tempDir('clearai-host-status-fresh-') })
+	apply(fresh.ctx)
+	const freshFacade = fresh.provided.get('clearai')
+	fresh.listeners.find((item) => item.event === 'internal/status')?.handler(fresh.ctx.fiber, 1)
+	check('启动路径(LOADING → ACTIVE)不报故障', (freshFacade.state('session-1').hostHealth ?? []).length === 0, JSON.stringify(freshFacade.state('session-1').hostHealth ?? null))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

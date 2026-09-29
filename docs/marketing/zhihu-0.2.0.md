@@ -3,8 +3,10 @@
 **GitHub：** [Clearailhc/clearai-dsh](https://github.com/Clearailhc/clearai-dsh)
 
 > Clearailhc/clearai-dsh @ v0.2.0 · DSH 原生插件
-> 15 套件 1372 条断言 · 29 个意图工具 · 6694 行内核 · Apache-2.0
+> 18 套件 1372 条断言 · 29 个意图工具 · 6694 行内核 · Apache-2.0
 > `npx clearai-dsh install`
+>
+> **时点声明**：本文是 v0.2.0 发布时的读数快照（工具数、断言数、内核行数、事件数都是当时的）；现行读数以 `CHANGELOG.md` 与 `docs/optimization/truth-table.zh-CN.md` 为准。
 
 ---
 

@@ -38,6 +38,9 @@ Notes:
 - `achieved` requires `ClosePlan` first: the kernel refuses to close a goal while a plan is open.
 - `abandoned` is an honest giving-up, not failure cleanup — the record stays.
 - Revision only bumps `revision` and appends to `reasons[]`; nothing is deleted.
+- Changing what counts as done is its own event: `criteria/revised` folds into `goal.criteriaHistory[]` (carrying the
+  independent `audit` key). It does **not** rewrite the `done_criteria` text (that travels the commit/revision path),
+  so a criterion change stays traceable; this is the key `SetGoal`'s `criteria_verdict` asks for.
 
 ## 2. Plan · implemented
 
@@ -108,9 +111,12 @@ stateDiagram-v2
 
 Three stickiness rules, all in `fold.js`:
 
-- `refuted` is not rewritten to `superseded` by a later list that omits it (`fold.js:272-277`).
+- `refuted` is not rewritten to `superseded` by a later list that omits it (`fold.js:396-411`).
 - A hypothesis already promoted to fact cannot be quietly replaced either (same `promoted` test).
 - `supportedLevel` is the maximum computed by `derive()`, never stored.
+- A level-skip reason, `level/skipped`, folds into `hypotheses[].skips[]`: `derive()` subtracts the levels a reason
+  covers from `untouchedLevels`, so writing the reason really does clear the `levels_skipped` gap — it is that gap's
+  way out, not something ignored.
 
 ## 5. Observation · implemented
 
@@ -138,6 +144,9 @@ stateDiagram-v2
 
 `derive().pendingAudit` is true when any entry has `verdict === null` → phase `auditing`, continuation
 `hold`. Lost audits are settled by `sweepLostAudits`, which explicitly lets that beat through
+Homomorphic reuse lands an `audit/reused` entry: its `verdict` is `reused`, which is **not** part of the
+`support | refute | inconclusive` decision and does not take the `null` "in flight" sentinel — so a step that reused
+an older verdict never leaves the system waiting.
 (`kernel.js:1904`).
 
 ## 7. Evidence · implemented
@@ -195,7 +204,7 @@ stateDiagram-v2
     end note
 ```
 
-Three derived states that are "not losses" (`fold.js:961-996`, all zero new ledger):
+Three derived states that are "not losses" (`fold.js:2094-2129`, all zero new ledger):
 
 | Derived | Meaning |
 |---|---|
@@ -299,7 +308,55 @@ Points:
 - **An assertion lands only at promotion** (`hypothesis` and `assertions` on `fact/promoted`); a conflict is a reading computed by `derive()` — **not a state, and it enters no gate**.
 - **Every read surface is a rendering**: `clear/ontology/domain.md`, `clear/knowledge/facts/INDEX.md`, the runtime card, the panel's ontology graph — one fold, no second account.
 
-## 13. Event coverage table
+## 13. Entities and assertions · implemented
+
+Storage fields: `state.entities[]`, `state.entityAssertions[]` — **a first-class write path for the
+entity layer**, stored separately from promoted facts (`state.facts[].assertions`) and merged only in
+the projection.
+
+```mermaid
+stateDiagram-v2
+    [*] --> registered: entity/registered（instance + basis + provenance）
+    registered --> registered: entity/asserted（one sourced sentence; the edge holds from that moment）
+    registered --> [*]
+```
+
+Points:
+
+- **Convention and observation are separate**: `RegisterTerm` is a convention (a concept; no evidence
+  required), `RegisterInstance` is an observation (an instance; `basis` and `provenance` required), and
+  `Assert` says one sourced thing about a registered instance (`evidence` required).
+- **Entities do not wait for the goal verdict**: `entity/asserted` produces an edge at the moment it is
+  recorded. The fact path is unchanged (independent verdict → `fact/promoted`), and the projection
+  carries both kinds: `source='promoted'` with level and scope, `source='asserted'` with provenance and
+  no independent verdict.
+- **The subject must be identifiable**: an assertion subject has to be a registered instance
+  (`assert_subject_unknown` in `validateAssertions`); otherwise every word is readable and nothing is
+  checkable.
+- **Promotion still attaches its assertions to the same entity** (deduped by `${type}|${id}`): the two
+  sources **merge**, they are not alternatives.
+
+## 14. Host read faces (degradation is a fact too) · implemented
+
+Storage field: `state.hostHealth[]` (append-only, capped at 20).
+
+```mermaid
+stateDiagram-v2
+    [*] --> readable: normal
+    readable --> degraded: host/inactive（sessions / sessionProjections unavailable）
+    degraded --> readable: read faces return
+```
+
+Points:
+
+- When a service is unavailable the read face **returns empty state instead of throwing**, and records
+  `host/inactive`: "cannot read right now" and "there is nothing" are two different things, and the
+  former belongs in the ledger.
+- When the session working directory is unavailable it **does not write** (no fallback to
+  `process.cwd()`): failing to write is an honest degradation, writing somewhere else quietly moves the
+  ledger.
+
+## 15. Event coverage table
 
 **Every** mutation kind fold understands is assigned a home below; conversely, every event named in
 this document is in fold's vocabulary. The `ledger-only` group never folds into the view (they are
@@ -359,12 +416,18 @@ ledger facts), so it appears in no state machine:
 | `ontology/predicate_revised` | §12 Domain lexicon | yes |
 | `ontology/term_deprecated` | §12 Domain lexicon | yes |
 | `ontology/predicate_deprecated` | §12 Domain lexicon | yes |
+| `entity/registered` | §13 Entities and assertions | yes |
+| `entity/asserted` | §13 Entities and assertions | yes |
+| `audit/reused` | §6 Evaluation | yes |
+| `level/skipped` | §4 Hypotheses (skip reason) | yes |
+| `criteria/revised` | §1 Goal (criterion revision) | yes |
+| `host/inactive` | §14 Host read faces | yes |
 | `admission/checked` | **ledger only** | no |
 | `git/committed` | **ledger only** | no |
 | `git/restored` | **ledger only** | no |
 | `git/snapshot` | **ledger only** | no |
 
-## 14. Relationship to the verification ontology
+## 16. Relationship to the verification ontology
 
 `docs/verification-loop.md` describes a **more complete** verification ontology (an eight-state
 machine, among other things). The difference matters when reading:

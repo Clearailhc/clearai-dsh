@@ -8,10 +8,10 @@
 
 ## 计数
 
-- 机制条目：**64**
-- 按状态：已实现 57 · 部分实现 1 · 设计目标 2 · 已删除 4
-- 按强度：硬边界 46 · 建议 10 · 原生 3 · 仅提示词 1 · 废弃 4
-- 按归宿：变成机制 1 · 保持设计目标 2 · 已删除并记账 4
+- 机制条目：**71**
+- 按状态：已实现 65 · 部分实现 1 · 设计目标 1 · 已删除 4
+- 按强度：硬边界 53 · 建议 10 · 原生 3 · 仅提示词 1 · 废弃 4
+- 按归宿：保持设计目标 2 · 已删除并记账 4
 - 真正阻断执行的：**19**
 - 受 autonomy 影响的：**2**
 - 存在已知不符（文档 / 注释与代码不一致）的：**2**
@@ -21,8 +21,8 @@
 这一节由代码导出，不是手写：
 
 - 机制：7 个（goal / plan / worldline / scout / brain / ledger / ontology）
-- 意图工具：29 件（SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate QueryKnowledge）
-- 配置键：24 个
+- 意图工具：32 件（SetGoal CloseGoal CreatePlan CheckPlan RequestPlanReview AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan ForkPlan AdvanceWorldline ConvergeFork WorldlineStatus AwaitWorldlines AbandonFork SpawnScout MapScouts SaveSkill WriteMemory FileHistory RestoreFile RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate RegisterInstance Assert ExplainLevelSkip QueryKnowledge）
+- 配置键：28 个
 - 提示词段：定义 24 段，同一时刻在场 23 段（槽位 clarification 二选一）
 
 ## 总表
@@ -61,6 +61,11 @@
 | `conflict-derivation` | 冲突派生（只暴露，不裁决） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | 本体图 / 实体图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/domain-language.js graphProjection` |
 | `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/clearai-kernel.js RegisterTerm` |
+| `entity-registration` | 实体登记(实例是一等写入口) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/clearai-kernel.js RegisterInstance` |
+| `entity-assertion` | 实体断言(登记即产边) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/clearai-kernel.js Assert` |
+| `level-skip-reason` | 跳级需具名理由 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/clearai-kernel.js ExplainLevelSkip` |
+| `criteria-revision-gate` | 判据修订要一份独立裁决 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | 否 | `preset/plugins/clearai-kernel.js SetGoal` |
+| `audit-digest-reuse` | 裁决按材料 digest 复用（同态不重派） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js auditDigest` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | 否 | `preset/plugins/prompts.js exploration-rhythm` |
 | `scout-precommit` | 立约前侦察（一生一次） | Harness | 已实现 | 建议 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js runScout / precommitRecon / scoutDigest / sweepScouts / persistMaterial / noticeBlock` |
@@ -88,11 +93,13 @@
 | `budget-tiers` | 已删除:人在场 6 轮 / 无人值守 512 轮 | Harness | 已删除 | 废弃 | 无 | system | 否 | 否 | — |
 | `non-authoritative-isolation` | 非权威路径写不进权威账本 | Harness | 已实现 | 硬边界 | 无 | system | 是 | 否 | `test/authority-boundary.test.mjs` |
 | `ledger-exploration-snapshots` | 回合边界的工作区快照 | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js snapshotWorkspace` |
+| `durable-dispatch-facts` | 派发事实独立落账（在 await 之前） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts` |
 | `human-gate-actions` | 人门动作白名单 | 宿主 | 已实现 | 硬边界 | 权威 | human | 否 | 否 | `ui/lib/index.js 人门通道` |
 | `context-pruning` | 上下文剪枝与压缩（宿主原生） | 宿主 | 已实现 | 原生 | 无 | system | 否 | 否 | `preset/agent.cordis.yml compaction` |
 | `model-routing` | 模型路由与切换（宿主原生，ClearAI 不持有） | 宿主 | 已实现 | 原生 | 无 | host | 否 | 否 | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
+| `host-read-face-degradation` | 宿主读面降级（取不到就空态,不抛） | 宿主 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/index.js sessionsOf` |
 | `commands-menu` | 人类 `/` 命令菜单 | 交互 | 已实现 | 原生 | 无 | human | 否 | 否 | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
-| `ontology-panel-graph` | 设计目标：面板「本体」页签与图编辑 | 交互 | 设计目标 | 建议 | 无 | human | 否 | 否 | — |
+| `ontology-panel-graph` | 面板「本体」：渲染 + 经人门通道的词条增删改（画布不做拖拽连线） | 交互 | 已实现 | 建议 | 无 | human | 否 | 否 | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
 
 ## 逐条明细
 
@@ -878,8 +885,8 @@
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：每次投影（view() 计算读面时）
-- **输入**：state.lexicon 与 state.facts
-- **输出**：{nodes, edges, bounds}：本体层（概念 / is_a / 谓词）与实体层（实例 / 断言），节点带确定性坐标
+- **输入**：state.lexicon 与 state.facts 与 state.entities 与 state.entityAssertions
+- **输出**：{nodes, edges, bounds}：本体层（概念 / is_a / 谓词）与实体层（实例 / 断言，边带 source=promoted|asserted），节点带确定性坐标
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
 - **理由**：图是最自然的表现形式，但它是投影而不是存储：同一账本必得同一张图，坐标、缩放与筛选都不进账本。
@@ -900,17 +907,109 @@
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/domain-language · **文档**：docs/domain-ontology.zh-CN.md
 
-### `ontology-panel-graph` · 设计目标：面板「本体」页签与图编辑
+### `ontology-panel-graph` · 面板「本体」：渲染 + 经人门通道的词条增删改（画布不做拖拽连线）
 
-- **层**：交互 · **状态**：设计目标 · **强度**：建议 · **权威**：无 · **责任方**：human
-- **触发**：—
+- **层**：交互 · **状态**：已实现 · **强度**：建议 · **权威**：无 · **责任方**：human
+- **触发**：人在面板的词条行 / 抽屉里提交人门动作（登记 / 修订 / 废止）
+- **输入**：POST /api/clearai/gate 的 {action, entry:{id,label,gloss,basis,parent,domain,range,reason,…}}
+- **输出**：一条署名 human 的人门消息 → 折法落成 ontology/term_added / ontology/predicate_added / ontology/term_revised / ontology/term_deprecated / ontology/predicate_deprecated（by:'user'），图与货架随投影刷新
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：图编辑只是具名动词的图形前端：新增节点 = RegisterTerm、连线 = RegisterPredicate、废止 = DeprecateTerm；拖动与缩放不产生任何账本事件。
-- **归宿**：变成机制
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/optimization/domain-ontology-plan.zh-CN.md
+- **理由**：编辑面是**具名动词的图形前端**，不是第二套写入路径：人门通道复用与模型工具同一份纯函数判据（表外的动词与取值都进不了日志），落账一律 by:'user'。**编辑 = 经人门通道的词条增删改**（登记概念 / 登记谓词两个表单抽屉，条目行上的修订 / 废止）；画布上只有点选、缩放、平移与筛选，**不做拖拽连线**——拖动表达语义太松，而抽屉表单能强制要 domain / range / 值形态 / 依据，且拖动与缩放不产生任何账本事件。
+- **代码**：ui/lib/index.js ONTOLOGY_GATE_ACTIONS; ui/lib/client.js submitOnto register_term register_predicate deprecate_entry; ui/lib/fold.js applyLexiconMutation ontology/term_added
+- **测试**：test/host.test.mjs（人门通道:登记 / 修订 / 废止的取值校验与落账、白名单逐字等价） · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
+
+### `entity-registration` · 实体登记(实例是一等写入口)
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **触发**：模型调 RegisterInstance
+- **输入**：{id, type, label, basis, provenance:{kind,ref}}
+- **输出**：entity/registered 变更 → state.entities[]（实体图节点，带出处）
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：概念是约定（不要依据），实例是观测（必须带出处）。把实体层绑在目标级裁决上时，"本体写得好、实体图是空的"会变成最省力的完成方式。
+- **代码**：preset/plugins/clearai-kernel.js RegisterInstance; ui/lib/domain-language.js validateTerm; ui/lib/fold.js applyMutations
+- **测试**：test/kernel.test.mjs · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/domain-language · **文档**：docs/domain-ontology.zh-CN.md
+
+### `entity-assertion` · 实体断言(登记即产边)
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **触发**：模型调 Assert
+- **输入**：{subject:{id,type}, predicate, object, evidence:{kind,ref}}
+- **输出**：entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：边在观测那一刻成立，与"独立裁决后才升格"的事实边并存但可区分（promoted 带等级与边界，asserted 带出处）。
+- **代码**：preset/plugins/clearai-kernel.js Assert; ui/lib/domain-language.js graphProjection; ui/lib/fold.js applyMutations
+- **测试**：test/kernel.test.mjs · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/domain-language · **文档**：docs/domain-ontology.zh-CN.md
+
+### `level-skip-reason` · 跳级需具名理由
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **触发**：模型调 ExplainLevelSkip；或结案时缺口 levels_skipped 存在
+- **输入**：{hypothesis, levels[], reason}
+- **输出**：level/skipped 变更 → hypotheses[].skips[]；缺口 levels_skipped 随之消失
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：supportedLevel 只是支持证据的最大值，所以"一路只在最贵那一级交付"本来零代价；跳级不违规，但必须说清这一级为什么不适用，理由要点到该检查的对象名。
+- **代码**：preset/plugins/clearai-kernel.js ExplainLevelSkip; ui/lib/fold.js deriveKnowledge
+- **测试**：test/contrast.test.mjs · **配置**：requireLevelReasons
+- **提示词**：preset/plugins/prompts.js clearai/loop-contract · **文档**：docs/verification-loop.zh-CN.md
+
+### `criteria-revision-gate` · 判据修订要一份独立裁决
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **触发**：SetGoal 修订且 done_criteria 文本变了
+- **输入**：criteria_verdict = 一份已落定独立裁决的 auditKey
+- **输出**：criteria/revised 变更 → goal.criteriaHistory[]；无裁决则拒（criteria_verdict_required）
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：判据是"怎样算完成"，它一变前面所有工作的验收含义跟着变；允许在同一次调用里顺手改掉，等于允许把"做不到"重新定义成"做到了"。
+- **代码**：preset/plugins/clearai-kernel.js SetGoal; ui/lib/fold.js applyMutations
+- **测试**：test/kernel.test.mjs · **配置**：requireCriteriaVerdict
+- **提示词**：preset/plugins/prompts.js clearai/loop-contract · **文档**：docs/epistemic-loop.zh-CN.md
+
+### `durable-dispatch-facts` · 派发事实独立落账（在 await 之前）
+
+- **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：派评估者（audit/dispatched）或派侦察（scout/dispatched）时
+- **输入**：sessionId + 一条已经发生的事实（派发动作本身,不依赖子任务返回什么）
+- **输出**：pendingFacts 里一条待落账事实：本拍的 pre-step 兜底落账（drainPendingFacts）,同一个工具结果的 mutations 里也并进同一条（withPendingFacts,pending 在前、按 id 去重）
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：事实寄存在「工具成功返回」这个易失载体上时,一次已经算完的评审会随栈帧消失：子代理是异步的,工具进了 await 之后进程可能被 abort、宿主服务可能瞬态不可得,而那批 mutations 还没落账——`turnDemand` 的「有裁决在飞 ⇒ hold」不触发,`sweepEndedAudits` 看不见,账上没有这一笔。模型这一侧只会原样重试,于是同一份评审按分钟计地重烧,而每次都可能同样丢。所以「派发」这类事实在 await 之前写进独立通道,两条通道同源同形,宿主那一侧只有一个折法。
+- **代码**：preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts
+- **测试**：test/kernel.test.mjs（派遣事实立刻落账,不随工具结果的成败起落）; test/contrast.test.mjs（结构判据:第一次 await 之前就有独立落账调用） · **配置**：—
+- **提示词**：— · **文档**：docs/optimization/2026-09-diagnosis.zh-CN.md
+
+### `audit-digest-reuse` · 裁决按材料 digest 复用（同态不重派）
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：同一状态再次结案（CloseGoal / 证据审计）,算出来的 digest 与上一次相同
+- **输入**：裁决种类 + 步 id + 目标修订号 + 计划步与产物 + 观测 + 原始假设 + 已升格事实 + 非审计来源证据 + 准入坐标里的产物
+- **输出**：复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不再派评估者;材料一变 digest 就变,必然重派
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：无
+- **理由**：digest 只盖材料,所以「重试一次就重烧两三分钟」这件事在机制上不可能发生。一次不确定的结案自己会落一条证据（anchor='auditor'）:把证据集合整个算进 digest,每重试一次 digest 就变一次,复用永远命中不了——而两次之间模型什么都没改,那不是新证据,是同一条评审自己的回声。派生读数（supportedLevel / refutations / inconclusive）同理被排除:它们由证据算出来,算进去等于把回声再算一遍。只有落定过、且真的给出了裁决的那一条才可复用:unknown 不是裁决,它说明那一次没成,正是该重派的理由。
+- **代码**：preset/plugins/clearai-kernel.js auditDigest; preset/plugins/clearai-kernel.js reuseAudit pendingAudits
+- **测试**：test/kernel.test.mjs（状态逐字未变 ⇒ 第二次结案复用旧裁决,账上留 audit/reused） · **配置**：—
+- **提示词**：— · **文档**：docs/optimization/state-machines.zh-CN.md
+
+### `host-read-face-degradation` · 宿主读面降级（取不到就空态,不抛）
+
+- **层**：宿主 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：宿主读面取不到服务（取 sessions / sessionProjections 回 undefined,或取服务时抛错）
+- **输入**：服务名 + 会话 id；内核那一侧再吃宿主交出的观测 {id, scope, detail, at}
+- **输出**：①读面返回空态（emptyState）而不是异常;②宿主半把降级记成观测,id 由**内容**算出来（scope + detail ⇒ hostHealthId,同一条只记一次,封顶 20 条）;③内核在 pre-step 把还没上账的那几条落成 host/inactive 变更（landedHostHealth 挡重复）;④折法按 id 幂等折进 state.hostHealth[],宿主半只把还没上账的本地那几条随 state() / view() 合并交出——同一条事实在账上一条、读数上也一条
+- **阻断执行**：否 · **受 autonomy 影响**：否
+- **原生替代**：Cordis 的方法式取服务 ctx.get(name)（取不到只回 undefined;属性式访问在 fiber 非 ACTIVE 时当场抛 cannot get required service in inactive context）
+- **理由**：「这一刻读不到」与「世上没有这件事」在界面上长得一模一样:降级抛出去会把一次跑了几分钟的评审整个作废,静默给 undefined 又会让空读数被读成「世上没有这件事」。所以读面一律走方法式取服务、取不到返回空态,并把降级这件事本身记成可观测的事实。只记在进程内还不够——**重启、换进程、离线复判都读不到它**,而这恰恰是最需要事后解释的一条;所以内核在 pre-step 把它落成账本事实,幂等靠内容寻址的 id,而不是靠「记得别写两次」。
+- **代码**：ui/lib/index.js sessionsOf; ui/lib/index.js projectionsOf; ui/lib/index.js hostHealth hostHealthId; preset/plugins/clearai-kernel.js landedHostHealth; ui/lib/fold.js case 'host/inactive'
+- **测试**：test/host.test.mjs（A1/A6:降级不抛、给的就是空态、两个服务各一条健康事实、view() 同源）; test/kernel.test.mjs（pre-step 把观测落成 host/inactive,同一条反复观察只落一条）; test/contrast.test.mjs（属性式服务访问清零） · **配置**：—
+- **提示词**：— · **文档**：docs/optimization/state-machines.zh-CN.md
 
 ---
 

@@ -98,7 +98,18 @@ No OWL, no RDF triples, no SHACL, no SPARQL, no graph database, no separate reas
 | `instance` | A concrete object mentioned by a fact, e.g. "WENO5", "batch-2025-001" | No — projected from facts |
 | `literal` | A number, text, formula, or code reference used as an object | No — projected from facts |
 
-**Instances are not registered.** They are projected out of typed facts and have no separate lifecycle — otherwise a picture would cost a whole extra object model. Instances sharing a label collapse to one node; entity resolution (two names for one thing) is out of scope, see [Known gaps](known-gaps.md).
+**Instances are registered through a first-class write path** (`RegisterInstance` → `entity/registered`,
+and `Assert` → `entity/asserted`), and they are **also** projected out of typed facts. The two sources
+merge in the projection under one key (`${type}|${id}`), so the picture keeps its identity whether the
+edge came from a promoted fact (`source='promoted'`, carrying level and scope) or from a sourced
+observation (`source='asserted'`, carrying provenance and no independent verdict).
+
+Why the write path exists: binding the entity layer's existence to a goal-level independent verdict made
+"a well-built ontology with an empty entity graph" the cheapest way to finish — vocabulary could be
+registered freely (a convention needs no evidence) while every concrete object waited on a verdict about
+the whole goal. An entity is an observation, so it lands when it is observed. Instances sharing a label
+collapse to one node; entity resolution (two names for one thing) is out of scope, see
+[Known gaps](known-gaps.md).
 
 ### 3.2 Edges
 
@@ -338,7 +349,7 @@ Three things have three lifecycles, and none of them pushes another's state. Thi
 | State machine | States | Events | Who pushes it |
 |---|---|---|---|
 | **Process objects** (nine; see [State machines](optimization/state-machines.md)) | `open` / `advanced` / `void` / `proposed` / `refuted` / `promoted` … | `goal/set`, `step/advanced`, `fact/promoted` … | The kernel, as facts arrive; the model can only emit intent |
-| **Domain vocabulary** (concepts / predicates) | `admitted` → `deprecated` (a revision is a self-loop, version +1) | `ontology/term_added`, `ontology/*_revised`, `ontology/*_deprecated` | Named verbs (seven, implemented); the fold only interprets |
+| **Domain vocabulary** (concepts / predicates) | `admitted` → `deprecated` (a revision is a self-loop, version +1) | `ontology/term_added`, `ontology/*_revised`, `ontology/*_deprecated` | Named verbs (ten, implemented); the fold only interprets |
 | **One verification** (`tests` on a step) | Derived from evidence and levels | `evidence/recorded`, `audit/settled` | The kernel |
 
 **They do not nest**: admitting a concept advances no process object, and closing a plan changes no vocabulary. There is exactly one directional relation between them — **reference**: assertions reference predicates and concepts; facts reference hypotheses and evidence.
@@ -398,7 +409,7 @@ flowchart LR
 | `clear/knowledge/facts/INDEX.md` | Promoted facts (with assertions and boundaries) | The kernel, idempotently |
 | The runtime card | Vocabulary counts, typed-fact ratio, one conflict line | The fold, `renderCard` |
 | The panel's propositions-and-facts view | Facts and assertion chips | The projection, `view().facts` |
-| The panel's ontology view | Ontology graph / entity graph / entry detail | The projection, `view().lexicon` (rendered in stages D–E) |
+| The panel's ontology view | Ontology graph / entity graph / entry detail | The projection, `view().lexicon` (rendered; edits go through the human gate) |
 
 ### 8.4 Where it stands today
 
@@ -407,8 +418,9 @@ flowchart LR
 | Six vocabulary events fold into `state.lexicon` | Implemented (stage B) |
 | Assertions fold into facts with `fact/promoted` | Implemented (fold layer) |
 | Conflict derivation / vocabulary health / graph projection | Implemented (`test/domain-language.test.mjs`) |
-| The seven verbs, the `SetGoal` / `CloseGoal` wiring, the `domain.md` shelf, the `clear/ontology/` write protection | Implemented |
-| The panel's ontology view and graph editing | Design target: stages D–E |
+| The ten verbs, the `SetGoal` / `CloseGoal` wiring, the `domain.md` shelf, the `clear/ontology/` write protection | Implemented |
+| The panel's ontology view (ontology graph / entity graph / entry cards / conflict row / vocabulary maintenance zone) | Implemented |
+| The editing drawer (register a concept / predicate, plus revise / deprecate on an entry row, over the human-gate route with the same criteria as the model's verbs) | Implemented (no canvas drag-to-connect: dragging and zooming produce no ledger event) |
 
 **In one line**: the state machines answer "how things change", the ontology answers "in what language knowledge is written", and the graphs are the **read surface** folded out of both — all three layers exist, and only the middle layer's producers are still unplugged.
 

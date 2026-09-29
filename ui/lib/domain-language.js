@@ -29,8 +29,14 @@ export const VALUE_FORMS = ['statement', 'quantity', 'formula', 'code', 'referen
  */
 export const OBJECT_KINDS = [...VALUE_FORMS, 'instance']
 
-/** 词条的两种角色。它们共用同一条生命周期(接纳 → 修订 → 黏性废止)。 */
-export const LEXICON_KINDS = ['term', 'predicate']
+/**
+ * 词条的三种角色。概念与谓词共用同一条生命周期(接纳 → 修订 → 黏性废止)。
+ *
+ * **实例**在表里,但不在 `lexicon` 里:它的家在账本的 `state.entities`(每条带类型与出处),
+ * 因为「某个具体物在某出处下成立」是一条**主张**,而不是一次约定——它要能带依据被清点。
+ * 它**没有 parent**:`is_a` 只连概念,实例与概念的关系用断言说(见 `validateTerm`)。
+ */
+export const LEXICON_KINDS = ['term', 'predicate', 'instance']
 
 /** id 的形状:小写字母开头的 slug。中英文之外的类型名一律不认,免得同一个概念有两种写法。 */
 const ID_PATTERN = /^[a-z][a-z0-9_]{1,39}$/
@@ -106,7 +112,8 @@ export function termChain(lexicon, id) {
  */
 export function validateTerm(lexicon, draft) {
 	const problems = []
-	const at = '概念'
+	const instance = isPlainObject(draft) && text(draft.kind) === 'instance'
+	const at = instance ? '实例' : '概念'
 	if (!isPlainObject(draft)) return [problem('term_shape', `${at}必须是一个对象`)]
 	const id = text(draft.id)
 	if (!ID_PATTERN.test(id)) problems.push(problem('id_shape', `${at} id 要小写字母开头的 slug(字母/数字/下划线,≤40):收到「${id}」`))
@@ -128,6 +135,12 @@ export function validateTerm(lexicon, draft) {
 			if (walk.cycle !== null || walk.missing !== null) problems.push(problem('parent_cycle', `父概念「${parent}」的父链已经成环或指空,不能再往上接`))
 		}
 	}
+	/**
+	 * **实例不是概念**:它有类型与出处,没有父概念。`is_a` 是概念之间的事;
+	 * 「这个样本属于哪一类」要用断言说——否则个体一多,本体层被具体物撑大,
+	 * 而实体层仍然是空的(那正是这套词汇要给实例一个可写入口的原因)。
+	 */
+	if (instance && parent !== '') problems.push(problem('instance_no_parent', `实例「${id}」不许有父概念:is_a 只连概念,它属于哪一类要用断言说`))
 	return problems
 }
 
@@ -270,11 +283,33 @@ export function validateAssertion(lexicon, assertion) {
 /**
  * 一条事实的**整组**断言是否自洽。除了逐条校验,还查「同一主体同一谓词给了两个值」——
  * 单值谓词上这已经是自相矛盾,不该等到与别的事实比才发现。
+ *
+ * **断言主体必须可指认**(契约冻结第 4 条):`subject.id` 要么已经在实体图上
+ * (`state.entities` 里的 `${type}|${id}`),要么在**同一批**断言里以 `instance` 形态被引出过
+ * (宾语形态 = instance,值/类型对上)。两者都不是 ⇒ `assert_subject_unknown`:
+ * 断言只挂在命题上,图里没有那个对象,句子无法被机器比对。
+ *
+ * 两个入口都认,判据只有这一份:
+ *   · 递**整份状态**(`{ lexicon, entities }`)—— 推荐,实体面在里面,这一条才真跑;
+ *   · 递**词汇**(旧调用点)或 `options.legacy === true` —— 迁移期一次性放行(缺实体面时
+ *     无法判「已登记」,如实跳过而不是拿猜测拒人)。
  */
-export function validateAssertions(lexicon, assertions) {
+export function validateAssertions(state, assertions, options = {}) {
 	if (assertions === undefined || assertions === null) return []
 	if (!Array.isArray(assertions)) return [problem('assertions_shape', 'assertions 只能是数组')]
 	if (assertions.length === 0) return []
+	const stateForm = isPlainObject(state) && isPlainObject(state.lexicon)
+	const lexicon = stateForm ? state.lexicon : state
+	const entities = stateForm && Array.isArray(state.entities) ? state.entities : null
+	const legacy = options === true || (isPlainObject(options) && options.legacy === true)
+	const registered = new Set(entities === null ? [] : entities.map((entry) => `${text(entry?.type)}|${text(entry?.id)}`))
+	/** 这一批断言里被 `instance` 宾语**引出**的对象:值 + (给了类型就要求类型一致)。 */
+	const introduced = new Map()
+	for (const assertion of assertions) {
+		if (text(assertion?.object?.kind) !== 'instance') continue
+		const value = text(assertion.object.value)
+		if (value !== '') introduced.set(value, text(assertion.object.type))
+	}
 	const problems = []
 	const seen = new Map()
 	for (const [index, assertion] of assertions.entries()) {
@@ -285,8 +320,31 @@ export function validateAssertions(lexicon, assertions) {
 			problems.push(problem('assertion_self_conflict', `同一事实里「${text(assertion?.predicate)}」在主体「${text(assertion?.subject?.id)}」上给了两个值:${seen.get(key)} 与 ${value}`))
 		}
 		seen.set(key, value)
+		if (entities === null || legacy) continue
+		const subjectId = text(assertion?.subject?.id)
+		if (subjectId === '') continue
+		const subjectType = text(assertion?.subject?.type)
+		if (registered.has(`${subjectType}|${subjectId}`)) continue
+		const introducedType = introduced.get(subjectId)
+		if (introducedType !== undefined && (introducedType === '' || introducedType === subjectType)) continue
+		problems.push(subjectUnknown(`${subjectType}|${subjectId}`))
 	}
 	return problems
+}
+
+/**
+ * `assert_subject_unknown` 的**报告形状**。
+ *
+ * 契约要求这一条带 `code` 与 `subject`,而消费它的内核把 problems 当文本拼
+ * (`` `- ${item}` ``)。所以这里给一个**两种读法都成立**的值:它是一段文本
+ * (`String(item)` / `item.includes(...)` 照常),同时挂着 `code` 与 `subject` 两个字段。
+ * 换成一个裸对象会让内核当场渲染出 `[object Object]`——那比不报更坏。
+ */
+function subjectUnknown(subject) {
+	const message = new String(problem('assert_subject_unknown', `主体「${subject}」还不在实体图上:先登记这个实例(带类型与出处),或在这一批断言里让某个宾语以 instance 形态引出它`))
+	message.code = 'assert_subject_unknown'
+	message.subject = subject
+	return message
 }
 
 /**
@@ -393,6 +451,31 @@ export function lexiconHealth(lexicon, facts) {
 }
 
 /**
+ * **每个概念被引用了多少次**:断言主体的类型、谓词声明的主词域 / 值域、以及实体断言的类型。
+ *
+ * 为什么要单独一份判据:「零引用」这件事有两处读者——货架上那一节,与 `deriveKnowledge`
+ * 的 `orphan_terms` 缺口。两处各算一遍,迟早会出现「货架说没人用、缺口说用了」这种
+ * 同一件事两种读数;所以引用面只在这里定义一次,两边都读它。
+ */
+export function termUsage(lexicon, facts, entityAssertions = []) {
+	const normalized = normalizeLexicon(lexicon)
+	const usage = new Map()
+	const bump = (id) => {
+		const key = text(id)
+		if (key !== '') usage.set(key, (usage.get(key) ?? 0) + 1)
+	}
+	for (const predicate of normalized.predicates) {
+		bump(predicate.domain)
+		bump(isPlainObject(predicate.range) ? predicate.range.term : '')
+	}
+	for (const fact of Array.isArray(facts) ? facts : []) {
+		for (const assertion of Array.isArray(fact?.assertions) ? fact.assertions : []) bump(assertion?.subject?.type)
+	}
+	for (const item of Array.isArray(entityAssertions) ? entityAssertions : []) bump(item?.subject?.type)
+	return usage
+}
+
+/**
  * **图是投影,不是存储**:同一份账本,永远算出同一组节点、同一组边、同一套默认坐标。
  *
  * 两层分开画(设计里那条最主要的错误就是把它们画成同一种边):
@@ -405,6 +488,8 @@ export function lexiconHealth(lexicon, facts) {
 export function graphProjection(state) {
 	const lexicon = normalizeLexicon(state?.lexicon)
 	const facts = Array.isArray(state?.facts) ? state.facts : []
+	/** 实体断言:登记那一刻就落账的「某实例在某出处下成立某断言」,不等目标裁决。 */
+	const entityAssertions = Array.isArray(state?.entityAssertions) ? state.entityAssertions : []
 	const nodes = []
 	const edges = []
 	const termById = new Map(lexicon.terms.map((item) => [item.id, item]))
@@ -417,6 +502,13 @@ export function graphProjection(state) {
 			const predicateId = text(assertion?.predicate)
 			if (predicateId !== '') uses.set(predicateId, (uses.get(predicateId) ?? 0) + 1)
 		}
+	}
+	/** 实体断言的使用同样算「在用」:词被断言引用过,就不该报「没人用」。 */
+	for (const item of entityAssertions) {
+		const type = text(item?.subject?.type)
+		if (type !== '') uses.set(type, (uses.get(type) ?? 0) + 1)
+		const predicateId = text(item?.predicate)
+		if (predicateId !== '') uses.set(predicateId, (uses.get(predicateId) ?? 0) + 1)
 	}
 	const depthOf = (term) => {
 		let depth = 0
@@ -446,7 +538,48 @@ export function graphProjection(state) {
 		const to = rangeTerm !== '' ? `term:${rangeTerm}` : form !== '' ? `form:${form}` : null
 		if (to !== null) edges.push({ id: `predicate:${predicate.id}`, kind: 'predicate', layer: 'ontology', predicate: predicate.id, label: predicate.label ?? predicate.id, from: text(predicate.domain) === '' ? null : `term:${text(predicate.domain)}`, to, status: predicate.status ?? 'admitted', functional: predicate.functional === true })
 	}
+	/**
+	 * **实体层的三个来源合一**(契约冻结第 5 条)。
+	 *
+	 * 从前实体只有一个来源:已升格事实里的断言。于是「实体」是目标级裁决的副产品——
+	 * 一条观察要在图上出现,得先过一遍与它无关的判据;而只给实体一个**登记节点的**
+	 * 写入口更糟:图可以被「一堆孤立节点」满足,边照样不长(第 2 轮那个病的同一形状)。
+	 * 所以实体有两个一等写入口,都在登记那一刻落账:
+	 *   · `entity/registered` → 节点(`source:'registered'`,带类型 / 依据 / 出处);
+	 *   · `entity/asserted`   → **边**(`source:'asserted'`,有出处、未经独立裁决)。
+	 *
+	 * 合并规则:
+	 *   · 键 `${type}|${id}`(与从前的实例键同形),同键去重,节点优先级
+	 *     `registered > promoted > asserted`(先落的那种是这条节点的身份与展示来源);
+	 *   · 边有两个来源:事实断言(`promoted`,带等级 / 边界 / 可点复核)与实体断言
+	 *     (`asserted`,带出处);两者形状同形,靠 `source` 区分,UI 可分别画实线 / 虚线;
+	 *   · `source` 只在**真有登记或实体断言**的图上出现:两个来源都为空时,这一段的输出
+	 *     与改造前逐字节一致(旧账本的图不许因为加字段而变)。
+	 */
+	const merging = (Array.isArray(state?.entities) ? state.entities.length : 0) > 0 || entityAssertions.length > 0
 	const instances = new Map()
+	if (merging) {
+		for (const entity of Array.isArray(state?.entities) ? state.entities : []) {
+			const type = text(entity?.type)
+			const entityId = text(entity?.id)
+			if (type === '' || entityId === '') continue
+			const key = `${type}|${entityId}`
+			if (instances.has(key)) continue
+			instances.set(key, {
+				id: key,
+				kind: 'instance',
+				layer: 'entity',
+				ref: entityId,
+				label: text(entity.label) || entityId,
+				type,
+				source: 'registered',
+				basis: entity.basis ?? null,
+				provenance: entity.provenance ?? null,
+				registeredAt: entity.registeredAt ?? null,
+				facts: [],
+			})
+		}
+	}
 	for (const fact of facts) {
 		const status = fact?.review?.decision === 'retracted' ? 'retracted' : fact?.refuted === true ? 'refuted' : 'live'
 		for (const assertion of Array.isArray(fact?.assertions) ? fact.assertions : []) {
@@ -475,9 +608,62 @@ export function graphProjection(state) {
 				instances.get(literalId).facts.push(fact.id ?? null)
 				to = literalId
 			}
-			if (to !== null) edges.push({ id: `assertion:${fact.id ?? ''}:${predicateId}:${subjectKey(assertion)}`, kind: 'assertion', layer: 'entity', predicate: predicateId, label: text(lexicon.predicates.find((item) => item.id === predicateId)?.label) || predicateId, from: key, to, status, level: fact.level ?? null, fact: fact.id ?? null, scope: fact.scope ?? null, claim: text(fact.hypothesis) === '' ? null : text(fact.hypothesis) })
+			if (to !== null) {
+				const edge = { id: `assertion:${fact.id ?? ''}:${predicateId}:${subjectKey(assertion)}`, kind: 'assertion', layer: 'entity', predicate: predicateId, label: text(lexicon.predicates.find((item) => item.id === predicateId)?.label) || predicateId, from: key, to, status, level: fact.level ?? null, fact: fact.id ?? null, scope: fact.scope ?? null, claim: text(fact.hypothesis) === '' ? null : text(fact.hypothesis) }
+				/** 加在末尾:两个来源都空时这条边的键序与从前逐字相同。 */
+				if (merging) edge.source = 'promoted'
+				edges.push(edge)
+			}
 		}
 	}
+	for (const item of entityAssertions) {
+		const subject = isPlainObject(item?.subject) ? item.subject : {}
+		const subjectId = text(subject.id)
+		const predicateId = text(item?.predicate)
+		if (subjectId === '' || predicateId === '') continue
+		const subjectType = text(subject.type)
+		const key = `${subjectType}|${subjectId}`
+		if (!instances.has(key)) instances.set(key, { id: key, kind: 'instance', layer: 'entity', ref: subjectId, label: subjectId, type: subjectType === '' ? null : subjectType, source: 'asserted', facts: [] })
+		const object = isPlainObject(item?.object) ? item.object : {}
+		const objectKind = text(object.kind)
+		let to = null
+		if (objectKind === 'instance') {
+			const objectLabel = text(object.value)
+			if (objectLabel === '') continue
+			const objectType = text(object.type) === '' ? text(predicateById.get(predicateId)?.range?.term) : text(object.type)
+			const objectKeyId = `${objectType}|${objectLabel}`
+			if (!instances.has(objectKeyId)) instances.set(objectKeyId, { id: objectKeyId, kind: 'instance', layer: 'entity', ref: objectLabel, label: objectLabel, type: objectType === '' ? null : objectType, source: 'asserted', facts: [] })
+			to = objectKeyId
+		} else if (objectKind !== '') {
+			const literalId = `${predicateId}:${objectKey(item.object)}`
+			if (!instances.has(literalId)) instances.set(literalId, { id: literalId, kind: 'literal', layer: 'entity', ref: objectKey(item.object), label: formatObject(object), type: null, source: 'asserted', facts: [] })
+			to = literalId
+		}
+		if (to === null) continue
+		edges.push({
+			id: `assertion:${text(item.id)}:${predicateId}:${subjectKey(item)}`,
+			kind: 'assertion',
+			layer: 'entity',
+			source: 'asserted',
+			predicate: predicateId,
+			label: text(lexicon.predicates.find((entry) => entry.id === predicateId)?.label) || predicateId,
+			from: key,
+			to,
+			/**
+			 * `status:'asserted'` 是**第三种边态**:有出处、登记那一刻就成立,但**没有**
+			 * 过独立裁决,所以它既不是 `live`(已升格)也不是 `retracted`。画成虚线。
+			 */
+			status: 'asserted',
+			level: null,
+			fact: null,
+			scope: null,
+			claim: null,
+			evidence: isPlainObject(item?.evidence) ? { kind: item.evidence.kind ?? null, ref: item.evidence.ref ?? null } : null,
+			assertion: text(item.id) === '' ? null : text(item.id),
+		})
+	}
+	/** 只从事实投影出来、又没被登记的节点:标成 `promoted`(只在合并的那张图上标,见上)。 */
+	if (merging) for (const instance of instances.values()) if (instance.source === undefined) instance.source = 'promoted'
 	for (const instance of [...instances.values()].sort((a, b) => (a.id < b.id ? -1 : 1))) nodes.push(instance)
 	/**
 	 * **确定性布局:按层分段,层内折行。**
@@ -637,25 +823,51 @@ export function applyLexiconMutation(lexicon, mutation, at) {
  * 为什么它必须是一份纯函数:同一份词汇与事实,谁渲染都得同一串字节——
  * 幂等写盘靠它(内容没变就不重写,文件时间戳是给人的读数),测试也靠它钉住。
  *
- * 三件事按顺序说:有什么词(概念 / 谓词)、它们长什么样(图)、用起来什么情况(引用与冲突)。
- * **不写"权威"二字就够了吗**:不够——所以抬头先写明这一份是读面,
- * 改它不会改词汇,词汇只认账本事件。
+ * **三节分开说**(契约冻结第 7 条):概念 / 个体(实例)/ 谓词。从前它们挤在一张「词条」表里,
+ * 于是「李赣」「狗熊哆嗦毛(样本)」这类**具体物**与「数值格式」这类**约定**长得一模一样——
+ * 读的人分不出哪些是可复用的语言、哪些是一次具体的记录。每节开头一句「这一节是什么」。
+ *
+ * **零引用的概念单独一节**:注册了却没有任何结论引用它,那它还是约定、不是已知。
+ * 这一节是这句话的可见面(与 `orphan_terms` 缺口读的是同一件事)。
+ *
+ * 第一个参数收两种形状:整份**状态**(推荐,个体那一节要有实体面)或旧的**词汇**;
+ * `options.view` 传 `knowledge-view.js` 的 `knowledgeView()` 输出时,「使用」一节读的就是
+ * 那份**单一叙述源**(缺口与进度不再由这里各写一套)。
  */
-export function describeDomainShelf(lexicon, facts, hypotheses = []) {
-	const normalized = normalizeLexicon(lexicon)
+export function describeDomainShelf(lexiconOrState, facts, hypotheses = [], options = {}) {
+	const stateForm = isPlainObject(lexiconOrState) && isPlainObject(lexiconOrState.lexicon)
+	const state = stateForm ? lexiconOrState : null
+	const normalized = normalizeLexicon(stateForm ? state.lexicon : lexiconOrState)
 	const rows = Array.isArray(facts) ? facts : []
+	const view = isPlainObject(options) && isPlainObject(options.view) ? options.view : null
+	const entityAssertions = stateForm && Array.isArray(state.entityAssertions) ? state.entityAssertions : []
 	const terms = [...normalized.terms].sort((a, b) => (a.id < b.id ? -1 : 1))
 	const predicates = [...normalized.predicates].sort((a, b) => (a.id < b.id ? -1 : 1))
-	const usage = new Map()
+	/**
+	 * 实例那一节与图**同一份判据**:直接读投影,不在这里重数一遍。
+	 * 没有状态(旧的词汇入口)时如实为空——不知道的事不编。
+	 */
+	const entityNodes = state === null ? [] : graphProjection(state).nodes.filter((node) => node.layer === 'entity' && node.kind === 'instance')
+	/**
+	 * **引用面读同一份判据**:概念那一列用 `termUsage`(断言主体 + 主词域 / 值域),
+	 * 与 `orphan_terms` 缺口 / 零引用那一节完全同源——否则会出现「引用 0 却没进零引用一节」
+	 * 这种同一张表里两种读数打架的形状。谓词那一列数的是断言条数。
+	 */
+	const termRefs = termUsage(normalized, rows, entityAssertions)
+	const predicateRefs = new Map()
 	for (const fact of rows) {
 		for (const assertion of Array.isArray(fact?.assertions) ? fact.assertions : []) {
 			const predicate = text(assertion?.predicate)
-			if (predicate !== '') usage.set(predicate, (usage.get(predicate) ?? 0) + 1)
-			const type = text(assertion?.subject?.type)
-			if (type !== '') usage.set(type, (usage.get(type) ?? 0) + 1)
+			if (predicate !== '') predicateRefs.set(predicate, (predicateRefs.get(predicate) ?? 0) + 1)
 		}
 	}
+	for (const item of entityAssertions) {
+		const predicate = text(item?.predicate)
+		if (predicate !== '') predicateRefs.set(predicate, (predicateRefs.get(predicate) ?? 0) + 1)
+	}
 	const conflicts = deriveConflicts(rows, normalized)
+	/** 零引用的概念:与 `deriveKnowledge` 的 `orphan_terms` 缺口读**同一份**引用面。 */
+	const orphans = terms.filter((term) => term.status !== 'deprecated' && (termRefs.get(term.id) ?? 0) === 0)
 	const lines = [
 		'# 领域本体(项目词汇)',
 		'',
@@ -664,32 +876,50 @@ export function describeDomainShelf(lexicon, facts, hypotheses = []) {
 		'> 语义变化(含义、主词域、值域、单值性)必须**换 id**:稳定 id 的含义不许在历史上悄悄改变。',
 		'',
 	]
-	if (terms.length === 0 && predicates.length === 0) {
+	if (terms.length === 0 && predicates.length === 0 && entityNodes.length === 0) {
 		lines.push('(还没有词条。先注册概念与谓词,再让假设带上断言——引用不存在的词会在落账之前被拒。)', '')
 		return `${lines.join('\n')}`
 	}
-	lines.push(`## 概念(${terms.length})`, '')
+	lines.push(`## 概念(${terms.length})`, '', '> 这一节是**语言**:可复用的类别与它们之间的 `is_a`。概念是约定,不带证据等级。', '')
 	if (terms.length === 0) lines.push('(无)', '')
 	else {
 		lines.push('| id | 名称 | 释义 | 父概念 | 状态 | 引用 | 依据 |', '|---|---|---|---|---|---|---|')
 		for (const term of terms) {
-			lines.push(`| \`${term.id}\` | ${escapeCell(term.label ?? term.id)} | ${escapeCell(term.gloss ?? '')} | ${term.parent === null || term.parent === undefined ? '—' : `\`${term.parent}\``} | ${term.status === 'deprecated' ? '**已废止**' : '已接纳'} | ${usage.get(term.id) ?? 0} | ${escapeCell(term.basis ?? '—')} |`)
+			lines.push(`| \`${term.id}\` | ${escapeCell(term.label ?? term.id)} | ${escapeCell(term.gloss ?? '')} | ${term.parent === null || term.parent === undefined ? '—' : `\`${term.parent}\``} | ${term.status === 'deprecated' ? '**已废止**' : '已接纳'} | ${termRefs.get(term.id) ?? 0} | ${escapeCell(term.basis ?? '—')} |`)
 		}
 		lines.push('')
 	}
-	lines.push(`## 谓词(${predicates.length})`, '')
+	lines.push(`## 个体(实例)(${entityNodes.length})`, '', '> 这一节是**具体物**:某个实例在某出处下成立——它带类型与出处,不是约定,也不能再当概念用。', '')
+	if (entityNodes.length === 0) {
+		lines.push('(没有实例。`RegisterInstance` 登记一个,`Assert` 让它在图上长出边——只登记节点不产边,图仍然是空的。)', '')
+	} else {
+		lines.push('| id | 名称 | 类型 | 来源 | 依据 / 出处 |', '|---|---|---|---|---|')
+		for (const node of entityNodes) {
+			const registered = node.source === 'registered'
+			const evidence = registered ? [node.basis, isPlainObject(node.provenance) ? node.provenance.ref : null].filter((item) => typeof item === 'string' && item !== '').join(' · ') || '—' : node.source === 'asserted' ? '实体断言(有出处,未经独立裁决)' : '已升格事实的断言'
+			const sourceText = registered ? '已登记' : node.source === 'asserted' ? '实体断言' : '已升格'
+			lines.push(`| \`${node.id}\` | ${escapeCell(node.label ?? node.ref)} | ${text(node.type) === '' ? '—' : `\`${text(node.type)}\``} | ${sourceText} | ${escapeCell(evidence)} |`)
+		}
+		lines.push('')
+	}
+	lines.push(`## 谓词(${predicates.length})`, '', '> 这一节是**关系**:谓词说明两个概念/实例之间能说什么,以及它的主词域与值域。', '')
 	if (predicates.length === 0) lines.push('(无)', '')
 	else {
 		lines.push('| id | 名称 | 主词域 | 值域 | 单值 | 状态 | 引用 | 依据 |', '|---|---|---|---|---|---|---|---|')
 		for (const predicate of predicates) {
 			const range = isPlainObject(predicate.range) ? predicate.range : {}
 			const rangeText = text(range.term) !== '' ? `概念 \`${text(range.term)}\`` : `值形态 \`${text(range.form)}\`${text(range.unit) === '' ? '' : `(${text(range.unit)})`}`
-			lines.push(`| \`${predicate.id}\` | ${escapeCell(predicate.label ?? predicate.id)} | ${text(predicate.domain) === '' ? '—' : `\`${text(predicate.domain)}\``} | ${rangeText} | ${predicate.functional === true ? '是' : '否'} | ${predicate.status === 'deprecated' ? '**已废止**' : '已接纳'} | ${usage.get(predicate.id) ?? 0} | ${escapeCell(predicate.basis ?? '—')} |`)
+			lines.push(`| \`${predicate.id}\` | ${escapeCell(predicate.label ?? predicate.id)} | ${text(predicate.domain) === '' ? '—' : `\`${text(predicate.domain)}\``} | ${rangeText} | ${predicate.functional === true ? '是' : '否'} | ${predicate.status === 'deprecated' ? '**已废止**' : '已接纳'} | ${predicateRefs.get(predicate.id) ?? 0} | ${escapeCell(predicate.basis ?? '—')} |`)
 		}
 		lines.push('')
 	}
 	const mermaid = describeDomainGraph(normalized)
 	if (mermaid !== '') lines.push('## 图', '', mermaid, '')
+	if (orphans.length > 0) {
+		lines.push(`## 零引用的概念(${orphans.length})`, '', '> 这一节是**还没被用起来的约定**:没有任何结论引用它们,所以它们今天还不是「已知」。', '')
+		for (const term of orphans) lines.push(`- \`${term.id}\`(${escapeCell(term.label ?? term.id)}):要么在断言里用起来,要么在这里如实标出它未被引用`)
+		lines.push('')
+	}
 	const deprecated = [...terms, ...predicates].filter((entry) => entry.status === 'deprecated')
 	if (deprecated.length > 0) {
 		lines.push('## 已废止(记录保留,新断言不许再引用)', '')
@@ -699,7 +929,19 @@ export function describeDomainShelf(lexicon, facts, hypotheses = []) {
 	const typed = rows.filter((fact) => Array.isArray(fact?.assertions) && fact.assertions.length > 0).length
 	const propositions = Array.isArray(hypotheses) ? hypotheses : []
 	const typedPropositions = propositions.filter((item) => Array.isArray(item?.assertions) && item.assertions.length > 0).length
-	lines.push('## 使用', '', `- 已升格事实里 ${typed}/${rows.length} 条带类型化断言;流转中的命题里 ${typedPropositions}/${propositions.length} 条带断言(未升格,不计入「引用」列)。`)
+	lines.push('## 使用', '')
+	if (view !== null) {
+		/** 单一叙述源:进度 / 缺口 / 下一步都读 `knowledgeView`,这里不再各写一套。 */
+		lines.push(`- ${view.headline.now} · ${view.headline.where}`)
+		if (Array.isArray(view.gaps) && view.gaps.length > 0) for (const gap of view.gaps) lines.push(`- **${gap.code}**(缺口 ${gap.count}):${gap.detail} → 下一步:${gap.nextAction}`)
+		else lines.push('- 结构完整:今天没有欠账(语言 / 实体图 / 断言 / 证据覆盖都不缺)。')
+	}
+	lines.push(`- 已升格事实里 ${typed}/${rows.length} 条带类型化断言;流转中的命题里 ${typedPropositions}/${propositions.length} 条带断言(未升格,不计入「引用」列)。`)
+	if (entityNodes.length > 0) {
+		const bySource = { registered: 0, promoted: 0, asserted: 0 }
+		for (const node of entityNodes) bySource[node.source] = (bySource[node.source] ?? 0) + 1
+		lines.push(`- 实体图:${entityNodes.length} 个实例节点(已登记 ${bySource.registered ?? 0} · 已升格 ${bySource.promoted ?? 0} · 实体断言 ${bySource.asserted ?? 0});${entityAssertions.length} 条实体断言(有出处,未经独立裁决)。`)
+	}
 	if (conflicts.length > 0) {
 		lines.push(`- **冲突 ${conflicts.length} 对**(只暴露,不裁决):`)
 		for (const conflict of conflicts) {

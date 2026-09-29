@@ -35,6 +35,8 @@ stateDiagram-v2
 - `achieved` 之前必须先 `ClosePlan`：内核拒收「计划还开着」的结案。
 - `abandoned` 是如实放弃，不是失败清洗——记录保留。
 - 修订只增 `revision` 并追加 `reasons[]`，旧段不删。
+- 改「怎样算完成」这件事本身还有一条：`criteria/revised` 折进 `goal.criteriaHistory[]`（带独立裁决的 `audit`）。
+  它**不改** `done_criteria` 文本（文本走立约 / 修订那条路），改判据因此可查；`SetGoal` 的 `criteria_verdict` 要的就是这份审计键。
 
 ## 2. 计划（plan）· 已实现
 
@@ -102,9 +104,11 @@ stateDiagram-v2
 
 三个黏性规则（都在 `fold.js` 里）：
 
-- `refuted` 不被后续「不在清单里」改写成 `superseded`（`fold.js:272-277`）。
+- `refuted` 不被后续「不在清单里」改写成 `superseded`（`fold.js:396-411`）。
 - 已升格成事实的假设同样不许被悄悄替代（同一处 `promoted` 判断）。
 - 支持等级 `supportedLevel` 是 `derive()` 现算的最大值，不存。
+- 跳级理由 `level/skipped` 折进 `hypotheses[].skips[]`：`derive()` 把被理由覆盖的层从 `untouchedLevels` 里减掉，
+  所以写明理由会让 `levels_skipped` 那条缺口真的消失——理由本身就是它的出口，不是被无视。
 
 ## 5. 观测（observation）· 已实现
 
@@ -130,6 +134,8 @@ stateDiagram-v2
 ```
 
 `derive().pendingAudit` = 存在 `verdict === null` 的条目 → 阶段为 `auditing`，续跑 `hold`。
+同态复用记一条 `audit/reused`：`verdict` 是 `reused`，**不进** `support | refute | inconclusive` 这条判定，
+也不占 `null` 那个「在飞」的哨兵——所以复用旧裁决的步骤不会让系统一直等。
 失联裁决由 `sweepLostAudits` 收口，并把「这一拍刚判定失联」显式放行（`kernel.js:1904`）。
 
 ## 7. 证据（evidence）· 已实现
@@ -186,7 +192,7 @@ stateDiagram-v2
     end note
 ```
 
-三条「不是落选」的派生状态（`fold.js:961-996`，全部零新账）：
+三条「不是落选」的派生状态（`fold.js:2094-2129`，全部零新账）：
 
 | 派生 | 含义 |
 |---|---|
@@ -282,7 +288,47 @@ stateDiagram-v2
 - **断言只在升格那一刻随事实落地**（`fact/promoted` 的 `hypothesis` 与 `assertions`）；冲突是 `derive()` 的现算读数，**不是状态，也不进闸门**。
 - **读面全是渲染**：`clear/ontology/domain.md`、`clear/knowledge/facts/INDEX.md`、运行态卡、面板本体图——同一份折法，没有第二本账。
 
-## 13. 事件清单覆盖表
+## 13. 实体与断言 · 已实现
+
+存储字段：`state.entities[]`、`state.entityAssertions[]`——**实体层的一等写入口**，与「已升格事实」
+（`state.facts[].assertions`）分开存、在投影里合起来画。
+
+```mermaid
+stateDiagram-v2
+    [*] --> registered: entity/registered（实例 + 依据 + 出处）
+    registered --> registered: entity/asserted（一句带出处的话；边在落账那一刻就成立）
+    registered --> [*]
+```
+
+要点：
+
+- **约定与观测分开**：`RegisterTerm` 是约定（概念，不需要依据），`RegisterInstance` 是观测
+  （实例，`basis` 与 `provenance` 必填），`Assert` 说一句关于某个已登记实例的话（`evidence` 必填）。
+- **实体不依赖目标裁决**：`entity/asserted` 在登记那一刻就产边。事实那条路照旧（独立裁决 → `fact/promoted`），
+  投影里两条边都在：`source='promoted'` 带等级与边界，`source='asserted'` 带出处、未经独立裁决。
+- **主体必须可指认**：断言主体必须是已登记实例（`validateAssertions` 的 `assert_subject_unknown`），
+  否则每个字都能读、却没人能核。
+- **升格仍会把断言补挂到同一实体上**（按 `${type}|${id}` 去重）：两条来源是**合并**，不是二选一。
+
+## 14. 宿主读面（降级也是事实）· 已实现
+
+存储字段：`state.hostHealth[]`（只增，封顶 20 条）。
+
+```mermaid
+stateDiagram-v2
+    [*] --> readable: 正常
+    readable --> degraded: host/inactive（sessions / sessionProjections 取不到）
+    degraded --> readable: 读面恢复
+```
+
+要点：
+
+- 读面取不到服务时**返回空态、不抛**，同时落一条 `host/inactive`：`这一刻读不到` 与 `没有东西`
+  是两件事，前者必须写在账上。
+- 会话工作目录取不到时**不写盘**（不回退 `process.cwd()`）：写不出去是诚实的降级，
+  写到别处是悄悄改了账本的位置。
+
+## 15. 事件清单覆盖表
 
 折法认识的**每一个**变更类型都在本节有归属；反过来，本文出现的每个 event 也都在折法词汇表里。
 `只留台账` 那一组不折进视图（它们是账本事实），因此不出现在任何状态机里：
@@ -340,12 +386,18 @@ stateDiagram-v2
 | `ontology/predicate_revised` | §12 领域词汇 | 是 |
 | `ontology/term_deprecated` | §12 领域词汇 | 是 |
 | `ontology/predicate_deprecated` | §12 领域词汇 | 是 |
+| `entity/registered` | §13 实体与断言 | 是 |
+| `entity/asserted` | §13 实体与断言 | 是 |
+| `audit/reused` | §6 评估 | 是 |
+| `level/skipped` | §4 假设（跳级理由） | 是 |
+| `criteria/revised` | §1 目标（判据修订） | 是 |
+| `host/inactive` | §14 宿主读面 | 是 |
 | `admission/checked` | **只留台账** | 否 |
 | `git/committed` | **只留台账** | 否 |
 | `git/restored` | **只留台账** | 否 |
 | `git/snapshot` | **只留台账** | 否 |
 
-## 14. 与验证本体的关系
+## 16. 与验证本体的关系
 
 `docs/verification-loop.zh-CN.md` 描述的是一份**更完整的**验证本体（八状态机等）。
 它与本文件的区别必须在读的时候分清：

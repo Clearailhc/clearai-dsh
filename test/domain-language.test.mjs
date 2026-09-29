@@ -21,6 +21,7 @@ const PORT = join(HERE, '..')
 const {
 	VALUE_FORMS,
 	OBJECT_KINDS,
+	LEXICON_KINDS,
 	emptyLexicon,
 	applyLexiconMutation,
 	findEntry,
@@ -34,9 +35,11 @@ const {
 	deriveConflicts,
 	lexiconHealth,
 	graphProjection,
+	describeDomainShelf,
 	formatAssertion,
 	formatObject,
 } = await import(join(PORT, 'ui', 'lib', 'domain-language.js'))
+const { knowledgeView, GLOSSARY } = await import(join(PORT, 'ui', 'lib', 'knowledge-view.js'))
 const fold = await import(join(PORT, 'ui', 'lib', 'fold.js'))
 const foldSource = readFileSync(join(PORT, 'ui', 'lib', 'fold.js'), 'utf8')
 const suiteSource = readFileSync(join(PORT, 'test', 'run.sh'), 'utf8')
@@ -241,7 +244,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本已 +1(v10:多了领域词汇与类型化事实)', fold.STATE_VERSION === 10, String(fold.STATE_VERSION))
+	check('状态版本已 +1(v11:实体账本 / 跳级理由 / 判据修订史 / 宿主健康)', fold.STATE_VERSION === 11, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -284,7 +287,7 @@ console.log('\n【折法:事实带上假设 id 与断言,并按 id 关联】')
 	 * 一次决定(改这一行 + 改 STATE_VERSION 的说明),而不是顺手长出来的——
 	 * 「旧账本逐字段不变」这句话只有在这种对照下才可核对。
 	 */
-	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'forks', 'scouts', 'brainCandidates', 'skillPromotions', 'brain', 'skillCatalog', 'skillUsage', 'blocks', 'releases', 'autonomy', 'constitution', 'ontology', 'lexicon', 'continuation', 'inFlight', 'written', 'writeCalls']
+	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'forks', 'scouts', 'brainCandidates', 'skillPromotions', 'brain', 'skillCatalog', 'skillUsage', 'blocks', 'releases', 'autonomy', 'constitution', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'continuation', 'inFlight', 'written', 'writeCalls']
 	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'level', 'evidence', 'path', 'assertions', 'at']
 	check('状态键集合与清单逐字一致(加字段要改这一行)', JSON.stringify(Object.keys(fold.emptyState()).sort()) === JSON.stringify([...STATE_KEYS].sort()), Object.keys(fold.emptyState()).filter((key) => !STATE_KEYS.includes(key)).join(','))
 	check('事实键集合与清单逐字一致', JSON.stringify(Object.keys(legacy.facts[0]).sort()) === JSON.stringify([...FACT_KEYS].sort()), Object.keys(legacy.facts[0]).filter((key) => !FACT_KEYS.includes(key)).join(','))
@@ -574,7 +577,205 @@ console.log('\n【知识 Inspector:一个选择 → 定义 / 关系 / 断言 / �
 	check('Inspector 不往状态里加东西(还是那一条事实)', state.facts.length === 1 && state.hypotheses.length === 1)
 }
 
-console.log('\n【时间:折法从事件盖上,不由产出方写】')
+console.log('\n【新折法:实体账本 / 跳级理由 / 判据修订史 / 宿主健康】')
+{
+	/**
+	 * 这一组钉的是契约冻结第 1 条的四条新变更 + 实体断言那一条(v2)。
+	 * 判据的形状都一样:**它就是一条纯投影**——同一批变更折两次,结果逐字节相同;
+	 * 而且旧变更一条都不许因此不认识。
+	 */
+	const base = fold.applyMutations(fold.emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: 'C', done_criteria: 'D', promote_at_level: 'L3', revision: 1, headline: '一句速览', criteria: ['c1'], hypotheses: [{ id: 'h1', claim: 'c1', refute_when: 'rw', version: 1 }] },
+		{ t: 'ontology/term_added', id: 'sucai', label: '素材', gloss: 'g', basis: 'b' },
+		{ t: 'ontology/predicate_added', id: 'cheng_wei', label: '称为', domain: 'sucai', range: { term: 'sucai' }, basis: 'b' },
+	])
+	check('新目标带上速览与判据清单(读面字段;判定仍看判据原文)', base.goal.headline === '一句速览' && base.goal.criteria.join(',') === 'c1' && base.goal.legacy === false)
+	check('空状态的三块新账都是空表(旧日志折出来与从前同形)', Array.isArray(base.entities) && base.entities.length === 0 && Array.isArray(base.entityAssertions) && base.entityAssertions.length === 0 && Array.isArray(base.hostHealth) && base.hostHealth.length === 0)
+	check('命题带着空的 skips[](跳级理由的家)', Array.isArray(base.hypotheses[0].skips) && base.hypotheses[0].skips.length === 0)
+
+	const registered = fold.applyMutations(base, [{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲', basis: 'R-01', provenance: { kind: 'url', ref: 'https://x' }, at: 10 }])
+	const again = fold.applyMutations(registered, [{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲(改)', basis: 'R-02', provenance: { kind: 'named', ref: '人' }, at: 20 }])
+	check('实体登记折成一条记录(带类型 / 依据 / 出处 / 登记时刻)', registered.entities.length === 1 && registered.entities[0].type === 'sucai' && registered.entities[0].provenance.ref === 'https://x' && registered.entities[0].registeredAt === 10)
+	check('重复登记 = 后到者覆盖展示字段,首条登记时刻保留', again.entities.length === 1 && again.entities[0].label === '样本甲(改)' && again.entities[0].basis === 'R-02' && again.entities[0].registeredAt === 10)
+
+	const asserted = fold.applyMutations(registered, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_a', type: 'sucai' }, evidence: { kind: 'url', ref: 'https://x' } }])
+	check('实体断言折成一条记录(主体 / 谓词 / 宾语 / 出处)', asserted.entityAssertions.length === 1 && asserted.entityAssertions[0].predicate === 'cheng_wei' && asserted.entityAssertions[0].evidence.ref === 'https://x')
+	check('同 id 的实体断言只落一条(两条落账通道不许落两遍)', fold.applyMutations(asserted, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_a' }, evidence: { kind: 'named', ref: 'x' } }]).entityAssertions.length === 1)
+
+	const skipped = fold.applyMutations(base, [{ t: 'level/skipped', goal: 'g1', hypothesis: 'h1', levels: ['L0', 'L1'], reason: '本项目 L0/L1 没有可检查的对象' }])
+	check('跳级理由折成命题的 skips[](带理由与时刻)', skipped.hypotheses[0].skips.length === 1 && skipped.hypotheses[0].skips[0].levels.join('/') === 'L0/L1' && typeof skipped.hypotheses[0].skips[0].reason === 'string')
+	const revised = fold.applyMutations(base, [{ t: 'criteria/revised', goal: 'g1', revision: 2, from: 'D', to: 'D2', reason: '口径改窄', audit: 'audit-9' }])
+	check('判据修订折成 goal.criteriaHistory[](带独立裁决,不改判据原文)', revised.goal.criteriaHistory.length === 1 && revised.goal.criteriaHistory[0].audit === 'audit-9' && revised.goal.done_criteria === 'D')
+	const host = fold.applyMutations(base, [{ t: 'host/inactive', scope: 'sessions', detail: '取不到会话服务' }])
+	check('宿主读面降级落一条 hostHealth(只增)', host.hostHealth.length === 1 && host.hostHealth[0].scope === 'sessions' && host.hostHealth[0].detail === '取不到会话服务')
+	const many = fold.applyMutations(base, Array.from({ length: 30 }, (_, index) => ({ t: 'host/inactive', scope: index % 2 === 0 ? 'sessions' : 'sessionProjections', detail: `第 ${index} 次` })))
+	check('hostHealth 是有界的读数(留最近若干条,不是档案)', many.hostHealth.length === 20 && many.hostHealth[many.hostHealth.length - 1].detail === '第 29 次')
+	check('不认识的新变更不抛(旧折法上运行时静默忽略)', fold.applyMutations(base, [{ t: 'no/such', id: 'x' }]).goal.id === 'g1')
+	const audited = fold.applyMutations(base, [
+		{ t: 'audit/dispatched', id: 'a1', step: 's1', plan: 'p1', digest: 'd-1', evaluator_session: 'child-1' },
+		{ t: 'audit/reused', id: 'a2', step: 's2', plan: 'p1', kind: 'evidence_audit', digest: 'd-1', by: 'kernel' },
+	])
+	check('裁决派发带 digest(同态复用的判据)', audited.audits.find((item) => item.id === 'a1').digest === 'd-1')
+	check('裁决复用也进账(「这次没花钱」看得见,而且不算「等裁决」)', audited.audits.find((item) => item.id === 'a2').verdict === 'reused' && audited.audits.find((item) => item.id === 'a2').digest === 'd-1')
+}
+
+console.log('\n【缺口:每条都有 code / count / detail / nextAction 四格】')
+{
+	const state = fold.applyMutations(fold.emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: 'C', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: 'c1', refute_when: 'rw', version: 1, assertions: [{ predicate: 'cheng_wei', subject: { id: 'yangben_a', type: 'sucai' }, object: { kind: 'instance', value: 'yangben_b', type: 'sucai' } }] }] },
+		{ t: 'ontology/term_added', id: 'sucai', label: '素材', gloss: 'g', basis: 'b' },
+		{ t: 'ontology/term_added', id: 'meiyong', label: '没人用的概念', gloss: 'g', basis: 'b' },
+		{ t: 'ontology/predicate_added', id: 'cheng_wei', label: '称为', domain: 'sucai', range: { term: 'sucai' }, basis: 'b' },
+	])
+	const gaps = fold.derive(state).knowledge.gaps
+	check('每一条缺口都有 code / count / detail / nextAction 四格', gaps.length > 0 && gaps.every((gap) => typeof gap.code === 'string' && typeof gap.count === 'number' && typeof gap.detail === 'string' && typeof gap.nextAction === 'string' && gap.nextAction !== ''), JSON.stringify(gaps))
+	const unlanded = gaps.find((gap) => gap.code === 'entities_unlanded')
+	check('断言主体没落图 ⇒ entities_unlanded(数的是去重的主体数)', unlanded !== undefined && unlanded.count === 1, JSON.stringify(gaps.map((gap) => gap.code)))
+	const landed = fold.applyMutations(state, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_b', type: 'sucai' }, evidence: { kind: 'named', ref: '人' } }])
+	check('实体断言落账 ⇒ entities_unlanded 消失(出口真的存在)', !fold.derive(landed).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
+	const orphans = gaps.find((gap) => gap.code === 'orphan_terms')
+	check('没有人引用的概念 ⇒ orphan_terms(与货架「零引用」同一份引用面)', orphans !== undefined && orphans.count === 1, JSON.stringify(orphans))
+
+	const l3 = fold.applyMutations(state, [
+		{ t: 'plan/created', id: 'p1', goal: 'g1', brief: 'b', steps: [{ id: 's1', do: 'r', done_criteria: 'd', tests: { hypothesis: 'h1', level: 'L3' } }] },
+		{ t: 'evidence/recorded', id: 'e1', plan: 'p1', step: 's1', verdict: 'support', level: 'L3', evaluator: 'independent', basis: 'b', refs: [], origins: [] },
+	])
+	const skippedGap = fold.derive(l3).knowledge.gaps.find((gap) => gap.code === 'levels_skipped')
+	check('走过 L3 而 L0–L2 没走 ⇒ levels_skipped 数出三层(并说得出是哪条命题缺哪几级)', skippedGap !== undefined && skippedGap.count === 3 && skippedGap.detail.includes('命题 h1 缺 L0/L1/L2'), JSON.stringify(skippedGap))
+	const explained = fold.applyMutations(l3, [{ t: 'level/skipped', goal: 'g1', hypothesis: 'h1', levels: ['L0', 'L1', 'L2'], reason: 'L0–L2 在本项目没有可检查的对象' }])
+	check('写明理由 ⇒ untouchedLevels 减掉它、缺口消失(出口是唯一的)', fold.derive(explained).hypotheses.find((item) => item.id === 'h1').untouchedLevels.length === 0 && !fold.derive(explained).knowledge.gaps.some((gap) => gap.code === 'levels_skipped'))
+}
+
+console.log('\n【投影合并:登记 / 升格 / 实体断言三个来源,键去重】')
+{
+	const lexicon = seeded()
+	const facts = [{ id: 'f1', text: 'a', level: 'L3', review: null, assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] }]
+	const plain = graphProjection({ lexicon, facts })
+	check('两个新来源都为空时,节点与边不带 source(旧账本的图逐字节不变)', plain.nodes.filter((node) => node.layer === 'entity').every((node) => node.source === undefined) && plain.edges.filter((edge) => edge.kind === 'assertion').every((edge) => edge.source === undefined))
+	const entities = [
+		{ id: 'WENO5', type: 'numerical_scheme', label: 'WENO5 实例', basis: 'R-01', provenance: { kind: 'url', ref: 'u' }, registeredAt: 1 },
+		{ id: 'OTHER', type: 'numerical_scheme', label: '另一个', basis: 'R-02', provenance: { kind: 'named', ref: '人' }, registeredAt: 2 },
+	]
+	const entityAssertions = [
+		{ id: 'ea1', subject: { id: 'WENO5', type: 'numerical_scheme' }, predicate: 'convergence_order', object: quantity(5), evidence: { kind: 'url', ref: 'u' } },
+		{ id: 'ea2', subject: { id: 'OTHER', type: 'numerical_scheme' }, predicate: 'convergence_order', object: quantity(9), evidence: { kind: 'named', ref: '人' } },
+	]
+	const merged = graphProjection({ lexicon, facts, entities, entityAssertions })
+	const entityNodes = merged.nodes.filter((node) => node.layer === 'entity')
+	const entityEdges = merged.edges.filter((edge) => edge.kind === 'assertion')
+	check('登记与升格同键 ⇒ 只留一条节点,登记那条是身份来源', entityNodes.filter((node) => node.id === 'numerical_scheme|WENO5').length === 1 && entityNodes.find((node) => node.id === 'numerical_scheme|WENO5').source === 'registered' && entityNodes.find((node) => node.id === 'numerical_scheme|WENO5').label === 'WENO5 实例')
+	check('实体断言也产边(只登记节点不产边,图仍然长不出来)', entityEdges.some((edge) => edge.source === 'asserted') && entityEdges.some((edge) => edge.source === 'promoted'))
+	check('两条来源的边形状同形、都在实体层、靠 source 分得开', entityEdges.every((edge) => edge.layer === 'entity' && typeof edge.from === 'string' && typeof edge.to === 'string'))
+	check('登记的节点带着出处(凭什么在这里)', entityNodes.find((node) => node.id === 'numerical_scheme|OTHER').provenance.ref === '人')
+	check('实体断言每条都产一条边,实例节点只来自登记的那两个', entityEdges.filter((edge) => edge.source === 'asserted').length === 2 && entityNodes.filter((node) => node.kind === 'instance').length === 2)
+	check('投影是纯函数:同一份账本两次调用逐字节相同', JSON.stringify(merged) === JSON.stringify(graphProjection({ lexicon, facts, entities, entityAssertions })))
+}
+
+console.log('\n【断言主体可指认:词汇三种条目,主体要么已登记要么同批引出】')
+{
+	const lexicon = seeded()
+	const line = { predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }
+	check('LEXICON_KINDS 认第三种条目:实例', LEXICON_KINDS.includes('instance') && LEXICON_KINDS.includes('term') && LEXICON_KINDS.includes('predicate'))
+	check('实例不许有父概念(is_a 只连概念)', validateTerm(lexicon, { id: 'yangben_a', kind: 'instance', label: '样本甲', gloss: 'g', basis: 'b', parent: 'numerical_scheme' }).some((item) => item.startsWith('instance_no_parent')))
+	check('没登记的断言主体要拒;旧调用点(只递词汇)照旧放行——迁移期一次', validateAssertions({ lexicon, entities: [] }, [line]).some((item) => String(item).includes('assert_subject_unknown')) && validateAssertions(lexicon, [line]).length === 0)
+	const problem = validateAssertions({ lexicon, entities: [] }, [line]).find((item) => String(item).includes('assert_subject_unknown'))
+	check('这条问题两种读法都成立(文本 + code/subject 字段,内核把它当文本拼)', problem !== undefined && problem.code === 'assert_subject_unknown' && typeof problem.subject === 'string')
+	check('登记过的断言主体放行', validateAssertions({ lexicon, entities: [{ id: 'WENO5', type: 'numerical_scheme' }] }, [line]).length === 0)
+	check('legacy:true 一次性放行', validateAssertions({ lexicon, entities: [] }, [line], { legacy: true }).length === 0)
+	const state = { lexicon, entities: [{ id: 'WENO5', type: 'numerical_scheme' }] }
+	const introduced = [
+		{ predicate: 'tested_by', subject: { id: 'smooth', type: 'test_case' }, object: { kind: 'statement', value: 'v' } },
+		{ predicate: 'tested_by', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: { kind: 'instance', value: 'smooth', type: 'test_case' } },
+	]
+	check('同一批里以 instance 形态引出过 ⇒ 主体可指认', !validateAssertions(state, introduced).some((item) => String(item).includes('assert_subject_unknown')), JSON.stringify(validateAssertions(state, introduced).map(String)))
+}
+
+console.log('\n【货架:概念 / 个体(实例)/ 谓词三节分开,零引用单独一节】')
+{
+	const state = fold.applyMutations(fold.emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: 'C', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: 'c1', refute_when: 'rw' }] },
+		{ t: 'ontology/term_added', id: 'sucai', label: '素材', gloss: 'g', basis: 'b' },
+		{ t: 'ontology/term_added', id: 'meiyong', label: '没人用的概念', gloss: 'g', basis: 'b' },
+		{ t: 'ontology/predicate_added', id: 'cheng_wei', label: '称为', domain: 'sucai', range: { term: 'sucai' }, basis: 'b' },
+		{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲', basis: 'R-01', provenance: { kind: 'url', ref: 'https://x' } },
+	])
+	const derived = fold.derive(state)
+	const shelf = describeDomainShelf(state, derived.factRows, derived.hypotheses)
+	check('三节都在,而且每节开头一句「这一节是什么」', /## 概念\(\d+\)[\s\S]*这一节是/.test(shelf) && /## 个体\(实例\)\(\d+\)[\s\S]*这一节是/.test(shelf) && /## 谓词\(\d+\)[\s\S]*这一节是/.test(shelf))
+	check('个体那一节把登记的实例与它的出处写出来', /## 个体\(实例\)\(1\)/.test(shelf) && shelf.includes('yangben_a') && shelf.includes('已登记'))
+	check('零引用的概念单独一节(它还是约定,不是已知)', /## 零引用的概念\(1\)/.test(shelf) && shelf.includes('meiyong'))
+	check('旧的词汇入口照旧可用(缺实体面时如实说没有,不编)', describeDomainShelf(state.lexicon, [], []).includes('## 概念(2)'))
+	const view = knowledgeView(state, derived, { preflight: null })
+	const wired = describeDomainShelf(state, derived.factRows, derived.hypotheses, { view })
+	check('货架的「使用」一节读 knowledgeView 那一份(同一句速览 / 缺口带下一步)', wired.includes(view.headline.now) && (view.gaps.length === 0 || wired.includes(view.gaps[0].nextAction)))
+}
+
+console.log('\n【单一叙述源:knowledgeView 的形状与卡上限】')
+{
+	/**
+	 * 卡是模型每一步唯一读到的窗口,而它是**每回合**重算的:上限必须是保证,不是希望。
+	 * 三条:三行速览齐备、契约字段齐备、卡文本有硬上限(超了如实说省了几行)。
+	 */
+	const state = fold.applyMutations(fold.emptyState(), [
+		{ t: 'goal/set', id: 'g1', claim: 'C', done_criteria: 'D'.repeat(400), promote_at_level: 'L3', revision: 1, hypotheses: Array.from({ length: 12 }, (_, index) => ({ id: `h${index}`, claim: `主张 ${index} ${'x'.repeat(120)}`, refute_when: 'rw' })) },
+	])
+	const derived = fold.derive(state)
+	const view = knowledgeView(state, derived)
+	check('三行速览齐备(正在解决 / 怎样算完成 / 我做到哪了)', typeof view.headline.now === 'string' && typeof view.headline.done === 'string' && typeof view.headline.where === 'string')
+	check('契约字段都在', ['headline', 'goal', 'progress', 'claims', 'gaps', 'facts', 'entities', 'evidence', 'deliver', 'boundaries'].every((key) => key in view), Object.keys(view).join(','))
+	check('术语表每一项都是三格(plain / where / nextAction)', Object.values(GLOSSARY).every((item) => typeof item.plain === 'string' && typeof item.where === 'string' && typeof item.nextAction === 'string'))
+	check('等级表能直接取(L0–L4)', ['L0', 'L1', 'L2', 'L3', 'L4'].every((level) => typeof view.levels[level]?.plain === 'string'))
+	check('卡文本有硬上限(≤3000 字符)', view.card.length <= 3000, String(view.card.length))
+	check('超上限时如实说省了几行,不静默截断', view.card.length <= 3000 && (/省去 \d+ 行|没有展开/.test(view.card) || view.card.length < 3000))
+	/**
+	 * **判据正文在卡里只出现一次,且是压缩版**:全文的家是 `clear/goals/{id}.md`。
+	 * 修订后的**第一张卡**会由内核 pre-step 补一次全文(逐字看到新尺子),之后各拍只留压缩版。
+	 */
+	check('卡里不带判据全文(压缩版 + 指针)', !fold.renderCard(state).includes('D'.repeat(400)) && fold.renderCard(state).includes('clear/goals/g1.md'))
+	const revised = fold.applyMutations(state, [{ t: 'criteria/revised', goal: 'g1', revision: 2, from: 'D'.repeat(400), to: 'D'.repeat(400), reason: 'r', audit: 'a-1' }])
+	check('判据改过 ⇒ 卡里写明第几次修订、谁裁的、全文在哪', fold.renderCard(revised).includes('a-1') && fold.renderCard(revised).includes('clear/goals/g1.md') && !fold.renderCard(revised).includes('D'.repeat(400)))
+	check('view() 把同一份交给面板(宿主经它暴露)', fold.view(state, 's').knowledgeView.headline.now === view.headline.now)
+
+	/**
+	 * **判据逐条**(`SetGoal` 收 `criteria: string[]`,每条一句话、每条可清点)。
+	 * 挤成一行会把「第 3 条没做到」抹平,整段重发又会把卡撑爆 ⇒ 三条界都要在:
+	 * 逐条一行(带序号)、每行有上限、条数有上限且超出**如实说**(还有几条 + 全文在哪)。
+	 */
+	const listed = fold.applyMutations(fold.emptyState(), [
+		{
+			t: 'goal/set',
+			id: 'g2',
+			claim: 'C',
+			done_criteria: 'D'.repeat(400),
+			headline: '一句速览',
+			criteria_note: '口径可随复核改',
+			promote_at_level: 'L3',
+			revision: 1,
+			criteria: ['第一条:留出集实测误差 < 5%', '第二条:语料每条带可追溯出处', `第三条:${'x'.repeat(200)}`, '第四条', '第五条', '第六条', '第七条', '第八条'],
+			hypotheses: [],
+		},
+	])
+	const listedView = knowledgeView(listed, fold.derive(listed))
+	check('判据逐条进读面(条数 / 每条一行 / 注解 / 文档指针同一处)', listedView.goal.criteriaTotal === 8 && listedView.goal.criteriaLines.length === 8 && listedView.goal.criteriaNote === '口径可随复核改' && listedView.goal.docPath === 'clear/goals/g2.md')
+	check('面板那一份每条也有上限(一条千字判据不占满一行)', listedView.goal.criteriaLines[2].length <= 161 && listedView.goal.criteriaLines[2].endsWith('…'))
+	const listedCard = fold.renderCard(listed)
+	const listedRows = listedCard.split('\n').filter((line) => /^\s+\d+\. /.test(line))
+	check('卡里判据逐条一行、带序号(不是压成一句)', listedRows.length === 6 && listedRows[0].includes('第一条') && listedRows[5].includes('第六条'))
+	check('每行 80 字封顶(逐条 ≠ 重发整段)', listedRows.every((line) => line.length <= 86) && !listedCard.includes('x'.repeat(200)) && !listedCard.includes('D'.repeat(400)))
+	check('超出 6 条如实说还有几条 + 全文在哪', listedCard.includes('还有 2 条') && listedCard.includes('clear/goals/g2.md'))
+	check('逐条之后卡仍守住硬上限(≤3000)', listedCard.length <= 3000, String(listedCard.length))
+	check('面板与卡读同一份(卡里的行就是读面里那一行)', listedView.goal.criteriaLines[0] === '第一条:留出集实测误差 < 5%' && listedCard.includes(listedView.goal.criteriaLines[0]))
+	/** 改过判据:逐条照列,留痕在同一张卡上(第几次修订 + 谁裁的)。 */
+	const listedRevised = fold.applyMutations(listed, [{ t: 'criteria/revised', goal: 'g2', revision: 2, from: 'D', to: 'D2', reason: 'r', audit: 'audit-9' }])
+	const revisedListedCard = fold.renderCard(listedRevised)
+	check('改过判据:逐条仍在,留痕写清第几次修订与独立裁决', /^\s+1\. 第一条/m.test(revisedListedCard) && revisedListedCard.includes('第 1 次修订') && revisedListedCard.includes('audit-9'))
+	/** 清单是空数组 ⇒ 与「没有清单」同一处置:退回压缩版 + 指针,不出现一个「判据(0 条)」小节。 */
+	const emptyList = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g3', claim: 'C', done_criteria: 'D'.repeat(400), promote_at_level: 'L3', revision: 1, criteria: [], hypotheses: [] }])
+	const emptyListCard = fold.renderCard(emptyList)
+	check('判据清单空数组 ⇒ 压缩版 + 指针(不写「0 条」小节)', emptyListCard.includes('立约时那一份') && emptyListCard.includes('clear/goals/g3.md') && !emptyListCard.includes('判据(0 条'))
+}
+
+
 {
 	/**
 	 * 病灶:每条变更的 `at` 都取 `mutation.at ?? 0`,而内核**不写** `at`——于是凡是显示时间的

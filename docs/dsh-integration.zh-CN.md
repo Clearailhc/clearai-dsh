@@ -58,10 +58,10 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 ## 安装
 
-在应用里：侧栏**「插件」→ 添加插件**填 `clearai-dsh@0.2.8`，走的是 DSH 自己的插件管理器——设置里的**插件列表**是**只读清单**，不是安装入口。开终端则是同一次安装：
+在应用里：侧栏**「插件」→ 添加插件**填 `clearai-dsh@0.3.0`，走的是 DSH 自己的插件管理器——设置里的**插件列表**是**只读清单**，不是安装入口。开终端则是同一次安装：
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.2.8
+dsh plugin --profile web add clearai-dsh@0.3.0
 ```
 
 版本是**刻意钉住**的：pnpm ≥ 11 会压住一天内发布的版本，而裸包名不会报错、会**回退到上一版**。插件管理器把 spec 原样转下去（`@deepseek-ai/dsh-plugin-manager` 里就是 `pnpm add <spec>`），并且**不比对**装到的是不是你要求的，于是这次降级被报成安装成功。机制与那句一次性豁免写在 README 的「为什么要钉版本」里。
@@ -85,7 +85,7 @@ npx clearai-dsh install
 ## 构建与验证
 
 ```bash
-npm test                        # 15 份套件 —— 清单在 test/run.sh
+npm test                        # 18 份套件 —— 清单在 test/run.sh
 node tools/build-package.mjs    # 装配 dist/clearai-dsh
 node tools/verify-package.mjs   # 现场重建并逐字节比对
 node tools/verify-deploy.mjs    # 用部署出去的文件做一次真实装配（绕开 ESM 缓存）

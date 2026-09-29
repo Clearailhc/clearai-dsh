@@ -231,7 +231,17 @@ console.log('\n【⑦ 事件的装载点与安装件】')
 	const { caught, fail } = catcher()
 	const sessions = []
 	const listeners = new Map()
-	const ctx = { sessions: { list: () => sessions }, on(event, handler, options) { listeners.set(event, { handler, options }); return () => {} } }
+	// 与真实 Cordis context 同形:服务走**方法式** `ctx.get(name)`(属性式在 fiber 非 ACTIVE 时会抛)。
+	const services = { sessions: { list: () => sessions } }
+	const ctx = {
+		get(name) {
+			return services[name]
+		},
+		on(event, handler, options) {
+			listeners.set(event, { handler, options })
+			return () => {}
+		},
+	}
 	install(ctx, fail)
 	check('安装件挂上三条听点:会话创建 / 落账前 / 落账后', listeners.has('session/created') && listeners.has('internal/dispatch') && listeners.has('session/event'))
 	check('安装件要求注入 sessions(没有它这条不变量无从谈起)', JSON.stringify(install.inject) === JSON.stringify(['sessions']))

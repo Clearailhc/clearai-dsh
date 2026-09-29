@@ -19,7 +19,8 @@ import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
 import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
-import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
+import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
+import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
 import { install as installInvariants } from './invariant.js'
 
 export const name = 'clearai-host'
@@ -99,9 +100,118 @@ export function apply(ctx) {
 		return lastView
 	}
 
+	/**
+	 * ═══ 注入服务只走**方法式**,读不到就降级 ═══
+	 *
+	 * 属性式读服务(把服务名当属性取)在 Cordis 里走一条 Proxy walk:只要本 fiber
+	 * (或链路上某个声明了同一条 inject 的祖先 fiber)此刻不是 ACTIVE,它**当场抛**
+	 * `cannot get required service "…" in inactive context`。
+	 * 方法式 `ctx.get(名字)` 走的是全局注册表,同一时刻只回 `undefined`——
+	 * 于是「这一刻读不到」成了一个**可表示**的值:读面降级,而不是把一次跑了几分钟的
+	 * 评审整个作废。所以宿主半一次都不许出现属性式访问;`inject` 声明保留,
+	 * 它保证正常路径上的就位顺序。
+	 *
+	 * 连方法式都炸(不该发生)时也走同一条降级:读面不许变成失败面。
+	 *
+	 * 降级这件事本身也要留痕:落一条**宿主健康事实**——只增不删,只留最近这些条,
+	 * 随 `state()` / `view()` 读取暴露(字段 `hostHealth`)。它与折法从会话日志折出来的
+	 * 那份**同形**(`[{ scope, detail, at }]`),所以面板与卡不必为「本地的」和「折出来的」
+	 * 写两套读法。
+	 */
+	const HOST_HEALTH_MAX = 20
+	const hostHealth = []
+	/**
+	 * **内容寻址的 id**:`scope + detail` 一样就是同一条观测。
+	 *
+	 * 为什么不用时间戳:`at` 每次都不同,同一条降级会被记成无数条。用内容算 id 之后,
+	 * ① 本地数组自己按 id 去重;② 内核把观测落成 `host/inactive` 变更时用同一个 id,
+	 * 折法按 id 幂等 ⇒ **账本上一条、读数上一条**,不会因为"宿主记一次、内核再落一次"变成两条。
+	 */
+	const hostHealthId = (scope, detail) => {
+		let h = 0x811c9dc5
+		const text = `${scope}\u0000${detail}`
+		for (let index = 0; index < text.length; index += 1) {
+			h ^= text.charCodeAt(index)
+			h = Math.imul(h, 0x01000193) >>> 0
+		}
+		return `hh-${h.toString(16).padStart(8, '0')}`
+	}
+	const noteHostHealth = (scope, detail) => {
+		const id = hostHealthId(scope, detail)
+		if (hostHealth.some((entry) => entry.id === id)) return
+		hostHealth.push({ id, scope, detail, at: Date.now() })
+		if (hostHealth.length > HOST_HEALTH_MAX) hostHealth.splice(0, hostHealth.length - HOST_HEALTH_MAX)
+	}
+	/**
+	 * 与折法折出来的那份**合并**,不是覆盖:折法手里的 `hostHealth` 是账本上的历史,
+	 * 本地这份是「这一刻读不到」的观测;两者都是读者要知道的事实,谁都不许把谁盖掉。
+	 * 本地一条都没有时原样返回,正常路径上的返回值与加这条机制之前逐字段相同。
+	 */
+	const withHostHealth = (value) => {
+		if (hostHealth.length === 0) return value
+		const folded = Array.isArray(value?.hostHealth) ? value.hostHealth : []
+		// 账本上已经有同一条(内核把它落成了 `host/inactive`)就不再加本地那份:同一条事实只报一次。
+		const known = new Set(folded.map((entry) => entry?.id).filter((id) => id !== undefined && id !== null))
+		const fresh = hostHealth.filter((entry) => !known.has(entry.id)).map((entry) => ({ ...entry }))
+		if (fresh.length === 0) return { ...value, hostHealth: folded }
+		return { ...value, hostHealth: [...folded, ...fresh] }
+	}
+
+	const sessionsOf = () => {
+		let sessions
+		try {
+			sessions = ctx.get('sessions')
+		} catch {
+			sessions = undefined
+		}
+		if (sessions === undefined || sessions === null) {
+			noteHostHealth('sessions', '宿主半此刻拿不到会话服务:读面退回空态(不是「这个会话不存在」)')
+			return undefined
+		}
+		return sessions
+	}
+
+	/** 投影服务:同上一条降级语义,同一条方法式访问。 */
+	const projectionsOf = () => {
+		let projections
+		try {
+			projections = ctx.get('sessionProjections')
+		} catch {
+			projections = undefined
+		}
+		if (projections === undefined || projections === null) {
+			noteHostHealth('sessionProjections', '宿主半此刻拿不到投影服务:读面退回空态(不是「这个会话没有状态」)')
+			return undefined
+		}
+		return projections
+	}
+
+	/**
+	 * 本插件 fiber 掉出 ACTIVE 时留一条观测。
+	 *
+	 * 读面降级只解释「这一刻读不到」,解释不了「为什么会读不到」——那要看 fiber 生命周期。
+	 * Cordis 的 `internal/status` 事件带着 (fiber, 旧状态),订阅面就挂在它上面;
+	 * 事件面是所有 fiber 共用的,所以过滤靠**身份**(`ctx.fiber`)而不是名字。
+	 * 观测面的失败不许把产品弄坏:订阅抛错也只是少一条证据。
+	 */
+	const FIBER_ACTIVE = 2
+	try {
+		ctx.on('internal/status', (fiber, oldValue) => {
+			if (fiber !== ctx.fiber || oldValue !== FIBER_ACTIVE) return
+			const detail = `宿主半 fiber 掉出 ACTIVE(${oldValue} → ${fiber.state}):两个注入服务这一刻都读不到,读面退回空态`
+			noteHostHealth('sessions', detail)
+			noteHostHealth('sessionProjections', detail)
+			ctx.logger?.warn?.(`clearai: ${detail}`)
+		})
+	} catch (error) {
+		ctx.logger?.warn?.(`clearai: fiber 生命周期观测没挂上 ${String(error?.message ?? error).slice(0, 160)}`)
+	}
+
 	ctx.effect(
-		() =>
-			ctx.sessionProjections.register({
+		() => {
+			const projections = projectionsOf()
+			if (projections === undefined || typeof projections.register !== 'function') return () => {}
+			const disposer = projections.register({
 				key: 'clearai',
 				stateVersion: STATE_VERSION,
 				stateSchema,
@@ -115,16 +225,31 @@ export function apply(ctx) {
 					return applyEvent(state, event)
 				},
 				wire: { viewSchema, view: memoView },
-			}),
+			})
+			return typeof disposer === 'function' ? disposer : () => {}
+		},
 		'clearai: session projection unit',
 	)
 
 	/** 读面:预设侧与运行态卡都走这里,不各自维护一份状态。 */
 	const stateOf = (sessionId) => {
-		const session = ctx.sessions.get(sessionId)
-		if (session === undefined) return emptyState()
-		return ctx.sessionProjections.stateOf(session, 'clearai') ?? emptyState()
+		const sessions = sessionsOf()
+		if (sessions === undefined || typeof sessions.get !== 'function') return withHostHealth(emptyState())
+		const session = sessions.get(sessionId)
+		if (session === undefined) return withHostHealth(emptyState())
+		const projections = projectionsOf()
+		if (projections === undefined || typeof projections.stateOf !== 'function') return withHostHealth(emptyState())
+		return withHostHealth(projections.stateOf(session, 'clearai') ?? emptyState())
 	}
+
+	/** 会话服务的读,给路由用:同一条降级语义(拿不到 ⇒ `undefined`)。 */
+	const sessionOf = (sessionId) => {
+		const sessions = sessionsOf()
+		return sessions === undefined || typeof sessions.get !== 'function' ? undefined : sessions.get(sessionId)
+	}
+
+	/** 面板视图:与 `state()` 同一份降级读数(健康事实一起交出去)。 */
+	const viewOf = (sessionId) => withHostHealth(view(stateOf(sessionId)))
 
 	/**
 	 * ═══ 人门通道(D2=B:面板可写,但只写人门动作)═══
@@ -546,11 +671,13 @@ export function apply(ctx) {
 		 */
 		route('/api/clearai/deliverables', ['GET'], (httpRequest) => {
 			const url = new URL(httpRequest.url)
-			const session = ctx.sessions.get(url.searchParams.get('sessionId') ?? '')
+			const session = sessionOf(url.searchParams.get('sessionId') ?? '')
 			const cwd = session?.header?.cwd
 			if (typeof cwd !== 'string' || cwd === '') return reply(404, { ok: false, error: 'no_live_session' })
 			// 只挑叶子字段构造属于我们自己的 JSON:不把投影对象整体搬出去。
-			const state = ctx.sessionProjections.stateOf(session, 'clearai')
+			// 投影这一刻读不到 ⇒ 「声明」那一半给空;盘上「实际」那一半是读盘,不吃投影,照给。
+			const projections = projectionsOf()
+			const state = projections === undefined || typeof projections.stateOf !== 'function' ? null : projections.stateOf(session, 'clearai')
 			const stages = (state?.plans ?? []).map((plan) => ({
 				plan: plan.id,
 				status: plan.status,
@@ -618,7 +745,7 @@ export function apply(ctx) {
 		 */
 		route('/api/clearai/brain', ['GET'], async (httpRequest) => {
 			const url = new URL(httpRequest.url)
-			const session = ctx.sessions.get(url.searchParams.get('sessionId') ?? '')
+			const session = sessionOf(url.searchParams.get('sessionId') ?? '')
 			const cwd = session?.header?.cwd
 			if (typeof cwd !== 'string' || cwd === '') return reply(404, { ok: false, error: 'no_live_session' })
 			const skills = ctx.get('skills')
@@ -670,14 +797,15 @@ export function apply(ctx) {
 		route('/api/clearai/inspector', ['GET'], async (httpRequest) => {
 			const url = new URL(httpRequest.url)
 			const sessionId = url.searchParams.get('sessionId') ?? ''
-			const session = ctx.sessions.get(sessionId)
+			const session = sessionOf(sessionId)
 			if (session === undefined) return reply(404, { ok: false, error: 'no_live_session' })
 			/**
 			 * 直接用本模块的折法读状态,不走 `ctx.get('clearai')`:那条门面是同一条 fiber 上
 			 * 提供给**预设侧**用的,而这条路由只是把同一个纯函数接到 HTTP 上——
 			 * 中间多一跳服务解析,只会多一种「服务没接上」的失败模式。
 			 */
-			const state = ctx.sessionProjections.stateOf(session, 'clearai')
+			const projections = projectionsOf()
+			const state = projections === undefined || typeof projections.stateOf !== 'function' ? null : projections.stateOf(session, 'clearai')
 			if (state === null || state === undefined) return reply(200, { ok: true, found: false })
 			const found = inspectGraphSelection(state, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' }, derive(state))
 			/** 找不到不是错误:那个对象可能刚被废止或本来就不在(如实说 `found: false`,不编一份空的)。 */
@@ -694,8 +822,8 @@ export function apply(ctx) {
 				state: stateOf,
 				/** 派生:阶段/完成度/假设状态/世界线阶段,全部现算。 */
 				derive: (sessionId) => derive(stateOf(sessionId)),
-				/** 面板视图(与 wire 同一份)。 */
-				view: (sessionId) => view(stateOf(sessionId)),
+				/** 面板视图(与 wire 同一份,降级时一并交出席位健康事实)。 */
+				view: viewOf,
 				/**
 				 * 运行态卡:注给模型的**事实**。
 				 *
@@ -736,7 +864,12 @@ export function apply(ctx) {
 				domain: {
 					validateTerm: (sessionId, draft) => validateTerm(stateOf(sessionId).lexicon, draft),
 					validatePredicate: (sessionId, draft) => validatePredicate(stateOf(sessionId).lexicon, draft),
-					validateAssertions: (sessionId, assertions) => validateAssertions(stateOf(sessionId).lexicon, assertions),
+					/**
+					 * **递整份 state,不只递 lexicon**:断言的主体要能被指认(实例登记过)才算数,
+					 * 而「登记过哪些实例」住在 `state.entities` 里。只递词汇的话,那条判据永远无从判断,
+					 * 只能迁移期一律放行——那就等于没有这条判据。
+					 */
+					validateAssertions: (sessionId, assertions, options = {}) => validateAssertions(stateOf(sessionId), assertions, options),
 					/**
 					 * 货架正文。带 `mutations` 时按**这一步之后**的样子渲染——
 					 * 工具在返回前就把货架写好,读的人不必等下一回合。
@@ -745,10 +878,16 @@ export function apply(ctx) {
 						const state = applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : [])
 						const next = derive(state)
 						// 在途命题也传进去:词汇刚立起来时「引用 0」会让人以为没人用,而断言已经在假设上了。
-						return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses)
+						// `view`:货架的「使用」一节与运行态卡 / 右栏读**同一份**叙述(单一叙述源)。
+						return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses, { view: knowledgeViewOf(state) })
 					},
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
+					/**
+					 * **当前的图投影**(节点 / 边)。给内核用:谓词登记与 `Assert` 都要判
+					 * 「这个类型是已登记的概念吗」——判据只有一份,就在这张投影里。只读,不落盘。
+					 */
+					graph: (sessionId) => graphProjection(stateOf(sessionId)),
 				},
 				/**
 				 * **知识 Inspector**:一个选择 → 它的定义 / 关系 / 断言 / 证据链 / 历史。

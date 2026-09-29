@@ -98,7 +98,9 @@ flowchart TD
 | `instance` | 事实中提到的具体对象，如「WENO5」「炉次-2025-001」 | 否，由事实投影产生 |
 | `literal` | 数值、文本、公式、代码引用等客体 | 否，由事实投影产生 |
 
-**实例不注册。** 它们从类型化事实里投影出来，没有独立生命周期——否则为了画一张图，就要多维护一套对象。同标签的实例在投影里合并为一个节点；实体消解（同一事物的不同称呼）本版不做，见[已知缺口](known-gaps.zh-CN.md)。
+**实例有独立的一等写入口**（`RegisterInstance` → `entity/registered`，`Assert` → `entity/asserted`），同时也照旧从类型化事实里投影出来。两个来源在投影里按同一个键（`${type}|${id}`）合并，所以节点身份与边的来路是两件事：来自升格事实的边是 `source='promoted'`（带等级与边界），来自带出处观测的边是 `source='asserted'`（带出处、未经独立裁决）。
+
+**为什么要有这个写入口**：把实体层的存在性绑在"目标级独立裁决"上，会让「本体写得很漂亮、实体图是空的」成为最省力的完成方式——词汇可以随便登记（约定不需要依据），而每一个具体对象都要等一次针对**整条目标**的裁决。实体是一次观测，所以它在被观测到的那一刻落账。同标签的实例在投影里合并为一个节点；实体消解（同一事物的不同称呼）本版不做，见[已知缺口](known-gaps.zh-CN.md)。
 
 ### 3.2 边
 
@@ -338,7 +340,7 @@ flowchart TD
 | 状态机 | 状态 | 事件 | 谁推 |
 |---|---|---|---|
 | **过程对象**（九个，见[状态机](optimization/state-machines.zh-CN.md)） | `open` / `advanced` / `void` / `proposed` / `refuted` / `promoted` … | `goal/set`、`step/advanced`、`fact/promoted` … | 内核按事实推进；模型只能发起意图 |
-| **领域词汇**（概念 / 谓词） | `admitted` → `deprecated`（修订是自环，版本 +1） | `ontology/term_added`、`ontology/*_revised`、`ontology/*_deprecated` | 具名动词（七个,已实现）；折法只解释 |
+| **领域词汇**（概念 / 谓词） | `admitted` → `deprecated`（修订是自环，版本 +1） | `ontology/term_added`、`ontology/*_revised`、`ontology/*_deprecated` | 具名动词（十个,已实现）；折法只解释 |
 | **一次验证**（步骤上的 `tests`） | 由证据与等级派生 | `evidence/recorded`、`audit/settled` | 内核 |
 
 **它们互不嵌套**：接纳一个概念不会推进任何过程对象，一条计划收尾也不改词汇。两者之间只有一种方向性关系——**引用**：断言引用谓词与概念，事实引用假设与证据。
@@ -398,7 +400,7 @@ flowchart LR
 | `clear/knowledge/facts/INDEX.md` | 已升格事实（含断言与边界） | 内核幂等渲染 |
 | 运行态卡 | 词汇计数、类型化事实比例、冲突一行 | 折法 `renderCard` |
 | 面板「命题与事实」 | 事实与断言芯片 | 投影 `view().facts` |
-| 面板「本体」 | 本体图 / 实体图 / 条目详情 | 投影 `view().lexicon`（阶段 D–E 渲染） |
+| 面板「本体」 | 本体图 / 实体图 / 条目详情 | 投影 `view().lexicon`（已渲染；编辑走人门通道） |
 
 ### 8.4 今天到哪儿了
 
@@ -407,8 +409,9 @@ flowchart LR
 | 六个词汇事件折进 `state.lexicon` | 已实现（阶段 B） |
 | 断言随 `fact/promoted` 折进事实 | 已实现（折法层） |
 | 冲突派生 / 词汇健康度 / 图投影 | 已实现（`test/domain-language.test.mjs`） |
-| 七个动词、`SetGoal` / `CloseGoal` 接线、`domain.md` 货架、`clear/ontology/` 拒写 | 已实现 |
-| 面板「本体」与图编辑 | 设计目标：阶段 D–E |
+| 十个动词、`SetGoal` / `CloseGoal` 接线、`domain.md` 货架、`clear/ontology/` 拒写 | 已实现 |
+| 面板「本体」渲染（本体图 / 实体图 / 条目卡 / 冲突行 / 词汇维护区） | 已实现 |
+| 编辑抽屉（登记概念 / 登记谓词 + 条目修订 / 废止，经人门通道，与模型动词同一份判据） | 已实现（画布上不做拖拽连线：拖动 / 缩放不产生账本事件） |
 
 **一句话**：状态机回答「东西怎么变」，本体回答「知识用什么语言写」，图是这两者折出来的**读面**——三层都在，只有中间那层的生产者还没接。
 

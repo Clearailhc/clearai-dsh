@@ -22,8 +22,8 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 
 ```bash
 # 安装（npm 包，预构建——无需构建步骤，不会触发 allowBuilds 授权）
-dsh plugin --profile web add clearai-dsh@0.2.8
-# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.2.8
+dsh plugin --profile web add clearai-dsh@0.3.0
+# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.3.0
 ```
 
 重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
@@ -78,12 +78,12 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 **推荐——在应用里装，并把版本钉住：**
 
-侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.2.8`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
+侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.3.0`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
 
 **或者开终端——同一次安装：**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.2.8
+dsh plugin --profile web add clearai-dsh@0.3.0
 ```
 
 从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。
@@ -137,7 +137,7 @@ Git 拉的是源码而不是构建产物，所以 pnpm ≥10 会拒绝运行 `pr
 从仓库开发：
 
 ```bash
-npm test                       # 15 份套件
+npm test                       # 18 份套件
 node tools/build-package.mjs   # 由源装配 dist/
 node tools/verify-package.mjs  # 现场重建并逐字节比对
 node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)

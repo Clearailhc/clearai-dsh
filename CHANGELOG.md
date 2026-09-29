@@ -2,6 +2,40 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-09-29
+
+**从一次真跑的三条症状出发,把三件事从劝告变成机制。** 一位用户在真实会话里遇到的三个问题——`CloseGoal` 运行失败且要跑很久;命题晦涩、而且**从没走过认识论循环的便宜层级**;本体建得不错、**查到的实体却没进实体图谱**——每一条都追到了代码行:宿主半用**属性式**取服务(宿主 fiber 瞬态掉线就抛,而评估者刚跑完的那两分钟评审随栈帧一起没了);实体层的节点与边**唯一**来自「整条目标被独立裁决判 support」之后的升格;`supportedLevel` 只是支持证据的最大值,跳级**零代价**。这一版不是把话说重一点,而是把这三条各自换成一道**可清点的机制**——并在两场真模型 headless 长测里验过。
+
+### Added
+
+- **实体是一等写入口**(本轮的主修):`RegisterInstance`(观测:依据与出处必填)与 `Assert`(说一句关于某个**已登记实例**的带出处的话)。**断言在登记那一刻就产边**,不再等目标裁决;投影把三个来源合起来画,同键去重、节点与边都带 `source`(`registered` / `promoted` / `asserted`),两个新来源都为空时输出与 0.2.8 **逐字节相同**。`RegisterTerm` 与它的分工写死在工具描述里:**概念是约定,实例是观测**。
+- **`ExplainLevelSkip`**:为「没走过的验证等级」留理由,`levels` 必须是卡上列出的未走过等级,`reason` 必须**点到该等级要检查的对象名**(「时间不够」过不了)。
+- **缺口三条 + 三道门**:`entities_unlanded`(逐主体差集:**断言主体在图上有边**才算落地)、`levels_skipped`、`orphan_terms`;每条缺口都带 `nextAction`。门 `requireLandedEntities` / `requireLevelReasons` / `requireCriteriaVerdict` 机制缺省关、preset 里开到生产,各自两条诚实出口(补齐 或 `abandoned`)。
+- **目标的一句话与可清点的判据**:`SetGoal` 新增 `headline`(≤120 字;省略时由 `claim` 首句现算,现算超长当场拒)、`criteria[]` / `criteria_note`;改判据文本要带一份**已落定独立裁决**的 auditKey。
+- **`clear/goals/{goalId}.md`**:本体声明里 `goal.persistence` 早就写了这个落点、此前没人写;现在内核幂等落盘(判据逐条、假设、修订留痕),卡里给压缩版 + 指针。
+- **单一叙述源 `ui/lib/knowledge-view.js`**:运行态卡、右栏面板、词汇货架读**同一份**投影(此前四处各写一遍,漂了要读者自己调和)。
+- **事件命名空间 `entity/` · `level/` · `criteria/` · `host/`**;`host/inactive` 四步闭环:宿主按 scope+detail 算**内容寻址 id** → 内核 pre-step 把没上账的落成变更 → 折法按 id **幂等** → 宿主只交出还没上账的那几条。
+- **真值表**补 4 条机制(共 71 条)与**代码→真值表**的反向检查(顶层 `events` + 4 项校验,总 29 项);工具面 **29 → 32 件**,领域动词 10 件。
+
+### Changed
+
+- **CloseGoal**:派发/结算事实**在 `await` 之前独立落账**(工具抛错、被 abort 都抹不掉);裁决按**材料** digest **同态复用**——digest 只盖目标修订号、计划步与判据、观测、原始假设、事实、非审计来源的证据与**产物摘要**,不含"上一次评审自己的回声";交付那一步同样适用,但**证据照旧落账**(步骤历史与既有的「连续两次无法判定 ⇒ 强制改法」都靠它),省掉的只是那两分钟子 run。复用仍带得出评估卡与评估者会话。
+- **裁决卡设预算**:`basis` ≤1200 字,缺口的每条写成 `{criterion, what, missing}` 三格。真跑里一次裁决的 `basis` 是五千余字、末步单次生成 81 秒。
+- **宿主读面降级不再抛**:`ui/lib/index.js` 禁属性式服务访问,取不到返回空态;`sessionCwd` 拿不到会话目录**不写盘**(删掉 `process.cwd()` 回退——"写不出去"与"写到别处"是两件事)。
+- **运行态卡**:判据**逐条**渲染(每条 80 字、最多 6 条 + "还有 N 条" + 指针)、`claim` 压缩、**删掉时钟**(分钟级时间戳让"同一状态的卡"每分钟变一次,按内容去重因此永远失效)。
+
+### Fixed
+
+- **评审只写正文卡片时,裁决被整份丢掉**(真模型长测抓到):`refs` 曾被写进 `VERDICT_SCHEMA` 的 `required`,评估者在 markdown 里写清 `verdict: support` 却因形状被 runtime 拒收 ⇒ 账上只剩「无法判定」,**目标永远结不了案**。现在 `refs` 声明但不强制,并给 `parseLooseJson` 加了**正文卡片兜底**(只认 `verdict:` 后那三个词;取不到就如实说取不到——猜一份 support 比丢掉一份 refute 坏得多)。
+- **三处「目录取不到就拿 `null` 拼路径」的崩溃**(立约前侦察 / 观测登记 / 准入)与 `WriteMemory` / `SaveSkill` 的同类问题:一律降级为如实返回,不再抛。
+- **`entities_unlanded` 的判据从"图上有节点"改成"图上有边"**:只数节点时,登记一个无关实例就能把缺口压掉,而真正该落地的主体仍只在命题上。
+
+### Verified
+
+- **18 套件 1879 项检查全绿**;真值表 29 项 / 71 条机制;`verify-package` 除沙箱内的 `npm pack` 外全过。
+- **两场真模型 headless 长测**(装出来的包、无人值守):`entity-graph` **41 通过 / 0 失败**(13 个实例、15 条断言边、3 处跳级理由)、`long-plan` **40 通过 / 0 失败**(5 步全交付、记忆 1 条、账本 5 次提交、目标 achieved,并自发用了 5 个实例 + 9 条断言)。现场(轨迹、会话日志、读数)归档在 `docs/optimization/e2e-logs/`。
+- **独立验证员**(fresh context、未参与实现)三轮复验 + 变异测试:抓出并修掉 11 处缺陷(含 3 处必崩的 `null` 路径、一处时间死区、一处可绕过的门);诊断与验证全文见 `docs/optimization/2026-09-diagnosis.zh-CN.md` 与 `2026-09-independent-verification.zh-CN.md`。
+
 ## [0.2.8] — 2026-09-28
 
 **四个面板消失的那条 bug:客户端半读了一个已经不存在的字段。** 客户端拿「当前会话」用的是 `sessions.list.getSnapshot().current`;宿主的 `SessionListState` 现在只有 `{ ids, byId, phase, projectionsBySession }` —— **没有 `current`**。读到 `undefined`,`isCurrentPreset()` 就恒为 `false`,`occupy()` / `syncRail()` **一个座位都不注册**。失效形态与症状完全一致:模式在、宿主半一切正常,中栏只剩「对话 / 轨迹」、右栏只剩宿主自带的页签,**而且不报错**(0.1.7-rc.2 与 0.2.0-rc.1 的宿主都是这个形状)。

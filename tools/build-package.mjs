@@ -184,6 +184,9 @@ copy(join(PORT, 'ui', 'lib', 'fold.js'), join(OUT, 'lib', 'fold.js'))
 // 领域语言层的纯函数:折法与宿主路由都 import 它,所以它必须跟着走
 // (少拷这一个文件,包里的 fold 会在 import 那一刻就报模块找不到)。
 copy(join(PORT, 'ui', 'lib', 'domain-language.js'), join(OUT, 'lib', 'domain-language.js'))
+// 叙述的单一来源:卡 / 右栏面板 / 货架读的是同一份投影。折法 import 它,
+// 所以它必须跟着走(少拷这一个文件,包里的 fold 会在 import 那一刻报模块找不到)。
+copy(join(PORT, 'ui', 'lib', 'knowledge-view.js'), join(OUT, 'lib', 'knowledge-view.js'))
 // 宿主不变量的伴生件:单独一个文件,按名字可挂(`clearai-dsh/invariant`)。
 copy(join(PORT, 'ui', 'lib', 'invariant.js'), join(OUT, 'lib', 'invariant.js'))
 /**
