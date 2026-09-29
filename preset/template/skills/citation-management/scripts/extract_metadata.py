@@ -11,7 +11,8 @@ import argparse
 import time
 import re
 import json
-import defusedxml.ElementTree as ET
+import xml.etree.ElementTree as ET  # only for the Element type annotation
+from defusedxml.ElementTree import fromstring as safe_fromstring
 from typing import Optional, Dict, List, Tuple
 from urllib.parse import urlparse
 
@@ -167,7 +168,7 @@ class MetadataExtractor:
             response = self.session.get(url, params=params, timeout=15)
             
             if response.status_code == 200:
-                root = ET.fromstring(response.content)
+                root = safe_fromstring(response.content)
                 article = root.find('.//PubmedArticle')
                 
                 if article is None:
@@ -220,7 +221,7 @@ class MetadataExtractor:
         Returns:
             Metadata dictionary or None
         """
-        url = 'http://export.arxiv.org/api/query'
+        url = 'https://export.arxiv.org/api/query'
         params = {
             'id_list': arxiv_id,
             'max_results': 1
@@ -231,7 +232,7 @@ class MetadataExtractor:
             
             if response.status_code == 200:
                 # Parse Atom XML
-                root = ET.fromstring(response.content)
+                root = safe_fromstring(response.content)
                 ns = {'atom': 'http://www.w3.org/2005/Atom', 'arxiv': 'http://arxiv.org/schemas/atom'}
                 
                 entry = root.find('atom:entry', ns)
