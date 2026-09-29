@@ -489,6 +489,8 @@ export function applyMutation(state, mutation) {
 		}
 		case 'block/cleared': {
 			delete next.blocks[`${mutation.plan}:${mutation.step}`]
+			const plan = planOf(mutation.plan)
+			if (plan?.blocked?.step === mutation.step) plan.blocked = undefined
 			break
 		}
 		case 'observation/recorded': {

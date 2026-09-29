@@ -893,7 +893,7 @@ export function apply(ctx, config = {}) {
 	// 判定树:l1 / l2 / no_anchor / invalid / needs_audit。
 
 	function admission(cwd, step, artifactsOverride) {
-		const result = { ok: false, verified_by: 'invalid', missing: [], empty: [], structural: [], confirmed: [], needs_audit: false, hint: '' }
+		const result = { ok: false, verified_by: 'invalid', missing: [], directories: [], empty: [], structural: [], confirmed: [], needs_audit: false, hint: '' }
 		if (step === null || typeof step !== 'object') {
 			result.missing.push('step')
 			return result
@@ -928,7 +928,24 @@ export function apply(ctx, config = {}) {
 				continue
 			}
 			if (stat.isDirectory()) {
-				result.empty.push(`${artifact}(空目录)`)
+				let files = 0
+				let bytes = 0
+				const countContents = (directory) => {
+					for (const entry of readdirSync(directory, { withFileTypes: true })) {
+						const entryPath = join(directory, entry.name)
+						if (entry.isDirectory()) countContents(entryPath)
+						else if (entry.isFile()) {
+							files += 1
+							bytes += statSync(entryPath).size
+						}
+					}
+				}
+				try {
+					countContents(absolute)
+				} catch {
+					// 目录在读数期间变化时，仍如实说明它不能作为物证。
+				}
+				result.directories.push(`${artifact}(目录不是物证,含 ${files} 个文件、${bytes} 字节)`)
 				continue
 			}
 			if (stat.size === 0) {
@@ -961,6 +978,11 @@ export function apply(ctx, config = {}) {
 		if (result.missing.length > 0) {
 			result.verified_by = 'l1'
 			result.hint = `声明的产物没落盘:${result.missing.join(', ')}。三条合法出路:①把产物做出来;②改声明(RefinePlan 改判据、AmendPlan 换产物);③带因作废(VoidPlanStep)。`
+			return result
+		}
+		if (result.directories.length > 0) {
+			result.verified_by = 'l1'
+			result.hint = `声明的产物是目录:${result.directories.join(', ')}。目录不是物证,请在 artifacts 声明具体文件。`
 			return result
 		}
 		if (result.empty.length > 0) {
@@ -2496,7 +2518,7 @@ export function apply(ctx, config = {}) {
 	// 为什么必须是**机制**而不是嘱咐:ClearAI 的无人值守档靠「系统自己开下一阶段」活着,
 	// 而 DSH 里一个回合结束后想让会话继续,只有宿主的回合驱动能做到。模型自己说"我继续"是无力的。
 
-	const CONTINUATION_CODES = { stalled: 'clearai_loop_stalled', abandoned: 'clearai_loop_abandoned' }
+	const CONTINUATION_CODES = { stalled: 'clearai-loop-stalled', abandoned: 'clearai-loop-abandoned' }
 
 	/**
 	 * 计划审阅的两个标签:它们是**机制**定义的措辞,不是模型的即兴表达。
@@ -3861,7 +3883,7 @@ export function apply(ctx, config = {}) {
 		properties: {
 			id: { type: 'string', description: '稳定 id(字母/数字/下划线/短横)' },
 			do: { type: 'string', description: '这一步做什么' },
-			artifacts: { type: 'array', items: { type: 'string' }, description: '以何物为证:相对 workspace 的产物路径' },
+			artifacts: { type: 'array', items: { type: 'string' }, description: '以何物为证:相对 workspace 的具体产物文件路径(目录不是物证)' },
 			done_criteria: { type: 'string', description: '判定标准:在结果出现之前写下,必须可核对' },
 			tests: {
 				type: 'object',
@@ -4508,6 +4530,7 @@ export function apply(ctx, config = {}) {
 			if (plan.steps.some((step) => step.id === args.step.id)) return fail('duplicate_step', `步骤 id 已存在:${args.step.id}`)
 			const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: args.step.tests ?? null }
 			mutations.push({ t: 'plan/amended', plan: plan.id, step: amended })
+			if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
 			/**
 			 * **没授权的计划:改完再呈一次**(审阅卡上承诺的就是这句)。
 			 * 已经授权的计划不再打扰人 —— 补一步不是重新立约。
@@ -4542,6 +4565,7 @@ export function apply(ctx, config = {}) {
 			const selfRef = SELF_REFERENCE.find(([pattern]) => pattern.test(criteria))
 			if (selfRef !== undefined) return fail('criteria_self_reference', selfRef[1])
 			mutations.push({ t: 'plan/refined', plan: plan.id, step: step.id, old_criteria: step.done_criteria, new_criteria: criteria, reason: args.reason ?? null })
+			if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
 			const refinedSteps = plan.steps.map((item) => (item.id === step.id ? { ...item, done_criteria: criteria } : item))
 			const againRefined = plan.confirmed_at === null ? await reviewExistingPlan(plan, exec, mutations, refinedSteps) : { note: '' }
 			return done({ ok: true, code: 'plan_refined', progress_changed: false, message: `步骤 ${step.id} 的判据已精化(进度不变,旧判据留痕)。${againRefined.note}` })
@@ -4591,6 +4615,7 @@ export function apply(ctx, config = {}) {
 			if (step.status === 'advanced') return fail('step_settled', `步骤 ${step.id} 已交付,不能作废(已交付的事实不会被撤销)。`)
 			if (typeof args.reason !== 'string' || args.reason.trim() === '') return fail('reason_required', '作废必须带原因。')
 			mutations.push({ t: 'plan/voided', plan: plan.id, step: step.id, reason: args.reason.trim() })
+			if (plan.blocked?.step === step.id) mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
 			/**
 			 * 作废**不动**分叉:作废是承诺层的权威动作,它不改变尝试层已经发生的事实
 			 * ——那些世界线探索过、有的还出了读数。把它们改写成「已放弃」就是改写历史。
@@ -4712,7 +4737,7 @@ export function apply(ctx, config = {}) {
 			if (plan.blocked !== undefined) {
 				return fail(
 					'plan_blocked',
-					`计划 ${plan.id} 已置 blocked(连续 ${plan.blocked.attempts} 次未过闸:${plan.blocked.reason}),停下等人。要接着做:AmendPlan 换一条能过闸的路、RefinePlan 补齐判据,或让人介入后重开。`,
+					`计划 ${plan.id} 已置 blocked(连续 ${plan.blocked.attempts} 次未过闸:${plan.blocked.reason}),停下等人。要接着做:AmendPlan 换一条能过闸的路、RefinePlan 补齐判据,或 VoidPlanStep 作废被拦步骤。`,
 				)
 			}
 			const level = step.tests?.level ?? null
