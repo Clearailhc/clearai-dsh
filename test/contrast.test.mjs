@@ -1,8 +1,12 @@
 /**
  * 对比套件 —— 把**真实现场**在新机制下的读数与旧读数并排钉住。
  *
- * 现场:`.tmp-session/session.v4.jsonl`(DSH 会话 9dc1fe2b · 2026-09-29 · 工作区 chouxiang,
- * 1635 事件 / 13.9MB,含 35 个子会话目录)。诊断见 `.tmp-audit/DIAGNOSIS.md`。
+ * 现场(两处来源,按可用性取第一个):本机完整导出 `.tmp-session/session.v4.jsonl`
+ * (DSH 会话 9dc1fe2b · 2026-09-29 · 工作区 chouxiang,1635 事件 / 13.9MB);
+ * 或**随仓库走的夹具** `test/fixtures/session-9dc1fe2b-closegoal.jsonl`(同一会话切出来的
+ * 17 条事件(5 次结案 + 5 条结果 + 7 次立约,够 A/C 两组用,见那里的 README)。为什么必须有夹具:完整导出是 gitignore 的临时物,
+ * 干净检出(CI、新克隆)上只读它会**直接崩**——2026-09-29 的发布流程就是这么红的。
+ * 诊断见 `.tmp-audit/DIAGNOSIS.md`(若本机有)。
  * 每一条断言都写成「旧读数 → 新读数」两个数:只报新读数的话,没人知道它修的是什么。
  *
  * **A 组为什么用结构性断言(而不是重放)**:重放整条 CloseGoal 链要拉起内核的 pre-step、
@@ -14,13 +18,22 @@
  * 跑法:node test/contrast.test.mjs
  */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { applyMutations, derive, deriveKnowledge, emptyState } from '../ui/lib/fold.js'
 import { graphProjection } from '../ui/lib/domain-language.js'
 
 const PORT = join(import.meta.dirname, '..')
-const SESSION_FILE = join(PORT, '.tmp-session', 'session.v4.jsonl')
+/**
+ * 真会话的两处来源。**优先完整导出**(本机),退回**随仓库的夹具**(CI / 干净检出)。
+ * 两处都没有 = 仓库坏了(夹具是提交进版本库的),那时如实报错,不假装通过。
+ */
+const SESSION_SOURCES = [join(PORT, '.tmp-session', 'session.v4.jsonl'), join(import.meta.dirname, 'fixtures', 'session-9dc1fe2b-closegoal.jsonl')]
+const SESSION_FILE = SESSION_SOURCES.find((candidate) => existsSync(candidate)) ?? null
+if (SESSION_FILE === null) {
+	console.log(`✗ 对照套件需要一个真会话导出,但两处都没有:\n  ${SESSION_SOURCES.join('\n  ')}\n  夹具是随仓库提交的:它不在,说明仓库被改坏了(见 test/fixtures/README.md)。`)
+	process.exit(1)
+}
 const KERNEL_SOURCE = readFileSync(join(PORT, 'preset', 'plugins', 'clearai-kernel.js'), 'utf8')
 const HOST_SOURCE = readFileSync(join(PORT, 'ui', 'lib', 'index.js'), 'utf8')
 
@@ -132,6 +145,7 @@ function maskCommentsAndStrings(text) {
 // throw / abort 都抹不掉;`turnDemand` 的 hold 与 `sweepEndedAudits` 才看得见它。
 
 console.log('\n【A 组 · 真会话:5 次结案的结局与账上的 audit 事实】')
+console.log(`  现场:${SESSION_FILE.includes('fixtures') ? '随仓库夹具' : '本机完整导出'} ${SESSION_FILE.replace(`${PORT}/`, '')}`)
 const events = readFileSync(SESSION_FILE, 'utf8')
 	.split('\n')
 	.filter((line) => line.trim() !== '')
