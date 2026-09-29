@@ -36,7 +36,7 @@ description: Use when working inside the ClearAI preset and you need the loop's 
 
 | 拍 | 你做什么 | 系统做什么 |
 |---|---|---|
-| 计划 | `CreatePlan`:每步写 `do`、`artifacts`(以何物为证)、`done_criteria`(判定标准) | 强制判据非空、自指检测、≤25 步、步骤 id 唯一 |
+| 计划 | `CreatePlan`:每步写 `do`、`artifacts`(以具体文件为证，目录不是物证)、`done_criteria`(判定标准) | 强制判据非空、自指检测、≤25 步、步骤 id 唯一 |
 | 执行 | 用文件、bash、公网做实际工作;产物落盘 | 只读并行 / 写入串行;沙箱;每次写入进账 |
 | 观察 | 拿到结果 | 登记观测(只追加) |
 | 反思 | `AdvancePlan` 交付 | 观测准入 → 裁决 → 写证据 → 推进 |
@@ -52,7 +52,7 @@ description: Use when working inside the ClearAI preset and you need the loop's 
 交付时系统按这个次序检查（以当前 ClearAI DSH 内核的准入契约为准）：
 
 1. 声明的产物**存在**吗?不存在 → 硬拦 `l1`,并告诉你三条合法出路(做出来 / 改声明 / 带因作废)。
-2. 存在但是**空**吗?空目录、零字节文件 → 同样硬拦:空文件不是观测。
+2. 声明的是**目录**吗?目录不是物证；系统报告其中的文件数与字节数，改为声明具体文件。零字节文件同样硬拦:空文件不是观测。
 3. **结构合法**吗?`.json` 必须能解析;`.md` 去掉标题行后实质文本不足 20 字符算「仅有标题」。其他扩展名不做结构判定(不误伤)。
 4. 一个坐标都没声明 → `no_anchor` 硬拦:不改变世界的步骤没有可验收的东西。
 5. 坐标齐备且判据非空 → **不是放行,是送评**(`needs_audit`)。

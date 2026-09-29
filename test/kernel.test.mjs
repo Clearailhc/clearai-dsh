@@ -140,6 +140,7 @@ function makeHost() {
 			return hostGoal
 		},
 		block(agent, ref, reason) {
+			if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(String(reason?.code ?? ''))) throw new Error('goal block reason requires a lower-kebab-case code and a non-empty message')
 			goalCalls.push(['block', reason?.code])
 			hostGoal = { ...hostGoal, phase: 'blocked', blockedReason: reason, activation: 'disarmed', revision: hostGoal.revision + 1 }
 			return hostGoal
@@ -915,6 +916,44 @@ console.log('\n【做的人不判自己】')
 	check('自判也写进证据面(依据可复查)', eventsOf('evidence/recorded').some((event) => event.evaluator === 'self'))
 }
 
+console.log('\n【目录物证与 blocked 出口】')
+{
+	const host = makeHost()
+	const session = 'session-blocked-recovery'
+	apply(host.ctx, {})
+	const directory = 'lab/directory-evidence'
+	mkdirSync(join(WORKSPACE, directory), { recursive: true })
+	writeFileSync(join(WORKSPACE, directory, 'evidence.md'), '# 目录内的证据\n\n这份文件让目录的文件数和字节数可核对。\n')
+	await callOn(host, session, 'CreatePlan', { steps: [{ id: 'd1', do: '错误地声明目录', artifacts: [directory], done_criteria: '目录中有证据' }] })
+	const directoryPlan = host.service.state(session).plans[0]
+	let directoryRejected = null
+	for (let i = 0; i < 3; i += 1) directoryRejected = await callOn(host, session, 'AdvancePlan', { step_id: 'd1', verdict: 'support', basis: '目录中有证据' })
+	check('目录物证 → 如实拒绝并报告文件数和字节数', directoryRejected.ok === false && /目录不是物证/.test(directoryRejected.message) && /含 1 个文件、\d+ 字节/.test(directoryRejected.message) && !/空目录/.test(directoryRejected.message), String(directoryRejected.message))
+	const blocked = await callOn(host, session, 'AdvancePlan', { step_id: 'd1' })
+	check('blocked 守卫只列可执行的解拦动作', blocked.ok === false && blocked.code === 'plan_blocked' && /AmendPlan/.test(blocked.message) && /RefinePlan/.test(blocked.message) && /VoidPlanStep/.test(blocked.message) && !/让人介入/.test(blocked.message), String(blocked.message))
+	const refined = await callOn(host, session, 'RefinePlan', { step_id: 'd1', done_criteria: '具体证据文件存在且非空' })
+	check('RefinePlan → 清除 blocked 与连拦计数', refined.ok === true && host.service.state(session).plans[0].blocked === undefined && host.service.state(session).blocks[`${directoryPlan.id}:d1`] === undefined, JSON.stringify(host.service.state(session)))
+	for (let i = 0; i < 3; i += 1) await callOn(host, session, 'AdvancePlan', { step_id: 'd1' })
+	const voided = await callOn(host, session, 'VoidPlanStep', { step_id: 'd1', reason: '目录不能作为物证' })
+	check('VoidPlanStep 被拦步骤 → 清除 blocked 与连拦计数', voided.ok === true && host.service.state(session).plans[0].blocked === undefined && host.service.state(session).blocks[`${directoryPlan.id}:d1`] === undefined, JSON.stringify(host.service.state(session)))
+	await callOn(host, session, 'ClosePlan', {})
+
+	const files = Array.from({ length: 6 }, (_, index) => `lab/recovered-${index + 1}.md`)
+	for (const file of files) write(file, '# 证据\n\n这是一份非空的 Markdown 物证，足以通过结构准入。\n')
+	await callOn(host, session, 'CreatePlan', {
+		steps: [
+			{ id: 'a1', do: '缺少的旧产物', artifacts: ['lab/missing-recovery.md'], done_criteria: '旧产物存在且非空' },
+		],
+	})
+	const recoveryPlan = host.service.state(session).plans[1]
+	for (let i = 0; i < 3; i += 1) await callOn(host, session, 'AdvancePlan', { step_id: 'a1' })
+	const amended = await callOn(host, session, 'AmendPlan', { step: { id: 'a2', do: '交付六份具体文件', artifacts: files, done_criteria: '六份具体文件均存在且非空' } })
+	check('AmendPlan → 清除 blocked 与连拦计数', amended.ok === true && host.service.state(session).plans[1].blocked === undefined && host.service.state(session).blocks[`${recoveryPlan.id}:a1`] === undefined, JSON.stringify(host.service.state(session)))
+	await callOn(host, session, 'VoidPlanStep', { step_id: 'a1', reason: '改用六份具体文件' })
+	const recovered = await callOn(host, session, 'AdvancePlan', { step_id: 'a2', verdict: 'support', basis: '六份 Markdown 物证均非空且已写入读数。' })
+	check('解拦后 AdvancePlan 按当前首个未落定步重验六份非空 md', recovered.ok === true && recovered.gate === 'needs_audit', `${recovered.code}/${recovered.gate}`)
+}
+
 console.log('\n【序位不变量 + 唯一完成动词之外不动进度】')
 {
 	const closed = await call('ClosePlan', {})
@@ -1026,8 +1065,9 @@ console.log('\n【无人值守续跑:宿主目标只当驱动器,不当事实源
 	await callOn(unattended, U, 'CreatePlan', { steps: [{ id: 'w1', do: '做一个不会落盘的产物', artifacts: ['lab/never.txt'], done_criteria: 'lab/never.txt 存在且非空' }] })
 	let stalled = null
 	for (let i = 0; i < 3; i += 1) stalled = await callOn(unattended, U, 'AdvancePlan', { step_id: 'w1' })
-	check('连拦达阈值 → 令牌置阻塞(clearai_loop_stalled)', stalled.blocked === true && calls().includes('block'), calls().join(','))
-	check('阻塞码是策略自有的稳定码', unattended.hostGoal?.blockedReason?.code === 'clearai_loop_stalled', String(unattended.hostGoal?.blockedReason?.code))
+	check('连拦达阈值 → 令牌置阻塞(clearai-loop-stalled)', stalled.blocked === true && calls().includes('block'), calls().join(','))
+	check('阻塞码是策略自有的合法 kebab-case 码', unattended.hostGoal?.blockedReason?.code === 'clearai-loop-stalled', String(unattended.hostGoal?.blockedReason?.code))
+	check('合法阻塞码成功收回续跑窗口', !/续跑窗口收回失败/.test(String(stalled.message)), String(stalled.message))
 	check('卡片里如实说了窗口被置阻塞', /续跑窗口已置阻塞/.test(String(stalled.message)))
 
 	// 目标达成 → 收回令牌(不再叫醒一个已经收尾的目标)。用一枚干净的令牌走这条路径:
@@ -1052,8 +1092,8 @@ console.log('\n【无人值守续跑:宿主目标只当驱动器,不当事实源
 	await callOn(givingUp, 'session-giveup', 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
 	const abandoned = await callOn(givingUp, 'session-giveup', 'CloseGoal', { outcome: 'abandoned', note: '缺仪器读数' })
 	check(
-		'abandoned 结案 → 令牌置阻塞(clearai_loop_abandoned),而不是 complete',
-		givingUp.hostGoal?.phase === 'blocked' && givingUp.hostGoal?.blockedReason?.code === 'clearai_loop_abandoned',
+		'abandoned 结案 → 令牌置阻塞(clearai-loop-abandoned),而不是 complete',
+		givingUp.hostGoal?.phase === 'blocked' && givingUp.hostGoal?.blockedReason?.code === 'clearai-loop-abandoned',
 		String(givingUp.hostGoal?.phase),
 	)
 
