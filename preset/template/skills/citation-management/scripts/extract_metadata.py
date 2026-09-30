@@ -11,9 +11,8 @@ import argparse
 import time
 import re
 import json
-import xml.etree.ElementTree as ET  # only for the Element type annotation
 from defusedxml.ElementTree import fromstring as safe_fromstring
-from typing import Optional, Dict, List, Tuple
+from typing import Any, Optional, Dict, List, Tuple
 from urllib.parse import urlparse
 
 class MetadataExtractor:
@@ -401,7 +400,7 @@ class MetadataExtractor:
             return str(date_parts[0][0])
         return ''
     
-    def _extract_year_pubmed(self, article: ET.Element) -> str:
+    def _extract_year_pubmed(self, article: Any) -> str:
         """Extract year from PubMed XML."""
         year = article.findtext('.//Journal/JournalIssue/PubDate/Year', '')
         if not year:
@@ -567,4 +566,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
