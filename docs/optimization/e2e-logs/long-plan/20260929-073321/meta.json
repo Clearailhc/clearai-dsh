@@ -1,0 +1,13 @@
+{
+  "scenario": "long-plan",
+  "model": "abhome/deepseek-flash",
+  "profile": "headless(装出来的包)",
+  "overrides": {
+    "autonomy": "unattended",
+    "maxAutoTurns": 4
+  },
+  "elapsedSeconds": 283,
+  "how": "DSH_HOME=<repo>/.tmp-e2e/nativehome node tools/e2e-run.mjs --scenario long-plan --autonomy unattended --max-turns 4",
+  "sessionFile": "session-e0b36075-e57c-48fd-a78c-51b5a63b4f34",
+  "at": "2026-09-29T07:33:21.349498Z"
+}

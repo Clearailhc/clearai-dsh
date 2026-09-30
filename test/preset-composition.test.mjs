@@ -40,11 +40,24 @@ console.log('\n【① 挂载表:工作方式回来了,第二本账没有】')
 	check('tool-subagent 挂载且带模型选择设置', /@deepseek-ai\/dsh-tool-subagent'/.test(PRESET) && /modelSelectionSettings: true/.test(PRESET))
 	check('tool-workflow 挂载', /@deepseek-ai\/dsh-tool-workflow/.test(PRESET))
 	check('tool-ralph 挂载', /@deepseek-ai\/dsh-tool-ralph/.test(PRESET))
-	check('workflow worker 与 delegation realm 在(workflows 服务要有自己的 realm)', /workflow-worker-thread/.test(PRESET) && /workflowEngine: true/.test(PRESET))
+	/**
+	 * 2026-09-28:workflow 引擎换代——旧宿主是 `dsh-workflow-worker-thread`(新宿主已无此包),
+	 * 现在是 `dsh-workflow-ptc`。断言同时改成**按行匹配**:上一版是全文匹配,而删掉那行时留下的
+	 * 注释里恰好写着旧包名,断言于是被自己的注释骗过(它显示 ✓,其实那行早就没了)。
+	 */
+	check('workflow 引擎与 delegation realm 在(workflows 服务要有自己的 realm)', /^ {4}- id: workflow-ptc$/m.test(PRESET) && /workflowEngine: true/.test(PRESET))
 	check('tool-goal 仍未挂载(目标只有一本账)', !/@deepseek-ai\/dsh-tool-goal/.test(PRESET))
 	check('command-goal 仍未挂载(原生 /goal 与 ClearAI 目标撞名)', !/dsh-command-goal/.test(PRESET))
 	check('plan-mode 仍未挂载(两套计划纪律不并存)', !/dsh-plan-mode/.test(PRESET))
-	check('clearai-commands 插件挂载', /\.\/plugins\/commands\.js/.test(PRESET))
+	// 同理按行锚定:包内插件的 name 现在是包内子路径(理由见 CHANGELOG 0.2.4)。
+	check('clearai-commands 插件挂载', /^\s+name: 'clearai-dsh\/presets\/clearai\/plugins\/commands\.js'$/m.test(PRESET))
+	/**
+	 * 知识门是本部署的**产品立场**(内核缺省 false ⇒ 断言始终是加法)。
+	 * 它必须真的写在 preset 里,否则「结论要有形态」这条纪律在真跑里根本不存在——
+	 * 而那正是长跑里本体三张图长不出来的原因:完成函数里没有它们。
+	 */
+	check('知识门在本部署里是开的(内核缺省关,立场写在 preset)', /requireTypedPromotion: true/.test(PRESET))
+	check('假设数量下限 2 仍在(开工要有候选对比,与知识门是两条立场)', /minHypotheses: 2/.test(PRESET))
 }
 
 console.log('\n【② 命令注册形状】')

@@ -2,11 +2,11 @@
  * verify-lifecycle —— preset 与包的**生命周期**验收(S4):升级 / 卸载 / 用户 fork。
  *
  * 为什么单开一个工具:这三件事都不是「装一次能不能用」,而是**时间轴上的行为**——
- *   · 升级:换版本重装,层栈不能重复、组合不能丢行、名册 root 不能断;
- *   · 卸载:行、bundles、node_modules、名册 root 四处都要回到装之前,不留悬空引用;
+ *   · 升级:换版本重装,层栈不能重复、组合不能丢行、预设归属不能断;
+ *   · 卸载:行、bundles、node_modules、预设归属四处都要回到装之前,不留悬空引用;
  *   · 用户 fork:播种出去的副本,**用户改过的文件永远不被覆盖**,卸载时也只删自己播的。
  *
- * 判据全部是机械的(文件哈希、bundles 列表、组合里的行、名册 root 表达式),
+ * 判据全部是机械的(文件哈希、bundles 列表、组合里的行、预设归属行/表达式),
  * 全部在一个**一次性 DSH_HOME** 里跑,不碰真实部署。
  *
  * 跑法:node tools/verify-lifecycle.mjs [--keep]
@@ -46,8 +46,8 @@ const realHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
 for (const name of ['.credentials.yaml', 'settings.yaml']) {
 	if (existsSync(join(realHome, name))) cpSync(join(realHome, name), join(HOME, name))
 }
-console.log(`【生命周期验收】DSH_HOME=${HOME}(profile 用官方 **web** 模板:名册只在挂它的部署里存在,`)
-console.log('                       而 S4 要验的正是「名册 root 在升级/卸载后还在不在」)')
+console.log(`【生命周期验收】DSH_HOME=${HOME}(profile 用官方 **web** 模板:预设归属只在挂它的部署里存在,`)
+console.log('                       而 S4 要验的正是「预设归属在升级/卸载后还在不在」)')
 console.log(`  v1=${V1}\n  v2=${V2}`)
 
 const build = (out, version) => {
@@ -85,6 +85,21 @@ const composedRows = () => {
 	return String(run.stdout ?? '')
 }
 const profileManifest = () => JSON.parse(readFileSync(join(HOME, 'profiles', 'life', 'package.json'), 'utf8'))
+/**
+ * 预设的**归属**在组合里(装上了/还在/已经没了,看的就是它)。
+ *
+ * 名册注册在宿主 0.1.7-alpha.1 换代了:「root 目录扫描」→「组合里的声明行」。判据按组合里
+ * 出现哪一代的名册行分档,旧判据不删、只在新宿主上让位(与 `tools/verify-clean-install.mjs`
+ * 的 ④/④′ 同一套读法)——2026-09-28 实测:这四条断言里留在旧机制上的那两条,在新宿主上**必红**,
+ * 而红的原因(机制换了,不是包坏了)从输出里看不出来。
+ */
+const presetAnchored = (rows) => {
+	if (rows.includes('- id: agent-preset-registry')) {
+		const at = rows.indexOf('- id: preset-clearai')
+		return at >= 0 && /name:\s*'@deepseek-ai\/dsh-agent-preset'/.test(rows.slice(at, at + 600)) && rows.includes('clearai-dsh/presets/')
+	}
+	return /agent-presets[\s\S]{0,400}node_modules\/clearai-dsh\/presets\//.test(rows)
+}
 const pkgDir = join(HOME, 'profiles', 'life', 'node_modules', 'clearai-dsh')
 
 // ── ① 用户 fork:播种 / 改过不覆盖 / 卸载只删自己播的 ──────────────────────
@@ -92,7 +107,8 @@ console.log('\n① 用户 fork(把预设播种到用户根,改过的不覆盖)')
 build(V1, '0.1.0')
 const bin = join(V1, 'bin', 'clearai.mjs')
 const seedEnv = { ...process.env, DSH_HOME: HOME }
-const seed = (extra = []) => spawnSync('node', [bin, 'seed', '--root', FORK_ROOT, ...extra], { encoding: 'utf8', env: seedEnv })
+/** `--lang zh`:①下面的断言读中文文案,而 CLI 从 0.2.2 起跟系统语言走。语言判据本身在 ④′ 单独验。 */
+const seed = (extra = []) => spawnSync('node', [bin, 'seed', '--root', FORK_ROOT, '--lang', 'zh', ...extra], { encoding: 'utf8', env: seedEnv })
 const first = seed()
 check('播种成功并报出条数', first.status === 0 && /播种到/.test(String(first.stdout)), String(first.stdout ?? '').split('\n')[0])
 const seededFile = join(FORK_ROOT, 'clearai', 'preset.yml')
@@ -107,14 +123,14 @@ check('再播一次:改过的文件**没被覆盖**(哈希不变)', sha(seededFi
 check('并且如实报出漂移', /你改过|没覆盖/.test(String(second.stdout)), String(second.stdout ?? '').split('\n').filter((line) => line.includes('漂移') || line.includes('改过')).join(' '))
 const otherFile = join(FORK_ROOT, 'clearai', 'plugins', 'prompts.js')
 const otherHash = sha(otherFile)
-const unseed = spawnSync('node', [bin, 'unseed', '--root', FORK_ROOT], { encoding: 'utf8', env: seedEnv })
+const unseed = spawnSync('node', [bin, 'unseed', '--root', FORK_ROOT, '--lang', 'zh'], { encoding: 'utf8', env: seedEnv })
 check('撤销播种:没改过的删掉,改过的保留', !existsSync(otherFile) && existsSync(seededFile), JSON.stringify({ 其他: existsSync(otherFile), 改过的: existsSync(seededFile) }))
 check('撤销时如实报「保留了你改过的」', /保留/.test(String(unseed.stdout)), String(unseed.stdout ?? '').replace(/\n/g, ' ').slice(0, 120))
 rmSync(FORK_ROOT, { recursive: true, force: true })
 writeFileSync(ledgerPath, '{}\n', 'utf8')
 void otherHash
 
-// ── ② 升级:换版本重装,层栈/行/root 都不许坏 ──────────────────────────────
+// ── ② 升级:换版本重装,层栈/行/预设归属都不许坏 ────────────────────────────
 console.log('\n② 升级(0.1.0 → 0.1.1 重装)')
 const v1 = install(V1)
 check('0.1.0 装上了', v1.status === 0, String(v1.stderr ?? '').slice(-200))
@@ -135,7 +151,7 @@ const hashTree = (root) => {
 }
 check('层栈里有 clearai-dsh(且只一次)', beforeBundles.filter((name) => name === 'clearai-dsh').length === 1, beforeBundles.join(' · '))
 check('组合里有 clearai-host 行', /^- id: clearai-host$/m.test(beforeRows))
-check('名册 root 指向包内 presets(表达式已在补丁层)', /agent-presets[\s\S]{0,400}node_modules\/clearai-dsh\/presets\//.test(beforeRows))
+check('预设归属在组合里(新宿主:preset-clearai 声明行;旧宿主:名册 root 表达式)', presetAnchored(beforeRows))
 
 build(V2, '0.1.1')
 const v2 = install(V2)
@@ -153,7 +169,7 @@ const builtTree = hashTree(V2)
 delete builtTree['INVENTORY.txt']
 check('层栈没有重复(升级后仍只有一次)', afterBundles.filter((name) => name === 'clearai-dsh').length === 1, afterBundles.join(' · '))
 check('组合里 clearai-host 行仍在', /^- id: clearai-host$/m.test(afterRows))
-check('名册 root 仍在且仍指向包内', /agent-presets[\s\S]{0,400}node_modules\/clearai-dsh\/presets\//.test(afterRows))
+check('升级后预设归属仍在(同一条判据)', presetAnchored(afterRows))
 {
 	const differing = Object.keys(builtTree).filter((rel) => installedTree[rel] !== builtTree[rel])
 	const missing = Object.keys(builtTree).filter((rel) => installedTree[rel] === undefined)
@@ -166,7 +182,7 @@ check('名册 root 仍在且仍指向包内', /agent-presets[\s\S]{0,400}node_mo
 check('包内清单版本是新的', JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')).version === '0.1.1')
 
 // ── ③ 卸载:四处都要回到装之前 ──────────────────────────────────────────────
-console.log('\n③ 卸载(行 / bundles / node_modules / 名册 root)')
+console.log('\n③ 卸载(行 / bundles / node_modules / 预设归属)')
 const removed = install(V2, ['--uninstall'])
 const finalBundles = profileManifest().dsh?.profile?.bundles ?? []
 const finalRows = composedRows()
@@ -175,7 +191,7 @@ check('bundles 里没有它了', !finalBundles.includes('clearai-dsh'), finalBun
 check('dependencies 里也没有了', profileManifest().dependencies?.['clearai-dsh'] === undefined)
 check('组合里没有 clearai-host 行(不留悬空引用)', !/^- id: clearai-host$/m.test(finalRows))
 check('包目录已删', !existsSync(pkgDir))
-check('名册 root 也随包一起没了', !/node_modules\/clearai-dsh\/presets\//.test(finalRows))
+check('预设归属也随包一起没了(不留悬空引用)', !presetAnchored(finalRows) && !/node_modules\/clearai-dsh\/presets\//.test(finalRows))
 
 // ── ④ 随包的 install 动词:读者会敲的那一条命令,走的是同一条原生路 ───────────
 console.log('\n④ 随包的 install 动词(node bin/clearai.mjs install)')
@@ -183,7 +199,11 @@ const HOME2 = mkdtempSync(join(tmpdir(), 'clearai-verb-'))
 for (const name of ['.credentials.yaml', 'settings.yaml']) {
 	if (existsSync(join(realHome, name))) cpSync(join(realHome, name), join(HOME2, name))
 }
-const verb = spawnSync('node', [join(V2, 'bin', 'clearai.mjs'), 'install', '--home', HOME2, '--profile', 'web', '--dist', V2], { encoding: 'utf8', env: { ...process.env, DSH_HOME: HOME2 }, timeout: 900000 })
+/**
+ * `--lang zh` 是**刻意**的:下面两条断言读的是中文文案,而安装侧输出从 0.2.2 起跟系统语言走
+ * (CI runner 的 locale 是 C.UTF-8 ⇒ 默认英文)。语言判据本身在 ④′ 单独验,两条各管一件事。
+ */
+const verb = spawnSync('node', [join(V2, 'bin', 'clearai.mjs'), 'install', '--home', HOME2, '--profile', 'web', '--dist', V2, '--lang', 'zh'], { encoding: 'utf8', env: { ...process.env, DSH_HOME: HOME2 }, timeout: 900000 })
 check('install 动词成功退出', verb.status === 0, String(verb.stderr ?? '').slice(-200))
 const verbProfile = join(HOME2, 'profiles', 'web', 'package.json')
 const verbManifest = existsSync(verbProfile) ? JSON.parse(readFileSync(verbProfile, 'utf8')) : null
@@ -192,6 +212,17 @@ check('bundles 里有它(宿主自己对的账)', (verbManifest?.dsh?.profile?.b
 /** 两件事分开验:它给了**读数**(宿主行进了组合),也给了**下一步**(重启),不是只说一句成功。 */
 check('它报出宿主行真的进了组合(读数,不是断言)', /宿主行\s+在组合里/.test(String(verb.stdout)), String(verb.stdout ?? '').split('\n').filter((line) => line.includes('宿主行')).join(' '))
 check('它报出下一步(重启)', /下一步/.test(String(verb.stdout)))
+
+/**
+ * ④′ 安装侧输出**跟系统语言走**。0.2.1 的 CLI 无论系统是什么都说中文;这里钉住判据的优先级:
+ * `--lang` > 环境变量;`C` / `POSIX` 是「没有语言信息」,按英文。
+ * 用 `unseed` 验(它不碰网络、不碰 profile),不为了验一句话再装一遍。
+ */
+const langOut = (args, env) => String(spawnSync('node', [join(V2, 'bin', 'clearai.mjs'), 'unseed', ...args], { encoding: 'utf8', env: { ...process.env, DSH_HOME: HOME2, ...env }, timeout: 60000 }).stdout ?? '')
+check('--lang zh 说中文(系统是 C 也一样)', /没有播种记账/.test(langOut(['--lang', 'zh'], { LC_ALL: 'C' })), langOut(['--lang', 'zh'], { LC_ALL: 'C' }))
+check('--lang en 说英文(系统是中文也一样)', /nothing was seeded/.test(langOut(['--lang', 'en'], { LC_ALL: 'zh_CN.UTF-8' })), langOut(['--lang', 'en'], { LC_ALL: 'zh_CN.UTF-8' }))
+check('LC_ALL=zh_CN.UTF-8 ⇒ 自动中文', /没有播种记账/.test(langOut([], { LC_ALL: 'zh_CN.UTF-8' })), langOut([], { LC_ALL: 'zh_CN.UTF-8' }))
+check('LC_ALL=C ⇒ 自动英文(没有语言信息)', /nothing was seeded/.test(langOut([], { LC_ALL: 'C' })), langOut([], { LC_ALL: 'C' }))
 rmSync(HOME2, { recursive: true, force: true })
 
 // ── 收尾 ────────────────────────────────────────────────────────────────────

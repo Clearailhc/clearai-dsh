@@ -1,0 +1,17 @@
+{
+  "name": "dsh-profile-web",
+  "private": true,
+  "dependencies": {
+    "clearai-dsh": "file:/tmp/clearai-release/dist/clearai-dsh"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "clearai-dsh"
+      ],
+      "patchReload": "live"
+    }
+  }
+}

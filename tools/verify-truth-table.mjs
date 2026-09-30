@@ -16,6 +16,11 @@
  *   ⑨ 真值表声称的计数与代码常量一致
  *   ⑩ 文档/注释里写下的「N 件工具 / N 段提示词」与代码算出来的数一致
  *   ⑪ 仓库根没有孤儿副本(旧内核拷贝、重复测试)——那是第二本账
+ *   ⑫ 假设数量下限 = 2（preset 立产品立场,内核有 hypotheses_too_few 那道门）
+ *   ⑬ source.code 可被证伪（文件在、符号在、没有行号）
+ *   ⑭ 非 implemented 必须交代归宿；known_mismatch 只写当下的不符
+ *   ⑮/⑯ **反向**(代码 → 表):代码里写下的变更类型必须都在 `events` 里登记,
+ *       而 `events` 里每条又必须指得到真机制、真的出现在代码里
  *
  * 跑法：node tools/verify-truth-table.mjs
  */
@@ -184,6 +189,217 @@ check(/hypotheses_too_few/.test(KERNEL), '⑫ 内核有 hypotheses_too_few 这�
 check(
 	/假设至少两条/.test(PROMPTS),
 	'⑫ loop-contract 写明了假设纪律(模型得先知道规则,门才不会天天误伤)',
+)
+
+// ── ⑬ source.code 必须**可被证伪**:文件在、符号在、没有行号 ─────────────────
+/**
+ * `source.code` 是「这条机制落在哪」的声明。它原来是一段带**行号**的散文
+ * (`clearai-kernel.js-3178`),而行号随每次编辑腐烂——真值表于是长期指着不存在的位置,
+ * 谁也没发现。这里把它变成**可以被机器证伪**的东西:
+ *   · 出现的每个文件路径必须真的存在;
+ *   · 出现的每个标识符必须在**它所属的那一段**里真的出现(按 `;` 切段,段首的路径即归属);
+ *   · 不许出现行号(它必烂;要指位置就指符号)。
+ * 这不是风格检查:一条「已实现」的机制指不出真实的落点,它就该红。
+ */
+const CODE_STOPWORDS = new Set(['case', 'the', 'and', 'file', 'group', 'js', 'mjs', 'yml', 'json', 'md'])
+const codeProblems = []
+for (const mechanism of TABLE.mechanisms) {
+	const code = mechanism.source?.code
+	if (typeof code !== 'string' || code === '') continue
+	if (/(?:\.js|\.mjs|\.yml|\.json|\.md)[-:]\d+/.test(code)) {
+		codeProblems.push(`${mechanism.id}: source.code 里还有行号(行号必烂,请指符号)`)
+		continue
+	}
+	let owner = null
+	for (const segment of code.split(';')) {
+		const trimmed = segment.trim()
+		if (trimmed === '') continue
+		const path = /[\w./-]+\.(?:js|mjs|yml|json|md)/.exec(trimmed)
+		if (path !== null) {
+			owner = path[0]
+			if (!existsSync(join(PORT, owner))) codeProblems.push(`${mechanism.id}: source.code 指向不存在的文件 ${owner}`)
+		}
+		if (owner === null) continue
+		let body = null
+		try {
+			body = readFileSync(join(PORT, owner), 'utf8')
+		} catch {
+			continue
+		}
+		// 路径本身会被标识符正则切碎(`preset`/`plugins`/`kernel`),先把它整段挖掉再认符号。
+		const symbols = (path === null ? trimmed : trimmed.replace(path[0], ' ')).match(/[A-Za-z_][A-Za-z0-9_]{2,}/g) ?? []
+		for (const identifier of symbols) {
+			if (CODE_STOPWORDS.has(identifier)) continue
+			if (!body.includes(identifier)) codeProblems.push(`${mechanism.id}: ${owner} 里找不到符号 ${identifier}`)
+		}
+	}
+}
+check(codeProblems.length === 0, '⑬ 每条机制的 source.code 都能被证伪(文件在、符号在、没有行号)', codeProblems.slice(0, 6).join(' ;; '))
+
+// ── ⑭ 非 implemented 的条目必须交代归宿；不符字段不许再写计划 ────────────────
+/**
+ * coverage §5 立了三分法:**变成机制 / 保持设计目标 / 已删除并记账**。没有这一栏,
+ * 「还没做」与「决定不做」在表里长得一模一样,读的人会一直把设计目标当待办。
+ * 同时:`known_mismatch` 是**不符**字段——它描述的是文档/注释与代码当下的矛盾,
+ * 不是「阶段 N 计划做什么」。行号与计划措辞都不许再出现(行号必烂,计划会落地)。
+ */
+const DESTINATIONS = new Set(['become-mechanism', 'stay-design-only', 'deleted'])
+const destinationProblems = []
+const mismatchProblems = []
+for (const mechanism of TABLE.mechanisms) {
+	if (mechanism.status !== 'implemented') {
+		if (!DESTINATIONS.has(mechanism.destination)) destinationProblems.push(`${mechanism.id}: status=${mechanism.status} 却没有归宿(${String(mechanism.destination)})`)
+	}
+	const mismatch = mechanism.known_mismatch
+	if (typeof mismatch !== 'string') continue
+	if (/(?:kernel|fold|index|client|brain|prompts)\.js[-:]\d+/.test(mismatch)) mismatchProblems.push(`${mechanism.id}: known_mismatch 里还有行号`)
+	if (/阶段\s*\d+\s*(计划|待|实现)|留给阶段|to be done in phase/i.test(mismatch)) mismatchProblems.push(`${mechanism.id}: known_mismatch 里写的是计划,不是当下的不符`)
+}
+check(destinationProblems.length === 0, '⑭ 每条非 implemented 的机制都交代了归宿', destinationProblems.slice(0, 4).join(' ;; '))
+check(mismatchProblems.length === 0, '⑭ known_mismatch 只写当下的不符(不写行号、不写计划)', mismatchProblems.slice(0, 4).join(' ;; '))
+
+// ── ⑮/⑯ 反向(代码 → 表)：代码里写下的变更类型必须在表里登记 ─────────────────
+/**
+ * 上面 ①–⑭ 只走**一个方向**：拿表里的条目去问代码。于是「代码里新长了一条机制、
+ * 表里没登记」这种漏登记永远不会红——本轮就有三条机制(A2 独立落账通道 / A3 digest 复用 /
+ * A6 宿主读面降级)在表外活了一整轮，谁也没发现。这里补上反方向。
+ *
+ * 抽取规则**只认语法位置**，不认「长得像事件名的字符串」：
+ *   · `t: '<字面量>'`（含 `t: cond ? 'a' : 'b'` 这种三元写法）；
+ *   · fold.js 的 `case '<字面量>'`（折法认得的 kind）；
+ *   · fold.js 的 `LEDGER_ONLY_MUTATIONS`（只留台账、不折视图的那一组）。
+ * 为什么不扫「所有形如 a/b 的字符串」：`ctx.on('agent/pre-step')`、`ctx.emit('clearai/brain')`、
+ * `internal/status`、`tool/result` 也都是那个形状，但它们不是账本变更——按语法位置抽，
+ * 这批假阳性自动出局；注释里的示例由 stripComments 先抹掉（等长替换，便于回原文取上下文）。
+ * 已知边界：`t: \`...\`` 这种模板拼接抽不到，所以下面先把「有没有模板拼接」单独钉成判据——
+ * 否则「反向检查是完整的」这句话是空的。
+ */
+/** 把注释换成等长空白（字符串内容保留，因为事件名就住在字符串里）。 */
+function stripComments(text) {
+	let out = ''
+	let state = null // null | "'" | '"' | '`' | '//' | '/*'
+	for (let index = 0; index < text.length; index += 1) {
+		const char = text[index]
+		const next = text[index + 1]
+		if (state === null) {
+			if (char === '/' && next === '/') {
+				state = '//'
+				out += '  '
+				index += 1
+				continue
+			}
+			if (char === '/' && next === '*') {
+				state = '/*'
+				out += '  '
+				index += 1
+				continue
+			}
+			if (char === "'" || char === '"' || char === '`') state = char
+			out += char
+			continue
+		}
+		if (state === '//') {
+			if (char === '\n') {
+				state = null
+				out += char
+			} else out += ' '
+			continue
+		}
+		if (state === '/*') {
+			if (char === '*' && next === '/') {
+				state = null
+				out += '  '
+				index += 1
+				continue
+			}
+			out += char === '\n' ? '\n' : ' '
+			continue
+		}
+		if (char === '\\') {
+			out += char + (next ?? '')
+			index += 1
+			continue
+		}
+		if (char === state) state = null
+		out += char
+	}
+	return out
+}
+
+const MUTATION_SHAPE = /^[a-z][a-z0-9-]*\/[a-z][a-z0-9_-]*$/
+const SCANNED_FILES = ['preset/plugins/clearai-kernel.js', 'ui/lib/index.js', 'ui/lib/fold.js']
+const SCANNED_TEXT = Object.fromEntries(SCANNED_FILES.map((rel) => [rel, stripComments(read(rel))]))
+/** `t:` 位置上的字面量（三元 `t: cond ? 'a' : 'b'` 也算：`t:` 之后到行尾/逗号之间的字面量都收）。 */
+function tLiterals(text) {
+	const found = new Set([...text.matchAll(/\bt:\s*'([^'\\\n]+)'/g)].map((match) => match[1]).filter((value) => MUTATION_SHAPE.test(value)))
+	for (const statement of text.matchAll(/\bt:\s*([^,\n]*(?:'[^'\n]*'[^,\n]*)+)/g)) {
+		for (const literal of statement[1].matchAll(/'([^'\\\n]+)'/g)) if (MUTATION_SHAPE.test(literal[1])) found.add(literal[1])
+	}
+	return found
+}
+/** 折法的 `case '<字面量>'`：它认得的事件类型。 */
+const caseLiterals = (text) => new Set([...text.matchAll(/case\s+'([^'\\\n]+)'/g)].map((match) => match[1]).filter((value) => MUTATION_SHAPE.test(value)))
+
+const FOLD_TEXT = SCANNED_TEXT['ui/lib/fold.js']
+const kernelWritten = tLiterals(SCANNED_TEXT['preset/plugins/clearai-kernel.js'])
+const hostWritten = tLiterals(SCANNED_TEXT['ui/lib/index.js'])
+const foldKnown = caseLiterals(FOLD_TEXT)
+const ledgerOnlyInCode = [...(/export const LEDGER_ONLY_MUTATIONS = \[([^\]]*)\]/.exec(FOLD_TEXT)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((match) => match[1])
+/** 代码里出现的全部变更类型（生产者 ∪ 折法认得的 ∪ 只留台账那组）。 */
+const codeEvents = new Set([...kernelWritten, ...hostWritten, ...foldKnown, ...ledgerOnlyInCode])
+
+const templateBuilt = SCANNED_FILES.filter((rel) => /\bt:\s*`/.test(SCANNED_TEXT[rel]))
+check(
+	templateBuilt.length === 0,
+	'⑮ 反向抽取的完整性前提:代码里没有模板拼接出来的变更类型',
+	`以下文件把事件名拼在模板串里,反向抽取会漏:[${templateBuilt.join(' ')}]`,
+)
+
+const tableEvents = Array.isArray(TABLE.events) ? TABLE.events : []
+const declaredEvents = new Map(tableEvents.map((entry) => [String(entry?.t ?? ''), String(entry?.by ?? '')]))
+const missingInTable = [...codeEvents].filter((type) => !declaredEvents.has(type)).sort()
+check(
+	missingInTable.length === 0,
+	'⑮ 反向:代码里的每个变更类型都在真值表 events 里(漏登记 ⇒ 红)',
+	`代码里有、表里没登记:[${missingInTable.join(' ')}]`,
+)
+
+/**
+ * 反方向也要红：凭空登记一个代码里不存在的事件、或把 `by` 指向一个不存在的机制，
+ * 都会让这张表变成第四本账。`ledger-only` 是唯一允许的非机制取值（它就指
+ * `LEDGER_ONLY_MUTATIONS` 那一组），而且要**逐字相等**——不然「登记成 ledger-only」
+ * 就成了把新事件塞进白名单让检查变绿的后门。
+ */
+const mechanismIds = new Set(TABLE.mechanisms.map((m) => m.id))
+const eventProblems = []
+const seenEventTypes = new Set()
+for (const entry of tableEvents) {
+	const type = String(entry?.t ?? '')
+	const by = String(entry?.by ?? '')
+	if (seenEventTypes.has(type)) eventProblems.push(`${type}: events 里重复登记`)
+	seenEventTypes.add(type)
+	if (by !== 'ledger-only' && !mechanismIds.has(by)) eventProblems.push(`${type}: by='${by}' 指不到任何机制`)
+	if (!codeEvents.has(type)) eventProblems.push(`${type}: 代码里没有这个变更类型(凭空登记)`)
+}
+check(
+	eventProblems.length === 0,
+	'⑯ 反向:events 里每条都指得到存在的机制,且真的在代码里出现(凭空登记 ⇒ 红)',
+	eventProblems.slice(0, 6).join(' ;; '),
+)
+const declaredLedgerOnly = tableEvents.filter((entry) => entry?.by === 'ledger-only').map((entry) => String(entry?.t)).sort()
+const ledgerOnlyProblems = []
+if (JSON.stringify(declaredLedgerOnly) !== JSON.stringify([...ledgerOnlyInCode].sort())) {
+	ledgerOnlyProblems.push(`表里 ledger-only=[${declaredLedgerOnly.join(' ')}] 代码里 LEDGER_ONLY_MUTATIONS=[${[...ledgerOnlyInCode].join(' ')}]`)
+}
+// 两条例外的理由：只留台账的那组必须是**内核写的事实**，而且折法不许认得它（认得就该折进视图）。
+for (const type of ledgerOnlyInCode) {
+	if (foldKnown.has(type)) ledgerOnlyProblems.push(`${type}: 折法认得它,却把它标成只留台账`)
+	if (!kernelWritten.has(type)) ledgerOnlyProblems.push(`${type}: 内核不写它,却把它标成只留台账`)
+}
+check(
+	ledgerOnlyProblems.length === 0,
+	'⑯ events 里 ledger-only 那一组与 LEDGER_ONLY_MUTATIONS 逐字一致(不是让检查变绿的后门)',
+	ledgerOnlyProblems.slice(0, 4).join(' ;; '),
 )
 
 // ── 结果 ─────────────────────────────────────────────────────────────────────

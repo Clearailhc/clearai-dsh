@@ -18,7 +18,10 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
-import { AUTONOMY_VALUES, HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, renderCard, view } from './fold.js'
+import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
+import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
+import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
+import { install as installInvariants } from './invariant.js'
 
 export const name = 'clearai-host'
 /** 投影注册表与会话存储:两个都是宿主服务,这里只消费。 */
@@ -64,10 +67,29 @@ const viewSchema = z.looseObject({
 	facts: z.array(z.unknown()),
 	forks: z.array(z.unknown()),
 	scouts: z.array(z.unknown()),
-	settlement: z.array(z.unknown()),
 })
 
 export function apply(ctx) {
+	/**
+	 * **把自己的不变量交给宿主**(`@deepseek-ai/dsh-invariants`)——但只在它挂了的时候。
+	 *
+	 * 为什么在这里注册、而不是另起一行组合:不变量服务**不是每个部署都挂**的诊断面
+	 * (它由组合决定,还带 `enabled` 与包名白/黑名单)。在我们这一侧读一次、有就加入,
+	 * 于是任何挂了它的部署(宿主自己的开发组合、我们跑验收的那套)都自动带上这几条契约,
+	 * 而没挂它的部署里这段是**零成本**的一行判断,不是一个永远等服务的悬空行。
+	 *
+	 * 认不出服务、或这个名字已经被别的路径注册过(同包名重复注册宿主会抛):都安静放过——
+	 * 诊断面不许把产品弄坏。
+	 */
+	try {
+		const invariants = ctx.get('invariants')
+		if (invariants !== undefined && typeof invariants.register === 'function') {
+			invariants.register('clearai-dsh', installInvariants)
+		}
+	} catch (error) {
+		ctx.logger?.warn?.(`clearai: 宿主不变量没挂上 ${String(error?.message ?? error).slice(0, 160)}`)
+	}
+
 	// 视图按状态引用记忆:同一份状态不重复造对象(投影用 Object.is 判断要不要发布)
 	let lastState = null
 	let lastView = null
@@ -78,9 +100,118 @@ export function apply(ctx) {
 		return lastView
 	}
 
+	/**
+	 * ═══ 注入服务只走**方法式**,读不到就降级 ═══
+	 *
+	 * 属性式读服务(把服务名当属性取)在 Cordis 里走一条 Proxy walk:只要本 fiber
+	 * (或链路上某个声明了同一条 inject 的祖先 fiber)此刻不是 ACTIVE,它**当场抛**
+	 * `cannot get required service "…" in inactive context`。
+	 * 方法式 `ctx.get(名字)` 走的是全局注册表,同一时刻只回 `undefined`——
+	 * 于是「这一刻读不到」成了一个**可表示**的值:读面降级,而不是把一次跑了几分钟的
+	 * 评审整个作废。所以宿主半一次都不许出现属性式访问;`inject` 声明保留,
+	 * 它保证正常路径上的就位顺序。
+	 *
+	 * 连方法式都炸(不该发生)时也走同一条降级:读面不许变成失败面。
+	 *
+	 * 降级这件事本身也要留痕:落一条**宿主健康事实**——只增不删,只留最近这些条,
+	 * 随 `state()` / `view()` 读取暴露(字段 `hostHealth`)。它与折法从会话日志折出来的
+	 * 那份**同形**(`[{ scope, detail, at }]`),所以面板与卡不必为「本地的」和「折出来的」
+	 * 写两套读法。
+	 */
+	const HOST_HEALTH_MAX = 20
+	const hostHealth = []
+	/**
+	 * **内容寻址的 id**:`scope + detail` 一样就是同一条观测。
+	 *
+	 * 为什么不用时间戳:`at` 每次都不同,同一条降级会被记成无数条。用内容算 id 之后,
+	 * ① 本地数组自己按 id 去重;② 内核把观测落成 `host/inactive` 变更时用同一个 id,
+	 * 折法按 id 幂等 ⇒ **账本上一条、读数上一条**,不会因为"宿主记一次、内核再落一次"变成两条。
+	 */
+	const hostHealthId = (scope, detail) => {
+		let h = 0x811c9dc5
+		const text = `${scope}\u0000${detail}`
+		for (let index = 0; index < text.length; index += 1) {
+			h ^= text.charCodeAt(index)
+			h = Math.imul(h, 0x01000193) >>> 0
+		}
+		return `hh-${h.toString(16).padStart(8, '0')}`
+	}
+	const noteHostHealth = (scope, detail) => {
+		const id = hostHealthId(scope, detail)
+		if (hostHealth.some((entry) => entry.id === id)) return
+		hostHealth.push({ id, scope, detail, at: Date.now() })
+		if (hostHealth.length > HOST_HEALTH_MAX) hostHealth.splice(0, hostHealth.length - HOST_HEALTH_MAX)
+	}
+	/**
+	 * 与折法折出来的那份**合并**,不是覆盖:折法手里的 `hostHealth` 是账本上的历史,
+	 * 本地这份是「这一刻读不到」的观测;两者都是读者要知道的事实,谁都不许把谁盖掉。
+	 * 本地一条都没有时原样返回,正常路径上的返回值与加这条机制之前逐字段相同。
+	 */
+	const withHostHealth = (value) => {
+		if (hostHealth.length === 0) return value
+		const folded = Array.isArray(value?.hostHealth) ? value.hostHealth : []
+		// 账本上已经有同一条(内核把它落成了 `host/inactive`)就不再加本地那份:同一条事实只报一次。
+		const known = new Set(folded.map((entry) => entry?.id).filter((id) => id !== undefined && id !== null))
+		const fresh = hostHealth.filter((entry) => !known.has(entry.id)).map((entry) => ({ ...entry }))
+		if (fresh.length === 0) return { ...value, hostHealth: folded }
+		return { ...value, hostHealth: [...folded, ...fresh] }
+	}
+
+	const sessionsOf = () => {
+		let sessions
+		try {
+			sessions = ctx.get('sessions')
+		} catch {
+			sessions = undefined
+		}
+		if (sessions === undefined || sessions === null) {
+			noteHostHealth('sessions', '宿主半此刻拿不到会话服务:读面退回空态(不是「这个会话不存在」)')
+			return undefined
+		}
+		return sessions
+	}
+
+	/** 投影服务:同上一条降级语义,同一条方法式访问。 */
+	const projectionsOf = () => {
+		let projections
+		try {
+			projections = ctx.get('sessionProjections')
+		} catch {
+			projections = undefined
+		}
+		if (projections === undefined || projections === null) {
+			noteHostHealth('sessionProjections', '宿主半此刻拿不到投影服务:读面退回空态(不是「这个会话没有状态」)')
+			return undefined
+		}
+		return projections
+	}
+
+	/**
+	 * 本插件 fiber 掉出 ACTIVE 时留一条观测。
+	 *
+	 * 读面降级只解释「这一刻读不到」,解释不了「为什么会读不到」——那要看 fiber 生命周期。
+	 * Cordis 的 `internal/status` 事件带着 (fiber, 旧状态),订阅面就挂在它上面;
+	 * 事件面是所有 fiber 共用的,所以过滤靠**身份**(`ctx.fiber`)而不是名字。
+	 * 观测面的失败不许把产品弄坏:订阅抛错也只是少一条证据。
+	 */
+	const FIBER_ACTIVE = 2
+	try {
+		ctx.on('internal/status', (fiber, oldValue) => {
+			if (fiber !== ctx.fiber || oldValue !== FIBER_ACTIVE) return
+			const detail = `宿主半 fiber 掉出 ACTIVE(${oldValue} → ${fiber.state}):两个注入服务这一刻都读不到,读面退回空态`
+			noteHostHealth('sessions', detail)
+			noteHostHealth('sessionProjections', detail)
+			ctx.logger?.warn?.(`clearai: ${detail}`)
+		})
+	} catch (error) {
+		ctx.logger?.warn?.(`clearai: fiber 生命周期观测没挂上 ${String(error?.message ?? error).slice(0, 160)}`)
+	}
+
 	ctx.effect(
-		() =>
-			ctx.sessionProjections.register({
+		() => {
+			const projections = projectionsOf()
+			if (projections === undefined || typeof projections.register !== 'function') return () => {}
+			const disposer = projections.register({
 				key: 'clearai',
 				stateVersion: STATE_VERSION,
 				stateSchema,
@@ -94,16 +225,31 @@ export function apply(ctx) {
 					return applyEvent(state, event)
 				},
 				wire: { viewSchema, view: memoView },
-			}),
+			})
+			return typeof disposer === 'function' ? disposer : () => {}
+		},
 		'clearai: session projection unit',
 	)
 
 	/** 读面:预设侧与运行态卡都走这里,不各自维护一份状态。 */
 	const stateOf = (sessionId) => {
-		const session = ctx.sessions.get(sessionId)
-		if (session === undefined) return emptyState()
-		return ctx.sessionProjections.stateOf(session, 'clearai') ?? emptyState()
+		const sessions = sessionsOf()
+		if (sessions === undefined || typeof sessions.get !== 'function') return withHostHealth(emptyState())
+		const session = sessions.get(sessionId)
+		if (session === undefined) return withHostHealth(emptyState())
+		const projections = projectionsOf()
+		if (projections === undefined || typeof projections.stateOf !== 'function') return withHostHealth(emptyState())
+		return withHostHealth(projections.stateOf(session, 'clearai') ?? emptyState())
 	}
+
+	/** 会话服务的读,给路由用:同一条降级语义(拿不到 ⇒ `undefined`)。 */
+	const sessionOf = (sessionId) => {
+		const sessions = sessionsOf()
+		return sessions === undefined || typeof sessions.get !== 'function' ? undefined : sessions.get(sessionId)
+	}
+
+	/** 面板视图:与 `state()` 同一份降级读数(健康事实一起交出去)。 */
+	const viewOf = (sessionId) => withHostHealth(view(stateOf(sessionId)))
 
 	/**
 	 * ═══ 人门通道(D2=B:面板可写,但只写人门动作)═══
@@ -375,15 +521,74 @@ export function apply(ctx) {
 				note: typeof request.note === 'string' ? request.note.slice(0, 200) : null,
 			}
 			/**
-			 * 技能名与运行档都要先过**取值校验**,再进日志。
+			 * **本体四动词(人的通道)**:词条字段在 RPC 边界上只收表内的那几个、带长度上限——
+			 * 表外的字段一律剥掉(不是拒:人门消息进日志,日志里不该出现没约定的形状)。
+			 * 判据与模型工具**同一份**:校验用 `domain-language` 的纯函数,对当前词汇判,
+			 * 不过就 400 并把问题清单带回界面——「点了报成功、账上一字未改」不许再出现。
+			 */
+			const ONTOLOGY_GATE_ACTIONS = ['register_term', 'register_predicate', 'revise_term', 'deprecate_entry']
+			if (ONTOLOGY_GATE_ACTIONS.includes(action)) {
+				const raw = request.entry ?? {}
+				const str = (key, cap = 300) => (typeof raw[key] === 'string' ? raw[key].slice(0, cap) : undefined)
+				detail.entry = {
+					id: str('id', 40),
+					label: str('label', 60),
+					gloss: str('gloss'),
+					basis: str('basis'),
+					parent: str('parent', 40),
+					domain: str('domain', 40),
+					reason: str('reason', 200),
+					unit: str('unit', 24),
+					aliases: Array.isArray(raw.aliases) ? raw.aliases.filter((item) => typeof item === 'string').slice(0, 8).map((item) => item.slice(0, 60)) : undefined,
+					functional: raw.functional === true ? true : undefined,
+					range:
+						raw.range !== null && typeof raw.range === 'object' && ['statement', 'quantity', 'formula', 'code', 'reference'].includes(String(raw.range.form))
+							? { form: String(raw.range.form), unit: typeof raw.range.unit === 'string' ? raw.range.unit.slice(0, 24) : undefined, term: typeof raw.range.term === 'string' ? raw.range.term.slice(0, 40) : undefined }
+							: undefined,
+				}
+				const lexicon = stateOf(sessionId).lexicon
+				let problems = []
+				if (action === 'register_term') problems = validateTerm(lexicon, detail.entry)
+				if (action === 'register_predicate') problems = validatePredicate(lexicon, detail.entry)
+				if (action === 'revise_term' || action === 'deprecate_entry') {
+					const id = detail.entry.id ?? ''
+					const known = [...(lexicon.terms ?? []), ...(lexicon.predicates ?? [])].find((item) => item.id === id)
+					if (known === undefined) problems = [`unknown_entry:词汇里没有这个条目:${id}`]
+					else if (action === 'deprecate_entry' && known.status === 'deprecated') problems = [`already_deprecated:${id} 已经是废止状态`]
+					else if ((detail.entry.reason ?? '') === '' || detail.entry.reason === undefined) problems = ['reason_required:这一步要写一句缘由']
+					else if (action === 'revise_term' && detail.entry.label === undefined && detail.entry.gloss === undefined && detail.entry.aliases === undefined) problems = ['nothing_to_revise:label / gloss / aliases 至少给一个']
+				}
+				if (problems.length > 0) return reply(400, { ok: false, error: 'entry_rejected', problems })
+			}
+			/**
+			 * 技能名要先过**取值校验**,再进日志。
 			 *
-			 * 技能名必须是原生那条语法(kebab-case):它曾要变成 `/<名字>` 手势(原生 pre-step
+			 * 它必须是原生那条语法(kebab-case):这个名字会变成 `/<名字>` 手势(原生 pre-step
 			 * 认的就是 `[a-z0-9]+(-[a-z0-9]+)*`),放别的形状进去只会静默不生效——比拒绝更坏。
-			 * 运行档只认两档;写别的值进去会让「立约即授权」这条机制在半个会话里失效,
-			 * 而人以为切好了。表外的值一律拒,与动词白名单同一套纪律。
+			 * 表外的值一律拒,与动词白名单同一套纪律。
 			 */
 			if (action === 'promote_skill' && (detail.skill === null || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(detail.skill))) {
 				return reply(400, { ok: false, error: 'bad_skill_name' })
+			}
+			/**
+			 * 撤回 / 维持一条事实:先**核标的还在不在**。
+			 *
+			 * 与提问卡那条同一个理由:`buildGateQuestion` 认不出那道门时回 409,而不是摆一张过期的卡。
+			 * 这里如果不核,面板会收到一句成功、而账本上一字未改——「点了报成功、什么都没做」
+			 * 正是这套界面最不能有的那类东西。
+			 */
+			if (action === 'confirm_provisional') {
+				const projected = view(stateOf(sessionId))
+				const fork = (projected.forks ?? []).find((item) => item.id === detail.fork)
+				if (fork === undefined) return reply(409, { ok: false, error: 'fork_not_found' })
+				if (fork.merge?.provisional !== true) return reply(409, { ok: false, error: 'not_provisional' })
+				if (fork.merge?.confirmed !== null && fork.merge?.confirmed !== undefined) return reply(409, { ok: false, error: 'already_confirmed' })
+			}
+			if (action === 'retract_fact' || action === 'keep_fact') {
+				const projected = view(stateOf(sessionId))
+				const fact = (projected.facts ?? []).find((item) => item.id === detail.value)
+				if (fact === undefined) return reply(409, { ok: false, error: 'fact_not_found' })
+				if (fact.review !== null && fact.review !== undefined) return reply(409, { ok: false, error: 'fact_already_reviewed' })
 			}
 			/**
 			 * ── 混合路径:点我们那条 → 用**原生提问卡**问 ──────────────────────
@@ -423,9 +628,23 @@ export function apply(ctx) {
 					? `人在面板上裁决:采纳这条世界线(${detail.branch ?? '?'})。`
 					: action === 'promote_skill'
 						? `人在面板上采纳了候选技能「${detail.skill ?? '?'}」——它从此进你的技能目录。`
-						: '人在面板上做了一个动作。'
+						: action === 'confirm_provisional'
+							? `人复核了那次**临时采纳**(${detail.fork ?? '?'})并认可它:这个结论不再是「待复核」。`
+							: action === 'retract_fact'
+							? `人审查了被推翻的那条事实(${detail.value ?? '?'})后决定**撤回**它${detail.note === null ? '' : `,缘由:${detail.note}`}。`
+							: action === 'keep_fact'
+								? `人审查了被推翻的那条事实(${detail.value ?? '?'})后判定**证据不可靠,维持原事实**${detail.note === null ? '' : `,缘由:${detail.note}`}。`
+							: ONTOLOGY_GATE_ACTIONS.includes(action)
+								? `人在本体格里${action === 'register_term' ? `登记了概念「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'register_predicate' ? `登记了谓词「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'revise_term' ? `修订了「${detail.entry?.id ?? '?'}」的展示信息` : `废止了「${detail.entry?.id ?? '?'}」`}${detail.entry?.basis ? `,依据:${detail.entry.basis}` : ''}${detail.entry?.reason ? `,缘由:${detail.entry.reason}` : ''}。`
+								: '人在面板上做了一个动作。'
 			const followUp =
-				action === 'promote_skill'
+				ONTOLOGY_GATE_ACTIONS.includes(action)
+					? '这条词汇变更已落账(`by:user`),与模型工具落的是同一本账、同一套判据;词汇货架会在下一拍同步'
+					: action === 'confirm_provisional'
+					? '这条确认已经落账(`by:user`);那道门随之消失,续跑可以继续'
+					: action === 'retract_fact' || action === 'keep_fact'
+					? '这个决定已经落账,并会写进 `clear/knowledge/facts/` 那一份(下一轮引用它之前先看那条记录)'
+					: action === 'promote_skill'
 					? '候选状态正由内核改写(`status: active`),下一个回合它就在你的技能目录里'
 					/* 说准(rather than 说满):这句话写下的那一刻只到 inbox、还没进投影,
 					   所以不能断言「已经在投影里生效」——失效模式是模型看到它与卡片矛盾,停下来问人。 */
@@ -452,11 +671,13 @@ export function apply(ctx) {
 		 */
 		route('/api/clearai/deliverables', ['GET'], (httpRequest) => {
 			const url = new URL(httpRequest.url)
-			const session = ctx.sessions.get(url.searchParams.get('sessionId') ?? '')
+			const session = sessionOf(url.searchParams.get('sessionId') ?? '')
 			const cwd = session?.header?.cwd
 			if (typeof cwd !== 'string' || cwd === '') return reply(404, { ok: false, error: 'no_live_session' })
 			// 只挑叶子字段构造属于我们自己的 JSON:不把投影对象整体搬出去。
-			const state = ctx.sessionProjections.stateOf(session, 'clearai')
+			// 投影这一刻读不到 ⇒ 「声明」那一半给空;盘上「实际」那一半是读盘,不吃投影,照给。
+			const projections = projectionsOf()
+			const state = projections === undefined || typeof projections.stateOf !== 'function' ? null : projections.stateOf(session, 'clearai')
 			const stages = (state?.plans ?? []).map((plan) => ({
 				plan: plan.id,
 				status: plan.status,
@@ -524,7 +745,7 @@ export function apply(ctx) {
 		 */
 		route('/api/clearai/brain', ['GET'], async (httpRequest) => {
 			const url = new URL(httpRequest.url)
-			const session = ctx.sessions.get(url.searchParams.get('sessionId') ?? '')
+			const session = sessionOf(url.searchParams.get('sessionId') ?? '')
 			const cwd = session?.header?.cwd
 			if (typeof cwd !== 'string' || cwd === '') return reply(404, { ok: false, error: 'no_live_session' })
 			const skills = ctx.get('skills')
@@ -561,6 +782,37 @@ export function apply(ctx) {
 			return reply(200, { ok: true, complete: true, entries })
 		})
 
+		/**
+		 * `GET /api/clearai/inspector?sessionId=…&kind=…&id=…`
+		 *
+		 * **知识 Inspector**:图上点了一个节点或边,把它的定义 / 关系 / 断言 / 证据链 / 历史取回来。
+		 *
+		 * 为什么走路由而不是塞进 `view()`:选择是**动态**的——把每个节点每条边的完整链都预先
+		 * 推进投影,等于对一张 61 节点 / 147 边的图各算一遍,而人一次只看一个。
+		 * 组装仍然只有一处实现(`inspectGraphSelection`,纯函数在宿主半),所以
+		 * 「客户端自己拼证据链」这条口子没有开。
+		 *
+		 * 只读:**不产生任何变更**,也拿不到写入口。
+		 */
+		route('/api/clearai/inspector', ['GET'], async (httpRequest) => {
+			const url = new URL(httpRequest.url)
+			const sessionId = url.searchParams.get('sessionId') ?? ''
+			const session = sessionOf(sessionId)
+			if (session === undefined) return reply(404, { ok: false, error: 'no_live_session' })
+			/**
+			 * 直接用本模块的折法读状态,不走 `ctx.get('clearai')`:那条门面是同一条 fiber 上
+			 * 提供给**预设侧**用的,而这条路由只是把同一个纯函数接到 HTTP 上——
+			 * 中间多一跳服务解析,只会多一种「服务没接上」的失败模式。
+			 */
+			const projections = projectionsOf()
+			const state = projections === undefined || typeof projections.stateOf !== 'function' ? null : projections.stateOf(session, 'clearai')
+			if (state === null || state === undefined) return reply(200, { ok: true, found: false })
+			const found = inspectGraphSelection(state, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' }, derive(state))
+			/** 找不到不是错误:那个对象可能刚被废止或本来就不在(如实说 `found: false`,不编一份空的)。 */
+			if (found === null) return reply(200, { ok: true, found: false })
+			return reply(200, { ok: true, found: true, inspector: found })
+		})
+
 	})
 
 	ctx.effect(
@@ -570,8 +822,8 @@ export function apply(ctx) {
 				state: stateOf,
 				/** 派生:阶段/完成度/假设状态/世界线阶段,全部现算。 */
 				derive: (sessionId) => derive(stateOf(sessionId)),
-				/** 面板视图(与 wire 同一份)。 */
-				view: (sessionId) => view(stateOf(sessionId)),
+				/** 面板视图(与 wire 同一份,降级时一并交出席位健康事实)。 */
+				view: viewOf,
 				/**
 				 * 运行态卡:注给模型的**事实**。
 				 *
@@ -600,6 +852,52 @@ export function apply(ctx) {
 				preview: (sessionId, mutations) => {
 					const next = applyMutations(stateOf(sessionId), mutations)
 					return { state: next, card: renderCard(next), view: view(next) }
+				},
+				/**
+				 * **领域语言层的判据**(值形状、引用存在、值域、同一事实自洽)与货架正文。
+				 *
+				 * 为什么由宿主半提供,而不是预设侧自己写一份:判据**只能有一份**。
+				 * 预设侧的工具与这条路由要判的是同一件事,而两份实现必然漂成
+				 * 「登记时放行、升格时拒绝」——那种不一致在界面上与「这条还没验」长得一模一样。
+				 * 所以判据住在纯函数模块里,预设侧经这道门调用它。
+				 */
+				domain: {
+					validateTerm: (sessionId, draft) => validateTerm(stateOf(sessionId).lexicon, draft),
+					validatePredicate: (sessionId, draft) => validatePredicate(stateOf(sessionId).lexicon, draft),
+					/**
+					 * **递整份 state,不只递 lexicon**:断言的主体要能被指认(实例登记过)才算数,
+					 * 而「登记过哪些实例」住在 `state.entities` 里。只递词汇的话,那条判据永远无从判断,
+					 * 只能迁移期一律放行——那就等于没有这条判据。
+					 */
+					validateAssertions: (sessionId, assertions, options = {}) => validateAssertions(stateOf(sessionId), assertions, options),
+					/**
+					 * 货架正文。带 `mutations` 时按**这一步之后**的样子渲染——
+					 * 工具在返回前就把货架写好,读的人不必等下一回合。
+					 */
+					renderShelf: (sessionId, mutations = []) => {
+						const state = applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : [])
+						const next = derive(state)
+						// 在途命题也传进去:词汇刚立起来时「引用 0」会让人以为没人用,而断言已经在假设上了。
+						// `view`:货架的「使用」一节与运行态卡 / 右栏读**同一份**叙述(单一叙述源)。
+						return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses, { view: knowledgeViewOf(state) })
+					},
+					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
+					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
+					/**
+					 * **当前的图投影**(节点 / 边)。给内核用:谓词登记与 `Assert` 都要判
+					 * 「这个类型是已登记的概念吗」——判据只有一份,就在这张投影里。只读,不落盘。
+					 */
+					graph: (sessionId) => graphProjection(stateOf(sessionId)),
+				},
+				/**
+				 * **知识 Inspector**:一个选择 → 它的定义 / 关系 / 断言 / 证据链 / 历史。
+				 *
+				 * 组装住在纯函数里(`inspectGraphSelection`),这里只把当前状态喂给它——
+				 * 客户端因此永远拿不到「自己拼链」的机会,凡是读到链的地方都同源。
+				 */
+				inspector: (sessionId, selection) => {
+					const state = stateOf(sessionId)
+					return inspectGraphSelection(state, selection, derive(state))
 				},
 			}),
 		'clearai: read facade',

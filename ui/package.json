@@ -1,8 +1,8 @@
 {
   "name": "clearai-dsh",
-  "version": "0.1.0",
+  "version": "0.0.0-dev",
   "private": true,
-  "description": "ClearAI(DSH 版):宿主平面注册会话投影单元 `clearai`(纯 fold,把工具写下的变更记录算成视图),浏览器平面把它渲染成右栏「进展 / 世界树 / 外脑」、中栏「产物」与输入框下方的状态条——目标 → 假设 → 验证与工作 → 世界线 → 资料 → 事实。",
+  "description": "开发形态的面板半：由 install.sh 摊进 profile 的 node_modules，供宿主套件与本地调试使用。发行物的清单是仓库根目录那份 package.json（`lib/host.js` + `lib/fold.js` + `lib/client.js` + `presets/`）。",
   "type": "module",
   "main": "lib/index.js",
   "dependencies": {
@@ -14,13 +14,9 @@
     },
     "./client": {
       "default": "./lib/client.js"
-    },
-    "./cordis.patch.yml": "./cordis.patch.yml"
+    }
   },
   "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
     "client": {
       "platform": "web",
       "inject": [

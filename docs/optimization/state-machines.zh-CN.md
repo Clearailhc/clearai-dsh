@@ -35,6 +35,8 @@ stateDiagram-v2
 - `achieved` 之前必须先 `ClosePlan`：内核拒收「计划还开着」的结案。
 - `abandoned` 是如实放弃，不是失败清洗——记录保留。
 - 修订只增 `revision` 并追加 `reasons[]`，旧段不删。
+- 改「怎样算完成」这件事本身还有一条：`criteria/revised` 折进 `goal.criteriaHistory[]`（带独立裁决的 `audit`）。
+  它**不改** `done_criteria` 文本（文本走立约 / 修订那条路），改判据因此可查；`SetGoal` 的 `criteria_verdict` 要的就是这份审计键。
 
 ## 2. 计划（plan）· 已实现
 
@@ -102,9 +104,11 @@ stateDiagram-v2
 
 三个黏性规则（都在 `fold.js` 里）：
 
-- `refuted` 不被后续「不在清单里」改写成 `superseded`（`fold.js:272-277`）。
+- `refuted` 不被后续「不在清单里」改写成 `superseded`（`fold.js:396-411`）。
 - 已升格成事实的假设同样不许被悄悄替代（同一处 `promoted` 判断）。
 - 支持等级 `supportedLevel` 是 `derive()` 现算的最大值，不存。
+- 跳级理由 `level/skipped` 折进 `hypotheses[].skips[]`：`derive()` 把被理由覆盖的层从 `untouchedLevels` 里减掉，
+  所以写明理由会让 `levels_skipped` 那条缺口真的消失——理由本身就是它的出口，不是被无视。
 
 ## 5. 观测（observation）· 已实现
 
@@ -130,6 +134,8 @@ stateDiagram-v2
 ```
 
 `derive().pendingAudit` = 存在 `verdict === null` 的条目 → 阶段为 `auditing`，续跑 `hold`。
+同态复用记一条 `audit/reused`：`verdict` 是 `reused`，**不进** `support | refute | inconclusive` 这条判定，
+也不占 `null` 那个「在飞」的哨兵——所以复用旧裁决的步骤不会让系统一直等。
 失联裁决由 `sweepLostAudits` 收口，并把「这一拍刚判定失联」显式放行（`kernel.js:1904`）。
 
 ## 7. 证据（evidence）· 已实现
@@ -154,7 +160,10 @@ stateDiagram-v2
     promoted --> [*]
 ```
 
-`retracted` 在验证本体里有定义，但**当前没有任何生产者**——属设计目标，不在本图里。
+`retracted` **不在本图里，因为它不是一个被存储的状态**：推翻证据只**标记**事实（`refuted`，派生），
+由人决定**撤回**或**维持原事实**——两种结局都落同一条 `fact/reviewed`（撤回是终态，记录保留），
+投影再从 `fact.review` 把它读成派生状态。生产者在 `HUMAN_GATE_ACTIONS` 的 `retract_fact` / `keep_fact`
+与内核的 `markFactReviewed`；真值表那一行是 `fact-retraction`（已实现）。
 
 ## 9. 世界线（fork / branch）· 已实现
 
@@ -166,6 +175,7 @@ stateDiagram-v2
         [*] --> exploring_f: fork/created
         exploring_f --> exploring_f: worldline/prepared / executing / executed / branch_delivered
         exploring_f --> deciding: 所有分支秩 ≥ evaluated
+        deciding --> deciding: fork/recommended（算术给出推荐；只记事实，状态不变）
         deciding --> settled: fork/converged（算术给出唯一优胜者）
         deciding --> undecidable: fork/undecidable（算术给不出结果）
         undecidable --> undecidable: fork/arbitrated（仲裁判决落账，但**不改 settled**）
@@ -182,7 +192,7 @@ stateDiagram-v2
     end note
 ```
 
-三条「不是落选」的派生状态（`fold.js:961-996`，全部零新账）：
+三条「不是落选」的派生状态（`fold.js:2094-2129`，全部零新账）：
 
 | 派生 | 含义 |
 |---|---|
@@ -249,14 +259,86 @@ stateDiagram-v2
 
 要点：
 
-- `collectRetryMs`（默认 2000ms）决定「投影里还没落地就再收一次」——判据是**投影**，不是内存里的 `reported`。
+- 「投影里还没落地就再收一次」的判据是**投影**，不是内存里的 `reported`；重收的节拍是**回合边界**，没有间隔旋钮。
 - 同一 id 的 `scout/settled` 在 fold 里幂等，重复发布不会长出第二条事实。
 - 侦察工具面只读（`scoutToolFilter`），`MapScouts` 有 `mapScoutMax` / `mapScoutConcurrency` 上限。
 
-## 12. 事件清单覆盖表
+## 12. 领域词汇（lexicon）· 已实现
+
+存储字段：`state.lexicon.{terms[], predicates[]}`——账本里的本体事件折出来的那个形状。
+
+```mermaid
+stateDiagram-v2
+    [*] --> admitted: ontology/term_added / ontology/predicate_added
+    admitted --> admitted: ontology/term_revised / ontology/predicate_revised（只改展示信息；版本 +1，旧值留痕）
+    admitted --> deprecated: ontology/term_deprecated / ontology/predicate_deprecated（黏性终态，带缘由）
+    deprecated --> [*]
+```
+
+要点：
+
+- **两种本体是两个字段、两种权威**：`state.ontology` 是**过程本体**的形状（插件自己的后台流转结构，随发布变、不可运行时编辑）；`state.lexicon` 是**领域本体**（项目自己的语言：概念、谓词、值形态），由账本事件治理。
+- **没有删除**：废止只把条目改成 `deprecated`；条目、旧版本，以及引用过它的事实全部留着（与「被推翻的假设保留」同一条）。
+- **语义变化不走修订**：含义、主词域、值域、单值性变了 ⇒ 废止 + 注册新 id。稳定 id 的含义在历史上不许悄悄改变，否则旧事实会被今天的释义重写。
+- 断言与冲突**不在这张图里**：断言随 `fact/promoted` 落在事实上；冲突由 `derive()` 现算（单值谓词 + 同一主体 + 不同客体 + 两侧都未撤回），只暴露、不裁决。
+
+### 联动：本体层与过程层不互相推进
+
+- **词汇事件不推进任何过程对象**，过程事件也不改词汇——两个状态机不嵌套，它们之间只有**引用**这一种方向性关系（断言引用谓词与概念）。四处握手点见[领域本体 §8](../domain-ontology.zh-CN.md)。
+- **断言只在升格那一刻随事实落地**（`fact/promoted` 的 `hypothesis` 与 `assertions`）；冲突是 `derive()` 的现算读数，**不是状态，也不进闸门**。
+- **读面全是渲染**：`clear/ontology/domain.md`、`clear/knowledge/facts/INDEX.md`、运行态卡、面板本体图——同一份折法，没有第二本账。
+
+## 13. 实体与断言 · 已实现
+
+存储字段：`state.entities[]`、`state.entityAssertions[]`——**实体层的一等写入口**，与「已升格事实」
+（`state.facts[].assertions`）分开存、在投影里合起来画。
+
+```mermaid
+stateDiagram-v2
+    [*] --> registered: entity/registered（实例 + 依据 + 出处）
+    registered --> registered: entity/asserted（一句带出处的话；边在落账那一刻就成立）
+    registered --> [*]
+```
+
+要点：
+
+- **约定与观测分开**：`RegisterTerm` 是约定（概念，不需要依据），`RegisterInstance` 是观测
+  （实例，`basis` 与 `provenance` 必填），`Assert` 说一句关于某个已登记实例的话（`evidence` 必填）。
+- **实体不依赖目标裁决**：`entity/asserted` 在登记那一刻就产边。事实那条路照旧（独立裁决 → `fact/promoted`），
+  投影里两条边都在：`source='promoted'` 带等级与边界，`source='asserted'` 带出处、未经独立裁决。
+- **主体必须可指认**：断言主体必须是已登记实例（`validateAssertions` 的 `assert_subject_unknown`），
+  否则每个字都能读、却没人能核。
+- **升格仍会把断言补挂到同一实体上**（按 `${type}|${id}` 去重）：两条来源是**合并**，不是二选一。
+
+## 14. 宿主读面（降级也是事实）· 已实现
+
+存储字段：`state.hostHealth[]`（只增，封顶 20 条）。
+
+```mermaid
+stateDiagram-v2
+    [*] --> readable: 正常
+    readable --> degraded: host/inactive（sessions / sessionProjections 取不到）
+    degraded --> readable: 读面恢复
+```
+
+要点：
+
+- 读面取不到服务时**返回空态、不抛**，同时落一条 `host/inactive`：`这一刻读不到` 与 `没有东西`
+  是两件事，前者必须写在账上。
+- 会话工作目录取不到时**不写盘**（不回退 `process.cwd()`）：写不出去是诚实的降级，
+  写到别处是悄悄改了账本的位置。
+
+## 15. 事件清单覆盖表
 
 折法认识的**每一个**变更类型都在本节有归属；反过来，本文出现的每个 event 也都在折法词汇表里。
-`只留台账` 那一组不折进视图（它们是账本事实），因此不出现在任何状态机里。
+`只留台账` 那一组不折进视图（它们是账本事实），因此不出现在任何状态机里：
+
+- `git/committed`：一次**交付**在账本里落的提交（`AdvancePlan` / 世界线采纳）。
+- `git/snapshot`：**回合边界**上的工作区快照（本会话写过东西、且工作区真的脏才落），
+  以及采纳前的合并快照。它的作用不是归属（哪一笔写入属于哪次调用，内核看不见 bash），
+  而是**覆盖面**：立约之前的探索产出同样进账本、同样可查可恢复。
+- `git/restored`：`RestoreFile` 的恢复（恢复 = 新版本 + 新提交，永不回退）。
+- `admission/checked`：每次交付的准入读数（收下的会另落一条 `observation/recorded`）。
 
 | 事件 | 归属 | 是否折进视图 |
 |---|---|---|
@@ -284,6 +366,8 @@ stateDiagram-v2
 | `worldline/executed` | §9 世界线 | 是 |
 | `worldline/removed` | §9 世界线 | 是 |
 | `branch/delivered` | §9 世界线 | 是 |
+| `fact/reviewed` | §4 假设(人审查后撤回 / 维持) | 是 |
+| `fork/recommended` | §9 世界线 | 是 |
 | `fork/created` | §9 世界线 | 是 |
 | `fork/converged` | §9 世界线 | 是 |
 | `fork/undecidable` | §9 世界线 | 是 |
@@ -296,14 +380,24 @@ stateDiagram-v2
 | `scout/dispatched` | §11 侦察 | 是 |
 | `scout/settled` | §11 侦察 | 是 |
 | `continuation/set` | §10 自动续跑 | 是 |
-| `brain/candidates` | 外脑候选扫描（真值表 `skill-candidate`） | 是 |
-| `skill/promoted` | 技能采纳（真值表 `skill-candidate`） | 是 |
+| `ontology/term_added` | §12 领域词汇 | 是 |
+| `ontology/predicate_added` | §12 领域词汇 | 是 |
+| `ontology/term_revised` | §12 领域词汇 | 是 |
+| `ontology/predicate_revised` | §12 领域词汇 | 是 |
+| `ontology/term_deprecated` | §12 领域词汇 | 是 |
+| `ontology/predicate_deprecated` | §12 领域词汇 | 是 |
+| `entity/registered` | §13 实体与断言 | 是 |
+| `entity/asserted` | §13 实体与断言 | 是 |
+| `audit/reused` | §6 评估 | 是 |
+| `level/skipped` | §4 假设（跳级理由） | 是 |
+| `criteria/revised` | §1 目标（判据修订） | 是 |
+| `host/inactive` | §14 宿主读面 | 是 |
 | `admission/checked` | **只留台账** | 否 |
 | `git/committed` | **只留台账** | 否 |
 | `git/restored` | **只留台账** | 否 |
 | `git/snapshot` | **只留台账** | 否 |
 
-## 13. 与验证本体的关系
+## 16. 与验证本体的关系
 
 `docs/verification-loop.zh-CN.md` 描述的是一份**更完整的**验证本体（八状态机等）。
 它与本文件的区别必须在读的时候分清：
@@ -311,7 +405,7 @@ stateDiagram-v2
 | 本文件 | 验证本体 |
 |---|---|
 | 代码当前真的会走的转移 | 声明出来的完整形状 |
-| 每个状态都有生产者 | 部分状态目前没有生产者（如 `retracted`） |
+| 用到的状态都有生产者（含人复核落的 `retracted`） | 设计形状里仍有没生产者的状态（如八状态验证机的若干格，见 [known-gaps](../known-gaps.zh-CN.md)） |
 | 用于回答「现在到底保证什么」 | 用于回答「这套设计打算长成什么样」 |
 
 已确认的差异见 [`../known-gaps.zh-CN.md`](../known-gaps.zh-CN.md)。

@@ -74,6 +74,50 @@ console.log('\n【① 事件面:每一条边声明的 event,折法必须真认�
 	}
 }
 
+console.log('\n【⑤ 类型只许声明今天真能发生的取值:每个取值都要有生产者】')
+{
+	/**
+	 * 病灶:ontology 的 `source` 声明了五个取值,而内核只写过两个——
+	 * 「声明了「有种观测来自人上传」,而那条路根本不存在」是类型里的一句假话,
+	 * 而类型是给模型读的(它会据此以为可以指望那种观测)。
+	 *
+	 * 判据是**逐一对齐**:声明的取值集合 = 内核真的写过的取值集合。
+	 * 将来真接上一个人上传入口,这条会红,那时回来把取值加进声明即可。
+	 */
+	const observation = VERIFICATION_LOOP.objects.find((item) => item.name === 'observation')
+	const declared = observation.fields.find((field) => field.name === 'source')?.values ?? []
+	/**
+	 * 取「某条 `observation/recorded` 之后不远处」的 `source:`:不能用 `[^}]` 跨——
+	 * 生成材料 id 的模板字符串里就带 `}`,一跨就断(这条断言自己撞过一次)。
+	 */
+	const produced = new Set()
+	for (const chunk of kernelSource.split("t: 'observation/recorded'").slice(1)) {
+		const hit = /source: '([a-z_]+)'/.exec(chunk.slice(0, 400))
+		if (hit !== null) produced.add(hit[1])
+	}
+	check('折法/内核真的写过来源(不是空集)', produced.size > 0, [...produced].join(','))
+	check('声明的来源取值与实际生产者逐一对齐(多一个就是类型里的假话)', declared.length === produced.size && declared.every((value) => produced.has(value)), `声明:${declared.join(',')} · 实际:${[...produced].join(',')}`)
+}
+
+console.log('\n【①′ 验证状态表:每一行都要指得出今天的落点】')
+{
+	/**
+	 * 这张表曾经是一台「存储式状态机」的设计目标,而**没有一行有落点**;文档自己承认它是设计目标,
+	 * 但读者没法知道每个名字今天到底在哪。改写之后它是**落点记录**:每个状态要么指得出折法里的事实、
+	 * 要么明说「刻意不可表示 / 不是状态」。
+	 *
+	 * 这条断言就是那份记录的机械面:以后往里加一行而没写落点,当场红。
+	 */
+	const doc = readFileSync(join(PORT, 'docs', 'verification-loop.md'), 'utf8')
+	const rows = [...doc.matchAll(/^\| (planned|registered|authorized|submitted|awaiting|observed|evaluated|expired|aborted) \|([^|]*)\|([^|]*)\|/gm)]
+	check('状态表读得到全部九个名字(表被删或改名都会红)', rows.length === 9, `${rows.length} 行`)
+	/** 落点词:折法里真有的变更类型 / 现算函数 / 明确的「不是状态」。 */
+	const LANDING = /(Unrepresentable by design|unrepresentable|not a state|Facts, not a state|derive\(\)|plan\/|audit\/|observation\/|evidence\/|human\/released|VoidPlanStep|AbandonFork|inFlight|block\/counted|tests: \{hypothesis, level\}|l4Delivery)/
+	const homeless = rows.filter((row) => !LANDING.test(row[3])).map((row) => row[1])
+	check('每一行都指得出今天的落点(事实 / 现算 / 刻意不可表示)', homeless.length === 0, homeless.join(','))
+	check('表头写明它是落点记录,不是运行时保证', /Where it lives today/.test(doc) && /derived, not stored/i.test(doc))
+}
+
 console.log('\n【② 守卫:声明里每一个具名守卫,核心里真有那一处实现】')
 {
 	/**
@@ -88,6 +132,7 @@ console.log('\n【② 守卫:声明里每一个具名守卫,核心里真有那�
 		external_source_for_l4: /l4RejectSelfWritten/,
 		human_release_for_l4: /l4RequiresHumanRelease/,
 		block_threshold: /CFG\.blockedThreshold/,
+		human_retraction_decision: /markFactReviewed/,
 	}
 	const named = new Set(VERIFICATION_LOOP.objects.flatMap((object) => object.transitions.flatMap((edge) => edge.guards)))
 	for (const guard of named) {
@@ -120,7 +165,7 @@ console.log('\n【④ 状态词汇:声明写的,必须与折法里真用的**同
 	 */
 	const vocab = {
 		goal: ['open', 'achieved', 'abandoned', 'superseded'],
-		hypothesis: ['proposed', 'refuted', 'superseded'],
+		hypothesis: ['proposed', 'refuted', 'superseded', 'retracted'],
 		plan: ['active', 'closed'],
 		step: ['open', 'advanced', 'void'],
 		observation: ['accepted', 'rejected'],
@@ -130,9 +175,12 @@ console.log('\n【④ 状态词汇:声明写的,必须与折法里真用的**同
 		const missing = states.filter((state) => !object.states.includes(state))
 		check(`${name}:声明的状态里有折法真用的那几个(${states.join('/')})`, missing.length === 0, missing.join(','))
 	}
-	// §22 的黏性:终态不该被别的边改写 —— 声明里 refuted 零出边,折法里也必须真的黏住
-	const refutedSticky = /status !== 'refuted' && refutations > 0/.test(foldSource)
-	check('假设的 refuted 是黏性终态:声明零出边,折法真黏住(与 ClearAI 本体 P3 同一个修法)', refutedSticky)
+	/**
+	 * §22 的黏性:终态不该被别的边改写。声明里 `refuted` / `retracted` 都是零出边,
+	 * 折法里也必须真的黏住——**撤回优先于一切**:后来的支持证据不复活一条被撤回的事实。
+	 */
+	check('假设的 refuted 是黏性终态:声明零出边,折法真黏住(与 ClearAI 本体 P3 同一个修法)', /status !== 'refuted'[\s\S]{0,40}refutations > 0/.test(foldSource))
+	check('假设的 retracted 同样是黏性终态,而且优先于 refuted(人撤回的不因后来证据复活)', /retractedClaims\.has\(String\(hypothesis\.claim/.test(foldSource) && /status !== 'retracted' && refutations > 0/.test(foldSource))
 	const supersededGuarded = /item\.status !== 'refuted' && !promoted/.test(foldSource)
 	check('「已被替代」不改写终态:折法里那两处前提在', supersededGuarded)
 }
@@ -149,15 +197,30 @@ console.log('\n【⑤ 事实那一格:声明里的字段与名字,界面与内�
 	for (const object of VERIFICATION_LOOP.objects) {
 		check(`界面有 ${object.name} 的人话名字(声明里每个对象都要有,少一个就红)`, labelBlock.includes(`${object.name}:`), labelBlock.replace(/\s+/g, ' ').slice(0, 80))
 	}
-	check('「事实」那一格注册在中栏视图里(与产物并列)', /id: 'clearai-facts'/.test(clientSource) && /label: t\('事实'\)/.test(clientSource))
+	check('「本体」那一格注册在中栏视图里(与产物并列;视图 id 仍是 clearai-facts)', /id: 'clearai-facts'/.test(clientSource) && /label: t\('本体'\)/.test(clientSource))
 	check('进展与世界线不再重复(分工写进了注释而不是口头约定)', /计划与世界线的\*\*行\*\*归世界树/.test(clientSource) || /归世界树/.test(clientSource))
 	check('事实货架(INDEX.md)由内核维护,且面板读的是同一张表', /renderFactsIndex/.test(kernelSource) && /INDEX\.md/.test(kernelSource))
+}
+
+console.log('\n【计数类说法:文件里写的对象数必须与声明对得上】')
+{
+	/**
+	 * 「对象是八个」曾经同时写在文件头与 note 里,而 `objects` 声明的是**九个**
+	 * (多出来的是 `release`)——两处一起漂,谁也没发现。所以这个数不靠人眼:
+	 * 把正文里的汉字数抓出来,与声明的长度对账。
+	 */
+	const NUMERALS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 }
+	const source = readFileSync(join(PORT, 'preset', 'plugins', 'ontology.js'), 'utf8')
+	// 只认**计数声明**那两处(文件头与 note):`一个对象` 这类量词短语不是计数,别误伤。
+	const claimed = [...source.matchAll(/对象是([一二三四五六七八九十])个/g), ...source.matchAll(/^\s*note: '([一二三四五六七八九十])个对象/gm)].map((match) => NUMERALS[match[1]])
+	check('正文里的对象数读得出来(至少一处)', claimed.length >= 1, String(claimed))
+	check('正文里写的对象数与声明长度一致', claimed.every((value) => value === VERIFICATION_LOOP.objects.length), `写的:${claimed.join(',')} · 声明:${VERIFICATION_LOOP.objects.length}`)
 }
 
 console.log('\n【货架:本体落成 clear/ontology/<id>.md,而且是给模型读的】')
 {
 	const doc = describeOntology(VERIFICATION_LOOP)
-	check('货架正文含八个对象与五级', VERIFICATION_LOOP.objects.every((object) => doc.includes(`### ${object.name}`)) && doc.includes('## 五级'))
+	check('货架正文含全部对象与五级', VERIFICATION_LOOP.objects.every((object) => doc.includes(`### ${object.name}`)) && doc.includes('## 五级'))
 	check('货架正文写出转移与守卫(模型据此对得上本体)', doc.includes('→') && doc.includes('守卫:'))
 	check('内核确实会写它(货架函数与调用点都在)', /function ensureOntologyShelf/.test(kernelSource) && /ensureOntologyShelf\(sessionCwd\(sessionId\)\)/.test(kernelSource))
 	check('clear/ 骨架里有 ontology 那一格', /\['skills', 'memory', 'knowledge', 'audit', 'ontology'\]/.test(kernelSource))

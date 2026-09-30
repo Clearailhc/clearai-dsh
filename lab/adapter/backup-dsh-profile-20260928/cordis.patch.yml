@@ -1,0 +1,9 @@
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+
+# ClearAI 的宿主行不在这里 —— 它由包自己的 bundle patch 提供
+# (clearai-dsh/cordis.patch.yml,经 dsh.profile.bundles 生效)。
+# 这一段曾经是开发形态留下的两行插入;装成包之后它们会与包的那一行撞 id,
+# 所以 2026-09-12 摘掉了。改预设请用 `clearai-dsh seed`,不要往这里写。
+[]

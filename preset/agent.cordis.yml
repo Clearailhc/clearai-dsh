@@ -111,7 +111,8 @@
 
 # ── 认识论内核(本预设的灵魂) ───────────────────────────────────────────────
 
-# 22 件意图工具(目标 2 + 计划 8 + 世界线 6 + 侦察 2 + 外脑 2 + 账本 2,见 `MECHANISM_TOOLS`)
+# 32 件意图工具(目标 2 + 计划 8 + 世界线 6 + 侦察 2 + 外脑 2 + 账本 2 + 领域语言 10:
+          #   概念注册/修订/废止 6 + **实例登记 1** + **带出处的断言 1** + **跳级理由 1** + 查询 1,见 `MECHANISM_TOOLS`)
 # + 一个 guard + 每回合派生的运行态卡 + 只增不删的台账 + 面板数据路由。
 # 逐条对照 docs/loop-philosophy.md 的五条哲学,见 ./plugins/clearai-kernel.js 的文件头。
 #
@@ -132,7 +133,12 @@
 # 达成→收回,触礁/放弃→置阻塞,重启后自动补防。
 # 配置项就是机制的旋钮:
 - id: clearai-kernel
-  name: ./plugins/clearai-kernel.js
+  # 用**包内子路径**而不是 `./plugins/…`:宿主 ≥0.1.7-alpha.1 起,预设是声明行
+  # (presets/clearai/clearai.patch.yml)里的 plugins 列表,相对基准不再是本文件所在目录 ——
+  # 实测 `./plugins/clearai-kernel.js` 会以「never started」出现在名册的 broken 里。
+  # 包名 + 子路径从 profile 的 node_modules 解析,与宿主解析其它插件名同一条路,
+  # 由 package.json 的 `"./presets/*"` 导出放行。
+  name: 'clearai-dsh/presets/clearai/plugins/clearai-kernel.js'
   config:
     # 连拦阈值:同一件事连续冲闸这么多次没过,计划置 blocked、停下等人。
     # 默认 3;这里写 2 是产品立场「人就在旁边,早点回来问」。它是**质量闸,不随运行档变**。
@@ -146,10 +152,31 @@
     l4RequiresHumanRelease: true
     # L4 只认外部来源:做的人自己写过的路径不算观测
     l4RejectSelfWritten: true
-    # 「≥2 条假设」在 ClearAI 只是文案;这里默认不强制,要开就把值改成 2
     # 假设数量下限:首次立目标至少登记 2 条候选假设(0 条一样拦)。候选对比是检验的前提——
     # 只有一个猜想时,「验证」容易退化成找证据支持自己。修订目标不受此限。
+    # 内核缺省是 0(=机制中立);**这里写 2 是产品立场**,所以它是硬门,不是文案。
     minHypotheses: 2
+    # 知识门:将要升格的命题必须已有断言的形态,否则结案被拒(在派评估者**之前**拦)。
+    # 为什么要有它:断言一直是「加法,不是门槛」,于是模型的最优策略就是
+    # 「检索 → 总结 → 写报告」——本体图、实体图、认识论三张图都长不出来,
+    # 因为**完成函数里没有它们**。让缺口进卡只解决「看得见」,这一道解决「绕不过」。
+    # 它与 minHypotheses 是两条不同的立场(开工要有候选对比 / 结论要有形态),所以是两个键。
+    # 内核缺省 false(= 断言始终是加法);这里写 true 是产品立场。
+    requireTypedPromotion: true
+    # 实体门:断言主体还没落到实体图上 ⇒ 结案被拒。
+    # 为什么要有它:「本体写得漂亮、实体图是空的」是这套系统最容易交付出来的假完成
+    # (真实运行:451 条查到的实体,实体图 0 节点 / 0 边,而卡上写着「结构完整」)。
+    # 出口两条:RegisterInstance / Assert 补登记,或如实 abandoned。
+    requireLandedEntities: true
+    # 判据修订门:改判据文本要带一份独立裁决的 auditKey。
+    # 为什么要有它:判据是"怎样算完成",它一变前面所有工作的验收含义跟着变——
+    # 允许在同一次 SetGoal 里顺手改掉,等于允许把"做不到"重新定义成"做到了"。
+    requireCriteriaVerdict: true
+    # 跳级门:有等级被跳过而没写理由 ⇒ 结案被拒。
+    # 为什么要有它:supportedLevel 只是支持证据的最大值,跳级本来零代价——
+    # 于是"一路只在最贵的那一级交付"成了最优策略,便宜的检查从没被走过也没人知道为什么。
+    # 出口两条:ExplainLevelSkip 补理由,或如实 abandoned。
+    requireLevelReasons: true
     # deny_rules 十条里可移植的九条(路径越狱那条不搬:宿主沙箱已经拥有它,ClearAI 自己也说「不重复」)
     bashDenyRules: true
     # 独立评估者:spawn = fresh context(fork 会继承历史,做的人与判的人就分不开了)
@@ -188,8 +215,8 @@
     # 当场抛错——未知机制 / 未知工具 / 未知段 / 已关机制却仍列着它的工具,四种错法都在装配期炸,
     # 而不是静默少装一件工具、等某一轮才发现。
     #
-    # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(22 件意图工具、23 段提示词定义、
-    # 同一时刻 22 段在场——澄清协议那一段由 autonomy 在两套措辞里收敛)。
+    # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(32 件意图工具、24 段提示词定义、
+    # 同一时刻 23 段在场——澄清协议那一段由 autonomy 在两套措辞里收敛)。
     # 这些数字不靠人眼维持:`node tools/verify-truth-table.mjs` 会拿代码算出来的数核对它们。
     # 要裁剪就把 tools 或 sections 显式写出来:
     #   tools: [SetGoal, CreatePlan, AdvancePlan, ...]      # 名字必须都在工具目录里
@@ -210,7 +237,8 @@
 # 一个字都不落账) + 一个呈审捷径(plan-review,把「重新呈审」steer 给模型,
 # 授权记号仍走 RequestPlanReview 工具落账——命令处理器没有变更通道,这是权威边界)。
 - id: clearai-commands
-  name: ./plugins/commands.js
+  # 同上:改用包内子路径(见 clearai-kernel 那一行的说明)。
+  name: 'clearai-dsh/presets/clearai/plugins/commands.js'
 
 # ── 工作方式(非权威能力,交还原生) ──────────────────────────────────────────
 
@@ -253,8 +281,13 @@
         toolName: subagent_fork
         backgroundMode: continuable
 
-    - id: workflow-worker-thread
-      name: '@deepseek-ai/dsh-workflow-worker-thread'
+    # 2026-09-28:workflow 引擎换代 —— 旧宿主是 `dsh-workflow-worker-thread`,
+    # 宿主 ≥0.1.7-alpha.1 里换成 `dsh-workflow-ptc`(前者已下线,是另一支实现)。
+    # 它必须与下面两条工具**同处这个 `isolate: { workflowEngine: true }` 的 realm**,
+    # 否则 tool-workflow / tool-ralph 会一直「waiting for workflowEngine」——
+    # 名册会给这个预设记一条 broken(实测实录)。
+    - id: workflow-ptc
+      name: '@deepseek-ai/dsh-workflow-ptc'
       config:
         provider: spawn
 

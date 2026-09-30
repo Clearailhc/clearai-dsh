@@ -46,6 +46,18 @@ function discoverDshCheckout() {
 	}
 	throw new Error('找不到 DSH 宿主(查过 ~/.npm/_npx/*)。先 `npx @deepseek-ai/dsh --help` 让缓存就位。')
 }
+/**
+ * **怎么起 `dsh`**:PATH 上有就直接用,没有才退回 `npx --no-install`。
+ *
+ * 为什么不能只写 npx:不带版本号的 `npx --no-install @deepseek-ai/dsh` 会按 registry 的
+ * `latest` 标签解析,而缓存里那一份是**另一个版本**——两边一旦错开,npx 直接
+ * `canceled due to missing packages`,整场跑不起来(与代码无关的假红)。
+ * `dsh` 本来就在 PATH 上时(产品安装形态、或 npx 缓存自己的 bin)那才是该用的那个启动器。
+ */
+const DSH_LAUNCH = (() => {
+	if (spawnSync('dsh', ['--version'], { encoding: 'utf8' }).status === 0) return { command: 'dsh', prefix: [] }
+	return { command: 'npx', prefix: ['--no-install', '@deepseek-ai/dsh'] }
+})()
 const CHECKOUT = process.env.DSH_CHECKOUT ?? discoverDshCheckout()
 /** 预设来源:默认 = 仓库里那份;`--installed` 重指到**装出来的包**里那份(见下)。 */
 let PRESET_YML = join(PORT, 'preset', 'agent.cordis.yml')
@@ -270,7 +282,7 @@ const presetRows = parseYaml(readFileSync(PRESET_YML, 'utf8')).map((row) => ({
  * 已在的行跳过(不能重复插,id 会撞),预设特意**不挂**的那些行显式关掉(第二本账)。
  * 「已在的行」直接从 `dsh --dump-config` 读——不猜。
  */
-const dump = spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--profile', resident ? 'web' : 'headless', '--dump-config'], { encoding: 'utf8', timeout: 180000 })
+const dump = spawnSync(DSH_LAUNCH.command, [...DSH_LAUNCH.prefix, '--profile', resident ? 'web' : 'headless', '--dump-config'], { encoding: 'utf8', timeout: 180000 })
 const present = new Set([...String(dump.stdout ?? '').matchAll(/^- id: (\S+)/gm)].map((match) => match[1]))
 check(`读得到 ${resident ? 'web' : 'headless'} profile 的行清单(dump-config)`, present.size > 20, `${present.size} 行`)
 
@@ -352,6 +364,16 @@ const hostPatch = [
 	...(present.has('subagent-model-selection-settings') ? [] : [{ insert: [MODEL_SELECTION_ROW] }]),
 	// installed 模式:宿主行由**包的补丁层**提供(我们不再插,免得同一个 id 挂两行)
 	...(installedHome !== null || !existsSync(HOST_PACKAGE) ? [] : [{ insert: [{ id: 'clearai-host', name: HOST_PACKAGE }] }]),
+	/**
+	 * **长测里把宿主的不变量面挂上**。
+	 *
+	 * `@deepseek-ai/dsh-invariants` 是诊断面:它由组合决定装不装(默认那套 bundle 不装它,
+	 * 只有 DSH 自己的开发组合装)。长测是我们自己的跑动,正好是它该在场的地方——
+	 * 内核那侧发现有这个服务就会把自己的五条契约注册进去,于是**每条事实在落账之前**就被判一道:
+	 * 引用完整性 / 准入先于推进 / 结算必有派遣 / 升格有据 / 事实棘轮。
+	 * 违反时宿主抛带稳定错误码与归属包名的 `InvariantError`,这场长测当场红,而不是等归档人肉核。
+	 */
+	...(present.has('invariants') ? [] : [{ insert: [{ id: 'invariants', name: '@deepseek-ai/dsh-invariants' }] }]),
 ]
 const presetPatch = [
 	...disabledRows.map((id) => ({ id, disabled: true })),
@@ -411,7 +433,7 @@ console.log(`  跑之前:章程占位 ${before.constitution.placeholders}/${befo
 if (autonomy !== undefined || maxTurns !== undefined) console.log(`  覆盖:autonomy=${autonomy ?? '(预设)'} maxAutoTurns=${maxTurns ?? '(预设)'}`)
 const started = Date.now()
 const profileName = installedHome === null ? (resident ? 'web' : 'headless') : installedProfile
-const run = spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', '--patch', hostPatchFile, '--patch', patchFile, '--profile', profileName, task], {
+const run = spawnSync(DSH_LAUNCH.command, [...DSH_LAUNCH.prefix, '--patch', hostPatchFile, '--patch', patchFile, '--profile', profileName, task], {
 	cwd: workspace,
 	env: { ...process.env, DSH_HOME },
 	encoding: 'utf8',
@@ -439,7 +461,16 @@ check('进程正常退出(exit 0)', run.status === 0, `exit=${run.status} stderr
  * 判据是「宿主真的把会话放在哪儿」,不是我们觉得它应该怎么折。
  */
 function sessionSlug(workspaceDir) {
-	return `--${workspaceDir.replace(/^\//, '').replace(/[^A-Za-z0-9_.]+/g, '-').replace(/-+$/, '')}--`
+	/**
+	 * 非 ASCII 的真实编码是 `~XXXX`(四个大写十六进制)——拿中文目录名的真项目(亨通)跑
+	 * --workspace 时发现:宿主把 亨通 记成 ~4EA8~901A,而把它折成 - 的旧规则永远找不到日志,
+	 * 于是「找不到日志」被误报成一排「什么都没发生」。规则从真实目录比对而来,不是猜的。
+	 */
+	const encoded = workspaceDir
+		.replace(/^\//, '')
+		.replace(/[^A-Za-z0-9_.]+/g, (run) => [...run].map((ch) => (ch.charCodeAt(0) > 127 ? `~${ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}` : '-')).join(''))
+		.replace(/-+$/, '')
+	return `--${encoded}--`
 }
 
 /** 一个工作区下的所有会话(每个会话一个目录,日志可能是 `.jsonl` 或 `.jsonl.zstd`)。 */
@@ -571,10 +602,22 @@ console.log(`  日志:${logPath} · ${events.length} 条事件`)
 const toolCalls = events.filter((event) => event.type === 'tool/call')
 const toolResults = events.filter((event) => event.type === 'tool/result')
 const called = (name) => toolCalls.some((event) => event.data?.name === name)
+/**
+ * 一次工具调用的结果。
+ *
+ * `toolCallId` 在 session 格式 v4 里挂在**结果消息本身**上(工具结果成了一等 tool-role 消息),
+ * 退役前它嵌在第一个 content 块里。两种都认:这份工具既读今天的日志,也拿去重放旧日志。
+ */
 const resultOf = (name) => {
 	const call = toolCalls.find((event) => event.data?.name === name)
 	if (call === undefined) return null
-	return toolResults.find((event) => event.data?.message?.content?.[0]?.toolCallId === call.data.callId) ?? null
+	return (
+		toolResults.find((event) => {
+			const message = event.data?.message
+			const paired = message?.toolCallId ?? message?.content?.[0]?.toolCallId ?? message?.source?.callId
+			return paired === call.data.callId
+		}) ?? null
+	)
 }
 
 const planShaped = !skillsScenario && !freeform
@@ -618,8 +661,8 @@ const allMutations = toolResults.flatMap((event) => event.data?.meta?.mutations 
 {
 	const mutations = allMutations
 	console.log(`  变更记录:${mutations.length} 条(${[...new Set(mutations.map((mutation) => mutation.t))].join(',')})`)
-	check('变更记录真的落了(goal/set)', skillsScenario || mutations.some((mutation) => mutation.t === 'goal/set'), mutations.map((mutation) => mutation.t).join(','))
-	check('变更记录真的落了(plan/created)', skillsScenario || mutations.some((mutation) => mutation.t === 'plan/created'), mutations.map((mutation) => mutation.t).join(','))
+	check('变更记录真的落了(goal/set)', planShaped ? mutations.some((mutation) => mutation.t === 'goal/set') : true, mutations.map((mutation) => mutation.t).join(','))
+	check('变更记录真的落了(plan/created)', planShaped ? mutations.some((mutation) => mutation.t === 'plan/created') : true, mutations.map((mutation) => mutation.t).join(','))
 }
 
 // ── ③b 工作区引导(真跑之后目录真的长出来了) ───────────────────────────────

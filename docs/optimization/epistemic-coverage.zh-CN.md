@@ -85,9 +85,9 @@
 |---|---|---|---|---|---|
 | B1a | 世界线各占工作副本 | `ForkPlan` + worktree | 硬 | 已实现 | kernel 套件 |
 | B1b | 收敛是算术；算不出 → 人门；落选保留 | `ConvergeFork` + 人门 | 硬 | 已实现 | kernel 套件 |
-| B2a | todo / 子代理 / workflow / ralph 原生回归，产物留在非权威区 | 阶段 5 计划 | — | **仅设计** | `authority-boundary`（待写） |
-| B2b | 模型切换走原生 `modelSelectionSettings` | 阶段 5 计划 | — | **仅设计** | `preset-composition`（待写） |
-| B2c | ClearAI 自己的 `/` 菜单（命令注册表贡献） | 阶段 5 计划 | — | **仅设计** | `preset-composition`（待写） |
+| B2a | todo / 子代理 / workflow / ralph 原生回归，产物留在非权威区 | `preset/agent.cordis.yml` 工作方式段 | 硬 | 已实现 | `authority-boundary`（14 条）+ `preset-composition` |
+| B2b | 模型切换走原生 `modelSelectionSettings` | `dsh-tool-subagent` 行的配置 | 硬 | 已实现 | `preset-composition` |
+| B2c | ClearAI 自己的 `/` 菜单（命令注册表贡献） | `preset/plugins/commands.js` | 硬 | 已实现 | `preset-composition` |
 
 ### 贯穿支撑
 
@@ -96,8 +96,17 @@
 | 意图与事实分离：没有可写 status/progress 的字段 | schema 不可表达 | 硬 | 已实现 | kernel 套件 |
 | 投影是唯一真相：状态 = 日志折叠，单调只增 | `fold.js` + RANK 单调 | 硬 | 已实现 | client 套件 |
 | 运行态卡每回合派生、前缀稳定才注入 | `renderCard` | 硬 | 已实现 | client 套件 |
-| 提示词 22 段清单驱动、槽位互斥收敛 | `SECTIONS` + 贡献表 | 硬 | 已实现 | truth-table 校验 |
+| 提示词 23 段在场清单驱动、槽位互斥收敛 | `SECTIONS` + 贡献表 | 硬 | 已实现 | truth-table 校验 |
 | 本体声明与实现交叉核对 | `ontology.js` + 装配校验 | 硬 | 已实现 | ontology 套件 |
+
+### 领域本体（词汇 / 断言 / 冲突 / 图）
+
+| 行为 | 承载机制 | 硬度 | 状态 | 验证 |
+|---|---|---|---|---|
+| 六个词汇事件折成 `state.lexicon`（修订留痕、废止黏性、没有删除） | `ui/lib/domain-language.js` + `fold.js` | 硬 | 已实现（折法 + 十个动词） | `test/domain-language.test.mjs` |
+| 断言随升格落地（引用必须存在、形态合域、同一事实自洽） | `fact/promoted` + `validateAssertions` | 硬 | 已实现（含 `SetGoal` / `CloseGoal` 接线） | `test/kernel.test.mjs` / `test/domain-language.test.mjs` |
+| 冲突只暴露不裁决（单值谓词 + 同主体 + 异客体 + 两侧未撤回） | `deriveConflicts` + 运行态卡 | 硬 | 已实现 | 同上 |
+| 本体图 / 实体图由同一折法派生（确定性布局，坐标不进账本） | `graphProjection` + `view().lexicon` | 硬 | 折法已实现；面板已渲染（编辑经人门通道） | 同上 |
 
 ### 已知不覆盖（如实列出，归宿见 §5）
 
@@ -105,9 +114,7 @@
 |---|---|---|---|
 | ⑦+ | 覆盖**每一次**评估的通用 L4 闸门 | 仅设计 | 保持 design-only，文档不冒称 |
 | — | 验证八状态机 | 仅设计 | 保持 design-only |
-| — | `retracted`（已撤回）有产生者 | 仅设计 | 保持 design-only |
 | — | 观测来源 `human_upload` / `file_drop` / `callback` / `pull` | 仅设计 | 保持 design-only；当前只有 `self`/`scout` 生产者 |
-| B2a–c | 非权威能力原生回归 | 仅设计 | 阶段 5 实现 |
 
 ## 3. 不可缩水清单 与 可交还清单
 
@@ -152,10 +159,19 @@
 - **落为机制**：`autonomy.override` 死路径（阶段 4/5 决定删或留，留则写明只读旧日志——已决定留）。
   （已落地：假设数量下限——preset 立 2，内核门 + 提示词纪律，见行 ②；权威边界测试；
   `/` 菜单五个命令与非权威能力 todo/subagent/workflow/ralph 挂回——见阶段 4/5 台账。）
-- **保持 design-only 并如实标注**：验证八状态机、通用 L4 门、`retracted` 产生者、
-  观测的另外四种来源。判据：真值表里各有一行、`status` 正确、任何文档不冒称已实现。
-- **删除并记账**：已删机制（`set_autonomy`、6/512 预算、`autoConfirmed`）只在真值表
-  与 CHANGELOG 里留痕，代码与注释不再叙述。
+- **作为概念注销**：「探索区」这个**被命名的模式**。它的负半是 `non-authoritative-isolation`
+  那一行（已实现，边界套件钉住）；正半——「探索期的产出必须有据可查」——是
+  `ledger-exploration-snapshots` 那一行（回合边界的工作区快照）。给一块区域起名字，只是给同一件事
+  添第二个称呼，不是机制。
+- **保持 design-only 并如实标注**：通用 L4 门。判据：真值表里各有一行、`status` 与
+  `destination` 都正确、任何文档不冒称已实现。现在**每一条非 implemented 的行都带归宿**
+  （变成机制 / 保持设计目标 / 已删除并记账），「还没做」与「决定不做」不再写成同一个样子。
+- **已经变成机制**：`retracted` 产生者（真值表行 `fact-retraction`，已实现：推翻只标记事实，
+  人用 `retract_fact` / `keep_fact` 决定撤回或维持，落一条 `fact/reviewed`）。
+- **仍然待做**：观测来源收窄（`observation-provenance`，当前类型只声明真有生产者的 `self` / `scout`）、
+  验证生命周期里**缺的那两条保证**（`verification-lifecycle`）、以及探索区（`exploration-zone`）。
+- **删除并记账**：已删机制（`set_autonomy`、6/512 预算、`autoConfirmed`）在真值表里各有
+  一行 `status=removed`、`destination=deleted`，另在 CHANGELOG 留痕；代码与注释不再叙述。
 
 ## 6. 端到端时序（规范序列）
 
@@ -188,9 +204,9 @@
 | `test/state-machine.test.mjs` | 状态转移 ↔ 折法 |
 | `test/docs-consistency.test.mjs` | 历史说法不冒充现状 |
 
-| 缺失的测试（阶段计划已列） | 要钉住的拍 |
+| 已补齐的测试 | 要钉住的拍 |
 |---|---|
-| `test/authority-boundary.test.mjs`（阶段 4） | B2a：非权威路径结构上写不出 `clearai` 变更 |
-| `test/preset-composition.test.mjs`（阶段 5） | B2b/B2c：菜单与模型切换挂载形态 |
-| `test/prompt-sections.test.mjs`（阶段 6） | 段落分类（hard/native/advisory）不漂移 |
-| 假设数量下限用例（阶段 4b） | ②：从提示词升格为机制后的行为 |
+| `test/authority-boundary.test.mjs` | B2a：非权威路径结构上写不出 `clearai` 变更 |
+| `test/preset-composition.test.mjs` | B2b/B2c：菜单与模型切换挂载形态 |
+| `test/prompt-sections.test.mjs` | 段落分类（hard/native/advisory）不漂移 |
+| 假设数量下限用例（在 `test/kernel.test.mjs` 里） | ②：下限是机制，不是文案 |

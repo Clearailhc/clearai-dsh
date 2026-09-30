@@ -1,0 +1,31 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: false
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      clearai-dsh:
+        specifier: file:/tmp/clearai-release/dist/clearai-dsh
+        version: file:../../../../../tmp/clearai-release/dist/clearai-dsh
+
+packages:
+
+  clearai-dsh@file:../../../../../tmp/clearai-release/dist/clearai-dsh:
+    resolution: {directory: ../../../../../tmp/clearai-release/dist/clearai-dsh, type: directory}
+    engines: {node: '>=22'}
+    hasBin: true
+
+  zod@4.6.2:
+    resolution: {integrity: sha512-lh5RCAGFa1Cm2hjtNwLQhSs/AsqdWnTQaBER9fEwN/88pSh7KOtJavtBx/0VlkN/uFd61SwYmljLMDAsHlvzBQ==}
+
+snapshots:
+
+  clearai-dsh@file:../../../../../tmp/clearai-release/dist/clearai-dsh:
+    dependencies:
+      zod: 4.6.2
+
+  zod@4.6.2: {}

@@ -2,6 +2,279 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — 2026-09-29
+
+**两个死结:计划置 blocked 后再也解不开,续跑窗口的阻塞码收不了兵。** 两条都不是措辞问题,是机制自己在文档承诺的出口上焊死了——0.3.0 的「连拦达阈值 ⇒ 置 blocked、停下等人」写得没错,可人按卡上说的三条出路走,一条也走不出去。
+
+### Fixed
+
+- **`block/cleared` 只清了连拦计数,没清 `plan.blocked`**:计划一旦置 blocked,`AmendPlan`(换一条能过闸的路)与 `RefinePlan`(补齐判据)把话说得再对也解不开,`plan.blocked` 会一直挂着,收件箱那条等人处置的条目成了死结。现在 `block/cleared` 同时删掉 `blocks[plan:step]` 与指向该步的 `plan.blocked`;三条出路各自**真的**能解拦——`AmendPlan`、`RefinePlan`,以及 `VoidPlanStep`(只作废被拦的那一步时才清)。阻塞守卫的文案也随之只列**可执行**的动词(去掉「让人介入后重开」,补上 `VoidPlanStep`)。
+- **续跑窗口的阻塞码用了下划线**:`clearai_loop_stalled` / `clearai_loop_abandoned` 不合宿主契约 —— `@deepseek-ai/dsh-goal` 要求 lower-kebab-case(`/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/`),`goals.block(...)` 当场拒收 ⇒ 收兵失败,窗口留在 `active` 上继续叫醒一个已经收尾的目标。现在改成 `clearai-loop-stalled` / `clearai-loop-abandoned`。测试桩 `makeHost().block` 也按同一条宿主规则抛错——桩与宿主同形,不然测的只是桩。
+- **目录被声明成物证时报「空目录」**:目录不是空文件,两件事不一样,而错的那句话会把下一步动作指错。准入现在把目录**单独判为不可作为物证**(`verified_by: 'l1'`),并如实报出目录里的**文件数与字节数**;`CreatePlan` 的 `artifacts` 契约描述与 `clearai-loop` 技能文档同步写明「目录不是物证,要声明具体文件」。
+
+### Verified
+
+- **18 套件 1886 项检查全绿**(内核 834 · 宿主 119 · 客户端 248 · 领域语言 234 · 本体 96 · 长测 41 · 对照 41 · 可读性 35 …);`verify-package` 44 通过 / 1 失败,唯一那条仍是沙箱里 `npm pack` 的 `EROFS`(只读 `~/.npm/_cacache`),与 0.3.0 记录的是同一处环境限制。
+- 续跑码那一条是**拿真宿主的契约核过**的:`node_modules/@deepseek-ai/dsh-goal/lib/index.js` 里就是那条 lower-kebab-case 正则,不是照着测试桩猜的。
+
+## [0.3.0] — 2026-09-29
+
+**从一次真跑的三条症状出发,把三件事从劝告变成机制。** 一位用户在真实会话里遇到的三个问题——`CloseGoal` 运行失败且要跑很久;命题晦涩、而且**从没走过认识论循环的便宜层级**;本体建得不错、**查到的实体却没进实体图谱**——每一条都追到了代码行:宿主半用**属性式**取服务(宿主 fiber 瞬态掉线就抛,而评估者刚跑完的那两分钟评审随栈帧一起没了);实体层的节点与边**唯一**来自「整条目标被独立裁决判 support」之后的升格;`supportedLevel` 只是支持证据的最大值,跳级**零代价**。这一版不是把话说重一点,而是把这三条各自换成一道**可清点的机制**——并在两场真模型 headless 长测里验过。
+
+### Added
+
+- **实体是一等写入口**(本轮的主修):`RegisterInstance`(观测:依据与出处必填)与 `Assert`(说一句关于某个**已登记实例**的带出处的话)。**断言在登记那一刻就产边**,不再等目标裁决;投影把三个来源合起来画,同键去重、节点与边都带 `source`(`registered` / `promoted` / `asserted`),两个新来源都为空时输出与 0.2.8 **逐字节相同**。`RegisterTerm` 与它的分工写死在工具描述里:**概念是约定,实例是观测**。
+- **`ExplainLevelSkip`**:为「没走过的验证等级」留理由,`levels` 必须是卡上列出的未走过等级,`reason` 必须**点到该等级要检查的对象名**(「时间不够」过不了)。
+- **缺口三条 + 三道门**:`entities_unlanded`(逐主体差集:**断言主体在图上有边**才算落地)、`levels_skipped`、`orphan_terms`;每条缺口都带 `nextAction`。门 `requireLandedEntities` / `requireLevelReasons` / `requireCriteriaVerdict` 机制缺省关、preset 里开到生产,各自两条诚实出口(补齐 或 `abandoned`)。
+- **目标的一句话与可清点的判据**:`SetGoal` 新增 `headline`(≤120 字;省略时由 `claim` 首句现算,现算超长当场拒)、`criteria[]` / `criteria_note`;改判据文本要带一份**已落定独立裁决**的 auditKey。
+- **`clear/goals/{goalId}.md`**:本体声明里 `goal.persistence` 早就写了这个落点、此前没人写;现在内核幂等落盘(判据逐条、假设、修订留痕),卡里给压缩版 + 指针。
+- **单一叙述源 `ui/lib/knowledge-view.js`**:运行态卡、右栏面板、词汇货架读**同一份**投影(此前四处各写一遍,漂了要读者自己调和)。
+- **事件命名空间 `entity/` · `level/` · `criteria/` · `host/`**;`host/inactive` 四步闭环:宿主按 scope+detail 算**内容寻址 id** → 内核 pre-step 把没上账的落成变更 → 折法按 id **幂等** → 宿主只交出还没上账的那几条。
+- **真值表**补 4 条机制(共 71 条)与**代码→真值表**的反向检查(顶层 `events` + 4 项校验,总 29 项);工具面 **29 → 32 件**,领域动词 10 件。
+
+### Changed
+
+- **CloseGoal**:派发/结算事实**在 `await` 之前独立落账**(工具抛错、被 abort 都抹不掉);裁决按**材料** digest **同态复用**——digest 只盖目标修订号、计划步与判据、观测、原始假设、事实、非审计来源的证据与**产物摘要**,不含"上一次评审自己的回声";交付那一步同样适用,但**证据照旧落账**(步骤历史与既有的「连续两次无法判定 ⇒ 强制改法」都靠它),省掉的只是那两分钟子 run。复用仍带得出评估卡与评估者会话。
+- **裁决卡设预算**:`basis` ≤1200 字,缺口的每条写成 `{criterion, what, missing}` 三格。真跑里一次裁决的 `basis` 是五千余字、末步单次生成 81 秒。
+- **宿主读面降级不再抛**:`ui/lib/index.js` 禁属性式服务访问,取不到返回空态;`sessionCwd` 拿不到会话目录**不写盘**(删掉 `process.cwd()` 回退——"写不出去"与"写到别处"是两件事)。
+- **运行态卡**:判据**逐条**渲染(每条 80 字、最多 6 条 + "还有 N 条" + 指针)、`claim` 压缩、**删掉时钟**(分钟级时间戳让"同一状态的卡"每分钟变一次,按内容去重因此永远失效)。
+
+### Fixed
+
+- **评审只写正文卡片时,裁决被整份丢掉**(真模型长测抓到):`refs` 曾被写进 `VERDICT_SCHEMA` 的 `required`,评估者在 markdown 里写清 `verdict: support` 却因形状被 runtime 拒收 ⇒ 账上只剩「无法判定」,**目标永远结不了案**。现在 `refs` 声明但不强制,并给 `parseLooseJson` 加了**正文卡片兜底**(只认 `verdict:` 后那三个词;取不到就如实说取不到——猜一份 support 比丢掉一份 refute 坏得多)。
+- **三处「目录取不到就拿 `null` 拼路径」的崩溃**(立约前侦察 / 观测登记 / 准入)与 `WriteMemory` / `SaveSkill` 的同类问题:一律降级为如实返回,不再抛。
+- **`entities_unlanded` 的判据从"图上有节点"改成"图上有边"**:只数节点时,登记一个无关实例就能把缺口压掉,而真正该落地的主体仍只在命题上。
+
+### Verified
+
+- **18 套件 1879 项检查全绿**;真值表 29 项 / 71 条机制;`verify-package` 除沙箱内的 `npm pack` 外全过。
+- **两场真模型 headless 长测**(装出来的包、无人值守):`entity-graph` **41 通过 / 0 失败**(13 个实例、15 条断言边、3 处跳级理由)、`long-plan` **40 通过 / 0 失败**(5 步全交付、记忆 1 条、账本 5 次提交、目标 achieved,并自发用了 5 个实例 + 9 条断言)。现场(轨迹、会话日志、读数)归档在 `docs/optimization/e2e-logs/`。
+- **独立验证员**(fresh context、未参与实现)三轮复验 + 变异测试:抓出并修掉 11 处缺陷(含 3 处必崩的 `null` 路径、一处时间死区、一处可绕过的门);诊断与验证全文见 `docs/optimization/2026-09-diagnosis.zh-CN.md` 与 `2026-09-independent-verification.zh-CN.md`。
+
+## [0.2.8] — 2026-09-28
+
+**四个面板消失的那条 bug:客户端半读了一个已经不存在的字段。** 客户端拿「当前会话」用的是 `sessions.list.getSnapshot().current`;宿主的 `SessionListState` 现在只有 `{ ids, byId, phase, projectionsBySession }` —— **没有 `current`**。读到 `undefined`,`isCurrentPreset()` 就恒为 `false`,`occupy()` / `syncRail()` **一个座位都不注册**。失效形态与症状完全一致:模式在、宿主半一切正常,中栏只剩「对话 / 轨迹」、右栏只剩宿主自带的页签,**而且不报错**(0.1.7-rc.2 与 0.2.0-rc.1 的宿主都是这个形状)。
+
+### Fixed
+
+- **客户端:当前会话的取法改成宿主自己的那一套** —— 在 `byId` 里找 `retainedBy.mainView > 0` 的那一行(`dsh-client-ui-open-in-app`、`dsh-client-ui-agent-preset` 都这么写);老宿主若还留着 `current`,照旧认它。`isCurrentPreset()` 与 `sessionIdFor()` 两处共用一个 `currentSessionRow()`。
+
+### Changed
+
+- **测试桩与宿主同形**(`test/client.test.mjs`):旧桩自己造了 `current: 's1'`,于是 240 条检查全绿,而真宿主上四个面板静默消失 —— 桩和宿主不一样,测的就是桩。现在桩用宿主的真实形状(`ids / byId / phase / projectionsBySession` + `retainedBy.mainView`),这条路径从此有断言看着。
+- 版本 0.2.8。
+
+### Verified on DSH 0.2.0-rc.1
+
+- **会话格式仍是 v4**(没有 v4→v5),0.2.5 那次的消息署名改动不用再动;
+- **预设声明行照旧**:名册读到 `standard, ptc, minimal, cordis, clearai`,且 clearai **没有 broken** —— `verify-clean-install` 指向 0.2.0-rc.1 是 22 通过 / 0 失败;
+- **真会话**:`node tools/e2e-run.mjs --installed` 在 0.2.0-rc.1 上 35 通过 / 0 失败(工具、`goal/set`、`plan/created`、投影、跨机制不变量);
+- **真浏览器**(隔离 DSH_HOME + 真 Chrome + 一轮真模型):中栏 `对话 | 轨迹 | 产物 | 本体`,右栏「新标签页」里有 `世界树` 与 `技能 · 记忆`;
+- 0.2 **没有删掉**我们预设用到的官方包;客户端插座与服务名(`conversation.view`、`conversation.input.*`、`sidebarRightTabs`、`sidebarRight`、`sidebar.right.pane.tab(.title)`、`layout`)在 0.2 源码里都还在。
+
+## [0.2.7] — 2026-09-28
+
+**装完显示「成功」,装到的却是上一版——原因不在我们,但句子在我们这边。** pnpm ≥ 11 起 `minimumReleaseAge` 默认 **1440 分钟(一天)**,而这条内置默认是**非严格**的:一天内发布的版本不会被选中,但**不报错**——它静默回退到**一天以前的最新版**。于是刚发完 `0.2.6`,三条路装到的都是 **`0.2.2`**(2026-09-18):`dsh plugin --profile web add clearai-dsh`(裸包名)、`@latest`、以及**设置 → 插件列表**里填包名。一台 Mac 上实测如此,本机也用 pnpm 12.4.1 在干净工作区复现过(裸名 → 0.2.2;`clearai-dsh@0.2.6` → 0.2.6)。
+
+这一版**不改包的行为**,只改用户会照抄的那几句,并加一条判据钉住它。
+
+### Changed
+
+- **README(中英)的推荐安装命令改成钉版本的** `dsh plugin --profile web add clearai-dsh@0.2.7`,并新增一段「为什么要钉版本」:机制、两种解法——写死版本(pnpm 会自己记下例外),或在 profile 的 `pnpm-workspace.yaml` 里 `minimumReleaseAgeExclude: [clearai-dsh]` 按**包名**豁免所有版本。「设置 → 插件列表」那条也改成填 `clearai-dsh@0.2.7`。
+- **「一条命令的安装器」标注清楚**:`npx clearai-dsh install` 自己解析当前版本并钉住它(`bin/clearai.mjs` 一直传的是 `clearai-dsh@<自己的版本>`),本来就不受这条延迟影响。
+- `docs/dsh-integration`(中英)的安装段同步;`docs/known-gaps`(中英)的「跑起来之前」补两条:pnpm 的这条年龄策略,以及**版本切换中途刷新插件列表可能看到的一次 `locale` 元信息错误**——那是宿主读到了换了一半的包(清单已声明 `locale/`、目录还没铺上),装稳后消失(装稳的 0.2.5 读出纯回退值,装稳的 0.2.6 读出中英标题、介绍与图标)。
+- **自检门新增一条**:发行物里的 `README.md` / `README.zh-CN.md` 必须出现钉到**本版版本号**的安装命令,且不许出现教人敲裸包名的命令行。
+
+**证据**:pnpm 12.4.1 干净工作区实测——裸名与 `@latest` → `0.2.2`;`clearai-dsh@0.2.6` → `0.2.6`,且 pnpm 自动往 `pnpm-workspace.yaml` 写入 `minimumReleaseAgeExclude: clearai-dsh@0.2.6`;把豁免改成按包名(`- clearai-dsh`)之后,裸名 → `0.2.6`。机制出处:pnpm 文档 `minimumReleaseAge`(默认 `1440`,v11 起)与 `minimumReleaseAgeStrict`(内置默认下为 false)。
+
+## [0.2.6] — 2026-09-28
+
+**插件列表里终于写了介绍。** 宿主从 `locale/<语言>.json` 的 `meta.title` / `meta.description` 与清单顶层的 `icon` 读一个插件的显示文字和图标;**三样都缺时回退到包名 + npm 的 description + 默认图**——而那正是我们一直显示的东西:标题 `clearai-dsh`(包名)、介绍 "ClearAI: The Epistemic Loop, native to DSH."(README 的 tagline)、一个通用图标。装上它的人在一个「插件市场」式的列表里看到的,是一句没有说清装上得到什么的英文。
+
+这一版把这三样补上,并给顺带发现的两处过时改了账:`docs/dsh-integration` 里「预设怎么进名册」还写着 `0.2.4` 之前的 root 目录机制(名册换代时它没跟上);README 的安装段也没提现在这条官方路径。
+
+### Added
+
+- **`locale/en.json` + `locale/zh.json`**:标题 `ClearAI`,一句话介绍分中英两份(界面是中文时不读英文)。宿主按文件名认语言,`en.json` 是基准。
+- **`brand/icon.svg`**:插件列表的图标。与 `logo.svg` 同一套几何,只把主笔颜色**写死**——主标那支是 `currentColor`,而列表里它是以 data URL 读进来的、没有可继承的 CSS 上下文,`currentColor` 会落到黑色,暗色卡片上只剩那颗点;品牌位图虽有两版,`icon` 却只能给一个文件。取中性环色 + emerald 点,明暗两套主题都读得出。
+- **`engines.dsh: ">=0.1.7-alpha.1"`**:宿主下界写进清单,市场据此显示要求(此前只有描述里那句话)。
+- **`screenshots.json`**:给市场卡片声明 5 张截图(四张英文面板 + 一张本体图工作区)。不声明时市场从 README 自动抽取,而我们的 README 里只有 logo 与星标图。
+
+### Changed
+
+- **构建把 `locale/` 打进发行物**(装配表与 `package.json` 的 `files` / `exports` 同步):`exports` 不放行 `./locale/*.json`,宿主解析不到;不进 `files`,发出去的包里就没有。图标走已有的 `brand/` 整目录拷贝。
+- **自检门加了「可被发现」这一关**:`verify-package` 判文件在不在、标题是不是包名、`exports` / `files` / `engines.dsh` 齐不齐;`verify-clean-install` 则**调宿主自己的 `readPluginMeta`** 对装好的那个包算一遍——「插件列表里会显示什么」从此是算出来的,不是我们复述的规则。这一关是先有的诊断:同一段宿主代码在我们补之前返回的正是 `{title: "clearai-dsh", description: "ClearAI: The Epistemic Loop, native to DSH."}`。
+- **文档跟上现状**:`docs/dsh-integration` 的「预设怎么进名册」按**声明行**重写(`preset-clearai` 那一条,构建期由 `preset/agent.cordis.yml` 派生,宿主 ≥ `0.1.7-alpha.1`),并给「源 → 包」表补上 `locale/` 与 `brand/` 两行;README(中英)的安装段补上不开终端的那条路(设置 → 插件列表填包名)与市场收录后的那条。
+
+## [0.2.5] — 2026-09-28
+
+**跟上了宿主的会话格式 v4(消息来源改成生产者自有)。** 宿主 `0.1.7-rc.2` 起,`source.kind` 就是**生产者自己的身份**:共享包装 `{ kind: 'plugin', plugin }` 已退役,原生接纳在落账那一步**当场拒绝**它,报 `format v4 message requires a producer-owned source kind`。内核一直用旧包装下发运行态卡与外脑事实(合并目录 / 运行档 / 候选技能 / 世界线回灌),于是**每一轮都在落账那一步整轮失败**——卡片与事实一条都进不去。而单测当时全绿:它们直接调 fold,不经过宿主的接纳。
+
+**为什么是 `plugin:clearai` 这个值**:宿主读取已发布 V3 日志时,未知名插件正是按 `plugin:<插件名>` 抬升的。选同一个值,老会话折得出来、新会话写得进去,两侧只认一个名字;另起一个名字则要永远维护新旧两套(而且旧会话在面板上的署名会和新会话长得不一样)。
+
+### Changed
+
+- **内核署 `plugin:clearai`,不再写 `plugin` 字段**:`MESSAGE_SOURCE_KIND` 一处定义,运行态卡与无卡通知两条通道共用。
+- **折叠层同时认两种署名**:`plugin:clearai`(现在写的)与退役前的 `{ kind: 'plugin', plugin: 'clearai' }`(事件被**直接**喂进来时仍带着它:测试、旧导出、重放工具)。退回到旧形状时身份在 `plugin` 字段上,**只认 `clearai`**——别的插件冒名不进这道门。
+- 形态字段没动:`form: 'snapshot'` + `sections` 照旧,面板的上下文注入行仍按 `form` 渲染(署名只换了个名字,呈现不变)。
+- **e2e 里按 v3 形状找工具结果的地方跟着改到 v4**:`toolCallId` 在 v4 挂在**结果消息本身**上(退役前嵌在第一个 content 块里),旧写法让 `CreatePlan` 的两条断言**永远假红**(进程 exit 0、变更记录也落了,断言却报「契约错误」);`--freeform` 那两场的目标/计划断言也改成随形态跳过——与同一份工具里其余断言的判据对齐。
+- **本地「干净安装」门不再随手挑一份 npx 缓存里的宿主**:这台机器的缓存里躺着 0.1.5-rc.1 与 0.1.7-rc.2 两份,`readdir` 挑到旧的那份时 `--dump-config` 会因为我们的 bundle patch 是数组(宿主 0.1.7-alpha.1 起才支持)当场崩,四条组合断言全红——而真正的原因(验的根本不是要支持的宿主)一个字都不在输出里。现在按版本挑最新的一份,并把「dsh 来自哪里、是哪个版本」念出来(CI 走 `DSH_CLI_PREFIX`,不受影响)。
+
+**证据**:拿宿主真代码(`dsh-session-format-v3-to-v4` 的 `assertV4RowAdmission`)验过——新署名接纳,旧署名以那条原话被拒;并确认转换表里没有 `clearai`(所以旧日志正好抬升成同一个值)。内核侧新增一节断言钉住每一条下发消息的署名(非空、不是 `plugin`、等于 `plugin:clearai`、无 `plugin` 字段、form/sections 照旧);旧署名在 `test/host.test.mjs` 与 `test/invariant.test.mjs` 各留一条「仍折得出来」的正向用例。真跑一场(`node tools/e2e-run.mjs --installed`:真宿主 + 装出来的包 + 真模型 + 真会话日志):运行态卡以 `plugin:clearai` 落在日志里、没有接纳报错,`goal/set` 与 `plan/created` 照旧落账、投影长出计划,跨机制不变量全绿(35 通过 / 0 失败)。干净安装门(真 pnpm + 真 `dsh plugin add` + 真宿主 0.1.7-rc.2)18 通过 / 0 失败:装到的是 `clearai-dsh@0.2.5`,组合里 `clearai-host` 恰好一行,名册里 `clearai` 在列表里且没有 broken。
+
+## [0.2.4] — 2026-09-28
+
+**跟上了宿主的预设换代。** 宿主 `0.1.7-alpha.1` 起把 agent 预设的注册从「root 目录扫描」换成了「组合里的声明行」,而 clearai-dsh 一直靠一条覆盖 `agent-presets` 行的补丁,把名册的 root 指到包内 `presets/`。那行 id 在新宿主里**已经不存在**,补丁没有落点——包照样装得上、宿主行照样起得来,但 **ClearAI 不进模式选择器**。这一版把它接上。
+
+**`0.2.3` 没有发布。** 它以 `v0.2.3` 触发了发布流水线,在「干净安装」那道门被拦下(拦的正是上面这个断裂),publish、registry 回查、建 Release 三步全部 skipped——npm 上半点副作用都没有。它原本要带的三条文档改动(版本号、中英 README)并入本版,所以这一版也包含 0.2.3 的账。
+
+> ⚠️ **宿主支持边界:本版要求宿主 ≥ `0.1.7-alpha.1`。** 在更早的宿主(≤ `0.1.6-alpha.2`,包括曾被当作 `latest` 的 `0.1.5-rc.3`)上,本版会因为找不到 `@deepseek-ai/dsh-agent-preset` 而**让 profile 起不来**。仍留在旧宿主的部署请继续用 `0.2.2`。
+
+### Added
+
+- **预设声明行**:`presets/clearai/clearai.patch.yml` —— 一条 `- id: preset-clearai` 声明行,`config.plugins` 里放整份插件列表。它由 `preset/agent.cordis.yml` **构建期派生**(与 `ui/vendor/*.js` 同一条纪律:生成物进仓库,包 = 源的纯函数),不手抄第二份。`package.json` 的 `dsh.bundle.patch` 随之由单文件改为**数组**。
+- **干净安装验收新增两条运行态断言**:boot 一次 profile,直接读 `agentPresets.list()`,要求 `clearai` 在列表里**且没有 `broken`**。静态的 `--dump-config` 看不出这件事——探针实测过:preset 里放一个**根本不存在的插件**,boot 依然完全正常,只有名册记一条 broken,界面就不显示这个预设。
+
+### Changed
+
+- **包内插件改用包内子路径**:`clearai-kernel` 与 `clearai-commands` 由 `./plugins/*.js` 改为 `clearai-dsh/presets/clearai/plugins/*.js`(`exports` 里加 `"./presets/*"` 放行)。声明行 `plugins` 的相对基准与原来的 `agent.cordis.yml` 不同,不改就会在名册里一直记着「never started」。
+- **workflow 引擎换包**:预设里那条 `@deepseek-ai/dsh-workflow-worker-thread` 在新宿主里**已经下线**,改为同 group 内的 `@deepseek-ai/dsh-workflow-ptc`(与官方 standard 预设同形,且必须与 `tool-workflow` / `tool-ralph` 同处那个 `isolate: { workflowEngine: true }` 的 realm,否则两条工具会一直「waiting for workflowEngine」)。
+- `pack/cordis.patch.yml` 里那段 `- id: agent-presets` 覆盖**已删除**:它在新宿主上没有目标行,留着只会让下一个人以为预设还靠目录扫描。
+- 文档与版本信息:项目版本更新至 `0.2.4`,中英 README 更新(原 0.2.3 的三条改动)。
+
+## [0.2.3] — 2026-09-23(未发布)
+
+> 本版**从未发布到 npm**。它是纯文档版本(版本号 + 中英 README),在发布流水线上被宿主换代造成的断裂拦下——原样发出去的话,用户在新宿主上装到的包不进预设选择器。改动已并入 [0.2.4]。
+
+
+**文档与版本信息更新。**
+
+### Changed
+
+- 更新项目版本至 `0.2.3`。
+- 更新中文 README。
+- 更新 README。
+
+## [0.2.2] — 2026-09-18
+
+**装的时候不再吓人。** 0.2.1 的 `npx clearai-dsh install` 会打出一串 peer 警告(react / graphology-types …),读起来像装坏了——而它们一个字都不影响运行。这一版把安装面收窄到运行时真正需要的那一个依赖,并让安装侧 CLI 按系统语言出话。
+
+### Changed
+
+- **安装面只剩一个运行时依赖。** `@xyflow/react` / `graphology` / `graphology-layout-forceatlas2` / `docx` 挪进 `devDependencies`:前三个只在构建期打 vendor(`lib/client.js` 里是**内联**的,装机后不解析 npm),`docx` 只给营销 docx 脚本用。于是 profile 里不再多装一批包,也不会再有那些注定填不上的 peer 警告——React 由 **DSH 宿主**提供(客户端半 `require('react')` 是问宿主拿的),`graphology-types` 只是类型包。运行时唯一保留的是 `zod`(宿主半 `lib/host.js` 真的 `from 'zod'`)。
+- **安装侧 CLI 跟系统语言走。** `doctor` / `install` / `root-yaml` / `seed` / `unseed` 的每一句都在中英两份文案表里(并排放在一处,改的时候不会只改一边);判据是 `--lang zh|en` > `CLEARAI_LANG` > `LC_ALL` / `LC_MESSAGES` / `LANG` > ICU 的默认 locale,`C` / `POSIX` 当「没有语言信息」按英文处理。0.2.1 之前是无论系统是什么都说中文。
+
+## [0.2.1] — 2026-09-18
+
+**知识任务是循环的原生行为,不是另一个模式。** 本体、实体、认识论早就在,但普通研究的最短路径仍然是「检索 → 总结 → 写报告」——要建本体得用户先想起来说一句。这一版修的是**接线缺口**:把知识任务的判据做成结构的(目标还开着 + 带着登记过的假设),系统自己进知识模式;并把图从手写 SVG 换成 React Flow,给了它一个真正的全屏工作区。
+
+### Added
+
+- **知识模式(分诊)**:判据是**结构的**——目标还开着,而且它带着登记过的命题。立约(`SetGoal`)本身就是模型已经做出的承诺;普通问答从不立约,于是从不进这一档(**零成本契约**)。词面启发式猜错了没人能复核,结构判据可以。
+- **知识预检**:把「已知」自动送到模型面前——只读、有界、**词面命中不猜语义**;每条读数说得出它来自哪条事实。
+- **缺口读数**:从已有事实算出还缺什么形态,每条指得出一个能补的动作。真跑的反直觉结论:改变行为的其实是**缺口的可见性**,不是门——所以两者都留(可见性让它想做,门不让它绕过)。
+- **知识门**:结案之前、派评估者之前拦住**没有形态的核心结论**——纯散文不许升格。
+- **知识 Inspector**:点节点或边 → 定义 / 关系 / 断言 / 证据链 / 登记与修订史;「按此筛选」是详情里的**显式动作**,不猜你点它的意思。新增宿主只读路由 `/api/clearai/inspector` 与行为测试。
+- **图谱工作区**:图带可展开成全屏工作区,布局是力导向(知识图谱的原生形状);渲染交给 React Flow(`@xyflow/react` 12,vendor 行随构建走,与 `dist/` 同一条纪律)。
+- **哲学 P6**:「本体生长是循环的原生行为,不是另一个模式」——写进[循环哲学](docs/loop-philosophy.zh-CN.md)与[认识论循环](docs/epistemic-loop.zh-CN.md)(中英)。
+- **素材工具** `tools/panel-shots.mjs`:折一场真会话 → 挂**真组件** → 真 Chrome 截图(与 `tools/graph-shots.mjs` 同一条口径)——面板截图从此可复现,不用人去界面里手点。
+
+### Changed
+
+- **图 DTO 统一**:图带与工作区共用同一份投影,判据只有一处(`fold` → `view()` → `graphProjection()`);「同一份账本 ⇒ 同一张图」是投影的性质。
+- **预设描述**收敛成一句中英并排:「利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.」——名册只有这两行元数据,宿主不会替我们本地化,所以只能自己写死。
+- **README 的「安装」改为「安装与使用」**:写明怎么在模式选择器里切到 `ClearAI`(默认标准模式不挂认识论循环),并把本体图 / 图带 / Inspector 的真机截图放进去。
+- 营销物料换掉全部陈旧面板截图:知乎稿与 docx、小红书 9 张卡片改用真机会话的投影(统计同步为 15 套件 1618 条断言 · 29 个意图工具 · 6808 行内核 · 50 种事件分支)。
+
+### Fixed
+
+- **命题身份在修订时被重新签发**:同一句话在 id 空间里躺着两份读数(一份「已支持」、一份「未触及」),真会话的卡实测 4 条主张显示成 6~8 行。现在主张原文不变就复用原 id,换了主张才发新 id;并补上 `hypothesis/superseded` 一直缺席的生产者。
+- **节点拖不动**(两次):受控 `nodes` 没接 `onNodesChange`;拖动键写成了对象,`[object Object]` 查不到。
+- **React Flow 是 forwardRef 对象,不是函数**——守卫把合法组件判成「没装上」;并改为同作用域注入,不再依赖运行时模块行。
+- **图带收不到 sessionId**;时间戳不再显示 1970。
+- **工作区读面有主人**:子会话结构上写不进词汇 / 事实货架。
+- 力导向布局的四个真机缺陷(评估者独立复核后逐条修掉)。
+
+## [0.2.0] — 2026-09-17
+
+**研究的产品形态是本体。** 认识论循环是本体的生产工艺,事实是它的内容单位——真值方向不变(世界 → 证据 → 事实 → 长成本体),所以**本体不裁决任何事,它只收留被裁决过的东西**。别的知识图谱靠抽取与断言堆边;这里的每一条边都要通过循环挣得。
+
+### Added
+
+- **领域本体(语言层)**:六个账本事件(`ontology/term_added / predicate_added / *_revised / *_deprecated`)折成 `state.lexicon`;概念与谓词带依据接纳、版本化修订、黏性废止(**没有删除**);语义变化必须换 id。判据只有一份(`ui/lib/domain-language.js` 纯函数),模型工具、人门动词与折法同源。
+- **七个具名动词**:`RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge`(意图工具 22 → 29 件)。
+- **类型化断言**:假设可带 `assertions`(主词–谓词–宾语;值形态 statement/quantity/formula/code/reference + 关系宾语 instance);**提供即严校**(引用存在、形态合域、同一事实自洽,一律落账之前拒),不提供放行(旧事实显示「未结构化」,不回溯改写);升格时断言随事实定型,事实按 id 关联假设(修掉按文本匹配)。
+- **冲突只暴露,不裁决**:同一单值谓词、同一主体、不同客体 ⇒ 派生一对冲突;卡片与货架各说一遍;不进闸门、不动任何一侧;处置走既有的人门。
+- **本体格(中栏)**:图带(本体图|实体图、缩放平移、全景、点节点=按概念过滤)、断言芯片就地展开词条卡、冲突行+内联标记、过滤 N/M 行、折叠的词汇维护区(含登记抽屉与废止入口——经人门通道,判据与模型工具同一份);零成本契约:没有词条时这一格与从前逐像素相同。
+- **词汇货架** `clear/ontology/domain.md`(概念/谓词/Mermaid 图/引用统计/废止缘由/冲突),幂等渲染,`clear/ontology/` 进系统拒写清单。
+- **提示词** `clearai/domain-language`(hard;24 段定义 / 23 段在场)。
+
+### Changed
+
+- **定位**:「认识论工作台」→「基于认识论的本体研究平台」;口号「从证据,到改进」→「从证据,到本体」;中栏「事实」格更名「本体」格,事实货架更名**本体货架**(视图 id `clearai-facts` 与账本词汇不动——只有用户可见名词收敛)。
+- 术语收敛:**本体图**(原词汇图)/ **实体图**(原知识图,「知识图谱」是业界词,指整体)。
+- 事实货架 INDEX.md 头改「本体内容(已确立条目…)」。
+- **README 整体重塑**:口号「你的研究，长成一个本体」;叙事从「认识论循环工作台」转向
+  「本体发现与探索平台」——先讲你得到什么(本体),再讲凭什么可信(循环,折叠在 details 里);
+  面板截图换为本体格为主角(待截);安装与案例后移。定位/术语表/CHANGELOG 同步。
+
+### Fixed
+
+- e2e 的会话目录 slug 不认中文路径(宿主把 亨通 编码为 ~4EA8~901A):真项目(中文工作区名)此前必被误报成一排 ✗。
+- `--installed` 一次性形态:ClosePlan 之后交出回合即结束 ⇒ CloseGoal 必须同回合连续调用(已写进 e2e 记账)。
+
+## [0.1.7] — 2026-09-16
+
+**同一件事实只有一个来源。** 一轮"按真值表逐条核对 → 按症状打补丁 → 发现自己在打补丁 →
+按权威归属复核 → 删掉补丁"的完整收敛。净效果是**更少的机制、更少的字段、更少的分支**。
+
+### Fixed
+
+- **"Ended" is not "lost": audits now have the same recovery path as scouts.** When the host's subagent catalog says an evaluator's run has ended, the kernel first **recovers the verdict from the child's own session log** (`recoverVerdictFromChildSession`) — the same path `sweepScouts` has always had — and only records `unknown` when recovery fails. Three honest outcomes replace the old single "lost, this verdict will have no result" (which induced re-delivery ⇒ the same evaluation was redone while its result lay on disk): recovered (verdict + audit card land), ended-but-incomplete (`audit_incomplete`), and log-unreadable (`auditor_ended_uncollected`). The settlement text no longer gives advice — whether to retry is a plan-level decision, not the ledger's to make.
+- **The ruler's scale must be a nameable reference, not prose.** `decide_by_scale_not_reference`: the right side of `量 = 口径` must reference **a file that actually exists in the workspace**; prose and dead paths are rejected. `评分 = 按本路线情况评分` passed the old format check and guaranteed nothing. Whether the branches actually *used* the measuring instrument remains the evaluator's job — the string check stops here and no longer pretends to verify.
+- **`runEvaluator`'s three `unknown` exits now push `audit/settled`.** An evaluator that crashed, didn't finish normally, or whose card could not be written previously left only a `audit/dispatched` on the ledger — looking like "still running" when it had already ended. All three paths now settle: a bad ending is still an ending.
+
+### Changed
+
+- **The host-invariant companion now advances state with the production fold.** It previously folded its own index of plans/steps/forks/branches/audits/hypotheses (ten Maps) — a second interpreter that needed two repairs in its first hour because its shapes disagreed with the main projection. It now calls `applyEvent` from `fold.js` on the same events, keeping only the five contract predicates and one `admitted` set (the fold deliberately keeps `admission/checked` as ledger-only). 386 → 190 lines. Two real contract holes fixed in the same pass: dispatch+settle and admission+advance legitimately occur **in the same batch** (the kernel emits them that way), so the judge now accumulates as it iterates.
+- **Turn-end bookkeeping shrank to a workspace snapshot.** The `clearai/turn-ended` event, `turnEnds` state, the in-flight list, and the run-state card's "their conclusions will not come back" (an inference with no evidence — a parent turn ending proves only that the parent turn ended) are all **deleted**. The closing beat (`agent/turn-stopping` / `agent/error`) now only records a ledger commit of the turn's writes — the one thing that belongs to us. `STATE_VERSION` 8 → 9.
+- **Sub-run settlement texts no longer give advice.** "Re-delivering this step dispatches a fresh evaluator" (audits) and "if you need that material, dispatch another scout" (scouts) are gone. The ledger states facts; retry decisions belong to the plan layer.
+
+### Added
+
+- **The authority map** (`docs/authority-map.zh-CN.md` + English): who produces each fact, where it lives, who consumes it, whether it can be derived — with the four confirmed findings (each now marked as fixed or under review) and the acceptance criterion: one failure class explained in one place; one fact one authority; the same run never re-executed because a read failed; the system can quietly say it does not know.
+- **`subagent/end` as a settlement channel** (in-process): fires on the same promise settlement as the handle we already trust, so settlement is not lost when the handle is gone (restart, mode switch, early return). Unknown child ids are ignored — someone else's sub-run is not our fact.
+
+## [0.1.6] — 2026-09-16
+
+**机制不许再说自己没有的话。** 一轮「按真值表逐条核对文档 vs 代码」的清点,把三处
+「文档写了、代码没有」补上了生产者;同时修掉四处在真跑里现形的缺陷——其中一个控件
+**点了报成功、账上一字未改**,还有一把**只有方向、没有口径**的尺子。
+
+### Fixed
+
+- **A control that reported success and did nothing.** The inbox rendered the same `fork_adopt` gate twice: once by the worldline block (with each branch's reading) and again by the generic list, because `needs === 'click'` implied "give it a 裁决 button". The second button sent `fork: null`, so the fold's `forks.find(id === null)` matched nothing and the state did not change — while the host route answered `200 {ok:true}`. One criterion now drives both renderings, and the generic layer only offers what it can actually land: 采纳 for a skill candidate, 用提问卡决定 for a gate the worldline block cannot render, a sentence-prompt for word gates.
+- **The ruler had a direction but no scale.** Two worldlines' `done_criteria` were byte-identical and each told the *branch* to publish its own 计分口径 — so two mutually invisible executors measured in different units (炉次 vs 等效炉次) and `min` compared the two conventions as if they were one quantity. `decide_by.metric` must now read `量 = 口径` (`decide_by_scale_required`), and the *sharing* is guaranteed by the existing "each branch's criteria must contain the metric verbatim" check — no new field, no new gate, refused at registration instead of after the work.
+- **The declared evidence path was never told to the doer.** `ForkPlan` declares each branch's `artifacts`, and delivery requires those paths to exist inside the executor's worktree — but the executor's brief carried only criteria, approach and workspace. A fresh agent therefore wrote to `products/reports/` and delivery failed on the declaration, leaving "copy the file into the declared path" as the only way through: a copy in a place where the evidence was not produced. The brief now carries the declared paths, and the refusal names the two honest ways out instead of inviting the copy.
+- **The delivery-point commit could be swallowed by an exploration snapshot.** A snapshot committed the tree, so the delivery commit became empty, `commitLedger` skipped it silently (its rule is "nothing changed → no commit") and the delivery point disappeared from the ledger. The delivery point is a *named* event ("what the workspace looked like when this step was delivered"): only it passes `allowEmpty`.
+- **Receiving no verdict never escalated.** A lost or unavailable independent verdict failed closed forever: the model could re-deliver, fail closed, and repeat — the same action, no new fact — without ever reaching a person. It now shares the block counter with a failed admission, so repeating it blocks the plan and lands in the inbox door that already exists.
+- **`retracted` had no producer** — the state was declared in the ontology, absent from it in code, and drawn in the panel. Refuting evidence now only *marks* a promoted fact (`refuted`, derived) and raises an inbox item; a human decides **撤回** or **维持原事实**, and both land as one `fact/reviewed` (retraction is terminal, the record is kept). "No decision" and "decided to keep" have to stay distinguishable, or the gate holds continuation forever.
+- **Platform junk no longer enters the ledger.** `.DS_Store` is nobody's content, is binary, and changes whenever a directory is browsed — two worldlines' copies always differ, so a merge conflicts over something unrelated to the delivery (a person clicked adopt and the model spent a round aligning `.DS_Store` bytes). `LEDGER_JUNK` now goes into the same `info/exclude` (exclusion is per repository, so every worktree benefits), and files already tracked are unstaged with `git rm --cached` — index only, the file in the workspace is untouched.
+
+### Added
+
+- **`untouchedLevels`.** A level measures how much a conclusion depends on trusting the doer; the compensation ladder (independent evaluator → human release) is the mechanism. "One level at a time" is an economic order, not a permission — and a reason for skipping cannot be falsified, so requiring one would be a field nobody can check. What is mechanical: the levels a hypothesis never used are derived and shown.
+- **`confirm_provisional`.** A provisional adoption could only be acknowledged by talking, while an open gate holds continuation — so the system waited for an action that could never arrive. Approval is a decision and now has a button.
+- **`VoidPlanStep`-style exits for the two gates that had none**, and two new human-gate verbs `retract_fact` / `keep_fact` (the whitelist is enumerated verbatim, and every gate is now checkable for both outcomes).
+- **Exploration snapshots** (`git/snapshot`): work written between deliveries is recorded, so exploration output is recoverable without asking anyone to declare it.
+
+### Changed
+
+- **The truth table tells the truth about itself.** Every `implemented` row must point at symbols that exist (`source.code` is now falsifiable and caught a dead identifier), every non-implemented row must name a destination, and the counts are 57 mechanisms: implemented 51 / partial 1 / design-only 1 / removed 4.
+- **`verification-loop`'s state table is a landing-point record**, not a design target: each of the nine names says where it lives today (a fact / something `derive()` computes / deliberately unrepresentable), and a machine check goes red if a row is added without one. §6 now says what carries each rule and admits that rule 1 is a reading, not a gate.
+- **Observation provenance declares only what has a producer** (`self`, `scout`); the type may not promise an origin nothing writes.
+- Docs, counts and suites aligned: 13 suites, 1267 assertions, `verify-package` 31/0.
+
 ## [0.1.5] — 2026-09-16
 
 **卡片读不出自己的名字。** 预设卡片显示成 `clearai` + 「暂无描述」,而不是 ClearAI 与它的说明 ——

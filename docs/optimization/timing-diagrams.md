@@ -1,6 +1,6 @@
 # ClearAI expected timing diagrams
 
-> These diagrams describe **who does what to whom, when, along five main paths**.
+> These diagrams describe **who does what to whom, when, along six main paths**.
 > They pair with the state machines ([`state-machines.md`](state-machines.md)):
 > state machines answer "which states exist", timing diagrams answer "who pushed it there".
 > Every tool name and event name in the diagrams maps one-to-one to code.
@@ -12,7 +12,7 @@
 | **Human** | The user. Only they can do three things: approve a plan on the native review card, release L4 on the native approval stack, press a human-gate verb on the panel | not a system component |
 | **Model** | The LLM reasoner. It **emits intent** (tool calls, answers) and executes nothing | not "the agent system"; it touches neither the ledger nor files — everything passes through the host |
 | **DSH host** | The engine: the turn loop, tool dispatch, sandbox and approvals, the native review card, subagents, the goals service (continuation driver), writing the session log | makes no epistemic judgments; it does not know "what may be believed" |
-| **ClearAI kernel** | The preset plugin: 22 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
+| **ClearAI kernel** | The preset plugin: 32 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
 | **Fact ledger** | The append-only record of facts. **The content is ours**: clearai mutation events + `clear/` artifacts and evaluation cards; **the carrier is the host's**: the session log + the filesystem. It stores no conclusions — "what may be believed now" is folded out of it by the projection | not a second state book; state is not "read" from it but "folded" out of it |
 | **Projection** | The host-side half `ui/lib`: fold (ledger → state) + derive (state → views) + the panel. **Reads the ledger, never writes** | not a cache, not a copy — one view of the same facts |
 | **Independent evaluator** | A fresh-context read-only subagent dispatched by the kernel via the host (L3+), returning a structured verdict through `outputSchema` | not the executor's twin; the other half of doer ≠ judge |
@@ -68,13 +68,20 @@ sequenceDiagram
     Note over M,D: this segment never touches the ClearAI kernel:<br/>the ledger gets ordinary session events, no authoritative mutations
 ```
 
-Current status: **partial**. Low-authority exploration is physically possible (the native tools
-exist), but the prompts describe it as a prelude to the formal loop rather than a region one may
-freely stay in; provisional planning tools like `tool-todo` are not mounted, so the model has no
-"plan that stays out of the ledger".
+Current status: **implemented**. Two things carry it, and neither is a "zone" object:
 
-Plan: see Phase 4 "exploration zone / formal zone" and Phase 5 "non-authoritative tools return"
-in the optimization plan.
+- **The negative half is a mechanism**: the native working tools are mounted (`tool-todo`,
+  subagents, `workflow`, `ralph`) and the authority-boundary suite pins that none of them can
+  emit a `clearai` mutation.
+- **The positive half is coverage, not a region**: a workspace snapshot lands at each turn
+  boundary in which this session wrote something, so exploration output produced before any plan
+  exists is in the ledger — inspectable and restorable. What that does not claim is attribution
+  (see [known gaps](../known-gaps.md)).
+
+The "exploration zone" as a **named mode** is retired as a concept: making it a mechanism would
+have dressed advice as machinery, and making it a surface would have been a second name for the
+same thing. The requirement behind it — "exploration output must be accounted for" — is met by
+the two bullets above.
 
 ## 2. Formal epistemic path · implemented
 
@@ -226,7 +233,59 @@ Key points:
   reversal depends on them staying readable forever.
 - A fork closed while an executor has not returned → derived `unreturned`; stop waiting.
 
-## 5. Human gate path · implemented
+## 5. Domain-ontology path · implemented (fold, verbs and panel all ship)
+
+**Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. The **fold
+half** (six vocabulary events, assertions, conflict and graph derivation) and the **ten verbs**
+(register / revise / deprecate / query / register instance / assert / explain a level skip) are wired; **so is the panel** (graph band / assertion chips /
+conflict row / vocabulary maintenance zone, plus graph editing through the human-gate route — the same
+criteria and the same ledger as the model's verbs).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant M as Model
+    participant K as ClearAI kernel
+    participant L as Fact ledger
+    participant P as Projection
+    participant G as Read surfaces (shelf / card / panel)
+
+    Note over M,P: knowledge preflight (implemented: no user reminder needed)
+    M->>K: SetGoal (registering propositions)
+    K-->>L: mutation goal/set
+    L->>P: fold → derive
+    P->>P: knowledgePreflight: claim text matches entry label/id/alias (bounded, auditable)
+    P-->>G: runtime card gains a "relevant known (directly referenceable)" line
+    G-->>M: model receives referenceable ids — reuse first, register only what's missing
+
+    Note over M,K: vocabulary verbs (implemented)
+    M->>K: RegisterTerm / RegisterPredicate (with a basis)
+    K->>K: validate: unique id · references exist · acyclic is_a · legal range
+    K-->>L: mutation ontology/term_added (and predicate_added / revised / deprecated)
+    M->>K: SetGoal (hypotheses carrying assertions)
+    K->>K: validate assertions: predicate exists · subject in domain · object form · intra-fact consistency
+    K-->>L: mutation goal/set
+    Note over K,L: everything below is the fold as it stands today
+    K-->>L: mutation fact/promoted (hypothesis + assertions)
+    L->>P: fold: events → state.lexicon / state.facts
+    P->>P: derive: conflict pairs · vocabulary health · graphProjection (layer / degree / claim)
+    P-->>G: render shelf / runtime card / panel view
+    G-->>M: next turn retrieves what is known by concept
+    Note over G: the graph is rendered by React Flow (nodes/edges from P; viewport and dragging are the library's)
+    G->>K: click a node / edge → GET /api/clearai/inspector (kind, id)
+    K->>P: inspectGraphSelection(state, selection)
+    P-->>G: definition / relations / assertions / evidence chain / history
+```
+
+Five boundaries (each has a test, or is written into [Known gaps](../known-gaps.md)):
+
+1. **Refused at registration**: an assertion that references an unknown or deprecated entry, or whose object form does not fit the range, is refused **before anything lands** — nothing enters the ledger, so there is nothing to clean up later.
+2. **Conflicts are surfaced only**: computed by `derive()`, they retract no side, decide nothing about which is true, and **enter no gate**; handling one goes through the existing human gate (`fact/reviewed`).
+3. **Graphs are renderings**: `graphProjection()` is a deterministic pure function (the same ledger always yields the same graph) and coordinates never enter the ledger.
+4. **The graph is a rendering, not a second ledger**: `graphProjection()` yields pure semantics (nodes / edges / bounds); the viewport, dragging and visibility belong to React Flow. The client's Inspector readings always come from `GET /api/clearai/inspector`, so it never assembles an evidence chain itself. Interaction produces no mutation at all.
+5. **The shelf has an owner**: `domain.md` and `facts/INDEX.md` are **workspace-level** read surfaces, and only the session that owns the ledger may lay them — the ownership check lives inside the write functions, so spawned children (evaluator / scout / executor) structurally cannot write them. Children share the workspace with the primary line yet hold a separate, empty projection; if they re-laid the shelf, the shared read surface would oscillate with whoever stepped last. Behavior is pinned by the kernel suite, structure by the authority-boundary suite.
+
+## 6. Human gate path · implemented
 
 ```mermaid
 sequenceDiagram
@@ -238,7 +297,7 @@ sequenceDiagram
     participant K as ClearAI kernel
 
     P-->>H: useProjection('clearai') pushes views
-    H->>P: press an action (adopt_branch / abandon_fork / promote_skill)
+    H->>P: press an action (adopt_branch / abandon_fork / promote_skill / retract_fact / keep_fact / confirm_provisional)
     P->>D: submit verb + arguments
     D->>D: whitelist check (anything off-list is refused; values checked on the same layer)
     D->>L: becomes a source.kind='user' message (append-only)

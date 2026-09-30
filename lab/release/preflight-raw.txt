@@ -1,0 +1,69 @@
+# 0.2.3 发布前置核查 — 原始输出
+
+采集时间: 2026-09-28T10:31:21+08:00
+采集目录: /home/lhc/Project/clearai-dsh
+
+==================================================================
+$ git rev-parse HEAD
+e362acc1832006d92c8e29838233510c42b55c23
+
+$ git rev-parse origin/main
+e362acc1832006d92c8e29838233510c42b55c23
+
+$ git status --short   (空=工作树干净)
+?? lab/release/
+(以上为空则工作树干净)
+
+==================================================================
+检查 1:package.json 版本 vs CHANGELOG 段落标题
+$ node -p "require('./package.json').version"
+0.2.3
+
+$ grep -n '^## \[0.2.3\]' CHANGELOG.md
+5:## [0.2.3] — 2026-09-23
+
+==================================================================
+检查 2:CHANGELOG 0.2.3 段落可被发布流程抽取
+$ node tools/changelog-section.mjs 0.2.3
+**文档与版本信息更新。**
+
+### Changed
+
+- 更新项目版本至 `0.2.3`。
+- 更新中文 README。
+- 更新 README。
+
+$ node tools/changelog-section.mjs 0.2.3 --title
+clearai-dsh 0.2.3 — 文档与版本信息更新。
+
+==================================================================
+检查 3:e362acc 上 CI 的结论
+$ gh run view 35857872272 --json databaseId,name,headSha,headBranch,event,status,conclusion,createdAt,url
+{"conclusion":"success","createdAt":"2026-09-23T12:00:52Z","databaseId":35857872272,"event":"push","headBranch":"main","headSha":"e362acc1832006d92c8e29838233510c42b55c23","name":"CI","status":"completed","url":"https://github.com/Clearailhc/clearai-dsh/actions/runs/35857872272"}
+
+$ gh run list --branch main --limit 3 --json databaseId,name,headSha,event,conclusion,createdAt
+[{"conclusion":"success","createdAt":"2026-09-23T12:00:52Z","databaseId":35857872272,"event":"push","headSha":"e362acc1832006d92c8e29838233510c42b55c23","name":"CI"},{"conclusion":"success","createdAt":"2026-09-23T10:30:38Z","databaseId":35849204289,"event":"push","headSha":"b4c5ff5e97faea1ca78fdb42039f48691c1cbc42","name":"CI"},{"conclusion":"success","createdAt":"2026-09-23T09:20:12Z","databaseId":35842325595,"event":"push","headSha":"76f6912a508023ab18b95f7325c0a57f932b1984","name":"CI"}]
+
+==================================================================
+检查 4:npm registry 上 0.2.3 是否已存在
+$ curl -sS https://registry.npmjs.org/clearai-dsh | node -e '<打印 dist-tags 与 versions>'
+dist-tags: {"latest":"0.2.2"}
+versions: 0.1.0, 0.1.1, 0.1.2, 0.1.3, 0.1.4, 0.1.5, 0.1.6, 0.1.7, 0.2.0, 0.2.1, 0.2.2
+has 0.2.3: false
+
+==================================================================
+检查 5:tag 现状(本地 / 远端)
+$ git tag -l 'v0.2.*'
+v0.2.0
+v0.2.1
+v0.2.2
+
+$ git ls-remote --tags origin 'v0.2.*'
+24be58ccce6d5223837dad12a9edb046ef96f980	refs/tags/v0.2.0
+b3969650760e216831fd9b5bf48aa3974ec0afc7	refs/tags/v0.2.0^{}
+c38143dd14c393220c36ef322df1ca229cda7097	refs/tags/v0.2.1
+b870978a1bd1c17913943c361a951654a2dac29f	refs/tags/v0.2.1^{}
+689d5c71d22e275ad1b01ad33f0ebe97d78a5a85	refs/tags/v0.2.2
+91dcb2ab11d1a4d8fe8d5d8ff4697447bb190c25	refs/tags/v0.2.2^{}
+
+== 本地是否存在 v0.2.3:0 条 ==

@@ -24,6 +24,16 @@ Retain the approved protocol, risk notes, device identity, calibration status, r
 ## Limitations
 A bench result may not generalize across devices, materials, environments, or long-term aging. Safety, legal, institutional, and manufacturer requirements take priority. The agent cannot certify apparatus, materials, or human safety.
 
+
+## The ontology in that run
+
+That run predates the typed form ("fact = prose"). Under the 0.2.0 design the same chain grows like this (real-run evidence in the three Hengtong sessions of the development plan):
+
+- **Words first**: `RegisterTerm` raises the concepts `sensor_unit` and `ambient_temp`, each basis pointing at the manufacturer's procedure; `RegisterPredicate` raises `zero_drift` (subject domain `sensor_unit`, value form `quantity` in mbar, **single-valued**) — single-valued is the point: one zero-drift reading per sensor in any conclusion.
+- **Hypotheses carry assertions**: "zero drift < 0.2 mbar over a 10 °C rise" carries the assertion `zero_drift(sensor_unit#3) = 0.08 mbar`; an assertion naming an unregistered predicate is refused **before anything lands**.
+- **Fixed at promotion**: once the two differently-criterized hypotheses are delivered, audited and promoted, and the second one reads `0.31 mbar` — same subject, same single-valued predicate, two values — the projection **derives a conflict pair automatically**: the runtime card says it, the ontology shelf says it, **the system retracts neither side**; retracting or keeping is a human press (through the human gate, record kept).
+- **The graph that grows**: the ontology graph gains `sensor_unit --zero drift--> quantity(mbar)`; the entity graph shows `sensor #3` carrying two `[L0][live]` assertion edges (0.08 and 0.31) — where it hurts is visible at a glance.
+- **Old facts stay**: facts promoted before any of this remain on the shelf, marked "unstructured"; assertions are additive, not a threshold.
 ## Stored run
 
 The task book this case was run against, and everything the run produced — the session record, the artifacts it left, and an honest reading of both — are kept with the case workspace. Nothing from a run is deleted, including runs that stopped halfway.

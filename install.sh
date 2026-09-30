@@ -8,12 +8,16 @@
 # 没有任何绝对路径、不给用户目录里塞副本。
 #
 # 本脚本保留给**开发**:它把仓库里的源直接摊进真实 DSH_HOME(预设拷进 ~/.dsh/.agent-presets,
-# 面板包塞进 profile 的 node_modules,再往 profile 补丁层追一行绝对路径)。
+# 面板包塞进 profile 的 node_modules,再往 profile 补丁层追一行)。
 # 改内核后想立刻在自己机器上生效,用它最省事;要验「发出去的样子」,用 install-native.mjs。
+#
+# **前提**:这个 profile 还没有通过包管理器装 clearai-dsh。装了的话本脚本会拒绝——
+# 那个目录是 pnpm 管的(manifest 与 lockfile 都指着它),覆盖它等于用 `ui/` 的一个子集
+# 换掉装好的包,而且补丁层会同时出现两条宿主行(投影单元只能注册一次)。
 #
 # 装三样东西:
 #   1. 预设平面:~/.dsh/.agent-presets/clearai/            (ClearAI 的灵魂:内核 + 组合 + 技能)
-#   2. 宿主平面:~/.dsh/profiles/web/node_modules/@clearai/dsh/          (面板 client 半)
+#   2. 宿主平面:~/.dsh/profiles/web/node_modules/clearai-dsh/            (面板 client 半)
 #   3. 宿主平面:~/.dsh/profiles/web/cordis.patch.yml 里的一行 insert(挂上面那个包)
 #
 # 幂等:重复跑只会覆盖文件,补丁行只加一次。
@@ -40,8 +44,21 @@ PANEL_PKG="clearai-dsh"
 OLD_PANEL_PKGS=()
 PANEL_DST="$DSH_HOME/profiles/$PROFILE/node_modules/$PANEL_PKG"
 PATCH="$DSH_HOME/profiles/$PROFILE/cordis.patch.yml"
+MANIFEST="$DSH_HOME/profiles/$PROFILE/package.json"
 
 echo "DSH_HOME = $DSH_HOME"
+
+# ── 0. 保护:产品安装在位时**拒绝**─────────────
+# 判据是 profile 清单里有这个依赖(pnpm 因此拥有那个目录)。这是**不可表示优于不可违反**:
+# 与其在覆盖前多问一句,不如让这条危险路径根本走不通,并把两条正当的路写清楚。
+if [ -f "$MANIFEST" ] && grep -q "\"$PANEL_PKG\"" "$MANIFEST"; then
+	echo "拒绝安装:$PROFILE 这个 profile 已经由包管理器装了 ${PANEL_PKG}。" >&2
+	echo "  它由 pnpm 管(manifest + lockfile),覆盖它会毁掉装好的包,并且在补丁层留下两条宿主行。" >&2
+	echo "  产品形态(推荐):node tools/build-package.mjs && node tools/install-native.mjs --profile $PROFILE" >&2
+	echo "  确实要回到开发形态:先用 dsh plugin --profile $PROFILE remove $PANEL_PKG 卸掉它" >&2
+	exit 1
+fi
+
 # **覆写之前先备份**(§27c):开发安装会覆盖下面三个落点,出问题时用
 # `bash tools/backup-home.sh rollback` 一条命令回到上一版 —— 不必再手动 git 恢复。
 if [ -d "$DSH_HOME/.agent-presets/clearai" ] || [ -d "$DSH_HOME/profiles/$PROFILE/node_modules/@clearai/dsh" ]; then
@@ -130,8 +147,8 @@ fi
 echo
 echo "装好了(**开发形态**;产品形态见 tools/install-native.mjs)。验收:"
 echo "  · 起一个新的 ClearAI 会话(预设选择器里选「ClearAI」)"
-echo "  · 中栏应出现「产物」页;右栏「+」里应有「进展 / 世界树 / 外脑」"
-echo "  · 输入框下方应出现一行派生状态(含「需要你 N」)"
+echo "  · 中栏应出现「产物 / 事实」两格;右栏「+」里应有「世界树 / 技能 · 记忆」"
+echo "  · 输入框上方应出现计划芯片(步数 +「需要你 N」)"
 echo
 echo "装完自检(用**部署出去的文件**做一次真实装配,绕开 ESM 缓存):"
 if node "$HERE/tools/verify-deploy.mjs"; then

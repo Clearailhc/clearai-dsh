@@ -1,0 +1,14 @@
+{
+  "name": "goal-chain",
+  "title": "目标链:结案后再立一个,复用前一环的产物",
+  "stamp": "20260917-145400",
+  "code": 0,
+  "passed": 39,
+  "failed": 0,
+  "failures": [],
+  "elapsedSec": 488,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/goal-chain/20260917-145400/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-goal-chain-20260917-145400-workspace--/session-4d33948a-295b-41e3-a274-f52cea0a55ac/session.v3.jsonl.zstd",
+  "mutationCount": 48,
+  "mutationKinds": "goal/set,plan/created,plan/confirmed,observation/recorded,admission/checked,evidence/recorded,step/advanced,block/cleared,git/committed,plan/amended,plan/closed,audit/dispatched,audit/settled,goal/closed"
+}

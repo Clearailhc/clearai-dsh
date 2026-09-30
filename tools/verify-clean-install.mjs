@@ -29,26 +29,42 @@
  */
 
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, realpathSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
 /**
  * dsh checkout 在哪:那是 `npx --no-install` 的工作目录(让它优先解析到 checkout 里的
  * 那份 CLI)。曾经在代码里写死了一台机器的绝对路径——换台机器,spawn 的 cwd 不存在,
- * 后面每一步都报一个看不懂的错。现在从 npx 缓存现找,找不到就退回仓库根(缓存解析照样工作)。
+ * 后面每一步都报一个看不懂的错。现在从 npx 缓存现找。
+ *
+ * **按版本挑,并把用的是哪一份念出来**(2026-09-28 的教训):这台机器的缓存里躺着两份
+ * (0.1.5-rc.1 与 0.1.7-rc.2),而 `readdir` 的顺序不保证挑到哪一份。挑到旧的那份时,
+ * `--dump-config` 会因为我们的 bundle patch 是数组(宿主 0.1.7-alpha.1 起才支持)当场崩,
+ * 四条组合断言全红——而真正的原因(验的根本不是我们要支持的宿主)一个字都不在输出里。
  */
 function discoverDshCheckout() {
 	const cache = join(process.env.HOME ?? homedir(), '.npm', '_npx')
+	const candidates = []
 	if (existsSync(cache)) {
 		for (const entry of readdirSync(cache)) {
-			if (existsSync(join(cache, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'))) return join(cache, entry)
+			const manifest = join(cache, entry, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+			if (!existsSync(manifest)) continue
+			candidates.push({ dir: join(cache, entry), version: JSON.parse(readFileSync(manifest, 'utf8')).version })
 		}
 	}
-	return ROOT
+	if (candidates.length === 0) return ROOT
+	const rank = (version) => String(version).split('-')[0].split('.').map(Number)
+	const newest = candidates.sort((a, b) => {
+		const [left, right] = [rank(a.version), rank(b.version)]
+		for (let index = 0; index < 3; index += 1) if ((left[index] ?? 0) !== (right[index] ?? 0)) return (right[index] ?? 0) - (left[index] ?? 0)
+		return 0
+	})[0]
+	console.log(`  dsh 来自:${newest.dir}(@deepseek-ai/dsh ${newest.version})`)
+	return newest.dir
 }
 const CHECKOUT = process.env.DSH_CHECKOUT ?? discoverDshCheckout()
 /**
@@ -156,15 +172,35 @@ if (spec === null) {
 	execFileSync('node', [join(ROOT, 'tools', 'build-package.mjs')], { stdio: 'pipe' })
 	const packDir = mkdtempSync(join(tmpdir(), 'clearai-pack-'))
 	const packed = spawnSync('npm', ['pack', join(ROOT, 'dist', 'clearai-dsh'), '--pack-destination', packDir], { encoding: 'utf8' })
-	const tgz = (packed.stdout ?? '').trim().split('\n').pop()
-	spec = join(packDir, tgz)
-	check('构建并打出了 tgz', existsSync(spec), spec)
+	const tgz = (packed.stdout ?? '').trim().split('\n').filter((line) => line.trim() !== '').pop() ?? ''
+	spec = tgz === '' ? packDir : join(packDir, tgz)
+	/**
+	 * **判据必须是"文件真的在",不是"这个路径存在"**:`npm pack` 失败(例如 npm 自己的缓存
+	 * 只读、EROFS)时 stdout 是空的,拼出来的 `spec` 就成了那个**目录**——`existsSync` 照样为真,
+	 * 于是这里报"✓ 打出了 tgz",而下一条 `dsh plugin add` 会把目录名当组合包名去解析,
+	 * 报出一句与真实原因毫无关系的 `cannot resolve profile bundle "clearai-pack-XXXX"`。
+	 * 所以:必须是 `.tgz` 结尾的**文件**;拿不到就把 npm 的原话打出来。
+	 */
+	const packedOk = spec.endsWith('.tgz') && existsSync(spec) && statSync(spec).isFile()
+	check('构建并打出了 tgz', packedOk, packedOk ? spec : `npm pack 没产出 tgz(stdout=${JSON.stringify((packed.stdout ?? '').slice(-120))} stderr=${JSON.stringify((packed.stderr ?? '').slice(-200))})`)
+	if (!packedOk) process.exit(1)
 }
 
 // ── ⑤ 真 CLI + 真 pnpm ─────────────────────────────────────────────────────
 {
 	const add = dsh(['plugin', '--profile', 'web', 'add', spec], HOME_DIR)
 	check(`dsh plugin add ${SPEC === null ? '<tgz>' : SPEC} 成功`, add.status === 0, `${String(add.stderr ?? '').slice(-200)}`)
+	/**
+	 * **失败时先把它说的话说完,再干净退出**。
+	 *
+	 * 为什么加这一段:装不上时,后面那七条机械断言会去读一个**不存在的** `package.json`,
+	 * 于是整场以一条 ENOENT 堆栈收尾——真正的失败原因(CLI / pnpm 那段 stderr)被埋在中间,
+	 * 读的人要自己往回翻。装不上就该在这里停:把 stderr 原样打出来,并以非零退出。
+	 */
+	if (add.status !== 0) {
+		console.log(`\n⛔ dsh plugin add 失败,后面的断言无从谈起。CLI 的原话:\n${String(add.stderr ?? '').trim() || '(stderr 为空)'}\n`)
+		process.exit(1)
+	}
 }
 
 // ── ⑥ 七条机械断言 ─────────────────────────────────────────────────────────
@@ -186,9 +222,71 @@ if (spec === null) {
 	const composed = dump.stdout ?? ''
 	check('③ 组合里 clearai-host 恰好一行', (composed.match(/- id: clearai-host/g) ?? []).length === 1, String((composed.match(/- id: clearai-host/g) ?? []).length))
 	check('③′ 宿主行用的是包名(不是路径)', /name:\s*'?clearai-dsh'?/.test(composed.slice(composed.indexOf('clearai-host'), composed.indexOf('clearai-host') + 120)))
-	const rosterLine = composed.slice(composed.indexOf('includeShippedRoot'), composed.indexOf('includeShippedRoot') + 600)
-	check('④ 名册 root 指向包内 presets/,且 trust 是 system', /node_modules\/clearai-dsh\/presets\//.test(rosterLine) && /trust:\s*system/.test(rosterLine), rosterLine.replace(/\s+/g, ' ').slice(0, 120))
-	check('④′ 没有把发行版 root 挤掉(includeShippedRoot 仍为 true)', /includeShippedRoot:\s*true/.test(composed))
+	/**
+	 * 预设注册在宿主 0.1.7-alpha.1 换代了:旧的「root 目录扫描」→「组合里的声明行」。
+	 * 断言按**组合里出现哪一代的名册行**分档;旧断言不删,只在新宿主上让位。
+	 * 依据与实测:lab/release/0.2.3-release-blocker.md、lab/adapter/0.2.4-design.md。
+	 */
+	const legacyRoster = composed.includes('- id: agent-presets')
+	const modernRegistry = composed.includes('- id: agent-preset-registry')
+	console.log(`  · 宿主的名册机制:${modernRegistry ? '声明行(≥0.1.7-alpha.1)' : legacyRoster ? 'root 目录(≤0.1.6-alpha.2)' : '都没找到'}`)
+
+	if (modernRegistry) {
+		check('④ 新机制:名册注册表行在(agent-preset-registry)', true)
+		const at = composed.indexOf('- id: preset-clearai')
+		const decl = at < 0 ? '' : composed.slice(at, at + 600)
+		check(
+			'④′ 新机制:预设声明行在,且 id/name/description/order/plugins 齐备',
+			at >= 0 && /name:\s*'@deepseek-ai\/dsh-agent-preset'/.test(decl) && /\bid: clearai\b/.test(decl) && /\border:\s*\d+/.test(decl) && /\bplugins:/.test(decl),
+			decl.replace(/\s+/g, ' ').slice(0, 120),
+		)
+		/**
+		 * **运行态那一条才是这一版最要紧的判据。**
+		 *
+		 * `--dump-config` 是静态的:探针实测过——preset 里放一个**根本不存在的插件**,
+		 * boot 依然完全正常,只有名册记一条 broken,界面就不显示这个预设。
+		 * 所以这里 boot 一次 profile,直接读 `agentPresets.list()`。
+		 * 用宿主的 profile-boot 接口(不需要模型凭据),web 起在随机端口并立即收尾。
+		 */
+		const INSTALL_ROOT = CLI_PREFIX ?? CHECKOUT
+		const rosterScript = [
+			"const install = process.env.CLEARAI_DSH_INSTALL",
+			"const { runProfile } = await import(install + '/node_modules/@deepseek-ai/dsh/lib/profile-boot.js')",
+			"const { createLaunchEnvironmentSnapshot } = await import(install + '/node_modules/@deepseek-ai/dsh-launch-environment/lib/index.js')",
+			"const environment = createLaunchEnvironmentSnapshot([{ source: 'process', values: { ...process.env } }])",
+			"const { ctx } = await runProfile({ environment, profile: 'web', patchFiles: [], args: ['--port', '0', '--no-open'] })",
+			'const list = await ctx.agentPresets.list()',
+			"const entry = list.find((item) => item.id === 'clearai')",
+			"process.stdout.write('ROSTER ' + JSON.stringify({ ids: list.map((i) => i.id), entry: entry === undefined ? null : entry }) + '\\n')",
+			'process.exit(entry !== undefined && entry.broken === undefined ? 0 : 3)',
+		].join('\n')
+		const roster = spawnSync(process.execPath, ['--input-type=module', '-e', rosterScript], {
+			encoding: 'utf8',
+			env: { ...process.env, DSH_HOME: HOME_DIR, CLEARAI_DSH_INSTALL: INSTALL_ROOT },
+			timeout: 300000,
+		})
+		const reported = (roster.stdout ?? '').split('\n').find((line) => line.startsWith('ROSTER '))
+		let ids = []
+		let entry = null
+		try {
+			const parsed = JSON.parse(reported.slice('ROSTER '.length))
+			ids = parsed.ids ?? []
+			entry = parsed.entry
+		} catch {
+			console.log(`  · 名册读不到(退出码 ${roster.status})——stderr 尾部:${String(roster.stderr ?? '').split('\n').filter((line) => line.trim() !== '').slice(-2).join(' | ').slice(0, 200)}`)
+		}
+		if (ids.length > 0) console.log(`  · 名册条目:${ids.join(', ')}`)
+		check('④″ 名册运行态:clearai 在列表里', ids.includes('clearai'), ids.join(', ') || '(空)')
+		check(
+			'④‴ 名册运行态:clearai 没有 broken(子插件真的起来了)',
+			entry !== null && entry.broken === undefined,
+			entry === null ? '(没有 clearai 条目)' : String(entry.broken ?? '').replace(/\s+/g, ' ').slice(0, 220),
+		)
+	} else {
+		const rosterLine = composed.slice(composed.indexOf('includeShippedRoot'), composed.indexOf('includeShippedRoot') + 600)
+		check('④ 名册 root 指向包内 presets/,且 trust 是 system', /node_modules\/clearai-dsh\/presets\//.test(rosterLine) && /trust:\s*system/.test(rosterLine), rosterLine.replace(/\s+/g, ' ').slice(0, 120))
+		check('④′ 没有把发行版 root 挤掉(includeShippedRoot 仍为 true)', /includeShippedRoot:\s*true/.test(composed))
+	}
 
 	const presetDir = join(PROFILE, 'node_modules', 'clearai-dsh', 'presets', 'clearai')
 	const skills = existsSync(join(presetDir, 'template', 'skills')) ? readFileSync(join(presetDir, 'template', 'skills', 'README.md'), 'utf8') : ''
@@ -203,6 +301,31 @@ if (spec === null) {
 		return (hit.stdout ?? '').trim() !== ''
 	})
 	check('⑥ 包内没有本机路径(仓库根 / 这次装到哪儿)', leaks.length === 0, leaks.join(', '))
+	/**
+	 * **插件列表里会显示什么**:判据不是我们复述规则,而是叫宿主自己的 `readPluginMeta`
+	 * 拿**装好的这个包**算一遍。它读 `<包名>/locale/<语言>.json` 的 `meta.title` /
+	 * `meta.description` 与清单顶层的 `icon`;全缺时回退成包名 + npm 的 description
+	 * (2026-09-28 实测到的就是那个形状:标题 `clearai-dsh`、介绍是 README 的 tagline)。
+	 * 所以这里同时钉住「有」与「不是回退值」——标题等于包名就是没写介绍。
+	 */
+	{
+		const installRoot = CLI_PREFIX ?? CHECKOUT
+		const bootPath = join(installRoot, 'node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js')
+		if (!existsSync(bootPath)) {
+			check('⑦ 拿得到宿主的 @deepseek-ai/dsh-app-boot(显示元数据要靠它算)', false, bootPath)
+		} else {
+			const { readPluginMeta } = await import(pathToFileURL(bootPath).href)
+			const meta = readPluginMeta('clearai-dsh', pathToFileURL(join(PROFILE, 'package.json')).href)
+			check('⑦ 宿主读显示元数据不报诊断', meta?.error === undefined, String(meta?.error ?? '').slice(0, 160))
+			check('⑦′ 标题是产品名,不是包名(不是回退值)', meta?.title?.en === 'ClearAI' && meta?.title?.zh === 'ClearAI', JSON.stringify(meta?.title ?? null))
+			check(
+				'⑦″ 介绍按语言各有一份(中文界面不必读英文)',
+				typeof meta?.description?.en === 'string' && meta.description.en.trim() !== '' && typeof meta?.description?.zh === 'string' && meta.description.zh.trim() !== '',
+				JSON.stringify(meta?.description ?? null).slice(0, 160),
+			)
+			check('⑦‴ 图标被宿主收下(data URL,不是默认图)', typeof meta?.icon === 'string' && meta.icon.startsWith('data:image/'), String(meta?.icon ?? '').slice(0, 24))
+		}
+	}
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

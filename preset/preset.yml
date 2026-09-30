@@ -1,8 +1,8 @@
 name: ClearAI
 # 预设名册只有这两行元数据,而且**宿主不会替我们本地化**:它只给四个内置 id 做 i18n,
 # 插件给的 name/description **一律原样显示**(见 @deepseek-ai/dsh-client-ui-agent-preset 的
-# presetDisplayText())。所以这里只能自己写死一句话、两种语言并排 ——
-# **一句中文 + 一句英文**,不再堆成两段;长度压在卡片的 clamp 之内(约 4 行)。
+# presetDisplayText())。所以这里只能自己写死、两种语言并排 ——
+# **一句中文 + 一句英文**,各只说一件事;长度压在卡片的 clamp 之内(约 2 行)。
 #
 # ⚠️ description **必须**是块标量(下面那个 `|-`)或者引号,不能写成普通标量:
 # 里面有「冒号 + 空格」时普通标量会被 YAML 读成嵌套映射 —— 而名册对读失败的处理是
@@ -10,4 +10,4 @@ name: ClearAI
 # 显示成目录名 + 「暂无描述」,宿主与我们两边都不报错。0.1.2–0.1.4 都带着这个 bug 发出去过;
 # `verify-package` 里那条「preset.yml 必须真能解析出 name 与 description」就是为此立的门。
 description: |-
-  认识论循环:命题→观测→评估→证据→事实,从答案到证据,从证据到改进。The epistemic loop: proposition → observation → evaluation → evidence → fact — from answers to evidence, from evidence to improvement.
+  利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.

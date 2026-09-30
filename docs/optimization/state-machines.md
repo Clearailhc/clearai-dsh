@@ -38,6 +38,9 @@ Notes:
 - `achieved` requires `ClosePlan` first: the kernel refuses to close a goal while a plan is open.
 - `abandoned` is an honest giving-up, not failure cleanup — the record stays.
 - Revision only bumps `revision` and appends to `reasons[]`; nothing is deleted.
+- Changing what counts as done is its own event: `criteria/revised` folds into `goal.criteriaHistory[]` (carrying the
+  independent `audit` key). It does **not** rewrite the `done_criteria` text (that travels the commit/revision path),
+  so a criterion change stays traceable; this is the key `SetGoal`'s `criteria_verdict` asks for.
 
 ## 2. Plan · implemented
 
@@ -108,9 +111,12 @@ stateDiagram-v2
 
 Three stickiness rules, all in `fold.js`:
 
-- `refuted` is not rewritten to `superseded` by a later list that omits it (`fold.js:272-277`).
+- `refuted` is not rewritten to `superseded` by a later list that omits it (`fold.js:396-411`).
 - A hypothesis already promoted to fact cannot be quietly replaced either (same `promoted` test).
 - `supportedLevel` is the maximum computed by `derive()`, never stored.
+- A level-skip reason, `level/skipped`, folds into `hypotheses[].skips[]`: `derive()` subtracts the levels a reason
+  covers from `untouchedLevels`, so writing the reason really does clear the `levels_skipped` gap — it is that gap's
+  way out, not something ignored.
 
 ## 5. Observation · implemented
 
@@ -138,6 +144,9 @@ stateDiagram-v2
 
 `derive().pendingAudit` is true when any entry has `verdict === null` → phase `auditing`, continuation
 `hold`. Lost audits are settled by `sweepLostAudits`, which explicitly lets that beat through
+Homomorphic reuse lands an `audit/reused` entry: its `verdict` is `reused`, which is **not** part of the
+`support | refute | inconclusive` decision and does not take the `null` "in flight" sentinel — so a step that reused
+an older verdict never leaves the system waiting.
 (`kernel.js:1904`).
 
 ## 7. Evidence · implemented
@@ -162,8 +171,11 @@ stateDiagram-v2
     promoted --> [*]
 ```
 
-`retracted` exists in the verification ontology but **has no producer today** — it is a design goal and
-is deliberately absent from this diagram.
+`retracted` **is deliberately absent from this diagram because it is not a stored state**: refuting
+evidence only *marks* the fact (`refuted`, derived), and a person decides to **retract** or to **keep** it —
+both outcomes land as one `fact/reviewed` (a retraction is terminal; the record is kept), and the projection
+reads it back out of `fact.review` as a derived state. The producers are `retract_fact` / `keep_fact` in
+`HUMAN_GATE_ACTIONS` and `markFactReviewed` in the kernel; the truth-table row is `fact-retraction` (implemented).
 
 ## 9. Worldlines (fork / branch) · implemented
 
@@ -175,6 +187,7 @@ stateDiagram-v2
         [*] --> exploring_f: fork/created
         exploring_f --> exploring_f: worldline/prepared / executing / executed / branch_delivered
         exploring_f --> deciding: every branch rank >= evaluated
+        deciding --> deciding: fork/recommended (arithmetic names a favourite; a fact only, no state change)
         deciding --> settled: fork/converged (arithmetic yields a unique winner)
         deciding --> undecidable: fork/undecidable (arithmetic cannot decide)
         undecidable --> undecidable: fork/arbitrated (the arbitration verdict lands, but settled is NOT set)
@@ -191,7 +204,7 @@ stateDiagram-v2
     end note
 ```
 
-Three derived states that are "not losses" (`fold.js:961-996`, all zero new ledger):
+Three derived states that are "not losses" (`fold.js:2094-2129`, all zero new ledger):
 
 | Derived | Meaning |
 |---|---|
@@ -263,17 +276,99 @@ stateDiagram-v2
 
 Notes:
 
-- `collectRetryMs` (default 2000ms) decides "re-collect while the projection has not landed yet" — the
-  criterion is the **projection**, not the in-memory `reported` flag.
+- A conclusion is re-published only while the **projection** has not landed it — the criterion is the
+  projection, not an in-memory "reported" flag. The retry cadence is the turn boundary, so there is no
+  interval knob.
 - `scout/settled` with the same id is idempotent in fold; a repeat never grows a second fact.
 - The scout tool face is read-only (`scoutToolFilter`), and `MapScouts` is bounded by `mapScoutMax` /
   `mapScoutConcurrency`.
 
-## 12. Event coverage table
+## 12. Domain lexicon · implemented
+
+Stored field: `state.lexicon.{terms[], predicates[]}` — the shape folded out of the ontology events in the ledger.
+
+```mermaid
+stateDiagram-v2
+    [*] --> admitted: ontology/term_added / ontology/predicate_added
+    admitted --> admitted: ontology/term_revised / ontology/predicate_revised (display information only; version +1, old values kept)
+    admitted --> deprecated: ontology/term_deprecated / ontology/predicate_deprecated (sticky terminal, with a reason)
+    deprecated --> [*]
+```
+
+Points:
+
+- **The two ontologies are two fields with two kinds of authority**: `state.ontology` is the shape of the **process ontology** (the plugin's own backend flow — release-scoped, not editable at runtime); `state.lexicon` is the **domain ontology** (the project's own language: concepts, predicates, value forms), governed by ledger events.
+- **There is no delete**: deprecation only flips an entry to `deprecated`; the entry, its old versions and every fact that referenced it stay (the same rule as "a refuted hypothesis is kept").
+- **A semantic change does not go through revision**: if meaning, domain, range or single-valuedness changes, deprecate and register a new id. The meaning of a stable id may not drift through history, or old facts get rewritten by today's gloss.
+- Assertions and conflicts are **not in this diagram**: assertions land on facts with `fact/promoted`; conflicts are computed by `derive()` (single-valued predicate + same subject + different objects + neither side retracted) and are surfaced, never adjudicated.
+
+### Interaction: the ontology layer and the process layer never advance each other
+
+- **Vocabulary events advance no process object**, and process events never change the vocabulary — the two state machines do not nest, and the only directional relation between them is **reference** (an assertion references predicates and concepts). The four handshake points are in [Domain ontology §8](../domain-ontology.md).
+- **An assertion lands only at promotion** (`hypothesis` and `assertions` on `fact/promoted`); a conflict is a reading computed by `derive()` — **not a state, and it enters no gate**.
+- **Every read surface is a rendering**: `clear/ontology/domain.md`, `clear/knowledge/facts/INDEX.md`, the runtime card, the panel's ontology graph — one fold, no second account.
+
+## 13. Entities and assertions · implemented
+
+Storage fields: `state.entities[]`, `state.entityAssertions[]` — **a first-class write path for the
+entity layer**, stored separately from promoted facts (`state.facts[].assertions`) and merged only in
+the projection.
+
+```mermaid
+stateDiagram-v2
+    [*] --> registered: entity/registered（instance + basis + provenance）
+    registered --> registered: entity/asserted（one sourced sentence; the edge holds from that moment）
+    registered --> [*]
+```
+
+Points:
+
+- **Convention and observation are separate**: `RegisterTerm` is a convention (a concept; no evidence
+  required), `RegisterInstance` is an observation (an instance; `basis` and `provenance` required), and
+  `Assert` says one sourced thing about a registered instance (`evidence` required).
+- **Entities do not wait for the goal verdict**: `entity/asserted` produces an edge at the moment it is
+  recorded. The fact path is unchanged (independent verdict → `fact/promoted`), and the projection
+  carries both kinds: `source='promoted'` with level and scope, `source='asserted'` with provenance and
+  no independent verdict.
+- **The subject must be identifiable**: an assertion subject has to be a registered instance
+  (`assert_subject_unknown` in `validateAssertions`); otherwise every word is readable and nothing is
+  checkable.
+- **Promotion still attaches its assertions to the same entity** (deduped by `${type}|${id}`): the two
+  sources **merge**, they are not alternatives.
+
+## 14. Host read faces (degradation is a fact too) · implemented
+
+Storage field: `state.hostHealth[]` (append-only, capped at 20).
+
+```mermaid
+stateDiagram-v2
+    [*] --> readable: normal
+    readable --> degraded: host/inactive（sessions / sessionProjections unavailable）
+    degraded --> readable: read faces return
+```
+
+Points:
+
+- When a service is unavailable the read face **returns empty state instead of throwing**, and records
+  `host/inactive`: "cannot read right now" and "there is nothing" are two different things, and the
+  former belongs in the ledger.
+- When the session working directory is unavailable it **does not write** (no fallback to
+  `process.cwd()`): failing to write is an honest degradation, writing somewhere else quietly moves the
+  ledger.
+
+## 15. Event coverage table
 
 **Every** mutation kind fold understands is assigned a home below; conversely, every event named in
 this document is in fold's vocabulary. The `ledger-only` group never folds into the view (they are
-ledger facts), so it appears in no state machine.
+ledger facts), so it appears in no state machine:
+
+- `git/committed`: the commit a **delivery** lands in the ledger (`AdvancePlan` / worldline adoption).
+- `git/snapshot`: a workspace snapshot at a **turn boundary** (only when this session wrote something
+  and the workspace is genuinely dirty), plus the pre-merge snapshot. Its job is not attribution —
+  the kernel cannot see what bash wrote — but **coverage**: exploration output produced before any
+  plan is in the ledger too, so it can be inspected and restored.
+- `git/restored`: a `RestoreFile` restore (a restore is a new version plus a new commit, never a rollback).
+- `admission/checked`: the admission reading of each delivery (what is accepted also lands an `observation/recorded`).
 
 | Event | Home | Folds into the view |
 |---|---|---|
@@ -301,6 +396,8 @@ ledger facts), so it appears in no state machine.
 | `worldline/executed` | §9 Worldlines | yes |
 | `worldline/removed` | §9 Worldlines | yes |
 | `branch/delivered` | §9 Worldlines | yes |
+| `fact/reviewed` | §4 Hypothesis (human review: retract / keep) | yes |
+| `fork/recommended` | §9 Worldlines | yes |
 | `fork/created` | §9 Worldlines | yes |
 | `fork/converged` | §9 Worldlines | yes |
 | `fork/undecidable` | §9 Worldlines | yes |
@@ -313,14 +410,24 @@ ledger facts), so it appears in no state machine.
 | `scout/dispatched` | §11 Scout | yes |
 | `scout/settled` | §11 Scout | yes |
 | `continuation/set` | §10 Auto continuation | yes |
-| `brain/candidates` | Brain candidate scan (truth table `skill-candidate`) | yes |
-| `skill/promoted` | Skill promotion (truth table `skill-candidate`) | yes |
+| `ontology/term_added` | §12 Domain lexicon | yes |
+| `ontology/predicate_added` | §12 Domain lexicon | yes |
+| `ontology/term_revised` | §12 Domain lexicon | yes |
+| `ontology/predicate_revised` | §12 Domain lexicon | yes |
+| `ontology/term_deprecated` | §12 Domain lexicon | yes |
+| `ontology/predicate_deprecated` | §12 Domain lexicon | yes |
+| `entity/registered` | §13 Entities and assertions | yes |
+| `entity/asserted` | §13 Entities and assertions | yes |
+| `audit/reused` | §6 Evaluation | yes |
+| `level/skipped` | §4 Hypotheses (skip reason) | yes |
+| `criteria/revised` | §1 Goal (criterion revision) | yes |
+| `host/inactive` | §14 Host read faces | yes |
 | `admission/checked` | **ledger only** | no |
 | `git/committed` | **ledger only** | no |
 | `git/restored` | **ledger only** | no |
 | `git/snapshot` | **ledger only** | no |
 
-## 13. Relationship to the verification ontology
+## 16. Relationship to the verification ontology
 
 `docs/verification-loop.md` describes a **more complete** verification ontology (an eight-state
 machine, among other things). The difference matters when reading:
@@ -328,7 +435,7 @@ machine, among other things). The difference matters when reading:
 | This file | Verification ontology |
 |---|---|
 | Transitions the code really takes today | The complete declared shape |
-| Every state has a producer | Some states have none yet (e.g. `retracted`) |
+| Every state in use has a producer (including `retracted`, landed by human review) | The designed shape still has states without producers (several cells of the eight-state machine; see [known-gaps](../known-gaps.md)) |
 | Answers "what is actually guaranteed now" | Answers "what this design intends to become" |
 
 Confirmed differences are tracked in [`../known-gaps.md`](../known-gaps.md).

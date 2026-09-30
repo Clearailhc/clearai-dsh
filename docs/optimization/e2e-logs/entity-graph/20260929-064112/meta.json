@@ -1,0 +1,15 @@
+{
+  "scenario": "entity-graph",
+  "at": "2026-09-29T06:41:12.670Z",
+  "model": "abhome/deepseek-flash",
+  "profile": "headless(装出来的包)",
+  "overrides": {
+    "autonomy": "unattended",
+    "maxAutoTurns": 3
+  },
+  "elapsedSeconds": 375,
+  "workspace": "/tmp/clearai-e2e-ws-gYk3tK(临时,跑完已清理)",
+  "session": "session-d07e7db7-303f-4280-86d0-92d40df544b8",
+  "how": "DSH_HOME=<repo>/.tmp-e2e/nativehome(install-native 装出的包) node tools/e2e-run.mjs --scenario entity-graph --autonomy unattended --max-turns 3",
+  "replay": "node tools/e2e-replay.mjs --scenario entity-graph --log <session.v4.jsonl.zstd>(物证类断言因临时工作区已清理而如实报缺)"
+}

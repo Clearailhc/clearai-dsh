@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -60,10 +60,27 @@ console.log(`【发行物自检】${manifest.name}@${manifest.version} · ${inve
 
 // ── ① 平面三分 ──────────────────────────────────────────────────────────────
 console.log('\n① 平面三分:同一个包,三样东西各落到自己的平面')
-check('清单声明了宿主 bundle(patch)', typeof manifest.dsh?.bundle?.patch === 'string' && manifest.dsh.bundle.patch !== '', JSON.stringify(manifest.dsh?.bundle ?? null))
+/**
+ * `patch` 在 0.2.4 起由**字符串改为数组**(宿主 ≥0.1.7-alpha.1 的 web-app 自己就是数组:
+ * 每个预设一个补丁文件)。两种形态都接受;并且——比形态更要紧的——**声明的每个补丁文件
+ * 都必须真的在包里**:声明一个不存在的文件,宿主加载时会直接失败。
+ */
+const patchList = Array.isArray(manifest.dsh?.bundle?.patch)
+	? manifest.dsh.bundle.patch
+	: typeof manifest.dsh?.bundle?.patch === 'string' && manifest.dsh.bundle.patch !== ''
+		? [manifest.dsh.bundle.patch]
+		: []
+check('清单声明了宿主 bundle(patch)', patchList.length > 0, JSON.stringify(manifest.dsh?.bundle ?? null))
+check(
+	'声明的每个补丁文件都真的在包里',
+	patchList.every((rel) => has(String(rel).replace(/^\.\//, ''))),
+	patchList.map((rel) => `${rel}${has(String(rel).replace(/^\.\//, '')) ? '' : ' (缺)'}`).join(', '),
+)
 check('清单声明了浏览器半(platform + inject)', manifest.dsh?.client?.platform === 'web' && Array.isArray(manifest.dsh.client.inject) && manifest.dsh.client.inject.length > 0, JSON.stringify(manifest.dsh?.client ?? null))
 check('出口齐:宿主半 / 浏览器半 / 补丁 / 清单', ['exports', 'main', 'bin'].every((key) => manifest[key] !== undefined) && manifest.exports['./client'] !== undefined && manifest.exports['./cordis.patch.yml'] !== undefined, Object.keys(manifest.exports ?? {}).join(','))
 check('宿主半与浏览器半都真的在包里', has('lib/host.js') && has('lib/client.js') && has('lib/fold.js'))
+// 伴生件在包里、也有出口:声明了 `./invariant` 却没有那个文件,等于文档说了一句做不到的话。
+check('宿主不变量伴生件在包里,且清单里有它的出口', has('lib/invariant.js') && manifest.exports['./invariant'] === './lib/invariant.js')
 check('补丁层文件在包里,且插的是**包名**行(不是路径)', has('cordis.patch.yml') && /name:\s*'clearai-dsh'/.test(readFileSync(join(DIST, 'cordis.patch.yml'), 'utf8')))
 check('随包带上 README(中英)、LICENSE 与品牌位图(npm 页面靠它们)', has('README.md') && has('README.zh-CN.md') && has('LICENSE') && has('brand/logo-lockup.png'))
 /**
@@ -90,7 +107,7 @@ check('bin 的值是 npm 规范化过的写法(不带 ./)', binValues.every((val
 
 // ── ② 发行物干净 ────────────────────────────────────────────────────────────
 console.log('\n② 发行物干净:只带该带的')
-const allowedRoots = ['package.json', 'cordis.patch.yml', 'INVENTORY.txt', 'README.md', 'README.zh-CN.md', 'LICENSE', 'CHANGELOG.md', 'brand', 'lib', 'presets', 'bin']
+const allowedRoots = ['package.json', 'cordis.patch.yml', 'INVENTORY.txt', 'README.md', 'README.zh-CN.md', 'LICENSE', 'CHANGELOG.md', 'brand', 'lib', 'locale', 'presets', 'bin']
 const stray = inventory.filter((rel) => !allowedRoots.some((root) => rel === root || rel.startsWith(`${root}/`)))
 check('包内没有白名单之外的文件', stray.length === 0, stray.slice(0, 5).join(', '))
 const forbidden = /(^|\/)(\.env|\.git|node_modules|coverage|__pycache__|\.pytest_cache)(\/|$)|\.(zst|tgz|log)$/
@@ -167,7 +184,7 @@ console.log('\n⑤ 只增不改:目录面与 fold 的既有词汇表对得上')
 const kernelSource = readFileSync(join(DIST, `${presetBase}/plugins/clearai-kernel.js`), 'utf8')
 const mechanismMatch = /export const MECHANISM_TOOLS = \{([\s\S]*?)\n\}/.exec(kernelSource)
 const toolNames = mechanismMatch === null ? [] : [...mechanismMatch[1].matchAll(/'([A-Z][A-Za-z]+)'/g)].map((match) => match[1])
-check('工具目录读得出来(22 件)', toolNames.length === 22, `${toolNames.length} 件`)
+check('工具目录读得出来(32 件)', toolNames.length === 32, `${toolNames.length} 件`)
 const presetText = readFileSync(join(DIST, `${presetBase}/agent.cordis.yml`), 'utf8')
 const kernelRow = /- id: clearai-kernel[\s\S]*?(?=\n- id: |\n# ──)/.exec(presetText)?.[0] ?? ''
 const declaredTools = [...kernelRow.matchAll(/^\s{6,}([A-Z][A-Za-z]+):\s*true$/gm)].map((match) => match[1])
@@ -223,6 +240,67 @@ try {
 	check('npm 会带走预设与模板(不是只有 lib)', files.some((rel) => rel.startsWith('presets/clearai/template/')) && files.some((rel) => rel.endsWith('agent.cordis.yml')))
 } catch (error) {
 	check('npm pack 能跑通', false, String(error?.message ?? error).slice(0, 200))
+}
+
+// ── 工程判据三:可被发现(插件列表读的就是这些) ─────────────────────────────
+/**
+ * 宿主读的是 `<包名>/locale/<语言>.json` 的 `meta.title` / `meta.description`,以及清单顶层的
+ * `icon`;三者缺一就回退到包名 / npm 的 description / 默认图 —— 列表里看起来就是「没写介绍」。
+ * 这几条只判「有没有、对不对」;**宿主真读出来的是什么**由 `verify-clean-install.mjs`
+ * 调宿主的 `readPluginMeta` 现场验(那一步才是这一页的判据)。
+ */
+console.log('\n⑧ 可被发现:插件列表的标题 / 介绍 / 图标')
+const ICON_EXTENSIONS = new Set(['.svg', '.png', '.jpg', '.jpeg', '.webp'])
+const MAX_ICON_BYTES = 256 * 1024
+{
+	const iconRel = typeof manifest.icon === 'string' ? manifest.icon : ''
+	const iconFile = iconRel === '' ? '' : join(DIST, iconRel)
+	const iconOk = iconRel !== '' && !iconRel.startsWith('/') && !/^[A-Za-z][A-Za-z\d+.-]*:/.test(iconRel) && !iconRel.split('/').includes('..') && existsSync(iconFile) && statSync(iconFile).isFile()
+	check('清单声明了 icon,且是包内真实存在的相对路径', iconOk, iconRel === '' ? '(没声明)' : iconRel)
+	check('图标是 SVG/PNG/JPEG/WebP,且 ≤256 KiB(宿主只收这四种)', iconOk && ICON_EXTENSIONS.has(extname(iconRel).toLowerCase()) && statSync(iconFile).size <= MAX_ICON_BYTES, iconOk ? `${extname(iconRel)} · ${statSync(iconFile).size} 字节` : '(没有可读的图标)')
+}
+{
+	const localeDir = join(DIST, 'locale')
+	const names = existsSync(localeDir) ? readdirSync(localeDir).filter((name) => name.endsWith('.json')) : []
+	const languages = names.map((name) => {
+		let meta = null
+		try {
+			meta = JSON.parse(readFileSync(join(localeDir, name), 'utf8')).meta ?? null
+		} catch {
+			meta = null
+		}
+		return { lang: name.slice(0, -5), title: meta?.title ?? null, description: meta?.description ?? null }
+	})
+	check('带了 locale/en.json(宿主从它开始认语言)', names.includes('en.json'), names.join(', ') || '(没有 locale/)')
+	check('带了 locale/zh.json(中文界面不必读英文)', names.includes('zh.json'), names.join(', ') || '(没有 locale/)')
+	check('每种语言的标题与介绍都非空', languages.length > 0 && languages.every((item) => typeof item.title === 'string' && item.title.trim() !== '' && typeof item.description === 'string' && item.description.trim() !== ''), JSON.stringify(languages))
+	check('标题不是包名(那是「没写介绍」的回退值)', languages.every((item) => item.title !== manifest.name), JSON.stringify(languages.map((item) => `${item.lang}:${item.title}`)))
+}
+check('exports 放行 ./locale/*.json(不放行宿主解析不到)', manifest.exports?.['./locale/*.json'] === './locale/*.json', String(manifest.exports?.['./locale/*.json'] ?? '(没有这条)'))
+check('files 带上 locale(不带就发不出去)', (manifest.files ?? []).includes('locale'))
+check('engines.dsh 声明了宿主下界(市场据此显示要求)', typeof manifest.engines?.dsh === 'string' && manifest.engines.dsh.trim() !== '', String(manifest.engines?.dsh ?? '(没声明)'))
+/**
+ * 发出去的 README 里,推荐的安装命令**必须钉住本版版本号**。
+ *
+ * 为什么值得一条机械判据:pnpm ≥ 11 的 `minimumReleaseAge`(默认 1440 分钟,内置默认**非严格**)
+ * 会压住一天内发布的版本,而且不报错 —— 它**静默回退到一天前的最新版**。2026-09-28 实测:
+ * 0.2.6 发布十分钟后,干净的 pnpm 工作区里 `pnpm add clearai-dsh` 装到的是 **0.2.2**;
+ * 同一台机器上把版本写死(`clearai-dsh@0.2.6`)就装对了。README 是用户唯一会照抄的东西,
+ * 所以「教人敲裸包名」这一句不许再回来。
+ */
+for (const name of ['README.md', 'README.zh-CN.md']) {
+	const text = existsSync(join(DIST, name)) ? readFileSync(join(DIST, name), 'utf8') : ''
+	const commands = [...text.matchAll(/(?:dsh plugin --profile web add|pnpm add)\s+clearai-dsh(@\S+)?/g)]
+	const versions = commands.map((match) => match[1] ?? '(裸包名)')
+	const wrong = versions.filter((version) => version !== `@${manifest.version}`)
+	check(`${name}:每个安装命令都钉到本版版本号(${manifest.version})`, commands.length > 0 && wrong.length === 0, versions.join(', ') || '(没找到安装命令)')
+	/**
+	 * 主要安装入口必须是**宿主自己的插件管理器**(侧栏「插件」→ 添加插件),
+	 * 不能只剩下终端命令 —— 官方那条路是本项目写明的首选,而且它的 spec 是钉过版本的。
+	 * 标签取自宿主自己的文案(ui-plugin-manager 的 locales):en `Add plugin` / zh `添加插件`。
+	 */
+	const entry = name === 'README.md' ? 'Add plugin' : '添加插件'
+	check(`${name}:给出了宿主自带的安装入口(${entry})`, text.includes(entry))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

@@ -99,9 +99,9 @@ currently rests on prompts or is missing.
 |---|---|---|---|---|---|
 | B1a | Each worldline owns a working copy | `ForkPlan` + worktree | hard | implemented | kernel suite |
 | B1b | Convergence is arithmetic; undecidable → human gate; losers kept | `ConvergeFork` + human gate | hard | implemented | kernel suite |
-| B2a | todo / subagents / workflow / ralph return natively, products stay non-authoritative | Phase 5 plan | — | **design-only** | `authority-boundary` (to write) |
-| B2b | Model switching via native `modelSelectionSettings` | Phase 5 plan | — | **design-only** | `preset-composition` (to write) |
-| B2c | ClearAI's own `/` menu (command-registry contributions) | Phase 5 plan | — | **design-only** | `preset-composition` (to write) |
+| B2a | todo / subagents / workflow / ralph return natively, products stay non-authoritative | `preset/agent.cordis.yml` working-style rows | hard | implemented | `authority-boundary` (14 checks) + `preset-composition` |
+| B2b | Model switching via native `modelSelectionSettings` | `dsh-tool-subagent` row config | hard | implemented | `preset-composition` |
+| B2c | ClearAI's own `/` menu (command-registry contributions) | `preset/plugins/commands.js` | hard | implemented | `preset-composition` |
 
 ### Pervasive supports
 
@@ -110,18 +110,25 @@ currently rests on prompts or is missing.
 | Intent/fact separation: no writable status/progress fields | schema inexpressibility | hard | implemented | kernel suite |
 | Projection is the only truth: state = log fold, monotonically increasing | `fold.js` + monotone RANKs | hard | implemented | client suite |
 | Runtime card derived each turn, injected only on prefix-stable change | `renderCard` | hard | implemented | client suite |
-| 22 prompt sections manifest-driven, slot wording mutually exclusive | `SECTIONS` + contribution table | hard | implemented | truth-table verifier |
+| 23 prompt sections in place, manifest-driven, slot wording mutually exclusive | `SECTIONS` + contribution table | hard | implemented | truth-table verifier |
 | Ontology declarations cross-checked against implementation | `ontology.js` + assembly check | hard | implemented | ontology suite |
+
+### Domain ontology (vocabulary / assertions / conflicts / graphs)
+
+| Behavior | Carried by | Hardness | Status | Verified by |
+|---|---|---|---|---|
+| Six vocabulary events fold into `state.lexicon` (revisions kept, deprecation sticky, no delete) | `ui/lib/domain-language.js` + `fold.js` | hard | implemented (the fold plus the ten verbs) | `test/domain-language.test.mjs` |
+| An assertion lands with promotion (references exist, form fits the range, one fact self-consistent) | `fact/promoted` + `validateAssertions` | hard | implemented (including the `SetGoal` / `CloseGoal` wiring) | `test/kernel.test.mjs` / `test/domain-language.test.mjs` |
+| Conflicts are surfaced, never adjudicated (single-valued predicate + same subject + different objects + neither retracted) | `deriveConflicts` + the runtime card | hard | implemented | same suite |
+| Vocabulary and entity graphs derive from one fold (deterministic layout, coordinates never ledgered) | `graphProjection` + `view().lexicon` | hard | fold implemented; the panel renders (edits go through the human gate) | same suite |
 
 ### Known non-coverage (listed honestly; destinations in §5)
 
 | Beat | Expected behavior | Status | Destination |
 |---|---|---|---|
-| ⑦+ | A universal L4 gate covering **every** evaluation | design-only | stays design-only; docs must not claim it |
-| — | The eight-state verification machine | design-only | stays design-only |
-| — | A producer for `retracted` | design-only | stays design-only |
-| — | Observation sources `human_upload` / `file_drop` / `callback` / `pull` | design-only | stays design-only; only `self`/`scout` have producers today |
-| B2a–c | Native return of non-authoritative capability | design-only | Phase 5 |
+| ⑦+ | A universal L4 gate covering **every** evaluation | design-only | truth-table row `l4-universal-gate` · destination `stay-design-only` (a decision, not a backlog item) |
+| — | The eight-state verification machine | design-only | truth-table row `verification-lifecycle` · destination `become-mechanism` — only its two missing **guarantees** are planned, not the nine stored states |
+| — | Observation sources `human_upload` / `file_drop` / `callback` / `pull` | design-only | truth-table row `observation-provenance` · destination `become-mechanism` (the type gets narrowed to the producers that exist) |
 
 ## 3. The no-shrinkage list and the hand-back list
 
@@ -171,14 +178,23 @@ the prompts now say one sentence):
 
 ## 5. Destinations for gaps (every gap gets exactly one of three)
 
+- **Landed as a mechanism**: the `retracted` producer (truth-table row `fact-retraction` — refuting
+  evidence only marks the fact, and a person decides retract or keep with `retract_fact` / `keep_fact`,
+  landing one `fact/reviewed`).
 - **Become mechanism**: the dead `autonomy.override` read path (Phase 4/5 decides delete or
   keep — decided: keep, read-only for old logs).
   (Landed: the hypothesis count floor — preset sets 2, kernel gate + prompt discipline, see
   row ②; the authority-boundary test; the five `/` commands and the returned native working
   tools todo/subagent/workflow/ralph — see the Phase 4/5 ledger entries.)
-- **Stay design-only, honestly labelled**: the eight-state verification machine, the universal
-  L4 gate, a `retracted` producer, the four other observation sources. The criterion: each has a
-  truth-table row with the correct `status`, and no document claims it is implemented.
+- **Retired as a concept**: the "exploration zone" as a *named mode*. Its negative half is the
+  `non-authoritative-isolation` row (implemented, pinned by the authority-boundary suite); its
+  positive half — "exploration output must be accounted for" — is the
+  `ledger-exploration-snapshots` row (a workspace snapshot at each turn boundary). Naming a region
+  would have added a second name for the same thing, not a mechanism.
+- **Stay design-only, honestly labelled**: the universal L4 gate. The criterion: it has a
+  truth-table row with the correct `status` and a `destination`, and no document claims it is
+  implemented. Every non-`implemented` row now carries that destination, so "not yet" and
+  "decided against" are no longer spelled the same way.
 - **Deleted and accounted**: removed mechanisms (`set_autonomy`, the 6/512 budgets,
   `autoConfirmed`) leave traces only in the truth table and the CHANGELOG; code and comments no
   longer narrate them.
@@ -220,7 +236,7 @@ Human (any time): gate verbs / ask_user_question answers / native approvals / `/
 
 | Missing test (already planned) | Beats to pin |
 |---|---|
-| `test/authority-boundary.test.mjs` (Phase 4) | B2a: non-authoritative paths structurally cannot emit `clearai` mutations |
-| `test/preset-composition.test.mjs` (Phase 5) | B2b/B2c: menu and model-switching mount shape |
-| `test/prompt-sections.test.mjs` (Phase 6) | section tags (hard/native/advisory) do not drift |
-| hypothesis-floor cases (Phase 4b) | ②: behavior once promoted from prompt to mechanism |
+| `test/authority-boundary.test.mjs` | B2a: non-authoritative paths structurally cannot emit `clearai` mutations |
+| `test/preset-composition.test.mjs` | B2b/B2c: menu and model-switching mount shape |
+| `test/prompt-sections.test.mjs` | section tags (hard/native/advisory) do not drift |
+| hypothesis-floor cases (in `test/kernel.test.mjs`) | ②: the floor as a mechanism, not prompt text |

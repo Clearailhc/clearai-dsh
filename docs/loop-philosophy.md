@@ -19,7 +19,7 @@ A conclusion is trustworthy exactly when it has survived a test that could have 
 
 ---
 
-## 1. Five principles that land in mechanisms
+## 1. Six principles that land in mechanisms
 
 ### P1 · Mechanism over exhortation
 
@@ -72,6 +72,22 @@ Refuted hypotheses, rejected observations, retracted facts, losing worldlines �
 
 A refuted hypothesis is a valuable asset: it records one road that did not work, and that is a real product of exploration.
 
+### P6 · Growing an ontology is native loop behaviour, not another mode
+
+**A mechanism that is not in the task's completion function is merely "available on request".** Ontology, entities and the epistemic loop were all there, yet the shortest path for ordinary research was still "retrieve → summarise → write a report"; building an ontology required the user to remember to ask. That is not a capability gap — it is a **wiring gap**.
+
+The fix is not another prompt paragraph but making the test for knowledge work **structural**: a goal is still open and carries registered (hypothesis) propositions — the act of that commitment is itself a promise the model has already made. When it holds, the system enters **knowledge mode**:
+
+| Face | Shape | Answers |
+|---|---|---|
+| Knowledge preflight | Reading (read-only, bounded, literal hit, no semantic guessing) | What is already known that can be reused? |
+| Gaps | Reading (computed from existing facts, each naming one action that can close it) | What form is still missing? |
+| Knowledge gate | Block (before close, before dispatching an evaluator) | May a core conclusion be promoted with no typed assertion? |
+
+Ordinary Q&A never makes that commitment and never enters this mode — the **zero-cost contract**. Real runs produced a counter-intuitive finding: what changed behaviour was the **visibility of gaps**, not the gate (models registered terms and attached assertions after seeing the gaps on the card). So both stay: **visibility makes it want to; the gate stops it from going around.**
+
+**Test**: if a discipline only works when the user or model remembers it, it has not entered the task's completion function; either wire it to a structural test, or admit it is a preference.
+
 ---
 
 ## 2. Seven stages, four runtime beats
@@ -83,7 +99,7 @@ At runtime these compress into **four beats**: plan → execute → observe → 
 | Beat | Stages it covers | What the model does | What the system guarantees |
 |---|---|---|---|
 | **Plan** | Frame + Hypothesize + Plan | Decompose steps, write criteria | Fine-grained, executable, evidence-acceptable; `done_criteria` enforced; ≤25 steps; artifacts declared |
-| **Execute** | Observe | Explore, write scripts, compute | Read-only work in parallel, writes serial; sandbox; every write lands in the ledger |
+| **Execute** | Observe | Explore, write scripts, compute | Read-only work in parallel, writes serial; sandbox; every write lands in the ledger (a snapshot at each turn boundary, plus a commit at each delivery) |
 | **Observe** | Verify | Receive results | **Admission only decides whether to accept, never what it means** |
 | **Reflect** | Evaluate + Record and act | Deliver, converge, amend | `AdvancePlan` is the only completion verb; evaluation is separated by level; conclusions land with their bounds |
 
@@ -104,6 +120,8 @@ before: deterministic gate in tool governance  →  during: sandbox + ledger  �
 One deliberately counter-intuitive trade-off: **execution is unapproved by default**, on the grounds that "recovery afterwards replaces approval beforehand" — if every write can be restored precisely, the cost of blocking every write exceeds the friction it removes. The safety net therefore becomes three things: block **genuinely dangerous** actions (not all of them), guarantee the ledger is **recoverable**, and keep changes **visible** in the turn strip.
 
 That trade-off holds only if the ledger is reliable enough, so the ledger's requirements are stricter than elsewhere: fixed identity, fixed HEAD, explicit exclusions, and a single failure that does not block the main flow but is never silently swallowed.
+
+It also holds only if the ledger's **coverage starts at the first turn**: a snapshot is taken at each turn boundary in which this session wrote something, so the window in which execution is unapproved and unrestorable is not "everything before the first delivery".
 
 ---
 
@@ -169,8 +187,9 @@ A philosophy document that lists only strengths is marketing. These tensions gen
 1. **Mechanism completeness ≠ implementation completeness.** The clearest case is the verification loop: the documents describe an eight-state machine for verification and an "L4 requires human release" rule, while the latter is not a universal gate over every evaluation (see the implementation status at the top of [Verification ontology](verification-loop.md)). Designed completeness is easily mistaken for running completeness.
 2. **The evidence gate rests on criteria, not levels, so a missing criterion changes the gate's shape (partially tightened, 2026-09).** Dispatching an independent evaluator is triggered by `needs_audit` (artifacts complete **and** `done_criteria` non-empty) — the criterion is a **structural precondition** of that gate. The old wording was "a step at L3 or above without `done_criteria` takes the deterministic release exit and never passes through independent evaluation"; **the normal entry point now closes that**: `CreatePlan` calls `validateSteps`, which requires every step's `done_criteria` to be a string of at least 4 trimmed characters, or the whole call is refused (`preset/plugins/clearai-kernel.js:2405-2426`, called at `:2745`). The soft spot therefore now applies only to **legacy logs, internally constructed plan objects, and any entry point added later** — it is an entry-point-consistency problem, no longer a "users may omit criteria" problem. The residual philosophical risk is that it still assumes **every path into the system** validates criteria, and that assumption is held by tests rather than by the type system.
 3. **Nothing mechanically checks that documents match the implementation.** This repository has repeatedly shipped "the mechanism changed but the docs, comments or prompts did not" (the auto-confirm branch for plan authorization was deleted, the continuation budget moved from 6/512 to 128, `set_autonomy` was removed — while comments and prompts kept describing the old semantics). The fix is to turn it into executable checks: the [mechanism truth table](optimization/truth-table.md) (`node tools/verify-truth-table.mjs`), the state-machine document (`node test/state-machine.test.mjs`), and a banned-phrase scan over the docs. **Wherever those checks do not reach, drift is still possible.**
-3. **Complexity and test density do not match.** The more complete the mechanism, the more tests are needed to show the mechanism is actually in effect — otherwise "a constraint that landed in a mechanism" and "a constraint believed to have landed in a mechanism" look identical in code. Current coverage lives in `test/`; known gaps are recorded in [Known gaps](known-gaps.md).
-4. **Unrepresentability costs money.** Every "make it unrepresentable" moves complexity from runtime to assembly time or the type layer. In a small system that may not pay off — this design accepts the cost because it bets correctness on determinism.
+4. **Complexity and test density do not match.** The more complete the mechanism, the more tests are needed to show the mechanism is actually in effect — otherwise "a constraint that landed in a mechanism" and "a constraint believed to have landed in a mechanism" look identical in code. Current coverage lives in `test/`; known gaps are recorded in [Known gaps](known-gaps.md).
+5. **Unrepresentability costs money.** Every "make it unrepresentable" moves complexity from runtime to assembly time or the type layer. In a small system that may not pay off — this design accepts the cost because it bets correctness on determinism.
+6. **The ontology layer is convention and the fact layer is experience; conflating them turns "we decided to call it this" into "this is how things are".** The [domain ontology](domain-ontology.md) makes knowledge comparable and conflicts detectable, and the price is that it carries authority of its own — once a term is cited as fact, arguing against that conclusion starts to look like arguing against the whole vocabulary. Three mechanisms hold that in check: entries are admitted **with a basis**, deprecation is **sticky** (there is no delete), and a semantic change must **take a new id**; and conflicts are **surfaced, never adjudicated** — the vocabulary can tell you two assertions contradict each other, never which one is right.
 
 ---
 

@@ -1,5 +1,6 @@
 # ClearAI 认识论核心收敛与 Harness 瘦身：落盘计划
 
+> **时点声明**：本文是**当时**的落盘计划（含定稿契约与计数），正文数字保留原样、不改写历史；现行读数以 `truth-table.zh-CN.md` 与 `CHANGELOG.md` 为准。
 > 这份文件是**已批准的执行计划**，也是后续所有工作的依据与进度台账的母本。
 > 进度与每阶段跑过的命令记在 [`progress.zh-CN.md`](progress.zh-CN.md)。
 > 英文版见 [`plan.md`](plan.md)。

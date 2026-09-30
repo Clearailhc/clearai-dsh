@@ -32,7 +32,9 @@ export const SCENARIOS = {
 			'3. 第一步上用 ForkPlan 开**两条**世界线:',
 			'   路线 compact:用 python3 写 lab/gen_compact.py,生成 lab/data_compact.json(紧凑 JSON,无空格);',
 			'   路线 pretty:用 python3 写 lab/gen_pretty.py,生成 lab/data_pretty.json(缩进 JSON,带空格)。',
-			'   两条的 done_criteria 都要写明「读数 = 生成文件的字节数」;decide_by 指标写「字节数」,方向取 min。',
+			'   开分叉**之前**先在工作区写一个测量脚本 lab/measure.sh(内容一行:#!/bin/bash\nwc -c < "$1"),',
+			'   然后 decide_by 指标写「字节数 = lab/measure.sh 对生成文件的输出」(口径必须是**工作区里真有的文件**),方向取 min;',
+			'   两条的 done_criteria 都要**逐字**写明量那一半(「字节数」)。',
 			'4. 用 AdvanceWorldline 把两条世界线都交付,每条报一个**整串就是一个数**的读数(字节数)。',
 			'5. ConvergeFork 让算术裁决;然后接着做第二步与第三步,最后 ClosePlan 收尾。',
 		].join('\n'),
@@ -181,6 +183,54 @@ export const SCENARIOS = {
 			{ label: '第二环复用了它(lab/numbered.txt)', ok: exists('lab/numbered.txt'), detail: 'lab/numbered.txt' },
 		],
 	},
+	'entity-graph': {
+		title: '本体与实体图:概念是约定,实例是观测',
+		// 这一场**不要求**跑到底:三道新门(实体未落账 / 跳级没理由 / 判据修订要裁决)开着,
+		// 模型找不到出口就会停在"目标还开着"——那正是要观测的现象,不该被判成失败。
+		expectComplete: false,
+		why: 'entity/registered 与 entity/asserted 是本轮新增的一等写入口:实体图从此不依赖目标裁决。这条链在真模型上一次都没跑过,而单测只能证明"机制在那儿"。',
+		task: [
+			'这个工作区是空的。目标:把「一家三口共用的家用网络」整理成本体(概念与关系)与实体图(具体设备),并给出带出处的断言。',
+			`要求(按顺序做;${DISCIPLINE}):`,
+			'1. SetGoal:`headline` 一句话(≤120 字)说清要建什么;判据写成可清点的形态:`lab/ontology.md` 与 `lab/entities.md` 都存在,且 `entities.md` 里每个实例都带出处;登记至少两条候选假设。',
+			'2. `RegisterTerm` 至少 4 个概念(例如 设备 / 接口 / 网络 / 厂商),`RegisterPredicate` 至少 2 条关系(例如 属于 / 支持),每条都写依据。',
+			'3. `RegisterInstance` 至少 3 个**具体实例**(每台设备一条):`type` 用你刚登记的概念,`basis` 写清哪份材料,`provenance` 用 `{kind:"named", ref:"…"}` 指向一份具名资料(可以是你自己编的登记表,但要在 lab/ 下落成文件)。',
+			'4. 用 `Assert` 给这 3 个实例各写一句**带出处**的话(谓词用第 2 步登记的),让实体图上真的长出边。',
+			'5. 写两份产物:`lab/ontology.md`(概念与谓词清单,逐条写依据)与 `lab/entities.md`(每个实例一行:实例 · 断言 · 出处)。',
+			'6. 用 `CreatePlan` 把上面这些拆成可交付的步骤并逐步 `AdvancePlan` 交付(产物声明这两份文件),然后 `ClosePlan`;最后 `CloseGoal` 结案。',
+			'   如果结案被门挡下(卡上会点名是哪一道),按它给的下一步补上再结;确实做不到就如实说明。',
+		].join('\n'),
+		asserts: ({ kinds, countOf, exists, readArtifact, mutations, projected, modelVisibleText }) => {
+			const registered = mutations.filter((m) => m.t === 'entity/registered')
+			const asserted = mutations.filter((m) => m.t === 'entity/asserted')
+			/**
+			 * 图的投影挂在 `view().lexicon.graph` 上(不是 `view().graph`)——判据必须读**真的那份**:
+			 * 读错位置会得到"0 节点"这种假失败,而它看起来像产品缺陷。
+			 */
+			const projectedGraph = projected?.lexicon?.graph ?? projected?.graph ?? { nodes: [], edges: [] }
+			const entityNodes = (projectedGraph.nodes ?? []).filter((node) => node.layer === 'entity')
+			const entityEdges = (projectedGraph.edges ?? []).filter((edge) => edge.kind === 'assertion')
+			return [
+				{ label: '登记了至少 3 个实例(entity/registered ≥ 3)', ok: registered.length >= 3, detail: `registered=${registered.length}(${registered.map((m) => m.id).join(',')})` },
+				{ label: '每个实例都带出处(kind+ref 非空)', ok: registered.length > 0 && registered.every((m) => typeof m.provenance?.ref === 'string' && m.provenance.ref !== ''), detail: JSON.stringify(registered.map((m) => m.provenance ?? null)).slice(0, 160) },
+				{ label: '写了至少 3 条带出处的断言(entity/asserted ≥ 3)', ok: asserted.length >= 3, detail: `asserted=${asserted.length}` },
+				{ label: '实体图上有节点(投影 entity 层非空)', ok: entityNodes.length >= 3, detail: `${entityNodes.length} 个节点` },
+				{ label: '实体图上有边(断言真的进了图)', ok: entityEdges.length >= 3, detail: `${entityEdges.length} 条边` },
+				{ label: '两份产物在盘上', ok: exists('lab/ontology.md') && exists('lab/entities.md'), detail: `ontology=${exists('lab/ontology.md')} entities=${exists('lab/entities.md')}` },
+				{ label: 'entities.md 里逐条带出处字样', ok: /出处|来源|provenance/i.test(readArtifact('lab/entities.md')), detail: readArtifact('lab/entities.md').slice(0, 120) },
+				/**
+				 * **条件断言(这才是这道门的意义)**:如果目标结案成了 achieved,那么实体图上必须已经有边——
+				 * 换句话说"本体建好了、实体图是空的"这种交付**过不了门**。
+				 */
+				{
+					label: '条件断言:结案成功 ⇒ 实体图上必须有边(空实体图不许结案)',
+					ok: !kinds.has('goal/closed') || asserted.length >= 1,
+					detail: `goal/closed=${countOf('goal/closed')} entity/asserted=${asserted.length}`,
+				},
+				{ label: '卡上确实把实体这条路指给过模型(可读性不是装饰)', ok: /RegisterInstance|实体图/.test(modelVisibleText), detail: modelVisibleText.includes('RegisterInstance') ? '点名过 RegisterInstance' : '只提过实体图' },
+			]
+		},
+	},
 }
 
 /**
@@ -312,6 +362,8 @@ export const INVARIANTS = [
 		label: '侦察没有悬空(每个 scout/dispatched 都有 scout/settled)',
 		run: ({ countOf }) => ({ ok: countOf('scout/dispatched') <= countOf('scout/settled'), detail: `dispatched=${countOf('scout/dispatched')} settled=${countOf('scout/settled')}` }),
 	},
+
+
 	{
 		label: '声明的物证真的在盘上(主线步骤的 artifacts)',
 		run: ({ mutations, exists }) => {

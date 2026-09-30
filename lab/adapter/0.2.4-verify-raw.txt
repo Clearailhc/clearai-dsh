@@ -1,0 +1,70 @@
+# 0.2.4 发布回查 —— 原始输出留档
+# 采集时间: 2026-09-28T11:34:11+08:00
+
+===================================================================
+§1 release workflow 结论
+$ gh run view 36373961380 --json databaseId,name,status,conclusion,headBranch,headSha,url
+{"conclusion":"success","databaseId":36373961380,"headBranch":"v0.2.4","headSha":"e4e3b3131c53e4ee054782ee34710368ef5397e0","name":"Release","status":"completed","url":"https://github.com/Clearailhc/clearai-dsh/actions/runs/36373961380"}
+
+§2 逐步结论
+JOB publish → completed/success
+   1. ✓ Set up job [success]
+   2. ✓ Run actions/checkout@v7 [success]
+   3. ✓ Run actions/setup-node@v7 [success]
+   4. ✓ Install dependencies [success]
+   5. ✓ npm 必须够新(OIDC trusted publishing 的最低要求) [success]
+   6. ✓ Enable pnpm [success]
+   7. ✓ Tag must match the manifest [success]
+   8. ✓ Suites [success]
+   9. ✓ Build and self-check [success]
+   10. ✓ Install the DSH CLI [success]
+   11. ✓ Clean install (mechanical half) [success]
+   12. ✓ OIDC claims(与 npm 上那份配置逐字对比用) [success]
+   13. ✓ Publish the built package [success]
+   14. ✓ Registry must carry exactly this source [success]
+   15. ✓ Create the GitHub Release [success]
+   29. ✓ Post Run actions/setup-node@v7 [success]
+   30. ✓ Post Run actions/checkout@v7 [success]
+   31. ✓ Complete job [success]
+
+===================================================================
+§3 CI 日志里「干净安装」那一步的预设读数(第三方证据)
+$ gh run view 36373961380 --log | grep 名册/preset
+  预设声明行:preset-clearai(17 个顶层行)
+④ 无仓库路径:发行物不假设自己长在哪个目录树里
+  装到的版本:clearai-dsh@0.2.4
+  · 宿主的名册机制:声明行(≥0.1.7-alpha.1)
+  ✓ ④ 新机制:名册注册表行在(agent-preset-registry)
+  ✓ ④′ 新机制:预设声明行在,且 id/name/description/order/plugins 齐备
+  · 名册条目:standard, ptc, minimal, cordis, clearai
+  ✓ ④″ 名册运行态:clearai 在列表里
+  ✓ ④‴ 名册运行态:clearai 没有 broken(子插件真的起来了)
+
+===================================================================
+§4 npm registry
+$ curl -sS https://registry.npmjs.org/clearai-dsh
+dist-tags: {"latest":"0.2.4"}
+0.2.4 gitHead: e4e3b3131c53e4ee054782ee34710368ef5397e0
+tarball: https://registry.npmjs.org/clearai-dsh/-/clearai-dsh-0.2.4.tgz
+integrity: sha512-KbZBJaYhynkg4EH+Q2UMapdwO84juzakyX6pQWaf9KAZi4WH6WFdms7fl/SWcdTFYaJNAVzr9WLwVM2rc8f6ug==
+modified: 2026-09-28T03:32:41.888Z
+
+§5 tarball 下载与摘要核对
+字节数: 1376417
+本地算出的 sha512-KbZBJaYhynkg4EH+Q2UMapdwO84juzakyX6pQWaf9KAZi4WH6WFdms7fl/SWcdTFYaJNAVzr9WLwVM2rc8f6ug==
+解包内文件数: 158
+解包内 package.json 版本: 0.2.4
+
+§6 GitHub Release
+$ gh release view v0.2.4 --json tagName,name,publishedAt,url
+{"name":"clearai-dsh 0.2.4 — 跟上了宿主的预设换代。","publishedAt":"2026-09-28T03:33:10Z","tagName":"v0.2.4","url":"https://github.com/Clearailhc/clearai-dsh/releases/tag/v0.2.4"}
+Release 说明与 CHANGELOG 0.2.4 段逐字一致: 否
+(存在差异,见上)
+
+§7 远端 tag
+$ git ls-remote --tags origin v0.2.4
+899a1781a9fa034d0fc3d8bb97bdab4d24d3ba42	refs/tags/v0.2.4
+原始字节数: release=2845 changelog=2844
+去尾部空白后逐字一致: true
+差异仅为尾部空白: true
+去尾后字符数: 1695 1695

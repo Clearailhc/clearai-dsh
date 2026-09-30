@@ -8,10 +8,29 @@ dist/
 
 # 运行产物:工作区骨架与账本证据(内核自己写,不是源码)
 clear/
-
+# 参考
+refs/
 # 长测归档:判读证据入库(trajectory.txt / summary.json / meta.json / index.json),
 # 重型现场留在盘上不入库(工作区现场、原始会话日志、stdout 快照)——`*.log` 已经在上面忽略。
 # 为什么这样分:轨迹解码后小且可 grep,是"模型到底做了什么"的可读记录;
 # 工作区与会话原件可能很大,留在归档目录里供本地复算(tools/e2e-replay.mjs)。
 docs/optimization/e2e-logs/*/*/workspace/
 docs/optimization/e2e-logs/*/*/session.jsonl.zstd
+
+# 会话分析临时物(本机审阅用,不入库)
+.analysis/
+
+# 图谱渲染的 vendor 行(@xyflow/react):由 tools/build-vendor.mjs 生成,
+# 随构建走(与 dist/ 同一条纪律——生成物不入库)。
+ui/vendor/
+
+# 本轮排查/验证的临时物(本机审阅用,不入库):会话导出、诊断报告、镜像部署、验证脚本
+.tmp-audit/
+.tmp-session/
+.tmp-impl/
+.tmp-verify/
+
+# pnpm 的本地 store(install-native 在本仓库里跑时会落在这里)
+.pnpm-store/
+# 本轮 headless 长测的一次性 DSH_HOME 与日志(证据归档在 docs/optimization/e2e-logs/)
+.tmp-e2e/

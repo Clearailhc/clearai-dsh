@@ -1,0 +1,33 @@
+【干净安装验收】
+  pnpm 12.4.1
+  一次性 DSH_HOME:/tmp/dsh-clean-6jsstw
+  ✓ 空 home + 官方模板能建出 web profile
+  ✓ profile 的补丁层是空的(我们还没动过它)
+  ✓ 搬进来了模型凭据(只这一份)
+  ✓ 没有搬 settings.yaml(实测:搬了会把干净 profile 里没有的 provider 带进来)
+  ✓ 没有搬 .agent-presets(预设要由包提供)
+  ✓ 构建并打出了 tgz
+  ✓ dsh plugin add <tgz> 成功
+  装到的版本:clearai-dsh@0.2.3
+  ✓ ① 依赖里有 clearai-dsh
+  ✓ ② bundles 里有它,而且恰好一次
+  ✓ ②′ 发行版自己的三条 bundle 还在
+  ✓ ③ 组合里 clearai-host 恰好一行
+  ✓ ③′ 宿主行用的是包名(不是路径)
+  · 宿主的名册机制:声明行(≥0.1.7-alpha.1)
+  ✓ ④ 新机制:名册注册表行在(agent-preset-registry)
+  ✓ ④′ 新机制:预设声明行在,且 id/name/description/order/plugins 齐备
+  · 名册条目:standard, ptc, minimal, cordis, clearai
+  ✓ ④″ 名册运行态:clearai 在列表里
+  ✓ ④‴ 名册运行态:clearai 没有 broken(子插件真的起来了)
+  ✓ ⑤ 包内预设自洽(组合文件 + 元数据 + 模板)
+  ✓ ⑥ 包内没有本机路径(仓库根 / 这次装到哪儿)
+
+结果:18 通过,0 失败
+临时 home 已清掉(要留现场用 --keep)。
+
+===================================================================
+运行方式: npm_config_cache=/tmp/npm-cache-probe DSH_CLI_PREFIX=/tmp/dsh-cli-017 DSH_CHECKOUT=/tmp/dsh-cli-017 node tools/verify-clean-install.mjs
+宿主版本: 0.1.7-rc.2
+采集时间: 2026-09-28T11:26:24+08:00
+退出码: 0(18 通过,0 失败)

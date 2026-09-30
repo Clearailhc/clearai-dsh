@@ -15,9 +15,9 @@ How a conjecture becomes a fact that can be cited with confidence. This document
 > **Not there yet** (same line as [Known gaps](known-gaps.md)):
 >
 > 1. **The eight-state verification machine** is designed, not implemented; only the subset above actually runs.
-> 2. **`retracted` has no producer** — the state is defined in the ontology, and no code path writes it today.
+> 2. ~~**`retracted` has no producer**~~ — **implemented**: refuting evidence only *marks* a promoted fact (`refuted`, derived) and raises an inbox item; a human decides to **retract** it or to judge the evidence unreliable and **keep** the fact. Both outcomes land as one `fact/reviewed` mutation (a retraction is terminal; the record is kept), and the fact's own file under `clear/knowledge/facts/` records the review.
 > 3. **A universal L4 gate over every evaluation** is not implemented; the human release that exists hangs on the step/branch axis.
-> 4. **Observation provenance has only ever been written as `self` and `scout`**; other origins exist in the type with no producer.
+> 4. **Observation provenance declares exactly what has a producer.** `source` used to list five origins while only `self` and `scout` were ever written. The type now declares those two, and `test/ontology.test.mjs` checks the declared set against the set the kernel actually writes — a value may exist only when something produces it *and* something decides on it.
 >
 > **One easily misread fact**: a step's declared level only decides **who may write a verdict** (L0–L2 self-judged by the doer, L3 and above refusing self-judgment) and **the L4 human gate**. It does **not** drive evaluator dispatch. Dispatch is triggered by admission deciding `needs_audit` (declared artifacts complete **and** `done_criteria` non-empty). So a step at L3 or above without `done_criteria` takes the deterministic release exit and **never passes through independent evaluation**.
 
@@ -110,7 +110,9 @@ One plan carries one stage of the goal. Steps in the plan may declare that they 
 
 ### 4.3 Execute and produce observations
 
-The model explores, writes scripts, computes. Every write enters the ledger; every execution leaves a command, exit code and commit in the event stream. Artifacts land in `lab/`. Nothing in this segment judges anything.
+The model explores, writes scripts, computes. Every write enters the ledger — at each **turn boundary** in which this session wrote something, the workspace is snapshotted as a commit (the message says it is an exploration-phase snapshot), so work done before any plan exists is inspectable and restorable too. Every execution leaves a command, exit code and commit in the event stream. Artifacts land in `lab/`. Nothing in this segment judges anything.
+
+> What that snapshot does **not** claim is **attribution**: the kernel cannot see what `bash` wrote, so it never says which write belonged to which call. It claims coverage only — and coverage is what the "recovery replaces approval" argument needs.
 
 | Ontology | Who | System object |
 |---|---|---|
@@ -206,43 +208,62 @@ Hypotheses:
 | superseded | Replaced by a new version | The old version when a hypothesis is revised | Terminal |
 | retracted | Retracted, record retained | A human decides after review | Terminal |
 
-Verification:
+Verification — **derived, not stored**:
 
-> **The table below is a design target; it is not implemented.** The code has no such state field or flow, and the values
-> `registered`/`authorized`/`submitted`/`awaiting` do not exist. The entire machine representation of "one verification"
-> today is `tests: {hypothesis, level}` on a step plus the point-in-time fact of `AdvancePlan`. The table is kept to record
-> intent and terminology; do not infer runtime behaviour from it.
+> These nine names were once a design target described as a stored state machine. They are **not** stored: every one of
+> them is either a fact already in the ledger, something `derive()` computes, or a state that is deliberately
+> unrepresentable. The table below is therefore a **landing-point record**: it says where each name lives today, and
+> says so plainly when the answer is "nowhere, on purpose". It is the thing to edit when the code moves.
 
-| State | Meaning | How it is entered | How it is left |
-|---|---|---|---|
-| planned | Criteria are a draft | On registration | Criteria written → registered |
-| registered | Criteria registered | The system checks the previous level passed | L4 → authorized; L0 to L3 → submitted |
-| authorized | A human released it; L4 only | A human releases it in the inbox | → submitted |
-| submitted | Executing | The corresponding step starts | Needs to wait for an external result → awaiting; aborted without a result → aborted |
-| awaiting | Waiting for a result | The action has been handed off | Result arrives from an eligible origin → observed; deadline passes → expired |
-| observed | Result obtained | The observation was admitted | Evaluation completes → evaluated |
-| evaluated | Evaluated, evidence written | The evaluator writes a verdict | Inconclusive returns to awaiting for one more try; a second inconclusive forces a change of hypothesis or criteria |
-| expired | Deadline passed with no result | The deadline passed | Handed to a human |
-| aborted | Stopped without a result | Deliberately stopped | Terminal |
+| State | Meaning | Where it lives today |
+|---|---|---|
+| planned | Criteria are a draft | **Unrepresentable by design**: `CreatePlan` refuses a step whose `done_criteria` is missing or shorter than 4 characters, so a step without criteria is never stored. |
+| registered | Criteria registered | The step itself — `tests: {hypothesis, level}` plus `done_criteria`; `plan/created` is the registration event. |
+| authorized | A human released it; L4 only | Not a verification state: a **release fact** (`human/released` → `state.releases[]`), enforced at delivery by `l4Delivery` + `witnessedRelease`. |
+| submitted | Executing | Derived: the step is `open`; `inFlight` records an `AdvancePlan`/`AdvanceWorldline`/`CloseGoal` that is actually in flight. |
+| awaiting | Waiting for a result | The sub-run's own facts: `worldline/executing`, `scout/dispatched`, `audit/dispatched`; `AwaitWorldlines` gives the wait a bound. A result that never comes does **not** become a state — see `expired`. |
+| observed | Result obtained | `observation/recorded` → `state.materials[]`, recorded on delivery from the declared refs (the artifact files plus the execution records are the observation). |
+| evaluated | Evaluated, evidence written | `audit/settled` + `evidence/recorded`; `derive()` computes support / refute / inconclusive per hypothesis. The "one more try, then force a change" policy is enforced at the **next** delivery: two inconclusive results on the same step refuse a third unchanged attempt (`inconclusive_repeat_forced_change`). |
+| expired | Deadline passed with no result | Not a state: an unavailable verdict is a fact (`audit/settled` with `verdict: 'unknown'`) and it **counts toward the same threshold as a failed admission** (`block/counted`), so repeating it blocks the plan and reaches a human through the inbox door that already exists. |
+| aborted | Stopped without a result | Facts, not a state: `VoidPlanStep(reason)`, `AbandonFork(reason)`, a sub-run's `stopReason` as recorded by the kernel's settlement funnel, and a sub-run's `stopReason` as recorded by the kernel's settlement funnel (which **recovers from the child's session log first** and only records unknown when recovery fails — see the [authority map](authority-map.md) §1). |
 
 L3 and above start at registered; changing criteria afterwards must leave a trace, keep the old version, and ask a human to confirm. Time spent waiting for a result does not count toward failure counts.
 
 Observations: on arrival, origin is checked against the verification level. Eligible ones are admitted and wake the task; ineligible ones are kept but not accepted, and flagged in the inbox.
 
-Facts: new refuting evidence only marks the fact and raises an inbox item. A human decides whether to retract it, or judges the evidence unreliable and leaves the fact alone. Data brought in from outside can itself be wrong, so retraction is never automatic.
+Facts: new refuting evidence only **marks** the fact (`refuted`, derived) and raises an inbox item; **retract** and **keep** are two buttons a human presses, and both land as one `fact/reviewed`. "No decision" and "decided to keep" have to stay distinguishable, or the gate holds continuation forever. A retraction is terminal and the record is kept (the shelf and the fact's own file say who, when and why). Data brought in from outside can itself be wrong, so retraction is never automatic.
 
-## 6. Rules
+## 6. Rules, and where each one actually lands
 
-The system checks these on state changes, not through prompts. A non-conforming operation is rejected and the reason returned to whoever initiated it.
+An earlier version of this section opened with "the system checks these on state changes, not through prompts". That was
+true of most of them and false of two — and a rule that is claimed as a mechanism but carried by prose is exactly the
+kind of drift this repository keeps finding. So each rule now says what carries it, and admits when the answer is "a
+reading, not a gate".
 
-1. One level at a time. To attempt a higher level, the previous level must already have supporting evidence. Skipping is allowed but must state a reason and is recorded.
-2. Write the criteria before doing the work. Execution may not start until the criteria are registered. For L3 and above, changing them after registration keeps the old version and requires human confirmation.
-3. L4 requires human release — **implemented on the step/branch axis**; a universal release covering every evaluation is not implemented (see the status box).
-4. Look at the origin of a result. L3 observations may be produced by the doer but must be re-runnable. L4 observations must come from outside; files the doer wrote do not count.
-5. The doer does not judge themselves. L3 and above evidence may only be written by a machine or an independent evaluator. L0 to L2 may be self-judged, and the basis must be reviewable.
-6. Weight of refutation. One piece of refuting evidence carries its level by default. A project charter may declare "any counterexample is decisive", as mathematics projects usually do.
-7. Nothing is deleted. Refuted hypotheses, rejected observations, retracted facts, and worldlines that were not chosen are all retained and inspectable.
-8. Only the system changes state. Nobody can write a verdict directly.
+1. **One level at a time; skipping states a reason.** *Not a gate, and deliberately so.* Requiring a reason would
+   produce a field nobody can check — "the literature does not cover this parameter" is domain judgement, and a
+   mechanism that cannot falsify its input is advice wearing machinery. What *is* mechanical: the levels a hypothesis
+   never used are **derived and shown** (`untouchedLevels`, on the run card and on the panel's proposition row), so a
+   jump is visible without being forbidden. This is the same move as `unjudged`: do not force a verdict, but never let
+   "never looked" read as "nothing wrong". The ladder's real invariant is rule 3.
+2. **Write the criteria before the work.** *Gate.* `CreatePlan` / `AmendPlan` refuse a step without criteria of at
+   least 4 characters (`validateSteps`); `RefinePlan` pushes the old version into `criteria_versions` rather than
+   overwriting it. "Human confirmation before changing L3+ criteria" is **not** implemented — the human reviews the
+   plan before it starts, not each later refinement.
+3. **L4 requires human release.** *Gate, on the step/branch axis.* A universal release covering every evaluation is a
+   **decision not to build** (truth-table row `l4-universal-gate`): a gate belongs where the correct answer depends on
+   a person.
+4. **Look at the origin of a result.** *Gate.* L4 sources are separated at delivery (`l4RejectSelfWritten`: files the
+   doer wrote do not count); L3 observations may be the doer's but must be re-runnable, which the evaluator checks.
+5. **The doer does not judge themselves.** *Gate.* `SELF_JUDGE_MAX_INDEX = 2`: L3 and above refuse a caller-supplied
+   verdict and dispatch an independent evaluator; L0–L2 may self-judge with a reviewable basis.
+6. **Weight of refutation.** One piece of refuting evidence carries its level by default; a charter declaring "any
+   counterexample is decisive" is **not implemented** (see [Candidates for later](#8-candidates-for-later)).
+7. **Nothing is deleted.** *Invariant, pinned by tests.* Refuted hypotheses, rejected observations, retracted facts
+   (marked, never removed) and unchosen worldlines (ref kept, working copy dropped) all stay inspectable; the ledger
+   only moves forward.
+8. **Only the system changes state.** *Gate.* Nobody can write a verdict directly: intent tools carry no verdict field
+   at levels they do not own, and the projection is a fold of the log rather than a mutable store.
 
 ## 7. Glossary
 
@@ -276,3 +297,19 @@ Everything below waits until a baseline has produced real trajectories; one line
 - Criteria soft-lock: for L3 and above, changing criteria leaves a trace and asks a human to confirm.
 - Refutation weight and the charter's "counterexamples are decisive" switch; section 4 of the charter becomes parsable.
 - Evaluation verdicts enter skill statistics (`skill_lifecycle` gains `audit_pass` / `audit_fail`); goal-level experience (`policy_slots` gains `goal_finished`).
+
+## 9. Relationship to the domain ontology
+
+This document describes the **process ontology**: the behaviour of knowing — which objects exist, who pushes
+which transition, who judges at each level. It must be read apart from the other ontology in the repository:
+
+| | Process ontology (this file) | [Domain ontology](domain-ontology.md) |
+|---|---|---|
+| Answers | **How** we come to know | **In what language** we say it |
+| Authority | A code declaration (`preset/plugins/ontology.js`), validated at assembly, changeable per release | Ledger events (`ontology/*`), growing with the project |
+| Editable? | **No**: it is the plugin's own backend flow; changing it means changing code and shipping | Yes: named verbs add, revise and deprecate (seven of them, implemented) |
+| In the projection | `state.ontology` (the shape) | `state.lexicon` (the vocabulary) plus the graph projection |
+| Shown to | The charter the model reads (`clear/ontology/verification-loop.md`); a human sees the **state shape** (worldlines / proposition groups) | The vocabulary and graphs the project reads (`clear/ontology/domain.md`, the panel's ontology view) |
+
+The two touch at exactly four points (shape checked at registration / fixed at promotion / conflicts derived /
+deprecation propagated); see Domain ontology §8.

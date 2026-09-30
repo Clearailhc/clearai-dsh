@@ -1,0 +1,17 @@
+{
+  "name": "worldline-arbitration",
+  "title": "世界线:两条实现按尺子算术裁决",
+  "stamp": "20260917-144502",
+  "code": 1,
+  "passed": 38,
+  "failed": 2,
+  "failures": [
+    "进程正常退出(exit 0)",
+    "这一轮跑到了收尾(目标结案且没有未落定的步骤)"
+  ],
+  "elapsedSec": 903,
+  "workspace": "/Users/lhc/.dsh/e2e-archive/worldline-arbitration/20260917-144502/workspace",
+  "sessionLog": "/Users/lhc/.dsh/sessions/--Users-lhc-.dsh-e2e-archive-worldline-arbitration-20260917-144502-workspace--/session-02059b77-11cb-4e77-8173-978cb201f537/session.v3.jsonl.zstd",
+  "mutationCount": 52,
+  "mutationKinds": "goal/set,plan/created,fork/created,worldline/prepared,worldline/executing,worldline/executed,observation/recorded,evidence/recorded,branch/delivered,fork/recommended,fork/merged,worldline/removed,fork/converged,plan/confirmed,admission/checked,block/counted,step/advanced,block/cleared,git/committed,plan/closed"
+}

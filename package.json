@@ -1,10 +1,11 @@
 {
   "name": "clearai-dsh",
-  "version": "0.1.5",
-  "description": "ClearAI: The Epistemic Loop, native to DSH.",
+  "version": "0.3.1",
+  "description": "ClearAI: an ontology-first DSH agent preset — evidence-checked research that grows into a domain ontology.",
   "type": "module",
   "private": false,
   "license": "Apache-2.0",
+  "icon": "./brand/icon.svg",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Clearailhc/clearai-dsh.git"
@@ -14,7 +15,10 @@
     ".": "./lib/host.js",
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./invariant": "./lib/invariant.js",
+    "./presets/*": "./presets/*"
   },
   "bin": {
     "clearai-dsh": "bin/clearai.mjs"
@@ -23,6 +27,7 @@
     "lib",
     "presets",
     "bin",
+    "locale",
     "cordis.patch.yml",
     "CHANGELOG.md",
     "README.md",
@@ -31,14 +36,18 @@
     "brand"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "dsh": ">=0.1.7-alpha.1"
   },
   "dependencies": {
     "zod": "^4.6.1"
   },
   "dsh": {
     "bundle": {
-      "patch": "./cordis.patch.yml"
+      "patch": [
+        "./cordis.patch.yml",
+        "./presets/clearai/clearai.patch.yml"
+      ]
     },
     "client": {
       "platform": "web",
@@ -50,15 +59,20 @@
     }
   },
   "keywords": [
+    "dsh",
     "dsh-plugin",
     "deepseek-harness",
+    "cordis",
+    "plugin",
     "clearai",
     "agent-preset",
+    "ontology",
+    "epistemic-loop",
     "evidence",
     "worldline"
   ],
   "scripts": {
-    "test": "bash test/run.sh",
+    "test": "node tools/build-vendor.mjs && bash test/run.sh",
     "build": "node tools/build-package.mjs",
     "verify": "node tools/verify-package.mjs",
     "verify:deploy": "node tools/verify-deploy.mjs",
@@ -66,6 +80,17 @@
     "pack": "node tools/build-package.mjs && npm pack ./dist/clearai-dsh",
     "release": "node tools/build-package.mjs && node tools/verify-package.mjs && node tools/verify-clean-install.mjs && npm pack ./dist/clearai-dsh --pack-destination dist",
     "e2e": "node tools/e2e-run.mjs",
-    "e2e:long": "node tools/e2e-parallel.mjs"
+    "e2e:long": "node tools/e2e-parallel.mjs",
+    "vendor": "node tools/build-vendor.mjs",
+    "check:browser": "node tools/browser-graph-check.mjs",
+    "shots": "node tools/graph-shots.mjs"
+  },
+  "devDependencies": {
+    "@xyflow/react": "^12.11.6",
+    "docx": "^9.7.1",
+    "esbuild": "^0.28.2",
+    "graphology": "^0.26.0",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "playwright-core": "^1.63.0"
   }
 }

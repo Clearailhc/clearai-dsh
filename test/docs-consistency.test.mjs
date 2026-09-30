@@ -16,7 +16,7 @@
  *
  * 跑法:node test/docs-consistency.test.mjs
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -110,6 +110,59 @@ console.log('\n【反向:这些短语没有被一刀切删掉(历史要留着)�
 	check('真值表里留了历史说法的记录', /6\/512|自动确认|set_autonomy/.test(optimization))
 	check('已知缺口文档点明了"授权不是闸门"', /授权是\*\*记号与归属\*\*|不是闸门/.test(readFileSync(join(PORT, 'docs', 'known-gaps.zh-CN.md'), 'utf8')))
 	check('扫描面本身非空(不是空跑)', all.length > 10000, `${all.length} 字节`)
+}
+
+console.log('\n【计数类说法:文档里写的数必须与它数的那份东西对得上】')
+{
+	/**
+	 * 「五份套件」曾经在 README(中英)、dsh-integration、release-verification 里各写一遍,
+	 * 而 `test/run.sh` 早就在跑 13 份——四个地方一起漂,谁也没发现。所以这个数**不写死在这里**:
+	 * 从 `run.sh` 现场数,再拿它去核对文档里每一处 `N 份套件` / `N suites`。
+	 */
+	const runSh = readFileSync(join(PORT, 'test', 'run.sh'), 'utf8')
+	const suites = [...runSh.matchAll(/node "\$HERE\/[a-z0-9-]+\.test\.mjs"/g)].length
+	check('从 test/run.sh 数得出套件数', suites >= 10, String(suites))
+	const offenders = []
+	for (const file of SCANNED) {
+		const text = readFileSync(file, 'utf8')
+		for (const [index, line] of text.split('\n').entries()) {
+			for (const match of line.matchAll(/(\d+)\s*(?:份)?套件|(\d+)[- ]suites?\b/g)) {
+				const stated = Number(match[1] ?? match[2])
+				if (stated !== suites) offenders.push(`${relative(PORT, file)}:${index + 1} 写的是 ${stated},实际 ${suites}`)
+			}
+		}
+	}
+	check('文档里写的套件数与 test/run.sh 一致', offenders.length === 0, offenders.slice(0, 5).join(' ;; '))
+}
+
+console.log('\n【链接:文档里的相对链接必须指得到真文件】')
+{
+	/**
+	 * 病灶:真值表里一条 `rationale` 写了 `../../authority-map.zh-CN.md`(多退了一层),
+	 * 生成物于是带着一个死链——而**没有任何检查看得见它**:读者点过去找不到文件,
+	 * 我们却以为文档齐了。所以把「相对链接指得到真文件」变成机械判据。
+	 *
+	 * 只认相对路径的 `.md` 链接:外部 URL、页内锚点、目录链接都不归这条管。
+	 */
+	/** 抽出「相对 `.md` 链接 → 目标」这一件事,好让下面那条反例能直接验它。 */
+	const deadLinks = (file, text) => {
+		const found = []
+		for (const [index, line] of text.split('\n').entries()) {
+			for (const match of line.matchAll(/\]\(([^)\s]+\.md)(?:#[^)]*)?\)/g)) {
+				const target = match[1]
+				if (/^[a-z]+:\/\//i.test(target) || target.startsWith('#')) continue
+				if (!existsSync(join(dirname(file), target))) found.push(`${relative(PORT, file)}:${index + 1} → ${target}`)
+			}
+		}
+		return found
+	}
+	const docs = walk(join(PORT, 'docs')).filter((file) => file.endsWith('.md'))
+	const roots = [...docs, join(PORT, 'README.md'), join(PORT, 'README.zh-CN.md')]
+	const dead = roots.flatMap((file) => deadLinks(file, readFileSync(file, 'utf8')))
+	const links = roots.reduce((count, file) => count + [...readFileSync(file, 'utf8').matchAll(/\]\(([^)\s]+\.md)(?:#[^)]*)?\)/g)].filter((match) => !/^[a-z]+:\/\//i.test(match[1])).length, 0)
+	check('文档里的相对 .md 链接都指得到真文件', dead.length === 0, dead.slice(0, 5).join(' ;; '))
+	check('链接检查不是空跑(真的扫到了链接)', links >= 30, `${links} 条相对链接,${roots.length} 份文档`)
+	check('这条检查抓得到死链(拿一条假链接验它,免得它对谁都是绿的)', deadLinks(join(PORT, 'docs', 'x.md'), '[a](missing-target-xyz.md)').length === 1)
 }
 
 console.log('\n【每份文档都指得出自己的状态】')

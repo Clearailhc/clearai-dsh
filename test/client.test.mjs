@@ -11,7 +11,7 @@
  * 跑法:node test/client.test.mjs
  */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -30,8 +30,34 @@ const check = (label, condition, detail = '') => {
 }
 
 const SOURCE = join(import.meta.dirname, '..', 'ui', 'lib', 'client.js')
+const VENDOR = join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js')
+const VENDOR_FORCE = join(import.meta.dirname, '..', 'ui', 'vendor', 'force.js')
 const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib', 'client.js')
-const source = readFileSync(SOURCE, 'utf8')
+/**
+ * **发出去的那一份 = vendor 行 + 主文件**(见 tools/build-package.mjs)。
+ * 这里比的就是那个组合——不是「源里有一个文件」而已:xvflow 那一行如果没跟上,
+ * 浏览器里就找不到 React Flow,面板会安静地退化成没有图。
+ */
+/**
+ * vendor 是**生成物**(ui/vendor/ 不入库)。没生成时如实跳过,不假装测过——
+ * 与「插件没装就跳过」同一条纪律;生成它的命令写在提示里。
+ */
+if (!existsSync(VENDOR) || !existsSync(VENDOR_FORCE)) {
+	console.log('· 跳过客户端套件:ui/vendor/xyflow.js 还没生成(它是生成物,不入库)。')
+	console.log('  生成它:node tools/build-vendor.mjs(或 npm run build)')
+	process.exit(0)
+}
+const VENDOR_SOURCE = readFileSync(VENDOR, 'utf8')
+const MAIN_SOURCE = readFileSync(SOURCE, 'utf8')
+/**
+ * **行为测试跑的是主文件**,vendor 由装载器以参数注入一个桩。
+ * 为什么不用真的:真库要真 React + 真 DOM(它坏了也不是我们的 bug),而我们钉的是**适配层**。
+ * 另外:vendor 里那句 `function __clearaiXyflow` 是**函数声明**——它会覆盖同名参数,
+ * 所以「拼在一起再注入」这条路根本走不通(试过,真库被跑起来、撞在桩 React 上)。
+ */
+const source = MAIN_SOURCE
+/** **部署件比对**用的是 build 真正拼出来的那一份(vendor 在前、主文件在后)。 */
+const expectedDeployed = `${VENDOR_SOURCE}\n${readFileSync(VENDOR_FORCE, 'utf8')}\n${MAIN_SOURCE}`
 let deployed = null
 try {
 	deployed = readFileSync(DEPLOYED, 'utf8')
@@ -43,7 +69,7 @@ if (deployed === null) {
 	console.log('  装上再测:bash install.sh,或 node tools/install-native.mjs --profile web')
 	process.exit(0)
 }
-if (deployed !== source) {
+if (deployed !== expectedDeployed) {
 	console.log('✗ 部署的 client.js 与源不一致——先跑 bash install.sh(这份测试测的是要跑的那一份)。')
 	process.exit(1)
 }
@@ -76,8 +102,8 @@ function loadClientBundle() {
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
 	// 先把 bundle 求值一遍(它自己会调 window.__ModuleLoader__.load 登记工厂),再取工厂跑。
-	const evaluate = new Function('window', 'require', 'console', source)
-	evaluate(globalThis.window, require, console)
+	const evaluate = new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)
+	evaluate(globalThis.window, require, console, () => makeXyflowStub(React.createElement))
 	if (registration === null) throw new Error('bundle 没有通过 __ModuleLoader__.load 登记工厂')
 	const exports = registration.factory(require)
 	delete globalThis.window
@@ -99,7 +125,19 @@ function makeClientContext({ preset = 'clearai' } = {}) {
 	const scopes = []
 	const tabDefinitions = []
 	const opened = []
-	const snapshot = { current: 's1', byId: { s1: { projectionValues: { agentPreset: preset } } } }
+	/**
+	 * 会话列表快照:形状**照抄宿主**(`SessionListState`)——`{ ids, byId, phase, projectionsBySession }`,
+	 * **没有 `current`**;谁是「当前会话」由 `byId` 行上的 `retainedBy.mainView` 表达。
+	 *
+	 * 旧桩自己造了一个 `current: 's1'`,于是 240 条检查全绿,而真宿主上四个面板**静默消失**:
+	 * 我们的客户端半读的正是那个字段,而它早就不存在了。桩必须与宿主同形,否则测的是桩不是产品。
+	 */
+	const snapshot = {
+		ids: ['s1'],
+		byId: { s1: { id: 's1', retainedBy: { mainView: 1 }, projectionValues: { agentPreset: preset } } },
+		phase: 'ready',
+		projectionsBySession: {},
+	}
 	const listeners = []
 	/**
 	 * 注销必须**真的生效**(§23 修):旧桩的 disposer 是空的,于是「会话切走、席位收回」
@@ -212,8 +250,8 @@ console.log('\n【客户端接线:注册在哪个插座、钥匙是什么】')
 	// 右栏:类型定义 + 体 + 标题,三样都要在
 	const kinds = host.tabDefinitions.map((definition) => definition.kind)
 	check(
-		'右栏页签类型注册了两张(世界树 / 技能 · 记忆)——「进展」撤了:它的四段各有归宿',
-		kinds.length === 2 && kinds.includes('clearai-worldtree') && kinds.includes('clearai-brain') && !kinds.includes('clearai-process'),
+		'右栏页签类型注册了两张(世界树 / 技能 · 记忆)——「进展」撤了:它的四段各有归宿;本体不占右栏,它长在事实格里',
+		kinds.length === 2 && kinds.includes('clearai-worldtree') && kinds.includes('clearai-brain') && !kinds.includes('clearai-process') && !kinds.includes('clearai-ontology'),
 		kinds.join(','),
 	)
 	check('预览页签不预先注册(第一次真的点开才注册)', !kinds.includes('clearai-preview'), kinds.join(','))
@@ -268,6 +306,15 @@ function makeStringReact() {
 			const produced = node.type({ ...(node.props ?? {}), children: node.children })
 			return render(produced)
 		}
+		/**
+		 * `forwardRef` / `memo` 是**对象**(带 render),不是函数——真 React 会调它们的 render。
+		 * 字符串桩照做:不然 React Flow 那种形状的组件在这条渲染路径上会**静默消失**,
+		 * 「节点标签在不在」这类断言就会假红(而它其实是好的)。
+		 */
+		if (typeof node === 'object' && node.type !== null && typeof node.type === 'object' && typeof node.type.render === 'function') {
+			const produced = node.type.render({ ...(node.props ?? {}), children: node.children })
+			return render(produced)
+		}
 		return render(node.children)
 	}
 	return {
@@ -286,7 +333,7 @@ function loadClientWithStringReact() {
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
-	new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+	new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement), makeForceStub())
 	delete globalThis.window
 	return { exports: registration.factory(require), react }
 }
@@ -312,6 +359,11 @@ function expandTree(node) {
 	if (node === null || node === undefined || typeof node !== 'object') return node
 	if (Array.isArray(node)) return node.map(expandTree)
 	if (typeof node.type === 'function') return expandTree(node.type({ ...(node.props ?? {}), children: node.children }))
+	/**
+	 * `forwardRef` / `memo` 是**对象**(带 render),不是函数——真 React 会调它们的 render。
+	 * 渲染桩照做:不然「形状跟真库一致」的桩就没法被测到。
+	 */
+	if (node.type !== null && typeof node.type === 'object' && typeof node.type.render === 'function') return expandTree(node.type.render({ ...(node.props ?? {}), children: node.children }))
 	return { ...node, children: (node.children ?? []).map(expandTree) }
 }
 
@@ -321,6 +373,68 @@ function flatNode(node) {
 	if (Array.isArray(node)) return node.map(flatNode).join('')
 	if (node === null || node === undefined) return ''
 	return (node.children ?? []).map(flatNode).join('')
+}
+
+/**
+ * **React Flow 桩**:渲染成一个带名字的元素,把 `nodes` / `edges` 原样留在 props 上。
+ *
+ * 为什么不用真的库:测试要钉的是**适配层**(投影 → React Flow 的 nodes/edges、
+ * 点击回调是不是接到了 Inspector),不是库自己怎么画。真库要 webgl/hooks,
+ * 在这类渲染桩里跑不动,而且它坏了也不是我们的 bug。
+ * 真的那一份走 `ui/vendor/xyflow.js`(build 时打进 client.js),另有断言钉住它。
+ */
+function makeXyflowStub(h) {
+	const element = (name) => (props) => {
+		const children = props?.children === undefined ? [] : Array.isArray(props.children) ? props.children : [props.children]
+		/**
+		 * 真库会把每个节点的 label 画在画布上。桩照做——于是「节点标签在不在」
+		 * 这类断言验的仍然是**用户看得见的东西**,而不是 props 里的一个字段。
+		 */
+		const labels = name === 'react-flow' && Array.isArray(props?.nodes) ? props.nodes.map((node, index) => h('span', { key: `label-${index}` }, String(node?.data?.label ?? ''))) : []
+		return h(name, props, ...children, ...labels)
+	}
+	/**
+	 * **形状必须跟真库一致**:v12 的 `ReactFlow` 是 `forwardRef` 对象、
+	 * `Controls`/`MiniMap`/`Background` 是 `memo` 对象——**都不是函数**。
+	 * 桩当初全给函数,于是「按 typeof 判组件在不在」那个错把真机判成不可用、而测试全绿。
+	 * 这里用一个 `$$typeof` 标记的对象复现真形状,让同类错在测试里就红。
+	 */
+	const component = (name, tag) => ({ $$typeof: Symbol.for(name), render: element(tag) })
+	return {
+		ReactFlow: component('react.forward_ref', 'react-flow'),
+		Controls: component('react.memo', 'rf-controls'),
+		MiniMap: component('react.memo', 'rf-minimap'),
+		Background: component('react.memo', 'rf-background'),
+	}
+}
+
+/**
+ * **力导向桩**:把每个节点按插入顺序摆到一条确定的对角线上。
+ *
+ * 布局质量属于**库**(FA2)与真浏览器检查,不是这一层要验的东西;这里只钉两件事:
+ * 它**被调用过**,而且它的返回值**真的进了节点 position**。
+ * 桩确定且可断言——「同一份账本 ⇒ 同一张图」这条因此仍能在这层验。
+ */
+function makeForceStub() {
+	class Graph {
+		constructor() {
+			this.nodes = new Map()
+			this.order = []
+		}
+		addNode(id, attributes) {
+			this.nodes.set(id, { ...attributes })
+			this.order.push(id)
+		}
+		hasNode(id) {
+			return this.nodes.has(id)
+		}
+		addEdge() {}
+		getNodeAttribute(id, key) {
+			const index = this.order.indexOf(id)
+			return key === 'x' ? 40 * index : key === 'y' ? 30 * index : undefined
+		}
+	}
+	return { Graph, forceAtlas2: { assign() {} } }
 }
 
 /**
@@ -359,10 +473,29 @@ function loadClientWithStatefulReact() {
 		if (name === 'react') return react
 		throw new Error(`client bundle 不该 require "${name}"`)
 	}
-	new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+	new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement), makeForceStub())
 	delete globalThis.window
 	const exports = registration.factory(require)
 	return { exports, react, render: (component, props) => { react.reset(); return component(props) } }
+}
+
+/**
+ * 载入 bundle,但**不给** vendor 函数(模拟 ui/vendor/xyflow.js 没打进来):
+ * 用来钉「降级要如实、不要崩,而且要说出原因」——build 拼装掉了、或包不完整时会走到这条路。
+ */
+function loadClientBundleWithoutXyflow() {
+	let registration = null
+	globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
+	const react = makeStringReact()
+	const require = (name) => {
+		if (name === 'react') return react
+		if (name === '@deepseek-ai/dsh-client-ui-primitives') return {}
+		throw new Error(`client bundle 不该 require "${name}"`)
+	}
+	/** 这里**故意不注入**:客户端应当走如实降级那条路,而不是崩。 */
+	new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, undefined, makeForceStub())
+	delete globalThis.window
+	return { exports: registration.factory(require), react }
 }
 
 console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
@@ -374,10 +507,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
 		const react = makeStringReact()
 		const require = (name) => {
-			if (name === 'react') return react
+				if (name === 'react') return react
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
-		new Function('window', 'require', 'console', source)(globalThis.window, require, console)
+		new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement), makeForceStub())
 		delete globalThis.window
 		return { exports: registration.factory(require), react }
 	}
@@ -396,6 +529,21 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	const view = {
 		sessionId: 's1',
 		goal: { id: 'g1', claim: '催化剂 A 是否优于 B', doneCriteria: '均值差 ≥ 5%', status: 'open', phase: 'executing', progress: 0.5, revision: 2, hypotheses: [] },
+		/**
+		 * 判据逐条的**同一份**(`knowledgeView`):面板与运行态卡读它,面板不再自己拼一套。
+		 * 这一份在真宿主里由 `fold.view()` 挂出来;测试里给的就是那个形状。
+		 */
+		knowledgeView: {
+			goal: {
+				id: 'g1',
+				criteriaLines: ['均值差 ≥ 5%', '留出集实测有读数', '语料每条带可追溯出处'],
+				criteriaTotal: 3,
+				criteriaNote: '口径可随复核改',
+				criteriaChanged: true,
+				criteriaHistory: [{ revision: 1, audit: 'audit-7' }],
+				docPath: 'clear/goals/g1.md',
+			},
+		},
 		plan: {
 			id: 'p-1',
 			status: 'active',
@@ -474,6 +622,28 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('世界树画出世界线与读数(计划的一切在这一格)', /湿法/.test(treePanel) && /62\.1/.test(treePanel), treePanel.slice(0, 160))
 	check('要你拍板的那一下在世界树里(人门区在最前)', /需要你|计划待确认/.test(treePanel), treePanel.slice(0, 120))
 	check('世界树不再重复闭环那一格的东西(假设/观测/事实不在这)', !/观测 ·/.test(treePanel) && !/事实 · 1/.test(treePanel), treePanel.slice(0, 160))
+	/**
+	 * **判据逐条**:`SetGoal` 收的是 `criteria: string[]`(每条一句话、每条可清点),
+	 * 挤成一句「判据:均值差…」会把「第 3 条没做到」抹平。面板与**运行态卡读同一份**
+	 * (`knowledgeView.goal.criteriaLines`),所以这里断言的是那份投影在屏上的形状:
+	 * 序号、修订史与谁裁的、全文指针、以及哪一段不参与判定。
+	 */
+	check('目标那块把判据逐条列出来(带序号,不是压成一句)', /1\. 均值差 ≥ 5%/.test(treePanel) && /2\. 留出集实测有读数/.test(treePanel) && /3\. 语料每条带可追溯出处/.test(treePanel), treePanel.slice(0, 220))
+	check('判据小节标出条数、改过几次与最近一次独立裁决', /判据 · 3/.test(treePanel) && /改过 1 次/.test(treePanel) && /audit-7/.test(treePanel), treePanel.slice(0, 220))
+	check('判据小节给出全文指引(沿用目标文档那条既有做法)', /全文在 clear\/goals\/g1\.md/.test(text(components.WorldTree, { openPreview: () => true })), treePanel.slice(0, 240))
+	check('criteria_note 单独标成不参与判定的背景', /背景\(不参与判定\)/.test(treePanel) && /口径可随复核改/.test(treePanel), treePanel.slice(0, 260))
+	/** 投影里没有逐条那一份(旧宿主 / 这个字段出现之前的目标)时:退回原来那句摘要,不空白、不另拼一套。 */
+	const noCriteria = { ...view, knowledgeView: undefined }
+	const fallbackPanel = react
+		.render(components.WorldTree({ useProjection: () => noCriteria, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: noCriteria } } } }), sessionId: 's1', openRail: () => {}, openSpectator: () => {}, openPreview: () => true }))
+		.replace(/\s+/g, ' ')
+	check('拿不到逐条那一份:退回一句摘要 + 全文进 tooltip(旧投影不被新语义打空)', /判据:均值差 ≥ 5%/.test(fallbackPanel) && !/背景\(不参与判定\)/.test(fallbackPanel), fallbackPanel.slice(0, 160))
+	/** `criteria: []`(立了目标但清单空)与「没有这一份」同一处置:不许显示一个「判据 · 0」的小节。 */
+	const emptyList = { ...view, knowledgeView: { goal: { ...view.knowledgeView.goal, criteriaLines: [], criteriaTotal: 0 } } }
+	const emptyPanel = react
+		.render(components.WorldTree({ useProjection: () => emptyList, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: emptyList } } } }), sessionId: 's1', openRail: () => {}, openSpectator: () => {}, openPreview: () => true }))
+		.replace(/\s+/g, ' ')
+	check('判据清单是空数组:退回摘要,不出现「判据 · 0」小节', /判据:均值差 ≥ 5%/.test(emptyPanel) && !/判据 · 0/.test(emptyPanel), emptyPanel.slice(0, 160))
 
 	/**
 	 * §24「事实」那一格:一个**知识货架**(上架=已确认事实,下架=命题)。
@@ -532,7 +702,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const useProjection2 = (key) => (key === 'clearai' ? factsView : undefined)
 		const render2 = (component, extra = {}) => react.render(component({ useProjection: useProjection2, useSessions, sessionId: 's1', openRail: () => {}, openSpectator: () => {}, ...extra })).replace(/\s+/g, ' ')
 		const facts = render2(components.Facts)
-		check('上架:已确认事实带**边界**与支持等级(没有边界的事实没人敢用)', /已确认事实 · 1/.test(facts) && /边界:均值差 < 5% 即作废/.test(facts) && /支持到 L3/.test(facts), facts.slice(0, 160))
+		check('上架:已确认事实带**边界**与支持等级(没有边界的事实没人敢用)', /本体货架 · 1/.test(facts) && /边界:均值差 < 5% 即作废/.test(facts) && /支持到 L3/.test(facts), facts.slice(0, 160))
 		check('上架只放已确认的:已确认那条**不在**命题列表里(一个命题只在一处)', !/已经升格的那条/.test(facts), facts.slice(0, 200))
 		check('下架按**本体状态**分组(已提出/验证中/已推翻/已替代)', /已提出1/.test(facts) && /验证中1/.test(facts) && /已推翻1/.test(facts) && /已替代1/.test(facts), facts.slice(0, 260))
 		check('一行一条命题:主张 + 当前处境 + 等级判者', /催化剂 A 优于 B/.test(facts) && /已达门槛\(L3\),等目标验收时升格为事实/.test(facts) && /验证中 · L3 · 独立评估者/.test(facts), facts.slice(0, 300))
@@ -542,7 +712,291 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const longView = { ...factsView, evidence: [{ ...factsView.evidence[1], basis: longBasis }] }
 		const longText = react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? longView : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
 		check('超长依据只上摘要(全文进 tooltip;一行不被撑爆)', !longText.includes(longBasis) && /…/.test(longText), longText.slice(0, 200))
-		check('还没证据的命题如实说「还没有证据」', /还没有证据:先登记判据,再验证/.test(facts), facts.slice(0, 400))
+		check('还没证据的命题如实说「暂无证据」', /暂无证据。先登记判据,后执行验证。/.test(facts), facts.slice(0, 400))
+
+		// ── 本体格:图带 / 芯片 / 冲突 / 零成本 / 自动展开 / 过滤判据(阶段 D) ──
+		{
+			const lexiconFixture = {
+				terms: [
+					{ id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', parent: null, status: 'admitted', basis: '现场记录 R-01', aliases: [], uses: 1, version: 1 },
+					{ id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', parent: 'furnace_batch', status: 'deprecated', basis: 'b', aliases: [], uses: 0, version: 1, deprecated: { reason: '与父概念无法区分', at: 9 } },
+				],
+				predicates: [
+					{ id: 'oxygen_ppm', label: '氧含量', gloss: '熔体氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, status: 'admitted', basis: 'GB/T 5121', uses: 2, version: 1 },
+				],
+				conflicts: [
+					{ predicate: 'oxygen_ppm', subject: 'furnace_batch|B1', sides: [ { fact: 'f-1', value: 'quantity:8:ppm', text: 'a', level: 'L3', count: 1 }, { fact: 'f-2', value: 'quantity:12:ppm', text: 'b', level: 'L3', count: 1 } ] },
+				],
+				health: [ { kind: 'unused', severity: 'info', id: 'narrow_batch', detail: '还没有任何谓词或事实引用它' } ],
+				/**
+				 * 投影夹具照 `graphProjection()` 的**真输出**写:`layer` 说这一层画不画,
+				 * `claim` 是事实指回命题的那条身份链。
+				 * 夹具落后于生产者时,它测的就不再是要跑的那份代码。
+				 */
+				graph: {
+					nodes: [
+						{ id: 'term:furnace_batch', kind: 'concept', layer: 'ontology', ref: 'furnace_batch', label: '炉次', status: 'admitted', uses: 1, depth: 0, x: 0, y: 0 },
+						{ id: 'form:quantity', kind: 'value_type', layer: 'ontology', ref: 'quantity', label: 'quantity', status: 'admitted', uses: 0, depth: 0, x: 0, y: 132 },
+						{ id: 'furnace_batch|B1', kind: 'instance', layer: 'entity', ref: 'B1', label: 'B1', type: 'furnace_batch', status: 'live', facts: ['f-1'], x: 0, y: 264 },
+					],
+					edges: [
+						{ id: 'predicate:oxygen_ppm', kind: 'predicate', layer: 'ontology', predicate: 'oxygen_ppm', label: '氧含量', from: 'term:furnace_batch', to: 'form:quantity', status: 'admitted', functional: true },
+						{ id: 'assertion:f-1:oxygen_ppm', kind: 'assertion', layer: 'entity', predicate: 'oxygen_ppm', label: '氧含量', from: 'furnace_batch|B1', to: 'form:quantity', status: 'live', level: 'L3', fact: 'f-1', scope: null, claim: 'h-1' },
+					],
+					bounds: { width: 400, height: 380 },
+				},
+			}
+			const typedView = {
+				...factsView,
+				lexicon: lexiconFixture,
+				facts: [
+					{ ...factsView.facts[0], assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' }, chip: 'B1 · 氧含量 = 8 ppm' } ] },
+					{ id: 'f-2', text: '复核读数为 12 ppm', scope: 's', level: 'L3', evidenceIds: ['e-1'], path: 'p', at: 31, assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 12, unit: 'ppm' }, chip: 'B1 · 氧含量 = 12 ppm' } ] },
+				],
+			}
+			const renderOnto = (v) => react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? v : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
+			const typed = renderOnto(typedView)
+
+			// ① 零成本:没有词条时,这一格与从前逐像素相同(图带/冲突行/维护区都不出现)
+			const plain = renderOnto(factsView)
+			check('零成本:没有词条就没有图带/冲突行/维护区(与从前同形)', !plain.includes('本体图') && !plain.includes('实体图') && !plain.includes('冲突') && !plain.includes('词汇('), plain.slice(0, 120))
+
+			// ② 图带:本体图/实体图切换在,节点标签在,截断说明的措辞在(有节点就不会出现)
+			check('图带:层次切换与节点都在(本体图默认)', typed.includes('本体图') && typed.includes('实体图') && typed.includes('炉次') && typed.includes('点节点看知识详情'), typed.slice(0, 200))
+			check('图带:提示写的是「看知识详情」而不是「过滤」(点击语义变了,提示得跟着变)', !typed.includes('点节点按概念过滤'))
+			check('图带:废止节点是虚线幽灵的来源数据(status=deprecated 的词条在维护区带缘由)', lexiconFixture.terms[1].status === 'deprecated' && String(lexiconFixture.terms[1].deprecated.reason).includes('与父概念无法区分'))
+
+			// ③ 冲突:一行指针 + 受害条目的内联标记
+			check('冲突行:仅当有冲突,一句话指针说清两侧', typed.includes('Conflict') === false && /冲突 1 对/.test(typed) && typed.includes('f-1(quantity:8:ppm)') && typed.includes('只暴露,不裁决'), typed.slice(0, 400))
+			check('冲突内联:受害条目自己亮出来(不必回看指针行)', /冲突 · oxygen_ppm/.test(typed), typed.slice(0, 500))
+
+			// ④ 断言芯片:已确立条目带芯片;命题带芯片且标注未升格
+			check('断言芯片:已确立条目显示「主语 · 谓词 = 值」', typed.includes('B1 · 氧含量 = 8 ppm') && typed.includes('B1 · 氧含量 = 12 ppm'), typed.slice(300, 700))
+
+			// ⑤ 词汇维护区:有事实时默认收起(词条表不出现),但区头计数在
+			check('维护区:有事实时默认收起(词条 id 不进 DOM,区头计数在)', !typed.includes('furnace_batch narrow') && /词汇\(2/.test(typed), typed.slice(-300))
+
+			// ⑥ 语言先于句子:0 条目 0 命题而有词条 ⇒ 维护区自动展开
+			const emptyShelves = { ...typedView, facts: [], goal: null }
+			const early = renderOnto(emptyShelves)
+			check('语言先于句子:空货架时维护区自动展开(词条表直接可见)', early.includes('furnace_batch') && early.includes('oxygen_ppm'), early.slice(0, 300))
+
+			// ⑦ 过滤判据(纯函数):断言命中、文本兜底、无关不命中
+			const termMatches = bundle.exports.__ontology?.termMatches
+			check('测试缝在:termMatches 可直接调', typeof termMatches === 'function')
+		/**
+		 * **合并目录要有上限**:真机器上全局技能可以有一百多条,全列出来就是信息爆炸。
+		 * 这一段钉住三件事:封顶生效、截掉多少如实说、候选不因为封顶被吞掉(它是等人的出口)。
+		 */
+		{
+			const many = Array.from({ length: 40 }, (_, i) => ({ name: `skill-${String(i).padStart(2, '0')}`, description: '一句话说明这条技能做什么用', source: 'user-agents', model: true, user: false, dir: null, inside: null, file: null }))
+			const renderBrain = (entries) => {
+				const projected = { brain: { skills: [], memory: { count: 0, files: [] } }, skills: { catalog: { entries }, usage: [] } }
+				const useSessions = (selector) => selector({ byId: { s1: { projectionValues: { clearai: projected } } } })
+				return react.render(components.BrainTab({ sessionId: 's1', useSessions, openPreview: () => {} })).replace(/\s+/g, ' ')
+			}
+			const capped = renderBrain(many)
+			check('合并目录封顶:40 条不全上屏,前 8 条可见 + 一句话说清还有多少', capped.includes('skill-00') && !capped.includes('skill-12') && /还有 32 条未列出/.test(capped), capped.slice(0, 200))
+			const withCandidate = renderBrain([...many, { name: 'cand-1', description: '模型写的 SOP', source: 'clearai-workspace', model: true, user: false, dir: null, inside: null, file: null }])
+			check('封顶不吞候选:候选永远在列表里(它是等人的出口)', withCandidate.includes('cand-1'), withCandidate.slice(0, 200))
+		}
+
+		check('测试缝在:termMatches 可直接调', typeof termMatches === 'function')
+
+			if (typeof termMatches === 'function') {
+				const byAssertion = termMatches({ id: 'furnace_batch', label: '炉次', aliases: [] }, { text: '别的', assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } } ] })
+				const byText = termMatches({ id: 'furnace_batch', label: '炉次', aliases: ['熔次'] }, { text: '这条结论按熔次对齐', assertions: null })
+				const byAlias = termMatches({ id: 'fb', label: '炉次', aliases: ['熔铸循环'] }, { text: '每个熔铸循环…', assertions: null })
+				const miss = termMatches({ id: 'furnace_batch', label: '炉次', aliases: [] }, { text: '完全无关的一条', assertions: null })
+				check('过滤判据:断言命中 ∨ 文本命中(含别名)∧ 无关不命中', byAssertion === true && byText === true && byAlias === true && miss === false, `${String(byAssertion)}/${String(byText)}/${String(byAlias)}/${String(miss)}`)
+			}
+
+			// ⑧ 图组件可独立渲染(空图不炸)
+			/**
+			 * **实体层的空态必须给通道,不能只给一句"暂无"**。
+			 *
+			 * 「实体图是空的」是这套系统最需要说话的一刻:用户看到的是"我查了那么多实体,
+			 * 图上什么都没有"。一句「此层暂无节点」把原因和下一步都藏起来了。
+			 * 判据落在**可执行**上:必须点名 `RegisterInstance`,并说清"断言挂在命题上不算已知"。
+			 */
+			{
+				const entityEmpty = react.render(
+					components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }),
+				)
+				check('实体层空态给通道(点名 RegisterInstance)', entityEmpty.includes('RegisterInstance'), entityEmpty.slice(0, 200))
+				check('实体层空态说清「断言挂在命题上不算已知」', entityEmpty.includes('不算'), entityEmpty.slice(0, 200))
+				const ontoEmpty = react.render(
+					components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'ontology', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }),
+				)
+				check('本体层空态仍是那句短话(两层空态可区分)', ontoEmpty.includes('此层暂无节点。'), ontoEmpty.slice(0, 200))
+			}
+
+			/**
+			 * ⑨ **适配层**:投影 → React Flow 的 nodes / edges。
+			 *
+			 * 这一层曾经自己算「先画谁」(按连接度截断前 40 个),那是**自己造轮子**:
+			 * 视口、缩放、可见性现在归 React Flow,所以客户端不再截断——
+			 * 全部节点进图,可读性由 fitView / MiniMap / 缩放负责。
+			 * 这里钉的是适配:**节点与边一条不少地交出去,标签与类型编码在 data 里**。
+			 */
+			{
+				const many = (count) => Array.from({ length: count }, (_, index) => ({
+					id: `term:t${String(index).padStart(2, '0')}`,
+					kind: 'concept',
+					layer: 'ontology',
+					ref: `t${String(index).padStart(2, '0')}`,
+					label: `概念${String(index).padStart(2, '0')}`,
+					status: 'admitted',
+					uses: 0,
+					depth: 0,
+					x: (index % 8) * 200,
+					y: Math.floor(index / 8) * 120,
+				}))
+				const ring = many(45)
+				const tree = expandTree(
+					components.GraphBand({
+						lexicon: { graph: { nodes: ring, edges: [], bounds: { width: 1600, height: 800 } }, conflicts: [] },
+						layer: 'ontology',
+						fullscreen: false,
+						sessionId: 's1',
+						onLayer: () => {},
+						onToggleFullscreen: () => {},
+						onFilter: () => {},
+					}),
+				)
+				const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
+				check('图交给 React Flow 渲染(不再是手写 SVG)', flow !== undefined)
+				check(
+					'组件形状是 forwardRef/memo 对象也要认(按 typeof 判函数就会误判成不可用)',
+					typeof components.GraphBand === 'function' && flow !== undefined && !String(flatNode(tree)).includes('图组件不可用'),
+					String(flow === undefined),
+				)
+				check('适配层不截断:全部节点一条不少地交出去(视口归库管)', flow?.props?.nodes?.length === 45, String(flow?.props?.nodes?.length))
+				check('节点的标签与初始坐标来自投影', flow?.props?.nodes?.[0]?.data?.label === '概念00' && flow.props.nodes[0].position.x === 0)
+				check('库的零件真的用上了(MiniMap / Controls / Background)', ['rf-minimap', 'rf-controls', 'rf-background'].every((name) => walkNodes(tree).some((item) => item.type === name)))
+				check('打开工作区 / 适配 都是显式动作', flatNode(tree).includes('打开图谱工作区') && flatNode(tree).includes('适配'))
+			}
+
+			/**
+			 * ⑨′ **降级如实**:React Flow 那一行没装上时,面板说清原因,
+			 * 不把整块面板炸掉(其余格子照常读)。
+			 */
+			{
+				const broken = loadClientBundleWithoutXyflow()
+				const rendered = broken.react
+					.render(broken.exports.__components.GraphBand({
+						lexicon: lexiconFixture,
+						layer: 'ontology',
+						fullscreen: false,
+						sessionId: 's1',
+						onLayer: () => {},
+						onToggleFullscreen: () => {},
+						onFilter: () => {},
+					}))
+					.replace(/\s+/g, ' ')
+				check('拿不到图组件时如实说,而不是崩', rendered.includes('图组件不可用'))
+				check('降级时说得出**原因**(不然下一次修它还得自己猜)', /图组件不可用\(.+?\)/.test(rendered), rendered.slice(0, 200))
+				check('降级时其余读数照常(节点计数仍在)', rendered.includes('个节点'))
+			}
+
+			/**
+			 * ⑩ **点击语义**:点节点是「看知识详情」,不是「按概念过滤」。
+			 *
+			 * 从前点一下就把货架过滤掉,读的人却还不知道那个词是什么意思。
+			 * 过滤改成 Inspector 里的一个显式动作——所以组件必须**收得到 sessionId**
+			 * (Inspector 要拿它去问宿主),而且不能再出现「已选中 · 名字」那种只报名字的卡。
+			 */
+			{
+				const band = react.render(
+					components.GraphBand({
+						lexicon: lexiconFixture,
+						layer: 'ontology',
+						expanded: false,
+						sessionId: 's1',
+						onLayer: () => {},
+						onToggleExpand: () => {},
+						onFilter: () => {},
+					}),
+				).replace(/\s+/g, ' ')
+				check('图带:提示说明点击是看知识详情', band.includes('点节点看知识详情'))
+				check('图带:没有选中时不摆 Inspector(零成本)', !band.includes('按此筛选'))
+				check('图带:零件与文案都不再承诺「点一下即过滤」', !band.includes('按概念过滤'))
+			}
+
+			/**
+			 * ⑪ **Inspector 组件本身**:它只渲染宿主给的读数,不在客户端拼链。
+			 * 这里直接喂一份投影输出,钉住「链的每一段都画得出来」。
+			 */
+			{
+				const inspector = {
+					selection: { kind: 'edge', id: 'assertion:f-1:oxygen_ppm:furnace_batch|B1', label: '氧含量' },
+					definition: { kind: 'assertion', predicate: 'oxygen_ppm', predicateLabel: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, subject: { type: 'furnace_batch', id: 'B1' } },
+					facts: [
+						{
+							id: 'f-1',
+							text: 'B1 氧含量是 8 ppm',
+							level: 'L3',
+							scope: '均值差 < 5% 即作废',
+							status: 'live',
+							at: 1700000000000,
+							review: null,
+							assertions: [{ chip: 'B1 · 氧含量 = 8 ppm' }],
+							hypothesis: { id: 'h-1', claim: 'B1 氧含量是 8 ppm', refuteWhen: '复测不是', status: 'alive', supportedLevel: 'L3', refutations: 0, inconclusive: 0 },
+							evidence: [
+								{
+									id: 'e-1',
+									verdict: 'support',
+									level: 'L3',
+									evaluator: 'independent',
+									basis: '读过产物',
+									origins: [{ kind: 'artifact', path: 'lab/g1.txt' }],
+									refs: ['lab/g1.txt'],
+									materials: [],
+									step: { plan: 'p-1', id: 's-1', do: '读仪表', doneCriteria: 'lab/g1.txt 存在', status: 'advanced' },
+								},
+							],
+							conflicts: [],
+						},
+					],
+					factsTruncated: 0,
+					relations: {},
+					conflicts: [],
+					history: [{ kind: 'fact/promoted', at: 1700000000000, summary: '升格为事实(支持到 L3)' }],
+					actions: { canFilter: true },
+					note: '这条边落在单值谓词上。',
+				}
+				const rendered = react.render(components.GraphInspector({ selection: { kind: 'edge', id: inspector.selection.id, label: '氧含量' }, inspector, sessionId: 's1', onFilter: () => {}, onClose: () => {} })).replace(/\s+/g, ' ')
+				check('Inspector:链的每一段都画得出来(事实 / 命题 / 证据 / 出处 / 步骤)', rendered.includes('f-1') && rendered.includes('h-1') && rendered.includes('e-1') && rendered.includes('lab/g1.txt') && rendered.includes('s-1'))
+				check('Inspector:命题带推翻条件与支持等级', rendered.includes('复测不是') && rendered.includes('L3'))
+				check('Inspector:历史画成一行', rendered.includes('升格为事实'))
+				check('Inspector:有「按此筛选」这个显式动作', rendered.includes('按此筛选'))
+				check('Inspector:单值谓词的冲突语义如实说', rendered.includes('单值谓词'))
+			}
+
+			/**
+			 * ⑫ **点击与选中走库的回调**:拖动 / 平移 / 缩放是 React Flow 的行为,
+			 * 不再由我们实现,也不该由我们测(那是测库)。我们只需钉住**接进库的三根线**:
+			 * 点击节点 → Inspector;点击边 → Inspector;点击空白 → 收起 Inspector。
+			 */
+			{
+				const tree = expandTree(
+					components.GraphBand({
+						lexicon: lexiconFixture,
+						layer: 'ontology',
+						fullscreen: false,
+						sessionId: 's1',
+						onLayer: () => {},
+						onToggleFullscreen: () => {},
+						onFilter: () => {},
+					}),
+				)
+				const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
+				check('图带:点击回调交给了库(onNodeClick / onEdgeClick / onPaneClick)', typeof flow?.props?.onNodeClick === 'function' && typeof flow?.props?.onEdgeClick === 'function' && typeof flow?.props?.onPaneClick === 'function')
+				check('图带:拖动节点 / 画布平移 / 滚轮缩放 都由库承担', flow?.props?.nodesDraggable === true && flow?.props?.panOnDrag === true && flow?.props?.zoomOnScroll === true)
+				check('图带:没选之前不摆 Inspector(零成本)', !flatNode(tree).includes('按此筛选'))
+			}
+
+		}
 		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
 		// 这一格**就是**事实库:不再挂一个「打开事实库」的空链接,整行点开原件
 		check(
@@ -673,7 +1127,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		 * 三条规矩都要真的在:走过的边写清触发与凭据、当前态标「当前」、没走的边虚线灰。
 		 */
 		check('流转图画出来了:六态都在,当前态标「当前」', /已提出/.test(opened) && /验证中/.test(opened) && /已确认/.test(opened) && /已推翻/.test(opened) && /当前/.test(opened), opened.slice(0, 200))
-		check('走过的边:图上标证据 id,图下的「来路」行写清触发与凭据', /e-1 · L3 支持/.test(opened) && /有了第一条证据 → 验证中 · e-1 · L3 支持/.test(opened), opened.slice(0, 400))
+		check('走过的边:图上标证据 id,图下的「来路」行写清触发与凭据', /e-1 · L3 支持/.test(opened) && /已获首条证据 → 验证中 · e-1 · L3 支持/.test(opened), opened.slice(0, 400))
 		check('没走的边只画虚线结构,tooltip 里写着「未走:这件事 · 谁发起」(取自声明,不是界面手抄)', /未走:promotion_threshold · system 发起/.test(opened) && /未走:refuting_evidence · system 发起/.test(opened) && /未走:hypothesis_revised · model 发起/.test(opened), opened.slice(0, 400))
 		check('形状来自声明:声明里没有 hypothesis 时不硬画', !/┊/.test(render2(components.PropositionShelf, { open: 'h1', onToggle: () => {}, data: { ...factsView, ontology: null } })) || true)
 	}
@@ -884,21 +1338,72 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	{
 		const wordGate = {
 			...view,
-			inbox: [{ kind: 'provisional_review', title: '临时采纳待复核', summary: '分叉 x · 分差不足以称结论', plan: 'p-1', step: 's1', human_action: null, needs: 'word', ask: '认可就说一句话(比如「认可,继续」);要改判据就重做一条' }],
+			// 「要一句话」的门现在只剩计划受阻那一种(临时采纳已经有按钮了)。
+			inbox: [{ kind: 'plan_blocked', title: '计划被拦', summary: '连续 2 次未过观测准入:产物没落盘', plan: 'p-1', step: 's1', human_action: null, needs: 'word', ask: '说明如何修改(改计划 / 补判据),语义判断归模型' }],
 			hasOpenGate: true,
 		}
 		const inboxText = react.render(components.Inbox({ data: wordGate })).replace(/\s+/g, ' ')
-		check('要一句话的门:**说出「说一句话就行」**,而且不摆机器词', /说一句话就行/.test(inboxText) && !/provisional_review/.test(inboxText), inboxText.slice(0, 200))
-		check('要一句话的门:不给按钮(它不是点击能表达的)', !/要你裁决|要你采纳/.test(inboxText), inboxText.slice(0, 160))
-		const clickGate = { ...view, inbox: [{ kind: 'fork_adopt', title: '世界线裁决', summary: '两条线跑完,待采纳一条', plan: 'p-1', step: 's1', human_action: 'adopt_branch', needs: 'click' }], hasOpenGate: true }
+		check('要一句话的门:**说出「等待输入」**,而且不摆机器词', /说明如何修改|等待输入/.test(inboxText) && !/provisional_review/.test(inboxText), inboxText.slice(0, 200))
+		check('要一句话的门:不给按钮(它不是点击能表达的)', !/要你采纳/.test(inboxText), inboxText.slice(0, 160))
+		/**
+		 * 裁决条目**永远给得出一个能落实的动作**:
+		 *   · 投影里有这一盘分叉 ⇒ 由世界线那一块渲染,一个分支一个采纳按钮;
+		 *   · 落不到那一块(拿不到分支数据)⇒ 给「用提问卡决定」,那条路会把读数铺进对话框。
+		 * 曾经这里是同一个「要你裁决」按钮渲染两遍,而其中一遍的请求里**没有分支**——
+		 * 落账时找不到分叉,状态一字未动,界面却回一句成功。
+		 */
+		/**
+		 * 被推翻的事实:那道门有**两个**结局,而且两个都必须能一键落地——
+		 * 只给「撤回」的话,「判定证据不可靠、维持原事实」就只能靠不说话,而门开着按住续跑,
+		 * 系统于是等一个永远不会来的动作。
+		 */
+		{
+			const refuted = {
+				...view,
+				hasOpenGate: true,
+				inbox: [{ kind: 'fact_refutation', title: '事实被推翻,等你决定', summary: '「X 比 Y 快」出现了推翻证据:撤回它,或判证据不可靠、维持原事实。', plan: null, step: null, value: 'fct-1', human_action: 'retract_fact', needs: 'click' }],
+				facts: [{ id: 'fct-1', text: 'X 比 Y 快', scope: null, level: 'L3', evidenceIds: [], path: null, at: 1, refuted: true, review: null }],
+			}
+			const text = react.render(components.Inbox({ data: refuted })).replace(/\s+/g, ' ')
+			check('被推翻的事实:撤回与维持两个按钮都在(少一个那道门就没有出口)', /撤回事实/.test(text) && /维持原事实/.test(text), text.slice(0, 200))
+			/**
+			 * 撤回是**两步**(与「放弃这条分叉」同一分工):机制只记录,「值得索要理由」在界面上——
+			 * 撤回改变的是下一轮模型会引用什么;而「维持原事实」不改任何面,所以它是一键。
+			 * 这份渲染桩的 `useState` 是空实现,所以这里断言的是**初始态**:缘由没写之前,
+			 * 「确认撤回」根本不存在(它要点开之后才出现)。
+			 */
+			{
+				const tree = walkNodes(components.Inbox({ data: refuted }))
+				const label = (node) => flatNode(node)
+				check('撤回先要写缘由:初始态只有「撤回事实」,没有「确认撤回」', tree.some((node) => label(node) === '撤回事实') && !tree.some((node) => label(node) === '确认撤回'))
+				check('那颗按钮的提示写着「两步」而不是「一键」', tree.some((node) => String(node.props?.title ?? '').includes('填写缘由后提交')), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => node.props?.title)))
+			}
+			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
+			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻 · 待裁决/.test(shelf), shelf.slice(0, 180))
+			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }
+			const shelf2 = react.render(components.FactShelf({ useProjection: () => retractedFacts })).replace(/\s+/g, ' ')
+			check('撤回过的事实**仍列在这里**(P5:记录不删),但标着「人已撤回」', /人已撤回\(记录保留\)/.test(shelf2), shelf2.slice(0, 180))
+		}
+		const clickGate = { ...view, inbox: [{ kind: 'fork_adopt', title: '世界线裁决', summary: '两条线跑完,待采纳一条', plan: 'p-1', step: 's1', fork: 'f-9', human_action: 'adopt_branch', needs: 'click' }], hasOpenGate: true }
 		const clickGateText = react.render(components.Inbox({ data: clickGate })).replace(/\s+/g, ' ')
-		check('要点击的门:给按钮,而且标明"要你裁决"', /要你裁决/.test(clickGateText), clickGateText.slice(0, 160))
-		const wordGateData = { ...view, inbox: [{ kind: 'plan_blocked', needs: 'word', ask: '说一句怎么改' }], continuation: { state: 'paused', goal: 'hg-1', target: '目标 g-1', why: 'gate' } }
+		check('拿不到分支的裁决条目 ⇒ 给「用提问卡决定」,不摆一个没有分支可裁的「裁决」', /通过提问卡决定/.test(clickGateText) && !/要你裁决/.test(clickGateText), clickGateText.slice(0, 160))
+		{
+			/** 同一盘分叉同时出现在 `inbox` 与 `forks` 里 —— 真实投影就是这么给的。 */
+			const both = { ...view, hasOpenGate: true, inbox: [clickGate.inbox[0]], forks: [{ id: 'f-9', stepId: 's1', question: '走湿法还是干法', phase: 'deciding', humanDecision: null, branches: [{ id: 'b1', label: '湿法', status: 'evaluated', reading: '62.1' }, { id: 'b2', label: '干法', status: 'evaluated', reading: '58.0' }] }] }
+			const bothText = react.render(components.Inbox({ data: both })).replace(/\s+/g, ' ')
+			const cardButtons = (bothText.match(/通过提问卡决定/g) ?? []).length
+			check('同一道门只渲染一次(曾经渲染两遍,其中一遍是空动作)', cardButtons === 1, `提问卡按钮 ${cardButtons} 个:${bothText.slice(0, 200)}`)
+			check('每条分支各有一个采纳按钮(要点得到分支)', /采纳 湿法/.test(bothText) && /采纳 干法/.test(bothText), bothText.slice(0, 220))
+			/** 人已经裁决过:条目已经消失,世界线那一块也不该再摆按钮(计数说 0 件、按钮还在就矛盾了)。 */
+			const decided = { ...both, inbox: [], forks: [{ ...both.forks[0], humanDecision: { action: 'adopt_branch', branch: 'b1', note: null, at: 1 } }] }
+			check('人裁决过的分叉不再摆按钮(与「需要你 N」的计数一致)', react.render(components.Inbox({ data: decided })).replace(/\s+/g, ' ') === '', react.render(components.Inbox({ data: decided })).slice(0, 120))
+		}
+		const wordGateData = { ...view, inbox: [{ kind: 'plan_blocked', needs: 'word', ask: '说明如何修改' }], continuation: { state: 'paused', goal: 'hg-1', target: '目标 g-1', why: 'gate' } }
 		const noteWord = react.render(components.ContinuationNote({ useProjection: (name) => (name === 'goal' ? { id: 'hg-1', phase: 'active' } : wordGateData) })).replace(/\s+/g, ' ')
-		check('续跑注:有"要一句话"的门 ⇒ 说「等你说一句话」', /续跑停着:等你说一句话/.test(noteWord), noteWord.slice(0, 120))
+		check('续跑注:有"要一句话"的门 ⇒ 说「等待输入」', /续跑停着:等待输入/.test(noteWord), noteWord.slice(0, 120))
 		const clickGateData = { ...view, inbox: [{ kind: 'fork_adopt', needs: 'click' }], continuation: { state: 'paused', goal: 'hg-1', target: '目标 g-1', why: 'gate' } }
 		const noteClick = react.render(components.ContinuationNote({ useProjection: (name) => (name === 'goal' ? { id: 'hg-1', phase: 'active' } : clickGateData) })).replace(/\s+/g, ' ')
-		check('续跑注:有可点的门 ⇒ 说「有人在等你」', /续跑停着:有人在等你/.test(noteClick), noteClick.slice(0, 120))
+		check('续跑注:有可点的门 ⇒ 说「等待人工处理」', /续跑停着:等待人工处理/.test(noteClick), noteClick.slice(0, 120))
 	}
 
 
@@ -985,7 +1490,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	// 投影为空:世界树(计划面)与事实格(闭环面)都要给平静空态,不抛、不显示堆栈
 	const emptyTree = react.render(components.WorldTree({ useProjection: () => undefined, sessionId: 's1' }))
 	const emptyFacts = react.render(components.Facts({ useProjection: () => undefined, sessionId: 's1' }))
-	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /还没有计划/.test(emptyTree) && /这个会话还没开始/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
+	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /暂无数据/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
 
 	// 空视图也要能渲染:这是最常见的崩溃点(字段全 undefined)。
 	const emptyView = { sessionId: 's1', goal: null, plan: null, forks: [], evidence: [], materials: [], facts: [], audits: [], settlement: [], scouts: [], inbox: [], hasOpenGate: false, brain: null }
@@ -1033,10 +1538,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		addresses.length = 0
 		const withoutProps = seat.component({ useProjection: () => view, useSessions })
 		withoutProps.props.openPreview('lab/evidence.csv')
-		check('座位 props 没有 sessionId 时兜底用当前会话(原生 chat 同款读法)', addresses.join('|') === 'dsh-resource://file/session/s1/lab/evidence.csv', addresses.join('|'))
+		check('座位 props 没有 sessionId 时兜底用当前会话(与宿主同一个读法:retainedBy.mainView)', addresses.join('|') === 'dsh-resource://file/session/s1/lab/evidence.csv', addresses.join('|'))
 		// 当前会话也拿不到(服务卸载):**不打开**,返回 false —— 不编一个会话 id 去撞读面。
 		addresses.length = 0
-		host.ctx.sessions.list.getSnapshot = () => ({ current: undefined, byId: {} })
+		host.ctx.sessions.list.getSnapshot = () => ({ ids: [], byId: {}, phase: 'ready', projectionsBySession: {} })
 		const noSession = seat.component({ useProjection: () => view, useSessions })
 		check('连当前会话都拿不到时不打开(返回 false,零调用)', noSession.props.openPreview('lab/evidence.csv') === false && addresses.length === 0, `${addresses.length}`)
 	}
@@ -1066,12 +1571,12 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	{
 		const noCatalog = { ...view, skills: { catalog: null, usage: [] } }
 		const rendered = react.render(components.BrainTab({ useProjection: () => noCatalog, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: noCatalog } } } }), sessionId: 's1', openRail: () => {} })).replace(/\s+/g, ' ')
-		check('目录还没到时如实说明(不假装这就是合并目录)', /目录还没到\(内核下一次 pre-step 会发\)/.test(rendered) && /literature-review/.test(rendered), rendered.slice(0, 160))
+		check('目录还没到时如实说明(不假装这就是合并目录)', /目录尚未到达\(内核下一次 pre-step 下发\)/.test(rendered) && /literature-review/.test(rendered), rendered.slice(0, 160))
 		// 会话**还没开始**(投影里连 clearai 的值都没有):文案要说清「数据来自会话日志」,
 		// 而不是让人去 clear/skills/ 里放技能(工作区里可能已经躺着 18 个)。
 		{
 			const started = react.render(components.BrainTab({ useProjection: () => undefined, useSessions: () => undefined, sessionId: 's1', openRail: () => {} })).replace(/\s+/g, ' ')
-			check('新会话(还没有第一轮对话)说清为什么是空的', /这个会话还没开始/.test(started) && /发第一句话/.test(started), started.slice(0, 140))
+			check('新会话(无首轮对话)说清为什么是空的', /暂无数据/.test(started) && /发送第一条消息/.test(started), started.slice(0, 140))
 		}
 	}
 	/**
@@ -1108,7 +1613,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			if (name === 'react') return reactStub
 			throw new Error(`client bundle 不该 require "${name}"`)
 		}
-		new Function('window', 'require', 'console', source)(globalThis.window, requireStub, console)
+		new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, requireStub, console, () => makeXyflowStub(reactStub.createElement))
 		delete globalThis.window
 		const loaded = registration.factory(requireStub)
 		const realFetch = globalThis.fetch
@@ -1203,7 +1708,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		check('这种情况顶条也照实写「盘上 3 份」', /阶段 0 · 交付 0\/0 处声明 · 盘上 3 份/.test(fresh.text), fresh.text.slice(0, 130))
 		// 两边都空:保留原来那句话(不是错误,是新项目的样子)。
 		const blank = await renderDeliverables({ ok: true, stages: [], outputs: [] })
-		check('两边都空时还是原来那句(新项目的样子)', /还没有计划,所以还没有产物/.test(blank.text) && !/点一条 → 右栏预览/.test(blank.text), blank.text.slice(0, 200))
+		check('两边都空时还是原来那句(新项目的样子)', /暂无计划/.test(blank.text) && !/点一条 → 右栏预览/.test(blank.text), blank.text.slice(0, 200))
 	}
 }
 
@@ -1523,7 +2028,7 @@ console.log('\n【世界树拓扑:脊柱 / 分叉车道 / 收敛(纯函数,直�
 	 */
 	{
 		const entryText = walkNodes(render(bundled.__components.Inbox, props)).map((node) => flatNode(node)).join('|')
-		check('人门区:世界线裁决旁边有「用提问卡决定」这个入口', /用提问卡决定/.test(entryText), entryText.slice(0, 140))
+		check('人门区:世界线裁决旁边有「用提问卡决定」这个入口', /通过提问卡决定/.test(entryText), entryText.slice(0, 140))
 	}
 
 	check('人门区:放弃是两步的第一步(先写缘由)', first.some((node) => flatNode(node) === '放弃这条分叉') && !first.some((node) => flatNode(node) === '确认放弃'))
@@ -1531,7 +2036,7 @@ console.log('\n【世界树拓扑:脊柱 / 分叉车道 / 收敛(纯函数,直�
 		const second = walkNodes(render(bundled.__components.Inbox, props))
 		// 注意按 `type === 'button'` 找:外面那层 span 的纯文本也是「确认放弃」(输入框没有文字子节点),只按文字找会命中它。
 		const confirm = second.find((node) => node.type === 'button' && flatNode(node) === '确认放弃')
-		const input = second.find((node) => node.type === 'input' && String(node.props?.placeholder ?? '').includes('为什么放弃'))
+		const input = second.find((node) => node.type === 'input' && String(node.props?.placeholder ?? '').includes('放弃缘由'))
 		check(
 			'人门区:点开之后出现缘由框与「确认放弃」,空缘由时确认按不动',
 			confirm !== undefined && input !== undefined && confirm.props?.disabled === true,
@@ -1587,6 +2092,29 @@ console.log('\n【服务的声明面:用到的每一个都必须在 inject 里(2
 	const host = makeClientContext()
 	bundle.exports.apply(host.ctx)
 	check('照真实契约(属性形式)注册得下去', host.registrations.length > 0 && host.tabDefinitions.length === 2, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
+}
+
+console.log('\n【图谱渲染:React Flow 那一行真的在部署件里】')
+{
+	/**
+	 * 这一条守的是**装出去之后还能不能用**:React Flow 由 `ui/vendor/xyflow.js` 提供,
+	 * build 时与主文件拼成同一份 lib/client.js(它是一个**同作用域的函数**,不是模块行——
+	 * 运行时动态加载的模块行不在启动图里,`require` 不认它)。
+	 * 拼接一旦掉了,浏览器里图会安静地退化成「图组件不可用」——所以这里验的是**包里的字节**,
+	 * 不是源里的意图。
+	 */
+	check('部署件里带着 vendor 函数(build 的拼接没掉)', deployed.includes('function __clearaiXyflow(require)'))
+	check('部署件里带上了 React Flow 的样式(缺了布局会散)', deployed.includes('data-clearai'))
+	/**
+	 * vendor 里**只能**依赖平台种子字:任何别的外部包在浏览器里都解析不到
+	 * (`require` 只认种子词与已注册的行),那会在运行时才炸。这条断言把打包结果
+	 * 的依赖面钉死——打包配置改动时它会先红,而不是等人打开面板发现图没了。
+	 */
+	const vendorRequires = [...readFileSync(VENDOR, 'utf8').matchAll(/require\("([^"]+)"\)/g)].map((match) => match[1])
+	const externalNotSeed = [...new Set(vendorRequires)].filter((name) => name !== 'react' && name !== 'react/jsx-runtime')
+	check('vendor 的外部依赖只有平台种子字(react / react/jsx-runtime)', externalNotSeed.length === 0, externalNotSeed.join(','))
+	check('主文件确实调用它(而不是只用桩)', readFileSync(SOURCE, 'utf8').includes('__clearaiXyflow(require)'))
+	check('依赖面仍然只有平台种子字(不 require 任何 npm 包)', !/require\('@xyflow/.test(readFileSync(SOURCE, 'utf8')))
 }
 
 console.log('\n【语言:接原生 locale 座位,表按源文索引】')
