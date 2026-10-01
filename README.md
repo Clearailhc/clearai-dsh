@@ -136,7 +136,7 @@ If pnpm is not on PATH: `npm install -g pnpm` (do not `corepack enable` — it i
 From the repository:
 
 ```bash
-npm test                       # 18 suites
+npm test                       # 17 suites
 node tools/build-package.mjs   # assemble dist/ from source
 node tools/verify-package.mjs  # rebuild on the spot, byte-compare
 node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chrome)

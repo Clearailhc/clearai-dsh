@@ -40,7 +40,6 @@ The package is a pure function of the source; `node tools/build-package.mjs` per
 | `pack/cordis.patch.yml` | `cordis.patch.yml` |
 | `pack/bin/clearai.mjs` | `bin/clearai.mjs` |
 | `preset/` | `presets/clearai/` |
-| `preset/template/` | `presets/clearai/template/` |
 | `ui/lib/index.js` | `lib/host.js` |
 | `ui/lib/fold.js` | `lib/fold.js` |
 | `ui/lib/invariant.js` | `lib/invariant.js` |
@@ -101,7 +100,7 @@ For development, `install.sh` lays the repository's source directly into a real 
 ## Build and verify
 
 ```bash
-npm test                        # 18 suites — the list lives in test/run.sh
+npm test                        # 17 suites — the list lives in test/run.sh
 node tools/build-package.mjs    # assemble dist/clearai-dsh
 node tools/verify-package.mjs   # rebuild and compare byte-for-byte
 node tools/verify-deploy.mjs    # compose the deployed files for real (bypasses the ESM cache)

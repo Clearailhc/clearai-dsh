@@ -107,7 +107,7 @@ console.log('\n【④ 不变量必须写在文档里,而不只在代码里】')
 	check('授权不是硬阻断这件事写明', zh.includes('授权不是硬阻断') && zh.includes("by='progress'"))
 	check('turnDemand 的判定顺序写明且不含 autonomy', zh.includes('turnDemand') && /这条链里没有 autonomy/.test(zh))
 	check('默认续跑额度 128 写明', zh.includes('DEFAULT_MAX_AUTO_TURNS = 128'))
-	check('「不是落选」的三种派生状态写明', zh.includes('failed') && zh.includes('orphaned') && zh.includes('unreturned'))
+	check('世界线与侦察两节写明已删除(旧日志里的事件被安静跳过)', /## 9\. 世界线[^\n]*已删除/.test(zh) && /## 11\. 侦察[^\n]*已删除/.test(zh) && zh.includes('原样跳过'))
 	check('retracted 的生产者写明(人的 fact/reviewed,不再声称没有生产者)', zh.includes('fact/reviewed') && !/retracted[^\n]{0,60}没有(任何)?生产者/.test(zh))
 }
 
@@ -117,10 +117,10 @@ console.log('\n【⑤ 时序图:四条主路径与关键边界】')
 		check(`${name}时序图含轻量探索路径`, /轻量探索路径|Light exploration path/.test(text))
 		check(`${name}时序图含正式认识论路径`, /正式认识论路径|Formal epistemic path/.test(text))
 		check(`${name}时序图含失败恢复路径`, /失败与恢复路径|Failure and recovery path/.test(text))
-		check(`${name}时序图含世界线路径`, /世界线路径|Worldline path/.test(text))
+		check(`${name}时序图含竞争路线路径`, /竞争路线路径|Competing-routes path/.test(text))
 		check(`${name}时序图写明准入不裁决`, /准入不裁决|Admission does not judge/.test(text))
 		check(`${name}时序图写明 L3+ 拒绝自判 verdict`, /verdict_not_accepted/.test(text))
-		check(`${name}时序图写明算术排序与人工采纳分离`, /算术只负责\*\*排序\*\*|Arithmetic only \*\*ranks\*\*/.test(text))
+		check(`${name}时序图写明同一计划里产物路径互斥`, /产物路径互斥|Artifact paths are exclusive/.test(text))
 	}
 }
 
@@ -133,7 +133,7 @@ console.log('\n【⑤b 时序图:固定角色表,不许退回模糊角色】')
 		check(`${name}时序图有固定角色表`, /固定角色表|fixed cast/i.test(text))
 		check(
 			`${name}角色表覆盖八个角色`,
-			[/人|Human/, /模型|Model/, /DSH 宿主|DSH host/, /ClearAI 内核|ClearAI kernel/, /事实账本|Fact ledger/, /投影|Projection/, /独立评估者|Independent evaluator/, /世界线执行者|Worldline executor/].every((pattern) =>
+			[/人|Human/, /模型|Model/, /DSH 宿主|DSH host/, /ClearAI 内核|ClearAI kernel/, /事实账本|Fact ledger/, /投影|Projection/, /独立评估者|Independent evaluator/, /原生子任务|Native subagent/].every((pattern) =>
 				pattern.test(text),
 			),
 		)

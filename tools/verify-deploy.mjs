@@ -145,7 +145,7 @@ console.log(`  段:${sections.length} 段 · 澄清协议 = ${clarifications.joi
 console.log(`  机制:${mechanisms.join('/')} · autonomy = ${config.autonomy ?? '(缺省 attended)'}`)
 
 /**
- * 宿主包也一起验:它里面的**三条面板路由**必须挂在 connection 的 exact fetch 表上
+ * 宿主包也一起验:它里面的**两条面板路由**必须挂在 connection 的 exact fetch 表上
  * (2026-09-11 踩过两次:挂 webServer 上浏览器永远轮不到;`ctx.get` 拿一次拿不到就静默不挂)。
  * 这里用部署出去的那一份 + 假 ctx 做一次真实装配,数路由。
  */
@@ -192,7 +192,7 @@ if (existsSync(HOST_PKG)) {
 	}
 	if (hostOk) {
 		const paths = routes.map((route) => route.path)
-		const expected = ['/api/clearai/gate', '/api/clearai/deliverables', '/api/clearai/brain']
+		const expected = ['/api/clearai/gate', '/api/clearai/inspector']
 		const missing = expected.filter((path) => !paths.includes(path))
 		const grammar = /^[A-Za-z0-9_$.-]+$/
 		const badPath = paths.find((path) => path.split('/').slice(2).some((segment) => !grammar.test(segment)))
@@ -202,6 +202,6 @@ if (existsSync(HOST_PKG)) {
 }
 console.log(`  宿主包:${hostOk ? '✓' : '✗'} ${hostNote}`)
 
-const ok = tools.size === 29 && sections.length === 23 && clarifications.length === 1 && hostOk
+const ok = tools.size === 20 && sections.length === 21 && clarifications.length === 1 && hostOk
 console.log(ok ? '\n部署自洽。(运行期验收仍需重启宿主:内核按 URL 缓存。)' : '\n✗ 实测数字与预期不符。')
 process.exit(ok ? 0 : 1)

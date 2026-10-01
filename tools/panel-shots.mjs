@@ -5,9 +5,8 @@
  * → 把**真组件**(构建出来的那一份客户端)挂进真 Chrome 渲染 → 截图。
  * 面板里的每个数字都来自投影或盘上真有的文件,没有一处是手写的。
  *
- * 两条读面在浏览器里是 fetch(`/api/clearai/deliverables`、`/api/clearai/brain`),
- * 这里按 `ui/lib/index.js` 的**同一形状**在 Node 侧算好、注入页面 —— 算的依据同样是
- * 投影 + 工作区盘上的文件;字段映射不另立一套(改读面时这里要跟着改,注释里指得出出处)。
+ * 检视读面在浏览器里是 fetch(`/api/clearai/inspector`),
+ * 这里按 `ui/lib/index.js` 的**同一形状**在 Node 侧算好、注入页面(改读面时这里要跟着改)。
  *
  * 跑法:
  *   node tools/panel-shots.mjs --session <id 前缀> [--out docs/marketing/zhihu/images] [--prefix panel]
@@ -18,7 +17,7 @@ import { createServer } from 'node:http'
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 
@@ -118,125 +117,8 @@ const outDir = join(PORT, option('--out') ?? join('docs', 'marketing', 'zhihu', 
 const prefix = option('--prefix') ?? 'panel'
 mkdirSync(outDir, { recursive: true })
 
-/**
- * ── 交付物读面的数据面(镜像 `ui/lib/index.js` 的 `/api/clearai/deliverables`)──
- * 形状逐字段对齐,面板因此能走同一套行渲染;存在性来自盘上的 stat,不是投影里的声明。
- *
- * 吃的是**原始账本状态**(`state`),不是 `view()` 的投影 —— 宿主那条读面就是
- * `ctx.sessionProjections.stateOf(session,'clearai')`,字段是 snake_case
- * (`done_criteria` / `confirmed_at`),产物是字符串路径。
- */
-const pathAreaOf = (path) => {
-	const clean = String(path ?? '').replace(/^\.\//, '')
-	if (clean === 'PROJECT.md' || clean === 'project.md') return { key: 'constitution', label: '章程' }
-	if (clean.startsWith('input/')) return { key: 'input', label: '项目资料' }
-	if (clean.startsWith('lab/')) return { key: 'process', label: '分析过程' }
-	if (clean.startsWith('products/')) return { key: 'output', label: '输出成果' }
-	if (clean.startsWith('clear/')) return { key: 'brain', label: '外脑' }
-	return { key: 'other', label: '未分类' }
-}
-const resolveInside = (base, candidate) => {
-	if (typeof candidate !== 'string' || candidate === '') return null
-	const root = resolve(base)
-	const target = resolve(root, candidate)
-	if (target !== root && !target.startsWith(`${root}${sep}`)) return null
-	return target
-}
-const OUTPUT_MAX_DEPTH = 5
-const OUTPUT_MAX_SCAN = 2000
-const OUTPUT_MAX_FILES = 200
-const listWorkspaceOutputs = (base) => {
-	const root = resolveInside(base, 'products')
-	if (root === null) return []
-	const workspaceRoot = resolve(base)
-	const found = []
-	let scanned = 0
-	const walk = (dir, depth) => {
-		if (depth > OUTPUT_MAX_DEPTH || scanned >= OUTPUT_MAX_SCAN) return
-		let entries = []
-		try {
-			entries = readdirSync(dir, { withFileTypes: true })
-		} catch {
-			return
-		}
-		for (const entry of entries) {
-			if (scanned >= OUTPUT_MAX_SCAN) return
-			if (entry.name.startsWith('.')) continue
-			const absolute = join(dir, entry.name)
-			if (entry.isDirectory()) {
-				walk(absolute, depth + 1)
-				continue
-			}
-			if (!entry.isFile()) continue
-			scanned += 1
-			try {
-				const info = statSync(absolute)
-				found.push({ relative: relative(workspaceRoot, absolute), bytes: info.size, modifiedAt: info.mtimeMs })
-			} catch {
-				continue
-			}
-		}
-	}
-	walk(root, 1)
-	return found.sort((left, right) => right.modifiedAt - left.modifiedAt).slice(0, OUTPUT_MAX_FILES)
-}
-const deliverablesPayload = (base, raw) => {
-	if (base === null) return { ok: false, error: 'no_live_session' }
-	const stages = (raw.plans ?? []).map((plan) => ({
-		plan: plan.id,
-		status: plan.status,
-		brief: plan.brief ?? '',
-		confirmedAt: plan.confirmed_at ?? null,
-		openedAt: plan.at ?? null,
-		closedAt: plan.closedAt ?? null,
-		summary: plan.summary ?? null,
-		steps: (plan.steps ?? []).map((step) => ({
-			id: step.id,
-			ordinal: step.ordinal,
-			do: step.do,
-			status: step.status,
-			doneCriteria: step.done_criteria,
-			level: step.tests?.level ?? null,
-			advancedAt: step.advancedAt ?? null,
-			voidReason: step.voidReason ?? null,
-			artifacts: (step.artifacts ?? []).map((entry) => {
-				/**
-				 * 投影里的产物是 `{ path, exists }`(声明,不读盘);宿主读面吃的是原始账本里的
-				 * 字符串路径。这里统一取路径 —— 盘上真不真的问题由下面的 stat 回答。
-				 */
-				const artifact = typeof entry === 'string' ? entry : String(entry?.path ?? '')
-				const absolute = resolveInside(base, artifact)
-				let info = null
-				try {
-					info = absolute === null ? null : statSync(absolute)
-				} catch {
-					info = null
-				}
-				const isFile = info !== null && info.isFile()
-				return {
-					path: artifact,
-					area: pathAreaOf(artifact),
-					exists: isFile,
-					directory: info !== null && info.isDirectory(),
-					bytes: isFile ? info.size : null,
-					modifiedAt: isFile ? info.mtimeMs : null,
-				}
-			}),
-		})),
-	}))
-	const declared = new Set(stages.flatMap((stage) => stage.steps.flatMap((step) => step.artifacts.map((artifact) => artifact.path))))
-	const outputs = listWorkspaceOutputs(base)
-		.filter((item) => !declared.has(item.relative))
-		.map((item) => ({ path: item.relative, area: pathAreaOf(item.relative), exists: true, bytes: item.bytes, modifiedAt: item.modifiedAt, declared: false }))
-	return { ok: true, stages, outputs }
-}
-
-/**
- * 默认三面:**本体格 / 产物 / 世界树**。
- * 「外脑」(`--panels brain`)不默认拍:它列的是这台机器上**个人**的技能目录
- * (`~/.agents/skills/...`),素材要发出去,路径不该跟着走。
- */
-const PANELS = (option('--panels') ?? 'ontology,deliverables,worldlines').split(',').map((item) => item.trim()).filter((item) => item !== '')
+/** 默认两面:**本体格 / 世界树**。 */
+const PANELS = (option('--panels') ?? 'ontology,worldlines').split(',').map((item) => item.trim()).filter((item) => item !== '')
 const stage = mkdtempSync(join(tmpdir(), 'clearai-panel-shots-'))
 try {
 	const entry = join(stage, 'runtime-entry.js')
@@ -269,11 +151,9 @@ try {
 	const useSessions = (selector) => selector({ byId: { [sessionId]: { projectionValues: { clearai: projection } } } })
 	const props = {
 		ontology: { useProjection: () => projection, openPreview: () => true, openRail: noop, openSpectator: noop },
-		deliverables: { useProjection: () => projection, useSessions, sessionId, openRail: noop, openPreview: () => true },
 		worldlines: { useSessions, sessionId, openPreview: () => true, openSpectator: noop },
-		brain: { useProjection: () => projection, useSessions, sessionId, openRail: noop, openPreview: () => true },
 	}
-	const component = { ontology: C.Facts, deliverables: C.Deliverables, worldlines: C.WorldTree, brain: C.BrainTab }
+	const component = { ontology: C.Facts, worldlines: C.WorldTree }
 	window.__MOUNT__ = (name) => {
 		try {
 			window.__ROOT__ = window.__ROOT__ ?? window.__CREATE_ROOT__(document.getElementById('root'))
@@ -289,12 +169,11 @@ try {
 	writeFileSync(
 		join(stage, 'prefetch.js'),
 		`(() => {
-	/** 两条读面在浏览器里走 fetch;这里按宿主同一形状注入(数据在 Node 侧由投影 + 盘上文件算出)。 */
+	/** 检视读面在浏览器里走 fetch;这里按宿主同一形状注入(数据在 Node 侧由投影算出)。 */
 	const json = (payload) => Promise.resolve(new Response(JSON.stringify(payload), { status: 200, headers: { 'content-type': 'application/json' } }))
 	const real = window.fetch.bind(window)
 	window.fetch = (input, init) => {
 		const url = String(typeof input === 'string' ? input : (input?.url ?? ''))
-		if (url.includes('/api/clearai/deliverables')) return json(window.__DELIVERABLES__)
 		if (url.includes('/api/clearai/inspector')) return json(window.__INSPECTOR__ ?? { ok: true, found: false })
 		if (url.includes('/api/clearai/')) return json({ ok: false, error: 'shot_stub' })
 		return real(input, init)
@@ -305,7 +184,6 @@ try {
 	const html = readFileSync(join(stage, 'index.html'), 'utf8').replace('<script src="/runtime.js">', '<script src="/prefetch.js"></script><script src="/runtime.js">')
 	writeFileSync(join(stage, 'index.html'), html)
 
-	const deliverables = deliverablesPayload(cwd, state)
 	const inspector = (() => {
 		const node = (projection.lexicon?.graph?.nodes ?? []).find((item) => item.layer === 'ontology')
 		if (node === undefined) return { ok: true, found: false }
@@ -337,10 +215,9 @@ try {
 		(payloads) => {
 			window.__PROJECTION__ = payloads.projection
 			window.__SID__ = payloads.sessionId
-			window.__DELIVERABLES__ = payloads.deliverables
 			window.__INSPECTOR__ = payloads.inspector
 		},
-		{ projection, sessionId, deliverables, inspector },
+		{ projection, sessionId, inspector },
 	)
 
 	/** 面板画不出来时,诊断信息比一张空图有用:把控制台/页面错误一并带出来。 */

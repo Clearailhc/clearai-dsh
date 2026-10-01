@@ -137,7 +137,7 @@ Git 拉的是源码而不是构建产物，所以 pnpm ≥10 会拒绝运行 `pr
 从仓库开发：
 
 ```bash
-npm test                       # 18 份套件
+npm test                       # 17 份套件
 node tools/build-package.mjs   # 由源装配 dist/
 node tools/verify-package.mjs  # 现场重建并逐字节比对
 node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)

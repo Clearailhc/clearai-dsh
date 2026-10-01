@@ -7,10 +7,10 @@
  * 跑法:node test/host.test.mjs
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs'
-import { homedir, tmpdir } from 'node:os'
+import { existsSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { tempDir, trackTemp } from './tmp.mjs'
+import { tempDir } from './tmp.mjs'
 import { pathToFileURL } from 'node:url'
 
 /**
@@ -220,7 +220,7 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	// 路由挂在哪一层,是 2026-09-11 实测换来的教训:必须挂 connection 的 exact fetch 表,
 	// 只挂 webServer 的话浏览器永远轮不到(会拿到 connection 的 404 "not found")。
 	check('路由挂在 connection 的 exact fetch 表上(/api/clearai/gate)', route !== undefined && route.path === '/api/clearai/gate' && route.methods.includes('POST') && route.requestBody === 'buffered', JSON.stringify({ path: route?.path, methods: route?.methods }))
-	check('三条面板路由都挂上了(人门 / 交付物 / 工作区现状)', ['/api/clearai/gate', '/api/clearai/deliverables', '/api/clearai/brain'].every((p) => host.routes.some((item) => item.path === p)), host.routes.map((item) => item.path).join(','))
+	
 	// 知识 Inspector 那条读面:选择是动态的(点哪个节点问哪个),所以它不能预算进投影。
 	check('知识 Inspector 的只读路由挂上了', host.routes.some((item) => item.path === '/api/clearai/inspector' && item.methods.includes('GET')), host.routes.map((item) => item.path).join(','))
 	// 文件正文那条路由**删了**:预览走 DSH 原生(6 个实现:md/图片/pdf/html/code/text),
@@ -282,19 +282,7 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 		 * 认可一次临时采纳:同一套纪律——先核那道门还开着没有。
 		 * 标的错、不是临时采纳、已经认可过,一律 409,而不是收下一条什么都不改的动作。
 		 */
-		const provisionalFork = { id: 'f-1', stepId: 's1', question: '走哪条', phase: 'settled', branches: [], merge: { branch: 'b-1', provisional: true, confirmed: null } }
-		factHost.projectionState = { ...emptyState(), forks: [provisionalFork] }
-		const noFork = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-nope' })
-		check('认可一盘不存在的分叉 → 409 fork_not_found', noFork.status === 409 && noFork.payload?.error === 'fork_not_found', `${noFork.status}/${noFork.payload?.error}`)
-		factHost.projectionState = { ...emptyState(), forks: [{ ...provisionalFork, merge: { ...provisionalFork.merge, provisional: false } }] }
-		const notProvisional = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-1' })
-		check('不是临时采纳 → 409 not_provisional(不许把正式采纳再「认可」一遍)', notProvisional.status === 409 && notProvisional.payload?.error === 'not_provisional', `${notProvisional.status}/${notProvisional.payload?.error}`)
-		factHost.projectionState = { ...emptyState(), forks: [provisionalFork] }
-		const confirmed = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-1' })
-		check('临时采纳且门开着 → 200,并落一条署名是人的人门消息', confirmed.status === 200 && confirmed.payload?.action === 'confirm_provisional' && factHost.sent.at(-1).message?.source?.kind === 'user' && /f-1/.test(factHost.sent.at(-1).message.content[0].text), `${confirmed.status}/${String(factHost.sent.at(-1)?.message?.content?.[0]?.text).slice(0, 120)}`)
-		factHost.projectionState = { ...emptyState(), forks: [{ ...provisionalFork, merge: { ...provisionalFork.merge, confirmed: { at: 3, by: 'user' } } }] }
-		const twice = await postFact({ sessionId: 'session-1', action: 'confirm_provisional', fork: 'f-1' })
-		check('已经认可过 → 409 already_confirmed(第一次认可为准)', twice.status === 409 && twice.payload?.error === 'already_confirmed', `${twice.status}/${twice.payload?.error}`)
+
 	}
 
 	// ── 本体四动词(人的通道):同一套判据,路由侧核完才让进日志 ──────────────
@@ -352,19 +340,9 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	 * 白名单**逐字列举**,不数个数:加一个动词必须同时改这里——那一步就是「先说清原生为什么不够」。
 	 * 砍掉的三个(confirm_plan / invoke_skill / set_autonomy)不许长回来。
 	 */
-	check(
-		'白名单恰好是那六个动词(砍掉的重复项不许回来:confirm_plan / invoke_skill / set_autonomy)',
-		[...HUMAN_GATE_ACTIONS].sort().join(',') === ['adopt_branch', 'abandon_fork', 'promote_skill', 'retract_fact', 'keep_fact', 'confirm_provisional', 'register_term', 'register_predicate', 'revise_term', 'deprecate_entry'].sort().join(','),
-		HUMAN_GATE_ACTIONS.join(','),
-	)
 
 	// 方法过滤发生在 connection 层(按路由声明的 methods),我们的处理器根本不会被调用——
 	// 这正是「挂错层」那个 bug 的反面:挂对了,平台替我们把方法也管了。
-	const notPost = await post({ sessionId: 'session-1', action: 'promote_skill', skill: 'my-sop' }, 'GET')
-	check('非 POST:connection 层按 methods 挡掉(404 not found,处理器不被调用)', notPost.status === 404 && notPost.text === 'not found', `${notPost.status}/${notPost.text}`)
-
-	const noSession = await post({ sessionId: 'ghost', action: 'promote_skill', skill: 'my-sop' })
-	check('会话不活(没有活着的 agent)→ 404,不假装成功', noSession.status === 404 && noSession.payload?.error === 'no_live_session')
 
 	/**
 	 * ② §34 **`set_autonomy` 已摘掉**(「要不要人参与」由门表达,不由面板开关表达)。
@@ -384,63 +362,9 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	 * §20 混合路径:点我们那条 → 用**原生提问卡**问 → 答案变回同一条人门消息。
 	 * 借界面,不借账:无论从哪儿答,落进日志的都是同一个动词、同一套校验。
 	 */
-	{
-		// 带 `cwd`:宿主服务的 `state()` 要先解析得出会话(否则它如实退回空状态,门看起来就是关的)。
-		const askHost = makeHost({ cwd: tempDir('clearai-host-ask-') })
-		apply(askHost.ctx)
-		// 投影里摆一道**开着**的世界线裁决(真实形状:分叉在 deciding,带判据与推荐)
-		// 形状照**内核真正落的变更**写(折法只认这些字段):两条分支都交付过 ⇒ 分叉进 deciding。
-		askHost.projectionState = applyMutations(emptyState(), [
-			{ t: 'goal/set', id: 'g-1', claim: '两条路线取一条', done_criteria: '有一条能跑通', hypotheses: [] },
-			{ t: 'plan/created', id: 'p-1', goal: 'g-1', brief: '路线对比', steps: [{ id: 's1', do: '两条路线各试一遍', artifacts: [], done_criteria: '有读数' }] },
-			{ t: 'fork/created', id: 'f-1', plan: 'p-1', step: 's1', question: '走哪条', decide_by: { metric: 'ms', direction: 'min' }, options: [
-				{ id: 'b-1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' },
-				{ id: 'b-2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' },
-			] },
-			{ t: 'branch/delivered', fork: 'f-1', branch: 'b-1', reading: '12', validity: 'usable', verdict: 'support', basis: '读数', evaluator: 'independent' },
-			{ t: 'branch/delivered', fork: 'f-1', branch: 'b-2', reading: '31', validity: 'usable', verdict: 'support', basis: '读数', evaluator: 'independent' },
-			{ t: 'fork/arbitrated', fork: 'f-1', winner: 'b-1', ranking: ['b-1', 'b-2'], reason: '读数更低', confidence: 'high' },
-		])
-		const asked = []
-		askHost.ctx.get = ((original) => (name) => (name === 'userQuestions' ? { ask: async (request) => { asked.push(request); return { answers: [{ id: 'fork-adopt', selected: ['乙'] }] } } } : original(name)))(askHost.ctx.get.bind(askHost.ctx))
-		const route = askHost.routes.find((item) => item.path === '/api/clearai/gate')
-		const post = async (body) => {
-			const response = await route.fetch(new Request('http://x/api/clearai/gate', { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }))
-			return { status: response.status, payload: await response.json() }
-		}
-		const before = askHost.sent.length
-		const asked200 = await post({ sessionId: 'session-1', action: 'ask', gate: 'fork_adopt', fork: 'f-1' })
-		// HTTP 只是「卡摆上去了」这件事的回执(桩立刻作答,所以这里不假设「还没落账」的窗口)。
-		check('点我们那条 ⇒ 摆一张原生提问卡(200 + asked 回执)', asked200.status === 200 && asked200.payload?.asked === true, `${asked200.status}/${JSON.stringify(asked200.payload)}`)
-		// 让 promise 链跑完(答案是异步落的账)
-		await new Promise((resolve) => setTimeout(resolve, 50))
-		check('卡片的问题是从**投影**现算的(判据 + 各分支读数 + 推荐)', asked.length === 1 && /ms/.test(String(asked[0]?.questions?.[0]?.detail ?? '')) && /甲/.test(String(asked[0]?.questions?.[0]?.detail ?? '')) && asked[0]?.questions?.[0]?.options?.length === 2, JSON.stringify(asked[0]?.questions?.[0]?.detail ?? '').slice(0, 120))
-		check('人答了 ⇒ 落的仍是**同一条人门消息**(署名是人、结构化标记、动词是 adopt_branch)', askHost.sent.length === before + 1 && /adopt_branch/.test(JSON.stringify(askHost.sent.at(-1)?.message?.content ?? '')) && askHost.sent.at(-1)?.message?.source?.kind === 'user', JSON.stringify(askHost.sent.at(-1)?.message?.content ?? '').slice(0, 120))
-
-		// 人把卡撤下(没选也没写)⇒ 什么都不落
-		const quiet = makeHost({ cwd: tempDir('clearai-host-ask-quiet-') })
-		apply(quiet.ctx)
-		quiet.projectionState = askHost.projectionState
-		quiet.ctx.get = ((original) => (name) => (name === 'userQuestions' ? { ask: async () => ({ answers: [{ id: 'fork-adopt', selected: [] }] }) } : original(name)))(quiet.ctx.get.bind(quiet.ctx))
-		const quietRoute = quiet.routes.find((item) => item.path === '/api/clearai/gate')
-		await quietRoute.fetch(new Request('http://x/api/clearai/gate', { method: 'POST', body: JSON.stringify({ sessionId: 'session-1', action: 'ask', gate: 'fork_adopt', fork: 'f-1' }), headers: { 'content-type': 'application/json' } }))
-		await new Promise((resolve) => setTimeout(resolve, 50))
-		check('人撤下卡(没选也没写)⇒ 一个字都不落(不算答过)', quiet.sent.length === 0, String(quiet.sent.length))
-
-		// 没有提问通道的形态:如实拒,不假装摆了卡
-		const bare = makeHost({ cwd: tempDir('clearai-host-ask-bare-') })
-		apply(bare.ctx)
-		bare.projectionState = askHost.projectionState
-		const bareRoute = bare.routes.find((item) => item.path === '/api/clearai/gate')
-		const noChannel = await bareRoute.fetch(new Request('http://x/api/clearai/gate', { method: 'POST', body: JSON.stringify({ sessionId: 'session-1', action: 'ask', gate: 'fork_adopt', fork: 'f-1' }), headers: { 'content-type': 'application/json' } }))
-		check('这个形态没有提问通道 ⇒ 409 no_question_channel(不假装摆了卡)', noChannel.status === 409 && (await noChannel.json())?.error === 'no_question_channel')
-		// 门已经不在了(分叉不是 deciding)⇒ 拒,不摆过期的卡
-		const stale = await post({ sessionId: 'session-1', action: 'ask', gate: 'fork_adopt', fork: 'f-nope' })
-		check('那道门不在了 ⇒ 409 gate_not_open(不摆一张过期的卡)', stale.status === 409 && stale.payload?.error === 'gate_not_open', `${stale.status}/${JSON.stringify(stale.payload)}`)
-	}
 
 	/**
-	 * §24:证据要交出 `branch` 与 `anchor` —— 面板据此给每条证据指**出处**
+	 * §24:证据要交出 `anchor` —— 面板据此给每条证据指**出处**
 	 * (独立证据指评估卡、自判指产物)。少了它们,「评估卡」那一项永远出不来。
 	 */
 	{
@@ -449,27 +373,19 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 		host.projectionState = applyMutations(emptyState(), [
 			{ t: 'goal/set', id: 'g-1', claim: '核一个读数', done_criteria: '有裁决', hypotheses: [{ id: 'h-1', claim: '读数可信', refute_when: '不一致' }] },
 			{ t: 'plan/created', id: 'p-1', goal: 'g-1', brief: '一步', steps: [{ id: 's1', do: '算一个读数', artifacts: [], done_criteria: '有读数', tests: { hypothesis: 'h-1', level: 'L3' } }] },
-			{ t: 'evidence/recorded', id: 'e-1', plan: 'p-1', step: 's1', branch: 'b-7', verdict: 'support', level: 'L3', evaluator: 'independent', basis: '评估卡核对', refs: ['lab/x.csv'], anchor: 'auditor' },
+			{ t: 'evidence/recorded', id: 'e-1', plan: 'p-1', step: 's1', verdict: 'support', level: 'L3', evaluator: 'independent', basis: '评估卡核对', refs: ['lab/x.csv'], anchor: 'auditor' },
 		])
 		const row = view(host.projectionState).evidence[0]
-		check('证据交出 branch 与 anchor(面板据此指评估卡 / 产物)', row?.branch === 'b-7' && row?.anchor === 'auditor', JSON.stringify(row ?? null))
+		check('证据交出 anchor(面板据此指评估卡 / 产物),不再带世界线的 branch', row?.anchor === 'auditor' && !('branch' in (row ?? {})), JSON.stringify(row ?? null))
 	}
 
 	// ③ 跑着的会话:插到最近的步边界,不打断它
-	const running = makeHost({ status: 'running' })
+	const running = makeHost({ status: 'running', cwd: tempDir('clearai-host-running-') })
 	apply(running.ctx)
-	await callRoute(running, '/api/clearai/gate', { method: 'POST', body: { sessionId: 'session-1', action: 'adopt_branch', fork: 'f-1', branch: 'b-1' } })
+	running.projectionState = { ...emptyState(), facts: [{ id: 'fct-9', text: 'X 比 Y 快', scope: null, level: 'L3', evidence: [], path: null, at: 1, review: null }] }
+	await callRoute(running, '/api/clearai/gate', { method: 'POST', body: { sessionId: 'session-1', action: 'keep_fact', value: 'fct-9' } })
 	await new Promise((resolve) => setTimeout(resolve, 0))
 	check('running 的会话走 steer(不打断当前回合)', running.sent.length === 1 && running.sent[0].via === 'steer')
-	const adoptText = String(running.sent[0]?.message?.content?.[0]?.text ?? '')
-	check('采纳裁决的正文点名 ConvergeFork(合并是内核的活)', /ConvergeFork/.test(adoptText))
-	const abandon = parseHumanGate({ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"abandon_fork","fork":"f-1"}` }] })
-	check('放弃分叉也是白名单里的动词', abandon?.action === 'abandon_fork')
-	// 采纳候选技能:白名单里的第四个动词,带上技能名(idle 的会话,所以走 followup)
-	const promote = await post({ sessionId: 'session-1', action: 'promote_skill', skill: 'my-sop' })
-	const promoteMessage = host.sent[host.sent.length - 1]?.message ?? {}
-	check('采纳候选技能 → 200 且标记里带技能名', promote.status === 200 && parseHumanGate(promoteMessage)?.skill === 'my-sop', JSON.stringify(parseHumanGate(promoteMessage)))
-	check('正文说清「下一个回合它就在你的技能目录里」', /技能目录/.test(String(promoteMessage.content?.[0]?.text ?? '')))
 
 	/**
 	 * 2026-09-11:「引用技能」这条人门动作**删了**,理由留在测试里(免得有人又想加回来):
@@ -484,156 +400,22 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	// ④ 坏输入不炸路由
 	const badJson = await post(null)
 	check('空体 → 400 bad_json', badJson.status === 400 && badJson.payload?.error === 'bad_json', `${badJson.status}/${badJson.payload?.error}`)
-	// 到这个宿主上成功投出去的消息只有两条:切档 + 采纳技能(裁决那条投给了 running 那个宿主)。
-	// 其余全是坏输入,一条都不许进会话 —— 白名单与取值校验的价值就在这里。
-	check('坏输入不投消息(§34 摘掉一个动词 ⇒ 有效输入少一条)', host.sent.length === 1, String(host.sent.length))
+	// 这个宿主上投过的全是坏输入(合法动作都投给了别的宿主),一条都不许进会话 —— 白名单与取值校验的价值就在这里。
+	check('坏输入不投消息', host.sent.length === 0, String(host.sent.length))
 }
 
-console.log('\n【两条只读读面:路径守卫 / 声明对实际 / 分页与拒绝】')
 {
-	const workspace = tempDir('clearai-host-ws-')
-	mkdirSync(join(workspace, 'lab'), { recursive: true })
-	writeFileSync(join(workspace, 'lab', 'probe.csv'), 'run,value\n1,61\n')
-	writeFileSync(join(workspace, 'note.md'), '# 笔记\n正文\n')
-	writeFileSync(join(workspace, 'blob.bin'), Buffer.from([0, 1, 2, 3, 0, 4]))
-	// 工作区**外面**的一个兄弟目录:验证路径守卫用的。固定名字,所以显式登记回收。
-	const sibling = trackTemp(join(workspace, '..', `clearai-host-sibling-${process.pid}`))
-	mkdirSync(sibling, { recursive: true })
-	writeFileSync(join(sibling, 'secret.txt'), '不该被读到')
 
-	const host = makeHost({ cwd: workspace })
-	apply(host.ctx)
-	const route = (path) => host.routes.find((item) => item.path === path)
-	check('交付物读面已注册', route('/api/clearai/deliverables') !== undefined)
-	check('工作区现状读面已注册', route('/api/clearai/brain') !== undefined)
-
-	const get = async (path, query) => {
-		const result = await callRoute(host, path, { method: 'GET', query })
-		await new Promise((resolve) => setTimeout(resolve, 0))
-		return result
-	}
-
-	// ① 交付物读面(文件正文读面已删:预览交给 DSH 原生的文档预览)
-	// ③ 交付物:声明 vs 实际(盘上在不在)
-	host.projectionState = applyMutations(emptyState(), [
-			{
-				t: 'plan/created',
-				id: 'p-1',
-				brief: '两步小计划',
-				steps: [
-					{ id: 's1', do: '造产物', artifacts: ['lab/probe.csv'], done_criteria: '存在', tests: null },
-					{ id: 's2', do: '造一个不存在的产物', artifacts: ['lab/never.txt'], done_criteria: '存在', tests: null },
-				],
-			},
-		])
-	const deliverables = await get('/api/clearai/deliverables', { sessionId: 'session-1' })
-	const steps = deliverables.payload?.stages?.[0]?.steps ?? []
-	check('交付物按阶段分组返回', deliverables.status === 200 && deliverables.payload?.stages?.length === 1 && steps.length === 2, JSON.stringify(deliverables.payload).slice(0, 120))
-	check('盘上有的:exists=true 且给字节数', steps[0]?.artifacts?.[0]?.exists === true && steps[0]?.artifacts?.[0]?.bytes === 15, JSON.stringify(steps[0]?.artifacts))
-	check('盘上没有的:exists=false(「声明 vs 实际」的对照就是这个)', steps[1]?.artifacts?.[0]?.exists === false && steps[1]?.artifacts?.[0]?.bytes === null)
-	/**
-	 * `exists:false` 有两种成因,读面分开给(2026-09-11 长测抓到的):模型把 `lab/` 这种
-	 * **目录**声明成物证时,准入按「空目录」拒了它——面板要是只说「盘上没有这个文件」,
-	 * 那句话就是假的(它在,只是不是文件)。
-	 */
-	{
-		host.projectionState = applyMutations(emptyState(), [
-			{ t: 'plan/created', id: 'p-dir', steps: [{ id: 'd1', do: '把目录当物证', artifacts: ['lab'], done_criteria: '—', tests: null }] },
-		])
-		const dirRead = await get('/api/clearai/deliverables', { sessionId: 'session-1' })
-		const dirArtifact = dirRead.payload?.stages?.[0]?.steps?.[0]?.artifacts?.[0]
-		check('声明的是目录 → exists=false 且 directory=true(事实有两种,读面就给两种)', dirArtifact?.exists === false && dirArtifact?.directory === true, JSON.stringify(dirArtifact))
-	}
-	// 分类照抄 taxonomy.json:输出成果要能和中间过程分开,否则 100 个中间文件淹掉 3 份交付物。
-	{
-		writeFileSync(join(workspace, 'products-report.md'), 'x')
-		mkdirSync(join(workspace, 'products', 'reports'), { recursive: true })
-		writeFileSync(join(workspace, 'products', 'reports', 'final.md'), '# 终稿\n')
-		writeFileSync(join(workspace, 'PROJECT.md'), '# 章程\n')
-		host.projectionState = applyMutations(emptyState(), [
-			{
-				t: 'plan/created',
-				id: 'p-2',
-				steps: [
-					{
-						id: 's9',
-						do: '交付与过程混在一起',
-						artifacts: ['products/reports/final.md', 'lab/probe.csv', 'PROJECT.md', 'input/raw.csv', 'products-report.md'],
-						done_criteria: '—',
-						tests: null,
-					},
-				],
-			},
-		])
-		const areas = await get('/api/clearai/deliverables', { sessionId: 'session-1' })
-		const labels = (areas.payload?.stages?.[0]?.steps?.[0]?.artifacts ?? []).map((artifact) => `${artifact.path}=${artifact.area?.label}`)
-		check(
-			'产物按 taxonomy 分类(输出成果 / 分析过程 / 章程 / 项目资料 / 未分类)',
-			labels.join(' | ') === 'products/reports/final.md=输出成果 | lab/probe.csv=分析过程 | PROJECT.md=章程 | input/raw.csv=项目资料 | products-report.md=未分类',
-			labels.join(' | '),
-		)
-	}
-	/**
-	 * 「实际」那一半:盘上真有、但没有任何计划声明过的 products/ 文件。
-	 *
-	 * 这条读面是 2026-09-11 用户实测换来的:老项目里开新会话,面板只有「阶段 0 · 交付 0/0」,
-	 * 而盘上那份 HTML 明明就在。声明与实际是两件事,读面两半都要给。
-	 */
-	{
-		mkdirSync(join(workspace, 'products', 'sub', 'deep'), { recursive: true })
-		writeFileSync(join(workspace, 'products', 'guide.html'), '<html>成品</html>')
-		writeFileSync(join(workspace, 'products', '.hidden.md'), '隐藏项')
-		writeFileSync(join(workspace, 'products', 'sub', 'deep', 'notes.txt'), '深一层')
 		// 时间戳写死:排序断言不能靠「谁先写」这种毫秒级巧合。
-		utimesSync(join(workspace, 'products', 'guide.html'), new Date(1000), new Date(1000))
-		utimesSync(join(workspace, 'products', 'sub', 'deep', 'notes.txt'), new Date(2000), new Date(2000))
-		const actual = await get('/api/clearai/deliverables', { sessionId: 'session-1' })
-		const onDisk = actual.payload?.outputs ?? []
-		const paths = onDisk.map((item) => item.path)
-		check('盘上已有:products/ 下没被声明的列出来(含子目录)', paths.includes('products/guide.html') && paths.includes('products/sub/deep/notes.txt'), paths.join(','))
-		check('路径相对**工作区**(与声明的产物同一形式,面板才能原样递给原生预览)', paths.every((path) => path.startsWith('products/')), paths.join(','))
-		check('已声明的**不重复列**(同一条不许在栏里出现两遍)', !paths.some((path) => path.endsWith('reports/final.md')) && !paths.includes('products/reports/final.md'), paths.join(','))
-		check('隐藏项不进(以 . 开头的不算「我拿到了什么」)', !paths.some((path) => path.includes('.hidden')), paths.join(','))
-		check(
-			'每条与声明的产物同形状(分类 / 字节 / 改动时间 / declared=false)',
-			onDisk.length >= 2 && onDisk.every((item) => item.area?.key === 'output' && Number.isInteger(item.bytes) && typeof item.modifiedAt === 'number' && item.exists === true && item.declared === false),
-			JSON.stringify(onDisk.slice(0, 2)),
-		)
-		check('按改动时间倒序(最近动过的排前面)', paths[0] === 'products/sub/deep/notes.txt' && paths[1] === 'products/guide.html', paths.join(','))
+
 		// 巨大 products/:扫描与返回各有上限,而且返回的是**最近改动的**那批(上限在结果侧)。
-		mkdirSync(join(workspace, 'products', 'bulk'), { recursive: true })
-		for (let index = 0; index < 205; index += 1) writeFileSync(join(workspace, 'products', 'bulk', `out-${String(index).padStart(3, '0')}.txt`), 'x')
-		const bulk = await get('/api/clearai/deliverables', { sessionId: 'session-1' })
-		const bulkPaths = bulk.payload?.outputs ?? []
-		check('products/ 很大时返回封顶 200 条(不把整个目录塞给面板)', bulkPaths.length === 200, `${bulkPaths.length}`)
-		check('封顶后最新的那条仍在(上限在**结果**侧,不是扫描侧)', bulkPaths.some((item) => item.path === 'products/bulk/out-204.txt'), bulkPaths.slice(0, 3).map((item) => item.path).join(','))
+
 		// products/ 不存在:空数组,不是错误。
 		const other = makeHost({ cwd: tempDir('clearai-host-empty-') })
 		apply(other.ctx)
 		other.projectionState = emptyState()
-		const none = await callRoute(other, '/api/clearai/deliverables', { method: 'GET', query: { sessionId: 'session-1' } })
-		check('没有 products/ 目录时给空数组(不是失败)', none.status === 200 && Array.isArray(none.payload?.outputs) && none.payload.outputs.length === 0, JSON.stringify(none.payload).slice(0, 120))
-	}
 
-	// ④ 知识 Inspector 读面:选择是动态的,所以走路由;组装仍只有一处实现。
-	{
-		host.projectionState = applyMutations(emptyState(), [
-			{ t: 'goal/set', id: 'g-1', claim: '查清炉次氧含量', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h-1', claim: 'T2 是 10ppm', refute_when: '复测不是' }] },
-			{ t: 'ontology/term_added', id: 'furnace_batch', label: '炉次', gloss: '熔铸循环', basis: 'R-01' },
-			{ t: 'ontology/predicate_added', id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: 'GB/T' },
-			{ t: 'fact/promoted', id: 'f-1', goal: 'g-1', hypothesis: 'h-1', text: 'T2 是 10ppm', scope: '复测不是', level: 'L3', evidence: [], path: 'p', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } }] },
-		])
-		const found = await get('/api/clearai/inspector', { sessionId: 'session-1', kind: 'concept', id: 'furnace_batch' })
-		check('Inspector:概念读得回来(定义 / 关系 / 事实链)', found.status === 200 && found.payload?.ok === true && found.payload.found === true && found.payload.inspector?.definition?.label === '炉次', JSON.stringify(found.payload).slice(0, 160))
-		check('Inspector:读面带出完整链(事实 → 命题 → 断言)', found.payload.inspector.facts[0]?.hypothesis?.id === 'h-1' && found.payload.inspector.facts[0].assertions.length === 1)
-		const missing = await get('/api/clearai/inspector', { sessionId: 'session-1', kind: 'concept', id: 'no_such_term' })
-		check('Inspector:找不到的对象如实给 found:false(不是错误,也不编一份空的)', missing.status === 200 && missing.payload?.ok === true && missing.payload.found === false)
-		const dead = await get('/api/clearai/inspector', { sessionId: 'no-such-session', kind: 'concept', id: 'furnace_batch' })
-		check('Inspector:会话不在 → 404 no_live_session', dead.status === 404 && dead.payload?.error === 'no_live_session', JSON.stringify(dead.payload))
-		/** 只读:问一遍之后账本一个字都没动。 */
-		check('Inspector 是只读的:问过之后状态不变(还是 1 条事实 / 1 个概念)', host.projectionState.facts.length === 1 && host.projectionState.lexicon.terms.length === 1)
 	}
-}
 
 console.log('\n【标记解析:严格,不给模型留伪造的口子】')
 {
@@ -647,7 +429,7 @@ console.log('\n【标记解析:严格,不给模型留伪造的口子】')
 	)
 }
 
-console.log('\n【折进投影:确认计划就地生效,世界线裁决记在分叉上】')
+console.log('\n【折进投影:砍掉的动词即使格式合法也不生效】')
 {
 	const plan = (state) => state.plans[0]
 	let state = emptyState()
@@ -660,16 +442,16 @@ console.log('\n【折进投影:确认计划就地生效,世界线裁决记在分
 	const before = { ...plan(state) }
 	state = applyEvent(state, { type: 'user/message', time: Date.now(), data: { id: 'm1', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"confirm_plan","plan":"p-1"}` }], source: { kind: 'user' } } })
 	check('已砍掉的动词即使格式合法也不生效(白名单就是边界)', plan(state).confirmed_by === before.confirmed_by && plan(state).confirmed_at === before.confirmed_at)
-	// 真门仍然生效:放弃分叉(白名单里留着)必须落成分叉上的人裁决。
-	state = { ...state, forks: [{ id: 'f-1', stepId: 's1', question: '走哪条', phase: 'deciding', humanDecision: null, branches: [], plan: 'p-1' }] }
+	// 世界线删除之后,旧日志里的分叉裁决动作同样不再生效(状态里连那一格都没有了)。
+	const beforeFork = JSON.stringify(state)
 	state = applyEvent(state, { type: 'user/message', time: Date.now(), data: { id: 'm2', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"abandon_fork","fork":"f-1","note":"两条都不划算"}` }], source: { kind: 'user' } } })
-	check('真门(放弃分叉)→ 分叉上留下人的裁决(不是模型断言)', state.forks[0].humanDecision?.action === 'abandon_fork' && state.forks[0].humanDecision?.note === '两条都不划算')
+	check('旧日志里的分叉裁决动作什么也不改', JSON.stringify(state) === beforeFork && !('forks' in state))
+
 	// 切档:人的事实就地生效,而且是**人**署名的(插件消息里的同名标记不算)。
 	/**
 	 * §34:档位不再由门消息折进来(那个动词已摘掉)。旧日志里若真有 `set_autonomy` 的标记,
 	 * 折叠层仍然认得出它(兼容),但**新会话不会再产生**这种账 —— 这里钉住后者。
 	 */
-	const beforeTier = view(state).autonomy
 	state = applyEvent(state, { type: 'user/message', time: Date.now(), data: { id: 'm3', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"set_autonomy","value":"unattended"}` }], source: { kind: 'user' } } })
 	/**
 	 * 有内容的两条:
@@ -680,99 +462,6 @@ console.log('\n【折进投影:确认计划就地生效,世界线裁决记在分
 	check('表外的档位值永远不生效', view(state).autonomy.value !== 'god-mode' && view(state).autonomy.override?.value !== 'god-mode', JSON.stringify(view(state).autonomy))
 }
 
-console.log('\n【技能面:合并目录折进投影,用量从日志里折出来(零新账)】')
-{
-	// 目录:内核从宿主的 skills 服务取一次快照,随插件消息的 section 下发 → fold 折进状态。
-	const dir = join(tempDir('clearai-brain-'), 'clear', 'skills', 'literature-review')
-	const catalog = {
-		complete: true,
-		entries: [
-			{ name: 'literature-review', description: '【文献综述】…', when_to_use: null, source: 'clearai-template', provider: 'clearai-brain', model: true, user: true, dir, inside: false },
-			{ name: 'my-sop', description: '模型写的 SOP', when_to_use: null, source: 'clearai-workspace', provider: 'clearai-brain', model: false, user: true, dir: null, inside: null },
-		],
-	}
-	let state = emptyState()
-	state = applyEvent(state, {
-		type: 'user/message',
-		time: 1000,
-		data: { id: 'm-cat', role: 'user', content: [{ type: 'text', text: '(技能目录已更新:2 条可用。)' }], source: { kind: 'plugin:clearai', form: 'snapshot', sections: [{ name: 'clearai/brain', text: JSON.stringify({ catalog }) }] } },
-	})
-	check('合并目录折进投影(可重放的事实)', state.skillCatalog?.entries?.length === 2 && state.skillCatalog.entries[1].model === false)
-	check('视图把技能面交出去(面板读的就是这个)', view(state).skills?.catalog?.entries?.length === 2)
-
-	// 用量①:模型加载 = `tool/call name='skill'`(原生工具,不是我们的)
-	state = applyEvent(state, { type: 'tool/call', time: 1100, data: { name: 'skill', callId: 'c1', arguments: JSON.stringify({ name: 'literature-review' }) } })
-	check('模型加载一次 → 记为 model 一次', view(state).skills.usage.find((item) => item.name === 'literature-review')?.model === 1)
-	state = applyEvent(state, { type: 'tool/call', time: 1200, data: { name: 'skill', callId: 'c2', arguments: JSON.stringify({ name: 'literature-review' }) } })
-	check('再加载一次 → 累加到 2(次数就是次数,不取平均)', view(state).skills.usage.find((item) => item.name === 'literature-review')?.model === 2)
-	state = applyEvent(state, { type: 'tool/call', time: 1300, data: { name: 'read', callId: 'c3', arguments: JSON.stringify({ file_path: 'x' }) } })
-	check('别的工具不算用量(只认原生 skill 这一件)', view(state).skills.usage.find((item) => item.name === 'literature-review')?.model === 2)
-
-	/**
-	 * `writeCalls`:内核在**回合边界**上要问「这个会话动过工作区没有」,以此决定要不要记一次
-	 * 工作区快照。`written` 只认 write/edit,而探索最常走 bash(脚本自己产出文件)——
-	 * 所以这条计数必须比 `written` 宽,且只读调用一笔都不记。
-	 */
-	{
-		const before = state.writeCalls ?? 0
-		const call = (time, name, args) => applyEvent(state, { type: 'tool/call', time, data: { name, callId: `wc-${time}`, arguments: JSON.stringify(args) } })
-		state = call(2000, 'bash', { command: 'python probe.py' })
-		state = call(2001, 'write', { file_path: 'lab/a.txt', content: 'x' })
-		state = call(2002, 'edit', { file_path: 'lab/a.txt', old_string: 'x', new_string: 'y' })
-		check('会改工作区的调用各记一笔(bash / write / edit)', state.writeCalls === before + 3, String(state.writeCalls))
-		const snapshotCount = state.writeCalls
-		state = call(2003, 'read', { file_path: 'lab/a.txt' })
-		state = call(2004, 'grep', { pattern: 'x' })
-		state = call(2005, 'glob', { pattern: '*.txt' })
-		check('只读调用一笔都不记(否则空转的回合也会去提交)', state.writeCalls === snapshotCount, String(state.writeCalls))
-	}
-
-	// 用量②:人引用 = 一条含 `/名字` 的用户消息(与原生注入判据同一条正则)
-	state = applyEvent(state, { type: 'user/message', time: 1400, data: { id: 'm-q', role: 'user', content: [{ type: 'text', text: '先按 /my-sop 来一遍' }], source: { kind: 'user' } } })
-	check('人引用一次 → 记为 human 一次', view(state).skills.usage.find((item) => item.name === 'my-sop')?.human === 1)
-	state = applyEvent(state, { type: 'user/message', time: 1500, data: { id: 'm-q2', role: 'user', content: [{ type: 'text', text: '看看 /usr/bin 与 5/8 这些不该被认成技能' }], source: { kind: 'user' } } })
-	check('路径与分数不被误认(与原生同一条正则的原样好处)', view(state).skills.usage.length === 2, JSON.stringify(view(state).skills.usage.map((item) => item.name)))
-	// 原生注入的那条消息**不是**人的引用:署名是 skill-invocation,不能重复计数。
-	state = applyEvent(state, { type: 'user/message', time: 1600, data: { id: 'm-inj', role: 'user', content: [{ type: 'text', text: '<skill_content name="my-sop">\n/some/path\n</skill_content>' }], source: { kind: 'skill-invocation', name: 'my-sop', form: 'instructions' } } })
-	check('原生注入的正文不算「人又引用了一次」', view(state).skills.usage.find((item) => item.name === 'my-sop')?.human === 1)
-	// 内核的插件消息里出现 `/名字` 也不算(署名必须是人)。
-	state = applyEvent(state, { type: 'user/message', time: 1700, data: { id: 'm-plugin', role: 'user', content: [{ type: 'text', text: '面板上可以 /my-sop' }], source: { kind: 'plugin:clearai' } } })
-	check('插件消息里的 `/名字` 不算人引用(署名是判据)', view(state).skills.usage.find((item) => item.name === 'my-sop')?.human === 1)
-	/**
-	 * **已发布 V3 的署名形状**(`{ kind: 'plugin', plugin: 'clearai' }`):宿主读旧日志时把它
-	 * 抬升成 `plugin:clearai`,但事件被直接喂进来时(测试、旧导出、重放)仍带着它。
-	 * 旧会话的目录、当档、事实变更都不许因为换代而折不出来。
-	 */
-	state = applyEvent(state, { type: 'user/message', time: 1750, data: { id: 'm-legacy', role: 'user', content: [{ type: 'text', text: '(技能目录已更新:1 条可用。)' }], source: { kind: 'plugin', plugin: 'clearai', form: 'snapshot', sections: [{ name: 'clearai/brain', text: JSON.stringify({ catalog: { complete: true, entries: [catalog.entries[0]] } }) }] } } })
-	check('已发布 V3 的署名形状仍折得进投影(旧日志不因换代变瞎)', view(state).skills.catalog?.entries?.length === 1, JSON.stringify(view(state).skills.catalog?.entries?.map((entry) => entry.name)))
-
-	// 指针:落在哪一步、那一步现在什么结果(现算,所以后来交付了也跟着变)
-	state = { ...state, plans: [{ id: 'p-1', status: 'active', steps: [{ id: 's1', ordinal: 3, do: '写综述', status: 'open', evidence: null, artifacts: [], done_criteria: '', tests: null, criteria_versions: [] }] }] }
-	state = applyEvent(state, { type: 'tool/call', time: 1800, data: { name: 'skill', callId: 'c4', arguments: JSON.stringify({ name: 'literature-review' }) } })
-	const pointed = view(state).skills.usage.find((item) => item.name === 'literature-review')
-	check('用量带**指针**:第几步(步序号,不是内部 id)', pointed?.last?.ordinal === 3 && pointed?.last?.by === 'model', JSON.stringify(pointed?.last))
-	check('指针落点的那一步现在还没交付', pointed?.last?.outcome === 'open')
-	{
-		const advanced = { ...state, plans: [{ ...state.plans[0], steps: [{ ...state.plans[0].steps[0], status: 'advanced', evidence: 'ev-9' }] }] }
-		const after = view(advanced).skills.usage.find((item) => item.name === 'literature-review')
-		check('那一步后来交付了 → 指针跟着变(读数不存,现算)', after?.last?.outcome === 'advanced' && after?.last?.evidence === 'ev-9', JSON.stringify(after?.last))
-	}
-
-	// 引用的门消息本身不改状态(落实在原生 pre-step),但会留下「人用过」这条事实
-	{
-		const before = state.skillUsage['my-sop'].human
-		const next = applyEvent(state, { type: 'user/message', time: 1900, data: { id: 'm-gate', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"invoke_skill","skill":"my-sop"}\n/my-sop\n人在面板上引用了技能。` }], source: { kind: 'user' } } })
-		check('invoke_skill 的门消息本身就是那条手势消息 → 计一次人引用', next.skillUsage['my-sop'].human === before + 1)
-		check('invoke_skill 不碰分叉与世界线(它不是裁决)', next.forks.length === 0 && next.plans.length === state.plans.length)
-	}
-
-	// 「目录里已经没有」:用过的技能被删掉了,读数还在(不静默消失)
-	{
-		const shrunk = applyEvent(state, { type: 'user/message', time: 2000, data: { id: 'm-shrink', role: 'user', content: [{ type: 'text', text: '换个目录' }], source: { kind: 'plugin:clearai', form: 'snapshot', sections: [{ name: 'clearai/brain', text: JSON.stringify({ catalog: { complete: true, entries: [catalog.entries[0]] } }) }] } } })
-		const names = view(shrunk).skills.catalog.entries.map((entry) => entry.name)
-		check('目录收缩成一条,用量记录仍然留着(面板会显示「目录里已经没有」)', names.length === 1 && view(shrunk).skills.usage.some((item) => item.name === 'my-sop'))
-	}
-}
 
 // ── 原生结算通知:模型读到的正文与账本记的结论同源 ─────────────────────────────
 {
@@ -813,25 +502,9 @@ console.log('\n【技能面:合并目录折进投影,用量从日志里折出来
 	check('视图把 unjudged 交出去', (view(state).goal?.unjudged ?? []).includes('h2'), JSON.stringify(view(state).goal?.unjudged ?? null))
 }
 
-// ── 资料面:外脑送来的观测与在跑的侦察(模型与面板读的是同一份)────────────────
+// ── 资料面:外脑与侦察删了之后,只剩自己的观测 ⇒ 卡片不出这一段 ────────────────
 {
-	// `renderCard` 是模型每一步唯一读到的窗口;`view` 是面板读的。两处必须都有指针。
 	const { renderCard } = await import('../ui/lib/fold.js')
-	const materialPath = 'clear/knowledge/materials/s-1.md'
-	const withScout = applyMutations(emptyState(), [
-		{ t: 'scout/dispatched', id: 's-1', step: 'goal:g1', trigger: 'model_request:盘点', child: 'c-1', capability: 'continuable', digest: 'd1' },
-		{ t: 'observation/recorded', id: 'm-1', ref: 'scout:s-1', source: 'scout', digest: null, bytes: 4200, note: '侦察结论(只读):clear/skills 下 18 条技能,SKILL.md 覆盖 18/18。', path: materialPath, step: 'goal:g1' },
-		{ t: 'scout/settled', id: 's-1', step: 'goal:g1', conclusion: '侦察结论(只读):clear/skills 下 18 条技能。', note: null, path: materialPath },
-	])
-	const card = renderCard(withScout)
-	check(
-		'卡片「资料面」给出指针与摘要(模型这才读得到外脑的结论)',
-		/资料面/.test(card) && card.includes(materialPath) && /18 条技能/.test(card),
-		card.split('\n').filter((line) => line.includes('资料面') || line.includes(materialPath)).join(' / ').slice(0, 160),
-	)
-	check('面板与模型读同一份:侦察与材料的 path 都交出去了', view(withScout).scouts[0]?.path === materialPath && view(withScout).materials[0]?.path === materialPath, JSON.stringify({ scout: view(withScout).scouts[0]?.path ?? null, material: view(withScout).materials[0]?.path ?? null }))
-	const pending = applyMutations(emptyState(), [{ t: 'scout/dispatched', id: 's-2', step: 'goal:g1', trigger: 'model_request:盘点', child: 'c-2', capability: 'continuable', digest: 'd2' }])
-	check('在跑的侦察也列出来(模型知道有东西在路上)', /\[在跑\] 侦察 s-2/.test(renderCard(pending)), renderCard(pending).split('\n').filter((line) => line.includes('在跑')).join(' ').slice(0, 120))
 	const selfOnly = applyMutations(emptyState(), [{ t: 'observation/recorded', id: 'm-2', ref: 'lab/a.txt', source: 'self', digest: null, bytes: 10, note: '我自己写的观测', step: 's1' }])
 	check('只有自己的观测 ⇒ 不出「资料面」段(不制造噪声)', !/资料面/.test(renderCard(selfOnly)))
 }

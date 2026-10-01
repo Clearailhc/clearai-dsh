@@ -27,7 +27,7 @@ const check = (label, condition, detail = '') => {
 	}
 }
 
-const { SCENARIOS, INVARIANTS, evaluateLog } = await import(join(PORT, 'tools', 'e2e-scenarios.mjs'))
+const { SCENARIOS, INVARIANTS } = await import(join(PORT, 'tools', 'e2e-scenarios.mjs'))
 
 /** 把一串变更包成不变量要的上下文(与 e2e-run.mjs 里那份同形)。 */
 function contextOf(mutations, overrides = {}) {
@@ -52,7 +52,6 @@ function contextOf(mutations, overrides = {}) {
 		promotedIds: [],
 		hypothesisStatus: {},
 		projectedSteps: 0,
-		memoryEntries: 0,
 		...overrides,
 	}
 }
@@ -82,7 +81,7 @@ console.log('\n【① 剧本表自身完整】')
 	})
 	check('每个剧本都有 title/why/task/asserts(缺一样就没法复盘)', incomplete.length === 0, incomplete.join(','))
 	// 任务书必须**点名机制**:测的是装配,任务不说用哪个工具,模型就可能绕开它——那场就白跑了。
-	const MECHANISMS = ['SetGoal', 'CreatePlan', 'ForkPlan', 'AdvanceWorldline', 'ConvergeFork', 'SpawnScout', 'ClosePlan', 'CloseGoal', 'WriteMemory']
+	const MECHANISMS = ['SetGoal', 'CreatePlan', 'ClosePlan', 'CloseGoal']
 	const vague = names.filter((name) => !MECHANISMS.some((tool) => SCENARIOS[name].task.includes(tool)))
 	check('每个任务书都点名了它要验的机制(否则跑的是模型的自由发挥)', vague.length === 0, vague.join(','))
 }
@@ -106,10 +105,6 @@ console.log('\n【③ 不变量:坏日志必须红(不然长测会骗人)】')
 	const dangling = [...HEALTHY.filter((mutation) => mutation.t !== 'audit/settled'), { t: 'audit/dispatched', id: 'a2' }]
 	check('评估者派了没收 ⇒ 抓住', danglingAudit.run(contextOf(dangling)).ok === false, JSON.stringify(danglingAudit.run(contextOf(dangling)).detail))
 
-	const orphanFork = invariantNamed('分叉不留孤儿')
-	const orphan = [...HEALTHY, { t: 'fork/created', id: 'f1' }]
-	check('分叉开了没收口 ⇒ 抓住', orphanFork.run(contextOf(orphan)).ok === false, JSON.stringify(orphanFork.run(contextOf(orphan)).detail))
-
 	const wrongStep = invariantNamed('证据都挂在存在的步骤上')
 	const stray = [...HEALTHY, { t: 'evidence/recorded', step: 's99', verdict: 'support' }]
 	check('证据挂在不存在的一步上 ⇒ 抓住', wrongStep.run(contextOf(stray)).ok === false, JSON.stringify(wrongStep.run(contextOf(stray)).detail))
@@ -118,9 +113,6 @@ console.log('\n【③ 不变量:坏日志必须红(不然长测会骗人)】')
 	const noFile = contextOf(HEALTHY)
 	check('推进了却没有物证文件 ⇒ 抓住', missingArtifact.run(noFile).ok === false, JSON.stringify(missingArtifact.run(noFile).detail))
 
-	const danglingScout = invariantNamed('侦察没有悬空')
-	check('侦察派了没收 ⇒ 抓住', danglingScout.run(contextOf([...HEALTHY, { t: 'scout/dispatched', id: 's1' }])).ok === false)
-	check('侦察派了也收了 ⇒ 放过', danglingScout.run(contextOf([...HEALTHY, { t: 'scout/dispatched', id: 's1' }, { t: 'scout/settled', id: 's1' }])).ok === true)
 }
 
 console.log('\n【③b 升格与证据等级自洽:两边都要抓】')
@@ -143,7 +135,7 @@ console.log('\n【③b 升格与证据等级自洽:两边都要抓】')
 	const evidenceOnAmendedStep = invariantNamed('证据都挂在存在的步骤上')
 	const amended = [...HEALTHY, { t: 'plan/amended', step: { id: 'crosscheck2', artifacts: [] } }, { t: 'evidence/recorded', step: 'crosscheck2', verdict: 'support' }]
 	check('证据挂在**修订后新增**的步上 ⇒ 放过', evidenceOnAmendedStep.run(contextOf(amended)).ok === true, JSON.stringify(evidenceOnAmendedStep.run(contextOf(amended)).detail))
-	// 先记证据、后作废该步:那是历史,不是孤儿(世界线场真跑里就是这个形态)。
+	// 先记证据、后作废该步:那是历史,不是孤儿(真跑里见过这个形态)。
 	const evidenceThenVoid = [...HEALTHY, { t: 'plan/amended', step: { id: 'crosscheck2', artifacts: [] } }, { t: 'evidence/recorded', step: 'crosscheck2', verdict: 'support' }, { t: 'plan/voided', step: 'crosscheck2' }]
 	check('证据先记、该步后作废 ⇒ 放过(不追溯)', evidenceOnAmendedStep.run(contextOf(evidenceThenVoid)).ok === true, JSON.stringify(evidenceOnAmendedStep.run(contextOf(evidenceThenVoid)).detail))
 	// 作废之后还有人往那步上记证据:那才是孤儿。
@@ -168,70 +160,25 @@ console.log('\n【③b 升格与证据等级自洽:两边都要抓】')
 	check('目标未结案 ⇒ 不要求升格(只判「没到级不许升格」)', promotion.run(openGoal).ok === true, JSON.stringify(promotion.run(openGoal).detail))
 }
 
-console.log('\n【③c 异步子 run 的结论:账上有 ≠ 心里有】')
-{
-	const visible = invariantNamed('异步子 run 的结论对模型可见')
-	const conclusion = '侦察结论(只读):clear/skills 下共 18 条技能,其中 SKILL.md 覆盖 18/18。'
-	const withScout = [...HEALTHY, { t: 'scout/settled', id: 's-1', conclusion, note: null }]
-	// 反例:结论只在变更记录里——这正是上一轮把那场 36/36 判成绿的形态。
-	const onlyInLedger = contextOf(withScout)
-	check('结论只躺在账本里 ⇒ 抓住(上一轮假绿的墓志铭)', visible.run(onlyInLedger).ok === false, JSON.stringify(visible.run(onlyInLedger).detail))
-	// **真回归**:工具结果的内容是**套娃**的(外层 tool-result,文本在里层 content[]),
-	// 判据必须认——它真实地把「送到了」误报成「没送到」过一次(E2E 两场都因此假红)。
-	{
-		const evaluated = await evaluateLog({
-			scenario: null,
-			mutations: withScout,
-			events: [
-				{
-					type: 'tool/result',
-					data: { message: { content: [{ type: 'tool-result', content: [{ type: 'text', text: `等了 32s(上限 300s):回灌 1 条结论\n\n【侦察结论 · s-1】\n${conclusion}` }] }] } },
-				},
-			],
-			workspace: '/tmp',
-			exists: () => false,
-			called: () => true,
-		})
-		const row = evaluated.checks.find((item) => item.label.includes('对模型可见'))
-		check('套娃内容块也算送达(tool-result 里层的文本)', row?.ok === true, JSON.stringify(row?.detail ?? ''))
-	}
-	// 正例之一:结论出现在工具结果的消息体里。
-	const inToolResult = contextOf(withScout, { modelVisibleText: `回了 1 条结论\n${conclusion}` })
-	check('结论出现在工具返回里 ⇒ 放过', visible.run(inToolResult).ok === true, JSON.stringify(visible.run(inToolResult).detail))
-	// 正例之二:结论出现在 **user/message** 里——原生结算通知走的就是这条。
-	const inNotice = contextOf(withScout, { modelVisibleText: `Background subagent s-1 finished.\nIts closing message:\n${conclusion}` })
-	check('结论出现在原生通知(user/message)里 ⇒ 放过', visible.run(inNotice).ok === true, JSON.stringify(visible.run(inNotice).detail))
-	// 执行者那条同样要查(否则只有侦察被修)。
-	const withExecutor = [...HEALTHY, { t: 'worldline/executed', fork: 'k-1', branch: 'b-1', child: 'c-1', ok: true, conclusion, note: null }]
-	check('执行者的结论只躺在账本里 ⇒ 同样抓住', visible.run(contextOf(withExecutor)).ok === false, JSON.stringify(visible.run(contextOf(withExecutor)).detail))
-	// 被截断后进消息:特征串取开头一段,截断也能认出来(避免判据自己制造假红)。
-	const long = `${'甲'.repeat(200)}结尾`
-	const truncated = contextOf([...HEALTHY, { t: 'scout/settled', id: 's-2', conclusion: long, note: null }], { modelVisibleText: `${long.slice(0, 120)}…已截断,全文 203 字` })
-	check('正文被截断后进消息(带指针)⇒ 仍算送达', visible.run(truncated).ok === true, JSON.stringify(visible.run(truncated).detail))
-}
-
 console.log('\n【④ 剧本断言:用坏上下文必须红】')
 {
 	const empty = contextOf([])
-	const worldline = SCENARIOS['worldline-arbitration']
+	const routes = SCENARIOS['competing-routes']
 	const falsification = SCENARIOS.falsification
 	// **安全性质**在空日志上恒真是对的(「被推翻的不许升格」,没有事实就没有违规);
 	// 其余断言在空日志上必须全红,否则「它在看日志」这句话就不成立。
 	const SAFETY = '安全性质'
-	// 侦察剧本里「产物引用了侦察结论」那一条:读不到文件 ⇒ 红;读到且含「侦察」⇒ 绿。
-	const scout = SCENARIOS['scout-first']
-	const citing = scout.asserts(contextOf([{ t: 'scout/dispatched', id: 's-1', child: 'c-1' }, { t: 'scout/settled', id: 's-1', conclusion: '共 18 条', path: null }], { readArtifact: () => '清单(据侦察结论):18 条技能。' }))
-	const noCite = scout.asserts(contextOf([{ t: 'scout/dispatched', id: 's-1', child: 'c-1' }, { t: 'scout/settled', id: 's-1', conclusion: '共 18 条', path: null }], { readArtifact: () => '清单:18 条技能。' }))
-	const citeCheck = (rows) => rows.find((row) => row.label.includes('引用了侦察结论'))
-	check('产物引用了侦察结论 ⇒ 放过', citeCheck(citing).ok === true, JSON.stringify(citeCheck(citing).detail))
-	check('产物没引用侦察结论 ⇒ 抓住(送达要被用上,不只是进了上下文)', citeCheck(noCite).ok === false, JSON.stringify(citeCheck(noCite).detail))
-
 	// 两类断言在空日志上恒真是**对的**,不算「意外通过」:
 	//   · 安全性质(「被推翻的不许升格」:没有事实就没有违规);
-	//   · 条件断言(「收敛了就必须有赢家」:没收敛就不适用)——前提由别的断言保证。
+	//   · 条件断言(前提不成立就不适用)——前提由别的断言保证。
 	const vacuouslyTrue = (label) => label.includes('安全性质') || label.includes('条件断言')
-	const worldlineEmpty = worldline.asserts(empty).filter((assertion) => !vacuouslyTrue(assertion.label))
-	check('世界线剧本的**非条件**断言在空日志上全红(断言真的在看日志)', worldlineEmpty.every((assertion) => assertion.ok === false), `${worldlineEmpty.filter((a) => a.ok).length} 条意外通过`)
+	// 「没有两步撞路径」是安全性质:空日志上恒真,其余在空日志上必须全红。
+	const routesEmpty = routes.asserts(empty).filter((assertion) => !assertion.label.includes('没有两步声明同一产物'))
+	check('竞争路线剧本的活性断言在空日志上全红(断言真的在看日志)', routesEmpty.every((assertion) => assertion.ok === false), `${routesEmpty.filter((a) => a.ok).length} 条意外通过`)
+	// 两步声明同一个产物 ⇒ 抓住;各占一处 ⇒ 放过。
+	const clashRow = (steps) => routes.asserts(contextOf([{ t: 'plan/created', id: 'p1', steps }])).find((row) => row.label.includes('没有两步声明同一产物'))
+	check('两步声明同一产物 ⇒ 抓住(并行路线会互相覆盖)', clashRow([{ id: 's1', artifacts: ['lab/data.json'] }, { id: 's2', artifacts: ['lab/data.json'] }]).ok === false)
+	check('两步各占一处产物 ⇒ 放过', clashRow([{ id: 's1', artifacts: ['lab/compact/data.json'] }, { id: 's2', artifacts: ['lab/pretty/data.json'] }]).ok === true)
 	const falsificationEmpty = falsification.asserts(empty).filter((assertion) => !vacuouslyTrue(assertion.label))
 	check('证伪剧本的**活性**断言在空日志上全红(安全性质那条按定义恒真,已排除)', falsificationEmpty.every((assertion) => assertion.ok === false), `${falsificationEmpty.filter((a) => a.ok).length} 条意外通过`)
 	// 证伪剧本的核心断言必须真的能区分「被推翻的假设不许升格」。

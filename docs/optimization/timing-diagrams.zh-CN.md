@@ -12,11 +12,11 @@
 | **人** | 用户。只有他能做三件事：在原生审阅卡上批准计划、在原生审批栈里放行 L4、在面板上按人门动词 | 不是系统组件 |
 | **模型** | LLM 推理体。它**发出意图**（工具调用、答复），不执行任何东西 | 不是「Agent 系统」；它不碰账本、不碰文件，一切经宿主转手 |
 | **DSH 宿主** | 引擎：回合循环、工具调度、沙箱与审批、原生审阅卡、子代理、goals 服务（续跑驱动）、会话日志的写入 | 不做认识论判断；它不知道「什么可以被相信」 |
-| **ClearAI 内核** | preset 插件：32 件意图工具 + guard + 运行态卡。**权威变更（mutations）的唯一生产者** | 不执行回合、不渲染界面、不持久化 |
+| **ClearAI 内核** | preset 插件：20 件意图工具 + guard + 运行态卡。**权威变更（mutations）的唯一生产者** | 不执行回合、不渲染界面、不持久化 |
 | **事实账本** | 只追加的事实记录。**内容是我们的**：clearai 变更事件 + `clear/` 产物与评估卡；**载体是宿主的**：会话日志 + 文件系统。它不存结论——「现在可以相信什么」由投影从它折叠出来 | 不是第二本状态账；状态不从它「读出来」，而是「折出来」 |
 | **投影** | 宿主半 `ui/lib`：fold（账本 → 状态）+ derive（状态 → 视图）+ 面板。**只读本账本，从不写** | 不是缓存，不是副本——同一份事实的一种看法 |
 | **独立评估者** | 内核经宿主派出的 fresh-context 只读子代理（L3+），带 `outputSchema` 回结构化裁决 | 不是执行者的分身；做判分离的那一半 |
-| **世界线执行者** | 每条互斥分支一个，各占一份工作副本，工具面不含计划/目标动词 | 不能立约、不能结案 |
+| **原生子任务** | 宿主自己的 subagent，由模型派出、并行跑一条路线。它与主线共用工作区，所以每条路线声明自己的产物路径 | 不是我们的；它不交付步骤——交付归模型 |
 
 旧名词对照：**Agent** = 拆成「模型 + DSH 宿主」；**内核** = ClearAI 内核；**投影 / 面板** = 投影；**账本（git）** = 事实账本。
 
@@ -175,7 +175,10 @@ sequenceDiagram
 当前状态：账本与准入是机制；**恢复纪律本身只在提示词里**（`clearai/execution-discipline`）。
 把它从「建议」升级为边界，需要宿主侧配合，属后续议题。
 
-## 4. 世界线路径 · 已实现
+## 4. 竞争路线路径 · 已实现
+
+世界线已在第二阶段删除。两条做法迥异的路线就是两条竞争的假设，各由一个步骤检验；
+并行交给宿主自己的子任务。
 
 ```mermaid
 sequenceDiagram
@@ -183,45 +186,33 @@ sequenceDiagram
     participant M as 模型
     participant D as DSH 宿主
     participant K as ClearAI 内核
-    participant X as 世界线执行者
-    participant H as 人
+    participant S as 原生子任务
     participant L as 事实账本
 
-    M->>D: ForkPlan(branches[], decide_by)
+    M->>D: SetGoal（假设：路线 A、路线 B，各写推翻条件）
     D->>K: execute
-    K->>K: validateForkOptions（尺子必须事先登记）
-    K->>D: 准备 branch + worktree（或退化到声明目录）
-    K->>D: 每条分支派一个执行者（工具面不含计划/目标动词）
-    D->>X: 启动（各自工作副本）
-    K->>L: fork/created, worldline/prepared, worldline/executing
-
-    X-->>K: 分支交付（读数 + 产物）
-    K->>L: branch/delivered（各分支秩 → evaluated）
-
-    M->>D: ConvergeFork
+    K->>L: goal/set
+    M->>D: CreatePlan（步骤 A 检验 h-A，步骤 B 检验 h-B，产物路径各不相同）
     D->>K: execute
-    K->>K: decideWinner（按预注册尺子算术排序）
-    alt 唯一优胜者且分差 ≥ autoAdoptMinGap
-        K->>L: fork/converged（winner 标 adopted，其余标 pruned 留痕）
-        K->>D: 采纳门
-        D->>H: 面板待办
-        H-->>K: adopt_branch（人门动词，经账本落账）
-        K->>L: by='user'
-    else 分差小但确实分胜负
-        K->>L: fork/converged（临时采纳 + 待复核痕迹）
-    else 算不出来
-        K->>L: fork/undecidable
-        K->>D: 可选：派横评仲裁（fork/arbitrated 只记判决）
-        K->>D: 交人决定
-        D->>H: 面板待办
+    K->>K: validateSteps（同一计划里两步不许声明同一个产物路径）
+    alt 路径撞了
+        K-->>D: 立约时就拒（两条路线会互相覆盖）
+    else 路径各占一处
+        K->>L: plan/created
     end
+    M->>D: subagent × 2（每条路线一个，并行）
+    D->>S: 启动（共用工作区）
+    S-->>D: 收尾消息 + 盘上产物
+    M->>D: AdvancePlan(步骤 A) / AdvancePlan(步骤 B)
+    D->>K: execute（逐步准入，同 §2）
+    K->>L: evidence/recorded（赢的给 support，输的给 refute）
 ```
 
 要点：
 
-- 算术只负责**排序**；`adopt_branch` 是人按的那一下。
-- 落选分支只删工作副本，**保留 branch ref**，因为事后改判依赖它永久可读。
-- 分叉已收口而执行者未归 → 派生 `unreturned`，不再等。
+- 谁成立由证据说；没有采纳门。输的那条是被推翻的假设，照样留在账上。
+- 两条都成立而互相矛盾时，模型如实写出来交给人；冲突只呈现，不设门。
+- 同一计划里产物路径互斥，因为子任务共用一个工作区。
 
 ## 5. 领域本体路径 · 已实现（折法、动词与面板都在跑）
 

@@ -75,19 +75,6 @@ rm -rf "$PRESET_DST"
 mkdir -p "$PRESET_DST"
 cp -r "$HERE/preset/." "$PRESET_DST/"
 
-# 工作区模板:空文件夹里铺的那套(PROJECT.md / 18 个技能 / knowledge / memory)。
-# 源是 ClearAI 自己的模板目录——本移植长在那个仓里,所以直接取;取不到就**如实跳过**
-# (工作区引导会退化成只建 clear/ 骨架,不假装铺过模板)。
-TEMPLATE_SRC="$HERE/preset/template"
-if [ -d "$TEMPLATE_SRC" ]; then
-	rm -rf "$PRESET_DST/template"
-	mkdir -p "$PRESET_DST/template"
-	# 残渣不进模板(ClearAI 的 _TRANSIENT_ASSET_DIRS 同款判定)。
-	tar -C "$TEMPLATE_SRC" --exclude=node_modules --exclude=dist --exclude=.vite --exclude=coverage --exclude=.pytest_cache --exclude=__pycache__ -cf - . | tar -C "$PRESET_DST/template" -xf -
-	echo "     工作区模板:$(find "$PRESET_DST/template" -name SKILL.md | wc -l) 个技能 + PROJECT.md"
-else
-	echo "     (跳过工作区模板:找不到 $TEMPLATE_SRC —— 工作区引导只会建 clear/ 骨架)"
-fi
 echo "① 预设已装:$PRESET_DST"
 find "$PRESET_DST" -type f | sed 's/^/     /'
 

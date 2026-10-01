@@ -165,9 +165,7 @@ if (hostYaml === null) {
 check('内核随预设走(./plugins/clearai-kernel.js)', has(`${presetBase}/plugins/clearai-kernel.js`))
 check('提示词段随预设走(./plugins/prompts.js)', has(`${presetBase}/plugins/prompts.js`))
 check('预设自己的技能在(skills/ 走 baseUrl,所以必须同目录)', inventory.some((rel) => rel.startsWith(`${presetBase}/skills/`)))
-check('工作区模板在预设旁边(内核缺省读 ../template)', has(`${presetBase}/template/project.md`) && inventory.some((rel) => rel.startsWith(`${presetBase}/template/skills/`)))
-const presetSkills = inventory.filter((rel) => rel.startsWith(`${presetBase}/template/skills/`) && rel.endsWith('SKILL.md')).length
-check('模板技能齐(18 条)', presetSkills === 18, `${presetSkills} 条`)
+check('不再带工作区模板(空文件夹不铺任何东西,技能走原生目录)', !inventory.some((rel) => rel.startsWith(`${presetBase}/template/`)))
 
 // ── ④ 无仓库路径(纪律④) ───────────────────────────────────────────────────
 console.log('\n④ 无仓库路径:发行物不假设自己长在哪个目录树里')
@@ -184,7 +182,7 @@ console.log('\n⑤ 只增不改:目录面与 fold 的既有词汇表对得上')
 const kernelSource = readFileSync(join(DIST, `${presetBase}/plugins/clearai-kernel.js`), 'utf8')
 const mechanismMatch = /export const MECHANISM_TOOLS = \{([\s\S]*?)\n\}/.exec(kernelSource)
 const toolNames = mechanismMatch === null ? [] : [...mechanismMatch[1].matchAll(/'([A-Z][A-Za-z]+)'/g)].map((match) => match[1])
-check('工具目录读得出来(32 件)', toolNames.length === 32, `${toolNames.length} 件`)
+check('工具目录读得出来(20 件)', toolNames.length === 20, `${toolNames.length} 件`)
 const presetText = readFileSync(join(DIST, `${presetBase}/agent.cordis.yml`), 'utf8')
 const kernelRow = /- id: clearai-kernel[\s\S]*?(?=\n- id: |\n# ──)/.exec(presetText)?.[0] ?? ''
 const declaredTools = [...kernelRow.matchAll(/^\s{6,}([A-Z][A-Za-z]+):\s*true$/gm)].map((match) => match[1])
@@ -237,7 +235,7 @@ try {
 	const files = JSON.parse(out)[0].files.map((item) => item.path)
 	const outside = files.filter((rel) => !allowedRoots.some((root) => rel === root || rel.startsWith(`${root}/`)))
 	check(`npm 会带走 ${files.length} 个文件,全在白名单内`, outside.length === 0, outside.slice(0, 5).join(', '))
-	check('npm 会带走预设与模板(不是只有 lib)', files.some((rel) => rel.startsWith('presets/clearai/template/')) && files.some((rel) => rel.endsWith('agent.cordis.yml')))
+	check('npm 会带走预设(不是只有 lib)', files.some((rel) => rel.endsWith('agent.cordis.yml')) && files.some((rel) => rel.endsWith('plugins/clearai-kernel.js')))
 } catch (error) {
 	check('npm pack 能跑通', false, String(error?.message ?? error).slice(0, 200))
 }

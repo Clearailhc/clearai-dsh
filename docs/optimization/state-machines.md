@@ -177,54 +177,10 @@ both outcomes land as one `fact/reviewed` (a retraction is terminal; the record 
 reads it back out of `fact.review` as a derived state. The producers are `retract_fact` / `keep_fact` in
 `HUMAN_GATE_ACTIONS` and `markFactReviewed` in the kernel; the truth-table row is `fact-retraction` (implemented).
 
-## 9. Worldlines (fork / branch) · implemented
+## 9. Worldlines (fork / branch) · removed
 
-Stored: `state.forks[]`; branch rank `BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }`.
+Worldlines were removed in phase 2 of the "less is more" rebuild: parallel exploration goes to native subagents, and competing routes are competing hypotheses, each tested by a step. `fork/*`, `worldline/*` and `branch/*` events in old logs are unknown and skipped as-is.
 
-```mermaid
-stateDiagram-v2
-    state "fork" as F {
-        [*] --> exploring_f: fork/created
-        exploring_f --> exploring_f: worldline/prepared / executing / executed / branch_delivered
-        exploring_f --> deciding: every branch rank >= evaluated
-        deciding --> deciding: fork/recommended (arithmetic names a favourite; a fact only, no state change)
-        deciding --> settled: fork/converged (arithmetic yields a unique winner)
-        deciding --> undecidable: fork/undecidable (arithmetic cannot decide)
-        undecidable --> undecidable: fork/arbitrated (the arbitration verdict lands, but settled is NOT set)
-        undecidable --> settled: fork/converged (the kernel re-decides from the verdict, then converges)
-        exploring_f --> orphaned: the owning step was plan/voided
-        exploring_f --> abandoned: fork/abandoned
-        settled --> [*]
-        abandoned --> [*]
-        orphaned --> [*]
-    }
-    note right of deciding
-      Adoption is still a human act (adopt_branch).
-      Arithmetic ranks; it does not decide.
-    end note
-```
-
-Three derived states that are "not losses" (`fold.js:2094-2129`, all zero new ledger):
-
-| Derived | Meaning |
-|---|---|
-| `failed` | The executor reported `ok:false` — the world gave it no chance; it was not ranked out |
-| `orphaned` | Its owning step was voided — it ends when the commitment is withdrawn, not by a human call or by arithmetic |
-| `unreturned` | The fork settled and the executor never reported — that line has no destination left |
-
-**Merging at adoption** (after `adopt_branch`) is a separate group of events; they record whether the
-winner's files really came back into the workspace:
-
-| Event | Meaning |
-|---|---|
-| `fork/merged` | Merge succeeded (or already up to date) |
-| `fork/merge_skipped` | No merge, but **the adoption is still recorded** (branch ref or working copy gone) |
-| `fork/merge_conflict` | Merge conflicted; recorded honestly and left to an ordinary delivery |
-| `worldline/removed` | The working copy was dropped — **the branch ref is kept**, because a later reversal depends on it staying readable |
-
-`worldline/executing` and `worldline/executed` are the two facts of an executor round trip: the first
-says it was dispatched, the second says it came back (`ok: true/false`). `fork/arbitration_dispatched`
-and `fork/arbitrated` are the round trip of cross-evaluation arbitration.
 
 ## 10. Auto continuation · implemented
 
@@ -262,26 +218,10 @@ clarification section and the deployment initial value. The default budget
 
 ---
 
-## 11. Scout · implemented
+## 11. Scout · removed
 
-Stored: `state.scouts[]`. Sub-roles are derived by the system on a trigger, never freely delegated by
-the model.
+Scouts were removed in phase 2 of the "less is more" rebuild: for parallel research the model uses the native `subagent`. `scout/*` events in old logs are unknown and skipped as-is.
 
-```mermaid
-stateDiagram-v2
-    [*] --> dispatched: scout/dispatched (trigger records why it was dispatched)
-    dispatched --> settled: scout/settled (the conclusion enters the material face)
-    settled --> settled: same id reported again (idempotent; this is how the long soak avoided loss)
-```
-
-Notes:
-
-- A conclusion is re-published only while the **projection** has not landed it — the criterion is the
-  projection, not an in-memory "reported" flag. The retry cadence is the turn boundary, so there is no
-  interval knob.
-- `scout/settled` with the same id is idempotent in fold; a repeat never grows a second fact.
-- The scout tool face is read-only (`scoutToolFilter`), and `MapScouts` is bounded by `mapScoutMax` /
-  `mapScoutConcurrency`.
 
 ## 12. Domain lexicon · implemented
 
@@ -362,12 +302,6 @@ Points:
 this document is in fold's vocabulary. The `ledger-only` group never folds into the view (they are
 ledger facts), so it appears in no state machine:
 
-- `git/committed`: the commit a **delivery** lands in the ledger (`AdvancePlan` / worldline adoption).
-- `git/snapshot`: a workspace snapshot at a **turn boundary** (only when this session wrote something
-  and the workspace is genuinely dirty), plus the pre-merge snapshot. Its job is not attribution —
-  the kernel cannot see what bash wrote — but **coverage**: exploration output produced before any
-  plan is in the ledger too, so it can be inspected and restored.
-- `git/restored`: a `RestoreFile` restore (a restore is a new version plus a new commit, never a rollback).
 - `admission/checked`: the admission reading of each delivery (what is accepted also lands an `observation/recorded`).
 
 | Event | Home | Folds into the view |
@@ -391,24 +325,7 @@ ledger facts), so it appears in no state machine:
 | `evidence/recorded` | §7 Evidence | yes |
 | `fact/promoted` | §8 Fact | yes |
 | `human/released` | §3 Step (L4 release) | yes |
-| `worldline/prepared` | §9 Worldlines | yes |
-| `worldline/executing` | §9 Worldlines | yes |
-| `worldline/executed` | §9 Worldlines | yes |
-| `worldline/removed` | §9 Worldlines | yes |
-| `branch/delivered` | §9 Worldlines | yes |
 | `fact/reviewed` | §4 Hypothesis (human review: retract / keep) | yes |
-| `fork/recommended` | §9 Worldlines | yes |
-| `fork/created` | §9 Worldlines | yes |
-| `fork/converged` | §9 Worldlines | yes |
-| `fork/undecidable` | §9 Worldlines | yes |
-| `fork/arbitration_dispatched` | §9 Worldlines | yes |
-| `fork/arbitrated` | §9 Worldlines | yes |
-| `fork/abandoned` | §9 Worldlines | yes |
-| `fork/merged` | §9 Worldlines | yes |
-| `fork/merge_skipped` | §9 Worldlines | yes |
-| `fork/merge_conflict` | §9 Worldlines | yes |
-| `scout/dispatched` | §11 Scout | yes |
-| `scout/settled` | §11 Scout | yes |
 | `continuation/set` | §10 Auto continuation | yes |
 | `ontology/term_added` | §12 Domain lexicon | yes |
 | `ontology/predicate_added` | §12 Domain lexicon | yes |
@@ -423,9 +340,6 @@ ledger facts), so it appears in no state machine:
 | `criteria/revised` | §1 Goal (criterion revision) | yes |
 | `host/inactive` | §14 Host read faces | yes |
 | `admission/checked` | **ledger only** | no |
-| `git/committed` | **ledger only** | no |
-| `git/restored` | **ledger only** | no |
-| `git/snapshot` | **ledger only** | no |
 
 ## 16. Relationship to the verification ontology
 

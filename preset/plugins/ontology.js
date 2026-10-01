@@ -256,12 +256,12 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 				transition('received', 'rejected', 'system', 'source_not_admissible', [], '不收:只在准入账(`admission/checked`)上留痕,不落观测对象', 'admission/checked'),
 			],
 			/**
-			 * `source` **只声明真有生产者的取值**:内核只写过 `self`(主线/世界线的交付)与 `scout`(侦察)。
+			 * `source` **只声明真有生产者的取值**:内核只写过 `self`(主线的交付)。
 			 * 一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话
 			 * (声明了「有种观测来自人上传」,而那条路根本不存在)。`human_upload` / `file_drop` /
 			 * `callback` / `pull` 是「后续候选」,等它们各自的入口真的接上再回来加。
 			 */
-			fields: [field('content'), field('source', { values: ['self', 'scout'] }), field('ref')],
+			fields: [field('content'), field('source', { values: ['self'] }), field('ref')],
 			persistence: 'fold.materials(收下的)+ 准入账(不收的)',
 			event_kind: 'observation/recorded',
 			note: '`received` 活在一次交付调用之内(候选观测):收下的才成为对象,不收的只留一条准入事实——「不收」不是对象的终态,是账本上的一行。来源取值与生产者**逐一对齐**(见 `source` 字段的说明):类型只声明今天真能发生的那些',
@@ -312,7 +312,7 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 			initial: 'granted',
 			terminal: ['granted'],
 			transitions: [],
-			fields: [field('step', { required: false }), field('branch', { required: false }), field('call'), field('via', { values: ['approval'] })],
+			fields: [field('step', { required: false }), field('call'), field('via', { values: ['approval'] })],
 			persistence: 'fold.releases(原生审批栈的审计对是权威记录)',
 			event_kind: 'human/released',
 			note: 'L4 的人放行:一次一放行;步级的事实一落,同一步重试不再问人)',

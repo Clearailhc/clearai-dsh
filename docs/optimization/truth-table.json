@@ -36,60 +36,142 @@
   },
   "eventsNote": "账本变更类型清单：内核真的会写下的每一条 mutation，加上折法认得的那几个 kind。by 指向写它（或认得它）的机制 id；`ledger-only` 是 fold.js 的 LEDGER_ONLY_MUTATIONS 那一组（只留台账、不折视图）。这张表要双向核对：代码里出现的变更类型必须在这里（tools/verify-truth-table.mjs ⑮），这里的每一条也必须真的出现在代码里、by 也指得到真机制（⑯）。",
   "events": [
-    { "t": "admission/checked", "by": "ledger-only" },
-    { "t": "audit/dispatched", "by": "independent-evaluator" },
-    { "t": "audit/reused", "by": "independent-evaluator" },
-    { "t": "audit/settled", "by": "independent-evaluator" },
-    { "t": "block/cleared", "by": "verification-lifecycle" },
-    { "t": "block/counted", "by": "verification-lifecycle" },
-    { "t": "branch/delivered", "by": "worldline-fork" },
-    { "t": "continuation/set", "by": "auto-continuation" },
-    { "t": "criteria/revised", "by": "criteria-revision-gate" },
-    { "t": "entity/asserted", "by": "entity-assertion" },
-    { "t": "entity/registered", "by": "entity-registration" },
-    { "t": "evidence/recorded", "by": "evidence-record" },
-    { "t": "fact/promoted", "by": "fact-promotion" },
-    { "t": "fact/reviewed", "by": "fact-retraction" },
-    { "t": "fork/abandoned", "by": "worldline-adopt" },
-    { "t": "fork/arbitrated", "by": "subrun-lifecycle" },
-    { "t": "fork/arbitration_dispatched", "by": "subrun-lifecycle" },
-    { "t": "fork/converged", "by": "worldline-metric" },
-    { "t": "fork/created", "by": "worldline-fork" },
-    { "t": "fork/merge_conflict", "by": "worldline-adopt" },
-    { "t": "fork/merge_skipped", "by": "worldline-adopt" },
-    { "t": "fork/merged", "by": "worldline-adopt" },
-    { "t": "fork/recommended", "by": "worldline-metric" },
-    { "t": "fork/undecidable", "by": "worldline-metric" },
-    { "t": "git/committed", "by": "ledger-only" },
-    { "t": "git/restored", "by": "ledger-only" },
-    { "t": "git/snapshot", "by": "ledger-only" },
-    { "t": "goal/closed", "by": "goal-close" },
-    { "t": "goal/set", "by": "goal-set" },
-    { "t": "host/inactive", "by": "host-read-face-degradation" },
-    { "t": "human/released", "by": "l4-human-release" },
-    { "t": "hypothesis/superseded", "by": "hypothesis-registry" },
-    { "t": "level/skipped", "by": "level-skip-reason" },
-    { "t": "observation/recorded", "by": "observation-provenance" },
-    { "t": "ontology/predicate_added", "by": "ontology-lexicon-events" },
-    { "t": "ontology/predicate_deprecated", "by": "ontology-lexicon-events" },
-    { "t": "ontology/predicate_revised", "by": "ontology-lexicon-events" },
-    { "t": "ontology/term_added", "by": "ontology-lexicon-events" },
-    { "t": "ontology/term_deprecated", "by": "ontology-lexicon-events" },
-    { "t": "ontology/term_revised", "by": "ontology-lexicon-events" },
-    { "t": "plan/amended", "by": "plan-amend-no-progress" },
-    { "t": "plan/blocked", "by": "verification-lifecycle" },
-    { "t": "plan/closed", "by": "formal-plan" },
-    { "t": "plan/confirmed", "by": "plan-review" },
-    { "t": "plan/created", "by": "formal-plan" },
-    { "t": "plan/refined", "by": "plan-amend-no-progress" },
-    { "t": "plan/voided", "by": "plan-amend-no-progress" },
-    { "t": "scout/dispatched", "by": "scout-precommit" },
-    { "t": "scout/settled", "by": "scout-precommit" },
-    { "t": "step/advanced", "by": "advance-plan" },
-    { "t": "worldline/executed", "by": "subrun-lifecycle" },
-    { "t": "worldline/executing", "by": "worldline-fork" },
-    { "t": "worldline/prepared", "by": "worldline-fork" },
-    { "t": "worldline/removed", "by": "worldline-adopt" }
+    {
+      "t": "admission/checked",
+      "by": "ledger-only"
+    },
+    {
+      "t": "audit/dispatched",
+      "by": "independent-evaluator"
+    },
+    {
+      "t": "audit/reused",
+      "by": "independent-evaluator"
+    },
+    {
+      "t": "audit/settled",
+      "by": "independent-evaluator"
+    },
+    {
+      "t": "block/cleared",
+      "by": "verification-lifecycle"
+    },
+    {
+      "t": "block/counted",
+      "by": "verification-lifecycle"
+    },
+    {
+      "t": "continuation/set",
+      "by": "auto-continuation"
+    },
+    {
+      "t": "criteria/revised",
+      "by": "criteria-revision-gate"
+    },
+    {
+      "t": "entity/asserted",
+      "by": "entity-assertion"
+    },
+    {
+      "t": "entity/registered",
+      "by": "entity-registration"
+    },
+    {
+      "t": "evidence/recorded",
+      "by": "evidence-record"
+    },
+    {
+      "t": "fact/promoted",
+      "by": "fact-promotion"
+    },
+    {
+      "t": "fact/reviewed",
+      "by": "fact-retraction"
+    },
+    {
+      "t": "goal/closed",
+      "by": "goal-close"
+    },
+    {
+      "t": "goal/set",
+      "by": "goal-set"
+    },
+    {
+      "t": "host/inactive",
+      "by": "host-read-face-degradation"
+    },
+    {
+      "t": "human/released",
+      "by": "l4-human-release"
+    },
+    {
+      "t": "hypothesis/superseded",
+      "by": "hypothesis-registry"
+    },
+    {
+      "t": "level/skipped",
+      "by": "level-skip-reason"
+    },
+    {
+      "t": "observation/recorded",
+      "by": "observation-provenance"
+    },
+    {
+      "t": "ontology/predicate_added",
+      "by": "ontology-lexicon-events"
+    },
+    {
+      "t": "ontology/predicate_deprecated",
+      "by": "ontology-lexicon-events"
+    },
+    {
+      "t": "ontology/predicate_revised",
+      "by": "ontology-lexicon-events"
+    },
+    {
+      "t": "ontology/term_added",
+      "by": "ontology-lexicon-events"
+    },
+    {
+      "t": "ontology/term_deprecated",
+      "by": "ontology-lexicon-events"
+    },
+    {
+      "t": "ontology/term_revised",
+      "by": "ontology-lexicon-events"
+    },
+    {
+      "t": "plan/amended",
+      "by": "plan-amend-no-progress"
+    },
+    {
+      "t": "plan/blocked",
+      "by": "verification-lifecycle"
+    },
+    {
+      "t": "plan/closed",
+      "by": "formal-plan"
+    },
+    {
+      "t": "plan/confirmed",
+      "by": "plan-review"
+    },
+    {
+      "t": "plan/created",
+      "by": "formal-plan"
+    },
+    {
+      "t": "plan/refined",
+      "by": "plan-amend-no-progress"
+    },
+    {
+      "t": "plan/voided",
+      "by": "plan-amend-no-progress"
+    },
+    {
+      "t": "step/advanced",
+      "by": "advance-plan"
+    }
   ],
   "mechanisms": [
     {
@@ -477,7 +559,7 @@
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js RestoreFile 走新 commit",
+        "code": "ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js VoidPlanStep",
         "tests": "test/kernel.test.mjs",
         "config": null,
         "prompt": "clearai/context-discipline",
@@ -485,7 +567,7 @@
       },
       "trigger": "任何状态变更",
       "input": "—",
-      "output": "推翻 / 作废 / 落选 / 修订全部留痕",
+      "output": "推翻 / 作废 / 修订全部留痕",
       "blocks_execution": false,
       "affected_by_autonomy": false,
       "native_dsh_alternative": null,
@@ -494,78 +576,81 @@
     },
     {
       "id": "worldline-fork",
-      "name": "世界线分叉（独立工作副本）",
-      "name_en": "Worldline fork with independent working copies",
+      "name": "已删除:世界线分叉（独立工作副本）",
+      "name_en": "Removed: Worldline fork with independent working copies",
       "layer": "epistemic",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js ForkPlan; prepareWorldlines; startWorldlineExecutor",
-        "tests": "test/kernel.test.mjs, tools/spike-git-worldlines.mjs",
-        "config": "gitWorldlines, autoDispatchExecutors, executorToolFilter",
-        "prompt": "clearai/worldline",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "code": null,
+        "tests": null,
+        "config": null,
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "模型调用 ForkPlan 且给出互斥分支与预注册指标",
       "input": "branches[], decide_by（尺子:量 = 口径 + 方向）",
       "output": "mutation fork/created, worldline/prepared, worldline/executing, worldline/executed, branch/delivered",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": null,
-      "rationale": "分叉是「选一」，不是并行加速：每条世界线一份独立工作副本，各自交付读数，收敛由**算术**决定（`decideWinner` 只排序，不做语义判定）。尺子在动手之前登记，写成「量 = 口径」，而**口径必须是工作区里真有的一个文件**（`decide_by_scale_not_reference` 拒散文、拒不存在的路径）。这把「同一把尺子」从一句**声明**变成一个**可指认的引用**：路径相等是机器可核的，文件内容在账本里有版本。至于两条世界线有没有真的用它去量，那是评估者重跑的事——字符串检查到这里就到头了，不冒充能验。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
+      "rationale": "「少即是多」第二阶段交还宿主:并行探索就是并行检验——竞争路线是竞争的假设,各由一个步骤检验,判据事先写好;并行交给原生子任务。代价是失去每条路线各自的文件副本,由「产物路径不重叠」兜住各自的产出。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "worldline-metric",
-      "name": "预注册指标与算术收敛",
-      "name_en": "Pre-registered metric and arithmetic convergence",
+      "name": "已删除:预注册指标与算术收敛",
+      "name_en": "Removed: Pre-registered metric and arithmetic convergence",
       "layer": "epistemic",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js validateForkOptions; decideWinner; pushRecommendation; ConvergeFork; runArbiter",
-        "tests": "test/kernel.test.mjs",
-        "config": "autoAdoptMinGap=0.15, forkArbitration",
-        "prompt": "clearai/worldline",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "code": null,
+        "tests": null,
+        "config": null,
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "ConvergeFork",
       "input": "各分支读数 + 预注册尺子",
       "output": "mutation fork/recommended（读数凑齐即落推荐，只记事实）；fork/converged；算不出来 → fork/undecidable，交人",
       "blocks_execution": true,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": null,
-      "rationale": "尺子必须事先登记；算不出来就停下问人，绝不退化成随便挑一条。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
+      "rationale": "「少即是多」第二阶段交还宿主:「同一把尺子」就是事先写下的判据;两条读数是否可比交给独立评估者。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "worldline-adopt",
-      "name": "世界线采纳必须由人按下",
-      "name_en": "Worldline adoption is a human act",
+      "name": "已删除:世界线采纳必须由人按下",
+      "name_en": "Removed: Worldline adoption is a human act",
       "layer": "epistemic",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "human",
       "source": {
-        "code": "ui/lib/index.js 人门通道（adopt_branch / abandon_fork）; preset/plugins/clearai-kernel.js AbandonFork; adoptWorldline",
-        "tests": "test/host.test.mjs",
+        "code": null,
+        "tests": null,
         "config": null,
-        "prompt": "clearai/worldline",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "人在面板上执行 adopt_branch / abandon_fork",
       "input": "fork id, branch id, reason",
       "output": "user 来源消息折进投影，写 by:'user'",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": null,
-      "rationale": "算术排序选出赢家；采纳是人按的那一下。两者不可合并。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
+      "rationale": "「少即是多」第二阶段交还宿主:落选就是被推翻的假设;两条都成立而互相矛盾时作为冲突交给人,不再有单独的采纳动作。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "block-threshold",
@@ -669,53 +754,55 @@
     },
     {
       "id": "scout-precommit",
-      "name": "立约前侦察（一生一次）",
-      "name_en": "Pre-commit reconnaissance",
+      "name": "已删除:立约前侦察（一生一次）",
+      "name_en": "Removed: Pre-commit reconnaissance",
       "layer": "harness",
-      "status": "implemented",
-      "hardness": "advisory",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js runScout / precommitRecon / scoutDigest / sweepScouts / persistMaterial / noticeBlock; ui/lib/fold.js case scout/dispatched",
-        "tests": "test/kernel.test.mjs",
-        "config": "precommitRecon=true, scoutToolFilter",
-        "prompt": "clearai/delegation",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "code": null,
+        "tests": null,
+        "config": null,
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "SetGoal 落定判据，且 input/ 有材料",
       "input": "brief",
       "output": "mutation scout/dispatched + scout/settled",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": null,
-      "rationale": "侦察是低权威的读侧工作，先看清材料再立约。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-tool-subagent",
+      "rationale": "「少即是多」第二阶段交还宿主:立约前要查资料,模型自己读,或派原生子任务只读去查。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "map-scouts",
-      "name": "并行侦察（有上限与并发）",
-      "name_en": "Parallel scouting with caps",
+      "name": "已删除:并行侦察（有上限与并发）",
+      "name_en": "Removed: Parallel scouting with caps",
       "layer": "harness",
-      "status": "implemented",
-      "hardness": "advisory",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "non-authoritative",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js MapScouts / sweepScouts / persistMaterial / noticeBlock",
-        "tests": "test/kernel.test.mjs",
-        "config": "mapScoutMax=50, mapScoutConcurrency=4",
-        "prompt": "clearai/delegation",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "code": null,
+        "tests": null,
+        "config": null,
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "模型调用 MapScouts",
       "input": "任务清单",
       "output": "多个只读子 run 的结论",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": "dsh 原生 subagent 并行（已随预设挂回(阶段 5;权威边界测试钉死它们产不出 clearai 变更)）",
-      "rationale": "放几十个子 run 出去不是并行，是把宿主打满。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
+      "rationale": "「少即是多」第二阶段交还宿主:并行侦察由原生子任务承担。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "evaluator-readonly-face",
@@ -744,28 +831,29 @@
     },
     {
       "id": "executor-tool-face",
-      "name": "世界线执行者工具面（不含计划/目标动词）",
-      "name_en": "Worldline executor face, no plan/goal verbs",
+      "name": "已删除:世界线执行者工具面（不含计划/目标动词）",
+      "name_en": "Removed: Worldline executor face, no plan/goal verbs",
       "layer": "harness",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js executorToolFilter",
-        "tests": "test/kernel.test.mjs",
-        "config": "executorToolFilter",
-        "prompt": "clearai/delegation",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "code": null,
+        "tests": null,
+        "config": null,
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "派遣世界线执行者时",
       "input": "候选工具名",
       "output": "任务书即计划；执行者工具面里根本没有 CreatePlan/AdvancePlan/ClosePlan",
       "blocks_execution": true,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": null,
-      "rationale": "把「不要自己开计划」从嘱咐变成不可表达。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-tool-subagent",
+      "rationale": "「少即是多」第二阶段交还宿主:世界线执行者随世界线一起删除。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "tool-trimming",
@@ -944,28 +1032,29 @@
     },
     {
       "id": "git-ledger",
-      "name": "只追加 git 账本（一律旁路账本，不碰用户仓库）",
-      "name_en": "Append-only git ledger, always a side ledger (never the user's repo)",
+      "name": "已删除:只追加 git 账本（一律旁路账本，不碰用户仓库）",
+      "name_en": "Removed: Append-only git ledger, always a side ledger (never the user's repo)",
       "layer": "harness",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js commitLedger; FileHistory; RestoreFile",
-        "tests": "test/kernel.test.mjs",
-        "config": "ledgerMaxFiles=20000",
-        "prompt": "clearai/context-discipline",
-        "docs": "docs/loop-philosophy.zh-CN.md"
+        "code": null,
+        "tests": null,
+        "config": null,
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "步骤交付点 / 文件历史查询 / 恢复",
       "input": "路径或交付点",
       "output": "mutation git/committed, git/restored, git/snapshot",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": null,
-      "rationale": "事后可回滚取代事前审批的前提是账本足够可靠。",
-      "known_mismatch": "旁路账本被删除会让仍存活的分叉变成孤儿（见 known-gaps）。"
+      "native_dsh_alternative": "dsh-workspace-changes",
+      "rationale": "「少即是多」第二阶段交还宿主:文件改动历史由宿主的 workspace-changes 显示;不再维护自己的 git 账本,也不提供恢复(已接受的代价)。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "kernel-panic-recovery",
@@ -1145,53 +1234,55 @@
     },
     {
       "id": "skill-candidate",
-      "name": "技能默认候选态（人采纳才进目录）",
-      "name_en": "Skills default to candidate until a human promotes them",
+      "name": "已删除:技能默认候选态（人采纳才进目录）",
+      "name_en": "Removed: Skills default to candidate until a human promotes them",
       "layer": "epistemic",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/brain.js LESSON_REQUIRED/FACT_REQUIRED; preset/plugins/clearai-kernel.js SaveSkill; ui/lib/fold.js promote_skill",
-        "tests": "test/brain.test.mjs",
+        "code": null,
+        "tests": null,
         "config": null,
-        "prompt": "clearai/skill-protocol",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "模型调用 SaveSkill",
       "input": "name, description, 正文",
       "output": "clear/skills/<name>/SKILL.md，status=candidate；人 promote_skill 后才 modelInvocable",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": "dsh-skill / dsh-skill-filesystem（读侧全走原生）",
-      "rationale": "模型写的 SOP 该由人过一道。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-skill-filesystem / dsh-tool-skill",
+      "rationale": "「少即是多」第二阶段交还宿主:技能走原生技能目录与 skill 工具,不再自带候选技能与采纳动作。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "memory-write",
-      "name": "记忆写入（字段校验 + 标题去重）",
-      "name_en": "Memory write with field contract and title dedup",
+      "name": "已删除:记忆写入（字段校验 + 标题去重）",
+      "name_en": "Removed: Memory write with field contract and title dedup",
       "layer": "epistemic",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/brain.js 字段契约; WriteMemory",
-        "tests": "test/brain.test.mjs",
+        "code": null,
+        "tests": null,
         "config": null,
-        "prompt": "clearai/memory-protocol",
-        "docs": "docs/epistemic-loop.zh-CN.md"
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "模型调用 WriteMemory",
       "input": "lesson 的五字段 / fact 的四字段",
       "output": "clear/memory/**；按标题跨文件去重",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": "dsh 原生 skill 目录承载读侧",
-      "rationale": "结构只有机制保证得了。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-agent-instructions",
+      "rationale": "「少即是多」第二阶段交还宿主:已确立的结论就是长期记忆(本体);项目说明走原生 PROJECT.md。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "model-routing",
@@ -1228,8 +1319,8 @@
       "authority": "none",
       "actor": "human",
       "source": {
-        "code": "preset/agent.cordis.yml command-compact（唯一的命令行）; preset/plugins/ 无 commands 贡献",
-        "tests": "test/preset-composition.test.mjs（阶段 5 新增）",
+        "code": "preset/agent.cordis.yml command-compact（唯一的命令行）",
+        "tests": "test/preset-composition.test.mjs",
         "config": null,
         "prompt": null,
         "docs": null
@@ -1240,7 +1331,7 @@
       "blocks_execution": false,
       "affected_by_autonomy": false,
       "native_dsh_alternative": "dsh-commands 注册表",
-      "rationale": "菜单是 DSH 原生的人类命令通道,应优先于自建协议。ClearAI 贡献五个**只读**命令(`/goal` `/plan` `/evidence` `/worldline` 现算状态窗,`/plan-review` 把呈审 steer 给模型);命令处理器没有变更通道,那是权威边界。",
+      "rationale": "菜单是 DSH 原生的人类命令通道。ClearAI 不再贡献自己的命令(第二阶段删除了 `/goal` `/plan` `/evidence` `/worldline` `/plan-review`):状态看界面,`/goal` 与 `/plan` 由原生接管。",
       "known_mismatch": null
     },
     {
@@ -1271,29 +1362,29 @@
     },
     {
       "id": "subrun-lifecycle",
-      "name": "子 run 统一生命周期（一次性句柄 + 一条收集通道）",
-      "name_en": "Unified sub-run lifecycle (one-shot handle, one collection channel)",
+      "name": "评估者子 run 的生命周期（一次性句柄 + 从子会话日志取回）",
+      "name_en": "Evaluator sub-run lifecycle (one-shot handle, recovery from the child log)",
       "layer": "harness",
       "status": "implemented",
       "hardness": "hard",
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js sweepScouts/sweepWorldlineExecutors; 宿主事件 subagent/end 与 agent/turn-stopping; ui/lib/fold.js case 'git/snapshot'",
-        "tests": "test/kernel.test.mjs（落定 / 认 id / 回合收尾）; test/host.test.mjs（事件折得进投影且可重放）",
+        "code": "preset/plugins/clearai-kernel.js dispatchSubRun; sweepEndedAudits; recoverVerdictFromChildSession",
+        "tests": "test/kernel.test.mjs（裁决落结算事实 / 先取回再落 unknown）",
         "config": "auditProvider=spawn, auditTimeoutMs",
         "prompt": "clearai/delegation",
         "docs": "docs/optimization/e2e-longruns.zh-CN.md"
       },
-      "trigger": "内核派任何子任务：侦察、世界线执行者、评估者、横评仲裁",
-      "input": "人格 + 任务书 + 工具面 + （评估者/仲裁）结构化输出 schema",
-      "output": "对应的事实变更（scout/settled、worldline/executed、audit/settled、fork/arbitrated）;回合结束时另落一笔工作区账本快照（git/snapshot），不判在飞、不写裁决",
+      "trigger": "内核派独立评估者",
+      "input": "人格 + 任务书 + 只读工具面 + 结构化输出 schema",
+      "output": "audit/settled(结论取回或如实落 unknown)",
       "blocks_execution": false,
       "affected_by_autonomy": false,
       "native_dsh_alternative": "subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构",
       "known_mismatch": null,
-      "notes": "四类子 run 共用一套启动与收集；差异只在人格、工具面与结果解释方式。结论送达模型 = 收集那一刻的返回值带上正文（不赌运行时的尽力投递）。",
-      "rationale": "子任务的生命周期由内核掌握，但**结束与存活的权威是宿主**：`subagents.listChildren`（`activity: running / inactive`）与 `subagent/end` 事件。结算有两条来源：本进程攥着的句柄，以及**从子会话自己的日志取回**（`recoverFromChildSession`——侦察与评估者同一条路）。宿主说已结束 ⇒ **先取回**，取不回才如实落 unknown，理由写清（`ended_uncollected` ≠ `lost`）——跳过取回就把「结束」误报成「死亡」，还诱导重新交付 ⇒ 同一次评估被重做。结算只报事实不给建议：要不要重试是计划层的决定。"
+      "notes": "侦察、世界线执行者与横评仲裁已随第二阶段删除,只剩评估者这一类子 run。",
+      "rationale": "子任务的生命周期由内核掌握,但**结束与存活的权威是宿主**:`subagents.listChildren` 与 `subagent/end`。宿主说已结束 ⇒ **先从子会话自己的日志取回**,取不回才如实落 unknown,理由写清(`ended_uncollected` ≠ `lost`)。结算只报事实不给建议:要不要重试是计划层的决定。"
     },
     {
       "id": "host-invariants",
@@ -1527,28 +1618,29 @@
     },
     {
       "id": "ledger-exploration-snapshots",
-      "name": "回合边界的工作区快照",
-      "name_en": "Workspace snapshot at the turn boundary",
+      "name": "已删除:回合边界的工作区快照",
+      "name_en": "Removed: Workspace snapshot at the turn boundary",
       "layer": "harness",
-      "status": "implemented",
-      "hardness": "hard",
+      "status": "removed",
+      "hardness": "deprecated",
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js snapshotWorkspace; ui/lib/fold.js writeCalls",
-        "tests": "test/kernel.test.mjs（回合边界快照）; test/host.test.mjs（writeCalls 计数）",
+        "code": null,
+        "tests": null,
         "config": null,
         "prompt": null,
-        "docs": "docs/verification-loop.zh-CN.md"
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "本会话调用过会改工作区的工具(write/edit/bash/pwsh),且工作区真的脏",
       "input": "—",
       "output": "一次账本提交 + mutation git/snapshot（只留台账）",
       "blocks_execution": false,
       "affected_by_autonomy": false,
-      "native_dsh_alternative": null,
-      "rationale": "账本原来只在**交付点**记一笔:那是刻意的偏离,理由写在代码里——每次写入的**归属**属于宿主的 fs 领域(bash 写的文件内核看不见),而交付点归属是内核真正知道的事实。但那条理由管的是粒度,不是**覆盖面**:立约之前(以及两次交付之间)写入的东西在账本里一个字都没有,`FileHistory` / `RestoreFile` 对它们无效,而「事后可恢复代替事前审批」这条安全论证恰恰建立在覆盖面之上(loop-philosophy §3)。回合边界那一笔只声明覆盖面,不声明归属:提交信息只说这是探索期快照。",
-      "known_mismatch": null
+      "native_dsh_alternative": "dsh-workspace-changes",
+      "rationale": "「少即是多」第二阶段交还宿主:回合边界快照随账本一起删除;每轮改了什么看宿主的改动卡片。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "ontology-lexicon-events",
@@ -1874,6 +1966,31 @@
       "native_dsh_alternative": "Cordis 的方法式取服务 ctx.get(name)（取不到只回 undefined;属性式访问在 fiber 非 ACTIVE 时当场抛 cannot get required service in inactive context）",
       "rationale": "「这一刻读不到」与「世上没有这件事」在界面上长得一模一样:降级抛出去会把一次跑了几分钟的评审整个作废,静默给 undefined 又会让空读数被读成「世上没有这件事」。所以读面一律走方法式取服务、取不到返回空态,并把降级这件事本身记成可观测的事实。只记在进程内还不够——**重启、换进程、离线复判都读不到它**,而这恰恰是最需要事后解释的一条;所以内核在 pre-step 把它落成账本事实,幂等靠内容寻址的 id,而不是靠「记得别写两次」。",
       "known_mismatch": null
+    },
+    {
+      "id": "artifact-path-exclusive",
+      "name": "产物路径不重叠(同一计划里两步不许声明同一个产物)",
+      "name_en": "Exclusive artifact paths (no two steps in a plan declare the same artefact)",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "preset/plugins/clearai-kernel.js validateSteps; normalizePath",
+        "tests": "test/kernel.test.mjs（产物路径不重叠）",
+        "config": null,
+        "prompt": "clearai/delegation",
+        "docs": "docs/verification-loop.zh-CN.md"
+      },
+      "trigger": "CreatePlan / AmendPlan",
+      "input": "步骤的 artifacts",
+      "output": "撞上已有步骤(作废的不算)的产物路径即拒",
+      "blocks_execution": true,
+      "affected_by_autonomy": false,
+      "native_dsh_alternative": null,
+      "known_mismatch": null,
+      "rationale": "并行探索交给原生子任务,而原生子任务共用一个工作目录;没有这一条,两条并行的路线会互相覆盖产出,准入收下的就不一定是那一步自己做出来的东西。"
     }
   ]
 }

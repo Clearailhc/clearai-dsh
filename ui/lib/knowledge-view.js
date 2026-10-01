@@ -170,12 +170,9 @@ function cardLines(state, derived, options, view) {
 	const issues = Array.isArray(derived?.lexiconIssues) ? derived.lexiconIssues : []
 	const lexicon = isPlainObject(derived?.lexicon) ? derived.lexicon : { terms: [], predicates: [] }
 	const plan = isPlainObject(derived?.activePlan) ? derived.activePlan : null
-	const forks = Array.isArray(derived?.forks) ? derived.forks : []
 	const inbox = Array.isArray(derived?.inbox) ? derived.inbox : []
 	const evidence = Array.isArray(state?.evidence) ? state.evidence : []
 	const facts = Array.isArray(state?.facts) ? state.facts : []
-	const materials = Array.isArray(state?.materials) ? state.materials : []
-	const scouts = Array.isArray(state?.scouts) ? state.scouts : []
 	const hostHealth = Array.isArray(state?.hostHealth) ? state.hostHealth : []
 	const graph = graphProjection(state)
 	const entityNodes = graph.nodes.filter((node) => node.layer === 'entity')
@@ -299,40 +296,6 @@ function cardLines(state, derived, options, view) {
 		if (plan.blocked !== undefined && plan.blocked !== null) push(`- 计划被拦:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次未过闸,停下等人)`)
 	}
 	if (derived?.hasOpenGate === true) push(`- 门(等人,${inbox.length} 件):${inbox.map((item) => `${item.kind}·${item.title}`).join(' / ')}`)
-	for (const fork of forks.slice(0, 3)) {
-		const ruler = fork.decide_by === null || fork.decide_by === undefined ? '(无尺子)' : `${fork.decide_by.metric}(${fork.decide_by.direction === 'min' ? '越小越好' : '越大越好'})`
-		push(`- 世界线(步 ${fork.step} · ${fork.phase}):${fork.question} — 裁决指标 ${ruler}`, 2)
-		for (const branch of fork.branches) {
-			const reading = branch.reading === null || branch.reading === undefined ? '未报读数' : `读数 ${branch.reading}${branch.validity === 'usable' ? '' : '(不可用)'}`
-			const executing = branch.execution ?? null
-			const runner =
-				executing === null
-					? '(执行者未派出)'
-					: branch.unreturned === true
-						? '(执行者未归 · 分叉已收口,结论不再回灌)'
-						: executing.ok === null
-							? '(执行中,结论会自动回灌)'
-							: executing.ok === true
-								? '(已回灌)'
-								: `(执行没跑成:${executing.note ?? 'unknown'})`
-			push(`  · [${branch.status}] ${branch.label}:${branch.approach}(${reading})${runner}`, 2)
-		}
-		if (fork.verdict !== null && fork.verdict !== undefined) push(`  → 已采纳 ${fork.verdict.winner},差额 ${fork.verdict.margin ?? '—'}${fork.verdict.tie === true ? ' · 并列' : ''}(算术裁决,不是谁说得响)`, 2)
-		if (fork.undecidable !== null && fork.undecidable !== undefined) push(`  → 算不出来(${fork.undecidable.code}):${fork.undecidable.reason} 停下问人,不许退化成随便挑一条。`, 2)
-		if (fork.abandoned === true) push(`  → 已放弃探索:${fork.abandonReason ?? ''}(留痕)`, 2)
-		if (fork.phase === 'exploring' || fork.phase === 'deciding') push('  · 这一步长着未收敛的分叉:先交付每条世界线,再 ConvergeFork;普通交付不能越过它。', 2)
-		if (fork.humanDecision !== null && fork.humanDecision !== undefined && !fork.settled) {
-			const decision = fork.humanDecision
-			push(
-				decision.action === 'adopt_branch'
-					? `  · **人已裁决**:采纳「${fork.branches.find((branch) => branch.id === decision.branch)?.label ?? decision.branch}」——跑 ConvergeFork 落实它(合并是内核的活)。`
-					: '  · **人已裁决**:放弃这条分叉——跑 AbandonFork 落实它(清理工作副本是内核的活)。',
-				2,
-			)
-		}
-		if (fork.merge?.provisional === true) push(`  · **临时采纳**(待复核):${fork.merge.decisionNote ?? '分差不足以称结论'}——它不是结论,是一个待复核的决定。`, 2)
-	}
-	if (forks.length > 3) push(`- (还有 ${forks.length - 3} 盘世界线未展开:面板「世界线」里有全部)`, 2)
 	if (evidence.length > 0) {
 		const last = evidence[evidence.length - 1]
 		push(`- 最近一条证据:${last.id} ${last.verdict}(${last.evaluator} · ${last.level})`, 1)
@@ -353,21 +316,6 @@ function cardLines(state, derived, options, view) {
 	}
 	if (conflicts.length > 3) push(`- (还有 ${conflicts.length - 3} 对冲突未展开:面板「本体」里有全部)`, 2)
 	if (goal !== null && Array.isArray(goal.unjudged) && goal.unjudged.length > 0) push(`- 结案留痕:有 ${goal.unjudged.length} 条假设没有被任何证据触及(${goal.unjudged.join(', ')})`)
-	{
-		const foreign = materials.filter((material) => material.source !== 'self')
-		const flying = scouts.filter((scout) => scout.conclusion === null || scout.conclusion === undefined)
-		if (foreign.length > 0 || flying.length > 0) {
-			push('- 资料面(外脑送来的观测 + 还在跑的侦察;全文在工作区文件里,要细节就 read):')
-			for (const material of foreign.slice(-3)) {
-				const note = String(material.note ?? '')
-				const excerpt = note.replace(/\s+/g, ' ').slice(0, 120)
-				const where = material.path === null || material.path === undefined ? `账本 ${material.ref}` : material.path
-				push(`  · [${material.source}] ${where}${material.bytes === null || material.bytes === undefined ? '' : `(${material.bytes} 字)`}:${excerpt}${note.length > 120 ? '…' : ''}`)
-			}
-			if (foreign.length > 3) push(`  · (还有 ${foreign.length - 3} 条更早的,全在 clear/knowledge/materials/ 下)`)
-			for (const scout of flying) push(`  · [在跑] 侦察 ${scout.id}${scout.trigger === null || scout.trigger === undefined ? '' : `(${scout.trigger})`}:结论回来时会作为观测送到你面前`)
-		}
-	}
 	push('- 提醒:进度、阶段、假设状态都是系统算出来的;你不能声明它们,只能通过交付与裁决推进。')
 	return lines
 }

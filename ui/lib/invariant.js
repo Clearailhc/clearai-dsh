@@ -50,9 +50,9 @@ function mutationsOf(event) {
 }
 
 /**
- * **伪步骤**:目标轴(`goal:<id>`)与世界线轴(`<forkId>:<branchId>`)的裁决也带 `step`,
- * 但它们本来就不在 `plan/created` 里登记。计划步骤 id 的取字纪律是字母/数字/下划线/短横
- * (见内核 `STEP_SCHEMA`),两条伪轴一律带冒号。
+ * **伪步骤**:目标轴(`goal:<id>`)的裁决也带 `step`,但它本来就不在 `plan/created` 里登记。
+ * 计划步骤 id 的取字纪律是字母/数字/下划线/短横(见内核 `STEP_SCHEMA`),伪轴一律带冒号
+ * (旧日志里的世界线轴 `<forkId>:<branchId>` 同样带冒号,照旧被识别为伪步骤)。
  */
 const isPseudoStep = (step) => String(step).includes(':')
 
@@ -84,14 +84,13 @@ function judge(before, mutations, admittedIn, fail) {
 	 */
 	const admitted = new Set(admittedIn ?? [])
 	const auditsSeen = new Set((Array.isArray(before?.audits) ? before.audits : []).map((item) => String(item.id)))
-	const scoutsSeen = new Set((Array.isArray(before?.scouts) ? before.scouts : []).map((item) => String(item.id)))
 	for (const mutation of mutations) {
 		if (mutation === null || typeof mutation !== 'object' || typeof mutation.t !== 'string') continue
 		const t = mutation.t
 		const step = mutation.step === undefined || mutation.step === null ? null : String(mutation.step)
 
 		// ── 契约①:引用完整性(查生产状态,不是另一份索引) ────────────────────
-		if (step !== null && !isPseudoStep(step) && hasAnyStep && ['evidence/recorded', 'observation/recorded', 'step/advanced', 'scout/dispatched'].includes(t)) {
+		if (step !== null && !isPseudoStep(step) && hasAnyStep && ['evidence/recorded', 'observation/recorded', 'step/advanced'].includes(t)) {
 			if (findStep(before, step) === undefined) fail(`引用完整性:${t} 指向不存在的步骤 ${step}——事实不能指向还没登记的东西`)
 		}
 
@@ -105,11 +104,7 @@ function judge(before, mutations, admittedIn, fail) {
 		if (t === 'audit/settled' && !auditsSeen.has(String(mutation.id))) {
 			fail(`结算必有派遣:audit/settled(${String(mutation.id)}) 之前没有 audit/dispatched`)
 		}
-		if (t === 'scout/settled' && !scoutsSeen.has(String(mutation.id))) {
-			fail(`结算必有派遣:scout/settled(${String(mutation.id)}) 之前没有 scout/dispatched`)
-		}
 		if (t === 'audit/dispatched' && mutation.id !== undefined && mutation.id !== null) auditsSeen.add(String(mutation.id))
-		if (t === 'scout/dispatched' && mutation.id !== undefined && mutation.id !== null) scoutsSeen.add(String(mutation.id))
 
 		// ── 契约④:升格有据(目标登记的门槛 vs 已落账的支持证据) ─────────────────
 		if (t === 'fact/promoted') {

@@ -48,7 +48,7 @@ console.log('\n【① 只有内核生产权威变更】')
 {
 	const producers = pluginFiles.filter((name) => MUTATION_LITERAL.test(readFileSync(join(PLUGINS_DIR, name), 'utf8')))
 	check('变更字面量只出现在 clearai-kernel.js', producers.length === 1 && producers[0] === 'clearai-kernel.js', producers.join(' '))
-	check('外脑/本体/提示词插件一件变更都不产', !['brain.js', 'ontology.js', 'prompts.js'].some((name) => producers.includes(name)))
+	check('本体/提示词插件一件变更都不产', !['ontology.js', 'prompts.js'].some((name) => producers.includes(name)))
 }
 
 console.log('\n【② 投影侧只有两个变更入口,且都被标记把守】')
