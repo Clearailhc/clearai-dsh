@@ -13,11 +13,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # 残留闸要在 PR 上查 base..HEAD 的账本提交,浅克隆里没有 base。
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           # CI 跑 engines 的下界(22)。发布那条流水线用 Node 24,因为 trusted publishing 要求
           # npm ≥ 11.5.1,而 Node 22 自带 10.9.8 —— 两处刻意不同,别顺手统一。
           node-version: '22'
+      - name: No ClearAI workspace residue
+        # 本仓库不是 ClearAI 工作区:不许跟踪 lab/ products/ .tmp-* 等,PR 里不许有内核账本提交
+        # (在仓库里跑会话时,账本会把工作区 `git add -A` 提交到当前分支)。见脚本文件头。
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$BASE_SHA" ]; then
+            node tools/check-workspace-residue.mjs --since "$BASE_SHA"
+          else
+            node tools/check-workspace-residue.mjs
+          fi
       - name: Install dependencies
         # `npm test` 的第一步是 `build-vendor`(esbuild),打包自检(build-package → buildVendor)
         # 也要它。0.2.1 之前 `test` 只是 `bash test/run.sh`(纯 Node、零依赖),所以这里一直没有

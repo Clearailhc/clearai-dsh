@@ -1,4 +1,0 @@
-# 升级前状态快照 2026-09-28T11:41:35+08:00
-宿主 dsh: 0.1.5-rc.1
-profile 依赖: {"clearai-dsh":"file:/tmp/clearai-release/dist/clearai-dsh"}
-profile 里 clearai-dsh 版本: 0.1.2
