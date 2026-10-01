@@ -21,7 +21,7 @@ It exists because of a self-diagnosis. After several rounds of fixing defects we
 | Which concepts and predicates exist in this domain, with what range and single-valuedness | **The ClearAI ledger** | Entries land only through named verbs (ten, implemented); the fold turns the six `ontology/*` events into `state.lexicon` — **there is no second vocabulary**. |
 | One fact's assertion (subject–predicate–object) | **The ClearAI ledger** (`fact/promoted.assertions`) | It lands **only at promotion**; old facts are never rewritten retroactively. |
 | Conflicts, the ontology graph, the entity graph, vocabulary health | **The projection (derived)** | All computed: a conflict is a paired reading rather than an object, the graphs are the output of `graphProjection()`, layout is a deterministic pure function, and coordinates never enter the ledger. |
-| `clear/ontology/domain.md` and the panel's ontology tab | **Rendering** | Not authority: the shelf is rewritten idempotently by the system and the panel only invokes verbs (the panel renders, and its edits go through the human gate with the same criteria as the model's verbs). |
+| `clear/ontology/domain.md` and the panel's Knowledge view | **Rendering** | Not authority: the shelf is rewritten idempotently by the system and the panel only invokes verbs (the panel renders, and its edits go through the human gate with the same criteria as the model's verbs). |
 
 ### One consequence we got wrong last batch
 

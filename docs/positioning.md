@@ -39,5 +39,5 @@ Most AI products optimize for fluent answers, task completion, or conversation h
 - **Evidence:** A recorded support for a claim, with provenance and limits.
 - **Fact:** A claim accepted for the current workspace under its recorded evidence and scope; bounded by its scope. A fact is the ontology's **content unit** — written as an assertion in the ontology's vocabulary, shelved at the moment of promotion.
 - **Ontology:** The whole of a project knowledge base's language and content: vocabulary (convention), established entries (experience), and their graphs. In product contexts it means the domain ontology by default; the process ontology is the plugin's internal flow and is not included.
-- **Ontology shelf:** The shelf view of the ontology's established content: every entry carries its boundary and support level; older, unstructured entries stay on the shelf, marked "unstructured".
+- **Knowledge (view):** The middle-column view (formerly the "ontology shelf"): one conclusion list grouped by how far it can be trusted, headed by the ontology and entity graphs; every row carries one line of basis and the condition under which it would not hold. The interface speaks only what people hear; see [Less is more](less-is-more.md).
 - **Bounded conclusion:** A conclusion stated with its confidence, conditions, alternatives, and remaining uncertainty.

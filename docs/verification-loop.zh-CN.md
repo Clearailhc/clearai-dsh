@@ -271,7 +271,7 @@ L3 以上从 registered 起,再改判定标准要留痕、保留旧版本、并�
 
 ## 7. 术语表
 
-全仓库统一用左列的叫法。右列是弃用的旧叫法,新写的文档、提示词和注释不再使用。
+全仓库统一用左列的叫法。右列是弃用的旧叫法,新写的文档、提示词和注释不再使用。面板与对人的汇报另用 [7.1](#71-对人的叫法) 那一列。
 
 | 统一叫法 | 英文 | 代码标识 | 弃用的旧叫法 |
 |---|---|---|---|
@@ -290,6 +290,29 @@ L3 以上从 registered 起,再改判定标准要留痕、保留旧版本、并�
 | 世界线 | Worldline | `ForkPlan` 的每条分支与其 worktree | 分支(只作「世界线的一条」用) |
 | 阶段 | Stage | 一张 Plan | 计划(指对象时仍可用) |
 | 升格门槛 | Promotion threshold | 目标文档 `promote_at_level` | 验收门槛 |
+
+### 7.1 对人的叫法
+
+上面那张表管的是**内部叫法**:代码、账本、提示词、给模型的契约与这些文档。**面板与对人的汇报**只用下面这一列——人不必先学会机制的词,才读得懂自己的研究。为什么分两层,见[少即是多](less-is-more.zh-CN.md)。
+
+| 内部叫法 | 对人的叫法 | English (for people) |
+|---|---|---|
+| 假设(命题) | 判断 | Claim |
+| 事实(已升格) | 已确立 | Established |
+| 假设 · 验证中且有支持证据 | 有依据,待复核 | Supported, awaiting review |
+| 假设 · 已提出,或验证中但没有证据 | 还没验 | Not yet tested |
+| 假设 · 有证据但都判不出 | 说不清 | Unclear |
+| 已推翻 | 被推翻 | Refuted |
+| 已替代 / 已撤回 | 归档(默认不显示,只留一个数) | Archived |
+| L0 / L1 / L2 / L3 / L4 | 推理 / 查过资料 / 复算 / 独立复核 / 人工确认 | Reasoning / Checked sources / Recomputed / Independently reviewed / Confirmed by a person |
+| 自判 | 自己判的 | Judged by the doer |
+| 支持 / 推翻 / 无法判定(裁决) | 支持 / 推翻 / 判不出 | Supports / Refutes / Could not tell |
+| 冲突 | 说法不一致 | Conclusions disagree |
+| 判定标准 | 怎样算完成 | Done when |
+| 本体货架、面板「本体」 | 知识 | Knowledge |
+| 本体图 / 实体图 | 概念图 / 实例图(界面上的切换钮仍写本体图 / 实体图) | Concept map / instance map |
+| 缺口 | 不对人显示(它是模型的待办) | — |
+| 计划、步骤、证据、事实的 id | 不对人显示 | — |
 
 ## 8. 后续候选
 
@@ -312,6 +335,6 @@ L3 以上从 registered 起,再改判定标准要留痕、保留旧版本、并�
 | 权威 | 代码声明（`preset/plugins/ontology.js`），装配期校验，随发布变 | 账本事件（`ontology/*`），随项目长 |
 | 能不能编辑 | **不能**：它是插件自己的后台流转结构，改它等于改代码并发布 | 可以：具名动词增删改（七个,已实现） |
 | 在投影里 | `state.ontology`（形状） | `state.lexicon`（词汇）与图投影 |
-| 展示给谁 | 模型读的章程（`clear/ontology/verification-loop.md`）；给人的是**状态形状**（世界树 / 命题分组） | 项目成员读的词汇表与图（`clear/ontology/domain.md`、面板「本体」） |
+| 展示给谁 | 模型读的章程（`clear/ontology/verification-loop.md`）；给人的是**状态形状**（世界树 / 「知识」格里按能信的程度分组的结论） | 项目成员读的词汇表与图（`clear/ontology/domain.md`、「知识」格的页眉图） |
 
 两者的联动点只有四处（登记校验 / 升格定型 / 冲突派生 / 废止传播），见领域本体 §8。

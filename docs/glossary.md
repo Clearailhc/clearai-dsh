@@ -47,8 +47,11 @@ The form of an assertion's object: statement, quantity (a number plus a unit), f
 ## conflict
 The paired reading the projection produces when two **un-retracted** confirmed facts fall on the same single-valued predicate, the same subject, and different objects. It is **surfaced, never adjudicated**: it retracts no side, decides nothing about which is true, and enters no gate; handling one goes through the existing human gate.
 
-## ontology shelf
-The shelf view of the ontology's established content: every entry carries its boundary and support level, and older unstructured entries stay on the shelf, marked as such. It is the renamed "fact shelf" — what sits on it did not change; what changed is that entries are read as content of the ontology rather than scattered conclusions.
+## Knowledge (view)
+The middle-column view (formerly the "ontology shelf" / "Ontology" tab): one conclusion list in which facts and claims are grouped by how far they can be trusted (established / supported, awaiting review / not yet tested / unclear / refuted), headed by the ontology and entity graphs. Every row carries one line of basis and the condition under which it would not hold. Layout: §9 of [Domain ontology](domain-ontology.md).
+
+## what people hear
+The layer of words that the panel and reports to people use exclusively: claim, established, supported awaiting review, reasoning / checked sources / recomputed / independently reviewed / confirmed by a person… Internal names (the rest of this glossary, code, ledger, the model's contract) are unchanged. Full table: §7.1 of [Verification loop](verification-loop.md); why two layers: [Less is more](less-is-more.md).
 
 ## ontology graph
 The graphical reading of the domain ontology: concepts are nodes, `is_a` and predicates are edges. It answers what this language **may** express — which is why it can exist before any fact does (a language before its sentences). It is drawn apart from the [entity graph](#entity-graph): their edges look alike, but one is a **declaration** and the other a **claim**.

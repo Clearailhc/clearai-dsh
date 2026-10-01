@@ -9,6 +9,7 @@
 | 保留历史 | 只追加的会话日志与 `fold.js`；`refine`/`void` 变更；supersession 字段；git 世界线引用与恢复提交；`FileHistory`/`RestoreFile` 单文件恢复；领域词汇的版本化修订与黏性废止（`ontology/term_deprecated` 没有复活这条路） | `test/kernel.test.mjs` 的保留历史/世界线/恢复断言、`test/domain-language.test.mjs` 的修订留痕与废止黏性；已实现。 |
 | 图是投影，不是存储 | `ui/lib/domain-language.js`（`graphProjection` / `deriveConflicts` / `lexiconHealth`）；`ui/lib/fold.js` 的 `state.lexicon` 与 `view().lexicon`；布局是确定性纯函数 | `test/domain-language.test.mjs`（同账本同图、冲突只暴露、旧账本兼容）；折法层、十个动词与货架都已实现；面板已渲染本体图 / 实体图 / 词条卡 / 冲突行 / 词汇维护区与 Inspector，编辑抽屉（登记 / 修订 / 废止，经人门通道、与模型动词同一份判据）也已接——见[开发计划](optimization/domain-ontology-plan.zh-CN.md)阶段 D–E。 |
 | 语义变化必须换 id | `applyLexiconMutation` 只接受展示信息修订；`parent` / `range` / `functional` 不走修订路径 | `test/domain-language.test.mjs`（改语义必须废止 + 新注册；废止黏性）；折法层已实现。 |
+| 感知有预算 | `ui/lib/client.js` 的「知识」格（`conclusionsOf`：一张结论清单按能信的程度分组；不渲染缺口与内部 id）与产物格；`ui/lib/knowledge-view.js` 的卡片去重；内核 `finish()` 不把卡拼进工具结果；提示词交付段的汇报口径 | `test/client.test.mjs`（分组、页眉图、无机制词）、`test/kernel.test.mjs`（工具结果不带卡、卡上无运行档）；面板与卡已实现。汇报口径是**偏好**（只在提示词里），不是机制。 |
 
 ## 权威边界
 

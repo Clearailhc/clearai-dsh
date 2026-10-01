@@ -99,7 +99,7 @@
 | `model-routing` | 模型路由与切换（宿主原生，ClearAI 不持有） | 宿主 | 已实现 | 原生 | 无 | host | 否 | 否 | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `host-read-face-degradation` | 宿主读面降级（取不到就空态,不抛） | 宿主 | 已实现 | 硬边界 | 权威 | system | 否 | 否 | `ui/lib/index.js sessionsOf` |
 | `commands-menu` | 人类 `/` 命令菜单 | 交互 | 已实现 | 原生 | 无 | human | 否 | 否 | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
-| `ontology-panel-graph` | 面板「本体」：渲染 + 经人门通道的词条增删改（画布不做拖拽连线） | 交互 | 已实现 | 建议 | 无 | human | 否 | 否 | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
+| `ontology-panel-graph` | 面板「知识」：结论清单 + 页眉图渲染 + 经人门通道的词条增删改（画布不做拖拽连线） | 交互 | 已实现 | 建议 | 无 | human | 否 | 否 | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
 
 ## 逐条明细
 
@@ -613,10 +613,10 @@
 - **输出**：一段状态卡文本
 - **阻断执行**：否 · **受 autonomy 影响**：否
 - **原生替代**：无
-- **理由**：让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。
+- **理由**：让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。卡只走这一条路:工具结果的 message 只说这一下做成了什么,不再附整张卡(结构化字段 card 仍在;CheckPlan 以卡为正文)。卡上一个数一种意思:写「计划 a/b 步 · 判断已确立 x/y」,不写完成度百分比。
 - **代码**：ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice
 - **测试**：test/kernel.test.mjs, test/host.test.mjs · **配置**：runtimeCard=true
-- **提示词**：clearai/state-protocol · **文档**：docs/loop-philosophy.zh-CN.md
+- **提示词**：clearai/state-protocol · **文档**：docs/loop-philosophy.zh-CN.md; docs/less-is-more.zh-CN.md
 
 ### `prompt-sections` · 提示词段（24 段定义 / 23 段在场）
 
@@ -907,7 +907,7 @@
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/domain-language · **文档**：docs/domain-ontology.zh-CN.md
 
-### `ontology-panel-graph` · 面板「本体」：渲染 + 经人门通道的词条增删改（画布不做拖拽连线）
+### `ontology-panel-graph` · 面板「知识」：结论清单 + 页眉图渲染 + 经人门通道的词条增删改（画布不做拖拽连线）
 
 - **层**：交互 · **状态**：已实现 · **强度**：建议 · **权威**：无 · **责任方**：human
 - **触发**：人在面板的词条行 / 抽屉里提交人门动作（登记 / 修订 / 废止）

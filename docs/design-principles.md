@@ -30,6 +30,10 @@ Both the ontology graph and the entity graph are computed from the same fold: `g
 
 Domain vocabulary may revise display information (name, gloss, aliases), but a change to **meaning, subject domain, range or single-valuedness** must deprecate the old entry and register a new one. A stable id whose meaning drifts silently through history rewrites every old fact in today's terms — that is a false statement, not a refactor.
 
+## Perception has a budget
+
+Correct mechanisms do not make a readable result. The panel and reports answer only the person's four questions (what can I trust right now, what was refuted or is still unclear, what has all this grown into, what do I need to do); everything else is process, there when opened. The interface speaks only what people hear ([Verification loop](verification-loop.md) §7.1), with no internal ids or mechanism words; on the model's side, each fact is injected once. Reasons and checks: [Less is more](less-is-more.md).
+
 ## Consequences
 
 These principles imply one authoritative loop ledger, derived state rather than a second mutable state store, explicit human gates where required, and a strict separation between host safety invariants and preset epistemic behavior. See `soul-map.md` for the implementation map and current status.

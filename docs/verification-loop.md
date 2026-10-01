@@ -267,7 +267,7 @@ reading, not a gate".
 
 ## 7. Glossary
 
-The whole repository uses the left column. The right column lists deprecated older names, which new documents, prompts and comments no longer use.
+The whole repository uses the left column. The right column lists deprecated older names, which new documents, prompts and comments no longer use. The panel and reports to people use the column in [7.1](#71-what-people-hear) instead.
 
 | Canonical | English | Code identifier | Deprecated older names |
 |---|---|---|---|
@@ -286,6 +286,29 @@ The whole repository uses the left column. The right column lists deprecated old
 | 世界线 | Worldline | each branch of `ForkPlan` and its worktree | 分支 (only for "one of the worldlines") |
 | 阶段 | Stage | one Plan | 计划 (still usable when referring to the object) |
 | 升格门槛 | Promotion threshold | goal document `promote_at_level` | 验收门槛 |
+
+### 7.1 What people hear
+
+The table above governs **internal names**: code, ledger, prompts, the model's contract and these documents. **The panel and reports to people** use only the column below, so nobody has to learn the mechanism's vocabulary before they can read their own research. Why two layers: see [Less is more](less-is-more.md).
+
+| Internal name | What people hear (zh) | What people hear (en) |
+|---|---|---|
+| Hypothesis (proposition) | 判断 | Claim |
+| Fact (promoted) | 已确立 | Established |
+| Hypothesis · testing, with supporting evidence | 有依据,待复核 | Supported, awaiting review |
+| Hypothesis · proposed, or testing with no evidence | 还没验 | Not yet tested |
+| Hypothesis · evidence exists but all inconclusive | 说不清 | Unclear |
+| Refuted | 被推翻 | Refuted |
+| Superseded / retracted | 归档 (hidden by default, only a count remains) | Archived |
+| L0 / L1 / L2 / L3 / L4 | 推理 / 查过资料 / 复算 / 独立复核 / 人工确认 | Reasoning / Checked sources / Recomputed / Independently reviewed / Confirmed by a person |
+| Self-judged | 自己判的 | Judged by the doer |
+| Support / refute / inconclusive (verdicts) | 支持 / 推翻 / 判不出 | Supports / Refutes / Could not tell |
+| Conflict | 说法不一致 | Conclusions disagree |
+| Criteria | 怎样算完成 | Done when |
+| Ontology shelf, the panel's "Ontology" view | 知识 | Knowledge |
+| Ontology graph / entity graph | 概念图 / 实例图 (the toggle still reads 本体图 / 实体图) | Concept map / instance map |
+| Gap | not shown to people (it is the model's to-do) | — |
+| Plan, step, evidence and fact ids | not shown to people | — |
 
 ## 8. Candidates for later
 
@@ -309,7 +332,7 @@ which transition, who judges at each level. It must be read apart from the other
 | Authority | A code declaration (`preset/plugins/ontology.js`), validated at assembly, changeable per release | Ledger events (`ontology/*`), growing with the project |
 | Editable? | **No**: it is the plugin's own backend flow; changing it means changing code and shipping | Yes: named verbs add, revise and deprecate (seven of them, implemented) |
 | In the projection | `state.ontology` (the shape) | `state.lexicon` (the vocabulary) plus the graph projection |
-| Shown to | The charter the model reads (`clear/ontology/verification-loop.md`); a human sees the **state shape** (worldlines / proposition groups) | The vocabulary and graphs the project reads (`clear/ontology/domain.md`, the panel's ontology view) |
+| Shown to | The charter the model reads (`clear/ontology/verification-loop.md`); a human sees the **state shape** (worldlines / conclusions grouped by how far they can be trusted in the Knowledge view) | The vocabulary and graphs the project reads (`clear/ontology/domain.md`, the header graph of the Knowledge view) |
 
 The two touch at exactly four points (shape checked at registration / fixed at promotion / conflicts derived /
 deprecation propagated); see Domain ontology §8.

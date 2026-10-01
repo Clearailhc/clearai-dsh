@@ -114,7 +114,7 @@ real CLI and pnpm, and asserts the sixteen mechanical facts (dependency, bundles
 host row, roster root inside the package, shipped roots intact, preset self-contained, no machine paths).
 Then, in the browser it prints:
 
-1. a session opens on the **ClearAI** preset and the middle column shows **Deliverables / Facts**;
+1. a session opens on the **ClearAI** preset and the middle column shows **Deliverables / Knowledge**;
 2. the right sidebar offers **Worldlines** and **Skills · Memory**;
 3. send one small task (e.g. "copy `input.md` to `products/echo.md` and set a goal for it");
 4. the ledger records `goal/set` and an audit pair, and `products/echo.md` exists;

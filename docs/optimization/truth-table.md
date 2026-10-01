@@ -99,7 +99,7 @@ This section is exported from code, not written by hand:
 | `model-routing` | Model routing and switching, host-native and not owned by ClearAI | Host | Implemented | Native | None | host | no | no | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `host-read-face-degradation` | Host read faces degrade to empty state instead of throwing | Host | Implemented | Hard boundary | Authoritative | system | no | no | `ui/lib/index.js sessionsOf` |
 | `commands-menu` | Human `/` command menu | UX | Implemented | Native | None | human | no | no | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
-| `ontology-panel-graph` | Ontology panel: rendering plus entry editing over the human gate (no canvas drag-to-connect) | UX | Implemented | Advisory | None | human | no | no | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
+| `ontology-panel-graph` | Knowledge panel: conclusion list and header graph, plus entry editing over the human gate (no canvas drag-to-connect) | UX | Implemented | Advisory | None | human | no | no | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
 
 ## Detail
 
@@ -613,10 +613,10 @@ This section is exported from code, not written by hand:
 - **Output**: 一段状态卡文本
 - **Blocks execution**: no · **Affected by autonomy**: no
 - **Native alternative**: none
-- **Rationale**: 让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。
+- **Rationale**: 让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。卡只走这一条路:工具结果的 message 只说这一下做成了什么,不再附整张卡(结构化字段 card 仍在;CheckPlan 以卡为正文)。卡上一个数一种意思:写「计划 a/b 步 · 判断已确立 x/y」,不写完成度百分比。
 - **Code**: ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice
 - **Tests**: test/kernel.test.mjs, test/host.test.mjs · **Config**: runtimeCard=true
-- **Prompt**: clearai/state-protocol · **Docs**: docs/loop-philosophy.zh-CN.md
+- **Prompt**: clearai/state-protocol · **Docs**: docs/loop-philosophy.zh-CN.md; docs/less-is-more.zh-CN.md
 
 ### `prompt-sections` · Prompt sections (24 defined / 23 in place)
 
@@ -907,7 +907,7 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/domain-language · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `ontology-panel-graph` · Ontology panel: rendering plus entry editing over the human gate (no canvas drag-to-connect)
+### `ontology-panel-graph` · Knowledge panel: conclusion list and header graph, plus entry editing over the human gate (no canvas drag-to-connect)
 
 - **Layer**: UX · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: human
 - **Trigger**: 人在面板的词条行 / 抽屉里提交人门动作（登记 / 修订 / 废止）

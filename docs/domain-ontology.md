@@ -49,8 +49,8 @@ So: **terms do not need verification; sentences written with terms do.**
 The process ontology is not project knowledge — it is the **plugin's own backend flow structure**: which objects exist, who may push which transition, who judges at which level. Three boundaries follow:
 
 - **It does not enter the ledger**: the ledger records **instances** (`goal/set`, `step/advanced`, `fact/promoted`, …), not the machine. Recording the machine in a project ledger would turn a plugin upgrade into a rewrite of project history, and would hand the runtime the ability to rewrite the rules of knowing — exactly what "inexpressible beats unviolatable" exists to prevent. The machine changes by **release**, `STATE_VERSION` guards its shape, and the shelf states the current version plainly.
-- **It is not editable at runtime**: changing the machine means changing code and declaration (`preset/plugins/ontology.js`), through assembly-time validation and a release — never through the ontology tab.
-- **It is shown as a state shape, not as a document to maintain**: the user sees steps, lanes, gates and convergence in the worldlines tree, and sees propositions grouped by ontology state in Propositions and facts — that is what the process ontology looks like on screen. The `clear/ontology/verification-loop.md` shelf is first of all the **charter the model reads** (it must write criteria and deliveries against these objects) and only secondly a reference for a human who wants to read deeply.
+- **It is not editable at runtime**: changing the machine means changing code and declaration (`preset/plugins/ontology.js`), through assembly-time validation and a release — never through the Knowledge view.
+- **It is shown as a state shape, not as a document to maintain**: the user sees steps, lanes, gates and convergence in the worldlines tree, and sees conclusions grouped by how far they can be trusted in the Knowledge view — that is what the process ontology looks like on screen. The `clear/ontology/verification-loop.md` shelf is first of all the **charter the model reads** (it must write criteria and deliveries against these objects) and only secondly a reference for a human who wants to read deeply.
 
 In one line: **the domain ontology answers "in what language is your knowledge written" (editable, ledgered, backed by a basis); the process ontology answers "where does your work stand right now" (release-level, not editable, invisible rules with visible states).**
 
@@ -408,8 +408,8 @@ flowchart LR
 | `clear/ontology/domain.md` | The domain vocabulary (concepts / predicates / basis / deprecations + Mermaid) | The kernel, idempotently (implemented) |
 | `clear/knowledge/facts/INDEX.md` | Promoted facts (with assertions and boundaries) | The kernel, idempotently |
 | The runtime card | Vocabulary counts, typed-fact ratio, one conflict line | The fold, `renderCard` |
-| The panel's propositions-and-facts view | Facts and assertion chips | The projection, `view().facts` |
-| The panel's ontology view | Ontology graph / entity graph / entry detail | The projection, `view().lexicon` (rendered; edits go through the human gate) |
+| The Knowledge view's conclusion list | Facts and claims (grouped by how far they can be trusted), assertion chips | The projection, `view().facts` and `view().goal.hypotheses` |
+| The Knowledge view's header graph | Ontology graph / entity graph / entry detail | The projection, `view().lexicon` (rendered; edits go through the human gate) |
 
 ### 8.4 Where it stands today
 
@@ -419,45 +419,50 @@ flowchart LR
 | Assertions fold into facts with `fact/promoted` | Implemented (fold layer) |
 | Conflict derivation / vocabulary health / graph projection | Implemented (`test/domain-language.test.mjs`) |
 | The ten verbs, the `SetGoal` / `CloseGoal` wiring, the `domain.md` shelf, the `clear/ontology/` write protection | Implemented |
-| The panel's ontology view (ontology graph / entity graph / entry cards / conflict row / vocabulary maintenance zone) | Implemented |
+| The Knowledge view (conclusion list / header graph / entry cards / disagreeing conclusions / vocabulary maintenance zone) | Implemented |
 | The editing drawer (register a concept / predicate, plus revise / deprecate on an entry row, over the human-gate route with the same criteria as the model's verbs) | Implemented (no canvas drag-to-connect: dragging and zooming produce no ledger event) |
 
 **In one line**: the state machines answer "how things change", the ontology answers "in what language knowledge is written", and the graphs are the **read surface** folded out of both — all three layers exist, and only the middle layer's producers are still unplugged.
 
 ## 9. Interface
 
-**The ontology does not get a tab of its own — it grows into the middle column's facts view** (`clearai-facts` in `conversation.view`).
+**The ontology does not get a tab of its own — it grows into the middle column's Knowledge view** (`clearai-facts` in `conversation.view`).
 
-Why: facts are that view's main question ("what do we know, and on what basis"), and the ontology is their **language and map**. Split across two columns, the reader has to carry context between them — and the right rail is only ~300px, where a graph is crippled. There is also a harder precedent: the "progress" tab was removed precisely because "the fewer tabs, the less each one has to be explained".
+Why: this view answers the person's first three questions: what can I trust right now, what was refuted or is still unclear, and what has all this grown into (see §2 of [Less is more](less-is-more.md)). The first two are epistemology's answer (the conclusion list); the third is ontology's answer (the graph). Split across two columns, the reader has to carry context between them, and the right rail is only ~300px, where a graph is crippled. There is also a harder precedent: the "progress" tab was removed precisely because "the fewer tabs, the less each one has to be explained".
+
+This view speaks only **what people hear** ([Verification loop](verification-loop.md) §7.1): no L0–L4, self-judged, threshold, promotion, proposition, or any internal id.
 
 ### 9.1 Layout (top to bottom)
 
 | Block | When it appears | What it holds |
 |---|---|---|
-| Conflict line | **only when conflicts exist** | One pointer: predicate · subject → both sides' facts and values; click to open the pair |
-| **Graph band** | resident once vocabulary exists (one click collapses it; the choice is remembered) | Ontology graph ｜ entity graph toggle (~200px, zoom and pan); **clicking a node filters the shelves below by concept**; `⤢` expands to panorama |
-| Filter line | **only while a filter is active** | Filtered by "X": N/M · clear — N/M tells the truth, unmatched rows never vanish silently |
-| Confirmed facts | resident | The existing shelf (unchanged) + **assertion chips** that expand a term card in place |
-| Propositions | resident | The existing groups (unchanged) + assertion chips (marked "not yet promoted") |
-| Vocabulary maintenance | collapsed by default | Term table, health, deprecations, "open the shelf"; **auto-expands when there are 0 facts and 0 propositions but vocabulary exists** (a language before its sentences needs somewhere to stand) |
+| Conclusions disagree | **only when conflicts exist** | Each side in its own conclusion's words; which one stays is a person's call (through the human gate). The affected rows are marked too |
+| **Header graph** | resident once vocabulary exists (one click collapses it) | Ontology graph ｜ entity graph toggle (~200px, zoom and pan); **draws only things in the domain**: value forms (`statement` / `quantity` / `reference` …) are grammar, not nodes; **clicking a node filters the list below by concept**; `⤢` expands to panorama |
+| Filter line | **only while a filter is active** | Only items about "X": N/M · clear — N/M tells the truth, unmatched rows never vanish silently |
+| **Conclusion list** | resident | Facts and claims as one list, grouped by how far they can be trusted: **established / supported, awaiting review / not yet tested / unclear / refuted**, empty groups hidden; one sentence per row with one line of basis below (the kind of evidence, and whether the doer judged it); superseded and withdrawn items leave only an archive count |
+| An opened row | when a row is clicked | When it would not hold, each piece of evidence (plain words, no ids), assertion chips (expanding a term card in place), open the original, see the process |
+| Vocabulary maintenance | collapsed by default | Term table, health, deprecations, "open the shelf"; **auto-expands when there are no conclusions yet but vocabulary exists** (a language before its sentences needs somewhere to stand) |
 
-### 9.2 Six "no explosion" contracts
+**Not in this view**: gaps (the model's to-do; they stay on the runtime card), plans and steps (process; in the worldlines tree), the level-transition diagram (process; removed).
 
-1. **Zero cost**: with no vocabulary, this view is **pixel-for-pixel what it was**. The conflict line, the band, the chips and the maintenance block each exist only when there is something to say.
-2. **Confidence ordering**: confirmed facts on top, propositions in flight in the middle, language (maintenance) at the bottom. Reference material never blocks conclusions.
-3. **The graph is both a face and a tool**: the band is this view's **head** (like a header — it does not compete with the facts), and its nodes *are* the index: clicking a concept node filters, replacing a row of text chips.
-4. **Expand in place, never jump away**: an assertion chip expands its term card in situ (gloss / basis / subject domain / range / single-valuedness / uses; actions: filter by this concept, see it in the graph); conflicts are marked on the **affected fact row**. The only cross-view jump kept is "see this step in the worldlines".
-5. **Only exceptions interrupt**: conflicts and health warnings each get one pointer line; vocabulary maintenance lives in the collapsed block.
-6. **Filtering is visible, clearable, and honest**: one status line plus `✕`, with N/M stating how many rows did not match (including older, untyped facts).
+### 9.2 Seven "no explosion" contracts
 
-### 9.3 The two graphs in the band
+1. **Zero cost**: with no vocabulary there is no graph, conflict line, chips or maintenance block, only the conclusion list. Each block exists only when there is something to say.
+2. **Confidence ordering**: what can be trusted comes first, refuted claims come last (kept, never deleted), language (maintenance) at the bottom. Reference material never blocks conclusions.
+3. **The graph is both a face and an index**: the graph is this view's **head** (like a header; it does not compete with the conclusions), and its nodes *are* the index: clicking a concept node filters. It answers "what has all this grown into"; it is a result, not process.
+4. **Expand in place, never jump away**: conclusion rows and assertion chips expand in situ; conflicts are marked on the **affected conclusion row**. The only cross-view jump kept is "see the process" (that step in the worldlines tree).
+5. **Only exceptions interrupt**: disagreeing conclusions and health warnings each take one line; gaps never appear here.
+6. **Filtering is visible, clearable, and honest**: one status line plus clear, with N/M stating how many rows did not match (including older, untyped facts).
+7. **Plain words**: only what people hear; no evidence ids, plan ids, level codes or state codes on screen.
+
+### 9.3 The two graphs in the header
 
 One toggle, sharing the same deterministic layout (`graphProjection()`: the same ledger always yields the same picture):
 
 - **Ontology graph** (default): concepts + `is_a` + predicates — **what this language looks like**. Clean and structural, which is why it is the face.
 - **Entity graph**: instances + assertion edges, coloured by support level, conflicts in red — **what has actually been verified**. Switch to it to read the situation.
 
-The panorama (`⤢`) expands in place to nearly the whole view: the shelves step aside, the **node cap is lifted** (the band draws only the first 40 nodes and says so), and a "fit" button frames the whole graph. Editing lands in this panorama in stage E.
+The panorama (`⤢`) expands in place to nearly the whole view: the conclusion list steps aside, the **node cap is lifted** (the header graph draws only the first 40 nodes and says so), and a "fit" button frames the whole graph. Editing lands in this panorama in stage E.
 
 ### 9.4 The read-only / editable boundary
 

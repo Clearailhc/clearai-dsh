@@ -151,13 +151,13 @@ node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
 
 中栏两格可切：**产物**与**知识**。右栏：**世界树**与**外脑**。
 
-**知识**——只回答一个问题：现在能信什么。一张结论清单，按能信的程度分组：**已确立 / 有依据，待复核 / 还没验 / 说不清 / 被推翻**；每条一句话，下面一句「凭什么」（推理、查过资料、复算、独立复核、人工确认——自己判的会如实写出来）。点开一条才看它在什么情况下不成立、逐条依据和产生它的那一步。两条结论说法不一致时，它会顶到最前面——留哪条由你决定。概念图默认收起，点开才画：本体图（你的领域长什么样）与实体图（已经找到了什么）一键切换，点节点或边打开知识详情。为什么这样取舍，见[少即是多](docs/less-is-more.zh-CN.md)。
+**知识**——回答两件事：现在能信什么，这些加起来长成了什么。页眉是一张图：本体图（你的领域长什么样）与实体图（已经找到了什么）一键切换，点节点按概念筛选下面的清单。下面是一张结论清单，按能信的程度分组：**已确立 / 有依据，待复核 / 还没验 / 说不清 / 被推翻**；每条一句话，下面一句「凭什么」（推理、查过资料、复算、独立复核、人工确认——自己判的会如实写出来）。点开一条才看它在什么情况下不成立、逐条依据和产生它的那一步。两条结论说法不一致时，它会顶到最前面——留哪条由你决定。为什么这样取舍，见[少即是多](docs/less-is-more.zh-CN.md)。
 
 <picture>
   <img src="docs/shots/zh/jepa-band.png" alt="本体图带：本体图与实体图切换" width="820">
 </picture>
 
-*点开的概念图——本体图与实体图共用同一份确定性投影，同一份账本永远得到同一张图；素材来自一场真实会话（21 概念 · 9 谓词）。*
+*页眉图——本体图与实体图共用同一份确定性投影，同一份账本永远得到同一张图；素材来自一场真实会话（21 概念 · 9 谓词）。截图是改版前的界面。*
 
 <picture>
   <img src="docs/shots/zh/jepa-inspector.png" alt="知识 Inspector：定义、关系、断言、证据链" width="820">
@@ -183,7 +183,7 @@ node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
 
 ## 文档
 
-- [定位](docs/positioning.zh-CN.md) · [领域本体设计](docs/domain-ontology.zh-CN.md)
+- [定位](docs/positioning.zh-CN.md) · [领域本体设计](docs/domain-ontology.zh-CN.md) · [少即是多](docs/less-is-more.zh-CN.md)
 - [认识论循环](docs/epistemic-loop.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md) · [循环哲学](docs/loop-philosophy.zh-CN.md)
 - [设计原则](docs/design-principles.zh-CN.md) · [灵魂映射](docs/soul-map.zh-CN.md) · [术语表](docs/glossary.zh-CN.md)
 - [知识原生循环执行账本](docs/optimization/knowledge-native-loop.zh-CN.md)（本轮：分诊 / 预检 / 知识门 / 图 / Inspector）

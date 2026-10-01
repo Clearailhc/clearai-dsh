@@ -150,13 +150,13 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 The middle column has two switchable views: **Deliverables** and **Knowledge**. The right sidebar: **Worldlines** and **External Brain**.
 
-**Knowledge** — answers one question: what can you trust right now. One list of conclusions, grouped by how far you can trust them: **established / supported, awaiting review / not yet tested / unclear / refuted**. Each is one sentence with one line of "on what basis" (reasoning, checked sources, recomputed, independently reviewed, confirmed by a person — and whether the doer judged it themselves). Open one to see when it would stop holding, each piece of evidence, and the step that produced it. When two conclusions disagree, that rises to the top — which one stays is your call. The concept map stays collapsed until you open it: the ontology graph (what your domain looks like) and the entity graph (what has been found) toggle with one click, and a node or edge opens its details. The reasoning behind these cuts is in [Less is more](docs/less-is-more.zh-CN.md) (Chinese).
+**Knowledge** — answers two things: what you can trust right now, and what it all adds up to. The header is a graph: the ontology graph (what your domain looks like) and the entity graph (what has been found) toggle with one click, and clicking a node filters the list below by that concept. Below it, one list of conclusions grouped by how far you can trust them: **established / supported, awaiting review / not yet tested / unclear / refuted**. Each is one sentence with one line of "on what basis" (reasoning, checked sources, recomputed, independently reviewed, confirmed by a person — and whether the doer judged it themselves). Open one to see when it would stop holding, each piece of evidence, and the step that produced it. When two conclusions disagree, that rises to the top — which one stays is your call. The reasoning behind these choices is in [Less is more](docs/less-is-more.md).
 
 <picture>
   <img src="docs/shots/zh/jepa-band.png" alt="The graph band: ontology graph and entity graph" width="820">
 </picture>
 
-*The opened concept map — the ontology graph and the entity graph share one deterministic projection, so the same ledger always yields the same picture (captured from a real session: 21 concepts, 9 predicates).*
+*The header graph — the ontology graph and the entity graph share one deterministic projection, so the same ledger always yields the same picture (captured from a real session: 21 concepts, 9 predicates; the screenshot predates the redesign).*
 
 <picture>
   <img src="docs/shots/zh/jepa-inspector.png" alt="Knowledge inspector: definition, relations, assertions, evidence chain" width="820">
@@ -182,7 +182,7 @@ The middle column has two switchable views: **Deliverables** and **Knowledge**. 
 
 ## Documentation
 
-- [Positioning](docs/positioning.md) · [Domain ontology design](docs/domain-ontology.md)
+- [Positioning](docs/positioning.md) · [Domain ontology design](docs/domain-ontology.md) · [Less is more](docs/less-is-more.md)
 - [Epistemic loop](docs/epistemic-loop.md) · [Verification ontology](docs/verification-loop.md) · [Loop philosophy](docs/loop-philosophy.md)
 - [Design principles](docs/design-principles.md) · [Soul map](docs/soul-map.md) · [Glossary](docs/glossary.md)
 - [Knowledge-native loop ledger](docs/optimization/knowledge-native-loop.zh-CN.md) (this round: triage / preflight / knowledge gate / graph / inspector; zh-CN)

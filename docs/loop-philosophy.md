@@ -19,7 +19,7 @@ A conclusion is trustworthy exactly when it has survived a test that could have 
 
 ---
 
-## 1. Six principles that land in mechanisms
+## 1. Seven principles that land in mechanisms
 
 ### P1 · Mechanism over exhortation
 
@@ -88,6 +88,22 @@ Ordinary Q&A never makes that commitment and never enters this mode — the **ze
 
 **Test**: if a discipline only works when the user or model remembers it, it has not entered the task's completion function; either wire it to a structural test, or admit it is a preference.
 
+### P7 · Perception has a budget
+
+**Correct mechanisms do not make a readable result.** When the two answers that matter, why a conclusion can be trusted and what the conclusions add up to, are buried under layer after layer of process information, trustworthy machinery still yields an unreadable wall. A person has four questions about a piece of research: what can I trust right now, what was refuted or is still unclear, what has all this grown into, and what do I need to do (see [Less is more](less-is-more.md)).
+
+| Layer | When it appears | What it holds |
+|---|---|---|
+| Results | Always | The conclusion list (grouped by how far it can be trusted), the header graph, the files you got |
+| Needs you | Only when a person must decide | Gates: approve a plan, choose a route, settle disagreeing conclusions, review a refuted fact |
+| Process | Only when opened | Evidence lines, plans and steps, route comparisons, vocabulary maintenance, file history |
+
+The model has a budget too, and whatever it reads it repeats: **inject a fact once** (the runtime card is injected by the pre-step when state changes; tool results no longer carry it); **one number, one meaning** on the card; rules live in mechanisms and are **not restated in every reply**; when speaking to people, mechanism words are **translated into theirs** ([Verification loop](verification-loop.md) §7.1).
+
+Landing points: the Knowledge view uses only what people hear and renders no gaps or internal ids (`test/client.test.mjs`); a tool result's `message` carries no runtime card (`test/kernel.test.mjs`). The reporting voice lives in the prompt's delivery section, and it is a **preference**, not a mechanism: no gate stops the model if it ignores it.
+
+**Test**: if a piece of information answers none of those four questions it does not belong in the results layer; if it needs no action from the person it does not interrupt them.
+
 ---
 
 ## 2. Seven stages, four runtime beats
@@ -152,11 +168,12 @@ Side-effecting tools are **at-most-once**; once past the dispatch boundary an un
 
 ## 5. Context is a governed resource, not a cache
 
-Three disciplines, each with a landing point in code:
+Four disciplines, each with a landing point in code:
 
 1. **A stable prefix is a hard constraint, not an optimisation.** The tool projection order is frozen; the environment section **deliberately contains no time** (time differs on every call and would cost the prompt and all history after it their prefix cache); rendering of a given tool result has exactly **one definition**, so the live path, the replay path and the history-rebuild path produce **the same bytes**.
 2. **Every byte ever sent to the model must be accounted for in the transcript.** The "recorded" and "observed" states of an event are strictly separated: facts about the **channel** are broadcast but never land in the transcript, because they are facts about the channel, not about the **work**.
 3. **Injection must be bounded, with hard caps.** The run card is rebuilt each turn; the compaction threshold is configurable; observation content is paged.
+4. **Inject a fact once.** The runtime card is injected by the pre-step only when state changes; a tool result says only what the call did and no longer carries the whole card (in two real runs, 148 of 162 calls carried it, over 300,000 characters). Readings on the card neither repeat nor contradict each other.
 
 Discipline 2 has a neat corollary: after an SSE reconnect there is **no backlog owed**. Anything that does not land in the ledger never took part in the resume cursor, so what a reconnect fetches is always a complete sequence of facts.
 
