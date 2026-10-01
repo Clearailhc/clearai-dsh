@@ -181,7 +181,7 @@ npx clearai-dsh install
 9. `images/09.png` 现在可以开始
 
 > 第 4–6 张是产品真机截图（同一场会话的投影），不是示意图。重拍链路：
-> `node tools/panel-shots.mjs --session <id>`（面板）→ `node tools/graph-shots.mjs --session <id> --prefix jepa`（图谱）→ `node .tmp-marketing/build-cards.mjs`（卡片）。
+> `node tools/panel-shots.mjs --session <id>`（面板）→ `node tools/graph-shots.mjs --session <id> --prefix jepa`（图谱）→ `node tools/marketing/build-cards.mjs`（卡片）。
 
 ## 话题建议
 

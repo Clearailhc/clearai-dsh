@@ -10,10 +10,10 @@ A selected WENO implementation should show fifth-order convergence for a smooth 
 Use `u(x)=cos(2*pi*x)` on `[0,1)`, exact cell averages, periodic indexing, the L-infinity face error, and successively refined meshes. Keep the method, precision, boundary treatment, and error definition fixed. Reproduce the run with:
 
 ```bash
-python3 lab/scripts/run_ai4sci_case.py
+python3 docs/cases/runs/ai4sci/run_ai4sci_case.py
 ```
 
-The script and its outputs are in [`lab/cases/ai4sci/`](../../lab/cases/ai4sci/). It records the source, method, grid sizes, errors, observed orders, and runtime metadata.
+The script and its outputs are in [`docs/cases/runs/ai4sci/`](runs/ai4sci/). It records the source, method, grid sizes, errors, observed orders, and runtime metadata.
 
 ## Observation and evaluation
 
@@ -31,9 +31,9 @@ The run does not prove a general theorem, fifth-order accuracy, multidimensional
 
 ## Retained evidence
 
-- [`lab/scripts/run_ai4sci_case.py`](../../lab/scripts/run_ai4sci_case.py): reproducible execution;
-- [`lab/cases/ai4sci/results.csv`](../../lab/cases/ai4sci/results.csv): raw tabular readings;
-- [`lab/cases/ai4sci/run_metadata.json`](../../lab/cases/ai4sci/run_metadata.json): parameters and environment;
-- [`lab/cases/ai4sci/README.md`](../../lab/cases/ai4sci/README.md): reproduction notes and evidence boundary.
+- [`docs/cases/runs/ai4sci/run_ai4sci_case.py`](runs/ai4sci/run_ai4sci_case.py): reproducible execution;
+- [`docs/cases/runs/ai4sci/results.csv`](runs/ai4sci/results.csv): raw tabular readings;
+- [`docs/cases/runs/ai4sci/run_metadata.json`](runs/ai4sci/run_metadata.json): parameters and environment;
+- [`docs/cases/runs/ai4sci/README.md`](runs/ai4sci/README.md): reproduction notes and evidence boundary.
 
 The proposition, the stronger claim it failed to establish, and the local observation are all retained rather than silently rewritten.
