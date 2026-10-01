@@ -14,9 +14,9 @@ The [plan](less-is-more-plan.zh-CN.md) is confirmed and the anchor documents now
 | Phase | Content | Status |
 |---|---|---|
 | 1 Prototype spikes | Native goal guard, kernel asks the person directly, kernel declares deliverables | Done (`tools/spikes/`) |
-| 2 Remove what the host already has | Ledger and file restore, scouts, external brain, template skills, `/` commands, deliverables tab, skills · memory tab, continuation status line | Not started |
+| 2 Remove what the host already has | Ledger and file restore, worldlines, scouts, external brain, template skills, `/` commands, deliverables tab, skills · memory tab, continuation status line | Not started |
 | 3 Goal layer on the native goal | `Frame` / `Conclude` / guard / blocking | Not started |
-| 4 Narrow the tool surface | Remove worldlines; merge plan and ontology tools into ten; three gaps, one gate | Not started |
+| 4 Narrow the tool surface | Merge plan and ontology tools into ten; three gaps, one gate | Not started |
 | 5 Prompts | Three-section scaffold | Not started |
 | 6 Presentation | Ontology pane conclusion list + header graph; run-state card only on change; plain words | Not started |
 
