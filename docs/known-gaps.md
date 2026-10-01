@@ -22,7 +22,7 @@ The [plan](less-is-more-plan.zh-CN.md) is confirmed and the anchor documents now
 
 **The rebuild removes these entries entirely** (their mechanisms are deleted or handed to the host): plan authorisation, branch-level L4 release and native approval records, result delivery and recovery for scout and worldline-executor runs, the one-shot form's "next turn", ledger coverage, worldline branches and merging, plan-review wording. Evaluator recovery, the real-browser checks and install prerequisites stay.
 
-**Costs of the rebuild** (accepted): restoring to an earlier version is lost — the host only shows what changed each turn, and not after a host restart; the state shape changes, so worldlines, scouts and ledger events in old sessions are no longer shown.
+**Costs of the rebuild** (accepted): restoring to an earlier version is lost — the host only shows what changed each turn, and not after a host restart; parallel routes no longer get their own file copy, so two routes editing the same files overwrite each other; the state shape changes, so worldlines, scouts and ledger events in old sessions are no longer shown.
 
 ## Not implemented
 

@@ -24,7 +24,7 @@ Besides ClearAI's own plugins, the preset composes these native DSH capabilities
 |---|---|---|
 | Goals and continuation | `dsh-goal`, `dsh-tool-goal`, `dsh-goal-round-driver` | `Frame` attaches criteria and judgements; `Conclude` calls `ctx.goals.complete()` after independent evaluation; a guard rejects the model completing it directly |
 | Plan review | `dsh-plan-mode` | `/plan` when the person wants to review a plan |
-| Subagents | `dsh-subagent` | Dispatching independent evaluators |
+| Subagents and orchestration | `dsh-subagent`, `dsh-tool-workflow` | Dispatching independent evaluators; the model tests competing judgements in parallel (replacing worldlines) |
 | Asking the person | `dsh-user-questions` | The call that opens a gate calls `ctx.userQuestions.ask()` |
 | Deliverables | `dsh-tool-present`, deliverable cards | At close the kernel appends one `deliverables/presented` |
 | File changes | `dsh-workspace-changes` | No own ledger |

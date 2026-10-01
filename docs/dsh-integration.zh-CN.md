@@ -24,7 +24,7 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 |---|---|---|
 | 目标与续跑 | `dsh-goal`、`dsh-tool-goal`、`dsh-goal-round-driver` | `Frame` 挂判据与判断；`Conclude` 过独立评估后调 `ctx.goals.complete()`；守卫拒绝模型直接完成 |
 | 计划审阅 | `dsh-plan-mode` | 人想审计划时用 `/plan` |
-| 子代理 | `dsh-subagent` | 派独立评估者 |
+| 子代理与编排 | `dsh-subagent`、`dsh-tool-workflow` | 派独立评估者；模型并行检验多条竞争判断（取代世界线） |
 | 问人 | `dsh-user-questions` | 开门的那次调用直接 `ctx.userQuestions.ask()` |
 | 交付 | `dsh-tool-present`、交付卡片 | 结案时内核追加一条 `deliverables/presented` |
 | 文件改动 | `dsh-workspace-changes` | 不再维护自己的账本 |

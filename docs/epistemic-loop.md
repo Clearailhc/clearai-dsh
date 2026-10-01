@@ -39,6 +39,7 @@ flowchart TD
 - **The doer does not judge their own work.** L0–L2 may self-judge with a reviewable basis; L3+ is judged by an independent evaluator; L4 also needs a human release.
 - **Only a human makes a human's decision.** Where a person is needed (L4 release, a plan blocked repeatedly, a fact meeting counter-evidence), the call that opened the gate asks the person directly; the answer never passes through the model. If nobody can answer, the gate stays open and the goal waits.
 - **Convention is not observation.** Concepts and predicates are conventions: they need a basis, not an evidence level. Instances and assertions are observations and must carry provenance. Facts are hypotheses that completed the loop. The graph labels the three apart.
+- **Parallel exploration is parallel testing.** Competing routes are competing judgements, each tested by a step whose criteria are written in advance; the model runs them in parallel with native subagents. The loser becomes a refuted judgement and stays on record; if both hold and contradict each other, the conflict is shown to the person.
 - **Conflicts are only surfaced.** When two confirmed facts contradict each other the system shows it; retracting or keeping is the person's decision.
 - **Nothing is deleted.** Refuted hypotheses, rejected artefacts and retracted facts all remain inspectable.
 - **No RSI claim.** The loop organises inquiry and records results; it does not redesign the system.

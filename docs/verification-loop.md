@@ -110,6 +110,7 @@ All state is folded from the session log; the model has no writable state field.
 | Rule | Mechanism |
 |---|---|
 | Criteria before work | `CreatePlan` rejects missing or too-short criteria; `RevisePlan` keeps old versions; changing goal criteria needs an independent verdict |
+| Parallel routes do not overwrite each other's output | `CreatePlan` / `RevisePlan` reject two steps in one plan declaring the same artefact path |
 | A step cannot declare itself done | `AdvancePlan` is the only completing action; tools have no writable state fields |
 | Admission only accepts or rejects | Artefact exists, is non-empty, well-formed; no judgement of what it shows |
 | The doer does not judge their own work | L3+ rejects caller-supplied verdicts and dispatches an independent evaluator (read-only, fresh context, structured output) |

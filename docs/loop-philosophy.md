@@ -73,6 +73,8 @@ Every decision in this version uses this one ruler: what directly serves the loo
 
 **One completing action**: `AdvancePlan` is the only action that advances a step; `RevisePlan` (add a step, change criteria, void) never changes progress. With one action that advances, "who advanced this step" always has an answer.
 
+**Parallel exploration needs no mechanism of its own.** Worldlines used to run routes in separate file copies, compare them on a pre-declared measure, and let a person adopt one. This version reduces that to the loop itself: competing routes are competing judgements, the measure is the criteria written in advance, losing is being refuted, contradiction is a conflict; the parallelism goes to native subagents. The cost is file isolation — the host's subagents share one working directory — so one cheap mechanism is added: steps in one plan may not declare the same artefact path.
+
 ---
 
 ## 3. Safety belongs to the host
