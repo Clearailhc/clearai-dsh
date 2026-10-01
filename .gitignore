@@ -34,3 +34,16 @@ ui/vendor/
 .pnpm-store/
 # 本轮 headless 长测的一次性 DSH_HOME 与日志(证据归档在 docs/optimization/e2e-logs/)
 .tmp-e2e/
+
+# ClearAI 工作区产物 —— 本仓库**不是** ClearAI 工作区。
+# 在仓库里开 ClearAI 会话时,内核的账本会在回合边界对工作区 `git add -A` 并提交到当前分支
+# (见 clearai-kernel.js 的 snapshotWorkspace / commitLedger)。`git add -A` 认 .gitignore,
+# 所以这里挡住的就是那条路:模型按技能约定写到 lab/ products/ input/ 的东西进不了提交。
+# 曾经漏进来过一次(「探索期快照」那一串提交),清理与原因见 tools/check-workspace-residue.mjs。
+/lab/
+/products/
+/input/
+/PROJECT.md
+.tmp-*/
+__pycache__/
+*.pyc

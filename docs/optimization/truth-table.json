@@ -944,8 +944,8 @@
     },
     {
       "id": "git-ledger",
-      "name": "只追加 git 账本（工作区仓库或旁路账本）",
-      "name_en": "Append-only git ledger, workspace repo or side ledger",
+      "name": "只追加 git 账本（一律旁路账本，不碰用户仓库）",
+      "name_en": "Append-only git ledger, always a side ledger (never the user's repo)",
       "layer": "harness",
       "status": "implemented",
       "hardness": "hard",

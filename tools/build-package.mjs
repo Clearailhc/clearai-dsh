@@ -103,7 +103,8 @@ for (const name of readdirSync(join(PORT, 'preset'))) {
  * 为什么声明行文件放在 `presets/clearai/` 里:声明行 plugins 里的**相对基准**
  * (`name: './plugins/*.js'` 与 `!!js` 的 `baseUrl`)以该补丁文件所在目录为准。
  * 放在与 `agent.cordis.yml` 同一目录,两类相对写法都不用改一个字。
- * 依据与实测:`lab/adapter/0.2.4-design.md` 第一节。
+ * 依据与实测:CHANGELOG 的 [0.2.4] 一节;原设计稿 `lab/adapter/0.2.4-design.md` 已随工作区残留
+ * 一起移出仓库,要看全文用 `git show 7b8a48d:lab/adapter/0.2.4-design.md`。
  */
 const readPresetMeta = (file) => {
 	// 不引 YAML 依赖:`preset.yml` 只有两个键,而 description 必须是块标量

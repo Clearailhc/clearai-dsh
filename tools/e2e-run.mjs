@@ -392,15 +392,15 @@ const freshAtStart = existsSync(useWorkspace === undefined ? '' : resolve(useWor
 /**
  * **fail closed:工作区不许落在 git 仓库里**。
  *
- * 为什么:ClearAI 的设计是「工作区本身是 git 仓库时,每次交付往那个仓库落一条提交」。
- * 跑验收时若把工作区指到宿主的项目仓库内,内核就会往那个仓库写一串 `clearai: 交付 …`
- * 的提交(实测发生过:它连当时未提交的改动一起提交了)。所以这里当场拒绝,
- * 而不是让人事后去 `git reset`。
+ * 为什么:0.3.2 之前内核在「工作区本身是 git 仓库」时把交付直接提交进那个仓库
+ * (实测发生过:它连当时未提交的改动一起提交了)。账本现在一律在旁路账本里,不再碰仓库历史,
+ * 但一场验收照样会往工作树里写一堆文件、往它的 `.git/info/exclude` 里加一行——
+ * 宿主的项目仓库不是放验收现场的地方。所以仍然当场拒绝。
  */
 if (useWorkspace !== undefined) {
 	try {
 		const top = execFileSync('git', ['-C', resolve(useWorkspace), 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-		console.error(`✗ 工作区落在 git 仓库里(${top}):ClearAI 会把交付提交进那个仓库,跑验收会污染它。\n  请换到仓库之外的目录(例如 ~/.dsh/e2e-archive/…)。`)
+		console.error(`✗ 工作区落在 git 仓库里(${top}):验收现场会写进那个仓库的工作树,污染它。\n  请换到仓库之外的目录(例如 ~/.dsh/e2e-archive/…)。`)
 		process.exit(2)
 	} catch {
 		/* 不在任何仓库里 = 正是我们要的 */
