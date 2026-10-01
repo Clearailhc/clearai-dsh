@@ -1,315 +1,143 @@
-# Verification ontology: objects, lifecycle, and terms
+# Verification Loop: Objects, Levels, Flow and Terms
 
-How a conjecture becomes a fact that can be cited with confidence. This document defines the six objects in the system, their levels and states, the full flow from goal to fact, and the terminology used across the repository. When other documents, prompts, or code comments refer to these concepts, this document's names are authoritative.
+> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md). Code follows in phases; what has landed is tracked in [Known Gaps](known-gaps.md).
 
-> **Implementation status (code is the source of truth)**
->
-> This document mixes two kinds of content: **behaviour that is implemented** and **design targets that are not**. Read it through this box.
->
-> **This document is the authoritative source for terms and concepts; what follows is which part of it this plugin actually implements.**
->
-> The ontology is declared in `preset/plugins/ontology.js`, and the same validator checks it at assembly time: initial/terminal states, reachability, and level-prefix monotonicity. `test/ontology.test.mjs` then **cross-checks** the declaration against the implementation — every edge's declared `event_kind` must be one the fold genuinely recognises, every named guard must genuinely exist in the kernel, and the state vocabulary in the declaration must be the same set the fold uses. Declared but unwired fails immediately.
->
-> **Wired**: the nine objects (goal / plan / step / hypothesis / observation / evaluation / evidence / fact / release) and the five levels L0–L4; the single completion verb `AdvancePlan`; the three admission checks (artifact exists, non-empty, structurally valid) plus `needs_audit`; independent-evaluator dispatch and evaluation-card persistence; **a per-step/per-branch L4 human release** (release reads the native approval record); fact promotion with scope and support level; arithmetic adjudication of worldlines and adoption-only convergence.
->
-> **Not there yet** (same line as [Known gaps](known-gaps.md)):
->
-> 1. **The eight-state verification machine** is designed, not implemented; only the subset above actually runs.
-> 2. ~~**`retracted` has no producer**~~ — **implemented**: refuting evidence only *marks* a promoted fact (`refuted`, derived) and raises an inbox item; a human decides to **retract** it or to judge the evidence unreliable and **keep** the fact. Both outcomes land as one `fact/reviewed` mutation (a retraction is terminal; the record is kept), and the fact's own file under `clear/knowledge/facts/` records the review.
-> 3. **A universal L4 gate over every evaluation** is not implemented; the human release that exists hangs on the step/branch axis.
-> 4. **Observation provenance declares exactly what has a producer.** `source` used to list five origins while only `self` and `scout` were ever written. The type now declares those two, and `test/ontology.test.mjs` checks the declared set against the set the kernel actually writes — a value may exist only when something produces it *and* something decides on it.
->
-> **One easily misread fact**: a step's declared level only decides **who may write a verdict** (L0–L2 self-judged by the doer, L3 and above refusing self-judgment) and **the L4 human gate**. It does **not** drive evaluator dispatch. Dispatch is triggered by admission deciding `needs_audit` (declared artifacts complete **and** `done_criteria` non-empty). So a step at L3 or above without `done_criteria` takes the deterministic release exit and **never passes through independent evaluation**.
+How a judgement becomes a fact you can safely cite. This document defines the objects, levels, flow and vocabulary; other documents, prompts and code comments defer to it.
 
-## 1. The one-line principle
+## 1. The principle
 
-A conclusion is trustworthy exactly when it has survived a test that could have failed it.
+A conclusion is trustworthy if and only if it survived a test that could have made it fail, and it states where it stops holding.
 
-The system's job is to guarantee the shape of that loop: every conclusion is preceded by a test that can fail, the test is registered before it runs, and the result is recorded honestly. The system does not supply the test itself — that is domain knowledge, and it comes from the charter, the skill library, and the people doing the research.
+The system does not supply the tests — that is domain knowledge, from the researcher and the model. The system guarantees the shape of the loop: criteria are written before the work, the doer does not judge their own work, and results are recorded as they happened.
 
-## 2. The six objects
+## 2. Objects
 
-| Object | What it is | What it must carry | Who may change it |
+| Object | What it is | Must carry | Who may change it |
 |---|---|---|---|
-| Hypothesis | A conjecture to be tested | A one-line claim; what result would refute it | The model proposes and revises; the system computes state |
-| Verification | One concrete action taken to test a hypothesis | Which hypothesis; level; criteria | The model registers; the system changes state |
-| Observation | Raw results obtained while verifying | Content; provenance (who, when, how it was produced) | Append-only, never modified |
-| Evaluation | Comparing a registered criterion against observations to reach a verdict | Which criteria were used; which observations were read; who judged | The evaluator writes; doer and judge are separated by level |
-| Evidence | The outcome of an evaluation | Support / refute / inconclusive; level; the observations and evaluation it cites | Written once, never changed; re-evaluation produces new evidence |
-| Fact | A hypothesis promoted once evidence suffices | The list of evidence supporting it | The system promotes; a human may retract |
+| Goal | The question to answer | Criteria (what counts as answered) | Text and continuation belong to the host's native goal; criteria are attached by `Frame`, and changing them needs an independent verdict |
+| Hypothesis | A judgement to test (the UI calls it a "judgement") | A one-line claim; what result would refute it | Proposed and revised by the model via `Frame`; status computed by the system |
+| Verification | A step that tests one hypothesis | Which hypothesis; level; criteria | Registered by the model; step state changed by the system |
+| Observation | The artefacts and execution record a step delivers | Content; source | Append-only |
+| Evaluation | A verdict from comparing observations against the registered criteria | Which criteria; which observations; who judged | By level: the doer, or an independent evaluator |
+| Evidence | The result of an evaluation | Supports / refutes / inconclusive; level; references | Never edited; re-evaluation produces new evidence |
+| Fact | A hypothesis promoted once evidence suffices | Scope; level; evidence; optional assertions | Promoted by the system; a human may retract it |
 
-Example: hypothesis "catalyst A gives a higher yield than B at 60 °C", refutation condition "mean yield over three repeats is not higher than B". The verification is "three repeated lab runs; a mean at least 5 points above B counts as support". The observation is the instrument's yield table plus who uploaded it. The evaluator reads the table and checks the mean difference. The evidence is "L4 · support · mean difference 6.2 points · based on observation #17". Evidence suffices, the hypothesis is promoted to a fact and written into the knowledge base.
-
-Three common words are not listed separately:
-
-- An experiment is simply a verification at a higher level. Numerical simulation, formal proof, lab work, and a production trial run are all verifications; only their level and cost differ.
-- A conclusion is the final answer to the project's question, assembled from several facts in a report. It cites facts and needs no state of its own.
-- A step is a unit of execution. A step carries at most one verification; a step that carries none is ordinary work and produces no evidence.
-
-Hypotheses belong to the project and are shared across stages and sessions.
+- A **step** is the unit of execution. It tests at most one hypothesis; a step that tests none is ordinary work and produces no evidence.
+- A **conclusion** answers the goal, assembled from facts in the report to the person; it cites facts and has no state of its own.
+- **Hypotheses belong to the project.** Established facts stay in the workspace across sessions and are retrieved by concept next time.
 
 ## 3. Levels
 
-Levels are domain-independent and follow from three properties: whether the evidence already existed or was newly produced; whether an evaluator could re-run it and get the same result; and whether a machine can decide it.
+A level decides two things only: **who judges**, and **that L4 needs a human release**. It follows from three properties: is the evidence existing or newly produced; can it be re-run with the same result; can a machine judge it.
 
-| Level | Definition | Rough cost | Who judges | What observations count | Before starting |
-|---|---|---|---|---|---|
-| L0 | A quick plausibility check by reasoning alone | Minutes | The doer, with a reviewable basis | Calculations, derivations | Start immediately |
-| L1 | Existing knowledge: whether the literature or a database has already answered or refuted it | Minutes | Same | Literature citations | Start immediately |
-| L2 | Existing data or a small computation | Hours | Same | Data files, scripts and their output | Start immediately |
-| L3 | Newly produced, reproducible evidence | Hours to days | An independent evaluator, or a machine | The doer's output; observations may be produced by the doer, but must be re-runnable | Register the criteria first |
-| L4 | Newly produced, non-reproducible or externally sourced evidence | Days, or not repeatable | An independent evaluator, judging only against the registered criteria | Only human uploads, automatically landed files, and external pushes; files the doer wrote do not count | Register the criteria first; **human release hangs on the step/branch axis** (see the status box) |
+| Level | Definition | Who judges | Accepted observations |
+|---|---|---|---|
+| L0 | A quick plausibility check by reasoning | The doer, with a reviewable basis | Derivations, calculations |
+| L1 | Existing knowledge: literature, databases | The doer, with a reviewable basis | Citations |
+| L2 | Existing data or small computation | The doer, with a reviewable basis | Data, scripts and output |
+| L3 | New, reproducible evidence | An independent evaluator, or a machine | The doer's output, which must be re-runnable |
+| L4 | New evidence that cannot be repeated or comes from outside | An independent evaluator, after a human release | Files the doer wrote do not count |
 
-A machine evaluator (a proof checker, a test, a statistics script) counts as an independent evaluator at any level: it compares the registered criteria against observations and writes evidence, with the same standing as an independent agent.
-
-What the five levels mean in each domain is written in section 4 of the project charter and in the skill library; the engine only knows these five abstract levels. Three domains as examples:
+A machine evaluator (proof checker, test, statistics script) counts as independent at every level. What the five levels mean in a given field lives in project skills; the engine knows only the five abstract levels.
 
 | Level | Mathematics | Physics | Life sciences |
 |---|---|---|---|
-| L0 | Small-case substitution, parity, order of magnitude, boundary cases | Dimensions, limiting cases, symmetry, conservation laws | Dose ranges, whether known pathways make sense |
-| L1 | Whether the literature has proved it or found a counterexample | Literature, handbook data | Literature, public databases |
-| L2 | Numerical verification over some range, symbolic computation | Re-analysis of existing experimental data | Re-analysis of existing omics datasets |
-| L3 | Systematic counterexample search, machine-checked formal proof | Numerical simulation, new computation | Computational simulation, new analysis of public data |
-| L4 | Peer review, journal acceptance | Experiment, beam time at a large facility | Wet lab, animal study, clinical trial |
+| L0 | Small cases, magnitude, edge cases | Dimensions, limits, conservation | Dose ranges, pathway plausibility |
+| L1 | Already proved or refuted in the literature | Literature, handbook data | Literature, public databases |
+| L2 | Numerical checks, symbolic computation | Re-analysis of existing data | Re-analysis of existing omics data |
+| L3 | Systematic counterexample search, machine-checked proof | Numerical simulation | Computational models, new analysis of public data |
+| L4 | Peer review | Experiments, facility time | Wet lab, clinical |
 
-A production trial run in an engineering setting is what L4 is called there.
-
-Where observations come from:
-
-| Origin | How it happens | How the system knows | Provenance label |
-|---|---|---|---|
-| Produced by the doer | The agent runs a script in the workspace and artifacts land on disk | The event stream has the command, exit code and ledger commit | self |
-| Uploaded by a human | Someone puts a result file into the project, or says so in conversation | An inbox item is completed, or a new file appears in the input directory | human_upload |
-| Landed automatically by a file | An instrument or compute job writes results into an agreed directory | A directory check on a schedule | file_drop |
-| Pushed by an external system | An external system pushes it in | The push carries a token dedicated to this verification | callback |
-| Fetched by the system | At the appointed time the system calls an external API or reads a database | Woken on a schedule and pulled | pull |
-
-L0 to L3 accept the first; L4 accepts only the last four.
-
-## 4. Lifecycle: from goal to fact
-
-Six segments. Each states what happens in the ontology, who does it, and which object and verb in the system it maps to.
-
-### 4.1 Set the goal and hypotheses
-
-A goal is the question the project must answer, with a statement of what would count as answering it. Hypotheses are registered under the goal: one line of claim plus a refutation condition each, at least two (enforced at the door: `SetGoal` rejects zero or one; revising an existing goal is exempt).
-
-| Ontology | Who | System object and verb |
-|---|---|---|
-| Goal | A human gives it; the model transcribes the criteria | Goal; `SetGoal(done_criteria, phases, promote_at_level)` |
-| Hypothesis proposed | The model | `SetGoal(hypotheses=[{claim, refute_when}])`, stored in the goal document's `hypotheses` |
-
-### 4.2 Register the verification
-
-One plan carries one stage of the goal. Steps in the plan may declare that they are a verification: which hypothesis, what level, what criteria. Criteria are written before the result appears — "write the criteria before doing the work". A step that declares nothing is ordinary work.
-
-| Ontology | Who | System object and verb |
-|---|---|---|
-| Verification registered | The model | Step `tests: {hypothesis, level}` + `done_criteria`; `CreatePlan` / `AmendPlan` / `RefinePlan` |
-| L4 release (**per step/branch**) | A human | Delivering an L4 step/branch raises the host approval card — a human approval releases it; there is no level-wide release covering every evaluation |
-
-### 4.3 Execute and produce observations
-
-The model explores, writes scripts, computes. Every write enters the ledger — at each **turn boundary** in which this session wrote something, the workspace is snapshotted as a commit (the message says it is an exploration-phase snapshot), so work done before any plan exists is inspectable and restorable too. Every execution leaves a command, exit code and commit in the event stream. Artifacts land in `lab/`. Nothing in this segment judges anything.
-
-> What that snapshot does **not** claim is **attribution**: the kernel cannot see what `bash` wrote, so it never says which write belonged to which call. It claims coverage only — and coverage is what the "recovery replaces approval" argument needs.
-
-| Ontology | Who | System object |
-|---|---|---|
-| Observation (origin self) | The model | Artifact files + execution records in the event stream |
-| Observation (external origin) | Humans, instruments, external systems | Input directories, inbox, timers, callback tokens |
-
-### 4.4 Deliver, which is to send for evaluation
-
-`AdvancePlan` is the only completion verb. It means "observed; please evaluate". The system first performs admission: the declared artifact exists, is non-empty, and is structurally valid. Admission only decides whether an observation is accepted, not what it means, so there is no contamination problem. Then the level decides who evaluates.
-
-| Level | Who evaluates | How it goes in the system |
-|---|---|---|
-| L0 to L2 | The doer | `AdvancePlan(evidence, verdict, basis)`; the system records evidence with `evaluator=self` |
-| L3 and above | An independent evaluator | The system dispatches an evaluator sub-run with a fresh context, read-only access to artifacts and execution records, producing an evaluation card; the system takes the verdict from the card and records evidence with `evaluator=independent`. **Note: dispatch is triggered by `needs_audit`, not by level** |
-
-An evaluator does not execute. It compares the registered criteria against observations. To ask "would this reproduce in a clean environment", that is a new verification called reproduction, registered separately as L3.
-
-### 4.5 Evidence returns to the hypothesis
-
-Evidence is append-only and hangs on the goal document's `evidence` list, citing the step, the plan and the evaluation card. A hypothesis's state is computed from evidence, not scored: which level it passed, how many refutations, how many inconclusive results.
-
-| Ontology | Who | System object |
-|---|---|---|
-| Evidence | Written by the system, content from self-judgment or an evaluation card | Goal document `evidence[]`; cards under `clear/evidence/audits/` |
-| Hypothesis state | Computed by the system | `hypothesis_status`; shown both on the run card and in the task book's machine section |
-
-### 4.6 Closing: promotion and settling
-
-Closing a stage archives the plan; if the goal is not met the system wakes the model to open the next stage. When the goal closes, an evaluator checks the goal criteria and how faithfully they were transcribed; passing means achieved. A hypothesis that reached the promotion threshold with no refutation is promoted to a fact, written into the knowledge base under the system's identity; refuted hypotheses stay in the goal document.
-
-| Ontology | Who | System object and verb |
-|---|---|---|
-| Goal achieved | An independent evaluator judges; the system closes | `CloseGoal` → goal evaluation → achieved |
-| Fact | The system | `clear/knowledge/facts/<goal_id>.md` |
-| Experience | The system | Skill statistics and memory |
-
-### 4.7 Sequence
+## 4. Flow: from question to fact
 
 ```
-human        model (Goal)         system               evaluator          workspace/ledger
-  │ goal ────▶│                    │                    │                  │
-  │           │ SetGoal: criteria, hypotheses (each with a refutation condition) │
-  │           │ CreatePlan: step = what to do + artifacts + criteria [+ tests]    │
-  │           │──── auto-confirm ─▶│                    │                  │
-  │  ┌─ each step ┼─────────────────┼────────────────────┼──────────────────┤
-  │  │        │ execute ────────────────────────────────────────────────▶│ observations land, execution recorded
-  │  │        │ AdvancePlan ──────▶│ admission (exists, structure)       │
-  │  │        │                    │ L0–L2: record self-judged evidence ─▶│ goal document evidence
-  │  │        │                    │ L3+: dispatch evaluator ───▶│ reads observations and records │
-  │  │        │                    │◀── evaluation card ────────┤                  │
-  │  │        │                    │ record independent evidence; converge or feed back gaps ──▶│
-  │  │        │◀── gap / converged ┤                    │                  │
-  │  └────────┼────────────────────┼────────────────────┼──────────────────┤
-  │           │ ClosePlan ─────────────────────────────────────────────▶│ archive
-  │           │◀── not met: open the next stage ┤                          │
-  │           │ CloseGoal ────────▶│ dispatch goal evaluation ─▶│ check transcription, criteria one by one │
-  │           │                    │◀── evaluation card ────────┤                  │
-  │           │                    │ achieved: promote facts ──────────────▶│ clear/knowledge/facts
-  │◀── Confirm (L4 release) / inbox (blocked, stalled) ┤                       │
+Human     Model                      System                      Independent evaluator
+ │ ask ──▶ │ native goal + Frame: criteria, hypotheses (each with a refutation condition)
+ │         │ CreatePlan: step = work + artefact + criteria [+ which hypothesis, level]
+ │  ┌ each ┤ do the work
+ │  │      │ AdvancePlan ──────────▶ │ admission: exists, non-empty, well-formed
+ │◀─┼──────┼── L4: asks the human to release
+ │  │      │                         │ L0–L2: record self-judged evidence
+ │  │      │                         │ L3+: dispatch evaluator ─▶ │ reads artefacts and record only
+ │  │      │                         │ ◀──────── evaluation card ─┤
+ │  │      │ ◀── accepted / blocked (what is missing)  record evidence, compute hypothesis status
+ │◀─┴──────┼── blocked repeatedly: asks the human
+ │         │ Conclude ─────────────▶ │ dispatch evaluator on goal criteria ─▶ │
+ │         │                         │ ◀──────── evaluation card ─┤
+ │         │                         │ pass: complete native goal, promote facts, declare deliverables
+ │◀────────┼── refuting evidence hits a promoted fact: asks the human to retract or keep
 ```
 
-A human appears in exactly three places: giving the goal at the start, the `Confirm` gate in the middle, and the inbox when a goal is blocked or stalled.
+A human appears in three places: asking the question; the gates that need a person (L4 release, repeated blocks, a fact meeting counter-evidence), asked directly by the call that opened them; and at any time through `/goal` or the native UI to pause or end the goal — a human ending the goal establishes nothing.
 
-## 5. States
+## 5. State
 
-All states are changed by the system. The model makes requests through tools; humans decide through the inbox. Evidence has no state.
+All state is folded from the session log; the model has no writable state field.
 
-Goal: only one goal is open at a time within a run. A goal can be revised (`SetGoal` requires a reason; each revision bumps the version and the changed fields stay in the revision record; blueprint sections have stable identity, and rewritten sections are marked superseded rather than deleted). After a goal closes, the next human instruction forges a new goal and the old one goes to history. Which segment a goal is in is derived, never stored:
+**Goal**: phase belongs to the native goal (active / paused / blocked / complete). ClearAI adds one derived note: criteria not written yet, or the closing evaluation is running.
 
-| Phase | Meaning | How it is decided |
+**Hypothesis**:
+
+| State | Enters when | Leaves when |
 |---|---|---|
-| drafting | Criteria not yet written | `done_criteria` is empty |
-| planning | Criteria exist, no plan opened yet | No active plan and no closed plan |
-| confirming | A plan awaits authorization | An active plan is pending confirmation |
-| executing | An active plan is advancing | The active plan wants a turn |
-| waiting | The plan layer is waiting on a human or a worldline | The active plan does not want a turn |
-| stage_boundary | The last stage closed, the next has not opened | The active plan is complete, or there is no active plan but there is a closed one |
-| auditing | An evaluator is adjudicating the goal | audit.status = pending |
-| stalled | The goal layer is stuck, waiting on a human | stalled.kind is non-empty |
-| suspended | The goal is open but this is not goal mode | The run's execution mode is not goal |
-| achieved / abandoned | Terminal | status |
+| proposed | Claim and refutation condition are written | First evidence → alive |
+| alive | From proposed | Threshold reached → confirmed; refuting evidence → refuted; rewritten → superseded |
+| confirmed (a fact) | At close, threshold reached and nothing refutes it | A human retracts it → retracted |
+| refuted (kept) | Refuting evidence at any level | Terminal |
+| superseded | Old version when a hypothesis is revised | Terminal |
+| retracted (kept) | A human decides after review | Terminal |
 
-Completion: with blueprint sections, = (closed sections + completed-step share of the current plan) / sections; without a blueprint, = confirmed hypotheses / valid hypotheses; if neither, no number is given. A section counts as closed when there is a closed plan under its name (`CreatePlan` stamps the plan's `phase_id`).
+**Step**: `open → advanced` or `open → void` (voiding needs a reason). A downgrade cannot be expressed: there is no "reject and redo" path.
 
-Hypotheses:
-
-| State | Meaning | How it is entered | How it is left |
-|---|---|---|---|
-| proposed | Stated | Claim and refutation condition written | First evidence → alive |
-| alive | Being verified | From proposed | Promotion threshold → confirmed; refuting evidence → refuted; rewritten → superseded |
-| confirmed | Confirmed, becomes a fact | Project promotion threshold reached with no refutation | A human decides to retract → retracted |
-| refuted | Refuted, record retained | Refuting evidence at any level | Terminal |
-| superseded | Replaced by a new version | The old version when a hypothesis is revised | Terminal |
-| retracted | Retracted, record retained | A human decides after review | Terminal |
-
-Verification — **derived, not stored**:
-
-> These nine names were once a design target described as a stored state machine. They are **not** stored: every one of
-> them is either a fact already in the ledger, something `derive()` computes, or a state that is deliberately
-> unrepresentable. The table below is therefore a **landing-point record**: it says where each name lives today, and
-> says so plainly when the answer is "nowhere, on purpose". It is the thing to edit when the code moves.
+**Verification** — derived, not stored. These nine names were once the design of a stored state machine; none of them is stored. Each is either a recorded fact, computed by `derive()`, or unrepresentable on purpose:
 
 | State | Meaning | Where it lives today |
 |---|---|---|
-| planned | Criteria are a draft | **Unrepresentable by design**: `CreatePlan` refuses a step whose `done_criteria` is missing or shorter than 4 characters, so a step without criteria is never stored. |
-| registered | Criteria registered | The step itself — `tests: {hypothesis, level}` plus `done_criteria`; `plan/created` is the registration event. |
-| authorized | A human released it; L4 only | Not a verification state: a **release fact** (`human/released` → `state.releases[]`), enforced at delivery by `l4Delivery` + `witnessedRelease`. |
-| submitted | Executing | Derived: the step is `open`; `inFlight` records an `AdvancePlan`/`AdvanceWorldline`/`CloseGoal` that is actually in flight. |
-| awaiting | Waiting for a result | The sub-run's own facts: `worldline/executing`, `scout/dispatched`, `audit/dispatched`; `AwaitWorldlines` gives the wait a bound. A result that never comes does **not** become a state — see `expired`. |
-| observed | Result obtained | `observation/recorded` → `state.materials[]`, recorded on delivery from the declared refs (the artifact files plus the execution records are the observation). |
-| evaluated | Evaluated, evidence written | `audit/settled` + `evidence/recorded`; `derive()` computes support / refute / inconclusive per hypothesis. The "one more try, then force a change" policy is enforced at the **next** delivery: two inconclusive results on the same step refuse a third unchanged attempt (`inconclusive_repeat_forced_change`). |
-| expired | Deadline passed with no result | Not a state: an unavailable verdict is a fact (`audit/settled` with `verdict: 'unknown'`) and it **counts toward the same threshold as a failed admission** (`block/counted`), so repeating it blocks the plan and reaches a human through the inbox door that already exists. |
-| aborted | Stopped without a result | Facts, not a state: `VoidPlanStep(reason)`, `AbandonFork(reason)`, a sub-run's `stopReason` as recorded by the kernel's settlement funnel, and a sub-run's `stopReason` as recorded by the kernel's settlement funnel (which **recovers from the child's session log first** and only records unknown when recovery fails — see the [authority map](authority-map.md) §1). |
+| planned | Draft criteria | Unrepresentable by design: `CreatePlan` rejects steps without criteria, so they are never stored |
+| registered | Criteria registered | The step itself — `tests: {hypothesis, level}` plus criteria; `plan/created` is the moment of registration |
+| authorized | A human released it (L4 only) | Not a state: a release fact (`human/released`) recorded when `AdvancePlan` asks the person |
+| submitted | Running | Derived: the step is open; `inFlight` marks the delivery in progress |
+| awaiting | Waiting for a result | The child's own facts: `audit/dispatched` |
+| observed | Result received | `observation/recorded`, registered on delivery |
+| evaluated | Evaluated, evidence written | `audit/settled` + `evidence/recorded`; `derive()` computes support / refute / inconclusive per hypothesis |
+| expired | No result in time | Not a state: `audit/settled` with verdict `unknown`, sharing the block counter (`block/counted`) |
+| aborted | Stopped without a result | Facts, not a state: a void with a reason (`VoidPlanStep`, reached through `RevisePlan`), or the child's recorded stop reason |
 
-L3 and above start at registered; changing criteria afterwards must leave a trace, keep the old version, and ask a human to confirm. Time spent waiting for a result does not count toward failure counts.
+**Fact**: new refuting evidence only **flags** it for review and asks the human on the spot; retract and keep both land the same review record. Data from outside can be wrong too, so nothing is retracted automatically.
 
-Observations: on arrival, origin is checked against the verification level. Eligible ones are admitted and wake the task; ineligible ones are kept but not accepted, and flagged in the inbox.
+## 6. Rules and where they live
 
-Facts: new refuting evidence only **marks** the fact (`refuted`, derived) and raises an inbox item; **retract** and **keep** are two buttons a human presses, and both land as one `fact/reviewed`. "No decision" and "decided to keep" have to stay distinguishable, or the gate holds continuation forever. A retraction is terminal and the record is kept (the shelf and the fact's own file say who, when and why). Data brought in from outside can itself be wrong, so retraction is never automatic.
+| Rule | Mechanism |
+|---|---|
+| Criteria before work | `CreatePlan` rejects missing or too-short criteria; `RevisePlan` keeps old versions; changing goal criteria needs an independent verdict |
+| A step cannot declare itself done | `AdvancePlan` is the only completing action; tools have no writable state fields |
+| Admission only accepts or rejects | Artefact exists, is non-empty, well-formed; no judgement of what it shows |
+| The doer does not judge their own work | L3+ rejects caller-supplied verdicts and dispatches an independent evaluator (read-only, fresh context, structured output) |
+| L4 needs a human release | `AdvancePlan` asks the human when delivering an L4 step; files the doer wrote do not count as L4 observations |
+| Stop for a human after repeated blocks | At the threshold, `AdvancePlan` asks the human; revising criteria or changing approach releases it |
+| Completing a goal needs independent evaluation | Only `Conclude` completes the native goal; a guard rejects the model completing it directly |
+| Nothing is deleted | Refuted hypotheses, rejected artefacts, retracted facts all remain; the session log is append-only |
+| A human's decision is never relayed by the model | Gates ask the human from kernel code; the answer returns in-process |
+| No answerer, no decision on the human's behalf | The gate stays open; the native goal is set to blocked with the reason |
 
-## 6. Rules, and where each one actually lands
+## 7. Vocabulary
 
-An earlier version of this section opened with "the system checks these on state changes, not through prompts". That was
-true of most of them and false of two — and a rule that is claimed as a mechanism but carried by prose is exactly the
-kind of drift this repository keeps finding. So each rule now says what carries it, and admits when the answer is "a
-reading, not a gate".
+Use the left column across the repository. UI and reports use the plain words in the third column; internal names do not change.
 
-1. **One level at a time; skipping states a reason.** *Not a gate, and deliberately so.* Requiring a reason would
-   produce a field nobody can check — "the literature does not cover this parameter" is domain judgement, and a
-   mechanism that cannot falsify its input is advice wearing machinery. What *is* mechanical: the levels a hypothesis
-   never used are **derived and shown** (`untouchedLevels`, on the run card and on the panel's proposition row), so a
-   jump is visible without being forbidden. This is the same move as `unjudged`: do not force a verdict, but never let
-   "never looked" read as "nothing wrong". The ladder's real invariant is rule 3.
-2. **Write the criteria before the work.** *Gate.* `CreatePlan` / `AmendPlan` refuse a step without criteria of at
-   least 4 characters (`validateSteps`); `RefinePlan` pushes the old version into `criteria_versions` rather than
-   overwriting it. "Human confirmation before changing L3+ criteria" is **not** implemented — the human reviews the
-   plan before it starts, not each later refinement.
-3. **L4 requires human release.** *Gate, on the step/branch axis.* A universal release covering every evaluation is a
-   **decision not to build** (truth-table row `l4-universal-gate`): a gate belongs where the correct answer depends on
-   a person.
-4. **Look at the origin of a result.** *Gate.* L4 sources are separated at delivery (`l4RejectSelfWritten`: files the
-   doer wrote do not count); L3 observations may be the doer's but must be re-runnable, which the evaluator checks.
-5. **The doer does not judge themselves.** *Gate.* `SELF_JUDGE_MAX_INDEX = 2`: L3 and above refuse a caller-supplied
-   verdict and dispatch an independent evaluator; L0–L2 may self-judge with a reviewable basis.
-6. **Weight of refutation.** One piece of refuting evidence carries its level by default; a charter declaring "any
-   counterexample is decisive" is **not implemented** (see [Candidates for later](#8-candidates-for-later)).
-7. **Nothing is deleted.** *Invariant, pinned by tests.* Refuted hypotheses, rejected observations, retracted facts
-   (marked, never removed) and unchosen worldlines (ref kept, working copy dropped) all stay inspectable; the ledger
-   only moves forward.
-8. **Only the system changes state.** *Gate.* Nobody can write a verdict directly: intent tools carry no verdict field
-   at levels they do not own, and the projection is a fold of the log rather than a mutable store.
-
-## 7. Glossary
-
-The whole repository uses the left column. The right column lists deprecated older names, which new documents, prompts and comments no longer use.
-
-| Canonical | English | Code identifier | Deprecated older names |
+| Term | Code identifier | Plain word in the UI | Deprecated |
 |---|---|---|---|
-| 目标 | Goal | `goal`, `SetGoal` / `CloseGoal` | 问题 (only when explaining what a goal answers) |
-| 假设 | Hypothesis | goal document `hypotheses[]` | 猜想 (colloquial only) |
-| 验证 | Verification | step `tests: {hypothesis, level}` | 验证步骤、实验步骤 |
-| 判定标准 | Criteria | `done_criteria` (the code name stays) | 完成标准、验收判据、完成谓词 |
-| 观测 | Observation | artifact files + execution records in the event stream | 产物、物证 |
-| 观测准入 | Admission | the `l1` / `l2` layers of `check_step_evidence` | 证据门、证据闸门 |
-| 评估者 | Evaluator | `agent_role=evaluator`; display label Evaluator | 审计员、裁判、评估子、审计子 |
-| 评估卡 | Evaluation card | cards under `clear/evidence/audits/`, `lab/evaluations/` | 审计卡 |
-| 证据 | Evidence | goal document `evidence[]` | distinct from a step's `step.evidence`, which is the convergence record |
-| 收敛记录 | Convergence record | `step.evidence`, `converged_evidence` | 步骤证据 |
-| 事实 | Fact | `clear/knowledge/facts/` | 已确认结论 |
-| 等级 | Level | `L0` to `L4`, always uppercase | distinct from the admission layers `l1` / `l2`, always lowercase |
-| 世界线 | Worldline | each branch of `ForkPlan` and its worktree | 分支 (only for "one of the worldlines") |
-| 阶段 | Stage | one Plan | 计划 (still usable when referring to the object) |
-| 升格门槛 | Promotion threshold | goal document `promote_at_level` | 验收门槛 |
+| Goal | native goal; `Frame` / `Conclude` | question | — |
+| Hypothesis | `hypotheses[]` | judgement | conjecture, proposition (as an object name) |
+| Criteria | `done_criteria` | what counts as done / wrong | acceptance criteria |
+| Observation | artefact files + execution record | what was delivered | exhibit |
+| Admission | `admission()` | accepted / blocked | evidence gate |
+| Evaluator | `agent_role=evaluator` | independent review | auditor, judge |
+| Evaluation card | `clear/evidence/audits/` | review record | audit card |
+| Evidence | `evidence[]` | why | — |
+| Fact | `fact/promoted` | a conclusion you can trust | confirmed conclusion |
+| Level | `L0`–`L4` (upper case) | strength of the test | — |
+| Promotion threshold | `promote_at_level` | — | acceptance threshold |
 
-## 8. Candidates for later
+## 8. Relation to the domain ontology
 
-Everything below waits until a baseline has produced real trajectories; one line each.
-
-- Reproduction as a registered L3 verification: an evaluator re-runs a delivered script in an independent worktree, and any mismatch refutes.
-- A machine evaluator run by the system: a step declares a checking script and the system verifies against the ledger or runs it.
-- L4 external observations: the four origins landing through one entry point, `interrupts` gaining `await` suspension, task state gaining `waiting`, and `scheduling` attaching to an existing goal.
-- Criteria soft-lock: for L3 and above, changing criteria leaves a trace and asks a human to confirm.
-- Refutation weight and the charter's "counterexamples are decisive" switch; section 4 of the charter becomes parsable.
-- Evaluation verdicts enter skill statistics (`skill_lifecycle` gains `audit_pass` / `audit_fail`); goal-level experience (`policy_slots` gains `goal_finished`).
-
-## 9. Relationship to the domain ontology
-
-This document describes the **process ontology**: the behaviour of knowing — which objects exist, who pushes
-which transition, who judges at each level. It must be read apart from the other ontology in the repository:
-
-| | Process ontology (this file) | [Domain ontology](domain-ontology.md) |
-|---|---|---|
-| Answers | **How** we come to know | **In what language** we say it |
-| Authority | A code declaration (`preset/plugins/ontology.js`), validated at assembly, changeable per release | Ledger events (`ontology/*`), growing with the project |
-| Editable? | **No**: it is the plugin's own backend flow; changing it means changing code and shipping | Yes: named verbs add, revise and deprecate (seven of them, implemented) |
-| In the projection | `state.ontology` (the shape) | `state.lexicon` (the vocabulary) plus the graph projection |
-| Shown to | The charter the model reads (`clear/ontology/verification-loop.md`); a human sees the **state shape** (worldlines / proposition groups) | The vocabulary and graphs the project reads (`clear/ontology/domain.md`, the panel's ontology view) |
-
-The two touch at exactly four points (shape checked at registration / fixed at promotion / conflicts derived /
-deprecation propagated); see Domain ontology §8.
+This document is the **process**: rules of knowing, versioned with the plugin, not editable at runtime. The [domain ontology](domain-ontology.md) is the **language**: the project's vocabulary and the graph it grows, governed by named verbs. They meet in exactly four places: assertion shape checked when a hypothesis is registered, fixed at promotion, conflicts derived on replay, and new assertions refused after deprecation.

@@ -7,6 +7,23 @@ What follows is the honest boundary of this release. Every line is either absent
 `implemented / partial / design only` and records each place where "the docs say A, the code does B". Mixing `current`
 with `design goal` in the same tense was this documentation set's worst habit.
 
+## "Less is more" rebuild progress
+
+The [plan](less-is-more-plan.zh-CN.md) is confirmed and the anchor documents now describe the target design; **the code is still the pre-rebuild code**. Until the matching phase below lands, the sections further down describe the current code, and the other documents describe the target.
+
+| Phase | Content | Status |
+|---|---|---|
+| 1 Prototype spikes | Native goal guard, kernel asks the person directly, kernel declares deliverables | Done (`tools/spikes/`) |
+| 2 Remove what the host already has | Ledger and file restore, scouts, external brain, template skills, `/` commands, deliverables tab, skills · memory tab, continuation status line | Not started |
+| 3 Goal layer on the native goal | `Frame` / `Conclude` / guard / blocking | Not started |
+| 4 Narrow the tool surface | Remove worldlines; merge plan and ontology tools into ten; three gaps, one gate | Not started |
+| 5 Prompts | Three-section scaffold | Not started |
+| 6 Presentation | Ontology pane conclusion list + header graph; run-state card only on change; plain words | Not started |
+
+**The rebuild removes these entries entirely** (their mechanisms are deleted or handed to the host): plan authorisation, branch-level L4 release and native approval records, result delivery and recovery for scout and worldline-executor runs, the one-shot form's "next turn", ledger coverage, worldline branches and merging, plan-review wording. Evaluator recovery, the real-browser checks and install prerequisites stay.
+
+**Costs of the rebuild** (accepted): restoring to an earlier version is lost — the host only shows what changed each turn, and not after a host restart; the state shape changes, so worldlines, scouts and ledger events in old sessions are no longer shown.
+
 ## Not implemented
 
 - **The eight-state verification machine.** The ontology in [Verification ontology](verification-loop.md) describes a full state machine for verification objects. What ships is the subset the kernel actually enforces: hypotheses, observations, evaluations, evidence, and facts, with levels L0–L4. The richer lifecycle remains a design target.

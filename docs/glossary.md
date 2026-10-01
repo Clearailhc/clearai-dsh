@@ -1,75 +1,83 @@
 # ClearAI Glossary
 
-This glossary defines the stable terms used by ClearAI. No other product or brand terms are normative.
+> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
+
+Stable ClearAI terms. Authoritative definitions of objects, levels and states live in the [Verification Loop](verification-loop.md); this list gives one line each. UI and reports use plain words, shown in parentheses.
 
 ## ClearAI
-A local-first ontology discovery and exploration platform: AI grows a living domain ontology inside real projects — with the epistemic loop as its process, settling research into an ever-growing knowledge structure (domain vocabulary + established entries + graphs). In this repository it is delivered as a DSH-native plugin.
+A local-first **ontology discovery and exploration platform**: AI grows a domain ontology in a real project, using the epistemic loop as its method of verification. Delivered as a native DSH plugin.
 
-## Epistemic Loop
-The repeatable cycle of Frame → Hypothesize → Plan → Observe → Verify → Evaluate → Record and act. At runtime it compresses into four beats: plan, execute, observe, reflect.
+## Epistemic loop
+Question → judgement (state what would prove it wrong) → a test that could fail → evidence → bounded conclusion → grows into the ontology.
 
-## Epistemic Harness
-The operational framework around the Epistemic Loop: it records propositions, hypotheses, verifications, observations, evidence, evaluations, and admissions, while preserving the boundaries between them and keeping human judgment in the loop where required.
+## Scaffold
+ClearAI supplies only what the model cannot and should not do for itself — the **fact boundary**: what counts as done, whose verdict counts, what may enter knowledge. Everything else is left to the model's judgement or to the host.
 
-## DSH native plugin
-A plugin implemented for the DeepSeek Harness (DSH) runtime and composed through its native plugin model. It extends the running harness through declared capabilities and lifecycle-managed effects rather than by changing ClearAI's core content or engine rules.
+## Goal (question)
+The question to answer. Text, continuation, pause and completion belong to the host's native goal; ClearAI attaches criteria and hypotheses through `Frame` and completes it through `Conclude` after an independent evaluation passes.
 
-## proposition
-A claim stated clearly enough to be examined. A proposition is not yet a fact.
+## Hypothesis (judgement)
+A judgement to test, stating what result would refute it. Its status is computed from evidence, never scored by the model.
 
-## hypothesis
-A proposition carrying an explicit refutation condition and preparing to enter verification. A hypothesis's state is computed from evidence, never scored by the model.
+## Criteria (what counts as done)
+Written in advance: what counts as done, or wrong. Written before the work; revisions keep the old versions.
 
-## verification
-A registered action taken to test a hypothesis, carrying a level and criteria. A step carries at most one verification.
+## Verification
+A step that tests one hypothesis, with a level and criteria. A step tests at most one hypothesis.
 
-## fact
-A conclusion that has been admitted under the applicable evidence and evaluation rules. A fact remains traceable to the proposition, observations, evidence, and admission that support it.
+## Observation (what was delivered)
+The artefacts and execution record a step delivers. It reports what was found; on its own it establishes nothing.
 
-## process ontology
-The epistemic harness's own backend flow: which objects exist, which states they take, who may push which transition, and who judges at each level. It is a code declaration (`preset/plugins/ontology.js`), validated at assembly and changed per plugin release; it **never enters the project ledger and is not editable at runtime**. A human sees it as a state shape (worldlines, proposition groups); the model reads it as a charter (`clear/ontology/verification-loop.md`).
+## Admission (accepted / blocked)
+Answers only whether an artefact is accepted: it exists, is non-empty, is well-formed. Admission is not adjudication.
 
-## domain ontology
-A project knowledge base's **language layer**: a governed set of conventions about which concepts exist in this domain, which predicates relate them, and what value form a relation takes. Its authority is ledger events (`ontology/*`), folded into `state.lexicon`; entries are admitted with a basis, revised with versions, and only ever deprecated (never deleted), and a semantic change must take a new id. It is not itself an empirical claim — empirical claims use it as vocabulary and pass the loop to become facts. In product contexts, "the ontology" means this by default.
+## Evaluation (independent review)
+A verdict from comparing observations against the registered criteria. At L3+ an independent evaluator does it: fresh context, read-only, structured output.
 
-## concept (term)
-One entry in the domain ontology: a domain concept's name, gloss, aliases and parent. It is a node in the ontology graph and what an assertion's `subject.type` may reference; admission requires a basis.
+## Evidence (why)
+The result of an evaluation: supports, refutes or inconclusive, with a level and references. Never edited.
 
-## predicate
-A relation declaration in the domain ontology: its subject domain (a concept), its range (another concept, or one of the five value forms), and whether it is single-valued. It is an edge in the ontology graph; only multiple values on a single-valued predicate derive a **conflict**.
+## Fact (a conclusion you can trust)
+A hypothesis promoted once evidence suffices, with scope, level and evidence, optionally with assertions. A human may retract it; the record stays.
 
-## assertion
-The content form of a fact: subject–predicate–object (plus qualifiers). It is **additive** — a fact without one stays valid and simply shows as "unstructured". An assertion lands with the fact at promotion and is never rewritten retroactively.
+## Level (strength of the test)
+L0–L4. Decides only who judges, and that L4 needs a human release.
 
-## value form
-The form of an assertion's object: statement, quantity (a number plus a unit), formula, code (a path to a re-runnable file in the workspace), or reference. A relation predicate's object is instead an **instance** of another concept.
+## Human gate (needs you)
+Decisions only a person can make: L4 release, a plan blocked repeatedly, a fact meeting counter-evidence. The call that opened the gate asks the person directly and the answer never passes through the model; if nobody can answer, the goal waits.
 
-## conflict
-The paired reading the projection produces when two **un-retracted** confirmed facts fall on the same single-valued predicate, the same subject, and different objects. It is **surfaced, never adjudicated**: it retracts no side, decides nothing about which is true, and enters no gate; handling one goes through the existing human gate.
+## Domain ontology
+The language layer of project knowledge: concepts, predicates, value forms. A convention, not an empirical claim: admitted with a basis, display details revisable, deprecation sticky, any change of meaning needs a new id. In product context "ontology" means this.
 
-## ontology shelf
-The shelf view of the ontology's established content: every entry carries its boundary and support level, and older unstructured entries stay on the shelf, marked as such. It is the renamed "fact shelf" — what sits on it did not change; what changed is that entries are read as content of the ontology rather than scattered conclusions.
+## Concept
+An entry in the domain ontology: name, definition, aliases, parent. A node of the ontology graph.
 
-## ontology graph
-The graphical reading of the domain ontology: concepts are nodes, `is_a` and predicates are edges. It answers what this language **may** express — which is why it can exist before any fact does (a language before its sentences). It is drawn apart from the [entity graph](#entity-graph): their edges look alike, but one is a **declaration** and the other a **claim**.
+## Predicate
+A declared relation: domain, range (another concept or a value form), single-valued or not. An edge of the ontology graph.
 
-## entity graph
-The graph projected out of facts: instances are nodes, assertions are edges, and every edge carries that fact's support level and review state. It is drawn apart from the **ontology graph** (concepts and predicates) — one says "what may be expressed", the other "what has been expressed".
+## Instance
+A concrete thing that was found. Recorded with provenance the moment it is observed. A node of the entity graph.
 
-## evidence
-Material used to support or challenge a proposition, such as a source, record, measurement, or other traceable artifact. Evidence is not itself a conclusion.
+## Assertion
+Subject–predicate–object (+ qualifiers). The content form of a fact, and additive: a fact without assertions is still valid and shows as "unstructured".
 
-## observation
-A recorded result of examining the world, a source, or a system. An observation reports what was encountered; it does not by itself establish a fact.
+## Value form
+The form of an assertion's object: statement, quantity (number + unit), formula, code (a re-runnable file in the workspace), reference.
 
-## evaluation
-An explicit assessment of observations and evidence in relation to a proposition, including the strength, limitations, and uncertainty of that support.
+## Conflict
+Two unretracted confirmed facts disagreeing on the same single-valued predicate for the same subject. Surfaced, never adjudicated.
 
-## admission
-The governed decision to accept a proposition as a fact at a stated level or scope. Admission is distinct from evaluation and must preserve the basis for the decision.
+## Gap
+A reading computed from the record, each pointing to an action that would close it. Shown to the model only.
 
-## human gate
-A required point at which a person reviews and authorizes an admission or other consequential epistemic decision. Automation may prepare the decision, but it does not replace the human gate.
+## Ontology graph / entity graph
+The ontology graph shows concepts and predicates — what the language allows. The entity graph shows instances and assertions — what has been said, each edge carrying its level and review state. They are drawn separately.
 
-## RSI
-Recursive self-improvement: a process in which a system uses its own outputs or capabilities to improve how it performs future work. In ClearAI, RSI remains subject to the Epistemic Loop, traceability, and applicable human gates.
+## Ontology (UI)
+The single middle pane: the graph as its header, and below it one list of conclusions grouped by how far they can be trusted.
+
+## World Tree (UI)
+The right pane: the plan's steps and gates.
+
+## RSI (recursive self-improvement)
+A system using its own output to improve how it works in future. ClearAI makes no RSI claim.

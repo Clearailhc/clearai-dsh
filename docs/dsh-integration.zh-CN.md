@@ -1,5 +1,7 @@
 # DSH 集成
 
+> **改造中。** 本文按[「少即是多」方案](less-is-more-plan.zh-CN.md)描述目标设计；安装、构建与验证一节反映当前已发布的形态。
+
 ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面**上，DSH 引擎一行不改。本文说明这份仓库如何映射到那一层、什么东西装到哪里、以及怎么构建与验证。
 
 ## 一个包，三个面
@@ -9,10 +11,24 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 | 面 | 承载什么 | 来自哪里 |
 |---|---|---|
 | 宿主组合（补丁层） | `clearai-host` 行 → 宿主半：会话投影单元 `clearai`、它的读路由、浏览器模块声明 | `pack/cordis.patch.yml`、`ui/lib/index.js` |
-| Agent 预设（名册） | ClearAI 的工具、提示词段、闸门、技能与工作区模板 | `preset/` |
-| 客户端模块（浏览器） | 产物视图、世界线 / 命题与事实 / 外脑三个页签 | `ui/lib/client.js` |
+| Agent 预设（名册） | ClearAI 的十件工具、三段提示词、守卫；以及它组合进来的 DSH 原生能力 | `preset/` |
+| 客户端模块（浏览器） | 中栏「本体」一格、右栏「世界树」一格 | `ui/lib/client.js` |
 
 这个分工不是装饰。客户端模块**只**通过**宿主** loader 的行被发现，所以浏览器那一半必须在补丁层；投影单元是进程级、只注册一次的，所以它不能待在会被重建的预设里。反过来，判断侧——工具、提示词段、技能——正好就是「一个会话的能力集」的定义，所以它属于预设。
+
+## 用宿主的，不自己做
+
+预设除了 ClearAI 自己的插件，还组合了这些 DSH 原生能力；对应的东西 ClearAI 不再自带：
+
+| 能力 | 原生包 | ClearAI 怎么用 |
+|---|---|---|
+| 目标与续跑 | `dsh-goal`、`dsh-tool-goal`、`dsh-goal-round-driver` | `Frame` 挂判据与判断；`Conclude` 过独立评估后调 `ctx.goals.complete()`；守卫拒绝模型直接完成 |
+| 计划审阅 | `dsh-plan-mode` | 人想审计划时用 `/plan` |
+| 子代理 | `dsh-subagent` | 派独立评估者 |
+| 问人 | `dsh-user-questions` | 开门的那次调用直接 `ctx.userQuestions.ask()` |
+| 交付 | `dsh-tool-present`、交付卡片 | 结案时内核追加一条 `deliverables/presented` |
+| 文件改动 | `dsh-workspace-changes` | 不再维护自己的账本 |
+| 技能与项目说明 | `dsh-skill`、`PROJECT.md` | 不再自带模板与记忆 |
 
 ## 源 → 包 的映射
 

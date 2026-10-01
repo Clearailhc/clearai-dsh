@@ -1,15 +1,23 @@
 # Soul Map
 
-| Principle | DSH surface / code | Tests / status |
-|---|---|---|
-| Mechanism over advice | `preset/plugins/clearai-kernel.js` (`MECHANISM_TOOLS`, `ctx.tools.guard()`); host sandbox/approval; `ui/lib/fold.js`; `ui/lib/index.js` projection registration | `test/kernel.test.mjs`, `test/host.test.mjs`; implemented. Constraints that live only in prompt text are marked as preferences here, not as enforced mechanisms. |
-| Impossible-to-express over forbidden | Tool schemas in `MECHANISM_TOOLS`; `derive()` and fold monotonicity; no writable `status`/`progress`/`phase`, no L3+ caller verdict | `test/kernel.test.mjs` schema and monotonicity assertions; implemented. |
-| Intent/fact separation | `admission()` artifact checks; `advance_plan`; `fold.js` event application and derived `wire` view; `conversation.view` consumes `useProjection('clearai')` | `test/kernel.test.mjs` admission, fabricated-evidence, and derived-progress assertions; implemented. |
-| Doer not judge self | L3+ guard (`verdict_not_accepted`); evaluator dispatch via `subagents.start('spawn', ...)` with read-only face and `outputSchema`; audit records | `test/kernel.test.mjs` and host/e2e audit assertions; implemented for machine evaluation. A per-step/per-branch L4 human release is implemented; the full eight-state verification machine and a universal L4 gate over every evaluation are not. |
-| Preserve history | Append-only session log and `fold.js`; `refine`/`void` mutations; supersession fields; git worldline refs and recovery commits; `FileHistory`/`RestoreFile` per-file restore; versioned revision and sticky deprecation of domain vocabulary (`ontology/term_deprecated` offers no resurrection) | `test/kernel.test.mjs` preservation/worldline/restore assertions plus revision-kept and deprecation-sticky assertions in `test/domain-language.test.mjs`; implemented. |
-| A graph is a projection, not storage | `ui/lib/domain-language.js` (`graphProjection` / `deriveConflicts` / `lexiconHealth`); `state.lexicon` and `view().lexicon` in `ui/lib/fold.js`; layout is a deterministic pure function | `test/domain-language.test.mjs` (same ledger yields the same graph, conflicts surfaced only, old ledgers unaffected); the fold layer, the ten verbs and the shelf are all implemented; the panel renders the ontology/entity graphs, entry cards, the conflict row, the vocabulary maintenance zone and the Inspector, and its editing drawer (register / revise / deprecate over the human-gate route, the same criteria as the model's verbs) is wired — see stages D–E of the [development plan](optimization/domain-ontology-plan.md). |
-| A semantic change must take a new id | `applyLexiconMutation` accepts display-information revisions only; `parent` / `range` / `functional` never travel through revision | `test/domain-language.test.mjs` (a semantic change must deprecate and register anew; deprecation is sticky); the fold layer is implemented. |
+> **Being rebuilt.** This table records target mechanisms from the ["less is more" plan](less-is-more-plan.zh-CN.md). "Phase" is the implementation phase in section 8 of the plan; until a phase lands, [Known Gaps](known-gaps.md) is authoritative.
+
+Each principle maps to the mechanism and tests that carry it. Where no mechanism exists, it is marked as a preference.
+
+| Principle | Mechanism | Tests | Phase |
+|---|---|---|---|
+| Do only what the host cannot | The preset composes native goal, plan mode, subagent, user-questions, deliverables, workspace-changes, skill and PROJECT.md; the kernel no longer ships its own versions | Composition test: the kernel registers no tool duplicating a native one | 2–3 |
+| Mechanism over exhortation | `ctx.tools.guard()`; kernel intent-tool schemas; `ui/lib/fold.js` | `test/kernel.test.mjs`, `test/host.test.mjs` | Exists; narrowed per phase |
+| Make invalid claims unrepresentable | No writable `status`/`progress`/`phase`; no caller verdict at L3+; monotonic step rank | Schema and monotonicity assertions | Exists |
+| Separate intent from fact | `admission()`; `AdvancePlan` as the only completing action; progress and facts derived by the fold | Admission, forged-evidence and derived-progress assertions | Exists |
+| The doer does not judge their own work | L3+ dispatches an independent evaluator; `Conclude` calls `ctx.goals.complete()` only after independent evaluation; a guard rejects the model's direct `update_goal(complete)`, including nested PTC calls | Guard tests (prototype: `tools/spikes/goal-guard.plugin.mjs`) | 3 |
+| Only a human makes a human's decision | The call that opens a gate calls `ctx.userQuestions.ask()`; the answer returns in-process; on `NO_PROVIDER` the native goal is set to blocked | Human-gate tests (prototype: `tools/spikes/human-gate.plugin.mjs`) | 3–4 |
+| Preserve history | Append-only session log and fold; `RevisePlan` keeps old criteria; retraction only marks; vocabulary revisions recorded, deprecation sticky | History assertions, `test/domain-language.test.mjs` | Exists |
+| The graph is a projection | `ui/lib/domain-language.js` (`graphProjection` / `deriveConflicts`); deterministic layout | `test/domain-language.test.mjs` | Exists |
+| A change of meaning needs a new id | `Define` on an existing id changes display details only; a change of meaning goes through `Deprecate` + a new id | Vocabulary revision and deprecation assertions | 4 |
+| Speak about process only when needed | The Ontology pane holds only the conclusion list and graph; the run-state card is injected only on change; deliverable cards only at close | Client snapshot tests, run-state dedup tests | 6 |
+| A scaffold, not a script | Three prompt sections (identity / loop / talking to people) | Prompt length and section tests | 5 |
 
 ## Authority boundary
 
-Host-owned projection, persistence, client wiring, and safety policy live in the package's host half (`ui/lib/index.js` → `lib/host.js`); preset-owned tools, guards, and prompt sections live under `preset/`. The mapping between source and package is in [DSH integration](dsh-integration.md). End-to-end verification is `tools/e2e-run.mjs`; deployment composition is `tools/verify-deploy.mjs`.
+The host half (`ui/lib/index.js` → `lib/host.js`) owns the projection and client wiring; the preset `preset/` owns tools, guards and prompts. Source-to-package mapping: [DSH Integration](dsh-integration.md).

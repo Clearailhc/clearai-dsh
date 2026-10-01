@@ -1,200 +1,128 @@
-# Loop philosophy: the mechanism protects the fact boundary
+# Loop Philosophy: Let Mechanisms Hold the Fact Boundary
 
-This document answers one question: **why ClearAI looks the way it does**. Each principle is expected to land on a mechanism or a test in this repository; a principle with no such landing point is a preference, not a system guarantee.
+> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
 
----
-
-## 0. The premise
-
-> **Let the model make the intelligent judgment; let the system hold the fact boundary.**
-
-This is not a division-of-labour slogan; it is an **interface definition**. It says what may be handed to probability and what must be handed to determinism:
-
-- **Given to the model:** understanding material, proposing hypotheses, choosing a route, judging which evidence is more credible, deciding what to do next.
-- **Not given to the model:** what counts as complete, what the state is, whether a fact may be written into the knowledge base, whether a write can be retracted, whose verdict is valid.
-
-What the second group shares is this: **each has a correct answer, and that answer does not depend on who gives it.** Whenever that holds, the system computes it — because asking a model to *say* a fact that could have been *computed* downgrades certainty into probability.
-
-A conclusion is trustworthy exactly when it has survived a test that could have failed it. The system does not supply the test; it **guarantees the shape of the loop**: every conclusion is preceded by a test that can fail, the test is registered before it runs, and the result is recorded honestly.
+This document answers: **why ClearAI looks the way it does**. Every principle should land in a mechanism or a test; one that does not is only a preference.
 
 ---
 
-## 1. Six principles that land in mechanisms
+## 0. The thesis
+
+> **Let the model make the intelligent judgements; let the system hold the fact boundary.**
+
+This is an interface definition:
+
+- **Given to the model**: understanding material, proposing judgements, choosing a route, weighing evidence, deciding what to do next.
+- **Not given to the model**: what counts as done, what the current state is, whether a fact may enter knowledge, whose verdict counts.
+
+Questions of the second kind have a correct answer that does not depend on who answers. Wherever that holds, the system computes it — asking the model to *say* something that could be computed downgrades certainty to probability.
+
+**Origin.** The biggest risk of doing research with AI is not failing to answer but answering too smoothly: what is known, guessed and invented all come out in the same voice, people cannot tell which sentence to trust, and the next session starts from zero. Epistemology answers "why can I trust this sentence"; ontology answers "what do these conclusions add up to".
+
+**The scaffold principle.** Models keep getting stronger. ClearAI supplies only what a model cannot and should not do for itself; the rest goes to the model or to the host. So this version's main move is subtraction: nothing the host already has gets a second copy, and the prompt keeps only the skeleton.
+
+---
+
+## 1. Six principles that live in mechanisms
 
 ### P1 · Mechanism over exhortation
 
-**Behavioural constraints belong in mechanisms, not in prompt text.**
+Prompts are probabilistic: write "do not declare completion yourself" ten times and step 40 of a long context will still get around it. Mechanisms are deterministic.
 
-Prompts are probabilistic: write "do not run dangerous commands" ten times and it will still be bypassed at step 40 of some long context. Mechanisms are deterministic. So in this system, every important constraint should have a **landing point in code**:
-
-| Constraint | Landing point |
+| Constraint | Mechanism |
 |---|---|
-| Dangerous commands cannot run | DSH tool governance rejects disallowed commands before execution; ClearAI's policy contribution takes part |
-| Writes cannot interleave | Workspace writes are bounded by runtime governance and the ledger |
-| Tools cannot escape the workspace | DSH workspace boundaries and the sandbox constrain paths |
-| A conclusion cannot certify itself | The kernel separates doer from evaluator by level (`SELF_JUDGE_MAX_INDEX`) |
-| A step cannot declare itself complete | `AdvancePlan` is the only completion verb, and it must deliver evidence |
+| A goal cannot declare itself complete | A guard rejects the model completing the native goal; only `Conclude` completes it, after independent evaluation |
+| A step cannot declare itself done | `AdvancePlan` is the only completing action, and it requires the artefact |
+| A conclusion cannot certify itself | Doer and judge are separated from L3 up |
+| A human's decision cannot be relayed | The kernel asks the person directly; the answer does not pass through the model |
+| Dangerous commands, leaving the workspace | The host's tool governance, sandbox and permission presets |
 
-**The test:** if a constraint exists only in prompt text with no mechanism behind it, it will eventually fail. Either add the mechanism or admit it is a preference. The [soul map](soul-map.md) applies exactly this test, marking which principles are enforced and which are still preferences.
+**Test**: a constraint that lives only in a prompt will fail eventually. Either add a mechanism or admit it is a preference.
 
-### P2 · Unrepresentable over unviolable
+### P2 · Unrepresentable beats forbidden
 
-Stronger than "we added a defence so it cannot go wrong" is "this mistake cannot be expressed at all".
+Stronger than "we defend against this error" is "this error cannot be written": step rank makes a downgrade unrepresentable; tools have no writable state fields; L3+ paths take no caller verdict at all.
 
-Two instances:
+### P3 · Separate fact from judgement
 
-- The rank of a plan step (`open/blocked=0 < advanced/void=1`) makes **downgrade unrepresentable** — there is no "reject and redo" edge, and rather than adding a defensive edge, the design does not offer the path.
-- The fold pushes done / void / verified / adopted back down on write, making "a fact going backwards" **unrepresentable on the write side**.
+The model may **request**, not **declare**. Step state, hypothesis state and progress are folded from the log, never stored a second time. **Every stored state is a potential lie**; state that can be recomputed can never disagree with the facts.
 
-### P3 · Separate fact from judgment: intent tools cannot assert facts
+### P4 · The doer does not judge their own work
 
-The model may **request**; it may not **declare**.
+Criteria are written before results exist; L0–L2 may self-judge with a reviewable basis; L3+ dispatches an independent evaluator with a fresh context reading artefacts only, and the system writes the evaluation card, not the evaluated party. Completing a goal also needs independent evaluation.
 
-- A plan step's `status` and `loops` **do not accept a caller declaration** — the model cannot mark a step done, only deliver evidence and let the system advance it.
-- A goal's phase (drafting/planning/executing/auditing/stalled…) and its completion are **entirely derived**, with no second ledger; `goal_id` and `phase_id` are written only on the plan side.
-- A hypothesis's state is **computed** from evidence, not scored: which level it passed, how many refutations, how many inconclusive results.
+### P5 · Delete nothing
 
-The direct payoff: **the system's state can always be recomputed**, so it can never disagree with the facts. Any stored state is a potential lie.
+Refuted judgements, rejected artefacts and retracted facts all stay. A refuted judgement is an asset: it records a dead end, which is a real output of exploration.
 
-### P4 · The doer does not judge itself
+### P6 · Growing the ontology is native to the loop
 
-- Criteria are written **before the result appears**. `done_criteria` is enforced at the entry point and checked for self-reference (a criterion may not cite itself).
-- L0–L2 allow self-judgment by the doer, but **the basis must be reviewable**; L3 and above refuse self-judgment outright (`verdict_not_accepted`).
-- An independent evaluator reads the artifacts with fresh context and produces a structured evaluation card; the system lands the card, **never passing through the evaluated party**.
+A mechanism that is not part of the task's completion function is merely "available". So knowledge work has a **structural** trigger: when a goal is open with registered judgements, the system enters knowledge mode — the run-state card shows related known facts and gaps (model only, three kinds), and closing has one gate (entities named in assertions must be on the graph). Ordinary Q&A never enters it and pays nothing.
 
-### P5 · Nothing is deleted
+A real run gave a counter-intuitive result: what changed behaviour was mainly **seeing the gaps**, not the gate. Visibility makes the model want to do it; the gate stops it from going around.
 
-Refuted hypotheses, rejected observations, retracted facts, losing worldlines — all are kept and inspectable.
+---
 
-- Ledger history **only moves forward**: a restore is a new commit, not a rollback.
-- A losing worldline is marked `pruned` and kept; **only the working copy is removed, the branch ref stays** — later re-judgment depends on it remaining readable.
-- Goal revisions keep their version and reason (`SetGoal` requires a reason; superseded sections are marked, not deleted), and the goal document is **not cleared** when it closes.
+## 2. One loop
 
-A refuted hypothesis is a valuable asset: it records one road that did not work, and that is a real product of exploration.
+> question → judgement (state what would prove it wrong) → a test that could fail → evidence → bounded conclusion → grows into the ontology
 
-### P6 · Growing an ontology is native loop behaviour, not another mode
+Every decision in this version uses this one ruler: what directly serves the loop stays; what does not is deleted or handed to the host. It replaces the old "seven stages" and "four runtime beats" — two descriptions of the same thing; we keep one.
 
-**A mechanism that is not in the task's completion function is merely "available on request".** Ontology, entities and the epistemic loop were all there, yet the shortest path for ordinary research was still "retrieve → summarise → write a report"; building an ontology required the user to remember to ask. That is not a capability gap — it is a **wiring gap**.
+**Admission does not adjudicate** — the part of this design we are most sure of. Admission checks only that an artefact exists, is non-empty and is well-formed. It answers "accept or not", never "what does it show", so admission cannot contaminate a conclusion; the verdict is left whole to the evaluator.
 
-The fix is not another prompt paragraph but making the test for knowledge work **structural**: a goal is still open and carries registered (hypothesis) propositions — the act of that commitment is itself a promise the model has already made. When it holds, the system enters **knowledge mode**:
+**One completing action**: `AdvancePlan` is the only action that advances a step; `RevisePlan` (add a step, change criteria, void) never changes progress. With one action that advances, "who advanced this step" always has an answer.
 
-| Face | Shape | Answers |
+---
+
+## 3. Safety belongs to the host
+
+This section used to say "after-the-fact restore replaces up-front approval", resting on our own git ledger. This version hands file history back to the host, which shows what changed each turn but **cannot restore**. So the premise moves: safety is carried up front by the host's **permission presets and approvals**, no longer after the fact by our ledger. This is an accepted cost, recorded in section 6 of the [plan](less-is-more-plan.zh-CN.md).
+
+---
+
+## 4. Handling failure
+
+**One test: who wrote this data.**
+
+- Provider, model parameters or external payloads broken → normalise and count at the boundary, do not echo it to the model, never let an external blip become the death of the run.
+- State we wrote ourselves broken → the record is broken; never silent.
+
+| Layer | Shape | Path |
 |---|---|---|
-| Knowledge preflight | Reading (read-only, bounded, literal hit, no semantic guessing) | What is already known that can be reused? |
-| Gaps | Reading (computed from existing facts, each naming one action that can close it) | What form is still missing? |
-| Knowledge gate | Block (before close, before dispatching an evaluator) | May a core conclusion be promoted with no typed assertion? |
+| Ordinary tool error | An error in the same turn | The model corrects itself |
+| Provider failure | A typed fact | Bounded backoff; if unavailable, pause and continue on "continue" |
+| Engine-level exception | Marked "effect may have committed" | Observe first, then consider retrying |
 
-Ordinary Q&A never makes that commitment and never enters this mode — the **zero-cost contract**. Real runs produced a counter-intuitive finding: what changed behaviour was the **visibility of gaps**, not the gate (models registered terms and attached assertions after seeing the gaps on the card). So both stay: **visibility makes it want to; the gate stops it from going around.**
-
-**Test**: if a discipline only works when the user or model remembers it, it has not entered the task's completion function; either wire it to a structural test, or admit it is a preference.
+Side-effecting tools run at most once; past the dispatch boundary an unknown outcome means: observe the current facts first.
 
 ---
 
-## 2. Seven stages, four runtime beats
+## 5. Context is a governed resource
 
-The Epistemic Loop unfolds into **seven stages**: Frame → Hypothesize → Plan → Observe → Verify → Evaluate → Record and act (see [The Epistemic Loop](epistemic-loop.md)).
-
-At runtime these compress into **four beats**: plan → execute → observe → reflect. The four beats are not a second ontology; they are the operating rhythm of model and system working together. **One loop advances; there is no multi-agent orchestration** — the sub-roles (Scout / Executor / Evaluator) are derived by the harness from triggers, not freely delegated.
-
-| Beat | Stages it covers | What the model does | What the system guarantees |
-|---|---|---|---|
-| **Plan** | Frame + Hypothesize + Plan | Decompose steps, write criteria | Fine-grained, executable, evidence-acceptable; `done_criteria` enforced; ≤25 steps; artifacts declared |
-| **Execute** | Observe | Explore, write scripts, compute | Read-only work in parallel, writes serial; sandbox; every write lands in the ledger (a snapshot at each turn boundary, plus a commit at each delivery) |
-| **Observe** | Verify | Receive results | **Admission only decides whether to accept, never what it means** |
-| **Reflect** | Evaluate + Record and act | Deliver, converge, amend | `AdvancePlan` is the only completion verb; evaluation is separated by level; conclusions land with their bounds |
-
-**"Admission does not judge" is the part of this design I have most confidence in.** Admission checks exactly three things — a declared artifact **exists**, is **non-empty**, and is **structurally valid**. It answers "do we accept this observation", not "what does this observation show". Because it does not judge, there is no "admission contaminates the conclusion" problem; judgment is left entirely to the evaluator in the next stage.
-
-Across the four beats there is a **single-verb principle**: `AdvancePlan` is the only verb that advances; the other three (`AmendPlan` adds a step, `RefinePlan` changes criteria without touching progress, `VoidPlanStep` voids with a reason) never change progress. **Only one verb advances the loop**, which keeps "who advanced this step" permanently answerable.
+1. **A stable prefix is a hard constraint.** Tool order is frozen; the environment section carries no time; each tool result has one rendering definition.
+2. **Injection is bounded.** The run-state card is injected once when state changes; the prompt is three sections, roughly three to four thousand characters; how to use a tool lives in the tool's description and appears when used.
+3. **Every byte sent to the model is backed by the log.** Facts about the channel are broadcast only, never logged.
 
 ---
 
-## 3. Three lines of defence at the fact boundary
+## 6. Engine and content are decoupled
 
-Safety does not rest on any single mechanism but on a three-stage relay:
-
-```
-before: deterministic gate in tool governance  →  during: sandbox + ledger  →  after: recoverable ledger + per-turn change strip
-```
-
-One deliberately counter-intuitive trade-off: **execution is unapproved by default**, on the grounds that "recovery afterwards replaces approval beforehand" — if every write can be restored precisely, the cost of blocking every write exceeds the friction it removes. The safety net therefore becomes three things: block **genuinely dangerous** actions (not all of them), guarantee the ledger is **recoverable**, and keep changes **visible** in the turn strip.
-
-That trade-off holds only if the ledger is reliable enough, so the ledger's requirements are stricter than elsewhere: fixed identity, fixed HEAD, explicit exclusions, and a single failure that does not block the main flow but is never silently swallowed.
-
-It also holds only if the ledger's **coverage starts at the first turn**: a snapshot is taken at each turn boundary in which this session wrote something, so the window in which execution is unapproved and unrestorable is not "everything before the first delivery".
+**ClearAI does not modify the DSH engine.** The epistemic layer is added on DSH's composition surface as contributions: one host package, one preset, one client module. New behaviour = register a contribution + declare a row, never an engine branch. The return is that it can be trimmed, verified at assembly and replaced. This version goes further: **for capabilities the host already provides, we contribute nothing at all.**
 
 ---
 
-## 4. The philosophy of failure
+## 7. Internal tensions
 
-### One test: who wrote this data
+A philosophy document that lists only strengths is marketing. These are the **real** tensions in this design:
 
-Boundary normalisation is not "swallowing faults"; it is **letting each layer digest the errors of its own layer**:
-
-- **provider / model parameters / external responses** → silently normalised at the entry boundary **with a counter kept**. Not echoed to the model (echoing only seeds behavioural drift in the context), not panicked (that promotes an external hiccup to the death of an entire run).
-- **Our own serialised state, approval records, plan data, snapshots** → if these break, the ledger is broken; **never silent**.
-
-Corollary: **untrusted input must not be promoted into the death of a run.**
-
-### Three paths, strictly separated
-
-| Layer | Symptom | Path |
-|---|---|---|
-| Ordinary tool error | `ok=false` + `failure_class` in the same turn | Continue; the model self-corrects |
-| Provider failure | Normalised into a **typed fact** | Bounded backoff; if finally unavailable the run is `paused` and one "continue" resumes it in place |
-| Engine-level unclassified exception | Promoted to an engine fault, **marked as possibly having committed effects** | Downgraded to a **read-only** recovery turn |
-
-### When the effect is uncertain, observe first
-
-Side-effecting tools are **at-most-once**; once past the dispatch boundary an unknown outcome is treated as "effect unknown". There is one semantics: **observe the current facts first, then talk about retrying**. The safety precondition for a retry is "knowing whether the last attempt actually happened", and under an unknown effect that precondition does not hold.
-
----
-
-## 5. Context is a governed resource, not a cache
-
-Three disciplines, each with a landing point in code:
-
-1. **A stable prefix is a hard constraint, not an optimisation.** The tool projection order is frozen; the environment section **deliberately contains no time** (time differs on every call and would cost the prompt and all history after it their prefix cache); rendering of a given tool result has exactly **one definition**, so the live path, the replay path and the history-rebuild path produce **the same bytes**.
-2. **Every byte ever sent to the model must be accounted for in the transcript.** The "recorded" and "observed" states of an event are strictly separated: facts about the **channel** are broadcast but never land in the transcript, because they are facts about the channel, not about the **work**.
-3. **Injection must be bounded, with hard caps.** The run card is rebuilt each turn; the compaction threshold is configurable; observation content is paged.
-
-Discipline 2 has a neat corollary: after an SSE reconnect there is **no backlog owed**. Anything that does not land in the ledger never took part in the resume cursor, so what a reconnect fetches is always a complete sequence of facts.
-
----
-
-## 6. Engine and content decoupled
-
-**ClearAI does not modify the DSH engine.** Three supports:
-
-- The epistemic layer is added as **contributions** on DSH's composition surface: one host package, one agent preset, one client module.
-- Behaviour enters the runtime through a **frozen preset and kernel contract**; when declaration and implementation disagree, assembly fails rather than silently reinterpreting bad data as a different set of permissions.
-- The ontology declaration (`preset/plugins/ontology.js`) validates its shape **at assembly time** and is cross-checked against the fold by tests.
-
-**A new behaviour = register a contribution (Tool / policy / prompt section) + one declaration line, never a new engine branch.**
-
-Why is this discipline worth its complexity? Three concrete returns:
-
-1. **Trimmable**: a different distribution is a different manifest (fewer or different plugins), not a code branch.
-2. **Verifiable**: every invariant can run at assembly time instead of surfacing on some runtime branch.
-3. **Replaceable**: swap out every prompt and role configuration and the engine code is untouched.
-
----
-
-## 7. The real tensions in this philosophy
-
-A philosophy document that lists only strengths is marketing. These tensions genuinely exist:
-
-1. **Mechanism completeness ≠ implementation completeness.** The clearest case is the verification loop: the documents describe an eight-state machine for verification and an "L4 requires human release" rule, while the latter is not a universal gate over every evaluation (see the implementation status at the top of [Verification ontology](verification-loop.md)). Designed completeness is easily mistaken for running completeness.
-2. **The evidence gate rests on criteria, not levels, so a missing criterion changes the gate's shape (partially tightened, 2026-09).** Dispatching an independent evaluator is triggered by `needs_audit` (artifacts complete **and** `done_criteria` non-empty) — the criterion is a **structural precondition** of that gate. The old wording was "a step at L3 or above without `done_criteria` takes the deterministic release exit and never passes through independent evaluation"; **the normal entry point now closes that**: `CreatePlan` calls `validateSteps`, which requires every step's `done_criteria` to be a string of at least 4 trimmed characters, or the whole call is refused (`preset/plugins/clearai-kernel.js:2405-2426`, called at `:2745`). The soft spot therefore now applies only to **legacy logs, internally constructed plan objects, and any entry point added later** — it is an entry-point-consistency problem, no longer a "users may omit criteria" problem. The residual philosophical risk is that it still assumes **every path into the system** validates criteria, and that assumption is held by tests rather than by the type system.
-3. **Nothing mechanically checks that documents match the implementation.** This repository has repeatedly shipped "the mechanism changed but the docs, comments or prompts did not" (the auto-confirm branch for plan authorization was deleted, the continuation budget moved from 6/512 to 128, `set_autonomy` was removed — while comments and prompts kept describing the old semantics). The fix is to turn it into executable checks: the [mechanism truth table](optimization/truth-table.md) (`node tools/verify-truth-table.mjs`), the state-machine document (`node test/state-machine.test.mjs`), and a banned-phrase scan over the docs. **Wherever those checks do not reach, drift is still possible.**
-4. **Complexity and test density do not match.** The more complete the mechanism, the more tests are needed to show the mechanism is actually in effect — otherwise "a constraint that landed in a mechanism" and "a constraint believed to have landed in a mechanism" look identical in code. Current coverage lives in `test/`; known gaps are recorded in [Known gaps](known-gaps.md).
-5. **Unrepresentability costs money.** Every "make it unrepresentable" moves complexity from runtime to assembly time or the type layer. In a small system that may not pay off — this design accepts the cost because it bets correctness on determinism.
-6. **The ontology layer is convention and the fact layer is experience; conflating them turns "we decided to call it this" into "this is how things are".** The [domain ontology](domain-ontology.md) makes knowledge comparable and conflicts detectable, and the price is that it carries authority of its own — once a term is cited as fact, arguing against that conclusion starts to look like arguing against the whole vocabulary. Three mechanisms hold that in check: entries are admitted **with a basis**, deprecation is **sticky** (there is no delete), and a semantic change must **take a new id**; and conflicts are **surfaced, never adjudicated** — the vocabulary can tell you two assertions contradict each other, never which one is right.
+1. **Complete mechanisms ≠ complete implementation.** The documents describe the target design; what has landed is tracked in [Known Gaps](known-gaps.md).
+2. **Handing work to the host means inheriting its limits.** We lose restore; changes in the host's goal, question and deliverable behaviour reach us directly. The prototype spikes show today's interfaces work, not that they will not change, so every dependency must be pinned by tests.
+3. **There is no mechanical equivalence check between documentation and implementation.** The truth table, state-machine document tests and banned-phrase scans cover part of it; elsewhere drift is still possible.
+4. **The ontology layer is convention; the fact layer is experience.** Once a term is cited as fact, disagreeing with a conclusion can look like disagreeing with the whole vocabulary. Mitigations: entries need a basis, deprecation is sticky, a change of meaning needs a new id, conflicts are surfaced and never adjudicated.
 
 ---
 
 ## 8. In one sentence
 
-**Leave the uncertainty to the model and collect the certainty into mechanisms; whatever can be computed should not be spoken; whatever can be recovered need not be blocked in advance.**
-
-That is the whole intent of this loop.
+**Leave uncertainty to the model, put certainty in mechanisms, hand the host what the host can do; whatever can be computed should not be merely said.**

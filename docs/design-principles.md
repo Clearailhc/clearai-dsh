@@ -1,35 +1,49 @@
 # Design Principles
 
-These principles turn ClearAI’s epistemology into enforceable DSH behavior. They describe mechanisms, not aspirations; where a capability is not implemented, the companion soul map says so.
+> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
 
-## Mechanism over advice
+These principles turn ClearAI's epistemology into behaviour DSH can enforce. They describe mechanisms, not wishes; the implementation mapping is in the [Soul Map](soul-map.md).
 
-A rule belongs in schemas, guards, projections, lifecycle code, or tests—not only in prompt text. The preset contributes intent tools and guards; the host supplies sandbox, approval, persistence, projections, and client surfaces. Prompt guidance may explain behavior, but it is not the enforcement boundary.
+## Do only what the host cannot
 
-## Impossible-to-express over forbidden
+ClearAI does three things: the epistemic contract, the domain ontology, and presentation. Goals and continuation, plan review, subagents, asking the human, deliverable cards, file change history, skills and project instructions all come from the host. Rebuilding something the host already has adds one more thing to keep aligned and one more place to drift.
 
-Prefer APIs that cannot represent an invalid claim. Intent tools omit writable `status`, `progress`, and `phase`; higher-level paths omit caller-supplied verdicts and evidence. Progress is derived by the projection, and only `advance_plan` can advance a step. This makes downgrade and self-certification structurally unavailable rather than merely rejected after the fact.
+## A scaffold, not a script
 
-## Intent and fact must be separate
+Models keep getting better at knowing themselves and at long tasks. The prompt carries only a first-principles skeleton: identity, the loop, how to talk to people. How to use each tool lives in the tool's own description and appears when it is used; current state comes from the run-state card, injected once when it changes.
 
-The model may request an action or submit an observation; it may not declare that work is complete or that an observation proves a claim. Admission checks declared artifacts for existence, non-emptiness, and basic structure. Evidence, phase, progress, and facts are produced by the kernel’s fold and derivation, not by model prose.
+## Mechanism over exhortation
 
-## The doer does not judge themselves
+Rules live in schemas, guards, projections or tests, not only in prompts. A constraint that exists only in a prompt is marked as a preference in the Soul Map.
 
-For L3+ work, caller-supplied verdicts are rejected. The kernel dispatches an independent, fresh-context evaluator with a read-only tool face and a structured output schema; its settled result becomes the audit record. Admission answers only whether material is admissible—it does not decide what the material means.
+## Make invalid claims unrepresentable
+
+Prefer APIs where an invalid claim cannot be written: tools have no writable `status`, `progress` or `phase`; L3+ paths take no caller-supplied verdict; steps have no downgrade path.
+
+## Separate intent from fact
+
+The model may request and deliver, but cannot declare completion or declare what an observation proves. Admission only accepts or rejects; evidence, progress and facts come from the fold.
+
+## The doer does not judge their own work
+
+L3+ dispatches an independent evaluator; completing a goal needs an independent evaluation, and a guard rejects the model completing the native goal directly.
+
+## Only a human makes a human's decision
+
+A gate that needs a person is asked by the call that opened it, and the answer returns to the kernel in-process without passing through the model. With nobody to answer, nothing is decided on the person's behalf: the gate stays open and the goal waits.
 
 ## Preserve history
 
-The system is append-only in meaning. Refinements retain prior criteria, superseded hypotheses remain recorded, voiding records a reason, and re-evaluation creates new evidence that can reference what it supersedes. Settled steps and branch decisions cannot silently regress; recovery is represented by new events or commits, never by erasing the past.
+Semantically append-only: revised criteria keep old versions, refuted hypotheses stay, voids carry reasons, retraction only marks.
 
-## A graph is a projection, not storage
+## The graph is a projection, not storage
 
-Both the ontology graph and the entity graph are computed from the same fold: `graphProjection()` is a deterministic pure function (the same ledger always yields the same nodes, edges and default layout), and coordinates, zoom and filters never enter the ledger. Editing on the panel only invokes verbs, and the shelf is rendered idempotently — **a read surface never turns back into authority**.
+The ontology and entity graphs are computed from the same fold, with a deterministic layout; a read surface never becomes the authority.
 
-## A semantic change must take a new id
+## A change of meaning needs a new id
 
-Domain vocabulary may revise display information (name, gloss, aliases), but a change to **meaning, subject domain, range or single-valuedness** must deprecate the old entry and register a new one. A stable id whose meaning drifts silently through history rewrites every old fact in today's terms — that is a false statement, not a refactor.
+Quietly changing what a stable id means rewrites every old fact with today's definition.
 
-## Consequences
+## Speak about process only when needed
 
-These principles imply one authoritative loop ledger, derived state rather than a second mutable state store, explicit human gates where required, and a strict separation between host safety invariants and preset epistemic behavior. See `soul-map.md` for the implementation map and current status.
+A user has four questions: what can I trust now; what was refuted and what is unclear; what does it add up to; what do you need from me. The UI and reports answer those four; process appears only when the person asks or must decide.
