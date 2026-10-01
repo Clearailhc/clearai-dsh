@@ -100,14 +100,14 @@ def generate_pdf(
 def check_dependencies():
     """Check if required dependencies are installed."""
     dependencies = {
-        'pandoc': 'pandoc --version',
-        'xelatex': 'xelatex --version'
+        'pandoc': ['pandoc', '--version'],
+        'xelatex': ['xelatex', '--version']
     }
 
     missing = []
     for name, cmd in dependencies.items():
         try:
-            subprocess.run(cmd.split(), capture_output=True, check=True)
+            subprocess.run(cmd, capture_output=True, check=True)
             print(f"✓ {name} is installed")
         except (subprocess.CalledProcessError, FileNotFoundError):
             print(f"✗ {name} is NOT installed")
