@@ -148,15 +148,15 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 ## What it looks like
 
-The middle column has two switchable views: **Deliverables** and **Ontology**. The right sidebar: **Worldlines** and **External Brain**.
+The middle column has two switchable views: **Deliverables** and **Knowledge**. The right sidebar: **Worldlines** and **External Brain**.
 
-**Ontology** — this view is your knowledge home. At the top, a **graph band**: the ontology graph (what your domain looks like) and the entity graph (what you have actually verified) toggle with one click; clicking a node or edge opens the **knowledge inspector** (definition / relations / assertions / evidence chain / history), and "filter by this" is an explicit action inside the detail view. Below that, the **ontology shelf**: established entries, each with assertion chips (click to see what the term means), boundary, and support level; contradictions surface automatically. The vocabulary maintenance block sits collapsed at the bottom — it auto-expands when a language exists before any sentence does.
+**Knowledge** — answers one question: what can you trust right now. One list of conclusions, grouped by how far you can trust them: **established / supported, awaiting review / not yet tested / unclear / refuted**. Each is one sentence with one line of "on what basis" (reasoning, checked sources, recomputed, independently reviewed, confirmed by a person — and whether the doer judged it themselves). Open one to see when it would stop holding, each piece of evidence, and the step that produced it. When two conclusions disagree, that rises to the top — which one stays is your call. The concept map stays collapsed until you open it: the ontology graph (what your domain looks like) and the entity graph (what has been found) toggle with one click, and a node or edge opens its details. The reasoning behind these cuts is in [Less is more](docs/less-is-more.zh-CN.md) (Chinese).
 
 <picture>
   <img src="docs/shots/zh/jepa-band.png" alt="The graph band: ontology graph and entity graph" width="820">
 </picture>
 
-*The band — the ontology graph and the entity graph share one deterministic projection, so the same ledger always yields the same picture (captured from a real session: 21 concepts, 9 predicates).*
+*The opened concept map — the ontology graph and the entity graph share one deterministic projection, so the same ledger always yields the same picture (captured from a real session: 21 concepts, 9 predicates).*
 
 <picture>
   <img src="docs/shots/zh/jepa-inspector.png" alt="Knowledge inspector: definition, relations, assertions, evidence chain" width="820">
@@ -166,7 +166,7 @@ The middle column has two switchable views: **Deliverables** and **Ontology**. T
 
 **Worldlines** — when two routes genuinely disagree, they run as separate branches with their own readings; the losing one stays on record, and adoption is a human press.
 
-**Deliverables** — the middle column keeps "what the plan declared" and "what actually exists on disk" apart.
+**Deliverables** — first the files you got (one per line, click to preview); each plan collapses to one line of "how far along", and opens to its steps.
 
 **External Brain** — skills and memory as DSH-native entries in one merged catalogue.
 
