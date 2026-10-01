@@ -781,10 +781,14 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 
 			// ① 零成本:没有词条时,这一格与从前逐像素相同(图带/冲突行/维护区都不出现)
 			const plain = renderOnto(factsView)
-			check('零成本:没有词条就没有图/冲突行/维护区', !plain.includes('概念图') && !plain.includes('说法不一致') && !plain.includes('词汇('), plain.slice(0, 120))
+			check('零成本:没有词条就没有图/冲突行/维护区', !plain.includes('点节点看知识详情') && !plain.includes('说法不一致') && !plain.includes('词汇('), plain.slice(0, 120))
+			/** D3:缺口是模型的待办(动作全是模型的动词),不上「知识」格——哪怕折法算出了一堆。 */
+			const withGaps = renderOnto({ ...typedView, knowledge: { mode: 'knowledge', gaps: [{ code: 'prose_only_claims', count: 3, detail: '3 条在验命题只有散文主张', nextAction: '用 SetGoal 的修订把这条主张写成断言' }, { code: 'entities_unlanded', count: 2, detail: 'x', nextAction: '先 RegisterInstance' }] } })
+			check('缺口不上「知识」格(D3:它是模型的待办)', !/缺口|散文主张|RegisterInstance|SetGoal/.test(withGaps), (withGaps.match(/缺口|散文主张|RegisterInstance|SetGoal/g) ?? []).join(','))
 
 			// ② 图带:本体图/实体图切换在,节点标签在,截断说明的措辞在(有节点就不会出现)
-			check('图默认收起成一行(过程按需,不占屏)', /看概念图 · 1 个概念/.test(typed) && !typed.includes('点节点看知识详情'), typed.slice(-200))
+			/** D2:图回答「这些加起来长成了什么」——是结果,不是过程:有词条就常驻在页眉,排在结论清单之前。 */
+			check('页眉图常驻:有词条就画,而且排在结论清单之前(D2)', typed.includes('点节点看知识详情') && typed.indexOf('点节点看知识详情') < typed.indexOf('已确立'), typed.slice(0, 300))
 			const band = react.render(components.GraphBand({ lexicon: lexiconFixture, layer: 'ontology', onLayer: () => {}, onFilter: () => {}, sessionId: 's1', fullscreen: false, onToggleFullscreen: () => {}, unlanded: null })).replace(/\s+/g, ' ')
 			check('展开后:层次切换与概念节点都在', band.includes('本体图') && band.includes('实体图') && band.includes('炉次') && band.includes('点节点看知识详情'), band.slice(0, 200))
 			check('值形态(quantity 这类语法)不画成节点', !/quantity/.test(band), band.slice(0, 200))

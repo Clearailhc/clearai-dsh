@@ -437,7 +437,7 @@ This view speaks only **what people hear** ([Verification loop](verification-loo
 | Block | When it appears | What it holds |
 |---|---|---|
 | Conclusions disagree | **only when conflicts exist** | Each side in its own conclusion's words; which one stays is a person's call (through the human gate). The affected rows are marked too |
-| **Header graph** | resident once vocabulary exists (one click collapses it) | Ontology graph ｜ entity graph toggle (~200px, zoom and pan); **draws only things in the domain**: value forms (`statement` / `quantity` / `reference` …) are grammar, not nodes; **clicking a node filters the list below by concept**; `⤢` expands to panorama |
+| **Header graph** | resident once vocabulary exists | Ontology graph ｜ entity graph toggle (~200px, zoom and pan); **draws only things in the domain**: value forms (`statement` / `quantity` / `reference` …) are grammar, not nodes; **clicking a node or edge opens its knowledge detail** (definition / relations / assertions / evidence chain / history), and "filter by this" is an explicit action inside the detail that filters the list below; `⤢` expands to panorama |
 | Filter line | **only while a filter is active** | Only items about "X": N/M · clear — N/M tells the truth, unmatched rows never vanish silently |
 | **Conclusion list** | resident | Facts and claims as one list, grouped by how far they can be trusted: **established / supported, awaiting review / not yet tested / unclear / refuted**, empty groups hidden; one sentence per row with one line of basis below (the kind of evidence, and whether the doer judged it); superseded and withdrawn items leave only an archive count |
 | An opened row | when a row is clicked | When it would not hold, each piece of evidence (plain words, no ids), assertion chips (expanding a term card in place), open the original, see the process |
@@ -449,7 +449,7 @@ This view speaks only **what people hear** ([Verification loop](verification-loo
 
 1. **Zero cost**: with no vocabulary there is no graph, conflict line, chips or maintenance block, only the conclusion list. Each block exists only when there is something to say.
 2. **Confidence ordering**: what can be trusted comes first, refuted claims come last (kept, never deleted), language (maintenance) at the bottom. Reference material never blocks conclusions.
-3. **The graph is both a face and an index**: the graph is this view's **head** (like a header; it does not compete with the conclusions), and its nodes *are* the index: clicking a concept node filters. It answers "what has all this grown into"; it is a result, not process.
+3. **The graph is both a face and an index**: the graph is this view's **head** (like a header; it does not compete with the conclusions), and its nodes *are* the index: open a node to see its detail, then "filter by this" to narrow the list below. It answers "what has all this grown into"; it is a result, not process.
 4. **Expand in place, never jump away**: conclusion rows and assertion chips expand in situ; conflicts are marked on the **affected conclusion row**. The only cross-view jump kept is "see the process" (that step in the worldlines tree).
 5. **Only exceptions interrupt**: disagreeing conclusions and health warnings each take one line; gaps never appear here.
 6. **Filtering is visible, clearable, and honest**: one status line plus clear, with N/M stating how many rows did not match (including older, untyped facts).

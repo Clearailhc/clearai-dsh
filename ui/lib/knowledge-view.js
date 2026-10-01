@@ -125,7 +125,7 @@ function fitLines(lines, limit = CARD_LIMIT) {
 		}
 	}
 	if (dropped > 0) {
-		const note = `- …(卡片为 ${limit} 字符上限省去 ${dropped} 行细节:完整读数在面板「运行态」与 CheckPlan 里)`
+		const note = `- …(卡片为 ${limit} 字符上限省去 ${dropped} 行细节:完整读数用 CheckPlan 取)`
 		/** 给这句提示**留出位置**:丢了行却不说,读的人会把这张卡当成全部。 */
 		while (measure(kept) + note.length + 1 > limit) {
 			let index = -1
@@ -142,7 +142,7 @@ function fitLines(lines, limit = CARD_LIMIT) {
 		if (measure(kept) + note.length + 1 <= limit) kept.push({ text: note, tier: 0 })
 	}
 	if (measure(kept) > limit) {
-		const note = `- …(卡片到达 ${limit} 字符上限,后面的行没有展开:完整读数在面板「运行态」与 CheckPlan 里)`
+		const note = `- …(卡片到达 ${limit} 字符上限,后面的行没有展开:完整读数用 CheckPlan 取)`
 		const out = []
 		let total = 0
 		for (const item of kept) {
@@ -264,7 +264,7 @@ function cardLines(state, derived, options, view) {
 			const readings = untouched ? '(未触及)' : `(${counts.join(' · ')}${skipped})`
 			push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}${skipLine(hypothesis)}`)
 		}
-		if (hypotheses.length > 10) push(`  · (还有 ${hypotheses.length - 10} 条命题未展开:面板「命题」里有全部)`, 2)
+		if (hypotheses.length > 10) push(`  · (还有 ${hypotheses.length - 10} 条命题未展开:中栏「知识」里有全部)`, 2)
 	}
 	if (knowledge.mode === 'knowledge') {
 		push(`- 知识模式:${knowledge.why}`)
@@ -301,7 +301,7 @@ function cardLines(state, derived, options, view) {
 			const tests = step.tests === null || step.tests === undefined ? '' : ` 【验 ${step.tests.hypothesis} · ${step.tests.level}】`
 			push(`  ${step.ordinal}. [${step.status}] ${step.do}${tests} → 物证:${(step.artifacts ?? []).join(', ') || '(未声明)'}`, 2)
 		}
-		if (plan.steps.length > 12) push(`  · (还有 ${plan.steps.length - 12} 步未展开:面板「计划」里有全部)`, 2)
+		if (plan.steps.length > 12) push(`  · (还有 ${plan.steps.length - 12} 步未展开:右栏「世界树」里有全部)`, 2)
 		const first = plan.steps.find((step) => step.status === 'open')
 		if (first !== undefined) push(`- 下一个可交付步:${first.id}(交付只能落在第一个未落定步)`)
 		if (plan.blocked !== undefined && plan.blocked !== null) push(`- 计划被拦:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次未过闸,停下等人)`)
@@ -340,7 +340,7 @@ function cardLines(state, derived, options, view) {
 		}
 		if (fork.merge?.provisional === true) push(`  · **临时采纳**(待复核):${fork.merge.decisionNote ?? '分差不足以称结论'}——它不是结论,是一个待复核的决定。`, 2)
 	}
-	if (forks.length > 3) push(`- (还有 ${forks.length - 3} 盘世界线未展开:面板「世界线」里有全部)`, 2)
+	if (forks.length > 3) push(`- (还有 ${forks.length - 3} 盘世界线未展开:右栏「世界树」里有全部)`, 2)
 	if (evidence.length > 0) {
 		const last = evidence[evidence.length - 1]
 		push(`- 最近一条证据:${last.id} ${last.verdict}(${last.evaluator} · ${last.level})`, 1)
@@ -349,7 +349,7 @@ function cardLines(state, derived, options, view) {
 	if (lexicon.terms.length > 0 || lexicon.predicates.length > 0) {
 		const typed = facts.filter((fact) => Array.isArray(fact.assertions) && fact.assertions.length > 0).length
 		push(`- 领域词汇:${lexicon.terms.length} 个概念 · ${lexicon.predicates.length} 个谓词${facts.length > 0 ? `;已升格事实里 ${typed}/${facts.length} 条带断言` : ''}`, 1)
-		if (issues.some((issue) => issue.severity === 'warning')) push(`  · 词汇健康度有 ${issues.filter((issue) => issue.severity === 'warning').length} 条待看(悬空引用 / 成环;在面板「本体」里)`, 1)
+		if (issues.some((issue) => issue.severity === 'warning')) push(`  · 词汇健康度有 ${issues.filter((issue) => issue.severity === 'warning').length} 条待看(悬空引用 / 成环;在中栏「知识」的词汇区里)`, 1)
 	}
 	if (entityNodes.length > 0) {
 		const assertionEdges = graph.edges.filter((edge) => edge.kind === 'assertion')
@@ -359,7 +359,7 @@ function cardLines(state, derived, options, view) {
 		const sides = conflict.sides.map((side) => `${side.fact ?? '?'}(${side.value})`).join(' 对 ')
 		push(`- **冲突(${conflict.predicate} · ${conflict.subject})**:${sides}——要么用证据推翻一侧,要么请人撤回一侧。`)
 	}
-	if (conflicts.length > 3) push(`- (还有 ${conflicts.length - 3} 对冲突未展开:面板「本体」里有全部)`, 2)
+	if (conflicts.length > 3) push(`- (还有 ${conflicts.length - 3} 对冲突未展开:中栏「知识」里有全部)`, 2)
 	if (goal !== null && Array.isArray(goal.unjudged) && goal.unjudged.length > 0) push(`- 结案留痕:有 ${goal.unjudged.length} 条假设没有被任何证据触及(${goal.unjudged.join(', ')})`)
 	{
 		const foreign = materials.filter((material) => material.source !== 'self')

@@ -90,6 +90,15 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 	// (这段纪律在**侦察人格**里(kernel 的 SCOUT_PERSONA),不在段表里,所以扫 KERNEL。)
 	check('侦察人格写明产出的长度纪律(3000 字以内 + 指针)', /3000 字以内/.test(KERNEL), KERNEL.match(/用 Markdown 写结论[^\n]*/)?.[0]?.slice(0, 80) ?? '(没找到)')
 
+	// D7(docs/less-is-more.zh-CN.md):对人说人的话——机制词与内部 id 不转述,结论按固定的五项写。
+	// 它是偏好(只在提示词里),所以这里钉的是「规则在场」,不是「模型照做」。
+	const delivery = SECTIONS.find((section) => section.name === 'clearai/delivery')
+	check(
+		'交付段写明对人说人的话:机制词不转述,结论按「结论 / 凭什么 / 范围 / 被推翻的 / 还没定的」(D7)',
+		/对人说话用人的词/.test(delivery.text) && ['**结论**', '**凭什么**', '**范围**', '**被推翻的**', '**还没定的**'].every((head) => delivery.text.includes(head)),
+		delivery.text.slice(-200),
+	)
+
 	// 假设留痕的纪律:不强求证实/证伪,但「没看过」不能留白(结案时会被如实记进账里)。
 	const loop = SECTIONS.find((section) => section.name === 'clearai/loop-contract')
 	check(

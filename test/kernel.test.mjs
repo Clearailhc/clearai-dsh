@@ -5205,6 +5205,22 @@ console.log('\n【输出契约:工具返回值必须落在自己声明的 schema
 	check('契约守卫是活的(故意越界能被抓到)', typeof probe === 'string' && probe.includes('extra'), String(probe))
 }
 
+console.log('\n【感知预算:工具结果不附卡,卡上一个数一种意思(docs/less-is-more.zh-CN.md D5/D6)】')
+{
+	const host = makeHost()
+	apply(host.ctx, {})
+	const S = 'session-perception'
+	const goal = await callOn(host, S, 'SetGoal', { claim: '把产物做出来', done_criteria: 'lab/perception.txt 存在', hypotheses: [{ claim: '能一次做成', refute_when: '做不成' }] })
+	check('工具结果的 message 只说这一下做成了什么,不附运行态卡(D5)', goal.ok === true && !String(goal.message).includes('【运行态卡】'), String(goal.message).slice(0, 120))
+	check('卡仍在结构化字段 card 里(没有丢,只是不进模型读的那一段)', String(goal.card ?? '').includes('【运行态卡】'))
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'p1', do: '写一版', artifacts: ['lab/perception.txt'], done_criteria: 'lab/perception.txt 存在' }] })
+	const card = (await callOn(host, S, 'CheckPlan', {})).card
+	check('CheckPlan 照旧以卡为正文(那是它的本职)', String(card).includes('【运行态卡】'))
+	check('卡上一个数一种意思:写「计划 a/b 步」,不写完成度百分比(D6)', /计划 0\/1 步/.test(card) && !/完成度/.test(card), card.split('\n').find((line) => line.includes('做到哪了')) ?? '')
+	check('卡上没有结尾说教与运行档(D5)', !/提醒:进度、阶段/.test(card) && !/运行档/.test(card))
+	check('卡上不指向不存在的面板(面板只有 产物 / 知识 / 世界树 / 技能 · 记忆)', !/面板「(运行态|计划|世界线|本体|命题|事实)」/.test(card))
+}
+
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failed > 0) {
 	console.log('失败项:')
