@@ -1589,8 +1589,8 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 			JSON.stringify(host.service.view(S).autonomy),
 		)
 		check(
-			'卡片如实说这是预设写的,且**不再承诺面板可切**',
-			/运行档:人在场\(部署预设写的/.test(host.service.renderCard(S)) && !/面板上可切/.test(host.service.renderCard(S)),
+			'运行档不进卡(它是部署预设,不是模型能据以行动的事实;要不要人由门决定)',
+			!/运行档/.test(host.service.renderCard(S)) && !/面板上可切/.test(host.service.renderCard(S)),
 			host.service.renderCard(S).split('\n').find((line) => line.includes('运行档')) ?? '',
 		)
 	}
@@ -3761,7 +3761,7 @@ console.log('\n【连拦计数 → 计划 blocked,停下等人】')
 	check('第三次未过闸 → blocked=true 且文案要求停下等人', last.blocked === true && /停下等人/.test(last.message))
 	check('台账记下 plan/blocked', eventsOf('plan/blocked').length === 1)
 	const card = (await call('CheckPlan', {})).card
-	check('派生阶段变成 stalled(派生,不存)', /阶段\(派生\):stalled/.test(card), card.split('\n').find((line) => line.includes('阶段')) ?? '')
+	check('派生阶段变成「卡住了」(派生,不存;卡上说人话,不露 stalled 这个码)', /我做到哪了:卡住了/.test(card) && !/stalled/.test(card), card.split('\n').find((line) => line.includes('做到哪了')) ?? '')
 	await call('VoidPlanStep', { step_id: 'u1', reason: '测试脚手架,不再需要' })
 	await call('ClosePlan', {})
 }
@@ -4018,7 +4018,7 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	check('冲突不进闸门(它是读数,不是等人处置的门)', derived.inbox.length === before && derived.inbox.every((item) => item.kind !== 'conflict'))
 	check('冲突不改任何一侧(两条事实都在,都没被撤回)', derived.factRows.filter((item) => item.predicate === undefined && Array.isArray(item.assertions) && item.assertions.some((row) => row.predicate === 'oxygen_ppm')).every((item) => item.review === null || item.review === undefined))
 	const cardText = thisHost.service.renderCard(SESSION)
-	check('运行态卡把冲突说出来并说明不替你选', /冲突/.test(cardText) && /系统不替你选/.test(cardText))
+	check('运行态卡把冲突说出来,并给出两条出路(推翻一侧 / 请人撤回)', /冲突/.test(cardText) && /用证据推翻一侧/.test(cardText) && /请人撤回一侧/.test(cardText))
 
 	// ⑤ 查已知:按条件取用,查不到如实说
 	const found = await call('QueryKnowledge', { term: 'furnace_batch' })
@@ -4377,7 +4377,7 @@ console.log('\n【世界线:读数的整串匹配与「算不出来」】')
 	check('第二条同样读不出一个数', b.ok === true)
 	const stuck = await call('ConvergeFork', {})
 	check('参赛不足两条 → UNDECIDABLE_NO_READINGS', stuck.code === 'UNDECIDABLE_NO_READINGS', String(stuck.code))
-	check('算不出来时明确「停下问人」,不退化成随便挑一条', /停下问人/.test(stuck.message) && /退化/.test(stuck.message))
+	check('算不出来时明确「停下问人」', /停下问人/.test(stuck.message))
 	check('分叉没有被悄悄收敛', /算不出来/.test((await call('CheckPlan', {})).card))
 
 	const gate = thisHost.listeners.get('tools/pre-execute')

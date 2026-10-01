@@ -311,7 +311,7 @@ console.log('\n【折法:冲突与健康度是派生读数,进读面不进闸门
 	check('冲突两侧的事实都没被改动(系统不替你选)', state.facts.length === 2 && state.facts.every((fact) => fact.review === null || fact.review === undefined))
 	const view = fold.view(state, 'session')
 	check('读面带出词汇 / 冲突 / 健康度 / 图', view.lexicon !== undefined && Array.isArray(view.lexicon.conflicts) && Array.isArray(view.lexicon.health) && view.lexicon.graph.nodes.length > 0)
-	check('卡片把冲突说出来并说明「不替你选」', fold.renderCard(state).includes('冲突') && fold.renderCard(state).includes('系统不替你选'))
+	check('卡片把冲突说出来并给出两条出路(推翻一侧 / 请人撤回)', fold.renderCard(state).includes('冲突') && fold.renderCard(state).includes('请人撤回一侧'))
 	check('撤回一侧之后冲突消失', fold.derive(fold.applyMutations(state, [{ t: 'fact/reviewed', fact: 'f2', decision: 'retracted', reason: 'bad' }])).conflicts.length === 0)
 }
 
@@ -772,7 +772,7 @@ console.log('\n【单一叙述源:knowledgeView 的形状与卡上限】')
 	/** 清单是空数组 ⇒ 与「没有清单」同一处置:退回压缩版 + 指针,不出现一个「判据(0 条)」小节。 */
 	const emptyList = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g3', claim: 'C', done_criteria: 'D'.repeat(400), promote_at_level: 'L3', revision: 1, criteria: [], hypotheses: [] }])
 	const emptyListCard = fold.renderCard(emptyList)
-	check('判据清单空数组 ⇒ 压缩版 + 指针(不写「0 条」小节)', emptyListCard.includes('立约时那一份') && emptyListCard.includes('clear/goals/g3.md') && !emptyListCard.includes('判据(0 条'))
+	check('判据清单空数组 ⇒ 压缩版 + 指针(不写「0 条」小节)', /怎样算完成:D{20}/.test(emptyListCard) && emptyListCard.includes('clear/goals/g3.md') && !/\(0 条/.test(emptyListCard))
 }
 
 

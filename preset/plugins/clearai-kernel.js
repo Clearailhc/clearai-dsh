@@ -866,7 +866,14 @@ export function apply(ctx, config = {}) {
 			.join(';')}`
 	}
 
-	/** 一次工具调用的收尾:预演变更 → 卡片 → 返回值。 */
+	/**
+	 * 一次工具调用的收尾:预演变更 → 卡片 → 返回值。
+	 *
+	 * 卡片放在结构化字段 `card` 里,**不拼进 `message`**(模型读的只有 message)。
+	 * 原来每条工具结果都拼一整张卡:两场真跑 162 次调用里 148 次带卡,合计三十多万字,
+	 * 连登记一个概念都要重读一遍判据与全部假设。卡本来就由 pre-step 在状态变化时注入
+	 * ——下一步之前模型就会看到新的那张——工具结果只需要说「这一下做成了什么」。
+	 */
 	function finish(hostService, sessionId, mutations) {
 		return (value) => {
 			const preview = previewOf(hostService, sessionId, mutations)
@@ -874,7 +881,7 @@ export function apply(ctx, config = {}) {
 				...value,
 				mutations,
 				card: preview.card,
-				message: `${value.message ?? value.code ?? 'ok'}\n\n${preview.card}`,
+				message: String(value.message ?? value.code ?? 'ok'),
 			}
 			// 输出**越界就裁掉并告警**:宿主会拿 output.schema 校验工具结果,多一个未声明的字段
 			// 会让整个工具调用失败(CreatePlan 曾因此全军覆没)。
@@ -3122,7 +3129,7 @@ export function apply(ctx, config = {}) {
 		if (file === null) return null
 			if (existsSync(file) && readFileSync(file, 'utf8') === body) return ''
 			writeTextFile(file, body)
-			return `\n词汇货架已更新:${join('clear', 'ontology', 'domain.md')}(概念 / 谓词 / 图 / 引用)。**它是读面,不是权威**——要改词汇就调注册 / 修订 / 废止动词。`
+			return `\n词汇货架已更新:${join('clear', 'ontology', 'domain.md')}。`
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai domain shelf: 写入失败 ${String(error?.message ?? error).slice(0, 160)}`)
 			return ''
@@ -6135,7 +6142,7 @@ export function apply(ctx, config = {}) {
 			const fork = forkOfStep(hostService.derive(sessionId).forks, step.id)
 			if (fork === null) return fail('no_fork', `步骤 ${step.id} 上没有分叉。`)
 			if (fork.abandoned) return fail('fork_abandoned', '这个分叉已经放弃探索了。')
-			if (fork.settled) return { ok: true, code: 'already_converged', mutations: [], card: hostService.renderCard(sessionId), message: `这个分叉已经收敛(采纳 ${fork.verdict?.winner})。\n\n${hostService.renderCard(sessionId)}` }
+			if (fork.settled) return { ok: true, code: 'already_converged', mutations: [], card: hostService.renderCard(sessionId), message: `这个分叉已经收敛(采纳 ${fork.verdict?.winner})。` }
 			const pending = fork.branches.filter((branch) => (BRANCH_RANK[branch.status] ?? 0) < BRANCH_RANK.evaluated)
 			if (pending.length > 0) {
 				return fail('fork_unsettled', `还有 ${pending.length} 条世界线没交付:${pending.map((branch) => branch.label).join('、')}。每条都要有观测与读数,算术才能比较。`)

@@ -161,6 +161,20 @@ function fitLines(lines, limit = CARD_LIMIT) {
  * 同一份账本永远给出同一串字节:卡里**不带时刻**——时间戳会让同一个状态的卡每分钟变一次,
  * 按内容去重的那条纪律因此失效。要看「什么时候发生」,账本里有事件时间。
  */
+/** 「做到哪了」:阶段一句 + 计划几步 + 判断确立了几条 + 缺口几条(没有的那项不写)。 */
+function whereLine(phase, derived, hypotheses, factRows, gaps) {
+	const plan = isPlainObject(derived?.activePlan) ? derived.activePlan : null
+	const steps = plan === null ? [] : (plan.steps ?? []).filter((step) => step.status !== 'void')
+	const effective = hypotheses.filter((item) => item.status !== 'superseded' && item.status !== 'retracted')
+	const promoted = new Set(factRows.map((fact) => fact.hypothesis).filter((id) => typeof id === 'string' && id !== ''))
+	const established = effective.filter((item) => item.status === 'confirmed' || promoted.has(item.id)).length
+	const parts = [phasePlain(phase)]
+	if (steps.length > 0) parts.push(`计划 ${steps.filter((step) => step.status === 'advanced').length}/${steps.length} 步`)
+	if (effective.length > 0) parts.push(`判断已确立 ${established}/${effective.length}`)
+	if (gaps.length > 0) parts.push(`${gaps.length} 条缺口`)
+	return parts.join(' · ')
+}
+
 function cardLines(state, derived, options, view) {
 	const goal = isPlainObject(state?.goal) ? state.goal : null
 	const hypotheses = Array.isArray(derived?.hypotheses) ? derived.hypotheses : []
@@ -181,23 +195,22 @@ function cardLines(state, derived, options, view) {
 	const entityNodes = graph.nodes.filter((node) => node.layer === 'entity')
 	const lines = []
 	const push = (value, tier = 0) => lines.push({ text: value, tier })
-	push('【运行态卡 · Harness-owned state】')
+	push('【运行态卡】')
 	/**
 	 * **卡里不写时刻**。分钟级的时间戳对决策没有信息量,却让"同一个状态的卡"每过一分钟就变一次
 	 * ——按内容去重的那条纪律因此永远失效,整卡重发。真需要精确时间,`bash date` 是工具的活。
 	 * 要看"什么时候发生",账本里有事件时间。
 	 */
 	push(`- 正在解决:${view.headline.now}`)
-	push(`- 怎样算完成:${view.headline.done}`)
 	push(`- 我做到哪了:${view.headline.where}`)
-	const autonomy = isPlainObject(state?.autonomy?.effective) ? state.autonomy.effective : null
-	if (autonomy !== null) {
-		push(`- 运行档:${autonomy.value === 'unattended' ? '无人值守' : '人在场'}(部署预设写的;它不是"要不要人参与"的开关——要不要人由**门**决定:计划待确认/等裁决/有人在等)`, 1)
-	}
-	if (goal === null) push('- 当前目标:未立(SetGoal 需要一份「怎样算回答了」的判据)')
+	/**
+	 * 运行档(人在场 / 无人值守)不进卡:它是部署预设,不是模型能据以行动的事实——
+	 * 要不要人由门决定,门开着时下面「门」那一行会说。
+	 */
+	if (goal === null) push(`- 怎样算完成:${view.headline.done}`)
 	else {
-		// claim 可以很长(真跑里上千字):卡上给压缩版,一句话在「正在解决」那行,全文在目标文档里。
-		push(`- 当前目标(${goal.id} · rev${goal.revision} · ${goal.status}):${clamp(String(goal.claim ?? ''), 160)}${String(goal.claim ?? '').length > 160 ? `…(全文 ${String(goal.claim).length} 字在 clear/goals/${goal.id}.md)` : ''}`)
+		// 目标的一句话已经在「正在解决」那行;这里只给身份与全文在哪(全文可能上千字)。
+		push(`- 目标:${goal.id} · 第 ${goal.revision} 版 · ${goal.status}(全文在 clear/goals/${goal.id}.md)`)
 		/**
 		 * **判据正文只出现一次,在顶部「怎样算完成」那一行**;这里只交代
 		 * "改过没有、谁裁的、全文在哪"。
@@ -222,7 +235,7 @@ function cardLines(state, derived, options, view) {
 			 *
 			 * 指针写进**这一行**(tier 0):显存紧张时被丢的是细节行,不是「全文在哪」。
 			 */
-			push(`- 判据(${criteriaTotal} 条,逐条;全文在 ${criteriaDoc}):`)
+			push(`- 怎样算完成(${criteriaTotal} 条${view.goal.criteriaChanged ? `,${revisionNote.replace(/ · $/, '')}` : ''}):`)
 			const shown = criteriaLines.slice(0, CRITERIA_ROWS_MAX)
 			/**
 			 * 逐条那几行与旧的那句压缩判据**同一档**(tier 0):尺子不许被挤掉。
@@ -230,15 +243,9 @@ function cardLines(state, derived, options, view) {
 			 */
 			for (let index = 0; index < shown.length; index += 1) push(`  ${index + 1}. ${clamp(shown[index], CRITERIA_LINE_LIMIT)}`)
 			if (criteriaTotal > shown.length) push(`  · (还有 ${criteriaTotal - shown.length} 条,全文在 ${criteriaDoc})`, 1)
-			push(`  · 判据留痕:${revisionNote}全文 ${criteriaLength} 字在 ${criteriaDoc}`, 1)
-		} else if (view.goal.criteriaChanged) {
-			const last = view.goal.criteriaHistory[view.goal.criteriaHistory.length - 1]
-			push(`- 判据:第 ${view.goal.criteriaHistory.length} 次修订 · 独立裁决 ${last?.audit ?? '—'} · 全文 ${criteriaLength} 字在 clear/goals/${goal.id}.md`)
 		} else if (criteriaLength > 0) {
-			push(`- 判据:立约时那一份 · 全文 ${criteriaLength} 字在 clear/goals/${goal.id}.md`)
-		} else push(`- 判据:${GLOSSARY.done_criteria.plain}`)
-		const progress = derived?.progress === null || derived?.progress === undefined ? '无法计算' : `${Math.round(derived.progress * 100)}%`
-		push(`- 阶段(派生):${derived?.phase ?? '—'} · 完成度(派生):${progress}`)
+			push(`- 怎样算完成:${view.headline.done}${view.goal.criteriaChanged ? `(${revisionNote.replace(/ · $/, '')})` : ''}`)
+		} else push(`- 怎样算完成:${GLOSSARY.done_criteria.plain}`)
 	}
 	if (hostHealth.length > 0) {
 		const last = hostHealth[hostHealth.length - 1]
@@ -253,7 +260,8 @@ function cardLines(state, derived, options, view) {
 			 */
 			const untouched = (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0
 			const skipped = (hypothesis.untouchedLevels ?? []).length === 0 ? '' : ` · 未走过 ${hypothesis.untouchedLevels.join('/')}`
-			const readings = untouched ? '(未触及)' : `(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive}${skipped})`
+			const counts = [hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined ? null : `支持到 ${hypothesis.supportedLevel}`, hypothesis.refutations > 0 ? `推翻 ${hypothesis.refutations}` : null, hypothesis.inconclusive > 0 ? `无法判定 ${hypothesis.inconclusive}` : null].filter((part) => part !== null)
+			const readings = untouched ? '(未触及)' : `(${counts.join(' · ')}${skipped})`
 			push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}${skipLine(hypothesis)}`)
 		}
 		if (hypotheses.length > 10) push(`  · (还有 ${hypotheses.length - 10} 条命题未展开:面板「命题」里有全部)`, 2)
@@ -272,7 +280,7 @@ function cardLines(state, derived, options, view) {
 			push('  · 相关已知:当前主张文本没有命中任何已有概念 / 谓词——要写断言就先立词(带依据),别把查不到当成不存在', 1)
 		}
 		if (gaps.length === 0) {
-			push('  · 结构完整:语言、断言的命题、带断言的已升格事实、证据覆盖、实体图、跳级理由、词条引用这七项今天都不欠')
+			push('  · 没有缺口')
 		} else {
 			const total = gaps.reduce((sum, gap) => sum + (Number(gap.count) || 0), 0)
 			push(`  · 缺口 ${total} 条(${gaps.map((gap) => `${gap.code} ${gap.count}`).join(' · ')}):`)
@@ -317,8 +325,8 @@ function cardLines(state, derived, options, view) {
 								: `(执行没跑成:${executing.note ?? 'unknown'})`
 			push(`  · [${branch.status}] ${branch.label}:${branch.approach}(${reading})${runner}`, 2)
 		}
-		if (fork.verdict !== null && fork.verdict !== undefined) push(`  → 已采纳 ${fork.verdict.winner},差额 ${fork.verdict.margin ?? '—'}${fork.verdict.tie === true ? ' · 并列' : ''}(算术裁决,不是谁说得响)`, 2)
-		if (fork.undecidable !== null && fork.undecidable !== undefined) push(`  → 算不出来(${fork.undecidable.code}):${fork.undecidable.reason} 停下问人,不许退化成随便挑一条。`, 2)
+		if (fork.verdict !== null && fork.verdict !== undefined) push(`  → 已采纳 ${fork.verdict.winner},差额 ${fork.verdict.margin ?? '—'}${fork.verdict.tie === true ? ' · 并列' : ''}`, 2)
+		if (fork.undecidable !== null && fork.undecidable !== undefined) push(`  → 算不出来(${fork.undecidable.code}):${fork.undecidable.reason} 停下问人。`, 2)
 		if (fork.abandoned === true) push(`  → 已放弃探索:${fork.abandonReason ?? ''}(留痕)`, 2)
 		if (fork.phase === 'exploring' || fork.phase === 'deciding') push('  · 这一步长着未收敛的分叉:先交付每条世界线,再 ConvergeFork;普通交付不能越过它。', 2)
 		if (fork.humanDecision !== null && fork.humanDecision !== undefined && !fork.settled) {
@@ -340,16 +348,16 @@ function cardLines(state, derived, options, view) {
 	if (facts.length > 0) push(`- 已升格事实:${facts.length} 条`, 1)
 	if (lexicon.terms.length > 0 || lexicon.predicates.length > 0) {
 		const typed = facts.filter((fact) => Array.isArray(fact.assertions) && fact.assertions.length > 0).length
-		push(`- 领域词汇:${lexicon.terms.length} 个概念 · ${lexicon.predicates.length} 个谓词;已升格事实里 ${typed}/${facts.length} 条带类型化断言`, 1)
+		push(`- 领域词汇:${lexicon.terms.length} 个概念 · ${lexicon.predicates.length} 个谓词${facts.length > 0 ? `;已升格事实里 ${typed}/${facts.length} 条带断言` : ''}`, 1)
 		if (issues.some((issue) => issue.severity === 'warning')) push(`  · 词汇健康度有 ${issues.filter((issue) => issue.severity === 'warning').length} 条待看(悬空引用 / 成环;在面板「本体」里)`, 1)
 	}
 	if (entityNodes.length > 0) {
 		const assertionEdges = graph.edges.filter((edge) => edge.kind === 'assertion')
-		push(`- 实体图:${view.entities.length} 个实例节点(已登记 ${view.entityCounts.registered} · 已升格 ${view.entityCounts.promoted} · 实体断言 ${view.entityCounts.asserted}) · ${assertionEdges.length} 条实体边(登记只产节点,Assert 才产边)`, 1)
+		push(`- 实体图:${view.entities.length} 个实例 · ${assertionEdges.length} 条边`, 1)
 	}
 	for (const conflict of conflicts.slice(0, 3)) {
 		const sides = conflict.sides.map((side) => `${side.fact ?? '?'}(${side.value})`).join(' 对 ')
-		push(`- **冲突(${conflict.predicate} · ${conflict.subject})**:${sides}——两条都还没被撤回。它是读数不是裁决:要么用证据推翻一侧,要么由人撤回一侧;系统不替你选。`)
+		push(`- **冲突(${conflict.predicate} · ${conflict.subject})**:${sides}——要么用证据推翻一侧,要么请人撤回一侧。`)
 	}
 	if (conflicts.length > 3) push(`- (还有 ${conflicts.length - 3} 对冲突未展开:面板「本体」里有全部)`, 2)
 	if (goal !== null && Array.isArray(goal.unjudged) && goal.unjudged.length > 0) push(`- 结案留痕:有 ${goal.unjudged.length} 条假设没有被任何证据触及(${goal.unjudged.join(', ')})`)
@@ -368,7 +376,6 @@ function cardLines(state, derived, options, view) {
 			for (const scout of flying) push(`  · [在跑] 侦察 ${scout.id}${scout.trigger === null || scout.trigger === undefined ? '' : `(${scout.trigger})`}:结论回来时会作为观测送到你面前`)
 		}
 	}
-	push('- 提醒:进度、阶段、假设状态都是系统算出来的;你不能声明它们,只能通过交付与裁决推进。')
 	return lines
 }
 
@@ -421,10 +428,12 @@ export function knowledgeView(state, derived, options = {}) {
 		headline: {
 			now: goal === null ? '还没有立目标(SetGoal 需要一份「怎样算回答了」的判据)' : clamp(goal.headline ?? goal.claim, 160),
 			done: doneText,
-			where:
-				goal === null
-					? '还没开始:立约之后才有进度可算'
-					: `${phasePlain(phase)} · 完成度 ${progress === null ? '无法计算' : `${Math.round(progress * 100)}%`}${live.length > 0 ? ` · ${live.length} 条在验命题` : ''}${gaps.length > 0 ? ` · ${gaps.length} 条缺口` : ''}`,
+			/**
+			 * 「做到哪了」用**两个具体的数**说,不用一个百分比:派生的完成度在有活动计划时是
+			 * 「交付了几步」,没有时是「确立了几条判断」——同一个百分号两种意思,于是出现过
+			 * 「步都落定了 · 完成度 0%」这种自相矛盾的读数。两个数各说各的,就不会打架。
+			 */
+			where: goal === null ? '还没开始:立约之后才有进度可算' : whereLine(phase, d, hypotheses, factRows, gaps),
 		},
 		goal:
 			goal === null
