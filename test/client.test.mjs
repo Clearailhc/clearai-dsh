@@ -1701,34 +1701,27 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		}
 		const opened = []
 		const rendered = await renderDeliverables(payload, { openPreview: (path) => { opened.push(path); return true } })
-		// 两个计数的单位不同,所以页眉分开写:「处声明」= 步骤声明(同一个文件被多步声明算多处),「份」= 去重后的文件
-		check('顶条两半都给:阶段 / 交付(处声明)/ 盘上多少份', /阶段 1 · 交付 1\/2 处声明 · 盘上 31 份/.test(rendered.text), rendered.text.slice(0, 130))
-		check('「核心产物」仍然只收声明过、且盘上真有的', /核心产物\(1\)/.test(rendered.text) && /products\/report\.md/.test(rendered.text), rendered.text.slice(0, 200))
-		check('「盘上已有」列出实际那一半,并交代它不是计划交付的', /盘上已有\(31\)/.test(rendered.text) && /未被任何计划声明/.test(rendered.text), rendered.text.slice(0, 300))
-		check('超出上限时如实说还有多少没列(上限 25)', /还有 6 份没列出来/.test(rendered.text), rendered.text.slice(0, 300))
-		// 判据为「缺」的那条**不可点**:点进去只会撞一个不存在的路径。
-		check('声明过但盘上没有的那条不是链接(机制上不可点)', !rendered.clickable('lab/missing.csv') && rendered.text.includes('lab/missing.csv'), rendered.text.slice(0, 300))
 		/**
-		 * `exists: false` 有两种成因,界面分开说(2026-09-11 长测抓到的):模型把 `lab/`(目录)
-		 * 声明成物证时准入按「空目录」拒了它,而面板原来一律写「缺 · 盘上没有这个文件」。
+		 * 这一格回答「我拿到了什么」:先列文件,一行一份、人读的大小;
+		 * 计划是过程,默认收起成一行——不摆计划 id、授权记号、判据全文与「处声明」这类账面计数。
 		 */
-		{
-			const withDir = JSON.parse(JSON.stringify(payload))
-			withDir.stages[0].steps[0].artifacts.push({ path: 'lab/', area: { key: 'process', label: '分析过程' }, exists: false, directory: true, bytes: null, modifiedAt: null })
-			const dirRendered = await renderDeliverables(withDir)
-			check('声明的是目录 → 说「目录」不说「缺」,并解释目录不算物证', /目录/.test(dirRendered.text) && /是目录\(不算物证\)/.test(dirRendered.text), dirRendered.text.slice(0, 300))
-		}
+		check('页眉只有名字,不摆账面计数(阶段 / 处声明)', /^产物/.test(rendered.text) && !/处声明|阶段 \d/.test(rendered.text), rendered.text.slice(0, 130))
+		check('「你拿到的」只收计划交付过、且盘上真有的成果', /你拿到的 · 1/.test(rendered.text) && /products\/report\.md/.test(rendered.text), rendered.text.slice(0, 200))
+		check('大小说人话(46 KB,不是 46615 字节)', /46 KB/.test(rendered.text) && !/46615/.test(rendered.text), rendered.text.slice(0, 300))
+		check('「工作区里的其他成果」照列(人问的是「我有什么」),来历收进 tooltip', /工作区里的其他成果 · 31/.test(rendered.text) && !/未被任何计划声明/.test(rendered.text), rendered.text.slice(0, 300))
+		check('超出上限时如实说还有多少没列(上限 25)', /还有 6 份没列出来/.test(rendered.text), rendered.text.slice(0, 300))
+		check('计划默认收起成一行:做到哪一步,不露计划 id、授权记号与简述', /当前计划 · 1\/1 步完成/.test(rendered.text) && !/p-1/.test(rendered.text.slice(rendered.text.lastIndexOf('计划'))) && !/授权记号/.test(rendered.text) && !/两步小计划/.test(rendered.text), rendered.text.slice(-160))
+		check('盘上没有的产物不出现、也不可点(收起的计划里没有它)', !rendered.clickable('lab/missing.csv') && !rendered.text.includes('lab/missing.csv'), rendered.text.slice(-200))
 		// 存在的那些点了要真的把路径交给原生预览。
 		rendered.clickAt('products/reports/oxygen-free-copper-guide.html')?.props.onClick()
-		check('点「盘上已有」里的一条 → 原生预览拿到那条路径', opened.join('|') === 'products/reports/oxygen-free-copper-guide.html', opened.join('|'))
+		check('点「工作区里的其他成果」里的一条 → 原生预览拿到那条路径', opened.join('|') === 'products/reports/oxygen-free-copper-guide.html', opened.join('|'))
 
-		// 老项目里开新会话:没有计划,但盘上有东西 —— 这一栏不再是「0/0」了事。
+		// 老项目里开新会话:没有计划,但盘上有东西 —— 照列,不再是「0/0」了事。
 		const fresh = await renderDeliverables({ ok: true, stages: [], outputs: onDisk.slice(0, 3) })
-		check('没有计划但盘上有产物:说清这是「没被任何计划声明」的', /盘上已经有 3 份产物,但没有任何计划声明过它们/.test(fresh.text), fresh.text.slice(0, 200))
-		check('这种情况顶条也照实写「盘上 3 份」', /阶段 0 · 交付 0\/0 处声明 · 盘上 3 份/.test(fresh.text), fresh.text.slice(0, 130))
-		// 两边都空:保留原来那句话(不是错误,是新项目的样子)。
+		check('没有计划但盘上有成果:照列这几份,不摆空的计划区', /工作区里的其他成果 · 3/.test(fresh.text) && !/计划/.test(fresh.text), fresh.text.slice(0, 200))
+		// 两边都空:新项目的样子。
 		const blank = await renderDeliverables({ ok: true, stages: [], outputs: [] })
-		check('两边都空时还是原来那句(新项目的样子)', /暂无计划/.test(blank.text) && !/点一条 → 右栏预览/.test(blank.text), blank.text.slice(0, 200))
+		check('两边都空:一句「还没有产物」', /还没有产物/.test(blank.text) && !/点击在右栏预览/.test(blank.text), blank.text.slice(0, 200))
 	}
 }
 
