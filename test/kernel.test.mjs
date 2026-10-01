@@ -29,8 +29,9 @@ process.env.DSH_HOME = tempDir('clearai-home-')
 const WORKSPACE = tempDir('clearai-ws-')
 const SESSION = 'session-test'
 
-// 世界线要物化成 git 分支 + worktree,所以工作区得先是真 git 仓库(阶段 2 起)。
-// 这不是测试的方便之举:ClearAI 的 A 层就是这么用的——用户自己的仓库。
+// 工作区刻意是一个**用户自己的** git 仓库:账本与世界线都必须落在旁路账本里,
+// 用户的分支、历史、ref 一个都不许碰(0.3.2 起;之前会直接在用户当前分支上提交)。
+// 「用户仓库原样不动」那一段核对这个仓库在整场测试之后仍只有它自己的提交。
 execFileSync('git', ['init', '-q'], { cwd: WORKSPACE })
 execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: WORKSPACE })
 /**
@@ -502,6 +503,12 @@ const ledgerDirOf = (workspace) => {
 		/* 账本根都读不到:交给调用方判红 */
 	}
 	return null
+}
+/** 在某个工作区的**旁路账本**上跑 git(账本不在了就抛,让调用方的断言如实红)。 */
+const ledgerGit = (workspace, args) => {
+	const dir = ledgerDirOf(workspace)
+	if (dir === null) throw new Error(`${workspace} 没有旁路账本`)
+	return execFileSync('git', ['--git-dir', dir, '--work-tree', workspace, ...args], { cwd: workspace, encoding: 'utf8' })
 }
 
 const write = (rel, content) => {
@@ -3661,10 +3668,11 @@ console.log('\n【回合收尾:只记一笔工作区,不替宿主与收集通道
 	// 模型写过东西(writeCalls>0)且工作区脏 ⇒ 收尾那一拍应记一笔账
 	write('lab/turn-end.txt', 'v1\n')
 	host.states.set(S, { ...host.service.state(S), writeCalls: 1 })
-	const commitsBefore = execFileSync('git', ['-C', WORKSPACE, 'log', '--format=%h', '-n', '50'], { encoding: 'utf8' }).split('\n').filter(Boolean)
+	const commitsBefore = ledgerGit(WORKSPACE, ['log', '--format=%h', '-n', '50']).split('\n').filter(Boolean)
 	await turnEnd({ agent: { id: S }, turn: 3, signal: undefined })
-	const commitsAfter = execFileSync('git', ['-C', WORKSPACE, 'log', '--format=%h', '-n', '50'], { encoding: 'utf8' }).split('\n').filter(Boolean)
-	check('收尾把这一回合的写入记进账本(一次性形态里唯一会落地的那笔)', commitsAfter.length > commitsBefore.length && /回合结束/.test(execFileSync('git', ['-C', WORKSPACE, 'log', '-1', '--format=%s'], { encoding: 'utf8' })), execFileSync('git', ['-C', WORKSPACE, 'log', '-1', '--format=%s'], { encoding: 'utf8' }).slice(0, 80))
+	const commitsAfter = ledgerGit(WORKSPACE, ['log', '--format=%h', '-n', '50']).split('\n').filter(Boolean)
+	const lastSubject = ledgerGit(WORKSPACE, ['log', '-1', '--format=%s'])
+	check('收尾把这一回合的写入记进账本(一次性形态里唯一会落地的那笔)', commitsAfter.length > commitsBefore.length && /回合结束/.test(lastSubject), lastSubject.slice(0, 80))
 	check('收尾不发消息(不许偷偷把模型叫起来)', (host.sent ?? []).length === 0, JSON.stringify((host.sent ?? []).map((row) => row.via)))
 	check('收尾不往会话日志写任何 clearai 事件(那一拍没有我们该说的)', (host.appended ?? []).filter((row) => String(row.type).startsWith('clearai/')).length === 0, JSON.stringify((host.appended ?? []).map((row) => row.type)))
 	check('内核也盯着 agent/error(宿主为"回合以错误结束"发的那个;那一拍同样只记账)', typeof host.listeners.get('agent/error') === 'function')
@@ -3719,10 +3727,10 @@ console.log('\n【账本不记平台垃圾:.DS_Store 这类不该让模型兜圈
 	writeText(join(WORKSPACE, 'sub', '.DS_Store'), '\x00nested\n')
 	const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'j1', verdict: 'support', basis: 'lab/junk-probe.txt 写着 v1' })
 	check('交付照常成功(排除垃圾不影响交付)', delivered.ok === true, String(delivered.code))
-	const listed = execFileSync('git', ['-C', WORKSPACE, 'ls-files'], { encoding: 'utf8', env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined } })
+	const listed = ledgerGit(WORKSPACE, ['ls-files'])
 	check('账本里**没有** .DS_Store(平台垃圾不进内容)', !/\.DS_Store/.test(listed), listed.split('\n').filter((line) => line.includes('DS_Store')).join(','))
 	check('工作树里那份 .DS_Store 原样留着(只摘索引,不碰用户的文件)', existsSync(join(WORKSPACE, '.DS_Store')))
-	const excludeFile = execFileSync('git', ['-C', WORKSPACE, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).trim() + '/info/exclude'
+	const excludeFile = join(ledgerDirOf(WORKSPACE), 'info', 'exclude')
 	const excludeText = readFileSync(excludeFile, 'utf8')
 	check('exclude 里写着垃圾名单(各条世界线的 worktree 一起受益)', /\.DS_Store/.test(excludeText) && /Thumbs\.db/.test(excludeText) && /clear\/worldlines\//.test(excludeText), excludeText.replace(/\n/g, ' | ').slice(0, 160))
 }
@@ -4142,7 +4150,7 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'r1')
 		return wire.branches.find((item) => item.label === label).worktreePath
 	}
-	check('世界线物化成 worktree(工作区是 git 仓库)', r1Prepared?.tier === 'workspace' && r1Prepared.branches.length === 2, String(r1Prepared?.tier))
+	check('世界线物化成 worktree,分支开在旁路账本里(工作区是用户的 git 仓库也一样)', r1Prepared?.tier === 'ledger' && r1Prepared.branches.length === 2, String(r1Prepared?.tier))
 	/**
 	 * 工作副本的位置:**在工作区里**(`clear/worldlines/`)——因为宿主沙箱只允许写会话自己的 cwd,
 	 * 而原生子代理继承父会话的 cwd(给不了它自己的根)。所以「不污染主线」这条不变量不再靠位置,
@@ -4152,7 +4160,7 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 	check('git 看不见工作副本(否则交付提交会把别的世界线一起提进主线)', (() => {
 		const status = execFileSync('git', ['status', '--porcelain'], { cwd: WORKSPACE, encoding: 'utf8' })
 		const exclude = readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')
-		return !status.includes('worldlines') && exclude.split('\n').some((line) => line.trim() === 'clear/worldlines/')
+		return !status.includes('worldlines') && exclude.split('\n').some((line) => line.trim() === '/clear/worldlines/')
 	})())
 	/**
 	 * **相对路径按世界线自己的工作副本解析**(2026-09-11 修的真 bug):
@@ -4221,7 +4229,7 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 	// ── 采纳 = 一次真合并;落选 = 删工作副本、保留 branch ref ──────────────────
 	const merged = eventsOf('fork/merged')
 	check('采纳是一次真合并(不是把文件拷过去)', merged.length === 1 && merged[0].mode === 'merged' && String(merged[0].commit ?? '').length >= 7, JSON.stringify(merged[0] ?? {}))
-	const mergeMessage = execFileSync('git', ['log', '-1', '--format=%s%n%b', 'HEAD'], { cwd: WORKSPACE, encoding: 'utf8' })
+	const mergeMessage = ledgerGit(WORKSPACE, ['log', '-1', '--format=%s%n%b', 'HEAD'])
 	// 措辞照 ClearAI:余量是**相对**差距(`abs(a-b)/max(|a|,|b|)`),不是绝对差。
 	// 62.1 与 55.4 → 6.7/62.1 = 10.8%,≥ 阈值 15%? 不到 —— 所以这一条是**临时采纳**,
 	// 合并信息里会带 [临时采纳] 标记(这正是「留人复核痕迹」那一档)。
@@ -4237,14 +4245,14 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 	const loserBranch = r1Prepared.branches.find((entry) => entry.id === removed[0].branch)?.branch
 	check('落选世界线的 branch ref 永久保留(读得到它记的「此路不通」)', (() => {
 		try {
-			return execFileSync('git', ['show', `${loserBranch}:probe.txt`], { cwd: WORKSPACE, encoding: 'utf8' }).includes('55.4')
+			return ledgerGit(WORKSPACE, ['show', `${loserBranch}:probe.txt`]).includes('55.4')
 		} catch {
 			return false
 		}
 	})(), String(loserBranch))
 	check('世界树上记下了 git 分支名与工作副本路径', (() => {
 		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'r1')
-		return wire.tier === 'workspace' && wire.merge !== null && wire.branches.some((branch) => branch.worktreeRemoved === true && branch.keptRef === true)
+		return wire.tier === 'ledger' && wire.merge !== null && wire.branches.some((branch) => branch.worktreeRemoved === true && branch.keptRef === true)
 	})())
 
 	const again = await call('ConvergeFork', {})
@@ -4347,7 +4355,7 @@ console.log('\n【世界线:读数的整串匹配与「算不出来」】')
 		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'r1')
 		return wire.branches.every((branch) => branch.execution !== null && branch.execution.ok === true)
 	})())
-	check('工作区是 git 仓库时,世界线物化成 worktree(不是声明目录)', prepared?.tier === 'workspace' && prepared.branches.length === 2, String(prepared?.tier))
+	check('工作区是 git 仓库时,世界线照样物化成 worktree(开在旁路账本里,不是声明目录)', prepared?.tier === 'ledger' && prepared.branches.length === 2, String(prepared?.tier))
 	check('两条世界线的工作副本真的在磁盘上', prepared.branches.every((entry) => existsSync(entry.path)))
 	/**
 	 * **声明的物证路径与尺子口径,必须真的交到干活的人手上。**
@@ -4453,7 +4461,7 @@ console.log('\n【世界线:脏工作区快照 + 合并冲突即人门】')
 	write('shared.md', '# 共享的结论\n\n用户手上的第三版(还没提交)。\n')
 	const conflicted = await call('ConvergeFork', {})
 	check('脏工作区 + 内容打架 → 冲突即人门(merge_conflict)', conflicted.ok === false && conflicted.code === 'merge_conflict', String(conflicted.code))
-	check('冲突前先把用户手上的改动存成一条提交(不能让他的工作消失)', eventsOf('git/snapshot').length >= 1 && /提交/.test(String(eventsOf('git/snapshot')[0]?.reason ?? '')), JSON.stringify({ snapshots: eventsOf('git/snapshot').length }))
+	check('冲突前先把用户手上的改动存成一条提交(不能让他的工作消失)', eventsOf('git/snapshot').some((event) => /采纳前/.test(String(event.reason ?? '')) && /提交/.test(String(event.reason ?? ''))), JSON.stringify({ snapshots: eventsOf('git/snapshot').length }))
 	check('冲突记在世界树上,分叉**没有被悄悄收敛**', (() => {
 		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'z1')
 		return wire.mergeConflict !== null && wire.decided === false
@@ -4490,6 +4498,11 @@ console.log('\n【世界线 B 层:工作区不是 git 仓库 → 旁路账本】
 		decide_by: { metric: 'yield = lab/probe.txt 里的产出数(件)', direction: 'max' },
 	})
 	check('分叉在非仓库工作区里也能立起', forked.ok === true, String(forked.code))
+	check(
+		'账本正是这次分叉建起来的:基线那一笔也落成 git/snapshot(不因为树是干净的就漏记)',
+		eventsOf('git/snapshot').some((event) => event.fork === eventsOf('fork/created').at(-1)?.id && typeof event.commit === 'string' && event.commit !== ''),
+		JSON.stringify(eventsOf('git/snapshot').slice(-2)),
+	)
 	const preparedB = eventsOf('worldline/prepared').slice(-1)[0]
 	check('世界线走 B 层:账本建在数据区(tier=ledger)', preparedB.tier === 'ledger', String(preparedB.tier))
 	check('工作区里**没有**多出 .git(用户文件夹保持干净)', !existsSync(join(plain, '.git')), ''.concat())
@@ -4657,7 +4670,7 @@ console.log('\n【探索期产出有据可查:回合边界上的工作区快照�
 	const snapshots = () => host.journal.filter((mutation) => mutation.t === 'git/snapshot')
 	const gitLog = (path) => {
 		try {
-			return execFileSync('git', ['log', '--oneline', '--', path], { cwd: WORKSPACE, encoding: 'utf8' }).trim()
+			return ledgerGit(WORKSPACE, ['log', '--oneline', '--', path]).trim()
 		} catch {
 			return ''
 		}
@@ -5203,6 +5216,67 @@ console.log('\n【输出契约:工具返回值必须落在自己声明的 schema
 	// 守卫本身要是活的:拿一个故意越界的对象喂它,必须报出来。
 	const probe = schemaViolation({ type: 'object', properties: { ok: { type: 'boolean' } }, additionalProperties: false }, { ok: true, extra: 1 })
 	check('契约守卫是活的(故意越界能被抓到)', typeof probe === 'string' && probe.includes('extra'), String(probe))
+}
+
+console.log('\n【用户仓库原样不动:账本与世界线只住在旁路账本里】')
+{
+	/**
+	 * 0.3.2 之前的失效形态(本仓库自己吃过):工作区是 git 仓库时,内核在**用户当前分支**上
+	 * `add -A` + 以 clearai@local 提交,世界线分支也开在用户仓库里 ⇒ 没写完的改动与中间产物
+	 * 随下一次 push 上了远端。整场测试在这个用户仓库里交付、快照、分叉、采纳、恢复过很多次,
+	 * 走到这里,它的历史里必须仍只有用户自己的提交。
+	 */
+	const userGit = (args) => execFileSync('git', ['-C', WORKSPACE, ...args], { encoding: 'utf8' }).trim()
+	const authors = userGit(['log', '--all', '--format=%ae']).split('\n').filter(Boolean)
+	check('用户仓库里没有一条 clearai@local 的提交(任何 ref 上都没有)', authors.every((author) => author !== 'clearai@local'), authors.join(','))
+	check('用户仓库里没有 clearai/* 分支(世界线分支开在旁路账本里)', userGit(['for-each-ref', 'refs/heads/clearai', '--format=%(refname)']) === '')
+	check('账本确实在记(旁路账本里有 clearai@local 的提交)', /clearai@local/.test(ledgerGit(WORKSPACE, ['log', '--all', '--format=%ae'])))
+	check(
+		'用户仓库的本地 exclude 里有世界线容器(嵌套的工作副本不出现在他的 git status 里)',
+		readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')
+			.split('\n')
+			.some((line) => line.trim() === '/clear/worldlines/'),
+	)
+	check(
+		'用户仓库的 exclude 里**只有**那一行(账本的垃圾名单不替用户决定忽略什么)',
+		!/\.DS_Store|\*\.swp/.test(readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')),
+	)
+	check(
+		'分叉前的快照落了 git/snapshot(系统对工作区做过的事,日志里说得出来)',
+		ledger().some((mutation) => mutation.t === 'git/snapshot' && /分叉前/.test(String(mutation.reason))),
+	)
+}
+
+console.log('\n【工作区是大仓库里的一个子目录:exclude 模式相对仓库根】')
+{
+	/**
+	 * `clear/worldlines/` 中间带斜杠,在 `info/exclude` 里锚定在仓库根上。工作区是 `/repo/pkg` 时
+	 * 工作副本在 `pkg/clear/worldlines/...`,照写 `clear/worldlines/` 挡不住——用户的 `git status` 里会冒出来。
+	 */
+	const repo = tempDir('clearai-mono-')
+	execFileSync('git', ['init', '-q'], { cwd: repo })
+	execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: repo })
+	const pkg = join(repo, 'pkg')
+	writeText(join(pkg, 'lab', 'probe.txt'), '# 测量脚本占位\n')
+	const host = makeHost()
+	host.cwd = pkg
+	apply(host.ctx, {})
+	const S = 'session-mono'
+	await callOn(host, S, 'SetGoal', { claim: '比两条路线', done_criteria: 'report.md 写下结论', hypotheses: [{ claim: '甲更好', refute_when: '乙更好' }] })
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'm1', do: '比两条路线', artifacts: ['report.md'], done_criteria: 'report.md 写下结论' }] })
+	const forked = await callOn(host, S, 'ForkPlan', {
+		question: '两条路线选哪条',
+		options: [
+			{ label: '甲', approach: '甲做法', done_criteria: 'yield 越大越好' },
+			{ label: '乙', approach: '乙做法', done_criteria: 'yield 越大越好' },
+		],
+		decide_by: { metric: 'yield = lab/probe.txt 里的产出数(件)', direction: 'max' },
+	})
+	const prepared = host.journal.filter((mutation) => mutation.t === 'worldline/prepared').at(-1)
+	check('前置:子目录工作区里分叉物化成 worktree', forked.ok === true && prepared?.tier === 'ledger' && prepared.branches.length === 2, `${forked.code} ${prepared?.tier}`)
+	const status = execFileSync('git', ['status', '--porcelain', '-uall'], { cwd: repo, encoding: 'utf8' })
+	check('用户的 git status 里看不见工作副本(模式写成 /pkg/clear/worldlines/)', !status.includes('worldlines'), status.split('\n').filter((line) => line.includes('worldlines')).slice(0, 2).join(' | '))
+	check('用户仓库里仍没有一条 clearai@local 的提交', !/clearai@local/.test(execFileSync('git', ['-C', repo, 'log', '--all', '--format=%ae'], { encoding: 'utf8' })))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
