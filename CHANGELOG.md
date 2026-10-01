@@ -17,6 +17,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 ### Changed
 
 - 旁路账本的文件数上限(`ledgerMaxFiles`,缺省 20000)从此对 git 工作区也生效:超过上限的大仓库里账本与 git 世界线退化成声明目录,并如实说明原因(此前 git 工作区不受这条限制,因为它写的是用户自己的仓库)。
+- 仓库清理:删除误入版本库的 ClearAI 工作区残留(`lab/`、`products/`、`.tmp-fontdiag/`);案例证据搬到 `docs/cases/runs/`,营销卡片脚本搬到 `tools/marketing/`;`.gitignore` 挡住工作区约定的目录;新增 `tools/check-workspace-residue.mjs` 并接进 CI(不许跟踪工作区产物与根上的 `PROJECT.md`,PR 里不许有 `clearai@local` 的提交)。
 
 ## [0.3.1] — 2026-09-29
 

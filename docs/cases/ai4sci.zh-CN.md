@@ -10,10 +10,10 @@
 使用 `[0,1)` 上的 `u(x)=cos(2*pi*x)`，精确单元平均、周期索引、面值 `L-infinity` 误差和连续加密网格。固定方法、精度、边界处理和误差定义。执行命令为：
 
 ```bash
-python3 lab/scripts/run_ai4sci_case.py
+python3 docs/cases/runs/ai4sci/run_ai4sci_case.py
 ```
 
-脚本和结果位于 [`lab/cases/ai4sci/`](../../lab/cases/ai4sci/)，记录函数、方法、网格、误差、观测阶数和运行元数据。
+脚本和结果位于 [`docs/cases/runs/ai4sci/`](runs/ai4sci/)，记录函数、方法、网格、误差、观测阶数和运行元数据。
 
 ## 观测与评价
 
@@ -31,9 +31,9 @@ python3 lab/scripts/run_ai4sci_case.py
 
 ## 保留的证据
 
-- [`lab/scripts/run_ai4sci_case.py`](../../lab/scripts/run_ai4sci_case.py)：可重跑执行入口；
-- [`lab/cases/ai4sci/results.csv`](../../lab/cases/ai4sci/results.csv)：原始表格读数；
-- [`lab/cases/ai4sci/run_metadata.json`](../../lab/cases/ai4sci/run_metadata.json)：参数与环境；
-- [`lab/cases/ai4sci/README.md`](../../lab/cases/ai4sci/README.md)：复现说明与证据边界。
+- [`docs/cases/runs/ai4sci/run_ai4sci_case.py`](runs/ai4sci/run_ai4sci_case.py)：可重跑执行入口；
+- [`docs/cases/runs/ai4sci/results.csv`](runs/ai4sci/results.csv)：原始表格读数；
+- [`docs/cases/runs/ai4sci/run_metadata.json`](runs/ai4sci/run_metadata.json)：参数与环境；
+- [`docs/cases/runs/ai4sci/README.md`](runs/ai4sci/README.md)：复现说明与证据边界。
 
 初始命题、此次未能建立的更强主张和局部观测都被保留，没有被静默改写。
