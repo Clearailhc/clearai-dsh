@@ -8,7 +8,7 @@
  * 排查用的 `.tmp-*`,连同开发者手上没写完的改动,一起成了几十条「探索期快照」,被 push 上了主线。
  *
  * 两条检查,各挡一种来路:
- *   · **跟踪了不该跟踪的路径**:工作区约定的目录(`lab/` `products/` `input/` `clear/`)、`.tmp-*`、
+ *   · **跟踪了不该跟踪的路径**:工作区约定的目录(`lab/` `products/` `input/` `clear/`)与根上的 `PROJECT.md`、`.tmp-*`、
  *     Python 缓存。`.gitignore` 已经挡住新增,这条挡的是 `git add -f` 与忽略规则被改掉。
  *   · **范围里有账本提交**(给了 `--since <ref>` 才查):作者是 `clearai@local` 的提交。
  *     它比路径检查更早发现问题——账本提交里混着的往往是正常源码改动,路径检查看不出来。
@@ -19,7 +19,7 @@
 import { execFileSync } from 'node:child_process'
 
 const LEDGER_AUTHOR = 'clearai@local'
-const RESIDUE = [/^(lab|products|input|clear)\//, /^\.tmp-[^/]+\//, /(^|\/)__pycache__\//, /\.pyc$/]
+const RESIDUE = [/^(lab|products|input|clear)\//, /^PROJECT\.md$/, /^\.tmp-[^/]+\//, /(^|\/)__pycache__\//, /\.pyc$/]
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' })
 

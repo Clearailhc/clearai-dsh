@@ -22,8 +22,8 @@ jobs:
           # npm ≥ 11.5.1,而 Node 22 自带 10.9.8 —— 两处刻意不同,别顺手统一。
           node-version: '22'
       - name: No ClearAI workspace residue
-        # 本仓库不是 ClearAI 工作区:不许跟踪 lab/ products/ .tmp-* 等,PR 里不许有内核账本提交
-        # (在仓库里跑会话时,账本会把工作区 `git add -A` 提交到当前分支)。见脚本文件头。
+        # 本仓库不是 ClearAI 工作区:不许跟踪 lab/ products/ PROJECT.md .tmp-* 等,PR 里不许有内核账本提交。
+        # 在仓库里跑 ClearAI 会话时,内核账本会把工作区 `git add -A` 提交到当前分支;这条挡住它们混进 PR。见脚本文件头。
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |

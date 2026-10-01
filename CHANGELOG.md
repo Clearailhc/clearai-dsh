@@ -2,6 +2,12 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- 仓库清理:删除误入版本库的 ClearAI 工作区残留(`lab/`、`products/`、`.tmp-fontdiag/`);案例证据搬到 `docs/cases/runs/`,营销卡片脚本搬到 `tools/marketing/`;`.gitignore` 挡住工作区约定的目录;新增 `tools/check-workspace-residue.mjs` 并接进 CI(不许跟踪工作区产物与根上的 `PROJECT.md`,PR 里不许有 `clearai@local` 的提交)。
+
 ## [0.3.1] — 2026-09-29
 
 **两个死结:计划置 blocked 后再也解不开,续跑窗口的阻塞码收不了兵。** 两条都不是措辞问题,是机制自己在文档承诺的出口上焊死了——0.3.0 的「连拦达阈值 ⇒ 置 blocked、停下等人」写得没错,可人按卡上说的三条出路走,一条也走不出去。
