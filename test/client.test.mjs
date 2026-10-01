@@ -352,7 +352,7 @@ function walkNodes(node, out = []) {
 /**
  * 把元素树**展开成真实节点**(函数组件就地调用,保留 props)。
  *
- * 为什么需要它:`walkNodes` 只走 `children`,遇到未展开的函数元素(`h(FactShelf, …)`)就停;
+ * 为什么需要它:`walkNodes` 只走 `children`,遇到未展开的函数元素(`h(Conclusions, …)`)就停;
  * 而字符串渲染桩又会把 props 丢掉——「点一下到底调没调打开器」这类断言,两者都验不了。
  */
 function expandTree(node) {
@@ -518,9 +518,9 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	const { exports, react } = bundle
 	const components = exports.__components
 	check(
-		'组件测试缝在(StatusStrip/Deliverables/WorldTree/BrainTab/Inbox/Facts/FactShelf/PropositionShelf)',
+		'组件测试缝在(Deliverables/WorldTree/BrainTab/Inbox/Facts/Conclusions/ConclusionRow)',
 		Object.entries(components)
-			.filter(([key]) => key !== 'LOOP_LABEL' && key !== 'PROPOSITION_GROUPS')
+			.filter(([key]) => key !== 'LOOP_LABEL')
 			.every(([, value]) => typeof value === 'function'),
 	)
 	check('对象的人话名字表也在缝上(交叉校验要用它:声明里每个对象都得有名字)', components.LOOP_LABEL !== undefined && components.LOOP_LABEL.hypothesis === '命题' && components.LOOP_LABEL.fact === '事实')
@@ -702,17 +702,39 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const useProjection2 = (key) => (key === 'clearai' ? factsView : undefined)
 		const render2 = (component, extra = {}) => react.render(component({ useProjection: useProjection2, useSessions, sessionId: 's1', openRail: () => {}, openSpectator: () => {}, ...extra })).replace(/\s+/g, ' ')
 		const facts = render2(components.Facts)
-		check('上架:已确认事实带**边界**与支持等级(没有边界的事实没人敢用)', /本体货架 · 1/.test(facts) && /边界:均值差 < 5% 即作废/.test(facts) && /支持到 L3/.test(facts), facts.slice(0, 160))
-		check('上架只放已确认的:已确认那条**不在**命题列表里(一个命题只在一处)', !/已经升格的那条/.test(facts), facts.slice(0, 200))
-		check('下架按**本体状态**分组(已提出/验证中/已推翻/已替代)', /已提出1/.test(facts) && /验证中1/.test(facts) && /已推翻1/.test(facts) && /已替代1/.test(facts), facts.slice(0, 260))
-		check('一行一条命题:主张 + 当前处境 + 等级判者', /催化剂 A 优于 B/.test(facts) && /已达门槛\(L3\),等目标验收时升格为事实/.test(facts) && /验证中 · L3 · 独立评估者/.test(facts), facts.slice(0, 300))
-		check('被推翻那条说清**被谁推翻**(负结果也是结论)', /被 e-2 推翻:牛顿 6 次 < 二分 41 次/.test(facts), facts.slice(0, 400))
+		/**
+		 * 「知识」格只回答一个问题——现在能信什么。事实与判断排成**一张**清单,按能信的程度分组;
+		 * 每行一句话 + 一句人话的「凭什么」。机制词(L0–L4、自判、门槛、升格、命题)不上这一格。
+		 */
+		check('页签叫「知识」', /^知识/.test(facts), facts.slice(0, 20))
+		check('一张清单按能信的程度分组:已确立 / 有依据待复核 / 还没验 / 被推翻(空组不出现)', /已确立 · 1/.test(facts) && /有依据,待复核 · 1/.test(facts) && /还没验 · 1/.test(facts) && /被推翻 · 1/.test(facts) && !/说不清 ·/.test(facts), facts.slice(0, 300))
+		check('分组顺序就是读的顺序:能信的在最前,被推翻的在最后', facts.indexOf('已确立') < facts.indexOf('有依据,待复核') && facts.indexOf('有依据,待复核') < facts.indexOf('还没验') && facts.indexOf('还没验') < facts.indexOf('被推翻'))
+		check('「凭什么」说人话:独立复核(不是 L3 · 独立评估者)', /依据:独立复核/.test(facts) && !/L3/.test(facts), facts.slice(0, 300))
+		check('机制词不上这一格(门槛 / 升格 / 自判 / 命题 / 本体货架)', !/门槛|升格|自判|命题|本体货架/.test(facts), (facts.match(/门槛|升格|自判|命题|本体货架/g) ?? []).join(','))
+		check('已确认那条只出现一次(作为已确立的事实,不再在判断里重复)', !/已经升格的那条/.test(facts), facts.slice(0, 200))
+		check('被推翻那条说清凭什么被推翻(负结果也是结论,留在最后但不删)', /推翻它的依据:牛顿 6 次 < 二分 41 次/.test(facts), facts.slice(0, 400))
+		check('已替代的旧版本只留一个归档数,不占屏', /另有 1 条旧版本或已撤回的/.test(facts), facts.slice(-120))
 		// 真数据里评估者的依据常常是几百字:列表只放摘要,全文进 tooltip(否则一行撑爆)
 		const longBasis = '逐条对照登记判据:'.repeat(40)
 		const longView = { ...factsView, evidence: [{ ...factsView.evidence[1], basis: longBasis }] }
 		const longText = react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? longView : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
 		check('超长依据只上摘要(全文进 tooltip;一行不被撑爆)', !longText.includes(longBasis) && /…/.test(longText), longText.slice(0, 200))
-		check('还没证据的命题如实说「暂无证据」', /暂无证据。先登记判据,后执行验证。/.test(facts), facts.slice(0, 400))
+		{
+			/** 点开一行才看明细:什么情况下不成立、逐条依据(人话,不带证据 id)、看过程。 */
+			const seam = bundle.exports.__propositions
+			const { groups } = seam.conclusionsOf({ ...factsView, openPreview: () => {}, openRail: () => {} })
+			const established = groups.find((group) => group.key === 'established').rows[0]
+			const opened = react.render(components.ConclusionRow({ data: { ...factsView, openPreview: () => {}, openRail: () => {} }, row: established, groupKey: 'established', open: true, onToggle: () => {} })).replace(/\s+/g, ' ')
+			check('点开:什么情况下不成立(事实的边界)', /什么情况下不成立:均值差 < 5% 即作废/.test(opened), opened.slice(0, 200))
+			check('点开:逐条依据说人话(支持 · 独立复核),不露证据 id', /支持 · 独立复核/.test(opened) && !/e-1/.test(opened), opened.slice(0, 200))
+			check('点开:能打开原文、能看过程(过程按需)', /打开原文/.test(opened) && /看过程/.test(opened), opened.slice(-120))
+			const untested = groups.find((group) => group.key === 'untested').rows[0]
+			const openedUntested = react.render(components.ConclusionRow({ data: factsView, row: untested, groupKey: 'untested', open: true, onToggle: () => {} })).replace(/\s+/g, ' ')
+			check('还没验的:收起时不编一句占位,点开如实说「还没有任何依据」', /还没有任何依据。/.test(openedUntested) && !/依据:/.test(openedUntested), openedUntested.slice(0, 160))
+			check('自己判的如实说出来(做的人不判自己:这是可信度的一半)', seam.basisOf([{ verdict: 'support', level: 'L2', evaluator: 'self' }]) === '复算 · 自己判的' && seam.basisOf([{ verdict: 'refute', level: 'L3', evaluator: 'independent' }]) === null)
+			const unclear = seam.conclusionsOf({ ...factsView, facts: [], evidence: [{ id: 'e-9', stepId: 's1', verdict: 'inconclusive', level: 'L2', evaluator: 'self', basis: 'x' }] }).groups.map((group) => group.key)
+			check('判过但判不出来的进「说不清」,不冒充「还没验」', unclear.includes('unclear'), unclear.join(','))
+		}
 
 		// ── 本体格:图带 / 芯片 / 冲突 / 零成本 / 自动展开 / 过滤判据(阶段 D) ──
 		{
@@ -759,19 +781,26 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 
 			// ① 零成本:没有词条时,这一格与从前逐像素相同(图带/冲突行/维护区都不出现)
 			const plain = renderOnto(factsView)
-			check('零成本:没有词条就没有图带/冲突行/维护区(与从前同形)', !plain.includes('本体图') && !plain.includes('实体图') && !plain.includes('冲突') && !plain.includes('词汇('), plain.slice(0, 120))
+			check('零成本:没有词条就没有图/冲突行/维护区', !plain.includes('概念图') && !plain.includes('说法不一致') && !plain.includes('词汇('), plain.slice(0, 120))
 
 			// ② 图带:本体图/实体图切换在,节点标签在,截断说明的措辞在(有节点就不会出现)
-			check('图带:层次切换与节点都在(本体图默认)', typed.includes('本体图') && typed.includes('实体图') && typed.includes('炉次') && typed.includes('点节点看知识详情'), typed.slice(0, 200))
-			check('图带:提示写的是「看知识详情」而不是「过滤」(点击语义变了,提示得跟着变)', !typed.includes('点节点按概念过滤'))
+			check('图默认收起成一行(过程按需,不占屏)', /看概念图 · 1 个概念/.test(typed) && !typed.includes('点节点看知识详情'), typed.slice(-200))
+			const band = react.render(components.GraphBand({ lexicon: lexiconFixture, layer: 'ontology', onLayer: () => {}, onFilter: () => {}, sessionId: 's1', fullscreen: false, onToggleFullscreen: () => {}, unlanded: null })).replace(/\s+/g, ' ')
+			check('展开后:层次切换与概念节点都在', band.includes('本体图') && band.includes('实体图') && band.includes('炉次') && band.includes('点节点看知识详情'), band.slice(0, 200))
+			check('值形态(quantity 这类语法)不画成节点', !/quantity/.test(band), band.slice(0, 200))
 			check('图带:废止节点是虚线幽灵的来源数据(status=deprecated 的词条在维护区带缘由)', lexiconFixture.terms[1].status === 'deprecated' && String(lexiconFixture.terms[1].deprecated.reason).includes('与父概念无法区分'))
 
 			// ③ 冲突:一行指针 + 受害条目的内联标记
-			check('冲突行:仅当有冲突,一句话指针说清两侧', typed.includes('Conflict') === false && /冲突 1 对/.test(typed) && typed.includes('f-1(quantity:8:ppm)') && typed.includes('只暴露,不裁决'), typed.slice(0, 400))
-			check('冲突内联:受害条目自己亮出来(不必回看指针行)', /冲突 · oxygen_ppm/.test(typed), typed.slice(0, 500))
+			check('说法不一致顶在最前,两侧各用结论自己的话说(不露内部键与值的序列化)', /^知识说法不一致 · 1/.test(typed) && typed.includes('「a」 与 「b」') && typed.includes('留哪条由你决定') && !/furnace_batch\|B1|quantity:8/.test(typed), typed.slice(0, 200))
+			check('受害条目自己也亮出来(不必回看那一行)', /与另一条说法不一致/.test(typed), typed.slice(0, 500))
 
 			// ④ 断言芯片:已确立条目带芯片;命题带芯片且标注未升格
-			check('断言芯片:已确立条目显示「主语 · 谓词 = 值」', typed.includes('B1 · 氧含量 = 8 ppm') && typed.includes('B1 · 氧含量 = 12 ppm'), typed.slice(300, 700))
+			{
+				const typedRows = bundle.exports.__propositions.conclusionsOf(typedView).groups.find((group) => group.key === 'established').rows
+				const chipText = typedRows.map((row) => react.render(components.ConclusionRow({ data: { ...typedView, assertionUI: { lexicon: lexiconFixture, openKey: null, onToggle: () => {}, onFilter: () => {}, onGraph: () => {} } }, row, groupKey: 'established', open: true, onToggle: () => {} }))).join(' ').replace(/\s+/g, ' ')
+				check('断言芯片在点开的那一行里:「主语 · 谓词 = 值」', chipText.includes('B1 · 氧含量 = 8 ppm') && chipText.includes('B1 · 氧含量 = 12 ppm'), chipText.slice(0, 300))
+				check('收起时芯片不占屏', !typed.includes('B1 · 氧含量 = 8 ppm'))
+			}
 
 			// ⑤ 词汇维护区:有事实时默认收起(词条表不出现),但区头计数在
 			check('维护区:有事实时默认收起(词条 id 不进 DOM,区头计数在)', !typed.includes('furnace_batch narrow') && /词汇\(2/.test(typed), typed.slice(-300))
@@ -1018,8 +1047,6 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			props.evidenceOf(factsView, 'h1').length === 1 && props.evidenceOf(factsView, 'h2').length === 1 && props.evidenceOf(factsView, 'h3').length === 0,
 			`h1=${props.evidenceOf(factsView, 'h1').length} h2=${props.evidenceOf(factsView, 'h2').length} h3=${props.evidenceOf(factsView, 'h3').length}`,
 		)
-		check('走过的转移用**声明里的原始状态键**(渲染时才翻译:混用两套键会让流转图认不出走过的边)', props.transitionsOf(factsView, h1).map((step) => step.to).join('→') === 'alive', JSON.stringify(props.transitionsOf(factsView, h1)))
-		check('被推翻那条的来路里有「出现推翻证据」且带评估者', props.transitionsOf(factsView, h2).some((step) => step.to === 'refuted' && /独立评估者/.test(step.by)), JSON.stringify(props.transitionsOf(factsView, h2)))
 		check(
 			'出处分两种:独立证据指**评估卡**、自判指**产物**——产物的标签是文件名',
 			props.originsOf(factsView, factsView.evidence[0]).some((origin) => origin.label === '评估卡' && /audits\/s1/.test(String(origin.path))) &&
@@ -1047,7 +1074,13 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			props.originsOf(branchView, { id: 'e-x', stepId: 's1', branch: 'b-9', anchor: 'auditor', refs: [] }).some((origin) => origin.label === '评估卡' && /k-1:b-9/.test(String(origin.path))),
 			JSON.stringify(props.originsOf(branchView, { id: 'e-x', stepId: 's1', branch: 'b-9', anchor: 'auditor', refs: [] })),
 		)
-		const opened = render2(components.PropositionShelf, { open: 'h1', onToggle: () => {} })
+		/** 点开一条 = 渲染那一行的展开态(界面里由 Facts 自己的 useState 驱动;这里直接给 open)。 */
+		const rowOf = (data, id) => props.conclusionsOf(data).groups.flatMap((group) => group.rows.map((row) => ({ row, groupKey: group.key }))).find((entry) => entry.row.id === id)
+		const openRow = (data, id) => {
+			const entry = rowOf(data, id)
+			return components.ConclusionRow({ data, row: entry.row, groupKey: entry.groupKey, open: true, onToggle: () => {} })
+		}
+		const opened = react.render(openRow(factsView, 'h1')).replace(/\s+/g, ' ')
 		/**
 		 * **点证据要真的开右侧预览**(§25)。判据不是"渲染出了一个可点的样子",
 		 * 而是"点下去那个打开器真的被调用、拿到的是原件路径"。
@@ -1056,14 +1089,14 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const calls = []
 			// 直接拿**元素树**(不是字符串):只有元素树上才留着 onClick/title 这些 props
 			// 展开到证据行:命题要点开才有证据(与界面一致);字符串渲染桩会丢 props,所以走元素树
-			const el = components.PropositionShelf({ data: factsView, open: 'h1', onToggle: () => {}, openPreview: (path) => calls.push(`preview:${path}`) })
+			const el = openRow({ ...factsView, openPreview: (path) => calls.push(`preview:${path}`) }, 'h1')
 			const nodes = walkNodes(expandTree(el))
 			const cardLink = nodes.find((node) => node.props?.onClick !== undefined && String(node.props?.title ?? '').includes('audits'))
 			cardLink?.props.onClick({ stopPropagation: () => {} })
 			check('点证据的出处 ⇒ 调用打开器并拿到原件路径(评估卡)', calls.some((entry) => entry.startsWith('preview:') && entry.includes('audits/s1')), JSON.stringify(calls))
-			const rowLink = walkNodes(expandTree(components.FactShelf({ data: factsView, openPreview: (path) => calls.push(`preview:${path}`) }))).find((node) => node.props?.onClick !== undefined && String(node.props?.title ?? '').includes('facts/g1.md'))
+			const rowLink = walkNodes(expandTree(openRow({ ...factsView, openPreview: (path) => calls.push(`preview:${path}`) }, 'f-1'))).find((node) => node.props?.onClick !== undefined && String(node.props?.title ?? '').includes('facts/g1.md'))
 			rowLink?.props.onClick()
-			check('点事实那一行 ⇒ 打开事实原件', calls.some((entry) => entry.includes('preview:clear/knowledge/facts/g1.md')), JSON.stringify(calls))
+			check('点开事实那一行的「打开原文」⇒ 打开事实原件', calls.some((entry) => entry.includes('preview:clear/knowledge/facts/g1.md')), JSON.stringify(calls))
 		}
 		/**
 		 * §27b **四类出处各自可点**:产物/评估卡 → 原生预览;看评估者 → 旁观子会话;
@@ -1093,13 +1126,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 					},
 				],
 			}
-			const el = components.PropositionShelf({
-				data: withOrigins,
-				open: 'h1',
-				onToggle: () => {},
-				openPreview: (path) => calls.push(`preview:${path}`),
-				openSpectator: (id) => calls.push(`spectate:${id}`),
-			})
+			const el = openRow({ ...withOrigins, openPreview: (path) => calls.push(`preview:${path}`), openSpectator: (id) => calls.push(`spectate:${id}`) }, 'h1')
 			const nodes = walkNodes(expandTree(el))
 			const clickable = nodes.filter((node) => node.props?.onClick !== undefined && node.props?.title !== undefined)
 			for (const node of clickable) node.props.onClick({ stopPropagation: () => {} })
@@ -1121,15 +1148,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const got = props.originsOf(legacy, { id: 'e-old', stepId: 's1', anchor: 'artifact', refs: ['m-legacy', 'm-unknown', 'not/a/real/path'] })
 			check('旧日志回退:材料 id 换成路径、路径照用、换不出来的丢掉', got.length === 2 && got[0].path === 'lab/legacy.csv' && got[1].path === 'not/a/real/path', JSON.stringify(got))
 		}
-		check('点开一条:证据行带等级/裁决/判者/依据', /e-1 · L3 · 支持 · 独立评估者/.test(opened) && /三种方法同根/.test(opened), opened.slice(0, 320))
-		/**
-		 * **流转图**(§25):从本体声明生成的状态机,画在展开区里。
-		 * 三条规矩都要真的在:走过的边写清触发与凭据、当前态标「当前」、没走的边虚线灰。
-		 */
-		check('流转图画出来了:六态都在,当前态标「当前」', /已提出/.test(opened) && /验证中/.test(opened) && /已确认/.test(opened) && /已推翻/.test(opened) && /当前/.test(opened), opened.slice(0, 200))
-		check('走过的边:图上标证据 id,图下的「来路」行写清触发与凭据', /e-1 · L3 支持/.test(opened) && /已获首条证据 → 验证中 · e-1 · L3 支持/.test(opened), opened.slice(0, 400))
-		check('没走的边只画虚线结构,tooltip 里写着「未走:这件事 · 谁发起」(取自声明,不是界面手抄)', /未走:promotion_threshold · system 发起/.test(opened) && /未走:refuting_evidence · system 发起/.test(opened) && /未走:hypothesis_revised · model 发起/.test(opened), opened.slice(0, 400))
-		check('形状来自声明:声明里没有 hypothesis 时不硬画', !/┊/.test(render2(components.PropositionShelf, { open: 'h1', onToggle: () => {}, data: { ...factsView, ontology: null } })) || true)
+		check('点开一条:依据一行一条,说人话(支持 · 独立复核)+ 依据原文', /支持 · 独立复核/.test(opened) && /三种方法同根/.test(opened), opened.slice(0, 320))
+		check('点开不再画状态机(过程不画成结果:没有「未走」的转移、没有「当前」节点)', !/未走:/.test(opened) && !/当前/.test(opened), opened.slice(0, 200))
 	}
 
 	/**
@@ -1378,11 +1398,11 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				check('撤回先要写缘由:初始态只有「撤回事实」,没有「确认撤回」', tree.some((node) => label(node) === '撤回事实') && !tree.some((node) => label(node) === '确认撤回'))
 				check('那颗按钮的提示写着「两步」而不是「一键」', tree.some((node) => String(node.props?.title ?? '').includes('填写缘由后提交')), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => node.props?.title)))
 			}
-			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
-			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻 · 待裁决/.test(shelf), shelf.slice(0, 180))
+			const shelf = react.render(components.Conclusions({ data: refuted, open: null, onToggle: () => {} })).replace(/\s+/g, ' ')
+			check('事实那一行如实标出「出现反例,待你决定」(引用它之前要看这条)', /出现反例 · 待你决定/.test(shelf), shelf.slice(0, 180))
 			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }
-			const shelf2 = react.render(components.FactShelf({ useProjection: () => retractedFacts })).replace(/\s+/g, ' ')
-			check('撤回过的事实**仍列在这里**(P5:记录不删),但标着「人已撤回」', /人已撤回\(记录保留\)/.test(shelf2), shelf2.slice(0, 180))
+			const shelf2 = react.render(components.Conclusions({ data: retractedFacts, open: null, onToggle: () => {} })).replace(/\s+/g, ' ')
+			check('撤回过的事实不再当「已确立」列出,只进归档计数(记录照旧保留)', !/已确立/.test(shelf2) && /另有 1 条旧版本或已撤回的/.test(shelf2), shelf2.slice(0, 180))
 		}
 		const clickGate = { ...view, inbox: [{ kind: 'fork_adopt', title: '世界线裁决', summary: '两条线跑完,待采纳一条', plan: 'p-1', step: 's1', fork: 'f-9', human_action: 'adopt_branch', needs: 'click' }], hasOpenGate: true }
 		const clickGateText = react.render(components.Inbox({ data: clickGate })).replace(/\s+/g, ' ')
@@ -1490,7 +1510,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	// 投影为空:世界树(计划面)与事实格(闭环面)都要给平静空态,不抛、不显示堆栈
 	const emptyTree = react.render(components.WorldTree({ useProjection: () => undefined, sessionId: 's1' }))
 	const emptyFacts = react.render(components.Facts({ useProjection: () => undefined, sessionId: 's1' }))
-	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /暂无数据/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
+	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /还没有内容/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
 
 	// 空视图也要能渲染:这是最常见的崩溃点(字段全 undefined)。
 	const emptyView = { sessionId: 's1', goal: null, plan: null, forks: [], evidence: [], materials: [], facts: [], audits: [], settlement: [], scouts: [], inbox: [], hasOpenGate: false, brain: null }
@@ -1498,7 +1518,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	// TreeDetail / Inbox 要一份选中行与门数据才渲染(它们在树里由选中驱动),不属于顶层空态。
 	check(
 		'空视图下这些组件都不炸(§34:档位开关已删,不在这个清单里)',
-		['PlanChip', 'WorldTree', 'BrainTab', 'Deliverables', 'Facts', 'FactShelf', 'PropositionShelf'].every((name) => typeof emptyText(components[name]) === 'string'),
+		['PlanChip', 'WorldTree', 'BrainTab', 'Deliverables', 'Facts'].every((name) => typeof emptyText(components[name]) === 'string') && typeof react.render(components.Conclusions({ data: emptyView, open: null, onToggle: () => {} })) === 'string',
 	)
 	// 预览走原生:断言接线用的就是这个契约(拿不到服务就如实说不打不开,不假装打开)
 	{
