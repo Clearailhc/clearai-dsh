@@ -122,9 +122,16 @@ Environment Variables:
     if args.verbose:
         cmd.append("-v")
     
-    # Execute — pass API key via environment to avoid exposure in process listings
+    # Execute — pass API key via environment to avoid exposure in process listings.
+    # Only forward the specific credential needed, instead of every secret-like
+    # variable already present in this process's environment, to minimize what
+    # is exposed through the child process's environment (e.g. /proc/<pid>/environ).
     try:
-        env = os.environ.copy()
+        sensitive_markers = ("KEY", "SECRET", "TOKEN", "PASSWORD")
+        env = {
+            name: value for name, value in os.environ.items()
+            if not any(marker in name.upper() for marker in sensitive_markers)
+        }
         if api_key:
             env["OPENROUTER_API_KEY"] = api_key
         result = subprocess.run(cmd, check=False, env=env)
