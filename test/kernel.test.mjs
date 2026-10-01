@@ -4160,7 +4160,7 @@ console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
 	check('git 看不见工作副本(否则交付提交会把别的世界线一起提进主线)', (() => {
 		const status = execFileSync('git', ['status', '--porcelain'], { cwd: WORKSPACE, encoding: 'utf8' })
 		const exclude = readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')
-		return !status.includes('worldlines') && exclude.split('\n').some((line) => line.trim() === 'clear/worldlines/')
+		return !status.includes('worldlines') && exclude.split('\n').some((line) => line.trim() === '/clear/worldlines/')
 	})())
 	/**
 	 * **相对路径按世界线自己的工作副本解析**(2026-09-11 修的真 bug):
@@ -4498,6 +4498,11 @@ console.log('\n【世界线 B 层:工作区不是 git 仓库 → 旁路账本】
 		decide_by: { metric: 'yield = lab/probe.txt 里的产出数(件)', direction: 'max' },
 	})
 	check('分叉在非仓库工作区里也能立起', forked.ok === true, String(forked.code))
+	check(
+		'账本正是这次分叉建起来的:基线那一笔也落成 git/snapshot(不因为树是干净的就漏记)',
+		eventsOf('git/snapshot').some((event) => event.fork === eventsOf('fork/created').at(-1)?.id && typeof event.commit === 'string' && event.commit !== ''),
+		JSON.stringify(eventsOf('git/snapshot').slice(-2)),
+	)
 	const preparedB = eventsOf('worldline/prepared').slice(-1)[0]
 	check('世界线走 B 层:账本建在数据区(tier=ledger)', preparedB.tier === 'ledger', String(preparedB.tier))
 	check('工作区里**没有**多出 .git(用户文件夹保持干净)', !existsSync(join(plain, '.git')), ''.concat())
@@ -5230,7 +5235,7 @@ console.log('\n【用户仓库原样不动:账本与世界线只住在旁路账�
 		'用户仓库的本地 exclude 里有世界线容器(嵌套的工作副本不出现在他的 git status 里)',
 		readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')
 			.split('\n')
-			.some((line) => line.trim() === 'clear/worldlines/'),
+			.some((line) => line.trim() === '/clear/worldlines/'),
 	)
 	check(
 		'用户仓库的 exclude 里**只有**那一行(账本的垃圾名单不替用户决定忽略什么)',
@@ -5240,6 +5245,38 @@ console.log('\n【用户仓库原样不动:账本与世界线只住在旁路账�
 		'分叉前的快照落了 git/snapshot(系统对工作区做过的事,日志里说得出来)',
 		ledger().some((mutation) => mutation.t === 'git/snapshot' && /分叉前/.test(String(mutation.reason))),
 	)
+}
+
+console.log('\n【工作区是大仓库里的一个子目录:exclude 模式相对仓库根】')
+{
+	/**
+	 * `clear/worldlines/` 中间带斜杠,在 `info/exclude` 里锚定在仓库根上。工作区是 `/repo/pkg` 时
+	 * 工作副本在 `pkg/clear/worldlines/...`,照写 `clear/worldlines/` 挡不住——用户的 `git status` 里会冒出来。
+	 */
+	const repo = tempDir('clearai-mono-')
+	execFileSync('git', ['init', '-q'], { cwd: repo })
+	execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: repo })
+	const pkg = join(repo, 'pkg')
+	writeText(join(pkg, 'lab', 'probe.txt'), '# 测量脚本占位\n')
+	const host = makeHost()
+	host.cwd = pkg
+	apply(host.ctx, {})
+	const S = 'session-mono'
+	await callOn(host, S, 'SetGoal', { claim: '比两条路线', done_criteria: 'report.md 写下结论', hypotheses: [{ claim: '甲更好', refute_when: '乙更好' }] })
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'm1', do: '比两条路线', artifacts: ['report.md'], done_criteria: 'report.md 写下结论' }] })
+	const forked = await callOn(host, S, 'ForkPlan', {
+		question: '两条路线选哪条',
+		options: [
+			{ label: '甲', approach: '甲做法', done_criteria: 'yield 越大越好' },
+			{ label: '乙', approach: '乙做法', done_criteria: 'yield 越大越好' },
+		],
+		decide_by: { metric: 'yield = lab/probe.txt 里的产出数(件)', direction: 'max' },
+	})
+	const prepared = host.journal.filter((mutation) => mutation.t === 'worldline/prepared').at(-1)
+	check('前置:子目录工作区里分叉物化成 worktree', forked.ok === true && prepared?.tier === 'ledger' && prepared.branches.length === 2, `${forked.code} ${prepared?.tier}`)
+	const status = execFileSync('git', ['status', '--porcelain', '-uall'], { cwd: repo, encoding: 'utf8' })
+	check('用户的 git status 里看不见工作副本(模式写成 /pkg/clear/worldlines/)', !status.includes('worldlines'), status.split('\n').filter((line) => line.includes('worldlines')).slice(0, 2).join(' | '))
+	check('用户仓库里仍没有一条 clearai@local 的提交', !/clearai@local/.test(execFileSync('git', ['-C', repo, 'log', '--all', '--format=%ae'], { encoding: 'utf8' })))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

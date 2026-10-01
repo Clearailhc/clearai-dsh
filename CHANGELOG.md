@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 **账本不再往用户的仓库里提交。** 工作区本身是 git 仓库时,内核的账本(交付点、回合边界快照、恢复)与 git 世界线(分支、合并)此前**直接用那个仓库**:每个回合边界在用户**当前分支**上 `git add -A` 并以 `clearai <clearai@local>` 提交,世界线分支 `clearai/*` 也开在里面。于是用户没写完的改动、模型按技能约定写的 `lab/` `products/`、排查用的 `.tmp-*` 一起进了他的历史,下一次 push 就上了远端——本仓库自己就这样吃进过几十条「探索期快照」(独立验证员 2026-09 也记过同一件事,当时判为「不是源码缺陷」)。
 
+> 过渡修复:后续计划把账本整体交给宿主(`dsh-workspace-changes`),届时本节描述的旁路账本会被移除。
+
 ### Fixed
 
 - **账本与世界线一律住在旁路账本**(`$DSH_HOME/storages/clearai/ledger/<slug>`):`gitContext` 删掉「工作区是 git 仓库就直接用它」那条分支。旁路账本认工作树里的 `.gitignore`、自动跳过用户的 `.git/`,所以账本看见的内容与用户看见的一致;`FileHistory` / `RestoreFile` / 世界线的行为不变,只是记录的位置换了。对用户仓库做的**唯一**一件事:在它本地的 `.git/info/exclude` 里加一行 `clear/worldlines/`,让嵌套的工作副本不出现在 `git status` 里(不进历史、不外传)。
@@ -15,7 +17,6 @@ All notable changes to this project are recorded here. The format follows [Keep 
 ### Changed
 
 - 旁路账本的文件数上限(`ledgerMaxFiles`,缺省 20000)从此对 git 工作区也生效:超过上限的大仓库里账本与 git 世界线退化成声明目录,并如实说明原因(此前 git 工作区不受这条限制,因为它写的是用户自己的仓库)。
-- 仓库清理:删除误入版本库的 ClearAI 工作区残留(`lab/`、`products/`、`.tmp-fontdiag/`);案例证据搬到 `docs/cases/runs/`,营销卡片脚本搬到 `tools/marketing/`;`.gitignore` 挡住工作区约定的目录;新增 `tools/check-workspace-residue.mjs` 并接进 CI(不许跟踪工作区产物,PR 里不许有 `clearai@local` 的提交)。
 
 ## [0.3.1] — 2026-09-29
 

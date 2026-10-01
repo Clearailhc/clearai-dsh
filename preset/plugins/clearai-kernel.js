@@ -5104,8 +5104,11 @@ export function apply(ctx, config = {}) {
 			if (!committed.ok && !/nothing to commit|无文件要提交|working tree clean/i.test(`${committed.out}${committed.err}`)) {
 				return { mode: null, cwd, gitDir: null, reason: `旁路账本基线提交失败:${(committed.err || committed.out || '').split('\n')[0]}` }
 			}
+			// 建账本的这一次调用把基线交给调用方:那也是一笔「系统对工作区做过的事」,调用方要能把它落进日志。
+			const head = committed.ok ? gitAt(context, ['rev-parse', '--short', 'HEAD']) : { ok: false }
+			return { mode: 'ledger', cwd, gitDir, reason: null, baselineCommit: head.ok === true ? head.out.trim() : null }
 		}
-		return { mode: 'ledger', cwd, gitDir, reason: null }
+		return { mode: 'ledger', cwd, gitDir, reason: null, baselineCommit: null }
 	}
 
 	/** 在主树上跑 git(旁路账本模式要显式带上 --git-dir/--work-tree)。 */
@@ -5296,7 +5299,12 @@ export function apply(ctx, config = {}) {
 		 */
 		if (isGitWorkspace(cwd)) {
 			const own = git(['rev-parse', '--absolute-git-dir'], cwd)
-			if (own.ok === true && own.out !== '') appendExclude(own.out, { junk: false })
+			/**
+			 * 模式要相对**仓库根**:工作区可以是大仓库里的一个子目录(`/repo/pkg`),
+			 * 而 `clear/worldlines/` 中间带斜杠,在 exclude 里是锚定在根上的 ⇒ 写成 `/pkg/clear/worldlines/`。
+			 */
+			const prefix = git(['rev-parse', '--show-prefix'], cwd)
+			if (own.ok === true && own.out !== '' && prefix.ok === true) appendExclude(own.out, { junk: false, container: `/${prefix.out}clear/worldlines/` })
 		}
 		return excluded
 	}
@@ -5305,8 +5313,7 @@ export function apply(ctx, config = {}) {
 	 * 往某个 git 目录的 `info/exclude` 里补上世界线容器与平台垃圾(只追加缺的那些)。
 	 * 用户仓库只给容器那一行(`junk: false`):垃圾名单是**账本的**口径,替用户的仓库决定忽略什么不是我们的事。
 	 */
-	function appendExclude(gitDir, { junk = true } = {}) {
-		const container = 'clear/worldlines/'
+	function appendExclude(gitDir, { junk = true, container = 'clear/worldlines/' } = {}) {
 		if (typeof gitDir !== 'string' || gitDir === '') return { ok: false, reason: '取不到 git 目录' }
 		const file = join(gitDir, 'info', 'exclude')
 		let current = ''
@@ -5411,7 +5418,8 @@ export function apply(ctx, config = {}) {
 		 */
 		const based = commitLedger(cwd, `clearai: 分叉 ${forkId} 前的工作区快照`)
 		if (based.ok !== true) return { ok: false, reason: `分叉前的工作区快照失败:${based.reason}` }
-		const baseCommit = based.skipped === true ? null : based.commit
+		// 账本若正是这次分叉建起来的,快照会看到一棵干净的树而跳过——那一笔是基线,同样要报给调用方。
+		const baseCommit = based.skipped === true ? (context.baselineCommit ?? null) : based.commit
 		const base = worldlineBase(cwd)
 		const prepared = []
 		for (const branch of branches) {
@@ -5861,7 +5869,7 @@ export function apply(ctx, config = {}) {
 			}
 			// 分叉前那笔快照也是系统对工作区做过的事,与回合边界那笔同一条纪律:日志里要说得出来。
 			if (materialized.ok === true && materialized.baseCommit !== null && materialized.baseCommit !== undefined) {
-				mutations.push({ t: 'git/snapshot', commit: materialized.baseCommit, reason: '分叉前的工作区快照(世界线从盘上此刻分出去)' })
+				mutations.push({ t: 'git/snapshot', commit: materialized.baseCommit, fork: forkId, reason: '分叉前的工作区快照(世界线从盘上此刻分出去)' })
 			}
 			mutations.push({ t: 'fork/created', id: forkId, step: step.id, plan: plan.id, question: args.question.trim(), decide_by: { metric: args.decide_by.metric.trim(), direction: args.decide_by.direction }, options })
 			mutations.push({
