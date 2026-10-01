@@ -70,6 +70,7 @@ const BANNED = [
 	{ pattern: /全程中文/, why: '提示词已改为跟随用户语言' },
 	{ pattern: /(通用 L4.{0,8}(已|全部)实现|universal L4 gate.{0,10}implemented)/, why: 'L4 人门只覆盖步骤/分支级' },
 	{ pattern: /(八状态机.{0,6}已实现|eight-state machine.{0,10}shipped)/, why: '八状态验证机仍是设计目标' },
+	{ pattern: /(A 层用工作区自己的仓库|用户仓库可用就地开分支|A\+B 两档|commits? (in|into) the user's (own )?repo)/, why: '账本与世界线一律住在旁路账本里,用户的仓库只多一行本地 exclude(0.3.2 起)' },
 ]
 
 /** 一行如果带上这些标记,说明它在讲历史/已删/已改 —— 允许。 */

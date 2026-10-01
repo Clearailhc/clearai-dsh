@@ -505,7 +505,7 @@ export const MECHANISM_TOOLS = {
 	scout: ['SpawnScout', 'MapScouts'],
 	/** 外脑:写侧两件(读侧全走宿主原生的技能目录与 `skill` 工具)。 */
 	brain: ['SaveSkill', 'WriteMemory'],
-	/** 账本两件:它长在 git 上(A 层用工作区自己的仓库,B 层用数据区的旁路账本,与世界线共用一本)。 */
+	/** 账本两件:它长在 git 上(数据区的旁路账本,与世界线共用一本;工作区自己是 git 仓库也不碰它)。 */
 	ledger: ['FileHistory', 'RestoreFile'],
 	/**
 	 * 领域语言:九个写入口(概念注册/修订/废止 · **实例登记** · **带出处的断言** · 跳级理由)
@@ -5071,13 +5071,17 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * 这一轮 git 操作该落在哪:工作区本身是仓库就直接用(用户可见的分支);
-	 * 不是仓库就在数据区建**旁路账本仓库**,把工作区当成它的工作树
-	 * (`--git-dir` + `--work-tree`,用户文件夹里不会出现 `.git`)。
-	 * 两者都不行 → mode 为 null,退化成声明目录并如实说明原因。
+	 * 这一轮 git 操作该落在哪:**一律**是数据区的**旁路账本仓库**,把工作区当成它的工作树
+	 * (`--git-dir` + `--work-tree`,用户文件夹里不会出现 `.git`)。建不起来 → mode 为 null,
+	 * 退化成声明目录并如实说明原因。
+	 *
+	 * **工作区自己是 git 仓库也不例外**(0.3.2 之前会直接用它):那时每个回合边界都在**用户当前分支**上
+	 * `add -A` + 以 `clearai@local` 提交——用户没写完的改动、模型的中间产物、`.gitignore` 漏掉的东西
+	 * 一起进了他的历史,下一次 push 就送上了远端(本仓库自己就这样吃过一串「探索期快照」)。
+	 * 账本是**系统的**记录,用户的仓库是**用户的**记录,两本不能是同一本。
+	 * 旁路账本认工作树里的 `.gitignore`,也自动跳过用户的 `.git/`,所以两边看见的「内容」一致。
 	 */
 	function gitContext(cwd, baselineMessage) {
-		if (isGitWorkspace(cwd)) return { mode: 'workspace', cwd, gitDir: null, reason: null }
 		const gitDir = ledgerDirFor(cwd)
 		if (!existsSync(join(gitDir, 'HEAD'))) {
 			const files = countFiles(cwd, CFG.ledgerMaxFiles + 1)
@@ -5281,11 +5285,29 @@ export function apply(ctx, config = {}) {
 	 * worktree 一起受益——它们各自的 `.DS_Store` 从此不会被 `add -A` 收进任何一条分支。
 	 */
 	function ensureWorldlineExcluded(cwd) {
-		const container = 'clear/worldlines/'
 		const context = gitContext(cwd)
 		if (context.mode === null) return { ok: false, reason: context.reason }
-		const gitDir = context.mode === 'ledger' ? context.gitDir : git(['rev-parse', '--absolute-git-dir'], cwd).out.trim()
-		if (gitDir === '') return { ok: false, reason: '取不到 git 目录' }
+		const excluded = appendExclude(context.gitDir)
+		if (excluded.ok !== true) return excluded
+		/**
+		 * 工作区自己是 git 仓库时,在**用户仓库的本地** exclude 里也写一份:工作副本是嵌套的 git 检出,
+		 * 不排除的话它们会出现在用户的 `git status` 里,`git add -A` 还会把它们当成内嵌仓库收进去。
+		 * `info/exclude` 只在本机生效、不进历史、不外传——这是我们对用户仓库做的**唯一**一件事。
+		 */
+		if (isGitWorkspace(cwd)) {
+			const own = git(['rev-parse', '--absolute-git-dir'], cwd)
+			if (own.ok === true && own.out !== '') appendExclude(own.out, { junk: false })
+		}
+		return excluded
+	}
+
+	/**
+	 * 往某个 git 目录的 `info/exclude` 里补上世界线容器与平台垃圾(只追加缺的那些)。
+	 * 用户仓库只给容器那一行(`junk: false`):垃圾名单是**账本的**口径,替用户的仓库决定忽略什么不是我们的事。
+	 */
+	function appendExclude(gitDir, { junk = true } = {}) {
+		const container = 'clear/worldlines/'
+		if (typeof gitDir !== 'string' || gitDir === '') return { ok: false, reason: '取不到 git 目录' }
 		const file = join(gitDir, 'info', 'exclude')
 		let current = ''
 		try {
@@ -5294,7 +5316,8 @@ export function apply(ctx, config = {}) {
 			/* 还没有这个文件:下面建 */
 		}
 		const lines = current.split('\n').map((line) => line.trim())
-		const missing = [container, ...LEDGER_JUNK].filter((pattern) => !lines.includes(pattern))
+		const wanted = junk ? [container, ...LEDGER_JUNK] : [container]
+		const missing = wanted.filter((pattern) => !lines.includes(pattern))
 		if (missing.length === 0) return { ok: true, already: true }
 		try {
 			mkdirSync(dirname(file), { recursive: true })
@@ -5307,7 +5330,8 @@ export function apply(ctx, config = {}) {
 				'',
 			].join('\n')
 			// 只追加缺的那些:已经写过容器的那份 exclude 不该被整块重写。
-			writeFileSync(file, `${head}${missing.length === 1 + LEDGER_JUNK.length ? block : `${missing.join('\n')}\n`}`, 'utf8')
+			const whole = junk ? block : ['# clearai:世界线工作副本(嵌套的 git 检出,住在 ClearAI 的旁路账本里)', container, ''].join('\n')
+			writeFileSync(file, `${head}${missing.length === wanted.length ? whole : `${missing.join('\n')}\n`}`, 'utf8')
 			return { ok: true, already: false }
 		} catch (error) {
 			return { ok: false, reason: String(error?.message ?? error).slice(0, 200) }
@@ -5352,20 +5376,28 @@ export function apply(ctx, config = {}) {
 			return null // 没有容器目录(或读不了):没有残留可报,不是故障
 		}
 		if (containers.length === 0) return null
-		const listed = git(['for-each-ref', 'refs/heads/clearai', '--format=%(refname:short)'], cwd)
-		const strayRefs =
-			listed.ok === true
-				? listed.out
-						.split('\n')
-						.map((line) => line.trim())
-						.filter((line) => line !== '' && ![...own].some((id) => line.includes(id))).length
-				: null
+		/**
+		 * 分支 ref 两处都数:旁路账本(现在的家),以及**用户仓库**——0.3.2 之前工作区是 git 仓库时
+		 * 世界线分支开在那里,升级上来的人盘上留的正是那些。只读,不为了数 ref 去建账本。
+		 */
+		const ledgerDir = ledgerDirFor(cwd)
+		const sources = [
+			existsSync(join(ledgerDir, 'HEAD')) ? git(['--git-dir', ledgerDir, 'for-each-ref', 'refs/heads/clearai', '--format=%(refname:short)'], cwd) : { ok: true, out: '' },
+			isGitWorkspace(cwd) ? git(['for-each-ref', 'refs/heads/clearai', '--format=%(refname:short)'], cwd) : { ok: true, out: '' },
+		]
+		const strayRefs = sources.every((listed) => listed.ok !== true)
+			? null
+			: sources
+					.filter((listed) => listed.ok === true)
+					.flatMap((listed) => listed.out.split('\n'))
+					.map((line) => line.trim())
+					.filter((line) => line !== '' && ![...own].some((id) => line.includes(id))).length
 		return { containers, worktrees, strayRefs }
 	}
 
 	/**
-	 * 给一个分叉把每条世界线物化成 **分支 + worktree**。
-	 * 只有工作区本身是 git 仓库时才做(A 层);不是仓库时返回 ok:false,由调用方退化成声明目录。
+	 * 给一个分叉把每条世界线物化成 **分支 + worktree**(分支开在旁路账本里);
+	 * 账本建不起来时返回 ok:false,由调用方退化成声明目录。
 	 */
 	function prepareWorldlines(cwd, forkId, branches) {
 		const context = gitContext(cwd)
@@ -5373,6 +5405,13 @@ export function apply(ctx, config = {}) {
 		// 先把容器排除掉,再开工作副本——顺序反了的话,中途失败的 worktree 会留在 status 里。
 		const excluded = ensureWorldlineExcluded(cwd)
 		if (excluded.ok !== true) return { ok: false, reason: `世界线容器排除失败(git 会看见工作副本):${excluded.reason}` }
+		/**
+		 * 世界线要从**盘上此刻**分出去,而账本的 HEAD 只在回合边界与交付点前进:
+		 * 不先记一笔,各条世界线拿到的是上一笔快照,看不见这之后写下的东西。
+		 */
+		const based = commitLedger(cwd, `clearai: 分叉 ${forkId} 前的工作区快照`)
+		if (based.ok !== true) return { ok: false, reason: `分叉前的工作区快照失败:${based.reason}` }
+		const baseCommit = based.skipped === true ? null : based.commit
 		const base = worldlineBase(cwd)
 		const prepared = []
 		for (const branch of branches) {
@@ -5385,13 +5424,13 @@ export function apply(ctx, config = {}) {
 			}
 			prepared.push({ id: branch.id, label: branch.label, path, branch: name })
 		}
-		return { ok: true, prepared, base, tier: context.mode }
+		return { ok: true, prepared, base, tier: context.mode, baseCommit }
 	}
 
 	/** 把某条世界线里还没提交的活提交到它自己的分支(删工作副本前必须做,否则就是"删了留不住")。 */
 	function commitWorldline(path, message) {
-		const context = gitContext(path)
-		if (context.mode !== null) cleanLedgerJunk(context)
+		// 工作副本自己就是一份 git 检出(`.git` 文件指回账本),直接在它里面跑,不经 gitContext。
+		cleanLedgerJunk({ mode: 'worktree', cwd: path, gitDir: null })
 		const status = git(['status', '--porcelain'], path)
 		if (!status.ok) return { ok: false, reason: status.err }
 		if (status.out === '') return { ok: true, committed: false }
@@ -5417,6 +5456,7 @@ export function apply(ctx, config = {}) {
 	 * 采纳 = 把赢家世界线合并回主线。
 	 * 三种结局都要如实回报:merged / already-up-to-date / conflict(冲突绝不自动选边)。
 	 * 主线脏且与世界线改动重叠时,git 会拒绝——此时先把用户手上的快照落成一条提交,再合并。
+	 * 「主线」是旁路账本的 HEAD:这条提交写在账本里,合并改的是工作区里的文件,用户的仓库不动。
 	 */
 	function adoptWorldline(cwd, branch, message) {
 		const context = gitContext(cwd)
@@ -5433,7 +5473,7 @@ export function apply(ctx, config = {}) {
 		const attempt = () => gitAt(context, [...GIT_IDENTITY, 'merge', '--no-ff', '-m', message, branch])
 		let merged = attempt()
 		let snapshotCommit = null
-		if (!merged.ok && /local changes|本地修改/.test(`${merged.err}\n${merged.out}`)) {
+		if (!merged.ok && /local changes|untracked working tree files|本地修改|未跟踪的工作区文件/.test(`${merged.err}\n${merged.out}`)) {
 			snapshotCommit = snapshot()
 			merged = attempt()
 		}
@@ -5818,6 +5858,10 @@ export function apply(ctx, config = {}) {
 					const option = options.find((item) => item.id === entry.id)
 					if (option !== undefined) option.workspace = entry.path
 				}
+			}
+			// 分叉前那笔快照也是系统对工作区做过的事,与回合边界那笔同一条纪律:日志里要说得出来。
+			if (materialized.ok === true && materialized.baseCommit !== null && materialized.baseCommit !== undefined) {
+				mutations.push({ t: 'git/snapshot', commit: materialized.baseCommit, reason: '分叉前的工作区快照(世界线从盘上此刻分出去)' })
 			}
 			mutations.push({ t: 'fork/created', id: forkId, step: step.id, plan: plan.id, question: args.question.trim(), decide_by: { metric: args.decide_by.metric.trim(), direction: args.decide_by.direction }, options })
 			mutations.push({
