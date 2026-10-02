@@ -202,8 +202,16 @@ export function subjectKey(assertion) {
 	return `${text(subject.type)}|${text(subject.id)}`
 }
 
+/**
+ * 一个类型算不算某个概念:就是它,或它的父链上有它(`jepa` is_a … `method` ⇒ 算 `method`)。
+ * 主词域与值域都按这一条判——只认字面相等,模型就得为每个子类另立一条谓词。
+ */
+function isKindOf(lexicon, type, ancestor) {
+	return type === ancestor || termChain(lexicon, type).chain.includes(ancestor)
+}
+
 /** 客体形态与谓词值域是否相容。 */
-function objectProblems(predicate, object) {
+function objectProblems(lexicon, predicate, object) {
 	const problems = []
 	if (!isPlainObject(object)) return [problem('object_required', '断言要有宾语')]
 	const kind = text(object.kind)
@@ -214,7 +222,7 @@ function objectProblems(predicate, object) {
 	if (rangeTerm !== '') {
 		if (kind !== 'instance') return [problem('object_form_mismatch', `谓词「${predicate.id}」的宾语是概念「${rangeTerm}」的实例,宾语形态应为 instance`)]
 		const type = text(object.type)
-		if (type !== '' && type !== rangeTerm) return [problem('object_type_mismatch', `宾语实例的类型「${type}」与谓词值域「${rangeTerm}」不一致`)]
+		if (type !== '' && !isKindOf(lexicon, type, rangeTerm)) return [problem('object_type_mismatch', `宾语实例的类型「${type}」既不是谓词值域「${rangeTerm}」,也不是它的下位概念`)]
 		if (text(object.value) === '') return [problem('object_value_required', '宾语实例要有名称')]
 		return []
 	}
@@ -266,7 +274,7 @@ export function validateAssertion(lexicon, assertion) {
 		const type = text(subject.type)
 		if (domain !== '') {
 			if (type === '') problems.push(problem('subject_type_required', `谓词「${predicateId}」声明了主词域「${domain}」,主体要写明 type`))
-			else if (type !== domain) problems.push(problem('subject_type_mismatch', `主体类型「${type}」与主词域「${domain}」不一致`))
+			else if (!isKindOf(lexicon, type, domain)) problems.push(problem('subject_type_mismatch', `主体类型「${type}」既不是主词域「${domain}」,也不是它的下位概念`))
 		}
 		if (type !== '') {
 			const typeEntry = findEntry(lexicon, type)
@@ -275,7 +283,7 @@ export function validateAssertion(lexicon, assertion) {
 			else if (!isUsable(typeEntry.entry)) problems.push(problem('subject_type_deprecated', `主体类型「${type}」已废止`))
 		}
 	}
-	problems.push(...objectProblems(predicate, assertion.object))
+	problems.push(...objectProblems(lexicon, predicate, assertion.object))
 	if (assertion.qualifiers !== undefined && assertion.qualifiers !== null && !isPlainObject(assertion.qualifiers)) problems.push(problem('qualifiers_shape', 'qualifiers 只能是对象(限定条件:时间、工况、适用范围)'))
 	return problems
 }

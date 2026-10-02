@@ -81,7 +81,7 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 			renderShelf: (_id, mutations = []) => {
 				const next = applyMutations(state, Array.isArray(mutations) ? mutations : [])
 				const derived = derive(next)
-				return describeDomainShelf(next.lexicon, derived.factRows, derived.hypotheses)
+				return describeDomainShelf(next, derived.factRows, derived.hypotheses)
 			},
 			format: (_id, assertion) => formatAssertion(state.lexicon, assertion),
 		},

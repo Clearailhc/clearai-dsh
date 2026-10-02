@@ -350,7 +350,8 @@ export function apply(ctx) {
 						const next = derive(state)
 						// 在途命题也传进去:词汇刚立起来时「引用 0」会让人以为没人用,而断言已经在假设上了。
 						// `view`:货架的「使用」一节与运行态卡 / 右栏读**同一份**叙述(单一叙述源)。
-						return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses, { view: knowledgeViewOf(state) })
+						// 递**整份状态**:实例一节与断言引用读 `state.entities` / `state.entityAssertions`,只递词汇这两节永远是 0。
+						return describeDomainShelf(state, next.factRows, next.hypotheses, { view: knowledgeViewOf(state) })
 					},
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),

@@ -1800,7 +1800,8 @@ export function apply(ctx, config = {}) {
 		if (goal === null) return ''
 		if (isSpawnedChild(sessionId)) return ''
 		try {
-			const hypotheses = Array.isArray(state?.hypotheses) ? state.hypotheses : []
+			/** 状态由证据算:读派生的那份(`state` 里只有立约时的 proposed,文件会一直停在「全部待检验」)。 */
+			const hypotheses = Array.isArray(derived?.hypotheses) ? derived.hypotheses : Array.isArray(state?.hypotheses) ? state.hypotheses : []
 			const history = Array.isArray(goal.criteriaHistory) ? goal.criteriaHistory : []
 			const lines = [
 				`# 目标 ${goal.id}(rev${goal.revision} · ${goal.status})`,

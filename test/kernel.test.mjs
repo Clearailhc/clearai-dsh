@@ -116,7 +116,7 @@ function makeHost() {
 			renderShelf: (id, mutations = []) => {
 				const state = applyMutations(service.state(id), Array.isArray(mutations) ? mutations : [])
 				const next = derive(state)
-				return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses)
+				return describeDomainShelf(state, next.factRows, next.hypotheses)
 			},
 			format: (id, assertion) => formatAssertion(service.state(id).lexicon, assertion),
 		},
@@ -1801,6 +1801,8 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	 */
 	const b1 = await call('RegisterInstance', { id: 'B1', type: 'furnace_batch', label: 'B1 炉次', basis: '化验单 L-08', provenance: { kind: 'named', ref: '化验单 L-08' } })
 	check('登记实例(带出处)→ 通过', b1.ok === true && b1.code === 'instance_registered', String(b1.code))
+	/** 2026-10-02 JEPA 长测:货架只拿到词汇,实例一节永远是 0,结案评估者据此判「交付对不上记录」。 */
+	check('登记的实例落进货架的「个体(实例)」一节', /## 个体\(实例\)\(1\)/.test(readFileSync(join(WORKSPACE, 'clear/ontology/domain.md'), 'utf8')) && readFileSync(join(WORKSPACE, 'clear/ontology/domain.md'), 'utf8').includes('B1'))
 
 	// ② 断言链:Frame 在落账之前严校(提供即严校;不提供放行)
 	const ghostPredicate = await call('Frame', {
@@ -1808,11 +1810,12 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [{ predicate: 'ghost_pred', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } }] }],
 	})
 	check('引用未登记谓词的断言 → 落账之前被拒', ghostPredicate.ok === false && /predicate_unknown/.test(String(ghostPredicate.message)))
+	await call('Define', { id: 'lab_sample', label: '化验样品', gloss: 'g', basis: 'b' })
 	const wrongType = await call('Frame', {
 		claim: 'C', done_criteria: 'D 可核对',
-		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'narrow_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } }] }],
+		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'lab_sample' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } }] }],
 	})
-	check('主体类型不合主词域 → 拒', wrongType.ok === false && /subject_type_mismatch/.test(String(wrongType.message)))
+	check('主体类型不合主词域(也不是它的下位概念)→ 拒', wrongType.ok === false && /subject_type_mismatch/.test(String(wrongType.message)))
 	const selfConflict = await call('Frame', {
 		claim: 'C', done_criteria: 'D 可核对',
 		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [assertion(8), assertion(12)] }],

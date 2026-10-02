@@ -150,6 +150,13 @@ console.log('\n【断言:宽松+校验——不提供放行,提供即严校】')
 	check('未登记的谓词要拒', validateAssertions(lexicon, [{ predicate: 'nope', subject: { id: 'x' }, object: { kind: 'statement', value: 'v' } }]).some((item) => item.includes('predicate_unknown')))
 	check('把概念当谓词用要拒', validateAssertions(lexicon, [{ predicate: 'weno_scheme', subject: { id: 'x' }, object: { kind: 'statement', value: 'v' } }]).some((item) => item.includes('predicate_not_predicate')))
 	check('主体类型不合主词域要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x', type: 'test_case' }, object: quantity(5) }]).some((item) => item.includes('subject_type_mismatch')))
+	/** 2026-10-02 JEPA 长测:主体类型是主词域的下位概念却被拒,模型只好废止 8 条谓词、去掉主词域重立一遍。 */
+	check('主体类型是主词域的下位概念:通过', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'weno_scheme' }, object: quantity(5) }]).length === 0)
+	{
+		const withSub = applyLexiconMutation(applyLexiconMutation(lexicon, { t: 'ontology/term_added', id: 'smooth_case', label: '光滑算例', gloss: 'g', parent: 'test_case', basis: 'b' }, 30), { t: 'ontology/predicate_added', id: 'compared_with', label: '对照', domain: 'numerical_scheme', range: { term: 'weno_scheme' }, basis: 'b' }, 31)
+		check('宾语类型是值域的下位概念:通过', validateAssertions(withSub, [{ predicate: 'tested_by', subject: { id: 'WENO5', type: 'weno_scheme' }, object: { kind: 'instance', value: 'sine', type: 'smooth_case' } }]).length === 0)
+		check('宾语类型是值域的上位概念:照样拒(上位不等于下位)', validateAssertions(withSub, [{ predicate: 'compared_with', subject: { id: 'WENO5', type: 'weno_scheme' }, object: { kind: 'instance', value: 'RK', type: 'numerical_scheme' } }]).some((item) => item.includes('object_type_mismatch')))
+	}
 	check('声明了主词域却漏写主体类型要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x' }, object: quantity(5) }]).some((item) => item.includes('subject_type_required')))
 	check('主体类型没登记要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x', type: 'ghost_type' }, object: quantity(5) }]).some((item) => item.includes('subject_type_unknown')))
 	check('宾语形态与值域不符要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x', type: 'numerical_scheme' }, object: { kind: 'statement', value: 'v' } }]).some((item) => item.includes('object_form_mismatch')))
