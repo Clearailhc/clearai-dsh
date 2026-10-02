@@ -1,0 +1,8 @@
+observed_at_utc: 2026-10-02T07:03:11Z
+command: python3 -c "print(1+1)"
+python3_path: /usr/bin/python3
+python3_version: Python 3.11.15
+exit_code: 0
+stdout: 2
+stderr: 
+stdout_bytes_hex:  32 0a
