@@ -649,27 +649,28 @@
     },
     {
       "id": "human-gate-actions",
-      "name": "人门动作白名单",
-      "name_en": "Human-gate action whitelist",
+      "name": "已删除:人门动作白名单",
+      "name_en": "Removed: human-gate action whitelist",
       "layer": "host",
-      "status": "implemented",
-      "hardness": "hard",
-      "authority": "authoritative",
+      "status": "removed",
+      "hardness": "deprecated",
+      "authority": "none",
       "actor": "human",
       "source": {
-        "code": "ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS",
-        "tests": "test/host.test.mjs",
+        "code": null,
+        "tests": null,
         "config": null,
-        "prompt": "clearai/loop",
-        "docs": "docs/design-principles.zh-CN.md"
+        "prompt": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
-      "trigger": "面板提交人门动词",
-      "input": "register_term / register_predicate / revise_term / deprecate_entry",
-      "output": "user 来源消息折进投影,写 by:'user'",
+      "trigger": "—",
+      "input": "—",
+      "output": "—",
       "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "面板上的人门动词只剩本体四个,两侧各一份(宿主半与内核),靠等价性用例钉住。其余要人拍板的事(L4 放行、计划卡住、事实被推翻)由开门的那次调用当场问人,不再经过面板与收件箱;旧日志里的撤回 / 维持仍折得出来。",
-      "known_mismatch": null
+      "native_dsh_alternative": "原生 ask_user_question(开门的那次调用当场问人)",
+      "rationale": "面板写入口 /api/clearai/gate 第六阶段整条拿掉:本体编辑抽屉删了,要改词汇就在对话里说,模型用 Define / Deprecate 落同一本账;其余要人拍板的事第三阶段起由开门的那次调用当场问人。旧日志里人按过的动作仍由 fold.js 的 parseHumanGate 照旧折出来。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "single-loop",
@@ -1538,7 +1539,7 @@
       "authority": "none",
       "actor": "system",
       "source": {
-        "code": "test/authority-boundary.test.mjs; ui/lib/index.js HUMAN_GATE_ACTIONS",
+        "code": "test/authority-boundary.test.mjs; ui/lib/fold.js LEGACY_GATE_ACTIONS",
         "tests": "test/authority-boundary.test.mjs（14 项）",
         "config": null,
         "prompt": null,
@@ -1699,26 +1700,26 @@
     },
     {
       "id": "ontology-panel-graph",
-      "name": "面板「本体」：渲染 + 经人门通道的词条增删改（画布不做拖拽连线）",
-      "name_en": "Ontology panel: rendering plus entry editing over the human gate (no canvas drag-to-connect)",
+      "name": "面板「本体」:图为主的只读读面",
+      "name_en": "Ontology panel: graph-first, read-only",
       "layer": "ux",
       "status": "implemented",
       "hardness": "advisory",
       "authority": "none",
       "actor": "human",
       "source": {
-        "code": "ui/lib/index.js ONTOLOGY_GATE_ACTIONS; ui/lib/client.js submitOnto register_term register_predicate deprecate_entry; ui/lib/fold.js applyLexiconMutation ontology/term_added",
-        "tests": "test/host.test.mjs（人门通道:登记 / 修订 / 废止的取值校验与落账、白名单逐字等价）",
+        "code": "ui/lib/client.js GraphBand GraphInspector Atlas conclusionsOf; ui/lib/fold.js trustHistory inspectGraphSelection",
+        "tests": "test/client.test.mjs(本体格:图、结论分组、三段展开、节点小卡)",
         "config": null,
         "prompt": null,
-        "docs": "docs/domain-ontology.zh-CN.md"
+        "docs": "docs/less-is-more-plan.zh-CN.md"
       },
-      "trigger": "人在面板的词条行 / 抽屉里提交人门动作（登记 / 修订 / 废止）",
-      "input": "POST /api/clearai/gate 的 {action, entry:{id,label,gloss,basis,parent,domain,range,reason,…}}",
-      "output": "一条署名 human 的人门消息 → 折法落成 ontology/term_added / ontology/predicate_added / ontology/term_revised / ontology/term_deprecated / ontology/predicate_deprecated（by:'user'），图与货架随投影刷新",
+      "trigger": "人打开中栏「本体」",
+      "input": "会话投影 clearai(view)与 GET /api/clearai/inspector",
+      "output": "本体图 / 实体图、按可信度分组的结论(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换)、点开一条的进度 → 可信度怎么变的 → 补充、节点小卡",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "编辑面是**具名动词的图形前端**，不是第二套写入路径：人门通道复用与模型工具同一份纯函数判据（表外的动词与取值都进不了日志），落账一律 by:'user'。**编辑 = 经人门通道的词条增删改**（登记概念 / 登记谓词两个表单抽屉，条目行上的修订 / 废止）；画布上只有点选、缩放、平移与筛选，**不做拖拽连线**——拖动表达语义太松，而抽屉表单能强制要 domain / range / 值形态 / 依据，且拖动与缩放不产生任何账本事件。",
+      "rationale": "第六阶段:面板只读,图是主角。词条增删改的抽屉与 /api/clearai/gate 一起删了——它是模型工具之外的第二个写入口,而人要改词汇在对话里说一句就够。界面用词与运行态卡同一套,内部编号不上屏。",
       "known_mismatch": null
     },
     {

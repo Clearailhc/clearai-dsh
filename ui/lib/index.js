@@ -16,7 +16,7 @@
  */
 
 import { z } from 'zod'
-import { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
+import { MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
 import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
 import { install as installInvariants } from './invariant.js'
@@ -46,9 +46,8 @@ const viewSchema = z.looseObject({
 	sessionId: z.string().nullable(),
 	goal: z.unknown().nullable(),
 	plan: z.unknown().nullable(),
-	/** 收件箱:面板「需要你 N」的数据面(条目只带分诊信息,见 fold.js 的 derive)。 */
-	inbox: z.array(z.unknown()),
-	hasOpenGate: z.boolean(),
+	/** 需要你:只陈述的几行(计划停下、结论矛盾),见 fold.js 的 derive。 */
+	needYou: z.array(z.unknown()),
 	evidence: z.array(z.unknown()),
 	audits: z.array(z.unknown()),
 	materials: z.array(z.unknown()),
@@ -238,31 +237,14 @@ export function apply(ctx) {
 	const viewOf = (sessionId) => withHostHealth(view(stateOf(sessionId)))
 
 	/**
-	 * ═══ 人门通道(D2=B:面板可写,但只写人门动作)═══
+	 * ═══ 面板只读 ═══
 	 *
-	 * 三条硬约束,每一条都有测试盯着:
-	 *   ① **动词白名单**:本体四动词(撤回 / 维持事实第三阶段起由内核在那次交付里当场问人,不走这里);
-	 *      表外一律拒(与贡献表同一套「表外的名字不许出现」)——**取值**也在这一层校验,
-	 *      宁可 400,也不静默半生效;
-	 *      `set_autonomy` 已摘掉:「在场与否」是运行时状态,不该是面板上的一个开关 ✗;
-	 *   ② **agent 不可达**:这些动词**没有工具 schema**——模型的工具面里不存在它们。
-	 *      模型能做的只是读到「人做了什么」这条事实(它进的是会话日志,不是内核状态);
-	 *   ③ **留下署名**:动作变成一条 `source.kind === 'user'` 的消息,折进投影时写
-	 *      `by:'user'`——「谁在什么时候撤回或维持了哪条事实、改了哪个词条」都在日志里。
-	 *
-	 * 已砍掉的动词(奥卡姆:它们是重复,或它们服务的机制已经交还宿主):
-	 *   · `adopt_branch` / `abandon_fork` / `confirm_provisional` / `promote_skill` —— 世界线与外脑已删除;
-	 *   · `confirm_plan` —— 计划审阅交给原生 `dsh-plan-mode`(`/plan`),ClearAI 不再有授权记号;
-	 *   · `retract_fact` / `keep_fact` —— 由收到推翻证据的那次交付当场问人(答案在进程内落账);
-	 *   · `invoke_skill` —— 原生 `/` 技能触发器做同一件事(还带候选菜单),我们那条只是在旁边
-	 *     又写了一遍同一个手势。
-	 *
-	 * 为什么走 HTTP 路由而不是 `harness.handle`:那是 cordis **动态插件**的座位,静态客户端包
-	 * 没有它(`host.call` 只在动态运行时的包里存在)。宿主平面的路由是这条
-	 * 通道在静态包里的对应物,与 ClearAI 面板自己的写接口(FastAPI 路由)同一个层级。
+	 * 面板没有写入口。原来的人门通道 `/api/clearai/gate` 在第六阶段整条拿掉:
+	 * 撤回 / 维持事实第三阶段起由内核在那次交付里当场问人;本体四动词随编辑抽屉一起删,
+	 * 要改词汇就在对话里说。旧日志里人按过的动作仍由 `fold.js` 的 `parseHumanGate` 照旧折出来。
 	 */
 	/**
-	 * 面板用的三条 HTTP 面**必须挂 `connection` 的 exact fetch route 表**,不能只挂 `webServer`——
+	 * 面板用的 HTTP 面**必须挂 `connection` 的 exact fetch route 表**,不能只挂 `webServer`——
 	 * 挂错层,浏览器里一按就是 404。
 	 *
 	 * 浏览器那侧的 `/api/*` 先落到 connection 的共享 channel:它先查 exact fetch route 表;
@@ -277,23 +259,6 @@ export function apply(ctx) {
 	 * `ctx.get('webServer')` 拿一次、拿不到就整段跳过」的写法,在服务晚到时是**静默不挂**。
 	 */
 	const reply = (status, payload) => Response.json(payload, { status, headers: { 'cache-control': 'no-store' } })
-	/**
-	 * 一条人门消息:**署名是人 + 结构化标记 + 一句人话**。
-	 * 两条路(面板直接点 / 原生提问卡答)共用它 ⇒ 无论从哪儿来,落进日志的是同一种事实。
-	 */
-	function appendHumanGate(agent, { detail, human, followUp }) {
-		const text = `${HUMAN_GATE_MARK} ${JSON.stringify(detail)}\n${human}这是**结构化的决定,不是商量**:${followUp}。\n`
-		const message = {
-			id: `clearai-gate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-			role: 'user',
-			content: [{ type: 'text', text }],
-			source: { kind: 'user' },
-		}
-		// 跑着就插到最近的步边界(steer);闲着就叫醒它(followup)。
-		if (agent.status === 'running') agent.steer(message)
-		else agent.followup(message)
-	}
-
 	ctx.inject(['connection'], (connectionCtx) => {
 		/** 挂一条 exact fetch route:归属当前 fiber,connection 消失时自动收掉。 */
 		const route = (path, methods, fetch) =>
@@ -301,80 +266,6 @@ export function apply(ctx) {
 				() => connectionCtx.connection.fetch.register({ path, methods, requestBody: 'buffered', fetch: (request) => Promise.resolve(fetch(request)) }),
 				`clearai: ${path}`,
 			)
-
-		route('/api/clearai/gate', ['POST'], async (httpRequest) => {
-			let request = null
-			try {
-				request = await httpRequest.json()
-			} catch {
-				// 连 JSON 都不是:如实说,而不是当成「未知动词」。
-				return reply(400, { ok: false, error: 'bad_json' })
-			}
-			const action = request === null || typeof request !== 'object' ? '' : String(request.action ?? '')
-			if (!HUMAN_GATE_ACTIONS.includes(action)) return reply(400, { ok: false, error: 'unknown_gate_action' })
-			const sessionId = request === null || typeof request !== 'object' ? '' : String(request.sessionId ?? '')
-			const agents = ctx.get('agents')
-			const agent = sessionId === '' ? undefined : agents?.get?.(sessionId)
-			if (agent === undefined) return reply(404, { ok: false, error: 'no_live_session' })
-			// 只挑需要的最小标量,不在 RPC 边界上搬活的会话对象。
-			const detail = {
-				action,
-				plan: typeof request.plan === 'string' ? request.plan : null,
-				value: typeof request.value === 'string' ? request.value : null,
-				note: typeof request.note === 'string' ? request.note.slice(0, 200) : null,
-			}
-			/**
-			 * **本体四动词(人的通道)**:词条字段在 RPC 边界上只收表内的那几个、带长度上限——
-			 * 表外的字段一律剥掉(不是拒:人门消息进日志,日志里不该出现没约定的形状)。
-			 * 判据与模型工具**同一份**:校验用 `domain-language` 的纯函数,对当前词汇判,
-			 * 不过就 400 并把问题清单带回界面——「点了报成功、账上一字未改」不许再出现。
-			 */
-			const ONTOLOGY_GATE_ACTIONS = ['register_term', 'register_predicate', 'revise_term', 'deprecate_entry']
-			if (ONTOLOGY_GATE_ACTIONS.includes(action)) {
-				const raw = request.entry ?? {}
-				const str = (key, cap = 300) => (typeof raw[key] === 'string' ? raw[key].slice(0, cap) : undefined)
-				detail.entry = {
-					id: str('id', 40),
-					label: str('label', 60),
-					gloss: str('gloss'),
-					basis: str('basis'),
-					parent: str('parent', 40),
-					domain: str('domain', 40),
-					reason: str('reason', 200),
-					unit: str('unit', 24),
-					aliases: Array.isArray(raw.aliases) ? raw.aliases.filter((item) => typeof item === 'string').slice(0, 8).map((item) => item.slice(0, 60)) : undefined,
-					functional: raw.functional === true ? true : undefined,
-					range:
-						raw.range !== null && typeof raw.range === 'object' && ['statement', 'quantity', 'formula', 'code', 'reference'].includes(String(raw.range.form))
-							? { form: String(raw.range.form), unit: typeof raw.range.unit === 'string' ? raw.range.unit.slice(0, 24) : undefined, term: typeof raw.range.term === 'string' ? raw.range.term.slice(0, 40) : undefined }
-							: undefined,
-				}
-				const lexicon = stateOf(sessionId).lexicon
-				let problems = []
-				if (action === 'register_term') problems = validateTerm(lexicon, detail.entry)
-				if (action === 'register_predicate') problems = validatePredicate(lexicon, detail.entry)
-				if (action === 'revise_term' || action === 'deprecate_entry') {
-					const id = detail.entry.id ?? ''
-					const known = [...(lexicon.terms ?? []), ...(lexicon.predicates ?? [])].find((item) => item.id === id)
-					if (known === undefined) problems = [`unknown_entry:词汇里没有这个条目:${id}`]
-					else if (action === 'deprecate_entry' && known.status === 'deprecated') problems = [`already_deprecated:${id} 已经是废止状态`]
-					else if ((detail.entry.reason ?? '') === '' || detail.entry.reason === undefined) problems = ['reason_required:这一步要写一句缘由']
-					else if (action === 'revise_term' && detail.entry.label === undefined && detail.entry.gloss === undefined && detail.entry.aliases === undefined) problems = ['nothing_to_revise:label / gloss / aliases 至少给一个']
-				}
-				if (problems.length > 0) return reply(400, { ok: false, error: 'entry_rejected', problems })
-			}
-			const human =
-				ONTOLOGY_GATE_ACTIONS.includes(action)
-								? `人在本体格里${action === 'register_term' ? `登记了概念「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'register_predicate' ? `登记了谓词「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'revise_term' ? `修订了「${detail.entry?.id ?? '?'}」的展示信息` : `废止了「${detail.entry?.id ?? '?'}」`}${detail.entry?.basis ? `,依据:${detail.entry.basis}` : ''}${detail.entry?.reason ? `,缘由:${detail.entry.reason}` : ''}。`
-								: '人在面板上做了一个动作。'
-			const followUp = '这条词汇变更已落账(`by:user`),与模型工具落的是同一本账、同一套判据;词汇货架会在下一拍同步'
-			try {
-				appendHumanGate(agent, { detail, human, followUp })
-			} catch (error) {
-				return reply(500, { ok: false, error: String(error?.message ?? error).slice(0, 200) })
-			}
-			return reply(200, { ok: true, action, sessionId })
-		})
 
 		/**
 		 * `GET /api/clearai/inspector?sessionId=…&kind=…&id=…`
@@ -426,7 +317,11 @@ export function apply(ctx) {
 				 * 与其在预设侧复制一份 fold,不如让 fold 的拥有者替它算。
 				 */
 				preview: (sessionId, mutations) => {
-					const next = applyMutations(stateOf(sessionId), mutations)
+					/**
+					 * 预演的是**这次调用返回之后**的样子:那时这次调用已经不在飞了。
+					 * 不清掉 `inFlight`,交付自己的结果上就会写着「在等裁决」(等的正是它自己)。
+					 */
+					const next = applyMutations({ ...stateOf(sessionId), inFlight: null }, mutations)
 					return { state: next, card: renderCard(next), view: view(next) }
 				},
 				/**

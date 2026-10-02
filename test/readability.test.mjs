@@ -226,10 +226,12 @@ const localeEn = localeOf('LOCALE_EN')
 check('client.js 里取得到 LOCALE_ZH / LOCALE_EN', localeZh !== null && localeEn !== null, `${localeZh === null ? 'zh 缺' : ''}${localeEn === null ? ' en 缺' : ''}`)
 
 let glossary = null
+let vocabulary = {}
 let glossaryError = null
 try {
 	const module = await import(pathToFileURL(join(PORT, 'ui', 'lib', 'knowledge-view.js')).href)
 	glossary = module.GLOSSARY ?? null
+	vocabulary = module
 	check('knowledge-view.js 导出 knowledgeView 函数(单一叙述源)', typeof module.knowledgeView === 'function')
 } catch (error) {
 	glossaryError = String(error?.message ?? error)
@@ -239,10 +241,15 @@ check('ui/lib/knowledge-view.js 存在且导出 GLOSSARY', glossary !== null && 
 	const entries = Object.entries(glossary ?? {})
 	check('GLOSSARY 有实际条目(≥3 条内部词)', entries.length >= 3, String(entries.length))
 	check('每条 GLOSSARY 都写清 plain / where / nextAction', entries.length > 0 && entries.every(([, value]) => typeof value?.plain === 'string' && value.plain.trim() !== '' && typeof value?.where === 'string' && typeof value?.nextAction === 'string' && value.nextAction.trim() !== ''), JSON.stringify(entries.slice(0, 4)))
-	const plains = entries.map(([, value]) => value?.plain).filter((value) => typeof value === 'string' && value !== '')
-	check('GLOSSARY 的 plain 都在 LOCALE_ZH 里登记', plains.length > 0 && plains.every((plain) => localeZh !== null && plain in localeZh), JSON.stringify(plains.filter((plain) => !(plain in (localeZh ?? {}))).slice(0, 5)))
-	check('GLOSSARY 的 plain 都在 LOCALE_EN 里登记', plains.length > 0 && plains.every((plain) => localeEn !== null && plain in localeEn), JSON.stringify(plains.filter((plain) => !(plain in (localeEn ?? {}))).slice(0, 5)))
-	check('en 值不得等于 zh 值(英文表不是复制粘贴出来的)', plains.every((plain) => localeEn?.[plain] !== localeZh?.[plain]), JSON.stringify(plains.filter((plain) => localeEn?.[plain] === localeZh?.[plain]).slice(0, 5)))
+	/**
+	 * 面板说的词与卡上同一套:可信度分组(TRUST)、单次结果(VERDICT_WORD)、等级(LEVEL_WORD)
+	 * 都从 knowledge-view 导出,面板逐个在两种语言里登记。GLOSSARY 的 plain 是写给模型的解释,不上面板。
+	 */
+	const words = [...(vocabulary.TRUST ?? []).map((item) => item.label), ...Object.values(vocabulary.VERDICT_WORD ?? {}), ...Object.values(vocabulary.LEVEL_WORD ?? {})]
+	check('卡上的状态词都导出了(TRUST / VERDICT_WORD / LEVEL_WORD)', words.length >= 14, String(words.length))
+	check('卡上的状态词都在 LOCALE_ZH 里登记(面板与卡同一套词)', words.every((word) => localeZh !== null && word in localeZh), JSON.stringify(words.filter((word) => !(word in (localeZh ?? {})))))
+	check('卡上的状态词都在 LOCALE_EN 里登记', words.every((word) => localeEn !== null && word in localeEn), JSON.stringify(words.filter((word) => !(word in (localeEn ?? {})))))
+	check('en 值不得等于 zh 值(英文表不是复制粘贴出来的)', words.every((word) => localeEn?.[word] !== localeZh?.[word]), JSON.stringify(words.filter((word) => localeEn?.[word] === localeZh?.[word])))
 	// 活检查:一个没登记的内部词必须被同一条判据抓出来。
 	const fake = '这个词没登记过-xyz'
 	check('活检查:未登记的内部词会被同一条判据抓出', !(fake in (localeZh ?? {})) && !(fake in (localeEn ?? {})))

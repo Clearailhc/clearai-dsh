@@ -17,8 +17,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFil
 import { join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
-import { CONFIG_KEYS, HUMAN_GATE_MARK, apply } from '../preset/plugins/clearai-kernel.js'
-import { applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
+import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
+import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
 import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
 
@@ -777,8 +777,8 @@ console.log('\n【计划:判据强制 + 步骤 id 唯一 + 判据自指 + 约立
 		await callOn(host, S, 'ClosePlan', {})
 		const mismatch = await callOn(host, S, 'CreatePlan', plan('完全对不上的说法'))
 		check(
-			'对不上时**列出全部有效 id**(让模型能照抄,而不是继续猜)',
-			mismatch.ok === false && /已登记的假设/.test(String(mismatch.message)) && String(mismatch.message).includes(registered.id),
+			'对不上时**列出全部有效短名**(让模型能照抄,而不是继续猜;内部 id 不进结果)',
+			mismatch.ok === false && /已登记的判断/.test(String(mismatch.message)) && String(mismatch.message).includes(registered.claim.slice(0, 12)) && !String(mismatch.message).includes(registered.id),
 			String(mismatch.message ?? '').split('\n')[0],
 		)
 	}
@@ -1339,7 +1339,7 @@ console.log('\n【旧日志里的撤回 / 维持:面板不再发这两个动作,
 		facts: [{ id: 'fct-1', goal: 'g-1', text: 'X 比 Y 快', scope: 'Y 更快则作废', level: 'L3', evidence: ['e-1'], path: null, at: 1 }],
 	}
 	const legacyMessage = (action) => ({ id: `m-${action}`, role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} ${JSON.stringify({ action, value: 'fct-1', note: '旧会话里人按的' })}` }], source: { kind: 'user' } })
-	check('被推翻、还没审过的事实:那一行写着「被推翻」,但不进收件箱(这道门改由交付当场问)', view(base).facts[0].refuted === true && derive(base).inbox.length === 0)
+	check('被推翻、还没审过的事实:那一行写着「被推翻」,但不进收件箱(这道门改由交付当场问)', view(base).facts[0].refuted === true && derive(base).needYou.length === 0)
 	const retracted = applyEvent(base, { type: 'user/message', time: 2, data: legacyMessage('retract_fact') })
 	check('旧日志里的撤回照样折出来(否则重放时又变回待复核)', view(retracted).facts[0].review?.decision === 'retracted' && derive(retracted).hypotheses[0].status === 'retracted')
 	const kept = applyEvent(base, { type: 'user/message', time: 3, data: legacyMessage('keep_fact') })
@@ -1425,7 +1425,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		const closedMutation = host.journal.filter((m) => m.t === 'goal/closed').at(-1)
 		const unjudged = closedMutation?.unjudged ?? null
 		check('结案把「没被任何证据触及的假设」如实落账', Array.isArray(unjudged) && unjudged.length === 1, JSON.stringify(unjudged))
-		check('结案消息如实说出来(未判不是「没问题」,是「没看过」)', /没有被任何证据触及/.test(String(closed.message ?? '')) && /没看过/.test(String(closed.message ?? '')), String(closed.message ?? '').slice(0, 160))
+		check('结案消息如实说出来(未判不是「没问题」,是「没看过」)', /一次都没检验过/.test(String(closed.message ?? '')) && /没看过/.test(String(closed.message ?? '')), String(closed.message ?? '').slice(0, 160))
 		check('视图把留痕交出去(面板与卡片读同一份)', (host.service.view(H).goal?.unjudged ?? []).length === 1, JSON.stringify(host.service.view(H).goal?.unjudged ?? null))
 	}
 
@@ -1623,7 +1623,7 @@ console.log('\n【连拦计数 → 计划 blocked,停下等人】')
 	check('第三次未过闸 → blocked=true 且文案要求停下等人', last.blocked === true && /停下等人/.test(last.message))
 	check('台账记下 plan/blocked', eventsOf('plan/blocked').length === 1)
 	const card = thisHost.service.renderCard(SESSION)
-	check('派生阶段变成 stalled(派生,不存)', /阶段\(派生\):stalled/.test(card), card.split('\n').find((line) => line.includes('阶段')) ?? '')
+	check('派生阶段变成 stalled(派生,不存),卡上说人话', thisHost.service.derive(SESSION).phase === 'stalled' && /进度:卡住了/.test(card) && !/stalled/.test(card), card.split('\n').find((line) => line.includes('进度')) ?? '')
 	await call('RevisePlan', { action: 'void', step_id: 'u1', reason: '测试脚手架,不再需要' })
 	await call('ClosePlan', {})
 }
@@ -1725,7 +1725,7 @@ console.log('\n【目标收尾:无条件派审计,只有评估者说达成才算
 	const refutedGoal = thisHost.service.state(SESSION).goal?.id
 	check(
 		'有推翻证据的假设不升格(达门槛也不能升)',
-		!factFiles().some((file) => file.endsWith(`/${refutedGoal}.md`)) && /没有达到升格门槛/.test(achieved.message),
+		!factFiles().some((file) => file.endsWith(`/${refutedGoal}.md`)) && /没有判断达到写进长期知识的门槛/.test(achieved.message),
 		`目标 ${refutedGoal} 却落了事实:${factFiles().join(',')}`,
 	)
 	check('被推翻的假设仍在状态里可查', thisHost.service.state(SESSION).hypotheses.length >= 1 && eventsOf('evidence/recorded').some((event) => event.verdict === 'refute'))
@@ -1750,7 +1750,7 @@ console.log('\n【升格:达门槛且无推翻的假设 → 事实(由系统写�
 	await call('ClosePlan', {})
 	thisHost.nextVerdict = { verdict: 'support', basis: '判据达成,转写忠实', shortfalls: [] }
 	const closed = await call('Conclude', { outcome: 'achieved' })
-	check('无推翻且达门槛 → 升格为事实', closed.ok === true && /升格为事实/.test(closed.message), String(closed.code))
+	check('无推翻且达门槛 → 升格为事实', closed.ok === true && /写进长期知识/.test(closed.message), String(closed.code))
 	const promotedGoal = thisHost.service.state(SESSION).goal?.id
 	check(
 		'事实由系统写进 clear/knowledge/facts/',
@@ -1844,7 +1844,6 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	check('升格带着类型化断言', Array.isArray(first.assertions) && first.assertions.length === 1)
 
 	// ④ 冲突:两条未撤回的事实互相矛盾 → 只暴露,不裁决,不改任何一侧
-	const before = derive(thisHost.service.state(SESSION)).inbox.length
 	await call('Frame', {
 		claim: '换个炉次复核氧含量',
 		done_criteria: '复核读数落在 lab/o3.md',
@@ -1861,10 +1860,10 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	const derived = derive(thisHost.service.state(SESSION))
 	const conflict = derived.conflicts.find((item) => item.predicate === 'oxygen_ppm')
 	check('同一单值谓词、同一主体、两个取值 → 派生一对冲突', conflict !== undefined && conflict.sides.length === 2, JSON.stringify(derived.conflicts.map((item) => item.predicate)))
-	check('冲突不进闸门(它是读数,不是等人处置的门)', derived.inbox.length === before && derived.inbox.every((item) => item.kind !== 'conflict'))
+	check('冲突只在「需要你」里陈述一行,不带按钮、不拦', derived.needYou.some((item) => item.kind === 'conflict' && /oxygen_ppm|氧含量/.test(item.text) && /以哪个为准/.test(item.text)), JSON.stringify(derived.needYou))
 	check('冲突不改任何一侧(两条事实都在,都没被撤回)', derived.factRows.filter((item) => item.predicate === undefined && Array.isArray(item.assertions) && item.assertions.some((row) => row.predicate === 'oxygen_ppm')).every((item) => item.review === null || item.review === undefined))
 	const cardText = thisHost.service.renderCard(SESSION)
-	check('运行态卡把冲突说出来并说明不替你选', /冲突/.test(cardText) && /系统不替你选/.test(cardText))
+	check('运行态卡把矛盾说出来并说明不替你选', /矛盾/.test(cardText) && /系统不替你选/.test(cardText))
 
 	/**
 	 * **主体没登记过 ⇒ 拒**(`assert_subject_unknown`),而 `legacy: true` 一次性放行。
@@ -2009,7 +2008,7 @@ console.log('\n【一步检验多条判断:关键实验同时判竞争的两条�
 	check('不检验判断的那一步只要写交付凭什么成立', measured.ok === true, String(measured.code))
 	write('lab/winner.txt', 'compact\n7 < 12\n')
 	const missing = await callOn(host, S, 'AdvancePlan', { step_id: 'compare', basis: 'lab/winner.txt 第一行 compact', results: [{ hypothesis: compact, verdict: 'support' }] })
-	check('检验两条只给了一条结果 ⇒ 拒,并点名缺哪条', missing.ok === false && missing.code === 'results_required' && missing.message.includes(pretty), missing.message.slice(0, 120))
+	check('检验两条只给了一条结果 ⇒ 拒,并点名缺哪条', missing.ok === false && missing.code === 'results_required' && missing.message.includes('「缩进更小」') && !missing.message.includes(pretty), missing.message.slice(0, 120))
 	const stray = await callOn(host, S, 'AdvancePlan', { step_id: 'compare', basis: 'lab/winner.txt 第一行 compact', results: [{ hypothesis: compact, verdict: 'support' }, { hypothesis: pretty, verdict: 'refute' }, { hypothesis: 'h-nope', verdict: 'support' }] })
 	check('给了这一步没登记检验的判断 ⇒ 拒', stray.ok === false && stray.code === 'result_not_tested', String(stray.code))
 	const crucial = await callOn(host, S, 'AdvancePlan', { step_id: 'compare', basis: 'lab/winner.txt 第一行 compact', results: [{ hypothesis: compact, verdict: 'support' }, { hypothesis: pretty, verdict: 'refute', basis: '缩进 12 字节不小于紧凑 7 字节' }] })

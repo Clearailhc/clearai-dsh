@@ -59,7 +59,7 @@ for (const [file, packed, prefixes] of PACKED_SOURCES) {
 
 const bust = `?test=${Date.now()}`
 const { apply } = await import(pathToFileURL(join(DEPLOYED_DIR, 'host.js')).href + bust)
-const { HUMAN_GATE_ACTIONS, HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, view } = await import(
+const { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, view } = await import(
 	pathToFileURL(join(DEPLOYED_DIR, 'fold.js')).href + bust
 )
 
@@ -212,15 +212,14 @@ async function callRoute(host, path, { method = 'GET', body, query } = {}) {
 	return { status: response.status, payload, text, route }
 }
 
-console.log('\n【人门通道:五个动词、只给人、留署名】')
+console.log('\n【面板只读:没有写入口,只剩 Inspector 读面】')
 {
 	const host = makeHost()
 	apply(host.ctx)
-	const route = host.routes.find((item) => item.path === '/api/clearai/gate')
-	// 路由挂在哪一层,是 2026-09-11 实测换来的教训:必须挂 connection 的 exact fetch 表,
-	// 只挂 webServer 的话浏览器永远轮不到(会拿到 connection 的 404 "not found")。
-	check('路由挂在 connection 的 exact fetch 表上(/api/clearai/gate)', route !== undefined && route.path === '/api/clearai/gate' && route.methods.includes('POST') && route.requestBody === 'buffered', JSON.stringify({ path: route?.path, methods: route?.methods }))
-	
+	// 第六阶段:人门通道整条拿掉(本体编辑抽屉删了,事实复核第三阶段起由交付当场问人)。
+	check('不再注册 /api/clearai/gate(面板没有写入口)', host.routes.every((item) => item.path !== '/api/clearai/gate'), host.routes.map((item) => item.path).join(','))
+	check('挂上的路由没有一条接受 POST', host.routes.every((item) => !item.methods.includes('POST')), host.routes.map((item) => `${item.path}:${item.methods}`).join(','))
+
 	// 知识 Inspector 那条读面:选择是动态的(点哪个节点问哪个),所以它不能预算进投影。
 	check('知识 Inspector 的只读路由挂上了', host.routes.some((item) => item.path === '/api/clearai/inspector' && item.methods.includes('GET')), host.routes.map((item) => item.path).join(','))
 	// 文件正文那条路由**删了**:预览走 DSH 原生(6 个实现:md/图片/pdf/html/code/text),
@@ -240,107 +239,15 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	}
 	check('路由是可回收的(ctx.effect 返回 disposer)', host.disposers.length > 0)
 
-	const post = async (payload, method = 'POST') => {
-		const result = await callRoute(host, '/api/clearai/gate', { method, ...(payload === null ? {} : { body: payload }) })
-		await new Promise((resolve) => setTimeout(resolve, 0))
-		return result
-	}
-
-	/**
-	 * ①′ 事实复核不再走这条路由:推翻证据落账的那次交付**当场问人**(`userQuestions`),
-	 * 面板不再发撤回 / 维持。路由收到这两个动词 ⇒ 400,不落任何消息(旧日志照样折得出来,见内核测试)。
-	 */
+	// 旧日志里人在抽屉里登记过的词照样折出来(否则重放时人登记的词凭空消失)。
 	{
-		const factHost = makeHost({ cwd: '/tmp/clearai-facts-test' })
-		apply(factHost.ctx)
-		factHost.projectionState = { ...emptyState(), facts: [{ id: 'fct-2', text: 'X 比 Y 快', scope: null, level: 'L3', evidence: [], path: null, at: 1, review: null }] }
-		const before = factHost.sent.length
-		for (const action of ['retract_fact', 'keep_fact']) {
-			const result = await callRoute(factHost, '/api/clearai/gate', { method: 'POST', body: { sessionId: 'session-1', action, value: 'fct-2' } })
-			await new Promise((resolve) => setTimeout(resolve, 0))
-			check(`${action} 不再是路由动词 → 400 unknown_gate_action`, result.status === 400 && result.payload?.error === 'unknown_gate_action', `${result.status}/${result.payload?.error}`)
-		}
-		check('被拒的动词不落任何消息', factHost.sent.length === before, `${factHost.sent.length - before} 条`)
+		const legacy = applyEvent(emptyState(), { type: 'user/message', time: 5, data: { id: 'm-old', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} ${JSON.stringify({ action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' } })}` }], source: { kind: 'user' } } })
+		const term = (legacy.lexicon.terms ?? []).find((item) => item.id === 'furnace_batch')
+		check('旧日志里人登记的概念照样折进词汇(署名 user)', term !== undefined && term.by === 'user', JSON.stringify(term ?? null).slice(0, 120))
 	}
+}
 
-	// ── 本体四动词(人的通道):同一套判据,路由侧核完才让进日志 ──────────────
-	{
-		const ontoHost = makeHost({ cwd: tempDir('clearai-host-onto-') })
-		apply(ontoHost.ctx)
-		const postOnto = async (payload) => {
-			const result = await callRoute(ontoHost, '/api/clearai/gate', { method: 'POST', body: payload })
-			await new Promise((resolve) => setTimeout(resolve, 0))
-			return result
-		}
-		const lexiconState = (lexicon) => {
-			ontoHost.projectionState = { ...emptyState(), lexicon }
-			return ontoHost
-		}
-		// 登记:判据拒绝(缺依据)→ 400 + 问题清单,不投消息
-		lexiconState({ terms: [], predicates: [] })
-		const noBasis = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸' } })
-		check('登记概念缺依据 → 400 entry_rejected 且带问题清单(判据与模型工具同一份)', noBasis.status === 400 && noBasis.payload?.error === 'entry_rejected' && JSON.stringify(noBasis.payload?.problems).includes('basis_required'), JSON.stringify(noBasis.payload).slice(0, 120))
-		check('被拒的登记不往会话里投消息', ontoHost.sent.length === 0)
-		// 登记成功:落一条署名是人的人门消息,entry 在消息里
-		const registered = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01', parent: 'ghost_parent_x' } })
-		check('登记概念(父概念不存在)→ 400 且问题点名 ghost_parent_x', registered.status === 400 && JSON.stringify(registered.payload?.problems).includes('ghost_parent_x'), JSON.stringify(registered.payload).slice(0, 120))
-		const okTerm = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' } })
-		check('登记概念合法 → 200,人门消息署名 user 且带 entry', okTerm.status === 200 && ontoHost.sent.at(-1)?.message?.source?.kind === 'user' && /furnace_batch/.test(ontoHost.sent.at(-1).message.content[0].text), `${okTerm.status}/${String(ontoHost.sent.at(-1)?.message?.content?.[0]?.text).slice(0, 100)}`)
-		// 谓词登记 + 重复 id 拒绝(先让投影里已经有那个概念——人门消息在这个桩里不会自动折进去)
-		lexiconState({ terms: [{ id: 'furnace_batch', label: '炉次', status: 'admitted', version: 1 }], predicates: [] })
-		const okPredicate = await postOnto({ sessionId: 'session-1', action: 'register_predicate', entry: { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' } })
-		check('登记谓词(值域合法)→ 200', okPredicate.status === 200, `${okPredicate.status}/${JSON.stringify(okPredicate.payload).slice(0, 120)}`)
-		const dup = await postOnto({ sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: 'again', basis: 'b' } })
-		check('重复 id → 400 id_taken(人也不能撞已有的词)', dup.status === 400 && JSON.stringify(dup.payload?.problems).includes('id_taken'), JSON.stringify(dup.payload).slice(0, 100))
-		// 废止:不存在的条目 / 已废止 / 缺缘由
-		const ghost = await postOnto({ sessionId: 'session-1', action: 'deprecate_entry', entry: { id: 'nope', reason: 'r' } })
-		check('废止不存在的条目 → 400 unknown_entry', ghost.status === 400 && JSON.stringify(ghost.payload?.problems).includes('unknown_entry'), `${ghost.status}`)
-		const noReason = await postOnto({ sessionId: 'session-1', action: 'deprecate_entry', entry: { id: 'furnace_batch' } })
-		check('废止缺缘由 → 400 reason_required', noReason.status === 400 && JSON.stringify(noReason.payload?.problems).includes('reason_required'), `${noReason.status}`)
-		const okDeprecate = await postOnto({ sessionId: 'session-1', action: 'deprecate_entry', entry: { id: 'furnace_batch', reason: '与子概念无法区分' } })
-		check('废止合法 → 200 且消息带缘由', okDeprecate.status === 200 && /与子概念无法区分/.test(ontoHost.sent.at(-1).message.content[0].text), `${okDeprecate.status}`)
-		// 修订:至少一个展示字段
-		const nothing = await postOnto({ sessionId: 'session-1', action: 'revise_term', entry: { id: 'furnace_batch', reason: 'r' } })
-		check('修订零字段 → 400 nothing_to_revise', nothing.status === 400 && JSON.stringify(nothing.payload?.problems).includes('nothing_to_revise'), `${nothing.status}`)
-	}
-
-	// ① 动词白名单:表外的动作一律拒(与贡献表同一套纪律:表外的名字不许出现)
-	const unknown = await post({ sessionId: 'session-1', action: 'delete_everything' })
-	check('表外的动词 → 400 unknown_gate_action', unknown.status === 400 && unknown.payload?.error === 'unknown_gate_action', `${unknown.status}/${unknown.payload?.error}`)
-	check('被拒的动作不会往会话里投消息', host.sent.length === 0)
-	/**
-	 * 白名单恰好四个动词 —— 2026-09-11 砍掉两个,砍的理由就是「它们是重复」:
-	 * `confirm_plan`(原生 plan-mode 就是用户复核的出口;我们自己的授权记号本来就「交付即落账」)、
-	 * `invoke_skill`(原生 `/` 技能触发器做同一件事)。这条断言把「不许再长回来」钉死:
-	 * 想加动词,先回答「原生为什么不够」。
-	 */
-	/**
-	 * 白名单**逐字列举**,不数个数:加一个动词必须同时改这里——那一步就是「先说清原生为什么不够」。
-	 * 砍掉的三个(confirm_plan / invoke_skill / set_autonomy)不许长回来。
-	 */
-
-	// 方法过滤发生在 connection 层(按路由声明的 methods),我们的处理器根本不会被调用——
-	// 这正是「挂错层」那个 bug 的反面:挂对了,平台替我们把方法也管了。
-
-	/**
-	 * ② §34 **`set_autonomy` 已摘掉**(「要不要人参与」由门表达,不由面板开关表达)。
-	 * 所以这里断言的是**相反**的事:那个动作再也进不来 —— 表外的名字一律拒(与贡献表同一套纪律)。
-	 */
-	const goneTier = await post({ sessionId: 'session-1', action: 'set_autonomy', value: 'unattended' })
-	check('已摘掉的动词 ⇒ 400(表外名字不许出现)', goneTier.status === 400 && goneTier.payload?.error === 'unknown_gate_action', `${goneTier.status}/${goneTier.payload?.error}`)
-	check('而且一个字都没投出去(拒绝就是拒绝,不静默半生效)', host.sent.length === 0, String(host.sent.length))
-
-	/**
-	 * §34:原来这里有一组「人刚切档那一拍,宿主按**传进来的当档**渲染卡片」——
-	 * 它服务的是已摘掉的 `set_autonomy` ✗。档位现在是部署预设的初值,卡片照投影渲染即可,
-	 * 没有"传进来的当档"这回事。
-	 */
-
-	/**
-	 * §20 混合路径:点我们那条 → 用**原生提问卡**问 → 答案变回同一条人门消息。
-	 * 借界面,不借账:无论从哪儿答,落进日志的都是同一个动词、同一套校验。
-	 */
-
+{
 	/**
 	 * §24:证据要交出 `anchor` —— 面板据此给每条证据指**出处**
 	 * (独立证据指评估卡、自判指产物)。少了它们,「评估卡」那一项永远出不来。
@@ -356,44 +263,7 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 		const row = view(host.projectionState).evidence[0]
 		check('证据交出 anchor(面板据此指评估卡 / 产物),不再带世界线的 branch', row?.anchor === 'auditor' && !('branch' in (row ?? {})), JSON.stringify(row ?? null))
 	}
-
-	// ③ 跑着的会话:插到最近的步边界,不打断它
-	const running = makeHost({ status: 'running', cwd: tempDir('clearai-host-running-') })
-	apply(running.ctx)
-	running.projectionState = emptyState()
-	await callRoute(running, '/api/clearai/gate', { method: 'POST', body: { sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' } } })
-	await new Promise((resolve) => setTimeout(resolve, 0))
-	check('running 的会话走 steer(不打断当前回合)', running.sent.length === 1 && running.sent[0].via === 'steer')
-
-	/**
-	 * 2026-09-11:「引用技能」这条人门动作**删了**,理由留在测试里(免得有人又想加回来):
-	 * 原生 `dsh-client-ui-skill` 注册的是 `/` 输入触发器 —— 人打一个 `/` 就出候选菜单,
-	 * 选一条即把技能正文作为指令注入这一回合,走的是与我们的按钮**完全同一条**原生手势
-	 * (`dsh-tool-skill` 的 `SKILL_GESTURE`,只认 `source.kind === 'user'`)。
-	 * 我们在面板上再放一个按钮,等于把同一件事做第二遍,还多一处会与原生菜单走偏的语义。
-	 * 技能名语法那条校验(宁可拒绝,也不静默不注入)因此也不再需要 —— 人不再经过我们输入名字。
-	 */
-	check('引用技能这条动作已经删掉(它是原生 `/` 触发器的重复)', !HUMAN_GATE_ACTIONS.includes('invoke_skill'))
-
-	// ④ 坏输入不炸路由
-	const badJson = await post(null)
-	check('空体 → 400 bad_json', badJson.status === 400 && badJson.payload?.error === 'bad_json', `${badJson.status}/${badJson.payload?.error}`)
-	// 这个宿主上投过的全是坏输入(合法动作都投给了别的宿主),一条都不许进会话 —— 白名单与取值校验的价值就在这里。
-	check('坏输入不投消息', host.sent.length === 0, String(host.sent.length))
 }
-
-{
-
-		// 时间戳写死:排序断言不能靠「谁先写」这种毫秒级巧合。
-
-		// 巨大 products/:扫描与返回各有上限,而且返回的是**最近改动的**那批(上限在结果侧)。
-
-		// products/ 不存在:空数组,不是错误。
-		const other = makeHost({ cwd: tempDir('clearai-host-empty-') })
-		apply(other.ctx)
-		other.projectionState = emptyState()
-
-	}
 
 console.log('\n【标记解析:严格,不给模型留伪造的口子】')
 {
@@ -469,8 +339,9 @@ console.log('\n【折进投影:砍掉的动词即使格式合法也不生效】'
 		{ t: 'goal/closed', id: 'g1', status: 'achieved', verdict: 'support', note: null, unjudged: ['h2'] },
 	])
 	const card = renderCard(state)
-	check('卡片把「从没被证据碰过」写成 (未触及)(与「无法判定 n」分得开)', /h2 \[proposed\].*\(未触及\)/.test(card), card.split('\n').filter((line) => line.includes('h2')).join(' ').slice(0, 140))
-	check('结案留痕在卡片上还在(未判不是「没问题」,是「没看过」)', /结案留痕.*h2/.test(card), card.split('\n').filter((line) => line.includes('结案留痕')).join(' ').slice(0, 140))
+	check('卡片把「从没被证据碰过」写成「还没检验」(与「不确定」分得开)', /「B 成立」.*还没检验/.test(card), card.split('\n').filter((line) => line.includes('B 成立')).join(' ').slice(0, 140))
+	check('结案留痕在卡片上还在(未判不是「没问题」,是「没看过」)', /结案时没检验过的判断:「B 成立」/.test(card), card.split('\n').filter((line) => line.includes('结案')).join(' ').slice(0, 140))
+	check('卡片上不出现内部编号与英文状态词', !/\bh[12]\b|proposed|support|refute/.test(card), card.slice(0, 200))
 	check('视图把 unjudged 交出去', (view(state).goal?.unjudged ?? []).includes('h2'), JSON.stringify(view(state).goal?.unjudged ?? null))
 }
 

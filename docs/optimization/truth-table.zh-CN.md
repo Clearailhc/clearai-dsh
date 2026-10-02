@@ -9,9 +9,9 @@
 ## 计数
 
 - 机制条目：**74**
-- 按状态：已实现 52 · 设计目标 1 · 已删除 21
-- 按强度：硬边界 43 · 建议 7 · 原生 3 · 废弃 21
-- 按归宿：保持设计目标 1 · 已删除并记账 21
+- 按状态：已实现 51 · 设计目标 1 · 已删除 22
+- 按强度：硬边界 42 · 建议 7 · 原生 3 · 废弃 22
+- 按归宿：保持设计目标 1 · 已删除并记账 22
 - 真正阻断执行的：**21**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
 
@@ -96,12 +96,12 @@
 | `ledger-exploration-snapshots` | 已删除:回合边界的工作区快照 | Harness | 已删除 | 废弃 | 权威 | system | 否 | — |
 | `durable-dispatch-facts` | 派发事实独立落账（在 await 之前） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts` |
 | `goal-complete-guard` | 守卫:原生 goal 只能经 Conclude 完成 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js update_goal` |
-| `human-gate-actions` | 人门动作白名单 | 宿主 | 已实现 | 硬边界 | 权威 | human | 否 | `ui/lib/index.js 人门通道` |
+| `human-gate-actions` | 已删除:人门动作白名单 | 宿主 | 已删除 | 废弃 | 无 | human | 否 | — |
 | `context-pruning` | 上下文剪枝与压缩（宿主原生） | 宿主 | 已实现 | 原生 | 无 | system | 否 | `preset/agent.cordis.yml compaction` |
 | `model-routing` | 模型路由与切换（宿主原生，ClearAI 不持有） | 宿主 | 已实现 | 原生 | 无 | host | 否 | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `host-read-face-degradation` | 宿主读面降级（取不到就空态,不抛） | 宿主 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/index.js sessionsOf` |
 | `commands-menu` | 人类 `/` 命令菜单 | 交互 | 已实现 | 原生 | 无 | human | 否 | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
-| `ontology-panel-graph` | 面板「本体」：渲染 + 经人门通道的词条增删改（画布不做拖拽连线） | 交互 | 已实现 | 建议 | 无 | human | 否 | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
+| `ontology-panel-graph` | 面板「本体」:图为主的只读读面 | 交互 | 已实现 | 建议 | 无 | human | 否 | `ui/lib/client.js GraphBand GraphInspector Atlas conclusionsOf` |
 
 ## 逐条明细
 
@@ -366,18 +366,17 @@
 - **测试**：test/kernel.test.mjs · **配置**：blockedThreshold=2（预设显式值）
 - **提示词**：clearai/loop · **文档**：docs/loop-philosophy.zh-CN.md
 
-### `human-gate-actions` · 人门动作白名单
+### `human-gate-actions` · 已删除:人门动作白名单
 
-- **层**：宿主 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：human
-- **触发**：面板提交人门动词
-- **输入**：register_term / register_predicate / revise_term / deprecate_entry
-- **输出**：user 来源消息折进投影,写 by:'user'
+- **层**：宿主 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：human
+- **触发**：—
 - **阻断执行**：否
-- **原生替代**：无
-- **理由**：面板上的人门动词只剩本体四个,两侧各一份(宿主半与内核),靠等价性用例钉住。其余要人拍板的事(L4 放行、计划卡住、事实被推翻)由开门的那次调用当场问人,不再经过面板与收件箱;旧日志里的撤回 / 维持仍折得出来。
-- **代码**：ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS
-- **测试**：test/host.test.mjs · **配置**：—
-- **提示词**：clearai/loop · **文档**：docs/design-principles.zh-CN.md
+- **原生替代**：原生 ask_user_question(开门的那次调用当场问人)
+- **理由**：面板写入口 /api/clearai/gate 第六阶段整条拿掉:本体编辑抽屉删了,要改词汇就在对话里说,模型用 Define / Deprecate 落同一本账;其余要人拍板的事第三阶段起由开门的那次调用当场问人。旧日志里人按过的动作仍由 fold.js 的 parseHumanGate 照旧折出来。
+- **归宿**：已删除并记账
+- **代码**：—
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `single-loop` · 单循环人格（不做多 Agent 编排）
 
@@ -830,7 +829,7 @@
 - **阻断执行**：是
 - **原生替代**：无
 - **理由**：这是把「工作方式」与「确认知识」解耦的那条**负向保证**:干活不设限,但干活的路径结构上产不出一条权威变更——权威账本只能由主线过观测准入与唯一完成动词写入。它是「探索可以自由、事实必须严格」这句话里**承重**的那一半,所以它有一行。
-- **代码**：test/authority-boundary.test.mjs; ui/lib/index.js HUMAN_GATE_ACTIONS
+- **代码**：test/authority-boundary.test.mjs; ui/lib/fold.js LEGACY_GATE_ACTIONS
 - **测试**：test/authority-boundary.test.mjs（14 项） · **配置**：—
 - **提示词**：— · **文档**：docs/loop-philosophy.zh-CN.md
 
@@ -912,18 +911,18 @@
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
 
-### `ontology-panel-graph` · 面板「本体」：渲染 + 经人门通道的词条增删改（画布不做拖拽连线）
+### `ontology-panel-graph` · 面板「本体」:图为主的只读读面
 
 - **层**：交互 · **状态**：已实现 · **强度**：建议 · **权威**：无 · **责任方**：human
-- **触发**：人在面板的词条行 / 抽屉里提交人门动作（登记 / 修订 / 废止）
-- **输入**：POST /api/clearai/gate 的 {action, entry:{id,label,gloss,basis,parent,domain,range,reason,…}}
-- **输出**：一条署名 human 的人门消息 → 折法落成 ontology/term_added / ontology/predicate_added / ontology/term_revised / ontology/term_deprecated / ontology/predicate_deprecated（by:'user'），图与货架随投影刷新
+- **触发**：人打开中栏「本体」
+- **输入**：会话投影 clearai(view)与 GET /api/clearai/inspector
+- **输出**：本体图 / 实体图、按可信度分组的结论(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换)、点开一条的进度 → 可信度怎么变的 → 补充、节点小卡
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：编辑面是**具名动词的图形前端**，不是第二套写入路径：人门通道复用与模型工具同一份纯函数判据（表外的动词与取值都进不了日志），落账一律 by:'user'。**编辑 = 经人门通道的词条增删改**（登记概念 / 登记谓词两个表单抽屉，条目行上的修订 / 废止）；画布上只有点选、缩放、平移与筛选，**不做拖拽连线**——拖动表达语义太松，而抽屉表单能强制要 domain / range / 值形态 / 依据，且拖动与缩放不产生任何账本事件。
-- **代码**：ui/lib/index.js ONTOLOGY_GATE_ACTIONS; ui/lib/client.js submitOnto register_term register_predicate deprecate_entry; ui/lib/fold.js applyLexiconMutation ontology/term_added
-- **测试**：test/host.test.mjs（人门通道:登记 / 修订 / 废止的取值校验与落账、白名单逐字等价） · **配置**：—
-- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
+- **理由**：第六阶段:面板只读,图是主角。词条增删改的抽屉与 /api/clearai/gate 一起删了——它是模型工具之外的第二个写入口,而人要改词汇在对话里说一句就够。界面用词与运行态卡同一套,内部编号不上屏。
+- **代码**：ui/lib/client.js GraphBand GraphInspector Atlas conclusionsOf; ui/lib/fold.js trustHistory inspectGraphSelection
+- **测试**：test/client.test.mjs(本体格:图、结论分组、三段展开、节点小卡) · **配置**：—
+- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `entity-registration` · 实体登记(实例是一等写入口)
 

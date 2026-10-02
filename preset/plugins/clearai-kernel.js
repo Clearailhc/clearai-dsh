@@ -33,6 +33,19 @@ export const inject = ['tools', 'systemPrompt']
 // ── 常量:全部来自 ClearAI 的代码事实 ───────────────────────────────────────
 
 const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
+/** 判断短名的上限(字);没起名时取主张开头这么多字。 */
+const HANDLE_LIMIT = 12
+/**
+ * **结果的人话**。账本里记 `support / refute / inconclusive`(内部名不改);
+ * 模型写结果时三种人话也认,工具结果与卡只写人话——模型读到什么就会照着说什么。
+ */
+const VERDICT_WORD = { support: '支持', refute: '推翻', inconclusive: '不确定' }
+const VERDICT_ALIAS = { 支持: 'support', 推翻: 'refute', 不确定: 'inconclusive', 说不清: 'inconclusive', 判不了: 'inconclusive' }
+const canonicalVerdict = (value) => {
+	const raw = String(value ?? '').trim()
+	if (['support', 'refute', 'inconclusive'].includes(raw.toLowerCase())) return raw.toLowerCase()
+	return VERDICT_ALIAS[raw] ?? null
+}
 /** 自判等级上限:L0–L2 可自判,L3 以上拒绝。 */
 const SELF_JUDGE_MAX_INDEX = 2
 /** `MAX_PLAN_STEPS`。 */
@@ -132,52 +145,6 @@ const OUTPUT_SCHEMA = {
 	},
 	required: ['ok'],
 	additionalProperties: false,
-}
-
-/**
- * 人门标记 —— **内核侧的解析**(宿主半 `fold.js` 有一份等价实现,两边都不 import 对方:
- * 预设平面与宿主平面互不依赖是这套移植的分层纪律)。
- *
- * 两份实现必须同格式,所以不是靠人记住,而是靠测试:
- * `test/kernel.test.mjs` 拿同一批消息喂两个解析器,断言结论一致。
- * 这份白名单不能是**抄在闭包里的私本**——
- * 改标记要改两处、忘了就静默失效。现在它在模块层、被导出,漏一处测试就红。
- */
-export const HUMAN_GATE_MARK = '[clearai·人门]'
-/**
- * 人门**动词白名单**(与宿主半 `fold.js` 的同名表逐字一致 —— 两边不 import 对方,
- * 靠 `test/kernel.test.mjs` 的等价性用例钉住)。
- *
- * 两侧白名单一旦各自维护,摘动词时只改一侧 ⇒ 内核仍认、宿主不认 ⇒ **等价性用例立刻红** ✓。
- * 这正是那条用例存在的意义:两份实现漂移不许静默。
- */
-/**
- * **逐字镜像 `ui/lib/fold.js` 的同名清单**(预设面不能 import 宿主半,于是只能两份;
- * 两份相等由 `test/authority-boundary.test.mjs` 钉死——它红的时候,是清单漂了,不是测试坏了)。
- */
-export const HUMAN_GATE_ACTIONS = [
-	'register_term',
-	'register_predicate',
-	'revise_term',
-	'deprecate_entry',
-]
-export function parseHumanGateMessage(message) {
-	if (message === null || typeof message !== 'object') return null
-	// 署名必须是人:插件与模型来源的同名标记不算人门动作(与宿主半同一条纪律)。
-	if (message.source === null || typeof message.source !== 'object' || message.source.kind !== 'user') return null
-	const blocks = Array.isArray(message.content) ? message.content : []
-	const first = blocks.find((block) => block?.type === 'text' && typeof block.text === 'string')
-	if (first === undefined || !first.text.startsWith(HUMAN_GATE_MARK)) return null
-	const line = first.text.slice(HUMAN_GATE_MARK.length).trim().split('\n')[0].trim()
-	try {
-		const parsed = JSON.parse(line)
-		if (parsed === null || typeof parsed !== 'object') return null
-		// 表外的动词不算人门动作(与宿主半同一条纪律:表外的名字不许出现)。
-		if (!HUMAN_GATE_ACTIONS.includes(String(parsed.action ?? ''))) return null
-		return parsed
-	} catch {
-		return null
-	}
 }
 
 /** 把这一笔落成事实:变更记录进 meta,卡片由宿主 fold 预演后给出(所以是「这一步之后」的样子)。 */
@@ -455,6 +422,9 @@ export function apply(ctx, config = {}) {
 		const exact = hypotheses.find((hypothesis) => hypothesis.id === raw)
 		if (exact !== undefined) return exact
 		const wantedNormalized = normalize(raw)
+		/** 短名(第六阶段):模型自己起的那个名字,人和模型都用它说话。 */
+		const byName = hypotheses.filter((hypothesis) => typeof hypothesis.name === 'string' && hypothesis.name !== '' && normalize(hypothesis.name) === wantedNormalized)
+		if (byName.length === 1) return byName[0]
 		const byText = hypotheses.filter((hypothesis) => normalize(hypothesis.claim) === wantedNormalized)
 		if (byText.length === 1) return byText[0]
 		if (wantedNormalized.length >= 8) {
@@ -503,23 +473,53 @@ export function apply(ctx, config = {}) {
 		})
 	}
 
-	/** 对不上时**列出全部有效选项**(id 最稳):让模型能照抄,而不是继续猜。 */
+	/** 对不上时**列出全部有效选项**(短名最顺手):让模型能照抄,而不是继续猜。 */
 	function hypothesisMenu(hypotheses) {
-		if (hypotheses.length === 0) return '当前目标没有登记任何假设:先用 Frame 登记(每条约一句话主张 + 一句推翻条件)。'
-		return `已登记的假设(用 **id** 最稳,可直接从运行态卡复制;也接受主张原文):${hypotheses
-			.map((hypothesis) => `${hypothesis.id}=${String(hypothesis.claim).slice(0, 40)}`)
-			.join(';')}`
+		if (hypotheses.length === 0) return '当前目标没有登记任何判断:先用 Frame 登记(每条一个短名、一句话主张、一句推翻条件)。'
+		return `已登记的判断(填短名即可,也认主张原文):${hypotheses.map((hypothesis) => `「${handleOf(hypothesis)}」${String(hypothesis.claim).slice(0, 40)}`).join(';')}`
+	}
+
+	/**
+	 * **判断的短名**:人和模型说起一条判断时用的名字。模型立判断时自己起;
+	 * 旧账本或没起名的,取主张开头。账本里的 id 只给机器对账,不上卡、不进工具结果。
+	 */
+	function handleOf(hypothesis) {
+		const name = typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : ''
+		if (name !== '') return name
+		const claim = String(hypothesis?.claim ?? '').replace(/\s+/g, ' ').trim()
+		return claim.length <= HANDLE_LIMIT ? claim : `${claim.slice(0, HANDLE_LIMIT)}…`
+	}
+
+	/** 按 id 找回一条判断的短名(找不到就如实说「一条已不在账上的判断」)。 */
+	function handleById(state, id) {
+		const found = (state?.hypotheses ?? []).find((hypothesis) => hypothesis.id === id)
+		return found === undefined ? '一条已不在账上的判断' : handleOf(found)
+	}
+
+	/** 拒绝类结果的卡尾:与收尾同一条「卡没变就不附」。 */
+	function cardTail(sessionId, preview) {
+		const card = preview?.card ?? null
+		if (card === null || lastCard.get(sessionId) === card) return ''
+		lastCard.set(sessionId, card)
+		return `\n\n${card}`
 	}
 
 	/** 一次工具调用的收尾:预演变更 → 卡片 → 返回值。 */
 	function finish(hostService, sessionId, mutations) {
 		return (value) => {
 			const preview = previewOf(hostService, sessionId, mutations)
+			const card = preview?.card ?? null
+			/**
+			 * **卡没变就不附**(第六阶段):回合开头与工具返回共用「上次发过的那张」。
+			 * 同一张卡在一轮里重发几遍,只是把同样的话塞给模型几遍——它读得越多,照抄得越多。
+			 */
+			const fresh = card !== null && lastCard.get(sessionId) !== card
+			if (fresh) lastCard.set(sessionId, card)
 			const result = {
 				...value,
 				mutations,
-				card: preview.card,
-				message: `${value.message ?? value.code ?? 'ok'}\n\n${preview.card}`,
+				card,
+				message: fresh ? `${value.message ?? value.code ?? 'ok'}\n\n${card}` : `${value.message ?? value.code ?? 'ok'}${card === null ? '' : '\n(状态卡与上次相同,不再重发。)'}`,
 			}
 			// 输出**越界就裁掉并告警**:宿主会拿 output.schema 校验工具结果,多一个未声明的字段
 			// 会让整个工具调用失败(CreatePlan 曾因此全军覆没)。
@@ -2003,6 +2003,7 @@ export function apply(ctx, config = {}) {
 					items: {
 						type: 'object',
 						properties: {
+							name: { type: 'string', description: '短名,十二字以内,你自己起(如「python3 能跑」)。之后说起这条判断、在别的工具里引用它,都用这个名字' },
 							claim: { type: 'string' },
 							refute_when: { type: 'string' },
 							assertions: {
@@ -2051,9 +2052,12 @@ export function apply(ctx, config = {}) {
 			const criteriaList = (Array.isArray(args.criteria) ? args.criteria : []).map((item) => String(item ?? '').trim()).filter((item) => item !== '')
 			const criteriaNote = typeof args.criteria_note === 'string' && args.criteria_note.trim() !== '' ? args.criteria_note.trim() : null
 			const hypotheses = Array.isArray(args.hypotheses) ? args.hypotheses : []
+			const names = hypotheses.map((hypothesis) => (typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : '')).filter((name) => name !== '')
+			if (new Set(names).size !== names.length) return fail('hypothesis_name_duplicate', '两条判断用了同一个短名:短名是用来区分判断的,换一个。')
 			for (const hypothesis of hypotheses) {
 				if (typeof hypothesis?.claim !== 'string' || hypothesis.claim.trim() === '') return fail('hypothesis_claim_required', '每条假设要有一句话主张。')
 				if (typeof hypothesis?.refute_when !== 'string' || hypothesis.refute_when.trim() === '') return fail('hypothesis_refute_required', '每条假设必须写清「什么结果会推翻它」——没有推翻条件的假设无法被检验。')
+				if (hypothesis?.name !== undefined && (typeof hypothesis.name !== 'string' || hypothesis.name.trim().length > HANDLE_LIMIT + 4)) return fail('hypothesis_name_too_long', `判断的短名要短:${HANDLE_LIMIT} 字以内,能让人一眼认出是哪条就够。`)
 				/**
 				 * **宽松+校验**:不写断言放行(断言是加法),写了就在**落账之前**严校——
 				 * 引用不存在的谓词 / 概念、宾语形态不合值域、同一事实自相矛盾,一律当场拒。
@@ -2168,8 +2172,12 @@ export function apply(ctx, config = {}) {
 				const claim = hypothesis.claim.trim()
 				const carried = idByClaim.get(claimKey(claim))
 				if (carried !== undefined) reused.add(carried)
+				const given = typeof hypothesis.name === 'string' ? hypothesis.name.trim() : ''
+				const kept = carried === undefined ? '' : String(existing.find((item) => item.id === carried)?.name ?? '')
 				return {
 					id: carried ?? `h-${Math.random().toString(36).slice(2, 8)}`,
+					/** 短名:这一版给了就用这一版的,没给就沿用旧的;都没有就不写(读的一侧取主张开头)。 */
+					...(given !== '' ? { name: given } : kept !== '' ? { name: kept } : {}),
 					claim,
 					refute_when: hypothesis.refute_when.trim(),
 					/** 断言随假设落账;没写就是 null(加法,不是门槛)。 */
@@ -2201,7 +2209,7 @@ export function apply(ctx, config = {}) {
 				ok: true,
 				code: isRevision ? 'goal_revised' : 'goal_set',
 				message:
-					`${isRevision ? `目标已修订到 rev${revision}` : `目标已立(${goalId})`},登记 ${hypotheses.length} 条假设。` +
+					`${isRevision ? `目标已修订(第 ${revision} 版)` : '目标已立'},登记了 ${hypotheses.length} 条判断${nextHypotheses.length === 0 ? '' : `:${nextHypotheses.map((item) => `「${handleOf(item)}」`).join('、')}`}。` +
 					// 原生 goal 上那一句给人看:用目标的一句话,不写 id。
 					attachNativeGoal(exec.agent, clip(headline === '' ? String(args.claim ?? '') : headline, 120)),
 			})
@@ -2236,7 +2244,7 @@ export function apply(ctx, config = {}) {
 				return done({
 					ok: true,
 					code: 'goal_abandoned',
-					message: `目标 ${goal.id} 已按 abandoned 结案(阻塞如实记录,记录保留)。${blockNativeGoal(exec.agent, BLOCK_CODES.abandoned, `模型如实放弃了这个目标:${args.note ?? '没写原因'}。要不要结束由人决定。`)}`,
+					message: `目标已如实放弃(阻塞原因记下了,记录都保留)。${blockNativeGoal(exec.agent, BLOCK_CODES.abandoned, `模型如实放弃了这个目标:${args.note ?? '没写原因'}。要不要结束由人决定。`)}`,
 				})
 			}
 			const plan = activePlanOf(state)
@@ -2322,7 +2330,7 @@ export function apply(ctx, config = {}) {
 				if (audit.reused === true) {
 					return fail(
 						'goal_not_achieved',
-						`目标未达成,保持开放。**这一步与上一次是同一份材料,所以复用了上一条独立裁决**(不再重复花钱请人):判据达成 ${audit.holds}。依据:${audit.basis}\n要拿到新判断,先改材料:补观测 / 交付产物 / 修订假设或判据;只是再喊一次结案不会产生新判断。\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}`,
+						`目标未达成,保持开放。**这一步与上一次是同一份材料,所以复用了上一条独立裁决**(不再重复花钱请人):独立评估者认为判据${audit.holds === 'no' ? '没有达成' : '判不了是否达成'}。依据:${audit.basis}\n要拿到新判断,先改材料:补观测 / 交付产物 / 修订假设或判据;只是再喊一次结案不会产生新判断。\n还没落定的步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => `第 ${step.ordinal} 步(${step.id})`).join('、')}`,
 						{ mutations },
 					)
 				}
@@ -2361,7 +2369,7 @@ export function apply(ctx, config = {}) {
 				const preview = previewOf(hostService, sessionId, mutations)
 				return fail(
 					'goal_not_achieved',
-					`目标未达成,保持开放。评估者裁决:判据达成 ${audit.holds}。依据:${audit.basis}${audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : ''}\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}${preview === null ? '\n(运行态卡这一刻取不到:宿主读面不可用。已经发生的事实照旧落账;先看当前账本再谈重试。)' : `\n\n${preview.card}`}`,
+					`目标还没达成,保持开放。独立评估者认为判据${audit.holds === 'no' ? '没有达成' : '判不了是否达成'}。依据:${audit.basis}${audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : ''}\n还没落定的步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => `第 ${step.ordinal} 步(${step.id})`).join('、')}${preview === null ? '\n(状态卡这一刻取不到:宿主读面不可用。已经发生的事实照旧落账;先看当前账本再谈重试。)' : cardTail(sessionId, preview)}`,
 					{ mutations },
 				)
 			}
@@ -2427,12 +2435,12 @@ export function apply(ctx, config = {}) {
 				code: 'goal_achieved',
 				verdict: 'support',
 				message:
-					`目标 ${goal.id} 已达成(独立评估者裁决:${audit.basis})。` +
-					(promoted.length > 0 ? `\n升格为事实:${promoted.join(' / ')}(写入 clear/knowledge/facts/${goal.id}.md)` : '\n没有达到升格门槛的假设。') +
+					`目标已达成(独立评估者的依据:${audit.basis})。` +
+					(promoted.length > 0 ? `\n写进长期知识:${promoted.join(' / ')}(clear/knowledge/facts/${goal.id}.md)` : '\n没有判断达到写进长期知识的门槛。') +
 					(untouched.length > 0
-						? `\n结案时有 ${untouched.length} 条假设**没有被任何证据触及**:${untouched.map((hypothesis) => hypothesis.id).join(', ')}——未判的假设不是「没问题」,是「没看过」;它们留在账上,随时可以补一次验证。`
+						? `\n结案时有 ${untouched.length} 条判断**一次都没检验过**:${untouched.map((hypothesis) => `「${handleOf(hypothesis)}」`).join('、')}——没检验不是「没问题」,是「没看过」;它们留在账上,随时可以补一次检验。`
 						: '') +
-					'\n被推翻与被改版的假设保留在日志里。' +
+					'\n被推翻与被替换的判断都留在记录里。' +
 					continuationNote +
 					declareDeliverables(exec, sessionId, delivered),
 			})
@@ -2470,7 +2478,7 @@ export function apply(ctx, config = {}) {
 						type: 'array',
 						minItems: 1,
 						items: { type: 'string' },
-						description: '这一步检验哪几条判断:**填 id 最稳**(h-xxxx,从运行态卡复制),也接受主张原文。一次观测同时判几条竞争的判断时(比较那一步),把它们都列上',
+						description: '这一步检验哪几条判断:填判断的短名(也认主张原文)。一次观测同时判几条竞争的判断时(比较那一步),把它们都列上',
 					},
 					level: { type: 'string', enum: LEVELS },
 				},
@@ -2846,7 +2854,7 @@ export function apply(ctx, config = {}) {
 				ok: true,
 				code: 'plan_created',
 				progress_changed: true,
-				message: `计划 ${planId} 已立(${args.steps.length} 步)${goal === null ? '' : `,属于目标 ${goal.id} 的一个阶段`}。${warnings.length > 0 ? `\n提醒:${warnings.join(';')}` : ''}`,
+				message: `计划已立(${args.steps.length} 步)${goal === null ? '' : ',是当前目标的一个阶段'}。${warnings.length > 0 ? `\n提醒:${warnings.join(';')}` : ''}`,
 			})
 		},
 	})
@@ -2935,7 +2943,7 @@ export function apply(ctx, config = {}) {
 			return done({
 				ok: true,
 				code: 'plan_closed',
-				message: `计划 ${plan.id} 已收束归档(clear/goals/plans/${plan.id}.md)。${state.goal === null || state.goal.status !== 'open' ? '' : `目标 ${state.goal.id} 仍未结案,继续开下一阶段。`}`,
+				message: `计划已收尾归档(clear/goals/plans/${plan.id}.md)。${state.goal === null || state.goal.status !== 'open' ? '' : '目标还没结案:继续开下一阶段,或用 Conclude 结案。'}`,
 			})
 		},
 	})
@@ -2973,12 +2981,12 @@ export function apply(ctx, config = {}) {
 				basis: { type: 'string', description: '交付凭什么成立:引用了哪个产物里的哪个事实(必须可复查)。仅 L0–L2 由你写' },
 				results: {
 					type: 'array',
-					description: '仅 L0–L2:这一步检验的每条判断各一格,对照它的推翻条件读结果。support=没碰到推翻条件;refute=碰到了;inconclusive=这次观测区分不了。推翻和说不清都不妨碍这一步完成',
+					description: '仅 L0–L2:这一步检验的每条判断各一格,对照它的推翻条件读结果:没碰到推翻条件是「支持」,碰到了是「推翻」,这次观测区分不了是「不确定」。推翻和不确定都不妨碍这一步完成',
 					items: {
 						type: 'object',
 						properties: {
-							hypothesis: { type: 'string', description: '判断 id(也认原文)' },
-							verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
+							hypothesis: { type: 'string', description: '判断的短名(也认主张原文)' },
+							verdict: { type: 'string', enum: ['支持', '推翻', '不确定', 'support', 'refute', 'inconclusive'] },
 							basis: { type: 'string', description: '一句话:这次观测对照推翻条件读出了什么(不写就用上面那句 basis)' },
 						},
 						required: ['hypothesis', 'verdict'],
@@ -3082,7 +3090,7 @@ export function apply(ctx, config = {}) {
 				const preview = previewOf(hostService, sessionId, mutations)
 				return fail(
 					`evidence_${gate.verified_by}`,
-					`未过观测准入(${gate.verified_by},第 ${count} 次):${gate.hint}${count >= CFG.blockedThreshold ? '\n已达阈值,计划置 blocked——停下等人,不要继续交付。' : ''}${stalledNote}\n\n${preview.card}`,
+					`观测没收下(第 ${count} 次):${gate.hint}${count >= CFG.blockedThreshold ? '\n连续被拦到了上限,计划停下等人:不要继续交付。' : ''}${stalledNote}${cardTail(sessionId, preview)}`,
 					{ gate: gate.verified_by, blocked: count >= CFG.blockedThreshold, mutations },
 				)
 			}
@@ -3143,7 +3151,7 @@ export function apply(ctx, config = {}) {
 						'evidence_audit_unavailable',
 						`没有拿到独立裁决,这一步不推进(fail-closed):${audit.basis}` +
 							(stalled ? `\n已达连拦阈值(${count} 次),计划置 blocked——停下等人,不要继续交付。` : `\n(这是第 ${count} 次;同一件事连续 ${CFG.blockedThreshold} 次拿不到裁决就置 blocked 等人。)`) +
-							`${stalledNote}\n\n${preview.card}`,
+							`${stalledNote}${cardTail(sessionId, preview)}`,
 						{ gate: 'audit_unavailable', blocked: stalled, mutations },
 					)
 				}
@@ -3189,16 +3197,17 @@ export function apply(ctx, config = {}) {
 				for (const item of given) {
 					const found = matchHypothesis(state.hypotheses, item?.hypothesis)
 					if (found === null || !tested.includes(found.id)) {
-						return fail('result_not_tested', `「${String(item?.hypothesis ?? '')}」不是这一步检验的判断。这一步检验的是:${tested.length === 0 ? '(无——不检验判断的步骤不给 results)' : tested.join('、')}。`)
+						return fail('result_not_tested', `「${String(item?.hypothesis ?? '')}」不是这一步检验的判断。这一步检验的是:${tested.length === 0 ? '(无——不检验判断的步骤不给 results)' : tested.map((id) => `「${handleById(state, id)}」`).join('、')}。`)
 					}
-					if (!['support', 'refute', 'inconclusive'].includes(String(item.verdict))) return fail('result_invalid', '每条结果的 verdict 只能是 support / refute / inconclusive。')
-					byId.set(found.id, { hypothesis: found.id, verdict: item.verdict, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim() : null })
+					const verdict = canonicalVerdict(item.verdict)
+					if (verdict === null) return fail('result_invalid', '每条结果只能是「支持」「推翻」「不确定」之一。')
+					byId.set(found.id, { hypothesis: found.id, verdict, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim() : null })
 				}
 				const missing = tested.filter((id) => !byId.has(id))
 				if (missing.length > 0) {
 					return fail(
 						'results_required',
-						`这一步检验 ${tested.length} 条判断,还缺 ${missing.join('、')} 的结果。每条对照它的推翻条件读:support=没碰到推翻条件,refute=碰到了,inconclusive=这次观测区分不了——三种都算这一步完成。`,
+						`这一步检验 ${tested.length} 条判断,还缺 ${missing.map((id) => `「${handleById(state, id)}」`).join('、')} 的结果。每条对照它的推翻条件读:没碰到推翻条件是「支持」,碰到了是「推翻」,这次观测区分不了是「不确定」——三种都算这一步完成。`,
 					)
 				}
 				evaluator = 'self'
@@ -3263,8 +3272,7 @@ export function apply(ctx, config = {}) {
 			 */
 			mutations.push({ t: 'step/advanced', plan: plan.id, step: step.id, evidence: evidenceIds, evaluator, basis, refs: originInfo.paths, origins: originInfo.origins })
 			mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
-			const word = { support: '支持', refute: '推翻', inconclusive: '说不清' }
-			const outcome = results.length === 0 ? '' : `\n结果:${results.map((item) => `${item.hypothesis} ${word[item.verdict]}`).join(';')}。`
+			const outcome = results.length === 0 ? '' : `\n结果:${results.map((item) => `「${handleById(state, item.hypothesis)}」${VERDICT_WORD[item.verdict]}`).join(';')}。`
 			const refuted = results.some((item) => item.verdict === 'refute')
 			const factReview = refuted
 				? await reviewRefutedFacts(
@@ -3283,9 +3291,9 @@ export function apply(ctx, config = {}) {
 				evaluator,
 				blocked: false,
 				message:
-					`步骤 ${step.id} 已交付并推进(${evaluator === 'independent' ? '独立评估者裁决' : '自判,依据已记账'})。观测准入:${gate.verified_by};坐标:${gate.confirmed.map((item) => item.ref).join(', ') || '(无)'}。` +
+					`第 ${step.ordinal} 步(${step.id})已交付(${evaluator === 'independent' ? '独立评估者判的' : '你自己判的,依据已记下'})。收下的观测:${gate.confirmed.map((item) => item.ref).join(', ') || '(无)'}。` +
 					outcome +
-					(refuted ? '\n推翻是有价值的结果:它和支持一样记进证据,判断的状态由证据算。' : '') +
+					(refuted ? '\n推翻也是有价值的结果:它和支持一样记进证据,判断的状态由证据算。' : '') +
 					factReview +
 					reuseNote,
 			})

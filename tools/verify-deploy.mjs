@@ -192,7 +192,7 @@ if (existsSync(HOST_PKG)) {
 	}
 	if (hostOk) {
 		const paths = routes.map((route) => route.path)
-		const expected = ['/api/clearai/gate', '/api/clearai/inspector']
+		const expected = ['/api/clearai/inspector']
 		const missing = expected.filter((path) => !paths.includes(path))
 		const grammar = /^[A-Za-z0-9_$.-]+$/
 		const badPath = paths.find((path) => path.split('/').slice(2).some((segment) => !grammar.test(segment)))
