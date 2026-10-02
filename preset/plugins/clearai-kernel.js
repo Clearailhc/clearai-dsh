@@ -491,6 +491,26 @@ export function apply(ctx, config = {}) {
 		return found === undefined ? '一条已不在账上的判断' : handleOf(found)
 	}
 
+	/**
+	 * **评估者的原话里换掉判断 id**:评估者读的是带 id 的任务书,写依据时常常顺手引用 `h-xxxxxx`。
+	 * 账本与评估卡留原话(对账要 id);转给模型和人看的那一句换成判断的短名。
+	 */
+	function plainIds(sessionId, text) {
+		const value = String(text ?? '')
+		if (!/\bh-[a-z0-9]{6}\b/.test(value)) return value
+		let state = null
+		try {
+			state = host()?.state?.(sessionId) ?? null
+		} catch {
+			state = null
+		}
+		// 「」已经隔开了词,id 后面那个空格一并吃掉。
+		return value.replace(/\b(h-[a-z0-9]{6})\b ?/g, (_match, id) => {
+			const found = (state?.hypotheses ?? []).find((hypothesis) => hypothesis.id === id)
+			return found === undefined ? '一条判断' : `「${handleOf(found)}」`
+		})
+	}
+
 	/** 拒绝类结果的卡尾:与收尾同一条「卡没变就不附」。 */
 	function cardTail(sessionId, preview) {
 		const card = preview?.card ?? null
@@ -2406,7 +2426,7 @@ export function apply(ctx, config = {}) {
 			}
 			const audit = await runEvaluator(sessionId, exec.agent, plan, syntheticStep, gate, 'goal_audit', exec.signal)
 			mutations.push(...audit.mutations)
-			if (audit.holds === 'pending') return fail('audit_pending', `目标评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试。`, { mutations: audit.mutations })
+			if (audit.holds === 'pending') return fail('audit_pending', `目标评估者仍在跑:${plainIds(sessionId, audit.basis)}。先观察当前事实,再谈重试。`, { mutations: audit.mutations })
 			if (audit.holds !== 'yes') {
 				/**
 				 * **复用来的裁决不落第二条证据**。
@@ -2419,7 +2439,7 @@ export function apply(ctx, config = {}) {
 				if (audit.reused === true) {
 					return fail(
 						'goal_not_achieved',
-						`目标未达成,保持开放。**这一步与上一次是同一份材料,所以复用了上一条独立裁决**(不再重复花钱请人):独立评估者认为判据${audit.holds === 'no' ? '没有达成' : '判不了是否达成'}。依据:${audit.basis}\n要拿到新判断,先改材料:补观测 / 交付产物 / 修订假设或判据;只是再喊一次结案不会产生新判断。\n还没落定的步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => `第 ${step.ordinal} 步(${step.id})`).join('、')}`,
+						`目标未达成,保持开放。**这一步与上一次是同一份材料,所以复用了上一条独立裁决**(不再重复花钱请人):独立评估者认为判据${audit.holds === 'no' ? '没有达成' : '判不了是否达成'}。依据:${plainIds(sessionId, audit.basis)}\n要拿到新判断,先改材料:补观测 / 交付产物 / 修订假设或判据;只是再喊一次结案不会产生新判断。\n还没落定的步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => `第 ${step.ordinal} 步(${step.id})`).join('、')}`,
 						{ mutations },
 					)
 				}
@@ -2458,7 +2478,7 @@ export function apply(ctx, config = {}) {
 				const preview = previewOf(hostService, sessionId, mutations)
 				return fail(
 					'goal_not_achieved',
-					`目标还没达成,保持开放。独立评估者认为判据${audit.holds === 'no' ? '没有达成' : '判不了是否达成'}。依据:${audit.basis}${audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : ''}\n还没落定的步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => `第 ${step.ordinal} 步(${step.id})`).join('、')}${preview === null ? '\n(状态卡这一刻取不到:宿主读面不可用。已经发生的事实照旧落账;先看当前账本再谈重试。)' : cardTail(sessionId, preview)}`,
+					`目标还没达成,保持开放。独立评估者认为判据${audit.holds === 'no' ? '没有达成' : '判不了是否达成'}。依据:${plainIds(sessionId, audit.basis)}${audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${plainIds(sessionId, verdictText([item]))}`).join('\n')}` : ''}\n还没落定的步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => `第 ${step.ordinal} 步(${step.id})`).join('、')}${preview === null ? '\n(状态卡这一刻取不到:宿主读面不可用。已经发生的事实照旧落账;先看当前账本再谈重试。)' : cardTail(sessionId, preview)}`,
 					{ mutations },
 				)
 			}
@@ -2559,7 +2579,7 @@ export function apply(ctx, config = {}) {
 				code: 'goal_achieved',
 				verdict: 'support',
 				message:
-					`目标已达成(独立评估者的依据:${audit.basis})。` +
+					`目标已达成(独立评估者的依据:${plainIds(sessionId, audit.basis)})。` +
 					(held.length > 0 ? `\n这几条判断够格了,但断言用到的本体此刻不成立,**没有写进长期知识**(它们照旧留在记录里;改好本体文件后,要在之后的目标里再检验一次才能写进长期知识):\n${held.map((item) => `- ${item}`).join('\n')}` : '') +
 					(promoted.length > 0 ? `\n写进长期知识:${promoted.map((item) => `${item.claim}(clear/knowledge/facts/${item.id}.json)`).join(' / ')}。之后的会话都读得到它们(总览在 clear/knowledge/facts/INDEX.md)。` : '\n没有判断达到写进长期知识的门槛。') +
 					(untouched.length > 0
@@ -2955,7 +2975,7 @@ export function apply(ctx, config = {}) {
 				}
 				const audit = await runEvaluator(sessionId, exec.agent, plan, step, gate, 'evidence_audit', exec.signal)
 				mutations.push(...audit.mutations)
-				if (audit.holds === 'pending') return fail('audit_pending', `独立评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试——不要重复派遣。`, { mutations })
+				if (audit.holds === 'pending') return fail('audit_pending', `独立评估者仍在跑:${plainIds(sessionId, audit.basis)}。先观察当前事实,再谈重试——不要重复派遣。`, { mutations })
 				if (audit.holds === 'unknown') {
 					const count = countBlock('audit_unavailable', audit.basis)
 					const stalled = count >= CFG.blockedThreshold
@@ -2963,7 +2983,7 @@ export function apply(ctx, config = {}) {
 					const preview = previewOf(hostService, sessionId, mutations)
 					return fail(
 						'evidence_audit_unavailable',
-						`没有拿到独立裁决,这一步不推进(fail-closed):${audit.basis}` +
+						`没有拿到独立裁决,这一步不推进(fail-closed):${plainIds(sessionId, audit.basis)}` +
 							(stalled ? `\n已达连拦阈值(${count} 次),计划置 blocked——停下等人,不要继续交付。` : `\n(这是第 ${count} 次;同一件事连续 ${CFG.blockedThreshold} 次拿不到裁决就置 blocked 等人。)`) +
 							`${stalledNote}${cardTail(sessionId, preview)}`,
 						{ gate: 'audit_unavailable', blocked: stalled, mutations },
@@ -2980,8 +3000,8 @@ export function apply(ctx, config = {}) {
 					const stalledNote = stalled ? await escalateBlocked(exec, plan, step, count, `计划 ${plan.id} 第 ${count} 次交付不成立`, mutations) : ''
 					return fail(
 						'delivery_not_holding',
-						`独立评估者判这次交付${audit.holds === 'no' ? '**不成立**' : '**判不了成不成立**'},这一步不推进:${audit.basis}` +
-							(audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : '') +
+						`独立评估者判这次交付${audit.holds === 'no' ? '**不成立**' : '**判不了成不成立**'},这一步不推进:${plainIds(sessionId, audit.basis)}` +
+							(audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${plainIds(sessionId, verdictText([item]))}`).join('\n')}` : '') +
 							(audit.reused === true ? '\n(同一份材料,复用了上一条独立裁决;要拿到新判断先改材料。)' : '') +
 							(stalled ? `\n已达连拦阈值(${count} 次),计划置 blocked——停下等人。` : '') +
 							stalledNote,

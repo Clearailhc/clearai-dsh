@@ -960,8 +960,12 @@ console.log('\n【完成度:终局优先,升格算数(2026-09-11 长测抓到的
 	await callOn(host, S, 'AdvancePlan', { step_id: 'g1', observations: [{ ref: 'lab/g1.txt' }] })
 	check('中途口径:计划推进时完成度按步算', Math.abs((host.service.view(S).goal?.progress ?? -1) - 1) < 1e-9, String(host.service.view(S).goal?.progress))
 	await callOn(host, S, 'ClosePlan', { summary: '这一阶段做完了' })
+	// 评估者的依据常常顺手引用判断 id(它读的任务书里有):转给模型时要换成短名。
+	const hypothesisId = host.service.state(S).hypotheses[0].id
+	host.nextVerdict = { verdict: 'support', basis: `判据满足;${hypothesisId} 经 g1 步检验`, reading: '1', validity: 'usable' }
 	const closed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
 	check('结案成功(独立评估者裁决)', closed.ok === true, String(closed.code))
+	check('评估者依据里的判断 id 换成短名(工具结果不出现内部编号)', String(closed.message).includes('「甲成立」经 g1 步检验') && !String(closed.message).includes(hypothesisId), String(closed.message).slice(0, 200))
 	check('终局优先:目标 achieved ⇒ 完成度 100%(不再回落到假设口径的 0%)', host.service.view(S).goal?.progress === 1, String(host.service.view(S).goal?.progress))
 }
 
