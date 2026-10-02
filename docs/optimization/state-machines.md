@@ -211,7 +211,9 @@ Scouts were removed in phase 2 of the "less is more" rebuild: for parallel resea
 
 ## 12. Domain lexicon · implemented
 
-Stored field: `state.lexicon.{terms[], predicates[]}` — the shape folded out of the ontology events in the ledger.
+Stored field: `state.lexicon.{terms[], predicates[]}`.
+
+> **The source is now files.** Since the ontology became a JSON file tree under `clear/ontology/`, the `workspace/synced` fold derives `lexicon` / `entities` / `entityAssertions` / `ontologyProblems` straight from the files with `materializeOntology` (see §8). The `ontology/*` and `entity/*` events below are no longer written by any tool; they stay so old sessions' ledgers still replay. Deprecation is written in the file (`status: "deprecated"`), and a change of meaning is detected through the definition fingerprints on facts ("definition changed") instead of requiring a new id.
 
 ```mermaid
 stateDiagram-v2
@@ -249,9 +251,9 @@ stateDiagram-v2
 
 Points:
 
-- **Convention and observation are separate**: `Define` is a convention (a concept; no evidence
-  required), `RegisterInstance` is an observation (an instance; `basis` and `provenance` required), and
-  `Assert` says one sourced thing about a registered instance (`evidence` required).
+- **Convention and observation are separate**: a concept file is a convention (no evidence required);
+  an entity file is an observation, and each of its relations must carry `evidence`.
+  (Before the ontology became files, these were the three tools `Define` / `RegisterInstance` / `Assert`.)
 - **Entities do not wait for the goal verdict**: `entity/asserted` produces an edge at the moment it is
   recorded. The fact path is unchanged (independent verdict → `fact/promoted`), and the projection
   carries both kinds: `source='promoted'` with level and scope, `source='asserted'` with provenance and

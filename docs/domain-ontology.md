@@ -50,18 +50,19 @@ flowchart TD
 
 ## 3. Graph model: the minimum
 
-No OWL, RDF, SHACL, SPARQL, graph database or reasoner. Four node kinds, three edge kinds.
+No OWL, RDF, SHACL, SPARQL, graph database or reasoner. Four node kinds, four edge kinds.
 
 | Node | Meaning | Source |
 |---|---|---|
-| `concept` | A domain concept, e.g. "numerical scheme", "furnace batch" | Domain ontology, `Define` |
+| `concept` | A domain concept, e.g. "numerical scheme", "furnace batch" | Concept files `clear/ontology/concepts/**.json` |
 | `value_type` | Built-in value forms: `statement` / `quantity` / `formula` / `code` / `reference` | Fixed by the system |
-| `instance` | A concrete thing that was found, e.g. "WENO5" | `RegisterInstance`, or projected from facts |
+| `instance` | A concrete thing that was found, e.g. "WENO5" | Entity files `clear/ontology/entities/**.json`, or projected from facts |
 | `literal` | Numbers, text, formulas, code references | Projected from assertions |
 
 | Edge | Meaning | Example |
 |---|---|---|
-| `is_a` | Concept inheritance | `WENO scheme → numerical scheme` |
+| `is_a` | Concept inheritance (concept directory nesting) | `WENO scheme → numerical scheme` |
+| `part_of` | Composition (entity directory nesting) | `blade-3 → turbine-A` |
 | `predicate` | Domain predicate: concept → concept or value form | `numerical scheme --convergence order--> quantity` |
 | `assertion` | One assertion | `WENO5 --convergence order--> 5` |
 
@@ -72,7 +73,7 @@ A predicate is an edge record with domain, range and single-valuedness, not a no
   "range": { "form": "quantity", "unit": "order" }, "functional": true }
 ```
 
-**Instances land the moment they are observed** (`RegisterInstance`, `Assert`, both with provenance), not when the goal closes. Otherwise "a beautiful vocabulary and an empty entity graph" becomes the cheapest way to finish. Edges from the two sources are labelled honestly: from promoted facts they carry level and scope (`promoted`); from observations with provenance they are not independently adjudicated (`asserted`).
+**Instances land the moment they are observed** (an entity file is written, each relation with provenance), not when the goal closes. Otherwise "a beautiful vocabulary and an empty entity graph" becomes the cheapest way to finish. Edges from the two sources are labelled honestly: from promoted facts they carry level and scope (`promoted`); from observations with provenance they are not independently adjudicated (`asserted`).
 
 **The ontology graph and the entity graph are drawn apart.** One says what the language allows (declaration), the other what has been said (claims). They differ in authority, pace and cost of error; drawing them as the same kind of edge is the main mistake this design avoids.
 
@@ -101,32 +102,51 @@ A relational predicate's object is another **instance** (`{ kind: "instance" }`)
 
 ---
 
-## 5. Storage and projection
+## 5. Storage and projection: the ontology is a tree of JSON files
 
-**The only authority is the event record**: `ontology/term_added`, `ontology/predicate_added`, two revision and two deprecation events, plus `entity/registered`, `entity/asserted` and `fact/promoted.assertions`. Replaying them yields `state.lexicon`; there is no second ledger and no hand-editable `domain.json`.
+**The ontology is files in the workspace.** The model maintains them with its native read, write and edit tools; there are no special tools:
 
-**Every read surface is a rendering**: `clear/ontology/domain.md` (with a Mermaid graph), the fact shelf, the graph and list in the Ontology pane, one summary line in the run-state card. All come from one projection; a read surface never becomes the authority.
+```
+clear/ontology/
+  SCHEMA.json                 ← format description written by the system
+  concepts/
+    numerical_scheme.json     ← describes "numerical scheme"
+    numerical_scheme/         ← its sub-concepts (directory nesting = is_a)
+      weno_scheme.json
+  relations/
+    convergence_order.json    ← predicate: domain / range / functional
+  entities/
+    turbine_a.json            ← entity: type + relations[]
+    turbine_a/                ← its parts (directory nesting = part_of)
+      blade_3.json
+```
 
-**Layout is not stored**: coordinates, zoom and filters are not knowledge. Layout is a deterministic pure function — the same record always yields the same graph, pinned by tests.
+- `X.json` describes X; X's children go in the sibling `X/` directory. Identity is the id (the file name), location is the directory, and references use ids only.
+- Concepts and predicates share one id space. A predicate's range is a concept id or `{form, unit?}`.
+- An entity carries `relations:[{predicate, object|value, unit?, evidence:{kind, ref}}]`; every relation needs provenance.
+- Fields not in `SCHEMA.json` are rejected.
+
+**Facts are written by the system only**: at promotion each fact becomes `clear/knowledge/facts/<id>.json` (with fingerprints of the definitions it uses), and `INDEX.md` is rendered from all fact files. Fact files accumulate across sessions: a new session can read the facts and ontology earlier sessions wrote.
+
+**The host folds the files into one graph**: before each step it syncs the workspace (cached by mtime and size, changes detected by sha1) and folds it into `state.lexicon`. The UI and the model read the same graph; a read surface never becomes the authority.
+
+**Layout is not stored**: coordinates, zoom and filters are not knowledge. Layout is a deterministic pure function — the same files always yield the same graph, pinned by tests.
 
 ---
 
-## 6. Add, revise, deprecate
+## 6. Three checks
 
-| Action | Tool | Rules |
+| When | What | Outcome |
 |---|---|---|
-| Admit a concept or predicate | `Define` | Unique id; non-empty name and definition; referenced concepts exist and are not deprecated; no `is_a` cycle; value form from the fixed set; **a basis is required** and must point at something actually on record |
-| Change display details (name, definition, aliases) | `Define` (same id again) | Version +1, old values kept |
-| Change meaning (sense, domain, range, single-valuedness) | `Deprecate` the old entry + `Define` a new id | The meaning of a stable id never silently changes in history |
-| Deprecate | `Deprecate` | Reason required; sticky, no restore; old nodes stay on the graph (dashed); new assertions cannot cite it; existing facts that cite it are flagged "uses a deprecated term" |
-| Register an instance | `RegisterInstance` | Provenance required |
-| Write an assertion | `Assert` | Provenance required; predicate, domain and range strictly checked against the vocabulary |
+| **On write** | One file: parseable JSON, fields match `SCHEMA.json`, id matches the file name | **Write denied**; the model sees what is wrong right away |
+| **On read** | Across files: duplicate ids, a parent / domain / range / entity type / relation object that points nowhere, single-valued conflicts | **Flagged, not blocked**: the faulty file stays off the graph and the problem is listed on the card and under the graph |
+| **On promotion** | Assertions about to enter long-term knowledge are rechecked against all files | **Not promoted**; the hypothesis stays in the "held" list |
 
-**Nothing is deleted.** This is the same history principle as "refuted hypotheses are kept" and "voids carry a reason".
+**Meaning changes are detected, not blocked.** Each fact carries fingerprints of the definitions it used; if those definition files change later, the fact is flagged "definition changed" under "to handle", and a person or the model decides whether to review it or keep it.
 
-**How a person changes the vocabulary.** They say so in the conversation, and the model records it with the same verbs and the same checks. The UI is read-only, with no edit drawer — a second write path would need a second set of checks to keep aligned with the model's verbs.
+**Deprecation**: write `status: "deprecated"` (optionally `replaced_by`) in the definition file. Old nodes stay on the graph (dashed); new assertions cannot cite them.
 
-**Why no proposal subsystem.** Entries are added one by one with a basis, few, reversible and visible; deprecation is the real veto. If batch induction arrives later, a change-set object comes with it rather than letting induction edit the live ontology.
+**How a person changes the ontology.** They say so in the conversation and the model edits the files, through the same three checks; or they edit the files directly, with the same effect. The UI is read-only.
 
 ---
 
@@ -159,10 +179,10 @@ A real run gave a counter-intuitive result: what changed model behaviour was mai
 
 Process objects, domain vocabulary and a single test each have their own lifecycle and **do not nest**: admitting a concept advances no process object, and closing a goal changes no vocabulary. They only reference each other (assertions cite predicates and concepts; facts cite hypotheses and evidence), and they meet in four places only:
 
-1. **Assertion shape checked when a hypothesis is registered**: unknown, deprecated or out-of-range references are rejected before anything is recorded;
+1. **Assertion shape checked when a hypothesis is registered**: unknown, deprecated or out-of-range references are rejected before anything is recorded (against the ontology files at that moment);
 2. **Fixed at promotion**: the fact carries its hypothesis id and assertions, bound to its level, scope and evidence in one record;
 3. **Conflicts and graphs derived on replay**: no fact is changed, no gate is opened;
-4. **Deprecation propagates**: new assertions refuse it, existing ones are flagged.
+4. **Definition changes propagate**: new assertions refuse deprecated terms; when a definition file changes, facts that use it are flagged "definition changed".
 
 ---
 
@@ -175,7 +195,7 @@ One screen, three layers, each finer than the one above:
 | Layer | Content |
 |---|---|
 | **Header** | One line for the question being answered + one line of counts + "to handle" (a plan stopped after repeated rejections, conclusions that contradict each other; one line each, statements only, no buttons) + a small progress rail: judgment → test → verified → in ontology, with a count per station |
-| **Graph (the main thing)** | **Ontology graph ｜ entity graph**, one at a time. Concepts in serif type, instances as small squares with their type in small print; verified relations solid, awaiting check dashed, refuted and uncertain each in their own colour. Clicking a node opens its term card and filters the list below (one line "only related to X · clear", with honest counts); full-screen available |
+| **Graph (the main thing)** | **Ontology graph ｜ entity graph**, one at a time. Directory nesting is drawn as collapsible subgraphs (collapsed to the first level when the graph is large; +N expands); file problems found on read are listed under the graph. Concepts in serif type, instances as small squares with their type in small print; verified relations solid, awaiting check dashed, refuted and uncertain each in their own colour. Clicking a node opens its term card and filters the list below (one line "only related to X · clear", with honest counts); full-screen available |
 | **Conclusion list** | One line per conclusion, grouped by status: **verified / awaiting check / testing / uncertain / refuted / replaced**, each tagged with the step it came from. Opening one shows three parts in order: **progress** (which station it has reached), **how trust changed** (one line per change: which step, from what to what), **more** (basis, scope, what would make it wrong, related concepts and instances) |
 
 A single test's result uses three words only: **support / refute / uncertain**. Levels are written in plain words: reasoned through alone / cites existing material / reproducible / independent check / released by a person. Internal ids never reach the screen; people see a judgment's short name and "step n".
@@ -189,7 +209,7 @@ A single test's result uses three words only: **support / refute / uncertain**. 
 5. **Interrupt only for exceptions**: anything that needs a person takes one line under "to handle"; a contradiction is marked on the two affected lines.
 6. **Filters tell the truth**: one status line + clear, stating how many did not match.
 
-**The pane is read-only.** Terms cannot be registered or edited by hand here; to change the vocabulary, say so in the conversation. Process never appears as editable content: steps and gates are in the World Tree on the right, one line per step, and opening a step shows which judgments it tested and what came out.
+**The pane is read-only.** Terms cannot be registered or edited by hand here; to change the ontology, say so in the conversation or edit the files under `clear/ontology/`. Process never appears as editable content: steps and gates are in the World Tree on the right, one line per step, and opening a step shows which judgments it tested and what came out.
 
 ---
 
@@ -201,7 +221,7 @@ The reference implementation Semantica (`semantica-agi/semantica`) walked this r
 
 ## 11. Boundaries and future work
 
-**Not in this version**: the semantic-web stack; graph databases; automatic ontology induction; large-scale extraction and entity resolution; rule reasoning and transitive closure; a cross-project vocabulary library; unit conversion; automatic retraction or conflict adjudication; editing authoritative files directly; editing in the UI.
+**Not in this version**: the semantic-web stack; graph databases; automatic ontology induction; large-scale extraction and entity resolution; rule reasoning and transitive closure; a cross-project vocabulary library; unit conversion; automatic retraction or conflict adjudication; editing in the UI.
 
 **Possible later** (not promised): a unit registry; cross-project reuse; entity resolution; deeper vocabulary health checks.
 
@@ -210,8 +230,8 @@ The reference implementation Semantica (`semantica-agi/semantica`) walked this r
 ## 12. Principles in review
 
 1. The process governs how we know, the domain ontology the language, and facts are assertions that completed the loop.
-2. The graph is the most natural form, but it is a projection, not authoritative storage.
-3. The vocabulary changes only through named verbs; the model and the person use the same path.
-4. No deletion — only versioned revision and sticky deprecation; a change of meaning needs a new id.
+2. The file tree is the ontology's authority; the graph is its projection.
+3. The model writes the ontology with native file tools behind three checks; facts are written by the system only.
+4. Deprecation leaves a trace; definition changes are detected and handed to a person or the model for review, never taking effect silently.
 5. Facts carry epistemic metadata; the entity graph never erases the evidence chain.
 6. Every read surface comes from one fold; there is no second ledger.

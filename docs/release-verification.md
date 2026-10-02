@@ -61,7 +61,7 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 | Surface | Criterion | Check | Passing line |
 |---|---|---|---|
-| Ten tools | `Frame`, `Conclude`, `CreatePlan`, `AdvancePlan`, `RevisePlan`, `ClosePlan`, `Define`, `Deprecate`, `RegisterInstance`, `Assert`; output-schema validation and semantic refusals both asserted | `test/kernel.test.mjs` | green |
+| Six tools | `Frame`, `Conclude`, `CreatePlan`, `AdvancePlan`, `RevisePlan`, `ClosePlan` (the ontology is written as files); output-schema validation and semantic refusals both asserted | `test/kernel.test.mjs` | green |
 | Single completion verb | Progress only through `AdvancePlan`; completion means the delivery holds, the result is recorded separately as evidence; the doer cannot judge its own result (L3 and up go to an independent evaluator) | same | green |
 | Closing | `Conclude` completes the native goal and promotes only after independent evaluation; one entity gate; the native `update_goal(complete)` is stopped by the guard | same | green |
 | Shelves | Fact shelf and ontology shelf rebuild idempotently | same | green |

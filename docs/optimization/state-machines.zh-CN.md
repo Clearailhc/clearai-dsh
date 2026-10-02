@@ -195,7 +195,9 @@ ClearAI 只在三个地方碰它：
 
 ## 12. 领域词汇（lexicon）· 已实现
 
-存储字段：`state.lexicon.{terms[], predicates[]}`——账本里的本体事件折出来的那个形状。
+存储字段：`state.lexicon.{terms[], predicates[]}`。
+
+> **现在的来源是文件。** 本体改成 `clear/ontology/` 下的 JSON 文件树之后，`workspace/synced` 的折法用 `materializeOntology` 从文件直接得出 `lexicon` / `entities` / `entityAssertions` / `ontologyProblems`（见 §8）；下面这些 `ontology/*` 与 `entity/*` 事件不再由工具写出，只为让旧会话的账本照常重放。废止写在文件里（`status: "deprecated"`），语义变化由事实上的定义指纹检测（「定义已变」），不再要求换 id。
 
 ```mermaid
 stateDiagram-v2
@@ -232,8 +234,8 @@ stateDiagram-v2
 
 要点：
 
-- **约定与观测分开**：`Define` 是约定（概念，不需要依据），`RegisterInstance` 是观测
-  （实例，`basis` 与 `provenance` 必填），`Assert` 说一句关于某个已登记实例的话（`evidence` 必填）。
+- **约定与观测分开**：概念文件是约定（不需要依据），实体文件是观测——它的每条关系都必须带 `evidence`。
+  （本体改成文件之前，这三件事分别是 `Define` / `RegisterInstance` / `Assert` 三件工具。）
 - **实体不依赖目标裁决**：`entity/asserted` 在登记那一刻就产边。事实那条路照旧（独立裁决 → `fact/promoted`），
   投影里两条边都在：`source='promoted'` 带等级与边界，`source='asserted'` 带出处、未经独立裁决。
 - **主体必须可指认**：断言主体必须是已登记实例（`validateAssertions` 的 `assert_subject_unknown`），

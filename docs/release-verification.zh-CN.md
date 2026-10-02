@@ -63,7 +63,7 @@ node tools/recheck.mjs --log ~/.dsh/sessions/<桶>/<会话>/session.v3.jsonl.zst
 
 | 面 | 判据 | 怎么验 | 通过线 |
 |---|---|---|---|
-| 工具 10 件 | `Frame`、`Conclude`、`CreatePlan`、`AdvancePlan`、`RevisePlan`、`ClosePlan`、`Define`、`Deprecate`、`RegisterInstance`、`Assert`;契约校验(输出 schema)+ 语义拒绝都断言 | `test/kernel.test.mjs` | 全绿 |
+| 工具 6 件 | `Frame`、`Conclude`、`CreatePlan`、`AdvancePlan`、`RevisePlan`、`ClosePlan`(本体写成文件);契约校验(输出 schema)+ 语义拒绝都断言 | `test/kernel.test.mjs` | 全绿 |
 | 唯一完成动作 | 推进只经 `AdvancePlan`;完成只看交付成立,结果另记成证据;做的人不判自己(L3 以上派独立评估者) | 同上 | 全绿 |
 | 结案 | `Conclude` 过独立评估才完成原生 goal 并升格;只有一道实体门;原生 `update_goal(complete)` 被守卫拦下 | 同上 | 全绿 |
 | 货架 | 事实货架 `INDEX.md` 幂等重建;本体货架落盘 | 同上(§22·§23) | 全绿 |

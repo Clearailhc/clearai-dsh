@@ -14,7 +14,7 @@
 | 人的决定只由人做 | 开门的那次调用直接 `ctx.userQuestions.ask()`；答案进程内交回；`NO_PROVIDER` 时置原生 goal 为阻塞 | 人门测试（原型见 `tools/spikes/human-gate.plugin.mjs`） | 3–4 |
 | 保留历史 | 只追加的会话日志与折法；`RevisePlan` 留判据旧版；撤回只标记；词汇修订留痕、废止黏性 | 保留历史断言、`test/domain-language.test.mjs` | 已有 |
 | 图是投影，不是存储 | `ui/lib/domain-language.js`（`graphProjection` / `deriveConflicts`）；确定性布局 | `test/domain-language.test.mjs` | 已有 |
-| 语义变化必须换 id | `Define` 同 id 只改展示信息；语义变化走 `Deprecate` + 新 id | 词汇修订与废止断言 | 4 |
+| 语义变化要被看见 | 事实带着所用定义的指纹；定义文件改了，这条事实标「定义已变」 | 词汇修订与废止断言 | 4 |
 | 过程只在需要时说 | 本体格只放结论清单与图；运行态卡只在状态变化时注入；交付卡片只在结案时出 | 客户端快照测试、运行态卡去重测试 | 6 |
 | 脚手架，不是剧本 | 提示词三段（身份 / 循环 / 对人说话） | 提示词长度与段落测试 | 5 |
 

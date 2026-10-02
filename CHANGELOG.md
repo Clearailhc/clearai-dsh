@@ -4,6 +4,26 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+**本体改成文件树。** 设计见 [领域本体](docs/domain-ontology.zh-CN.md) 第 5、6 节。`STATE_VERSION` 15;旧会话不迁移。
+
+### Changed
+
+- **本体是 `clear/ontology/` 下的 JSON 文件树**:`concepts/`、`relations/`、`entities/`,`X.json` 描述 X,孩子放在同级 `X/` 目录(概念嵌套 = is_a,实体嵌套 = 组成)。模型用原生文件工具写,系统写一份 `SCHEMA.json` 说明格式。
+- **三道检查**:写时单文件校验(不合格拒写);读时跨文件校验(只标不拦,问题列在卡上与图下);升格时全量校验(不合格不升格)。
+- **事实写成文件并跨会话累积**:每条一份 `clear/knowledge/facts/<id>.json`,带所用定义的指纹;定义改了,这条事实标「定义已变」进「待处理」。`INDEX.md` 从全部事实文件渲染。
+- **图上目录嵌套成可收起的子图**:点多时默认收到第一层,+N 展开。
+- 结案后提示模型把可复用的做法写成原生技能(`.agents/skills/<名字>/SKILL.md`)。
+
+### Fixed
+
+- 后一次 `Conclude` 会把之前目标的假设再升格一次。
+- 相对路径能绕过受保护目录;读受保护目录的文件也被拦。
+
+### Removed
+
+- 4 件本体工具 `Define` / `Deprecate` / `RegisterInstance` / `Assert`(工具 10 → 6),以及 `clear/ontology/domain.md` 读面。
+
+
 **「少即是多」第六阶段:呈现。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第六阶段的改动清单。机制、十件工具、账本事件与 `STATE_VERSION` 都不变。
 
 ### Changed
