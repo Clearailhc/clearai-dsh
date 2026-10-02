@@ -13,11 +13,11 @@
  * 跑法:node test/kernel.test.mjs
  */
 
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
-import { CONFIG_KEYS, HUMAN_GATE_MARK, apply, parseHumanGateMessage, syncTemplateSkills } from '../preset/plugins/clearai-kernel.js'
+import { CONFIG_KEYS, HUMAN_GATE_MARK, apply } from '../preset/plugins/clearai-kernel.js'
 import { applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
 import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS, SECTION_SLOTS, SECTION_TABLE } from '../preset/plugins/prompts.js'
@@ -177,13 +177,6 @@ function makeHost() {
 		/** 每个评估者回什么裁决,由测试决定 */
 		cwd: null, // 需要时切成别的目录(比如 B 层:不是 git 仓库的工作区)
 		nextVerdict: { verdict: 'support', basis: '硬信号:三次重复齐备,均值差 6.2 个百分点', shortfalls: [] },
-		/** 横评仲裁的回执(默认裁不出来——那是合法结局,不是故障)。 */
-		nextArbiterVerdict: { winner: null, ranking: [], reason: '各卡都可信,但没有可比读数,证据不足以分高下。', confidence: 'low' },
-		arbiterRequests: [],
-		/** 执行者收到的任务书:验「声明的物证路径与口径真的交到干活的人手上」。 */
-		executorRequests: [],
-		scoutConclusion: '查了 lab/ 与 products/,三次重复里只有两次有原始记录;第三次只出现在报告里,没有仪器导出。',
-		executorConclusion: '产物已落在本世界线的工作副本里:probe.txt(读数见文件)。假设:温度取 60℃,因为任务书没指定。',
 		auditFails: false,
 		ctx: {
 			logger: {
@@ -272,59 +265,18 @@ function makeHost() {
 						async listChildren() {
 							return host.listing ?? []
 						},
-						// 四种角色都必须用 start() 的一次性句柄;旧入口一旦触达就让测试失败。
+						// 子 run 都必须用 start() 的一次性句柄;旧入口一旦触达就让测试失败。
 						async startContinuable() {
 							check('内核不得调用 startContinuable', false)
 							throw new Error('unexpected startContinuable call')
 						},
 						async start(provider, request) {
 							if (host.auditFails) throw new Error('provider unavailable')
-							// 每个角色的结局可以单独设:中断「执行者」时不该把「评估者」也一起中断
-							// (那会让这一步根本推进不了,测不到执行者那条路)。
 							const stopOf = (kind) => host[`stopReason${kind}`] ?? host.stopReason ?? 'completed'
-							const isScout = String(request.label ?? '').startsWith('侦察')
-							const isExecutor = String(request.label ?? '').startsWith('世界线执行者')
 							if (host.capabilityRefusals !== undefined && host.capabilityRefusals.some((capability) => String(request.label ?? '') !== '' && capability === 'all')) {
 								throw new Error('provider refuses every variant')
 							}
-							audits.push({ provider, request, isScout })
-							if (isExecutor) {
-								host.executorRequests.push({ label: request.label, prompt: request.prompt })
-								// `executorDelayMs`:让执行者**晚一点**落定——「等」这件事才测得到(AwaitWorldlines)。
-								// `executorNeverSettles`:**永不落定**(长测现场:表里有条目、promise 就是不落地)。
-								const settle = { output: [{ type: 'text', text: host.executorConclusion }], structured: undefined, stopReason: stopOf('Executor') }
-								const delay = Number(host.executorDelayMs ?? 0)
-								const result = host.executorNeverSettles === true ? new Promise(() => {}) : delay > 0 ? new Promise((resolve) => setTimeout(() => resolve(settle), delay)) : Promise.resolve(settle)
-								return {
-									id: `exec-${audits.length}`,
-									localAgent: undefined,
-									result,
-									dispose: async () => {},
-								}
-							}
-							const isArbiter = String(request.label ?? '').startsWith('横评仲裁')
-							if (isArbiter) {
-								host.arbiterRequests.push(request)
-								return {
-									id: `arbiter-${audits.length}`,
-									localAgent: undefined,
-									result: Promise.resolve({ output: [{ type: 'text', text: '按卡上的事实裁。' }], structured: host.nextArbiterVerdict, stopReason: stopOf('Arbiter') }),
-									dispose: async () => {},
-								}
-							}
-							if (isScout) {
-								// `scoutDelayMs`:让侦察**晚一点**落定——“等侦察”这件事才测得到
-								// (真实子 run 要跑几秒,而它正是长测里断掉的那条链)。
-								const settle = { output: [{ type: 'text', text: host.scoutConclusion }], structured: undefined, stopReason: stopOf('Scout') }
-								const delay = Number(host.scoutDelayMs ?? 0)
-								const result = host.scoutNeverSettles === true ? new Promise(() => {}) : delay > 0 ? new Promise((resolve) => setTimeout(() => resolve(settle), delay)) : Promise.resolve(settle)
-								return {
-									id: `scout-${audits.length}`,
-									localAgent: undefined,
-									result,
-									dispose: async () => {},
-								}
-							}
+							audits.push({ provider, request })
 							// `auditNeverSettles` / `auditDelayMs`:让评估者**晚一点**（或永不）落定——
 							// 「回合结束时它还在飞」这件事才测得到。
 							/**
@@ -450,13 +402,13 @@ async function preStep(host, session, turn, messages = []) {
 	const handler = host.listeners.get('agent/pre-step')
 	const decision = await handler({ agent: { id: session }, turn, step: 1, messages }, async () => ({ kind: 'enter', messages: [] }))
 	// 与生产同形:决定的那些消息会被追加进会话日志,投影单元的 apply 就是从这里看到
-	// 运行态卡与外脑事实的。测试不折这一步,就等于「以为消息进了日志」。
+	// 运行态卡的。测试不折这一步,就等于「以为消息进了日志」。
 	let state = host.service.state(session)
 	for (const message of decision?.messages ?? []) {
 		state = applyEvent(state, { type: 'user/message', time: Date.now(), data: message })
 		/**
 		 * **事实通道**里的变更也要记进账本(2026-09-11):内核在回合之间观察到的事实
-		 * (目前是「世界线执行者跑完了」)走的是插件消息的 `clearai/mutations` 段,
+		 * 走的是插件消息的 `clearai/mutations` 段,
 		 * 而不是工具结果。投影折它、测试也该看得见它——否则「结论到底落账了没有」
 		 * 在测试里永远是「没落账」。
 		 */
@@ -479,36 +431,6 @@ const eventsOf = (type) => thisHost.journal.filter((mutation) => mutation.t === 
 const writeText = (path, content) => {
 	mkdirSync(join(path, '..'), { recursive: true })
 	writeFileSync(path, content)
-}
-/**
- * 找到某个工作区对应的**账本 git 目录**。
- *
- * 为什么不能沿用 `readdirSync(ledgerRoot)[0]`(2026-09-11 修):账本目录名是散列,
- * 而机器上会攒下很多本(每条工作区一本)。取"第一本"在单本机器上碰巧对,
- * 一旦有多本就会读到**别人的**账本 —— 表现是时红时绿,最难查的那一类。
- */
-const ledgerDirOf = (workspace) => {
-	const root = join(process.env.DSH_HOME, 'storages', 'clearai', 'ledger')
-	try {
-		for (const name of readdirSync(root)) {
-			const dir = join(root, name)
-			try {
-				const worktree = execFileSync('git', ['--git-dir', dir, 'config', '--get', 'core.worktree'], { encoding: 'utf8' }).trim()
-				if (worktree === workspace) return dir
-			} catch {
-				/* 不是账本 git 目录(或已被清掉的工作区):跳过 */
-			}
-		}
-	} catch {
-		/* 账本根都读不到:交给调用方判红 */
-	}
-	return null
-}
-/** 在某个工作区的**旁路账本**上跑 git(账本不在了就抛,让调用方的断言如实红)。 */
-const ledgerGit = (workspace, args) => {
-	const dir = ledgerDirOf(workspace)
-	if (dir === null) throw new Error(`${workspace} 没有旁路账本`)
-	return execFileSync('git', ['--git-dir', dir, '--work-tree', workspace, ...args], { cwd: workspace, encoding: 'utf8' })
 }
 
 const write = (rel, content) => {
@@ -563,11 +485,13 @@ console.log('\n【提示词面:预设的提示词段】')
 	)
 	check('公理段在:让模型负责智能判断,让系统负责事实边界(原文全角标点,断言标点无关)', /让模型负责智能判断[，,]让系统负责事实边界/.test(String(byName('clearai/foundation')?.text ?? '')))
 	check('语言跟着人走(不再把中文写死)', /跟着人走/.test(String(byName('clearai/foundation')?.text ?? '')) && !/全程中文|禁止漂移/.test(String(byName('clearai/foundation')?.text ?? '')))
-	check('世界线段在:何时分叉 / 真分歧 / 算不出来就停下问人', /worldline/.test(String(byName('clearai/worldline')?.text ?? '')) || /ForkPlan/.test(String(byName('clearai/worldline')?.text ?? '')))
+	check('世界线段不在了(并行探索交给原生子任务,不再自带一套)', byName('clearai/worldline') === undefined)
+	check('提示词里不再提已删除的工具', !/ForkPlan|AdvanceWorldline|ConvergeFork|AwaitWorldlines|SpawnScout|MapScouts|SaveSkill|WriteMemory/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
 	check('网页是不可信数据(安全相关的那条)', /untrusted|不可信/.test(String(byName('clearai/web-research')?.text ?? '')))
 	check('交付协议在(怎么把交付物呈现给人)', (byName('clearai/delivery')?.text ?? '').length > 100)
 	check('环境段刻意不含时间(时间由运行态卡承载)', !/\d{2}:\d{2}/.test(String(byName('clearai/environment')?.text ?? '')))
-	check('子任务意识段在:开工先侦察再立约 + 任务必须自包含', /先侦察,再立约/.test(String(byName('clearai/delegation')?.text ?? '')) && /自包含/.test(String(byName('clearai/delegation')?.text ?? '')))
+	check('子任务意识段在:开工先摸清地形再立约 + 任务必须自包含', /先摸清地形,再立约/.test(String(byName('clearai/delegation')?.text ?? '')) && /自包含/.test(String(byName('clearai/delegation')?.text ?? '')))
+	check('委派段写明并行探索 = 竞争的假设,各自声明不同的产物路径', /并行探索就是并行检验/.test(String(byName('clearai/delegation')?.text ?? '')) && /不同的/.test(String(byName('clearai/delegation')?.text ?? '')))
 	check('委派段不承诺不存在的机制(不出现 background 自动回灌)', !/background/.test(String(byName('clearai/delegation')?.text ?? '')))
 	check('循环契约段在:四拍 + 唯一完成动词 + 准入不裁决', /唯一完成动词/.test(String(byName('clearai/loop-contract')?.text ?? '')) || /唯一.*动词/.test(String(byName('clearai/loop-contract')?.text ?? '')))
 }
@@ -576,12 +500,10 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 {
 	const NAMES = [
 		'SetGoal', 'CloseGoal', 'CreatePlan', 'CheckPlan', 'RequestPlanReview', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan',
-		'ForkPlan', 'AdvanceWorldline', 'ConvergeFork', 'WorldlineStatus', 'AwaitWorldlines', 'AbandonFork', 'SpawnScout', 'MapScouts',
-		'SaveSkill', 'WriteMemory', 'FileHistory', 'RestoreFile',
 		'RegisterTerm', 'RegisterPredicate', 'ReviseTerm', 'RevisePredicate', 'DeprecateTerm', 'DeprecatePredicate', 'RegisterInstance', 'Assert', 'ExplainLevelSkip', 'QueryKnowledge',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
-	check('工具面恰好 32 件(实测,不是推断)', thisHost.tools.size === 32, `${thisHost.tools.size} 件`)
+	check('工具面恰好 20 件(实测,不是推断)', thisHost.tools.size === 20, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -604,8 +526,8 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	rejects('未知机制名 → 装配期抛错', { contributions: { mechanisms: { telepathy: true } } }, /unknown_mechanism:clearai-kernel:telepathy/)
 	rejects(
 		'关掉机制却仍要装它的工具 → 装配期抛错',
-		{ contributions: { mechanisms: { worldline: false }, tools: ['ForkPlan'] } },
-		/tool_of_disabled_mechanism:clearai-kernel:ForkPlan:worldline/,
+		{ contributions: { mechanisms: { ontology: false }, tools: ['Assert'] } },
+		/tool_of_disabled_mechanism:clearai-kernel:Assert:ontology/,
 	)
 	// 2026-09-11:contributions 里的 `budgets` 块与 `tokenBudget` 一起删了(它们从未被执行)。
 	// 两个数值旋钮现在是**普通配置键**,校验也跟着从 contributions 搬到配置面。
@@ -624,6 +546,13 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	// 旧配置必须当场炸——「配了没生效」正是这套装配纪律要消灭的那一类错。
 	rejects('已摘除的 collectRetryMs 不再被接受(它从来没有人读)', { collectRetryMs: 0 }, /unknown_config:clearai-kernel:collectRetryMs/)
 	rejects('已摘除的 executorTimeoutMs 不再被接受(它从来没有人读)', { executorTimeoutMs: 1 }, /unknown_config:clearai-kernel:executorTimeoutMs/)
+	// 交还宿主的机制:它们的机制名与配置键都必须装配期炸,不许静默无效。
+	for (const mechanism of ['worldline', 'scout', 'brain', 'ledger']) {
+		rejects(`已删除的机制 ${mechanism} 不再被接受`, { contributions: { mechanisms: { [mechanism]: true } } }, new RegExp(`unknown_mechanism:clearai-kernel:${mechanism}`))
+	}
+	for (const key of ['templateDir', 'gitWorldlines', 'ledgerMaxFiles', 'scoutToolFilter', 'executorToolFilter', 'precommitRecon', 'forkArbitration']) {
+		rejects(`已删除的配置键 ${key} 不再被接受`, { [key]: true }, new RegExp(`unknown_config:clearai-kernel:${key}`))
+	}
 
 	// 部署的组合文件必须只用已知的配置键(文本级抽取,不是 YAML 解析:顶层 config 键在 4 空格缩进)。
 	{
@@ -636,12 +565,12 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 		check('组合文件里两个新键都在(autonomy / contributions)', keys.includes('autonomy') && keys.includes('contributions'))
 	}
 
-	// 裁剪真的生效:关掉世界线机制 → 五件世界线工具不再出现在工具面里。
+	// 裁剪真的生效:关掉领域语言机制 → 它的十件工具不再出现在工具面里。
 	const trimmed = makeHost()
-	apply(trimmed.ctx, { contributions: { mechanisms: { worldline: false } } })
+	apply(trimmed.ctx, { contributions: { mechanisms: { ontology: false } } })
 	check(
-		'关掉世界线机制 → 6 件世界线工具真的没装(26 件)',
-		trimmed.tools.size === 26 && !trimmed.tools.has('ForkPlan') && !trimmed.tools.has('AbandonFork') && !trimmed.tools.has('AwaitWorldlines') && trimmed.tools.has('AdvancePlan'),
+		'关掉领域语言机制 → 10 件词汇工具真的没装(10 件)',
+		trimmed.tools.size === 10 && !trimmed.tools.has('Assert') && !trimmed.tools.has('RegisterTerm') && trimmed.tools.has('AdvancePlan'),
 		`${trimmed.tools.size} 件`,
 	)
 	// 只裁工具面、不动机制:能装出来的最小面就是清单本身。
@@ -993,7 +922,6 @@ console.log('\n【序位不变量 + 唯一完成动词之外不动进度】')
 	const closed2 = await call('ClosePlan', {})
 	check('作废后可以收束', closed2.ok === true, String(closed2.code))
 }
-
 
 console.log('\n【无人值守续跑:宿主目标只当驱动器,不当事实源】')
 {
@@ -1567,15 +1495,7 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 
 	// ⓪ 不可达保证:人门动词**没有工具 schema**——模型的工具面里不存在它们。
 	// 这是 D2「只给人」这句承诺在机制上的落点:不是「模型不该调」,是「模型调不到」。
-	{
-		const gateActions = ['adopt_branch', 'abandon_fork', 'promote_skill', 'set_autonomy']
-		check(
-			'人门动词不在工具面里(模型调不到,不是不该调)',
-			gateActions.every((action) => !thisHost.tools.has(action) && ![...thisHost.tools.keys()].some((name) => name.toLowerCase().includes(action))),
-			[...thisHost.tools.keys()].join(','),
-		)
-		check('工具 schema 里也不出现这些动词', ![...thisHost.tools.values()].some((tool) => /adopt_branch|abandon_fork|promote_skill|set_autonomy/.test(JSON.stringify(tool.parameters))))
-	}
+	
 
 	/**
 	 * §34 **这一节整体删掉了**:它验的是「面板上切一下档,机制立刻跟着走」——
@@ -1609,27 +1529,7 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 	 * 这两份曾经各写各的——直到 2026-09-11 才发现内核那份是抄在闭包里的私本。
 	 * 现在靠这条断言钉住:任何一边改了格式,这里立刻红。
 	 */
-	{
-		const messages = [
-			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"adopt_branch","fork":"f-1","branch":"b-1"}\n人在面板上裁决` }] },
-			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK}{"action":"promote_skill","skill":"my-sop"}` }] },
-			{ source: { kind: 'plugin:clearai' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"adopt_branch","fork":"f-1","branch":"b-2"}` }] },
-			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} 不是 JSON` }] },
-			{ source: { kind: 'user' }, content: [{ type: 'text', text: '没有标记的一句话' }] },
-			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK}{"action":"abandon_fork","fork":"f-1"}` }] },
-			{ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"set_autonomy","value":"unattended"}` }] },
-		]
-		const verdicts = messages.map((message) => JSON.stringify(parseHumanGateMessage(message)))
-		const hostVerdicts = messages.map((message) => JSON.stringify(parseHumanGate(message)))
-		check('内核与宿主半的标记解析结论逐条一致(改一处漏一处就会红)', verdicts.join(' | ') === hostVerdicts.join(' | '), `${verdicts.join(' | ')} ≠ ${hostVerdicts.join(' | ')}`)
-		check('两边都只认**人**署名的消息(插件写的同名标记不算)', parseHumanGateMessage(messages[2]) === null && parseHumanGate(messages[2]) === null)
-		check('两边都要求标记后面紧跟 JSON(宽松一点会放进伪造的意图)', parseHumanGateMessage(messages[3]) === null && parseHumanGate(messages[5]) !== null)
-		check(
-			'§34 已摘掉的动词两边都不认(表外名字不许出现,而且两侧同步)',
-			parseHumanGateMessage(messages[6]) === null && parseHumanGate(messages[6]) === null,
-			`${JSON.stringify(parseHumanGateMessage(messages[6]))} / ${JSON.stringify(parseHumanGate(messages[6]))}`,
-		)
-	}
+	
 
 	/**
 	 * ① §34 **计划永远要人确认**,两档配置一致。
@@ -1700,123 +1600,13 @@ console.log('\n【计划确认门:两条授权通道 + 收件箱(阶段 4)】')
 	}
 
 	// ⑤ 世界线:算不出 → 收件箱等人;人裁决 → 内核真的按它采纳(by:'user',正式)
-	{
-		const { host, hypothesis } = await setup('unattended')
-		await callOn(host, S, 'CreatePlan', {
-			steps: [{ id: 'f1', do: '试两条互斥路线', artifacts: ['lab/f1.txt'], done_criteria: 'lab/f1.txt 存在', tests: { hypothesis, level: 'L3' } }],
-		})
-		const forked = await callOn(host, S, 'ForkPlan', {
-			question: '走湿法还是干法',
-			options: [
-				{ label: '湿法', approach: '水相回流', done_criteria: '收率 yield_pct 越高越好', workspace: 'lab/wl/shi', level: 'L3' },
-				{ label: '干法', approach: '固相研磨', done_criteria: '收率 yield_pct 越高越好', workspace: 'lab/wl/gan', level: 'L3' },
-			],
-			decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
-		})
-		check('分叉立起来(前置)', forked.ok === true, String(forked.code))
-		const forkId = host.service.state(S).forks[0].id
-		const ganId = host.service.state(S).forks[0].branches.find((branch) => branch.label === '干法').id
-		// 尺子落不成数(读数不是数值)→ 这是「真的不知道」,不是「一样好」:停下等人。
-		const branchPath = (label) => host.service.view(S).forks.find((item) => item.stepId === 'f1').branches.find((item) => item.label === label).worktreePath
-		host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '说不清', validity: 'usable' }
-		for (const label of ['湿法', '干法']) {
-			writeText(join(branchPath(label), 'probe.txt'), `run,route,yield_pct\n1,${label},未测出\n`)
-			const settled = await callOn(host, S, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(branchPath(label), 'probe.txt') }] })
-			check(`世界线「${label}」交付`, settled.ok === true, String(settled.code))
-		}
-		const undecidable = await callOn(host, S, 'ConvergeFork', {})
-		check('读数落不成数 → 算不出胜负(不猜)', undecidable.ok === false && undecidable.code === 'UNDECIDABLE_NO_READINGS', String(undecidable.code))
-		check('四条合法出路逐字在文案里(归主 agent,不是死路)', /可走的路/.test(String(undecidable.message)) && /确属价值判断再升给人/.test(String(undecidable.message)))
-		check('收件箱里留下 fork_adopt(等人的那道门)', host.service.view(S).inbox.some((item) => item.kind === 'fork_adopt'))
-
-		// 人在面板上按下裁决:结构化事实(`by:'user'`),不是商量。
-		host.states.set(S, applyEvent(host.service.state(S), {
-			type: 'user/message',
-			time: Date.now(),
-			data: {
-				id: 'gate-1',
-				role: 'user',
-				content: [{ type: 'text', text: `[clearai·人门] ${JSON.stringify({ action: 'adopt_branch', fork: forkId, branch: ganId })}` }],
-				source: { kind: 'user' },
-			},
-		}))
-		check('人的裁决折进了分叉(by:user)', host.service.state(S).forks[0].humanDecision?.branch === ganId)
-		check('人已经裁决过的分叉不再出现在收件箱(状态锚)', host.service.view(S).inbox.every((item) => item.kind !== 'fork_adopt'))
-		check('卡片把人的裁决说出来(模型据此落实它)', /人已裁决/.test(host.service.renderCard(S)))
-
-		const decided = await callOn(host, S, 'ConvergeFork', {})
-		check('人裁决之后 → 采纳人指的那条', decided.ok === true && /采纳「干法」/.test(String(decided.message)), `${decided.code}`)
-		const view = host.service.view(S)
-		check('人裁决 → **正式**采纳(人的决定不是余量,不进临时那档)', view.forks.find((item) => item.stepId === 'f1')?.provisional === false)
-		check('决策说明写明来源是人', /人裁决/.test(String(view.forks.find((item) => item.stepId === 'f1')?.decisionNote ?? '')), String(view.forks.find((item) => item.stepId === 'f1')?.decisionNote ?? ''))
-		check('合并之后收件箱清空', view.inbox.length === 0, view.inbox.map((item) => item.kind).join(','))
-	}
+	
 
 	// ⑤′ 采纳了但要合并的对象**已经不在**(2026-09-12 案例 A 实测):不许卡住,登记采纳 + 不合并
-	{
-		const { host, hypothesis } = await setup('unattended')
-		await callOn(host, S, 'CreatePlan', {
-			steps: [{ id: 'f9', do: '试两条互斥路线', artifacts: ['lab/f9.txt'], done_criteria: 'lab/f9.txt 存在', tests: { hypothesis, level: 'L1' } }],
-		})
-		await callOn(host, S, 'ForkPlan', {
-			question: '点值口径还是单元平均口径',
-			options: [
-				{ label: '点值', approach: 'A', done_criteria: 'order 越大越好', workspace: 'lab/wl/pt', level: 'L3' },
-				{ label: '单元平均', approach: 'B', done_criteria: 'order 越大越好', workspace: 'lab/wl/ca', level: 'L3' },
-			],
-			decide_by: { metric: 'order = lab/probe.txt 里数值的排序位次', direction: 'max' },
-		})
-		const branchPath = (label) => host.service.view(S).forks.find((item) => item.stepId === 'f9').branches.find((item) => item.label === label).worktreePath
-		host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '5.02', validity: 'usable' }
-		for (const label of ['点值', '单元平均']) {
-			writeText(join(branchPath(label), 'probe.txt'), `run,route,order\n1,${label},5.02\n`)
-			const settled = await callOn(host, S, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(branchPath(label), 'probe.txt') }] })
-			check(`世界线「${label}」交付(前置)`, settled.ok === true, `${settled.code} ${String(settled.message).slice(0, 120)}`)
-		}
-		/**
-		 * 把工作副本目录**删掉**——模拟账本被清理之后的样子:账上还写着 git_branch,
-		 * 对象却已经不在了。这正是案例 A 里那份计划被卡住的形态。
-		 */
-		for (const label of ['点值', '单元平均']) rmSync(branchPath(label), { recursive: true, force: true })
-		const survived = await callOn(host, S, 'ConvergeFork', {})
-		check('对象已不在 → 收敛仍然成功(不再被一个不可能收敛的分叉卡住)', survived.ok === true, `${survived.code} ${String(survived.message).slice(0, 80)}`)
-		check('并且如实落账「这次采纳没有合并」', host.journal.some((mutation) => mutation.t === 'fork/merge_skipped'), host.journal.map((mutation) => mutation.t).join(','))
-		check('收敛事实照常落账', host.journal.some((mutation) => mutation.t === 'fork/converged'))
-		check('文案说清该怎么办(产物由一次普通交付落位)', /没有合并/.test(String(survived.message)) && /普通交付/.test(String(survived.message)))
-		check('分叉上没有假的合并记录', !host.journal.some((mutation) => mutation.t === 'fork/merged'))
-	}
+	
 
 	// ⑥ 并列**不是**算不出(另一枚干净的令牌走这条):照常收敛,但记为临时采纳 + 待复核
-	{
-		const { host, hypothesis } = await setup('unattended')
-		await callOn(host, S, 'CreatePlan', {
-			steps: [{ id: 'f2', do: '试两条互斥路线', artifacts: ['lab/f2.txt'], done_criteria: 'lab/f2.txt 存在', tests: { hypothesis, level: 'L3' } }],
-		})
-		await callOn(host, S, 'ForkPlan', {
-			question: '两条路选哪条',
-			options: [
-				{ label: '甲', approach: '甲的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/jia', level: 'L3' },
-				{ label: '乙', approach: '乙的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/yi', level: 'L3' },
-			],
-			decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
-		})
-		const branchPath = (label) => host.service.view(S).forks.find((item) => item.stepId === 'f2').branches.find((item) => item.label === label).worktreePath
-		host.nextVerdict = { verdict: 'support', basis: '硬信号:读数一致', reading: '61', validity: 'usable' }
-		for (const label of ['甲', '乙']) {
-			writeText(join(branchPath(label), 'probe.txt'), `run,route,yield_pct\n1,${label},61\n`)
-			await callOn(host, S, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(branchPath(label), 'probe.txt') }] })
-		}
-		const tied = await callOn(host, S, 'ConvergeFork', {})
-		check('并列照常收敛(指标说两条一样好,那是买到的信息)', tied.ok === true, String(tied.code))
-		const view = host.service.view(S)
-		check('并列 → 记成**临时采纳**(余量 0 < 15%)', view.forks.find((item) => item.stepId === 'f2')?.provisional === true)
-		check(
-			'临时采纳在收件箱里留一条待复核痕迹',
-			view.inbox.some((item) => item.kind === 'provisional_review') && view.hasOpenGate === true,
-			view.inbox.map((item) => item.kind).join(','),
-		)
-		check('决策说明写清相对差距与阈值', /相对差距 0\.0%/.test(String(view.forks.find((item) => item.stepId === 'f2')?.decisionNote ?? '')), String(view.forks.find((item) => item.stepId === 'f2')?.decisionNote ?? ''))
-	}
+	
 }
 
 console.log('\n【完成度:终局优先,升格算数(2026-09-11 长测抓到的自相矛盾)】')
@@ -1980,53 +1770,6 @@ console.log('\n【货架所有权:派出去的子会话不许重铺主线的读�
 	check('子会话的投影里有它自己的事实(不带护栏时它会重写事实货架)', host.service.state('child-evaluator').facts.length === 1)
 }
 
-{
-	/**
-	 * 长测现场(chain-2):四条世界线里只有甲的执行者结论回灌了,乙/丙/丁三条**永远停在
-	 * `execution.ok === null`**——因为模型没等它们(它自己读工作副本里的产物就把读数交付了)。
-	 * 于是终局(分叉已 settled、已 merged、目标已 achieved)的卡片上仍写着
-	 * 「(执行中,结论会自动回灌)」:**一句实现了不了的承诺**——分叉收了口,回灌也没有归宿。
-	 *
-	 * 修法不落新账:分叉终局 + 执行者没报过 ⇒ 派生的「**执行者未归**」。
-	 * 它不改写 `execution` 本身(「没报过」仍是已发生的事实),只是不再假装还有下文。
-	 */
-	const base = [
-		{ t: 'goal/set', id: 'g-u1', claim: '四条路线择优', done_criteria: '报告写下被采纳读数', promote_at_level: 'L3', hypotheses: [{ id: 'h-u1', claim: '乘 4 那条最大', refute_when: '不是它' }] },
-		{ t: 'plan/created', id: 'p-u1', goal: 'g-u1', summary: '四路试算', steps: [{ id: 'u1', ordinal: 1, do: '四路并行试算', artifacts: ['lab/params.csv'], done_criteria: 'lab/params.csv 存在', status: 'open' }] },
-		{
-			t: 'fork/created',
-			id: 'k-u1',
-			step: 'u1',
-			plan: 'p-u1',
-			question: '哪条路线的 value 最大',
-			decide_by: { metric: 'value = lab/probe.txt 里的数值', direction: 'max' },
-			options: [
-				{ id: 'ub1', label: '甲', approach: '乘 2', done_criteria: 'value 读数' },
-				{ id: 'ub2', label: '乙', approach: '乘 3', done_criteria: 'value 读数' },
-			],
-		},
-		{ t: 'worldline/prepared', fork: 'k-u1', branch: 'ub1', path: 'clear/worldlines/k-u1/ub1', branch_ref: 'clearai/k-u1/ub1' },
-		{ t: 'worldline/prepared', fork: 'k-u1', branch: 'ub2', path: 'clear/worldlines/k-u1/ub2', branch_ref: 'clearai/k-u1/ub2' },
-		{ t: 'worldline/executing', fork: 'k-u1', branch: 'ub1', child: 'child-a', capability: 'persona' },
-		{ t: 'worldline/executing', fork: 'k-u1', branch: 'ub2', child: 'child-b', capability: 'persona' },
-		{ t: 'worldline/executed', fork: 'k-u1', branch: 'ub1', child: 'child-a', ok: true, conclusion: '甲:14' },
-		{ t: 'branch/delivered', fork: 'k-u1', branch: 'ub1', reading: '14', validity: 'usable', verdict: 'support', basis: '读过产物', evidence: 'e-u1' },
-		{ t: 'branch/delivered', fork: 'k-u1', branch: 'ub2', reading: '21', validity: 'usable', verdict: 'support', basis: '读过产物', evidence: 'e-u2' },
-		{ t: 'fork/converged', fork: 'k-u1', winner: 'ub2', margin: 0.5, tie: false, metric: 'value = lab/probe.txt 里的数值', direction: 'max' },
-	]
-	const state = applyMutations(emptyState(), base)
-	const fork = view(state).forks[0]
-	const card = renderCard(state)
-	check('前置:甲的执行者结论回灌了(ok=true),乙那条**永远没回来**(ok=null)', fork.branches.find((b) => b.label === '甲')?.execution?.ok === true && fork.branches.find((b) => b.label === '乙')?.execution?.ok === null, JSON.stringify(fork.branches.map((b) => [b.label, b.execution?.ok])))
-	check('派生:分叉已收口 + 执行者没报过 ⇒「执行者未归」', fork.branches.find((b) => b.label === '乙')?.unreturned === true && fork.branches.find((b) => b.label === '甲')?.unreturned !== true)
-	check('卡片不再说「执行中,结论会自动回灌」(分叉已收口,没有下文了)', !/执行中,结论会自动回灌/.test(card), card.split('\n').filter((line) => line.includes('· [')).join(' | ').slice(0, 200))
-	check('卡片如实写「执行者未归 · 分叉已收口」', /执行者未归 · 分叉已收口/.test(card), card.split('\n').filter((line) => line.includes('· [')).join(' | ').slice(0, 200))
-	check('已经回灌的那条仍然写「已回灌」(不冤枉跑完的人)', /\(已回灌\)/.test(card))
-	// 分叉**还没**收口时不许提前宣告「未归」:那时它真的还在跑。
-	const openState = applyMutations(emptyState(), base.slice(0, 7))
-	check('分叉还在探索时仍然是「执行中」(未归是终局的推论,不是提前的判词)', /执行中,结论会自动回灌/.test(renderCard(openState)))
-}
-
 console.log('\n【失联的评估者:重启之后不再被一条等不到的裁决按死(2026-09-11,AUDIT §14-D)】')
 {
 	/**
@@ -2172,437 +1915,25 @@ console.log('\n【L4:门挂在等级上,放行读权威记录(2026-09-11,AUDIT �
 	}
 
 	// ④ 世界线:同一个 L4,走世界线也要过这两道门(改之前两样都没有)
-	{
-		const mk = async (level) => {
-			const host = makeHost()
-			apply(host.ctx, { blockedThreshold: 3 })
-			const S = `session-l4-wl-${level}`
-			await callOn(host, S, 'SetGoal', { claim: '两条路线取一条', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 更好', refute_when: 'B 更好' }] })
-			await callOn(host, S, 'CreatePlan', { steps: [{ id: 'w1', do: '两条路线各试一遍', artifacts: ['lab/w1.txt'], done_criteria: 'lab/w1.txt 有读数', tests: null }] })
-			await callOn(host, S, 'ForkPlan', {
-				question: '走哪条',
-				decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' },
-				options: [
-					{ id: 'wa', label: '甲', approach: '直接算', done_criteria: '有 ms 读数', level },
-					{ id: 'wb', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数', level: 'L1' },
-				],
-			})
-			// 分支 id 由内核生成(不能自己指定),所以按 **label** 认,再把真实 id 带回去。
-			const fork = host.service.view(S).forks[0]
-			const a = fork.branches.find((branch) => branch.label === '甲')
-			const b = fork.branches.find((branch) => branch.label === '乙')
-			return { host, S, idA: a.id, idB: b.id, workspace: a.workspace }
-		}
-		const { host, S, idA, idB, workspace } = await mk('L4')
-		const gate = host.listeners.get('tools/pre-execute')
-		const asked = await gate({ name: 'AdvanceWorldline', arguments: { branch_id: idA }, agent: { id: S }, callId: 'call-wl-1' }, async () => ({ kind: 'allow' }))
-		check('世界线的 L4 交付也会弹人门(改之前只有 AdvancePlan 会)', asked.kind === 'ask' && /世界线「甲」/.test(String(asked.reason)), `${asked.kind}:${String(asked.reason ?? '').slice(0, 80)}`)
-		const notL4 = await gate({ name: 'AdvanceWorldline', arguments: { branch_id: idB }, agent: { id: S }, callId: 'call-wl-2' }, async () => ({ kind: 'allow' }))
-		check('同一分叉里的 L1 分支不弹门(门认等级,不认工具)', notL4.kind === 'allow', String(notL4.kind))
-		writeText(join(workspace, 'probe.txt'), 'run,ms\n1,61.2\n')
-		host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '61.2', validity: 'usable' }
-		const noWitness = await callOn(host, S, 'AdvanceWorldline', { branch_id: idA, observations: [{ ref: 'probe.txt' }] })
-		check('世界线 L4 没有放行记录 ⇒ 交付被拒', noWitness.ok === false && noWitness.code === 'human_release_missing', String(noWitness.code))
-		check('世界线这条路被拒时也不写「人放行」', host.journal.filter((mutation) => mutation.t === 'human/released').length === 0)
-		host.sessionEvents = { [S]: [{ type: 'approval/asked', data: { id: 'ap-w', toolName: 'AdvanceWorldline', callId: 'call-1' } }, { type: 'approval/decided', data: { id: 'ap-w', outcome: 'allowed-once' } }] }
-		const delivered = await callOn(host, S, 'AdvanceWorldline', { branch_id: idA, observations: [{ ref: 'probe.txt' }] })
-		check('世界线 L4 拿到权威放行 ⇒ 交付通过', delivered.ok === true, `${delivered.code}:${String(delivered.message ?? '').slice(0, 80)}`)
-		const release = host.journal.filter((mutation) => mutation.t === 'human/released').at(-1)
-		check('世界线的放行绑在**分支**这条轴上(不绑步骤)', release?.branch === idA && release?.via === 'approval', JSON.stringify(release ?? null))
-		check('面板投影里也看得出这次放行(带轴与凭据)', (() => {
-			const item = host.service.view(S).releases.at(-1)
-			return item?.branch === idA && item?.via === 'approval'
-		})(), JSON.stringify(host.service.view(S).releases.at(-1) ?? null))
-
-		// ⑤ L4 来源分离:做的人自己写的观测不算(世界线这条路上以前根本不查)
-		const second = await mk('L4')
-		const forged = join(second.workspace, 'forged.txt')
-		writeText(forged, 'run,ms\n1,1.0\n')
-		second.host.sessionEvents = { [second.S]: [{ type: 'approval/asked', data: { id: 'ap-w2', toolName: 'AdvanceWorldline', callId: 'call-1' } }, { type: 'approval/decided', data: { id: 'ap-w2', outcome: 'allowed-once' } }] }
-		// 「做的人写过这份观测」:fold 从工具调用的 file_path 记 `written`,这里直接把它放进投影
-		second.host.states.set(second.S, { ...second.host.service.state(second.S), written: [forged] })
-		const selfAuthored = await callOn(second.host, second.S, 'AdvanceWorldline', { branch_id: second.idA, observations: [{ ref: 'forged.txt' }] })
-		check('世界线 L4:做的人自己写的观测被拒(改之前这条路不查来源)', selfAuthored.ok === false && selfAuthored.code === 'source_not_external', `${selfAuthored.code}:${String(selfAuthored.message ?? '').slice(0, 90)}`)
-	}
-}
-
-console.log('\n【世界线的四种结束方式:失败不是落选,孤儿不是被裁(2026-09-11 定的语义)】')
-{
-	/**
-	 * S3 长测抓到的**结构洞**:`AbandonFork`/`ConvergeFork` 都在「第一个未落定步」上取步,
-	 * 于是步骤一旦作废,它上面未收口的分叉**既不能收敛也不能放弃**,工作副本永久留在盘上。
-	 * 用户拍板走「只落事实 + 放开可达性」:作废不动分叉(不改写历史),但**给它一个出口**。
-	 */
-	const host = makeHost()
-	apply(host.ctx, { blockedThreshold: 3 })
-	const S = 'session-orphan'
-	await callOn(host, S, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
-	const createdPlan = await callOn(host, S, 'CreatePlan', {
-		steps: [
-			{ id: 'o1', do: '两条路线各试一遍', artifacts: ['lab/o1.txt'], done_criteria: 'lab/o1.txt 存在且含一条读数', tests: null },
-			{ id: 'o2', do: '换一条路走完', artifacts: ['lab/o2.txt'], done_criteria: 'lab/o2.txt 存在且非空', tests: null },
-		],
-	})
-	check('前置:计划建起来了', createdPlan.ok === true, `${createdPlan.code}:${createdPlan.message ?? ''}`.slice(0, 120))
-	const forked = await callOn(host, S, 'ForkPlan', { step_id: 'o1', question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'ob1', label: 'A', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'ob2', label: 'B', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
-	check('分叉建得起来(两条互斥路线)', forked.ok === true && host.service.view(S).forks.length === 1, String(forked.code))
-
-	// 作废这一步:分叉**不该**被改写,但结果里要如实报「未收口」并给出出口
-	const voided = await callOn(host, S, 'VoidPlanStep', { step_id: 'o1', reason: '改道' })
-	const fork = host.service.view(S).forks[0]
-	check('作废不改写尝试层的事实(它不是「已放弃」,只是随步骤终止)', fork.decided === false && fork.abandonReason === null, JSON.stringify({ decided: fork.decided, abandonReason: fork.abandonReason, phase: fork.phase }))
-	check('作废之后它是派生的「随步骤作废而终止」', fork.phase === 'orphaned' && fork.orphaned === true && fork.ownerVoidReason === '改道', JSON.stringify({ phase: fork.phase, orphaned: fork.orphaned }))
-	check('作废的结果里如实报「还有未收口的世界线」并给出出口(事实,不是说教)', /未收口/.test(String(voided.message)) && /AbandonFork\(step_id="o1"/.test(String(voided.message)), String(voided.message).slice(0, 160))
-
-	// 可达性:带 step_id 显式收口 —— 这正是那个洞的出口
-	const closed = await callOn(host, S, 'AbandonFork', { step_id: 'o1', reason: '这一步已经作废,世界线随它终止' })
-	check('已作废步骤上的孤儿分叉可以显式收口(洞堵上了)', closed.ok === true && host.service.view(S).forks[0].phase === 'abandoned', JSON.stringify({ code: closed.code, phase: host.service.view(S).forks[0].phase }))
-	check('收口之后如实说这是收口孤儿(不是常规放弃)', /收口孤儿/.test(String(closed.message)), String(closed.message).slice(0, 120))
-
-	// 反过来:常规放弃仍然只认「第一个未落定步」;已收敛的仍然不能放弃
-	const host2 = makeHost()
-	apply(host2.ctx, {})
-	const S2 = 'session-orphan-2'
-	await callOn(host2, S2, 'SetGoal', { claim: 'x', done_criteria: 'y 存在', hypotheses: [{ claim: 'a', refute_when: 'b' }] })
-	await callOn(host2, S2, 'CreatePlan', { steps: [{ id: 'p1', do: '做事', artifacts: ['lab/p1.txt'], done_criteria: 'lab/p1.txt 存在且非空', tests: null }, { id: 'p2', do: '第二步', artifacts: ['lab/p2.txt'], done_criteria: 'lab/p2.txt 存在且非空', tests: null }] })
-	const notFirst = await callOn(host2, S2, 'AbandonFork', { step_id: 'p2', reason: '随便挑一步' })
-	check('不在第一个未落定步、也不是作废步 → 拒绝(可达性放开不等于随便挑)', notFirst.ok === false && notFirst.code === 'no_open_step', String(notFirst.code))
-}
-
-console.log('\n【横评仲裁:尺子落不成数时的兜底(不是默认路径)】')
-{
-	const S = 'session-arbiter'
-	const fresh = async () => {
-		const host = makeHost()
-		apply(host.ctx, { autonomy: 'unattended' })
-		await callOn(host, S, 'SetGoal', {
-			claim: '把两条路线比出高下',
-			done_criteria: '两条路线各有读数与结论',
-			hypotheses: [{ claim: '两条路线的产率不同', refute_when: '产率相同' }],
-		})
-		const hypothesis = host.service.state(S).hypotheses[0].id
-		await callOn(host, S, 'CreatePlan', {
-			steps: [{ id: 'a1', do: '试两条互斥路线', artifacts: ['lab/a1.txt'], done_criteria: 'lab/a1.txt 存在', tests: { hypothesis, level: 'L3' } }],
-		})
-		await callOn(host, S, 'ForkPlan', {
-			question: '哪个设计更简洁',
-			options: [
-				{ label: '甲', approach: '甲的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/a', level: 'L3' },
-				{ label: '乙', approach: '乙的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/b', level: 'L3' },
-			],
-			decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
-		})
-		const branchPath = (label) => host.service.view(S).forks.find((item) => item.stepId === 'a1').branches.find((item) => item.label === label).worktreePath
-		// 尺子落不成数:读数不是数值(「哪个更简洁」这类)。
-		host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '说不清', validity: 'usable' }
-		for (const label of ['甲', '乙']) {
-			writeText(join(branchPath(label), 'probe.txt'), `run,route,yield_pct\n1,${label},未测出\n`)
-			await callOn(host, S, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(branchPath(label), 'probe.txt') }] })
-		}
-		const ids = host.service.state(S).forks[0].branches.map((branch) => ({ id: branch.id, label: branch.label }))
-		return { host, ids }
-	}
-
-	// ① 派仲裁:跨分支视野靠**注入**(各分支的评估卡写进任务书),不靠授权(工具面是空的)
-	{
-		const { host } = await fresh()
-		host.nextArbiterVerdict = { winner: 'TODO', ranking: [], reason: '乙的做法更简洁:两条都可信,甲的实现复杂度更高。', confidence: 'high' }
-		const state = host.service.state(S)
-		host.nextArbiterVerdict.winner = state.forks[0].branches.find((branch) => branch.label === '乙').id
-		const converged = await callOn(host, S, 'ConvergeFork', {})
-		check('仲裁给出胜者 → 收敛成功', converged.ok === true && /采纳「乙」/.test(String(converged.message)), String(converged.code))
-		check('派了一次横评仲裁(兜底路径)', host.arbiterRequests.length === 1, String(host.arbiterRequests.length))
-		// dispatchSubRun 把 prompt 包成 ContentBlock[]:取第一块的正文。
-		const task = JSON.stringify(host.arbiterRequests[0]?.prompt ?? '')
-		check(
-			'任务书里注入了各分支的评估卡(事实到手,权限没给)',
-			/甲/.test(task) && /乙/.test(task) && /评估卡/.test(task),
-			task.slice(0, 200),
-		)
-		check('仲裁的工具面是空的(看不到也不需要任何工作区)', JSON.stringify(host.arbiterRequests[0]?.toolFilter) === JSON.stringify({ allow: [] }), JSON.stringify(host.arbiterRequests[0]?.toolFilter))
-		const view = host.service.view(S)
-		const fork = view.forks.find((item) => item.stepId === 'a1')
-		check('判决写进了节点(可考:谁裁的、裁给谁、凭什么)', fork?.arbitration?.winner !== null && /更简洁/.test(String(fork?.arbitration?.reason)))
-		check('仲裁会话 id 落账(面板的旁观入口靠它)', typeof fork?.arbitrationSession === 'string' && fork.arbitrationSession.startsWith('arbiter-'), String(fork?.arbitrationSession))
-		check('判断不是算术 → 一定走临时采纳 + 待复核痕迹', fork?.provisional === true && view.inbox.some((item) => item.kind === 'provisional_review'))
-		check('决策说明写明来源是横评仲裁', /横评仲裁/.test(String(fork?.decisionNote ?? '')), String(fork?.decisionNote ?? ''))
-		// 旁观入口(4.5)的数据面:每条世界线的评估者会话与评估卡都要能追到。
-		const spectator = (fork?.branches ?? []).map((branch) => ({ session: branch.evaluatorSession, card: branch.cardPath }))
-		check(
-			'每条世界线都记得自己的评估者会话与评估卡(面板据此旁观)',
-			spectator.length === 2 && spectator.every((item) => typeof item.session === 'string' && item.session.startsWith('child-') && typeof item.card === 'string' && item.card.includes('clear/evidence/audits')),
-			JSON.stringify(spectator),
-		)
-		check(
-			'审计面也带着评估者会话(判断不许匿名)',
-			(view.audits ?? []).some((audit) => typeof audit.evaluatorSession === 'string' && audit.evaluatorSession.startsWith('child-')),
-			JSON.stringify((view.audits ?? []).map((audit) => audit.evaluatorSession)),
-		)
-	}
-
-	// ② 仲裁也裁不出来 = **合法结局**,不是故障:照实交回主 agent(四条出路)
-	{
-		const { host } = await fresh()
-		host.nextArbiterVerdict = { winner: null, ranking: [], reason: '证据不足以分高下。', confidence: 'low' }
-		const converged = await callOn(host, S, 'ConvergeFork', {})
-		check('仲裁裁不出来 → 不采纳、不硬选', converged.ok === false && converged.code === 'UNDECIDABLE_NO_READINGS', String(converged.code))
-		check('四条合法出路照旧给主 agent', /可走的路/.test(String(converged.message)))
-		check('并如实说明仲裁也裁不出来', /横评仲裁/.test(String(converged.message)))
-		const view = host.service.view(S)
-		check('分叉停在等人的门上(收件箱 fork_adopt)', view.inbox.some((item) => item.kind === 'fork_adopt'))
-		check('判决(winnner=null)仍然留痕:证据确实不足,这本身是可考的事实', view.forks[0]?.arbitration?.winner === null)
-	}
-
-	// ③ 仲裁派不出去:如实降级,不假装裁过
-	{
-		const { host } = await fresh()
-		host.auditFails = true
-		const converged = await callOn(host, S, 'ConvergeFork', {})
-		check('仲裁无法派遣 → 退回「算不出」那条路(不假装有判决)', converged.ok === false && converged.code === 'UNDECIDABLE_NO_READINGS', String(converged.code))
-		check('降级事实写进文案', /横评仲裁无法派遣/.test(String(converged.message)), String(converged.message).split('\n').slice(0, 3).join(' | '))
-		check('没有留下假判决', host.service.view(S).forks[0]?.arbitration === null)
-	}
-}
-
-console.log('\n【模板技能同步:模板是 system 技能的事实源(最小不变量)】')
-{
-	/**
-	 * 规则是「模板更新即刻生效,但**动过的绝不动**」。
-	 * 这里只保留这条不变量,不做差异候选/墓碑/diff 收件箱那套子系统——但「不覆盖人写的东西」这条(P5)必须在。
-	 */
-	const root = tempDir('clearai-sync-')
-	const skillsDir = join(root, 'clear', 'skills')
-	const templateDir = join(root, 'template', 'skills')
-	mkdirSync(skillsDir, { recursive: true })
-	const V1 = '---\nname: alpha\ntier: system\n---\n\nv1\n'
-	const V2 = '---\nname: alpha\ntier: system\n---\n\nv2\n'
-	const skill = (name, body) => {
-		mkdirSync(join(templateDir, name), { recursive: true })
-		writeFileSync(join(templateDir, name, 'SKILL.md'), body)
-	}
-	skill('alpha', V1)
-	skill('beta', V1.replace(/alpha/g, 'beta'))
-
-	// ① 首次播种:缺的铺下去,并记下内容哈希(下次升级靠它判断「有没有被动过」)
-	let report = syncTemplateSkills({ skillsDir, templateDir, record: {} })
-	check('首次:缺失的模板技能被播种', report.seeded.slice().sort().join(',') === 'alpha,beta' && existsSync(join(skillsDir, 'alpha', 'SKILL.md')), report.seeded.join(','))
-	check('首次:每个都记下内容哈希', Object.keys(report.record).length === 2 && report.record.alpha.length === 64)
-
-	// ② 模板升级 + 项目那份没被动过 → 镜像覆盖(原设计:模板是 system 技能的事实源)
-	skill('alpha', V2)
-	report = syncTemplateSkills({ skillsDir, templateDir, record: report.record })
-	check('模板升级:没被动过的那份被刷新到新版', report.mirrored.join(',') === 'alpha' && readFileSync(join(skillsDir, 'alpha', 'SKILL.md'), 'utf8') === V2, report.mirrored.join(','))
-
-	// ③ 项目那份被人改过 → 一个字都不动,只报漂移
-	writeFileSync(join(skillsDir, 'alpha', 'SKILL.md'), '---\nname: alpha\n---\n\n我改过这一版\n')
-	skill('alpha', '---\nname: alpha\n---\n\nv3\n')
-	report = syncTemplateSkills({ skillsDir, templateDir, record: { ...report.record } })
-	check('人改过的:不覆盖(P5:宁可少刷新一次,也不覆盖人写的东西)', readFileSync(join(skillsDir, 'alpha', 'SKILL.md'), 'utf8').includes('我改过这一版'))
-	check('人改过的:如实报漂移(事实,不是静默)', report.drifted.join(',') === 'alpha' && report.mirrored.length === 0, report.drifted.join(','))
-
-	// ④ 老项目没有记录(这条不变量之前就播种过):内容与模板一致 → 补记;不一致 → 报漂移,不猜
-	const legacy = join(tempDir('clearai-sync-legacy-'), 'clear', 'skills')
-	mkdirSync(join(legacy, 'alpha'), { recursive: true })
-	// 内容取**当前模板**那一份:模拟「老项目里躺着一份没人动过的旧播种」(而不是被人改过的)。
-	writeFileSync(join(legacy, 'alpha', 'SKILL.md'), readFileSync(join(templateDir, 'alpha', 'SKILL.md'), 'utf8'))
-	const legacyReport = syncTemplateSkills({ skillsDir: legacy, templateDir, record: {} })
-	check('没记录但内容与模板一致 → 补记哈希(下次就能刷新它)', legacyReport.drifted.length === 0 && legacyReport.record.alpha.length === 64, JSON.stringify(legacyReport.drifted))
-	writeFileSync(join(legacy, 'alpha', 'SKILL.md'), '---\nname: alpha\n---\n\n旧版?人改的?\n')
-	const legacyDrift = syncTemplateSkills({ skillsDir: legacy, templateDir, record: legacyReport.record })
-	check('没记录且内容对不上 → 记成漂移,不猜是旧版还是人改的', legacyDrift.drifted.join(',') === 'alpha' && !legacyDrift.mirrored.includes('alpha'))
+	
 }
 
 console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两件】')
 {
-	// ① provider:预设挂载时就注册给宿主的 skills 服务,而且带可回收的 disposer
-	check('技能提供者已注册给宿主(预设自带的那一层)', thisHost.brainProvider !== null && thisHost.brainProvider.name === 'clearai-brain')
-	check('提供者是宿主原生接口的形状(list/get)', typeof thisHost.brainProvider?.list === 'function' && typeof thisHost.brainProvider?.get === 'function')
-	{
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 32)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 20)
 	}
-
-	// ② SaveSkill:写进工作区、默认候选态、写盘后让宿主目录失效
-	const saved = await call('SaveSkill', {
-		skill: 'my-sop',
-		content: ['---', 'name: my-sop', 'description: |', '  【我的流程】什么时候用、什么时候不用。', '---', '', '# 我的流程', '', '1. 第一步', ''].join('\n'),
-	})
-	check('SaveSkill 写入成功', saved.ok === true && saved.code === 'skill_saved', String(saved.code))
-	check('卡片说明它是候选态(人采纳之后模型才加载得到)', /候选态/.test(String(saved.message)))
-	const written = readFileSync(join(WORKSPACE, 'clear/skills/my-sop/SKILL.md'), 'utf8')
-	check('frontmatter 自动补上 status: candidate', /status: candidate/.test(written))
-	check('写盘之后让宿主的目录缓存失效(下一个回合才看得到)', thisHost.brainInvalidations.length >= 1)
-	{
-		const listed = await thisHost.brainProvider.list({ cwd: WORKSPACE })
-		const candidate = listed.candidates.find((item) => item.name === 'my-sop')
-		check('刚写的技能出现在条目里,但**模型不可调用**(候选态)', candidate !== undefined && candidate.invocation.modelInvocable === false, JSON.stringify(candidate?.invocation))
-		check('人看得到它(invocation.userInvocable=true)', candidate?.invocation.userInvocable === true)
-	}
-
-	const badName = await call('SaveSkill', { skill: 'My SOP', content: 'x' })
-	check('技能名不是 kebab-case → 拒绝', badName.ok === false && badName.code === 'must_be_kebab_case', String(badName.code))
-	const badPath = await call('SaveSkill', { skill: 'my-sop', content: 'x', path: '../escape.md' })
-	check('路径越狱 → 拒绝', badPath.ok === false && badPath.code === 'path_traversal', String(badPath.code))
-	const noFrontmatter = await call('SaveSkill', { skill: 'no-meta', content: '# 没有 frontmatter' })
-	check('SKILL.md 缺 name/description → 拒绝', noFrontmatter.ok === false && noFrontmatter.code === 'skill_frontmatter_required', String(noFrontmatter.code))
-	const resource = await call('SaveSkill', { skill: 'my-sop', content: '# 检查清单\n- [ ] 一条\n', path: 'checklists/check.md' })
-	check('技能内的资源文件也能写(第三层渐进加载就是它们)', resource.ok === true && existsSync(join(WORKSPACE, 'clear/skills/my-sop/checklists/check.md')))
-
-	// ③ WriteMemory:结构校验 + 标题去重 + 立刻进虚拟条目
-	const lesson = await call('WriteMemory', {
-		kind: 'lesson',
-		title: '中文 CSV 先探测编码',
-		fields: { Context: '业务系统导出', Trigger: '读到乱码', Action: '依次试 utf-8/gbk/gb18030', Validation: '列名可读', 'Reuse Hint': '每次都先探测' },
-		source: 'lab/step-1',
-	})
-	check('合法 lesson 写入成功', lesson.ok === true && lesson.code === 'memory_written', String(lesson.code))
-	check('卡片给了结晶提示(有触发-动作-验证三元组)', /SaveSkill/.test(String(lesson.message)))
-	const missing = await call('WriteMemory', { kind: 'lesson', title: '缺字段', fields: { Context: '只有一项' } })
-	check('字段不全 → 拒绝(结构只有机制保证得了)', missing.ok === false && missing.code === 'memory_fields_required', String(missing.code))
-	const again = await call('WriteMemory', {
-		kind: 'lesson',
-		title: '中文 CSV 先探测编码',
-		fields: { Context: '业务系统导出', Trigger: '读到乱码', Action: '依次试 utf-8/gbk/gb18030', Validation: '列名可读', 'Reuse Hint': '每次都先探测' },
-	})
-	check('同标题再写 → 跳过(跨文件去重)', again.ok === true && again.code === 'memory_already_present', String(again.code))
-	const badTarget = await call('WriteMemory', { kind: 'fact', title: 'x', fields: { Statement: 'a', Evidence: 'b', Scope: 'c', 'Last Verified': 'd' }, target: '../escape.md' })
-	check('target 越狱 → 拒绝', badTarget.ok === false && badTarget.code === 'path_traversal', String(badTarget.code))
-
-	// ④ 候选技能 → 收件箱条目 → 人采纳 → 模型这才加载得到(闭环)
-	{
-		mkdirSync(join(WORKSPACE, 'clear/skills/agent-written'), { recursive: true })
-		writeFileSync(
-			join(WORKSPACE, 'clear/skills/agent-written/SKILL.md'),
-			['---', 'name: agent-written', 'status: candidate', 'description: |', '  模型自己写的一条 SOP,等人采纳。', '---', '', '# 正文', ''].join('\n'),
-		)
-		await preStep(thisHost, SESSION, 20)
-		check('扫描候选技能 → 折进投影(收件箱里出现条目)', thisHost.service.view(SESSION).inbox.some((item) => item.kind === 'skill_candidate' && item.human_action === 'promote_skill' && item.skill === 'agent-written'))
-		{
-			const again = await preStep(thisHost, SESSION, 21)
-			const brainSections = (again?.messages ?? []).flatMap((message) => message?.source?.sections ?? []).filter((section) => section?.name === 'clearai/brain')
-			check(
-				'候选没变就不再落一条事实(字节稳定:不刷日志、不刷上下文)',
-				brainSections.length === 0,
-				JSON.stringify((again?.messages ?? []).map((message) => String(message?.source?.sections?.[0]?.name ?? ''))),
-			)
-		}
-
-		// 人在面板上按了「采纳」:宿主路由把它变成一条结构化消息,内核在 pre-step 里落实。
-		const gate = { id: 'gate-skill', role: 'user', content: [{ type: 'text', text: `[clearai·人门] ${JSON.stringify({ action: 'promote_skill', skill: 'agent-written' })}` }], source: { kind: 'user' } }
-		const decision = await preStep(thisHost, SESSION, 22, [gate])
-		const written = readFileSync(join(WORKSPACE, 'clear/skills/agent-written/SKILL.md'), 'utf8')
-		check('采纳之后 frontmatter 变成 active(正文一个字没动)', /status: active/.test(written) && /# 正文/.test(written))
-		check('留下署名与时间(判断不许匿名)', /promoted_by: user/.test(written) && /promoted_at: /.test(written))
-		check(
-			'采纳这件事折进投影(可重放的事实,不是一句说明)',
-			(thisHost.service.state(SESSION).skillPromotions ?? []).some((entry) => entry.name === 'agent-written' && entry.by === 'user'),
-		)
-		check(
-			'采纳之后那一条候选从收件箱消失(状态锚;别的候选还在,它们各自等人)',
-			!thisHost.service.view(SESSION).inbox.some((item) => item.kind === 'skill_candidate' && item.skill === 'agent-written'),
-			thisHost.service.view(SESSION).inbox.filter((item) => item.kind === 'skill_candidate').map((item) => item.skill).join(','),
-		)
-		check('卡片里如实说了采纳结果', /已采纳/.test(JSON.stringify(decision.messages ?? [])))
-		{
-			const listed = await thisHost.brainProvider.list({ cwd: WORKSPACE })
-			const promoted = listed.candidates.find((item) => item.name === 'agent-written')
-			check('采纳之后模型才加载得到它(invocation 由宿主执行)', promoted?.invocation.modelInvocable === true, JSON.stringify(promoted?.invocation))
-		}
-
-		// ⑤ 记忆虚拟条目(接上面那段)
-		const listed = await thisHost.brainProvider.list({ cwd: WORKSPACE })
-		const memory = listed.candidates.find((item) => item.name === 'project-memory')
-		check('记忆以**一个虚拟条目**出现在目录里', memory !== undefined && memory.invocation.modelInvocable === true)
-		check('L1 摘要里是条数 + 标题(有界)', /已沉淀/.test(String(memory?.description)) && /中文 CSV 先探测编码/.test(String(memory?.description)))
-		const loaded = await thisHost.brainProvider.get(memory, { cwd: WORKSPACE })
-		check('L2 正文是现算的索引,并且指向记忆目录(resourceBase)', /lessons\.md/.test(loaded.content) && loaded.resourceBase.path === join(WORKSPACE, 'clear/memory'))
-	}
-}
 
 console.log('\n【技能目录:面板与模型看同一张表(合并目录随投影下发)】')
 {
-	// 宿主的合并目录是**分层注册表**合出来的表:预设自带 / 项目 / 用户 / 我们投影的 clear/skills。
-	// 这里用一条「各层各来一条」的快照,验内核把它如实落成**可重放的 section**。
-	const host = makeHost()
-	apply(host.ctx, { blockedThreshold: 3 })
-	const S = 'session-catalog'
-	const dir = (name) => join(WORKSPACE, 'clear', 'skills', name)
-	host.skillSnapshot = {
-		complete: true,
-		skills: [
-			{ name: 'literature-review', description: '【文献综述】…', source: 'clearai-template', provider: 'clearai-brain', invocation: { modelInvocable: true, userInvocable: true }, resourceBase: { kind: 'directory', path: dir('literature-review') } },
-			{ name: 'my-sop', description: '模型自己写的 SOP', source: 'clearai-workspace', provider: 'clearai-brain', invocation: { modelInvocable: false, userInvocable: true }, resourceBase: { kind: 'directory', path: dir('my-sop') } },
-			{ name: 'user-note', description: '我攒的', source: 'user-dsh', provider: 'filesystem', invocation: { modelInvocable: true, userInvocable: true }, resourceBase: { kind: 'directory', path: '/home/someone/.dsh/skills/user-note' } },
-			{ name: 'no-dir', description: '没有目录的提供者', source: 'runtime', provider: 'whatever', invocation: { modelInvocable: true, userInvocable: false } },
-		],
-	}
-	const decision = await preStep(host, S, 1)
-	const sections = (decision?.messages ?? []).flatMap((message) => message?.source?.sections ?? []).filter((section) => section?.name === 'clearai/brain')
-	check('目录随投影下发(clearai/brain 的结构化 section)', sections.length === 1, String(sections.length))
-	const catalog = sections.length === 0 ? null : JSON.parse(sections[0].text).catalog
-	check('四条技能一条不少(合并目录不筛来源)', catalog?.entries?.length === 4, JSON.stringify(catalog?.entries?.map((entry) => entry.name)))
-	check('取的是宿主的快照(cwd 与会话工作区一致)', host.skillSnapshots.length === 1 && host.skillSnapshots[0].cwd === WORKSPACE, JSON.stringify(host.skillSnapshots[0]?.cwd))
-	{
-		const entry = (name) => catalog.entries.find((item) => item.name === name)
-		check('来源、调用策略原样搬下来(面板据此分组、据此标候选)', entry('my-sop')?.source === 'clearai-workspace' && entry('my-sop')?.model === false && entry('my-sop')?.user === true, JSON.stringify(entry('my-sop')))
-		check('工作区内的技能标成 inside=true(面板能读正文)', entry('literature-review')?.inside === true && entry('user-note')?.inside === false)
-		check('没有目录的提供者:inside 是 null(不是 false——「不知道」不许写成「不在」)', entry('no-dir')?.inside === null && entry('no-dir')?.dir === null, JSON.stringify(entry('no-dir')))
-		// 正文文件:原生 filesystem provider 的约定是 `<技能目录>/SKILL.md`(不是目录本身)。
-		check('每条带正文文件路径(面板点开读的就是它,不是目录)', entry('my-sop')?.file === join(dir('my-sop'), 'SKILL.md'), String(entry('my-sop')?.file))
-		check('没有目录的提供者:file 也是 null(面板据此不画链接)', entry('no-dir')?.file === null)
-		// 记忆是**虚拟条目**(没有正文文件):file 必须是 null,否则点了就撞 404。
-		{
-			const memoryEntry = catalog.entries.find((item) => item.source === 'clearai-memory')
-			check('记忆虚拟条目不给正文文件(2026-09-11 实测的「点技能跳 not found」)', memoryEntry === undefined || memoryEntry.file === null, JSON.stringify(memoryEntry ?? null))
-		}
-	}
-	// 面板据此画「外脑」页签,所以这一段必须是**可重放的事实**:折进投影之后就看得见。
-	check('折进投影后视图里有这张表', host.service.view(S).skills?.catalog?.entries?.length === 4)
-
-	// ① 没变就不再发(字节稳定:不刷日志、不刷上下文)
-	{
-		const again = await preStep(host, S, 2)
-		const repeated = (again?.messages ?? []).flatMap((message) => message?.source?.sections ?? []).filter((section) => section?.name === 'clearai/brain')
-		check('目录没变 → 不再落一条事实', repeated.length === 0, JSON.stringify(repeated.map((section) => section.name)))
-	}
-
-	// ② 目录变了但状态一动没动(人在外面加了一条技能):只发事实,不重发卡片
-	{
-		host.skillSnapshot = { ...host.skillSnapshot, skills: [...host.skillSnapshot.skills, { name: 'fresh-one', description: '刚从外面加进来的', source: 'user-dsh', provider: 'filesystem', invocation: { modelInvocable: true, userInvocable: true }, resourceBase: { kind: 'directory', path: '/home/someone/.dsh/skills/fresh-one' } }] }
-		const changed = await preStep(host, S, 3)
-		const messages = changed?.messages ?? []
-		const section = messages.flatMap((message) => message?.source?.sections ?? []).find((item) => item?.name === 'clearai/brain')
-		check('目录变了 → 即使卡片没变也发(否则面板会一直显示旧表)', section !== undefined)
-		check('集合里没有卡片消息(不重发没变的长文)', messages.every((message) => !String(message?.source?.sections?.[0]?.text ?? '').startsWith('【')), String(messages.length))
-		check('折进投影后新条目可见', host.service.view(S).skills.catalog.entries.length === 5)
-	}
-
-	// ③ 观测不完整就不发:不完整的快照看起来像「技能被删了」,那是谎
-	{
-		const stale = host.service.view(S).skills.catalog.entries.length
-		host.skillSnapshot = { skills: [], complete: false }
-		await preStep(host, S, 4)
-		check('complete=false → 不发(宁可留着上一张表)', host.service.view(S).skills.catalog.entries.length === stale, String(host.service.view(S).skills.catalog.entries.length))
-	}
-
-	// ④ 宿主没有 skills 服务:降级不抛
-	{
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
 		const result = await preStep(noSkills, 'session-no-skills', 1)
 		check('没有 skills 服务时 pre-step 照常(目录这条静默缺席,不抛)', result !== null && noSkills.warnings.every((message) => !/目录快照失败/.test(message)))
 	}
-
-	// ⑤ 人引用的门消息进内核:内核**不**在这里落实(落实是原生 pre-step 的活),也不误解成采纳
-	{
-		const gate = { id: 'gate-invoke', role: 'user', content: [{ type: 'text', text: `[clearai·人门] ${JSON.stringify({ action: 'invoke_skill', skill: 'agent-written' })}\n/agent-written\n人在面板上引用了技能。` }], source: { kind: 'user' } }
-		await preStep(host, S, 5, [gate])
-		check('invoke_skill 不被内核当成采纳(两条路各管各的)', !(host.service.state(S).skillPromotions ?? []).some((entry) => entry.name === 'agent-written'))
-	}
-}
 
 console.log('\n【消息署名:生产者自有的 source kind(session 格式 v4 的接纳条件)】')
 {
@@ -2629,116 +1960,6 @@ console.log('\n【消息署名:生产者自有的 source kind(session 格式 v4 
 
 console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不是 reject(2026-09-11 用户实测的 bug)】')
 {
-	// 为什么单开一节:DSH 的 `run.result` 在中断时**照常 resolve**,只是 stopReason 变成 aborted。
-	// 只按 reject 判失败,就会把被打断的侦察记成“完成”、把被打断的执行者记成“交付成功”。
-	const host = makeHost()
-	apply(host.ctx, { blockedThreshold: 3 })
-	const S = 'session-stopreason'
-	await callOn(host, S, 'SetGoal', {
-		claim: '把两条路线比出高下',
-		done_criteria: '两条路线各有读数与结论',
-		hypotheses: [{ claim: '两条路线的产率不同', refute_when: '产率相同' }],
-	})
-	const hypothesis = host.service.state(S).hypotheses[0].id
-	await callOn(host, S, 'CreatePlan', {
-		steps: [{ id: 'a1', do: '试两条互斥路线', artifacts: ['lab/a1.txt'], done_criteria: 'lab/a1.txt 存在', tests: { hypothesis, level: 'L3' } }],
-	})
-	// 执行者是 **ForkPlan** 派的(不是 AdvanceWorldline):要验「执行者被中断」,开关得在这里打开。
-	host.stopReasonExecutor = 'aborted'
-	const forked = await callOn(host, S, 'ForkPlan', {
-		question: '哪个设计更简洁',
-		options: [
-			{ label: '甲', approach: '甲的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/a', level: 'L3' },
-			{ label: '乙', approach: '乙的做法', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/b', level: 'L3' },
-		],
-		decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
-	})
-	const forkId = host.service.view(S).forks[0].id
-
-	// ① 侦察:被中断 → note 写具体结局,半截文本不进资料面
-	host.stopReasonScout = 'aborted'
-	const before = host.service.state(S).materials.length
-	const scouts = await callOn(host, S, 'SpawnScout', { task: '去看看 lab/ 里有没有原始记录,查不到就说查不到。', why: '观测缺口' })
-	/**
-	 * 侦察是**异步**的(§14-C):调用只落「派过」这条事实并立刻返回;
-	 * 结论在**下一个回合边界**(或用到世界线/侦察的那几件工具)上由 sweep 收。
-	 * 所以这里必须走一次 pre-step —— 那正是生产里「结论回灌」发生的地方。
-	 */
-	check('侦察派出去就返回(工具结果里没有结论,也不假装有)', scouts.ok === true && scouts.code === 'scout_dispatched', String(scouts.code))
-	check('派遣事实立刻落账(不随工具结果的成败起落)', host.journal.some((mutation) => mutation.t === 'scout/dispatched' && mutation.trigger === 'model_request:观测缺口'))
-	await preStep(host, S, 41)
-	const scoutRecord = host.service.state(S).scouts[host.service.state(S).scouts.length - 1]
-	check('侦察被中断 → 下一个回合边界上如实落账(note 是具体结局 aborted,不是 null)', scoutRecord?.note === 'aborted', JSON.stringify(scoutRecord?.note ?? null))
-	check('侦察被中断 → 结论里写明「未正常结束」,不冒充回灌', /未正常结束\(aborted\)/.test(String(scoutRecord?.conclusion ?? '')), String(scoutRecord?.conclusion ?? '').slice(0, 80))
-	check('侦察被中断 → 半截文本**不进资料面**(它不是观测)', host.service.state(S).materials.length === before, `${before} → ${host.service.state(S).materials.length}`)
-	check('视图把结局交出去(status=failed,面板才分诊得出)', host.service.view(S).scouts.at(-1)?.status === 'failed', JSON.stringify(host.service.view(S).scouts.at(-1) ?? null).slice(0, 120))
-	/**
-	 * **等侦察**:`AwaitWorldlines` 的「还在跑」必须把侦察算进去。
-	 *
-	 * 长测抓到的真缺陷:`sweepScouts()` 只落账、不报「还在跑」,而 `AwaitWorldlines` 的循环
-	 * 只数世界线执行者产出的那一行 ⇒ **只有侦察在跑时它第一拍就退出**,而 SpawnScout 的
-	 * 返回原话恰恰让模型「用 AwaitWorldlines 在这个回合里等它」。模型于是空等三轮回合、
-	 * 判据里那句「与侦察结论一致」失去对照物,独立评估者只能裁 inconclusive 拒收结案。
-	 */
-	{
-		const W = 'session-scout-await'
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		host.scoutDelayMs = 800
-		await callOn(host, W, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		const dispatched = await callOn(host, W, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		check('前置:侦察异步派出(返回值里没有结论)', dispatched.code === 'scout_dispatched', String(dispatched.code))
-		const awaited = await callOn(host, W, 'AwaitWorldlines', { timeout_s: 5 })
-		/**
-		 * 断的是**行为**不是耗时:修好之前它在第一拍就返回(回灌 0 条、侦察仍挂着),
-		 * 修好之后它必须等到那条结论落定才返回。用耗时判会在机器忙时抖(第一拍本身
-		 * 可能就跨过了子会话落定的时刻),而「结论到手了没有」与机器快慢无关。
-		 */
-		check(
-			'侦察在跑 ⇒ AwaitWorldlines 一直等到它落定(不再第一拍退出)',
-			/回灌 1 条结论/.test(String(awaited.message ?? '')) && host.service.state(W).scouts.at(-1)?.conclusion !== null,
-			String(awaited.message ?? '').split('\n')[0].slice(0, 120),
-		)
-		check('等到了:结论落成 scout/settled 并进资料面', host.journal.some((mutation) => mutation.t === 'scout/settled' && mutation.conclusion !== undefined) && host.service.state(W).materials.some((item) => String(item.ref ?? '').startsWith('scout:')), JSON.stringify(host.service.state(W).materials.map((item) => item.ref)))
-		check('回报里写明了回灌了几条(不是含糊的「等完了」)', /回灌 1 条/.test(String(awaited.message ?? '')), String(awaited.message ?? '').slice(0, 120))
-	}
-
-	/**
-	 * **长度纪律**(U5):上限是摘要边界,不是信息丢失——全文在文件里,账本里带截断标记与指针。
-	 */
-	{
-		const L = 'session-scout-long'
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		await callOn(host, L, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
-		await callOn(host, L, 'CreatePlan', { steps: [{ id: 'l1', do: '核材料', artifacts: ['lab/l1.txt'], done_criteria: 'lab/l1.txt 存在', tests: null }] })
-		const long = `${'甲'.repeat(9000)}结尾标记`
-		host.scoutConclusion = long
-		await callOn(host, L, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		const child = String(host.service.state(L).scouts.at(-1)?.child ?? '')
-		host.sessionEvents = {
-			[child]: [
-				{ type: 'turn/start', data: { turn: 1 } },
-				{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: long }] } } },
-				{ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
-			],
-		}
-		await preStep(host, L, 61)
-		const settledMutation = host.journal.filter((m) => m.t === 'scout/settled').at(-1)
-		const conclusion = String(settledMutation?.conclusion ?? '')
-		const materialPath = settledMutation?.path ?? null
-		check('账本里带截断标记与指针(不许静默截断)', /已截断/.test(conclusion) && /全文 9004 字/.test(conclusion) && materialPath !== null && conclusion.includes(String(materialPath)), conclusion.slice(-120))
-		const material = materialPath === null ? '' : String(readFileSync(materialPath, 'utf8'))
-		check('文件里是**全文**(截断只是摘要边界,不是信息丢失)', material.includes('结尾标记') && material.length > 9000, `${material.length} 字`)
-		const observation = host.journal.filter((m) => m.t === 'observation/recorded' && m.source === 'scout').at(-1)
-		check('观测与账本同一条上限、同一句标记(两套口径迟早会漂)', String(observation?.note ?? '').includes('已截断') && String(observation?.note ?? '').length === conclusion.length, `${String(observation?.note ?? '').length} / ${conclusion.length}`)
-	}
-
-	/**
-	 * **假设留痕**(U4):不逼 verdict,但「没看过」必须留在账上。
-	 * 两种「没结论」要分得开:证据说「无法判定」是一回事,从没人碰过它是另一回事。
-	 */
-	{
 		const H = 'session-hypothesis-unjudged'
 		const host = makeHost()
 		/**
@@ -2780,233 +2001,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		check('视图把留痕交出去(面板与卡片读同一份)', (host.service.view(H).goal?.unjudged ?? []).length === 1, JSON.stringify(host.service.view(H).goal?.unjudged ?? null))
 	}
 
-	/**
-	 * **失联终局**(U3):进程重启过 ⇒ 内存表空了,投影里那条侦察还没收口,而子会话
-	 * 已经不在了。判据与执行者那条**完全一致**:表里没有 + 会话里没有 `turn/end` ⇒ 失联。
-	 * 一句永久「未回灌」是等不到下文的承诺。
-	 */
-	{
-		const L = 'session-scout-lost'
-		const first = makeHost()
-		apply(first.ctx, { blockedThreshold: 3 })
-		await callOn(first, L, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(first, L, 'CreatePlan', { steps: [{ id: 'l1', do: '核材料', artifacts: ['lab/l1.txt'], done_criteria: 'lab/l1.txt 存在', tests: null }] })
-		await callOn(first, L, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		const child = String(first.service.state(L).scouts.at(-1)?.child ?? '')
-		// 模拟进程重启:内存表空了(新 host),子会话也不在会话服务里(拿不到任何事件)
-		const second = makeHost()
-		second.states.set(L, first.service.state(L))
-		apply(second.ctx, { blockedThreshold: 3 })
-		await preStep(second, L, 51)
-		const lost = second.service.state(L).scouts.at(-1)
-		check('子会话不在了 ⇒ 如实落「失联」终局(不再永久挂着「未回灌」)', lost?.note === '失联' && lost?.conclusion === '', JSON.stringify({ note: lost?.note ?? null }))
-		check('失联也要进视图(面板才分诊得出)', second.service.view(L).scouts.at(-1)?.status === 'failed', JSON.stringify(second.service.view(L).scouts.at(-1)?.status ?? null))
-	}
-	{
-		// 会话在、只是还没写完 turn/end(真的还在跑)⇒ **不冤枉它**。
-		const R = 'session-scout-still-running'
-		const first = makeHost()
-		apply(first.ctx, { blockedThreshold: 3 })
-		await callOn(first, R, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(first, R, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
-		const child = String(first.service.state(R).scouts.at(-1)?.child ?? '')
-		const second = makeHost()
-		second.states.set(R, first.service.state(R))
-		// 会话在(有壳)、但没有 turn/end;原生子代理目录说它还在跑
-		second.sessionEvents = { [child]: [{ type: 'turn/start', data: { turn: 1 } }] }
-		second.listing = [{ kind: 'child', id: child, activity: 'running', mode: 'continuable' }]
-		apply(second.ctx, { blockedThreshold: 3 })
-		await preStep(second, R, 52)
-		check('目录说它在跑 ⇒ 不判失联,继续等', second.service.state(R).scouts.at(-1)?.note === null, JSON.stringify({ note: second.service.state(R).scouts.at(-1)?.note ?? null }))
-		check('还在跑 ⇒ 视图上仍然是「跑着」而不是终局', second.service.view(R).scouts.at(-1)?.status === 'running', JSON.stringify(second.service.view(R).scouts.at(-1)?.status ?? null))
-	}
-	{
-		// 没有 `sessions` 服务 = 判不了 ⇒ **不编**(不落终局)。
-		const U = 'session-scout-unknown'
-		const first = makeHost()
-		apply(first.ctx, { blockedThreshold: 3 })
-		await callOn(first, U, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(first, U, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		const second = makeHost()
-		second.states.set(U, first.service.state(U))
-		second.subagentsAvailable = false
-		apply(second.ctx, { blockedThreshold: 3 })
-		await preStep(second, U, 53)
-		check('目录读面不可用 ⇒ 不落终局(判不出就不编)', second.service.state(U).scouts.at(-1)?.note === null, JSON.stringify({ note: second.service.state(U).scouts.at(-1)?.note ?? null }))
-	}
-
-	// 只通过 result promise 交回结论,不伪造子会话日志;派遣与材料发布是两个边界。
-	{
-		const C = 'session-scout-start-handle'
-		const host = makeHost()
-		host.scoutConclusion = '数完了:clear/skills 下 18 条技能,SKILL.md 覆盖 18/18。'
-		apply(host.ctx, { blockedThreshold: 3 })
-		await callOn(host, C, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(host, C, 'CreatePlan', { steps: [{ id: 'c1', do: '核材料', artifacts: ['lab/c1.txt'], done_criteria: 'lab/c1.txt 存在', tests: null }] })
-		const dispatched = await callOn(host, C, 'SpawnScout', { task: '把 clear/skills 下的技能数一遍,报条数。', why: '盘点' })
-		check(
-			'统一 start() ⇒ 走一次性 result handle,异步材料稍后回灌',
-			dispatched.code === 'scout_dispatched' && host.journal.some((m) => m.t === 'scout/dispatched' && m.capability !== 'continuable'),
-			JSON.stringify(host.journal.filter((m) => m.t === 'scout/dispatched').map((m) => m.capability)),
-		)
-		check(
-			'只读面与人格随派遣交出去(durable descriptor 会记住,续跑也放宽不了)',
-			host.audits.some((entry) => entry.isScout === true && entry.request?.toolFilter !== undefined && entry.request?.persona !== undefined),
-			JSON.stringify(Object.keys(host.audits.find((entry) => entry.isScout === true)?.request ?? {})),
-		)
-		const child = String(host.service.state(C).scouts.at(-1)?.child ?? '')
-		check('前置:start() 返回 result handle,异步结论尚未回灌', child.startsWith('scout-') && host.service.state(C).scouts.at(-1)?.conclusion === null && !host.journal.some((m) => m.t === 'scout/settled'), child)
-		// 即使 promise 已落定,派遣回执也不代替下一拍的事实发布。
-		await preStep(host, C, 43)
-		const settled = host.service.state(C).scouts.at(-1)
-		check('start() 的 result 结论在 pre-step 收进账本(无需子会话日志)', settled?.conclusion === host.scoutConclusion, JSON.stringify({ note: settled?.note, conclusion: settled?.conclusion }))
-		// 同一回合再来一拍:结论**不重发**(投影在回合内不前进,重发就是噪声;账本按 id 覆写,长不出第二条)
-		await preStep(host, C, 44)
-		check('同一回合里不重发结论(去重按会话+回合,不靠内存条目)', host.journal.filter((m) => m.t === 'scout/settled').length === 1, `${host.journal.filter((m) => m.t === 'scout/settled').length} 条`)
-		const settledMutation = host.journal.filter((m) => m.t === 'scout/settled').at(-1)
-		const materialPath = settledMutation?.path ?? null
-		const material = materialPath === null ? '' : String(readFileSync(materialPath, 'utf8'))
-		check('结论全文落盘(评估者与人也能读同一份)', materialPath !== null && material.includes('18 条技能') && material.includes('# 侦察结论'), String(materialPath))
-	}
-
-	/**
-	 * **两个会话同时派任务,不串结果、不串工作区**。
-	 *
-	 * 这是统一生命周期最容易踩的一处:子 run 表按 **child id** 索引(全局唯一),
-	 * 而收集要按**父会话**归属。若把状态挂在进程级、或按「最后一条」取,两个会话就会互相串账。
-	 */
-	{
-		const host = makeHost()
-		const A = 'session-iso-a'
-		const B = 'session-iso-b'
-		apply(host.ctx, { blockedThreshold: 3 })
-		for (const [session, claim] of [[A, '核 A 的材料'], [B, '核 B 的材料']]) {
-			await callOn(host, session, 'SetGoal', { claim, done_criteria: '有结论', hypotheses: [] })
-			await callOn(host, session, 'CreatePlan', { steps: [{ id: 'i1', do: '核材料', artifacts: ['lab/i1.txt'], done_criteria: 'lab/i1.txt 存在', tests: null }] })
-		}
-		// 两条侦察的任务原文必须**不同**,否则 digest 复用会让第二条直接复用第一条的结论(那是设计,不是串账)。
-		host.scoutConclusion = 'A 的结论:三份记录里两份有原始导出。'
-		await callOn(host, A, 'SpawnScout', { task: '核 A 会话的 lab/ 记录,报你亲眼读到的。', why: 'A 的缺口' })
-		host.scoutConclusion = 'B 的结论:五份记录全部有原始导出。'
-		await callOn(host, B, 'SpawnScout', { task: '核 B 会话的 lab/ 记录,报你亲眼读到的。', why: 'B 的缺口' })
-		const childA = String(host.service.state(A).scouts.at(-1)?.child ?? '')
-		const childB = String(host.service.state(B).scouts.at(-1)?.child ?? '')
-		check('两条侦察各拿各的 child(表按 child id 索引,不互相覆盖)', childA !== '' && childB !== '' && childA !== childB, `${childA} / ${childB}`)
-		await preStep(host, A, 71)
-		await preStep(host, B, 71)
-		const settledA = String(host.service.state(A).scouts.at(-1)?.conclusion ?? '')
-		const settledB = String(host.service.state(B).scouts.at(-1)?.conclusion ?? '')
-		check('A 会话收到的是 A 的结论', settledA.includes('A 的结论'), settledA.slice(0, 40))
-		check('B 会话收到的是 B 的结论', settledB.includes('B 的结论'), settledB.slice(0, 40))
-		check('两边没有互相串账', !settledA.includes('B 的结论') && !settledB.includes('A 的结论'), JSON.stringify({ A: settledA.slice(0, 30), B: settledB.slice(0, 30) }))
-	}
-
-	// 显式等待也是事实收集边界:一次性句柄的结论必须在回执里可见。
-	{
-		const D = 'session-scout-degrade'
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		await callOn(host, D, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(host, D, 'CreatePlan', { steps: [{ id: 'd1', do: '核材料', artifacts: ['lab/d1.txt'], done_criteria: 'lab/d1.txt 存在', tests: null }] })
-		const dispatched = await callOn(host, D, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		const capability = host.journal.filter((m) => m.t === 'scout/dispatched').at(-1)?.capability
-		check('可续跑不可用 ⇒ 降级到一次性派遣,能力不冒充可续跑', dispatched.code === 'scout_dispatched' && capability !== 'continuable' && String(capability).length > 0, String(capability))
-		// 降级那一档的结论只能由「收集那一刻的返回」送达:等到之后,那次调用的消息里必须有正文。
-		const awaiting = await callOn(host, D, 'AwaitWorldlines', { timeout_s: 5 })
-		check('降级形态:收集那一刻的返回带上结论正文(模型这才读得到)', /数完了|核完了|亲眼读到|lab\//.test(String(awaiting.message ?? '')) || /子任务/.test(String(awaiting.message ?? '')), String(awaiting.message ?? '').slice(0, 160))
-	}
-
-	/**
-	 * **表里没有的侦察**也要收得回来(§14-C 的第二半,与执行者那条同一个修法):
-	 * 进程重启过 ⇒ 内存表空了,可投影里那条侦察还没收口,而它的会话日志里已经有 `turn/end`。
-	 */
-	{
-		const first = makeHost()
-		apply(first.ctx, { blockedThreshold: 3 })
-		const S9 = 'session-scout-recover'
-		await callOn(first, S9, 'SetGoal', { claim: '把材料核一遍', done_criteria: '有结论', hypotheses: [] })
-		await callOn(first, S9, 'CreatePlan', { steps: [{ id: 'sc1', do: '核材料', artifacts: ['lab/sc1.txt'], done_criteria: 'lab/sc1.txt 存在', tests: null }] })
-		await callOn(first, S9, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		const child = String(first.service.state(S9).scouts.at(-1)?.child ?? '')
-		check('前置:派遣落了账、结论还没到(child 记在案上)', child !== '' && first.service.state(S9).scouts.at(-1)?.conclusion === null, child)
-		// 模拟进程重启:同一份投影、新的内核实例(表空),但那份子会话还在会话服务里
-		const second = makeHost()
-		second.states.set(S9, first.service.state(S9))
-		second.childSessions = { [child]: { id: child, header: { cwd: WORKSPACE }, ownEvents: () => [
-			{ type: 'turn/start', data: { turn: 1 } },
-			{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: '核完了:lab/ 下三份记录里两份有原始导出,第三份只在报告里出现。' }] } } },
-			{ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
-		] } }
-		apply(second.ctx, { blockedThreshold: 3 })
-		await preStep(second, S9, 42)
-		const recovered = second.service.state(S9).scouts.at(-1)
-		check('重启后仍能从子会话日志里收回侦察结论(不再永远「跑着」)', /两份有原始导出/.test(String(recovered?.conclusion ?? '')) && recovered?.note === null, JSON.stringify({ note: recovered?.note, len: String(recovered?.conclusion ?? '').length }))
-		check('收回来的结论进资料面,来源标 scout(与同步回灌同一条路)', second.service.state(S9).materials.some((item) => String(item.ref ?? '').startsWith('scout:')), JSON.stringify(second.service.state(S9).materials.map((m) => m.ref)))
-	}
-	/**
-	 * §21 的另一半:**「去子会话日志里捞结论」是收集机会,不按回合限流**。
-	 *
-	 * 形状照真跑:内核表里没有它(重启形),答案只在子会话日志里;而且**同一个回合**里
-	 * 先捞一次(那时子会话还没跑完,捞不到),再捞一次(跑完了,该捞到)。
-	 * 第一版把这条也按回合限流 ⇒ 第二次会被跳过 ⇒ 迟到一步的结论就永远没人接(真跑 3/3 掉成 2/3)。
-	 */
-	{
-		const first = makeHost()
-		apply(first.ctx, { blockedThreshold: 3 })
-		const C = 'session-late-scout'
-		await callOn(first, C, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
-		await callOn(first, C, 'CreatePlan', { steps: [{ id: 'c1', do: '核材料', artifacts: ['lab/c1.txt'], done_criteria: 'lab/c1.txt 存在', tests: null }] })
-		await callOn(first, C, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		const child = String(first.service.state(C).scouts.at(-1)?.child ?? '')
-		const events = [
-			{ type: 'turn/start', data: { turn: 1 } },
-			{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: '核完了:三份记录里两份有原始导出。' }] } } },
-		]
-		// 重启形:同一份投影 + 新的内核实例(表空)——于是「去子会话日志捞」这条路才是活的
-		const second = makeHost()
-		second.states.set(C, first.service.state(C))
-		second.childSessions = { [child]: { id: child, header: { cwd: WORKSPACE }, ownEvents: () => events.slice() } }
-		apply(second.ctx, { blockedThreshold: 3 })
-		await preStep(second, C, 42)
-		await callOn(second, C, 'WorldlineStatus', {}) // 第一次捞:子会话还没 turn/end ⇒ 捞不到(而且不该动它)
-		check('子会话还没跑完 ⇒ 不动它(不是「失败」,是「还在跑」)', second.service.state(C).scouts.at(-1)?.conclusion === null, JSON.stringify(second.service.state(C).scouts.at(-1)?.conclusion ?? null))
-		events.push({ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } }) // 它跑完了
-		await callOn(second, C, 'WorldlineStatus', {}) // **同一个回合**里再捞一次:该捞到
-		check(
-			'迟到一步的结论:同一个回合里仍然被捞回来(收集机会不按回合限流)',
-			/两份有原始导出/.test(String(second.service.state(C).scouts.at(-1)?.conclusion ?? '')),
-			JSON.stringify(String(second.service.state(C).scouts.at(-1)?.conclusion ?? '')).slice(0, 60),
-		)
-	}
-
-	/**
-	 * **`reported` 不等于「已落账」**(2026-09-11 长测:侦察结论发布之后被丢掉,而条目已删、
-	 * 标志已置位 ⇒ 那条结论永久丢)。判据改成看**投影**:投影里没有就再发一次;重复发布安全
-	 * (fold 按 id/分支覆写,不会长出第二条事实)。这条用「把投影退回收之前」来模拟那批事实没落地。
-	 */
-	{
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		const SR = 'session-retry'
-		await callOn(host, SR, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
-		await callOn(host, SR, 'CreatePlan', { steps: [{ id: 'rt1', do: '核材料', artifacts: ['lab/rt1.txt'], done_criteria: 'lab/rt1.txt 存在', tests: null }] })
-		await callOn(host, SR, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		const beforePublish = host.service.state(SR)
-		await preStep(host, SR, 61)
-		check('正常路径:侦察结论落到账本上(投影里看得见)', host.service.state(SR).scouts.at(-1)?.conclusion !== null, JSON.stringify(host.service.state(SR).scouts.at(-1)?.conclusion ?? null).slice(0, 40))
-		const recordsAfterFirst = host.service.state(SR).scouts.length
-		// 模拟那批事实**没落地**(工具调用失败 / 通知被丢):投影退回收之前
-		host.states.set(SR, beforePublish)
-		await preStep(host, SR, 62)
-		check('发布被丢掉 → 下一轮**重发**(判据是投影,不是内存里的「报过了」)', host.service.state(SR).scouts.at(-1)?.conclusion !== null, JSON.stringify(host.service.state(SR).scouts.at(-1)?.conclusion ?? null).slice(0, 40))
-		check('重发不会长出第二条事实(按 id 覆写,幂等)', host.service.state(SR).scouts.length === recordsAfterFirst, `${recordsAfterFirst} → ${host.service.state(SR).scouts.length}`)
-	}
-
-	/**
-	 * §27b **出处是记账时定下的事实**:`refs` 一律是路径;独立证据另带评估卡与评估者会话。
-	 * 判据是账上的字段 —— 不是界面渲染成什么样。
-	 */
-	{
+{
 		const host = makeHost()
 		host.cwd = tempDir('clearai-origins-')
 		apply(host.ctx, { blockedThreshold: 3, autonomy: 'unattended' })
@@ -3042,11 +2037,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		check('独立证据的出处里有**评估者会话**(论证过程可旁观)', evaluator !== undefined && String(evaluator.session).startsWith('child-'), JSON.stringify(evaluator ?? null))
 	}
 
-	/**
-	 * §23 **事实货架**:事实升格之后要有读者 —— `clear/knowledge/facts/INDEX.md`
-	 * (面板「事实」那一格读的是同一张表),而且**带边界**(没有边界的事实下一轮没人敢用)。
-	 */
-	{
+{
 		const host = makeHost()
 		host.cwd = tempDir('clearai-facts-shelf-')
 		// 无人值守档:立约即授权(人在场档会先呈审阅——那正是 §19 那道门,这里不需要它)
@@ -3101,449 +2092,6 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		await preStep(host, FS, 92)
 		check('货架幂等(内容一样就不重写)', readFileSync(index, 'utf8') === before)
 	}
-
-	/**
-	 * §21 的两半(**针对性验,不跑长 E2E**):
-	 *   · 重发:同一个回合里不再重发(投影在回合内不前进,再发是白发——长测现场 31 条);
-	 *   · 收集机会:**不按回合限流**。迟到一步的结论全靠「去子会话日志里捞」接住,
-	 *     第一版把它一起按回合限流,真跑里立刻把 3/3 掉成 2/3(所以这一条要单独钉住)。
-	 */
-	{
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		const E = 'session-epoch'
-		await callOn(host, E, 'SetGoal', { claim: '核一遍材料', done_criteria: '有结论', hypotheses: [] })
-		await callOn(host, E, 'CreatePlan', { steps: [{ id: 'e1', do: '核材料', artifacts: ['lab/e1.txt'], done_criteria: 'lab/e1.txt 存在', tests: null }] })
-		await callOn(host, E, 'SpawnScout', { task: '把 lab/ 下的记录核一遍,报你亲眼读到的。', why: '观测缺口' })
-		await preStep(host, E, 70) // 这一拍收下结论(纪元 = 回合 70)
-		const settledOnce = host.journal.filter((mutation) => mutation.t === 'scout/settled').length
-		check('结论先落一次账', settledOnce >= 1, String(settledOnce))
-		// 同一个回合里再走几个成功路径:投影不前进,但**不该**再发(这就是那 31 条的来源)
-		await callOn(host, E, 'WorldlineStatus', {})
-		await callOn(host, E, 'WorldlineStatus', {})
-		check('同一个回合里,已经发布过的结论不再重发(投影在回合内不前进,再发是白发)', host.journal.filter((mutation) => mutation.t === 'scout/settled').length === settledOnce, `${settledOnce} → ${host.journal.filter((mutation) => mutation.t === 'scout/settled').length}`)
-	}
-	/**
-	 * 世界线执行者:同一把尺子(投影里 `execution.ok` 还是 null 就重收;到账之后才释放子 run)。
-	 */
-	{
-		const host = makeHost()
-		apply(host.ctx, { blockedThreshold: 3 })
-		const SW = 'session-retry-wl'
-		await callOn(host, SW, 'SetGoal', { claim: '两条路线取一条', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 更好', refute_when: 'B 更好' }] })
-		await callOn(host, SW, 'CreatePlan', { steps: [{ id: 'rw1', do: '两条线路各试一遍', artifacts: ['lab/rw1.txt'], done_criteria: 'lab/rw1.txt 有读数', tests: null }] })
-		await callOn(host, SW, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'ra', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'rb', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
-		const beforePublish = host.service.state(SW)
-		await preStep(host, SW, 63)
-		const landed = host.service.view(SW).forks[0].branches.every((branch) => branch.execution?.ok === true)
-		check('正常路径:两条执行者结论都落了账', landed, JSON.stringify(host.service.view(SW).forks[0].branches.map((b) => b.execution?.ok)))
-		host.states.set(SW, beforePublish)
-		await preStep(host, SW, 64)
-		check('执行者的发布被丢掉 → 下一轮重收(判据同样是投影)', host.service.view(SW).forks[0].branches.every((branch) => branch.execution?.ok === true) && host.journal.filter((m) => m.t === 'worldline/executed').length >= 4, `${host.journal.filter((m) => m.t === 'worldline/executed').length} 条`)
-	}
-
-	// ② 世界线执行者:被中断 → 不许记成「交付成功」
-	{
-		/**
-		 * 2026-09-11 起 `ForkPlan` **不等**执行者(用户在 GUI 里抓到的事实:四个执行者在跑、
-		 * 树上十几分钟没有分叉——因为变更记录是随工具结果落账的,而它卡在 Promise.all 里)。
-		 * 现在:派遣这一笔立即落账;结论由**下一个回合的 sweep** 收,作为事实注入。
-		 * 所以这里先断「派遣已经落账」,再用一次 preStep 把结论收进来。
-		 */
-		const prepared = host.journal.filter((mutation) => mutation.t === 'worldline/prepared' && mutation.fork === forkId)
-		const executing = host.journal.filter((mutation) => mutation.t === 'worldline/executing' && mutation.fork === forkId)
-		check('派遣立即落账(fork/created + worldline/prepared + 两条 executing),不等执行者', host.service.view(S).forks.some((item) => item.id === forkId) && prepared.length === 1 && executing.length === 2, JSON.stringify({ prepared: prepared.length, executing: executing.length }))
-		check('ForkPlan 的卡说「已经在各自的工作副本里作业」,不谎称已回灌结论', /已经在各自的工作副本里作业/.test(String(forked.message ?? '')) && !/已回灌结论/.test(String(forked.message ?? '')), String(forked.message ?? '').slice(0, 140))
-		await preStep(host, S, 91)
-		const executed = host.journal.filter((mutation) => mutation.t === 'worldline/executed' && mutation.fork === forkId)
-		check('执行者被中断 → 下个回合回灌时记 ok=false(不是「交付成功」)', executed.length === 2 && executed.every((mutation) => mutation.ok === false), JSON.stringify(executed).slice(0, 160))
-		check('执行者被中断 → 结论写明未正常结束,不冒充读数', /未正常结束\(aborted\)/.test(String(executed[0]?.conclusion ?? '')), String(executed[0]?.conclusion ?? '').slice(0, 80))
-		check('回灌走的是**事实通道**(插件 section),所以投影里看得见', host.service.view(S).forks.find((item) => item.id === forkId)?.branches.every((branch) => branch.execution?.ok === false) === true)
-		// 卡片要把「执行者跑到哪了」当一条独立事实说出来(异步派遣之后,不写模型就以为它在闲着)
-		/**
-		 * 失联的执行者(2026-09-11):异步收集靠内存表,进程一重启那张表就空了,
-		 * 而投影里那条世界线还停在 `worldline/executing` —— 树与卡片会永远显示「执行中」,
-		 * 没有任何东西会再回灌它。判据是两条已有事实的推论:**投影里在跑** + **这个进程里没有它的条目**。
-		 */
-		{
-			const first = makeHost()
-			apply(first.ctx, { blockedThreshold: 3 })
-			const S3 = 'session-lost'
-			await callOn(first, S3, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
-			await callOn(first, S3, 'CreatePlan', { steps: [{ id: 'l1', do: '分两条路试', artifacts: ['lab/l1.txt'], done_criteria: 'lab/l1.txt 有读数', tests: null }] })
-			await callOn(first, S3, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'lb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'lb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
-			const running = first.service.view(S3).forks[0].branches.map((branch) => branch.execution?.ok)
-			check('前置:两条世界线都在「执行中」(ok=null,还没回灌)', running.length === 2 && running.every((ok) => ok === null), JSON.stringify(running))
-			// 模拟进程重启:同一份投影,换一个内核实例(它内存里的执行者表是空的)
-			const second = makeHost()
-			second.states.set(S3, first.service.state(S3))
-			apply(second.ctx, { blockedThreshold: 3 })
-			await preStep(second, S3, 93)
-			const notes = second.service.view(S3).forks[0].branches.map((branch) => branch.execution?.note)
-			check('重启后失联的执行者如实落账(不再是永远「在跑」)', notes.length === 2 && notes.every((note) => note === 'lost'), JSON.stringify(notes))
-			check('卡片如实说出「失联」(并说清产物没丢、可以照常交付)', /执行没跑成:lost/.test(second.service.renderCard(S3)))
-		}
-		/**
-		 * **从子会话日志回收结论**(2026-09-11 R3 长测:执行者都跑完了,父会话退出时只收上来一条)。
-		 *
-		 * 结论没丢:它就写在执行者自己的会话日志里。所以「内存表里没有」不等于「失联」——
-		 * 先去它的会话里读;**连会话都不在了**才写 lost。顺序错了就是把「没读到」记成「没跑成」。
-		 */
-		{
-			const first = makeHost()
-			apply(first.ctx, { blockedThreshold: 3 })
-			const S4 = 'session-recover'
-			await callOn(first, S4, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
-			await callOn(first, S4, 'CreatePlan', { steps: [{ id: 'r1', do: '分两条路试', artifacts: ['lab/r1.txt'], done_criteria: 'lab/r1.txt 有读数', tests: null }] })
-			await callOn(first, S4, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'rb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'rb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
-			const branchOf = (label) => first.service.view(S4).forks[0].branches.find((branch) => branch.label === label)
-			const childOf = (label) => String(branchOf(label).execution?.child ?? '')
-			// 甲:执行者跑完了(会话里最后一条 turn/end 是 completed,末尾有结论文本)但父进程没来得及收
-			const childA = childOf('甲')
-			const childB = childOf('乙')
-			check('前置:两条执行者都有子会话 id(落账在 worldline/executing 上)', childA !== '' && childB !== '', `${childA} / ${childB}`)
-			const sessionOf = (id, reason, text) => ({
-				id,
-				header: { cwd: WORKSPACE },
-				ownEvents: () => [
-					{ type: 'turn/start', data: { turn: 1 } },
-					{ type: 'assistant/message', data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'reasoning', text: '想一下' }, { type: 'text', text }] } } },
-					{ type: 'turn/end', data: { turn: 1, reason: { kind: reason } } },
-				],
-			})
-			// 模拟「宿主重启」:新的内核实例(内存表空),但会话服务里那两份子会话还在
-			const second = makeHost()
-			second.states.set(S4, first.service.state(S4))
-			second.childSessions = { [childA]: sessionOf(childA, 'completed', '甲跑完了:读数 61.2,产物在 lab/probe.txt'), [childB]: sessionOf(childB, 'aborted', '乙跑到一半被打断') }
-			apply(second.ctx, { blockedThreshold: 3 })
-			await preStep(second, S4, 94)
-			const branches = second.service.view(S4).forks[0].branches
-			const a = branches.find((branch) => branch.label === '甲')
-			const b = branches.find((branch) => branch.label === '乙')
-			check('跑完的执行者:结论从它自己的会话日志里回收(ok=true,note=recovered)', a?.execution?.ok === true && a?.execution?.note === 'recovered', JSON.stringify(a?.execution))
-			check('回收到的结论就是它最后说的话(不是空白、不是「失联」)', /甲跑完了:读数 61\.2/.test(String(a?.execution?.conclusion ?? '')), String(a?.execution?.conclusion ?? '').slice(0, 80))
-			check('被打断的执行者:回收成 ok=false 并带上真实缘由(aborted,不是笼统 failed)', b?.execution?.ok === false && b?.execution?.note === 'aborted' && /跑到一半被打断/.test(String(b?.execution?.conclusion ?? '')), JSON.stringify(b?.execution))
-			check('回收也是「已回灌」:卡片不再写「执行中」', /\(已回灌\)/.test(second.service.renderCard(S4)), second.service.renderCard(S4).split('\n').filter((line) => line.includes('· [')).join(' | ').slice(0, 200))
-			// 反向:会话不在这个进程里 → 仍然如实写「失联」(不把「读不到」写成「跑完了」)
-			const third = makeHost()
-			third.states.set(S4, first.service.state(S4))
-			apply(third.ctx, { blockedThreshold: 3 })
-			await preStep(third, S4, 95)
-			check('会话也不在了 → 仍然如实写「失联」,不假装回收到了结论', third.service.view(S4).forks[0].branches.every((branch) => branch.execution?.note === 'lost' && branch.execution?.ok === false))
-			/**
-			 * 分叉**已经收口**之后才回收到的结论:照收(结论是账本里的东西,与它还有没有用无关)。
-			 * 但收不回来时**不许写「失联」**——那条世界线已经没有归宿了,
-			 * 把「没人再等它」写成「它没跑成」是记错了事实(收口后的派生态是「执行者未归」)。
-			 */
-			const forkId = first.service.view(S4).forks[0].id
-			const settledState = applyMutations(first.service.state(S4), [
-				{ t: 'branch/delivered', fork: forkId, branch: 'rb1', reading: '61.2', validity: 'usable', verdict: 'support', basis: '硬信号' },
-				{ t: 'branch/delivered', fork: forkId, branch: 'rb2', reading: '44', validity: 'usable', verdict: 'support', basis: '硬信号' },
-				{ t: 'fork/converged', fork: forkId, winner: 'rb1', margin: 0.1, metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' },
-			])
-			const fourth = makeHost()
-			fourth.states.set(S4, settledState)
-			fourth.childSessions = { [childA]: sessionOf(childA, 'completed', '甲跑完了:读数 61.2'), [childB]: sessionOf(childB, 'completed', '乙也跑完了:读数 44') }
-			apply(fourth.ctx, { blockedThreshold: 3 })
-			await preStep(fourth, S4, 96)
-			check('分叉收口之后才回收到的结论照收(账本里的事实不因「没用了」而丢)', fourth.journal.filter((mutation) => mutation.t === 'worldline/executed' && mutation.note === 'recovered').length === 2, JSON.stringify(fourth.journal.filter((m) => m.t === 'worldline/executed').map((m) => m.note)))
-			check('回收之后卡片写「已回灌」,不再写「执行者未归」', !/执行者未归/.test(fourth.service.renderCard(S4)) && /\(已回灌\)/.test(fourth.service.renderCard(S4)), fourth.service.renderCard(S4).split('\n').filter((line) => line.includes('· [')).join(' | ').slice(0, 200))
-			const fifth = makeHost()
-			fifth.states.set(S4, settledState)
-			apply(fifth.ctx, { blockedThreshold: 3 })
-			await preStep(fifth, S4, 97)
-			check('收口之后收不回来:不写「失联」(没人再等它,不是它没跑成)', fifth.journal.filter((mutation) => mutation.t === 'worldline/executed').length === 0, JSON.stringify(fifth.journal.filter((m) => m.t === 'worldline/executed')))
-			/**
-			 * **不用等回合边界**(2026-09-11 R3 现场:模型一个回合走完整条链,根本没有下一个 pre-step)。
-			 * 交付/收敛/收尾/两件观察工具的成功返回上都要做同一件事——否则「结论可回收」只在
-			 * 恰好还有下一个回合时才成立。
-			 */
-			const sixth = makeHost()
-			sixth.states.set(S4, first.service.state(S4))
-			sixth.childSessions = { [childA]: sessionOf(childA, 'completed', '甲跑完了:读数 61.2'), [childB]: sessionOf(childB, 'aborted', '乙被打断') }
-			apply(sixth.ctx, { blockedThreshold: 3 })
-			const seen = await callOn(sixth, S4, 'WorldlineStatus', {})
-			check(
-				'观察工具的成功返回上也回收(不必等到下一个回合边界)',
-				sixth.journal.filter((mutation) => mutation.t === 'worldline/executed').length === 2 &&
-					sixth.journal.some((mutation) => mutation.note === 'recovered' && mutation.ok === true) &&
-					sixth.journal.some((mutation) => mutation.note === 'aborted' && mutation.ok === false),
-				JSON.stringify(sixth.journal.filter((m) => m.t === 'worldline/executed').map((m) => m.note)),
-			)
-			check('回执里如实说这两条是回收来的(来源可考)', /回收/.test(String(seen.message)), String(seen.message).split('\n').slice(0, 3).join(' / '))
-			/**
-			 * **表里有条目、promise 却不落定**(2026-09-11 最后一场长测:四条执行者都跑完了,
-			 * 有一条的 promise 始终没落地,于是「有条目」把回收挡住了,那条线永久停在「执行者未归」)。
-			 * 判据不该看内存表,要看**执行者自己的会话日志**:它写了 `turn/end`,结论就存在了。
-			 */
-			const seventh = makeHost()
-			apply(seventh.ctx, { blockedThreshold: 3 })
-			seventh.executorNeverSettles = true
-			const S6 = 'session-stuck'
-			await callOn(seventh, S6, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
-			await callOn(seventh, S6, 'CreatePlan', { steps: [{ id: 'k1', do: '两条路各试一遍', artifacts: ['lab/k1.txt'], done_criteria: 'lab/k1.txt 有读数', tests: null }] })
-			await callOn(seventh, S6, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'kb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'kb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
-			const stuckKids = seventh.service.view(S6).forks[0].branches.map((branch) => String(branch.execution?.child ?? ''))
-			seventh.childSessions = Object.fromEntries(stuckKids.map((id) => [id, sessionOf(id, 'completed', `跑完了:${id.slice(0, 4)} 的读数`)]))
-			const stuckSeen = await callOn(seventh, S6, 'WorldlineStatus', {})
-			check('表里有条目不落定 → 仍然能从它的会话日志回收(不再卡在「执行者未归」)', seventh.journal.filter((mutation) => mutation.t === 'worldline/executed' && mutation.note === 'recovered').length === 2, JSON.stringify(seventh.journal.filter((m) => m.t === 'worldline/executed').map((m) => m.note)))
-			check('回收说清来源(不是「失联」)', /回收/.test(String(stuckSeen.message)) && !/失联/.test(String(stuckSeen.message)), String(stuckSeen.message).split('\n').slice(0, 3).join(' / '))
-		}
-		/**
-		 * **盘上残留的读数**(R3-c:同一个工作区里跑第二轮时,上一轮的 4 份工作副本 + 4 个分支
-		 * 树上一个都看不到)。残留是事实,该像目录、当档一样自己回到投影里。
-		 */
-		{
-			const dirty = tempDir('clearai-residue-')
-			execFileSync('git', ['init', '-q'], { cwd: dirty })
-			execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: dirty })
-			// 上一轮留下的:两个容器、共 3 份工作副本,外加 3 个分支 ref
-			for (const [fork, branch] of [['k-old-1', 'b-1'], ['k-old-1', 'b-2'], ['k-old-2', 'b-3']]) {
-				mkdirSync(join(dirty, 'clear', 'worldlines', fork, branch), { recursive: true })
-				execFileSync('git', ['branch', `clearai/${fork}/${branch}`], { cwd: dirty })
-			}
-			const host = makeHost()
-			host.cwd = dirty
-			apply(host.ctx, {})
-			const S5 = 'session-residue'
-			const decision = await preStep(host, S5, 98)
-			const text = JSON.stringify(decision.messages ?? [])
-			check('开场事实里报出「盘上还留着上一轮的 3 份世界线工作副本」', /盘上还留着\*\*上一轮\*\*的 3 份世界线工作副本/.test(text), text.slice(0, 300))
-			check('报清是哪几盘(容器名 + 份数)', /k-old-1\(2 份\)/.test(text) && /k-old-2\(1 份\)/.test(text), text.slice(0, 400))
-			check('分支 ref 也如实报数(3 个)', /3 个 clearai 分支 ref/.test(text), text.slice(0, 400))
-			check('说清「留着是留档」与怎么清(不劝、也不偷偷删)', /留档/.test(text) && /git worktree remove/.test(text), text.slice(0, 400))
-			// 反向:这盘自己的分叉不算残留(自己刚开的工作副本不是「上一轮」)
-			const clean = makeHost()
-			clean.cwd = dirty
-			clean.states.set(S5, {
-				...emptyState(),
-				forks: [{ id: 'k-old-1', step: 's1', branches: [] }, { id: 'k-old-2', step: 's1', branches: [] }],
-			})
-			apply(clean.ctx, {})
-			const cleanDecision = await preStep(clean, S5, 99)
-			check('当前这盘自己的分叉不算残留(只有真正没人认领的才报)', !/世界线工作副本/.test(JSON.stringify(cleanDecision.messages ?? [])), JSON.stringify(cleanDecision.messages ?? []).slice(0, 200))
-		}
-		check('卡片如实标注每条世界线的执行状态(具体结局,不是笼统的 failed)', /执行没跑成:aborted/.test(host.service.renderCard(S)) && !/执行没跑成:failed/.test(host.service.renderCard(S)), host.service.renderCard(S).split('\n').filter((line) => line.includes('· [')).join(' | ').slice(0, 160))
-	}
-	const branchPath = (label) => host.service.view(S).forks.find((item) => item.id === forkId).branches.find((item) => item.label === label).worktreePath
-	host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '61.2', validity: 'usable' }
-	writeText(join(branchPath('甲'), 'probe.txt'), 'run,yield_pct\n1,61.2\n')
-	await callOn(host, S, 'AdvanceWorldline', { branch_id: '甲', observations: [{ ref: join(branchPath('甲'), 'probe.txt') }] })
-
-	// ③ 横评仲裁:被中断 → 说「未正常结束」,不写成「裁不出来」
-	delete host.stopReasonExecutor
-	host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '说不清', validity: 'usable' }
-	writeText(join(branchPath('乙'), 'probe.txt'), 'run,yield_pct\n1,未测出\n')
-	await callOn(host, S, 'AdvanceWorldline', { branch_id: '乙', observations: [{ ref: join(branchPath('乙'), 'probe.txt') }] })
-	host.stopReasonArbiter = 'aborted'
-	const converged = await callOn(host, S, 'ConvergeFork', {})
-	check('仲裁被中断 → 如实说「未正常结束」,不冒充「裁不出来」', /未正常结束\(aborted\)/.test(String(converged.message ?? '')) || converged.code === 'UNDECIDABLE_NO_READINGS', `${converged.code} / ${String(converged.message ?? '').slice(0, 100)}`)
-	delete host.stopReasonScout
-	delete host.stopReasonArbiter
-}
-
-console.log('\n【只读脸按注册表过滤 + 幂等派遣(2026-09-11 用户指出的两个缺口)】')
-{
-	// ① `read_image` 只在挂了 attachments 的部署里存在,而 tools.restrict 遇到未知名字会抛。
-	//    所以候选名单要过一道「这个部署里到底有没有」的过滤——用假 tools 注册表验两个方向。
-	const host = makeHost()
-	// 只挂了 read/glob(没有 read_image、没有 grep)的「瘦部署」
-	host.toolNames = ['read', 'glob', 'web_search', 'web_fetch']
-	apply(host.ctx, { blockedThreshold: 3 })
-	const S = 'session-face'
-	await callOn(host, S, 'SetGoal', { claim: 'x', done_criteria: 'y 存在', hypotheses: [{ claim: 'a', refute_when: 'b' }] })
-	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'a1', do: '查一处', artifacts: ['lab/a1.txt'], done_criteria: '存在', tests: { hypothesis: host.service.state(S).hypotheses[0].id, level: 'L3' } }] })
-	const scoutsBefore = host.audits.filter((entry) => entry.isScout === true).length
-	await callOn(host, S, 'SpawnScout', { task: '去看一眼 lab/ 里有什么', why: '观测缺口' })
-	const face = host.audits.filter((entry) => entry.isScout === true).slice(-1)[0]?.request?.toolFilter?.allow ?? []
-	check('瘦部署:候选名单里没有的工具被摘掉(read_image/grep 不在脸上)', scoutsBefore === 0 && face.includes('read') && !face.includes('read_image') && !face.includes('grep'), JSON.stringify(face))
-
-	// ② 幂等派遣:同一个任务第二次派 → 复用,不重跑;换了措辞 → 重派;
-	//    上一次被中断 → 重派(用户要的「中断的应该继续/重试」)。
-	const reuseHost = makeHost()
-	apply(reuseHost.ctx, { blockedThreshold: 3 })
-	const R = 'session-reuse'
-	await callOn(reuseHost, R, 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
-	const task = '去把 lab/ 下的原始记录核一遍,查不到就写未查到。'
-	await callOn(reuseHost, R, 'SpawnScout', { task, why: '观测缺口' })
-	// 复用只在「上一次**正常回灌过**」时成立 ⇒ 先走一次回合边界把结论收上来(异步派遣之后的必然一步)。
-	await preStep(reuseHost, R, 51)
-	const first = (reuseHost.journal.filter((mutation) => mutation.t === 'scout/dispatched')).length
-	const second = await callOn(reuseHost, R, 'SpawnScout', { task, why: '观测缺口' })
-	const afterSecond = (reuseHost.journal.filter((mutation) => mutation.t === 'scout/dispatched')).length
-	check('同一个任务再派一次 → **不再派**(复用上一次的回灌)', afterSecond === first, `${first} → ${afterSecond}`)
-	check('复用时如实说明是复用,不假装又跑了一遍', /复用/.test(String(second.message ?? '')), String(second.message ?? '').slice(0, 100))
-	check('身份(digest)进了落账,可重放', typeof reuseHost.journal.find((mutation) => mutation.t === 'scout/dispatched')?.digest === 'string', JSON.stringify(reuseHost.journal.find((mutation) => mutation.t === 'scout/dispatched')?.digest))
-	await callOn(reuseHost, R, 'SpawnScout', { task: `${task}  换个问法`, why: '观测缺口' })
-	const afterReword = (reuseHost.journal.filter((mutation) => mutation.t === 'scout/dispatched')).length
-	check('改了措辞 = 另一件事 → 重新派', afterReword === first + 1, `${first} → ${afterReword}`)
-	const interrupted = makeHost()
-	apply(interrupted.ctx, { blockedThreshold: 3 })
-	const I = 'session-reuse-2'
-	await callOn(interrupted, I, 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
-	interrupted.stopReasonScout = 'aborted'
-	await callOn(interrupted, I, 'SpawnScout', { task, why: '观测缺口' })
-	const interruptedCount = (interrupted.journal.filter((mutation) => mutation.t === 'scout/dispatched')).length
-	delete interrupted.stopReasonScout
-	await callOn(interrupted, I, 'SpawnScout', { task, why: '观测缺口' })
-	const retried = (interrupted.journal.filter((mutation) => mutation.t === 'scout/dispatched')).length
-	check('上一次被中断 → **重派**(不是复用半截结论)', retried === interruptedCount + 1, `${interruptedCount} → ${retried}`)
-}
-
-console.log('\n【工作区引导:空文件夹铺默认结构,已有内容只加 clear/】')
-{
-	const freshRoot = tempDir('clearai-boot-fresh-')
-	const busyRoot = tempDir('clearai-boot-busy-')
-	writeFileSync(join(busyRoot, '用户自己的文件.txt'), '别动我')
-	const host = makeHost()
-	/**
-	 * 模板目录**是配置**(打包纪律④:发行物里不许出现仓库路径)。
-	 * 测试跑的是仓库里那份内核,所以在这里显式指回 ClearAI 的模板目录——
-	 * 生产形态下缺省是插件旁边的 `template/`(随包走)。
-	 */
-	apply(host.ctx, { templateDir: join(import.meta.dirname, '..', 'preset', 'template') })
-	const S = 'session-bootstrap'
-	await callOn(host, S, 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
-
-	// ① 空文件夹:默认结构全铺
-	const before = host.cwd
-	host.cwd = freshRoot
-	await preStep(host, S, 30)
-	check('空文件夹:clear/ 骨架建起来', ['skills', 'memory', 'knowledge', 'audit'].every((sub) => existsSync(join(freshRoot, 'clear', sub))))
-	check('空文件夹:系统配置落盘', existsSync(join(freshRoot, 'clear', 'config.json')))
-	check('空文件夹:PROJECT.md 铺上(它是章程,也是原生指令文件的候选名)', existsSync(join(freshRoot, 'PROJECT.md')))
-	check('空文件夹:input / lab / products 三个默认目录都在', ['input', 'lab', 'products'].every((dir) => existsSync(join(freshRoot, dir))))
-	check('空文件夹:18 个模板技能铺进 clear/skills', readdirSync(join(freshRoot, 'clear', 'skills')).filter((name) => existsSync(join(freshRoot, 'clear', 'skills', name, 'SKILL.md'))).length === 18, String(readdirSync(join(freshRoot, 'clear', 'skills')).length))
-	check('卡片如实说明铺了什么', /工作区已铺好/.test(String((await preStep(host, S, 31, [{ source: { kind: 'user' } }]))?.messages?.[0]?.content?.[0]?.text ?? '')) || true)
-
-	/**
-	 * ①′ 章程读数:**只有文件系统事实**(在不在 / 多大 / 什么时候动过)。
-	 *
-	 * 2026-09-11 砍掉了这里的「占位 X/Y 条 + §1 当前阶段」解析(用户一问点醒,理由见 kernel):
-	 * 那是对文本做格式解析,改一个标点「事实」就变(长测现场:18 被数成 17);
-	 * 而章程每回合被原生指令文件整份注入模型上下文,再算一遍摘要是第二本账。
-	 * 这条断言反向钉住:读数里**不许**再出现推导出来的计数。
-	 */
-	{
-		const facts = host.service.state(S).constitution
-		check('章程读数随投影下发(面板读的就是这份)', facts !== null && facts !== undefined && facts.exists === true, JSON.stringify(facts))
-		check('读数只有文件系统事实:大小与最后改动', typeof facts.bytes === 'number' && facts.bytes > 0 && typeof facts.modifiedAt === 'number', JSON.stringify(facts))
-		check('不再有推导出来的计数(占位 / 已填 / 当前阶段都不许回来)', facts.placeholders === undefined && facts.items === undefined && facts.stage === undefined, Object.keys(facts).join(','))
-		// 卡片里也不该再出现章程那一行:原文已经在模型上下文里,二次摘要只会更旧更错。
-		check('运行态卡不再写章程那一行(原文已随原生指令文件注入)', !/项目章程/.test(host.service.renderCard(S)))
-		// 文件动过 → 读数跟着变(事实来自文件系统,不是缓存)。
-		const file = join(freshRoot, 'PROJECT.md')
-		appendFileSync(file, '\n<!-- 长测:文件动了一下 -->\n')
-		await preStep(host, S, 33)
-		check('文件动过之后读数跟着走', host.service.state(S).constitution.modifiedAt !== facts.modifiedAt)
-	}
-
-	// ② 幂等:再跑一遍不动任何东西(技能不覆盖)
-	writeFileSync(join(freshRoot, 'clear', 'skills', 'data-analysis', 'SKILL.md'), '我自己改过的')
-	host.cwd = freshRoot
-	const bootstrappedAgain = await preStep(host, S, 32)
-	void bootstrappedAgain
-	check('幂等:改过的技能不被模板覆盖(刻意偏离 ClearAI 的「同步」)', readFileSync(join(freshRoot, 'clear', 'skills', 'data-analysis', 'SKILL.md'), 'utf8') === '我自己改过的')
-
-	// ③ 已有内容的文件夹:只加 clear/,不碰用户的目录、不写 PROJECT.md
-	const busy = makeHost()
-	apply(busy.ctx, {})
-	busy.cwd = busyRoot
-	await callOn(busy, 'session-busy', 'SetGoal', { claim: 'x', done_criteria: 'y 存在' })
-	await preStep(busy, 'session-busy', 30)
-	check('已有内容:只加 clear/(用户的目录归用户)', existsSync(join(busyRoot, 'clear', 'skills')) && !existsSync(join(busyRoot, 'input')) && !existsSync(join(busyRoot, 'products')))
-	check('已有内容:**不**写 PROJECT.md(不往别人的项目里塞章程)', !existsSync(join(busyRoot, 'PROJECT.md')))
-	check('已有内容:用户自己的文件原样不动', readFileSync(join(busyRoot, '用户自己的文件.txt'), 'utf8') === '别动我')
-	host.cwd = before
-
-	/**
-	 * ④ 抢在第一个 pre-step 之前铺(`agent/created`)。
-	 *
-	 * 为什么这条是机制而不是优化:技能目录是宿主**合并目录**的一部分,原生 `tool-skill` 的
-	 * pre-step 在我们前面先取快照,并按 `cwd+作用域+revision` 缓存。等轮到自己才铺,那次快照
-	 * 就把空表缓存住了——模型看不到 `clear/skills`、人引用 `/技能名` 也注入不出正文。
-	 * 2026-09-11 的 E2E 真跑抓到的就是这个(面板与模型一起瞎)。
-	 */
-	{
-		const early = makeHost()
-		apply(early.ctx, { templateDir: join(import.meta.dirname, '..', 'preset', 'template') })
-		const earlyRoot = tempDir('clearai-boot-early-')
-		const created = early.listeners.get('agent/created')
-		check('注册了 agent/created 这一个更早的机制位', typeof created === 'function')
-		created({ agent: { id: 'session-early', session: { header: { cwd: earlyRoot } } } })
-		check('会话一创建就把工作区铺好(还没跑任何 pre-step)', existsSync(join(earlyRoot, 'clear', 'skills')) && readdirSync(join(earlyRoot, 'clear', 'skills')).length === 18, String(readdirSync(join(earlyRoot, 'clear', 'skills')).length))
-		check('铺完立刻让宿主的技能目录缓存失效(否则它还会端出铺之前的空表)', early.brainInvalidations.length >= 1, JSON.stringify(early.brainInvalidations))
-		check('同一次会话不重复铺(幂等)', (() => { const before = early.brainInvalidations.length; created({ agent: { id: 'session-early', session: { header: { cwd: earlyRoot } } } }); return early.brainInvalidations.length === before })())
-		// 不知道工作区在哪就**不铺**:`sessionCwd` 查不到会话时会退回进程目录,那会把 clear/ 铺错地方。
-		const ghostRoot = tempDir('clearai-boot-ghost-')
-		created({ agent: { id: 'session-ghost' } })
-		check('拿不到 cwd 时不铺(宁可不铺,也不铺到进程目录里)', !existsSync(join(ghostRoot, 'clear')))
-	}
-}
-
-console.log('\n【账本:交付点落一条提交,恢复是一条新提交】')
-{
-	const host = makeHost()
-	apply(host.ctx, {})
-	const S = 'session-ledger'
-	await callOn(host, S, 'SetGoal', { claim: '把产物做出来', done_criteria: 'lab/ledger-probe.txt 存在', hypotheses: [{ claim: '能一次做成', refute_when: '做不成' }] })
-	const hypothesis = host.service.state(S).hypotheses[0].id
-	await callOn(host, S, 'CreatePlan', {
-		steps: [{ id: 'l1', do: '写第一版', artifacts: ['lab/ledger-probe.txt'], done_criteria: 'lab/ledger-probe.txt 存在', tests: { hypothesis, level: 'L3' } }],
-	})
-	write('lab/ledger-probe.txt', '第一版\n')
-	const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'l1' })
-	check('交付成功', delivered.ok === true, String(delivered.code))
-	check('卡片里如实说这次交付落了账', /账本:这次交付已记为一条提交/.test(String(delivered.message)), String(delivered.message).split('\n').slice(-2).join(' '))
-	check('落了一条 git/committed 记录(带步 id,来源可考)', host.journal.some((mutation) => mutation.t === 'git/committed' && mutation.step === 'l1'))
-
-	// 第二步把它改成第二版并交付:HEAD 现在是 v2,账本里两条都在。
-	await callOn(host, S, 'AmendPlan', { step: { id: 'l2', do: '改成第二版', artifacts: ['lab/ledger-probe.txt'], done_criteria: 'lab/ledger-probe.txt 存在', tests: { hypothesis, level: 'L3' } } })
-	write('lab/ledger-probe.txt', '第二版\n')
-	const second = await callOn(host, S, 'AdvancePlan', { step_id: 'l2' })
-	check('第二次交付也落一条账(每步一条)', second.ok === true && host.journal.filter((mutation) => mutation.t === 'git/committed').length === 2, String(second.code))
-	const history = await callOn(host, S, 'FileHistory', { path: 'lab/ledger-probe.txt' })
-	check('FileHistory 列得出来(提交信息写着是哪一步交付的)', history.ok === true && /交付/.test(String(history.message)) && /l1/.test(String(history.message)), String(history.message).slice(0, 160))
-	// 历史是**新的在前**:最后一条就是第一次交付(第一版)。
-	const commits = [...String(history.message).matchAll(/([0-9a-f]{7,40})\s·/g)].map((match) => match[1])
-	check('历史里给得出提交 id(两条都在)', commits.length === 2, String(history.message))
-	/**
-	 * 取的是**那一步自己的提交**(按提交信息里的步 id),不是"位置上的最后一条":
-	 * 账本是懒建的,第一笔可能是基线(它现在继承那一步的信息,所以按 id 找仍然找得到)。
-	 * 按位置找的话,基线一旦掺进来就会把恢复指到一个不相干的提交上 —— 那是测试脆,不是产品错。
-	 */
-	const lineForL1 = String(history.message)
-		.split('\n')
-		.find((line) => /[0-9a-f]{7,40}\s·/.test(line) && /l1/.test(line))
-	const commit = (lineForL1 ?? '').match(/([0-9a-f]{7,40})\s·/)?.[1] ?? commits[commits.length - 1]
-	check('找得到 l1 那一步的提交(按步 id,不按位置)', typeof commit === 'string' && commit.length >= 7, String(history.message))
-
-	const restored = await callOn(host, S, 'RestoreFile', { path: 'lab/ledger-probe.txt', commit, reason: '被后来的编辑弄坏了' })
-	check('恢复成功', restored.ok === true, String(restored.code))
-	check('内容真的回到了第一次交付那一版(逐字节)', readFileSync(join(WORKSPACE, 'lab/ledger-probe.txt'), 'utf8') === '第一版\n', JSON.stringify(readFileSync(join(WORKSPACE, 'lab/ledger-probe.txt'), 'utf8')))
-	check('恢复**自己**也落一条提交(账本只前进,历史没被抹掉)', /这条恢复自己也是一条新提交/.test(String(restored.message)), String(restored.message).slice(-120))
-	check('留了 git/restored 记录(从哪个提交恢复、为什么)', host.journal.some((mutation) => mutation.t === 'git/restored' && mutation.path === 'lab/ledger-probe.txt' && mutation.from === commit))
-	{
-		const after = await callOn(host, S, 'FileHistory', { path: 'lab/ledger-probe.txt' })
-		check(
-			'恢复之后历史里**三条都在**(恢复 + 两次交付;不是把时间倒回去)',
-			// 只数**提交信息**里的字样(卡里也有「交付」二字,不能混进来)。
-			// 账本里现在三条:两次交付 + 一次恢复(恢复自己也是一条提交)。
-			/clearai: 恢复/.test(String(after.message)) &&
-				(String(after.message).match(/clearai:\s*交付/g) ?? []).length === 2 &&
-				(String(after.message).match(/[0-9a-f]{7,40}\s·/g) ?? []).length === 3,
-			`历史里 ${(String(after.message).match(/[0-9a-f]{7,40}\s·/g) ?? []).length} 条提交(期望 3)`,
-		)
-	}
-
-	// 路径守卫与错误:不认绝对路径 / `..` / 不存在的提交
-	const badPath = await callOn(host, S, 'FileHistory', { path: '../outside.txt' })
-	check('`..` → 拒绝', badPath.ok === false && badPath.code === 'invalid_path', String(badPath.code))
-	const badCommit = await callOn(host, S, 'RestoreFile', { path: 'lab/ledger-probe.txt', commit: '不是提交' })
-	check('非法 commit → 拒绝', badCommit.ok === false && badCommit.code === 'invalid_commit', String(badCommit.code))
-	const ghost = await callOn(host, S, 'RestoreFile', { path: 'lab/ledger-probe.txt', commit: 'deadbee' })
-	check('提交里没有这个文件 → 拒绝(不写坏东西)', ghost.ok === false && ghost.code === 'not_in_commit', String(ghost.code))
-}
 
 console.log('\n【裁决一旦结束就要落结算事实:不许让派发事实独自留在账上】')
 {
@@ -3640,127 +2188,6 @@ console.log('\n【评估者已结束 ⇒ 先取回它的裁决,取不回才如�
 	}
 }
 
-console.log('\n【回合收尾:只记一笔工作区,不替宿主与收集通道说话】')
-{
-	/**
-	 * 权威归属(§一):「还在不在跑」的权威是宿主的子任务目录,「结果收没收回」是收集通道的事。
-	 * 收尾那一拍**只做一件真正属于我们的事**:把这一回合的写入记进账本(一次性形态里
-	 * 唯一会落地的那笔)。此前它还宣告过「它们的结论不会自己回来」——那是没有证据的推论
-	 * (父回合结束只证明父回合结束),已删。
-	 */
-	const host = makeHost()
-	apply(host.ctx, {})
-	const S = 'session-turn-end'
-	await callOn(host, S, 'SetGoal', { claim: '把产物做出来', done_criteria: 'lab/turn-end.txt 存在', hypotheses: [{ claim: '能做成', refute_when: '做不成' }] })
-	const hypothesis = host.service.state(S).hypotheses[0].id
-	await callOn(host, S, 'CreatePlan', { steps: [{ id: 't1', do: '分头试两条', artifacts: ['lab/turn-end.txt'], done_criteria: 'lab/turn-end.txt 存在', tests: { hypothesis, level: 'L0' } }] })
-	const turnEnd = host.listeners.get('agent/turn-stopping')
-	check('内核注册了 agent/turn-stopping(宿主给的回合收尾位)', typeof turnEnd === 'function')
-	host.executorNeverSettles = true
-	await callOn(host, S, 'ForkPlan', {
-		question: '两条路线选哪条',
-		options: [
-			{ label: '甲', approach: '甲做法', done_criteria: '读数 order 越大越好' },
-			{ label: '乙', approach: '乙做法', done_criteria: '读数 order 越大越好' },
-		],
-		decide_by: { metric: 'order = lab/probe.txt 里数值的排序位次', direction: 'max' },
-	})
-	// 模型写过东西(writeCalls>0)且工作区脏 ⇒ 收尾那一拍应记一笔账
-	write('lab/turn-end.txt', 'v1\n')
-	host.states.set(S, { ...host.service.state(S), writeCalls: 1 })
-	const commitsBefore = ledgerGit(WORKSPACE, ['log', '--format=%h', '-n', '50']).split('\n').filter(Boolean)
-	await turnEnd({ agent: { id: S }, turn: 3, signal: undefined })
-	const commitsAfter = ledgerGit(WORKSPACE, ['log', '--format=%h', '-n', '50']).split('\n').filter(Boolean)
-	const lastSubject = ledgerGit(WORKSPACE, ['log', '-1', '--format=%s'])
-	check('收尾把这一回合的写入记进账本(一次性形态里唯一会落地的那笔)', commitsAfter.length > commitsBefore.length && /回合结束/.test(lastSubject), lastSubject.slice(0, 80))
-	check('收尾不发消息(不许偷偷把模型叫起来)', (host.sent ?? []).length === 0, JSON.stringify((host.sent ?? []).map((row) => row.via)))
-	check('收尾不往会话日志写任何 clearai 事件(那一拍没有我们该说的)', (host.appended ?? []).filter((row) => String(row.type).startsWith('clearai/')).length === 0, JSON.stringify((host.appended ?? []).map((row) => row.type)))
-	check('内核也盯着 agent/error(宿主为"回合以错误结束"发的那个;那一拍同样只记账)', typeof host.listeners.get('agent/error') === 'function')
-}
-
-console.log('\n【子 run 落定由宿主告诉我们:handle 不在了也不丢结算】')
-{
-	/**
-	 * 原来只有两条结算通道:本进程攥着的 `run.result`,和"读子会话自己的日志"。
-	 * `subagent/end` 是宿主在**同一个 promise 落定那一刻**发出的(成功与失败都发),
-	 * 于是第三种通道有了:handle 已经不在(重启、换档、早退)也收得到,失败一路也不必靠日志猜。
-	 * **认 id 才吃**:别人的子 run 不是我们的事实。
-	 */
-	const host = makeHost()
-	apply(host.ctx, {})
-	const S = 'session-subagent-end'
-	await callOn(host, S, 'SetGoal', { claim: '查清 lab 里的原始记录', done_criteria: 'lab/records.md 有结论', hypotheses: [{ claim: '记录齐备', refute_when: '缺记录' }] })
-	await callOn(host, S, 'CreatePlan', { steps: [{ id: 's1', do: '查记录', artifacts: ['lab/records.md'], done_criteria: 'lab/records.md 有结论' }] })
-	host.scoutNeverSettles = true
-	const spawned = await callOn(host, S, 'SpawnScout', { task: '去看看 lab/ 里有没有原始记录,查不到就说查不到。', why: '观测缺口' })
-	check('前置:侦察派出去就返回(不等结论)', spawned.ok === true && spawned.code === 'scout_dispatched', String(spawned.code))
-	const childId = host.journal.filter((mutation) => mutation.t === 'scout/dispatched').at(-1)?.child
-	await preStep(host, S, 2)
-	check('promise 不落定 ⇒ 账上仍是「派过、没回」', !host.journal.some((mutation) => mutation.t === 'scout/settled'))
-	host.listeners.get('subagent/end')({ id: childId, stopReason: 'completed', lastAssistantMessage: [{ type: 'text', text: '查到了:三次重复里只有两次有原始记录。' }] })
-	await preStep(host, S, 3)
-	const settled = host.journal.filter((mutation) => mutation.t === 'scout/settled').at(-1)
-	check('宿主一报落定,下一个回合边界就收进账(不再只靠读子会话日志)', settled !== undefined && /只有两次有原始记录/.test(String(settled.conclusion)), JSON.stringify(settled ?? null).slice(0, 160))
-	check('不认识的 id 不会被吃(别人的子 run 不是我们的事实)', (() => {
-		const before = host.journal.filter((mutation) => mutation.t === 'scout/settled').length
-		host.listeners.get('subagent/end')({ id: 'someone-else', stopReason: 'completed', lastAssistantMessage: [{ type: 'text', text: '与我无关' }] })
-		return host.journal.filter((mutation) => mutation.t === 'scout/settled').length === before
-	})())
-}
-
-console.log('\n【账本不记平台垃圾:.DS_Store 这类不该让模型兜圈子】')
-{
-	/**
-	 * `.DS_Store` 不是任何人的内容:二进制、每浏览一次目录就可能变一次。让它进账本,
-	 * 两条世界线的副本**一定**各有一份不同的 ⇒ 合并必然冲突,而冲突源与交付内容毫无关系
-	 * (人点了合并,模型却要围着它兜一圈把两边字节对齐)。
-	 * 这里钉两件事:提交前它从索引里被摘掉(工作树里的文件原样留着),以及 exclude 里写着它。
-	 */
-	const host = makeHost()
-	apply(host.ctx, {})
-	const S = 'session-junk'
-	await callOn(host, S, 'SetGoal', { claim: '把产物做出来', done_criteria: 'lab/junk-probe.txt 存在', hypotheses: [{ claim: '能做成', refute_when: '做不成' }] })
-	const hypothesis = host.service.state(S).hypotheses[0].id
-	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'j1', do: '写一版', artifacts: ['lab/junk-probe.txt'], done_criteria: 'lab/junk-probe.txt 存在', tests: { hypothesis, level: 'L0' } }] })
-	write('lab/junk-probe.txt', 'v1\n')
-	write('.DS_Store', '\x00finder-binary\n')
-	writeText(join(WORKSPACE, 'sub', '.DS_Store'), '\x00nested\n')
-	const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'j1', verdict: 'support', basis: 'lab/junk-probe.txt 写着 v1' })
-	check('交付照常成功(排除垃圾不影响交付)', delivered.ok === true, String(delivered.code))
-	const listed = ledgerGit(WORKSPACE, ['ls-files'])
-	check('账本里**没有** .DS_Store(平台垃圾不进内容)', !/\.DS_Store/.test(listed), listed.split('\n').filter((line) => line.includes('DS_Store')).join(','))
-	check('工作树里那份 .DS_Store 原样留着(只摘索引,不碰用户的文件)', existsSync(join(WORKSPACE, '.DS_Store')))
-	const excludeFile = join(ledgerDirOf(WORKSPACE), 'info', 'exclude')
-	const excludeText = readFileSync(excludeFile, 'utf8')
-	check('exclude 里写着垃圾名单(各条世界线的 worktree 一起受益)', /\.DS_Store/.test(excludeText) && /Thumbs\.db/.test(excludeText) && /clear\/worldlines\//.test(excludeText), excludeText.replace(/\n/g, ' | ').slice(0, 160))
-}
-
-console.log('\n【账本:交付点不会被探索期快照顶掉】')
-{
-	/**
-	 * 长测抓到的洞:探索期快照先提交了那棵树,紧接着的**交付提交**变成空提交 ⇒
-	 * `commitLedger` 按「树干净就不提交」的纪律静默跳过 ⇒ 账本里**没有这条交付**。
-	 * 交付点是一笔**具名事件**(它记的是"这一步交付时工作区长什么样"),所以它必须留着;
-	 * 快照本来就是「有变化才记」,没有这条义务。
-	 */
-	const host = makeHost()
-	apply(host.ctx, {})
-	const S = 'session-ledger-snapshot'
-	await callOn(host, S, 'SetGoal', { claim: '把产物做出来', done_criteria: 'lab/snap-probe.txt 存在', hypotheses: [{ claim: '能一次做成', refute_when: '做不成' }] })
-	const hypothesis = host.service.state(S).hypotheses[0].id
-	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'p1', do: '写第一版', artifacts: ['lab/snap-probe.txt'], done_criteria: 'lab/snap-probe.txt 存在', tests: { hypothesis, level: 'L0' } }] })
-	write('lab/snap-probe.txt', 'v1\n')
-	// 造一次「本回合有写入」:快照正是按这个读数触发的。
-	host.states.set(S, { ...host.service.state(S), writeCalls: 1 })
-	await preStep(host, S, 1, [])
-	check('探索期快照确实落了账(它先提交了这棵树)', host.journal.some((mutation) => mutation.t === 'git/snapshot'), JSON.stringify(host.journal.map((mutation) => mutation.t)))
-	check('快照的措辞不撒谎:它写的是「尚未交付的写入」,不是「回合边界」以外的承诺', /尚未交付的写入/.test(String(host.journal.find((mutation) => mutation.t === 'git/snapshot')?.reason ?? '')), String(host.journal.find((mutation) => mutation.t === 'git/snapshot')?.reason))
-	// L0 由做的人自己判:交付要带 verdict 与可复查的依据。
-	const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'p1', verdict: 'support', basis: 'lab/snap-probe.txt 里写着 v1' })
-	const committed = host.journal.filter((mutation) => mutation.t === 'git/committed' && mutation.step === 'p1')
-	check('树相同时交付仍然是**一条提交**(交付点不许在账上消失)', delivered.ok === true && committed.length === 1 && typeof committed[0].commit === 'string' && committed[0].commit.length >= 7, `${delivered.code}/${JSON.stringify(committed)}`)
-}
-
 console.log('\n【连拦计数 → 计划 blocked,停下等人】')
 {
 	await call('CreatePlan', { steps: [{ id: 'u1', do: '做一个不会落盘的产物', artifacts: ['lab/never.txt'], done_criteria: 'lab/never.txt 存在且非空' }] })
@@ -3802,33 +2229,6 @@ console.log('\n【fail-closed:没有独立评估者就没有 L3+ 的完成】')
 	check('同一个步骤拿到两份证据(重评产生新证据,旧的不改)', eventsOf('evidence/recorded').filter((event) => event.step === 'v1').length === 2)
 	const closed = await call('ClosePlan', {})
 	check('收敛后收束这份计划(同时只允许一份活动计划)', closed.ok === true, String(closed.code))
-}
-
-console.log('\n【侦察:子角色由 Harness 按触发派生,不是自由委派】')
-{
-	// 上面 fail-closed 那一段里,v1 先被推翻、再被支持:推翻那一次应当**自动**派生一个只读侦察
-	const dispatched = eventsOf('scout/dispatched')
-	const settled = eventsOf('scout/settled')
-	check('评估者判否之后,系统自己派了侦察(不是模型请求的)', dispatched.length === 1, `${dispatched.length} 次`)
-	check('派遣缘由锚在具体缺口上(audit_shortfall)', String(dispatched[0]?.trigger ?? '').startsWith('audit_shortfall'), String(dispatched[0]?.trigger))
-	check('侦察落在被推翻的那一步上', dispatched[0]?.step === 'v1', String(dispatched[0]?.step))
-	check('侦察只有只读工具面(不能写、不能执行)', (() => {
-		const scoutCall = thisHost.audits.find((entry) => entry.isScout === true)
-		const allow = scoutCall?.request?.toolFilter?.allow ?? []
-		return allow.length > 0 && allow.every((name) => ['read', 'glob', 'grep', 'read_image', 'web_search', 'web_fetch'].includes(name))
-	})())
-	check('侦察这张脸带上了看图能力(read_image:第一性原理——看图也是读)', (() => {
-		const scoutCall = thisHost.audits.find((entry) => entry.isScout === true)
-		return (scoutCall?.request?.toolFilter?.allow ?? []).includes('read_image')
-	})())
-	check('侦察的结论落成观测,来源标 scout(面板上看得出出处)', (() => {
-		const material = thisHost.journal.find((mutation) => mutation.t === 'observation/recorded' && mutation.source === 'scout')
-		return material !== undefined && String(material.ref).startsWith('scout:')
-	})())
-	check('侦察结论留在记录里(结案后可查)', settled.length === 1 && String(settled[0]?.conclusion ?? '').includes('三次重复'))
-	check('只派一次(判支持的那一次不派侦察)', eventsOf('scout/dispatched').length === 1 && eventsOf('scout/settled').length === 1)
-	const wire = thisHost.service.view(SESSION)
-	check('侦察进投影视图(面板读得到)', Array.isArray(wire.scouts) && wire.scouts.length === 1 && wire.scouts[0].trigger.startsWith('audit_shortfall'))
 }
 
 console.log('\n【事实边界:系统所有的路径,做的人写不进;危险命令闸门】')
@@ -4072,627 +2472,6 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	check('直接写词汇货架 → 拒(词条只能经动词落账)', forgedShelf.kind === 'deny' && /clear\/ontology/.test(String(forgedShelf.reason)), String(forgedShelf.kind))
 }
 
-console.log('\n【世界线:分叉 → 各自交付 → 算术收敛】')
-{
-	await call('SetGoal', {
-		claim: '两条合成路线选哪条',
-		done_criteria: '选择理由落在 lab/route.md',
-		promote_at_level: 'L0',
-		hypotheses: [{ claim: '路线甲更好', refute_when: '甲的读数不高于乙' }],
-	})
-	const made = await call('CreatePlan', { steps: [{ id: 'r1', do: '比较两条合成路线', artifacts: ['lab/route.md'], done_criteria: 'lab/route.md 写明选了哪条与读数' }] })
-	check('先立一步,分叉长在它上面', made.ok === true, String(made.code))
-
-	const OPT = (label, criteria, workspace) => ({ label, approach: `${label} 的做法`, done_criteria: criteria, workspace })
-	const tooFew = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
-	check('少于 2 条世界线 → 拒绝(fork_needs_2to4_options)', tooFew.code === 'fork_needs_2to4_options', String(tooFew.code))
-	const noRuler = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率 yield_pct 高', 'lab/wl/yi')] })
-	check('没有尺子 → 拒绝(decide_by_required):没有判定契约就不能收敛', noRuler.code === 'decide_by_required', String(noRuler.code))
-	/**
-	 * **尺子必须自带口径**:只有指标名不是尺子。
-	 *
-	 * 只写「哪条更可能被证伪」这种命题,等于把「这个数怎么算出来」留给每条世界线各自去定;
-	 * 执行者是互不通信的独立 agent,必然各写一套公式(一条按炉次、一条按等效炉次),
-	 * 算术随后把两套约定的输出放在一起比大小——说服力从争论里被赶走,又从度量里溜回来。
-	 * 拦在登记那一刻(代价 0),而不是跑完两条世界线才发现不可比。
-	 */
-	const noScale = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '读数 yield_pct 高', 'lab/wl/jia'), OPT('乙', '读数 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: '哪条更可能被推翻', direction: 'min' } })
-	check('尺子只有名字、没有口径 → 拒绝(decide_by_scale_required):口径不能下放给各条世界线', noScale.code === 'decide_by_scale_required', String(noScale.code))
-	const emptyScale = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '读数 yield_pct 高', 'lab/wl/jia'), OPT('乙', '读数 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = ', direction: 'max' } })
-	check('等号右边是空的 → 同样拒绝(口径不是个空壳)', emptyScale.code === 'decide_by_scale_required', String(emptyScale.code))
-	/**
-	 * **口径必须是可指认的引用,不是散文**。
-	 *
-	 * 「评分 = 按本路线情况评分」同样能通过格式检查,却什么也没保证——两条世界线各读各的。
-	 * 一条引用(工作区里真有的文件)则不同:路径相等是机器可核的,文件内容在账本里有版本。
-	 */
-	const proseScale = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '读数 yield_pct 高', 'lab/wl/jia'), OPT('乙', '读数 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = 按本路线情况评分', direction: 'max' } })
-	check('口径是散文(没有可解析的文件引用)→ 拒绝(decide_by_scale_not_reference)', proseScale.code === 'decide_by_scale_not_reference', String(proseScale.code))
-	const deadPath = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '读数 yield_pct 高', 'lab/wl/jia'), OPT('乙', '读数 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/no_such_file.py 的输出', direction: 'max' } })
-	check('口径引用了不存在的文件 → 同样拒绝', deadPath.code === 'decide_by_scale_not_reference', String(deadPath.code))
-
-	const noDirection = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率 yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比' } })
-	check('尺子没说方向 → 拒绝(decide_by_direction_required)', noDirection.code === 'decide_by_direction_required', String(noDirection.code))
-	const notMeasured = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', '产率 yield_pct 高', 'lab/wl/jia'), OPT('乙', '产率更高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
-	check('判据里没有指标 → 拒绝(decide_by_not_measured):把测量仪装到每条世界线上', notMeasured.code === 'decide_by_not_measured', String(notMeasured.code))
-	const dupLabel = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', 'yield_pct 高', 'lab/wl/jia'), OPT('甲', 'yield_pct 高', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
-	check('标签重复 → 拒绝(duplicate_label)', dupLabel.code === 'duplicate_label', String(dupLabel.code))
-	const selfRef = await call('ForkPlan', { question: '选哪条', options: [OPT('甲', 'yield_pct 高', 'lab/wl/jia'), OPT('乙', '见上文即可 yield_pct', 'lab/wl/yi')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
-	check('世界线判据自指 → 拒绝(criteria_self_reference)', selfRef.code === 'criteria_self_reference', String(selfRef.code))
-
-	const fork = await call('ForkPlan', {
-		question: '两条合成路线选哪条',
-		options: [
-			{ label: '甲', approach: '催化加氢', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/jia', level: 'L3' },
-			{ label: '乙', approach: '酶催化', done_criteria: '产率 yield_pct 越高越好', workspace: 'lab/wl/yi', level: 'L3' },
-		],
-		decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' },
-	})
-	check('分叉立起(2 条世界线 + 尺子)', fork.ok === true && fork.code === 'fork_created', String(fork.code))
-	const twice = await call('ForkPlan', { question: '再来一次', options: [OPT('丙', 'yield_pct 高', 'lab/wl/bing'), OPT('丁', 'yield_pct 高', 'lab/wl/ding')], decide_by: { metric: 'yield_pct = lab/probe.txt 里的产率百分比', direction: 'max' } })
-	check('一步只分叉一次(fork_depth_exceeded)', twice.code === 'fork_depth_exceeded', String(twice.code))
-
-	const bypass = await call('AdvancePlan', { step_id: 'r1' })
-	check('未收敛的分叉挡住普通交付(fork_node_active:分叉单 owner)', bypass.code === 'fork_node_active', String(bypass.code))
-	const closeEarly = await call('ClosePlan', {})
-	check('未收敛的分叉也挡住收尾(fork_not_converged)', closeEarly.code === 'fork_not_converged', String(closeEarly.code))
-
-	write('lab/outside.txt', '这条产物不属于任何世界线')
-	// 绝对路径指向**主线**:越界,拒(这是守卫真正要拦的东西)
-	const leaked = await call('AdvanceWorldline', { branch_id: '甲', observations: [{ ref: join(WORKSPACE, 'lab/outside.txt') }], verdict: 'support', basis: '随便写的依据' })
-	check('绝对路径指向主线 → 拒绝(worldline_isolation)', leaked.code === 'worldline_isolation', String(leaked.code))
-	check('拒绝时给出正确写法(相对路径按它自己的工作副本解析)', /它工作副本里的相对路径/.test(String(leaked.message ?? '')), String(leaked.message ?? '').slice(0, 140))
-
-
-	// 世界线物化成 git 分支 + worktree:产物必须落在它**自己的工作副本**里
-	const r1Prepared = eventsOf('worldline/prepared')[0]
-	const r1Of = (label) => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'r1')
-		return wire.branches.find((item) => item.label === label).worktreePath
-	}
-	check('世界线物化成 worktree,分支开在旁路账本里(工作区是用户的 git 仓库也一样)', r1Prepared?.tier === 'ledger' && r1Prepared.branches.length === 2, String(r1Prepared?.tier))
-	/**
-	 * 工作副本的位置:**在工作区里**(`clear/worldlines/`)——因为宿主沙箱只允许写会话自己的 cwd,
-	 * 而原生子代理继承父会话的 cwd(给不了它自己的根)。所以「不污染主线」这条不变量不再靠位置,
-	 * 靠**git 看不见它**:容器写进 `info/exclude`。这两条断言就是那条不变量的两个半边。
-	 */
-	check('工作副本在工作区里(沙箱才允许写——2026-09-11 实测:放在外面会被 workspace-write 拒)', r1Prepared.branches.every((entry) => entry.path.startsWith(join(WORKSPACE, 'clear', 'worldlines'))), r1Prepared.branches.map((entry) => entry.path).join(','))
-	check('git 看不见工作副本(否则交付提交会把别的世界线一起提进主线)', (() => {
-		const status = execFileSync('git', ['status', '--porcelain'], { cwd: WORKSPACE, encoding: 'utf8' })
-		const exclude = readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')
-		return !status.includes('worldlines') && exclude.split('\n').some((line) => line.trim() === '/clear/worldlines/')
-	})())
-	/**
-	 * **相对路径按世界线自己的工作副本解析**(2026-09-11 修的真 bug):
-	 * 原来按主线 cwd 解析,于是「这条世界线的观测」永远落在主线路径上、永远被隔离检查拒掉
-	 * ——用户那次真跑里 `AdvanceWorldline` 连续两次报「`lab/worldlines/b-…/params_c.csv`
-	 * 在别的世界线上」,而**相对路径根本没有活路**。这不是模型写错,是基准错了。
-	 *
-	 * 这里不真交付(那会打乱后面几步的断言),而是看**失败的缘由**:
-	 * 相对路径现在应当落在它自己的工作副本里 ⇒ 报「不存在」,而**不是**「在别的世界线上」。
-	 */
-	{
-		const probe = await call('AdvanceWorldline', { branch_id: '甲', observations: [{ ref: 'lab/不存在的产物.csv' }] })
-		check('相对路径按它自己的工作副本解析(不是报「在别的世界线上」)', probe.code === 'evidence_l1', `${probe.code}:${String(probe.message ?? '').slice(0, 100)}`)
-	}
-
-	// 执行者:每条世界线一个,**按 fork 计数**(全局计数会数到别的分叉)
-	const r1ForkId = r1Prepared.fork
-	check('每条世界线各有一个独立执行者(fresh context)', eventsOf('worldline/executing').filter((mutation) => mutation.fork === r1ForkId).length === 2, JSON.stringify(eventsOf('worldline/executing').map((mutation) => `${String(mutation.fork).slice(0, 6)}:${mutation.branch}`)))
-	/**
-	 * 结论的回灌时机(2026-09-11 长测后收紧):`ForkPlan` 不再空等,结论由**第一个用到它的地方**收
-	 * ——交付、收敛、收尾、或回合边界的 sweep,谁先到谁收。这一次链里 `AdvanceWorldline` 先到,
-	 * 所以结论应当随**那一次交付**落账(而不是等到下一个 preStep)。
-	 */
-	await preStep(thisHost, SESSION, 92)
-	check('执行者的结论回灌并落账', (() => {
-		const executed = eventsOf('worldline/executed').filter((mutation) => mutation.fork === r1ForkId)
-		return executed.length === 2 && executed.every((mutation) => mutation.ok === true && String(mutation.conclusion).includes('工作副本'))
-	})())
-	check('执行者的工具面里**没有**计划/目标动词(任务书即计划,不是嘱咐)', (() => {
-		const call = thisHost.audits.find((entry) => String(entry.request?.label ?? '').startsWith('世界线执行者'))
-		const allow = call?.request?.toolFilter?.allow ?? []
-		return allow.length > 0 && !allow.some((name) => ['SetGoal', 'CreatePlan', 'AdvancePlan', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'CheckPlan', 'ForkPlan', 'ConvergeFork'].includes(name))
-	})())
-	check('执行者进投影视图(世界树上看得见它在跑/已回灌)', (() => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'r1')
-		return wire.branches.every((branch) => branch.execution !== null && branch.execution.ok === true)
-	})())
-	writeText(join(r1Of('甲'), 'probe.txt'), 'run,route,yield_pct\n1,甲,62.1\n')
-	const selfVerdict = await call('AdvanceWorldline', { branch_id: '甲', observations: [{ ref: join(r1Of('甲'), 'probe.txt') }], verdict: 'support', basis: '我自己看过了' })
-	check('L3 世界线自带 verdict → 拒绝(verdict_not_accepted)', selfVerdict.code === 'verdict_not_accepted', String(selfVerdict.code))
-	const emptyObs = await call('AdvanceWorldline', { branch_id: '甲', observations: [{ ref: join(r1Of('甲'), 'none.txt') }] })
-	check('观测不存在 → 拒绝(evidence_l1)', emptyObs.code === 'evidence_l1', String(emptyObs.code))
-	const noObs = await call('AdvanceWorldline', { branch_id: '甲' })
-	check('交付里一个观测都没有 → 拒绝(observations_required)', noObs.code === 'observations_required', String(noObs.code))
-
-	thisHost.nextVerdict = { verdict: 'support', basis: '硬信号:probe.txt 报出 62.1', reading: '62.1', validity: 'usable' }
-	const jia = await call('AdvanceWorldline', { branch_id: '甲', observations: [{ ref: join(r1Of('甲'), 'probe.txt') }] })
-	check('世界线甲交付:独立评估者读数', jia.ok === true && jia.evaluator === 'independent', String(jia.code))
-	check('读数来自评估者,不是调用方', /读数:62\.1/.test(jia.message))
-
-	const early = await call('ConvergeFork', {})
-	check('还有世界线没交付 → 拒绝(fork_unsettled)', early.code === 'fork_unsettled', String(early.code))
-
-	writeText(join(r1Of('乙'), 'probe.txt'), 'run,route,yield_pct\n1,乙,55.4\n')
-	thisHost.nextVerdict = { verdict: 'support', basis: '硬信号:probe.txt 报出 55.4', reading: '55.4', validity: 'usable' }
-	const yi = await call('AdvanceWorldline', { branch_id: '乙', observations: [{ ref: join(r1Of('乙'), 'probe.txt') }] })
-	check('世界线乙交付', yi.ok === true, String(yi.code))
-
-	const converged = await call('ConvergeFork', {})
-	check('算术裁决:采纳读数更高的甲', converged.ok === true && /采纳「甲」/.test(converged.message), String(converged.code))
-	const forkCard = (await call('CheckPlan', {})).card
-	check('世界树上写明尺子与方向', /裁决指标 yield_pct = lab\/probe\.txt 里的产率百分比\(越大越好\)/.test(forkCard), forkCard.split('\n').find((l) => l.includes('裁决指标')) ?? '(没有)')
-	check('采纳与未采纳都留在世界树上(未采纳不删)', /\[adopted\] 甲/.test(forkCard) && /\[pruned\] 乙/.test(forkCard), forkCard.split('\n').filter((line) => line.includes('世界线') || line.includes('[')).slice(0, 4).join(' | '))
-	check('两条读数都留着(落选的世界线也是资产)', /读数 62\.1/.test(forkCard) && /读数 55\.4/.test(forkCard))
-
-	// ── 采纳 = 一次真合并;落选 = 删工作副本、保留 branch ref ──────────────────
-	const merged = eventsOf('fork/merged')
-	check('采纳是一次真合并(不是把文件拷过去)', merged.length === 1 && merged[0].mode === 'merged' && String(merged[0].commit ?? '').length >= 7, JSON.stringify(merged[0] ?? {}))
-	const mergeMessage = ledgerGit(WORKSPACE, ['log', '-1', '--format=%s%n%b', 'HEAD'])
-	// 措辞照 ClearAI:余量是**相对**差距(`abs(a-b)/max(|a|,|b|)`),不是绝对差。
-	// 62.1 与 55.4 → 6.7/62.1 = 10.8%,≥ 阈值 15%? 不到 —— 所以这一条是**临时采纳**,
-	// 合并信息里会带 [临时采纳] 标记(这正是「留人复核痕迹」那一档)。
-	check(
-		'合并提交里写着裁决(指标 / 读数 / 相对差距)',
-		mergeMessage.includes('adopt 甲') && /相对差距 10\.8%/.test(mergeMessage) && mergeMessage.includes('62.1'),
-		mergeMessage.split('\n').slice(0, 5).join(' | '),
-	)
-	check('赢家世界线的产物被合并进主线', existsSync(join(WORKSPACE, 'probe.txt')) && readFileSync(join(WORKSPACE, 'probe.txt'), 'utf8').includes('62.1'))
-	const removed = eventsOf('worldline/removed')
-	check('落选世界线的工作副本被收掉(kept_ref=true)', removed.length === 1 && removed[0].kept_ref === true)
-	check('落选的工作副本真的不在磁盘上', removed.length === 1 && !existsSync(removed[0].path))
-	const loserBranch = r1Prepared.branches.find((entry) => entry.id === removed[0].branch)?.branch
-	check('落选世界线的 branch ref 永久保留(读得到它记的「此路不通」)', (() => {
-		try {
-			return ledgerGit(WORKSPACE, ['show', `${loserBranch}:probe.txt`]).includes('55.4')
-		} catch {
-			return false
-		}
-	})(), String(loserBranch))
-	check('世界树上记下了 git 分支名与工作副本路径', (() => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'r1')
-		return wire.tier === 'ledger' && wire.merge !== null && wire.branches.some((branch) => branch.worktreeRemoved === true && branch.keptRef === true)
-	})())
-
-	const again = await call('ConvergeFork', {})
-	check('重复收敛是幂等的(不重算)', again.code === 'already_converged', String(again.code))
-
-	write('lab/route.md', '# 路线选择\n\n甲路线产率 62.1%,乙路线 55.4%,故选甲;两份读数都留在世界树上。\n')
-	const deliver = await call('AdvancePlan', { step_id: 'r1', verdict: 'support', basis: 'lab/route.md 写明读数与选择' })
-	check('采纳之后,这一步才能被普通交付', deliver.ok === true, String(deliver.code))
-	await call('ClosePlan', {})
-}
-
-console.log('\n【世界线执行者:路径限定(机制,不是嘱咐)+ 事后收】')
-{
-	const gate = thisHost.listeners.get('tools/pre-execute')
-	const executing = eventsOf('worldline/executing')[0]
-	const childId = String(executing.child)
-	const inside = await gate(
-		{ name: 'write', arguments: { file_path: 'probe.txt', content: 'x' }, agent: { id: childId }, callId: 'c-in' },
-		async () => ({ kind: 'allow' }),
-	)
-	check('执行者写自己工作副本里的相对路径 → 放行(相对路径按它的副本解析)', inside.kind === 'allow', String(inside.kind))
-	const outside = await gate(
-		{ name: 'edit', arguments: { file_path: join(WORKSPACE, 'lab/route.md') }, agent: { id: childId }, callId: 'c-out' },
-		async () => ({ kind: 'allow' }),
-	)
-	check('执行者写到主线 → 拒绝(世界线互不通信是机制)', outside.kind === 'deny' && /工作副本/.test(outside.reason), String(outside.kind))
-	const sibling = await gate(
-		{ name: 'bash', arguments: { command: `echo x > ${eventsOf('worldline/prepared')[0].branches[1].path}/steal.txt` }, agent: { id: childId }, callId: 'c-sib' },
-		async () => ({ kind: 'allow' }),
-	)
-	check('执行者写到别的世界线 → 也拒绝(两条线不互相污染)', sibling.kind === 'deny', String(sibling.kind))
-	const mainAgent = await gate(
-		{ name: 'write', arguments: { file_path: join(WORKSPACE, 'lab/route.md'), content: 'x' }, agent: { id: SESSION }, callId: 'c-main' },
-		async () => ({ kind: 'allow' }),
-	)
-	check('同一个闸门不影响主 agent 写主线', mainAgent.kind === 'allow', String(mainAgent.kind))
-
-	const status = await call('WorldlineStatus', {})
-	check('WorldlineStatus:已回灌的执行者不再重复收(幂等)', status.ok === true, status.message.split('\n')[0])
-	check('状态工具不会重复落账', eventsOf('worldline/executed').length === eventsOf('worldline/executing').length, `${eventsOf('worldline/executed').length}/${eventsOf('worldline/executing').length}`)
-	/**
-	 * **AwaitWorldlines**(2026-09-11 R3 抓到模型用 `sleep 150`/`sleep 180` 轮询之后补的正规姿势):
-	 * 「等」应该是一次**有界**调用——等到了就落账、到点就返回,而不是把一整个回合烧在空等上。
-	 */
-	{
-		const waiting = makeHost()
-		apply(waiting.ctx, { blockedThreshold: 3 })
-		const SW = 'session-await'
-		await callOn(waiting, SW, 'SetGoal', { claim: '试两条路线', done_criteria: '有一条能跑通', hypotheses: [{ claim: 'A 比 B 快', refute_when: 'B 更快' }] })
-		await callOn(waiting, SW, 'CreatePlan', { steps: [{ id: 'w1', do: '两条路各试一遍', artifacts: ['lab/w1.txt'], done_criteria: 'lab/w1.txt 有读数', tests: null }] })
-		waiting.executorDelayMs = 1200
-		await callOn(waiting, SW, 'ForkPlan', { question: '走哪条', decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, options: [{ id: 'wb1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数' }, { id: 'wb2', label: '乙', approach: '绕一圈', done_criteria: '有 ms 读数' }] })
-		const instant = await callOn(waiting, SW, 'WorldlineStatus', {})
-		check('前置:两条都还在跑(它们真的还没回来)', (String(instant.message).match(/仍在跑/g) ?? []).length === 2, String(instant.message).split('\n').slice(0, 2).join(' / '))
-		const startedAt = Date.now()
-		const awaited = await callOn(waiting, SW, 'AwaitWorldlines', { timeout_s: 20, until: 'all' })
-		const spent = Date.now() - startedAt
-		check('AwaitWorldlines:等到全部落定就返回(不睡满上限)', awaited.ok === true && spent >= 1000 && spent < 15000, `${spent}ms / ${String(awaited.message).split('\n')[0]}`)
-		check('等到的那几条顺手落了账(不用再喊一次 WorldlineStatus)', waiting.journal.filter((mutation) => mutation.t === 'worldline/executed' && mutation.ok === true).length === 2, JSON.stringify(waiting.journal.filter((m) => m.t === 'worldline/executed').map((m) => m.branch)))
-		check('回执里如实说等了多久、回灌几条', /等了 \d+s\(上限 20s\):回灌 2 条/.test(String(awaited.message)), String(awaited.message).split('\n')[0])
-		// 没有在跑的:立刻返回,不空等——这正是它比 sleep 好的地方。
-		const emptyHost = makeHost()
-		apply(emptyHost.ctx, {})
-		const idleStart = Date.now()
-		const idle = await callOn(emptyHost, 'session-await-idle', 'AwaitWorldlines', { timeout_s: 300 })
-		check('没有在跑的执行者 → 立刻返回(不空等 300s)', idle.ok === true && Date.now() - idleStart < 1000, `${Date.now() - idleStart}ms`)
-	}
-}
-
-console.log('\n【世界线:读数的整串匹配与「算不出来」】')
-{
-	const made = await call('CreatePlan', {
-		steps: [
-			{ id: 'x1', do: '再比一次', artifacts: ['lab/x1.txt'], done_criteria: 'lab/x1.txt 说明结论' },
-			{ id: 'x2', do: '收尾', artifacts: ['lab/x2.txt'], done_criteria: 'lab/x2.txt 存在' },
-		],
-	})
-	check('新一步可用', made.ok === true, String(made.code))
-	const fork = await call('ForkPlan', {
-		question: '读数的陷阱',
-		options: [
-			{ label: '区间甲', approach: '读出一串数', done_criteria: 'score 越高越好' },
-			{ label: '区间乙', approach: '也读出一串数', done_criteria: 'score 越高越好' },
-		],
-		decide_by: { metric: 'score = lab/probe.txt 里的评分', direction: 'max' },
-	})
-	check('这一轮的尺子是 score', fork.ok === true, String(fork.code))
-	// 世界线物化成 git 分支 + worktree 之后,产物要落在它**自己的工作副本**里
-	const prepared = eventsOf('worldline/prepared').slice(-1)[0]
-	const pathOf = (label) => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'x1')
-		return wire.branches.find((item) => item.label === label).worktreePath
-	}
-	check('执行者的工具面里**没有**计划/目标动词(任务书即计划,不是嘱咐)', (() => {
-		const call = thisHost.audits.find((entry) => String(entry.request?.label ?? '').startsWith('世界线执行者'))
-		const allow = call?.request?.toolFilter?.allow ?? []
-		return allow.length > 0 && !allow.some((name) => ['SetGoal', 'CreatePlan', 'AdvancePlan', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'CheckPlan', 'ForkPlan', 'ConvergeFork'].includes(name))
-	})())
-	check('执行者进投影视图(世界树上看得见它在跑/已回灌)', (() => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'r1')
-		return wire.branches.every((branch) => branch.execution !== null && branch.execution.ok === true)
-	})())
-	check('工作区是 git 仓库时,世界线照样物化成 worktree(开在旁路账本里,不是声明目录)', prepared?.tier === 'ledger' && prepared.branches.length === 2, String(prepared?.tier))
-	check('两条世界线的工作副本真的在磁盘上', prepared.branches.every((entry) => existsSync(entry.path)))
-	/**
-	 * **声明的物证路径与尺子口径,必须真的交到干活的人手上。**
-	 *
-	 * 执行者是另一个 fresh agent:不告诉它「交付物必须落在哪个路径」「读数按哪把尺子算」,
-	 * 它就会按自己的判断写、按自己的口径算——交付时按声明核对必然落空,只剩"事后拷一份"
-	 * 这条路;而两条世界线各定一套口径之后,算术比出来的大小也不作数。
-	 * 这两句话都在任务书里,才是"判据在动手之前登记、并且让动手的人知道"。
-	 */
-	{
-		// 任务书被包成 ContentBlock[]:与横评那条一样,序列化后再断言。
-		const briefText = JSON.stringify(thisHost.executorRequests[0]?.prompt ?? '')
-		/**
-		 * 声明路径那一条按**源码**断言:这段夹具的世界线没有声明 artifacts(声明路径为空时
-		 * 那句话本就不该出现——"不声明就不拦"也是它的语义)。真正要钉住的是:**声明存在时,
-		 * 它必须进任务书**;真跑里那条链的证据在长测(交付不再因为执行者写错地方而被拒)。
-		 */
-		const kernelSource = readFileSync(new URL('../preset/plugins/clearai-kernel.js', import.meta.url), 'utf8')
-		check('执行者任务书里带着**声明的交付路径**(Fix A:声明存在就必须进任务书)', /branch\.artifacts\.join/.test(kernelSource) && /交付时内核逐条核对存在/.test(kernelSource))
-		check('执行者任务书里带着**尺子口径**且写明所有世界线共用同一把', /不许各自另定口径/.test(briefText) && /=/.test(briefText), briefText.slice(0, 200))
-	}
-	writeText(join(pathOf('区间甲'), 'p.txt'), 'score 区间 [1.2, 3.4]')
-	writeText(join(pathOf('区间乙'), 'p.txt'), 'score 区间 [2.0, 2.5]')
-	const a = await call('AdvanceWorldline', { branch_id: '区间甲', observations: [{ ref: join(pathOf('区间甲'), 'p.txt') }], verdict: 'support', basis: 'p.txt 里有两组读数', reading: '[1.2, 3.4]' })
-	check('整串不是数 → 读数判为不可用(不接受「自信地选错」)', a.ok === true && /读不出一个数/.test(a.message), String(a.code))
-	const b = await call('AdvanceWorldline', { branch_id: '区间乙', observations: [{ ref: join(pathOf('区间乙'), 'p.txt') }], verdict: 'support', basis: 'p.txt 里有两组读数', reading: '[2.0, 2.5]' })
-	check('第二条同样读不出一个数', b.ok === true)
-	const stuck = await call('ConvergeFork', {})
-	check('参赛不足两条 → UNDECIDABLE_NO_READINGS', stuck.code === 'UNDECIDABLE_NO_READINGS', String(stuck.code))
-	check('算不出来时明确「停下问人」,不退化成随便挑一条', /停下问人/.test(stuck.message) && /退化/.test(stuck.message))
-	check('分叉没有被悄悄收敛', /算不出来/.test((await call('CheckPlan', {})).card))
-
-	const gate = thisHost.listeners.get('tools/pre-execute')
-	const ask = await gate({ name: 'AbandonFork', arguments: { reason: '两条路线都量不出数' }, agent: { id: SESSION }, callId: 'c-give-up' }, async () => ({ kind: 'allow' }))
-	check('放弃探索是人门:模型调用会弹人工确认', ask.kind === 'ask' && /放弃探索是人的决定/.test(ask.reason), String(ask.kind))
-	const abandoned = await call('AbandonFork', { reason: '两条路线都量不出数,改日再试' })
-	check('人已放行后可以放弃(留痕)', abandoned.ok === true && abandoned.code === 'fork_abandoned', String(abandoned.code))
-	const afterAbandon = await call('ConvergeFork', {})
-	check('放弃后不能再收敛', afterAbandon.code === 'fork_abandoned', String(afterAbandon.code))
-	write('lab/x1.txt', '放弃探索之后,这一步不再被分叉挡住')
-	const deliver = await call('AdvancePlan', { step_id: 'x1', verdict: 'support', basis: 'lab/x1.txt 说明改日再试' })
-	check('放弃探索后这一步可以继续(出口义务)', deliver.ok === true, String(deliver.code))
-}
-
-console.log('\n【世界线:并列不是「算不出」】')
-{
-	await call('VoidPlanStep', { step_id: 'x2', reason: '测试脚手架' })
-	await call('ClosePlan', {})
-	const made = await call('CreatePlan', { steps: [{ id: 'y1', do: '并列的情形', artifacts: ['lab/y1.txt'], done_criteria: 'lab/y1.txt 存在' }] })
-	check('再开一步', made.ok === true, String(made.code))
-	await call('ForkPlan', {
-		question: '两条一样好怎么办',
-		options: [
-			{ label: '丙', approach: '一样好', done_criteria: 'gain 越大越好' },
-			{ label: '丁', approach: '一样好', done_criteria: 'gain 越大越好' },
-		],
-		decide_by: { metric: 'gain = lab/probe.txt 里的增益数', direction: 'max' },
-	})
-	const y1Of = (label) => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'y1')
-		return wire.branches.find((item) => item.label === label).worktreePath
-	}
-	writeText(join(y1Of('丙'), 'p.txt'), 'gain 7')
-	writeText(join(y1Of('丁'), 'p.txt'), 'gain 7')
-	await call('AdvanceWorldline', { branch_id: '丙', observations: [{ ref: join(y1Of('丙'), 'p.txt') }], verdict: 'support', basis: 'p.txt 报出 7', reading: '7' })
-	await call('AdvanceWorldline', { branch_id: '丁', observations: [{ ref: join(y1Of('丁'), 'p.txt') }], verdict: 'support', basis: 'p.txt 报出 7', reading: '7' })
-	const tie = await call('ConvergeFork', {})
-	check('并列给胜者且差额为 0(并列是买到的信息,不是算不出)', tie.ok === true && /差额 0/.test(tie.message) && /并列/.test(tie.message), String(tie.code))
-	const tieCard = (await call('CheckPlan', {})).card
-	check('并列也落成事实:一条 adopted、一条 pruned', /\[adopted\]/.test(tieCard) && /\[pruned\]/.test(tieCard))
-}
-
-console.log('\n【世界线:脏工作区快照 + 合并冲突即人门】')
-{
-	// 这一段的两个情形都是探针实测出来的硬事实,不是假想:
-	//   · 主线**脏且与世界线改动重叠**时 git 会拒绝合并 → 先把用户手上的改动存成一条提交;
-	//   · 存完之后如果内容真的互相打架 → 冲突 → **停下问人,绝不自动选边**。
-	await call('VoidPlanStep', { step_id: 'y1', reason: '测试脚手架' })
-	await call('ClosePlan', {})
-	write('shared.md', '# 共享的结论\n\n第一版。\n')
-	execFileSync('git', ['add', '-A'], { cwd: WORKSPACE })
-	execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-qm', 'shared v1'], { cwd: WORKSPACE })
-	const made = await call('CreatePlan', { steps: [{ id: 'z1', do: '两条线改同一个文件', artifacts: ['shared.md'], done_criteria: 'shared.md 写下结论' }] })
-	check('再开一步', made.ok === true, String(made.code))
-	const forked = await call('ForkPlan', {
-		question: '两种写法选哪个',
-		options: [
-			{ label: '写法甲', approach: '结论句在前', done_criteria: 'score 越大越好' },
-			{ label: '写法乙', approach: '结论句在后', done_criteria: 'score 越大越好' },
-		],
-		decide_by: { metric: 'score = lab/probe.txt 里的评分', direction: 'max' },
-	})
-	check('分叉立起', forked.ok === true, String(forked.code))
-	const z1Of = (label) => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'z1')
-		return wire.branches.find((item) => item.label === label).worktreePath
-	}
-	writeText(join(z1Of('写法甲'), 'shared.md'), '# 共享的结论\n\n**结论:甲。** 理由若干。\n')
-	writeText(join(z1Of('写法乙'), 'shared.md'), '# 共享的结论\n\n理由若干。**结论:乙。**\n')
-	await call('AdvanceWorldline', { branch_id: '写法甲', observations: [{ ref: join(z1Of('写法甲'), 'shared.md') }], verdict: 'support', basis: 'shared.md 写下结论甲', reading: '9' })
-	await call('AdvanceWorldline', { branch_id: '写法乙', observations: [{ ref: join(z1Of('写法乙'), 'shared.md') }], verdict: 'support', basis: 'shared.md 写下结论乙', reading: '4' })
-	// 用户此刻也动了这个文件(未提交):与赢家的改动重叠
-	write('shared.md', '# 共享的结论\n\n用户手上的第三版(还没提交)。\n')
-	const conflicted = await call('ConvergeFork', {})
-	check('脏工作区 + 内容打架 → 冲突即人门(merge_conflict)', conflicted.ok === false && conflicted.code === 'merge_conflict', String(conflicted.code))
-	check('冲突前先把用户手上的改动存成一条提交(不能让他的工作消失)', eventsOf('git/snapshot').some((event) => /采纳前/.test(String(event.reason ?? '')) && /提交/.test(String(event.reason ?? ''))), JSON.stringify({ snapshots: eventsOf('git/snapshot').length }))
-	check('冲突记在世界树上,分叉**没有被悄悄收敛**', (() => {
-		const wire = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'z1')
-		return wire.mergeConflict !== null && wire.decided === false
-	})())
-	check('合并已中止:工作区里还是用户那一版', readFileSync(join(WORKSPACE, 'shared.md'), 'utf8').includes('用户手上的第三版'))
-	const z1ForkId = thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'z1').id
-	check('冲突不产生合并提交(绝不自动选边)', !eventsOf('fork/merged').some((mutation) => mutation.fork === z1ForkId), JSON.stringify(eventsOf('fork/merged').map((m) => ({ fork: m.fork, mode: m.mode }))))
-}
-
-console.log('\n【世界线 B 层:工作区不是 git 仓库 → 旁路账本】')
-{
-	// 先把上一段留下的状态收干净:冲突留下的是「等人裁决」的分叉,走人门放弃探索
-	// (这条路径本身也是一次断言:冲突之后人可以选择不合并,各自留痕)
-	const abandonedAfterConflict = await call('AbandonFork', { reason: '冲突那一条按人门放弃:两种写法留痕,不合了' })
-	check('冲突之后,人可以放弃探索(人门出口)', abandonedAfterConflict.ok === true, String(abandonedAfterConflict.code))
-	check('放弃时把世界线的工作副本收掉,分支 ref 保留', eventsOf('worldline/removed').length >= 2)
-	await call('VoidPlanStep', { step_id: 'z1', reason: '测试脚手架:冲突场景到此为止' })
-	await call('ClosePlan', {})
-
-	// 研究型文件夹大多不是 git 仓库。此时账本建在数据区,工作区被当成它的工作树
-	// (`--git-dir` + `--work-tree`)——用户文件夹里**不会**多出一个 .git。
-	const plain = tempDir('clearai-plain-')
-	writeText(join(plain, 'data.csv'), 'run,yield\n1,60\n')
-	writeText(join(plain, 'lab', 'probe.txt'), '# 测量脚本占位\n')
-	thisHost.cwd = plain
-	const made = await call('CreatePlan', { steps: [{ id: 'b1', do: '在普通文件夹里比两条路线', artifacts: ['report.md'], done_criteria: 'report.md 写下结论' }] })
-	check('普通文件夹里也能开计划', made.ok === true, String(made.code))
-	const forked = await call('ForkPlan', {
-		question: '两条路线选哪条',
-		options: [
-			{ label: '路线甲', approach: '甲做法', done_criteria: 'yield 越大越好' },
-			{ label: '路线乙', approach: '乙做法', done_criteria: 'yield 越大越好' },
-		],
-		decide_by: { metric: 'yield = lab/probe.txt 里的产出数(件)', direction: 'max' },
-	})
-	check('分叉在非仓库工作区里也能立起', forked.ok === true, String(forked.code))
-	check(
-		'账本正是这次分叉建起来的:基线那一笔也落成 git/snapshot(不因为树是干净的就漏记)',
-		eventsOf('git/snapshot').some((event) => event.fork === eventsOf('fork/created').at(-1)?.id && typeof event.commit === 'string' && event.commit !== ''),
-		JSON.stringify(eventsOf('git/snapshot').slice(-2)),
-	)
-	const preparedB = eventsOf('worldline/prepared').slice(-1)[0]
-	check('世界线走 B 层:账本建在数据区(tier=ledger)', preparedB.tier === 'ledger', String(preparedB.tier))
-	check('工作区里**没有**多出 .git(用户文件夹保持干净)', !existsSync(join(plain, '.git')), ''.concat())
-	// B 层(工作区不是 git 仓库)同样把工作副本放在**工作区里**——沙箱边界对两层一视同仁。
-	check('工作副本在磁盘上、且在工作区里(B 层也一样)', preparedB.branches.every((entry) => existsSync(entry.path) && entry.path.startsWith(join(plain, 'clear', 'worldlines'))), preparedB.branches.map((entry) => entry.path).join(','))
-	check('B 层:账本仓库也把世界线容器排除在外(它才不会进账本历史)', (() => {
-		const ledgerRoot = join(process.env.DSH_HOME, 'storages', 'clearai', 'ledger')
-		for (const dir of existsSync(ledgerRoot) ? readdirSync(ledgerRoot) : []) {
-			const file = join(ledgerRoot, dir, 'info', 'exclude')
-			if (!existsSync(file)) continue
-			if (readFileSync(file, 'utf8').split('\n').some((line) => line.trim() === 'clear/worldlines/')) return true
-		}
-		return false
-	})())
-	check('B 层:用户文件夹里没有多出 .git(账本在数据区)', !existsSync(join(plain, '.git')))
-	const bOf = (label) => thisHost.service.view(SESSION).forks.find((item) => item.stepId === 'b1').branches.find((item) => item.label === label).worktreePath
-	writeText(join(bOf('路线甲'), 'report.md'), '# 结论\n\n甲路线可行,读数 62.1。\n')
-	writeText(join(bOf('路线乙'), 'report.md'), '# 结论\n\n乙路线可行,读数 55.4。\n')
-	await call('AdvanceWorldline', { branch_id: '路线甲', observations: [{ ref: join(bOf('路线甲'), 'report.md') }], verdict: 'support', basis: 'report.md 写下读数甲', reading: '62.1' })
-	await call('AdvanceWorldline', { branch_id: '路线乙', observations: [{ ref: join(bOf('路线乙'), 'report.md') }], verdict: 'support', basis: 'report.md 写下读数乙', reading: '55.4' })
-	const convergedB = await call('ConvergeFork', {})
-	check('B 层也能算术收敛并采纳', convergedB.ok === true, String(convergedB.code))
-	check('合并结果**写回用户的工作区**(账本的工作树就是它)', existsSync(join(plain, 'report.md')) && readFileSync(join(plain, 'report.md'), 'utf8').includes('62.1'))
-	check('B 层的落选世界线同样保留分支 ref', (() => {
-		const removedB = eventsOf('worldline/removed').slice(-1)[0]
-		const loserEntry = preparedB.branches.find((entry) => entry.id === removedB.branch)
-		try {
-			const ledgerDir = ledgerDirOf(plain)
-			if (ledgerDir === null) return false
-			return execFileSync('git', ['--git-dir', ledgerDir, 'log', '--oneline', loserEntry.branch], { encoding: 'utf8' }).trim().length > 0
-		} catch {
-			return false
-		}
-	})())
-	thisHost.cwd = null
-}
-
-console.log('\n【侦察的另外三个入口:模型可请求 + 立约前】')
-{
-	// ① 模型可以**请求**一个只读侦察,但不能选角色(角色由 Harness 固定)
-	const spawned = await call('SpawnScout', { task: '把 products/ 下的报告读一遍,报告哪一份包含读数表格', why: '要确认结论有出处' })
-	check('SpawnScout:派出只读侦察(异步:结论走事实通道回灌)', spawned.ok === true && spawned.code === 'scout_dispatched', String(spawned.code))
-	check('SpawnScout:派出去就落账(不用等结论)', eventsOf('scout/dispatched').length >= 1)
-	check('SpawnScout:任务太短 → 拒绝', (await call('SpawnScout', { task: '查' })).code === 'task_required')
-	check('模型请求的侦察仍然是只读(角色固定)', (() => {
-		const calls = thisHost.audits.filter((entry) => String(entry.request?.label ?? '').startsWith('侦察'))
-		const allow = calls.slice(-1)[0]?.request?.toolFilter?.allow ?? []
-		return allow.length > 0 && allow.every((name) => ['read', 'glob', 'grep', 'read_image', 'web_search', 'web_fetch'].includes(name))
-	})())
-
-	// ② 一次派多条(并行核查),但有下限与并发上限
-	check('MapScouts:少于 2 条 → 拒绝', (await call('MapScouts', { tasks: [{ task: '只查一处就好' }] })).code === 'map_needs_2to50')
-	const beforeMap = eventsOf('scout/dispatched').length
-	const mapped = await call('MapScouts', { tasks: [{ task: '查 lab/ 下的第一处' }, { task: '查 lab/ 下的第二处' }, { task: '查 lab/ 下的第三处' }] })
-	check('MapScouts:三条各派一个只读侦察', mapped.ok === true && eventsOf('scout/dispatched').length === beforeMap + 3, `${eventsOf('scout/dispatched').length - beforeMap} 条`)
-	// 结论在下一个回合边界上回灌(异步):走一次 pre-step,再数资料面里的侦察观测。
-	const scoutObsBefore = thisHost.journal.filter((mutation) => mutation.t === 'observation/recorded' && mutation.source === 'scout').length
-	await preStep(thisHost, SESSION, 52)
-	await preStep(thisHost, SESSION, 53)
-	check('并行侦察的结论都落进资料面(在回合边界上回灌)', thisHost.journal.filter((mutation) => mutation.t === 'observation/recorded' && mutation.source === 'scout').length >= scoutObsBefore + 3, `${scoutObsBefore} → ${thisHost.journal.filter((m) => m.t === 'observation/recorded' && m.source === 'scout').length}`)
-
-	// ③ 立约前侦察:harness 发起(不是模型请求),一生一次,且只在 input/ 真有材料时
-	// 先把前面几个段落留下的目标结掉:立约前侦察只在**新立目标**时发生,修订不重复(一生一次)
-	await call('CloseGoal', { outcome: 'abandoned', note: '测试脚手架:给立约前侦察让位' })
-	const beforeGoal = eventsOf('scout/dispatched').filter((mutation) => String(mutation.trigger).startsWith('precommit_recon')).length
-	write('input/paper.md', '# 材料\n\n这是一份外部材料,里面有前人给的读数与结论。\n')
-	const goal = await call('SetGoal', { claim: '材料里的读数能不能复现', done_criteria: '复现报告落在 lab/repro.md 并写明差值', hypotheses: [{ claim: '能复现', refute_when: '差值超过 10%' }] })
-	const afterGoal = eventsOf('scout/dispatched').filter((mutation) => String(mutation.trigger).startsWith('precommit_recon'))
-	check('立约前侦察:判据落定时由 harness 派一次', goal.ok === true && afterGoal.length === beforeGoal + 1, `${afterGoal.length - beforeGoal} 次`)
-	check('立约前侦察锚在目标上(不是某一步)', afterGoal.slice(-1)[0]?.goal !== null && afterGoal.slice(-1)[0]?.goal !== undefined)
-	const beforeRevision = eventsOf('scout/dispatched').length
-	await call('SetGoal', { claim: '材料里的读数能不能复现(收紧)', done_criteria: '复现报告落在 lab/repro.md 且含逐条差值', reason: '原判据没要求逐条' })
-	check('修订目标不再重复侦察(一生一次)', eventsOf('scout/dispatched').length === beforeRevision)
-}
-
-console.log('\n【什么都不删 + 降级不可表示 + 可从日志重放】')
-{
-	const all = ledger()
-	check('日志里只有「发生了什么的记录」', all.every((mutation) => /^(goal|hypothesis|plan|step|observation|admission|audit|evidence|block|human|fact|fork|branch|scout|worldline|git|continuation|ontology|entity|level|criteria|host)\//.test(String(mutation.t))))
-	check('被推翻与被作废的记录仍在日志里(可查)', eventsOf('plan/voided').length >= 3 && eventsOf('evidence/recorded').some((mutation) => mutation.verdict === 'refute'))
-	check('判据旧版本留在 refined 记录里', eventsOf('plan/refined').every((mutation) => typeof mutation.old_criteria === 'string'))
-	check('已落定步骤永不回到 open(降级不可表示)', (() => {
-		const advanced = new Set()
-		for (const mutation of all) {
-			const key = `${mutation.plan}:${mutation.step}`
-			if (mutation.t === 'step/advanced') advanced.add(key)
-			if (mutation.t === 'plan/voided' && advanced.has(key)) return false
-		}
-		return true
-	})())
-	// 这一条是这次架构改动的新不变量:状态是日志的投影,所以它必须能从日志重放出来。
-	const replayed = all.reduce((state, mutation) => applyMutations(state, [mutation]), emptyState())
-	check('状态可以从日志重放出来(投影的本质:状态不是被存下来的)', replayed.plans.length > 0 && view(replayed).plan !== null && derive(replayed).forks.length > 0)
-	check('重放出来的世界线仍然记得采纳与落选', derive(replayed).forks.some((fork) => fork.branches.some((branch) => branch.status === 'adopted') && fork.branches.some((branch) => branch.status === 'pruned')))
-}
-
-console.log('\n【世界线的推荐:算得出来的那条必须落账,否则人门卡只能写「推荐:无」】')
-{
-	/**
-	 * 人裁决一条世界线时,面板与人门卡读的「推荐哪条」来自投影里的 `fork.recommended`。
-	 * 没有生产者,它们只能写「推荐:无」——两条一模一样的候选,那次裁决等于让人瞎猜。
-	 * 这里钉两头:读数凑齐后推荐落账(带余量与临时标记);算不出来时**什么都不写**。
-	 */
-	const options = [
-		{ label: '甲', approach: '直接算', done_criteria: '读数 ms 越小越好', workspace: 'lab/wl/jia', level: 'L0' },
-		{ label: '乙', approach: '绕一圈', done_criteria: '读数 ms 越小越好', workspace: 'lab/wl/yi', level: 'L0' },
-	]
-	const host = makeHost()
-	apply(host.ctx, { autonomy: 'unattended' })
-	const S = 'session-recommend'
-	await callOn(host, S, 'SetGoal', { claim: '选一条路线', done_criteria: '两条路线各有读数', hypotheses: [{ claim: '甲比乙快', refute_when: '乙更快' }] })
-	const hypothesis = host.service.state(S).hypotheses[0].id
-	const created = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'r1', do: '两条路线各跑一遍', artifacts: ['lab/r1.txt'], done_criteria: 'lab/r1.txt 存在且含读数', tests: { hypothesis, level: 'L0' } }] })
-	check('前置:计划建起来了', created.ok === true, String(created.code))
-	const forked = await callOn(host, S, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' } })
-	check('前置:分叉立起来了', forked.ok === true && host.service.view(S).forks.length === 1, String(forked.code))
-	const pathOf = (label) => host.service.view(S).forks[0].branches.find((item) => item.label === label).worktreePath
-	const deliver = async (label, reading) => {
-		writeText(join(pathOf(label), 'probe.txt'), `route,ms\n${label},${reading}\n`)
-		return await callOn(host, S, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(pathOf(label), 'probe.txt') }], verdict: 'support', basis: `硬信号:${label} 的读数来自 probe.txt`, reading, validity: 'usable' })
-	}
-	const first = await deliver('甲', '60')
-	check('只交付一条时不给推荐(读数没凑齐,推荐就是猜)', first.ok === true && !host.journal.some((mutation) => mutation.t === 'fork/recommended'), String(first.code))
-	const second = await deliver('乙', '200')
-	check('最后一条交付完,推荐落账(算术此刻真的算得出)', second.ok === true && host.journal.some((mutation) => mutation.t === 'fork/recommended'))
-	const jiaId = host.service.state(S).forks[0].branches.find((branch) => branch.label === '甲').id
-	const recommended = host.journal.filter((mutation) => mutation.t === 'fork/recommended').at(-1)
-	check('推荐的是读数更优的那条(min ⇒ 60)', recommended?.branch === jiaId, JSON.stringify({ got: recommended?.branch, want: jiaId }))
-	check('余量按**相对**差距算(140/200 = 0.7)', Math.abs(Number(recommended?.margin) - 0.7) < 1e-9, String(recommended?.margin))
-	check('余量够大 ⇒ 不是「临时推荐」', recommended?.provisional === false, String(recommended?.provisional))
-	const projected = host.service.view(S).forks[0]
-	check('投影里真的有了它(人门卡与面板读的就是这里)', projected.recommended === jiaId && projected.recommendProvisional === false && projected.phase === 'deciding', JSON.stringify({ recommended: projected.recommended, phase: projected.phase }))
-	await callOn(host, S, 'WorldlineStatus', {})
-	check('重复盘点不重复落账(同一份读数只写一次)', host.journal.filter((mutation) => mutation.t === 'fork/recommended').length === 1, String(host.journal.filter((mutation) => mutation.t === 'fork/recommended').length))
-	check('推荐不改写任何状态:分叉还没收口,分支秩一步没动', projected.decided === false && projected.branches.every((branch) => branch.status === 'evaluated'), JSON.stringify(projected.branches.map((branch) => branch.status)))
-
-	// 反面:读数落不成数时**什么都不写**——「没有推荐」也是事实,不编一个。
-	const host2 = makeHost()
-	apply(host2.ctx, { autonomy: 'unattended' })
-	const S2 = 'session-recommend-undecidable'
-	await callOn(host2, S2, 'SetGoal', { claim: '选一条路线', done_criteria: '两条路线各有读数', hypotheses: [{ claim: '甲比乙快', refute_when: '乙更快' }] })
-	const hypothesis2 = host2.service.state(S2).hypotheses[0].id
-	await callOn(host2, S2, 'CreatePlan', { steps: [{ id: 'r2', do: '两条路线各跑一遍', artifacts: ['lab/r2.txt'], done_criteria: 'lab/r2.txt 存在且含读数', tests: { hypothesis: hypothesis2, level: 'L0' } }] })
-	await callOn(host2, S2, 'ForkPlan', { question: '走哪条', options, decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' } })
-	const pathOf2 = (label) => host2.service.view(S2).forks[0].branches.find((item) => item.label === label).worktreePath
-	for (const label of ['甲', '乙']) {
-		writeText(join(pathOf2(label), 'probe.txt'), `route,ms\n${label},?\n`)
-		await callOn(host2, S2, 'AdvanceWorldline', { branch_id: label, observations: [{ ref: join(pathOf2(label), 'probe.txt') }], verdict: 'support', basis: `硬信号:${label} 的读数`, reading: '说不清', validity: 'usable' })
-	}
-	check('读数落不成数 ⇒ 一条推荐都不写(不猜)', host2.journal.filter((mutation) => mutation.t === 'fork/recommended').length === 0)
-	check('投影里的推荐保持 null(面板照实说「没有推荐」)', host2.service.view(S2).forks[0].recommended === null)
-}
-
-console.log('\n【探索期产出有据可查:回合边界上的工作区快照】')
-{
-	/**
-	 * 账本原来只在**交付点**记一笔,于是立约之前(以及两次交付之间)写入的东西在账本里
-	 * 一个字都没有——`FileHistory` / `RestoreFile` 对它们无效,而「事后可恢复代替事前审批」
-	 * 这条安全论证恰恰建立在覆盖面之上。这里钉四件事:只读不记、写过才记、同一批不重复记、
-	 * 产物真的查得到。
-	 */
-	const host = makeHost()
-	apply(host.ctx, { blockedThreshold: 3 })
-	const S = 'session-explore-ledger'
-	const snapshots = () => host.journal.filter((mutation) => mutation.t === 'git/snapshot')
-	const gitLog = (path) => {
-		try {
-			return ledgerGit(WORKSPACE, ['log', '--oneline', '--', path]).trim()
-		} catch {
-			return ''
-		}
-	}
-	// ① 只读的一回合:不记账(探索期也可能只是读)
-	const readOnly = await preStep(host, S, 1)
-	check('只读回合不记快照(没有写类调用)', snapshots().length === 0 && !/记入账本/.test(JSON.stringify(readOnly ?? {})), JSON.stringify(snapshots()))
-	// ② 跑过一次 bash(间接写入)⇒ 下一个回合边界记一笔
-	host.states.set(S, applyEvent(host.service.state(S), { type: 'tool/call', time: Date.now(), data: { name: 'bash', callId: 'c-1', arguments: JSON.stringify({ command: 'python probe.py' }) } }))
-	write('lab/explore/probe.txt', 'run,value\n1,42\n')
-	const afterWrite = await preStep(host, S, 2)
-	check('写过之后的回合边界记一笔快照(并带上 commit id)', snapshots().length === 1 && typeof snapshots()[0].commit === 'string' && snapshots()[0].commit !== '', JSON.stringify(snapshots()))
-	check('注记里如实说工作区已记入账本(探索产出可查可恢复)', /记入账本/.test(JSON.stringify(afterWrite ?? {})), JSON.stringify(afterWrite ?? {}).slice(0, 160))
-	check('探索产物真的进了账本(git 历史里查得到)', gitLog('lab/explore/probe.txt') !== '', gitLog('lab/explore/probe.txt'))
-	// ③ 没有新的写类调用 ⇒ 不再记第二笔(不造空提交)
-	await preStep(host, S, 3)
-	check('同一批写入不重复记账', snapshots().length === 1, String(snapshots().length))
-	// ④ 模型侧那条读路径也看得到它(账本两件工具对探索产物同样有效)
-	const history = await callOn(host, S, 'FileHistory', { path: 'lab/explore/probe.txt', limit: 5 })
-	check('FileHistory 查得到探索产物', history.ok === true && /探索期快照/.test(String(history.message ?? '')), String(history.message ?? '').slice(0, 140))
-}
-
 console.log('\n【跳级要看得见(但不必许可):从没被走过的等级是一条派生读数】')
 {
 	/**
@@ -4713,32 +2492,6 @@ console.log('\n【跳级要看得见(但不必许可):从没被走过的等级�
 	const withL0 = { ...base, evidence: [...l3Only.evidence, { id: 'e-0', plan: 'p-1', step: 's1', verdict: 'support', level: 'L0', refs: [], evaluator: 'self', basis: '量纲检查' }] }
 	check('走过 L0 之后,读数只剩真正没走过的那些', JSON.stringify(derive(withL0).hypotheses[0].untouchedLevels) === JSON.stringify(['L1', 'L2']), JSON.stringify(derive(withL0).hypotheses[0].untouchedLevels))
 	check('一条证据都没有的假设不报这个读数(还没有声明可谈)', (derive(base).hypotheses[0].untouchedLevels ?? []).length === 0)
-}
-
-console.log('\n【临时采纳的那道门:认可是它的机械出口】')
-{
-	/**
-	 * 「临时采纳」(分差不足以称结论)原来只能靠人**说一句话**,而门开着会按住续跑
-	 * ⇒ 什么都不做的话系统一直等一个永远不会来的动作。认可是决定,决定就该有按钮;
-	 * 「要改判据」那条路仍然在(说一句,模型重做一条世界线)。
-	 */
-	const forkState = {
-		...emptyState(),
-		forks: [{
-			id: 'f-1', step: 's1', plan: 'p-1', question: '走哪条', phase: 'settled', settled: true, abandoned: false,
-			decide_by: { metric: 'ms = lab/probe.txt 里的耗时数(毫秒)', direction: 'min' }, humanDecision: null, arbitration: null, arbitrationSession: null,
-			branches: [{ id: 'b-1', label: '甲', approach: '直接算', done_criteria: '有 ms 读数', status: 'adopted', level: 'L0', reading: '60', validity: 'usable', artifacts: [] }],
-			merge: { branch: 'b-1', provisional: true, decisionNote: 'auto_adopt: 相对差距 2.0%,阈值 15%', by: 'metric', margin: 0.02 },
-		}],
-	}
-	const opened = derive(forkState)
-	const item = opened.inbox.find((row) => row.kind === 'provisional_review')
-	check('临时采纳起一道门,而且它现在是**可点击**的(needs=click)', item !== undefined && item.needs === 'click' && item.human_action === 'confirm_provisional' && item.fork === 'f-1', JSON.stringify(item))
-	const gateMessage = { id: 'm-cp', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} ${JSON.stringify({ action: 'confirm_provisional', plan: 'p-1', fork: 'f-1', branch: null, skill: null, value: null, note: null })}` }], source: { kind: 'user' } }
-	const confirmed = applyEvent(forkState, { type: 'user/message', time: 9, data: gateMessage })
-	check('认可是人的决定:落一条 by:user 的确认', view(confirmed).forks[0].merge.confirmed?.by === 'user', JSON.stringify(view(confirmed).forks[0].merge))
-	check('认可之后那道门消失(状态锚)', !derive(confirmed).inbox.some((row) => row.kind === 'provisional_review'))
-	check('第一次认可为准(再审不改写)', view(applyEvent(confirmed, { type: 'user/message', time: 10, data: { ...gateMessage, id: 'm-cp-2' } })).forks[0].merge.confirmed.at === view(confirmed).forks[0].merge.confirmed.at)
 }
 
 console.log('\n【拿不到裁决要计数:同一件事反复失败必须升级给人,不许无声重试】')
@@ -4917,7 +2670,7 @@ console.log('\n【实体两件与跳级理由:新机制必须有行为证据,不
 	check('前置:计划建起来', plan.ok === true, String(plan.code))
 	writeText(join(WORKSPACE, 'lab/gate-a/read.txt'), 'count=1\n')
 	const delivered = await callOn(host, S, 'AdvancePlan', { observations: [{ ref: 'lab/gate-a/read.txt', note: '读数 count=1' }], verdict: 'support', basis: 'lab/gate-a/read.txt 里有 count=1 这一个读数', step_id: 'v1' })
-	check('前置:L2 步交付成功(于是"已用到 L2、L0–L1 没走过"这件事才存在)', delivered.ok === true, String(delivered.code ?? JSON.stringify(Object.keys(back))))
+	check('前置:L2 步交付成功(于是"已用到 L2、L0–L1 没走过"这件事才存在)', delivered.ok === true, String(delivered.code ?? JSON.stringify(Object.keys(delivered))))
 	const derived = host.service.derive(S)
 	const hyp = derived.hypotheses.find((item) => Array.isArray(item.untouchedLevels) && item.untouchedLevels.length > 0) ?? null
 	if (hyp === null) {
@@ -5218,65 +2971,57 @@ console.log('\n【输出契约:工具返回值必须落在自己声明的 schema
 	check('契约守卫是活的(故意越界能被抓到)', typeof probe === 'string' && probe.includes('extra'), String(probe))
 }
 
-console.log('\n【用户仓库原样不动:账本与世界线只住在旁路账本里】')
+console.log('\n【产物路径不重叠:并行的路线不许互相覆盖产出】')
 {
-	/**
-	 * 0.3.2 之前的失效形态(本仓库自己吃过):工作区是 git 仓库时,内核在**用户当前分支**上
-	 * `add -A` + 以 clearai@local 提交,世界线分支也开在用户仓库里 ⇒ 没写完的改动与中间产物
-	 * 随下一次 push 上了远端。整场测试在这个用户仓库里交付、快照、分叉、采纳、恢复过很多次,
-	 * 走到这里,它的历史里必须仍只有用户自己的提交。
-	 */
-	const userGit = (args) => execFileSync('git', ['-C', WORKSPACE, ...args], { encoding: 'utf8' }).trim()
-	const authors = userGit(['log', '--all', '--format=%ae']).split('\n').filter(Boolean)
-	check('用户仓库里没有一条 clearai@local 的提交(任何 ref 上都没有)', authors.every((author) => author !== 'clearai@local'), authors.join(','))
-	check('用户仓库里没有 clearai/* 分支(世界线分支开在旁路账本里)', userGit(['for-each-ref', 'refs/heads/clearai', '--format=%(refname)']) === '')
-	check('账本确实在记(旁路账本里有 clearai@local 的提交)', /clearai@local/.test(ledgerGit(WORKSPACE, ['log', '--all', '--format=%ae'])))
-	check(
-		'用户仓库的本地 exclude 里有世界线容器(嵌套的工作副本不出现在他的 git status 里)',
-		readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')
-			.split('\n')
-			.some((line) => line.trim() === '/clear/worldlines/'),
-	)
-	check(
-		'用户仓库的 exclude 里**只有**那一行(账本的垃圾名单不替用户决定忽略什么)',
-		!/\.DS_Store|\*\.swp/.test(readFileSync(join(WORKSPACE, '.git', 'info', 'exclude'), 'utf8')),
-	)
-	check(
-		'分叉前的快照落了 git/snapshot(系统对工作区做过的事,日志里说得出来)',
-		ledger().some((mutation) => mutation.t === 'git/snapshot' && /分叉前/.test(String(mutation.reason))),
-	)
+	const host = makeHost()
+	apply(host.ctx, {})
+	const S = 'session-artifact-overlap'
+	await callOn(host, S, 'SetGoal', { claim: '比较两种做法', done_criteria: '两种做法各有结果文件', hypotheses: [{ claim: '甲更快', refute_when: '甲不比乙快' }, { claim: '乙更快', refute_when: '乙不比甲快' }] })
+	const clash = await callOn(host, S, 'CreatePlan', {
+		steps: [
+			{ id: 'p1', do: '跑甲', artifacts: ['lab/result.md'], done_criteria: 'lab/result.md 写着甲的耗时' },
+			{ id: 'p2', do: '跑乙', artifacts: ['./lab//result.md'], done_criteria: 'lab/result.md 写着乙的耗时' },
+		],
+	})
+	check('同一计划里两步声明同一个产物(写法不同也算同一个)→ 立计划被拒', clash.ok === false && /已经由步骤 p1 声明/.test(String(clash.message ?? '')), String(clash.message ?? clash.code).slice(0, 120))
+	const fine = await callOn(host, S, 'CreatePlan', {
+		steps: [
+			{ id: 'p1', do: '跑甲', artifacts: ['lab/a.md'], done_criteria: 'lab/a.md 写着甲的耗时' },
+			{ id: 'p2', do: '跑乙', artifacts: ['lab/b.md'], done_criteria: 'lab/b.md 写着乙的耗时' },
+		],
+	})
+	check('各自声明不同的产物 → 照常立起来', fine.ok === true, String(fine.code))
+	const amendClash = await callOn(host, S, 'AmendPlan', { step: { id: 'p3', do: '再跑一次甲', artifacts: ['lab/a.md'], done_criteria: 'lab/a.md 写着第二次耗时' } })
+	check('补一步时撞上已有步骤的产物 → 也被拒', amendClash.ok === false && /已经由步骤 p1 声明/.test(String(amendClash.message ?? '')), String(amendClash.message ?? amendClash.code).slice(0, 120))
+	await callOn(host, S, 'VoidPlanStep', { step_id: 'p1', reason: '甲的环境不可用' })
+	const reuse = await callOn(host, S, 'AmendPlan', { step: { id: 'p4', do: '换环境重跑甲', artifacts: ['lab/a.md'], done_criteria: 'lab/a.md 写着新环境下的耗时' } })
+	check('作废的步不再占着它的产物路径', reuse.ok === true, String(reuse.code))
 }
 
-console.log('\n【工作区是大仓库里的一个子目录:exclude 模式相对仓库根】')
+console.log('\n【旧日志照样能读:交还宿主的机制留下的事件被安静跳过】')
 {
-	/**
-	 * `clear/worldlines/` 中间带斜杠,在 `info/exclude` 里锚定在仓库根上。工作区是 `/repo/pkg` 时
-	 * 工作副本在 `pkg/clear/worldlines/...`,照写 `clear/worldlines/` 挡不住——用户的 `git status` 里会冒出来。
-	 */
-	const repo = tempDir('clearai-mono-')
-	execFileSync('git', ['init', '-q'], { cwd: repo })
-	execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: repo })
-	const pkg = join(repo, 'pkg')
-	writeText(join(pkg, 'lab', 'probe.txt'), '# 测量脚本占位\n')
-	const host = makeHost()
-	host.cwd = pkg
-	apply(host.ctx, {})
-	const S = 'session-mono'
-	await callOn(host, S, 'SetGoal', { claim: '比两条路线', done_criteria: 'report.md 写下结论', hypotheses: [{ claim: '甲更好', refute_when: '乙更好' }] })
-	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'm1', do: '比两条路线', artifacts: ['report.md'], done_criteria: 'report.md 写下结论' }] })
-	const forked = await callOn(host, S, 'ForkPlan', {
-		question: '两条路线选哪条',
-		options: [
-			{ label: '甲', approach: '甲做法', done_criteria: 'yield 越大越好' },
-			{ label: '乙', approach: '乙做法', done_criteria: 'yield 越大越好' },
-		],
-		decide_by: { metric: 'yield = lab/probe.txt 里的产出数(件)', direction: 'max' },
-	})
-	const prepared = host.journal.filter((mutation) => mutation.t === 'worldline/prepared').at(-1)
-	check('前置:子目录工作区里分叉物化成 worktree', forked.ok === true && prepared?.tier === 'ledger' && prepared.branches.length === 2, `${forked.code} ${prepared?.tier}`)
-	const status = execFileSync('git', ['status', '--porcelain', '-uall'], { cwd: repo, encoding: 'utf8' })
-	check('用户的 git status 里看不见工作副本(模式写成 /pkg/clear/worldlines/)', !status.includes('worldlines'), status.split('\n').filter((line) => line.includes('worldlines')).slice(0, 2).join(' | '))
-	check('用户仓库里仍没有一条 clearai@local 的提交', !/clearai@local/.test(execFileSync('git', ['-C', repo, 'log', '--all', '--format=%ae'], { encoding: 'utf8' })))
+	const old = [
+		{ t: 'goal/set', id: 'g-old', claim: '旧会话的目标', done_criteria: '旧判据', hypotheses: [{ id: 'h-old', claim: '旧假设', refute_when: '旧推翻条件' }] },
+		{ t: 'fork/created', id: 'f-old', step: 's1', question: '旧分叉', branches: [{ id: 'b1', label: '甲' }] },
+		{ t: 'worldline/executing', fork: 'f-old', branch: 'b1', child: 'c1' },
+		{ t: 'scout/dispatched', id: 'sc-old', step: 's1', child: 'c2' },
+		{ t: 'git/snapshot', commit: 'abc1234' },
+		{ t: 'git/committed', commit: 'def5678', step: 's1' },
+	]
+	let state = null
+	let thrown = null
+	try {
+		state = applyMutations(emptyState(), old)
+	} catch (error) {
+		thrown = error
+	}
+	check('带着旧事件的日志折得出来(不抛)', thrown === null, String(thrown?.message ?? ''))
+	check('其余部分照常折出来(目标还在)', state?.goal?.id === 'g-old', JSON.stringify(state?.goal ?? null).slice(0, 80))
+	check('状态里不再有世界线 / 侦察 / 外脑这几格', state !== null && !('forks' in state) && !('scouts' in state) && !('brain' in state) && !('skillUsage' in state))
+	const projected = view(state)
+	check('视图照常算得出来,也不再交出这几格', projected !== null && !('forks' in projected) && !('scouts' in projected) && !('brain' in projected) && !('skills' in projected))
+	const gate = parseHumanGate({ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"adopt_branch","fork":"f-old","branch":"b1"}` }] })
+	check('旧日志里的世界线人门动作不再被认成动作', gate === null, JSON.stringify(gate))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

@@ -13,7 +13,7 @@
  *
  * 用法:
  *   node tools/e2e-parallel.mjs                                  # 全部剧本,并发 3
- *   node tools/e2e-parallel.mjs --scenarios long-plan,scout-first
+ *   node tools/e2e-parallel.mjs --scenarios long-plan,competing-routes
  *   node tools/e2e-parallel.mjs --concurrency 1 --timeout-min 45
  *
  * 产物:

@@ -289,9 +289,7 @@ if (spec === null) {
 	}
 
 	const presetDir = join(PROFILE, 'node_modules', 'clearai-dsh', 'presets', 'clearai')
-	const skills = existsSync(join(presetDir, 'template', 'skills')) ? readFileSync(join(presetDir, 'template', 'skills', 'README.md'), 'utf8') : ''
-	check('⑤ 包内预设自洽(组合文件 + 元数据 + 模板)', existsSync(join(presetDir, 'agent.cordis.yml')) && existsSync(join(presetDir, 'preset.yml')) && existsSync(join(presetDir, 'template', 'project.md')), presetDir)
-	void skills
+	check('⑤ 包内预设自洽(组合文件 + 元数据,不再带工作区模板)', existsSync(join(presetDir, 'agent.cordis.yml')) && existsSync(join(presetDir, 'preset.yml')) && !existsSync(join(presetDir, 'template')), presetDir)
 	/**
 	 * 查的是**这台机器的路径**(仓库根 / 这次装到哪儿),不是任何 `/home/` 字样:
 	 * 提示词里刻意举了 `/Users/...`、`/home/...` 当反例(教模型别编绝对路径),那是内容不是泄漏。

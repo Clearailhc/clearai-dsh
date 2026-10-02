@@ -113,7 +113,7 @@ console.log('\n【重构基线:计划点名的不符必须在表里留痕】')
 	// 已经解决的那两条**不许悄悄长回来**:它们曾是真实的不符,现在代码与文案说的是同一句话。
 	for (const [id, why] of [
 		['plan-review', '授权语义已统一为一句话(记号是归属,门是审阅卡)'],
-		['commands-menu', 'commands.js 已贡献五个只读命令'],
+		['commands-menu', '命令交给原生,ClearAI 不再贡献自己的命令'],
 	]) {
 		const entry = TABLE.mechanisms.find((m) => m.id === id)
 		check(`${id} 的不符字段已清空(${why})`, entry !== undefined && entry.known_mismatch === null)

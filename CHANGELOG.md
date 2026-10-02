@@ -4,6 +4,26 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+**「少即是多」第二阶段:宿主已经有的,交还宿主。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第二阶段的清单删除;机制骨架(目标 / 计划 / 准入 / 证据 / 本体)不动。
+
+### Removed
+
+- **世界线**(`ForkPlan` `AdvanceWorldline` `ConvergeFork` `WorldlineStatus` `AwaitWorldlines` `AbandonFork`、执行者子任务、横评仲裁、世界树里的车道)。并行探索改由原生 `subagent` 承担:做法迥异的路线就是竞争的假设,各由一个步骤检验。
+- **旁路账本与文件恢复**(`FileHistory` `RestoreFile`、回合快照、交付点提交、`ledgerMaxFiles`)。下面「账本不再往用户的仓库里提交」那一节描述的旁路账本随之整体移除;每轮改了什么交给宿主的 `dsh-workspace-changes`。
+- **侦察**(`SpawnScout` `MapScouts`、开工前侦察、资料面)、**外脑**(`brain.js`、`SaveSkill` `WriteMemory`、技能候选与扶正)、**模板技能与铺工作区**(`preset/template/`、空文件夹里的 `PROJECT.md` 与目录骨架)、**自己的 `/` 命令**(`commands.js`)。
+- 界面:产物页签与 `/api/clearai/deliverables`、技能 · 记忆页签与 `/api/clearai/brain`、续跑状态行;人门里与上述机制相关的动作(`adopt_branch` `abandon_fork` `promote_skill` `confirm_provisional`)。
+- 配置键:`templateDir` `scoutToolFilter` `gitWorldlines` `ledgerMaxFiles` `executorToolFilter` `precommitRecon` `mapScoutMax` `mapScoutConcurrency` `autoDispatchExecutors` `autoAdoptMinGap` `forkArbitration`。
+
+### Added
+
+- **同一计划里两步不许声明同一个产物路径**(`CreatePlan` / `AmendPlan` 立约时就拒):子任务共用一个工作区,撞路径的两条路线会互相覆盖。
+
+### Changed
+
+- 工具面 20 件(目标 2 · 计划 8 · 本体 10),提示词 21 段生效。
+- 投影状态版本升到 12。旧会话照样读得开:被删机制的事件被安静跳过,不报错也不显示。
+- 测试与长测剧本同步瘦身:世界线与侦察剧本换成「竞争路线」剧本;套件 17 份。
+
 **账本不再往用户的仓库里提交。** 工作区本身是 git 仓库时,内核的账本(交付点、回合边界快照、恢复)与 git 世界线(分支、合并)此前**直接用那个仓库**:每个回合边界在用户**当前分支**上 `git add -A` 并以 `clearai <clearai@local>` 提交,世界线分支 `clearai/*` 也开在里面。于是用户没写完的改动、模型按技能约定写的 `lab/` `products/`、排查用的 `.tmp-*` 一起进了他的历史,下一次 push 就上了远端——本仓库自己就这样吃进过几十条「探索期快照」(独立验证员 2026-09 也记过同一件事,当时判为「不是源码缺陷」)。
 
 > 过渡修复:后续计划把账本整体交给宿主(`dsh-workspace-changes`),届时本节描述的旁路账本会被移除。

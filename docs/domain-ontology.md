@@ -1,505 +1,215 @@
 # Domain Ontology: the Knowledge Form of the Epistemic Loop
 
-> The epistemic loop governs *what may be believed*. The domain ontology governs *the language in which it is said*. This document defines the domain ontology and specifies how it is represented, stored, added, revised and deprecated, and how it relates to the epistemic loop, the fact base and graph projection.
->
-> This describes the `0.2.0` **design**. What is implemented and what is still a design target is governed by [Known gaps](known-gaps.md) and the [mechanism truth table](optimization/truth-table.md) — this document does not present itself as current behaviour.
+> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md). Code follows in phases; what has landed is tracked in [Known Gaps](known-gaps.md).
+
+> The epistemic loop governs "why believe it"; the domain ontology governs "in what language to say it". This document defines the domain ontology: how it is represented, stored, added to, revised and deprecated, and how it relates to the loop, facts and the graph.
 
 ---
 
-## 1. The problem: facts need a form
+## 1. The problem: facts need shape
 
-A fact today is a one-line statement (`text`), a boundary (`scope`), a support level (`level`) and a set of evidence references. It is epistemically complete — the *why believe it* is answered — but its content is prose, so three things cannot be done mechanically:
+A fact that is only prose is epistemically complete — why it is believed and where it holds are both stated — but three things cannot be done mechanically:
 
-- **Comparison**: whether two facts are about the same thing can only be decided by re-reading prose;
-- **Conflict detection**: two contradictory facts can sit on the shelf together with nobody told;
-- **Reuse**: citing "what is known" in the next round means re-reading the whole fact base instead of retrieving by concept.
+- **Comparison**: whether two facts say the same thing needs rereading the prose;
+- **Conflict detection**: two contradictory facts can sit on the shelf together;
+- **Reuse**: using "what is known" next time means rereading every fact.
 
-The loop therefore completes only half its work: it *earns* conclusions but does not *place* them into a structure that can keep growing. The starting point of this design is one sentence:
-
-> The product of the epistemic loop is not a string; it is **bounded knowledge** — assertion content (constrained by the ontology) times epistemic metadata (governed by the loop).
-**This re-centering says the conclusion out loud: the product form of research is the ontology.** The epistemic loop is the ontology's production process and facts are its content units — the direction of truth does not change (world → evidence → fact → grown into the ontology), so **the ontology adjudicates nothing; it only houses what has been adjudicated**. Vocabulary is convention and entries are experience; their authorities belong to admission and to verification respectively, and not one line of that boundary moves after the re-centering.
+So the loop's output is not a string but **bounded knowledge**: asserted content (constrained by the ontology) × epistemic metadata (governed by the loop). The direction of truth never changes — world → evidence → fact → grows into the ontology — and **the ontology adjudicates nothing; it only houses what has been adjudicated**. Established conclusions stay in the workspace across sessions; that is ClearAI's long-term memory.
 
 ---
 
 ## 2. Three layers
 
-"Ontology" has two senses in this repository and they must be kept apart, or two entirely different kinds of authority get conflated.
-
-| Layer | What it is | Question it answers | Where authority comes from | Rate of change |
+| Layer | What it is | Answers | Authority | Pace |
 |---|---|---|---|---|
-| **Process ontology** | [`verification-loop`](verification-loop.md): nine objects, state machines, L0–L4, who judges and who releases | **How** we come to know | Code declaration, assembly-time validation, per plugin release | Release-level |
-| **Domain ontology** | A project's domain language: concepts, predicates, value forms, constraints | **In what language** we say it | Convention: admitted with a basis, usage leaves traces, deprecation is sticky | Slow (convention layer) |
-| **Fact base** | Sentences written in that language that already passed the loop | **What** we know | The loop: evidence, levels, boundaries, evaluation, review | Fast (empirical layer) |
+| **Process** | [Verification Loop](verification-loop.md): objects, levels, who judges and who releases | **How** we know | Declared in code, checked at assembly | Per plugin version |
+| **Domain ontology** | The project's domain language: concepts, predicates, value forms | **In what language** we say it | Convention: admitted with a basis, sticky deprecation | Slow |
+| **Facts** | Sentences in that language that completed the loop | **What** we know | The loop: evidence, level, scope, review | Fast |
 
-### 2.1 The domain ontology is a language, not an a priori frame
+**The domain ontology is a language, not an a-priori framework.** Terms are conventions, not empirical claims: their authority comes from being adopted, used and deprecable, not from evidence levels. That unties two knots: the vocabulary is usable before the first goal has produced any fact (language precedes sentences); terms need no verification — sentences written with them do.
 
-In knowledge representation, an ontology is "an explicit specification of a conceptualization" (Gruber, 1993). ClearAI accepts the **form** (explicit, shareable, checkable) and rejects the **a-priority**:
-
-> **A domain ontology is the language layer of a project's knowledge base: a set of governed conventions about which concepts exist in this domain, how they relate, which units quantities use, and what form a conclusion takes.**
-
-That yields one cut which dissolves two deadlocks at once:
-
-- **Bootstrapping**: a fact needs promotion before it has epistemic standing. If the domain ontology were also defined as "facts that must pass the loop", then no vocabulary would exist while the first goal is still running. **A language may exist before any sentence does** — conventions are admitted by named verbs, not by promotion.
-- **Authority**: a term is a convention, not an empirical claim. The authority of a convention comes from being adopted, used and deprecable — not from an evidence level. Only empirical claims need L0–L4.
-
-So: **terms do not need verification; sentences written with terms do.**
-
-### 2.2 The process ontology is the plugin's own backend flow
-
-The process ontology is not project knowledge — it is the **plugin's own backend flow structure**: which objects exist, who may push which transition, who judges at which level. Three boundaries follow:
-
-- **It does not enter the ledger**: the ledger records **instances** (`goal/set`, `step/advanced`, `fact/promoted`, …), not the machine. Recording the machine in a project ledger would turn a plugin upgrade into a rewrite of project history, and would hand the runtime the ability to rewrite the rules of knowing — exactly what "inexpressible beats unviolatable" exists to prevent. The machine changes by **release**, `STATE_VERSION` guards its shape, and the shelf states the current version plainly.
-- **It is not editable at runtime**: changing the machine means changing code and declaration (`preset/plugins/ontology.js`), through assembly-time validation and a release — never through the ontology tab.
-- **It is shown as a state shape, not as a document to maintain**: the user sees steps, lanes, gates and convergence in the worldlines tree, and sees propositions grouped by ontology state in Propositions and facts — that is what the process ontology looks like on screen. The `clear/ontology/verification-loop.md` shelf is first of all the **charter the model reads** (it must write criteria and deliveries against these objects) and only secondly a reference for a human who wants to read deeply.
-
-In one line: **the domain ontology answers "in what language is your knowledge written" (editable, ledgered, backed by a basis); the process ontology answers "where does your work stand right now" (release-level, not editable, invisible rules with visible states).**
-
-### 2.3 The three layers
+**The process is not project knowledge.** It is not in the record and not editable at runtime; changing it means changing code and releasing. In the UI it appears as **state shape**: steps and gates in the World Tree, conclusions grouped by trust in the Ontology pane.
 
 ```mermaid
 flowchart TD
-    accTitle: Three Layers Of ClearAI Knowledge
-    accDescr: The process ontology is fixed per release and governs how claims earn status, the domain ontology is a project's governed vocabulary, and the fact base holds sentences that already passed the loop.
-
-    subgraph process["Process ontology · code · per release"]
-        loop["Nine objects · state machines · L0–L4 · human gates"]
+    subgraph process["Process · declared in code · per version"]
+        loop["Objects · levels · who judges, who releases"]
     end
-    subgraph domain["Domain ontology · ledger · convention layer"]
-        vocab["Concepts · predicates · value forms · constraints"]
+    subgraph domain["Domain ontology · governed record · convention"]
+        vocab["Concepts · predicates · value forms"]
     end
-    subgraph facts["Fact base · ledger · empirical layer"]
-        know["Assertions + levels + boundaries + evidence"]
+    subgraph facts["Facts · governed record · experience"]
+        know["Assertion + level + scope + evidence"]
     end
-
-    loop -->|"governs how status is earned"| domain
-    loop -->|"governs promotion"| facts
+    loop -->|"rules for promotion"| facts
     domain -->|"supplies vocabulary"| facts
-    facts -->|"usage traces · pressure"| domain
-
-    classDef code fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
-    classDef ledger fill:#dcfce7,stroke:#16a34a,color:#14532d
-
-    class loop code
-    class vocab,know ledger
+    facts -->|"usage trace"| domain
 ```
 
 ---
 
-## 3. The graph model: the minimal set after Occam's razor
+## 3. Graph model: the minimum
 
-No OWL, no RDF triples, no SHACL, no SPARQL, no graph database, no separate reasoner. Only the four node kinds and three edge kinds that serve the current loop.
+No OWL, RDF, SHACL, SPARQL, graph database or reasoner. Four node kinds, three edge kinds.
 
-### 3.1 Nodes
-
-| Node | Meaning | Independently governed |
+| Node | Meaning | Source |
 |---|---|---|
-| `concept` | A domain concept, e.g. "numerical scheme", "furnace batch", "ramp rate" | Yes — part of the domain ontology |
-| `value_type` | A built-in value form: `statement` / `quantity` / `formula` / `code` / `reference` | No — fixed by the system |
-| `instance` | A concrete object mentioned by a fact, e.g. "WENO5", "batch-2025-001" | No — projected from facts |
-| `literal` | A number, text, formula, or code reference used as an object | No — projected from facts |
-
-**Instances are registered through a first-class write path** (`RegisterInstance` → `entity/registered`,
-and `Assert` → `entity/asserted`), and they are **also** projected out of typed facts. The two sources
-merge in the projection under one key (`${type}|${id}`), so the picture keeps its identity whether the
-edge came from a promoted fact (`source='promoted'`, carrying level and scope) or from a sourced
-observation (`source='asserted'`, carrying provenance and no independent verdict).
-
-Why the write path exists: binding the entity layer's existence to a goal-level independent verdict made
-"a well-built ontology with an empty entity graph" the cheapest way to finish — vocabulary could be
-registered freely (a convention needs no evidence) while every concrete object waited on a verdict about
-the whole goal. An entity is an observation, so it lands when it is observed. Instances sharing a label
-collapse to one node; entity resolution (two names for one thing) is out of scope, see
-[Known gaps](known-gaps.md).
-
-### 3.2 Edges
+| `concept` | A domain concept, e.g. "numerical scheme", "furnace batch" | Domain ontology, `Define` |
+| `value_type` | Built-in value forms: `statement` / `quantity` / `formula` / `code` / `reference` | Fixed by the system |
+| `instance` | A concrete thing that was found, e.g. "WENO5" | `RegisterInstance`, or projected from facts |
+| `literal` | Numbers, text, formulas, code references | Projected from assertions |
 
 | Edge | Meaning | Example |
 |---|---|---|
-| `is_a` | Concept subsumption | `WENO scheme → numerical scheme` |
-| `predicate` | A domain predicate: concept → concept, or concept → value form | `numerical scheme --convergence order--> quantity` |
-| `assertion` | One typed fact | `WENO5 --convergence order--> 5` |
+| `is_a` | Concept inheritance | `WENO scheme → numerical scheme` |
+| `predicate` | Domain predicate: concept → concept or value form | `numerical scheme --convergence order--> quantity` |
+| `assertion` | One assertion | `WENO5 --convergence order--> 5` |
 
-A predicate is a **first-class edge record** in the ontology graph, not a visible node. It carries:
+A predicate is an edge record with domain, range and single-valuedness, not a node:
 
 ```json
-{
-  "id": "convergence_order",
-  "label": "convergence order",
-  "domain": "numerical_scheme",
-  "range": { "form": "quantity", "unit": "order" },
-  "functional": true
-}
+{ "id": "convergence_order", "label": "convergence order", "domain": "numerical_scheme",
+  "range": { "form": "quantity", "unit": "order" }, "functional": true }
 ```
 
-Predicates are promoted to nodes only when relations *between predicates* genuinely need expressing. **No meta-model in advance.**
+**Instances land the moment they are observed** (`RegisterInstance`, `Assert`, both with provenance), not when the goal closes. Otherwise "a beautiful vocabulary and an empty entity graph" becomes the cheapest way to finish. Edges from the two sources are labelled honestly: from promoted facts they carry level and scope (`promoted`); from observations with provenance they are not independently adjudicated (`asserted`).
 
-### 3.3 Ontology graph and entity graph stay separate
-
-```mermaid
-flowchart LR
-    accTitle: Ontology Graph Versus Knowledge Graph
-    accDescr: The ontology graph declares which concepts and predicates exist, while the entity graph shows the typed facts that were actually promoted.
-
-    subgraph onto["Ontology graph · what may be said"]
-        scheme["numerical scheme"] -->|is_a| method["scientific method"]
-        scheme -->|"convergence order · quantity"| qty["quantity"]
-    end
-    subgraph kg["Entity graph · what is said"]
-        weno["WENO5"] -->|"convergence order · L3"| five["5"]
-        weno -->|"type"| scheme2["numerical scheme"]
-    end
-
-    classDef concept fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
-    classDef value fill:#fef3c7,stroke:#d97706,color:#78350f
-    classDef inst fill:#dcfce7,stroke:#16a34a,color:#14532d
-
-    class scheme,method,scheme2 concept
-    class qty value
-    class weno,five inst
-```
-
-Drawing a term definition and an empirical fact as the same kind of edge is the main mistake this design avoids: they differ in authority, in rate of change, and in the cost of being wrong.
+**The ontology graph and the entity graph are drawn apart.** One says what the language allows (declaration), the other what has been said (claims). They differ in authority, pace and cost of error; drawing them as the same kind of edge is the main mistake this design avoids.
 
 ---
 
-## 4. Facts: assertion plus epistemic metadata
+## 4. Facts: assertion + epistemic metadata
 
-### 4.1 Definition
-
-> **A fact = an assertion written in the domain language + epistemic metadata.**
-
-The metadata is what exists today (level, boundary, evidence, evaluation, review, source goal, verification path) and loses nothing. What is new is the **assertion**:
+> **A fact = an assertion in the domain language + epistemic metadata (level, scope, evidence, evaluation, review, originating goal).**
 
 ```json
-{
-  "subject": { "id": "WENO5", "type": "numerical_scheme" },
+{ "subject": { "id": "WENO5", "type": "numerical_scheme" },
   "predicate": "convergence_order",
   "object": { "kind": "quantity", "value": 5, "unit": "order" },
-  "qualifiers": { "regime": "smooth" }
-}
+  "qualifiers": { "regime": "smooth" } }
 ```
 
-### 4.2 Value forms: the direct answer to "what form?"
-
-Plain text, formulae and code are not three kinds of fact. They are the five **value forms an assertion object may take**:
-
-| Form | Object shape | Validation (strict once supplied) |
+| Value form | Object | Validation (strict when provided) |
 |---|---|---|
-| `statement` | A short statement string | Non-empty, bounded length |
-| `quantity` | A number plus a unit string | The number parses; the unit is non-empty; no dimensional arithmetic in this version |
-| `formula` | LaTeX source | Non-empty; no semantic parsing in this version |
-| `code` | A workspace file path | The file really exists in the workspace (the same discipline as "a scale must reference a real file") |
-| `reference` | A ledger id or an on-disk path | The reference resolves |
+| `statement` | Short statement | Non-empty, length limit |
+| `quantity` | Number + unit | Parseable number, non-empty unit; no unit conversion |
+| `formula` | LaTeX | Non-empty; no semantic parsing |
+| `code` | Workspace file path | The file exists |
+| `reference` | Record id or path | Resolvable |
 
-A relation predicate (`range: { term }`) takes an **instance** as its object — `{ kind: "instance", value: "<label>" }` — because its object is another instance rather than a literal value. `instance` is therefore the relation-object form, not a sixth value form.
-
-### 4.3 Fields a promoted fact carries
-
-Beyond today's fields, `fact/promoted` gains:
-
-- `hypothesis`: the id of the hypothesis that produced this fact. This **fixes a fragile spot**: hypotheses and facts are matched today by `text` equality, so rewording breaks the link. Matching by id replaces it.
-- `assertions`: the assertion array, or `null` when absent (lenient plus validated: omission passes, supply is checked strictly).
+A relational predicate's object is another **instance** (`{ kind: "instance" }`), not a sixth value form. Assertions are additive: a fact without them is still valid and shows as "unstructured". Assertions land with the fact at promotion and are never rewritten afterwards; a fact links to its hypothesis by id, not by matching text.
 
 ---
 
 ## 5. Storage and projection
 
-### 5.1 The only authority: ledger events
+**The only authority is the event record**: `ontology/term_added`, `ontology/predicate_added`, two revision and two deprecation events, plus `entity/registered`, `entity/asserted` and `fact/promoted.assertions`. Replaying them yields `state.lexicon`; there is no second ledger and no hand-editable `domain.json`.
 
-| Event | Meaning |
-|---|---|
-| `ontology/term_added` | Admit a concept |
-| `ontology/predicate_added` | Admit a predicate |
-| `ontology/term_revised` | Non-semantic revision of a concept (version +1, old values kept) |
-| `ontology/predicate_revised` | Non-semantic revision of a predicate |
-| `ontology/term_deprecated` | Sticky deprecation of a concept |
-| `ontology/predicate_deprecated` | Sticky deprecation of a predicate |
+**Every read surface is a rendering**: `clear/ontology/domain.md` (with a Mermaid graph), the fact shelf, the graph and list in the Ontology pane, one summary line in the run-state card. All come from one projection; a read surface never becomes the authority.
 
-`fold` replays these into `state.lexicon` (concepts, predicates, revision history, deprecations). **There is no second state account.**
-
-The projection also carries a `state.ontology` slot, and that is the **process-ontology** shape (see §2.2) — not the same thing as this field: one is release-scoped and not editable, the other grows with the project and is governed by the ledger.
-
-### 5.2 Every read surface comes from the same projection
-
-None of the following is authoritative storage; all of it is rendering:
-
-- `clear/ontology/domain.md`: the Markdown read surface for the domain ontology (with Mermaid), rendered idempotently by the system;
-- `clear/knowledge/facts/INDEX.md`: the fact shelf;
-- the ontology graph and entity graph in the UI;
-- the statistics line on the runtime card;
-- the nodes and edges returned by `graphProjection(state)`.
-
-**There is no hand-editable `domain.json`.** If offline editing is ever needed, a file may only be a **draft patch** that enters the ledger through an apply action.
-
-### 5.3 Layout is not stored
-
-Node coordinates, zoom and filters are not knowledge and do not enter the ledger. Layout is a **deterministic pure function**:
-
-- the ontology graph prefers `is_a` layering;
-- without hierarchy it uses a deterministic partitioned/circular layout;
-- the same ledger yields the same graph data and the same default layout (pinnable by tests);
-- a user's temporary drag only changes the current view.
+**Layout is not stored**: coordinates, zoom and filters are not knowledge. Layout is a deterministic pure function — the same record always yields the same graph, pinned by tests.
 
 ---
 
-## 6. Adding, revising and deprecating
+## 6. Add, revise, deprecate
 
-### 6.1 Add: registration with a basis
-
-`RegisterTerm` (concepts) and `RegisterPredicate` (predicates). Registration checks: unique id; non-empty label and gloss; `domain` / `range` / `parent` referencing existing, non-deprecated concepts; no cycle in `is_a`; the value form is one of the fixed enumeration; a single-valued predicate declaration is self-consistent.
-
-**A basis is required**, and it must point at something that really exists in the ledger (literature, a project file, an existing fact, experimental material, or a user statement). A basis is not proof of the fact; it explains why the convention was introduced.
-
-### 6.2 Revise: version for small changes, a new id for semantic change
-
-In-place overwriting is not allowed.
-
-| Change | Action |
-|---|---|
-| Label, gloss, aliases, display information | `ReviseTerm` / `RevisePredicate`: version +1, old values kept, id unchanged |
-| Concept meaning, predicate domain/range, constraints — i.e. **semantics** | **Deprecate the old entry and register a new one** |
-
-The second row is a hard boundary: **the meaning of a stable id may not change silently in history.** Old facts are always interpreted under the vocabulary of their time, never rewritten by today's gloss.
-
-### 6.3 Delete: there is no delete, only sticky deprecation
-
-`DeprecateTerm` / `DeprecatePredicate`: a reason is required; old nodes and edges stay on the graph (ghost styling); historical facts remain readable; **new assertions may not reference deprecated entries**; existing facts that do reference them show "the term this used has been deprecated"; there is no undo — restoring meaning means registering a new version.
-
-This is the same historical principle as "facts are not deleted", "a refuted hypothesis is kept" and "voiding requires a reason".
-
-### 6.4 Graph editing = a graphical front end for named governance verbs
-
-| Graph action | Actual meaning |
-|---|---|
-| Add a node | `RegisterTerm` |
-| Add an edge | `RegisterPredicate` |
-| Edit node information | `ReviseTerm` |
-| Edit edge properties | `RevisePredicate` |
-| Remove a node/edge | `DeprecateTerm` / `DeprecatePredicate` |
-| Click a fact edge | Jump to the fact and its evidence; changes nothing |
-
-**Graph editing never writes files; it invokes verbs.** Dragging and zooming produce no ledger event. This is the positive statement of "a non-authoritative path structurally cannot write the ledger".
-
-### 6.5 Why no proposal subsystem
-
-Automatic ontology induction (inducing concepts from extracted material by frequency) must produce **proposals** rather than editing the live ontology — we accept that. But this version has no batch induction: terms are registered one at a time by the model with a basis, or edited on the graph by a human. They are few, reversible and visible. **Deprecation is the real veto.** So no `Proposal / Review` state machine is built now; when batch induction actually arrives it adds an `ontology_change_set` object, instead of letting induction edit the live ontology directly.
-
----
-
-## 7. Integration with the epistemic loop
-
-```mermaid
-flowchart TD
-    accTitle: Domain Ontology Inside The Epistemic Loop
-    accDescr: Each beat of the loop touches the domain vocabulary, and promoted typed facts project into the entity graph where conflicts are surfaced but never auto-adjudicated.
-
-    frame["Frame: pick concepts and value forms"] --> hyp["Hypothesise: register typed assertions"]
-    hyp --> plan["Plan: criteria may cite relations"]
-    plan --> obs["Observe: record object and source"]
-    obs --> verify["Verify: check assertion and evidence"]
-    verify --> evaluate["Evaluate: level · independence · conflict"]
-    evaluate --> promote["Record: the typed fact lands"]
-    promote --> project["Project: ontology graph and entity graph"]
-    project --> next["Next round: retrieve what is known by concept"]
-    project --> conflict["Conflict is derived, only surfaced"]
-    conflict --> human["A person or independent evaluator handles it"]
-    human --> project
-
-    classDef beat fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
-    classDef out fill:#dcfce7,stroke:#16a34a,color:#14532d
-    classDef review fill:#fef3c7,stroke:#d97706,color:#78350f
-
-    class frame,hyp,plan,obs,verify,evaluate beat
-    class promote,project,next out
-    class conflict,human review
-```
-
-| Beat | What the domain ontology does |
-|---|---|
-| Frame | Retrieve what is known by concept instead of re-reading every fact |
-| Hypothesise | Write typed assertions with registered predicates; writing none is still allowed |
-| Plan | Criteria may cite predicates and value forms; binding to a unit system is not enforced in this version |
-| Observe | Recorded objects carry a value form and a source; observation is not fact |
-| Verify | Check that assertion, evidence and hypothesis correspond |
-| Evaluate | Level, independence, uncertainty — and **mechanically derived conflicts** |
-| Record | Promote to a typed fact, landing in the fact base and the graph projection together |
-| Next round | Retrieve what is known by concept, predicate or subject |
-
-### 7.1 Conflict is derived, not adjudicated
-
-When two **un-retracted** confirmed facts fall on the same single-valued predicate, the same subject, and different objects, the projection produces a conflict (referencing both facts). A conflict:
-
-- **is not stored** — it is recomputed on every replay;
-- **is not auto-adjudicated**, and never auto-retracts either side — "admission is not a verdict" holds in this new layer too;
-- disappears when either side is retracted (through the existing `fact/reviewed`);
-- may be explicitly kept on both sides with a reason (a one-off `fact/conflict-resolved`).
-
-### 7.2 Every fact edge carries epistemic metadata
-
-Colour shows the support level or fact state, line style shows confirmed / pending review / refuted / retracted, and the detail shows the statement, `scope`, evidence, evaluator, source goal and verification step. The graph is not knowledge visualisation; it is **visualisation of epistemic results**: from one edge you can trace back to the hypothesis, evidence, evaluation and human decision that produced it.
-
----
-
-## 8. Interaction with the state machines and the flows
-
-Three things have three lifecycles, and none of them pushes another's state. This section sets them side by side first, then says exactly where they do shake hands.
-
-### 8.1 Three state machines that do not nest
-
-| State machine | States | Events | Who pushes it |
-|---|---|---|---|
-| **Process objects** (nine; see [State machines](optimization/state-machines.md)) | `open` / `advanced` / `void` / `proposed` / `refuted` / `promoted` … | `goal/set`, `step/advanced`, `fact/promoted` … | The kernel, as facts arrive; the model can only emit intent |
-| **Domain vocabulary** (concepts / predicates) | `admitted` → `deprecated` (a revision is a self-loop, version +1) | `ontology/term_added`, `ontology/*_revised`, `ontology/*_deprecated` | Named verbs (ten, implemented); the fold only interprets |
-| **One verification** (`tests` on a step) | Derived from evidence and levels | `evidence/recorded`, `audit/settled` | The kernel |
-
-**They do not nest**: admitting a concept advances no process object, and closing a plan changes no vocabulary. There is exactly one directional relation between them — **reference**: assertions reference predicates and concepts; facts reference hypotheses and evidence.
-
-### 8.2 Exactly four handshake points
-
-```mermaid
-flowchart LR
-    accTitle: Four Handshake Points Between The Two Layers
-    accDescr: The process state machines and the domain vocabulary touch at exactly four points, and every read surface is derived from the same fold.
-
-    subgraph process["Process layer · state machines"]
-        hyp["Hypothesis registration · SetGoal"]
-        promote["Promotion · fact/promoted"]
-        ev["Evidence / evaluation"]
-    end
-    subgraph vocab["Domain layer · vocabulary"]
-        lex["state.lexicon · concepts / predicates"]
-        dep["Deprecation · deprecated"]
-    end
-    subgraph surface["Read surfaces · all renderings"]
-        shelf["clear/ontology/domain.md"]
-        index["facts/INDEX.md"]
-        card["Runtime card"]
-        panel["Panel · ontology graph"]
-    end
-
-    lex -->|"(1) shape checked at registration"| hyp
-    dep -->|"(4) new assertions refused; existing ones marked"| hyp
-    ev -->|"threshold reached"| promote
-    hyp -->|"(2) fixed at promotion"| promote
-    promote -->|"(3) conflicts and graphs derived on replay"| card
-    promote --> shelf
-    promote --> index
-    promote --> panel
-
-    classDef p fill:#dbeafe,stroke:#2563eb,color:#1e3a5f
-    classDef v fill:#dcfce7,stroke:#16a34a,color:#14532d
-    classDef r fill:#fef3c7,stroke:#d97706,color:#78350f
-
-    class hyp,promote,ev p
-    class lex,dep v
-    class shelf,index,card,panel r
-```
-
-1. **Shape checked at hypothesis registration**: a `SetGoal` assertion references a predicate and a concept; an unknown or deprecated reference, or a range mismatch, is refused **before anything lands** (implemented).
-2. **Fixed at promotion**: `fact/promoted` carries `hypothesis` (identity) and `assertions` (content) — from then on the assertion travels in the same record as the level, boundary and evidence.
-3. **Conflicts derived on replay**: `derive()` computes conflict pairs from the fact set and the vocabulary. It **modifies no fact** and enters no gate.
-4. **Deprecation propagates as a boundary**: once an entry is deprecated, **new** assertions referencing it are refused; **existing** facts stay readable and the shelf marks them "the term this used has been deprecated".
-
-### 8.3 Who reads what
-
-| Read surface | What it reads | Rendered by |
+| Action | Tool | Rules |
 |---|---|---|
-| `clear/ontology/<process-ontology id>.md` | The process-ontology shape (nine objects / five levels) | The kernel, idempotently — the charter the model reads |
-| `clear/ontology/domain.md` | The domain vocabulary (concepts / predicates / basis / deprecations + Mermaid) | The kernel, idempotently (implemented) |
-| `clear/knowledge/facts/INDEX.md` | Promoted facts (with assertions and boundaries) | The kernel, idempotently |
-| The runtime card | Vocabulary counts, typed-fact ratio, one conflict line | The fold, `renderCard` |
-| The panel's propositions-and-facts view | Facts and assertion chips | The projection, `view().facts` |
-| The panel's ontology view | Ontology graph / entity graph / entry detail | The projection, `view().lexicon` (rendered; edits go through the human gate) |
+| Admit a concept or predicate | `Define` | Unique id; non-empty name and definition; referenced concepts exist and are not deprecated; no `is_a` cycle; value form from the fixed set; **a basis is required** and must point at something actually on record |
+| Change display details (name, definition, aliases) | `Define` (same id again) | Version +1, old values kept |
+| Change meaning (sense, domain, range, single-valuedness) | `Deprecate` the old entry + `Define` a new id | The meaning of a stable id never silently changes in history |
+| Deprecate | `Deprecate` | Reason required; sticky, no restore; old nodes stay on the graph (dashed); new assertions cannot cite it; existing facts that cite it are flagged "uses a deprecated term" |
+| Register an instance | `RegisterInstance` | Provenance required |
+| Write an assertion | `Assert` | Provenance required; predicate, domain and range strictly checked against the vocabulary |
 
-### 8.4 Where it stands today
+**Nothing is deleted.** This is the same history principle as "refuted hypotheses are kept" and "voids carry a reason".
 
-| Piece | Status |
+**How a person changes the vocabulary.** They say so in the conversation, and the model records it with the same verbs and the same checks. The UI is read-only, with no edit drawer — a second write path would need a second set of checks to keep aligned with the model's verbs.
+
+**Why no proposal subsystem.** Entries are added one by one with a basis, few, reversible and visible; deprecation is the real veto. If batch induction arrives later, a change-set object comes with it rather than letting induction edit the live ontology.
+
+---
+
+## 7. Relation to the loop
+
+| Beat | Role of the domain ontology |
 |---|---|
-| Six vocabulary events fold into `state.lexicon` | Implemented (stage B) |
-| Assertions fold into facts with `fact/promoted` | Implemented (fold layer) |
-| Conflict derivation / vocabulary health / graph projection | Implemented (`test/domain-language.test.mjs`) |
-| The ten verbs, the `SetGoal` / `CloseGoal` wiring, the `domain.md` shelf, the `clear/ontology/` write protection | Implemented |
-| The panel's ontology view (ontology graph / entity graph / entry cards / conflict row / vocabulary maintenance zone) | Implemented |
-| The editing drawer (register a concept / predicate, plus revise / deprecate on an entry row, over the human-gate route with the same criteria as the model's verbs) | Implemented (no canvas drag-to-connect: dragging and zooming produce no ledger event) |
+| Question | Retrieve what is known by concept instead of rereading every fact |
+| Judgement | Write assertions with registered predicates; optional |
+| Test | Criteria may cite predicates and value forms |
+| Evidence | Instances and assertions land with provenance; observations are not facts |
+| Conclusion | Promotion into facts, which enter the graph |
+| Ontology | Next time, retrieve by concept, predicate or subject |
 
-**In one line**: the state machines answer "how things change", the ontology answers "in what language knowledge is written", and the graphs are the **read surface** folded out of both — all three layers exist, and only the middle layer's producers are still unplugged.
+**Knowledge mode.** While a goal is open with registered hypotheses, the run-state card adds two things: known facts that match the topic lexically (read-only, bounded, no semantic guessing), and **gaps** — computed from the record, each pointing to an action that would close it. Gaps are for the model only, and there are three kinds:
 
-## 9. Interface
+1. A judgement no evidence has touched;
+2. A judgement that is prose only, with no assertion;
+3. An assertion whose subject is not on the instance graph.
 
-**The ontology does not get a tab of its own — it grows into the middle column's facts view** (`clearai-facts` in `conversation.view`).
+Closing has **one gate**: entities named in assertions must be on the instance graph. Two honest ways out: add them, or abandon honestly. Ordinary Q&A never enters knowledge mode.
 
-Why: facts are that view's main question ("what do we know, and on what basis"), and the ontology is their **language and map**. Split across two columns, the reader has to carry context between them — and the right rail is only ~300px, where a graph is crippled. There is also a harder precedent: the "progress" tab was removed precisely because "the fewer tabs, the less each one has to be explained".
+A real run gave a counter-intuitive result: what changed model behaviour was mainly **seeing the gaps**, not the gate. So both stay — visibility makes it want to, the gate stops it from going around.
 
-### 9.1 Layout (top to bottom)
+**Conflicts: derived, never adjudicated.** When two unretracted confirmed facts land on the same single-valued predicate for the same subject with different objects, the projection yields a conflict pair. It is not stored, retracts neither side, decides nothing and is not a gate; retracting either side (review) removes it, and a person may keep both with a stated reason.
 
-| Block | When it appears | What it holds |
+---
+
+## 8. Relation to the state machines
+
+Process objects, domain vocabulary and a single test each have their own lifecycle and **do not nest**: admitting a concept advances no process object, and closing a goal changes no vocabulary. They only reference each other (assertions cite predicates and concepts; facts cite hypotheses and evidence), and they meet in four places only:
+
+1. **Assertion shape checked when a hypothesis is registered**: unknown, deprecated or out-of-range references are rejected before anything is recorded;
+2. **Fixed at promotion**: the fact carries its hypothesis id and assertions, bound to its level, scope and evidence in one record;
+3. **Conflicts and graphs derived on replay**: no fact is changed, no gate is opened;
+4. **Deprecation propagates**: new assertions refuse it, existing ones are flagged.
+
+---
+
+## 9. UI: the Ontology pane
+
+The middle column has one pane, **Ontology**. It answers the person's first three questions: what can I trust now; what was refuted and what is unclear; what does it add up to. The fourth — what do you need from me — sits next to the input box ("needs you N").
+
+| Block | When | Content |
 |---|---|---|
-| Conflict line | **only when conflicts exist** | One pointer: predicate · subject → both sides' facts and values; click to open the pair |
-| **Graph band** | resident once vocabulary exists (one click collapses it; the choice is remembered) | Ontology graph ｜ entity graph toggle (~200px, zoom and pan); **clicking a node filters the shelves below by concept**; `⤢` expands to panorama |
-| Filter line | **only while a filter is active** | Filtered by "X": N/M · clear — N/M tells the truth, unmatched rows never vanish silently |
-| Confirmed facts | resident | The existing shelf (unchanged) + **assertion chips** that expand a term card in place |
-| Propositions | resident | The existing groups (unchanged) + assertion chips (marked "not yet promoted") |
-| Vocabulary maintenance | collapsed by default | Term table, health, deprecations, "open the shelf"; **auto-expands when there are 0 facts and 0 propositions but vocabulary exists** (a language before its sentences needs somewhere to stand) |
+| **Header graph** | Whenever vocabulary exists; collapsible | Ontology graph ｜ entity graph toggle; clicking a node filters the list below; expandable to full view |
+| Filter line | Only while filtering | "Filtered by X: N/M · clear", counting what did not match |
+| **Conclusion list** | Always | One list grouped by trust: **trustworthy** (facts, with scope and level) → **still under test** → **refuted or unclear** (including conflicts and pending reviews); retracted items collapsed at the end |
 
-### 9.2 Six "no explosion" contracts
+Each row is in plain words: the conclusion, why, and its scope; an assertion chip expands the term card in place (definition, basis, domain, range, citation count). Conflicts are marked on the two affected rows.
 
-1. **Zero cost**: with no vocabulary, this view is **pixel-for-pixel what it was**. The conflict line, the band, the chips and the maintenance block each exist only when there is something to say.
-2. **Confidence ordering**: confirmed facts on top, propositions in flight in the middle, language (maintenance) at the bottom. Reference material never blocks conclusions.
-3. **The graph is both a face and a tool**: the band is this view's **head** (like a header — it does not compete with the facts), and its nodes *are* the index: clicking a concept node filters, replacing a row of text chips.
-4. **Expand in place, never jump away**: an assertion chip expands its term card in situ (gloss / basis / subject domain / range / single-valuedness / uses; actions: filter by this concept, see it in the graph); conflicts are marked on the **affected fact row**. The only cross-view jump kept is "see this step in the worldlines".
-5. **Only exceptions interrupt**: conflicts and health warnings each get one pointer line; vocabulary maintenance lives in the collapsed block.
-6. **Filtering is visible, clearable, and honest**: one status line plus `✕`, with N/M stating how many rows did not match (including older, untyped facts).
+**No-explosion contract:**
 
-### 9.3 The two graphs in the band
+1. **Zero cost**: with no goal and no vocabulary the pane is an empty hint, with no blocks laid out.
+2. **Ordered by trust**: trustworthy first, unclear last; process does not enter this pane.
+3. **The graph is header and index**: clicking a concept node filters; no separate chip row.
+4. **Expand in place, no jumps**: the only cross-pane jump is "see that step in the World Tree".
+5. **Interrupt only for exceptions**: conflicts and pending reviews take one pointer line each.
+6. **Filters tell the truth**: one status line + clear, with N/M stating what did not match.
 
-One toggle, sharing the same deterministic layout (`graphProjection()`: the same ledger always yields the same picture):
-
-- **Ontology graph** (default): concepts + `is_a` + predicates — **what this language looks like**. Clean and structural, which is why it is the face.
-- **Entity graph**: instances + assertion edges, coloured by support level, conflicts in red — **what has actually been verified**. Switch to it to read the situation.
-
-The panorama (`⤢`) expands in place to nearly the whole view: the shelves step aside, the **node cap is lifted** (the band draws only the first 40 nodes and says so), and a "fit" button frames the whole graph. Editing lands in this panorama in stage E.
-
-### 9.4 The read-only / editable boundary
-
-The first version is **read-only**: zero-dependency SVG (zoom, pan, select, switching, panorama, conflict highlighting, dashed ghosts for deprecated entries). Graph editing (stage E) is **a graphical front end for named verbs** — add a node = `RegisterTerm`, connect = `RegisterPredicate`, deprecate = `DeprecateTerm`; a drawer form rather than drag-to-connect (a drag gesture expresses semantics too loosely, while a drawer can require domain, range, value form and basis). Dragging and zooming **produce no ledger event**.
-
-**This view governs the domain ontology only.** The process ontology never appears here as editable content — it shows up as the steps and gates in the worldlines tree and as propositions grouped by state; the charter the model reads is the `clear/ontology/verification-loop.md` shelf.
+**The pane is read-only.** Process never appears as editable content here: steps and gates are in the World Tree on the right.
 
 ---
 
-## 10. Relationship to Semantica
+## 10. Relation to Semantica
 
-The reference implementation Semantica (graph-native knowledge infrastructure, `semantica-agi/semantica`; the local copy under `refs/` is not committed) has already walked this road, and our trade-offs are explicit.
-
-**Three things borrowed:**
-
-1. **An ontology is naturally a graph** — concepts as nodes and predicates as directed edges with domain/range is the most natural representation of this kind of knowledge;
-2. **Visual editing with governed application** — the graph is editable, but an edit must become a traceable change rather than a byte written directly;
-3. **Separation of automatic output from the live ontology** — frequency induction only produces proposals; without batch induction, we honour the same rule by not building a proposal state machine.
-
-**Four things deliberately not borrowed:**
-
-1. The RDF / OWL / SHACL / SPARQL stack and its reasoners — introducing a full serialisation and query semantics for consumers this version does not have;
-2. Multi-backend graph databases (Neo4j / FalkorDB / AGE / Neptune and friends) — ClearAI is local-first and single-project, and the ledger is already authoritative;
-3. Enterprise ingestion, NER/relation extraction and entity-resolution pipelines — they do not solve our current problem;
-4. React Flow / Sigma.js and similar front-end graph libraries — the plugin client is a bundler-free native module environment, and the ontology scale does not need an enterprise renderer.
+The reference implementation Semantica (`semantica-agi/semantica`) walked this road. We **borrow** three things: an ontology is naturally a graph; an edit must become a traceable change; automatic output stays separate from the live ontology. We **do not borrow** four: RDF/OWL/SHACL/SPARQL and reasoners; multi-backend graph databases; enterprise ingestion, extraction and entity-resolution pipelines; heavy front-end graph stacks (the graph band uses a vendored React Flow built into the client module, not resolved from npm).
 
 ---
 
-## 11. Boundaries and what comes later
+## 11. Boundaries and future work
 
-**Not in this version**: OWL/RDF/SHACL/SPARQL; graph and triple stores; automatic ontology induction; large-scale document extraction and entity resolution; complex rule reasoning and transitive closure; cross-project or user-level ontology libraries; dimensional conversion and numeric tolerance reasoning; automatic overwriting, automatic retraction, or automatic conflict adjudication; direct editing of authoritative ontology files; drag-to-connect as the only editing mechanism.
+**Not in this version**: the semantic-web stack; graph databases; automatic ontology induction; large-scale extraction and entity resolution; rule reasoning and transitive closure; a cross-project vocabulary library; unit conversion; automatic retraction or conflict adjudication; editing authoritative files directly; editing in the UI.
 
-**Later directions** (not promised here): a unit registry bound to worldline "quantity = scale" criteria; cross-project ontology reuse; entity resolution; deeper ontology health checks (naming conventions, coverage, invalidation propagation).
+**Possible later** (not promised): a unit registry; cross-project reuse; entity resolution; deeper vocabulary health checks.
 
 ---
 
-## 12. Design principles, restated
+## 12. Principles in review
 
-1. The process ontology governs the path of knowing, the domain ontology governs the language of knowledge, and a fact is an assertion that passed the loop.
-2. A graph is the most natural presentation, but the graph is a projection, not authoritative storage.
-3. Nodes and edges are editable, and every edit must land as a named governance action.
-4. There is no delete — only versioned revision and sticky deprecation; a semantic change must take a new id.
-5. A fact carries epistemic metadata, and the entity graph may not erase its evidence chain.
-6. Every read surface comes from the same fold; no second account is maintained.
-7. Implement only the graph capability the current problem needs; do not build an enterprise knowledge-graph platform in advance.
+1. The process governs how we know, the domain ontology the language, and facts are assertions that completed the loop.
+2. The graph is the most natural form, but it is a projection, not authoritative storage.
+3. The vocabulary changes only through named verbs; the model and the person use the same path.
+4. No deletion — only versioned revision and sticky deprecation; a change of meaning needs a new id.
+5. Facts carry epistemic metadata; the entity graph never erases the evidence chain.
+6. Every read surface comes from one fold; there is no second ledger.

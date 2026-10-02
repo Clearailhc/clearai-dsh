@@ -27,7 +27,7 @@ import { homedir, tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { artifactExists, countMemoryEntries } from './e2e-workspace.mjs'
+import { artifactExists } from './e2e-workspace.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
@@ -201,7 +201,6 @@ function readConstitution(workspace) {
 	return { exists: true, items: items.length, placeholders: items.filter((item) => item.placeholder).length, stage: stage === null ? null : { filled: !stage.placeholder, value: stage.placeholder ? null : stage.value }, changeLog }
 }
 
-/** 记忆条数:数 `clear/memory/*.md` 里的一级条目(`## `)。 */
 /** 盘上产物:products/ 下的文件(相对工作区路径)。 */
 function listProducts(workspace, limit = 200) {
 	const root = join(workspace, 'products')
@@ -237,15 +236,14 @@ function countSessionLogs(workspace) {
  * 这一场要验的是**装出来的产物**,不是仓库里的源。所以:
  *   ① 一次性 DSH_HOME + 官方 headless 模板建 profile;
  *   ② `dsh plugin add`(没 pnpm 就手工对账并如实标注)把 `dist/clearai-dsh` 装进去;
- *   ③ 预设/内核/模板都从**安装位置**读:`<profile>/node_modules/clearai-dsh/presets/clearai/`;
+ *   ③ 预设/内核都从**安装位置**读:`<profile>/node_modules/clearai-dsh/presets/clearai/`;
  *   ④ 宿主半不再由我们插行 —— 包的 `cordis.patch.yml` 自己带(`--dump-config` 里能看到 `clearai-host`)。
  *
  * 为什么仍然要摊平预设:headless 是**一次性 app**,它自己创建 agent、**不选预设**
  * (名册是给能选预设的 app 用的:web)。所以「名册选择」那条路在 S2 的 web 启动里验过,
- * 这里验的是另一半:**装出来的行 / 预设 / 模板在真进程里跑得对不对**。
+ * 这里验的是另一半:**装出来的行 / 预设在真进程里跑得对不对**。
  */
 let installedHome = null
-let installedTemplateDir = null
 let installedProfile = 'headless'
 if (argv.includes('--installed')) {
 	installedHome = mkdtempSync(join(tmpdir(), 'clearai-e2e-home-'))
@@ -264,7 +262,6 @@ if (argv.includes('--installed')) {
 	const installedPresetDir = join(installedHome, 'profiles', installedProfile, 'node_modules', 'clearai-dsh', 'presets', 'clearai')
 	check('预设从**安装位置**读(不是仓库)', existsSync(join(installedPresetDir, 'agent.cordis.yml')), installedPresetDir)
 	PRESET_YML = join(installedPresetDir, 'agent.cordis.yml')
-	installedTemplateDir = join(installedPresetDir, 'template')
 	console.log(`  这一场跑的是装出来的包:${dirname(installedPresetDir)}`)
 }
 
@@ -330,12 +327,6 @@ const missing = presetRows
 		const config = { ...(row.config ?? {}) }
 		if (autonomy !== undefined) config.autonomy = autonomy
 		if (maxTurns !== undefined) config.maxAutoTurns = Number(maxTurns)
-		/**
-		 * 模板目录**是配置**(打包纪律④:发行物里不许出现仓库路径,内核里那条指回仓库的
-		 * fallback 已删)。E2E 跑的是仓库里那份内核,所以在这里显式指回 ClearAI 的模板目录;
-		 * 生产形态下缺省是插件旁边的 `template/`(随包走)。
-		 */
-		config.templateDir = installedTemplateDir ?? join(PORT, 'preset', 'template')
 		return { ...row, config }
 	})
 const personaRow = presetRows.find((row) => row.id === 'persona')
@@ -388,7 +379,6 @@ const patchFile = join(patchDir, 'preset.patch.yml')
 writeFileSync(hostPatchFile, stringifyYaml(hostPatch), 'utf8')
 writeFileSync(patchFile, stringifyYaml(presetPatch), 'utf8')
 
-const freshAtStart = existsSync(useWorkspace === undefined ? '' : resolve(useWorkspace)) ? readdirSync(resolve(useWorkspace)).length === 0 : true
 /**
  * **fail closed:工作区不许落在 git 仓库里**。
  *
@@ -413,23 +403,17 @@ if (!existsSync(workspace)) {
 	console.log(`✗ --workspace 指向的目录不存在:${workspace}`)
 	process.exit(2)
 }
-/**
- * **不预先建 `lab/`**(2026-09-11 修正):内核把「工作区是不是空的」按**目录项数**判
- * (`bootstrapWorkspace` 的 `fresh = entries.length === 0`),预先建一个空 `lab/` 就把空文件夹
- * 变成「非空」——于是章程 `PROJECT.md` 不会铺,而本工具的断言却按「空文件夹」要求它铺。
- * 空工作区该由内核自己铺默认结构(`input/ lab/ products/` + PROJECT.md),这是它的一条设计。
- */
+/** 不预先建 `lab/`:工作区原样交给模型,目录由它按计划自己建。 */
 void tempWorkspace
-/** 跑之前的读数:章程占位数 / 记忆条数 / 盘上产物数——跑完对比,才说得清「这一轮改了什么」。 */
+/** 跑之前的读数:章程占位数 / 盘上产物数——跑完对比,才说得清「这一轮改了什么」。 */
 const before = {
 	constitution: readConstitution(workspace),
-	memory: countMemoryEntries(workspace),
 	products: listProducts(workspace),
 	logs: countSessionLogs(workspace),
 }
 console.log(`  工作区:${workspace}${tempWorkspace ? '(临时)' : '(现成,跑完不动)'}`)
 if (scenario !== null) console.log(`  剧本:${scenarioName} · ${scenario.title}\n  为什么要它:${scenario.why}`)
-console.log(`  跑之前:章程占位 ${before.constitution.placeholders}/${before.constitution.items} · 记忆 ${before.memory} 条 · products/ ${before.products.length} 个文件 · 已有会话 ${before.logs} 个`)
+console.log(`  跑之前:章程占位 ${before.constitution.placeholders}/${before.constitution.items} · products/ ${before.products.length} 个文件 · 已有会话 ${before.logs} 个`)
 if (autonomy !== undefined || maxTurns !== undefined) console.log(`  覆盖:autonomy=${autonomy ?? '(预设)'} maxAutoTurns=${maxTurns ?? '(预设)'}`)
 const started = Date.now()
 const profileName = installedHome === null ? (resident ? 'web' : 'headless') : installedProfile
@@ -665,70 +649,6 @@ const allMutations = toolResults.flatMap((event) => event.data?.meta?.mutations 
 	check('变更记录真的落了(plan/created)', planShaped ? mutations.some((mutation) => mutation.t === 'plan/created') : true, mutations.map((mutation) => mutation.t).join(','))
 }
 
-// ── ③b 工作区引导(真跑之后目录真的长出来了) ───────────────────────────────
-{
-	// 这个临时工作区**不是空的**(我们预建了 lab/),所以按纪律:只加系统自己的 clear/,
-	// 不铺默认结构、不写 PROJECT.md(不往别人的项目里塞章程)。
-	check('非空工作区:只加 clear/ 骨架', existsSync(join(workspace, 'clear', 'skills')) && existsSync(join(workspace, 'clear', 'config.json')))
-	// 空工作区会铺章程(那是设计);非空工作区**不**铺——本来就有一份的(真项目)当然还在。
-const hasProjectMd = existsSync(join(workspace, 'PROJECT.md'))
-check(
-	freshAtStart ? '空工作区:铺上 PROJECT.md(章程)' : '非空工作区:不新建 PROJECT.md',
-	freshAtStart ? hasProjectMd : before.constitution.exists === hasProjectMd,
-	`freshAtStart=${freshAtStart} before=${before.constitution.exists} after=${hasProjectMd}`,
-)
-	check('非空工作区:模板技能仍然铺进去了(技能与章程是两件事)', readdirSync(join(workspace, 'clear', 'skills')).filter((name) => existsSync(join(workspace, 'clear', 'skills', name, 'SKILL.md'))).length === 18, String(readdirSync(join(workspace, 'clear', 'skills')).length))
-}
-
-// ── ③c 技能面:真日志里的**合并目录**(面板与模型看同一张表) ──────────────────
-{
-	const catalogOf = (event) => {
-		if (event.type !== 'user/message') return null
-		const section = (event.data?.source?.sections ?? []).find((item) => item?.name === 'clearai/brain')
-		if (section === undefined || typeof section.text !== 'string') return null
-		try {
-			return JSON.parse(section.text).catalog ?? null
-		} catch {
-			return null
-		}
-	}
-	const catalogs = events.map(catalogOf).filter((item) => item !== null)
-	const catalog = catalogs.length === 0 ? null : catalogs[catalogs.length - 1]
-	const entries = catalog === null || !Array.isArray(catalog.entries) ? [] : catalog.entries
-	check('内核在真跑里取到了宿主的合并目录(随投影下发)', entries.length > 0, JSON.stringify(catalogs.length))
-	{
-		const bySource = {}
-		for (const entry of entries) bySource[entry.source] = (bySource[entry.source] ?? 0) + 1
-		console.log(`  合并目录:${entries.length} 条 · ${Object.entries(bySource).map(([source, count]) => `${source}:${count}`).join(' · ')}`)
-		const template = entries.filter((entry) => entry.source === 'clearai-template')
-		check('工作区模板的 18 条都在目录里(我们这一层不会漏)', template.length === 18, `${template.length} 条`)
-		// 模型看到的那张表(原生 skill-catalog 消息)必须是**我们这张表的子集**:
-		// 面板的表若比模型的表少,「现在能用哪些技能」这个问题就被答错了。
-		const nativeNames = new Set(
-			events
-				.filter((event) => event.type === 'user/message' && event.data?.source?.kind === 'skill-catalog')
-				.flatMap((event) => (event.data.content ?? []).filter((block) => block?.type === 'text').flatMap((block) => [...String(block.text).matchAll(/^- `([a-z0-9-]+)`:/gm)].map((match) => match[1]))),
-		)
-		const missing = [...nativeNames].filter((name) => !entries.some((entry) => entry.name === name))
-		check('模型的技能目录一条不漏地出现在面板的表里', missing.length === 0, `模型有、面板没有:${missing.join(',')}(模型表 ${nativeNames.size} 条)`)
-		check('目录里的每条都带调用策略(面板据此标「候选 / 仅人可引用」)', entries.every((entry) => typeof entry.model === 'boolean' && typeof entry.user === 'boolean'))
-	}
-
-	// 人引用技能(`/名字` 手势)→ 原生 pre-step 注入正文 → 我们的 fold 记为一次**人**的用法。
-	if (skillsScenario) {
-		const injections = events.filter((event) => event.type === 'user/message' && event.data?.source?.kind === 'skill-invocation')
-		check('引用的技能正文真的被注入了(原生 pre-step 认那个手势)', injections.length >= 1, `${injections.length} 条注入`)
-		const injected = injections.find((event) => event.data?.source?.name === QUOTED_SKILL)
-		check(`注入的是被引用的那一条(${QUOTED_SKILL})`, injected !== undefined, injections.map((event) => String(event.data?.source?.name)).join(','))
-		// 直接看**那条消息的文本**(JSON.stringify 会把 `name="` 里的引号转义掉,拿它匹配等于测自己)。
-		const injectedText = (injected?.data?.content ?? [])
-			.filter((block) => block?.type === 'text')
-			.map((block) => String(block.text))
-			.join('\n')
-		check('注入的是**正文**(<skill_content> 块,不是一句「已加载」)', /<skill_content name="literature-review">/.test(injectedText) && /<skill_instructions>/.test(injectedText), injectedText.slice(0, 120))
-	}
-}
-
 // ── ④ 用我们自己的 fold 折这份真日志:投影真的长出了目标与计划 ────────────────
 
 if (events.length > 0) {
@@ -775,14 +695,12 @@ if (events.length > 0) {
 
 const after = {
 	constitution: readConstitution(workspace),
-	memory: countMemoryEntries(workspace),
 	products: listProducts(workspace),
 	logs: countSessionLogs(workspace),
 }
 console.log('\n【跑完的读数(与跑之前对比)】')
 console.log(`  章程:占位 ${before.constitution.placeholders}/${before.constitution.items} → ${after.constitution.placeholders}/${after.constitution.items} · 变更记录 ${before.constitution.changeLog} → ${after.constitution.changeLog} 行`)
 if (after.constitution.stage !== null) console.log(`  章程 §1 当前阶段:${after.constitution.stage.filled ? `已填「${after.constitution.stage.value}」` : '仍是占位'}`)
-console.log(`  记忆:${before.memory} → ${after.memory} 条`)
 const newProducts = after.products.filter((path) => !before.products.includes(path))
 console.log(`  products/:${before.products.length} → ${after.products.length} 个文件${newProducts.length === 0 ? '' : `(新增 ${newProducts.join(', ')})`}`)
 console.log(`  会话目录:${before.logs} → ${after.logs}`)
@@ -864,7 +782,6 @@ if (events.length > 0) {
 		workspace,
 		exists,
 		called,
-		memoryEntries: countMemoryEntries(workspace),
 	})
 	console.log(`  变更直方图:${evaluated.stats.histogram || '(空)'}`)
 	console.log('\n【跨机制不变量】')

@@ -12,11 +12,11 @@
 | **Human** | The user. Only they can do three things: approve a plan on the native review card, release L4 on the native approval stack, press a human-gate verb on the panel | not a system component |
 | **Model** | The LLM reasoner. It **emits intent** (tool calls, answers) and executes nothing | not "the agent system"; it touches neither the ledger nor files — everything passes through the host |
 | **DSH host** | The engine: the turn loop, tool dispatch, sandbox and approvals, the native review card, subagents, the goals service (continuation driver), writing the session log | makes no epistemic judgments; it does not know "what may be believed" |
-| **ClearAI kernel** | The preset plugin: 32 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
+| **ClearAI kernel** | The preset plugin: 20 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
 | **Fact ledger** | The append-only record of facts. **The content is ours**: clearai mutation events + `clear/` artifacts and evaluation cards; **the carrier is the host's**: the session log + the filesystem. It stores no conclusions — "what may be believed now" is folded out of it by the projection | not a second state book; state is not "read" from it but "folded" out of it |
 | **Projection** | The host-side half `ui/lib`: fold (ledger → state) + derive (state → views) + the panel. **Reads the ledger, never writes** | not a cache, not a copy — one view of the same facts |
 | **Independent evaluator** | A fresh-context read-only subagent dispatched by the kernel via the host (L3+), returning a structured verdict through `outputSchema` | not the executor's twin; the other half of doer ≠ judge |
-| **Worldline executor** | One per mutually exclusive branch, each owning a working copy, with a tool surface that excludes plan/goal verbs | cannot contract, cannot close |
+| **Native subagent** | The host's own subagent, started by the model to run one route in parallel. It shares the workspace, so each route declares its own artifact paths | not ours; it does not deliver steps — the model does |
 
 Old-name mapping: **Agent** = split into "Model + DSH host"; **kernel** = ClearAI kernel;
 **projection / panel** = the projection; **ledger (git)** = the fact ledger.
@@ -184,7 +184,10 @@ Current status: the ledger and admission are mechanisms; **the recovery discipli
 only in the prompts** (`clearai/execution-discipline`). Upgrading it from advice to boundary
 needs host-side cooperation and is a later topic.
 
-## 4. Worldline path · implemented
+## 4. Competing-routes path · implemented
+
+Worldlines were removed in phase 2. Two routes that differ in kind are two competing
+hypotheses, each tested by one step; the parallelism is the host's own subagents.
 
 ```mermaid
 sequenceDiagram
@@ -192,46 +195,35 @@ sequenceDiagram
     participant M as Model
     participant D as DSH host
     participant K as ClearAI kernel
-    participant X as Worldline executors
-    participant H as Human
+    participant S as Native subagent
     participant L as Fact ledger
 
-    M->>D: ForkPlan(branches[], decide_by)
+    M->>D: SetGoal(hypotheses: route A, route B — each with refute_when)
     D->>K: execute
-    K->>K: validateForkOptions (the ruler must be registered in advance)
-    K->>D: prepare branch + worktree (or degrade to a declared directory)
-    K->>D: dispatch one executor per branch (tool surface excludes plan/goal verbs)
-    D->>X: start (each in its own working copy)
-    K->>L: fork/created, worldline/prepared, worldline/executing
-
-    X-->>K: branch delivery (readings + artifacts)
-    K->>L: branch/delivered (each branch's rank → evaluated)
-
-    M->>D: ConvergeFork
+    K->>L: goal/set
+    M->>D: CreatePlan(step A tests h-A, step B tests h-B, distinct artifacts)
     D->>K: execute
-    K->>K: decideWinner (arithmetic ranking by the pre-registered ruler)
-    alt a unique winner with margin ≥ autoAdoptMinGap
-        K->>L: fork/converged (winner marked adopted, the rest marked pruned but kept)
-        K->>D: the adoption gate
-        D->>H: panel inbox
-        H-->>K: adopt_branch (a human-gate verb, recorded via the ledger)
-        K->>L: by='user'
-    else a small margin but a real winner
-        K->>L: fork/converged (provisional adoption + pending-review trace)
-    else undecidable
-        K->>L: fork/undecidable
-        K->>D: optional: dispatch a cross-evaluation arbitration (fork/arbitrated records the ruling only)
-        K->>D: hand to the human
-        D->>H: panel inbox
+    K->>K: validateSteps (two steps may not claim the same artifact path)
+    alt paths overlap
+        K-->>D: refused at contract time (the routes would overwrite each other)
+    else paths distinct
+        K->>L: plan/created
     end
+    M->>D: subagent × 2 (one per route, in parallel)
+    D->>S: start (shared workspace)
+    S-->>D: closing message + artifacts on disk
+    M->>D: AdvancePlan(step A) / AdvancePlan(step B)
+    D->>K: execute (admission per step, as in §2)
+    K->>L: evidence/recorded (support for the winner, refute for the loser)
 ```
 
 Key points:
 
-- Arithmetic only **ranks**; `adopt_branch` is the press of a human finger.
-- Losing branches lose only their working copies; **the branch refs are kept**, because a later
-  reversal depends on them staying readable forever.
-- A fork closed while an executor has not returned → derived `unreturned`; stop waiting.
+- Evidence decides which hypothesis stands; there is no adoption gate. The losing route is a
+  refuted hypothesis and stays on the record.
+- When both routes hold and contradict each other, the model says so and hands it to the
+  human; the conflict is surfaced, not gated.
+- Artifact paths are exclusive within a plan, because subagents share one workspace.
 
 ## 5. Domain-ontology path · implemented (fold, verbs and panel all ship)
 

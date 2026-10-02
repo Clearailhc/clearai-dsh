@@ -112,7 +112,7 @@ console.log('\n【①′ 验证状态表:每一行都要指得出今天的落点
 	const rows = [...doc.matchAll(/^\| (planned|registered|authorized|submitted|awaiting|observed|evaluated|expired|aborted) \|([^|]*)\|([^|]*)\|/gm)]
 	check('状态表读得到全部九个名字(表被删或改名都会红)', rows.length === 9, `${rows.length} 行`)
 	/** 落点词:折法里真有的变更类型 / 现算函数 / 明确的「不是状态」。 */
-	const LANDING = /(Unrepresentable by design|unrepresentable|not a state|Facts, not a state|derive\(\)|plan\/|audit\/|observation\/|evidence\/|human\/released|VoidPlanStep|AbandonFork|inFlight|block\/counted|tests: \{hypothesis, level\}|l4Delivery)/
+	const LANDING = /(Unrepresentable by design|unrepresentable|not a state|Facts, not a state|derive\(\)|plan\/|audit\/|observation\/|evidence\/|human\/released|VoidPlanStep|inFlight|block\/counted|tests: \{hypothesis, level\}|l4Delivery)/
 	const homeless = rows.filter((row) => !LANDING.test(row[3])).map((row) => row[1])
 	check('每一行都指得出今天的落点(事实 / 现算 / 刻意不可表示)', homeless.length === 0, homeless.join(','))
 	check('表头写明它是落点记录,不是运行时保证', /Where it lives today/.test(doc) && /derived, not stored/i.test(doc))
@@ -223,7 +223,7 @@ console.log('\n【货架:本体落成 clear/ontology/<id>.md,而且是给模型�
 	check('货架正文含全部对象与五级', VERIFICATION_LOOP.objects.every((object) => doc.includes(`### ${object.name}`)) && doc.includes('## 五级'))
 	check('货架正文写出转移与守卫(模型据此对得上本体)', doc.includes('→') && doc.includes('守卫:'))
 	check('内核确实会写它(货架函数与调用点都在)', /function ensureOntologyShelf/.test(kernelSource) && /ensureOntologyShelf\(sessionCwd\(sessionId\)\)/.test(kernelSource))
-	check('clear/ 骨架里有 ontology 那一格', /\['skills', 'memory', 'knowledge', 'audit', 'ontology'\]/.test(kernelSource))
+	check('货架写入时自己建目录(不再依赖铺工作区那一步)', /function writeTextFile[\s\S]{0,200}mkdirSync\(dirname\(file\), \{ recursive: true \}\)/.test(kernelSource))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

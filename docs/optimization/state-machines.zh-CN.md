@@ -165,52 +165,10 @@ stateDiagram-v2
 投影再从 `fact.review` 把它读成派生状态。生产者在 `HUMAN_GATE_ACTIONS` 的 `retract_fact` / `keep_fact`
 与内核的 `markFactReviewed`；真值表那一行是 `fact-retraction`（已实现）。
 
-## 9. 世界线（fork / branch）· 已实现
+## 9. 世界线（fork / branch）· 已删除
 
-存储字段：`state.forks[]`；分支秩 `BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }`。
+世界线已在「少即是多」第二阶段删除:并行探索交给原生子任务,竞争路线就是竞争的假设,各由一个步骤检验。旧日志里的 `fork/*`、`worldline/*`、`branch/*` 事件不认识就原样跳过。
 
-```mermaid
-stateDiagram-v2
-    state "fork" as F {
-        [*] --> exploring_f: fork/created
-        exploring_f --> exploring_f: worldline/prepared / executing / executed / branch_delivered
-        exploring_f --> deciding: 所有分支秩 ≥ evaluated
-        deciding --> deciding: fork/recommended（算术给出推荐；只记事实，状态不变）
-        deciding --> settled: fork/converged（算术给出唯一优胜者）
-        deciding --> undecidable: fork/undecidable（算术给不出结果）
-        undecidable --> undecidable: fork/arbitrated（仲裁判决落账，但**不改 settled**）
-        undecidable --> settled: fork/converged（内核据判决重判一次后落采纳）
-        exploring_f --> orphaned: 承载步骤被 plan/voided
-        exploring_f --> abandoned: fork/abandoned
-        settled --> [*]
-        abandoned --> [*]
-        orphaned --> [*]
-    }
-    note right of deciding
-      采纳仍是一次人门动作（adopt_branch）
-      算术只负责排序，不负责决定
-    end note
-```
-
-三条「不是落选」的派生状态（`fold.js:2094-2129`，全部零新账）：
-
-| 派生 | 含义 |
-|---|---|
-| `failed` | 执行者报了 `ok:false`——世界没给它机会，不是被尺子排掉 |
-| `orphaned` | 承载步骤被作废——随承诺撤回而终止，不是人裁的也不是算术排的 |
-| `unreturned` | 分叉已收口而执行者没报过——那条线再回来也没有归宿了 |
-
-**采纳时的合并**（`adopt_branch` 之后）是另一组事件，它们记的是「赢家的文件有没有真的回到工作区」：
-
-| 事件 | 含义 |
-|---|---|
-| `fork/merged` | 合并成功（或 already-up-to-date） |
-| `fork/merge_skipped` | 没合并，但**照样登记这次采纳**（分支 ref 或工作副本已不在） |
-| `fork/merge_conflict` | 合并冲突，如实记下并交给一次普通交付 |
-| `worldline/removed` | 工作副本被收掉——**保留 branch ref**，因为事后改判依赖它永久可读 |
-
-`worldline/executing` 与 `worldline/executed` 是执行者往返的两条事实：前者说派出去了，
-后者说回来了（`ok: true/false`）。`fork/arbitration_dispatched` 与 `fork/arbitrated` 是横评仲裁的往返。
 
 ## 10. 自动续跑（continuation）· 已实现
 
@@ -246,22 +204,10 @@ stateDiagram-v2
 
 ---
 
-## 11. 侦察（scout）· 已实现
+## 11. 侦察（scout）· 已删除
 
-存储字段：`state.scouts[]`。子角色由系统按触发派生，不是模型自由委派。
+侦察已在「少即是多」第二阶段删除:要并行查资料,模型用原生 `subagent`。旧日志里的 `scout/*` 事件不认识就原样跳过。
 
-```mermaid
-stateDiagram-v2
-    [*] --> dispatched: scout/dispatched（trigger 记它凭什么被派）
-    dispatched --> settled: scout/settled（结论进资料面）
-    settled --> settled: 同 id 重复上报（幂等，长测现场靠这条防丢）
-```
-
-要点：
-
-- 「投影里还没落地就再收一次」的判据是**投影**，不是内存里的 `reported`；重收的节拍是**回合边界**，没有间隔旋钮。
-- 同一 id 的 `scout/settled` 在 fold 里幂等，重复发布不会长出第二条事实。
-- 侦察工具面只读（`scoutToolFilter`），`MapScouts` 有 `mapScoutMax` / `mapScoutConcurrency` 上限。
 
 ## 12. 领域词汇（lexicon）· 已实现
 
@@ -333,11 +279,6 @@ stateDiagram-v2
 折法认识的**每一个**变更类型都在本节有归属；反过来，本文出现的每个 event 也都在折法词汇表里。
 `只留台账` 那一组不折进视图（它们是账本事实），因此不出现在任何状态机里：
 
-- `git/committed`：一次**交付**在账本里落的提交（`AdvancePlan` / 世界线采纳）。
-- `git/snapshot`：**回合边界**上的工作区快照（本会话写过东西、且工作区真的脏才落），
-  以及采纳前的合并快照。它的作用不是归属（哪一笔写入属于哪次调用，内核看不见 bash），
-  而是**覆盖面**：立约之前的探索产出同样进账本、同样可查可恢复。
-- `git/restored`：`RestoreFile` 的恢复（恢复 = 新版本 + 新提交，永不回退）。
 - `admission/checked`：每次交付的准入读数（收下的会另落一条 `observation/recorded`）。
 
 | 事件 | 归属 | 是否折进视图 |
@@ -361,24 +302,7 @@ stateDiagram-v2
 | `evidence/recorded` | §7 证据 | 是 |
 | `fact/promoted` | §8 事实 | 是 |
 | `human/released` | §3 步骤（L4 放行） | 是 |
-| `worldline/prepared` | §9 世界线 | 是 |
-| `worldline/executing` | §9 世界线 | 是 |
-| `worldline/executed` | §9 世界线 | 是 |
-| `worldline/removed` | §9 世界线 | 是 |
-| `branch/delivered` | §9 世界线 | 是 |
 | `fact/reviewed` | §4 假设(人审查后撤回 / 维持) | 是 |
-| `fork/recommended` | §9 世界线 | 是 |
-| `fork/created` | §9 世界线 | 是 |
-| `fork/converged` | §9 世界线 | 是 |
-| `fork/undecidable` | §9 世界线 | 是 |
-| `fork/arbitration_dispatched` | §9 世界线 | 是 |
-| `fork/arbitrated` | §9 世界线 | 是 |
-| `fork/abandoned` | §9 世界线 | 是 |
-| `fork/merged` | §9 世界线 | 是 |
-| `fork/merge_skipped` | §9 世界线 | 是 |
-| `fork/merge_conflict` | §9 世界线 | 是 |
-| `scout/dispatched` | §11 侦察 | 是 |
-| `scout/settled` | §11 侦察 | 是 |
 | `continuation/set` | §10 自动续跑 | 是 |
 | `ontology/term_added` | §12 领域词汇 | 是 |
 | `ontology/predicate_added` | §12 领域词汇 | 是 |
@@ -393,9 +317,6 @@ stateDiagram-v2
 | `criteria/revised` | §1 目标（判据修订） | 是 |
 | `host/inactive` | §14 宿主读面 | 是 |
 | `admission/checked` | **只留台账** | 否 |
-| `git/committed` | **只留台账** | 否 |
-| `git/restored` | **只留台账** | 否 |
-| `git/snapshot` | **只留台账** | 否 |
 
 ## 16. 与验证本体的关系
 

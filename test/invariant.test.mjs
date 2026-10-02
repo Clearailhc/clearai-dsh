@@ -127,14 +127,9 @@ console.log('\n【④ 契约三:结算必有派遣】')
 	const before = stateOf([
 		validPrefix()[0],
 		validPrefix()[1],
-		{ t: 'fork/created', id: 'k-1', step: 's1', plan: 'p-1', question: '走哪条', decide_by: { metric: 'x = y', direction: 'min' }, options: [{ label: '甲', approach: 'a', done_criteria: 'c' }] },
-		{ t: 'worldline/prepared', fork: 'k-1', branches: [{ id: 'b-1', label: '甲', status: 'exploring', level: 'L0', done_criteria: 'c', artifacts: [] }] },
-		{ t: 'worldline/executing', fork: 'k-1', branch: 'b-1', child: 'c-exec' },
 		{ t: 'audit/dispatched', id: 'a-1', step: 's1', plan: 'p-1', evaluator_session: 'c-aud' },
-		{ t: 'scout/dispatched', id: 'sc-1', step: 's1', plan: 'p-1', trigger: '观测缺口', child: 'c-scout' },
 	])
 	const cases = [
-		['scout/settled 没有对应派遣', { t: 'scout/settled', id: 'sc-ghost', step: 's1', conclusion: 'x' }],
 		['audit/settled 没有对应派遣', { t: 'audit/settled', id: 'a-ghost', step: 's1', verdict: 'support' }],
 	]
 	for (const [label, mutation] of cases) {
@@ -149,7 +144,6 @@ console.log('\n【④ 契约三:结算必有派遣】')
 	}
 	try {
 		judge(before, [
-			{ t: 'scout/settled', id: 'sc-1', step: 's1', conclusion: '查到了' },
 			{ t: 'audit/settled', id: 'a-1', step: 's1', verdict: 'support' },
 		], new Set(), (m) => { throw new Error(m) })
 		check('有派遣的结算 → 放行', true)

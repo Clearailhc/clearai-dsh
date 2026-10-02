@@ -19,9 +19,6 @@
 import { applyLexiconMutation, deriveConflicts, emptyLexicon, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { knowledgeView } from './knowledge-view.js'
 
-/** 世界线分支状态的秩。秩只增;一旦出现 adopted,整个分叉的分支状态冻结。 */
-const BRANCH_RANK = { exploring: 0, evaluated: 1, adopted: 2, pruned: 2 }
-
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
 const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
 
@@ -44,9 +41,14 @@ export const MUTATION_KIND = 'clearai'
  *           (登记那一刻就成立的边)、`hostHealth`(宿主读面降级的账),以及
  *           `hypotheses[].skips`(跳级理由)与 `goal.criteriaHistory`(判据修订)。
  *           旧日志这三块都是空表:实体图仍只从 `facts[].assertions` 长出来,逐字节不变。
- * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍——用量是**从日志折出来的**,重折才完整。
+ *   v11 → v12:**宿主已有的交还宿主**:分叉 / 世界线(`forks`)、侦察(`scouts`)、外脑与技能目录
+ *           (`brain`、`brainCandidates`、`skillPromotions`、`skillCatalog`、`skillUsage`)、章程读数
+ *           (`constitution`)与写入计数(`writeCalls`)都从状态里删了。旧日志里的对应事件类型
+ *           (`fork/*`、`worldline/*`、`scout/*`、`branch/*`、`git/*`、`clearai/brain` 段、相关人门动作)
+ *           不认识就原样跳过,其余部分照常折出来。
+ * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 11
+export const STATE_VERSION = 12
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -56,11 +58,10 @@ export const STATE_VERSION = 11
  *   · 发行自检按它比对内核实际落的每一类事实 —— 既没折、又不在清单里的,是**真的缺口**;
  *   · 读代码的人不必逐条 grep 才知道哪些事实不上界面。
  *
- * 这四类都是**账本事实**:它们记「系统/账本做了什么」,不改变任何派生量
- * (准入检查、提交流水、快照、恢复),面板只展示当前可读取的证据与记录,
- * 而不是从投影里再长一份。
+ * 它们记「系统做了什么」(准入检查),不改变任何派生量。
+ * 旧日志里的 `git/*`(已删除的账本)不再列出:不认识的类型原样返回,本来就会被安静跳过。
  */
-export const LEDGER_ONLY_MUTATIONS = ['admission/checked', 'git/committed', 'git/restored', 'git/snapshot']
+export const LEDGER_ONLY_MUTATIONS = ['admission/checked']
 
 /** 空状态。`init` 与「日志里还没有任何变更」都必须给出同一个形状。 */
 export function emptyState() {
@@ -72,27 +73,6 @@ export function emptyState() {
 		audits: [],
 		materials: [],
 		facts: [],
-		forks: [],
-		/** 系统按触发派出去的侦察(子角色不是模型自由委派):结论进资料面,这里留一条记录 */
-		scouts: [],
-		/** 工作区里等人采纳的候选技能(内核扫描后落的事实)与已采纳的记录 */
-		brainCandidates: [],
-		skillPromotions: [],
-		/**
-		 * 外脑全景(技能清单 + 记忆索引)。**由内核扫描后随投影下发**——面板在浏览器里读不了盘,
-		 * 而内核每个 pre-step 都在扫;清单走投影(变了才发),正文才走宿主路由(点开时才读)。
-		 */
-		brain: null,
-		/**
-		 * 宿主原生的**合并技能目录**(预设自带 / 项目 / 用户 / 我们投影的 `clear/skills` 合并后的表)。
-		 * 内核每个 pre-step 调一次 `ctx.skills.snapshot`,变了才发——于是面板与模型看的是**同一张表**。
-		 */
-		skillCatalog: null,
-		/**
-		 * 本会话的技能加载记录。**纯派生,零新账**:
-		 * 模型加载 = 日志里的 `tool/call name='skill'`;人引用 = 一条含 `/名字` 的用户消息。
-		 */
-		skillUsage: {},
 		blocks: {},
 		releases: [],
 		/**
@@ -104,13 +84,6 @@ export function emptyState() {
 		 *   · 它也不影响续跑:要不要继续由门状态算出来(见内核 turnDemand)。
 		 */
 		autonomy: { override: null, effective: null },
-		/**
-		 * 项目章程(`PROJECT.md`)的读数(内核扫描后随投影下发)。
-		 * 为什么要有它:章程的**读**侧早就接在原生指令文件上了,但**写**侧只有一句提示词——
-		 * 结果是跑完几轮、交付了产物,章程还是铺工作区那天的模板,谁也没发现——不提醒它就会一直漂着。
-		 * 事实摆在这里,人与模型都看得见「它还是不是空壳」。
-		 */
-		constitution: null,
 		/**
 		 * **本体形状**:内核随投影下发的那份声明(对象/状态/边/等级)。
 		 * 为什么进投影而不是在界面里手抄:面板那一格的页眉要从**声明**生成——
@@ -162,15 +135,6 @@ export function emptyState() {
 		inFlight: null,
 		/** 本会话自己写过的路径(来自 tool/call 的 write/edit):L4 来源分离的判据 */
 		written: [],
-		/**
-		 * **会改工作区的工具调用**的一次计数(来自 tool/call 的 write/edit/bash/pwsh)。
-		 *
-		 * 为什么要有它:`written` 只认 write/edit,而探索最常走 bash(脚本自己产出文件),
-		 * 于是「这个会话到底动过工作区没有」用 `written` 答不全。内核在**回合边界**上要问的
-		 * 正是这一句(是否值得记一次工作区快照),所以这里记一个只增的计数——
-		 * 它是日志折出来的,可重放,不是第二本账。
-		 */
-		writeCalls: 0,
 	}
 }
 
@@ -178,58 +142,10 @@ export function emptyState() {
  * 等裁决的三个工具:它们的调用在飞时,派生阶段是 `auditing`。
  * 其余工具不等外部裁决,不该让面板在每次调用时跳一下。
  */
-const VERDICT_WAITERS = new Set(['AdvancePlan', 'AdvanceWorldline', 'CloseGoal'])
+const VERDICT_WAITERS = new Set(['AdvancePlan', 'CloseGoal'])
 
 /** 记下来的自写路径有上限:它是判据,不是档案(档案在会话日志里)。 */
 const MAX_WRITTEN = 512
-/**
- * 会**改工作区**的工具名。`bash`/`pwsh` 也算:脚本自己产出文件,内核分辨不了只读与写入,
- * 所以宁可偏保守——多记一笔快照,也不漏掉探索产出。
- */
-const WRITE_CAPABLE_TOOLS = new Set(['write', 'edit', 'bash', 'pwsh'])
-
-/**
- * 技能引用手势:与原生 `dsh-tool-skill` 的 `SKILL_GESTURE` **同一条正则**。
- *
- * 为什么不各写一条:这条正则是「技能正文会不会被注入」的**充要条件**
- * (`dsh-tool-skill/lib/index.js` 的 `invokedSkillNames`:只认 `source.kind === 'user'` 的
- * 文本块)。面板数出来的用法与原生真的做了什么必须是同一件事,否则读数就是编的。
- */
-const SKILL_GESTURE = /(^|\s)\/([a-z0-9]+(?:-[a-z0-9]+)*)(?=\s|$)/g
-/** 每条技能留最近几次记录(用量是判据不是档案;要全量去会话日志里查)。 */
-const MAX_SKILL_EVENTS = 8
-/** 最多跟踪多少条技能,免得一个失控的会话把投影撑大。 */
-const MAX_SKILLS_TRACKED = 64
-
-/** 从一条消息的文本块里取出被引用的技能名(与原生同一条正则、同一套去重)。 */
-function invokedSkillNames(message) {
-	const names = []
-	for (const block of Array.isArray(message?.content) ? message.content : []) {
-		if (block?.type !== 'text' || typeof block.text !== 'string') continue
-		for (const match of block.text.matchAll(SKILL_GESTURE)) if (match[2] !== undefined && !names.includes(match[2])) names.push(match[2])
-	}
-	return names
-}
-
-/** 这一次加载落在哪一步上(「在第 3 步」这个指针的由来)。 */
-function stepPointer(state) {
-	const plan = state.plans.find((item) => item.status === 'active') ?? null
-	if (plan === null) return { plan: null, step: null, ordinal: null }
-	const step = plan.steps.find((item) => item.status === 'open') ?? null
-	return { plan: plan.id, step: step === null ? null : step.id, ordinal: step === null ? null : step.ordinal }
-}
-
-function recordSkillUse(state, name, by, at, pointer) {
-	const usage = state.skillUsage ?? (state.skillUsage = {})
-	if (usage[name] === undefined && Object.keys(usage).length >= MAX_SKILLS_TRACKED) return
-	const entry = usage[name] ?? { name, model: 0, human: 0, events: [], lastAt: null }
-	if (by === 'model') entry.model += 1
-	else entry.human += 1
-	entry.events.push({ by, at, plan: pointer.plan, step: pointer.step, ordinal: pointer.ordinal })
-	if (entry.events.length > MAX_SKILL_EVENTS) entry.events.splice(0, entry.events.length - MAX_SKILL_EVENTS)
-	entry.lastAt = at
-	usage[name] = entry
-}
 
 /** 深拷贝(状态是纯 JSON,这是唯一需要的工具)。 */
 function clone(value) {
@@ -503,7 +419,6 @@ export function applyMutation(state, mutation) {
 				note: mutation.note ?? null,
 				path: mutation.path ?? null,
 				step: mutation.step ?? null,
-				branch: mutation.branch ?? null,
 				at,
 			})
 			break
@@ -572,7 +487,6 @@ export function applyMutation(state, mutation) {
 				id: mutation.id,
 				step: mutation.step,
 				plan: mutation.plan,
-				branch: mutation.branch ?? null,
 				verdict: mutation.verdict,
 				level: mutation.level,
 				evaluator: mutation.evaluator,
@@ -601,15 +515,10 @@ export function applyMutation(state, mutation) {
 			break
 		}
 		case 'human/released': {
-			/**
-			 * 放行绑在**哪条轴**上要说清:主线绑步骤、世界线绑分支。
-			 * `via` 记它凭什么算数——现在只有 `approval`(原生审批栈的权威记录),不推断。
-			 */
+			/** `via` 记它凭什么算数——现在只有 `approval`(原生审批栈的权威记录),不推断。 */
 			next.releases.push({
 				step: mutation.step ?? null,
 				plan: mutation.plan ?? null,
-				fork: mutation.fork ?? null,
-				branch: mutation.branch ?? null,
 				via: mutation.via ?? null,
 				at,
 				call: mutation.call ?? null,
@@ -648,229 +557,6 @@ export function applyMutation(state, mutation) {
 			const fact = next.facts.find((item) => item.id === mutation.fact)
 			if (fact === undefined) break
 			fact.review = { decision: mutation.decision === 'retracted' ? 'retracted' : 'kept', reason: mutation.reason ?? null, at, by: mutation.by ?? 'user' }
-			break
-		}
-		case 'worldline/prepared': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.tier = mutation.tier
-			fork.base = mutation.base ?? null
-			fork.degradedReason = mutation.reason ?? null
-			for (const entry of mutation.branches ?? []) {
-				const branch = fork.branches.find((item) => item.id === entry.id)
-				if (branch !== undefined) {
-					branch.worktree_path = entry.path
-					branch.git_branch = entry.branch
-					branch.worktree_removed = false
-				}
-			}
-			break
-		}
-		case 'fork/merge_skipped': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.mergeSkipped = { branch: mutation.branch ?? null, reason: mutation.reason ?? null }
-			break
-		}
-		case 'worldline/executing': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			const branch = fork?.branches.find((item) => item.id === mutation.branch)
-			if (branch === undefined) break
-			branch.execution = { child: mutation.child ?? null, capability: mutation.capability ?? null, ok: null, conclusion: null }
-			break
-		}
-		case 'worldline/executed': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			const branch = fork?.branches.find((item) => item.id === mutation.branch)
-			if (branch === undefined) break
-			branch.execution = { ...(branch.execution ?? { child: mutation.child ?? null, capability: null }), ok: mutation.ok === true, conclusion: mutation.conclusion ?? null, note: mutation.note ?? null }
-			break
-		}
-		case 'worldline/removed': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			const branch = fork?.branches.find((item) => item.id === mutation.branch)
-			if (branch === undefined) break
-			branch.worktree_removed = true
-			branch.kept_ref = mutation.kept_ref !== false
-			break
-		}
-		case 'fork/merged': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.merge = {
-				branch: mutation.branch,
-				commit: mutation.commit ?? null,
-				mode: mutation.mode ?? 'merged',
-				snapshotCommit: mutation.snapshot_commit ?? null,
-				// 临时采纳 = 分差不足以称结论(或由判断而来):它不是结论,是待复核的决定。
-				provisional: mutation.provisional === true,
-				by: mutation.by ?? 'metric',
-				decisionNote: mutation.decision_note ?? null,
-				margin: mutation.margin ?? null,
-			}
-			fork.mergeConflict = null
-			break
-		}
-		case 'fork/merge_conflict': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.mergeConflict = { branch: mutation.branch, winner: mutation.winner ?? null, margin: mutation.margin ?? null, detail: mutation.detail ?? null }
-			break
-		}
-		case 'scout/dispatched': {
-			next.scouts.push({
-				id: mutation.id,
-				step: mutation.step,
-				plan: mutation.plan ?? null,
-				trigger: mutation.trigger ?? null,
-				child: mutation.child ?? null,
-				capability: mutation.capability ?? null,
-				// 任务身份:同一个身份已经正常回灌过的,再派时会被复用而不是重跑(幂等派遣)。
-				digest: mutation.digest ?? null,
-				conclusion: null,
-				note: null,
-				path: null,
-				at,
-			})
-			break
-		}
-		case 'scout/settled': {
-			const scout = next.scouts.find((item) => item.id === mutation.id)
-			if (scout !== undefined) {
-				scout.conclusion = mutation.conclusion ?? null
-				scout.note = mutation.note ?? null
-				scout.path = mutation.path ?? null
-			}
-			break
-		}
-		case 'fork/created': {
-			if (next.forks.some((fork) => fork.step === mutation.step)) break // 一步只分叉一次
-			next.forks.push({
-				id: mutation.id,
-				step: mutation.step,
-				plan: mutation.plan,
-				question: mutation.question,
-				decide_by: mutation.decide_by,
-				settled: false,
-				abandoned: false,
-				abandonReason: null,
-				/** 横评仲裁的判决(`fork/arbitrated`)与它的会话 id(面板可旁观)。 */
-				arbitration: null,
-				arbitrationSession: null,
-				/** 人在面板上的裁决(结构化记录,by:'user');null = 还没裁。 */
-				humanDecision: null,
-				verdict: null,
-				undecidable: null,
-				/**
-				 * 算术算出来的推荐(`fork/recommended`):人裁决那条路上**唯一的输入**。
-				 * 它是事实(系统算过),不是状态——分支秩不动,收敛仍然只走 ConvergeFork。
-				 */
-				recommended: null,
-				recommendMargin: null,
-				recommendProvisional: false,
-				recommendBy: null,
-				/**
-				 * 采纳时**没能合并**的原因(`fork/merge_skipped`):面板据此说清「决定登记了,
-				 * 赢家的产物要靠一次普通交付落位」。不转发它,这句话就永远说不出来。
-				 */
-				mergeSkipped: null,
-				at,
-				branches: (mutation.options ?? []).map((option) => ({
-					id: option.id,
-					label: option.label,
-					approach: option.approach,
-					done_criteria: option.done_criteria,
-					workspace: option.workspace ?? null,
-					artifacts: option.artifacts ?? [],
-					level: option.level ?? 'L0',
-					status: 'exploring',
-					card_path: null,
-					evaluator_session: null,
-					humanDecision: null,
-				reading: null,
-					validity: null,
-					verdict: null,
-					basis: null,
-					evaluator: null,
-					evidence: null,
-					at: null,
-				})),
-			})
-			break
-		}
-		case 'branch/delivered': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			const branch = fork?.branches.find((item) => item.id === mutation.branch)
-			if (branch === undefined) break
-			if ((BRANCH_RANK[branch.status] ?? 0) < BRANCH_RANK.evaluated) branch.status = 'evaluated'
-			branch.reading = mutation.reading ?? null
-			branch.validity = mutation.validity ?? null
-			branch.verdict = mutation.verdict ?? null
-			branch.basis = mutation.basis ?? null
-			branch.evaluator = mutation.evaluator ?? null
-			branch.evidence = mutation.evidence ?? null
-			// 评估卡与评估者会话:仲裁用卡(注入),面板用会话(旁观入口)。
-			branch.card_path = mutation.card_path ?? null
-			branch.evaluator_session = mutation.evaluator_session ?? null
-			branch.at = at
-			break
-		}
-		case 'fork/recommended': {
-			/**
-			 * 算术算出来的推荐。**只记事实,不动状态**:分支秩不变、`settled` 不变——
-			 * 采纳永远还是要走 `ConvergeFork`(或人的一次裁决)。它存在的理由只有一个:
-			 * 人门卡与面板读的是投影里的这个字段,不落账它们就只能写「推荐:无」。
-			 */
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.recommended = mutation.branch ?? null
-			fork.recommendMargin = mutation.margin ?? null
-			fork.recommendProvisional = mutation.provisional === true
-			fork.recommendBy = mutation.by ?? null
-			break
-		}
-		case 'fork/converged': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.settled = true
-			fork.undecidable = null
-			fork.verdict = { winner: mutation.winner, margin: mutation.margin ?? null, tie: mutation.tie === true, metric: mutation.metric ?? null, direction: mutation.direction ?? null }
-			for (const branch of fork.branches) {
-				if ((BRANCH_RANK[branch.status] ?? 0) >= BRANCH_RANK.adopted) continue // 一旦采纳,状态冻结
-				branch.status = branch.id === mutation.winner ? 'adopted' : 'pruned'
-			}
-			break
-		}
-		case 'fork/arbitration_dispatched': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.arbitrationSession = mutation.arbiter_session ?? null
-			break
-		}
-		case 'fork/arbitrated': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			// 判决写进节点(唯一真相仍是投影):采纳与否由内核重判一次决定,这里只记事实。
-			fork.arbitration = {
-				winner: mutation.winner ?? null,
-				ranking: mutation.ranking ?? [],
-				reason: mutation.reason ?? '',
-				confidence: mutation.confidence ?? 'low',
-				arbiter_session: mutation.arbiter_run_id ?? null,
-			}
-			break
-		}
-		case 'fork/undecidable': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.undecidable = { code: mutation.code, reason: mutation.reason, readings: mutation.readings ?? [] }
-			break
-		}
-		case 'fork/abandoned': {
-			const fork = next.forks.find((item) => item.id === mutation.fork)
-			if (fork === undefined) break
-			fork.abandoned = true
-			fork.abandonReason = mutation.reason ?? null
 			break
 		}
 		case 'continuation/set': {
@@ -1100,7 +786,6 @@ export function applyEvent(state, event) {
 			 * 原来找到目录就 return,于是同一条消息里的**运行档被吃掉**,
 			 * 表现是投影里的 effective 档永远停在「还没定档」,而机制那边早就按新档跑了。
 			 */
-			const brain = source.sections.find((section) => section?.name === 'clearai/brain')
 			const tier = source.sections.find((section) => section?.name === 'clearai/autonomy')
 			/**
 			 * 内核在**回合之间**观察到的事实(目前:世界线执行者跑完)。
@@ -1122,28 +807,9 @@ export function applyEvent(state, event) {
 				}
 			}
 			const facts = source.sections.find((section) => section?.name === 'clearai/mutations')
-			if (brain !== undefined || tier !== undefined || facts !== undefined) {
+			if (tier !== undefined || facts !== undefined) {
 				let next = clone(state)
 				let touched = false
-				if (brain !== undefined && typeof brain.text === 'string') {
-					try {
-						const payload = JSON.parse(brain.text)
-						if (Array.isArray(payload?.candidates)) next.brainCandidates = payload.candidates
-						if (payload?.overview !== undefined) next.brain = payload.overview
-						// 章程读数:只有真的变了才会出现在 payload 里(内核那侧按文件系统指纹去重)。
-						if (payload?.constitution !== undefined) next.constitution = payload.constitution
-						// 合并目录:内核从宿主的 skills 服务取的那张表(变了才发)。
-						if (payload?.catalog !== null && typeof payload?.catalog === 'object' && Array.isArray(payload.catalog.entries)) {
-							next.skillCatalog = { complete: payload.catalog.complete === true, entries: payload.catalog.entries, at: typeof event.time === 'number' ? event.time : null }
-						}
-						for (const name of Array.isArray(payload?.promoted) ? payload.promoted : []) {
-							next.skillPromotions = [...(next.skillPromotions ?? []), { name, by: 'user', at: typeof event.time === 'number' ? event.time : Date.now() }]
-						}
-						touched = true
-					} catch {
-						// 坏 payload:如实少一条外脑事实,但不吞掉同一条消息里别的事实。
-					}
-				}
 				if (facts !== undefined && typeof facts.text === 'string') {
 					try {
 						const payload = JSON.parse(facts.text)
@@ -1173,17 +839,11 @@ export function applyEvent(state, event) {
 				if (touched) return next
 			}
 		}
-		// 人在面板上按下的人门动作 → 落成**事实**(不是请求):确认计划就地生效;
-		// 世界线的裁决记在分叉上,由内核的 ConvergeFork/AbandonFork 落实(合并与清理是内核的活)。
+		// 人在面板上按下的人门动作 → 落成**事实**(不是请求)。
 		const gate = parseHumanGate(event.data)
-		// 人引用技能:一条含 `/名字` 的**用户消息**。这就是原生 pre-step 注入正文的判据,
-		// 所以「人用过它」不是我们的推测,而是这条消息本身。插件与注入消息都不算(署名必须是人)。
-		const quoted = source !== null && typeof source === 'object' && source.kind === 'user' ? invokedSkillNames(event.data) : []
-		if (gate === null && quoted.length === 0) return state
+		if (gate === null) return state
 		const at = typeof event.time === 'number' ? event.time : Date.now()
 		const next = clone(state)
-		for (const name of quoted) recordSkillUse(next, name, 'human', at, stepPointer(state))
-		if (gate === null) return next
 		// **旧日志容忍分支**(写入者已摘除,只有旧日志可能带着):人切运行档曾经是一条人门动作,旧会话里可能留着。
 		// 读到它就照旧记成一条**人的事实**,让历史会话仍然读得通;当前面板上已经没有这个开关,
 		// 新的会话不会再产生这一条。不要据此认为"现在还能切档"——要删这个分支得先确认没有旧日志。
@@ -1197,19 +857,6 @@ export function applyEvent(state, event) {
 		 * 人审查一条事实:标的在 `value`(面板送出的是事实 id),缘由在 `note`。
 		 * 已经审过的不再改(第一次决定为准,与计划授权那条同一条纪律)。
 		 */
-		/**
-		 * 人认可一次**临时采纳**:它是那道门唯一的机械出口。
-		 *
-		 * 「临时采纳」的语义是「分差不足以称结论」;原来它只能靠人说话,而门开着会按住续跑
-		 * ⇒ 什么都不做的话系统一直等。认可是**人的决定**,落一条 `by:'user'` 的确认留着痕迹;
-		 * 「要改判据」那条路仍然在(说一句话,模型重做一条世界线)。
-		 */
-		if (gate.action === 'confirm_provisional') {
-			const provisionalFork = next.forks.find((item) => item.id === (gate.fork ?? null))
-			if (provisionalFork?.merge?.provisional !== true || provisionalFork.merge.confirmed !== undefined) return next
-			provisionalFork.merge = { ...provisionalFork.merge, confirmed: { at, by: 'user' } }
-			return next
-		}
 		if (gate.action === 'retract_fact' || gate.action === 'keep_fact') {
 			const fact = next.facts.find((item) => item.id === (gate.value ?? null))
 			if (fact === undefined || fact.review !== undefined) return next
@@ -1239,31 +886,12 @@ export function applyEvent(state, event) {
 			next.lexicon = applyLexiconMutation(next.lexicon, { t: kind, ...entry, by: 'user' }, at)
 			return next
 		}
-		const fork = next.forks.find((item) => item.id === (gate.fork ?? null))
-		if (fork === undefined) return next
-		fork.humanDecision = {
-			action: gate.action,
-			branch: gate.branch ?? null,
-			note: gate.note ?? null,
-			at,
-		}
 		return next
 	}
 	if (event.type === 'tool/call') {
 		const data = event.data ?? {}
 		if (typeof data.name !== 'string') return state
 		const next = clone(state)
-		if (data.name === 'skill') {
-			// 模型加载技能 = 原生 `skill` 工具的一次调用。工具名与参数形状照原样认,不猜别的写法。
-			let args = null
-			try {
-				args = typeof data.arguments === 'string' ? JSON.parse(data.arguments) : data.arguments
-			} catch {
-				args = null
-			}
-			const name = args === null || typeof args !== 'object' || typeof args.name !== 'string' ? '' : args.name.trim()
-			if (name !== '') recordSkillUse(next, name, 'model', typeof event.time === 'number' ? event.time : 0, stepPointer(state))
-		}
 		if (data.name === 'write' || data.name === 'edit') {
 			let args = null
 			try {
@@ -1277,11 +905,6 @@ export function applyEvent(state, event) {
 				if (next.written.length > MAX_WRITTEN) next.written.splice(0, next.written.length - MAX_WRITTEN)
 			}
 		}
-		/**
-		 * 会改工作区的那几件工具都记一笔:`write`/`edit` 是直接的,`bash`/`pwsh` 是间接的
-		 * (脚本自己产出文件,内核看不见)。计数只增,判据留给用它的地方。
-		 */
-		if (WRITE_CAPABLE_TOOLS.has(data.name)) next.writeCalls = (next.writeCalls ?? 0) + 1
 		next.inFlight = VERDICT_WAITERS.has(data.name) ? { name: data.name, callId: data.callId ?? null, at: typeof event.time === 'number' ? event.time : 0 } : null
 		return next
 	}
@@ -2107,53 +1730,6 @@ export function derive(state) {
 	}
 
 	/**
-	 * 世界线的**派生状态**(语义:见 recon 的「四条结束方式」):
-	 *
-	 *   · `failed`   —— 执行者没跑成(`worldline/executed{ok:false}`)。**它不是落选**:
-	 *     落选意味着它跑完了、被尺子排到了后面;失败是「世界没给它机会」。原来的实现在这两件事上
-	 *     共用一个状态(都还是 exploring),于是界面会一直为一条死掉的线呼吸——那是说假话。
-	 *   · `orphaned` —— 承载它的**步骤被作废**了,而它还没收口。它既不是被人裁掉(没人做过这个决定),
-	 *     也不是被算术排掉(没有尺子排过它):它是「随承诺撤回而终止」。这是两个已存在事实的**推论**,
-	 *     不是第五种存储状态——零新账,也**不改写历史**(绝不把它写成「已放弃」)。
-	 */
-	const forks = state.forks.map((fork) => {
-		const owner = (activePlan ?? closedPlans[closedPlans.length - 1] ?? null)?.steps.find((step) => step.id === fork.step) ?? null
-		const ownerVoided = owner !== null && owner.status === 'void'
-		return {
-			...fork,
-			ownerStatus: owner === null ? null : owner.status,
-			ownerVoidReason: ownerVoided ? (owner.voidReason ?? null) : null,
-			orphaned: ownerVoided && !fork.settled && !fork.abandoned,
-			phase: fork.abandoned
-				? 'abandoned'
-				: fork.settled
-					? 'settled'
-					: ownerVoided
-						? 'orphaned'
-						: fork.branches.every((branch) => (BRANCH_RANK[branch.status] ?? 0) >= BRANCH_RANK.evaluated)
-							? 'deciding'
-							: 'exploring',
-			branches: fork.branches.map((branch) => ({
-				...branch,
-				// 派生,不落库:执行没跑成,而状态还停在探索中。
-				failed: branch.status === 'exploring' && branch.execution !== null && branch.execution !== undefined && branch.execution.ok === false,
-				orphaned: ownerVoided && !fork.settled && !fork.abandoned && branch.status === 'exploring',
-				/**
-				 * **执行者未归**(与「失败」「孤儿」同一族的假话——不说破就会被当成还在跑):
-				 *
-				 * 执行者是异步派的,所以「它在跑」是一条会过期的状态。分叉一旦收口(收敛或放弃),
-				 * 那条世界线就**没有归宿**了——回灌也进不了任何决定。可 `execution.ok` 仍是 `null`,
-				 * 于是卡片会永远写「(执行中,结论会自动回灌)」:**一句实现了不了的承诺**。
-				 *
-				 * 两条已有事实的推论:分叉是终局 + 执行者没报过。零新账,也不改写 `execution` 本身
-				 * (它仍然是「没报过」这个已发生的事实)。
-				 */
-				unreturned: (fork.settled === true || fork.abandoned === true) && branch.execution !== null && branch.execution !== undefined && branch.execution.ok === null,
-			})),
-		}
-	})
-
-	/**
 	 * 收件箱:每一道门都是**状态锚**(由派生事实算出,不依赖中断记录)——门一解决,条目自然消失,
 	 * 不可能残留成僵尸。
 	 * 条目只带**分诊信息**(标题/摘要/指向),不带全部正文:收件箱是分诊,不是问诊。
@@ -2162,57 +1738,6 @@ export function derive(state) {
 	 * 不是闸门;见 HUMAN_GATE_ACTIONS 的收敛记录)——收件箱里的每一条都经得起「等人是必须的吗」。
 	 */
 	const inbox = []
-	for (const fork of forks) {
-		// 人已经裁决过的不再等他(ClearAI 的条目是状态锚:状态一变,条目自然消失)。
-		if (fork.phase !== 'deciding' || (fork.humanDecision ?? null) !== null) continue
-		const label = fork.branches.find((branch) => branch.id === fork.recommended)?.label ?? null
-		inbox.push({
-			kind: 'fork_adopt',
-			title: '世界线裁决',
-			summary: `${fork.question} · ${fork.branches.length} 条世界线探索完毕,待采纳一条${label === null ? '' : ` · 推荐★${label}`}`,
-			plan: fork.plan ?? null,
-			step: fork.step,
-			/** 条目要指得出**是哪一盘分叉**:界面那条「用提问卡决定」的手势按它去取题目与选项。 */
-			fork: fork.id,
-			human_action: 'adopt_branch',
-			/** 门要什么:**点击**(有白名单动词)还是**一句话**(语义判断归模型)。 */
-			needs: 'click',
-		})
-	}
-	for (const fork of forks) {
-		// 人已经认可过就不再等他(状态锚:状态一变,条目自然消失)。
-		if (fork.merge?.provisional !== true || (fork.merge.confirmed ?? null) !== null) continue
-		inbox.push({
-			kind: 'provisional_review',
-			title: '临时采纳待复核',
-			summary: `${fork.question} · 已**临时**采纳「${fork.branches.find((branch) => branch.id === fork.merge.branch)?.label ?? fork.merge.branch}」:${fork.merge.decisionNote ?? '分差不足以称结论'}`,
-			plan: fork.plan ?? null,
-			step: fork.step,
-			/** 标的:认可是对**哪一盘分叉**的认可。 */
-			fork: fork.id,
-			/** 认可是一个动作(一键);「要改判据」那条路仍然靠说一句话,由模型重做一条世界线。 */
-			human_action: 'confirm_provisional',
-			/**
-			 * **一键认可**:它曾经是「要一句话」的门,而「认可就什么都不用做」有个洞——
-			 * 门开着 ⇒ 续跑停着 ⇒ 什么都不做的话系统一直等,等一个永远不会来的动作。
-			 * 认可是一次决定,决定就该有按钮;要改判据那条路仍然在(说一句话,模型重做一条世界线)。
-			 */
-			needs: 'click',
-			ask: '要改判据就重做一条世界线(说一句即可)',
-		})
-	}
-	for (const candidate of state.brainCandidates ?? []) {
-		inbox.push({
-			kind: 'skill_candidate',
-			title: `候选技能:${candidate.name}`,
-			summary: `${String(candidate.description ?? '').slice(0, 120)}——模型自己写的 SOP,采纳后才进它的技能目录。`,
-			plan: null,
-			step: null,
-			human_action: 'promote_skill',
-			skill: candidate.name,
-			needs: 'click',
-		})
-	}
 	if (activePlan !== null && activePlan.blocked !== undefined) {
 		inbox.push({
 			kind: 'plan_blocked',
@@ -2293,7 +1818,6 @@ export function derive(state) {
 		activePlan,
 		closedPlans,
 		pendingAudit,
-		forks,
 		factRows,
 		settlement,
 		stepOf,
@@ -2315,24 +1839,23 @@ export function derive(state) {
  *
  * 人在面板上按的每一个动作,都经宿主平面的路由变成**一条用户消息**进会话日志——
  * 内容是一行结构化标记,不是自然语言。为什么要这样:
- *   · **可审计**:谁在什么时候做了什么(采纳哪条世界线、扶正哪个技能、把档切成什么),
+ *   · **可审计**:谁在什么时候做了什么(撤回或维持哪条事实、改了哪个词条),
  *     就在日志里(`source.kind==='user'`);
  *   · **不做 NLU**:ClearAI 把确认短语白名单整体删掉了,理由是「语义判断只归模型,
  *     harness 只做顺序可判定的题」。标记进得来、自然语言进不来,是同一条纪律;
  *   · **agent 不可达**:这些动词**没有工具 schema**——模型能调的工具面里不存在它们,
  *     它只能看见「人做了什么」这条事实。
  *
- * 动词表只有 3 个(奥卡姆:另外砍掉的两个都是**重复**):
+ * 砍掉的动词(奥卡姆:都是**重复**,或者它服务的机制已经删除):
  *   · `confirm_plan` —— 原生 `dsh-plan-mode` 就是「用户复核的出口」;而我们自己的
  *     `planIsAuthorized` 本来就承认「交付第一步即授权」。计划确认从来不是闸门(它是记号),
  *     少一个假装成闸门的按钮,界面就不再暗示一条不存在的约束。需要人拍板时用原生
  *     `ask_user_question`(它同样把人的答复留在日志里,署名一样是人)。
  *   · `invoke_skill` —— 原生 `/` 技能触发器(`dsh-client-ui-skill` 注册 trigger `/`,
  *     `dsh-client-ui-input-trigger` 出候选菜单)做的正是同一件事,而且带候选菜单。
- * 留下的三个各有原生没有的职责:
- *   · `adopt_branch`/`abandon_fork` —— `ConvergeFork` 只认「算术」或「人门」两条路,
- *     算不出来时这是唯一的结构化人裁决通道(不做 NLU 是纪律,不是懒);
- *   · `promote_skill` —— 候选技能扶正是**只有人能触发**的写动作(模型不能自举)。
+ *   · `adopt_branch` / `abandon_fork` / `confirm_provisional` —— 世界线已删除,并行探索交给原生子任务;
+ *   · `promote_skill` —— 外脑已删除,技能走原生技能目录。
+ * 旧日志里的这些动作不再折:`parseHumanGate` 按动词表拒收,原样跳过。
  *
  * 已摘除:`set_autonomy`。「在场与否」是**运行时状态**(有没有门开着、有没有裁决在飞),
  * 不是人在面板上按的一个开关;那个档位还顺手把「计划经人确认」变成系统自己签的。
@@ -2342,12 +1865,8 @@ export function derive(state) {
 export const HUMAN_GATE_MARK = '[clearai·人门]'
 /** 面板上允许出现的动词。表外的动词一律拒(与贡献表同一套「表外的名字不许出现」)。 */
 export const HUMAN_GATE_ACTIONS = [
-	'adopt_branch',
-	'abandon_fork',
-	'promote_skill',
 	'retract_fact',
 	'keep_fact',
-	'confirm_provisional',
 	/**
 	 * **本体四动词(人的通道)**:面板抽屉发的就是它们;模型有同名语义的工具
 	 * (`RegisterTerm` 等),但这两个面落的是**同一套判据与同一本账**——判据在宿主半的
@@ -2383,45 +1902,6 @@ export function parseHumanGate(message) {
 	}
 }
 
-/**
- * 技能面:合并目录(内核发的)+ 本会话用量(从日志折的)。
- *
- * 用量**不做跨会话统计**(第一性原理:判据混杂、没有决策者据此行动,
- * 更好的原语是「一次具体实例 + 可点开的指针」)。这里给的正是那个指针:谁在哪一步加载的、
- * 那一步**现在**是什么结果——现算,所以技能用完那一步后来又交付了,这里也跟着变。
- */
-function skillUsageView(state) {
-	const usage = state.skillUsage ?? {}
-	return Object.values(usage)
-		.map((entry) => {
-			const events = Array.isArray(entry.events) ? entry.events : []
-			const last = events.length === 0 ? null : events[events.length - 1]
-			const plan = last === null ? null : (state.plans.find((item) => item.id === last.plan) ?? null)
-			const step = plan === null || last.step === null ? null : (plan.steps.find((item) => item.id === last.step) ?? null)
-			return {
-				name: entry.name,
-				model: entry.model ?? 0,
-				human: entry.human ?? 0,
-				lastAt: entry.lastAt ?? null,
-				last:
-					last === null
-						? null
-						: {
-								by: last.by,
-								at: last.at ?? null,
-								plan: last.plan ?? null,
-								step: last.step ?? null,
-								ordinal: last.ordinal ?? null,
-								// 指针落在的这一步现在的结果(现算):advanced / open / void
-								outcome: step === null ? null : step.status,
-								evidence: step === null ? null : (step.evidence ?? null),
-								stepDo: step === null ? null : step.do,
-							},
-			}
-		})
-		.sort((left, right) => String(left.name).localeCompare(String(right.name)))
-}
-
 /** 面板契约。浏览器读的就是这个,一字不改。 */
 export function view(state, sessionId) {
 	const derived = derive(state)
@@ -2440,26 +1920,23 @@ export function view(state, sessionId) {
 		 * 注意**它不是可切换的开关**:`set_autonomy` 已摘除,现在只有部署预设会下发新值;
 		 * `source === 'session'` 只可能来自旧日志。
 		 */
-		/** 项目章程的读数(面板「技能 · 记忆」页签顶部那一行;点开走原生预览)。 */
-		constitution: state.constitution ?? null,
 		/**
 		 * 被闸门裁断过几次(`block/counted`):世界树的**分段通道**画的就是它——
 		 * 这一步磨了几轮、其中几次被驳回。事实在投影里,面板只负责画。
 		 */
 		blocks: state.blocks ?? {},
 		/**
-		 * **人放行**(`human/released`)的痕迹:每一条都带它绑在哪条轴上
-		 * (`step` / `branch`)以及凭据(`via:'approval'`,原生审批栈的权威记录)。
+		 * **人放行**(`human/released`)的痕迹:每一条都带它绑在哪一步上
+		 * 以及凭据(`via:'approval'`,原生审批栈的权威记录)。
 		 * 面板与测试都读这里 —— 推断出来的放行不该有痕迹,所以这份读数本身就是判据。
 		 */
-		releases: (state.releases ?? []).map((item) => ({ step: item.step ?? null, plan: item.plan ?? null, fork: item.fork ?? null, branch: item.branch ?? null, via: item.via ?? null, call: item.call ?? null, at: item.at ?? null })),
+		releases: (state.releases ?? []).map((item) => ({ step: item.step ?? null, plan: item.plan ?? null, via: item.via ?? null, call: item.call ?? null, at: item.at ?? null })),
 		autonomy: {
 			value: state.autonomy?.effective?.value ?? null,
 			preset: state.autonomy?.effective?.preset ?? null,
 			source: state.autonomy?.effective?.source ?? null,
 			override: state.autonomy?.override ?? null,
 		},
-		brain: state.brain ?? null,
 		/** 本体形状(面板页眉据此生成,不手抄)。 */
 		ontology: state.ontology ?? null,
 		/**
@@ -2511,8 +1988,6 @@ export function view(state, sessionId) {
 						why: state.continuation.why ?? null,
 						label: state.continuation.label ?? null,
 					},
-		/** 技能面:合并目录 + 本会话用量(「技能 · 记忆」页签的数据面)。 */
-		skills: { catalog: state.skillCatalog ?? null, usage: skillUsageView(state) },
 		goal:
 			state.goal === null
 				? null
@@ -2623,12 +2098,9 @@ export function view(state, sessionId) {
 			stepId: item.step,
 			planId: item.plan,
 			/**
-			 * `branch` 与 `anchor` **必须交出去**:面板要给每条证据指一个**出处**——
-			 * 独立证据指评估卡(文件)、自判证据指它锚定的产物。少了这两个字段,
-			 * 「评估卡」那一项永远出不来(成因:世界线证据的评估卡按 `分支` 归属,
-			 * 与证据的 `stepId` 不是同一个 id,只看 stepId 会对不上)。
+			 * `anchor` **必须交出去**:面板要给每条证据指一个**出处**——
+			 * 独立证据指评估卡(文件)、自判证据指它锚定的产物。
 			 */
-			branch: item.branch ?? null,
 			anchor: item.anchor ?? 'artifact',
 			/** 记账时定下的出处。旧日志没有这个字段 ⇒ 客户端走只读回退。 */
 			origins: item.origins ?? [],
@@ -2680,91 +2152,6 @@ export function view(state, sessionId) {
 			/** 派生:收到过推翻证据(要复核)与人的审查决定(撤回 / 维持)。 */
 			refuted: item.refuted === true,
 			review: item.review ?? null,
-		})),
-		/**
-		 * 侦察记录:**结局要能看出来**。
-		 *
-		 * 失效模式:中断一次跑动之后「状态上全部显示执行完成」,而宿主其实报了失败。
-		 * 两处都修了:内核改成按 `stopReason` 落账(aborted/error 不算完成),这里把 `note` 交出去
-		 * 并派生成三态——跑着 / 正常回灌 / 没正常结束。面板与资料面据此分诊,而不是一律当"完成"。
-		 */
-		scouts: (state.scouts ?? []).map((item) => ({
-			id: item.id,
-			stepId: item.step,
-			trigger: item.trigger,
-			child: item.child,
-			capability: item.capability,
-			digest: item.digest ?? null,
-			conclusion: item.conclusion,
-			at: item.at,
-			note: item.note ?? null,
-			path: item.path ?? null,
-			status: item.conclusion === null || item.conclusion === undefined ? 'running' : item.note === null || item.note === undefined ? 'settled' : 'failed',
-		})),
-		forks: derived.forks.map((fork) => ({
-			tier: fork.tier ?? null,
-			degradedReason: fork.degradedReason ?? null,
-			merge: fork.merge ?? null,
-			mergeConflict: fork.mergeConflict ?? null,
-			/** 临时采纳:分差不足以称结论(或由判断而来)→ 面板要给「待复核」标记。 */
-			provisional: fork.merge?.provisional === true,
-			decisionNote: fork.merge?.decisionNote ?? null,
-			/** 人在面板上的裁决(结构化记录,by:'user'):内核的工具据此落实它。 */
-			humanDecision: fork.humanDecision ?? null,
-			id: fork.id,
-			stepId: fork.step,
-			question: fork.question,
-			phase: fork.phase,
-			decided: fork.settled,
-			abandonReason: fork.abandonReason,
-			/** 承载它的步骤现在是什么状态(void = 承诺已撤回)——面板据此说「随步骤作废而终止」。 */
-			ownerStatus: fork.ownerStatus ?? null,
-			ownerVoidReason: fork.ownerVoidReason ?? null,
-			/** 派生:步骤作废 + 还没收口。不是新状态,是两个事实的推论(见 derive 里的说明)。 */
-			orphaned: fork.orphaned === true,
-			decideBy: { metric: fork.decide_by?.metric ?? null, direction: fork.decide_by?.direction ?? null },
-			verdict: fork.verdict,
-			undecidable: fork.undecidable,
-			/**
-			 * 算术推荐(`fork/recommended`):人门卡与面板的「推荐★」读的就是它。
-			 * 它只在分叉**还没收口**时才有意义——收口之后 `verdict.winner` 才是结论。
-			 */
-			recommended: fork.recommended ?? null,
-			recommendMargin: fork.recommendMargin ?? null,
-			recommendProvisional: fork.recommendProvisional === true,
-			recommendBy: fork.recommendBy ?? null,
-			/** 采纳时没能合并(以及为什么):决定登记了,产物靠一次普通交付落位。 */
-			mergeSkipped: fork.mergeSkipped ?? null,
-			arbitration: fork.arbitration ?? null,
-			arbitrationSession: fork.arbitrationSession ?? null,
-			branches: fork.branches.map((branch) => ({
-				id: branch.id,
-				label: branch.label,
-				approach: branch.approach,
-				doneCriteria: branch.done_criteria,
-				workspace: branch.workspace,
-				level: branch.level,
-				status: branch.status,
-				reading: branch.reading,
-				validity: branch.validity,
-				/** 派生:执行没跑成(`execution.ok === false`)。**它不是落选**——面板要分开说。 */
-				failed: branch.failed === true,
-				orphaned: branch.orphaned === true,
-				/** 派生:分叉已收口而执行者没报过 ⇒ 那句「结论会自动回灌」作废(见 derive 里的说明)。 */
-				unreturned: branch.unreturned === true,
-				execution: branch.execution ?? null,
-				verdict: branch.verdict,
-				basis: branch.basis,
-				evaluator: branch.evaluator,
-				execution: branch.execution ?? null,
-				cardPath: branch.card_path ?? null,
-				evaluatorSession: branch.evaluator_session ?? null,
-				gitBranch: branch.git_branch ?? null,
-				worktreePath: branch.worktree_path ?? null,
-				worktreeRemoved: branch.worktree_removed === true,
-				keptRef: branch.kept_ref !== false,
-				at: branch.at,
-			})),
 		})),
 	}
 }

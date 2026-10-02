@@ -2,14 +2,14 @@
  * 长测剧本:给 `tools/e2e-run.mjs --scenario <name>` 用。
  *
  * 为什么单开一份:默认那一场只走「立约 → 建计划 → 停」十几拍,够验通不通,不够验**机制之间**。
- * 世界线分叉与算术裁决、证伪、长链多步、侦察先于计划、目标链——这些在真模型上从没跑过。
+ * 竞争路线并行检验、证伪、长链多步、目标链、本体与实体图——这些要在真模型上跑过才算数。
  *
  * 每个剧本给两样东西:
  *   · `task`  —— 写死的任务书。测试的是**装配**,不是模型的创造力;所以任务书明确点名要用哪个机制。
  *   · `asserts` —— 从真会话日志里取证的断言。返回 [{label, ok, detail}]。
  *
  * 共同不变量(所有剧本都跑,见 `INVARIANTS`)才是长测真正的价值:
- * 单点机制在单测里都绿,而「推进前有没有准入」「分叉有没有留孤儿」「评估者有没有悬空」
+ * 单点机制在单测里都绿,而「推进前有没有准入」「评估者有没有悬空」
  * 这类**跨机制一致性**只有完整跑一场才看得出来。
  */
 
@@ -20,57 +20,39 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 export const SCENARIOS = {
-	'worldline-arbitration': {
-		title: '世界线:两条实现按尺子算术裁决',
+	'competing-routes': {
+		title: '竞争路线:两条假设并行检验,产物各占各的路径',
 		expectComplete: true,
-		why: '分叉/世界线/读数/算术裁决/采纳,是这套机制里最深的一条链,单测只覆盖到内核函数边界。',
+		why: '世界线删了之后,「两条路线比一比」就是两条竞争假设各由一个步骤检验(可以交给原生子任务并行跑)。这条链要在真跑里验:两步各声明不同的产物、各自交付、证据各挂各的假设,而撞路径的计划在立约时就被拦下。',
 		task: [
-			'这个工作区是空的。目标:用一把**事先登记的尺子**在两种实现之间择优,把赢家落成产物。',
+			'这个工作区是空的。目标:比较两种 JSON 写法哪种生成的文件更小,把结论写成 lab/winner.txt。',
 			`要求(按顺序做;${DISCIPLINE}):`,
-			'1. SetGoal:判据写清「lab/winner.txt 存在,且第一行是赢家路线的名字」;登记至少两条候选假设,每条写清什么结果会推翻它。',
-			'2. CreatePlan 一份三步计划:第一步是「分叉择优」(判据里要写出裁决指标与方向),第二步把赢家落成 lab/winner.txt,第三步核对并结案。',
-			'3. 第一步上用 ForkPlan 开**两条**世界线:',
-			'   路线 compact:用 python3 写 lab/gen_compact.py,生成 lab/data_compact.json(紧凑 JSON,无空格);',
-			'   路线 pretty:用 python3 写 lab/gen_pretty.py,生成 lab/data_pretty.json(缩进 JSON,带空格)。',
-			'   开分叉**之前**先在工作区写一个测量脚本 lab/measure.sh(内容一行:#!/bin/bash\nwc -c < "$1"),',
-			'   然后 decide_by 指标写「字节数 = lab/measure.sh 对生成文件的输出」(口径必须是**工作区里真有的文件**),方向取 min;',
-			'   两条的 done_criteria 都要**逐字**写明量那一半(「字节数」)。',
-			'4. 用 AdvanceWorldline 把两条世界线都交付,每条报一个**整串就是一个数**的读数(字节数)。',
-			'5. ConvergeFork 让算术裁决;然后接着做第二步与第三步,最后 ClosePlan 收尾。',
+			'1. SetGoal:判据写清「lab/winner.txt 存在,第一行是更小那种写法的名字,第二行是两份文件的字节数」;登记**两条竞争假设**:',
+			'   h-compact:「紧凑 JSON(无空格)比缩进 JSON 小」;h-pretty:「缩进 JSON 比紧凑 JSON 小」。每条写清什么结果会推翻它。',
+			'2. CreatePlan 三步:',
+			'   ① 路线 compact:用 python3 生成 lab/compact/data.json(紧凑写法),并量出字节数;',
+			'   ② 路线 pretty:用 python3 生成 lab/pretty/data.json(缩进写法),并量出字节数;',
+			'   ③ 对照两份读数,写 lab/winner.txt。',
+			'   ① 与 ② 互不依赖,**各自声明不同的产物路径**;你可以用原生子任务把它们并行做完。',
+			'3. 每一步交付时给观测(哪份文件、多少字节),并给两条假设各一个 verdict:成立的给 support,不成立的给 refute。',
+			'4. 做完三步:ClosePlan 收束计划,然后 CloseGoal 结案。',
 		].join('\n'),
-		asserts: ({ kinds, countOf, exists, mutations, readArtifact }) => {
-			// **一条 `worldline/prepared` 携带全部世界线**(fold 里就是按 `branches` 展开的),
-			// 所以这里数分支、不数变更——数变更会得出「只登记了一条」的假失败。
-			const branches = mutations.filter((m) => m.t === 'worldline/prepared').flatMap((m) => m.branches ?? [])
+		asserts: ({ mutations, exists, readArtifact, evidenceVerdicts }) => {
+			const created = mutations.filter((m) => m.t === 'plan/created')
+			const artifacts = created.flatMap((m) => (m.steps ?? []).flatMap((step) => (step.artifacts ?? []).map((path) => ({ step: step.id, path: String(path) }))))
+			const owners = new Map()
+			const clashes = []
+			for (const { step, path } of artifacts) {
+				const owner = owners.get(path)
+				if (owner !== undefined && owner !== step) clashes.push(path)
+				owners.set(path, step)
+			}
 			return [
-			{ label: '分叉真的开了(fork/created)', ok: countOf('fork/created') >= 1, detail: `fork/created=${countOf('fork/created')}` },
-			{ label: '两条世界线都登记了(prepared 里 ≥2 条分支)', ok: branches.length >= 2, detail: `分支=${branches.length}(${branches.map((b) => b.label ?? b.id).join(',')})` },
-			{ label: '两条世界线都交付了读数(worldline/executed ≥ 2)', ok: countOf('worldline/executed') >= 2, detail: `executed=${countOf('worldline/executed')}` },
-			/**
-			 * **两种诚实结局都接受**:收敛(算术裁决出赢家)或**如实不可判**(读数不足/不可用)。
-			 * 后者是设计里的路(「算不出来就停下问人」),把它判成失败等于要求内核编一个赢家。
-			 * 但两条都不许:既不收敛又不留痕——那才是「默默停下」。
-			 */
-			{
-				label: '分叉收口了:收敛 或 如实记下不可判(不许默默停下)',
-				ok: kinds.has('fork/converged') || kinds.has('fork/undecidable') || kinds.has('fork/abandoned'),
-				detail: [...kinds].filter((k) => k.startsWith('fork/')).join(','),
-			},
-			{
-				label: '条件断言:收敛了就必须有赢家被采纳(merged 或如实登记未合并)',
-				ok: !kinds.has('fork/converged') || kinds.has('fork/merged') || kinds.has('fork/merge_skipped'),
-				detail: [...kinds].filter((k) => k.startsWith('fork/')).join(','),
-			},
-			{
-				label: '条件断言:不可判时要写清原因(读数不足/不可用,而不是一句「没成」)',
-				ok: !kinds.has('fork/undecidable') || String(mutations.find((m) => m.t === 'fork/undecidable')?.reason ?? '').length > 8,
-				detail: String(mutations.find((m) => m.t === 'fork/undecidable')?.reason ?? '(没有不可判记录)').slice(0, 90),
-			},
-			{
-				label: '条件断言:拿到赢家就落成产物;不可判则不落(不许把没裁出来的东西写成赢家)',
-				ok: kinds.has('fork/converged') ? exists('lab/winner.txt') : true,
-				detail: 'lab/winner.txt',
-			},
+				{ label: '计划立住了(plan/created)', ok: created.length >= 1, detail: `created=${created.length}` },
+				{ label: '同一计划里没有两步声明同一产物(并行路线不互相覆盖)', ok: clashes.length === 0, detail: clashes.join(',') || `${artifacts.length} 条产物各占一处` },
+				{ label: '两条路线的产物都在盘上', ok: exists('lab/compact/data.json') && exists('lab/pretty/data.json'), detail: `compact=${exists('lab/compact/data.json')} pretty=${exists('lab/pretty/data.json')}` },
+				{ label: '竞争假设有输有赢(support 与 refute 都记了)', ok: evidenceVerdicts.includes('support') && evidenceVerdicts.includes('refute'), detail: evidenceVerdicts.join(',') },
+				{ label: '结论落成了产物(lab/winner.txt 第一行点名一种写法)', ok: /compact|pretty|紧凑|缩进/i.test(readArtifact('lab/winner.txt').split('\n')[0] ?? ''), detail: readArtifact('lab/winner.txt').slice(0, 80) },
 			]
 		},
 	},
@@ -108,57 +90,27 @@ export const SCENARIOS = {
 		],
 	},
 	'long-plan': {
-		title: '长链:五步交付,物证、准入、收尾',
+		title: '长链:四步交付,物证、准入、收尾',
 		expectComplete: true,
 		why: '多步长链才有机会暴露「跳步推进」「物证造假」「收尾不干净」这类只在长度上出现的问题。',
 		task: [
-			'这个工作区是空的。目标:走完一条五步的数据小链,最后交出 lab/report.md。',
+			'这个工作区是空的。目标:走完一条四步的数据小链,最后交出 lab/report.md。',
 			`要求(按顺序做;${DISCIPLINE}):`,
 			'1. SetGoal:判据 = 「lab/report.md 存在,且里面给出的均值与 lab/means.json 完全一致」;登记至少两条候选假设。',
-			'2. CreatePlan 五步:',
+			'2. CreatePlan 四步:',
 			'   ① 造 lab/raw.csv:3 列 × 20 行数值(自己生成,写清怎么生成的);',
 			'   ② 写 lab/analyze.py,读 raw.csv 算出每列均值,输出 lab/means.json;',
 			'   ③ 用**另一条独立路径**核对(例如 bash + awk/python 一行式再算一遍),把两次结果对照写进 lab/check.md;',
 			'   ④ 写 lab/report.md 汇总:数据怎么来的、均值是多少、怎么核对的;',
-			'   ⑤ 把这次流程里值得记住的一条经验用 WriteMemory 落盘。',
 			'3. 每一步都声明 artifacts 与 done_criteria;交付时给观测(哪份文件、多大、什么内容)。',
 			'4. 全部做完后 ClosePlan 收尾。',
 		].join('\n'),
-		asserts: ({ countOf, exists, memoryEntries, projectedSteps, kinds }) => [
-			{ label: '推进了至少四步(step/advanced ≥ 4)', ok: countOf('step/advanced') >= 4, detail: `advanced=${countOf('step/advanced')}` },
-			{ label: '计划真的是五步上下(投影里 ≥ 4 步)', ok: projectedSteps >= 4, detail: `${projectedSteps} 步` },
+		asserts: ({ countOf, exists, projectedSteps }) => [
+			{ label: '推进了至少三步(step/advanced ≥ 3)', ok: countOf('step/advanced') >= 3, detail: `advanced=${countOf('step/advanced')}` },
+			{ label: '计划真的是四步上下(投影里 ≥ 3 步)', ok: projectedSteps >= 3, detail: `${projectedSteps} 步` },
 			{ label: '数据产物在盘上(lab/raw.csv)', ok: exists('lab/raw.csv'), detail: 'lab/raw.csv' },
 			{ label: '计算产物在盘上(lab/means.json)', ok: exists('lab/means.json'), detail: 'lab/means.json' },
 			{ label: '报告在盘上(lab/report.md)', ok: exists('lab/report.md'), detail: 'lab/report.md' },
-			{ label: '经验落了记忆(≥1 条)', ok: memoryEntries >= 1, detail: `${memoryEntries} 条` },
-			{ label: '账本提交过(git/committed)', ok: kinds.has('git/committed'), detail: [...kinds].filter((k) => k.startsWith('git/')).join(',') },
-		],
-	},
-	'scout-first': {
-		title: '侦察先于计划',
-		expectComplete: true,
-		why: 'SpawnScout 是「只读、派出去就不等、结论回灌进资料面」那条路;它与主线的衔接(收结论→据此立计划)没在真跑里验过。',
-		task: [
-			'这个工作区是空的(系统会铺好 clear/ 骨架)。我要一份「先看再动」的小交付。',
-			`要求(按顺序做;${DISCIPLINE}):`,
-			'1. **先派一次只读侦察**:用 SpawnScout 让一个子代理回答「工作区里有哪些现成技能(clear/skills/ 下各是什么)、有没有可用的数据文件、工作区根目录下有什么」。',
-			'   侦察是异步的:**必须等它的结论回来**——用 AwaitWorldlines;到点还没回来就**再等一次**(最多等三次),',
-			'   直到结论到手再往下做。等不到就如实说明,不要假装它有结论。',
-			'2. 拿到侦察结论后,再 SetGoal:判据 = 「lab/inventory.md 存在,且(1)技能条数与**侦察结论报的条数**一致、(2)文件里**逐字引用侦察结论里的一句话**」;登记至少两条候选假设。',
-			'3. CreatePlan 两步:第一步据侦察结论写 lab/inventory.md,第二步独立核对(自己再列一遍目录,与文件内容对照)。',
-			'4. 做完两步,ClosePlan 收尾。',
-		].join('\n'),
-		asserts: ({ countOf, exists, called, readArtifact }) => [
-			{ label: '真的派了侦察(scout/dispatched)', ok: countOf('scout/dispatched') >= 1, detail: `dispatched=${countOf('scout/dispatched')}` },
-			{ label: '侦察结论收上来了(scout/settled)', ok: countOf('scout/settled') >= 1, detail: `settled=${countOf('scout/settled')}` },
-			{ label: '侦察是走工具派的(SpawnScout)', ok: called('SpawnScout'), detail: 'SpawnScout' },
-			{ label: '清单落成了产物(lab/inventory.md)', ok: exists('lab/inventory.md'), detail: 'lab/inventory.md' },
-			// 判据**依赖**侦察结论:产物里必须留下引用它的痕迹——"结论送达了模型"因此有外部证据。
-			{
-				label: '产物里引用了侦察结论(送达不只是进了上下文,还被用上了)',
-				ok: /侦察/.test(readArtifact('lab/inventory.md')),
-				detail: readArtifact('lab/inventory.md').slice(0, 80),
-			},
 		],
 	},
 	'goal-chain': {
@@ -237,7 +189,7 @@ export const SCENARIOS = {
  * 跨机制不变量:所有剧本都跑。
  *
  * 这些是「长测才看得见」的那一类:单点机制在单测里都绿,而推进与准入的**先后**、
- * 分叉与收敛的**配对**、评估者的**闭环**,只有一场完整跑动才给得出证据。
+ * 评估者的**闭环**,只有一场完整跑动才给得出证据。
  */
 export const INVARIANTS = [
 	{
@@ -253,14 +205,6 @@ export const INVARIANTS = [
 		run: ({ countOf }) => ({ ok: countOf('audit/dispatched') <= countOf('audit/settled'), detail: `dispatched=${countOf('audit/dispatched')} settled=${countOf('audit/settled')}` }),
 	},
 	{
-		label: '分叉不留孤儿(每个 fork/created 都以 converged/abandoned/undecidable 收口)',
-		run: ({ countOf }) => {
-			const opened = countOf('fork/created')
-			const closed = countOf('fork/converged') + countOf('fork/abandoned') + countOf('fork/undecidable')
-			return { ok: opened <= closed, detail: `created=${opened} 收口=${closed}` }
-		},
-	},
-	{
 		label: '证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)',
 		run: ({ mutations }) => {
 			/**
@@ -274,18 +218,11 @@ export const INVARIANTS = [
 			 * 三种「步」都要认(每一种都是真日志教出来的):
 			 *   · `plan/created` 带 `steps` 数组;`plan/amended` 带**单个** `step` 对象(补一步);
 			 *   · `plan/voided` 带**单个** `step` 字符串(作废一步);
-			 *   · **合成锚点**:目标级审计的证据挂在 `goal:<目标id>` 上,世界线级挂在
-			 *     `<forkId>:<branchId>` 上——它们不是计划里的步,但都是合法的落点。
-			 *     锚点指向的目标/分叉必须真的存在,否则一样算孤儿。
+			 *   · **合成锚点**:目标级审计的证据挂在 `goal:<目标id>` 上——它不是计划里的步,
+			 *     但是合法的落点。锚点指向的目标必须真的存在,否则一样算孤儿。
 			 */
 			const goalIds = new Set(mutations.filter((m) => m.t === 'goal/set').map((m) => m.id))
-			const forkIds = new Set(mutations.filter((m) => m.t === 'fork/created').map((m) => m.id))
-			const isSyntheticAnchor = (id) => {
-				if (typeof id !== 'string') return false
-				if (id.startsWith('goal:')) return goalIds.has(id.slice('goal:'.length))
-				const [left, right] = id.split(':')
-				return right !== undefined && right !== '' && forkIds.has(left)
-			}
+			const isSyntheticAnchor = (id) => typeof id === 'string' && id.startsWith('goal:') && goalIds.has(id.slice('goal:'.length))
 			const steps = new Set()
 			const orphans = []
 			for (const mutation of mutations) {
@@ -330,41 +267,6 @@ export const INVARIANTS = [
 		},
 	},
 	{
-		/**
-		 * **异步子 run 的结论必须对模型可见**。
-		 *
-		 * 这条是「账上有、心里没有」的墓志铭:修好之前,侦察与执行者的结论只落在
-		 * `meta.mutations` 里,模型可见文本中出现 0 次——于是模型的判据写成
-		 * 「与侦察结论一致」时,它和独立评估者都无处可读,只能裁 inconclusive。
-		 * 判据必须查**模型可见文本**,查账本等于什么都没查(这正是上一轮假绿的成因)。
-		 */
-		label: '异步子 run 的结论对模型可见(侦察与执行者都不许只躺在账本里)',
-		run: ({ mutations, modelVisibleText }) => {
-			const settled = [
-				...mutations.filter((m) => m.t === 'scout/settled' && String(m.conclusion ?? '').trim() !== '').map((m) => ({ who: `侦察 ${m.id}`, text: String(m.conclusion) })),
-				...mutations.filter((m) => m.t === 'worldline/executed' && m.ok === true && String(m.conclusion ?? '').trim() !== '').map((m) => ({ who: `执行者 ${m.branch}`, text: String(m.conclusion) })),
-			]
-			// 正文可能被截断后进消息(带指针),所以取开头一段做特征串再找。
-			// 归一空白再比:同一段正文在账本里带换行、进消息时可能被重排,逐字节比会假红。
-			const norm = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
-			const visible = norm(modelVisibleText)
-			const missing = settled.filter((item) => {
-				const fingerprint = norm(item.text).slice(0, 120)
-				return fingerprint !== '' && !visible.includes(fingerprint)
-			})
-			return {
-				ok: missing.length === 0,
-				detail: settled.length === 0 ? '(这一场没有异步子 run 的结论)' : `共 ${settled.length} 条,模型看不到 ${missing.length} 条:${missing.map((item) => item.who).join(',')}`,
-			}
-		},
-	},
-	{
-		label: '侦察没有悬空(每个 scout/dispatched 都有 scout/settled)',
-		run: ({ countOf }) => ({ ok: countOf('scout/dispatched') <= countOf('scout/settled'), detail: `dispatched=${countOf('scout/dispatched')} settled=${countOf('scout/settled')}` }),
-	},
-
-
-	{
 		label: '声明的物证真的在盘上(主线步骤的 artifacts)',
 		run: ({ mutations, exists }) => {
 			const declared = mutations.filter((m) => m.t === 'plan/created').flatMap((m) => (m.steps ?? []).flatMap((step) => step.artifacts ?? []))
@@ -387,10 +289,10 @@ export const INVARIANTS = [
  * 只能靠信跑它的人。`tools/e2e-replay.mjs` 与 `tools/e2e-run.mjs` 共用这一个函数,
  * 于是「跑一场」与「重判一场」永远不会漂移。
  *
- * `exists` / `called` / `memoryEntries` 由调用方注入:这一层不碰文件系统,
+ * `exists` / `called` 由调用方注入:这一层不碰文件系统,
  * 才能被快测用合成上下文直接验(见 `test/e2e-scenarios.test.mjs`)。
  */
-export async function evaluateLog({ scenario, events, mutations, workspace, exists, called, memoryEntries = 0 }) {
+export async function evaluateLog({ scenario, events, mutations, workspace, exists, called }) {
 	const { applyEvent, emptyState, view, derive } = await import(new URL('../ui/lib/fold.js', import.meta.url))
 	let state = emptyState()
 	for (const event of events) state = applyEvent(state, event)
@@ -460,7 +362,6 @@ export async function evaluateLog({ scenario, events, mutations, workspace, exis
 		promotedIds,
 		hypothesisStatus,
 		projectedSteps: (projected.plan?.steps ?? []).length,
-		memoryEntries,
 	}
 	const checks = INVARIANTS.map((invariant) => {
 		const outcome = invariant.run(context)

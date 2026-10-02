@@ -17,7 +17,6 @@
  *   ui/lib/client.js             → lib/client.js           (浏览器半)
  *   locale/                      → locale/                  (插件列表的显示文案:标题 + 一句话介绍,按语言分文件)
  *   brand/                       → brand/                   (README 位图 + 插件列表图标 brand/icon.svg)
- *   preset/template/              → presets/clearai/template/
  *                                  (工作区模板:随包走,内核缺省从这里找)
  *
  * 模板是插件源的一部分,发行物不依赖任何外部仓库路径。
@@ -38,7 +37,6 @@ const OUT = resolve(process.argv.includes('--out') ? process.argv[process.argv.i
  * 而不是让构建脚本去改源文件。
  */
 const VERSION_OVERRIDE = process.argv.includes('--version') ? process.argv[process.argv.indexOf('--version') + 1] : null
-const TEMPLATE_SRC = join(PORT, 'preset', 'template')
 /** 残渣不进模板。 */
 const TRANSIENT = new Set(['node_modules', 'dist', '.vite', 'coverage', '.pytest_cache', '__pycache__', '.git'])
 
@@ -168,15 +166,6 @@ const readPresetMeta = (file) => {
 	)
 	copy(packPath, join(OUT, 'presets', 'clearai', 'clearai.patch.yml'))
 	console.log(`  预设声明行:preset-clearai(${rows.filter((line) => /^- id:/.test(line)).length} 个顶层行)`)
-}
-
-// ── ③ 工作区模板:装进预设旁边(内核缺省读 `../template`) ──────────────────
-if (existsSync(TEMPLATE_SRC)) {
-	copy(TEMPLATE_SRC, join(OUT, 'presets', 'clearai', 'template'))
-	const skills = existsSync(join(TEMPLATE_SRC, 'skills')) ? readdirSync(join(TEMPLATE_SRC, 'skills')).filter((n) => !n.startsWith('.')).length : 0
-	console.log(`  模板:${skills} 个技能 + project.md`)
-} else {
-	throw new Error(`模板源不存在:${TEMPLATE_SRC}(它随包走,不能在发行物里指向仓库)`)
 }
 
 // ── ④ 宿主半 / 浏览器半:同一份源,两个出口 ─────────────────────────────────

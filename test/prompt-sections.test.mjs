@@ -43,7 +43,7 @@ const toolNames = Object.values(MECHANISM_TOOLS).flat()
 console.log('\n【① 每段都有合法标签】')
 {
 	const untagged = SECTIONS.filter((section) => !VALID.has(section.class))
-	check('24 段定义全部带 hard/native/advisory 标签', SECTIONS.length === 24 && untagged.length === 0, untagged.map((section) => section.name).join(','))
+	check('22 段定义全部带 hard/native/advisory 标签', SECTIONS.length === 22 && untagged.length === 0, untagged.map((section) => section.name).join(','))
 	const tally = { hard: 0, native: 0, advisory: 0 }
 	for (const section of SECTIONS) tally[section.class] += 1
 	console.log(`  分类账:hard ${tally.hard} · native ${tally.native} · advisory ${tally.advisory}`)
@@ -81,14 +81,10 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 	// 提示词若把它说成「同步、派出就等它回来」,模型就会去等一个不存在的返回值——长测里正是这么卡住的。
 	const delegation = SECTIONS.find((section) => section.name === 'clearai/delegation')
 	check(
-		'delegation 按异步讲侦察(与内核契约一致,不说「同步」)',
-		/派出去就不等/.test(delegation.text) && !/同步,派出就等它回来/.test(delegation.text),
-		delegation.text.match(/SpawnScout[^|]*\|[^|]*/)?.[0]?.slice(0, 90) ?? '(没找到那一行)',
+		'delegation 写明并行探索 = 竞争的假设并行检验,且不再提侦察工具',
+		/并行探索就是并行检验/.test(delegation.text) && !/SpawnScout|MapScouts/.test(delegation.text),
+		delegation.text.match(/并行探索[^。]*。/)?.[0]?.slice(0, 90) ?? '(没找到那一行)',
 	)
-
-	// 侦察的产出纪律:它是给父任务**省**上下文的,不是流水账——超长要压缩,并说清细节在哪。
-	// (这段纪律在**侦察人格**里(kernel 的 SCOUT_PERSONA),不在段表里,所以扫 KERNEL。)
-	check('侦察人格写明产出的长度纪律(3000 字以内 + 指针)', /3000 字以内/.test(KERNEL), KERNEL.match(/用 Markdown 写结论[^\n]*/)?.[0]?.slice(0, 80) ?? '(没找到)')
 
 	// 假设留痕的纪律:不强求证实/证伪,但「没看过」不能留白(结案时会被如实记进账里)。
 	const loop = SECTIONS.find((section) => section.name === 'clearai/loop-contract')

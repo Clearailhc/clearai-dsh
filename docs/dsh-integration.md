@@ -1,5 +1,7 @@
 # DSH integration
 
+> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md); the install, build and verification sections reflect the currently published form.
+
 ClearAI is a native DSH plugin. It adds an epistemic layer on DSH's **composition surface** and leaves the DSH engine untouched. This document explains how the repository maps onto that surface, what installs where, and how to build and verify it.
 
 ## One package, three surfaces
@@ -9,10 +11,24 @@ The published package is `clearai-dsh`. A single install places three things on 
 | Surface | What it carries | Where it comes from |
 |---|---|---|
 | Host composition (patch layer) | Row `clearai-host` → the host half: the session projection unit `clearai`, its read routes, and the browser module declaration | `pack/cordis.patch.yml`, `ui/lib/index.js` |
-| Agent preset (roster) | ClearAI's tools, prompt sections, guards, skills, and the workspace template | `preset/` |
-| Client module (browser) | The deliverables view, the worldline / propositions / external-brain panes | `ui/lib/client.js` |
+| Agent preset (roster) | ClearAI's ten tools, three prompt sections and guards, plus the native DSH capabilities it composes | `preset/` |
+| Client module (browser) | The Ontology pane in the middle, the World Tree pane on the right | `ui/lib/client.js` |
 
 The split is not cosmetic. Client modules are only discovered through rows of the **host** loader, so the browser half must sit in the patch layer. The projection unit is process-wide and registers once, so it cannot live in a preset that gets rebuilt. Conversely, the judgment side — tools, prompt sections, skills — is exactly what "one session's capabilities" means, so it belongs to the preset.
+
+## Use the host, do not rebuild it
+
+Besides ClearAI's own plugins, the preset composes these native DSH capabilities; ClearAI no longer ships its own versions:
+
+| Capability | Native package | How ClearAI uses it |
+|---|---|---|
+| Goals and continuation | `dsh-goal`, `dsh-tool-goal`, `dsh-goal-round-driver` | `Frame` attaches criteria and judgements; `Conclude` calls `ctx.goals.complete()` after independent evaluation; a guard rejects the model completing it directly |
+| Plan review | `dsh-plan-mode` | `/plan` when the person wants to review a plan |
+| Subagents and orchestration | `dsh-subagent`, `dsh-tool-workflow` | Dispatching independent evaluators; the model tests competing judgements in parallel (replacing worldlines) |
+| Asking the person | `dsh-user-questions` | The call that opens a gate calls `ctx.userQuestions.ask()` |
+| Deliverables | `dsh-tool-present`, deliverable cards | At close the kernel appends one `deliverables/presented` |
+| File changes | `dsh-workspace-changes` | No own ledger |
+| Skills and project instructions | `dsh-skill`, `PROJECT.md` | No bundled templates or memory |
 
 ## Source → package mapping
 
@@ -24,7 +40,6 @@ The package is a pure function of the source; `node tools/build-package.mjs` per
 | `pack/cordis.patch.yml` | `cordis.patch.yml` |
 | `pack/bin/clearai.mjs` | `bin/clearai.mjs` |
 | `preset/` | `presets/clearai/` |
-| `preset/template/` | `presets/clearai/template/` |
 | `ui/lib/index.js` | `lib/host.js` |
 | `ui/lib/fold.js` | `lib/fold.js` |
 | `ui/lib/invariant.js` | `lib/invariant.js` |
@@ -85,7 +100,7 @@ For development, `install.sh` lays the repository's source directly into a real 
 ## Build and verify
 
 ```bash
-npm test                        # 18 suites — the list lives in test/run.sh
+npm test                        # 17 suites — the list lives in test/run.sh
 node tools/build-package.mjs    # assemble dist/clearai-dsh
 node tools/verify-package.mjs   # rebuild and compare byte-for-byte
 node tools/verify-deploy.mjs    # compose the deployed files for real (bypasses the ESM cache)

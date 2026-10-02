@@ -6,7 +6,7 @@
  * 于是「跑一场」与「重判一场」永远不会漂移,别人也不必花 token 重跑就能检查我们的结论。
  *
  * 用法:
- *   node tools/e2e-replay.mjs --scenario scout-first \\
+ *   node tools/e2e-replay.mjs --scenario competing-routes \\
  *     --log ~/.dsh/sessions/<slug>/session-xxxx/session.v3.jsonl.zstd \\
  *     --workspace /var/folders/.../clearai-e2e-ws-XXXX
  *
@@ -16,7 +16,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { artifactExists, countMemoryEntries } from './e2e-workspace.mjs'
+import { artifactExists } from './e2e-workspace.mjs'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -64,7 +64,6 @@ const evaluated = await evaluateLog({
 	mutations,
 	workspace: workspace ?? '(未给)',
 	exists: (rel) => (workspace === undefined ? false : artifactExists(workspace, rel)),
-	memoryEntries: workspace === undefined ? 0 : countMemoryEntries(workspace),
 	called: (name) => toolCalls.some((event) => event.data?.name === name),
 })
 

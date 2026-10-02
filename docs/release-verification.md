@@ -7,7 +7,7 @@ The detailed Chinese working copy, including the per-component notes accumulated
 ## How to run
 
 ```bash
-npm test                                                  # all 18 suites (list: test/run.sh)
+npm test                                                  # all 17 suites (list: test/run.sh)
 node tools/build-package.mjs && node tools/verify-package.mjs
 node tools/verify-deploy.mjs                              # compose the deployed files for real
 node tools/recheck.mjs --log <a real session.v3.jsonl.zstd>   # suites + deploy + per-surface text budgets
@@ -29,7 +29,6 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| **Deliverables** | One row per file, deduplicated by path; the two counting units stay separate | client suite + text budget | green · ≤ 1200 chars |
 | **Facts** | Only confirmed propositions are shelved; unshelved ones group by ontology state; machine fields stay off screen | client suite + budget | green · ≤ 1500 chars |
 | Proposition map | Horizontal trunk plus branches; only traversed transitions carry evidence ids | client suite + human look | green · ≤ 1600 chars |
 
@@ -37,23 +36,20 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| **Worldlines** | A selected row has detail; multiple plans are switchable | client suite + budget | green · ≤ 900 chars |
-| **Skills · memory** | One row per recognisable entry; machine readings go to tooltips | client suite + budget | green · ≤ 2600 chars |
+| **World tree** | A selected row has detail; multiple plans are switchable | client suite + budget | green · ≤ 900 chars |
 
-## 4 · Tools row and continuation note
+## 4 · Tools row and continuation
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
 | Plan chip | Clickable while a plan awaits review or is blocked, in plain words | client suite | green |
 | Continuation | Rides native `goals`; stops while any gate is open; the round cap is a fuse | kernel + host suites | green |
-| Note text | Facts only; human gates first; no stale "step N" after closure | client suite + budget | green · ≤ 60 chars |
 
 ## 5 · Human gates and jumps
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
 | Inbox | Anything waiting on a person is stated first | client suite | green |
-| Native question card | Clicking our row raises the native card; the answer lands on the same gate message | host suite | green |
 | Four origin kinds | Artifact / evaluation card → native preview; evaluator → observe the sub-session; approval → stated plainly | client suite | green |
 | Forward jump | "See this step in the world tree" opens the tree with exactly that row selected | client suite + human click | green · human pass |
 | Backward jump | "See the evidence for this step" switches to facts and expands the owning proposition | client suite + human click | green · human pass |
@@ -62,7 +58,7 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 | Surface | Criterion | Check | Passing line |
 |---|---|---|---|
-| Intent tools (32) | Output-schema validation and semantic refusals are both asserted | `test/kernel.test.mjs` | green |
+| Intent tools (20) | Output-schema validation and semantic refusals are both asserted | `test/kernel.test.mjs` | green |
 | **Host-side invariants** | Five contracts (referential integrity / admission before advance / no settlement without dispatch / promotion is backed / the fact ratchet) judged **before the append**; a violation raises the host's `InvariantError` owned by `clearai-dsh`. **Scope**: this is a diagnostics surface — the shipped web/headless profiles do **not** mount the service; it is live only where the host already mounts it, plus our long runs. It **no longer folds an index of its own**: state advances through the production fold (`applyEvent` in `fold.js`), and the file keeps only the five contracts plus one `admitted` accumulation (see [authority map](authority-map.md) §2④) | `test/invariant.test.mjs`; the long runs mount `@deepseek-ai/dsh-invariants` for real | green · no `invariant violated` in long runs |
 | Single completion verb | Progress only through `AdvancePlan`; the doer cannot judge its own result | same | green |
 | L4 release | The native approval pair is the only authority | same | green |
@@ -95,7 +91,7 @@ bash tools/capture-ui.sh start          # copies ~/.dsh to /tmp/clearai-shots an
 Then, in the browser:
 
 1. **Start a session** and send one message — the model answers (the plugin does not break the app).
-2. The middle column shows **deliverables** and **facts**; the right sidebar offers **worldlines** and **skills · memory**.
+2. The middle column shows **facts**; the right sidebar offers the **world tree**.
 3. On a session with evidence: the proposition map marks traversed transitions with evidence ids; clicking an origin opens the real artifact.
 4. Clicking **"see this step in the world tree"** opens the tree with **that row selected**.
 5. In the tree detail, **"see the evidence for this step"** switches back to facts and expands the matching proposition.
@@ -114,8 +110,8 @@ real CLI and pnpm, and asserts the sixteen mechanical facts (dependency, bundles
 host row, roster root inside the package, shipped roots intact, preset self-contained, no machine paths).
 Then, in the browser it prints:
 
-1. a session opens on the **ClearAI** preset and the middle column shows **Deliverables / Facts**;
-2. the right sidebar offers **Worldlines** and **Skills · Memory**;
+1. a session opens on the **ClearAI** preset and the middle column shows **Facts**;
+2. the right sidebar offers the **World tree**;
 3. send one small task (e.g. "copy `input.md` to `products/echo.md` and set a goal for it");
 4. the ledger records `goal/set` and an audit pair, and `products/echo.md` exists;
 5. the page console has no errors.
@@ -128,6 +124,4 @@ provider that a clean profile does not have.
 ## Known unverified items
 
 - **Backward/forward jumps clicked by a human.** Mechanism and data are verified; the end-to-end click needs a session that actually promoted a fact.
-- **Skill descriptions remain longish** (18 entries × ~60 chars). Compressing further would make skills unrecognisable.
-- **The memory pane grows** with entry count; a file-name-only default is the next step if it gets noisy.
 - **The client half is cached inside the host process too.** After installing, restart `dsh web`; refreshing the browser is not enough.

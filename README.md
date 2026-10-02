@@ -16,7 +16,7 @@
 ClearAI is an **ontology discovery and exploration platform**, built on two core concepts:
 
 - **Domain ontology** (what you get) — your project's own vocabulary, the knowledge entries established through the loop, and their graphs. At the end of a research session you hold a continuously growing knowledge structure, retrievable next round by concept.
-- **Epistemic loop** (how you get it) — a disciplined seven-stage path: frame, hypothesize, plan, observe, verify, evaluate, record. Every edge is tested by evidence and independent evaluation.
+- **Epistemic loop** (how you get it) — question → judgement (state what would prove it wrong) → a test that could fail → evidence → bounded conclusion → grows into the ontology. Every edge is tested by evidence and independent evaluation.
 
 > Other knowledge graphs pile up edges by extraction and assertion; here every edge has to be earned through the loop.
 
@@ -34,7 +34,7 @@ Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a ne
   <img src="docs/diagrams/ontology-hero.png" alt="The epistemic loop (left) growing a domain ontology (right)" width="1200">
 </picture>
 
-*Left: the Epistemic Loop — seven stages. Its emerald fact dot is also the first node of the domain ontology on the right. Right: the ontology graph — dark is a concept, light is a value form, emerald an instance; the instance carries two contradictory assertions — **the two readings are tinted amber**, marking that they do not agree. The system reports the conflict; retracting or keeping is a human decision.*
+*Left: the Epistemic Loop. Its emerald fact dot is also the first node of the domain ontology on the right. Right: the ontology graph — dark is a concept, light is a value form, emerald an instance; the instance carries two contradictory assertions — **the two readings are tinted amber**, marking that they do not agree. The system reports the conflict; retracting or keeping is a human decision.*
 
 ---
 
@@ -66,7 +66,7 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 
 *Inside the ring is the instrument's read-out: the L0–L4 axis, the **pre-registered** threshold as a dashed line, and five observations with error bars — the supported one filled, the inconclusive drawn as a dashed circle, the refuted left in place with a slash through it (nothing is deleted). The emerald dot at the opening is the one reading that crossed the threshold and settled as a fact.*
 
-At runtime, the seven stages compress into four beats — plan, execute, observe, reflect. State is derived from the session record with no second store; the tools the model holds contain no field in which it could declare a step complete.
+State is derived from the session record with no second store; the tools the model holds contain no field in which it could declare a step complete, and a goal completes only after independent evaluation. ClearAI does only what the host cannot — the epistemic contract, the domain ontology, presentation; goal continuation, subagents, asking you, deliverable cards and file history all come from DSH itself.
 
 ClearAI does **not** claim recursive self-improvement. It provides the epistemic substrate a self-improving system would need. See [Positioning](docs/positioning.md) and the [OpenRSI survey](docs/research-openrsi.md).
 
@@ -123,7 +123,7 @@ Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), then **create a sessi
 1. Open `dsh web` and click "New session";
 2. Click the current mode name at the top (default: **Standard mode**) to open the preset list;
 3. Pick **ClearAI** — its card reads "利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.";
-4. Just ask your question. Ordinary Q&A runs as usual; once you set a goal and register hypotheses, the system enters knowledge mode by itself: known facts come to you, gaps stay visible, and conclusions earn their place.
+4. Just ask your question. Ordinary Q&A runs as usual; once a goal is set and judgements are registered, the system enters knowledge mode by itself: what is already known comes to you, and conclusions earn their place through evidence. Only decisions only you can make are put to you.
 
 <picture>
   <img src="docs/shots/zh/jepa-ontology.png" alt="The knowledge graph in ClearAI mode" width="820">
@@ -136,7 +136,7 @@ If pnpm is not on PATH: `npm install -g pnpm` (do not `corepack enable` — it i
 From the repository:
 
 ```bash
-npm test                       # 18 suites
+npm test                       # 17 suites
 node tools/build-package.mjs   # assemble dist/ from source
 node tools/verify-package.mjs  # rebuild on the spot, byte-compare
 node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chrome)
@@ -148,27 +148,21 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 ## What it looks like
 
-The middle column has two switchable views: **Deliverables** and **Ontology**. The right sidebar: **Worldlines** and **External Brain**.
+One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Next to the input box: "needs you N".
 
-**Ontology** — this view is your knowledge home. At the top, a **graph band**: the ontology graph (what your domain looks like) and the entity graph (what you have actually verified) toggle with one click; clicking a node or edge opens the **knowledge inspector** (definition / relations / assertions / evidence chain / history), and "filter by this" is an explicit action inside the detail view. Below that, the **ontology shelf**: established entries, each with assertion chips (click to see what the term means), boundary, and support level; contradictions surface automatically. The vocabulary maintenance block sits collapsed at the bottom — it auto-expands when a language exists before any sentence does.
+**Ontology** — it answers only your four questions. Its header is the **graph**: the ontology graph (what your domain looks like) and the entity graph (what has actually been verified) toggle with one click, and clicking a node filters by that concept. Below it is **one list of conclusions** grouped by how far they can be trusted: trustworthy (with scope and level), still under test, refuted or unclear. Two contradictory conclusions light up; retracting or keeping is your call.
+
+**World Tree** — the plan's steps and gates.
+
+**Deliverables** — at close, the artefacts accepted for each step appear as DSH's native deliverable cards; what changed each turn is in DSH's native change cards.
+
+> The screenshot below shows the interface before this rebuild; it will be retaken when the presentation phase lands.
 
 <picture>
   <img src="docs/shots/zh/jepa-band.png" alt="The graph band: ontology graph and entity graph" width="820">
 </picture>
 
-*The band — the ontology graph and the entity graph share one deterministic projection, so the same ledger always yields the same picture (captured from a real session: 21 concepts, 9 predicates).*
-
-<picture>
-  <img src="docs/shots/zh/jepa-inspector.png" alt="Knowledge inspector: definition, relations, assertions, evidence chain" width="820">
-</picture>
-
-*Open any node or edge: definition, relations, assertions, evidence chain, registration and revision history, all in one place. (UI shown is Chinese.)*
-
-**Worldlines** — when two routes genuinely disagree, they run as separate branches with their own readings; the losing one stays on record, and adoption is a human press.
-
-**Deliverables** — the middle column keeps "what the plan declared" and "what actually exists on disk" apart.
-
-**External Brain** — skills and memory as DSH-native entries in one merged catalogue.
+*The band — the ontology graph and the entity graph share one deterministic projection, so the same record always yields the same picture (captured from a real session: 21 concepts, 9 predicates).*
 
 ---
 
@@ -185,7 +179,7 @@ The middle column has two switchable views: **Deliverables** and **Ontology**. T
 - [Positioning](docs/positioning.md) · [Domain ontology design](docs/domain-ontology.md)
 - [Epistemic loop](docs/epistemic-loop.md) · [Verification ontology](docs/verification-loop.md) · [Loop philosophy](docs/loop-philosophy.md)
 - [Design principles](docs/design-principles.md) · [Soul map](docs/soul-map.md) · [Glossary](docs/glossary.md)
-- [Knowledge-native loop ledger](docs/optimization/knowledge-native-loop.zh-CN.md) (this round: triage / preflight / knowledge gate / graph / inspector; zh-CN)
+- ["Less is more" plan](docs/less-is-more-plan.zh-CN.md) (this round's decisions, prototype spikes and phases; zh-CN)
 - [Development plan](docs/optimization/domain-ontology-plan.md) (with real-run evidence from the Hengtong project)
 - [Known gaps](docs/known-gaps.md) · [Authority map](docs/authority-map.md) · [Release verification](docs/release-verification.md)
 
