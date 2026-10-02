@@ -22,8 +22,8 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 
 ```bash
 # 安装（npm 包，预构建——无需构建步骤，不会触发 allowBuilds 授权）
-dsh plugin --profile web add clearai-dsh@0.3.1
-# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.3.1
+dsh plugin --profile web add clearai-dsh@0.4.0
+# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.4.0
 ```
 
 重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
@@ -78,12 +78,12 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 **推荐——在应用里装，并把版本钉住：**
 
-侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.3.1`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
+侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.4.0`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
 
 **或者开终端——同一次安装：**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.3.1
+dsh plugin --profile web add clearai-dsh@0.4.0
 ```
 
 从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。
@@ -127,10 +127,10 @@ Git 拉的是源码而不是构建产物，所以 pnpm ≥10 会拒绝运行 `pr
 4. 像平常一样提问。普通问答照常走；一旦立了目标、登记了判断，系统自动进入知识模式：已知送上来，结论过证据才准入。只有你能做的决定才会来问你。
 
 <picture>
-  <img src="docs/shots/zh/jepa-ontology.png" alt="ClearAI 模式下的知识图谱" width="820">
+  <img src="docs/shots/zh/jepa-ontology.png" alt="ClearAI 模式下的「本体」一格" width="820">
 </picture>
 
-*ClearAI 模式下的本体图——这场真实会话长出 21 个概念、9 条谓词；同一份账本永远得到同一张图。*
+*[JEPA 世界模型](docs/cases/jepa-world-model.zh-CN.md)那场会话之后的「本体」一格：问题、进度轨、图，以及按状态分组的结论。*
 
 如果 PATH 上没有 pnpm：`npm install -g pnpm`（别用 `corepack enable`——它装的是版本转发器，可能下载一个自己启动不了的 pnpm）。
 
@@ -157,21 +157,28 @@ node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
 
 **交付**——结案时，各步收下的产物以 DSH 原生交付卡片出现；每轮改了哪些文件，看 DSH 原生的改动卡片。
 
-> 下面的截图来自改造前的界面，呈现阶段落地后重拍。
+**语言**——系统自己写的话（工具结果、运行态卡、问你的话、`clear/` 下的文件）都跟着你说话的语言走，中文或英文。面板跟着界面语言。
 
 <picture>
-  <img src="docs/shots/zh/jepa-band.png" alt="本体图带：本体图与实体图切换" width="820">
+  <img src="docs/shots/zh/jepa-ontology-graph.png" alt="本体图全屏" width="820">
 </picture>
 
-*图带——本体图与实体图共用同一份确定性投影，同一份账本永远得到同一张图；素材来自一场真实会话（21 概念 · 9 谓词）。*
+*本体图全屏。本体图与实体图来自 `clear/ontology/` 下文件的同一份确定性投影，同样的文件永远得到同一张图。*
+
+<picture>
+  <img src="docs/shots/zh/ns-refuted.png" alt="展开一条被推翻的判断" width="820">
+</picture>
+
+*[Navier–Stokes](docs/cases/navier-stokes.zh-CN.md) 那场会话里一条被推翻的判断：它停在检验这一站，记录留着原因。*
 
 ---
 
 ## 案例
 
-- [物理世界工艺实验](docs/cases/physical-experiment.zh-CN.md)——传感器热漂移：从立词到冲突现形的完整链路
-- [AI for Science](docs/cases/ai4sci.zh-CN.md)——WENO 重构的收敛阶，以及「分辨不出来」意味着什么
-- [数学探索](docs/cases/mathematics.zh-CN.md)——把有限数值证据与形式证明严格分开
+两个都是真模型从头跑到尾、中途没问人的会话；截图是在真 DSH 里回放它们拍的。
+
+- [JEPA 世界模型](docs/cases/jepa-world-model.zh-CN.md)：文献综述、交给独立评估者判的玩具实验，以及 21 个概念、8 种关系、27 个实体的本体
+- [Navier–Stokes 被解决了吗？](docs/cases/navier-stokes.zh-CN.md)：两条流行说法被推翻并保留，一次准入被拦后如实处理，以及 24 个概念、13 种关系、59 个实体的本体
 
 ---
 
