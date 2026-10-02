@@ -142,7 +142,7 @@ clear/ontology/
 | **On read** | Across files: duplicate ids, a parent / domain / range / entity type / relation object that points nowhere, single-valued conflicts | **Flagged, not blocked**: the faulty file stays off the graph and the problem is listed on the card and under the graph |
 | **On promotion** | Assertions about to enter long-term knowledge are rechecked against all files | **Not promoted**; the hypothesis stays in the "held" list |
 
-**Meaning changes are detected, not blocked.** Each fact carries fingerprints of the definitions it used; if those definition files change later, the fact is flagged "definition changed" under "to handle", and a person or the model decides whether to review it or keep it.
+**Meaning changes are detected, not blocked.** Each fact carries fingerprints of the definitions it used (the entries its assertions cite, plus concepts and relations its claim and scope mention by name); if those definition files change later, the fact is flagged "definition changed" under "to handle", and a person or the model decides whether to review it or keep it.
 
 **Deprecation**: write `status: "deprecated"` (optionally `replaced_by`) in the definition file. Old nodes stay on the graph (dashed); new assertions cannot cite them.
 
