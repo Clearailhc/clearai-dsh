@@ -110,11 +110,21 @@ ${item.prompt}
 
 ## 交回方式
 
-你的最后一条消息**只**包含一个 JSON 对象,符合下面的 schema,不要加任何解释或代码块标记:
+裁决是一个 JSON 对象,符合下面的 schema:
 
 \`\`\`json
 ${JSON.stringify(item.outputSchema)}
 \`\`\`
+
+判完之后,用这条命令把裁决交回(这是唯一允许你运行的命令;它只把裁决交给系统,不碰工作区):
+
+\`\`\`bash
+node ${CALL} ${runDir} --settle ${target} <<'EOF'
+{"structured": <你的裁决 JSON>}
+EOF
+\`\`\`
+
+看到 \`{"ok":true}\` 就结束;你的最后一条消息复述那个 JSON 即可。
 `
 	const file = join(runDir, `evaluator-${target}.md`)
 	writeFileSync(file, text)
