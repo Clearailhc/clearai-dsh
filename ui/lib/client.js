@@ -105,8 +105,8 @@ window.__ModuleLoader__.load({
 
 		/** 语言命名空间。表按**源文**索引:键就是中文原文,所以漏翻译一条只会退回中文,不会把 key 显示给人。 */
 		const LOCALE_NS = 'clearai'
-		const LOCALE_ZH = {" · 改过 ":" · 改过 "," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:"," 个断言的主语还没登记成实例。":" 个断言的主语还没登记成实例。"," 次":" 次"," 次评估者":" 次评估者"," 步":" 步"," 步)":" 步)"," 看核验记录":" 看核验记录"," 看核验过程":" 看核验过程"," 轮":" 轮","(点一下开右栏「世界树」)":"(点一下开右栏「世界树」)","(点一下开右栏「世界树」看拓扑)":"(点一下开右栏「世界树」看拓扑)","(缺)":"(缺)","clearai 面板:右栏页签类型注册失败 ":"clearai 面板:右栏页签类型注册失败 ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","」相关的":"」相关的","一句话":"一句话","一步检验":"一步检验","上位":"上位","下一步:找一步去检验它":"下一步:找一步去检验它","下一步:换个办法再检验":"下一步:换个办法再检验","下一步:独立核验通过 → 已验证":"下一步:独立核验通过 → 已验证","下一步:结案时写进长期知识":"下一步:结案时写进长期知识","下位":"下位","不确定":"不确定","世界树":"世界树","主语":"主语","事实":"事实","产物":"产物","人撤回":"人撤回","人放行":"人放行","代码":"代码","依据":"依据","值的形态":"值的形态","做什么":"做什么","入本体":"入本体","全屏":"全屏","全文在 ":"全文在 ","公式":"公式","关系":"关系","关闭":"关闭","写进长期知识":"写进长期知识","出自":"出自","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)","判据":"判据","判据:":"判据:","判断":"判断","原生预览打开它":"原生预览打开它","原生预览打开它(计划声明的产物)":"原生预览打开它(计划声明的产物)","取不到":"取不到","取值":"取值","只看与「":"只看与「","只看相关":"只看相关","可信度怎么变的":"可信度怎么变的","可复算":"可复算","命题":"命题","图组件不可用":"图组件不可用","在图上找它":"在图上找它","在检验这一站被推翻,不再往下走。":"在检验这一站被推翻,不再往下走。","实体图":"实体图","实体图还空着。":"实体图还空着。","实例":"实例","审批记录":"审批记录","已交付":"已交付","已作废":"已作废","已推翻":"已推翻","已提出":"已提出","已收尾 · 存档可看":"已收尾 · 存档可看","已替换":"已替换","已被替换,不再往下走。":"已被替换,不再往下走。","已验证":"已验证","引用":"引用","引用已有材料":"引用已有材料","待推进":"待推进","待核验":"待核验","打开「本体」那一格并展开这条结论":"打开「本体」那一格并展开这条结论","打开目标文档(原生预览)":"打开目标文档(原生预览)","打开计划文档(原生预览)":"打开计划文档(原生预览)","推翻":"推翻","提出":"提出","支持":"支持","收起":"收起","收起详情":"收起详情","放行":"放行","数值":"数值","暂无计划。建立后此处显示计划的步骤与闸门。":"暂无计划。建立后此处显示计划的步骤与闸门。","有 ":"有 ","有矛盾":"有矛盾","未声明":"未声明","本体":"本体","本体图":"本体图","本体图还空着。模型立词之后,概念和关系会长在这里。":"本体图还空着。模型立词之后,概念和关系会长在这里。","查看此步骤的证据":"查看此步骤的证据","查看步骤详情":"查看步骤详情","查看评估者":"查看评估者","检验":"检验","检验结果:":"检验结果:","概念":"概念","正在取…":"正在取…","正在裁决":"正在裁决","步 ":"步 ","清除":"清除","点击查看详情":"点击查看详情","点开看进度和来历":"点开看进度和来历","状态":"状态","独立核验":"独立核验","独立核验:":"独立核验:","用到它的结论":"用到它的结论","登记过的实例、写进长期知识的断言会出现在这里。":"登记过的实例、写进长期知识的断言会出现在这里。","盘上没有这个文件":"盘上没有这个文件","目标":"目标","相关":"相关","看核验":"看核验","看记录":"看记录","矛盾":"矛盾","第 n 步":"第 n 步","算错":"算错","类型":"类型","结论":"结论","结论照常可读。":"结论照常可读。","背景(不参与判定):":"背景(不参与判定):","自己推了一遍":"自己推了一遍","自己检验":"自己检验","范围":"范围","范围:":"范围:","补充":"补充","观测":"观测","计划":"计划","计划 ":"计划 ","计划受阻,等人处置":"计划受阻,等人处置","计划已交付 ":"计划已交付 ","计划已收尾(":"计划已收尾(","计划文档":"计划文档","计划的步骤与闸门":"计划的步骤与闸门","证据":"证据","评 ":"评 ","评估":"评估","评估卡":"评估卡","起过 ":"起过 ","还没有内容。发第一条消息后,这里显示本体图和结论。":"还没有内容。发第一条消息后,这里显示本体图和结论。","还没有立目标":"还没有立目标","还没有结论。模型立下判断之后,这里一行一条。":"还没有结论。模型立下判断之后,这里一行一条。","这一项已经不在当前的词里了(可能刚被废止)。":"这一项已经不在当前的词里了(可能刚被废止)。","这个词已废止,旧结论里的用法照样可读。":"这个词已废止,旧结论里的用法照样可读。","进度":"进度","退出全屏":"退出全屏","适配":"适配","释义":"释义","待处理":"待处理","待处理 ":"待处理 ","验证":"验证","验证中":"验证中"}
-		const LOCALE_EN = {" · 改过 ":" · changed "," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: "," 个断言的主语还没登记成实例。":" assertion subjects are not registered as instances yet. "," 次":" times"," 次评估者":" evaluators"," 步":" steps"," 步)":" steps)"," 看核验记录":" Review record"," 看核验过程":" Watch the review"," 轮":" rounds","(点一下开右栏「世界树」)":" (click to open the World Tree)","(点一下开右栏「世界树」看拓扑)":" (click to see the steps in the World Tree)","(缺)":" (missing)","clearai 面板:右栏页签类型注册失败 ":"clearai panel: failed to register the right-sidebar tab type ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","」相关的":"\"","一句话":"Statement","一步检验":"A test","上位":"Broader","下一步:找一步去检验它":"Next: test it in a step","下一步:换个办法再检验":"Next: test it another way","下一步:独立核验通过 → 已验证":"Next: independent check passes → Verified","下一步:结案时写进长期知识":"Next: written to long-term knowledge at close","下位":"Narrower","不确定":"Uncertain","世界树":"World Tree","主语":"Subject","事实":"Facts","产物":"Deliverables","人撤回":"Withdrawn by a person","人放行":"Released by a person","代码":"Code","依据":"Basis","值的形态":"Value form","做什么":"What it does","入本体":"In ontology","全屏":"Full screen","全文在 ":"Full text at ","公式":"Formula","关系":"Relation","关闭":"Close","写进长期知识":"Written to long-term knowledge","出自":"From","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"Switch back to an earlier World Tree (the plans are all still here, and their documents are archived under clear/goals/plans/)","判据":"Criterion","判据:":"Criterion: ","判断":"Judgment","原生预览打开它":"Open it in the native preview","原生预览打开它(计划声明的产物)":"Open it in the native preview (an artifact declared by the plan)","取不到":"Unavailable","取值":"Value","只看与「":"Only related to \"","只看相关":"Only related","可信度怎么变的":"How trust changed","可复算":"Reproducible","命题":"Propositions","图组件不可用":"The graph component is unavailable","在图上找它":"Find it on the graph","在检验这一站被推翻,不再往下走。":"Refuted at the test stage; it goes no further.","实体图":"Entity graph","实体图还空着。":"The entity graph is empty. ","实例":"Instances","审批记录":"approval record","已交付":"delivered","已作废":"voided","已推翻":"Refuted","已提出":"proposed","已收尾 · 存档可看":"closed · archived and readable","已替换":"Replaced","已被替换,不再往下走。":"Replaced; it goes no further.","已验证":"Verified","引用":"Reference","引用已有材料":"Cites existing material","待推进":"to advance","待核验":"Awaiting check","打开「本体」那一格并展开这条结论":"Open the Ontology pane and expand this conclusion","打开目标文档(原生预览)":"Open the goal document (native preview)","打开计划文档(原生预览)":"Open the plan document (native preview)","推翻":"Refute","提出":"Proposed","支持":"Support","收起":"Collapse","收起详情":"Collapse details","放行":"release","数值":"Quantity","暂无计划。建立后此处显示计划的步骤与闸门。":"No plan yet. Once created, its steps show here.","有 ":"","有矛盾":"Conflicting","未声明":"not declared","本体":"Ontology","本体图":"Ontology graph","本体图还空着。模型立词之后,概念和关系会长在这里。":"The ontology graph is empty. Concepts and relations appear once terms are defined.","查看此步骤的证据":"see the evidence for this step","查看步骤详情":"view step details","查看评估者":"view evaluator","检验":"Test","检验结果:":"Result: ","概念":"concepts","正在取…":"Loading…","正在裁决":"Deciding","步 ":"step ","清除":"Clear","点击查看详情":"click for details","点开看进度和来历":"Open to see progress and history","状态":"Status","独立核验":"Independent check","独立核验:":"Independent check: ","用到它的结论":"Conclusions using it","登记过的实例、写进长期知识的断言会出现在这里。":"Registered instances and assertions in long-term knowledge appear here.","盘上没有这个文件":"this file is not on disk","目标":"Goal","相关":"Related","看核验":"See check","看记录":"See record","矛盾":"Conflicts","第 n 步":"Step n","算错":"Wrong if","类型":"Type","结论":"CONCLUSIONS","结论照常可读。":"conclusions are still readable.","背景(不参与判定):":"Background (not part of the verdict): ","自己推了一遍":"Reasoned through alone","自己检验":"Self-tested","范围":"Scope","范围:":"Scope: ","补充":"More","观测":"Observation","计划":"Plan","计划 ":"Plan ","计划受阻,等人处置":"plan blocked, waiting for a person","计划已交付 ":"Plan delivered ","计划已收尾(":"Plan closed (","计划文档":"Plan document","计划的步骤与闸门":"Plan steps","证据":"Evidence","评 ":"E","评估":"Evaluation","评估卡":"evaluation card","起过 ":"ran ","还没有内容。发第一条消息后,这里显示本体图和结论。":"Nothing yet. After the first message, the graph and conclusions show here.","还没有立目标":"No goal yet","还没有结论。模型立下判断之后,这里一行一条。":"No conclusions yet. Each judgment gets one line here.","这一项已经不在当前的词里了(可能刚被废止)。":"This item is no longer in the vocabulary (it may have just been deprecated).","这个词已废止,旧结论里的用法照样可读。":"This term is deprecated; older conclusions still read fine.","进度":"Progress","退出全屏":"Exit full screen","适配":"Fit","释义":"Gloss","待处理":"To handle","待处理 ":"to handle ","验证":"Verification","验证中":"Testing"}
+		const LOCALE_ZH = {" · 改过 ":" · 改过 "," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:"," 次":" 次"," 次评估者":" 次评估者"," 步":" 步"," 步)":" 步)"," 看核验记录":" 看核验记录"," 看核验过程":" 看核验过程"," 轮":" 轮","(点一下开右栏「世界树」)":"(点一下开右栏「世界树」)","(点一下开右栏「世界树」看拓扑)":"(点一下开右栏「世界树」看拓扑)","(缺)":"(缺)","clearai 面板:右栏页签类型注册失败 ":"clearai 面板:右栏页签类型注册失败 ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","」相关的":"」相关的","一句话":"一句话","一步检验":"一步检验","上位":"上位","下一步:找一步去检验它":"下一步:找一步去检验它","下一步:换个办法再检验":"下一步:换个办法再检验","下一步:独立核验通过 → 已验证":"下一步:独立核验通过 → 已验证","下一步:结案时写进长期知识":"下一步:结案时写进长期知识","下位":"下位","不确定":"不确定","世界树":"世界树","主语":"主语","事实":"事实","产物":"产物","人撤回":"人撤回","人放行":"人放行","代码":"代码","依据":"依据","值的形态":"值的形态","做什么":"做什么","入本体":"入本体","全屏":"全屏","全文在 ":"全文在 ","公式":"公式","关系":"关系","关闭":"关闭","写进长期知识":"写进长期知识","出自":"出自","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)","判据":"判据","判据:":"判据:","判断":"判断","原生预览打开它":"原生预览打开它","原生预览打开它(计划声明的产物)":"原生预览打开它(计划声明的产物)","取不到":"取不到","取值":"取值","只看与「":"只看与「","只看相关":"只看相关","可信度怎么变的":"可信度怎么变的","可复算":"可复算","命题":"命题","图组件不可用":"图组件不可用","在图上找它":"在图上找它","在检验这一站被推翻,不再往下走。":"在检验这一站被推翻,不再往下走。","实体图":"实体图","实体图还空着。":"实体图还空着。","实例":"实例","审批记录":"审批记录","已交付":"已交付","已作废":"已作废","已推翻":"已推翻","已提出":"已提出","已收尾 · 存档可看":"已收尾 · 存档可看","已替换":"已替换","已被替换,不再往下走。":"已被替换,不再往下走。","已验证":"已验证","引用":"引用","引用已有材料":"引用已有材料","待推进":"待推进","待核验":"待核验","打开「本体」那一格并展开这条结论":"打开「本体」那一格并展开这条结论","打开目标文档(原生预览)":"打开目标文档(原生预览)","打开计划文档(原生预览)":"打开计划文档(原生预览)","推翻":"推翻","提出":"提出","支持":"支持","收起":"收起","收起详情":"收起详情","放行":"放行","数值":"数值","暂无计划。建立后此处显示计划的步骤与闸门。":"暂无计划。建立后此处显示计划的步骤与闸门。","有 ":"有 ","有矛盾":"有矛盾","未声明":"未声明","本体":"本体","本体图":"本体图","查看此步骤的证据":"查看此步骤的证据","查看步骤详情":"查看步骤详情","查看评估者":"查看评估者","检验":"检验","检验结果:":"检验结果:","概念":"概念","正在取…":"正在取…","正在裁决":"正在裁决","步 ":"步 ","清除":"清除","点击查看详情":"点击查看详情","点开看进度和来历":"点开看进度和来历","状态":"状态","独立核验":"独立核验","独立核验:":"独立核验:","用到它的结论":"用到它的结论","盘上没有这个文件":"盘上没有这个文件","目标":"目标","相关":"相关","看核验":"看核验","看记录":"看记录","矛盾":"矛盾","第 n 步":"第 n 步","算错":"算错","类型":"类型","结论":"结论","结论照常可读。":"结论照常可读。","背景(不参与判定):":"背景(不参与判定):","自己推了一遍":"自己推了一遍","自己检验":"自己检验","范围":"范围","范围:":"范围:","补充":"补充","观测":"观测","计划":"计划","计划 ":"计划 ","计划受阻,等人处置":"计划受阻,等人处置","计划已交付 ":"计划已交付 ","计划已收尾(":"计划已收尾(","计划文档":"计划文档","计划的步骤与闸门":"计划的步骤与闸门","证据":"证据","评 ":"评 ","评估":"评估","评估卡":"评估卡","起过 ":"起过 ","还没有内容。发第一条消息后,这里显示本体图和结论。":"还没有内容。发第一条消息后,这里显示本体图和结论。","还没有立目标":"还没有立目标","还没有结论。模型立下判断之后,这里一行一条。":"还没有结论。模型立下判断之后,这里一行一条。","这一项已经不在当前的词里了(可能刚被废止)。":"这一项已经不在当前的词里了(可能刚被废止)。","这个词已废止,旧结论里的用法照样可读。":"这个词已废止,旧结论里的用法照样可读。","进度":"进度","退出全屏":"退出全屏","适配":"适配","释义":"释义","待处理":"待处理","待处理 ":"待处理 ","验证":"验证","验证中":"验证中","展开下一层":"展开下一层","收起下一层":"收起下一层","本体文件有 ":"本体文件有 "," 处问题(这些不进图)":" 处问题(这些不进图)"," 个断言的主语还没写成实体文件。":" 个断言的主语还没写成实体文件。","clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。":"clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。","本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。":"本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。"}
+		const LOCALE_EN = {" · 改过 ":" · changed "," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: "," 次":" times"," 次评估者":" evaluators"," 步":" steps"," 步)":" steps)"," 看核验记录":" Review record"," 看核验过程":" Watch the review"," 轮":" rounds","(点一下开右栏「世界树」)":" (click to open the World Tree)","(点一下开右栏「世界树」看拓扑)":" (click to see the steps in the World Tree)","(缺)":" (missing)","clearai 面板:右栏页签类型注册失败 ":"clearai panel: failed to register the right-sidebar tab type ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","」相关的":"\"","一句话":"Statement","一步检验":"A test","上位":"Broader","下一步:找一步去检验它":"Next: test it in a step","下一步:换个办法再检验":"Next: test it another way","下一步:独立核验通过 → 已验证":"Next: independent check passes → Verified","下一步:结案时写进长期知识":"Next: written to long-term knowledge at close","下位":"Narrower","不确定":"Uncertain","世界树":"World Tree","主语":"Subject","事实":"Facts","产物":"Deliverables","人撤回":"Withdrawn by a person","人放行":"Released by a person","代码":"Code","依据":"Basis","值的形态":"Value form","做什么":"What it does","入本体":"In ontology","全屏":"Full screen","全文在 ":"Full text at ","公式":"Formula","关系":"Relation","关闭":"Close","写进长期知识":"Written to long-term knowledge","出自":"From","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"Switch back to an earlier World Tree (the plans are all still here, and their documents are archived under clear/goals/plans/)","判据":"Criterion","判据:":"Criterion: ","判断":"Judgment","原生预览打开它":"Open it in the native preview","原生预览打开它(计划声明的产物)":"Open it in the native preview (an artifact declared by the plan)","取不到":"Unavailable","取值":"Value","只看与「":"Only related to \"","只看相关":"Only related","可信度怎么变的":"How trust changed","可复算":"Reproducible","命题":"Propositions","图组件不可用":"The graph component is unavailable","在图上找它":"Find it on the graph","在检验这一站被推翻,不再往下走。":"Refuted at the test stage; it goes no further.","实体图":"Entity graph","实体图还空着。":"The entity graph is empty. ","实例":"Instances","审批记录":"approval record","已交付":"delivered","已作废":"voided","已推翻":"Refuted","已提出":"proposed","已收尾 · 存档可看":"closed · archived and readable","已替换":"Replaced","已被替换,不再往下走。":"Replaced; it goes no further.","已验证":"Verified","引用":"Reference","引用已有材料":"Cites existing material","待推进":"to advance","待核验":"Awaiting check","打开「本体」那一格并展开这条结论":"Open the Ontology pane and expand this conclusion","打开目标文档(原生预览)":"Open the goal document (native preview)","打开计划文档(原生预览)":"Open the plan document (native preview)","推翻":"Refute","提出":"Proposed","支持":"Support","收起":"Collapse","收起详情":"Collapse details","放行":"release","数值":"Quantity","暂无计划。建立后此处显示计划的步骤与闸门。":"No plan yet. Once created, its steps show here.","有 ":"","有矛盾":"Conflicting","未声明":"not declared","本体":"Ontology","本体图":"Ontology graph","查看此步骤的证据":"see the evidence for this step","查看步骤详情":"view step details","查看评估者":"view evaluator","检验":"Test","检验结果:":"Result: ","概念":"concepts","正在取…":"Loading…","正在裁决":"Deciding","步 ":"step ","清除":"Clear","点击查看详情":"click for details","点开看进度和来历":"Open to see progress and history","状态":"Status","独立核验":"Independent check","独立核验:":"Independent check: ","用到它的结论":"Conclusions using it","盘上没有这个文件":"this file is not on disk","目标":"Goal","相关":"Related","看核验":"See check","看记录":"See record","矛盾":"Conflicts","第 n 步":"Step n","算错":"Wrong if","类型":"Type","结论":"CONCLUSIONS","结论照常可读。":"conclusions are still readable.","背景(不参与判定):":"Background (not part of the verdict): ","自己推了一遍":"Reasoned through alone","自己检验":"Self-tested","范围":"Scope","范围:":"Scope: ","补充":"More","观测":"Observation","计划":"Plan","计划 ":"Plan ","计划受阻,等人处置":"plan blocked, waiting for a person","计划已交付 ":"Plan delivered ","计划已收尾(":"Plan closed (","计划文档":"Plan document","计划的步骤与闸门":"Plan steps","证据":"Evidence","评 ":"E","评估":"Evaluation","评估卡":"evaluation card","起过 ":"ran ","还没有内容。发第一条消息后,这里显示本体图和结论。":"Nothing yet. After the first message, the graph and conclusions show here.","还没有立目标":"No goal yet","还没有结论。模型立下判断之后,这里一行一条。":"No conclusions yet. Each judgment gets one line here.","这一项已经不在当前的词里了(可能刚被废止)。":"This item is no longer in the vocabulary (it may have just been deprecated).","这个词已废止,旧结论里的用法照样可读。":"This term is deprecated; older conclusions still read fine.","进度":"Progress","退出全屏":"Exit full screen","适配":"Fit","释义":"Gloss","待处理":"To handle","待处理 ":"to handle ","验证":"Verification","验证中":"Testing","展开下一层":"Expand the next level","收起下一层":"Collapse the next level","本体文件有 ":"Ontology files have "," 处问题(这些不进图)":" problems (these stay off the graph)"," 个断言的主语还没写成实体文件。":" assertion subjects have no entity file yet. ","clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。":"Entity files under clear/ontology/entities/ and assertions in long-term knowledge appear here.","本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。":"The ontology graph is empty. Concepts and relations appear once the model writes files under clear/ontology/concepts/ and relations/."}
 
 		/**
 		 * 翻译函数:**由原生 locale 座位绑定**(`ctx.locale.bind`),不是我们自建的一套 i18n。
@@ -238,6 +238,8 @@ window.__ModuleLoader__.load({
 .clearai-graph[data-full="1"] .clearai-graph-canvas{height:auto;flex:1 1 auto;min-width:0}
 .clearai-graph-side{flex:0 0 auto}
 .clearai-graph-body[data-side="1"] .clearai-graph-side{width:380px;overflow-y:auto}
+.clearai-graph-problems{margin-top:6px;font-size:11.5px;color:var(--dsw-alias-label-secondary)}.clearai-graph-problems summary{cursor:pointer;color:var(--dsw-alias-state-warn-primary)}.clearai-graph-problems>div{padding:2px 0 2px 12px;line-height:1.5}.clearai-graph-problems>div[data-sev=info]{opacity:.7}.clearai-graph-problems code{font-size:11px}
+.clearai-fold{margin-left:2px;padding:0 4px;border-radius:6px;font-weight:500;font-size:10.5px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-l2,rgba(127,127,127,.12));cursor:pointer}
 .clearai-graph-empty{height:150px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;border:.5px dashed var(--dsw-alias-border-l3);border-radius:10px;color:var(--dsw-alias-label-secondary);font-size:12.5px}
 .react-flow__node.clearai-star-node .react-flow__handle{opacity:0;pointer-events:none;left:4.5px;top:50%;transform:translate(-50%,-50%);min-width:0;min-height:0;width:1px;height:1px;border:0}
 .react-flow__node.clearai-star-node.selected,.react-flow__node.clearai-star-node:focus{box-shadow:none;outline:none}
@@ -1834,9 +1836,73 @@ window.__ModuleLoader__.load({
 			const graph = lexicon?.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
 			const conflicts = Array.isArray(lexicon?.conflicts) ? lexicon.conflicts : []
 			const conflicted = new Set(conflicts.flatMap((item) => item.sides.map((side) => side.fact)).filter((id) => typeof id === 'string'))
-			const allNodes = graph.nodes.filter((node) => node.layer === layer)
-			const allEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
-			const nodeById = new Map(allNodes.map((node) => [node.id, node]))
+			const layerNodes = graph.nodes.filter((node) => node.layer === layer)
+			const layerEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
+			const nodeById = new Map(layerNodes.map((node) => [node.id, node]))
+			const problems = Array.isArray(lexicon?.problems) ? lexicon.problems : []
+
+			/**
+			 * **目录嵌套就是子图**:概念的父是 `node.parent`(is_a),实体的父是 `node.container`(组成)。
+			 * 一个父可以收起,收起后它的整棵子树藏起来,子树上的边改连到这个父身上(去掉自环、去重)。
+			 * 点多(> 40)时默认收到第一层,点开 +N 再往下看;点少时全展开。
+			 */
+			const parentOf = (node) => {
+				const id = node.kind === 'concept' ? (typeof node.parent === 'string' && node.parent !== '' ? `term:${node.parent}` : null) : (node.container ?? null)
+				return id !== null && id !== node.id && nodeById.has(id) ? id : null
+			}
+			const parentById = new Map(layerNodes.map((node) => [node.id, parentOf(node)]))
+			const childCount = new Map()
+			for (const [, parent] of parentById) if (parent !== null) childCount.set(parent, (childCount.get(parent) ?? 0) + 1)
+			const depthOfNode = (id) => {
+				let depth = 0
+				const seen = new Set([id])
+				for (let at = parentById.get(id); at !== null && at !== undefined && !seen.has(at); at = parentById.get(at)) {
+					seen.add(at)
+					depth += 1
+				}
+				return depth
+			}
+			const [toggled, setToggled] = React.useState({})
+			React.useEffect(() => {
+				setToggled({})
+			}, [layer])
+			const crowded = layerNodes.length > 40
+			const isCollapsed = (id) => (childCount.get(id) ?? 0) > 0 && (toggled[id] ?? (crowded && depthOfNode(id) >= 1))
+			/** 往上找第一个没被收起的祖先挡住的点:自己可见就是自己。 */
+			const shownAs = (id) => {
+				let shown = id
+				const seen = new Set([id])
+				for (let at = parentById.get(id); at !== null && at !== undefined && !seen.has(at); at = parentById.get(at)) {
+					seen.add(at)
+					if (isCollapsed(at)) shown = at
+				}
+				return shown
+			}
+			const hiddenUnder = new Map()
+			for (const node of layerNodes) {
+				const shown = shownAs(node.id)
+				if (shown !== node.id) hiddenUnder.set(shown, (hiddenUnder.get(shown) ?? 0) + 1)
+			}
+			const allNodes = layerNodes.filter((node) => shownAs(node.id) === node.id)
+			const allEdges = (() => {
+				const out = []
+				const seen = new Set()
+				for (const edge of layerEdges) {
+					const from = nodeById.has(edge.from) ? shownAs(edge.from) : edge.from
+					const to = nodeById.has(edge.to) ? shownAs(edge.to) : edge.to
+					if (from === to) continue
+					if (from === edge.from && to === edge.to) {
+						out.push(edge)
+						continue
+					}
+					const key = `${edge.kind}|${edge.label ?? ''}|${from}|${to}`
+					if (seen.has(key)) continue
+					seen.add(key)
+					out.push({ ...edge, id: `${edge.id}@${from}>${to}`, from, to })
+				}
+				return out
+			})()
+			const toggle = (id) => setToggled((current) => ({ ...current, [id]: !isCollapsed(id) }))
 			const countOf = (name) => graph.nodes.filter((node) => node.layer === name).length
 			const entityNames = new Map(graph.nodes.filter((node) => node.kind === 'instance' && typeof node.ref === 'string' && node.ref !== '' && node.label !== node.ref).map((node) => [String(node.ref), String(node.label)]))
 
@@ -1851,7 +1917,7 @@ window.__ModuleLoader__.load({
 			 * React Flow 内部的拖动没有地方落地,节点根本拖不动。位置是界面状态,换层或图变了就清掉。
 			 */
 			const [dragged, setDragged] = React.useState({})
-			const graphKey = `${layer}|${allNodes.length}|${allEdges.length}`
+			const graphKey = `${layer}|${layerNodes.length}|${layerEdges.length}`
 			React.useEffect(() => {
 				setDragged({})
 			}, [graphKey])
@@ -1919,6 +1985,20 @@ window.__ModuleLoader__.load({
 							{ className: 'clearai-star', 'data-kind': node.kind, 'data-state': nodeState(node), 'data-sel': node.id === selectedId ? '1' : '0' },
 							h('i', null),
 							h('span', null, trimLabel(node.kind === 'value_type' ? (FORM_WORD[node.ref] ?? node.label ?? node.ref) : (node.label ?? node.ref ?? node.id), 16)),
+							(childCount.get(node.id) ?? 0) > 0
+								? h(
+										'b',
+										{
+											className: 'clearai-fold',
+											title: isCollapsed(node.id) ? t('展开下一层') : t('收起下一层'),
+											onClick: (event) => {
+												event.stopPropagation()
+												toggle(node.id)
+											},
+										},
+										isCollapsed(node.id) ? `+${hiddenUnder.get(node.id) ?? 0}` : '−',
+									)
+								: null,
 						),
 					},
 					className: 'clearai-star-node',
@@ -1985,8 +2065,8 @@ window.__ModuleLoader__.load({
 			const sideBySide = fullscreen === true
 			const empty =
 				layer === 'entity'
-					? `${typeof unlanded === 'number' && unlanded > 0 ? `${t('有 ')}${unlanded}${t(' 个断言的主语还没登记成实例。')}` : t('实体图还空着。')}${t('登记过的实例、写进长期知识的断言会出现在这里。')}`
-					: t('本体图还空着。模型立词之后,概念和关系会长在这里。')
+					? `${typeof unlanded === 'number' && unlanded > 0 ? `${t('有 ')}${unlanded}${t(' 个断言的主语还没写成实体文件。')}` : t('实体图还空着。')}${t('clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。')}`
+					: t('本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。')
 			return h(
 				'div',
 				{ className: 'clearai-graph', 'data-full': fullscreen === true ? '1' : '0' },
@@ -2056,6 +2136,18 @@ window.__ModuleLoader__.load({
 								h(GraphInspector, { selection: inspection, sessionId, names: entityNames, onFilter: () => onFilter(filterTarget), onClose: () => setPicked(null) }),
 							),
 				),
+				/** 读时的跨文件检查只标不拦:有问题的那一份不进图,这里说清是哪个文件、哪里不对。 */
+				problems.length === 0
+					? null
+					: h(
+							'details',
+							{ className: 'clearai-graph-problems' },
+							h('summary', null, `${t('本体文件有 ')}${problems.length}${t(' 处问题(这些不进图)')}`),
+							...problems.slice(0, 12).map((item, index) =>
+								h('div', { key: `${item.path ?? ''}#${index}`, 'data-sev': item.severity === 'error' ? 'error' : item.severity === 'info' ? 'info' : 'warning' }, h('code', null, String(item.path ?? '')), ` ${String(item.detail ?? item.code ?? '')}`),
+							),
+							problems.length > 12 ? h('div', null, `… ${problems.length - 12}`) : null,
+						),
 			)
 		}
 

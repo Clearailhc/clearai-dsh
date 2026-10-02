@@ -730,9 +730,35 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const entityEmpty = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
 			check('实体图空态说人话(不点名内部工具)', entityEmpty.includes('实体图还空着') && !entityEmpty.includes('RegisterInstance'), entityEmpty.slice(0, 200))
 			const unlanded = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'entity', unlanded: 3, fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
-			check('实体图空着但有断言没落地:说清有几个', unlanded.includes('3') && unlanded.includes('还没登记成实例'), unlanded.slice(0, 200))
+			check('实体图空着但有断言没落地:说清有几个', unlanded.includes('3') && unlanded.includes('还没写成实体文件'), unlanded.slice(0, 200))
 			const ontoEmpty = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'ontology', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
 			check('本体图空态与实体图可区分', ontoEmpty.includes('本体图还空着'), ontoEmpty.slice(0, 200))
+			check('本体图空态指向本体文件', ontoEmpty.includes('clear/ontology/concepts/'), ontoEmpty.slice(0, 200))
+		}
+		{
+			/** 目录嵌套就是子图:45 个点(1 根 · 4 枝 · 每枝 10 叶),点多默认收到第一层,跨枝的边改连到枝上。 */
+			const node = (id, parent) => ({ id: `term:${id}`, kind: 'concept', layer: 'ontology', ref: id, label: id, status: 'admitted', parent, x: 0, y: 0 })
+			const nodes = [node('root', null)]
+			for (let branch = 0; branch < 4; branch += 1) {
+				nodes.push(node(`b${branch}`, 'root'))
+				for (let leaf = 0; leaf < 10; leaf += 1) nodes.push(node(`b${branch}l${leaf}`, `b${branch}`))
+			}
+			const edges = [
+				...nodes.filter((item) => item.parent !== null).map((item) => ({ id: `is_a:${item.ref}`, kind: 'is_a', layer: 'ontology', from: item.id, to: `term:${item.parent}` })),
+				{ id: 'rel:x', kind: 'relation', layer: 'ontology', label: '依赖', from: 'term:b0l3', to: 'term:b1l7' },
+				{ id: 'rel:y', kind: 'relation', layer: 'ontology', label: '依赖', from: 'term:b0l4', to: 'term:b1l2' },
+			]
+			const problems = [{ path: 'clear/ontology/relations/bad.json', id: 'bad', code: 'dangling_range', detail: '值域「nope」没有对应的概念文件', severity: 'warning' }]
+			const tree = expandTree(components.GraphBand({ lexicon: { graph: { nodes, edges, bounds: { width: 800, height: 600 } }, conflicts: [], problems }, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
+			check('点多(> 40)默认收到第一层:只剩根和四枝', flow?.props?.nodes?.length === 5, String(flow?.props?.nodes?.length))
+			const branchLabel = String(flatNode(walkNodes([flow?.props?.nodes?.find((item) => item.id === 'term:b0')?.data?.label])))
+			check('收起的枝标出藏了几个(+10)', branchLabel.includes('+10'), branchLabel)
+			const crossing = (flow?.props?.edges ?? []).filter((edge) => edge.source === 'term:b0' && edge.target === 'term:b1')
+			check('藏起来的叶子之间的边改连到枝上,同类边去重', crossing.length === 1, JSON.stringify(flow?.props?.edges?.map((edge) => `${edge.source}>${edge.target}`)))
+			check('不留自环', (flow?.props?.edges ?? []).every((edge) => edge.source !== edge.target))
+			const text = String(flatNode(tree))
+			check('读时查出的文件问题列在图下,说清哪个文件', text.includes('本体文件有 1 处问题') && text.includes('clear/ontology/relations/bad.json'), text.slice(-300))
 		}
 		{
 			const many = (count) => Array.from({ length: count }, (_, index) => ({ id: `term:t${String(index).padStart(2, '0')}`, kind: 'concept', layer: 'ontology', ref: `t${index}`, label: `概念${String(index).padStart(2, '0')}`, status: 'admitted', x: (index % 8) * 200, y: Math.floor(index / 8) * 120 }))
