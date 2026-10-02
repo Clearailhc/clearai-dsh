@@ -8,11 +8,11 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **73**
-- By status: Implemented 53 · Design only 1 · Removed 19
-- By strength: Hard boundary 43 · Advisory 8 · Native 3 · Deprecated 19
-- By destination: stays design-only 1 · deleted and accounted 19
-- Actually blocking execution: **20**
+- Mechanisms: **74**
+- By status: Implemented 53 · Design only 1 · Removed 20
+- By strength: Hard boundary 43 · Advisory 8 · Native 3 · Deprecated 20
+- By destination: stays design-only 1 · deleted and accounted 20
+- Actually blocking execution: **21**
 - Carrying a known mismatch between docs/comments and code: **1**
 
 ## Code constant snapshot
@@ -20,8 +20,8 @@ This table answers one question: **what the current code actually guarantees**. 
 This section is exported from code, not written by hand:
 
 - Mechanisms: 3 (goal / plan / ontology)
-- Intent tools: 19 (Frame Conclude CreatePlan CheckPlan AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate RegisterInstance Assert ExplainLevelSkip QueryKnowledge)
-- Config keys: 15
+- Intent tools: 10 (Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Define Deprecate RegisterInstance Assert)
+- Config keys: 13
 - Prompt sections: 21 defined, 21 mounted at any moment
 
 ## Summary
@@ -36,7 +36,7 @@ This section is exported from code, not written by hand:
 | `plan-review` | Removed: plan review stamp | Epistemic | Removed | Deprecated | None | human | no | — |
 | `plan-reauthorize` | Removed: re-present a plan for review | Epistemic | Removed | Deprecated | None | model | no | — |
 | `advance-plan` | AdvancePlan: the only completion verb | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | `preset/plugins/clearai-kernel.js AdvancePlan` |
-| `plan-amend-no-progress` | Amend/Refine/Void do not move progress | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js AmendPlan` |
+| `plan-amend-no-progress` | RevisePlan (add / refine / void) does not move progress | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js RevisePlan` |
 | `admission` | Admission: intake only, never a verdict | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js admission` |
 | `self-judge-limit` | Self-judgement capped at L2 | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js SELF_JUDGE_MAX_INDEX=2` |
 | `independent-evaluator` | Independent evaluator, fresh context, read-only face | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js runEvaluator / resolveToolFace / evaluatorPrompt / writeAuditCard` |
@@ -59,10 +59,11 @@ This section is exported from code, not written by hand:
 | `assertion-validation` | Assertion shape validation (before anything lands) | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | Ontology and entity graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js graphProjection` |
-| `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js RegisterTerm` |
+| `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Define` |
 | `entity-registration` | Entity registration (instances as a first-class write path) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js RegisterInstance` |
 | `entity-assertion` | Entity assertion (edge holds on record) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Assert` |
-| `level-skip-reason` | Level skips need a named reason | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js ExplainLevelSkip` |
+| `entity-gate` | Entity gate (the only structural gate at Conclude) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
+| `level-skip-reason` | Removed: level skips need a named reason | Epistemic | Removed | Deprecated | None | model | no | — |
 | `criteria-revision-gate` | Criterion revisions need an independent verdict | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Frame` |
 | `audit-digest-reuse` | Verdicts are reused by material digest (same state, no re-dispatch) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js auditDigest` |
 | `artifact-path-exclusive` | Exclusive artifact paths (no two steps in a plan declare the same artefact) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js validateSteps` |
@@ -146,7 +147,7 @@ This section is exported from code, not written by hand:
 ### `criteria-required` · Criteria-before-work enforcement
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: CreatePlan / AmendPlan 校验步骤
+- **Trigger**: CreatePlan / RevisePlan(add) 校验步骤
 - **Input**: steps[].done_criteria
 - **Output**: 装配期拒绝：缺少判据、长度 < 4、或判据自指
 - **Blocks execution**: yes
@@ -155,7 +156,7 @@ This section is exported from code, not written by hand:
 - **Code**: preset/plugins/clearai-kernel.js validateSteps; CreatePlan 调用点
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/plan-governance · **Docs**: docs/epistemic-loop.zh-CN.md
-- **Known mismatch**: 「每条进入系统的路径都校验判据」靠**测试**维持,不由类型保证:正常入口(`CreatePlan` / `AmendPlan` 经 `validateSteps`)强制判据,而旧会话日志、内部构造的计划对象、以及将来新增的入口不受它约束。
+- **Known mismatch**: 「每条进入系统的路径都校验判据」靠**测试**维持,不由类型保证:正常入口(`CreatePlan` / `RevisePlan(add)` 经 `validateSteps`)强制判据,而旧会话日志、内部构造的计划对象、以及将来新增的入口不受它约束。
 
 ### `formal-plan` · Formal plan
 
@@ -207,16 +208,16 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: blockedThreshold, l4RequiresHumanRelease, l4RejectSelfWritten
 - **Prompt**: clearai/loop-contract · **Docs**: docs/loop-philosophy.zh-CN.md
 
-### `plan-amend-no-progress` · Amend/Refine/Void do not move progress
+### `plan-amend-no-progress` · RevisePlan (add / refine / void) does not move progress
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
-- **Trigger**: 模型调用三者之一
+- **Trigger**: 模型调用 RevisePlan 的三种动作之一
 - **Input**: 步骤增补 / 判据修订 / 作废理由
 - **Output**: plan/amended, plan/refined, plan/voided（进度不变）
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。
-- **Code**: preset/plugins/clearai-kernel.js AmendPlan; RefinePlan; VoidPlanStep; ui/lib/fold.js/323/330
+- **Rationale**: 进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口(第四阶段把 AmendPlan / RefinePlan / VoidPlanStep 合并为 RevisePlan,各自的校验不变,变更事件名不变)。
+- **Code**: preset/plugins/clearai-kernel.js RevisePlan; ui/lib/fold.js/323/330
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/plan-governance · **Docs**: docs/loop-philosophy.zh-CN.md
 
@@ -306,7 +307,7 @@ This section is exported from code, not written by hand:
 - **Blocks execution**: no
 - **Native alternative**: none
 - **Rationale**: 被推翻的假设是资产：它记录了此路不通。
-- **Code**: ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js VoidPlanStep
+- **Code**: ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js RevisePlan
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/context-discipline · **Docs**: docs/loop-philosophy.zh-CN.md
 
@@ -750,13 +751,13 @@ This section is exported from code, not written by hand:
 ### `verification-lifecycle` · Verification lifecycle: which guarantees are live
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: system
-- **Trigger**: 拿不到裁决 / 判不了交付成不成立 / 某条假设跳过了低等级
-- **Output**: block/counted ⇒ plan/blocked ⇒ 当场问人;untouchedLevels(派生读数)
+- **Trigger**: 拿不到裁决 / 判不了交付成不成立
+- **Output**: block/counted ⇒ plan/blocked ⇒ 当场问人
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状;③「跳级」只记事实:从没走过的等级是一条派生读数。
-- **Code**: preset/plugins/clearai-kernel.js countBlock; ui/lib/fold.js untouchedLevels; docs/verification-loop.md
-- **Tests**: test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级读数); test/ontology.test.mjs(状态表逐行有落点) · **Config**: —
+- **Rationale**: 文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行;「从没走过的等级」这条读数第四阶段删了。
+- **Code**: preset/plugins/clearai-kernel.js countBlock; docs/verification-loop.md
+- **Tests**: test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级理由整套删除); test/ontology.test.mjs(状态表逐行有落点) · **Config**: —
 - **Prompt**: — · **Docs**: docs/verification-loop.md
 
 ### `fact-retraction` · Fact retraction by human decision
@@ -901,13 +902,13 @@ This section is exported from code, not written by hand:
 ### `ontology-verbs` · Named verbs for the domain vocabulary, and the shelf
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
-- **Trigger**: 模型调用 RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge
-- **Input**: id / label / gloss / domain / range / functional / basis / reason
+- **Trigger**: 模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate
+- **Input**: id / label / gloss / aliases / parent / domain / range / functional / basis / reason
 - **Output**: mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id。
-- **Code**: preset/plugins/clearai-kernel.js RegisterTerm; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
+- **Rationale**: 词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id——同 id 再定义只许改名字、释义、别名。第四阶段把六个写入口合并成 Define / Deprecate、删掉只读的 QueryKnowledge(知识预检已把相关已知送进运行态卡),变更事件名不变。
+- **Code**: preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/domain-language · **Docs**: docs/domain-ontology.zh-CN.md
 
@@ -950,18 +951,30 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: preset/plugins/prompts.js clearai/domain-language · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `level-skip-reason` · Level skips need a named reason
+### `entity-gate` · Entity gate (the only structural gate at Conclude)
 
-- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
-- **Trigger**: 模型调 ExplainLevelSkip；或结案时缺口 levels_skipped 存在
-- **Input**: {hypothesis, levels[], reason}
-- **Output**: level/skipped 变更 → hypotheses[].skips[]；缺口 levels_skipped 随之消失
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: Conclude(achieved),知识模式下,在派评估者之前
+- **Input**: 将要升格的判断(达门槛、无推翻)的断言主体
+- **Output**: 有主体不是实体图节点 ⇒ 拒(entities_unlanded),点名判断与主体;否则放行去独立评估
+- **Blocks execution**: yes
+- **Native alternative**: none
+- **Rationale**: 「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不再要求另用 Assert 把同一句话说一遍。第四阶段把关口从三道收到这一道。
+- **Code**: preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph
+- **Tests**: test/kernel.test.mjs(实体门); test/contrast.test.mjs(B 组) · **Config**: requireLandedEntities
+- **Prompt**: preset/plugins/prompts.js clearai/domain-language · **Docs**: docs/less-is-more-plan.zh-CN.md
+
+### `level-skip-reason` · Removed: level skips need a named reason
+
+- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
+- **Trigger**: —
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: supportedLevel 只是支持证据的最大值，所以"一路只在最贵那一级交付"本来零代价；跳级不违规，但必须说清这一级为什么不适用，理由要点到该检查的对象名。
-- **Code**: preset/plugins/clearai-kernel.js ExplainLevelSkip; ui/lib/fold.js deriveKnowledge
-- **Tests**: test/contrast.test.mjs · **Config**: requireLevelReasons
-- **Prompt**: preset/plugins/prompts.js clearai/loop-contract · **Docs**: docs/verification-loop.zh-CN.md
+- **Rationale**: 第四阶段整套删除(ExplainLevelSkip、level/skipped、untouchedLevels、levels_skipped 缺口与 requireLevelReasons 门):第三阶段重跑里它让小任务结案时多被拦一次、多写一段理由,而等级的职责只有两件——谁来判,以及 L4 要人放行。旧日志里的 level/skipped 安静跳过。
+- **Destination**: deleted and accounted
+- **Code**: —
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `criteria-revision-gate` · Criterion revisions need an independent verdict
 
@@ -1018,7 +1031,7 @@ This section is exported from code, not written by hand:
 ### `artifact-path-exclusive` · Exclusive artifact paths (no two steps in a plan declare the same artefact)
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: CreatePlan / AmendPlan
+- **Trigger**: CreatePlan / RevisePlan(add)
 - **Input**: 步骤的 artifacts
 - **Output**: 撞上已有步骤(作废的不算)的产物路径即拒
 - **Blocks execution**: yes

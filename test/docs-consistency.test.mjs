@@ -66,7 +66,7 @@ const BANNED = [
 	{ pattern: /(6\s*\/\s*512|6 轮 vs 512|人在场 6 \/ 无人值守 512|attended: 6|unattended: 512)/, why: '两档额度(6/512)已删除,现在只有 DEFAULT_MAX_AUTO_TURNS=128' },
 	{ pattern: /(Goal 档自动确认|立约即授权|无人值守.{0,6}自动确认|unattended.{0,12}auto-?confirm)/, why: '计划授权没有自动确认分支;confirmed_by 只有 user 与 progress' },
 	{ pattern: /(无\s*done_criteria.{0,12}绕过|不经独立评估|bypassed by "no criteria")/, why: '正常 CreatePlan 入口已由 validateSteps 强制判据' },
-	{ pattern: /run\.current_step/, why: 'DSH 里不存在这个字段;事实源是 CheckPlan 与运行态卡' },
+	{ pattern: /run\.current_step/, why: 'DSH 里不存在这个字段;事实源是运行态卡' },
 	{ pattern: /全程中文/, why: '提示词已改为跟随用户语言' },
 	{ pattern: /(通用 L4.{0,8}(已|全部)实现|universal L4 gate.{0,10}implemented)/, why: 'L4 人门只覆盖步骤/分支级' },
 	{ pattern: /(八状态机.{0,6}已实现|eight-state machine.{0,10}shipped)/, why: '八状态验证机仍是设计目标' },

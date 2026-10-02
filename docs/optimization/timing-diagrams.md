@@ -12,7 +12,7 @@
 | **Human** | The user. Only they can do two things: answer the questions the system asks on the spot (L4 release, a stuck plan, a refuted fact), and submit an ontology verb on the panel | not a system component |
 | **Model** | The LLM reasoner. It **emits intent** (tool calls, answers) and executes nothing | not "the agent system"; it touches neither the ledger nor files — everything passes through the host |
 | **DSH host** | The engine: the turn loop, tool dispatch, sandbox and approvals, subagents, the goals service (native goal and continuation), userQuestions (the native question card), writing the session log | makes no epistemic judgments; it does not know "what may be believed" |
-| **ClearAI kernel** | The preset plugin: 19 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
+| **ClearAI kernel** | The preset plugin: 10 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
 | **Fact ledger** | The append-only record of facts. **The content is ours**: clearai mutation events + `clear/` artifacts and evaluation cards; **the carrier is the host's**: the session log + the filesystem. It stores no conclusions — "what may be believed now" is folded out of it by the projection | not a second state book; state is not "read" from it but "folded" out of it |
 | **Projection** | The host-side half `ui/lib`: fold (ledger → state) + derive (state → views) + the panel. **Reads the ledger, never writes** | not a cache, not a copy — one view of the same facts |
 | **Independent evaluator** | A fresh-context read-only subagent dispatched by the kernel via the host (L3+), returning a structured verdict through `outputSchema` | not the executor's twin; the other half of doer ≠ judge |
@@ -224,8 +224,8 @@ Key points:
 ## 5. Domain-ontology path · implemented (fold, verbs and panel all ship)
 
 **Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. The **fold
-half** (six vocabulary events, assertions, conflict and graph derivation) and the **ten verbs**
-(register / revise / deprecate / query / register instance / assert / explain a level skip) are wired; **so is the panel** (graph band / assertion chips /
+half** (six vocabulary events, assertions, conflict and graph derivation) and the **four verbs**
+(`Define` to register or revise / `Deprecate` / `RegisterInstance` / `Assert`) are wired; **so is the panel** (graph band / assertion chips /
 conflict row / vocabulary maintenance zone, plus graph editing through the human-gate route — the same
 criteria and the same ledger as the model's verbs).
 
@@ -247,7 +247,7 @@ sequenceDiagram
     G-->>M: model receives referenceable ids — reuse first, register only what's missing
 
     Note over M,K: vocabulary verbs (implemented)
-    M->>K: RegisterTerm / RegisterPredicate (with a basis)
+    M->>K: Define (concept, or predicate when range is given)
     K->>K: validate: unique id · references exist · acyclic is_a · legal range
     K-->>L: mutation ontology/term_added (and predicate_added / revised / deprecated)
     M->>K: Frame (hypotheses carrying assertions)

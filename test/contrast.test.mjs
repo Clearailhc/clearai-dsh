@@ -212,21 +212,43 @@ console.log('\n【A 组 · 宿主半:属性式服务访问必须清零】')
 	check('活检查:同一扫描器抓得到故意注入的属性式访问', [...injected.matchAll(/ctx\.(sessions|sessionProjections)\s*[.[]/g)].length === 2)
 }
 
-// ═══ B 组 · 跳级:缺口从「看不见」到「要理由」═══════════════════════════
+// ═══ B 组 · 结案门:第三阶段证伪那一场被拦四次 → 第四阶段一次也不拦 ═══════════════
 //
-// 真会话读数(lead 实测):4 条命题最终 supportedLevel 全 L3,untouchedLevels =
-// L0 / L0+L1 / L0+L1 / L0+L2;全会话 L0 证据 0 条。旧读数是「卡上照旧说结构完整」,
-// 新读数:deriveKnowledge 必须报 `levels_skipped`,count = 7(1+2+2+2);
-// 补上 `level/skipped` 理由后缺口消失。
+// 现场:`docs/optimization/sim-runs/2026-10-02-p3/falsification/events.jsonl`(随仓库走)。
+// 旧读数:计划收尾之后第一次 Conclude 起,被拦四次(跳级没理由 → 没有断言形态 ×2 → 主体没落图),
+// 外加 7 次补救调用。新读数:把同一份账折到第一次 Conclude 之前,结案门一道都不该触发——
+// 跳级理由与「没有断言形态」两道门删了,唯一留下的实体门只看将升格判断的断言主体,而那条判断没写断言。
+// 另一半是第二阶段到第三阶段那四条命题的真会话:全部 L3、L0 证据 0 条,从前报 7 处跳级;现在不报。
 
-console.log('\n【B 组 · 跳级缺口:7 处没理由 → 补理由后消失】')
-/** 造 4 条命题,证据等级刻意排成真会话里那四种 untouchedLevels。 */
-function buildSkippedState() {
+console.log('\n【B 组 · 结案门:证伪那一场从拦四次到一次不拦】')
+{
+	const LOG = join(PORT, 'docs', 'optimization', 'sim-runs', '2026-10-02-p3', 'falsification', 'events.jsonl')
+	const events = readFileSync(LOG, 'utf8').trim().split('\n').map((line) => JSON.parse(line))
+	const calls = new Map(events.filter((event) => event.type === 'tool/call').map((event) => [event.data.callId, event.data.name]))
+	const results = events.filter((event) => event.type === 'tool/result')
+	const concludes = results.filter((event) => calls.get(event.data.callId) === 'Conclude')
+	const blocked = concludes.filter((event) => !(event.data.meta?.mutations ?? []).some((mutation) => mutation.t === 'goal/closed'))
+	check('旧读数:同一场里 Conclude 被拦 4 次(第 5 次才结案)', concludes.length === 5 && blocked.length === 4, `${concludes.length} 次结案、${blocked.length} 次被拦`)
+	const firstConclude = results.indexOf(concludes[0])
+	const mutations = results.slice(0, firstConclude).flatMap((event) => event.data.meta?.mutations ?? [])
+	const state = applyMutations(emptyState(), mutations)
+	const derived = derive(state)
+	const threshold = ['L0', 'L1', 'L2', 'L3', 'L4'].indexOf(state.goal?.promote_at_level ?? 'L3')
+	const promotable = derived.hypotheses.filter((item) => (item.status === 'alive' || item.status === 'proposed') && (item.refutations ?? 0) === 0 && ['L0', 'L1', 'L2', 'L3', 'L4'].indexOf(item.supportedLevel ?? '') >= threshold)
+	check('前提:折到第一次 Conclude 之前,计划已收尾、有 1 条判断到了门槛', state.plans.every((plan) => plan.status !== 'active') && promotable.length === 1, `${promotable.length} 条`)
+	check('新读数:将升格的判断没有主体不在图上 ⇒ 实体门不拦', promotable.every((item) => (item.unlanded ?? []).length === 0))
+	const codes = derived.knowledge.gaps.map((gap) => gap.code)
+	check('新读数:缺口里没有被删的那几种(跳级 / 没有词汇 / 零引用 / 事实没带断言)', !codes.some((code) => ['levels_skipped', 'no_language', 'orphan_terms', 'unstructured_facts'].includes(code)), codes.join(','))
+	check('只有散文的判断照旧在卡上列成缺口(看得见,但不拦)', codes.includes('prose_only_claims'), codes.join(','))
+}
+
+console.log('\n【B 组 · 真会话的四条 L3 命题:从前报 7 处跳级,现在不报】')
+{
 	const spec = [
-		{ id: 'h-1', levels: ['L1', 'L2', 'L3'] }, // 未走 L0
-		{ id: 'h-2', levels: ['L2', 'L3'] }, // 未走 L0/L1
-		{ id: 'h-3', levels: ['L2', 'L3'] }, // 未走 L0/L1
-		{ id: 'h-4', levels: ['L1', 'L3'] }, // 未走 L0/L2
+		{ id: 'h-1', levels: ['L1', 'L2', 'L3'] },
+		{ id: 'h-2', levels: ['L2', 'L3'] },
+		{ id: 'h-3', levels: ['L2', 'L3'] },
+		{ id: 'h-4', levels: ['L1', 'L3'] },
 	]
 	const mutations = [
 		{
@@ -250,56 +272,14 @@ function buildSkippedState() {
 			mutations.push({ t: 'evidence/recorded', id: `e-${item.id}-${level}`, step: `s-${index + 1}`, plan: 'p-contrast', verdict: 'support', level, evaluator: level === 'L3' ? 'independent' : 'self', basis: `${item.id} 在 ${level} 的读数` })
 		}
 	}
-	return applyMutations(emptyState(), mutations)
-}
-
-const skippedState = buildSkippedState()
-const skippedDerived = derive(skippedState)
-const expectedUntouched = { 'h-1': ['L0'], 'h-2': ['L0', 'L1'], 'h-3': ['L0', 'L1'], 'h-4': ['L0', 'L2'] }
-const untouchedOf = (hypotheses) => Object.fromEntries(hypotheses.map((item) => [item.id, item.untouchedLevels ?? []]))
-check(
-	'前提:4 条命题的 untouchedLevels 折成真会话那四种(L0 / L0+L1 / L0+L1 / L0+L2)',
-	JSON.stringify(untouchedOf(skippedDerived.hypotheses)) === JSON.stringify(expectedUntouched),
-	JSON.stringify(untouchedOf(skippedDerived.hypotheses)),
-)
-check('前提:4 条命题 supportedLevel 全是 L3(与真会话一致)', skippedDerived.hypotheses.every((item) => item.supportedLevel === 'L3'), skippedDerived.hypotheses.map((item) => item.supportedLevel).join(','))
-
-{
-	const knowledge = deriveKnowledge(skippedState, skippedDerived.hypotheses, skippedDerived.factRows, skippedDerived.lexicon)
+	const state = applyMutations(emptyState(), mutations)
+	const derived = derive(state)
+	check('前提:4 条命题 supportedLevel 全是 L3(与真会话一致)', derived.hypotheses.every((item) => item.supportedLevel === 'L3'), derived.hypotheses.map((item) => item.supportedLevel).join(','))
+	const knowledge = deriveKnowledge(state, derived.hypotheses, derived.factRows, derived.lexicon)
 	check('状态进了知识模式(缺口才有载体)', knowledge.mode === 'knowledge', knowledge.mode)
-	const gap = (knowledge.gaps ?? []).find((item) => item.code === 'levels_skipped') ?? null
-	const expectedCount = Object.values(expectedUntouched).reduce((total, levels) => total + levels.length, 0)
-	check('新机制:levels_skipped 缺口存在(旧读数里它根本不存在)', gap !== null, `gaps=${(knowledge.gaps ?? []).map((item) => item.code).join(',') || '(空)'}`)
-	check(`新读数:levels_skipped count = ${expectedCount}(1+2+2+2)`, gap?.count === expectedCount, String(gap?.count))
-	check('缺口带人话 detail(点得出是哪几条命题)', typeof gap?.detail === 'string' && gap.detail.length > 0, String(gap?.detail ?? ''))
-	check('缺口带可执行的 nextAction', typeof gap?.nextAction === 'string' && gap.nextAction.trim() !== '', String(gap?.nextAction ?? ''))
+	check('新读数:没有 levels_skipped 缺口(等级只决定谁来判)', (knowledge.gaps ?? []).every((item) => item.code !== 'levels_skipped'), (knowledge.gaps ?? []).map((item) => item.code).join(','))
+	check('新读数:派生里没有 untouchedLevels(旧读数是 1+2+2+2=7 处)', derived.hypotheses.every((item) => !('untouchedLevels' in item)))
 	check('每个缺口四件套齐(code/count/detail/nextAction)', (knowledge.gaps ?? []).every((item) => typeof item.code === 'string' && typeof item.count === 'number' && typeof item.detail === 'string' && item.detail !== '' && typeof item.nextAction === 'string' && item.nextAction !== ''), JSON.stringify((knowledge.gaps ?? []).map((item) => item.code)))
-	// 活检查:计数不是恒 0——自己独立数一遍 untouchedLevels。
-	check('活检查:独立数一遍 untouchedLevels 也是 7(计数不是空跑)', skippedDerived.hypotheses.reduce((total, item) => total + (item.untouchedLevels ?? []).length, 0) === expectedCount)
-}
-
-{
-	// 补上理由:每条命题一次 ExplainLevelSkip,覆盖它全部 untouchedLevels。
-	const reasons = {
-		'h-1': 'L0 要检查的是「抽象」这个词本身在语料里的出现形态,现有材料只有二手转述',
-		'h-2': 'L0 与 L1 要检查的是《山东秧歌》教材原片与该词在教材语境里的用法,教材原件未取得',
-		'h-3': 'L0 与 L1 要检查的是花鼓灯教材原片与其语境,教材原件未取得',
-		'h-4': 'L0 要检查的是「抽象」在 2015 年前语料里的用法,L2 要检查的是站内分区数据,两者都没有留存',
-	}
-	const withReason = applyMutations(
-		skippedState,
-		Object.entries(reasons).map(([hypothesis, reason]) => ({ t: 'level/skipped', goal: 'g-contrast', hypothesis, levels: expectedUntouched[hypothesis], reason })),
-	)
-	const derivedWithReason = derive(withReason)
-	check('level/skipped 折法认得这条变更(跳过的层从 untouchedLevels 里减去)', derivedWithReason.hypotheses.every((item) => (item.untouchedLevels ?? []).length === 0), JSON.stringify(untouchedOf(derivedWithReason.hypotheses)))
-	const knowledge = deriveKnowledge(withReason, derivedWithReason.hypotheses, derivedWithReason.factRows, derivedWithReason.lexicon)
-	check('新读数:补上理由后 levels_skipped 缺口消失(不是空跑:理由前 count=7)', derivedWithReason.hypotheses.reduce((total, item) => total + (item.untouchedLevels ?? []).length, 0) === 0 && (knowledge.gaps ?? []).every((item) => item.code !== 'levels_skipped'), JSON.stringify((knowledge.gaps ?? []).map((item) => item.code)))
-	// 活检查:理由只覆盖一部分时,缺口必须仍在——否则「补理由」这条判据是假的。
-	const partial = applyMutations(skippedState, [{ t: 'level/skipped', goal: 'g-contrast', hypothesis: 'h-1', levels: ['L0'], reason: reasons['h-1'] }])
-	const partialDerived = derive(partial)
-	const partialKnowledge = deriveKnowledge(partial, partialDerived.hypotheses, partialDerived.factRows, partialDerived.lexicon)
-	const partialGap = (partialKnowledge.gaps ?? []).find((item) => item.code === 'levels_skipped') ?? null
-	check('活检查:只补一条理由时缺口仍在,count 降到 6', partialGap?.count === 6, String(partialGap?.count))
 }
 
 // ═══ C 组 · 实体图:数据早就写好了,只差一条通道 ═════════════════════════

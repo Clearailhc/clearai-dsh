@@ -244,7 +244,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本已 +1(v13:步骤完成与结果分开,证据写明针对哪条判断)', fold.STATE_VERSION === 13, String(fold.STATE_VERSION))
+	check('状态版本已 +1(v14:缺口与关口收窄,跳级理由整套删除)', fold.STATE_VERSION === 14, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -344,8 +344,7 @@ console.log('\n【知识模式:结构判据 + 缺口是读数,不是拦截】')
 		{ t: 'ontology/term_added', id: 'numerical_scheme', label: '数值格式', basis: 'b', version: 1 },
 		{ t: 'ontology/predicate_added', id: 'convergence_order', label: '收敛阶', domain: 'numerical_scheme', range: { form: 'quantity' }, basis: 'b' },
 	])
-	check('语言还没立起来 ⇒ 报 no_language', codes(goalOnly).includes('no_language'))
-	check('立了概念与谓词 ⇒ no_language 消失(否则它是一条永远擦不掉的抱怨)', !codes(withLanguage).includes('no_language'))
+	check('缺口只留三种:没有词汇不再单列一条(第四阶段删了 no_language)', !codes(goalOnly).includes('no_language') && !codes(withLanguage).includes('no_language'))
 	check('只有散文主张 ⇒ 报 prose_only_claims', codes(goalOnly).includes('prose_only_claims'))
 
 	const typed = fold.applyMutations(withLanguage, [
@@ -364,15 +363,12 @@ console.log('\n【知识模式:结构判据 + 缺口是读数,不是拦截】')
 	])
 	check('两条命题都带上断言 ⇒ prose_only_claims 消失', !codes(typed).includes('prose_only_claims'), JSON.stringify(labelled(typed).gaps))
 
-	// ③ 升格时没带断言:只算 0.2.0 那条路(有 hypothesis 关联)的,旧事实不算欠账。
+	// ③ 升格时没带断言的事实:第四阶段起不再单列缺口(它已经是结论,欠的是下一轮的形态,不是这一轮的动作)。
 	const promoted = fold.applyMutations(typed, [
 		{ t: 'fact/promoted', id: 'f1', goal: 'g1', hypothesis: 'h1', text: 'c1', scope: 's', level: 'L3', evidence: [], path: 'p', assertions: [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'numerical_scheme' }, object: quantity(5) }] },
 	])
-	check('升格带了断言 ⇒ 不报 unstructured_facts', !codes(promoted).includes('unstructured_facts'))
 	const bare = fold.applyMutations(typed, [{ t: 'fact/promoted', id: 'f9', goal: 'g1', hypothesis: 'h1', text: 'c1', scope: 's', level: 'L3', evidence: [], path: 'p', assertions: null }])
-	check('升格没带断言(0.2.0 那条路)⇒ 报 unstructured_facts', codes(bare).includes('unstructured_facts'))
-	const legacy = fold.applyMutations(typed, [{ t: 'fact/promoted', id: 'f0', goal: 'g1', text: '旧事实', scope: 's', level: 'L3', evidence: [], path: 'p' }])
-	check('更早的事实(没有 hypothesis 关联)补不上断言 ⇒ 不算欠账', !codes(legacy).includes('unstructured_facts'))
+	check('升格没带断言 ⇒ 不再报 unstructured_facts(缺口只留三种)', !codes(bare).includes('unstructured_facts'))
 
 	// ④ 从没被证据碰过:只在这次会话真的跑出过证据之后才报(计划刚立不是缺口)。
 	check('一步都还没走 ⇒ 不报 untouched_claims(那是起点,不是缺口)', !codes(typed).includes('untouched_claims'))
@@ -591,7 +587,7 @@ console.log('\n【新折法:实体账本 / 跳级理由 / 判据修订史 / 宿�
 	])
 	check('新目标带上速览与判据清单(读面字段;判定仍看判据原文)', base.goal.headline === '一句速览' && base.goal.criteria.join(',') === 'c1' && base.goal.legacy === false)
 	check('空状态的三块新账都是空表(旧日志折出来与从前同形)', Array.isArray(base.entities) && base.entities.length === 0 && Array.isArray(base.entityAssertions) && base.entityAssertions.length === 0 && Array.isArray(base.hostHealth) && base.hostHealth.length === 0)
-	check('命题带着空的 skips[](跳级理由的家)', Array.isArray(base.hypotheses[0].skips) && base.hypotheses[0].skips.length === 0)
+	check('命题上不再有 skips(跳级理由第四阶段整套删了)', !('skips' in base.hypotheses[0]))
 
 	const registered = fold.applyMutations(base, [{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲', basis: 'R-01', provenance: { kind: 'url', ref: 'https://x' }, at: 10 }])
 	const again = fold.applyMutations(registered, [{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲(改)', basis: 'R-02', provenance: { kind: 'named', ref: '人' }, at: 20 }])
@@ -603,7 +599,7 @@ console.log('\n【新折法:实体账本 / 跳级理由 / 判据修订史 / 宿�
 	check('同 id 的实体断言只落一条(两条落账通道不许落两遍)', fold.applyMutations(asserted, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_a' }, evidence: { kind: 'named', ref: 'x' } }]).entityAssertions.length === 1)
 
 	const skipped = fold.applyMutations(base, [{ t: 'level/skipped', goal: 'g1', hypothesis: 'h1', levels: ['L0', 'L1'], reason: '本项目 L0/L1 没有可检查的对象' }])
-	check('跳级理由折成命题的 skips[](带理由与时刻)', skipped.hypotheses[0].skips.length === 1 && skipped.hypotheses[0].skips[0].levels.join('/') === 'L0/L1' && typeof skipped.hypotheses[0].skips[0].reason === 'string')
+	check('旧日志里的 level/skipped 安静跳过(不抛,也不留在命题上)', skipped.hypotheses.length === 1 && !('skips' in skipped.hypotheses[0]))
 	const revised = fold.applyMutations(base, [{ t: 'criteria/revised', goal: 'g1', revision: 2, from: 'D', to: 'D2', reason: '口径改窄', audit: 'audit-9' }])
 	check('判据修订折成 goal.criteriaHistory[](带独立裁决,不改判据原文)', revised.goal.criteriaHistory.length === 1 && revised.goal.criteriaHistory[0].audit === 'audit-9' && revised.goal.done_criteria === 'D')
 	const host = fold.applyMutations(base, [{ t: 'host/inactive', scope: 'sessions', detail: '取不到会话服务' }])
@@ -630,20 +626,26 @@ console.log('\n【缺口:每条都有 code / count / detail / nextAction 四格�
 	const gaps = fold.derive(state).knowledge.gaps
 	check('每一条缺口都有 code / count / detail / nextAction 四格', gaps.length > 0 && gaps.every((gap) => typeof gap.code === 'string' && typeof gap.count === 'number' && typeof gap.detail === 'string' && typeof gap.nextAction === 'string' && gap.nextAction !== ''), JSON.stringify(gaps))
 	const unlanded = gaps.find((gap) => gap.code === 'entities_unlanded')
-	check('断言主体没落图 ⇒ entities_unlanded(数的是去重的主体数)', unlanded !== undefined && unlanded.count === 1, JSON.stringify(gaps.map((gap) => gap.code)))
-	const landed = fold.applyMutations(state, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_b', type: 'sucai' }, evidence: { kind: 'named', ref: '人' } }])
-	check('实体断言落账 ⇒ entities_unlanded 消失(出口真的存在)', !fold.derive(landed).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
-	const orphans = gaps.find((gap) => gap.code === 'orphan_terms')
-	check('没有人引用的概念 ⇒ orphan_terms(与货架「零引用」同一份引用面)', orphans !== undefined && orphans.count === 1, JSON.stringify(orphans))
+	check('断言主体没落图 ⇒ entities_unlanded(数的是去重的主体数)', unlanded !== undefined && unlanded.count === 1 && unlanded.detail.includes('sucai|yangben_a'), JSON.stringify(gaps.map((gap) => gap.code)))
+	check('读数挂在判断上(与结案的实体门同一份)', JSON.stringify(fold.derive(state).hypotheses[0].unlanded) === JSON.stringify([{ id: 'yangben_a', type: 'sucai' }]))
+	/**
+	 * **判据是「主体是图上的节点」**:登记实例就够了,不必再用 Assert 把同一句话说一遍——
+	 * 第三阶段重跑里,旧判据(要有边)让模型登记完实例还被拦一次,只好再 Assert 一句一字不差的话。
+	 */
+	const registered = fold.applyMutations(state, [{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲', basis: 'R-01', provenance: { kind: 'named', ref: '人' } }])
+	check('登记实例 ⇒ entities_unlanded 消失(出口就是缺口里写的那一个动作)', !fold.derive(registered).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
+	check('nextAction 指的正是 RegisterInstance', /RegisterInstance/.test(unlanded?.nextAction ?? ''))
+	const asserted = fold.applyMutations(state, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_b', type: 'sucai' }, evidence: { kind: 'named', ref: '人' } }])
+	check('带出处的 Assert 也把主体落成节点 ⇒ 缺口同样消失', !fold.derive(asserted).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
+	const unrelated = fold.applyMutations(state, [{ t: 'entity/registered', id: 'yangben_z', type: 'sucai', label: '无关样本', basis: 'R-09', provenance: { kind: 'named', ref: '人' } }])
+	check('登记一个无关节点不会让缺口消失(逐个主体判)', fold.derive(unrelated).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
+	check('缺口只留三种:没人引用的概念不再单列(第四阶段删了 orphan_terms)', !gaps.some((gap) => gap.code === 'orphan_terms'))
 
 	const l3 = fold.applyMutations(state, [
 		{ t: 'plan/created', id: 'p1', goal: 'g1', brief: 'b', steps: [{ id: 's1', do: 'r', done_criteria: 'd', tests: { hypothesis: 'h1', level: 'L3' } }] },
 		{ t: 'evidence/recorded', id: 'e1', plan: 'p1', step: 's1', verdict: 'support', level: 'L3', evaluator: 'independent', basis: 'b', refs: [], origins: [] },
 	])
-	const skippedGap = fold.derive(l3).knowledge.gaps.find((gap) => gap.code === 'levels_skipped')
-	check('走过 L3 而 L0–L2 没走 ⇒ levels_skipped 数出三层(并说得出是哪条命题缺哪几级)', skippedGap !== undefined && skippedGap.count === 3 && skippedGap.detail.includes('命题 h1 缺 L0/L1/L2'), JSON.stringify(skippedGap))
-	const explained = fold.applyMutations(l3, [{ t: 'level/skipped', goal: 'g1', hypothesis: 'h1', levels: ['L0', 'L1', 'L2'], reason: 'L0–L2 在本项目没有可检查的对象' }])
-	check('写明理由 ⇒ untouchedLevels 减掉它、缺口消失(出口是唯一的)', fold.derive(explained).hypotheses.find((item) => item.id === 'h1').untouchedLevels.length === 0 && !fold.derive(explained).knowledge.gaps.some((gap) => gap.code === 'levels_skipped'))
+	check('走过 L3 而 L0–L2 没走 ⇒ 不再报 levels_skipped(等级只决定谁来判)', !fold.derive(l3).knowledge.gaps.some((gap) => gap.code === 'levels_skipped'))
 }
 
 console.log('\n【投影合并:登记 / 升格 / 实体断言三个来源,键去重】')

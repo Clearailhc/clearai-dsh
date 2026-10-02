@@ -19,7 +19,7 @@ import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, HUMAN_GATE_MARK, apply } from '../preset/plugins/clearai-kernel.js'
 import { applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
-import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
+import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
@@ -467,8 +467,8 @@ const write = (rel, content) => {
 
 console.log('\n【装配面】')
 check(
-	'九件意图工具全部注册',
-	['Frame', 'Conclude', 'CreatePlan', 'CheckPlan', 'AdvancePlan', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan'].every((name) => thisHost.tools.has(name)),
+	'目标与计划六件意图工具全部注册',
+	['Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan'].every((name) => thisHost.tools.has(name)),
 )
 check('工具 schema 里没有 status / progress / phase 这类可宣告状态的字段(P2 不可表示)', () => false || ![...thisHost.tools.values()].some((tool) => /"status"|"progress"|"phase"/.test(JSON.stringify(tool.parameters))))
 check('注册了 tools/pre-execute 与 agent/pre-step 两个机制位', thisHost.listeners.has('tools/pre-execute') && thisHost.listeners.has('agent/pre-step'))
@@ -524,11 +524,11 @@ console.log('\n【提示词面:预设的提示词段】')
 console.log('\n【装配:贡献表驱动(阶段 3)】')
 {
 	const NAMES = [
-		'Frame', 'Conclude', 'CreatePlan', 'CheckPlan', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan',
-		'RegisterTerm', 'RegisterPredicate', 'ReviseTerm', 'RevisePredicate', 'DeprecateTerm', 'DeprecatePredicate', 'RegisterInstance', 'Assert', 'ExplainLevelSkip', 'QueryKnowledge',
+		'Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan',
+		'Define', 'Deprecate', 'RegisterInstance', 'Assert',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
-	check('工具面恰好 19 件(实测,不是推断)', thisHost.tools.size === 19, `${thisHost.tools.size} 件`)
+	check('工具面恰好 10 件(实测,不是推断)', thisHost.tools.size === 10, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -570,7 +570,7 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 		rejects(`已删除的机制 ${mechanism} 不再被接受`, { contributions: { mechanisms: { [mechanism]: true } } }, new RegExp(`unknown_mechanism:clearai-kernel:${mechanism}`))
 	}
 	// 第三阶段:运行档与续跑轮数交还原生 goal(续跑由原生驱动做,没有「档」)。
-	for (const key of ['templateDir', 'gitWorldlines', 'ledgerMaxFiles', 'scoutToolFilter', 'executorToolFilter', 'precommitRecon', 'forkArbitration', 'autonomy', 'maxAutoTurns']) {
+	for (const key of ['templateDir', 'gitWorldlines', 'ledgerMaxFiles', 'scoutToolFilter', 'executorToolFilter', 'precommitRecon', 'forkArbitration', 'autonomy', 'maxAutoTurns', 'requireTypedPromotion', 'requireLevelReasons']) {
 		rejects(`已删除的配置键 ${key} 不再被接受`, { [key]: true }, new RegExp(`unknown_config:clearai-kernel:${key}`))
 	}
 
@@ -585,12 +585,12 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 		check('组合文件里有贡献表、没有运行档(运行档第三阶段删了)', keys.includes('contributions') && !keys.includes('autonomy') && !keys.includes('maxAutoTurns'))
 	}
 
-	// 裁剪真的生效:关掉领域语言机制 → 它的十件工具不再出现在工具面里。
+	// 裁剪真的生效:关掉领域语言机制 → 它的四件工具不再出现在工具面里。
 	const trimmed = makeHost()
 	apply(trimmed.ctx, { contributions: { mechanisms: { ontology: false } } })
 	check(
-		'关掉领域语言机制 → 10 件词汇工具真的没装(剩 9 件)',
-		trimmed.tools.size === 9 && !trimmed.tools.has('Assert') && !trimmed.tools.has('RegisterTerm') && trimmed.tools.has('AdvancePlan'),
+		'关掉领域语言机制 → 4 件词汇工具真的没装(剩 6 件)',
+		trimmed.tools.size === 6 && !trimmed.tools.has('Assert') && !trimmed.tools.has('Define') && trimmed.tools.has('AdvancePlan'),
 		`${trimmed.tools.size} 件`,
 	)
 	// 只裁工具面、不动机制:能装出来的最小面就是清单本身。
@@ -765,15 +765,15 @@ console.log('\n【计划:判据强制 + 步骤 id 唯一 + 判据自指 + 约立
 		const plan = (hypothesis) => ({ steps: [{ id: 'p1', do: '跑三次重复', artifacts: ['lab/y.csv'], done_criteria: 'lab/y.csv 含三次重复', tests: { hypothesis, level: 'L3' } }] })
 		const byId = await callOn(host, S, 'CreatePlan', plan(registered.id))
 		check('tests 填 **id** → 认(最稳的写法)', byId.ok === true, String(byId.code))
-		await callOn(host, S, 'VoidPlanStep', { step_id: 'p1', reason: '验匹配用' })
+		await callOn(host, S, 'RevisePlan', { action: 'void', step_id: 'p1', reason: '验匹配用' })
 		await callOn(host, S, 'ClosePlan', {})
 		const byText = await callOn(host, S, 'CreatePlan', plan(registered.claim))
 		check('tests 填假设**原文** → 也认(不再把模型逼进猜谜)', byText.ok === true, `${byText.code}:${String(byText.message ?? '').slice(0, 60)}`)
-		await callOn(host, S, 'VoidPlanStep', { step_id: 'p1', reason: '验匹配用' })
+		await callOn(host, S, 'RevisePlan', { action: 'void', step_id: 'p1', reason: '验匹配用' })
 		await callOn(host, S, 'ClosePlan', {})
 		const byPrefix = await callOn(host, S, 'CreatePlan', plan(registered.claim.slice(0, 12)))
 		check('tests 填**唯一前缀** → 也认', byPrefix.ok === true, String(byPrefix.code))
-		await callOn(host, S, 'VoidPlanStep', { step_id: 'p1', reason: '验匹配用' })
+		await callOn(host, S, 'RevisePlan', { action: 'void', step_id: 'p1', reason: '验匹配用' })
 		await callOn(host, S, 'ClosePlan', {})
 		const mismatch = await callOn(host, S, 'CreatePlan', plan('完全对不上的说法'))
 		check(
@@ -868,11 +868,11 @@ console.log('\n【目录物证与 blocked 出口】')
 	for (let i = 0; i < 3; i += 1) directoryRejected = await callOn(host, session, 'AdvancePlan', { step_id: 'd1', verdict: 'support', basis: '目录中有证据' })
 	check('目录物证 → 如实拒绝并报告文件数和字节数', directoryRejected.ok === false && /目录不是物证/.test(directoryRejected.message) && /含 1 个文件、\d+ 字节/.test(directoryRejected.message) && !/空目录/.test(directoryRejected.message), String(directoryRejected.message))
 	const blocked = await callOn(host, session, 'AdvancePlan', { step_id: 'd1' })
-	check('blocked 守卫当场问人;没人能答 ⇒ 只列模型自己能动的解拦动作', blocked.ok === false && /已问人怎么办/.test(blocked.message) && blocked.code === 'plan_blocked' && /AmendPlan/.test(blocked.message) && /RefinePlan/.test(blocked.message) && /VoidPlanStep/.test(blocked.message) && !/让人介入/.test(blocked.message), String(blocked.message))
-	const refined = await callOn(host, session, 'RefinePlan', { step_id: 'd1', done_criteria: '具体证据文件存在且非空' })
-	check('RefinePlan → 清除 blocked 与连拦计数', refined.ok === true && host.service.state(session).plans[0].blocked === undefined && host.service.state(session).blocks[`${directoryPlan.id}:d1`] === undefined, JSON.stringify(host.service.state(session)))
+	check('blocked 守卫当场问人;没人能答 ⇒ 只列模型自己能动的解拦动作', blocked.ok === false && /已问人怎么办/.test(blocked.message) && blocked.code === 'plan_blocked' && /RevisePlan/.test(blocked.message) && /refine/.test(blocked.message) && /void/.test(blocked.message) && !/让人介入/.test(blocked.message), String(blocked.message))
+	const refined = await callOn(host, session, 'RevisePlan', { action: 'refine', step_id: 'd1', done_criteria: '具体证据文件存在且非空' })
+	check('RevisePlan(refine) → 清除 blocked 与连拦计数', refined.ok === true && host.service.state(session).plans[0].blocked === undefined && host.service.state(session).blocks[`${directoryPlan.id}:d1`] === undefined, JSON.stringify(host.service.state(session)))
 	for (let i = 0; i < 3; i += 1) await callOn(host, session, 'AdvancePlan', { step_id: 'd1' })
-	const voided = await callOn(host, session, 'VoidPlanStep', { step_id: 'd1', reason: '目录不能作为物证' })
+	const voided = await callOn(host, session, 'RevisePlan', { action: 'void', step_id: 'd1', reason: '目录不能作为物证' })
 	check('VoidPlanStep 被拦步骤 → 清除 blocked 与连拦计数', voided.ok === true && host.service.state(session).plans[0].blocked === undefined && host.service.state(session).blocks[`${directoryPlan.id}:d1`] === undefined, JSON.stringify(host.service.state(session)))
 	await callOn(host, session, 'ClosePlan', {})
 
@@ -885,9 +885,9 @@ console.log('\n【目录物证与 blocked 出口】')
 	})
 	const recoveryPlan = host.service.state(session).plans[1]
 	for (let i = 0; i < 3; i += 1) await callOn(host, session, 'AdvancePlan', { step_id: 'a1' })
-	const amended = await callOn(host, session, 'AmendPlan', { step: { id: 'a2', do: '交付六份具体文件', artifacts: files, done_criteria: '六份具体文件均存在且非空' } })
+	const amended = await callOn(host, session, 'RevisePlan', { action: 'add', step: { id: 'a2', do: '交付六份具体文件', artifacts: files, done_criteria: '六份具体文件均存在且非空' } })
 	check('AmendPlan → 清除 blocked 与连拦计数', amended.ok === true && host.service.state(session).plans[1].blocked === undefined && host.service.state(session).blocks[`${recoveryPlan.id}:a1`] === undefined, JSON.stringify(host.service.state(session)))
-	await callOn(host, session, 'VoidPlanStep', { step_id: 'a1', reason: '改用六份具体文件' })
+	await callOn(host, session, 'RevisePlan', { action: 'void', step_id: 'a1', reason: '改用六份具体文件' })
 	const recovered = await callOn(host, session, 'AdvancePlan', { step_id: 'a2', verdict: 'support', basis: '六份 Markdown 物证均非空且已写入读数。' })
 	check('解拦后 AdvancePlan 按当前首个未落定步重验六份非空 md', recovered.ok === true && recovered.gate === 'needs_audit', `${recovered.code}/${recovered.gate}`)
 }
@@ -909,18 +909,18 @@ console.log('\n【序位不变量 + 唯一完成动词之外不动进度】')
 	const outOfOrder = await call('AdvancePlan', { step_id: 't2' })
 	check('越序交付 → 拒绝(out_of_order)', outOfOrder.ok === false && outOfOrder.code === 'out_of_order', String(outOfOrder.code))
 
-	const amend = await call('AmendPlan', { step: { id: 't3', do: '补一步', artifacts: ['lab/c.txt'], done_criteria: 'lab/c.txt 存在' } })
+	const amend = await call('RevisePlan', { action: 'add', step: { id: 't3', do: '补一步', artifacts: ['lab/c.txt'], done_criteria: 'lab/c.txt 存在' } })
 	check('AmendPlan 不动进度', amend.ok === true && amend.progress_changed === false)
-	const refine = await call('RefinePlan', { step_id: 't3', done_criteria: 'lab/c.txt 存在且非空' })
+	const refine = await call('RevisePlan', { action: 'refine', step_id: 't3', done_criteria: 'lab/c.txt 存在且非空' })
 	check('RefinePlan 不动进度且旧判据留痕', refine.ok === true && refine.progress_changed === false && ledger().some((event) => event.t === 'plan/refined' && event.old_criteria === 'lab/c.txt 存在'))
-	const voided = await call('VoidPlanStep', { step_id: 't3', reason: '这一步本不该存在' })
+	const voided = await call('RevisePlan', { action: 'void', step_id: 't3', reason: '这一步本不该存在' })
 	check('VoidPlanStep 带因作废且不动进度', voided.ok === true && voided.progress_changed === false)
 	check('作废留痕,不删记录', eventsOf('plan/voided').length === 1)
-	const settled = await call('VoidPlanStep', { step_id: 't1', reason: '测试脚手架' })
+	const settled = await call('RevisePlan', { action: 'void', step_id: 't1', reason: '测试脚手架' })
 	check('已作废之外仍可作废其它步', settled.ok === true)
 
 	// 收束这份脚手架计划:剩下的步作废,然后 ClosePlan
-	await call('VoidPlanStep', { step_id: 't2', reason: '测试脚手架' })
+	await call('RevisePlan', { action: 'void', step_id: 't2', reason: '测试脚手架' })
 	const closed2 = await call('ClosePlan', {})
 	check('作废后可以收束', closed2.ok === true, String(closed2.code))
 }
@@ -954,83 +954,96 @@ console.log('\n【完成度:终局优先,升格算数(2026-09-11 长测抓到的
 	check('终局优先:目标 achieved ⇒ 完成度 100%(不再回落到假设口径的 0%)', host.service.view(S).goal?.progress === 1, String(host.service.view(S).goal?.progress))
 }
 
-console.log('\n【知识门:核心结论不许以纯散文升格(机制缺省关,preset 里开)】')
+console.log('\n【实体门:将要升格的结论,主体必须在图上(结案唯一的结构关口;机制缺省关,preset 里开)】')
 {
 	/**
-	 * 为什么要有这道门:断言一直是「加法,不是门槛」,于是模型的最优策略就是
-	 * 「检索 → 总结 → 写报告」——本体图、实体图、认识论三张图都长不出来,因为**完成函数里没有它们**。
-	 * 让缺口进卡只解决「看得见」;这一道解决「绕不过」。
+	 * 第四阶段把结案的结构关口从三道收到一道。删掉的两道(跳级没理由、将升格的命题没有断言形态)
+	 * 在第三阶段重跑里让一个「跑一次 python3」的任务被拦四次;留下的这一道只看**将要升格的判断**:
+	 * 它的断言主体必须是实体图上的节点。边由升格本身落下,不再要求另用 `Assert` 把同一句话说一遍。
 	 *
-	 * 两个形态都要验:**缺省关**(机制中立,断言始终是加法 ⇒ 老账本照旧结案)
-	 * 和**开了之后**(将要升格的命题没形态就拦,而且**在派评估者之前**就拦)。
+	 * 场景:T1 登记过;判断说「T1 喂给了 T2,T2 的氧含量是 10ppm」——T2 只在这一批断言里被引出,
+	 * 还不是图上的节点。第二条判断只有散文、也没被检验:它不是结论,不欠这一笔。
 	 */
-	const setup = async (config) => {
+	const setup = async (config, { assertions = true } = {}) => {
 		const host = makeHost()
-		const ws = tempDir('clearai-typed-gate-')
+		const ws = tempDir('clearai-entity-gate-')
 		execFileSync('git', ['init', '-q'], { cwd: ws })
 		execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: ws })
 		host.cwd = ws
 		apply(host.ctx, { blockedThreshold: 3, ...config })
-		const S = `session-typed-${String(config.requireTypedPromotion)}`
-		await callOn(host, S, 'Frame', {
+		const S = `session-entity-gate-${String(config.requireLandedEntities)}-${String(assertions)}`
+		await callOn(host, S, 'Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+		await callOn(host, S, 'Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: '现场记录 R-01' })
+		await callOn(host, S, 'Define', { id: 'fed_by', label: '原料来自', domain: 'furnace_batch', range: { term: 'furnace_batch' }, basis: '现场记录 R-01' })
+		await callOn(host, S, 'RegisterInstance', { id: 'T1', type: 'furnace_batch', label: 'T1 炉次', basis: '现场记录 R-01', provenance: { kind: 'named', ref: '现场记录 R-01' } })
+		const framed = await callOn(host, S, 'Frame', {
 			claim: '把炉次氧含量查清',
 			done_criteria: '氧含量有读数与出处',
-			hypotheses: [{ claim: 'T2 炉次氧含量是 10ppm', refute_when: '复测不是 10ppm' }],
+			hypotheses: [
+				{
+					claim: 'T2 炉次氧含量是 10ppm',
+					refute_when: '复测不是 10ppm',
+					assertions: assertions
+						? [
+								{ predicate: 'fed_by', subject: { id: 'T1', type: 'furnace_batch' }, object: { kind: 'instance', value: 'T2', type: 'furnace_batch' } },
+								{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } },
+							]
+						: undefined,
+				},
+				{ claim: 'T3 炉次也一样', refute_when: 'T3 复测不是 10ppm' },
+			],
 		})
+		check(`前置:目标立起(断言${assertions ? '带着还没落图的主体 T2' : '没写'})`, framed.ok === true, String(framed.code))
+		const [first] = host.service.state(S).hypotheses
 		await callOn(host, S, 'CreatePlan', {
-			steps: [{ id: 'g1', do: '读仪表记录', artifacts: ['lab/g1.txt'], done_criteria: 'lab/g1.txt 存在', tests: { hypothesis: host.service.state(S).hypotheses[0].id, level: 'L3' } }],
+			steps: [{ id: 'g1', do: '读仪表记录', artifacts: ['lab/g1.txt'], done_criteria: 'lab/g1.txt 存在', tests: { hypotheses: [first.id], level: 'L3' } }],
 		})
 		writeText(join(ws, 'lab', 'g1.txt'), '氧含量 10ppm\n')
 		host.nextVerdict = { verdict: 'support', basis: '硬信号:读过产物', reading: '10', validity: 'usable' }
 		await callOn(host, S, 'AdvancePlan', { step_id: 'g1', observations: [{ ref: 'lab/g1.txt' }] })
 		await callOn(host, S, 'ClosePlan', { summary: '这一阶段做完了' })
-		return { host, S }
+		return { host, S, first }
 	}
 
-	// ① 缺省(=机制中立):没形态照旧结案。
+	// ① 门开着、主体没落图:拦下,而且**不白花一次评估者**。
 	{
-		const { host, S } = await setup({})
-		const closed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-		check('缺省不装知识门 ⇒ 无断言的命题照旧升格(断言始终是加法)', closed.ok === true, String(closed.code))
-		check('升格后事实真的没有断言(那条缺口如实留在读数里)', (host.service.state(S).facts[0]?.assertions ?? null) === null)
-	}
-
-	// ② 装了门:拦下,而且**不白花一次评估者**。
-	{
-		const { host, S } = await setup({ requireTypedPromotion: true })
-		/** 交付到 L3 那一步已经派过一次评估者——数的增量,不是总数。 */
+		const { host, S, first } = await setup({ requireLandedEntities: true })
+		check('前置:将要升格的判断真的有一个主体不在图上', JSON.stringify(host.service.derive(S).hypotheses.find((item) => item.id === first.id)?.unlanded) === JSON.stringify([{ id: 'T2', type: 'furnace_batch' }]))
 		const dispatchedBefore = host.service.state(S).audits.length
 		const blocked = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-		check('将升格的命题没有形态 ⇒ 拒', blocked.ok === false && blocked.code === 'claims_untyped', String(blocked.code))
+		check('主体没落图 ⇒ 拒(entities_unlanded)', blocked.ok === false && blocked.code === 'entities_unlanded', String(blocked.code))
 		check('拒在**派评估者之前**(那一次子 run 没有白花)', host.service.state(S).audits.length === dispatchedBefore, `${dispatchedBefore} → ${host.service.state(S).audits.length} 次派发`)
-		check('门说清了是哪几条命题、也给了两条出路', /补形态再结/.test(String(blocked.message)) && /abandoned/.test(String(blocked.message)), String(blocked.message).slice(0, 120))
-		check('目标保持开放(不许靠改判据绕过)', host.service.state(S).goal.status === 'open')
+		check('门点名是哪条判断、哪个主体', String(blocked.message).includes(first.id) && String(blocked.message).includes('furnace_batch|T2'), String(blocked.message).slice(0, 160))
+		check('门指的出口是 RegisterInstance,并说清不必再 Assert 同一句话', /RegisterInstance/.test(String(blocked.message)) && /不必再/.test(String(blocked.message)))
+		check('只有散文、没被检验的那条判断不进门的名单', !String(blocked.message).includes(host.service.state(S).hypotheses[1].id))
+		check('目标保持开放', host.service.state(S).goal.status === 'open')
+		check('卡上的缺口与门是同一份读数(entities_unlanded 点到 T2)', host.service.derive(S).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded' && gap.count === 1 && gap.detail.includes('furnace_batch|T2')))
 
-		// 补形态:词汇 + 修订目标(主张原文一字不动 ⇒ 用回原 id,验到哪一级接着算)。
-		const term = await callOn(host, S, 'RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
-		const pred = await callOn(host, S, 'RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: '现场记录 R-01' })
-		/**
-		 * **实例也得先登记**:断言的**主体必须可指认**——`T2` 是具体的一次炉次(观测),
-		 * 不是概念(约定)。只立词不立实例的话,那句断言读得出、却没人能核。
-		 */
-		const inst = await callOn(host, S, 'RegisterInstance', { id: 'T2', type: 'furnace_batch', label: 'T2 炉次', basis: '现场记录 R-01', provenance: { kind: 'named', ref: '现场记录 R-01' } })
-		check('先立词汇与实例(没有它们就写不出可核的断言)', term.ok === true && pred.ok === true && inst.ok === true, `${term.code}/${pred.code}/${inst.code}`)
-		const hypothesisId = host.service.state(S).hypotheses[0].id
-		const revised = await callOn(host, S, 'Frame', {
-			claim: '把炉次氧含量查清',
-			done_criteria: '氧含量有读数与出处',
-			reason: '补上断言的形态',
-			hypotheses: [{ claim: 'T2 炉次氧含量是 10ppm', refute_when: '复测不是 10ppm', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'T2', type: 'furnace_batch' }, object: { kind: 'quantity', value: 10, unit: 'ppm' } }] }],
-		})
-		check('修订目标 → 立起', revised.ok === true, String(revised.code))
-		check('补上的断言落在**原来那条**命题上(不是新开一条)', host.service.state(S).hypotheses.length === 1 && host.service.state(S).hypotheses[0].id === hypothesisId)
-		check('验到哪一级接着算(修订没有抹掉已支持等级)', host.service.derive(S).hypotheses[0].supportedLevel === 'L3')
-
+		const inst = await callOn(host, S, 'RegisterInstance', { id: 'T2', type: 'furnace_batch', label: 'T2 炉次', basis: '现场记录 R-02', provenance: { kind: 'named', ref: '现场记录 R-02' } })
+		check('登记 T2(唯一要补的动作)', inst.ok === true, String(inst.code))
 		const passed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-		check('补上形态之后放行', passed.ok === true, String(passed.code))
-		check('升格的事实带着断言(这一次本体真的长出来了)', Array.isArray(host.service.state(S).facts[0]?.assertions) && host.service.state(S).facts[0].assertions.length === 1)
-		check('事实仍然指得回它的命题(身份与内容一起定型)', host.service.state(S).facts[0].hypothesis === hypothesisId)
-		check('结案后缺口读数清空(它不再是欠账)', !host.service.derive(S).knowledge.gaps.some((gap) => gap.code === 'unstructured_facts'))
+		check('登记之后放行,不需要再 Assert', passed.ok === true, String(passed.code))
+		const fact = host.service.state(S).facts[0]
+		check('升格的事实带着断言,并指得回它的判断', Array.isArray(fact?.assertions) && fact.assertions.length === 2 && fact.hypothesis === first.id)
+		const edges = graphProjection(host.service.state(S)).edges.filter((edge) => edge.kind === 'assertion')
+		check('边由升格落下:T2 的氧含量在实体图上', edges.some((edge) => edge.from === 'furnace_batch|T2' && edge.predicate === 'oxygen_ppm' && edge.source === 'promoted'), JSON.stringify(edges.map((edge) => `${edge.from}-${edge.predicate}`)))
+		check('账上没有一条 Assert(没有重复劳动)', !host.journal.some((mutation) => mutation.t === 'entity/asserted'))
+	}
+
+	// ② 同一份状态、门关着:不挡(门是机制,不是文案)。
+	{
+		const { host, S } = await setup({})
+		const passed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+		check('门关着 ⇒ 同一份状态直接结案', passed.ok === true, String(passed.code))
+	}
+
+	// ③ 门开着、判断只有散文:不拦——那只是卡上的一条缺口,不是关口。
+	{
+		const { host, S } = await setup({ requireLandedEntities: true }, { assertions: false })
+		check('前置:只有散文的判断在卡上列成缺口', host.service.derive(S).knowledge.gaps.some((gap) => gap.code === 'prose_only_claims'))
+		const passed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+		check('只有散文的判断照样升格(第四阶段删了「没有形态」那道门)', passed.ok === true, String(passed.code))
+		check('升格后的事实如实没有断言', (host.service.state(S).facts[0]?.assertions ?? null) === null)
 	}
 }
 
@@ -1052,8 +1065,8 @@ console.log('\n【货架所有权:派出去的子会话不许重铺主线的读�
 	host.cwd = ws
 	apply(host.ctx, {})
 	const P = 'session-shelf-owner'
-	const term = await callOn(host, P, 'RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
-	const pred = await callOn(host, P, 'RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: 'GB/T 5121' })
+	const term = await callOn(host, P, 'Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+	const pred = await callOn(host, P, 'Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: 'GB/T 5121' })
 	check('前置:词汇真的立起来了', term.ok === true && pred.ok === true, `${term.code}/${pred.code}`)
 	const domain = join(ws, 'clear', 'ontology', 'domain.md')
 	const factsIndex = join(ws, 'clear', 'knowledge', 'facts', 'INDEX.md')
@@ -1077,7 +1090,7 @@ console.log('\n【货架所有权:派出去的子会话不许重铺主线的读�
 
 	// ② 对照:拥有账本的会话照常维护——词汇变了,货架跟着长。
 	host.childSessions = {}
-	await callOn(host, P, 'RegisterTerm', { id: 'heating_rate', label: '升温速率', gloss: 'g', basis: 'b' })
+	await callOn(host, P, 'Define', { id: 'heating_rate', label: '升温速率', gloss: 'g', basis: 'b' })
 	await preStep(host, P, 1)
 	check('主线自己的 pre-step 照常维护货架(新词条长出来了)', readFileSync(domain, 'utf8').includes('heating_rate') && readFileSync(domain, 'utf8') !== domainBefore)
 
@@ -1338,7 +1351,7 @@ console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 19)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 10)
 	}
 
 console.log('\n【技能目录:面板与模型看同一张表(合并目录随投影下发)】')
@@ -1609,9 +1622,9 @@ console.log('\n【连拦计数 → 计划 blocked,停下等人】')
 	for (let i = 0; i < 3; i += 1) last = await call('AdvancePlan', { step_id: 'u1' })
 	check('第三次未过闸 → blocked=true 且文案要求停下等人', last.blocked === true && /停下等人/.test(last.message))
 	check('台账记下 plan/blocked', eventsOf('plan/blocked').length === 1)
-	const card = (await call('CheckPlan', {})).card
+	const card = thisHost.service.renderCard(SESSION)
 	check('派生阶段变成 stalled(派生,不存)', /阶段\(派生\):stalled/.test(card), card.split('\n').find((line) => line.includes('阶段')) ?? '')
-	await call('VoidPlanStep', { step_id: 'u1', reason: '测试脚手架,不再需要' })
+	await call('RevisePlan', { action: 'void', step_id: 'u1', reason: '测试脚手架,不再需要' })
 	await call('ClosePlan', {})
 }
 
@@ -1761,23 +1774,25 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	const assertion = (value) => ({ predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value, unit: 'ppm' } })
 
 	// ① 词汇动词:判据与折法同源,拒绝都发生在**落账之前**
-	const noBasis = await call('RegisterTerm', { id: 'no_basis_term', label: '无依据概念', gloss: 'g', basis: '' })
+	const noBasis = await call('Define', { id: 'no_basis_term', label: '无依据概念', gloss: 'g', basis: '' })
 	check('概念缺依据 → 拒(约定可以自愿,不能无来由)', noBasis.ok === false && /basis_required/.test(String(noBasis.message)), String(noBasis.code))
-	const badId = await call('RegisterTerm', { id: 'Bad-Id', label: 'L', gloss: 'g', basis: 'b' })
+	const badId = await call('Define', { id: 'Bad-Id', label: 'L', gloss: 'g', basis: 'b' })
 	check('概念 id 形状不对 → 拒', badId.ok === false && /id_shape/.test(String(badId.message)))
-	const registered = await call('RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+	const registered = await call('Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
 	check('登记概念 → 通过', registered.ok === true && registered.code === 'term_registered', String(registered.code))
 	check('概念落进货架(读面由系统写)', readFileSync(join(WORKSPACE, 'clear/ontology/domain.md'), 'utf8').includes('furnace_batch'))
-	const duplicate = await call('RegisterTerm', { id: 'furnace_batch', label: '炉次', gloss: 'again', basis: 'b' })
-	check('同一 id 再登记 → 拒(概念与谓词共用一个命名空间)', duplicate.ok === false && /id_taken/.test(String(duplicate.message)))
-	const ghostParent = await call('RegisterTerm', { id: 'narrow_batch', label: 'N', gloss: 'g', basis: 'b', parent: 'ghost_concept' })
+	const asPredicate = await call('Define', { id: 'furnace_batch', label: '炉次', range: { form: 'quantity' }, basis: 'b' })
+	check('同一 id 换成谓词 → 拒(概念与谓词共用一个命名空间)', asPredicate.ok === false && asPredicate.code === 'kind_mismatch', String(asPredicate.code))
+	const same = await call('Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: 'b' })
+	check('同一 id、展示信息也一样 → 拒(没有要改的,不重复记账)', same.ok === false && same.code === 'nothing_to_revise', String(same.code))
+	const ghostParent = await call('Define', { id: 'narrow_batch', label: 'N', gloss: 'g', basis: 'b', parent: 'ghost_concept' })
 	check('父概念不存在 → 拒', ghostParent.ok === false && /parent_unknown/.test(String(ghostParent.message)))
-	check('登记子概念(is_a 边)→ 通过', (await call('RegisterTerm', { id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', basis: 'b', parent: 'furnace_batch' })).ok === true)
-	const ambiguous = await call('RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', range: { term: 'furnace_batch', form: 'quantity' }, basis: 'b' })
+	check('登记子概念(is_a 边)→ 通过', (await call('Define', { id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', basis: 'b', parent: 'furnace_batch' })).ok === true)
+	const ambiguous = await call('Define', { id: 'oxygen_ppm', label: '氧含量', range: { term: 'furnace_batch', form: 'quantity' }, basis: 'b' })
 	check('值域二选一:同时给 term 与 form → 拒', ambiguous.ok === false && /range_ambiguous/.test(String(ambiguous.message)))
-	const ghostDomain = await call('RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'ghost_concept', range: { form: 'quantity' }, basis: 'b' })
+	const ghostDomain = await call('Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'ghost_concept', range: { form: 'quantity' }, basis: 'b' })
 	check('主词域不存在 → 拒', ghostDomain.ok === false && /domain_unknown/.test(String(ghostDomain.message)))
-	const predicate = await call('RegisterPredicate', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' })
+	const predicate = await call('Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' })
 	check('登记谓词(量形态 · 单值)→ 通过', predicate.ok === true && predicate.code === 'predicate_registered', String(predicate.code))
 
 	/**
@@ -1851,13 +1866,6 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	const cardText = thisHost.service.renderCard(SESSION)
 	check('运行态卡把冲突说出来并说明不替你选', /冲突/.test(cardText) && /系统不替你选/.test(cardText))
 
-	// ⑤ 查已知:按条件取用,查不到如实说
-	const found = await call('QueryKnowledge', { term: 'furnace_batch' })
-	check('按概念取已知 → 返回带断言的事实', found.ok === true && /已知/.test(String(found.message)), String(found.code))
-	const empty = await call('QueryKnowledge', { predicate: 'ghost_pred' })
-	check('查不到也如实说(不把「查不到」写成「不存在」)', empty.ok === true && empty.code === 'knowledge_empty' && /不要/.test(String(empty.message)), String(empty.code))
-	check('一个条件都不给 → 拒', (await call('QueryKnowledge', {})).ok === false)
-
 	/**
 	 * **主体没登记过 ⇒ 拒**(`assert_subject_unknown`),而 `legacy: true` 一次性放行。
 	 * 这一对是契约 §4 的正反两面:门要真的在,迁移开关也要真的有出口。
@@ -1873,12 +1881,19 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	})
 	check('legacy:true → 放行(迁移期出口真的通)', legacyGoal.ok === true, String(legacyGoal.code))
 
-	// ⑥ 修订 / 废止:展示信息可改,语义不可;废止黏性且挡住新断言
-	check('修订展示信息 → 通过', (await call('ReviseTerm', { id: 'furnace_batch', gloss: '一次熔铸循环(含熔炼与铸造)', reason: '把释义写全' })).ok === true)
+	// ⑤ 修订 / 废止:同 id 再定义只改展示信息,语义不可;废止黏性且挡住新断言
+	const revisedCall = await call('Define', { id: 'furnace_batch', gloss: '一次熔铸循环(含熔炼与铸造)', basis: '把释义写全' })
+	check('同 id 再定义展示信息 → 修订', revisedCall.ok === true && revisedCall.code === 'term_revised', String(revisedCall.code))
 	const revised = thisHost.service.state(SESSION).lexicon.terms.find((item) => item.id === 'furnace_batch')
 	check('修订只动展示信息:版本 +1,父链不动', revised.version === 2 && (revised.parent ?? null) === null)
-	check('废止概念 → 通过(记录保留)', (await call('DeprecateTerm', { id: 'narrow_batch', reason: '与父概念无法区分' })).ok === true)
-	check('废止是黏性终态:第二次不记账', (await call('DeprecateTerm', { id: 'narrow_batch', reason: 'again' })).code === 'already_deprecated')
+	const reparent = await call('Define', { id: 'furnace_batch', parent: 'narrow_batch', basis: '想改父概念' })
+	check('同 id 再定义改了父概念 → 拒(语义变了要换 id)', reparent.ok === false && reparent.code === 'semantics_changed' && /Deprecate/.test(String(reparent.message)), String(reparent.code))
+	const refunction = await call('Define', { id: 'oxygen_ppm', functional: false, basis: '想改成多值' })
+	check('同 id 再定义改了谓词的单值性 → 拒', refunction.ok === false && refunction.code === 'semantics_changed', String(refunction.code))
+	const relabel = await call('Define', { id: 'oxygen_ppm', label: '熔体氧含量', functional: true, range: { form: 'quantity', unit: 'ppm' }, basis: '名字写全' })
+	check('同 id 再定义谓词:语义字段原样带上、只改名字 → 修订', relabel.ok === true && relabel.code === 'predicate_revised', String(relabel.code))
+	check('废止概念 → 通过(记录保留)', (await call('Deprecate', { id: 'narrow_batch', reason: '与父概念无法区分' })).ok === true)
+	check('废止是黏性终态:第二次不记账', (await call('Deprecate', { id: 'narrow_batch', reason: 'again' })).code === 'already_deprecated')
 	await call('RegisterInstance', { id: 'B2', type: 'narrow_batch', label: 'B2 炉次', basis: '化验单 L-09', provenance: { kind: 'named', ref: '化验单 L-09' } })
 	const useDeprecated = await call('Frame', {
 		claim: 'C3', done_criteria: 'D3 可核对',
@@ -1895,14 +1910,12 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	check('直接写词汇货架 → 拒(词条只能经动词落账)', forgedShelf.kind === 'deny' && /clear\/ontology/.test(String(forgedShelf.reason)), String(forgedShelf.kind))
 }
 
-console.log('\n【跳级要看得见(但不必许可):从没被走过的等级是一条派生读数】')
+console.log('\n【跳级理由整套删除(第四阶段):等级只决定谁来判,不再有「未走过的等级」】')
 {
 	/**
-	 * 等级衡量的是「这条结论有多大程度只能靠信任做的人」,逐级上升的补偿是独立裁决与人放行。
-	 * 「直接在 L3 上交付、L0–L2 从没走过」本身**不是违规**——首次测量没有廉价路可走;
-	 * 但它必须看得见,与「假设从没被证据碰过」记成 `unjudged` 是同一条先例。
-	 * 这里刻意**不设闸门、不加必填字段**:「为什么没走便宜的路」是不可校验的领域判断,
-	 * 强制它只会造一个看起来像机制、其实核不了的字段。
+	 * 第三阶段重跑里,「跳级没写理由」让一个「跑一次 python3」的任务在结案时多被拦一次、
+	 * 多写一段「这一级为什么不适用」。等级的职责收回到两件:谁来判,以及 L4 要人放行。
+	 * 所以派生里不再有 `untouchedLevels`,卡上不再有「未走过」,旧日志里的 `level/skipped` 安静跳过。
 	 */
 	const base = {
 		...emptyState(),
@@ -1910,11 +1923,10 @@ console.log('\n【跳级要看得见(但不必许可):从没被走过的等级�
 		plans: [{ id: 'p-1', status: 'active', steps: [{ id: 's1', ordinal: 1, do: '直接测', status: 'advanced', tests: { hypothesis: 'h-1', level: 'L3' }, artifacts: [], done_criteria: '有读数' }] }],
 	}
 	const l3Only = { ...base, evidence: [{ id: 'e-1', plan: 'p-1', step: 's1', verdict: 'support', level: 'L3', refs: [], evaluator: 'independent', basis: '均值差 6.2' }] }
-	check('只在 L3 上交过 ⇒ 如实列出 L0/L1/L2 从没走过', JSON.stringify(derive(l3Only).hypotheses[0].untouchedLevels) === JSON.stringify(['L0', 'L1', 'L2']), JSON.stringify(derive(l3Only).hypotheses[0].untouchedLevels))
-	check('运行态卡里说得出这件事(模型据此交代「为什么更便宜的路不通」)', /未走过 L0\/L1\/L2/.test(renderCard(l3Only)), renderCard(l3Only).split('\n').find((line) => line.includes('未走过')) ?? '(卡片里没有这一行)')
-	const withL0 = { ...base, evidence: [...l3Only.evidence, { id: 'e-0', plan: 'p-1', step: 's1', verdict: 'support', level: 'L0', refs: [], evaluator: 'self', basis: '量纲检查' }] }
-	check('走过 L0 之后,读数只剩真正没走过的那些', JSON.stringify(derive(withL0).hypotheses[0].untouchedLevels) === JSON.stringify(['L1', 'L2']), JSON.stringify(derive(withL0).hypotheses[0].untouchedLevels))
-	check('一条证据都没有的假设不报这个读数(还没有声明可谈)', (derive(base).hypotheses[0].untouchedLevels ?? []).length === 0)
+	check('只在 L3 上交过 ⇒ 派生里没有「未走过的等级」这一项', !('untouchedLevels' in derive(l3Only).hypotheses[0]), JSON.stringify(Object.keys(derive(l3Only).hypotheses[0])))
+	check('运行态卡不再列「未走过」', !/未走过/.test(renderCard(l3Only)), renderCard(l3Only).split('\n').find((line) => line.includes('未走过')) ?? '')
+	const old = applyMutations(l3Only, [{ t: 'level/skipped', goal: null, hypothesis: 'h-1', levels: ['L0', 'L1', 'L2'], reason: '旧日志里的一条跳级理由' }])
+	check('旧日志里的 level/skipped 安静跳过(折得出来,不留痕在假设上)', !('skips' in old.hypotheses[0]) && derive(old).hypotheses[0].supportedLevel === 'L3')
 }
 
 console.log('\n【拿不到裁决要计数:同一件事反复失败必须升级给人,不许无声重试】')
@@ -2053,16 +2065,16 @@ console.log('\n【首回合的系统事实:本体声明与货架那句话必须�
 	)
 }
 
-console.log('\n【实体两件与跳级理由:新机制必须有行为证据,不是只有声明】')
+console.log('\n【实体两件:新机制必须有行为证据,不是只有声明】')
 {
 	const host = makeHost()
 	apply(host.ctx, {})
 	const S = 'session-entity'
 
 	// ① 概念先立起来(实例要有 type)。
-	const term = await callOn(host, S, 'RegisterTerm', { id: 'sucai', label: '素材', gloss: '被挪用的原始材料', basis: '测试用' })
+	const term = await callOn(host, S, 'Define', { id: 'sucai', label: '素材', gloss: '被挪用的原始材料', basis: '测试用' })
 	check('前置:概念登记成功', term.ok === true, String(term.code))
-	const pred = await callOn(host, S, 'RegisterPredicate', { id: 'cheng_wei', label: '被称为', gloss: '某材料曾被称为某概念', range: { term: 'sucai' }, basis: '测试用' })
+	const pred = await callOn(host, S, 'Define', { id: 'cheng_wei', label: '被称为', gloss: '某材料曾被称为某概念', range: { term: 'sucai' }, basis: '测试用' })
 	check('前置:谓词登记成功', pred.ok === true, String(pred.code))
 
 	// ② 实例:出处必填、type 必须是已登记概念。
@@ -2083,41 +2095,8 @@ console.log('\n【实体两件与跳级理由:新机制必须有行为证据,不
 	check('断言落账(带出处即成立,不等目标裁决)', asserted.ok === true && asserted.code === 'entity_asserted', String(asserted.code))
 	check('实体断言真的落进了账本(边在登记那一刻成立)', host.journal.filter((m) => m.t === 'entity/asserted').length === 1, JSON.stringify(host.journal.filter((m) => m.t === 'entity/asserted').length))
 
-	// ④ 跳级理由:levels 必须是"未走过"的,理由必须点到对象名。
-	const goal = await callOn(host, S, 'Frame', {
-		claim: '样本甲能不能被判为抽象',
-		headline: '样本甲能不能被判为抽象',
-		done_criteria: '存在一份判定记录,并列出 1 个反例',
-		hypotheses: [{ claim: '样本甲属于抽象', refute_when: '出现反例', assertions: [{ predicate: 'cheng_wei', subject: { id: 'yangben_a', type: 'sucai' }, object: { kind: 'instance', value: 'chouxiang', type: 'sucai' } }] }],
-	})
-	check('前置:目标立起(带 headline)', goal.ok === true, String(goal.code))
-	/**
-	 * `untouchedLevels` 只在「已经用到过某一级」之后才有意义(没走过任何等级时它是空的,
-	 * 那是"还没有声明可谈",不是缺口)。所以这里先交付一个 L3 步——真实运行里也是这条路径。
-	 */
-	const hypId = host.service.derive(S).hypotheses[0]?.id ?? null
-	const plan = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'v1', do: '跑一遍并落读数', done_criteria: 'lab/gate-a/read.txt 存在,含 1 个读数', artifacts: ['lab/gate-a/read.txt'], tests: { hypothesis: hypId, level: 'L2' } }] })
-	check('前置:计划建起来', plan.ok === true, String(plan.code))
-	writeText(join(WORKSPACE, 'lab/gate-a/read.txt'), 'count=1\n')
-	const delivered = await callOn(host, S, 'AdvancePlan', { observations: [{ ref: 'lab/gate-a/read.txt', note: '读数 count=1' }], verdict: 'support', basis: 'lab/gate-a/read.txt 里有 count=1 这一个读数', step_id: 'v1' })
-	check('前置:L2 步交付成功(于是"已用到 L2、L0–L1 没走过"这件事才存在)', delivered.ok === true, String(delivered.code ?? JSON.stringify(Object.keys(delivered))))
-	const derived = host.service.derive(S)
-	const hyp = derived.hypotheses.find((item) => Array.isArray(item.untouchedLevels) && item.untouchedLevels.length > 0) ?? null
-	if (hyp === null) {
-		check('前置:存在一条"有未走过等级"的命题(否则下面的断言是空跑)', false, JSON.stringify(derived.hypotheses.map((item) => item.untouchedLevels)))
-	} else {
-		const wrongLevel = await callOn(host, S, 'ExplainLevelSkip', { hypothesis: hyp.id, levels: ['L4'], reason: '这一级要检查的对象是 L4 要人放行,本项目没有外部仪器读数' })
-		check('给"已走过"的等级写理由 → 拒', wrongLevel.ok === false && wrongLevel.code === 'levels_not_untouched', String(wrongLevel.code))
-		const vague = await callOn(host, S, 'ExplainLevelSkip', { hypothesis: hyp.id, levels: hyp.untouchedLevels, reason: '这一层的检查在本项目里不适用,没必要为它单独花一次检查的时间' })
-		check('理由够长但不点对象名 → 拒(一句"不适用"过不了门)', vague.ok === false && vague.code === 'skip_reason_missing_object', String(vague.code))
-		const shortReason = await callOn(host, S, 'ExplainLevelSkip', { hypothesis: hyp.id, levels: hyp.untouchedLevels, reason: '时间不够' })
-		check('理由太短 → 拒', shortReason.ok === false && shortReason.code === 'skip_reason_too_short', String(shortReason.code))
-		const ok = await callOn(host, S, 'ExplainLevelSkip', { hypothesis: hyp.id, levels: hyp.untouchedLevels, reason: `这一级要检查的对象是 ${hyp.assertions?.[0]?.object?.value ?? '样本甲'}:它的来源正当性在本项目里没有可比的对照材料,所以这一层的检查不适用` })
-		check('写明对象名 → 落账', ok.ok === true && ok.code === 'level_skip_recorded', String(ok.code))
-		check('跳级理由真的折进账本', host.journal.filter((m) => m.t === 'level/skipped').length === 1, JSON.stringify(host.journal.filter((m) => m.t === 'level/skipped').length))
-		const after = host.service.derive(S).hypotheses.find((item) => item.id === hyp.id)
-		check('写完理由后 untouchedLevels 少掉那几层(缺口真的消失)', after === undefined || (after.untouchedLevels ?? []).length === 0, JSON.stringify(after?.untouchedLevels))
-	}
+	// ④ 跳级理由那件工具已经删了(第四阶段):目录里没有它。
+	check('ExplainLevelSkip 不在工具面上', !host.tools.has('ExplainLevelSkip'))
 
 	// ⑤ 一句话目标:超 120 字当场拒。
 	const long = await callOn(host, 'session-long', 'Frame', { claim: '长'.repeat(200), done_criteria: '有 1 份产物' })
@@ -2155,77 +2134,6 @@ console.log('\n【同态结案:状态没变就不重复花钱请裁决】')
 	check('第二次结案仍然成功(复用旧裁决)', second.ok === true, String(second.code))
 	check('状态没变 ⇒ 不重复派遣(评估者仍然只有 1 个)', evaluators() === 1, String(evaluators()))
 	check('账上如实留下「这次没花钱」这条事实', host.journal.some((mutation) => mutation.t === 'audit/reused'), JSON.stringify(host.journal.filter((m) => String(m.t).startsWith('audit/')).map((m) => m.t)))
-}
-
-console.log('\n【两道新门:实体未落账 / 跳级无理由,结案时真的会被挡】')
-{
-	/**
-	 * 门是**机制**:同一份状态,开门就拒、关门就放。所以这里同时跑两个宿主,
-	 * 配置只差那两个键——结论因此不可能来自别处的差别。
-	 */
-	const build = async (host) => {
-		const S = 'session-gate'
-		host.nextVerdict = { verdict: 'support', basis: '判据逐条对上了', shortfalls: [] }
-		await callOn(host, S, 'RegisterTerm', { id: 'sucai', label: '素材', gloss: '被挪用的原始材料', basis: '测试用' })
-		await callOn(host, S, 'RegisterPredicate', { id: 'cheng_wei', label: '被称为', gloss: '某材料曾被称为某概念', range: { term: 'sucai' }, basis: '测试用' })
-		// 实例先登记(契约要求主体可指认);但关于它的那句话**只挂在命题上** ⇒ 图上有节点、没有边。
-		await callOn(host, S, 'RegisterInstance', { id: 'yangben_x', type: 'sucai', label: '样本X', basis: '语料 p99', provenance: { kind: 'named', ref: '语料 p99' } })
-		const goal = await callOn(host, S, 'Frame', {
-			claim: '未落账的实体主体会不会挡住结案',
-			headline: '未落账的实体主体会不会挡住结案',
-			done_criteria: '存在一份读数,含 1 个结论',
-			hypotheses: [{ claim: '主体没登记就该被挡', refute_when: '结案通过', assertions: [{ predicate: 'cheng_wei', subject: { id: 'yangben_x', type: 'sucai' }, object: { kind: 'instance', value: 'chouxiang', type: 'sucai' } }] }],
-		})
-		check('前置:目标立起(断言主体 yangben_x 还没登记)', goal.ok === true, String(goal.code))
-		return S
-	}
-
-	const gated = makeHost()
-	apply(gated.ctx, { requireLandedEntities: true, requireLevelReasons: true, minHypotheses: 0 })
-	const S1 = await build(gated)
-	const blocked = await callOn(gated, S1, 'Conclude', { outcome: 'achieved' })
-	check('实体没落账 ⇒ 结案被挡(entities_unlanded)', blocked.ok === false && blocked.code === 'entities_unlanded', String(blocked.code))
-	check('挡下来的话里给了下一步(不是一句"不行")', /RegisterInstance|Assert/.test(String(blocked.message ?? '')), String(blocked.message ?? '').slice(0, 120))
-	/**
-	 * 出口是 `Assert`(把这句话连出处落成边),**不是**再登记一个节点——
-	 * 这正是这道门要逼出来的那个动作。
-	 */
-	const asserted = await callOn(gated, S1, 'Assert', { subject: { id: 'yangben_x', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'chouxiang', type: 'sucai' }, evidence: { kind: 'named', ref: '语料 p99' } })
-	check('前置:用 Assert 把这句话落成边', asserted.ok === true, String(asserted.code))
-	const next = await callOn(gated, S1, 'Conclude', { outcome: 'achieved' })
-	check('断言落到图上之后不再因为这道门被挡(换一道或通过)', next.code !== 'entities_unlanded', String(next.code))
-
-	const free = makeHost()
-	apply(free.ctx, { minHypotheses: 0 })
-	const S2 = await build(free)
-	const passed = await callOn(free, S2, 'Conclude', { outcome: 'achieved' })
-	check('同一份状态、门关着 ⇒ 不挡(门是机制,不是文案)', passed.code !== 'entities_unlanded', String(passed.code))
-
-	/**
-	 * 第二道门:`levels_skipped`。构造"已用到 L2、L0/L1 从没走过"的状态——
-	 * 那正是真实运行里 4/4 命题的读数形态。门开则拒,理由是"跳级要写理由"。
-	 */
-	const skipHost = makeHost()
-	apply(skipHost.ctx, { requireLandedEntities: true, requireLevelReasons: true, minHypotheses: 0 })
-	const S3 = 'session-skip-gate'
-	skipHost.nextVerdict = { verdict: 'support', basis: '判据逐条对上了', shortfalls: [] }
-	const g3 = await callOn(skipHost, S3, 'Frame', {
-		claim: '跳级没写理由会不会挡住结案',
-		headline: '跳级没写理由会不会挡住结案',
-		done_criteria: '存在一份读数,含 1 个结论',
-		hypotheses: [{ claim: '没写理由就该被挡', refute_when: '结案通过' }],
-	})
-	check('前置:skip 门的目标立起', g3.ok === true, String(g3.code))
-	const h3 = skipHost.service.derive(S3).hypotheses[0]?.id ?? null
-	await callOn(skipHost, S3, 'CreatePlan', { steps: [{ id: 'v1', do: '跑一遍并落读数', done_criteria: 'lab/gate-b/skip.txt 存在,含 1 个读数', artifacts: ['lab/gate-b/skip.txt'], tests: { hypothesis: h3, level: 'L2' } }] })
-	writeText(join(WORKSPACE, 'lab/gate-b/skip.txt'), 'count=1\n')
-	const d3 = await callOn(skipHost, S3, 'AdvancePlan', { observations: [{ ref: 'lab/gate-b/skip.txt', note: '读数 count=1' }], verdict: 'support', basis: 'lab/gate-b/skip.txt 里有 count=1 这一个读数', step_id: 'v1' })
-	check('前置:L2 步交付(于是 L0/L1 是"没走过")', d3.ok === true, String(d3.code))
-	await callOn(skipHost, S3, 'ClosePlan', { summary: '这一阶段的读数已经拿到了' })
-	const skipBlocked = await callOn(skipHost, S3, 'Conclude', { outcome: 'achieved' })
-	check('跳级没理由 ⇒ 结案被挡(levels_skipped)', skipBlocked.ok === false && skipBlocked.code === 'levels_skipped', String(skipBlocked.code))
-	const skipOk = await callOn(skipHost, S3, 'ExplainLevelSkip', { hypothesis: h3, levels: skipHost.service.derive(S3).hypotheses[0]?.untouchedLevels ?? [], reason: '这一层的检查在本项目里没有可比对照材料,所以不适用' })
-	check('写明理由后可以继续(出口是通的)', skipOk.ok === true, String(skipOk.code))
 }
 
 console.log('\n【判据修订门:成功路径也要走通(不能只有"拒"的那一半)】')
@@ -2421,10 +2329,10 @@ console.log('\n【产物路径不重叠:并行的路线不许互相覆盖产出�
 		],
 	})
 	check('各自声明不同的产物 → 照常立起来', fine.ok === true, String(fine.code))
-	const amendClash = await callOn(host, S, 'AmendPlan', { step: { id: 'p3', do: '再跑一次甲', artifacts: ['lab/a.md'], done_criteria: 'lab/a.md 写着第二次耗时' } })
+	const amendClash = await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'p3', do: '再跑一次甲', artifacts: ['lab/a.md'], done_criteria: 'lab/a.md 写着第二次耗时' } })
 	check('补一步时撞上已有步骤的产物 → 也被拒', amendClash.ok === false && /已经由步骤 p1 声明/.test(String(amendClash.message ?? '')), String(amendClash.message ?? amendClash.code).slice(0, 120))
-	await callOn(host, S, 'VoidPlanStep', { step_id: 'p1', reason: '甲的环境不可用' })
-	const reuse = await callOn(host, S, 'AmendPlan', { step: { id: 'p4', do: '换环境重跑甲', artifacts: ['lab/a.md'], done_criteria: 'lab/a.md 写着新环境下的耗时' } })
+	await callOn(host, S, 'RevisePlan', { action: 'void', step_id: 'p1', reason: '甲的环境不可用' })
+	const reuse = await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'p4', do: '换环境重跑甲', artifacts: ['lab/a.md'], done_criteria: 'lab/a.md 写着新环境下的耗时' } })
 	check('作废的步不再占着它的产物路径', reuse.ok === true, String(reuse.code))
 }
 

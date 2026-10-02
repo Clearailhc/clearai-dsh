@@ -102,7 +102,7 @@
 | observed | 拿到结果 | `observation/recorded`，交付时登记 |
 | evaluated | 已评估，证据写好 | `audit/settled` + `evidence/recorded`；`derive()` 按假设现算支持 / 推翻 / 说不清 |
 | expired | 到期没等到 | 不是状态：`audit/settled` 的裁决为 `unknown`，与准入被拦共用一个连拦计数（`block/counted`） |
-| aborted | 没拿到结果就中止 | 是事实，不是状态：带原因的作废（`VoidPlanStep`，经 `RevisePlan` 触发），或子任务记下的结束原因 |
+| aborted | 没拿到结果就中止 | 是事实，不是状态：带原因的作废（`RevisePlan` 的 `action: "void"`），或子任务记下的结束原因 |
 
 **事实**：新的推翻证据只**标记**它待复核，并当场问人；撤回与维持都落同一条复核记录。从外部拿回来的数据也可能有问题，所以不自动撤回。
 

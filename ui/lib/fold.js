@@ -39,7 +39,7 @@ export const MUTATION_KIND = 'clearai'
  *           没有断言的事实照旧可读——形状变了才 +1,不是语义变了才 +1。
  *   v10 → v11:**实体账本**独立于目标裁决:`entities`(登记的实例)、`entityAssertions`
  *           (登记那一刻就成立的边)、`hostHealth`(宿主读面降级的账),以及
- *           `hypotheses[].skips`(跳级理由)与 `goal.criteriaHistory`(判据修订)。
+ *           `hypotheses[].skips`(跳级理由,v14 删)与 `goal.criteriaHistory`(判据修订)。
  *           旧日志这三块都是空表:实体图仍只从 `facts[].assertions` 长出来,逐字节不变。
  *   v11 → v12:**宿主已有的交还宿主**:分叉 / 世界线(`forks`)、侦察(`scouts`)、外脑与技能目录
  *           (`brain`、`brainCandidates`、`skillPromotions`、`skillCatalog`、`skillUsage`)、章程读数
@@ -50,9 +50,12 @@ export const MUTATION_KIND = 'clearai'
  *           `hypothesis` 照旧读);证据带上它针对的判断(`hypothesis`);`step/advanced` 带上交付本身
  *           (`delivery`:谁判的、凭什么、出处),`step.evidence` 变成 id 数组;结算事实带上两项裁决
  *           (`holds` / `results`)。
+ *   v13 → v14:**缺口与关口收窄**:跳级理由整套删除——假设上不再有 `skips`,派生里不再有
+ *           `untouchedLevels`;旧日志里的 `level/skipped` 不认识就原样跳过。缺口只留三种
+ *           (`untouched_claims`、`prose_only_claims`、`entities_unlanded`)。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 13
+export const STATE_VERSION = 14
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -283,12 +286,6 @@ export function applyMutation(state, mutation) {
 					 * 不写断言照旧成立(宽松+校验);写了就是「这条主张用这门语言怎么说」。
 					 */
 					assertions: Array.isArray(hypothesis.assertions) ? clone(hypothesis.assertions) : null,
-					/**
-					 * **跳级理由**(`level/skipped` 折进来)。跳级本身不违规(首次测量没有廉价路
-					 * 可走),但「我直接上了 L3、下面几级从没走过」必须能说清为什么不适用——
-					 * 理由落在这里,`derive()` 会把被理由覆盖的层从 `untouchedLevels` 里减掉。
-					 */
-					skips: [],
 					at,
 				})
 			}
@@ -615,19 +612,6 @@ export function applyMutation(state, mutation) {
 			break
 		}
 		/**
-		 * **跳级理由**(`level/skipped`):这一级为什么在本项目里不适用。
-		 *
-		 * 折法只记事实,不改派生:`derive()` 把被理由覆盖的层从 `untouchedLevels` 里减掉,
-		 * 于是「跳级没理由」这条缺口会自动消失——理由本身就是它的出口。
-		 */
-		case 'level/skipped': {
-			const hypothesis = next.hypotheses.find((item) => item.id === mutation.hypothesis)
-			if (hypothesis === undefined) break
-			hypothesis.skips = Array.isArray(hypothesis.skips) ? hypothesis.skips : []
-			hypothesis.skips.push({ levels: Array.isArray(mutation.levels) ? mutation.levels.slice() : [], reason: mutation.reason ?? null, at })
-			break
-		}
-		/**
 		 * **判据修订**(`criteria/revised`):改「怎样算完成」这件事本身。
 		 *
 		 * 它折成 `goal.criteriaHistory[]`,**不改** `done_criteria`(文本由立约/修订那条路改):
@@ -871,6 +855,26 @@ export function applyEvent(state, event) {
 const TERMINAL_HYPOTHESIS = new Set(['refuted', 'superseded', 'retracted'])
 
 /**
+ * **断言主体落图了吗**:一条判断的断言里,主体还不是实体图节点的那些(去重)。
+ *
+ * 节点有几种来路,都带出处或独立裁决:`RegisterInstance` 登记的实例、`Assert` 与升格事实里的主体,
+ * 以及它们以 instance 形态引出的宾语。`derive()` 把读数挂在每条判断上(`unlanded`),
+ * 缺口 ③ 与 `Conclude` 的实体门读的都是它——「卡上说落了」与「门说没落」不会出现两种读数。
+ */
+function subjectsOffGraph(hypothesis, nodes) {
+	const seen = new Map()
+	for (const assertion of Array.isArray(hypothesis?.assertions) ? hypothesis.assertions : []) {
+		const id = String(assertion?.subject?.id ?? '').trim()
+		const type = String(assertion?.subject?.type ?? '').trim()
+		if (id === '' || type === '') continue
+		const key = `${type}|${id}`
+		if (seen.has(key) || nodes.has(key)) continue
+		seen.set(key, { id, type })
+	}
+	return [...seen.values()]
+}
+
+/**
  * **知识模式(分诊)与缺口读数。**
  *
  * 判据是**结构的,不是词法的**:这里不猜「这句话像不像研究任务」。立约(`Frame`)并用
@@ -898,48 +902,11 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 	const gaps = []
 	if (mode === 'knowledge') {
 		/**
-		 * ① 语言还没立起来:跨轮复用与「按概念取用已知」都要求先有词汇。
-		 *    判据是**两个都空**——只有概念没有谓词时,关系还说不出来,但语言已经开张了,
-		 *    那是进展不是缺口(否则每注册一个概念就多一条永远擦不掉的抱怨)。
-		 */
-		if (terms.length === 0 && predicates.length === 0) {
-			gaps.push({
-				code: 'no_language',
-				count: registered.length,
-				detail: `${registered.length} 条在验命题,但还没有任何概念与谓词:换一轮只能靠重读散文取用它们`,
-				nextAction: '先 RegisterTerm 立词,再 RegisterPredicate 说清它们之间是什么关系',
-			})
-		}
-		/**
-		 * ② 只有散文主张的命题:断言是可选的(「加法,不是门槛」),所以这里**不是违规**,
-		 *    而是「这条主张还不能被机器比对」。只算非终态的:被推翻/被替代的不再欠这一笔。
-		 */
-		const proseOnly = registered.filter((item) => !Array.isArray(item.assertions) || item.assertions.length === 0)
-		if (proseOnly.length > 0) {
-			gaps.push({
-				code: 'prose_only_claims',
-				count: proseOnly.length,
-				detail: `${proseOnly.length} 条在验命题只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
-				nextAction: '用 Frame 的修订把这条主张写成断言(主词–谓词–宾语),引用已登记的 id',
-			})
-		}
-		/**
-		 * ③ **升格时没带断言**。只算 0.2.0 那条路走出来的事实(`hypothesis` 已关联)——
-		 *    更早的事实补不上断言(见已知缺口),把它们算成欠账就是一条永远还不掉的抱怨。
-		 */
-		const unstructured = factRows.filter((fact) => typeof fact.hypothesis === 'string' && fact.hypothesis !== '' && (!Array.isArray(fact.assertions) || fact.assertions.length === 0))
-		if (unstructured.length > 0) {
-			gaps.push({
-				code: 'unstructured_facts',
-				count: unstructured.length,
-				detail: `${unstructured.length} 条已升格事实没有断言:它们进不了实体图,也不能按概念取用`,
-				nextAction: '下次升格时带上 assertions;这条老事实的形态靠新一次升格补',
-			})
-		}
-		/**
-		 * ④ **从没被证据碰过的命题**。只在这次会话已经真的跑出过证据之后才报——计划刚立、
-		 *    一步都还没走时,所有假设都是「没碰过」,那是正常的起点而不是缺口。
-		 *    它和结案时那条 `unjudged` 是同一条先例:**不逼裁决,但不许把「没看过」写成「没问题」**。
+		 * 缺口只留三种,都是「这一轮的结论还不能被复用」的直接读数,每种都指得到今天就能补的动作。
+		 *
+		 * ① **从没被证据碰过的判断**。只在这次会话已经真的跑出过证据之后才报——计划刚立、
+		 *    一步都还没走时,所有判断都是「没碰过」,那是正常的起点而不是缺口。
+		 *    不逼裁决,但不许把「没看过」写成「没问题」。
 		 */
 		if (Array.isArray(state?.evidence) && state.evidence.length > 0) {
 			const untouched = registered.filter((item) => item.refutations + item.inconclusive === 0 && item.supportedLevel === null)
@@ -953,72 +920,34 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 			}
 		}
 		/**
-		 * ⑤ **实体层空着**。判据是整数可清点的:非终态命题的断言主体去重数(wanted)与实体层
-		 *    节点数。两个数都从账本现算,没有一个字是猜的。
-		 *
-		 *    为什么必须有这一条:实体层从前是升格的副产品,于是「断言齐备、门槛也放行」却
-		 *    因为另一条无关判据被卡住时,卡上四项全绿而**实体图是空的**——「看得见的边界」
-		 *    在这里漏过一整层。诚实出口是两条:登记并落断言,或如实说清不值得留下形态。
+		 * ② 只有散文主张的判断:断言是可选的,所以这里**不是违规**,也不拦结案,
+		 *    而是「这条主张还不能被机器比对、下一轮也按概念取不到」。只算非终态的。
 		 */
-		const assertions = registered.flatMap((item) => (Array.isArray(item.assertions) ? item.assertions : []))
-		const wantedKeys = new Set(assertions.map((assertion) => `${String(assertion?.subject?.type ?? '')}|${String(assertion?.subject?.id ?? '')}`).filter((key) => key !== '|'))
+		const proseOnly = registered.filter((item) => !Array.isArray(item.assertions) || item.assertions.length === 0)
+		if (proseOnly.length > 0) {
+			gaps.push({
+				code: 'prose_only_claims',
+				count: proseOnly.length,
+				detail: `${proseOnly.length} 条在验命题只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
+				nextAction: '先 Define 立概念与谓词、RegisterInstance 登记主体,再用 Frame 修订把主张写成断言(主词–谓词–宾语)',
+			})
+		}
 		/**
-		 * **判据是"每一个主体都落地了吗",不是"图上有没有东西"。**
+		 * ③ **断言主体没落图**。判据与 `Conclude` 的实体门是同一条(每条判断上的 `unlanded`):
+		 *    断言的主体是不是实体图上带出处的节点。逐个主体判,`count` 就是还没落地的个数——
+		 *    随便登记一个无关节点不会让它消失。
 		 *
-		 * 弱判据(实体层节点数 === 0)有一个便宜的绕法:随便登记一个**无关**节点,
-		 * 缺口就消失,而真正该落地的那几个主体仍然只在命题上。于是这道门形同虚设。
-		 * 所以这里逐个主体判它有没有落成实体层节点,`count` 就是**还没落地的个数**。
+		 *    为什么看节点、不看边:边由升格本身落下(事实带着它的断言进图),
+		 *    要求在升格之前另用 `Assert` 把同一句话再说一遍,只是让模型重复劳动。
 		 */
-		/**
-		 * **"落地"的判据是"这句断言在图上有边",不是"图上有这个节点"。**
-		 *
-		 * 只数节点会漏掉最要命的那种形态:实例登记了(图上有节点),而关于它的那句话还挂在命题上
-		 * ——图有节点、没有边,"实体图长出来了"仍然是一句空话。所以这里取**断言边的起点集合**:
-		 * 一条边要么来自带出处的实体断言(`Assert`),要么来自过了独立裁决的升格事实。
-		 */
-		const graph = graphProjection(state)
-		const landedKeys = new Set(graph.edges.filter((edge) => edge.kind === 'assertion').map((edge) => String(edge.from)))
-		const unlanded = [...wantedKeys].filter((key) => !landedKeys.has(`term:${key}`) && !landedKeys.has(key))
+		const unlanded = [...new Map(registered.flatMap((item) => item.unlanded ?? []).map((item) => [`${item.type}|${item.id}`, item])).values()]
 		if (unlanded.length > 0) {
 			gaps.push({
 				code: 'entities_unlanded',
 				count: unlanded.length,
-				detail: `${unlanded.length} 个断言主体还没有落到实体图（共 ${wantedKeys.size} 个）：断言只挂在命题上，不构成「已知」`,
-				nextAction: '先 RegisterInstance 把实例连出处登记下来；确实不值得留下形态就如实说清',
+				detail: `${unlanded.length} 个断言主体还没有落到实体图(${unlanded.map((item) => `${item.type}|${item.id}`).join('、')}):断言只挂在命题上,不构成「已知」`,
+				nextAction: '用 RegisterInstance 把这些主体连出处登记下来;确实不值得留下形态就把断言从判断上拿掉(Frame 修订)',
 			})
-		}
-		/**
-		 * ⑥ **跳级没有理由**。`derive()` 已经把写明理由的层从 `untouchedLevels` 里减掉,
-		 *    所以这里数出来的每一个都是真的欠一句解释的层——出口只有一条:
-		 *    用 `ExplainLevelSkip` 写清「为什么这一级在本项目里不适用」。
-		 */
-		const skipped = registered
-			.map((item) => ({ id: item.id, levels: Array.isArray(item.untouchedLevels) ? item.untouchedLevels : [] }))
-			.filter((item) => item.levels.length > 0)
-		const skippedCount = skipped.reduce((sum, item) => sum + item.levels.length, 0)
-		if (skippedCount > 0) {
-			gaps.push({
-				code: 'levels_skipped',
-				count: skippedCount,
-				detail: `${skippedCount} 处跳级没有理由（${skipped.map((item) => `命题 ${item.id} 缺 ${item.levels.join('/')}`).join('；')}）`,
-				nextAction: '用 ExplainLevelSkip 写明「为什么这一级在本项目里不适用」',
-			})
-		}
-		/**
-		 * ⑦ **注册了却没人用的概念**。它和货架上「零引用的概念」那一节读**同一份**引用面
-		 *    (`termUsage`),所以两处不会出现「货架说没人用、缺口说用了」这种两种读数。
-		 */
-		if (terms.length > 0 && registered.length > 0) {
-			const usage = termUsage(lexicon, factRows, Array.isArray(state?.entityAssertions) ? state.entityAssertions : [])
-			const orphans = terms.filter((term) => term.status !== 'deprecated' && (usage.get(term.id) ?? 0) === 0)
-			if (orphans.length > 0) {
-				gaps.push({
-					code: 'orphan_terms',
-					count: orphans.length,
-					detail: `${orphans.length} 个概念没有任何结论引用它们（它们还只是约定，不是已知）`,
-					nextAction: '要么在断言里用起来，要么在货架上如实标出「未被引用」',
-				})
-			}
 		}
 	}
 	return {
@@ -1037,10 +966,10 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 /**
  * **知识预检(preflight)**:进入知识模式那一刻,把「已知」主动送到模型面前。
  *
- * 解决的问题:真跑里模型不查就开工——不是因为不知道有 \`QueryKnowledge\`,
+ * 解决的问题:真跑里模型不查就开工——不是因为没有查询的入口,
  * 而是因为**没人提醒它此刻该查**。提示词会被读成建议;卡里的读数不会。
  * 于是这里把相关性判断做成投影:从当前目标与命题的文本出发,圈出**有界**的一组
- * 已有词汇、事实与冲突,随运行态卡注入。模型只在这份摘要不够用时才需要精确查询。
+ * 已有词汇、事实与冲突,随运行态卡注入。模型只在这份摘要不够用时才需要去读全文。
  *
  * 三条纪律(与缺口读数同一套):
  *   · **只读**:不产生变更,不新增状态——它就是 \`derive\` 的另一个读面;
@@ -1566,6 +1495,7 @@ export function derive(state) {
 			.map((item) => item.hypothesis)
 			.filter((id) => typeof id === 'string' && id !== ''),
 	)
+	const instanceNodes = new Set(graphProjection(state).nodes.filter((node) => node.kind === 'instance').map((node) => String(node.id)))
 	const hypotheses = state.hypotheses.map((hypothesis) => {
 		const rows = []
 		for (const item of state.evidence) {
@@ -1587,31 +1517,7 @@ export function derive(state) {
 		else if (status === 'proposed' && rows.length > 0) status = 'alive'
 		// 被推翻是黏性终态:「已被替代」不该改写「已被推翻」——两件事。
 		if (status !== 'superseded' && status !== 'refuted' && status !== 'retracted' && refutations > 0) status = 'refuted'
-		/**
-		 * **从没被走过的等级**(派生,零新账)。
-		 *
-		 * 等级衡量的是「这条结论在多大程度上只能靠信任做的人」,而它逐级上升的补偿是
-		 * 独立裁决与人放行。所以「我直接在 L3 上交付、L0/L1/L2 从没走过」本身不是违规
-		 * (首次测量没有廉价路可走),但**它必须看得见**——与「假设从没被证据碰过」记成
-		 * `unjudged` 是同一条先例:不逼裁决,但不许把「没看过」写成「没问题」。
-		 *
-		 * 只列**低于已用到过的最高等级**、且一条证据都没有的那些级;没走过任何等级时为空
-		 * (还没有声明可谈)。
-		 */
-		const used = new Set(rows.map((item) => String(item.level ?? '').toUpperCase()))
-		const top = [...used].reduce((best, level) => Math.max(best, LEVELS.indexOf(level)), -1)
-		/**
-		 * **写明理由的跳级不算「没走过」**:`level/skipped` 记的就是「这一级在本项目里
-		 * 为什么不适用」。所以减掉它——于是 `levels_skipped` 缺口与卡上那一行读的都是
-		 * 减完的结果:「写明理由」是那条缺口唯一的出口,而且它真的会让缺口消失。
-		 */
-		const skipCovered = new Set(
-			(Array.isArray(hypothesis.skips) ? hypothesis.skips : [])
-				.flatMap((skip) => (Array.isArray(skip?.levels) ? skip.levels : []))
-				.map((level) => String(level).toUpperCase()),
-		)
-		const untouchedLevels = top <= 0 ? [] : LEVELS.slice(0, top).filter((level) => !used.has(level) && !skipCovered.has(level))
-		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive, untouchedLevels }
+		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive, unlanded: subjectsOffGraph(hypothesis, instanceNodes) }
 	})
 
 	/**
@@ -1770,7 +1676,7 @@ export const HUMAN_GATE_MARK = '[clearai·人门]'
 export const HUMAN_GATE_ACTIONS = [
 	/**
 	 * **本体四动词(人的通道)**:面板抽屉发的就是它们;模型有同名语义的工具
-	 * (`RegisterTerm` 等),但这两个面落的是**同一套判据与同一本账**——判据在宿主半的
+	 * (`Define` / `Deprecate`),但这两个面落的是**同一套判据与同一本账**——判据在宿主半的
 	 * `domain` 门里,词汇事件只有一种折法。这个数组在内核那一侧有一份**逐字镜像**
 	 * (预设面不能 import 这一层),两边相等由 authority-boundary 套件钉死。
 	 */
@@ -1889,9 +1795,7 @@ export function view(state, sessionId) {
 							supportedLevel: hypothesis.supportedLevel,
 							refutations: hypothesis.refutations,
 							inconclusive: hypothesis.inconclusive,
-							/** 从没被走过的等级(派生):面板据此说清「这一级是跳上来的」。 */
-							untouchedLevels: hypothesis.untouchedLevels,
-							version: hypothesis.version,
+								version: hypothesis.version,
 							/** 断言随假设走(未升格):面板同画芯片(chip 同样在投影侧算好),标注「未升格」。 */
 							assertions: Array.isArray(hypothesis.assertions)
 								? hypothesis.assertions.map((assertion) => ({ ...assertion, chip: formatAssertion(state.lexicon, assertion) }))

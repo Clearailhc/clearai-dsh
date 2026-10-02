@@ -203,10 +203,8 @@ export const CONFIG_KEYS = [
 	'l4RequiresHumanRelease',
 	'l4RejectSelfWritten',
 	'minHypotheses',
-	'requireTypedPromotion',
 	'requireCriteriaVerdict',
 	'requireLandedEntities',
-	'requireLevelReasons',
 	'bashDenyRules',
 	'auditProvider',
 	'auditTimeoutMs',
@@ -221,12 +219,12 @@ export const CONFIG_KEYS = [
  */
 export const MECHANISM_TOOLS = {
 	goal: ['Frame', 'Conclude'],
-	plan: ['CreatePlan', 'CheckPlan', 'AmendPlan', 'RefinePlan', 'VoidPlanStep', 'ClosePlan', 'AdvancePlan'],
+	plan: ['CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan'],
 	/**
-	 * 领域语言:九个写入口(概念注册/修订/废止 · **实例登记** · **带出处的断言** · 跳级理由)
-	 * + 一个读入口(按概念取已知)。「约定」与「观测」各走各的门:概念不需依据,实例与断言必须带出处。
+	 * 领域语言:四个写入口——立词(概念与谓词,同 id 再定义即修订)、废止、**实例登记**、**带出处的断言**。
+	 * 「约定」与「观测」各走各的门:概念不需依据,实例与断言必须带出处。
 	 */
-	ontology: ['RegisterTerm', 'RegisterPredicate', 'ReviseTerm', 'RevisePredicate', 'DeprecateTerm', 'DeprecatePredicate', 'RegisterInstance', 'Assert', 'ExplainLevelSkip', 'QueryKnowledge'],
+	ontology: ['Define', 'Deprecate', 'RegisterInstance', 'Assert'],
 }
 const TOOL_CATALOG = new Set(Object.values(MECHANISM_TOOLS).flat())
 
@@ -324,26 +322,14 @@ export function apply(ctx, config = {}) {
 		l4RejectSelfWritten: config.l4RejectSelfWritten !== false,
 		/** ClearAI 代码里「≥2 条假设」只是文案;默认不强制。 */
 		minHypotheses: config.minHypotheses ?? 0,
-		/**
-		 * **知识门**:将要升格的命题必须已有断言的形态,否则结案被拒。
-		 *
-		 * 与 `minHypotheses` 是**两条不同的立场**,所以是两个键,不是一个:
-		 * 前者说「开工要有候选对比」,这条说「结论要有形态」。一个部署完全可以只要前者。
-		 * 机制侧缺省关(= 断言始终是加法),preset 里写 true——与 `blockedThreshold` 同一个模式。
-		 */
-		requireTypedPromotion: config.requireTypedPromotion === true,
-		/**
-		 * 两道与它对称的门(机制缺省关,preset 里开):
-		 *   · `requireLandedEntities`:断言主体还没落到实体图上 ⇒ 结案被拒。
-		 *     它挡的是「本体写得漂亮、实体图是空的」——那是把结论停在散文上的另一种形态。
-		 *   · `requireLevelReasons`:有等级被跳过而没写理由 ⇒ 结案被拒。
-		 *     它挡的是「一路只在最贵的那一级交付」——便宜的检查从未被走过,却没人知道为什么。
-		 * 两条出口都诚实:补齐(RegisterInstance / Assert / ExplainLevelSkip)或如实 abandoned。
-		 */
 		/** 判据修订门:改「怎样算完成」要带一份独立裁决的 auditKey(机制缺省关,preset 里开)。 */
 		requireCriteriaVerdict: config.requireCriteriaVerdict === true,
+		/**
+		 * **实体门**(结案唯一的结构关口;机制缺省关,preset 里开):将要升格的判断里,
+		 * 断言主体还不是实体图节点 ⇒ 结案被拒。它挡的是「本体写得漂亮、实体图是空的」。
+		 * 出口两条:`RegisterInstance` 补登记,或把断言从判断上拿掉 / 如实 abandoned。
+		 */
 		requireLandedEntities: config.requireLandedEntities === true,
-		requireLevelReasons: config.requireLevelReasons === true,
 		bashDenyRules: config.bashDenyRules !== false,
 		auditProvider: config.auditProvider ?? 'spawn',
 		auditTimeoutMs: config.auditTimeoutMs ?? 240000,
@@ -636,7 +622,7 @@ export function apply(ctx, config = {}) {
 
 		if (result.missing.length > 0) {
 			result.verified_by = 'l1'
-			result.hint = `声明的产物没落盘:${result.missing.join(', ')}。三条合法出路:①把产物做出来;②改声明(RefinePlan 改判据、AmendPlan 换产物);③带因作废(VoidPlanStep)。`
+			result.hint = `声明的产物没落盘:${result.missing.join(', ')}。三条合法出路:①把产物做出来;②改声明(RevisePlan refine 改判据、add 补一步换产物);③带因作废(RevisePlan void)。`
 			return result
 		}
 		if (result.directories.length > 0) {
@@ -660,7 +646,7 @@ export function apply(ctx, config = {}) {
 			return result
 		}
 		if (criteria === '') {
-			// ClearAI 的存量兼容出口。本内核在 CreatePlan/AmendPlan 就强制判据,所以这条路径不可达
+			// ClearAI 的存量兼容出口。本内核在 CreatePlan/RevisePlan 就强制判据,所以这条路径不可达
 			// ——「没有判据 → 确定性放行」这个软肋在这里被关掉。
 			result.ok = true
 			result.verified_by = 'l1'
@@ -1619,7 +1605,7 @@ export function apply(ctx, config = {}) {
 		})
 		if (asked.ok !== true) {
 			const why = asked.reason === 'cancelled' ? '人把问题撤下了' : '没有人能回答'
-			return `\n已问人怎么办,但${why}:计划保持 blocked,停下等人。人回答之前,你自己能动的只有计划本身:RefinePlan 改判据、AmendPlan 换做法、VoidPlanStep 带原因作废。${blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, `步骤 ${step.id} 连续 ${attempts} 次没过,等人决定:按缺口再改,还是作废这一步。`)}`
+			return `\n已问人怎么办,但${why}:计划保持 blocked,停下等人。人回答之前,你自己能动的只有计划本身:RevisePlan 改判据(refine)、补一步换做法(add)、带原因作废(void)。${blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, `步骤 ${step.id} 连续 ${attempts} 次没过,等人决定:按缺口再改,还是作废这一步。`)}`
 		}
 		const said = asked.note === null ? '' : `,人说:「${asked.note}」`
 		if (asked.choice === STALL_VOID) {
@@ -1628,7 +1614,7 @@ export function apply(ctx, config = {}) {
 			return `\n人决定**作废这一步**${said}。已带原因作废,记录保留;接着做下一步。`
 		}
 		mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
-		return `\n人让你**按缺口再改**${said}。改判据(RefinePlan)或换做法后再交付。`
+		return `\n人让你**按缺口再改**${said}。改判据(RevisePlan refine)或换做法后再交付。`
 	}
 
 	/**
@@ -1871,15 +1857,6 @@ export function apply(ctx, config = {}) {
 		const predicate = (Array.isArray(lexicon.predicates) ? lexicon.predicates : []).find((item) => item.id === wanted)
 		if (predicate !== undefined) return { kind: 'predicate', entry: predicate }
 		return null
-	}
-
-	/** 查询条件的一行人话:让「查不到」也说得清查的是什么。 */
-	function describeFilter(filter) {
-		const parts = []
-		if (filter.term !== '') parts.push(`概念「${filter.term}」`)
-		if (filter.predicate !== '') parts.push(`谓词「${filter.predicate}」`)
-		if (filter.subject !== '') parts.push(`主体「${filter.subject}」`)
-		return `查询:${parts.join(' · ')}`
 	}
 
 	/**
@@ -2282,75 +2259,43 @@ export function apply(ctx, config = {}) {
 						remaining.length === 0
 							? '(所有步都落定了,只差一次 ClosePlan)'
 							: `(还有 ${remaining.length} 步没落定:${remaining.map((step) => step.id).join(', ')})`
-					}。\n为什么不让跳过:事实是在**收尾**这条路上沉淀的(假设 → 事实),先结目标就等于跳过沉淀 ✗。\n要接着做:把剩下的步交付或用 VoidPlanStep 作废,然后 \`ClosePlan\`;要放弃这个目标就用 \`Conclude(outcome="abandoned")\`(那条路不受此限)。`,
+					}。\n为什么不让跳过:事实是在**收尾**这条路上沉淀的(假设 → 事实),先结目标就等于跳过沉淀 ✗。\n要接着做:把剩下的步交付或用 RevisePlan(void)作废,然后 \`ClosePlan\`;要放弃这个目标就用 \`Conclude(outcome="abandoned")\`(那条路不受此限)。`,
 				)
 			}
 			const derived = hostService.derive(sessionId)
 			/**
-			 * **知识门:核心结论不许以纯散文升格。**
+			 * **实体门:将要升格的结论,主体必须在图上。**(结案唯一的结构关口)
 			 *
-			 * 位置有讲究——它坐在「计划已收尾」之后、**派评估者之前**。判据与准入同一条顺序纪律:
-			 * 先把能做的前提查完,再花钱请人裁决;等评估卡回来才发现没形态,那一次子 run 就白花了。
+			 * 位置有讲究——它坐在「计划已收尾」之后、**派评估者之前**:先拦便宜能补的,
+			 * 再花钱请人裁决;等评估卡回来才发现主体没落图,那一次子 run 就白花了。
 			 *
-			 * 为什么需要它:断言一直是「加法,不是门槛」,于是真跑里模型的最优策略就是
-			 * 「检索 → 总结 → 写报告」——本体、实体、认识论三张图都长不出来,因为完成函数里没有它们。
-			 * 让缺口进卡(见 `renderCard`)只解决「看得见」;这一道解决「绕不过」。
+			 * 判据只看**将要升格的那几条判断**(与下面升格循环逐字同一套谓词):没到门槛的判断
+			 * 还不是结论,不欠这一笔;只有散文、没有断言的判断也不拦——那是只给模型的缺口
+			 * (`prose_only_claims`),不是关口。主体是不是图上的节点,读的是 `derive()` 挂在每条
+			 * 判断上的 `unlanded`,与卡上缺口 ③ 同一份读数。
 			 *
-			 * **判据是结构谓词,不是词面**:将要升格的命题里,只要有一条没有断言就拦。
-			 * 出口有两条,都是诚实的:补上断言的形态再结,或者如实 `abandoned`。
-			 * 缺口不许被伪装成 support(那是「造证」,比不结案坏得多)。
+			 * 为什么看节点、不看边:边由升格本身落下(事实带着断言进图);要求升格之前另用
+			 * `Assert` 把同一句话再说一遍,只是让模型重复劳动——第三阶段重跑里它就这样多花了一轮。
 			 *
-			 * 开关是 `requireTypedPromotion`(机制缺省关,preset 里开):它与 `minHypotheses`
-			 * 是两条不同的立场,所以不共用一个键。另外它**只在知识模式下生效**——
-			 * 没有登记的命题就没有「形态」可谈,那时拦下来的只是一句空话。
+			 * 第四阶段删掉的两道门:「跳级没写理由」(`ExplainLevelSkip` 整套删除)与
+			 * 「将升格的命题没有断言形态」(降为缺口)。依据见 `docs/less-is-more-plan.zh-CN.md` 第四阶段。
 			 */
-			/**
-			 * **结构缺口的两道门**(与上面的知识门同一族、同一条顺序纪律:先拦便宜能补的,
-			 * 再花钱请人裁决)。
-			 *
-			 * 两道都是「可清点的整数 + 两条诚实出口」,判据来自投影的 `gaps`,不另算一套:
-			 *   · `entities_unlanded`:N 个断言主体还没落到实体图。补法是 `RegisterInstance`
-			 *     (登记节点)或 `Assert`(连出处把边也落下来);不值当就如实 abandoned。
-			 *   · `levels_skipped`:N 处跳级没有理由。补法是 `ExplainLevelSkip`。
-			 * 提示词只会被读成建议;这两道进的是完成函数。
-			 */
-			const gapOf = (code) => (derived.knowledge.gaps ?? []).find((gap) => gap.code === code) ?? null
 			if (CFG.requireLandedEntities && derived.knowledge.mode === 'knowledge') {
-				const gap = gapOf('entities_unlanded')
-				if (gap !== null) {
-					return fail(
-						'entities_unlanded',
-						`${gap.detail}\n${gap.nextAction}\n为什么不让跳过:断言停在命题上时,图是空的——而"查到的实体"没有落成图,等于这一轮没有留下可复用的东西。两条出口:补登记,或如实 \`Conclude(outcome="abandoned")\`。`,
-						{ mutations },
-					)
-				}
-			}
-			if (CFG.requireLevelReasons && derived.knowledge.mode === 'knowledge') {
-				const gap = gapOf('levels_skipped')
-				if (gap !== null) {
-					return fail(
-						'levels_skipped',
-						`${gap.detail}\n${gap.nextAction}\n为什么不让跳过:等级是"这条结论多大程度只能靠信任做的人";跳过便宜的那几级本身不违规,但**没有理由**的跳级等于没人知道为什么。两条出口:补理由,或如实 \`Conclude(outcome="abandoned")\`。`,
-						{ mutations },
-					)
-				}
-			}
-			if (CFG.requireTypedPromotion && derived.knowledge.mode === 'knowledge') {
 				const threshold = levelIndexOf(goal.promote_at_level)
-				/** 与下面那段升格循环**逐字同一套谓词**:将要升格的就是这几条,一条不多一条不少。 */
 				const promotable = derived.hypotheses.filter(
 					(hypothesis) =>
 						(hypothesis.status === 'alive' || hypothesis.status === 'proposed') &&
 						(hypothesis.refutations ?? 0) === 0 &&
 						levelIndexOf(hypothesis.supportedLevel) >= threshold,
 				)
-				const untyped = promotable.filter((hypothesis) => !Array.isArray(hypothesis.assertions) || hypothesis.assertions.length === 0)
-				if (untyped.length > 0) {
+				const offGraph = promotable.filter((hypothesis) => (hypothesis.unlanded ?? []).length > 0)
+				if (offGraph.length > 0) {
 					return fail(
-						'claims_untyped',
-						`有 ${untyped.length} 条命题已经验到门槛、却**没有断言的形态**,再往下就是散文升格:\n${untyped
-							.map((hypothesis) => `- ${hypothesis.id}(${hypothesis.supportedLevel}):${hypothesis.claim}`)
-							.join('\n')}\n把结论写成「主词 · 谓词 = 宾语」才进得了实体图,下一轮也才按概念取用得到。两条路:\n① **补形态再结**:词汇里没有对应的概念 / 谓词就先 \`RegisterTerm\` / \`RegisterPredicate\`,再用 \`Frame\` 修订目标、把这些命题连断言一起重列一遍(主张原文一字不动就会用回原 id,验到哪一级接着算),然后重新结案;\n② **如实放弃**:这些结论不值得留下形态,就用 \`Conclude(outcome="abandoned")\` 说清阻塞收兵。\n别为了让门放行而编一个词——词汇是约定,它将长期约束这个项目怎么写结论。`,
+						'entities_unlanded',
+						`有 ${offGraph.length} 条将要升格的判断,断言主体还不在实体图上:\n${offGraph
+							.map((hypothesis) => `- ${hypothesis.id}(${hypothesis.supportedLevel}):${hypothesis.unlanded.map((subject) => `${subject.type}|${subject.id}`).join('、')}`)
+							.join('\n')}\n为什么不让跳过:升格会把这些断言连同主体一起写进实体图;主体没有出处,图上就多出一个无从复核的节点。\n两条出口:① 用 \`RegisterInstance\` 把这些主体连出处登记下来,然后重新结案(不必再 \`Assert\` 同一句话,升格会落下这条边);② 这些断言不值得留下形态,就用 \`Frame\` 修订把它们从判断上拿掉,或如实 \`Conclude(outcome="abandoned")\`。`,
+						{ mutations },
 					)
 				}
 			}
@@ -2540,76 +2485,39 @@ export function apply(ctx, config = {}) {
 
 	// ── 领域语言(本体动词)─────────────────────────────────────────────────
 	/**
-	 * 七个动词 = 领域词汇的**全部写入口**(注册 / 修订 / 废止,概念与谓词各一套)+ 一个读入口。
+	 * 两个动词 = 领域词汇的**全部写入口**:`Define` 立词与修订(概念与谓词同一件),`Deprecate` 废止。
 	 *
 	 * 它们只做一件事:把「这个领域有哪些概念、哪些谓词、关系取什么值形态」写进账本事件,
 	 * 由折法折成 `state.lexicon`;再由同一份折法长出本体图、冲突读数与货架。
+	 * 事件名沿用从前那七个动词的(`ontology/term_added` 等),所以旧日志照旧折得出来。
 	 *
 	 * 四条贯穿所有动词的纪律:
 	 *   · **判据只有一份**——校验经 `hostService.domain.*`(与折法、读面同源),预设侧不复制规则;
 	 *   · **依据必填**——约定可以自愿,不能无来由;
 	 *   · **没有删除**——修订留版本,废止留缘由且是黏性终态;
-	 *   · **语义变化必须换 id**——改展示信息走修订,改含义/主词域/值域走「废止 + 新注册」。
+	 *   · **语义变化必须换 id**——同 id 再定义只许改展示信息;改含义/主词域/值域走「废止 + 新 id」。
 	 */
+	const TERM_SEMANTICS = ['parent']
+	const PREDICATE_SEMANTICS = ['domain', 'range', 'functional']
+	const sameValue = (left, right) => JSON.stringify(left ?? null) === JSON.stringify(right ?? null)
+
 	defineTool({
-		name: 'RegisterTerm',
+		name: 'Define',
 		description:
-			'登记一个领域概念(本体图上的节点)。id 用小写 slug;`gloss` 一句话说清它指什么;`basis` 必填——哪份材料、哪条事实或人说的哪句话让这个词成立。`parent` 可选(is_a,只能连概念)。登记是**约定**不是主张:它不需要证据等级,但从此可以出现在断言里。要改展示信息用 ReviseTerm,要作废用 DeprecateTerm(记录不会删)。',
+			'立一个领域词:**不带 `range` 的是概念**(本体图上的节点),**带 `range` 的是谓词**(本体图上的边)。id 用小写 slug;`basis` 必填——哪份材料、哪条事实或人说的哪句话让这个词成立。概念可给 `parent`(is_a,只能连概念)与 `aliases`;谓词的值域二选一:`range={form:"quantity"|"statement"|"formula"|"code"|"reference",unit?}`(宾语是字面值)或 `range={term:"<概念 id>"}`(宾语是另一个概念的实例),`domain` 可选(主词域),`functional=true` 表示单值(同一主体出现两个不同取值时投影给出一对冲突,只暴露不裁决)。**同 id 再定义即修订**:只许改名字、释义、别名(旧值留在账上);含义变了(父概念 / 主词域 / 值域 / 单值性)要先 `Deprecate` 旧词、换一个新 id。登记是约定不是主张:它不需要证据等级,但从此可以出现在断言里。',
 		parameters: {
 			type: 'object',
 			properties: {
 				id: { type: 'string', description: '小写字母开头的 slug(字母/数字/下划线,≤40)' },
-				label: { type: 'string', description: '给人看的名字' },
-				gloss: { type: 'string', description: '一句话释义' },
-				aliases: { type: 'array', items: { type: 'string' }, description: '别名(可选)' },
-				parent: { type: 'string', description: '父概念 id(可选,is_a)' },
-				basis: { type: 'string', description: '依据:哪份材料 / 哪条事实 / 谁说的' },
-			},
-			required: ['id', 'label', 'gloss', 'basis'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const judge = domainJudge(hostService)
-			if (judge === null) return fail('domain_unavailable', '这一层的宿主没有提供领域判据(domain facade):无法校验词汇。请检查宿主半与预设是否同版本。')
-			const problems = judge.validateTerm(sessionId, args)
-			if (problems.length > 0) return fail('term_rejected', `这个词不能登记:\n${problems.map((item) => `- ${item}`).join('\n')}`)
-			mutations.push({
-				t: 'ontology/term_added',
-				id: String(args.id).trim(),
-				label: String(args.label).trim(),
-				gloss: String(args.gloss).trim(),
-				aliases: Array.isArray(args.aliases) ? args.aliases.map((alias) => String(alias)) : [],
-				parent: args.parent === undefined ? null : String(args.parent).trim(),
-				basis: String(args.basis).trim(),
-			})
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({
-				ok: true,
-				code: 'term_registered',
-				message: `概念 ${String(args.id).trim()} 已登记。它现在是本体图上的一个节点:新断言可以引用它。${note}`,
-			})
-		},
-	})
-
-	defineTool({
-		name: 'RegisterPredicate',
-		description:
-			'登记一个领域谓词(本体图上的边)。值域二选一:`range={form:"quantity"|"statement"|"formula"|"code"|"reference",unit?}` 说宾语是一个**字面值**,或 `range={term:"<概念 id>"}` 说宾语是**另一个概念的实例**。`domain` 可选(主词域,声明了它,断言的主体就必须写明类型)。`functional=true` 表示单值:同一主体出现两个不同取值时,投影会给出一对**冲突**(只暴露,不裁决)。',
-		parameters: {
-			type: 'object',
-			properties: {
-				id: { type: 'string', description: '小写字母开头的 slug' },
-				label: { type: 'string', description: '给人看的名字' },
-				gloss: { type: 'string', description: '一句话释义(可选)' },
-				domain: { type: 'string', description: '主词域:概念 id(可选)' },
+				label: { type: 'string', description: '给人看的名字(新词必填)' },
+				gloss: { type: 'string', description: '一句话释义(新概念必填)' },
+				basis: { type: 'string', description: '依据:哪份材料 / 哪条事实 / 谁说的;修订时写为什么改' },
+				aliases: { type: 'array', items: { type: 'string' }, description: '别名(仅概念,可选)' },
+				parent: { type: 'string', description: '父概念 id(仅概念,可选,is_a)' },
+				domain: { type: 'string', description: '主词域:概念 id(仅谓词,可选)' },
 				range: {
 					type: 'object',
-					description: '值域:{form,unit?} 或 {term}',
+					description: '值域(给了它就是谓词):{form,unit?} 或 {term}',
 					properties: {
 						form: { type: 'string', enum: ['statement', 'quantity', 'formula', 'code', 'reference'] },
 						unit: { type: 'string' },
@@ -2617,96 +2525,89 @@ export function apply(ctx, config = {}) {
 					},
 					additionalProperties: false,
 				},
-				functional: { type: 'boolean', description: '是否单值(默认否)' },
-				basis: { type: 'string', description: '依据(必填)' },
+				functional: { type: 'boolean', description: '是否单值(仅谓词,默认否)' },
 			},
-			required: ['id', 'label', 'range', 'basis'],
+			required: ['id', 'basis'],
 			additionalProperties: false,
 		},
 		output: CARD_OUTPUT,
 		async execute(args, exec) {
 			const call = open(exec)
 			if (call.ok !== true) return call.response
-			const { hostService, sessionId, mutations } = call
+			const { hostService, sessionId, state, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
 			const judge = domainJudge(hostService)
 			if (judge === null) return fail('domain_unavailable', '这一层的宿主没有提供领域判据(domain facade):无法校验词汇。请检查宿主半与预设是否同版本。')
-			const problems = judge.validatePredicate(sessionId, args)
-			if (problems.length > 0) return fail('predicate_rejected', `这个谓词不能登记:\n${problems.map((item) => `- ${item}`).join('\n')}`)
-			mutations.push({
-				t: 'ontology/predicate_added',
-				id: String(args.id).trim(),
-				label: String(args.label).trim(),
-				gloss: args.gloss === undefined ? '' : String(args.gloss).trim(),
-				domain: args.domain === undefined ? null : String(args.domain).trim(),
-				range: args.range,
-				functional: args.functional === true,
-				basis: String(args.basis).trim(),
-			})
+			const id = String(args.id ?? '').trim()
+			const basis = typeof args.basis === 'string' ? args.basis.trim() : ''
+			const existing = findLexiconEntry(state, id)
+			if (existing === null) {
+				if (args.range === undefined) {
+					const problems = judge.validateTerm(sessionId, args)
+					if (problems.length > 0) return fail('term_rejected', `这个概念不能登记:\n${problems.map((item) => `- ${item}`).join('\n')}`)
+					mutations.push({
+						t: 'ontology/term_added',
+						id,
+						label: String(args.label).trim(),
+						gloss: String(args.gloss).trim(),
+						aliases: Array.isArray(args.aliases) ? args.aliases.map((alias) => String(alias)) : [],
+						parent: args.parent === undefined ? null : String(args.parent).trim(),
+						basis,
+					})
+					const note = ensureDomainShelf(hostService, sessionId, mutations)
+					return done({ ok: true, code: 'term_registered', message: `概念 ${id} 已登记。它现在是本体图上的一个节点:新断言可以引用它。${note}` })
+				}
+				if (args.aliases !== undefined || args.parent !== undefined) return fail('predicate_rejected', '谓词没有别名与父概念:aliases / parent 只属于概念(不带 range 的那种)。')
+				const problems = judge.validatePredicate(sessionId, args)
+				if (problems.length > 0) return fail('predicate_rejected', `这个谓词不能登记:\n${problems.map((item) => `- ${item}`).join('\n')}`)
+				mutations.push({
+					t: 'ontology/predicate_added',
+					id,
+					label: String(args.label).trim(),
+					gloss: args.gloss === undefined ? '' : String(args.gloss).trim(),
+					domain: args.domain === undefined ? null : String(args.domain).trim(),
+					range: args.range,
+					functional: args.functional === true,
+					basis,
+				})
+				const note = ensureDomainShelf(hostService, sessionId, mutations)
+				return done({
+					ok: true,
+					code: 'predicate_registered',
+					message: `谓词 ${id} 已登记(${args.range?.term ? `宾语是概念 ${args.range.term} 的实例` : `宾语取 ${args.range?.form} 形态`}${args.functional === true ? ' · 单值' : ''})。下一步:在 Frame 的假设里带上断言,引用它。${note}`,
+				})
+			}
+			/**
+			 * **同 id 再定义 = 修订**,只许动展示信息。语义字段给了就要与现值一致——
+			 * 稳定 id 的含义在历史上悄悄改变,等于拿今天的释义重写所有旧事实。
+			 */
+			const kindName = existing.kind === 'term' ? '概念' : '谓词'
+			if (existing.entry.status === 'deprecated') return fail(existing.kind === 'term' ? 'term_deprecated' : 'predicate_deprecated', `${kindName} ${id} 已废止,不能再定义(要恢复语义就换一个新 id)。`)
+			if (existing.kind === 'term' && (args.range !== undefined || args.domain !== undefined || args.functional !== undefined)) {
+				return fail('kind_mismatch', `id ${id} 已经是一个概念:range / domain / functional 只属于谓词。要立谓词就换一个 id(概念与谓词共用一个命名空间)。`)
+			}
+			if (existing.kind === 'predicate' && (args.aliases !== undefined || args.parent !== undefined)) {
+				return fail('kind_mismatch', `id ${id} 已经是一个谓词:aliases / parent 只属于概念。`)
+			}
+			const semantics = existing.kind === 'term' ? TERM_SEMANTICS : PREDICATE_SEMANTICS
+			const changed = semantics.filter((key) => args[key] !== undefined && !sameValue(key === 'functional' ? args[key] === true : args[key], key === 'functional' ? existing.entry[key] === true : existing.entry[key]))
+			if (changed.length > 0) {
+				return fail(
+					'semantics_changed',
+					`${kindName} ${id} 已经登记过,这次改了它的含义(${changed.join(' / ')})。同 id 再定义只许改名字、释义、别名——含义变了要先 \`Deprecate\` 旧词,再用一个新 id \`Define\`。`,
+				)
+			}
+			const display = existing.kind === 'term' ? ['label', 'gloss', 'aliases'] : ['label', 'gloss']
+			const revised = display.filter((key) => args[key] !== undefined && !sameValue(key === 'aliases' ? args[key].map(String) : String(args[key]).trim(), existing.entry[key]))
+			if (revised.length === 0) return fail('nothing_to_revise', `${kindName} ${id} 已经登记过,而且这次给的名字、释义、别名都与现值相同:没有要改的。`)
+			const pick = (key) => (revised.includes(key) ? (key === 'aliases' ? args.aliases.map(String) : String(args[key]).trim()) : undefined)
+			mutations.push(
+				existing.kind === 'term'
+					? { t: 'ontology/term_revised', id, label: pick('label'), gloss: pick('gloss'), aliases: pick('aliases'), reason: basis }
+					: { t: 'ontology/predicate_revised', id, label: pick('label'), gloss: pick('gloss'), reason: basis },
+			)
 			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({
-				ok: true,
-				code: 'predicate_registered',
-				message: `谓词 ${String(args.id).trim()} 已登记(${args.range?.term ? `宾语是概念 ${args.range.term} 的实例` : `宾语取 ${args.range?.form} 形态`}${args.functional === true ? ' · 单值' : ''})。下一步:在 Frame 的假设里带上断言,引用它。${note}`,
-			})
-		},
-	})
-
-	defineTool({
-		name: 'ReviseTerm',
-		description:
-			'修订一个概念的**展示信息**(名字 / 释义 / 别名):版本 +1,旧值留在账上,id 不变。**语义变化不许走这条路**——含义、父概念变了就废止旧条目、注册新条目;稳定 id 的含义在历史上悄悄改变,等于拿今天的释义重写所有旧事实。',
-		parameters: {
-			type: 'object',
-			properties: {
-				id: { type: 'string' },
-				label: { type: 'string', description: '新名字(可选)' },
-				gloss: { type: 'string', description: '新释义(可选)' },
-				aliases: { type: 'array', items: { type: 'string' } },
-				reason: { type: 'string', description: '为什么改(必填)' },
-			},
-			required: ['id', 'reason'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const entry = findLexiconEntry(state, args.id)
-			if (entry === null || entry.kind !== 'term') return fail('unknown_term', `词汇里没有这个概念:${String(args.id)}`)
-			if (entry.entry.status === 'deprecated') return fail('term_deprecated', `概念 ${String(args.id)} 已废止,不能修订(要恢复语义就注册新条目)。`)
-			if (typeof args.reason !== 'string' || args.reason.trim() === '') return fail('reason_required', '修订要写一句原因:改了什么、为什么改。')
-			if (args.label === undefined && args.gloss === undefined && args.aliases === undefined) return fail('nothing_to_revise', '没有要改的字段:label / gloss / aliases 至少给一个。')
-			mutations.push({ t: 'ontology/term_revised', id: String(args.id), label: args.label === undefined ? undefined : String(args.label).trim(), gloss: args.gloss === undefined ? undefined : String(args.gloss).trim(), aliases: Array.isArray(args.aliases) ? args.aliases.map((alias) => String(alias)) : undefined, reason: String(args.reason).trim() })
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({ ok: true, code: 'term_revised', message: `概念 ${String(args.id)} 已修订(旧值留在账上)。${note}` })
-		},
-	})
-
-	defineTool({
-		name: 'RevisePredicate',
-		description: '修订一个谓词的**展示信息**(名字 / 释义)。值域、主词域与单值性是语义——那三样变了要废止旧谓词、注册新的。',
-		parameters: {
-			type: 'object',
-			properties: { id: { type: 'string' }, label: { type: 'string' }, gloss: { type: 'string' }, reason: { type: 'string' } },
-			required: ['id', 'reason'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const entry = findLexiconEntry(state, args.id)
-			if (entry === null || entry.kind !== 'predicate') return fail('unknown_predicate', `词汇里没有这个谓词:${String(args.id)}`)
-			if (entry.entry.status === 'deprecated') return fail('predicate_deprecated', `谓词 ${String(args.id)} 已废止,不能修订。`)
-			if (typeof args.reason !== 'string' || args.reason.trim() === '') return fail('reason_required', '修订要写一句原因。')
-			mutations.push({ t: 'ontology/predicate_revised', id: String(args.id), label: args.label === undefined ? undefined : String(args.label).trim(), gloss: args.gloss === undefined ? undefined : String(args.gloss).trim(), reason: String(args.reason).trim() })
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({ ok: true, code: 'predicate_revised', message: `谓词 ${String(args.id)} 已修订(版本 +1,旧值留着)。${note}` })
+			return done({ ok: true, code: existing.kind === 'term' ? 'term_revised' : 'predicate_revised', message: `${kindName} ${id} 已修订(改了 ${revised.join(' / ')};版本 +1,旧值留在账上)。${note}` })
 		},
 	})
 
@@ -2715,9 +2616,9 @@ export function apply(ctx, config = {}) {
 	 * 引用它的**新**断言会被拒,并在货架上标明「所用术语已废止」。
 	 */
 	defineTool({
-		name: 'DeprecateTerm',
+		name: 'Deprecate',
 		description:
-			'废止一个概念(或谓词):缘由必填。**没有删除**——条目、旧版本与引用过它的事实全部留着;新断言不许再引用它,存量事实在货架上标明「所用术语已废止」。要恢复语义就注册一个新条目(那是覆盖,不是复活)。',
+			'废止一个概念或谓词:缘由必填。**没有删除**——条目、旧版本与引用过它的事实全部留着;新断言不许再引用它,存量事实在货架上标明「所用术语已废止」。要恢复语义就用新 id 再 `Define`(那是覆盖,不是复活)。',
 		parameters: {
 			type: 'object',
 			properties: { id: { type: 'string', description: '概念或谓词的 id' }, reason: { type: 'string', description: '为什么废止(必填)' } },
@@ -2744,94 +2645,6 @@ export function apply(ctx, config = {}) {
 		},
 	})
 
-	defineTool({
-		name: 'DeprecatePredicate',
-		description: '废止一个谓词:缘由必填,记录保留,新断言不许再引用它(与 DeprecateTerm 同一条纪律,单列出来是为了让参数与语义各自说清)。',
-		parameters: {
-			type: 'object',
-			properties: { id: { type: 'string' }, reason: { type: 'string' } },
-			required: ['id', 'reason'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const entry = findLexiconEntry(state, args.id)
-			if (entry === null || entry.kind !== 'predicate') return fail('unknown_predicate', `词汇里没有这个谓词:${String(args.id)}`)
-			if (entry.entry.status === 'deprecated') return fail('already_deprecated', `${String(args.id)} 已经是废止状态。`)
-			if (typeof args.reason !== 'string' || args.reason.trim() === '') return fail('reason_required', '废止要写缘由。')
-			mutations.push({ t: 'ontology/predicate_deprecated', id: String(args.id), reason: String(args.reason).trim() })
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({ ok: true, code: 'entry_deprecated', message: `谓词 ${String(args.id)} 已废止(记录保留,新断言不许再引用)。${note}` })
-		},
-	})
-
-	/**
-	 * **螺旋上半圈的入口**:按概念 / 谓词 / 主体取「已知」。
-	 * 读数全部来自投影(事实与流转中的假设),不新建任何存储;它也不改任何东西。
-	 */
-	defineTool({
-		name: 'QueryKnowledge',
-		description:
-			'按概念 / 谓词 / 主体查「已知」:返回带类型化断言的**已升格事实**与**还在流转的命题**。要复用前面的结论就用它,而不是把事实库重读一遍。只读:它不改任何东西。',
-		parameters: {
-			type: 'object',
-			properties: {
-				term: { type: 'string', description: '概念 id:匹配断言的主体类型 / 宾语概念 / 词条本身' },
-				predicate: { type: 'string', description: '谓词 id' },
-				subject: { type: 'string', description: '主体名称(实例)' },
-			},
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const derived = hostService.derive(sessionId)
-			const filter = { term: args.term === undefined ? '' : String(args.term).trim(), predicate: args.predicate === undefined ? '' : String(args.predicate).trim(), subject: args.subject === undefined ? '' : String(args.subject).trim() }
-			if (filter.term === '' && filter.predicate === '' && filter.subject === '') return fail('query_empty', '至少给一个条件:term / predicate / subject。')
-			const match = (assertion) => {
-				const subject = assertion?.subject ?? {}
-				const object = assertion?.object ?? {}
-				if (filter.predicate !== '' && String(assertion?.predicate ?? '') !== filter.predicate) return false
-				if (filter.subject !== '' && String(subject.id ?? '') !== filter.subject) return false
-				if (filter.term !== '') {
-					const hits = [String(subject.type ?? ''), String(subject.id ?? ''), String(object.kind) === 'instance' ? String(object.type ?? '') : '', String(object.kind) === 'instance' ? String(object.value ?? '') : '', String(assertion?.predicate ?? '')]
-					if (!hits.includes(filter.term)) return false
-				}
-				return true
-			}
-			const facts = derived.factRows.filter((fact) => (Array.isArray(fact.assertions) ? fact.assertions : []).some(match))
-			const inFlight = derived.hypotheses.filter((hypothesis) => (Array.isArray(hypothesis.assertions) ? hypothesis.assertions : []).some(match))
-			if (facts.length === 0 && inFlight.length === 0) {
-				return done({ ok: true, code: 'knowledge_empty', message: `这个词汇条件下还没有任何东西:${describeFilter(filter)}。要么先登记/验证,要么换个条件——**不要**把「查不到」写成「不存在」。` })
-			}
-			const lines = []
-			if (facts.length > 0) {
-				lines.push(`已知(已升格,可作为已知引用):${facts.length} 条`)
-				for (const fact of facts.slice(0, 12)) {
-					lines.push(`- ${fact.id} · ${clip(String(fact.text ?? ''), 120)}(支持到 ${fact.level ?? '—'}${fact.review?.decision === 'retracted' ? ' · **已撤回**' : fact.refuted === true ? ' · 有推翻证据等人决定' : ''})`)
-					lines.push(`  边界:${clip(String(fact.scope ?? '(未写)'), 120)}`)
-					for (const assertion of fact.assertions ?? []) if (match(assertion)) lines.push(`  断言:${hostService.domain.format(sessionId, assertion)}`)
-				}
-				if (facts.length > 12) lines.push(`  (还有 ${facts.length - 12} 条,见 clear/knowledge/facts/INDEX.md)`)
-			}
-			if (inFlight.length > 0) {
-				lines.push(`还在流转的命题(未升格):${inFlight.length} 条`)
-				for (const hypothesis of inFlight.slice(0, 8)) {
-					lines.push(`- ${hypothesis.id} [${hypothesis.status}] ${clip(String(hypothesis.claim ?? ''), 100)}${hypothesis.supportedLevel === null ? '' : `(支持到 ${hypothesis.supportedLevel})`}`)
-					for (const assertion of hypothesis.assertions ?? []) if (match(assertion)) lines.push(`  断言:${hostService.domain.format(sessionId, assertion)}`)
-				}
-			}
-			return done({ ok: true, code: 'knowledge_found', message: `${describeFilter(filter)}\n${lines.join('\n')}` })
-		},
-	})
-
 	/**
 	 * ── 实体两件:实例与关于它的断言 ──────────────────────────────────────────
 	 *
@@ -2843,7 +2656,7 @@ export function apply(ctx, config = {}) {
 	 * 一个节点都没有——账面上"本体建好了",实际上一条可复核的观测都没留下来。
 	 *
 	 * 修法是把「约定」与「观测」分开,各给一个写入口:
-	 *   · `RegisterTerm` = 约定(概念,不需要依据);
+	 *   · `Define` = 约定(概念,不需要依据);
 	 *   · `RegisterInstance` = 观测(实例,**必须**带依据与出处);
 	 *   · `Assert` = 关于某个实例的一句话(**必须**带出处),它**在落账那一刻就进实体图**。
 	 * 事实层照旧:独立裁决过的结论仍然升格成事实,实体图因此有两类边
@@ -2852,7 +2665,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'RegisterInstance',
 		description:
-			'登记一个**实例**(实体图上的节点):某个具体的人 / 作品 / 事件 / 样本。与 `RegisterTerm` 的分工是硬的——概念是**约定**(不需要依据),实例是**观测**(`basis` 与 `provenance` 必填)。`type` 必须是已登记的概念。实例自己不带关系;要让它连上别的节点就用 `Assert`。',
+			'登记一个**实例**(实体图上的节点):某个具体的人 / 作品 / 事件 / 样本。与 `Define` 的分工是硬的——概念是**约定**(不需要依据),实例是**观测**(`basis` 与 `provenance` 必填)。`type` 必须是已登记的概念。实例自己不带关系;要让它连上别的节点就用 `Assert`。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -2894,7 +2707,7 @@ export function apply(ctx, config = {}) {
 			}
 			const terms = Array.isArray(stateOf(sessionId)?.lexicon?.terms) ? stateOf(sessionId).lexicon.terms : []
 			const known = terms.find((term) => String(term.id) === type)
-			if (known === undefined) return fail('instance_type_unknown', `type ${type} 不是已登记的概念。先 RegisterTerm 立这个概念(它才是约定那一侧),再登记实例。`)
+			if (known === undefined) return fail('instance_type_unknown', `type ${type} 不是已登记的概念。先 Define 立这个概念(它才是约定那一侧),再登记实例。`)
 			if (String(known.status ?? 'admitted') === 'deprecated') return fail('instance_type_deprecated', `概念 ${type} 已废止:新断言不许再引用它。`)
 			mutations.push({ t: 'entity/registered', id, type, label, basis, provenance: { kind, ref } })
 			const note = ensureDomainShelf(hostService, sessionId, mutations)
@@ -2955,7 +2768,7 @@ export function apply(ctx, config = {}) {
 			const kind = String(args.evidence?.kind ?? '').trim()
 			const ref = String(args.evidence?.ref ?? '').trim()
 			if (subjectId === '' || subjectType === '') return fail('assert_subject_required', '主词要同时给 `id` 与 `type`(type 是它所属的概念)。')
-			if (predicateId === '') return fail('assert_predicate_required', '谓词必填:先 `RegisterPredicate` 立一条关系,再说这句话。')
+			if (predicateId === '') return fail('assert_predicate_required', '谓词必填:先 `Define`(带 range)立一条关系,再说这句话。')
 			if (!['url', 'named', 'backref'].includes(kind) || ref === '') return fail('assert_evidence_required', '出处必填:`{kind:"url"|"named"|"backref", ref:"…"}`。**没有出处的话是意见,不是观测**——它不进实体图。')
 			const projection = hostService.domain.graph?.(sessionId) ?? null
 			const registered = Array.isArray(stateOf(sessionId)?.entities) ? stateOf(sessionId).entities : []
@@ -2988,76 +2801,6 @@ export function apply(ctx, config = {}) {
 		},
 	})
 
-	/**
-	 * ── ExplainLevelSkip:跳级要记账 ─────────────────────────────────────────
-	 *
-	 * 等级衡量的是「这条结论在多大程度上只能靠信任做的人」。便宜的那几级(L0 自洽检查、
-	 * L1 已有知识、L2 已有数据)不是形式:它们能在花掉一次独立裁决之前先把问题问清。
-	 * 但 `supportedLevel` 只是 support 证据的最大值,**跳级不违规、也没有任何代价**——
-	 * 于是"一路只在最贵的那一级交付"成了最优策略:结论全部停在 L3,而 L0 证据一条都没有。
-	 *
-	 * 不逼模型补读数(首次测量确实可能没有廉价路),但**跳级必须留下理由**:
-	 * 理由是「这一级在本项目里为什么不适用」,不是「时间不够」。
-	 */
-	defineTool({
-		name: 'ExplainLevelSkip',
-		description:
-			'为**没走过的验证等级**留下理由。`levels` 必须是这条命题当前"未走过"的等级(卡上会列出来);`reason` 要写成"这一级在本项目里为什么不适用",并**点到该等级要检查的对象名**——写"时间不够"不算理由。它不改等级、也不替代读数:它只让"跳过"从默许变成账上的一条事实。',
-		parameters: {
-			type: 'object',
-			properties: {
-				hypothesis: { type: 'string', description: '命题 id(也认原文与唯一前缀)' },
-				levels: { type: 'array', items: { type: 'string', enum: LEVELS }, description: '未走过的等级' },
-				reason: { type: 'string', description: '为什么这一级在本项目里不适用(必须点到该等级要检查的对象名)' },
-			},
-			required: ['hypothesis', 'levels', 'reason'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const derived = hostService.derive(sessionId)
-			const hypothesis = matchHypothesis(derived.hypotheses, args.hypothesis)
-			if (hypothesis === null) return fail('hypothesis_unknown', `认不出这条命题:${String(args.hypothesis)}。有效 id:${derived.hypotheses.map((item) => item.id).join('、') || '(当前没有命题)'}。`)
-			const levels = (Array.isArray(args.levels) ? args.levels : []).map((level) => String(level)).filter((level) => LEVELS.includes(level))
-			if (levels.length === 0) return fail('levels_required', `levels 必填,取值 ${LEVELS.join('/')}。`)
-			const untouched = Array.isArray(hypothesis.untouchedLevels) ? hypothesis.untouchedLevels : []
-			const notUntouched = levels.filter((level) => !untouched.includes(level))
-			if (notUntouched.length > 0) {
-				return fail(
-					'levels_not_untouched',
-					`${notUntouched.join('/')} 不是"未走过"的等级,不能给它写跳过理由(${hypothesis.id} 当前未走过:${untouched.join('/') || '无'})。见卡上那行读数。`,
-				)
-			}
-			const reason = String(args.reason ?? '').trim()
-			if (reason.length < 24) return fail('skip_reason_too_short', '理由太短:写明"这一级要检查什么、为什么在本项目里不适用"。')
-			/**
-			 * **可清点的理由判据**:理由里必须出现该等级要检查的对象名(取自这条命题自己的断言主体)。
-			 * 这不是文字游戏——它挡住的是"随便写一句「不适用」就把门过了"这条捷径。
-			 */
-			const subjects = (Array.isArray(hypothesis.assertions) ? hypothesis.assertions : [])
-				.map((assertion) => String(assertion?.object?.value ?? '').trim())
-				.concat((Array.isArray(hypothesis.assertions) ? hypothesis.assertions : []).map((assertion) => String(assertion?.subject?.id ?? '').trim()))
-				.filter((token) => token !== '')
-			if (subjects.length > 0 && !subjects.some((token) => reason.includes(token))) {
-				return fail(
-					'skip_reason_missing_object',
-					`理由里必须点到这一级要检查的对象名:${subjects.slice(0, 6).join('、')}。\n为什么要求这个:一句"不适用"谁都会写,而写清"看的是哪个对象、为什么不适用于它"才是一次可复核的判断。`,
-				)
-			}
-			mutations.push({ t: 'level/skipped', goal: state.goal?.id ?? null, hypothesis: hypothesis.id, levels, reason })
-			const left = untouched.filter((level) => !levels.includes(level))
-			return done({
-				ok: true,
-				code: 'level_skip_recorded',
-				message: `${hypothesis.id} 的 ${levels.join('/')} 已记下跳过理由。${left.length === 0 ? '这条命题的跳级现在都有理由了。' : `还剩 ${left.join('/')} 没有理由——卡上会继续报。`}`,
-			})
-		},
-	})
-
 	defineTool({
 		name: 'CreatePlan',
 		description:
@@ -3077,7 +2820,7 @@ export function apply(ctx, config = {}) {
 			if (call.ok !== true) return call.response
 			const { hostService, sessionId, state, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
-			if (activePlanOf(state) !== null) return fail('active_plan_exists', '已经有一份活动计划。改它用 AmendPlan / RefinePlan / VoidPlanStep,收它用 ClosePlan。')
+			if (activePlanOf(state) !== null) return fail('active_plan_exists', '已经有一份活动计划。改它用 RevisePlan,收它用 ClosePlan。')
 			const problem = validateSteps(args.steps)
 			if (problem !== null) return fail('invalid_steps', problem)
 			const resolvedTests = new Map()
@@ -3108,51 +2851,25 @@ export function apply(ctx, config = {}) {
 		},
 	})
 
+	/**
+	 * **改计划只有一个入口**,三种动作各自的校验不变:补一步(`add`)、精化判据(`refine`)、
+	 * 带因作废(`void`)。事件名沿用(`plan/amended` / `plan/refined` / `plan/voided`),旧日志照旧折。
+	 * 三种都不动进度;连拦的那一步被补、被改判据、被作废,都清掉连拦。
+	 */
 	defineTool({
-		name: 'CheckPlan',
-		description: '取计划的真实状态:真实 step_id、每步的产物声明与判定标准、派生进度、以及下一个可交付步。对象不明时先查这里。',
-		parameters: { type: 'object', properties: {}, additionalProperties: false },
-		output: CARD_OUTPUT,
-		async execute(_args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const card = call.hostService.renderCard(call.sessionId)
-			return { ok: true, mutations: [], card, message: card }
-		},
-	})
-
-	defineTool({
-		name: 'AmendPlan',
-		description: '补一步:漏了活就补上。不动进度(返回值 progress_changed=false)。',
-		parameters: { type: 'object', properties: { step: STEP_SCHEMA }, required: ['step'], additionalProperties: false },
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const plan = activePlanOf(state)
-			if (plan === null) return fail('no_active_plan', '没有活动计划。')
-			if (plan.steps.length >= MAX_PLAN_STEPS) return fail('plan_too_long', `计划已有 ${plan.steps.length} 步,上限 ${MAX_PLAN_STEPS}。`)
-			const problem = validateSteps([args.step], plan.steps)
-			if (problem !== null) return fail('invalid_step', problem)
-			if (plan.steps.some((step) => step.id === args.step.id)) return fail('duplicate_step', `步骤 id 已存在:${args.step.id}`)
-			const resolved = resolveTests(state.hypotheses, args.step.tests)
-			if (resolved.ok !== true) return fail('unknown_hypothesis', `步骤 ${args.step.id} 声明的判断「${resolved.wanted}」对不上任何一条已登记的判断。${hypothesisMenu(state.hypotheses)}`)
-			const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: resolved.tests }
-			mutations.push({ t: 'plan/amended', plan: plan.id, step: amended })
-			if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
-			return done({ ok: true, code: 'plan_amended', progress_changed: false, message: `已补一步 ${args.step.id}(进度不变)。` })
-		},
-	})
-
-	defineTool({
-		name: 'RefinePlan',
-		description: '精化判定标准:只改 done_criteria,不动进度。旧判据留在日志里(什么都不删)。',
+		name: 'RevisePlan',
+		description:
+			'改当前计划,不动进度(返回 progress_changed=false),三种动作:`action="add"` 补一步(漏了活就补上,给 `step`);`action="refine"` 精化一步的判定标准(给 `step_id` 与新的 `done_criteria`,旧判据留在日志里);`action="void"` 带因作废一步(给 `step_id` 与 `reason`:发现某步本不该存在就作废并说明缘由——作废留痕光明正大,为凑完成而造证是大忌;已交付的步不能作废)。',
 		parameters: {
 			type: 'object',
-			properties: { step_id: { type: 'string' }, done_criteria: { type: 'string' }, reason: { type: 'string' } },
-			required: ['step_id', 'done_criteria'],
+			properties: {
+				action: { type: 'string', enum: ['add', 'refine', 'void'], description: 'add=补一步;refine=改判据;void=带因作废' },
+				step: { ...STEP_SCHEMA, description: 'action=add:新步' },
+				step_id: { type: 'string', description: 'action=refine / void:哪一步' },
+				done_criteria: { type: 'string', description: 'action=refine:新的判定标准' },
+				reason: { type: 'string', description: '为什么改(action=void 必填)' },
+			},
+			required: ['action'],
 			additionalProperties: false,
 		},
 		output: CARD_OUTPUT,
@@ -3163,33 +2880,32 @@ export function apply(ctx, config = {}) {
 			const done = finish(hostService, sessionId, mutations)
 			const plan = activePlanOf(state)
 			if (plan === null) return fail('no_active_plan', '没有活动计划。')
+			if (args.action === 'add') {
+				if (args.step === undefined || args.step === null) return fail('step_required', 'action="add" 要给 `step`(id / do / done_criteria,可选 artifacts 与 tests)。')
+				if (plan.steps.length >= MAX_PLAN_STEPS) return fail('plan_too_long', `计划已有 ${plan.steps.length} 步,上限 ${MAX_PLAN_STEPS}。`)
+				const problem = validateSteps([args.step], plan.steps)
+				if (problem !== null) return fail('invalid_step', problem)
+				if (plan.steps.some((step) => step.id === args.step.id)) return fail('duplicate_step', `步骤 id 已存在:${args.step.id}`)
+				const resolved = resolveTests(state.hypotheses, args.step.tests)
+				if (resolved.ok !== true) return fail('unknown_hypothesis', `步骤 ${args.step.id} 声明的判断「${resolved.wanted}」对不上任何一条已登记的判断。${hypothesisMenu(state.hypotheses)}`)
+				const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: resolved.tests }
+				mutations.push({ t: 'plan/amended', plan: plan.id, step: amended })
+				if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
+				return done({ ok: true, code: 'plan_amended', progress_changed: false, message: `已补一步 ${args.step.id}(进度不变)。` })
+			}
+			if (args.action !== 'refine' && args.action !== 'void') return fail('unknown_action', 'action 只能是 add / refine / void。')
 			const step = plan.steps.find((item) => item.id === args.step_id)
 			if (step === undefined) return fail('unknown_step', `没有这一步:${args.step_id}`)
-			if (step.status !== 'open') return fail('step_settled', `步骤 ${step.id} 已落定(${step.status}),判据不再可改。`)
-			const criteria = String(args.done_criteria ?? '').trim()
-			if (criteria.length < 4) return fail('done_criteria_required', '判据不能为空。')
-			const selfRef = SELF_REFERENCE.find(([pattern]) => pattern.test(criteria))
-			if (selfRef !== undefined) return fail('criteria_self_reference', selfRef[1])
-			mutations.push({ t: 'plan/refined', plan: plan.id, step: step.id, old_criteria: step.done_criteria, new_criteria: criteria, reason: args.reason ?? null })
-			if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
-			return done({ ok: true, code: 'plan_refined', progress_changed: false, message: `步骤 ${step.id} 的判据已精化(进度不变,旧判据留痕)。` })
-		},
-	})
-
-	defineTool({
-		name: 'VoidPlanStep',
-		description: '带因作废一步:发现某步本不该存在就作废并说明缘由。作废留痕光明正大;为凑完成而造证是大忌。不动进度。',
-		parameters: { type: 'object', properties: { step_id: { type: 'string' }, reason: { type: 'string' } }, required: ['step_id', 'reason'], additionalProperties: false },
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const plan = activePlanOf(state)
-			if (plan === null) return fail('no_active_plan', '没有活动计划。')
-			const step = plan.steps.find((item) => item.id === args.step_id)
-			if (step === undefined) return fail('unknown_step', `没有这一步:${args.step_id}`)
+			if (args.action === 'refine') {
+				if (step.status !== 'open') return fail('step_settled', `步骤 ${step.id} 已落定(${step.status}),判据不再可改。`)
+				const criteria = String(args.done_criteria ?? '').trim()
+				if (criteria.length < 4) return fail('done_criteria_required', '判据不能为空。')
+				const selfRef = SELF_REFERENCE.find(([pattern]) => pattern.test(criteria))
+				if (selfRef !== undefined) return fail('criteria_self_reference', selfRef[1])
+				mutations.push({ t: 'plan/refined', plan: plan.id, step: step.id, old_criteria: step.done_criteria, new_criteria: criteria, reason: args.reason ?? null })
+				if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
+				return done({ ok: true, code: 'plan_refined', progress_changed: false, message: `步骤 ${step.id} 的判据已精化(进度不变,旧判据留痕)。` })
+			}
 			if (step.status === 'advanced') return fail('step_settled', `步骤 ${step.id} 已交付,不能作废(已交付的事实不会被撤销)。`)
 			if (typeof args.reason !== 'string' || args.reason.trim() === '') return fail('reason_required', '作废必须带原因。')
 			mutations.push({ t: 'plan/voided', plan: plan.id, step: step.id, reason: args.reason.trim() })
@@ -3212,7 +2928,7 @@ export function apply(ctx, config = {}) {
 			if (plan === null) return fail('no_active_plan', '没有活动计划。')
 			const unsettled = plan.steps.filter((step) => step.status === 'open')
 			if (unsettled.length > 0) {
-				return fail('plan_has_open_steps', `还有 ${unsettled.length} 步没落定:${unsettled.map((step) => step.id).join(', ')}。交付它们,或带因作废(VoidPlanStep)。`)
+				return fail('plan_has_open_steps', `还有 ${unsettled.length} 步没落定:${unsettled.map((step) => step.id).join(', ')}。交付它们,或带因作废(RevisePlan void)。`)
 			}
 			mutations.push({ t: 'plan/closed', plan: plan.id, summary: args.summary ?? null })
 			persistArchive(sessionId, plan, args.summary ?? null)
@@ -3286,7 +3002,7 @@ export function apply(ctx, config = {}) {
 			if (step === null) return fail('no_open_step', '这份计划没有未落定的步了:ClosePlan 收束它。')
 			// 序位不变量:交付只能落在第一个未落定步
 			if (args.step_id !== undefined && args.step_id !== '' && args.step_id !== step.id) {
-				return fail('out_of_order', `交付只能落在第一个未落定步 ${step.id}(${step.do});你给的是 ${args.step_id}。RefinePlan/AmendPlan 不受此限。`)
+				return fail('out_of_order', `交付只能落在第一个未落定步 ${step.id}(${step.do});你给的是 ${args.step_id}。RevisePlan 不受此限。`)
 			}
 			// 计划已经如实停下等人:这时再交付不是「更努力」,
 			// 而是绕过那道已经开着的门——先改计划或让人介入。
@@ -3461,7 +3177,7 @@ export function apply(ctx, config = {}) {
 				auditCardPath = audit.cardPath ?? null
 				auditSessionId = audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? audit.evaluatorSession ?? null
 				if (audit.reused === true) {
-					reuseNote = `\n**同一条材料**:这次**复用了上一条独立裁决**,没有重复请人。要拿到新判断先改材料——换产物内容、补观测,或用 RefinePlan 改这一步的判据。`
+					reuseNote = `\n**同一条材料**:这次**复用了上一条独立裁决**,没有重复请人。要拿到新判断先改材料——换产物内容、补观测,或用 RevisePlan(refine)改这一步的判据。`
 					basis = `${basis}\n[同一条材料:这次复用了上一条独立裁决,没有重复请人。]`
 				}
 			} else {

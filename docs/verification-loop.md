@@ -102,7 +102,7 @@ All state is folded from the session log; the model has no writable state field.
 | observed | Result received | `observation/recorded`, registered on delivery |
 | evaluated | Evaluated, evidence written | `audit/settled` + `evidence/recorded`; `derive()` computes support / refute / inconclusive per hypothesis |
 | expired | No result in time | Not a state: `audit/settled` with verdict `unknown`, sharing the block counter (`block/counted`) |
-| aborted | Stopped without a result | Facts, not a state: a void with a reason (`VoidPlanStep`, reached through `RevisePlan`), or the child's recorded stop reason |
+| aborted | Stopped without a result | Facts, not a state: a void with a reason (`RevisePlan` with `action: "void"`), or the child's recorded stop reason |
 
 **Fact**: new refuting evidence only **flags** it for review and asks the human on the spot; retract and keep both land the same review record. Data from outside can be wrong too, so nothing is retracted automatically.
 

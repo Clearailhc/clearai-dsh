@@ -104,8 +104,8 @@ stateDiagram-v2
 - `refuted` 不被后续「不在清单里」改写成 `superseded`（`fold.js:396-411`）。
 - 已升格成事实的假设同样不许被悄悄替代（同一处 `promoted` 判断）。
 - 支持等级 `supportedLevel` 是 `derive()` 现算的最大值，不存。
-- 跳级理由 `level/skipped` 折进 `hypotheses[].skips[]`：`derive()` 把被理由覆盖的层从 `untouchedLevels` 里减掉，
-  所以写明理由会让 `levels_skipped` 那条缺口真的消失——理由本身就是它的出口，不是被无视。
+- 第四阶段起没有跳级机制了：旧账本里的 `level/skipped` 折叠时静默跳过。`derive()` 改为给每条假设标 `unlanded`
+  （断言主体里不在实体图上的实例节点），`entities_unlanded` 缺口与 Conclude 的实体门都读它。
 
 ## 5. 观测（observation）· 已实现
 
@@ -227,7 +227,7 @@ stateDiagram-v2
 
 要点：
 
-- **约定与观测分开**：`RegisterTerm` 是约定（概念，不需要依据），`RegisterInstance` 是观测
+- **约定与观测分开**：`Define` 是约定（概念，不需要依据），`RegisterInstance` 是观测
   （实例，`basis` 与 `provenance` 必填），`Assert` 说一句关于某个已登记实例的话（`evidence` 必填）。
 - **实体不依赖目标裁决**：`entity/asserted` 在登记那一刻就产边。事实那条路照旧（独立裁决 → `fact/promoted`），
   投影里两条边都在：`source='promoted'` 带等级与边界，`source='asserted'` 带出处、未经独立裁决。
@@ -290,7 +290,6 @@ stateDiagram-v2
 | `entity/registered` | §13 实体与断言 | 是 |
 | `entity/asserted` | §13 实体与断言 | 是 |
 | `audit/reused` | §6 评估 | 是 |
-| `level/skipped` | §4 假设（跳级理由） | 是 |
 | `criteria/revised` | §1 目标（判据修订） | 是 |
 | `host/inactive` | §14 宿主读面 | 是 |
 | `admission/checked` | **只留台账** | 否 |

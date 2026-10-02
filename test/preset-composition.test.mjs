@@ -49,12 +49,13 @@ console.log('\n【① 挂载表:工作方式回来了,第二本账没有】')
 	check('plan-mode 挂上了(动手前给人看计划交给原生 /plan)', /name: '@deepseek-ai\/dsh-plan-mode'/.test(PRESET))
 	check('自带的 / 命令插件已不挂(状态看界面,/goal /plan 由原生接管)', !/plugins\/commands\.js/.test(PRESET) && !/clearai-commands/.test(PRESET))
 	/**
-	 * 知识门是本部署的**产品立场**(内核缺省 false ⇒ 断言始终是加法)。
-	 * 它必须真的写在 preset 里,否则「结论要有形态」这条纪律在真跑里根本不存在——
-	 * 而那正是长跑里本体三张图长不出来的原因:完成函数里没有它们。
+	 * 实体门是本部署的**产品立场**(内核缺省 false),也是第四阶段之后结案唯一的结构关口。
+	 * 它必须真的写在 preset 里,否则「将升格的结论,主体要在图上」这条纪律在真跑里根本不存在。
+	 * 删掉的两道门(没有断言形态、跳级没理由)也不许再出现在 preset 里——内核会在装配期炸。
 	 */
-	check('知识门在本部署里是开的(内核缺省关,立场写在 preset)', /requireTypedPromotion: true/.test(PRESET))
-	check('假设数量下限 2 仍在(开工要有候选对比,与知识门是两条立场)', /minHypotheses: 2/.test(PRESET))
+	check('实体门在本部署里是开的(内核缺省关,立场写在 preset)', /requireLandedEntities: true/.test(PRESET))
+	check('删掉的两道门不在 preset 里', !/requireTypedPromotion/.test(PRESET) && !/requireLevelReasons/.test(PRESET))
+	check('假设数量下限 2 仍在(开工要有候选对比,与实体门是两条立场)', /minHypotheses: 2/.test(PRESET))
 }
 
 console.log('\n【② 交还宿主的那几件真的不在了】')

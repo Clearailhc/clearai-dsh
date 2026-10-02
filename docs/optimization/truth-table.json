@@ -105,10 +105,6 @@
       "by": "hypothesis-registry"
     },
     {
-      "t": "level/skipped",
-      "by": "level-skip-reason"
-    },
-    {
       "t": "observation/recorded",
       "by": "observation-provenance"
     },
@@ -254,13 +250,13 @@
         "prompt": "clearai/plan-governance",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
-      "trigger": "CreatePlan / AmendPlan 校验步骤",
+      "trigger": "CreatePlan / RevisePlan(add) 校验步骤",
       "input": "steps[].done_criteria",
       "output": "装配期拒绝：缺少判据、长度 < 4、或判据自指",
       "blocks_execution": true,
       "native_dsh_alternative": null,
       "rationale": "没有判据就没有可失败的检验，独立评估也无从触发。",
-      "known_mismatch": "「每条进入系统的路径都校验判据」靠**测试**维持,不由类型保证:正常入口(`CreatePlan` / `AmendPlan` 经 `validateSteps`)强制判据,而旧会话日志、内部构造的计划对象、以及将来新增的入口不受它约束。"
+      "known_mismatch": "「每条进入系统的路径都校验判据」靠**测试**维持,不由类型保证:正常入口(`CreatePlan` / `RevisePlan(add)` 经 `validateSteps`)强制判据,而旧会话日志、内部构造的计划对象、以及将来新增的入口不受它约束。"
     },
     {
       "id": "formal-plan",
@@ -362,26 +358,26 @@
     },
     {
       "id": "plan-amend-no-progress",
-      "name": "AmendPlan / RefinePlan / VoidPlanStep 不动进度",
-      "name_en": "Amend/Refine/Void do not move progress",
+      "name": "RevisePlan(补一步 / 改判据 / 作废)不动进度",
+      "name_en": "RevisePlan (add / refine / void) does not move progress",
       "layer": "epistemic",
       "status": "implemented",
       "hardness": "hard",
       "authority": "authoritative",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js AmendPlan; RefinePlan; VoidPlanStep; ui/lib/fold.js/323/330",
+        "code": "preset/plugins/clearai-kernel.js RevisePlan; ui/lib/fold.js/323/330",
         "tests": "test/kernel.test.mjs",
         "config": null,
         "prompt": "clearai/plan-governance",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
-      "trigger": "模型调用三者之一",
+      "trigger": "模型调用 RevisePlan 的三种动作之一",
       "input": "步骤增补 / 判据修订 / 作废理由",
       "output": "plan/amended, plan/refined, plan/voided（进度不变）",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。",
+      "rationale": "进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口(第四阶段把 AmendPlan / RefinePlan / VoidPlanStep 合并为 RevisePlan,各自的校验不变,变更事件名不变)。",
       "known_mismatch": null
     },
     {
@@ -538,7 +534,7 @@
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js VoidPlanStep",
+        "code": "ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js RevisePlan",
         "tests": "test/kernel.test.mjs",
         "config": null,
         "prompt": "clearai/context-discipline",
@@ -1394,18 +1390,18 @@
       "authority": "none",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js countBlock; ui/lib/fold.js untouchedLevels; docs/verification-loop.md",
-        "tests": "test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级读数); test/ontology.test.mjs(状态表逐行有落点)",
+        "code": "preset/plugins/clearai-kernel.js countBlock; docs/verification-loop.md",
+        "tests": "test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级理由整套删除); test/ontology.test.mjs(状态表逐行有落点)",
         "config": null,
         "prompt": null,
         "docs": "docs/verification-loop.md"
       },
-      "trigger": "拿不到裁决 / 判不了交付成不成立 / 某条假设跳过了低等级",
+      "trigger": "拿不到裁决 / 判不了交付成不成立",
       "input": "—",
-      "output": "block/counted ⇒ plan/blocked ⇒ 当场问人;untouchedLevels(派生读数)",
+      "output": "block/counted ⇒ plan/blocked ⇒ 当场问人",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状;③「跳级」只记事实:从没走过的等级是一条派生读数。",
+      "rationale": "文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行;「从没走过的等级」这条读数第四阶段删了。",
       "known_mismatch": null
     },
     {
@@ -1686,18 +1682,18 @@
       "authority": "authoritative",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js RegisterTerm; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'",
+        "code": "preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'",
         "tests": "test/kernel.test.mjs",
         "config": null,
         "prompt": "clearai/domain-language",
         "docs": "docs/domain-ontology.zh-CN.md"
       },
-      "trigger": "模型调用 RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge",
-      "input": "id / label / gloss / domain / range / functional / basis / reason",
+      "trigger": "模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate",
+      "input": "id / label / gloss / aliases / parent / domain / range / functional / basis / reason",
       "output": "mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id。",
+      "rationale": "词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id——同 id 再定义只许改名字、释义、别名。第四阶段把六个写入口合并成 Define / Deprecate、删掉只读的 QueryKnowledge(知识预检已把相关已知送进运行态卡),变更事件名不变。",
       "known_mismatch": null
     },
     {
@@ -1773,28 +1769,53 @@
       "actor": "model"
     },
     {
-      "id": "level-skip-reason",
-      "name": "跳级需具名理由",
-      "name_en": "Level skips need a named reason",
+      "id": "entity-gate",
+      "name": "实体门(结案唯一的结构关口)",
+      "name_en": "Entity gate (the only structural gate at Conclude)",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js ExplainLevelSkip; ui/lib/fold.js deriveKnowledge",
-        "config": "requireLevelReasons",
-        "docs": "docs/verification-loop.zh-CN.md",
-        "prompt": "preset/plugins/prompts.js clearai/loop-contract",
-        "tests": "test/contrast.test.mjs"
+        "code": "preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph",
+        "config": "requireLandedEntities",
+        "docs": "docs/less-is-more-plan.zh-CN.md",
+        "prompt": "preset/plugins/prompts.js clearai/domain-language",
+        "tests": "test/kernel.test.mjs(实体门); test/contrast.test.mjs(B 组)"
       },
-      "trigger": "模型调 ExplainLevelSkip；或结案时缺口 levels_skipped 存在",
-      "input": "{hypothesis, levels[], reason}",
-      "output": "level/skipped 变更 → hypotheses[].skips[]；缺口 levels_skipped 随之消失",
-      "blocks_execution": false,
+      "trigger": "Conclude(achieved),知识模式下,在派评估者之前",
+      "input": "将要升格的判断(达门槛、无推翻)的断言主体",
+      "output": "有主体不是实体图节点 ⇒ 拒(entities_unlanded),点名判断与主体;否则放行去独立评估",
+      "blocks_execution": true,
       "native_dsh_alternative": null,
-      "rationale": "supportedLevel 只是支持证据的最大值，所以\"一路只在最贵那一级交付\"本来零代价；跳级不违规，但必须说清这一级为什么不适用，理由要点到该检查的对象名。",
+      "rationale": "「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不再要求另用 Assert 把同一句话说一遍。第四阶段把关口从三道收到这一道。",
       "known_mismatch": null,
       "layer": "epistemic",
       "status": "implemented",
       "hardness": "hard",
       "authority": "authoritative",
-      "actor": "model"
+      "actor": "system"
+    },
+    {
+      "id": "level-skip-reason",
+      "name": "已删除:跳级需具名理由",
+      "name_en": "Removed: level skips need a named reason",
+      "source": {
+        "code": null,
+        "config": null,
+        "docs": "docs/less-is-more-plan.zh-CN.md",
+        "prompt": null,
+        "tests": null
+      },
+      "trigger": "—",
+      "input": "—",
+      "output": "—",
+      "blocks_execution": false,
+      "native_dsh_alternative": null,
+      "rationale": "第四阶段整套删除(ExplainLevelSkip、level/skipped、untouchedLevels、levels_skipped 缺口与 requireLevelReasons 门):第三阶段重跑里它让小任务结案时多被拦一次、多写一段理由,而等级的职责只有两件——谁来判,以及 L4 要人放行。旧日志里的 level/skipped 安静跳过。",
+      "known_mismatch": null,
+      "layer": "epistemic",
+      "status": "removed",
+      "hardness": "deprecated",
+      "authority": "none",
+      "actor": "model",
+      "destination": "deleted"
     },
     {
       "id": "criteria-revision-gate",
@@ -1908,7 +1929,7 @@
         "prompt": "clearai/delegation",
         "docs": "docs/verification-loop.zh-CN.md"
       },
-      "trigger": "CreatePlan / AmendPlan",
+      "trigger": "CreatePlan / RevisePlan(add)",
       "input": "步骤的 artifacts",
       "output": "撞上已有步骤(作废的不算)的产物路径即拒",
       "blocks_execution": true,

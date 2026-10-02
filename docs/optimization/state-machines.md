@@ -114,9 +114,9 @@ Three stickiness rules, all in `fold.js`:
 - `refuted` is not rewritten to `superseded` by a later list that omits it (`fold.js:396-411`).
 - A hypothesis already promoted to fact cannot be quietly replaced either (same `promoted` test).
 - `supportedLevel` is the maximum computed by `derive()`, never stored.
-- A level-skip reason, `level/skipped`, folds into `hypotheses[].skips[]`: `derive()` subtracts the levels a reason
-  covers from `untouchedLevels`, so writing the reason really does clear the `levels_skipped` gap — it is that gap's
-  way out, not something ignored.
+- Since phase 4 there is no level-skip mechanism: old `level/skipped` events in a ledger are silently skipped by the fold.
+  `derive()` instead marks each hypothesis with `unlanded` (assertion subjects that are not instance nodes on the
+  entity graph); the `entities_unlanded` gap and the Conclude entity gate both read it.
 
 ## 5. Observation · implemented
 
@@ -242,7 +242,7 @@ stateDiagram-v2
 
 Points:
 
-- **Convention and observation are separate**: `RegisterTerm` is a convention (a concept; no evidence
+- **Convention and observation are separate**: `Define` is a convention (a concept; no evidence
   required), `RegisterInstance` is an observation (an instance; `basis` and `provenance` required), and
   `Assert` says one sourced thing about a registered instance (`evidence` required).
 - **Entities do not wait for the goal verdict**: `entity/asserted` produces an edge at the moment it is
@@ -313,7 +313,6 @@ ledger facts), so it appears in no state machine:
 | `entity/registered` | §13 Entities and assertions | yes |
 | `entity/asserted` | §13 Entities and assertions | yes |
 | `audit/reused` | §6 Evaluation | yes |
-| `level/skipped` | §4 Hypotheses (skip reason) | yes |
 | `criteria/revised` | §1 Goal (criterion revision) | yes |
 | `host/inactive` | §14 Host read faces | yes |
 | `admission/checked` | **ledger only** | no |

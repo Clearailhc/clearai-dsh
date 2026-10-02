@@ -179,20 +179,16 @@ window.__ModuleLoader__.load({
 		const EVALUATOR = lazyTable(() => ({ self: t('自判'), independent: t('独立评估者') }))
 
 		/**
-		 * **缺口 code → 人话标签**。code 是机器词(`no_language` 这类),**不上屏**——
+		 * **缺口 code → 人话标签**。code 是机器词(`prose_only_claims` 这类),**不上屏**——
 		 * 人看到的是这一句。允许的 code 在这里是**显式清单**:表本身是惰性代理,
 		 * 用 `in` 判会把 `toString` 这类原型上的键也认成缺口类型。
 		 * 表里的每一句都在 LOCALE_ZH / LOCALE_EN 里成对登记(与其余面向人的串同一规矩)。
 		 */
-		const GAP_CODES = ['no_language', 'prose_only_claims', 'unstructured_facts', 'untouched_claims', 'entities_unlanded', 'levels_skipped', 'orphan_terms']
+		const GAP_CODES = ['untouched_claims', 'prose_only_claims', 'entities_unlanded']
 		const GAP_LABEL = lazyTable(() => ({
-			no_language: t('语言还没立:概念与谓词都还是空的'),
 			prose_only_claims: t('命题只有散文主张:没有能被机器比对的断言'),
-			unstructured_facts: t('升格的事实没带断言:它进不了实体图'),
 			untouched_claims: t('命题没被任何证据碰过'),
 			entities_unlanded: t('断言主体还没落到实体图'),
-			levels_skipped: t('跳级没写理由'),
-			orphan_terms: t('概念没有任何结论引用'),
 		}))
 
 		const STRONG = { refuted: true, stalled: true, refute: true }
@@ -342,12 +338,6 @@ window.__ModuleLoader__.load({
 			evBasis: { color: 'var(--dsw-alias-label-secondary)', opacity: 0.85, flex: '1 1 auto', minWidth: 0 },
 			fileLink: { color: 'var(--dsw-alias-brand-primary)', cursor: 'pointer', whiteSpace: 'nowrap' },
 			pathFoot: { fontSize: 11, color: 'var(--dsw-alias-label-secondary)', opacity: 0.7, marginTop: 2 },
-			/** 未走过等级那一行:安静,但**可点**——所以给下划线,颜色用链接令牌(它是一条通道)。 */
-			levelChannel: { fontSize: 11.5, flex: '0 0 auto', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, color: 'var(--dsw-alias-brand-primary)' },
-			/** 等级说明展开区:与 propBody 同一族的左侧竖线,但不占证明那一栏的位。 */
-			levelGuide: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6, paddingLeft: 10, borderLeft: '2px solid var(--dsw-alias-border-l2)' },
-			levelRow: { display: 'flex', flexDirection: 'column', gap: 1, fontSize: 11.5 },
-			levelHead: { fontWeight: 600, color: 'var(--dsw-alias-label-primary)' },
 			/** 世界树页眉的判据小节:逐条带序号;左侧竖线说明它是「目标的一部分」而不是新面板。 */
 			criteria: { display: 'flex', flexDirection: 'column', gap: 1, paddingLeft: 8, marginTop: 2, borderLeft: '2px solid var(--dsw-alias-border-l2)' },
 			criteriaRow: { display: 'flex', gap: 6, alignItems: 'baseline', fontSize: 11.5 },
@@ -907,64 +897,6 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 等级说明**只有一个来源**:折法侧经宿主投影下发的 `knowledgeView`;
-		 * 它的底稿是 `preset/plugins/prompts.js` 里那五级说明。
-		 * 客户端**绝不手抄第二份**——两处各写一套,漂移是迟早的事。
-		 * 取不到就返回 null,由调用点如实说「读不到等级说明」。
-		 */
-		const levelTableOf = (data) => {
-			const view = data?.knowledgeView ?? null
-			const table = view?.levels ?? view?.glossary ?? null
-			return table !== null && typeof table === 'object' ? table : null
-		}
-
-		/**
-		 * **等级通道**:未走过的等级不再是一句陈述,而是一行**可点**的东西。
-		 *
-		 * 点开看到的是 `ExplainLevelSkip` 要交的三件:
-		 *   ① 这一级要检查的对象(这条命题自己的断言主体——reason 里必须点到它们);
-		 *   ② reason 该怎么写(以及模板);
-		 *   ③ 这一级在这一档里可能不适用的理由从哪来说(等级说明的 `plain` / `where`)。
-		 *
-		 * 「跳过」本身不违规,所以这里**不劝、不拦**:只把要交的东西摆出来。
-		 */
-		const LevelGuide = ({ row, data }) => {
-			const untouched = Array.isArray(row?.untouchedLevels) ? row.untouchedLevels : []
-			const table = levelTableOf(data)
-			const objects = (Array.isArray(row?.assertions) ? row.assertions : []).map(assertionName).filter((text) => text !== '')
-			const hypothesis = String(row?.id ?? '')
-			return h(
-				'div',
-				{ style: S.levelGuide },
-				...untouched.map((level) => {
-					const info = table === null ? null : table[level] ?? null
-					const plain = info === null ? null : String(info.plain ?? '')
-					const where = info === null ? null : String(info.where ?? '')
-					const nextAction = info === null ? null : String(info.nextAction ?? '')
-					return h(
-						'div',
-						{ key: level, style: S.levelRow },
-						h('div', { style: S.levelHead }, `${level} · ${plain === null || plain === '' ? t('读不到等级说明') : t(plain)}`),
-						where === null || where === '' ? null : h('div', { style: S.faint }, `${t('这一级看什么:')}${t(where)}`),
-						nextAction === null || nextAction === '' ? null : h('div', { style: S.faint }, `${t('这一级要交什么:')}${t(nextAction)}`),
-						h(
-							'div',
-							{ style: S.faint },
-							`${t('这一级要检查的对象:')}${objects.length === 0 ? t('这条命题还没写明断言主体:先用 RegisterInstance 把实例连出处登记下来。') : objects.join(';')}`,
-						),
-						h('div', { style: S.faint }, `${t('reason 怎么写:')}${t('reason 里必须点到上面这些对象名,不能写「时间不够」。')}`),
-						h('div', { style: S.faint }, t('跳级本身不违规:要交的是「这一级为什么不适用」的理由,不是这一级的读数。')),
-						/**
-						 * 模板本身是**代码**,不翻译;它前面那句话是人话,走 t()。
-						 * (verb 名与字段名是模型的接口,换语言也不该换。)
-						 */
-						h('div', { style: S.faint }, t('交给模型的写法:'), h('span', { style: S.mono }, ` ExplainLevelSkip { hypothesis: '${hypothesis}', levels: ['${level}'], reason: '…' }`)),
-					)
-				}),
-			)
-		}
-
-		/**
 		 * **命题行**:一行一条命题,默认只有主张 + 当前处境 + 等级判者。
 		 * 点开才出现「凭什么」——流转图 + 每条证据的出处。
 		 */
@@ -972,13 +904,6 @@ window.__ModuleLoader__.load({
 			const { data, row, open, onToggle } = props
 			const evidence = evidenceOf(data, row.id)
 			const path = transitionsOf(data, row)
-			const untouched = Array.isArray(row.untouchedLevels) ? row.untouchedLevels : []
-			/**
-			 * 等级通道的展开是**界面状态**(点了哪一条,不进账本)。
-			 * `levelsOpen` 是给测试缝的显式覆盖:真 React 里点不动的地方,测试要能直接渲染展开态。
-			 */
-			const [levelsShown, setLevelsShown] = React.useState(false)
-			const levelsOpen = props.levelsOpen ?? levelsShown
 			return h(
 				'div',
 				{ style: open === true ? S.propOpen : S.propRow },
@@ -988,32 +913,8 @@ window.__ModuleLoader__.load({
 					h('span', { style: { ...S.propClaim, ...(row.status === 'refuted' || row.status === 'superseded' ? S.stale : {}) } }, dash(row.claim)),
 					h('span', { style: S.propWhere }, whereOf(data, row)),
 					h('span', { style: S.propJudge }, `${gloss(HYPOTHESIS, row.status)} · ${judgeOf(data, row)}`),
-					/**
-					 * **从没被走过的等级**:等级越往上,系统补的独立性越多(独立裁决、人放行),
-					 * 所以「直接跳到高等级」这件事本身不违规(首次测量没有廉价路),但必须看得见——
-					 * 与「这条假设从没被证据碰过」标成「未触及」同一条规矩。
-					 *
-					 * 它同时是**通道**,不是陈述:点开就是 `ExplainLevelSkip` 要交的东西
-					 * (要检查哪些对象、reason 怎么写、这一级为什么可能不适用)。
-					 * 只说「尚无证据」而不给出口,读者只会知道欠账、不知道还法。
-					 */
-					untouched.length === 0
-						? null
-						: h(
-								'span',
-								{
-									style: S.levelChannel,
-									title: t('这些等级尚无证据:跳级不违规,但需说明原因'),
-									onClick: (event) => {
-										event?.stopPropagation?.()
-										setLevelsShown(levelsOpen !== true)
-									},
-								},
-								`${t('未走过 ')}${untouched.join('/')} · ${levelsOpen === true ? t('收起这一级要交的东西') : t('怎么补这一级?')}`,
-							),
 				),
 				h(AssertionChips, { assertions: row.assertions, ui: data.assertionUI, promoted: false }),
-				levelsOpen === true ? h(LevelGuide, { row, data }) : null,
 				open === true
 					? h(
 							'div',
@@ -1092,7 +993,6 @@ window.__ModuleLoader__.load({
 		 */
 		const gapTarget = (code, data, onShowEntity) => {
 			if (code === 'entities_unlanded' && typeof onShowEntity === 'function') return { label: t('看实体图'), title: t('切到实体图那一层,看有哪些实例节点'), run: onShowEntity }
-			if ((code === 'no_language' || code === 'orphan_terms') && typeof data?.openPreview === 'function') return { label: t('打开词汇货架(原生预览)'), title: t('原生预览打开它'), run: () => data.openPreview('clear/ontology/domain.md') }
 			return null
 		}
 
@@ -2949,7 +2849,7 @@ window.__ModuleLoader__.load({
 		 * 真的跑一遍渲染路径(捕 undefined 字段访问这类只有渲染时才炸的错)。
 		 * 仍然不是给别的包用的接口。
 		 */
-		exports.__components = { PlanChip, WorldTree, GraphBand, GraphInspector, VocabBlock, AssertionChips, Inbox, TreeDetail, Facts, FactShelf, PropositionShelf, PropositionRow, GapShelf, LevelGuide, ClearAIMark, LOOP_LABEL, PROPOSITION_GROUPS }
+		exports.__components = { PlanChip, WorldTree, GraphBand, GraphInspector, VocabBlock, AssertionChips, Inbox, TreeDetail, Facts, FactShelf, PropositionShelf, PropositionRow, GapShelf, ClearAIMark, LOOP_LABEL, PROPOSITION_GROUPS }
 		/**
 		 * 测试缝之三:命题那一列的**派生**是纯函数(分组、处境、来路、证据链),
 		 * 渲染本身没法在没浏览器的地方细究——把它导出去,让测试直接断言派生结果。
