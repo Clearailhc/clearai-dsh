@@ -4,6 +4,17 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+**「少即是多」第五阶段:提示词收成三段。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第五阶段的改动清单。
+
+### Changed
+
+- **提示词 21 段 → 3 段**,约 1.5 万字收到 2 千字出头:身份(`clearai/identity`)、循环(`clearai/loop`)、对人说话(`clearai/speaking`)。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。
+- 人格前缀只留一句身份;`clearai-loop` 技能只讲提示词与工具说明都没写的部分:准入核什么、被拦之后怎么走、评估卡怎么读。
+
+### Removed
+
+- 讲原生工具用法的段(文件读写、网页、技能、委派、Python 环境)、已删机制的残留说法(`lab/` 与 `products/` 目录约定、`PROJECT.md` 占位、`setup_cjk()`、`retract_fact` / `keep_fact`),以及只由提示词承载的「引擎级异常降权只读恢复」细则(身份段留一句:结局不明先看当前事实)。机制、工具、状态形状都不变。
+
 **「少即是多」第四阶段:Conclude 门收紧,工具面收拢。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第四阶段的改动清单。
 
 ### Changed

@@ -162,8 +162,8 @@ for (const orphan of ['clearai-kernel.js', 'kernel.test.mjs']) {
 check(/minHypotheses:\s*2\b/.test(PRESET), '⑫ preset 把假设数量下限立为 2(产品立场)')
 check(/hypotheses_too_few/.test(KERNEL), '⑫ 内核有 hypotheses_too_few 这道门(Frame 入口)')
 check(
-	/假设至少两条/.test(PROMPTS),
-	'⑫ loop-contract 写明了假设纪律(模型得先知道规则,门才不会天天误伤)',
+	/(假设|判断)至少两条/.test(PROMPTS),
+	'⑫ 循环段写明了假设纪律(模型得先知道规则,门才不会天天误伤)',
 )
 
 // ── ⑬ source.code 必须**可被证伪**:文件在、符号在、没有行号 ─────────────────
