@@ -565,8 +565,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		audits: [],
 		settlement: [],
 		scouts: [],
-		inbox: [{ kind: 'plan_confirm', title: '计划待确认', summary: '…', plan: 'p-1', step: null, human_action: 'confirm_plan' }],
-		hasOpenGate: true,
+		needYou: [{ kind: 'plan_blocked', text: '计划卡住了:产物没落盘' }],
 		brain: {
 			skills: [
 				{ name: 'literature-review', description: '【文献综述】…', status: 'active', tier: 'system', version: null, bytes: 1234, resources: 3, path: 'clear/skills/literature-review/SKILL.md' },
@@ -605,7 +604,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	const treePanel = text(components.WorldTree)
 	check('世界树页眉给出目标与判据(撤「进展」之后它们是这一格的起点)', /催化剂 A 是否优于 B/.test(treePanel) && /均值差/.test(treePanel), treePanel.slice(0, 90))
 	
-	check('要你拍板的那一下在世界树里(人门区在最前)', /需要你|计划待确认/.test(treePanel), treePanel.slice(0, 120))
+	check('需要你的那一句在世界树里(只陈述)', /需要你/.test(treePanel) && /计划卡住了/.test(treePanel), treePanel.slice(0, 120))
 	check('世界树不再重复闭环那一格的东西(假设/观测/事实不在这)', !/观测 ·/.test(treePanel) && !/事实 · 1/.test(treePanel), treePanel.slice(0, 160))
 	/**
 	 * **判据逐条**:`Frame` 收的是 `criteria: string[]`(每条一句话、每条可清点),
@@ -631,468 +630,154 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('判据清单是空数组:退回摘要,不出现「判据 · 0」小节', /判据:均值差 ≥ 5%/.test(emptyPanel) && !/判据 · 0/.test(emptyPanel), emptyPanel.slice(0, 160))
 
 	/**
-	 * §24「事实」那一格:一个**知识货架**(上架=已确认事实,下架=命题)。
+	 * 第六阶段「本体」那一格:**图为主**,下面一行一条结论。
 	 *
-	 * 判据三条(都是"用户能不能一眼答上来"):
-	 *   · 上架只放**已确认**的,每条带边界——没有边界的事实没人敢用;
-	 *   · 下架按**本体状态**分组(已提出/验证中/已推翻/已替代),用词以 `docs/verification-loop.md` §5 为准;
-	 *   · 默认一行一条命题(主张 + 处境 + 等级判者),**不摆**观测/评估/哈希这些机器字段。
+	 * 判据都是"用户能不能一眼答上来":
+	 *   · 页眉说在回答什么、一行计数、需要你、四站进度轨(判断 → 检验 → 已验证 → 入本体);
+	 *   · 结论按可信度分组(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换),一行一条;
+	 *   · 点开依次是 进度 → 可信度怎么变的 → 补充;
+	 *   · 内部编号(h-… / e-… / s-…)与机器词(support / refute / proposed)不上屏。
 	 */
 	{
-		const factsView = { ...view }
-		factsView.ontology = { id: 'verification-loop', objects: [
-			{ name: 'hypothesis', states: ['proposed', 'alive', 'confirmed', 'refuted', 'superseded'], initial: 'proposed', terminal: ['refuted', 'superseded'], edges: [
-				['proposed', 'alive', 'system', 'evidence_appended'],
-				['alive', 'confirmed', 'system', 'promotion_threshold'],
-				['alive', 'refuted', 'system', 'refuting_evidence'],
-				['proposed', 'superseded', 'model', 'hypothesis_revised'],
-			], event_kind: 'hypothesis/superseded' },
-		], levels: [] }
-		factsView.goal = {
-			...view.goal,
-			promoteAtLevel: 'L3',
-			hypotheses: [
-				{ id: 'h1', claim: '催化剂 A 优于 B', refuteWhen: '均值差 < 5%', status: 'alive', supportedLevel: 'L3', refutations: 0, inconclusive: 0, version: 1 },
-				{ id: 'h2', claim: '二分法比牛顿法省求值', refuteWhen: '牛顿更少', status: 'refuted', supportedLevel: 'L3', refutations: 1, inconclusive: 0, version: 1 },
-				{ id: 'h3', claim: '旧版外推法更快', refuteWhen: '—', status: 'superseded', supportedLevel: null, refutations: 0, inconclusive: 0, version: 2 },
-				{ id: 'h4', claim: '还没开始的猜想', refuteWhen: '—', status: 'proposed', supportedLevel: null, refutations: 0, inconclusive: 0, version: 1 },
-				{ id: 'h5', claim: '已经升格的那条', refuteWhen: '—', status: 'confirmed', supportedLevel: 'L3', refutations: 0, inconclusive: 0, version: 1 },
+		const atlasView = {
+			...view,
+			needYou: [{ kind: 'conflict', text: '炉次 B1的氧含量:「8 ppm」和「12 ppm」矛盾,以哪个为准?' }],
+			goal: {
+				...view.goal,
+				hypotheses: [
+					{ id: 'h-aa11', name: 'A 优于 B', claim: '催化剂 A 的产率比 B 高 5% 以上', refuteWhen: '均值差 < 5%', status: 'alive', trust: 'credible', supportedLevel: 'L3', history: [
+						{ kind: 'proposed', at: 1, to: 'testing' },
+						{ kind: 'evidence', id: 'e-1', at: 10, ordinal: 1, verdict: 'support', level: 'L3', evaluator: 'independent', basis: '三种方法同根', from: 'testing', to: 'credible' },
+					] },
+					{ id: 'h-bb22', name: '二分更省', claim: '二分法比牛顿法省求值', refuteWhen: '牛顿更少', status: 'refuted', trust: 'refuted', supportedLevel: null, history: [
+						{ kind: 'proposed', at: 2, to: 'testing' },
+						{ kind: 'evidence', id: 'e-2', at: 20, ordinal: 3, verdict: 'refute', level: 'L3', evaluator: 'independent', basis: '牛顿 6 次 < 二分 41 次', from: 'testing', to: 'refuted' },
+					] },
+					{ id: 'h-cc33', name: '温度无关', claim: '产率与温度无关', refuteWhen: '相关系数 > 0.3', status: 'proposed', trust: 'testing', supportedLevel: null, history: [{ kind: 'proposed', at: 3, to: 'testing' }] },
+					{ id: 'h-dd44', name: '学习率敏感', claim: '学习率扫一遍结果差很多', refuteWhen: '差异 < 1%', status: 'alive', trust: 'unclear', supportedLevel: null, history: [
+						{ kind: 'proposed', at: 4, to: 'testing' },
+						{ kind: 'evidence', id: 'e-3', at: 30, ordinal: 4, verdict: 'inconclusive', level: 'L2', evaluator: 'self', basis: '噪声太大', from: 'testing', to: 'unclear' },
+					] },
+				],
+			},
+			evidence: [
+				{ id: 'e-1', stepId: 's1', planId: 'p-1', verdict: 'support', level: 'L3', evaluator: 'independent', basis: '三种方法同根', refs: ['lab/a.csv'], origins: [{ kind: 'audit-card', path: 'clear/evidence/audits/s1/run-1.json' }], at: 10 },
 			],
-		}
-		// 证据挂在步骤上(h1 的验证步是 s1),链是 证据 → 步骤 → 命题
-		factsView.plan = { ...view.plan, steps: [
-			{ id: 's1', ordinal: 1, do: '造产物', artifacts: ['lab/a.csv'], doneCriteria: '存在', tests: { hypothesis: 'h1', level: 'L3' }, status: 'advanced', advancedAt: 1, voidReason: null, evidenceId: 'e-1' },
-			{ id: 's2', ordinal: 2, do: '写报告', artifacts: ['products/report.md'], doneCriteria: '有读数', tests: null, status: 'open', advancedAt: null, voidReason: null, evidenceId: null },
-			{ id: 's3', ordinal: 3, do: '对照两种方法的求值次数', artifacts: ['lab/evals.csv'], doneCriteria: '有对照读数', tests: { hypothesis: 'h2', level: 'L3' }, status: 'advanced', advancedAt: 2, voidReason: null, evidenceId: 'e-2' },
-		] }
-		/**
-		 * **跨计划**的步骤索引:真数据里命题的验证步常常留在**已收尾的旧计划**里
-		 * (实测:两条计划,`tests` 全在旧的那条上,`view.plan` 只交当前那条)
-		 * ⇒ 只查活动计划的实现在真数据上会把五个命题的证据全显示成「—」。
-		 * 这里把 h2/s3 放进索引、却**不**放进 `plan.steps`,就是为了让那条修法必须真的在。
-		 */
-		factsView.stepIndex = {
-			s1: { plan: 'p-old', planStatus: 'closed', tests: { hypothesis: 'h1', level: 'L3' }, do: '造产物', status: 'advanced' },
-			s3: { plan: 'p-old', planStatus: 'closed', tests: { hypothesis: 'h2', level: 'L3' }, do: '对照两种方法的求值次数', status: 'advanced' },
-			s2: { plan: 'p-1', planStatus: 'active', tests: null, do: '写报告', status: 'open' },
-		}
-		factsView.evidence = [
-			{ id: 'e-1', stepId: 's1', planId: 'p-1', verdict: 'support', level: 'L3', evaluator: 'independent', basis: '三种方法同根', refs: ['lab/a.csv'], anchor: 'auditor', at: 10 },
-			{ id: 'e-2', stepId: 's3', planId: 'p-1', verdict: 'refute', level: 'L3', evaluator: 'independent', basis: '牛顿 6 次 < 二分 41 次', refs: [], anchor: 'auditor', at: 20 },
-		]
-		factsView.audits = [{ id: 'a-1', stepId: 's1', verdict: 'support', cardPath: 'clear/evidence/audits/s1/run-1.json', evaluator: 'independent', evaluatorSession: null, capability: null, at: 10 }]
-		factsView.materials = [{ id: 'm-1', ref: 'lab/a.csv', source: 'self', digest: 'deadbeef', note: null, at: 5 }]
-		factsView.facts = [{ id: 'f-1', text: '催化剂 A 优于 B', scope: '均值差 < 5% 即作废', level: 'L3', evidenceIds: ['e-1'], path: 'clear/knowledge/facts/g1.md', at: 30 }]
-		factsView.releases = []
-		const useProjection2 = (key) => (key === 'clearai' ? factsView : undefined)
-		const render2 = (component, extra = {}) => react.render(component({ useProjection: useProjection2, useSessions, sessionId: 's1', openRail: () => {}, openSpectator: () => {}, ...extra })).replace(/\s+/g, ' ')
-		const facts = render2(components.Facts)
-		check('上架:已确认事实带**边界**与支持等级(没有边界的事实没人敢用)', /本体货架 · 1/.test(facts) && /边界:均值差 < 5% 即作废/.test(facts) && /支持到 L3/.test(facts), facts.slice(0, 160))
-		check('上架只放已确认的:已确认那条**不在**命题列表里(一个命题只在一处)', !/已经升格的那条/.test(facts), facts.slice(0, 200))
-		check('下架按**本体状态**分组(已提出/验证中/已推翻/已替代)', /已提出1/.test(facts) && /验证中1/.test(facts) && /已推翻1/.test(facts) && /已替代1/.test(facts), facts.slice(0, 260))
-		check('一行一条命题:主张 + 当前处境 + 等级判者', /催化剂 A 优于 B/.test(facts) && /已达门槛\(L3\),等目标验收时升格为事实/.test(facts) && /验证中 · L3 · 独立评估者/.test(facts), facts.slice(0, 300))
-		check('被推翻那条说清**被谁推翻**(负结果也是结论)', /被 e-2 推翻:牛顿 6 次 < 二分 41 次/.test(facts), facts.slice(0, 400))
-		// 真数据里评估者的依据常常是几百字:列表只放摘要,全文进 tooltip(否则一行撑爆)
-		const longBasis = '逐条对照登记判据:'.repeat(40)
-		const longView = { ...factsView, evidence: [{ ...factsView.evidence[1], basis: longBasis }] }
-		const longText = react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? longView : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
-		check('超长依据只上摘要(全文进 tooltip;一行不被撑爆)', !longText.includes(longBasis) && /…/.test(longText), longText.slice(0, 200))
-		check('还没证据的命题如实说「暂无证据」', /暂无证据。先登记判据,后执行验证。/.test(facts), facts.slice(0, 400))
-
-		// ── 本体格:图带 / 芯片 / 冲突 / 零成本 / 自动展开 / 过滤判据(阶段 D) ──
-		{
-			const lexiconFixture = {
-				terms: [
-					{ id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', parent: null, status: 'admitted', basis: '现场记录 R-01', aliases: [], uses: 1, version: 1 },
-					{ id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', parent: 'furnace_batch', status: 'deprecated', basis: 'b', aliases: [], uses: 0, version: 1, deprecated: { reason: '与父概念无法区分', at: 9 } },
-				],
-				predicates: [
-					{ id: 'oxygen_ppm', label: '氧含量', gloss: '熔体氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, status: 'admitted', basis: 'GB/T 5121', uses: 2, version: 1 },
-				],
-				conflicts: [
-					{ predicate: 'oxygen_ppm', subject: 'furnace_batch|B1', sides: [ { fact: 'f-1', value: 'quantity:8:ppm', text: 'a', level: 'L3', count: 1 }, { fact: 'f-2', value: 'quantity:12:ppm', text: 'b', level: 'L3', count: 1 } ] },
-				],
-				health: [ { kind: 'unused', severity: 'info', id: 'narrow_batch', detail: '还没有任何谓词或事实引用它' } ],
-				/**
-				 * 投影夹具照 `graphProjection()` 的**真输出**写:`layer` 说这一层画不画,
-				 * `claim` 是事实指回命题的那条身份链。
-				 * 夹具落后于生产者时,它测的就不再是要跑的那份代码。
-				 */
+			facts: [{ id: 'f-1', hypothesis: 'h-aa11', text: '催化剂 A 的产率比 B 高 5% 以上', scope: '均值差 < 5%', level: 'L3', evidenceIds: ['e-1'], path: 'clear/knowledge/facts/g1.md', at: 40, assertions: [{ predicate: 'yield', subject: { id: 'cat_a', type: 'catalyst' }, object: { kind: 'quantity', value: 62, unit: '%' } }] }],
+			lexicon: {
+				terms: [], predicates: [], conflicts: [], health: [],
 				graph: {
 					nodes: [
-						{ id: 'term:furnace_batch', kind: 'concept', layer: 'ontology', ref: 'furnace_batch', label: '炉次', status: 'admitted', uses: 1, depth: 0, x: 0, y: 0 },
-						{ id: 'form:quantity', kind: 'value_type', layer: 'ontology', ref: 'quantity', label: 'quantity', status: 'admitted', uses: 0, depth: 0, x: 0, y: 132 },
-						{ id: 'furnace_batch|B1', kind: 'instance', layer: 'entity', ref: 'B1', label: 'B1', type: 'furnace_batch', status: 'live', facts: ['f-1'], x: 0, y: 264 },
+						{ id: 'term:catalyst', kind: 'concept', layer: 'ontology', ref: 'catalyst', label: '催化剂', status: 'admitted', x: 0, y: 0 },
+						{ id: 'form:quantity', kind: 'value_type', layer: 'ontology', ref: 'quantity', label: 'quantity', status: 'admitted', x: 0, y: 100 },
+						{ id: 'catalyst|cat_a', kind: 'instance', layer: 'entity', ref: 'cat_a', label: '催化剂 A', type: 'catalyst', status: 'live', facts: ['f-1'], x: 0, y: 200 },
 					],
-					edges: [
-						{ id: 'predicate:oxygen_ppm', kind: 'predicate', layer: 'ontology', predicate: 'oxygen_ppm', label: '氧含量', from: 'term:furnace_batch', to: 'form:quantity', status: 'admitted', functional: true },
-						{ id: 'assertion:f-1:oxygen_ppm', kind: 'assertion', layer: 'entity', predicate: 'oxygen_ppm', label: '氧含量', from: 'furnace_batch|B1', to: 'form:quantity', status: 'live', level: 'L3', fact: 'f-1', scope: null, claim: 'h-1' },
-					],
-					bounds: { width: 400, height: 380 },
+					edges: [{ id: 'predicate:yield', kind: 'predicate', layer: 'ontology', predicate: 'yield', label: '产率', from: 'term:catalyst', to: 'form:quantity', status: 'admitted' }],
+					bounds: { width: 400, height: 300 },
 				},
-			}
-			const typedView = {
-				...factsView,
-				lexicon: lexiconFixture,
-				facts: [
-					{ ...factsView.facts[0], assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' }, chip: 'B1 · 氧含量 = 8 ppm' } ] },
-					{ id: 'f-2', text: '复核读数为 12 ppm', scope: 's', level: 'L3', evidenceIds: ['e-1'], path: 'p', at: 31, assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 12, unit: 'ppm' }, chip: 'B1 · 氧含量 = 12 ppm' } ] },
-				],
-			}
-			const renderOnto = (v) => react.render(components.Facts({ useProjection: (key) => (key === 'clearai' ? v : undefined), sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
-			const typed = renderOnto(typedView)
-
-			// ① 零成本:没有词条时,这一格与从前逐像素相同(图带/冲突行/维护区都不出现)
-			const plain = renderOnto(factsView)
-			check('零成本:没有词条就没有图带/冲突行/维护区(与从前同形)', !plain.includes('本体图') && !plain.includes('实体图') && !plain.includes('冲突') && !plain.includes('词汇('), plain.slice(0, 120))
-
-			// ② 图带:本体图/实体图切换在,节点标签在,截断说明的措辞在(有节点就不会出现)
-			check('图带:层次切换与节点都在(本体图默认)', typed.includes('本体图') && typed.includes('实体图') && typed.includes('炉次') && typed.includes('点节点看知识详情'), typed.slice(0, 200))
-			check('图带:提示写的是「看知识详情」而不是「过滤」(点击语义变了,提示得跟着变)', !typed.includes('点节点按概念过滤'))
-			check('图带:废止节点是虚线幽灵的来源数据(status=deprecated 的词条在维护区带缘由)', lexiconFixture.terms[1].status === 'deprecated' && String(lexiconFixture.terms[1].deprecated.reason).includes('与父概念无法区分'))
-
-			// ③ 冲突:一行指针 + 受害条目的内联标记
-			check('冲突行:仅当有冲突,一句话指针说清两侧', typed.includes('Conflict') === false && /冲突 1 对/.test(typed) && typed.includes('f-1(quantity:8:ppm)') && typed.includes('只暴露,不裁决'), typed.slice(0, 400))
-			check('冲突内联:受害条目自己亮出来(不必回看指针行)', /冲突 · oxygen_ppm/.test(typed), typed.slice(0, 500))
-
-			// ④ 断言芯片:已确立条目带芯片;命题带芯片且标注未升格
-			check('断言芯片:已确立条目显示「主语 · 谓词 = 值」', typed.includes('B1 · 氧含量 = 8 ppm') && typed.includes('B1 · 氧含量 = 12 ppm'), typed.slice(300, 700))
-
-			// ⑤ 词汇维护区:有事实时默认收起(词条表不出现),但区头计数在
-			check('维护区:有事实时默认收起(词条 id 不进 DOM,区头计数在)', !typed.includes('furnace_batch narrow') && /词汇\(2/.test(typed), typed.slice(-300))
-
-			// ⑥ 语言先于句子:0 条目 0 命题而有词条 ⇒ 维护区自动展开
-			const emptyShelves = { ...typedView, facts: [], goal: null }
-			const early = renderOnto(emptyShelves)
-			check('语言先于句子:空货架时维护区自动展开(词条表直接可见)', early.includes('furnace_batch') && early.includes('oxygen_ppm'), early.slice(0, 300))
-
-			// ⑦ 过滤判据(纯函数):断言命中、文本兜底、无关不命中
-			const termMatches = bundle.exports.__ontology?.termMatches
-			check('测试缝在:termMatches 可直接调', typeof termMatches === 'function')
-		/**
-		 * **合并目录要有上限**:真机器上全局技能可以有一百多条,全列出来就是信息爆炸。
-		 * 这一段钉住三件事:封顶生效、截掉多少如实说、候选不因为封顶被吞掉(它是等人的出口)。
-		 */
-
-		check('测试缝在:termMatches 可直接调', typeof termMatches === 'function')
-
-			if (typeof termMatches === 'function') {
-				const byAssertion = termMatches({ id: 'furnace_batch', label: '炉次', aliases: [] }, { text: '别的', assertions: [ { predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } } ] })
-				const byText = termMatches({ id: 'furnace_batch', label: '炉次', aliases: ['熔次'] }, { text: '这条结论按熔次对齐', assertions: null })
-				const byAlias = termMatches({ id: 'fb', label: '炉次', aliases: ['熔铸循环'] }, { text: '每个熔铸循环…', assertions: null })
-				const miss = termMatches({ id: 'furnace_batch', label: '炉次', aliases: [] }, { text: '完全无关的一条', assertions: null })
-				check('过滤判据:断言命中 ∨ 文本命中(含别名)∧ 无关不命中', byAssertion === true && byText === true && byAlias === true && miss === false, `${String(byAssertion)}/${String(byText)}/${String(byAlias)}/${String(miss)}`)
-			}
-
-			// ⑧ 图组件可独立渲染(空图不炸)
-			/**
-			 * **实体层的空态必须给通道,不能只给一句"暂无"**。
-			 *
-			 * 「实体图是空的」是这套系统最需要说话的一刻:用户看到的是"我查了那么多实体,
-			 * 图上什么都没有"。一句「此层暂无节点」把原因和下一步都藏起来了。
-			 * 判据落在**可执行**上:必须点名 `RegisterInstance`,并说清"断言挂在命题上不算已知"。
-			 */
-			{
-				const entityEmpty = react.render(
-					components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }),
-				)
-				check('实体层空态给通道(点名 RegisterInstance)', entityEmpty.includes('RegisterInstance'), entityEmpty.slice(0, 200))
-				check('实体层空态说清「断言挂在命题上不算已知」', entityEmpty.includes('不算'), entityEmpty.slice(0, 200))
-				const ontoEmpty = react.render(
-					components.GraphBand({ lexicon: { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }, layer: 'ontology', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }),
-				)
-				check('本体层空态仍是那句短话(两层空态可区分)', ontoEmpty.includes('此层暂无节点。'), ontoEmpty.slice(0, 200))
-			}
-
-			/**
-			 * ⑨ **适配层**:投影 → React Flow 的 nodes / edges。
-			 *
-			 * 这一层曾经自己算「先画谁」(按连接度截断前 40 个),那是**自己造轮子**:
-			 * 视口、缩放、可见性现在归 React Flow,所以客户端不再截断——
-			 * 全部节点进图,可读性由 fitView / MiniMap / 缩放负责。
-			 * 这里钉的是适配:**节点与边一条不少地交出去,标签与类型编码在 data 里**。
-			 */
-			{
-				const many = (count) => Array.from({ length: count }, (_, index) => ({
-					id: `term:t${String(index).padStart(2, '0')}`,
-					kind: 'concept',
-					layer: 'ontology',
-					ref: `t${String(index).padStart(2, '0')}`,
-					label: `概念${String(index).padStart(2, '0')}`,
-					status: 'admitted',
-					uses: 0,
-					depth: 0,
-					x: (index % 8) * 200,
-					y: Math.floor(index / 8) * 120,
-				}))
-				const ring = many(45)
-				const tree = expandTree(
-					components.GraphBand({
-						lexicon: { graph: { nodes: ring, edges: [], bounds: { width: 1600, height: 800 } }, conflicts: [] },
-						layer: 'ontology',
-						fullscreen: false,
-						sessionId: 's1',
-						onLayer: () => {},
-						onToggleFullscreen: () => {},
-						onFilter: () => {},
-					}),
-				)
-				const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
-				check('图交给 React Flow 渲染(不再是手写 SVG)', flow !== undefined)
-				check(
-					'组件形状是 forwardRef/memo 对象也要认(按 typeof 判函数就会误判成不可用)',
-					typeof components.GraphBand === 'function' && flow !== undefined && !String(flatNode(tree)).includes('图组件不可用'),
-					String(flow === undefined),
-				)
-				check('适配层不截断:全部节点一条不少地交出去(视口归库管)', flow?.props?.nodes?.length === 45, String(flow?.props?.nodes?.length))
-				check('节点的标签与初始坐标来自投影', flow?.props?.nodes?.[0]?.data?.label === '概念00' && flow.props.nodes[0].position.x === 0)
-				check('库的零件真的用上了(MiniMap / Controls / Background)', ['rf-minimap', 'rf-controls', 'rf-background'].every((name) => walkNodes(tree).some((item) => item.type === name)))
-				check('打开工作区 / 适配 都是显式动作', flatNode(tree).includes('打开图谱工作区') && flatNode(tree).includes('适配'))
-			}
-
-			/**
-			 * ⑨′ **降级如实**:React Flow 那一行没装上时,面板说清原因,
-			 * 不把整块面板炸掉(其余格子照常读)。
-			 */
-			{
-				const broken = loadClientBundleWithoutXyflow()
-				const rendered = broken.react
-					.render(broken.exports.__components.GraphBand({
-						lexicon: lexiconFixture,
-						layer: 'ontology',
-						fullscreen: false,
-						sessionId: 's1',
-						onLayer: () => {},
-						onToggleFullscreen: () => {},
-						onFilter: () => {},
-					}))
-					.replace(/\s+/g, ' ')
-				check('拿不到图组件时如实说,而不是崩', rendered.includes('图组件不可用'))
-				check('降级时说得出**原因**(不然下一次修它还得自己猜)', /图组件不可用\(.+?\)/.test(rendered), rendered.slice(0, 200))
-				check('降级时其余读数照常(节点计数仍在)', rendered.includes('个节点'))
-			}
-
-			/**
-			 * ⑩ **点击语义**:点节点是「看知识详情」,不是「按概念过滤」。
-			 *
-			 * 从前点一下就把货架过滤掉,读的人却还不知道那个词是什么意思。
-			 * 过滤改成 Inspector 里的一个显式动作——所以组件必须**收得到 sessionId**
-			 * (Inspector 要拿它去问宿主),而且不能再出现「已选中 · 名字」那种只报名字的卡。
-			 */
-			{
-				const band = react.render(
-					components.GraphBand({
-						lexicon: lexiconFixture,
-						layer: 'ontology',
-						expanded: false,
-						sessionId: 's1',
-						onLayer: () => {},
-						onToggleExpand: () => {},
-						onFilter: () => {},
-					}),
-				).replace(/\s+/g, ' ')
-				check('图带:提示说明点击是看知识详情', band.includes('点节点看知识详情'))
-				check('图带:没有选中时不摆 Inspector(零成本)', !band.includes('按此筛选'))
-				check('图带:零件与文案都不再承诺「点一下即过滤」', !band.includes('按概念过滤'))
-			}
-
-			/**
-			 * ⑪ **Inspector 组件本身**:它只渲染宿主给的读数,不在客户端拼链。
-			 * 这里直接喂一份投影输出,钉住「链的每一段都画得出来」。
-			 */
-			{
-				const inspector = {
-					selection: { kind: 'edge', id: 'assertion:f-1:oxygen_ppm:furnace_batch|B1', label: '氧含量' },
-					definition: { kind: 'assertion', predicate: 'oxygen_ppm', predicateLabel: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, subject: { type: 'furnace_batch', id: 'B1' } },
-					facts: [
-						{
-							id: 'f-1',
-							text: 'B1 氧含量是 8 ppm',
-							level: 'L3',
-							scope: '均值差 < 5% 即作废',
-							status: 'live',
-							at: 1700000000000,
-							review: null,
-							assertions: [{ chip: 'B1 · 氧含量 = 8 ppm' }],
-							hypothesis: { id: 'h-1', claim: 'B1 氧含量是 8 ppm', refuteWhen: '复测不是', status: 'alive', supportedLevel: 'L3', refutations: 0, inconclusive: 0 },
-							evidence: [
-								{
-									id: 'e-1',
-									verdict: 'support',
-									level: 'L3',
-									evaluator: 'independent',
-									basis: '读过产物',
-									origins: [{ kind: 'artifact', path: 'lab/g1.txt' }],
-									refs: ['lab/g1.txt'],
-									materials: [],
-									step: { plan: 'p-1', id: 's-1', do: '读仪表', doneCriteria: 'lab/g1.txt 存在', status: 'advanced' },
-								},
-							],
-							conflicts: [],
-						},
-					],
-					factsTruncated: 0,
-					relations: {},
-					conflicts: [],
-					history: [{ kind: 'fact/promoted', at: 1700000000000, summary: '升格为事实(支持到 L3)' }],
-					actions: { canFilter: true },
-					note: '这条边落在单值谓词上。',
-				}
-				const rendered = react.render(components.GraphInspector({ selection: { kind: 'edge', id: inspector.selection.id, label: '氧含量' }, inspector, sessionId: 's1', onFilter: () => {}, onClose: () => {} })).replace(/\s+/g, ' ')
-				check('Inspector:链的每一段都画得出来(事实 / 命题 / 证据 / 出处 / 步骤)', rendered.includes('f-1') && rendered.includes('h-1') && rendered.includes('e-1') && rendered.includes('lab/g1.txt') && rendered.includes('s-1'))
-				check('Inspector:命题带推翻条件与支持等级', rendered.includes('复测不是') && rendered.includes('L3'))
-				check('Inspector:历史画成一行', rendered.includes('升格为事实'))
-				check('Inspector:有「按此筛选」这个显式动作', rendered.includes('按此筛选'))
-				check('Inspector:单值谓词的冲突语义如实说', rendered.includes('单值谓词'))
-			}
-
-			/**
-			 * ⑫ **点击与选中走库的回调**:拖动 / 平移 / 缩放是 React Flow 的行为,
-			 * 不再由我们实现,也不该由我们测(那是测库)。我们只需钉住**接进库的三根线**:
-			 * 点击节点 → Inspector;点击边 → Inspector;点击空白 → 收起 Inspector。
-			 */
-			{
-				const tree = expandTree(
-					components.GraphBand({
-						lexicon: lexiconFixture,
-						layer: 'ontology',
-						fullscreen: false,
-						sessionId: 's1',
-						onLayer: () => {},
-						onToggleFullscreen: () => {},
-						onFilter: () => {},
-					}),
-				)
-				const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
-				check('图带:点击回调交给了库(onNodeClick / onEdgeClick / onPaneClick)', typeof flow?.props?.onNodeClick === 'function' && typeof flow?.props?.onEdgeClick === 'function' && typeof flow?.props?.onPaneClick === 'function')
-				check('图带:拖动节点 / 画布平移 / 滚轮缩放 都由库承担', flow?.props?.nodesDraggable === true && flow?.props?.panOnDrag === true && flow?.props?.zoomOnScroll === true)
-				check('图带:没选之前不摆 Inspector(零成本)', !flatNode(tree).includes('按此筛选'))
-			}
-
+			},
 		}
-		check('默认**不摆**机器字段(观测行/哈希/结算单都不在这一格)', !/deadbeef/.test(facts) && !/结算单/.test(facts) && !/观测 ·/.test(facts), facts.slice(0, 300))
-		// 这一格**就是**事实库:不再挂一个「打开事实库」的空链接,整行点开原件
-		check(
-			'事实行:整行可点开原件(不再挂重复入口:没有「事实存档」「打开原件」「打开事实库」,也不摆内部 id)',
-			!/事实存档/.test(facts) && !/打开原件/.test(facts) && !/打开事实库/.test(facts) && !/g1\.md/.test(facts) && /催化剂 A 优于 B/.test(facts),
-			facts.slice(0, 200),
-		)
+		const atlasProjection = (key) => (key === 'clearai' ? atlasView : undefined)
+		const atlas = react.render(components.Atlas({ useProjection: atlasProjection, sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
+		check('页眉:说在回答什么(目标那句)', atlas.includes('催化剂 A 是否优于 B'), atlas.slice(0, 120))
+		check('页眉:一行计数用六个状态词', /已验证 1 · 验证中 1 · 不确定 1 · 已推翻 1/.test(atlas), atlas.slice(0, 200))
+		check('页眉:需要你那一句只陈述(没有按钮)', atlas.includes('需要你') && atlas.includes('以哪个为准'), atlas.slice(0, 260))
+		check('页眉:四站进度轨带每站人数', /判断 4/.test(atlas) && /检验 3/.test(atlas) && /已验证 1/.test(atlas) && /入本体 1/.test(atlas), atlas.slice(0, 320))
+		check('图带:本体图 / 实体图二选一,带各层点数', atlas.includes('本体图 2') && atlas.includes('实体图 1'), atlas.slice(0, 400))
+		check('结论按可信度分组,一行一条短名', atlas.includes('A 优于 B') && atlas.includes('二分更省') && atlas.includes('温度无关') && atlas.includes('学习率敏感'))
+		check('结论行带「第几步」,不摆内部编号', atlas.includes('第 3 步') && !/h-aa11|h-bb22|e-1|\bs1\b|f-1/.test(atlas), atlas.slice(-400))
+		check('不出现机器词(support / refute / proposed / alive)', !/\bsupport\b|\brefute\b|\bproposed\b|\balive\b/.test(atlas))
+		check('不再出现旧用词(站住 / 已确认 / 在验 / 本体货架)', !/站住|已确认|在验|本体货架/.test(atlas))
+		check('本体图上值的形态说人话(quantity → 数值)', !atlas.includes('quantity'), atlas.slice(0, 400))
 
-		/**
-		 * 点开一条命题 ⇒ 来路(只画走过的转移)与出处(评估卡 / 产物)。
-		 * 渲染成字符串时点击状态由 `open` 传不进去(组件自己的 useState),
-		 * 所以这里直接验**派生**(纯函数),渲染那条由下面的展开断言兜。
-		 */
 		const props = bundle.exports.__propositions
-		const h1 = factsView.goal.hypotheses.find((row) => row.id === 'h1')
-		const h2 = factsView.goal.hypotheses.find((row) => row.id === 'h2')
-		check(
-			'证据链是「证据 → 步骤 → 命题」:h1 一条、h2 一条、没验证过的 h3 零条(不串门)',
-			props.evidenceOf(factsView, 'h1').length === 1 && props.evidenceOf(factsView, 'h2').length === 1 && props.evidenceOf(factsView, 'h3').length === 0,
-			`h1=${props.evidenceOf(factsView, 'h1').length} h2=${props.evidenceOf(factsView, 'h2').length} h3=${props.evidenceOf(factsView, 'h3').length}`,
-		)
-		check('走过的转移用**声明里的原始状态键**(渲染时才翻译:混用两套键会让流转图认不出走过的边)', props.transitionsOf(factsView, h1).map((step) => step.to).join('→') === 'alive', JSON.stringify(props.transitionsOf(factsView, h1)))
-		check('被推翻那条的来路里有「出现推翻证据」且带评估者', props.transitionsOf(factsView, h2).some((step) => step.to === 'refuted' && /独立评估者/.test(step.by)), JSON.stringify(props.transitionsOf(factsView, h2)))
-		check(
-			'出处分两种:独立证据指**评估卡**、自判指**产物**——产物的标签是文件名',
-			props.originsOf(factsView, factsView.evidence[0]).some((origin) => origin.label === '评估卡' && /audits\/s1/.test(String(origin.path))) &&
-				props.originsOf(factsView, { id: 'e-9', stepId: 's2', anchor: 'artifact', refs: ['lab/x.csv'] }).some((origin) => origin.label === 'x.csv' && origin.path === 'lab/x.csv'),
-			JSON.stringify(props.originsOf(factsView, factsView.evidence[0])),
-		)
-		// 一条证据挂两个产物时,标签必须**互相区分**(用户实测:都写「产物」就不知道该点谁)
-		{
-			const two = props.originsOf(
-				{ ...factsView, materials: [] },
-				{ id: 'e-two', stepId: 's1', anchor: 'artifact', refs: ['lab/num.txt', 'products/report.md'] },
-			)
-			check('两个产物 → 两个**不同**的文件名标签(点谁一眼能认)', two.length === 2 && two[0].label === 'num.txt' && two[1].label === 'report.md', JSON.stringify(two))
-			const same = props.originsOf({ ...factsView, materials: [] }, { id: 'e-same', stepId: 's1', anchor: 'artifact', refs: ['a/x.csv', 'b/x.csv'] })
-			check('同名不同目录 ⇒ 补一层目录(仍然认得出)', same.length === 2 && same[0].label === 'a/x.csv' && same[1].label === 'b/x.csv', JSON.stringify(same))
-		}
-		
-		const opened = render2(components.PropositionShelf, { open: 'h1', onToggle: () => {} })
-		/**
-		 * **点证据要真的开右侧预览**(§25)。判据不是"渲染出了一个可点的样子",
-		 * 而是"点下去那个打开器真的被调用、拿到的是原件路径"。
-		 */
+		const rows = props.conclusionsOf(atlasView)
+		const byName = (name) => rows.find((row) => row.name === name)
+		check('结论模型:每条判断一行,状态取自宿主算好的 trust', rows.length === 4 && byName('A 优于 B').trust === 'credible' && byName('二分更省').trust === 'refuted', JSON.stringify(rows.map((row) => [row.name, row.trust])))
+		check('站位:写进长期知识 = 4,推翻停在检验 = 2,只提出 = 1,检验过 = 2', byName('A 优于 B').station === 4 && byName('二分更省').station === 2 && byName('温度无关').station === 1 && byName('学习率敏感').station === 2)
+		check('结论行带出处那一步与依据', byName('A 优于 B').step === 1 && byName('A 优于 B').basis === '三种方法同根' && byName('A 优于 B').fact === 'f-1')
+		const legacy = props.conclusionsOf({ goal: null, facts: [{ id: 'f-old', text: '旧账本里的事实', scope: null, level: 'L3', evidenceIds: [], at: 1 }] })
+		check('旧账本里没有判断关联的事实也各占一行(已验证、入本体)', legacy.length === 1 && legacy[0].trust === 'credible' && legacy[0].station === 4, JSON.stringify(legacy))
+
+		/** 点开一条:进度 → 可信度怎么变的 → 补充(直接渲染展开区;行的展开状态是组件自己的 useState)。 */
+		const opened = react.render(components.ConclusionDetail({ row: byName('A 优于 B'), data: atlasView, onFocus: () => {} })).replace(/\s+/g, ' ')
+		const order = ['进度', '可信度怎么变的', '补充'].map((word) => opened.indexOf(word))
+		check('展开区三段依次是 进度 → 可信度怎么变的 → 补充', order.every((at) => at >= 0) && order[0] < order[1] && order[1] < order[2], opened.slice(0, 200))
+		check('可信度的每一笔:第几步 · 支持 · 独立核验 · 之前 → 之后', /第 1 步:支持 · 独立核验 · 验证中 → 已验证/.test(opened), opened.slice(0, 400))
+		check('补充里有 依据 / 算错 / 相关 / 出自(范围与算错相同就不重复)', opened.includes('依据') && opened.includes('算错') && opened.includes('相关') && opened.includes('出自') && !opened.includes('范围'), opened.slice(-400))
+		check('相关里用实例在图上的名字,而不是 id', opened.includes('催化剂 A') && !opened.includes('cat_a'), opened.slice(-300))
+		check('依据带「看核验」入口', opened.includes('看核验'))
 		{
 			const calls = []
-			// 直接拿**元素树**(不是字符串):只有元素树上才留着 onClick/title 这些 props
-			// 展开到证据行:命题要点开才有证据(与界面一致);字符串渲染桩会丢 props,所以走元素树
-			const el = components.PropositionShelf({ data: factsView, open: 'h1', onToggle: () => {}, openPreview: (path) => calls.push(`preview:${path}`) })
-			const nodes = walkNodes(expandTree(el))
-			const cardLink = nodes.find((node) => node.props?.onClick !== undefined && String(node.props?.title ?? '').includes('audits'))
-			cardLink?.props.onClick({ stopPropagation: () => {} })
-			check('点证据的出处 ⇒ 调用打开器并拿到原件路径(评估卡)', calls.some((entry) => entry.startsWith('preview:') && entry.includes('audits/s1')), JSON.stringify(calls))
-			const rowLink = walkNodes(expandTree(components.FactShelf({ data: factsView, openPreview: (path) => calls.push(`preview:${path}`) }))).find((node) => node.props?.onClick !== undefined && String(node.props?.title ?? '').includes('facts/g1.md'))
-			rowLink?.props.onClick()
-			check('点事实那一行 ⇒ 打开事实原件', calls.some((entry) => entry.includes('preview:clear/knowledge/facts/g1.md')), JSON.stringify(calls))
+			const el = components.ConclusionDetail({ row: byName('A 优于 B'), data: { ...atlasView, openPreview: (path) => calls.push(path) }, onFocus: () => {} })
+			const link = walkNodes(expandTree(el)).find((node) => node.props?.onClick !== undefined && String(node.props?.title ?? '').includes('audits'))
+			link?.props.onClick()
+			check('点「看核验」⇒ 原生预览打开评估卡', calls.some((path) => path.includes('audits/s1/run-1.json')), JSON.stringify(calls))
 		}
-		/**
-		 * §27b **四类出处各自可点**:产物/评估卡 → 原生预览;看评估者 → 旁观子会话;
-		 * 审批记录 → 无文件但如实说明。判据是"点下去那个打开器真的被调用、拿到的是什么"。
-		 */
+		const refutedDetail = react.render(components.ConclusionDetail({ row: byName('二分更省'), data: atlasView })).replace(/\s+/g, ' ')
+		check('被推翻那条:进度条说清停在哪,不给下一步', refutedDetail.includes('在检验这一站被推翻') && !refutedDetail.includes('下一步'), refutedDetail.slice(0, 300))
+		check('被推翻那一笔写「推翻」', /第 3 步:推翻/.test(refutedDetail), refutedDetail.slice(0, 300))
+		const pendingDetail = react.render(components.ConclusionDetail({ row: byName('温度无关'), data: atlasView })).replace(/\s+/g, ' ')
+		check('还没检验的:时间线末尾给下一步', pendingDetail.includes('下一步:找一步去检验它'), pendingDetail.slice(0, 300))
+		const unclearDetail = react.render(components.ConclusionDetail({ row: byName('学习率敏感'), data: atlasView })).replace(/\s+/g, ' ')
+		check('不确定那一笔写「不确定」,自己检验说到了哪一级', /第 4 步:不确定 · 可复算/.test(unclearDetail), unclearDetail.slice(0, 300))
+
+		// ── 图带 ──
 		{
-			const calls = []
-			const withOrigins = {
-				...factsView,
-				evidence: [
-					{
-						id: 'e-orig',
-						stepId: 's1',
-						planId: 'p-1',
-						verdict: 'support',
-						level: 'L3',
-						evaluator: 'independent',
-						basis: '评估卡核对',
-						refs: ['lab/a.csv'],
-						origins: [
-							{ kind: 'artifact', path: 'lab/a.csv' },
-							{ kind: 'audit-card', path: 'clear/evidence/audits/s1/run-1.json' },
-							{ kind: 'evaluator-session', session: 'child-1' },
-							{ kind: 'approval-record', call: 'call-1' },
-						],
-						at: 10,
-					},
+			const emptyGraph = { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }
+			const entityEmpty = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			check('实体图空态说人话(不点名内部工具)', entityEmpty.includes('实体图还空着') && !entityEmpty.includes('RegisterInstance'), entityEmpty.slice(0, 200))
+			const unlanded = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'entity', unlanded: 3, fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			check('实体图空着但有断言没落地:说清有几个', unlanded.includes('3') && unlanded.includes('还没登记成实例'), unlanded.slice(0, 200))
+			const ontoEmpty = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'ontology', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			check('本体图空态与实体图可区分', ontoEmpty.includes('本体图还空着'), ontoEmpty.slice(0, 200))
+		}
+		{
+			const many = (count) => Array.from({ length: count }, (_, index) => ({ id: `term:t${String(index).padStart(2, '0')}`, kind: 'concept', layer: 'ontology', ref: `t${index}`, label: `概念${String(index).padStart(2, '0')}`, status: 'admitted', x: (index % 8) * 200, y: Math.floor(index / 8) * 120 }))
+			const tree = expandTree(components.GraphBand({ lexicon: { graph: { nodes: many(45), edges: [], bounds: { width: 1600, height: 800 } }, conflicts: [] }, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			const flow = walkNodes(tree).find((item) => item.type === 'react-flow')
+			check('图交给 React Flow 渲染', flow !== undefined)
+			check('组件形状是 forwardRef/memo 对象也要认', typeof components.GraphBand === 'function' && flow !== undefined && !String(flatNode(tree)).includes('图组件不可用'))
+			check('适配层不截断:全部节点交出去(视口归库管)', flow?.props?.nodes?.length === 45, String(flow?.props?.nodes?.length))
+			check('节点画成星点(点 + 标签),不是方框', String(flatNode(walkNodes([flow?.props?.nodes?.[0]?.data?.label]))).includes('概念00') && flow?.props?.nodes?.[0]?.data?.label?.props?.className === 'clearai-star')
+			check('库的零件用上了(Controls / Background;小地图去掉了)', ['rf-controls', 'rf-background'].every((name) => walkNodes(tree).some((item) => item.type === name)) && !walkNodes(tree).some((item) => item.type === 'rf-minimap'))
+			check('工具条:本体图 / 实体图 / 图例 / 适配 / 全屏', ['本体图', '实体图', '已验证', '待核验', '适配', '全屏'].every((word) => flatNode(tree).includes(word)))
+			check('点击回调交给了库(节点 / 边 / 空白)', typeof flow?.props?.onNodeClick === 'function' && typeof flow?.props?.onEdgeClick === 'function' && typeof flow?.props?.onPaneClick === 'function')
+			check('拖动 / 平移 / 缩放由库承担', flow?.props?.nodesDraggable === true && flow?.props?.panOnDrag === true && flow?.props?.zoomOnScroll === true)
+			check('没选之前不摆小卡', !flatNode(tree).includes('只看相关'))
+		}
+		{
+			const small = expandTree(components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			const flow = walkNodes(small).find((item) => item.type === 'react-flow')
+			const positions = (flow?.props?.nodes ?? []).map((node) => `${Math.round(node.position.x)},${Math.round(node.position.y)}`)
+			check('小图排成一圈(不跑力导向,点不叠在一起)', positions.length === 2 && new Set(positions).size === 2, positions.join(' | '))
+		}
+		{
+			const broken = loadClientBundleWithoutXyflow()
+			const rendered = broken.react.render(broken.exports.__components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} })).replace(/\s+/g, ' ')
+			check('拿不到图组件时如实说原因,结论照常可读', /图组件不可用\(.+?\)/.test(rendered) && rendered.includes('结论照常可读'), rendered.slice(0, 200))
+		}
+
+		// ── 点一个点 / 一条边:小卡 ──
+		{
+			const inspector = {
+				selection: { kind: 'edge', id: 'assertion:f-1:yield', label: '产率' },
+				definition: { kind: 'assertion', predicate: 'yield', gloss: '每批的产率', domain: 'catalyst', domainLabel: '催化剂', basis: '实验记录' },
+				facts: [
+					{ id: 'f-1', text: '催化剂 A 的产率是 62%', scope: '均值差 < 5%', status: 'live', review: null, conflicts: [], hypothesis: { id: 'h-aa11', refuteWhen: '均值差 < 5%' } },
+					{ id: 'f-2', text: '复核读数是 55%', scope: '复测', status: 'live', review: null, conflicts: [{ predicate: 'yield' }], hypothesis: null },
 				],
+				factsTruncated: 0,
+				relations: { edges: [{ chip: 'cat_a · 产率 = 62%' }] },
 			}
-			const el = components.PropositionShelf({
-				data: withOrigins,
-				open: 'h1',
-				onToggle: () => {},
-				openPreview: (path) => calls.push(`preview:${path}`),
-				openSpectator: (id) => calls.push(`spectate:${id}`),
-			})
-			const nodes = walkNodes(expandTree(el))
-			const clickable = nodes.filter((node) => node.props?.onClick !== undefined && node.props?.title !== undefined)
-			for (const node of clickable) node.props.onClick({ stopPropagation: () => {} })
-			check('产物与评估卡 ⇒ 原生预览(拿到的是文件路径)', calls.some((entry) => entry === 'preview:lab/a.csv') && calls.some((entry) => entry.includes('audits/s1/run-1.json')), JSON.stringify(calls))
-			check('看评估者 ⇒ 旁观评估者子会话(harness 原生)', calls.some((entry) => entry === 'spectate:child-1'), JSON.stringify(calls))
-			const labels = nodes.map((node) => String(node.children?.[0] ?? '')).join('|')
-			check(
-				'四类入口都有名字(文件名 / 评估卡 / 看评估者 / 审批记录)',
-				/a\.csv/.test(labels) && /评估卡/.test(labels) && /看评估者/.test(labels) && /审批记录/.test(labels),
-				labels.slice(0, 160),
-			)
+			const card = react.render(components.GraphInspector({ selection: inspector.selection, inspector, names: new Map([['cat_a', '催化剂 A']]), sessionId: 's1', onFilter: () => {}, onClose: () => {} })).replace(/\s+/g, ' ')
+			check('小卡:标题是名字,带释义 / 主语 / 依据', card.includes('产率') && card.includes('每批的产率') && card.includes('催化剂') && card.includes('实验记录'), card.slice(0, 200))
+			check('小卡:关系串里的实例 id 换成图上的名字', card.includes('催化剂 A · 产率 = 62%') && !card.includes('cat_a'), card)
+			check('小卡:用到它的结论带状态签(已验证 / 有矛盾)', card.includes('用到它的结论') && card.includes('已验证') && card.includes('有矛盾'), card)
+			check('小卡:范围与算错相同时不重复', !card.includes('范围:均值差') && card.includes('范围:复测'), card)
+			check('小卡:不摆内部编号', !/f-1|f-2|h-aa11/.test(card), card)
+			check('小卡:「只看相关」与「关闭」两个显式动作', card.includes('只看相关') && card.includes('关闭'))
 		}
-		/**
-		 * 旧日志(没有 origins)走只读回退:材料 id → 材料表里的路径;换不出来的**丢掉** ——
-		 * 绝不把裸 id 渲染成"能点"的样子(真数据实测:整排出处因此点不开)。
-		 */
-		{
-			const legacy = { ...factsView, materials: [{ id: 'm-legacy', ref: 'lab/legacy.csv', source: 'self', digest: 'x', note: null, at: 1 }], audits: [] }
-			const got = props.originsOf(legacy, { id: 'e-old', stepId: 's1', anchor: 'artifact', refs: ['m-legacy', 'm-unknown', 'not/a/real/path'] })
-			check('旧日志回退:材料 id 换成路径、路径照用、换不出来的丢掉', got.length === 2 && got[0].path === 'lab/legacy.csv' && got[1].path === 'not/a/real/path', JSON.stringify(got))
-		}
-		check('点开一条:证据行带等级/裁决/判者/依据', /e-1 · L3 · 支持 · 独立评估者/.test(opened) && /三种方法同根/.test(opened), opened.slice(0, 320))
-		/**
-		 * **流转图**(§25):从本体声明生成的状态机,画在展开区里。
-		 * 三条规矩都要真的在:走过的边写清触发与凭据、当前态标「当前」、没走的边虚线灰。
-		 */
-		check('流转图画出来了:六态都在,当前态标「当前」', /已提出/.test(opened) && /验证中/.test(opened) && /已确认/.test(opened) && /已推翻/.test(opened) && /当前/.test(opened), opened.slice(0, 200))
-		check('走过的边:图上标证据 id,图下的「来路」行写清触发与凭据', /e-1 · L3 支持/.test(opened) && /已获首条证据 → 验证中 · e-1 · L3 支持/.test(opened), opened.slice(0, 400))
-		check('没走的边只画虚线结构,tooltip 里写着「未走:这件事 · 谁发起」(取自声明,不是界面手抄)', /未走:promotion_threshold · system 发起/.test(opened) && /未走:refuting_evidence · system 发起/.test(opened) && /未走:hypothesis_revised · model 发起/.test(opened), opened.slice(0, 400))
-		check('形状来自声明:声明里没有 hypothesis 时不硬画', !/┊/.test(render2(components.PropositionShelf, { open: 'h1', onToggle: () => {}, data: { ...factsView, ontology: null } })) || true)
 	}
 
 	/**
@@ -1216,8 +901,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		text(components.PlanChip, { useProjection: () => ({ ...view, plan: { ...view.plan, confirmationPending: true } }) }).replace(/需要你\s*\d+/, '') === '1/3' &&
 			/color-warning/.test(String(components.PlanChip({ useProjection: () => ({ ...view, plan: { ...view.plan, confirmationPending: true } }) }).props.style?.color ?? '')) &&
 			/color-warning/.test(String(components.PlanChip({ useProjection: () => ({ ...view, plan: { ...view.plan, blocked: { reason: 'x' } } }) }).props.style?.color ?? '')) &&
-			// §35:有门(收件箱非空)时**也该**是琥珀 ⇒ 这条要用"门都关着"的 fixture 才是未染色的情形
-			components.PlanChip({ useProjection: () => ({ ...view, inbox: [] }), useSessions, sessionId: 's1' }).props.style === undefined &&
+			// 有「需要你」时**也该**是琥珀 ⇒ 这条要用"门都关着"的 fixture 才是未染色的情形
+			components.PlanChip({ useProjection: () => ({ ...view, needYou: [] }), useSessions, sessionId: 's1' }).props.style === undefined &&
 			/color-warning/.test(String(components.PlanChip({ useProjection, useSessions, sessionId: 's1' }).props.style?.color ?? '')),
 	)
 	check(
@@ -1274,45 +959,15 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('世界树不再画车道与收敛(并行探索交给原生子任务)', !/湿法|干法|已采纳|车道/.test(tree), tree.slice(0, 160))
 
 	/**
-	 * §37 **门要什么,由数据说;要一句话的门必须说出来**。
-	 *
-	 * 病灶:曾有门 `human_action: null` ⇒ 界面上**既没按钮也没提示** ✗,
-	 * 而它照样 `hasOpenGate` ⇒ 按住续跑 ⇒ 人以为"什么都不用做",系统却一直在等 ✗。
+	 * 「需要你」只陈述(面板只读):计划卡住、两条结论矛盾。没有按钮——要人的事在对话里问。
 	 */
 	{
-		const wordGate = {
-			...view,
-			// 「要一句话」的门现在只剩计划受阻那一种。
-			inbox: [{ kind: 'plan_blocked', title: '计划被拦', summary: '连续 2 次未过观测准入:产物没落盘', plan: 'p-1', step: 's1', human_action: null, needs: 'word', ask: '说明如何修改(改计划 / 补判据),语义判断归模型' }],
-			hasOpenGate: true,
-		}
-		const inboxText = react.render(components.Inbox({ data: wordGate })).replace(/\s+/g, ' ')
-		check('要一句话的门:不给按钮(它不是点击能表达的)', !/要你采纳/.test(inboxText), inboxText.slice(0, 160))
-		/**
-		 * 被推翻的事实:撤回 / 维持现在由**那次交付当场问人**(原生提问卡),面板不再发这两个动作。
-		 * 收件箱只读:即使旧数据里有这一条,也不渲染按钮——面板上没有一个点了不落账的控件。
-		 */
-		{
-			const refuted = {
-				...view,
-				hasOpenGate: true,
-				inbox: [{ kind: 'fact_refutation', title: '事实被推翻,等你决定', summary: '「X 比 Y 快」出现了推翻证据:撤回它,或判证据不可靠、维持原事实。', plan: null, step: null, value: 'fct-1', human_action: 'retract_fact', needs: 'click' }],
-				facts: [{ id: 'fct-1', text: 'X 比 Y 快', scope: null, level: 'L3', evidenceIds: [], path: null, at: 1, refuted: true, review: null }],
-			}
-			const tree = walkNodes(components.Inbox({ data: refuted }))
-			check('收件箱只读:不渲染撤回 / 维持按钮(这道门改由交付当场问人)', !tree.some((node) => node.type === 'button'), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => flatNode(node))))
-			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
-			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻 · 待裁决/.test(shelf), shelf.slice(0, 180))
-			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }
-			const shelf2 = react.render(components.FactShelf({ useProjection: () => retractedFacts })).replace(/\s+/g, ' ')
-			check('撤回过的事实**仍列在这里**(P5:记录不删),但标着「人已撤回」', /人已撤回\(记录保留\)/.test(shelf2), shelf2.slice(0, 180))
-		}
-		
-
+		const needText = react.render(components.NeedYou({ data: view })).replace(/\s+/g, ' ')
+		check('需要你:一条一行,说人话', /需要你/.test(needText) && /计划卡住了:产物没落盘/.test(needText), needText)
+		check('需要你:不渲染任何按钮(面板没有写入口)', !walkNodes(expandTree(components.NeedYou({ data: view }))).some((node) => node.type === 'button'))
+		check('没有要你做的事 ⇒ 什么都不画', components.NeedYou({ data: { ...view, needYou: [] } }) === null)
 	}
 
-	
-	
 	/**
 	 * 章程那一行:**只有文件系统事实**(在不在 / 多大 / 什么时候动过)+ 点开走原生预览。
 	 *
@@ -1359,16 +1014,16 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 
 	// 投影为空:世界树(计划面)与事实格(闭环面)都要给平静空态,不抛、不显示堆栈
 	const emptyTree = react.render(components.WorldTree({ useProjection: () => undefined, sessionId: 's1' }))
-	const emptyFacts = react.render(components.Facts({ useProjection: () => undefined, sessionId: 's1' }))
-	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /暂无数据/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
+	const emptyFacts = react.render(components.Atlas({ useProjection: () => undefined, sessionId: 's1' }))
+	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /还没有内容/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
 
 	// 空视图也要能渲染:这是最常见的崩溃点(字段全 undefined)。
-	const emptyView = { sessionId: 's1', goal: null, plan: null, evidence: [], materials: [], facts: [], audits: [], settlement: [], inbox: [], hasOpenGate: false }
+	const emptyView = { sessionId: 's1', goal: null, plan: null, evidence: [], materials: [], facts: [], audits: [], settlement: [], needYou: [] }
 	const emptyText = (component) => react.render(component({ useProjection: () => emptyView, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: emptyView } } } }), sessionId: 's1', openRail: () => {}, openSpectator: () => {} }))
-	// TreeDetail / Inbox 要一份选中行与门数据才渲染(它们在树里由选中驱动),不属于顶层空态。
+	// TreeDetail / NeedYou 要一份选中行与门数据才渲染(它们在树里由选中驱动),不属于顶层空态。
 	check(
 		'空视图下这些组件都不炸',
-		['PlanChip', 'WorldTree', 'Facts', 'FactShelf', 'PropositionShelf'].every((name) => typeof emptyText(components[name]) === 'string'),
+		['PlanChip', 'WorldTree', 'Atlas'].every((name) => typeof emptyText(components[name]) === 'string'),
 	)
 	// 预览走原生:断言接线用的就是这个契约(拿不到服务就如实说不打不开,不假装打开)
 	{
@@ -1512,7 +1167,7 @@ console.log('\n【世界树拓扑:一条脊柱(纯函数,直接断言)】')
 	const stepRow = { kind: 'step', lane: 0, step: { id: 's2', ordinal: 2, do: '跑乙做法', status: 'open', doneCriteria: '有读数', voidReason: null, level: 'L3', artifacts: [{ path: 'products/report.md', exists: true }, { path: 'lab/missing.csv', exists: false }] } }
 	const stepText = react.render(TreeDetail({ row: stepRow, data: detailData, openPreview: () => true, openSpectator: () => true, onClose: () => {} })).replace(/\s+/g, ' ')
 	check('详情:把这一步的判据/状态/产物都摊开', /判据/.test(stepText) && /有读数/.test(stepText) && /products\/report\.md/.test(stepText) && /lab\/missing\.csv\(缺\)/.test(stepText), stepText.slice(0, 200))
-	check('详情:证据与评估者的裁决状态都在(还没回来的说「正在裁决」)', /证据 e1 · support · L3/.test(stepText) && /正在裁决/.test(stepText), stepText.slice(0, 200))
+	check('详情:检验结果与独立核验的状态都在,说人话(还没回来的说「正在裁决」;不摆证据编号)', /检验结果:支持 · 独立核验/.test(stepText) && /正在裁决/.test(stepText) && !/\be1\b|support/.test(stepText), stepText.slice(0, 200))
 	check('详情:不再有采纳 / 放弃分叉的动作', !/采纳此世界线|放弃探索/.test(stepText))
 }
 
@@ -1610,7 +1265,13 @@ console.log('\n【语言:接原生 locale 座位,表按源文索引】')
 	check('向原生 locale 座位注册了词典', registered.length === 1 && registered[0].ns === 'clearai', JSON.stringify(registered.map((r) => r.ns)))
 	const zh = registered[0]?.dicts?.zh ?? {}
 	const en = registered[0]?.dicts?.en ?? {}
-	check('两种语言都注册了(缺一种宿主会拒)', Object.keys(zh).length > 200 && Object.keys(en).length > 200, `${Object.keys(zh).length}/${Object.keys(en).length}`)
+	check('两种语言都注册了(缺一种宿主会拒)', Object.keys(zh).length > 0 && Object.keys(en).length > 0, `${Object.keys(zh).length}/${Object.keys(en).length}`)
+	{
+		/** 用到的每个 `t('…')` 都要在词典里:漏一个,英文界面上就冒出一句中文。 */
+		const used = [...new Set([...source.matchAll(/\bt\('((?:[^'\\]|\\.)*)'\)/g)].map((match) => match[1]))]
+		const missing = used.filter((key) => !(key in zh) || !(key in en))
+		check('界面上用到的每句话都登记了两种语言', used.length > 50 && missing.length === 0, missing.slice(0, 8).join(' | '))
+	}
 	check('两边的键完全一致(不然会漏翻译成 key)', Object.keys(zh).every((k) => k in en) && Object.keys(en).every((k) => k in zh))
 	check('表按**源文**索引:中文那一侧的键值相同(漏译只会退回中文)', Object.entries(zh).slice(0, 20).every(([k, v]) => k === v))
 	check('订阅了语言变化(走宿主 locale/change 事件)', listener !== null && onEvents.includes('locale/change'), onEvents.join(','))

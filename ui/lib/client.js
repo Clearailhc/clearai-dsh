@@ -2,12 +2,11 @@
  * clearai-dsh —— 浏览器半(ClearAI 的面板)。
  *
  * 它注册三个座位:
- *   中栏 `conversation.view`    本体(页眉图 + 已确认事实 + 在流转的命题)
- *   右栏 `sidebarRightTabs`     世界树(计划的步骤与闸门)
+ *   中栏 `conversation.view`    本体(页眉 + 本体图 / 实体图 + 按可信度分组的结论)
+ *   右栏 `sidebarRightTabs`     世界树(计划的步骤,一行一步)
  *   输入框 `conversation.input`  计划芯片(步数 + 「需要你 N」)
  * 交付与文件改动走 DSH 原生的卡片,技能走原生技能目录,这里都不另做一份。
- * 除此之外还有一个**只给人**的写入口:人门动作(事实复核等),它走宿主半的
- * `POST /api/clearai/gate`,落成一条署名为人的消息——模型能调的工具面里没有这些动词。
+ * 面板**只读**:没有写入口。要人拍板的事由开门的那次工具调用当场问人,要改词汇就在对话里说。
  *
  * 面板自己不取数、不重算:宿主半注册的**会话投影单元** `clearai`(见 `lib/index.js`)把算好的
  * 视图推下来,`useProjection('clearai')` 读它。投影为空(`undefined`)时渲染平静的空态,
@@ -106,8 +105,8 @@ window.__ModuleLoader__.load({
 
 		/** 语言命名空间。表按**源文**索引:键就是中文原文,所以漏翻译一条只会退回中文,不会把 key 显示给人。 */
 		const LOCALE_NS = 'clearai'
-		const LOCALE_ZH = {"个节点":"个节点","条边":"条边","适配":"适配","打开图谱工作区":"打开图谱工作区","关闭工作区":"关闭工作区","图组件不可用":"图组件不可用","点节点看知识详情":"点节点看知识详情","按此筛选":"按此筛选","关闭":"关闭","正在取这条知识的读数…":"正在取这条知识的读数…","取不到读数":"取不到读数","宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。":"宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。","父概念":"父概念","形态":"形态","取值":"取值","引用":"引用","子概念":"子概念","相关谓词":"相关谓词","实例":"实例","关系边":"关系边","主词":"主词","相关事实":"相关事实","(还有更多,未列出)":"(还有更多,未列出)","历史":"历史","这条事实没有命题关联(旧账本):不拿文本相等去猜身份。":"这条事实没有命题关联(旧账本):不拿文本相等去猜身份。","推翻条件":"推翻条件","支持到":"支持到","断言":"断言","没有证据引用(旧事实或自判)。":"没有证据引用(旧事实或自判)。","出处":"出处","产生步骤":"产生步骤","复核":"复核","这条事实参与了一对冲突读数(只暴露,不裁决)":"这条事实参与了一对冲突读数(只暴露,不裁决)","滚轮缩放 · 拖动平移 · 拖节点挪位":"滚轮缩放 · 拖动平移 · 拖节点挪位","类型":"类型","被推翻 · 待裁决":"被推翻 · 待裁决","等待中":"等待中","等待人工":"等待人工","发送失败:":"发送失败:","已获首条证据":"已获首条证据","填写缘由后提交":"填写缘由后提交","请填写缘由":"请填写缘由","点击查看详情":"点击查看详情","查看步骤详情":"查看步骤详情","查看词条":"查看词条","撤回需填写缘由后提交":"撤回需填写缘由后提交","暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。":"暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。","暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。":"暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。","暂无目标。目标携带验收判据;判据在结果出现之前登记。":"暂无目标。目标携带验收判据;判据在结果出现之前登记。","暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。":"暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。","暂无证据。先登记判据,后执行验证。":"暂无证据。先登记判据,后执行验证。","此层暂无节点。":"此层暂无节点。","达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。":"达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。","修改判据需重新建立世界线":"修改判据需重新建立世界线","在世界树中查看此步骤":"在世界树中查看此步骤","查看此步骤的证据":"查看此步骤的证据","查看评估者":"查看评估者","本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。":"本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。","这些等级尚无证据:跳级不违规,但需说明原因":"这些等级尚无证据:跳级不违规,但需说明原因","此谓词已不在词汇中(可能已废止);存量断言仍可读。":"此谓词已不在词汇中(可能已废止);存量断言仍可读。","未升格:断言仍在命题上":"未升格:断言仍在命题上","撤回缘由(必填)":"撤回缘由(必填)","登记概念":"登记概念","登记谓词":"登记谓词","名称":"名称","单位":"单位","提交":"提交","取消":"取消","废止":"废止","为什么?":"为什么?","提交中…":"提交中…","点节点按概念过滤 · 滚轮缩放 · 拖拽平移":"点节点按概念过滤 · 滚轮缩放 · 拖拽平移","复位":"复位","全景":"全景","还原":"还原","展开图带":"展开图带","图里只画了前":"图里只画了前"," 个节点;全景可看全部":" 个节点;全景可看全部","一条边":"一条边","词汇":"词汇","概念":"概念","谓词":"谓词","已废止":"已废止","健康":"健康","单值":"单值","打开词汇货架(原生预览)":"打开词汇货架(原生预览)","冲突":"冲突"," 对":" 对","只暴露,不裁决;撤回或维持由人决定":"只暴露,不裁决;撤回或维持由人决定","按":"按","过滤":"","清除":"清除","按此谓词过滤":"按此谓词过滤","在图里看":"在图里看"," · 未升格":" · 未升格","释义":"释义","主词域":"主词域","值域":"值域","本体":"本体","本体货架 · ":"本体货架 · ","这里会长出你的本体:已确立的条目与在验的命题。":"这里会长出你的本体:已确立的条目与在验的命题。","本体图":"本体图","实体图":"实体图"," · 支持到 ":" · 支持到 "," · 证据 ":" · 证据 "," 发起":" 发起"," 推翻:":" 推翻:"," 旁观 ":" 旁观 "," 条":" 条"," 次评估者":" 次评估者"," 步":" 步"," 步)":" 步)"," 评估卡":" 评估卡"," 轮":" 轮","(假设达到这一级且无推翻才升格为事实)":"(假设达到这一级且无推翻才升格为事实)","(每次修订留痕,旧值不删)":"(每次修订留痕,旧值不删)","(点一下开右栏「世界树」)":"(点一下开右栏「世界树」)","(点一下开右栏「世界树」看拓扑)":"(点一下开右栏「世界树」看拓扑)","(缺)":"(缺)","(要独立评估)才达门槛":"(要独立评估)才达门槛","),等目标验收时升格为事实":"),等目标验收时升格为事实",":还差 ":":还差 ","clearai 面板:右栏页签类型注册失败 ":"clearai 面板:右栏页签类型注册失败 ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","世界树":"世界树","事实":"事实","产物":"产物","人审查后决定撤回":"人审查后决定撤回","人已撤回(记录保留)":"人已撤回(记录保留)","撤回事实":"撤回事实","维持原事实":"维持原事实","未走过 ":"未走过 ","确认撤回":"确认撤回","确认撤回(记录保留,不再作为「已知」引用)":"确认撤回(记录保留,不再作为「已知」引用)","会话日志里的原生审批对(不可伪造)":"会话日志里的原生审批对(不可伪造)","依据":"依据","候选":"候选","做什么":"做什么","做法":"做法","出现推翻证据":"出现推翻证据","出现推翻证据(终态,记录保留)":"出现推翻证据(终态,记录保留)","分支":"分支","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)","判据":"判据","判据:":"判据:","判据待写":"判据待写","升格门槛":"升格门槛","原生预览打开它":"原生预览打开它","原生预览打开它(计划声明的产物)":"原生预览打开它(计划声明的产物)","命题":"命题","命题 · ":"命题 · ","在":"在","在 ":"在 ","多问我":"多问我","完成度 ":"完成度 ","完成度 —":"完成度 —","审批记录":"审批记录","已交付":"已交付","已作废":"已作废","已推翻":"已推翻","已提出":"已提出","已撤回":"已撤回","已收尾 · 存档可看":"已收尾 · 存档可看","已改版":"已改版","已放弃":"已放弃","已替代":"已替代","已确认":"已确认","已确认事实 · ":"已确认事实 · ","已被下一版命题替代(版本留着,不参与当前推理)":"已被下一版命题替代(版本留着,不参与当前推理)","已裁决":"已裁决","已达成":"已达成","已达门槛(":"已达门槛(","已达门槛,已升格为事实":"已达门槛,已升格为事实","待开计划":"待开计划","待推进":"待推进","待裁决":"待裁决","打开 ":"打开 ","打开「事实」那一格并展开这条命题":"打开「事实」那一格并展开这条命题","打开世界树并选中产出这条事实的验证步":"打开世界树并选中产出这条事实的验证步","打开世界树并选中产生这条证据的验证步":"打开世界树并选中产生这条证据的验证步","打开计划文档(原生预览)":"打开计划文档(原生预览)","技能 · 记忆":"技能 · 记忆","推翻":"推翻","推进中":"推进中","支持":"支持","支持到 ":"支持到 ","收敛":"收敛","收起":"收起","收起详情":"收起详情","放行":"放行","旁观写这条裁决的评估者子会话(论证过程)":"旁观写这条裁决的评估者子会话(论证过程)","旁观评估者":"旁观评估者","无法判定":"无法判定","未声明":"未声明","未走:":"未走:","步 ":"步 ","派生 · ":"派生 · ","版本":"版本","状态":"状态","独立评估者":"独立评估者","盘上没有":"盘上没有","盘上没有这个文件":"盘上没有这个文件","目录":"目录","目标":"目标","目标挂起":"目标挂起","续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。":"续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。","续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。":"续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。","缘由必填":"缘由必填","缺":"缺","自判":"自判","自己拿主意":"自己拿主意","被 ":"被 ","被下一版命题改写":"被下一版命题改写","裁决":"裁决","要你":"要你","观测":"观测","计划":"计划","计划 ":"计划 ","计划受阻,等人处置":"计划受阻,等人处置","计划在建,**等你确认**":"计划在建,**等你确认**","计划已交付 ":"计划已交付 ","计划已收尾(":"计划已收尾(","计划文档":"计划文档","证据":"证据","证据 ":"证据 ","评 ":"评 ","评估":"评估","评估卡":"评估卡","评估者":"评估者","评估者 ":"评估者 ","评估者会话 ":"评估者会话 ","评估者在裁决":"评估者在裁决","读数":"读数","起过 ":"起过 ","边界:":"边界:","这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。":"这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。","进度":"进度","问题:":"问题:","阶段":"阶段","阶段 ":"阶段 ","阶段交界":"阶段交界","需要你 ":"需要你 ","验证":"验证","验证中":"验证中","怎么补这一级?":"怎么补这一级?","收起这一级要交的东西":"收起这一级要交的东西","读不到等级说明":"读不到等级说明","这一级看什么:":"这一级看什么:","这一级要交什么:":"这一级要交什么:","这一级要检查的对象:":"这一级要检查的对象:","这条命题还没写明断言主体:先用 RegisterInstance 把实例连出处登记下来。":"这条命题还没写明断言主体:先用 RegisterInstance 把实例连出处登记下来。","reason 怎么写:":"reason 怎么写:","reason 里必须点到上面这些对象名,不能写「时间不够」。":"reason 里必须点到上面这些对象名,不能写「时间不够」。","跳级本身不违规:要交的是「这一级为什么不适用」的理由,不是这一级的读数。":"跳级本身不违规:要交的是「这一级为什么不适用」的理由,不是这一级的读数。","缺口":"缺口","语言还没立:概念与谓词都还是空的":"语言还没立:概念与谓词都还是空的","命题只有散文主张:没有能被机器比对的断言":"命题只有散文主张:没有能被机器比对的断言","升格的事实没带断言:它进不了实体图":"升格的事实没带断言:它进不了实体图","命题没被任何证据碰过":"命题没被任何证据碰过","断言主体还没落到实体图":"断言主体还没落到实体图","跳级没写理由":"跳级没写理由","概念没有任何结论引用":"概念没有任何结论引用","未登记的缺口类型":"未登记的缺口类型","下一步:":"下一步:","看实体图":"看实体图","切到实体图那一层,看有哪些实例节点":"切到实体图那一层,看有哪些实例节点","这一层还没有实例节点。":"这一层还没有实例节点。","实例靠 RegisterInstance 登记(带出处);断言挂在命题上不算「已知」。":"实例靠 RegisterInstance 登记(带出处);断言挂在命题上不算「已知」。"," 个断言主体还没落到这一层:":" 个断言主体还没落到这一层:","先 RegisterInstance 把实例连出处登记下来;确实不值得留下形态就如实说清":"先 RegisterInstance 把实例连出处登记下来;确实不值得留下形态就如实说清","用 ExplainLevelSkip 写明「为什么这一级在本项目里不适用」":"用 ExplainLevelSkip 写明「为什么这一级在本项目里不适用」","要么在断言里用起来,要么在货架上如实标出「未被引用」":"要么在断言里用起来,要么在货架上如实标出「未被引用」","交给模型的写法:":"交给模型的写法:","推理自检:结论只是自己推了一遍,没有引入任何外部输入":"推理自检:结论只是自己推了一遍,没有引入任何外部输入","已有知识:引用自己或别人手上已有的材料":"已有知识:引用自己或别人手上已有的材料","可复算:照一份能重跑的步骤自己算一遍":"可复算:照一份能重跑的步骤自己算一遍","独立裁决:由另一个评估者读产物后给结论":"独立裁决:由另一个评估者读产物后给结论","人放行:交付前有人看过并批准":"人放行:交付前有人看过并批准","还没建计划:先想清楚要怎么回答":"还没建计划:先想清楚要怎么回答","执行中:有活动计划且还有未落定的步":"执行中:有活动计划且还有未落定的步","阶段边界:当前计划的步都落定了,该结案或起新计划":"阶段边界:当前计划的步都落定了,该结案或起新计划","在等裁决:有交付/结案在飞,或上一次裁决还没回来":"在等裁决:有交付/结案在飞,或上一次裁决还没回来","卡住了:连续几次没通过观测准入,停下等人":"卡住了:连续几次没通过观测准入,停下等人","目标已达成(终局)":"目标已达成(终局)","目标已如实放弃(终局)":"目标已如实放弃(终局)","已登记:某实例在某出处下被登记下来(一等写入口)":"已登记:某实例在某出处下被登记下来(一等写入口)","已升格:来自过了独立裁决的事实断言":"已升格:来自过了独立裁决的事实断言","实体断言:登记那一刻就成立的边,有出处但未经独立裁决":"实体断言:登记那一刻就成立的边,有出处但未经独立裁决","支持到哪一级:所有支持证据里最高的那一级":"支持到哪一级:所有支持证据里最高的那一级","从没走过的等级:已用到最高级之下、一条证据都没有的级":"从没走过的等级:已用到最高级之下、一条证据都没有的级","被推翻次数:收到过几条推翻证据":"被推翻次数:收到过几条推翻证据","无法判定次数:判过但判不出来":"无法判定次数:判过但判不出来","还没有概念与谓词:换一轮只能靠重读散文取用结论":"还没有概念与谓词:换一轮只能靠重读散文取用结论","命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断":"命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断","已升格事实没带断言:进不了实体图,也不能按概念取用":"已升格事实没带断言:进不了实体图,也不能按概念取用","有命题一条证据都没碰过:没看过不等于没问题":"有命题一条证据都没碰过:没看过不等于没问题","断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」":"断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」","有等级被跳过而没写理由:跳级不违规,但要说清为什么不适用":"有等级被跳过而没写理由:跳级不违规,但要说清为什么不适用","有概念没有任何结论引用:它们还只是约定,不是已知":"有概念没有任何结论引用:它们还只是约定,不是已知","判据没改过:它还是立约时那一份(要原文读账本里的 done_criteria)":"判据没改过:它还是立约时那一份(要原文读账本里的 done_criteria)","判据改动要有一份独立裁决:改「怎样算完成」不能被顺手做掉":"判据改动要有一份独立裁决:改「怎样算完成」不能被顺手做掉","宿主会话服务读不到:这一刻拿不到会话,写盘可能写到错地方":"宿主会话服务读不到:这一刻拿不到会话,写盘可能写到错地方","投影服务读不到:这一刻的读数是空的,不是「没有」":"投影服务读不到:这一刻的读数是空的,不是「没有」"," · 改过 ":" · 改过 "," 次":" 次"," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:","全文在 ":"全文在 ","打开目标文档(原生预览)":"打开目标文档(原生预览)","背景(不参与判定):":"背景(不参与判定):"}
-		const LOCALE_EN = {"个节点":" nodes","条边":" edges","适配":"Fit","打开图谱工作区":"Open the graph workspace","关闭工作区":"Close the workspace","图组件不可用":"The graph component is unavailable","点节点看知识详情":"Click a node to see what it means","按此筛选":"Filter by this","关闭":"Close","正在取这条知识的读数…":"Fetching this entry’s readings…","取不到读数":"Could not fetch the readings","宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。":"The host has no readings for this object (it may have just been deprecated, or it is not in the current vocabulary).","父概念":"Parent concept","形态":"Value form","取值":"Value","引用":"Used by","子概念":"Child concepts","相关谓词":"Related predicates","实例":"Instances","关系边":"Relation edges","主词":"Subjects","相关事实":"Related facts","(还有更多,未列出)":" (more not listed)","历史":"History","这条事实没有命题关联(旧账本):不拿文本相等去猜身份。":"This fact has no proposition link (old ledger); text equality is not used to guess identity.","推翻条件":"Refutation condition","支持到":"Supported to","断言":"Assertion","没有证据引用(旧事实或自判)。":"No evidence cites it (an old fact, or self-judged).","出处":"Provenance","产生步骤":"Producing step","复核":"Review","这条事实参与了一对冲突读数(只暴露,不裁决)":"This fact takes part in a conflict reading (surfaced, never adjudicated)","滚轮缩放 · 拖动平移 · 拖节点挪位":"wheel to zoom · drag to pan · drag a node to move it","类型":"Type","被推翻 · 待裁决":"refuted · awaiting decision","等待中":"waiting","等待人工":"awaiting human","发送失败:":"send failed: ","已获首条证据":"first evidence received","填写缘由后提交":"fill in the reason, then submit","请填写缘由":"reason required","点击查看详情":"click for details","查看步骤详情":"view step details","查看词条":"view term","撤回需填写缘由后提交":"fill in the reason before retracting","暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。":"No data yet. After your first message this shows established entries and propositions in verification.","暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。":"No propositions yet. Each needs a one-line claim and a refutation condition; verified ones are promoted to facts.","暂无目标。目标携带验收判据;判据在结果出现之前登记。":"No goal yet. A goal carries its acceptance criterion; the criterion is registered before any result.","暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。":"No goal yet. Verified propositions reaching the threshold without refutation are promoted at acceptance.","暂无证据。先登记判据,后执行验证。":"No evidence yet. Register the criterion first, then verify.","此层暂无节点。":"No nodes on this layer yet.","达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。":"Propositions reaching the threshold with no refutation are promoted to fact at goal acceptance (written under clear/knowledge/facts/).","修改判据需重新建立世界线":"changing the criterion requires a new worldline","在世界树中查看此步骤":"see this step in Worldlines","查看此步骤的证据":"see the evidence for this step","查看评估者":"view evaluator","本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。":"The ontology declaration has not reached the projection; a canonical-loop mirror is shown and will align at the next step.","这些等级尚无证据:跳级不违规,但需说明原因":"no evidence at these levels: skipping is not a violation, but state why","此谓词已不在词汇中(可能已废止);存量断言仍可读。":"this predicate is no longer in the vocabulary (possibly deprecated); existing assertions remain readable.","未升格:断言仍在命题上":"not yet promoted: the assertion is still on a proposition","撤回缘由(必填)":"Reason for retracting (required)","登记概念":"Register a concept","登记谓词":"Register a predicate","名称":"Label","单位":"Unit","提交":"Submit","取消":"Cancel","废止":"Deprecate","为什么?":"Why?","提交中…":"Submitting…","点节点按概念过滤 · 滚轮缩放 · 拖拽平移":"Click a node to filter by concept · wheel to zoom · drag to pan","复位":"Reset view","全景":"Panorama","还原":"Restore","展开图带":"Show the graph band","图里只画了前":"Showing the first"," 个节点;全景可看全部":" nodes; the panorama shows all","一条边":"An edge","词汇":"Vocabulary","概念":"concepts","谓词":"predicates","已废止":"deprecated","健康":"Health","单值":"single-valued","打开词汇货架(原生预览)":"Open the vocabulary shelf (native preview)","冲突":"Conflict"," 对":" pair(s)","只暴露,不裁决;撤回或维持由人决定":"surfaced, never adjudicated; retracting or keeping is a human decision","按":"Filtered by","过滤":"","清除":"Clear","按此谓词过滤":"Filter by this predicate","在图里看":"See it in the graph"," · 未升格":" · not yet promoted","释义":"Gloss","主词域":"Subject domain","值域":"Range","本体":"Ontology","本体货架 · ":"Ontology shelf · ","这里会长出你的本体:已确立的条目与在验的命题。":"This is where your ontology grows: established entries and propositions still in verification.","本体图":"Ontology graph","实体图":"Entity graph"," · 支持到 ":" · supported to "," · 证据 ":" · evidence "," 发起":" started"," 推翻:":"refuted by:"," 旁观 ":" observe "," 条":" entries"," 次评估者":" evaluators"," 步":" steps"," 步)":" steps)"," 评估卡":" evaluation card"," 轮":" rounds","(假设达到这一级且无推翻才升格为事实)":" (a hypothesis is promoted to fact only at this level and with no refutation)","(每次修订留痕,旧值不删)":" (every revision is kept; old values are not deleted)","(点一下开右栏「世界树」)":" (click to open Worldlines)","(点一下开右栏「世界树」看拓扑)":" (click to see the topology in Worldlines)","(缺)":" (missing)","(要独立评估)才达门槛":" (independent evaluation required) to reach the threshold","),等目标验收时升格为事实":"), and is promoted to fact when the goal is accepted",":还差 ":": short by ","clearai 面板:右栏页签类型注册失败 ":"clearai panel: failed to register the right-sidebar tab type ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","世界树":"Worldlines","事实":"Facts","产物":"Deliverables","人审查后决定撤回":"withdrawn after human review","人已撤回(记录保留)":"withdrawn by a person (record kept)","撤回事实":"Retract the fact","维持原事实":"Keep the fact","未走过 ":"untouched: ","确认撤回":"Confirm retraction","确认撤回(记录保留,不再作为「已知」引用)":"Confirm retraction (the record is kept; it can no longer be cited as known)","会话日志里的原生审批对(不可伪造)":"the native approval pair in the session log (cannot be forged)","依据":"Basis","候选":"candidate","做什么":"What it does","做法":"Approach","出现推翻证据":"refuting evidence appeared","出现推翻证据(终态,记录保留)":"refuting evidence appeared (terminal; record kept)","分支":"Branch","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"Switch back to an earlier worldline set (the plans are all still here, and their documents are archived under clear/goals/plans/)","判据":"Criterion","判据:":"Criterion: ","判据待写":"criterion not written","升格门槛":"Promotion threshold","原生预览打开它":"Open it in the native preview","原生预览打开它(计划声明的产物)":"Open it in the native preview (an artifact declared by the plan)","命题":"Propositions","命题 · ":"Propositions · ","在":"in","在 ":"in ","多问我":"Ask me more","完成度 ":"Progress ","完成度 —":"Progress —","审批记录":"approval record","已交付":"delivered","已作废":"voided","已推翻":"refuted","已提出":"proposed","已撤回":"withdrawn","已收尾 · 存档可看":"closed · archived and readable","已改版":"superseded","已放弃":"abandoned","已替代":"superseded","已确认":"confirmed","已确认事实 · ":"Confirmed facts · ","已被下一版命题替代(版本留着,不参与当前推理)":"superseded by a later version of the proposition (the version is kept but takes no part in current reasoning)","已裁决":"decided","已达成":"achieved","已达门槛(":"threshold reached (","已达门槛,已升格为事实":"threshold reached; promoted to fact","待开计划":"no plan yet","待推进":"to advance","待裁决":"awaiting decision","打开 ":"Open ","打开「事实」那一格并展开这条命题":"Open the Facts pane and expand this proposition","打开世界树并选中产出这条事实的验证步":"Open Worldlines and select the verification step that produced this fact","打开世界树并选中产生这条证据的验证步":"Open Worldlines and select the verification step that produced this evidence","打开计划文档(原生预览)":"Open the plan document (native preview)","技能 · 记忆":"Skills · Memory","推翻":"refute","推进中":"in progress","支持":"support","支持到 ":"supported to ","收敛":"converge","收起":"Collapse","收起详情":"Collapse details","放行":"release","旁观写这条裁决的评估者子会话(论证过程)":"Observe the evaluator sub-session that wrote this verdict (the reasoning process)","旁观评估者":"Observe evaluator","无法判定":"inconclusive","未声明":"not declared","未走:":"Not taken: ","步 ":"step ","派生 · ":"derived · ","版本":"Version","状态":"Status","独立评估者":"independent evaluator","盘上没有":"not on disk","盘上没有这个文件":"this file is not on disk","目录":"directory","目标":"Goal","目标挂起":"goal suspended","续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。":"Continuation: ask me more — it stops at the end of each stage and waits for you to give the next one (called \"attended\" in the docs). Click to switch to \"decide for yourself\".","续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。":"Continuation: decide for yourself — committing a plan is the authorisation, and it keeps going for a set number of rounds, opening a gate only for decisions it cannot reduce (called \"unattended\" in the docs). Click to switch to \"ask me more\".","缘由必填":"A reason is required","缺":"missing","自判":"self-judged","自己拿主意":"Decide for yourself","被 ":"by ","被下一版命题改写":"rewritten by a later version of the proposition","裁决":"Verdict","要你":"needs you","观测":"Observation","计划":"Plan","计划 ":"Plan ","计划受阻,等人处置":"plan blocked, waiting for a person","计划在建,**等你确认**":"plan is being built, **waiting for your confirmation**","计划已交付 ":"Plan delivered ","计划已收尾(":"Plan closed (","计划文档":"Plan document","证据":"Evidence","证据 ":"Evidence ","评 ":"E","评估":"Evaluation","评估卡":"evaluation card","评估者":"Evaluator","评估者 ":"Evaluator ","评估者会话 ":"Evaluator session ","评估者在裁决":"an evaluator is deciding","读数":"Reading","起过 ":"ran ","边界:":"Scope: ","这个会话还没开始:面板的数据来自会话日志,发第一句话之后,这里会显示已确认的事实与正在流转的命题。":"This session has not started: the panels read the session log, so after your first message this will show confirmed facts and the propositions in flight.","进度":"Progress","问题:":"Question: ","阶段":"Stage","阶段 ":"Stage ","阶段交界":"at a stage boundary","需要你 ":"needs you ","验证":"Verification","验证中":"verifying","怎么补这一级?":"How do I fill in this level?","收起这一级要交的东西":"Hide what this level requires","读不到等级说明":"Level descriptions are unavailable","这一级看什么:":"What this level looks at: ","这一级要交什么:":"What this level must hand in: ","这一级要检查的对象:":"Objects this level must check: ","这条命题还没写明断言主体:先用 RegisterInstance 把实例连出处登记下来。":"This proposition names no assertion subject yet: use RegisterInstance to register the instance together with its provenance.","reason 怎么写:":"How to write the reason: ","reason 里必须点到上面这些对象名,不能写「时间不够」。":"The reason must name those objects above; \"not enough time\" does not count.","跳级本身不违规:要交的是「这一级为什么不适用」的理由,不是这一级的读数。":"Skipping a level is not itself a violation: what is owed is why this level does not apply here, not a reading for it.","缺口":"Gaps","语言还没立:概念与谓词都还是空的":"No language yet: both concepts and predicates are empty","命题只有散文主张:没有能被机器比对的断言":"Prose-only proposition: it has no assertion a machine can compare","升格的事实没带断言:它进不了实体图":"A promoted fact carries no assertion, so it cannot enter the entity graph","命题没被任何证据碰过":"No evidence has touched this proposition","断言主体还没落到实体图":"Assertion subjects have not landed on the entity graph","跳级没写理由":"A level was skipped without a reason","概念没有任何结论引用":"No conclusion cites this concept","未登记的缺口类型":"Unregistered gap type","下一步:":"Next: ","看实体图":"Show the entity graph","切到实体图那一层,看有哪些实例节点":"Switch to the entity layer to see which instance nodes exist","这一层还没有实例节点。":"No instance nodes have landed on this layer yet.","实例靠 RegisterInstance 登记(带出处);断言挂在命题上不算「已知」。":"Instances arrive through RegisterInstance, with provenance; an assertion left on a proposition does not count as known."," 个断言主体还没落到这一层:":" assertion subjects have not landed on this layer: ","先 RegisterInstance 把实例连出处登记下来;确实不值得留下形态就如实说清":"First register the instance with RegisterInstance, provenance included; if it truly does not deserve a lasting shape, say so plainly","用 ExplainLevelSkip 写明「为什么这一级在本项目里不适用」":"Use ExplainLevelSkip to state why this level does not apply in this project","要么在断言里用起来,要么在货架上如实标出「未被引用」":"Either put it to use in an assertion, or mark it plainly on the shelf as uncited","交给模型的写法:":"How to hand it to the model: ","推理自检:结论只是自己推了一遍,没有引入任何外部输入":"Reasoning self-check: the conclusion is only your own derivation, with no external input brought in","已有知识:引用自己或别人手上已有的材料":"Existing knowledge: citing material you or someone else already has at hand","可复算:照一份能重跑的步骤自己算一遍":"Reproducible: work it through yourself from a set of steps that can be re-run","独立裁决:由另一个评估者读产物后给结论":"Independent verdict: another evaluator reads the artifact and gives the conclusion","人放行:交付前有人看过并批准":"Human release: a person has looked at it and approved before delivery","还没建计划:先想清楚要怎么回答":"No plan yet: work out how the question will be answered first","执行中:有活动计划且还有未落定的步":"Executing: there is an active plan with steps still open","阶段边界:当前计划的步都落定了,该结案或起新计划":"Stage boundary: every step of the current plan has landed; close the goal or plan the next stage","在等裁决:有交付/结案在飞,或上一次裁决还没回来":"Awaiting verdict: a delivery or closure is in flight, or the last verdict has not returned","卡住了:连续几次没通过观测准入,停下等人":"Stalled: admission failed several times in a row; stopped and waiting for a person","目标已达成(终局)":"Goal achieved (terminal)","目标已如实放弃(终局)":"Goal abandoned honestly (terminal)","已登记:某实例在某出处下被登记下来(一等写入口)":"Registered: an instance was recorded against a provenance (a first-class write path)","已升格:来自过了独立裁决的事实断言":"Promoted: an assertion from a fact that passed an independent verdict","实体断言:登记那一刻就成立的边,有出处但未经独立裁决":"Asserted edge: holds from the moment it was recorded, with provenance but no independent verdict","支持到哪一级:所有支持证据里最高的那一级":"Supported to: the highest level among supporting evidence","从没走过的等级:已用到最高级之下、一条证据都没有的级":"Untouched levels: levels below the highest one used that have no evidence at all","被推翻次数:收到过几条推翻证据":"Refutations: how many refuting pieces of evidence arrived","无法判定次数:判过但判不出来":"Inconclusive: judged, but the material would not settle it","还没有概念与谓词:换一轮只能靠重读散文取用结论":"No concepts or predicates yet: reusing conclusions means re-reading prose","命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断":"Prose-only claim: whether two conclusions say the same thing can only be decided by re-reading","已升格事实没带断言:进不了实体图,也不能按概念取用":"A promoted fact carries no assertion: it cannot enter the entity graph or be fetched by concept","有命题一条证据都没碰过:没看过不等于没问题":"Some claim has never been touched by evidence: unlooked is not the same as fine","断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」":"Assertion subjects have not landed on the entity graph: the sentence hangs on a proposition and is not yet known","有等级被跳过而没写理由:跳级不违规,但要说清为什么不适用":"A level was skipped with no reason recorded: skipping is allowed, but say why it does not apply","有概念没有任何结论引用:它们还只是约定,不是已知":"A concept is cited by no conclusion: it is still only a convention, not knowledge","判据没改过:它还是立约时那一份(要原文读账本里的 done_criteria)":"The criterion has not changed: it is still the one registered at commit time (read done_criteria from the ledger)","判据改动要有一份独立裁决:改「怎样算完成」不能被顺手做掉":"Changing the criterion needs an independent verdict: redefining done must not happen as a side effect","宿主会话服务读不到:这一刻拿不到会话,写盘可能写到错地方":"The host session service is unreadable: no session right now, so writing could land in the wrong place","投影服务读不到:这一刻的读数是空的,不是「没有」":"The projection service is unreadable: readings are empty right now, which is not the same as nothing"," · 改过 ":" · changed "," 次":" times"," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: ","全文在 ":"Full text at ","打开目标文档(原生预览)":"Open the goal document (native preview)","背景(不参与判定):":"Background (not part of the verdict): "}
+		const LOCALE_ZH = {" · 改过 ":" · 改过 "," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:"," 个断言的主语还没登记成实例。":" 个断言的主语还没登记成实例。"," 次":" 次"," 次评估者":" 次评估者"," 步":" 步"," 步)":" 步)"," 看核验记录":" 看核验记录"," 看核验过程":" 看核验过程"," 轮":" 轮","(点一下开右栏「世界树」)":"(点一下开右栏「世界树」)","(点一下开右栏「世界树」看拓扑)":"(点一下开右栏「世界树」看拓扑)","(缺)":"(缺)","clearai 面板:右栏页签类型注册失败 ":"clearai 面板:右栏页签类型注册失败 ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","」相关的":"」相关的","一句话":"一句话","一步检验":"一步检验","上位":"上位","下一步:找一步去检验它":"下一步:找一步去检验它","下一步:换个办法再检验":"下一步:换个办法再检验","下一步:独立核验通过 → 已验证":"下一步:独立核验通过 → 已验证","下一步:结案时写进长期知识":"下一步:结案时写进长期知识","下位":"下位","不确定":"不确定","世界树":"世界树","主语":"主语","事实":"事实","产物":"产物","人撤回":"人撤回","人放行":"人放行","代码":"代码","依据":"依据","值的形态":"值的形态","做什么":"做什么","入本体":"入本体","全屏":"全屏","全文在 ":"全文在 ","公式":"公式","关系":"关系","关闭":"关闭","写进长期知识":"写进长期知识","出自":"出自","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)","判据":"判据","判据:":"判据:","判断":"判断","原生预览打开它":"原生预览打开它","原生预览打开它(计划声明的产物)":"原生预览打开它(计划声明的产物)","取不到":"取不到","取值":"取值","只看与「":"只看与「","只看相关":"只看相关","可信度怎么变的":"可信度怎么变的","可复算":"可复算","命题":"命题","图组件不可用":"图组件不可用","在图上找它":"在图上找它","在检验这一站被推翻,不再往下走。":"在检验这一站被推翻,不再往下走。","实体图":"实体图","实体图还空着。":"实体图还空着。","实例":"实例","审批记录":"审批记录","已交付":"已交付","已作废":"已作废","已推翻":"已推翻","已提出":"已提出","已收尾 · 存档可看":"已收尾 · 存档可看","已替换":"已替换","已被替换,不再往下走。":"已被替换,不再往下走。","已验证":"已验证","引用":"引用","引用已有材料":"引用已有材料","待推进":"待推进","待核验":"待核验","打开「事实」那一格并展开这条命题":"打开「事实」那一格并展开这条命题","打开目标文档(原生预览)":"打开目标文档(原生预览)","打开计划文档(原生预览)":"打开计划文档(原生预览)","推翻":"推翻","提出":"提出","支持":"支持","收起":"收起","收起详情":"收起详情","放行":"放行","数值":"数值","暂无计划。建立后此处显示计划的步骤与闸门。":"暂无计划。建立后此处显示计划的步骤与闸门。","有 ":"有 ","有矛盾":"有矛盾","未声明":"未声明","本体":"本体","本体图":"本体图","本体图还空着。模型立词之后,概念和关系会长在这里。":"本体图还空着。模型立词之后,概念和关系会长在这里。","查看此步骤的证据":"查看此步骤的证据","查看步骤详情":"查看步骤详情","查看评估者":"查看评估者","检验":"检验","检验结果:":"检验结果:","概念":"概念","正在取…":"正在取…","正在裁决":"正在裁决","步 ":"步 ","清除":"清除","点击查看详情":"点击查看详情","点开看进度和来历":"点开看进度和来历","状态":"状态","独立核验":"独立核验","独立核验:":"独立核验:","用到它的结论":"用到它的结论","登记过的实例、写进长期知识的断言会出现在这里。":"登记过的实例、写进长期知识的断言会出现在这里。","盘上没有这个文件":"盘上没有这个文件","目标":"目标","相关":"相关","看核验":"看核验","看记录":"看记录","矛盾":"矛盾","第 n 步":"第 n 步","算错":"算错","类型":"类型","结论":"结论","结论照常可读。":"结论照常可读。","背景(不参与判定):":"背景(不参与判定):","自己推了一遍":"自己推了一遍","自己检验":"自己检验","范围":"范围","范围:":"范围:","补充":"补充","观测":"观测","计划":"计划","计划 ":"计划 ","计划受阻,等人处置":"计划受阻,等人处置","计划已交付 ":"计划已交付 ","计划已收尾(":"计划已收尾(","计划文档":"计划文档","计划的步骤与闸门":"计划的步骤与闸门","证据":"证据","评 ":"评 ","评估":"评估","评估卡":"评估卡","起过 ":"起过 ","还没有内容。发第一条消息后,这里显示本体图和结论。":"还没有内容。发第一条消息后,这里显示本体图和结论。","还没有立目标":"还没有立目标","还没有结论。模型立下判断之后,这里一行一条。":"还没有结论。模型立下判断之后,这里一行一条。","这一项已经不在当前的词里了(可能刚被废止)。":"这一项已经不在当前的词里了(可能刚被废止)。","这个词已废止,旧结论里的用法照样可读。":"这个词已废止,旧结论里的用法照样可读。","进度":"进度","退出全屏":"退出全屏","适配":"适配","释义":"释义","需要你":"需要你","需要你 ":"需要你 ","验证":"验证","验证中":"验证中"}
+		const LOCALE_EN = {" · 改过 ":" · changed "," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: "," 个断言的主语还没登记成实例。":" assertion subjects are not registered as instances yet. "," 次":" times"," 次评估者":" evaluators"," 步":" steps"," 步)":" steps)"," 看核验记录":" Review record"," 看核验过程":" Watch the review"," 轮":" rounds","(点一下开右栏「世界树」)":" (click to open Worldlines)","(点一下开右栏「世界树」看拓扑)":" (click to see the topology in Worldlines)","(缺)":" (missing)","clearai 面板:右栏页签类型注册失败 ":"clearai panel: failed to register the right-sidebar tab type ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","」相关的":"\"","一句话":"Statement","一步检验":"A test","上位":"Broader","下一步:找一步去检验它":"Next: test it in a step","下一步:换个办法再检验":"Next: test it another way","下一步:独立核验通过 → 已验证":"Next: independent check passes → Verified","下一步:结案时写进长期知识":"Next: written to long-term knowledge at close","下位":"Narrower","不确定":"Uncertain","世界树":"Worldlines","主语":"Subject","事实":"Facts","产物":"Deliverables","人撤回":"Withdrawn by a person","人放行":"Released by a person","代码":"Code","依据":"Basis","值的形态":"Value form","做什么":"What it does","入本体":"In ontology","全屏":"Full screen","全文在 ":"Full text at ","公式":"Formula","关系":"Relation","关闭":"Close","写进长期知识":"Written to long-term knowledge","出自":"From","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"Switch back to an earlier worldline set (the plans are all still here, and their documents are archived under clear/goals/plans/)","判据":"Criterion","判据:":"Criterion: ","判断":"Judgment","原生预览打开它":"Open it in the native preview","原生预览打开它(计划声明的产物)":"Open it in the native preview (an artifact declared by the plan)","取不到":"Unavailable","取值":"Value","只看与「":"Only related to \"","只看相关":"Only related","可信度怎么变的":"How trust changed","可复算":"Reproducible","命题":"Propositions","图组件不可用":"The graph component is unavailable","在图上找它":"Find it on the graph","在检验这一站被推翻,不再往下走。":"Refuted at the test stage; it goes no further.","实体图":"Entity graph","实体图还空着。":"The entity graph is empty. ","实例":"Instances","审批记录":"approval record","已交付":"delivered","已作废":"voided","已推翻":"refuted","已提出":"proposed","已收尾 · 存档可看":"closed · archived and readable","已替换":"Replaced","已被替换,不再往下走。":"Replaced; it goes no further.","已验证":"Verified","引用":"Reference","引用已有材料":"Cites existing material","待推进":"to advance","待核验":"Awaiting check","打开「事实」那一格并展开这条命题":"Open the Facts pane and expand this proposition","打开目标文档(原生预览)":"Open the goal document (native preview)","打开计划文档(原生预览)":"Open the plan document (native preview)","推翻":"refute","提出":"Proposed","支持":"support","收起":"Collapse","收起详情":"Collapse details","放行":"release","数值":"Quantity","暂无计划。建立后此处显示计划的步骤与闸门。":"No plan yet. Once created, its steps show here.","有 ":"","有矛盾":"Conflicting","未声明":"not declared","本体":"Ontology","本体图":"Ontology graph","本体图还空着。模型立词之后,概念和关系会长在这里。":"The ontology graph is empty. Concepts and relations appear once terms are defined.","查看此步骤的证据":"see the evidence for this step","查看步骤详情":"view step details","查看评估者":"view evaluator","检验":"Test","检验结果:":"Result: ","概念":"concepts","正在取…":"Loading…","正在裁决":"Deciding","步 ":"step ","清除":"Clear","点击查看详情":"click for details","点开看进度和来历":"Open to see progress and history","状态":"Status","独立核验":"Independent check","独立核验:":"Independent check: ","用到它的结论":"Conclusions using it","登记过的实例、写进长期知识的断言会出现在这里。":"Registered instances and assertions in long-term knowledge appear here.","盘上没有这个文件":"this file is not on disk","目标":"Goal","相关":"Related","看核验":"See check","看记录":"See record","矛盾":"Conflicts","第 n 步":"Step n","算错":"Wrong if","类型":"Type","结论":"CONCLUSIONS","结论照常可读。":"conclusions are still readable.","背景(不参与判定):":"Background (not part of the verdict): ","自己推了一遍":"Reasoned through alone","自己检验":"Self-tested","范围":"Scope","范围:":"Scope: ","补充":"More","观测":"Observation","计划":"Plan","计划 ":"Plan ","计划受阻,等人处置":"plan blocked, waiting for a person","计划已交付 ":"Plan delivered ","计划已收尾(":"Plan closed (","计划文档":"Plan document","计划的步骤与闸门":"Plan steps","证据":"Evidence","评 ":"E","评估":"Evaluation","评估卡":"evaluation card","起过 ":"ran ","还没有内容。发第一条消息后,这里显示本体图和结论。":"Nothing yet. After the first message, the graph and conclusions show here.","还没有立目标":"No goal yet","还没有结论。模型立下判断之后,这里一行一条。":"No conclusions yet. Each judgment gets one line here.","这一项已经不在当前的词里了(可能刚被废止)。":"This item is no longer in the vocabulary (it may have just been deprecated).","这个词已废止,旧结论里的用法照样可读。":"This term is deprecated; older conclusions still read fine.","进度":"Progress","退出全屏":"Exit full screen","适配":"Fit","释义":"Gloss","需要你":"Needs you","需要你 ":"needs you ","验证":"Verification","验证中":"Testing"}
 
 		/**
 		 * 翻译函数:**由原生 locale 座位绑定**(`ctx.locale.bind`),不是我们自建的一套 i18n。
@@ -152,47 +151,11 @@ window.__ModuleLoader__.load({
 		 */
 		const inject = ['slots', 'sessions', 'sidebarRightTabs', 'sidebarRight']
 
-		const PHASE = lazyTable(() => ({
-			drafting: t('判据待写'),
-			planning: t('待开计划'),
-			executing: t('推进中'),
-			waiting: t('等待中'),
-			stage_boundary: t('阶段交界'),
-			auditing: t('评估者在裁决'),
-			stalled: t('等待人工'),
-			suspended: t('目标挂起'),
-			achieved: t('已达成'),
-			abandoned: t('已放弃'),
-			superseded: t('已改版'),
-		}))
-		const HYPOTHESIS = lazyTable(() => ({
-			proposed: t('已提出'),
-			alive: t('验证中'),
-			confirmed: t('已确认'),
-			/** 规范词是「已替代」(与验证本体同词);「已改版」是旧写法。 */
-			refuted: t('已推翻'),
-			superseded: t('已替代'),
-			retracted: t('已撤回'),
-		}))
 		const STEP = lazyTable(() => ({ open: t('待推进'), advanced: t('已交付'), void: t('已作废') }))
-		const VERDICT = lazyTable(() => ({ support: t('支持'), refute: t('推翻'), inconclusive: t('无法判定') }))
-		const EVALUATOR = lazyTable(() => ({ self: t('自判'), independent: t('独立评估者') }))
-
-		/**
-		 * **缺口 code → 人话标签**。code 是机器词(`prose_only_claims` 这类),**不上屏**——
-		 * 人看到的是这一句。允许的 code 在这里是**显式清单**:表本身是惰性代理,
-		 * 用 `in` 判会把 `toString` 这类原型上的键也认成缺口类型。
-		 * 表里的每一句都在 LOCALE_ZH / LOCALE_EN 里成对登记(与其余面向人的串同一规矩)。
-		 */
-		const GAP_CODES = ['untouched_claims', 'prose_only_claims', 'entities_unlanded']
-		const GAP_LABEL = lazyTable(() => ({
-			prose_only_claims: t('命题只有散文主张:没有能被机器比对的断言'),
-			untouched_claims: t('命题没被任何证据碰过'),
-			entities_unlanded: t('断言主体还没落到实体图'),
-		}))
-
-		const STRONG = { refuted: true, stalled: true, refute: true }
-
+		const VERDICT = lazyTable(() => ({ support: t('支持'), refute: t('推翻'), inconclusive: t('不确定') }))
+		
+		/** 「第 n 步」:整句做一个词条,英文才排得成 Step n。 */
+		const nth = (n) => t('第 n 步').replace('n', String(n))
 		const dash = (value) => (value === null || value === undefined || value === '' ? '—' : String(value))
 		const gloss = (table, value) => (value === null || value === undefined ? '—' : `${table[value] ?? value}`)
 		const when = (at) => {
@@ -241,6 +204,112 @@ window.__ModuleLoader__.load({
 .clearai-treerow{display:flex;align-items:center;gap:6px;padding:0 6px;cursor:pointer;border-radius:4px;transition:background .12s}
 .clearai-treerow:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-treerow[data-sel="1"]{background:var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))}
+/* ── 本体格(第六阶段):期刊式排版 + 进度轨。颜色只用主题令牌,深浅色跟着宿主走。 ── */
+.clearai-atlas{height:100%;overflow-y:auto;box-sizing:border-box;padding:22px 26px 36px;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-primary)}
+.clearai-serif,.clearai-question,.clearai-row-title,.clearai-card-title,.clearai-star>span{font-family:ui-serif,"Songti SC","Noto Serif SC","Source Han Serif SC",Georgia,serif}
+.clearai-head{display:flex;flex-direction:column;gap:6px;padding-bottom:16px;margin-bottom:16px;border-bottom:.5px solid var(--dsw-alias-border-l2)}
+.clearai-question{font-size:19px;font-weight:600;line-height:1.45;letter-spacing:.01em}
+.clearai-counts{font-size:12px;color:var(--dsw-alias-label-secondary)}
+.clearai-need{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:4px 10px;border-left:2px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-1);border-radius:0 6px 6px 0}
+.clearai-need b{font-weight:600;color:var(--dsw-alias-state-warn-primary);white-space:nowrap}
+.clearai-track{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+.clearai-track-stop{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.clearai-track-stop i{width:7px;height:7px;border-radius:50%;border:1px solid var(--dsw-alias-border-l3);box-sizing:border-box}
+.clearai-track-stop[data-on="1"]{color:var(--dsw-alias-label-primary)}
+.clearai-track-stop[data-on="1"] i{background:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-primary)}
+.clearai-track-line{flex:1 1 18px;max-width:56px;height:1px;background:var(--dsw-alias-border-l2)}
+.clearai-track-line[data-on="1"]{background:var(--dsw-alias-label-secondary)}
+/* 图 */
+.clearai-graph{margin-bottom:18px}
+.clearai-graph[data-full="1"]{position:fixed;inset:0;z-index:40;background:var(--dsw-alias-bg-base);padding:16px 20px;display:flex;flex-direction:column;margin:0}
+.clearai-graph-bar{display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:12px}
+.clearai-seg{display:inline-flex;border:.5px solid var(--dsw-alias-border-l3);border-radius:999px;padding:2px}
+.clearai-seg>span{padding:2px 12px;border-radius:999px;cursor:pointer;color:var(--dsw-alias-label-secondary);white-space:nowrap}
+.clearai-seg>span[data-on="1"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary-inverted)}
+.clearai-legend{display:inline-flex;gap:12px;color:var(--dsw-alias-label-tertiary);font-size:11.5px}
+.clearai-legend>span{display:inline-flex;align-items:center;gap:5px}
+.clearai-legend>span::before{content:"";width:16px;border-top:1.3px solid var(--dsw-alias-label-secondary)}
+.clearai-legend>span[data-l="dash"]::before{border-top-style:dashed;border-top-color:var(--dsw-alias-label-tertiary)}
+.clearai-legend>span[data-l="warn"]::before{border-top-color:var(--dsw-alias-state-warn-primary)}
+.clearai-graph-body{display:flex;flex-direction:column;gap:10px;min-height:0}
+.clearai-graph[data-full="1"] .clearai-graph-body{flex:1 1 auto}
+.clearai-graph-body[data-side="1"]{flex-direction:row}
+.clearai-graph-canvas{height:340px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-base)}
+.clearai-graph[data-full="1"] .clearai-graph-canvas{height:auto;flex:1 1 auto;min-width:0}
+.clearai-graph-side{flex:0 0 auto}
+.clearai-graph-body[data-side="1"] .clearai-graph-side{width:380px;overflow-y:auto}
+.clearai-graph-empty{height:150px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;border:.5px dashed var(--dsw-alias-border-l3);border-radius:10px;color:var(--dsw-alias-label-secondary);font-size:12.5px}
+.react-flow__node.clearai-star-node .react-flow__handle{opacity:0;pointer-events:none;left:4.5px;top:50%;transform:translate(-50%,-50%);min-width:0;min-height:0;width:1px;height:1px;border:0}
+.react-flow__node.clearai-star-node.selected,.react-flow__node.clearai-star-node:focus{box-shadow:none;outline:none}
+.clearai-star{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12.5px;color:var(--dsw-alias-label-primary);cursor:pointer}
+.clearai-star>i{flex:0 0 auto;width:9px;height:9px;border-radius:50%;box-sizing:border-box;border:1.4px solid var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base)}
+.clearai-star[data-kind="instance"]>i{background:var(--dsw-alias-label-primary)}
+.clearai-star[data-kind="literal"]>i{width:6px;height:6px;border:0;background:var(--dsw-alias-label-secondary)}
+.clearai-star[data-kind="literal"]{color:var(--dsw-alias-label-secondary);font-size:11.5px}
+.clearai-star[data-kind="value_type"]>i{border-radius:2px;width:8px;height:8px;border-color:var(--dsw-alias-label-tertiary)}
+.clearai-star[data-kind="value_type"]{color:var(--dsw-alias-label-secondary);font-size:11.5px}
+.clearai-star[data-state="pending"]>i{border-style:dashed;background:var(--dsw-alias-bg-base);border-color:var(--dsw-alias-label-secondary)}
+.clearai-star[data-state="off"]{opacity:.45}
+.clearai-star[data-state="off"]>i{border-style:dashed}
+.clearai-star[data-state="conflict"]>i{border-color:var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-state-warn-primary)}
+.clearai-star[data-sel="1"]>i{box-shadow:0 0 0 4px var(--dsw-alias-interactive-bg-hover)}
+.clearai-star[data-sel="1"]>span{font-weight:600}
+/* 小卡 */
+.clearai-card{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
+.clearai-card-head{display:flex;align-items:baseline;gap:8px;font-size:12px}
+.clearai-card-kind{font-size:11px;color:var(--dsw-alias-label-tertiary);letter-spacing:.06em}
+.clearai-card-title{font-size:15px;font-weight:600}
+.clearai-card-facts{display:flex;flex-direction:column;gap:4px}
+.clearai-card-fact{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12.5px}
+/* 结论 */
+.clearai-section-head{font-size:11px;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary);margin:4px 0 4px}
+.clearai-filter{display:flex;gap:10px;align-items:baseline;font-size:12px;color:var(--dsw-alias-label-secondary);margin:-8px 0 12px}
+.clearai-list{display:flex;flex-direction:column;gap:10px}
+.clearai-group-head{display:flex;gap:6px;align-items:baseline;font-size:11.5px;color:var(--dsw-alias-label-secondary);margin:6px 0 2px}
+.clearai-group-head>span{color:var(--dsw-alias-label-tertiary)}
+.clearai-row{border-top:.5px solid var(--dsw-alias-border-l1)}
+.clearai-row[data-open="1"]{background:var(--dsw-alias-bg-layer-1);border-radius:8px;border-top-color:transparent}
+.clearai-row-head{display:flex;align-items:baseline;gap:10px;padding:7px 8px;cursor:pointer;border-radius:8px}
+.clearai-row-head:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.clearai-row-title{font-size:14px;font-weight:500;white-space:nowrap}
+.clearai-row-sub{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.clearai-row-step{margin-left:auto;font-size:11.5px;color:var(--dsw-alias-label-tertiary);white-space:nowrap}
+.clearai-row[data-trust="replaced"] .clearai-row-title{text-decoration:line-through;color:var(--dsw-alias-label-tertiary)}
+.clearai-trust{flex:0 0 auto;display:inline-block;font-size:11px;line-height:16px;padding:0 7px;border-radius:999px;border:.5px solid var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary);white-space:nowrap}
+.clearai-trust[data-trust="credible"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary-inverted)}
+.clearai-trust[data-trust="testing"]{border-color:var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary)}
+.clearai-trust[data-trust="unclear"]{border-style:dashed;border-color:var(--dsw-alias-label-tertiary);color:var(--dsw-alias-label-secondary)}
+.clearai-trust[data-trust="refuted"]{border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
+.clearai-trust[data-trust="replaced"]{border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary)}
+.clearai-trust[data-trust="conflict"]{border-color:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-state-warn-primary)}
+/* 点开一条:三段 */
+.clearai-detail{display:flex;flex-direction:column;gap:16px;padding:6px 12px 14px 12px}
+.clearai-part-head{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dsw-alias-label-tertiary);margin-bottom:8px}
+.clearai-part-head b{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
+.clearai-stations-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.clearai-stations-bar span{height:5px;border-radius:3px;background:var(--dsw-alias-border-l1)}
+.clearai-stations-bar span[data-state="done"]{background:var(--dsw-alias-label-primary)}
+.clearai-stations-bar span[data-state="next"]{background:repeating-linear-gradient(90deg,var(--dsw-alias-label-secondary) 0 4px,var(--dsw-alias-border-l1) 4px 8px)}
+.clearai-stations-bar span[data-state="broken"]{background:var(--dsw-alias-state-error-primary)}
+.clearai-stations-names{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:6px;font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+.clearai-stations-names span[data-now="1"]{color:var(--dsw-alias-label-primary);font-weight:600}
+.clearai-stations-note{margin-top:6px;font-size:12px;color:var(--dsw-alias-state-error-primary)}
+.clearai-tl{position:relative;display:flex;flex-direction:column}
+.clearai-tl::before{content:"";position:absolute;left:4px;top:9px;bottom:9px;width:1px;background:var(--dsw-alias-border-l2)}
+.clearai-tl-row{position:relative;display:grid;grid-template-columns:9px 76px 1fr;gap:10px;align-items:baseline;padding:2px 0;font-size:12.5px}
+.clearai-tl-dot{width:9px;height:9px;border-radius:50%;box-sizing:border-box;align-self:center;background:var(--dsw-alias-label-primary)}
+.clearai-tl-row[data-kind="proposed"] .clearai-tl-dot{background:var(--dsw-alias-bg-base);border:1.4px solid var(--dsw-alias-label-tertiary)}
+.clearai-tl-row[data-verdict="refute"] .clearai-tl-dot{background:var(--dsw-alias-state-error-primary)}
+.clearai-tl-row[data-verdict="inconclusive"] .clearai-tl-dot{background:var(--dsw-alias-bg-base);border:1.4px dashed var(--dsw-alias-label-secondary)}
+.clearai-tl-row[data-kind="promoted"] .clearai-tl-dot{background:var(--dsw-alias-brand-primary)}
+.clearai-tl-row[data-kind="next"]{color:var(--dsw-alias-label-tertiary)}
+.clearai-tl-row[data-kind="next"] .clearai-tl-dot{background:var(--dsw-alias-bg-base);border:1px dashed var(--dsw-alias-label-tertiary)}
+.clearai-tl-time{font-size:11.5px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
+.clearai-tl-move{font-weight:600}
+.clearai-kv{display:grid;grid-template-columns:44px 1fr;gap:5px 14px;font-size:12.5px;line-height:1.6}
+.clearai-kv>span:nth-child(odd){color:var(--dsw-alias-label-tertiary)}
+.clearai-chips{display:inline-flex;gap:6px;flex-wrap:wrap}
+.clearai-quiet{color:var(--dsw-alias-label-secondary);font-size:12.5px;padding:6px 0}
 `
 		/** 把上面那段 CSS 挂进页面(带 data-plugin 标记,宿主按包名记账,卸载时收掉)。 */
 		function installStyles() {
@@ -457,21 +526,6 @@ window.__ModuleLoader__.load({
 		}))
 
 		/**
-		 * 命题的分组 = **本体声明的五个状态**,顺序即认识论的顺序。
-		 *
-		 * 用词有权威出处:[`docs/verification-loop.md`](../docs/verification-loop.md) 的状态表
-		 * (那份文档明说「其他文档、提示词与代码注释提到这些概念时,以这里的叫法为准」)。
-		 * 界面因此不另造一套产品词——「已确认」的命题不在这一列:它已经**升格为事实**,在事实货架上。
-		 */
-		const PROPOSITION_GROUPS = lazyTable(() => ([
-			{ status: 'proposed', label: t('已提出') },
-			{ status: 'alive', label: t('验证中') },
-			{ status: 'refuted', label: t('已推翻') },
-			{ status: 'superseded', label: t('已替代') },
-			{ status: 'retracted', label: t('已撤回') },
-		]))
-
-		/**
 		 * 一行够用的摘要。**真数据逼出来的**:评估者的依据常常是几百字的一整段
 		 * (逐条对照判据 + 隔离标注),原样内联会把那一行撑到没法看。
 		 * 摘要进列表,全文进 tooltip——「可查」不等于「必须占屏」。
@@ -580,68 +634,6 @@ window.__ModuleLoader__.load({
 			return out
 		}
 
-		/** 一条证据一句话:`e-1 · L2 · 支持 · 自判 · 依据… · 出处`。 */
-		function evidenceLine(data, item) {
-			return h(
-				'div',
-				{ key: item.id, style: S.evRow },
-				h('span', { style: S.evHead }, `${item.id} · ${dash(item.level)} · ${gloss(VERDICT, item.verdict)} · ${gloss(EVALUATOR, item.evaluator)}`),
-				h('span', { style: S.evBasis, title: String(item.basis ?? '') }, brief(item.basis, 160)),
-				...originsOf(data, item).map((origin, index) => {
-					/**
-					 * 四类入口各自的去处:
-					 *   产物 / 评估卡 → 右侧**原生预览**打开那个文件;
-					 *   看评估者      → 旁观**评估者子会话**(论证过程在里面,harness 原生能力);
-					 *   审批记录      → 没有文件(原生审批对在会话日志里),如实说明它凭什么不可伪造。
-					 */
-					const open =
-						origin.kind === 'evaluator-session'
-							? origin.session === null || data.openSpectator === undefined
-								? undefined
-								: () => data.openSpectator(origin.session)
-							: origin.path === null || data.openPreview === undefined
-								? undefined
-								: () => data.openPreview(origin.path)
-					const title =
-						origin.kind === 'evaluator-session'
-							? t('旁观写这条裁决的评估者子会话(论证过程)')
-							: origin.kind === 'approval-record'
-								? `${t('会话日志里的原生审批对(不可伪造)')}${origin.call === null ? '' : ` · ${origin.call}`}`
-								: (origin.path ?? '')
-					return h(
-						'span',
-						{
-							key: `${item.id}-${origin.label}-${index}`,
-							style: open === undefined ? S.faint : S.fileLink,
-							onClick:
-								open === undefined
-									? undefined
-									: (event) => {
-											event?.stopPropagation?.()
-											open()
-										},
-							title,
-						},
-						origin.label,
-					)
-				}),
-			)
-		}
-
-		/** 当前处境一句话:这是这一格存在的理由——用户要知道「现在能不能当真」。 */
-		function whereOf(data, row) {
-			const evidence = evidenceOf(data, row.id)
-			const threshold = data?.goal?.promoteAtLevel ?? 'L3'
-			const refute = evidence.find((item) => item.verdict === 'refute')
-			if (row.status === 'refuted') return refute === undefined ? t('出现推翻证据(终态,记录保留)') : `${t('被 ')}${refute.id}${t(' 推翻:')}${brief(refute.basis, 56)}`
-			if (row.status === 'superseded') return t('已被下一版命题替代(版本留着,不参与当前推理)')
-			if (row.status === 'confirmed') return t('已达门槛,已升格为事实')
-			if (row.status === 'retracted') return t('人已撤回(记录保留)')
-			if (row.supportedLevel === null || row.supportedLevel === undefined) return t('暂无证据。先登记判据,后执行验证。')
-			if (levelRank(row.supportedLevel) >= levelRank(threshold)) return `${t('已达门槛(')}${row.supportedLevel}${t('),等目标验收时升格为事实')}`
-			return `${t('支持到 ')}${row.supportedLevel}${t(':还差 ')}${threshold}${t('(要独立评估)才达门槛')}`
-		}
-
 		/**
 		 * 一条**事实**的证据落在哪一步(纯函数:可单测)。
 		 *
@@ -657,596 +649,355 @@ window.__ModuleLoader__.load({
 			return null
 		}
 
-		/** 一条事实的证据落在哪份计划里:多份计划各有自己的世界树,跳过去时要切到那一份。 */
-		function rowPlanOf(data, fact) {
-			for (const id of fact?.evidenceIds ?? []) {
-				const item = (data?.evidence ?? []).find((entry) => entry.id === id)
-				if (typeof item?.planId === 'string' && item.planId !== '') return item.planId
-			}
-			return null
-		}
+		/**
+		 * ═══ 本体格(第六阶段:图为主) ═══
+		 *
+		 * 一屏三层,自上而下越来越细:
+		 *   ① 页眉:在回答什么 · 一行计数 · 需要你(只陈述)· 迷你进度轨(判断 → 检验 → 已验证 → 入本体);
+		 *   ② 图:本体图 / 实体图二选一,星图式(点 + 衬线标签;实线已验证、虚线待核验);
+		 *   ③ 结论:一行一条,按可信度分组;点开依次是 进度 → 可信度怎么变的 → 补充。
+		 *
+		 * 用词与运行态卡**同一套**(`knowledge-view.js` 的 TRUST / VERDICT_WORD / LEVEL_WORD):
+		 * 单次检验的结果是 支持 / 推翻 / 不确定;一条结论的状态是 已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换。
+		 * 内部编号(h-… / e-… / s-…)不上屏:人认的是短名和「第几步」。
+		 */
+		const TRUST_ORDER = ['credible', 'pending', 'testing', 'unclear', 'refuted', 'replaced']
+		const TRUST_WORD = lazyTable(() => ({ credible: t('已验证'), pending: t('待核验'), testing: t('验证中'), unclear: t('不确定'), refuted: t('已推翻'), replaced: t('已替换') }))
+		const LEVEL_WORD = lazyTable(() => ({ L0: t('自己推了一遍'), L1: t('引用已有材料'), L2: t('可复算'), L3: t('独立核验'), L4: t('人放行') }))
+		/** 进度轨的四站。顺序即一条结论要走的路。 */
+		const STATIONS = () => [t('判断'), t('检验'), t('已验证'), t('入本体')]
+		/** 还没走完时,下一步是什么(时间线末尾那条虚点)。 */
+		const NEXT_STEP = lazyTable(() => ({
+			testing: t('下一步:找一步去检验它'),
+			pending: t('下一步:独立核验通过 → 已验证'),
+			unclear: t('下一步:换个办法再检验'),
+			credible: t('下一步:结案时写进长期知识'),
+		}))
+		/** 值的形态(本体图上的小方块):内部词换成人话。 */
+		const FORM_WORD = lazyTable(() => ({ statement: t('一句话'), quantity: t('数值'), formula: t('公式'), code: t('代码'), reference: t('引用') }))
+		const KIND_WORD = lazyTable(() => ({ concept: t('概念'), value_type: t('值的形态'), instance: t('实例'), literal: t('取值'), edge: t('关系') }))
 
-		/** 右侧那一列:最有力的一条证据给出的**等级 · 判者**——这就是「多可信」。 */
-		function judgeOf(data, row) {
-			const evidence = evidenceOf(data, row.id)
-			const best = evidence.slice().sort((a, b) => levelRank(b.level) - levelRank(a.level))[0]
-			return best === undefined ? '—' : `${dash(best.level)} · ${gloss(EVALUATOR, best.evaluator)}`
-		}
+		/** 一步检验是怎么做的:独立核验直接说;自己做的,说到了哪一级(可复算 / 引用材料 / 推了一遍)。 */
+		const howOf = (row) => (row.evaluator === 'independent' ? t('独立核验') : (LEVEL_WORD[row.level] ?? t('自己检验')))
 
-		/** 实际**走过**的转移(不画未走的岔路:那是过程知识,不是「我现在能信什么」)。 */
-		function transitionsOf(data, row) {
-			const evidence = evidenceOf(data, row.id)
-			const out = []
-			/**
-			 * `to` 一律用**声明里的原始状态键**(`alive` / `refuted` …),不做翻译——
-			 * 翻译只在渲染时做。混用两套键是踩过的坑:流转图按原始键查「这一跳走没走过」,
-			 * 而这里返回的是中文字面 ⇒ 命不中 ⇒ 走过的边全被画成"没走"。
-			 */
-			if (evidence.length > 0) {
-				const first = evidence[0]
-				out.push({ to: 'alive', on: t('已获首条证据'), by: `${first.id} · ${dash(first.level)} ${gloss(VERDICT, first.verdict)}`, independent: first.evaluator === 'independent' })
+		/**
+		 * **结论行的模型**(纯函数,导出给测试)。
+		 *
+		 * 一条判断一行;旧账本里没有判断关联的事实也各占一行(它们已经写进长期知识,只是不知道出自哪条判断)。
+		 * 站位:写进长期知识 = 4,已验证 = 3,检验过 = 2,只是提出 = 1;被推翻的停在「检验」那一站。
+		 */
+		function conclusionsOf(data) {
+			const facts = Array.isArray(data?.facts) ? data.facts : []
+			const ordinalOf = new Map()
+			for (const plan of [...(Array.isArray(data?.plans) ? data.plans : []), ...(data?.plan ? [data.plan] : [])]) {
+				for (const step of plan?.steps ?? []) if (typeof step?.id === 'string') ordinalOf.set(step.id, step.ordinal ?? null)
 			}
-			if (row.status === 'refuted') {
-				const refute = evidence.find((item) => item.verdict === 'refute')
-				out.push({
-					to: 'refuted',
-					on: t('出现推翻证据'),
-					by: refute === undefined ? '—' : `${refute.id} · ${gloss(EVALUATOR, refute.evaluator)}`,
-					independent: refute !== undefined && refute.evaluator === 'independent',
+			const testingStep = (id) => {
+				for (const [stepId, meta] of Object.entries(data?.stepIndex ?? {})) if (testedOf(meta).includes(id)) return ordinalOf.get(stepId) ?? null
+				return null
+			}
+			const linked = new Set()
+			const rows = (Array.isArray(data?.goal?.hypotheses) ? data.goal.hypotheses : []).map((hypothesis) => {
+				const history = Array.isArray(hypothesis.history) ? hypothesis.history : []
+				const fact = facts.find((item) => item.hypothesis === hypothesis.id) ?? null
+				if (fact !== null) linked.add(fact.id)
+				const lastEvidence = [...history].reverse().find((row) => row.kind === 'evidence') ?? null
+				const promoted = fact !== null && fact.review?.decision !== 'retracted'
+				const trust = TRUST_ORDER.includes(hypothesis.trust) ? hypothesis.trust : 'testing'
+				const station = trust === 'refuted' ? 2 : promoted ? 4 : trust === 'credible' ? 3 : lastEvidence !== null ? 2 : 1
+				return {
+					key: hypothesis.id,
+					hypothesis: hypothesis.id,
+					name: String(hypothesis.name ?? ''),
+					claim: String(hypothesis.claim ?? ''),
+					trust,
+					station,
+					history,
+					refuteWhen: hypothesis.refuteWhen ?? null,
+					scope: fact?.scope ?? hypothesis.fact?.scope ?? null,
+					basis: lastEvidence?.basis ?? null,
+					evidenceId: lastEvidence?.id ?? null,
+					step: lastEvidence?.ordinal ?? testingStep(hypothesis.id),
+					assertions: fact?.assertions ?? hypothesis.assertions ?? null,
+					fact: fact?.id ?? null,
+				}
+			})
+			for (const fact of facts) {
+				if (linked.has(fact.id)) continue
+				const trust = fact.review?.decision === 'retracted' ? 'replaced' : fact.refuted === true ? 'refuted' : 'credible'
+				rows.push({
+					key: fact.id,
+					hypothesis: null,
+					name: '',
+					claim: String(fact.text ?? ''),
+					trust,
+					station: trust === 'credible' ? 4 : 2,
+					history: [{ kind: 'promoted', at: fact.at ?? null, level: fact.level ?? null, to: 'credible' }],
+					refuteWhen: null,
+					scope: fact.scope ?? null,
+					basis: null,
+					evidenceId: (fact.evidenceIds ?? [])[0] ?? null,
+					step: null,
+					assertions: fact.assertions ?? null,
+					fact: fact.id,
 				})
 			}
-			if (row.status === 'superseded') out.push({ to: 'superseded', on: t('被下一版命题改写'), by: row.version > 1 ? `v${row.version}` : '—', independent: false })
-			if (row.status === 'retracted') out.push({ to: 'retracted', on: t('人审查后决定撤回'), by: '—', independent: false })
-			return out
+			return rows
 		}
 
-		/**
-		 * 流转图的**固定布局**(产品面,不是通用图布局器)。
-		 *
-		 * 主干一行(左→右):已提出 → 验证中 → 已确认;终态分支挂在下面一行。
-		 * 这样无论声明有没有下发、有几条边,**横向主干都在** —— 不会退化成竖排。
-		 * 声明下发后,边的 `on` / `actor` 从声明取(未走的边据此写清"这件事叫什么、谁发起");
-		 * 声明还没下来的旧会话,用规范闭环的安全镜像,并在标题里如实标注。
-		 */
-		const FLOW_LAYOUT = {
-			nodeW: 112,
-			nodeH: 30,
-			width: 600,
-			height: 152,
-			trunkY: 20,
-			branchY: 100,
-			place: {
-				proposed: { x: 16, y: 20 },
-				alive: { x: 166, y: 20 },
-				confirmed: { x: 316, y: 20 },
-				refuted: { x: 166, y: 100 },
-				superseded: { x: 316, y: 100 },
-				retracted: { x: 466, y: 100 },
-			},
-			/** 声明缺失时的规范镜像:只用来画图,标题会说明它不是实时声明。 */
-			fallbackEdges: [
-				['proposed', 'alive', 'system', 'evidence_appended'],
-				['alive', 'confirmed', 'system', 'promotion_threshold'],
-				['alive', 'refuted', 'system', 'refuting_evidence'],
-				['proposed', 'superseded', 'model', 'hypothesis_revised'],
-				['confirmed', 'retracted', 'human', 'retraction_request'],
-			],
+		/** 短名与主张重复时只说一遍(没起短名的旧判断,短名就是主张的开头)。 */
+		const titleOf = (row) => {
+			const name = row.name.trim()
+			if (name === '' || name.endsWith('…') || row.claim.startsWith(name)) return { title: brief(row.claim, 40), sub: null }
+			return { title: name, sub: brief(row.claim, 60) }
 		}
 
-		/**
-		 * **流转图**:横向主干 + 分支的 SVG 状态机。
-		 *
-		 * 三条着色规矩(与世界树同一套视觉语言):
-		 *   · **走过的边**:实线 + 颜色(独立裁决用品牌强调色、自判用前景色),旁边写清触发与凭据;
-		 *   · **当前态**:品牌色描边 + 呼吸光环,并在节点上写「当前」;
-		 *   · **没走的边**:虚线 + 低饱和,写明「这件事 · 谁发起」。
-		 */
-		function StateFlow(props) {
-			const { data, row } = props
-			const spec = (data?.ontology?.objects ?? []).find((object) => object.name === 'hypothesis') ?? null
-			const declared = Array.isArray(spec?.edges) && spec.edges.length > 0 ? spec.edges : null
-			const edges = declared ?? FLOW_LAYOUT.fallbackEdges
-			const path = transitionsOf(data, row)
-			const taken = new Map(path.map((step) => [step.to, step]))
-			const current = row.status
-			const L = FLOW_LAYOUT
-			const items = []
-			for (const [from, to, actor, on] of edges) {
-				const a = L.place[from]
-				const b = L.place[to]
-				if (a === undefined || b === undefined || from === to) continue
-				const step = taken.get(to)
-				const done = step !== undefined
-				const color = done ? (step.independent === true ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-label-primary)') : 'var(--dsw-alias-border-l2)'
-				const horizontal = a.y === b.y && b.x > a.x
-				const x1 = horizontal ? a.x + L.nodeW : a.x + L.nodeW / 2
-				const y1 = horizontal ? a.y + L.nodeH / 2 : a.y + L.nodeH
-				const x2 = horizontal ? b.x : b.x + L.nodeW / 2
-				const y2 = horizontal ? b.y + L.nodeH / 2 : b.y
-				const midY = (y1 + y2) / 2
-				items.push(
-					h(
-						'path',
-						{
-							key: `edge-${from}-${to}`,
-							d: horizontal ? `M ${x1} ${y1} H ${x2}` : `M ${x1} ${y1} V ${midY} H ${x2} V ${y2}`,
-							fill: 'none',
-							stroke: color,
-							strokeWidth: done ? 2 : 1,
-							strokeDasharray: done ? undefined : '4 3',
-						},
-						h(
-							'title',
-							null,
-							done ? `${step.on} · ${step.by}` : `${t('未走:')}${on ?? to} · ${actor ?? '?'}${t(' 发起')}`,
-						),
-					),
-				)
-				const label = done ? `${step.by.split(' · ')[0]} · ${step.by.split(' · ')[1] ?? ''}`.trim() : ''
-				if (label !== '') {
-					items.push(
-						h(
-							'text',
-							{
-								key: `label-${from}-${to}`,
-								x: horizontal ? (x1 + x2) / 2 : x2 + 5,
-								y: horizontal ? y1 - 7 : midY - 4,
-								textAnchor: horizontal ? 'middle' : 'start',
-								fontSize: 9.5,
-								fill: color,
-							},
-							label,
-						),
-					)
-				}
-			}
-			for (const [state, position] of Object.entries(L.place)) {
-				const reached = state === 'proposed' || taken.has(state)
-				const isNow = state === current
-				items.push(
-					h('rect', {
-						key: `node-${state}`,
-						x: position.x,
-						y: position.y,
-						width: L.nodeW,
-						height: L.nodeH,
-						rx: L.nodeH / 2,
-						fill: isNow ? 'var(--dsw-alias-bg-layer-2)' : 'transparent',
-						stroke: isNow ? 'var(--dsw-alias-brand-primary)' : reached ? 'var(--dsw-alias-label-primary)' : 'var(--dsw-alias-border-l2)',
-						strokeWidth: isNow ? 2 : 1,
-						strokeDasharray: reached || isNow ? undefined : '4 3',
-						className: isNow ? 'clearai-breathe-stroke' : undefined,
-					}),
-				)
-				items.push(
-					h(
-						'text',
-						{
-							key: `text-${state}`,
-							x: position.x + L.nodeW / 2,
-							y: position.y + L.nodeH / 2 + 4,
-							textAnchor: 'middle',
-							fontSize: 11,
-							fill: isNow ? 'var(--dsw-alias-brand-primary)' : reached ? 'var(--dsw-alias-label-primary)' : 'var(--dsw-alias-label-secondary)',
-						},
-						`${gloss(HYPOTHESIS, state)}${isNow ? ' · 当前' : ''}`,
-					),
-				)
-			}
-			/**
-			 * 图下那几行**来路**:图上只标走过那一跳的证据 id(窄间距里读得清),
-			 * 完整的「这件事叫什么 + 谁做的」写在这里 —— 图管结构,文字管凭据,各占各的地方。
-			 */
-			const walked = path.filter((step) => step.to !== 'retracted' || current === 'retracted')
+		/** 状态小签:实心 = 已验证,描边 = 待核验,淡描边 = 验证中,虚边 = 不确定,红 = 已推翻,删除线 = 已替换。 */
+		function TrustTag(props) {
+			return h('span', { className: 'clearai-trust', 'data-trust': props.trust }, TRUST_WORD[props.trust] ?? props.trust)
+		}
+
+		/** 四站进度条:走过的实心,在路上的那一段斜纹,当前站名加粗。 */
+		function StationBar(props) {
+			const reached = props.station
+			const stopped = props.trust === 'refuted' || props.trust === 'replaced'
+			const names = STATIONS()
 			return h(
 				'div',
-				{ style: { margin: '4px 0 8px', maxWidth: '100%' } },
+				{ className: 'clearai-stations', 'data-stopped': stopped ? '1' : '0' },
 				h(
 					'div',
-					{ style: { overflowX: 'auto' } },
-					h(
-						'svg',
-						{ width: L.width, height: L.height, viewBox: `0 0 ${L.width} ${L.height}`, style: { display: 'block', minWidth: L.width } },
-						...items,
-					),
+					{ className: 'clearai-stations-bar' },
+					...names.map((_, index) => h('span', { key: `seg-${index}`, 'data-state': index < reached ? (stopped && index === reached - 1 ? 'broken' : 'done') : index === reached && !stopped ? 'next' : 'todo' })),
 				),
-				walked.length === 0
-					? null
-					: h(
-							'div',
-							{ style: { display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 } },
-							...walked.map((step) =>
-								h(
-									'div',
-									{ key: `walked-${step.to}`, style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary)' } },
-									`${step.on} → ${gloss(HYPOTHESIS, step.to)} · ${step.by}`,
-								),
-							),
-						),
-				declared === null
-					? h('div', { style: { ...S.faint, fontSize: 11, marginTop: 2 } }, t('本体声明尚未进入投影;当前显示规范闭环的镜像,下一拍自动对齐。'))
-					: null,
+				h('div', { className: 'clearai-stations-names' }, ...names.map((name, index) => h('span', { key: `name-${index}`, 'data-now': index === reached - 1 ? '1' : '0' }, name))),
+				stopped ? h('div', { className: 'clearai-stations-note' }, props.trust === 'refuted' ? t('在检验这一站被推翻,不再往下走。') : t('已被替换,不再往下走。')) : null,
 			)
 		}
 
-		/**
-		 * 一条断言里的人与物:**等级说明要点名「这一级要检查的对象」**,名字就从这里来。
-		 * 只做展示用拼装,不重算账本(断言在账本里已经是定型的形状)。
-		 */
-		const assertionSubjectName = (assertion) => {
-			const subject = assertion?.subject ?? {}
-			const id = String(subject.id ?? '')
-			if (id === '') return ''
-			const type = String(subject.type ?? '')
-			return type === '' ? id : `${type}|${id}`
-		}
-		const assertionObjectName = (object) => {
-			if (object === null || object === undefined) return ''
-			const value = String(object.value ?? '')
-			if (object.kind !== 'quantity') return value
-			const unit = String(object.unit ?? '')
-			return unit === '' ? value : `${value} ${unit}`
-		}
-		const assertionName = (assertion) => {
-			const chip = String(assertion?.chip ?? '')
-			if (chip !== '') return chip
-			const subject = assertionSubjectName(assertion)
-			const predicate = String(assertion?.predicate ?? '')
-			const object = assertionObjectName(assertion?.object)
-			return `${subject} · ${predicate} = ${object}`
+		/** 可信度怎么变的:一笔一行,变了的那一笔写出「之前 → 之后」。 */
+		function TrustTimeline(props) {
+			const rows = props.history
+			const lines = rows.map((row, index) => {
+				let text = ''
+				if (row.kind === 'proposed') text = t('提出')
+				else if (row.kind === 'evidence') text = `${row.ordinal === null || row.ordinal === undefined ? t('一步检验') : `${nth(row.ordinal)}`}:${VERDICT[row.verdict] ?? row.verdict} · ${howOf(row)}`
+				else if (row.kind === 'promoted') text = t('写进长期知识')
+				else if (row.kind === 'retracted') text = `${t('人撤回')}${row.reason ? `:${brief(row.reason, 40)}` : ''}`
+				const moved = row.from !== undefined && row.from !== row.to
+				return h(
+					'div',
+					{ key: `tl-${index}`, className: 'clearai-tl-row', 'data-kind': row.kind, 'data-verdict': row.verdict ?? '' },
+					h('span', { className: 'clearai-tl-dot' }),
+					h('span', { className: 'clearai-tl-time' }, when(row.at)),
+					h('span', null, text, moved ? h('b', { className: 'clearai-tl-move' }, ` · ${TRUST_WORD[row.from] ?? row.from} → ${TRUST_WORD[row.to] ?? row.to}`) : null),
+				)
+			})
+			const next = props.station >= 4 || props.trust === 'refuted' || props.trust === 'replaced' ? null : (NEXT_STEP[props.trust] ?? null)
+			if (next !== null) lines.push(h('div', { key: 'tl-next', className: 'clearai-tl-row', 'data-kind': 'next' }, h('span', { className: 'clearai-tl-dot' }), h('span', { className: 'clearai-tl-time' }, ''), h('span', null, next)))
+			return h('div', { className: 'clearai-tl' }, ...lines)
 		}
 
-		/**
-		 * **命题行**:一行一条命题,默认只有主张 + 当前处境 + 等级判者。
-		 * 点开才出现「凭什么」——流转图 + 每条证据的出处。
-		 */
-		function PropositionRow(props) {
-			const { data, row, open, onToggle } = props
-			const evidence = evidenceOf(data, row.id)
-			const path = transitionsOf(data, row)
+		/** 点开一条:进度 → 可信度怎么变的 → 补充,依次往下。 */
+		function ConclusionDetail(props) {
+			const { row, data } = props
+			const evidence = row.evidenceId === null ? null : ((data?.evidence ?? []).find((item) => item.id === row.evidenceId) ?? null)
+			const origins = evidence === null ? [] : originsOf(data, evidence)
+			const subjects = [...new Set((Array.isArray(row.assertions) ? row.assertions : []).map((assertion) => String(assertion?.subject?.id ?? '')).filter((id) => id !== ''))]
+			const part = (index, title, body) => h('div', { className: 'clearai-part' }, h('div', { className: 'clearai-part-head' }, h('b', null, String(index)), title), body)
+			const kv = (label, value) => (value === null || value === undefined || value === '' ? [] : [h('span', { key: `k-${label}` }, label), h('span', { key: `v-${label}` }, value)])
 			return h(
 				'div',
-				{ style: open === true ? S.propOpen : S.propRow },
-				h(
-					'div',
-					{ style: S.propHead, onClick: onToggle },
-					h('span', { style: { ...S.propClaim, ...(row.status === 'refuted' || row.status === 'superseded' ? S.stale : {}) } }, dash(row.claim)),
-					h('span', { style: S.propWhere }, whereOf(data, row)),
-					h('span', { style: S.propJudge }, `${gloss(HYPOTHESIS, row.status)} · ${judgeOf(data, row)}`),
-				),
-				h(AssertionChips, { assertions: row.assertions, ui: data.assertionUI, promoted: false }),
-				open === true
-					? h(
-							'div',
-							{ style: S.propBody },
-							h(StateFlow, { data, row }),
-							evidence.length === 0 ? null : h('div', { style: S.evList }, ...evidence.map((item) => evidenceLine(data, item))),
-							/**
-							 * 图上那一跳的完整凭据(触发 + 判者 + 两个可点入口)。
-							 * 这里**不再**摆本体文件路径:那是文档坐标,不是面板上的动作 ——
-							 * 「这句话不用了」——人拍板删的。
-							 */
-							evidence.length === 0
+				{ className: 'clearai-detail' },
+				part(1, t('进度'), h(StationBar, { station: row.station, trust: row.trust })),
+				part(2, t('可信度怎么变的'), h(TrustTimeline, { history: row.history, station: row.station, trust: row.trust })),
+				part(
+					3,
+					t('补充'),
+					h(
+						'div',
+						{ className: 'clearai-kv' },
+						...kv(
+							t('依据'),
+							row.basis === null
 								? null
 								: h(
-										'div',
-										{ style: S.pathFoot },
-										h(
-											Link,
-											{
-												onClick: () => {
-													const last = evidence[evidence.length - 1]
-													treeFocus.set({ plan: last.planId ?? null, step: last.stepId, branch: last.branch ?? null })
-													if (data.openRail !== undefined) data.openRail('clearai-worldtree')
-												},
-												title: t('打开世界树并选中产生这条证据的验证步'),
-											},
-											t('在世界树中查看此步骤'),
-										),
+										'span',
+										null,
+										h('span', { title: String(row.basis) }, brief(row.basis, 120)),
+										...origins
+											.filter((origin) => origin.path !== null || origin.session !== null)
+											.slice(0, 2)
+											.map((origin, index) =>
+												h(
+													'span',
+													{
+														key: `o-${index}`,
+														className: 'clearai-link',
+														style: { marginLeft: 8 },
+														onClick: () => (origin.session !== null && origin.kind === 'evaluator-session' ? data.openSpectator?.(origin.session) : data.openPreview?.(origin.path)),
+														title: origin.path ?? '',
+													},
+													origin.kind === 'audit-card' || origin.kind === 'evaluator-session' ? t('看核验') : t('看记录'),
+												),
+											),
 									),
-						)
-					: null,
-			)
-		}
-
-		/** **命题货架**:按本体状态分组;空组不出现。已确认的不在这里(它已升格为事实)。 */
-		function PropositionShelf(props) {
-			/**
-			 * 打开器**自己接**(不靠外层注入):谁渲染这个货架,点证据/点事实都能开原件。
-			 * 踩过的坑:只有最外层 `Facts` 注入 `openPreview` 时,单独渲染货架(测试缝、
-			 * 以后的复用)会让整排出处看着能点、点了没反应。
-			 */
-			/**
-			 * `props.X ?? 已有值`:外层 `Facts` 只传 `{data}`,而打开器在 `data` 里 ——
-			 * 直接写 `openRail: props.openRail` 会用 `undefined` 把它盖掉 ⇒ 链接永不渲染 ✗(踩过的坑)。
-			 */
-			const base = props.data ?? (typeof props.useProjection === 'function' ? props.useProjection('clearai') : undefined) ?? {}
-			const data = { ...base, openPreview: props.openPreview ?? base.openPreview, openRail: props.openRail ?? base.openRail, openSpectator: props.openSpectator ?? base.openSpectator }
-			const rows = (data.goal?.hypotheses ?? []).filter((row) => row.status !== 'confirmed')
-			const groups = PROPOSITION_GROUPS.map((group) => ({ ...group, rows: rows.filter((row) => row.status === group.status) })).filter((group) => group.rows.length > 0)
-			return h(
-				Section,
-				{ title: `${t('命题 · ')}${rows.length}` },
-				rows.length === 0
-					? h('div', { style: S.faint }, t('暂无命题。每条需一句主张与一句推翻条件;通过验证后升格为事实。'))
-					: h(
-							'div',
-							null,
-							...groups.map((group) =>
-								h(
-									'div',
-									{ key: group.status },
-									h('div', { style: S.group }, group.label, h('span', { style: S.groupN }, String(group.rows.length))),
-									...group.rows.map((row) => h(PropositionRow, { key: row.id, data, row, open: props.open === row.id, onToggle: () => props.onToggle(row.id) })),
-								),
-							),
 						),
+						...kv(t('范围'), row.scope === row.refuteWhen ? null : row.scope),
+						...kv(t('算错'), row.refuteWhen),
+						...kv(
+							t('相关'),
+							subjects.length === 0
+								? null
+								: h('span', { className: 'clearai-chips' }, ...subjects.map((id) => h('span', { key: id, className: 'clearai-chip', onClick: () => props.onFocus?.(id), title: t('在图上找它') }, labelOfEntity(data, id)))),
+						),
+						...kv(t('出自'), row.step === null ? null : `${nth(row.step)}`),
+					),
+				),
 			)
 		}
 
-		/**
-		 * 一条缺口的**去处**(没有就返回 null,由行里如实只写「下一步」)。
-		 *
-		 * 「可点则跳」不是每条都能跳:缺口是**账本自己算出来的欠账**,有的欠在模型那一侧
-		 * (要用哪个动词补),有的欠在本面板别处。能跳到具体去处的才挂链接;
-		 * 跳不到的**不假装可点**——那会教人学会「点了没反应」。
-		 */
-		const gapTarget = (code, data, onShowEntity) => {
-			if (code === 'entities_unlanded' && typeof onShowEntity === 'function') return { label: t('看实体图'), title: t('切到实体图那一层,看有哪些实例节点'), run: onShowEntity }
-			return null
+		/** 实例在图上的名字(登记时给的 label);图上没有它就退回 id。 */
+		const labelOfEntity = (data, id) => String((data?.lexicon?.graph?.nodes ?? []).find((node) => node.layer === 'entity' && String(node.ref ?? '') === id)?.label ?? id)
+
+		/** 一条结论一行:状态签 + 短名(+ 主张)+ 出自第几步。 */
+		function ConclusionRow(props) {
+			const { row, open } = props
+			const { title, sub } = titleOf(row)
+			return h(
+				'div',
+				{ className: 'clearai-row', 'data-open': open ? '1' : '0', 'data-trust': row.trust },
+				h(
+					'div',
+					{ className: 'clearai-row-head', onClick: () => props.onToggle(row.key), title: open ? t('收起') : t('点开看进度和来历') },
+					h(TrustTag, { trust: row.trust }),
+					h('span', { className: 'clearai-row-title' }, title),
+					sub === null ? null : h('span', { className: 'clearai-row-sub' }, sub),
+					h('span', { className: 'clearai-row-step' }, row.step === null ? '' : `${nth(row.step)}`),
+				),
+				open ? h(ConclusionDetail, { row, data: props.data, onFocus: props.onFocus }) : null,
+			)
 		}
 
-		/**
-		 * **缺口行**:「结构完整」这类结论之外,这一栏把**欠账**摆出来。
-		 *
-		 * 每条 = code 的人话 + 计数 + 现状(折法侧写好的 `detail`)+ 下一步(`nextAction`),
-		 * 能跳的去处挂成链接。缺口的算法在折法侧(账本是唯一生产者),这里**不重算**——
-		 * 客户端自己再算一套,两边迟早各说各话。
-		 */
-		const GapShelf = ({ data, onShowEntity }) => {
-			const gaps = Array.isArray(data?.knowledge?.gaps) ? data.knowledge.gaps : []
-			if (gaps.length === 0) return null
+		/** 结论列表:按可信度分组,空组不出现。 */
+		function ConclusionList(props) {
+			const rows = props.rows
+			if (rows.length === 0) return h('div', { className: 'clearai-quiet' }, t('还没有结论。模型立下判断之后,这里一行一条。'))
 			return h(
-				Section,
-				{ title: `${t('缺口')} ${gaps.length}` },
-				...gaps.map((gap, index) => {
-					const code = String(gap?.code ?? '')
-					const label = GAP_CODES.includes(code) ? GAP_LABEL[code] : null
-					const count = typeof gap?.count === 'number' ? gap.count : null
-					const target = gapTarget(code, data, onShowEntity)
-					const detail = String(gap?.detail ?? '')
-					const nextAction = String(gap?.nextAction ?? '')
+				'div',
+				{ className: 'clearai-list' },
+				...TRUST_ORDER.map((trust) => {
+					const group = rows.filter((row) => row.trust === trust)
+					if (group.length === 0) return null
 					return h(
 						'div',
-						{ key: `${code}-${index}`, style: S.row },
-						h(
-							'div',
-							{ style: S.inline },
-							label === null
-								? h('span', { style: S.tagStrong, title: code }, t('未登记的缺口类型'))
-								: h('span', { style: S.tagStrong }, label),
-							count === null ? null : h('span', { style: S.faint }, String(count)),
-							target === null ? null : h(Link, { title: target.title, onClick: target.run }, target.label),
-						),
-						detail === '' ? null : h('div', { style: S.faint }, t(detail)),
-						nextAction === '' ? null : h('div', { style: S.dim }, `${t('下一步:')}${t(nextAction)}`),
+						{ key: trust, className: 'clearai-group' },
+						h('div', { className: 'clearai-group-head' }, TRUST_WORD[trust], h('span', null, String(group.length))),
+						...group.map((row) => h(ConclusionRow, { key: row.key, row, open: props.open === row.key, onToggle: props.onToggle, data: props.data, onFocus: props.onFocus })),
 					)
 				}),
 			)
 		}
 
-		/** **事实货架**:已确认、可作已知的那一层。每条都带边界——没有边界的事实没人敢用。 */
-		function FactShelf(props) {
-			const base = props.data ?? (typeof props.useProjection === 'function' ? props.useProjection('clearai') : undefined) ?? {}
-			const data = { ...base, openPreview: props.openPreview ?? base.openPreview, openRail: props.openRail ?? base.openRail, openSpectator: props.openSpectator ?? base.openSpectator }
-			const facts = data.facts ?? []
+		/** 页眉:在回答什么 · 一行计数 · 需要你 · 迷你进度轨。 */
+		function AtlasHeader(props) {
+			const { data, rows } = props
+			const live = rows.filter((row) => row.trust !== 'replaced')
+			const counts = TRUST_ORDER.filter((trust) => trust !== 'replaced')
+				.map((trust) => [trust, rows.filter((row) => row.trust === trust).length])
+				.filter(([, count]) => count > 0)
+			const stations = STATIONS().map((name, index) => [name, live.filter((row) => row.station >= index + 1).length])
+			const needYou = Array.isArray(data?.needYou) ? data.needYou : []
 			return h(
-				Section,
-				{ title: `${t('本体货架 · ')}${facts.length}`, mark: true },
-				facts.length === 0
-					? h(
-							'div',
-							{ style: S.faint },
-							data.goal === null || data.goal === undefined
-								? t('暂无目标。验证达门槛且无推翻的命题在验收时升格为事实。')
-								: t('达门槛且无推翻的命题在目标验收时升格为事实(写入 clear/knowledge/facts/)。'),
-						)
+				'div',
+				{ className: 'clearai-head' },
+				h('div', { className: 'clearai-question', title: String(data?.goal?.claim ?? '') }, data?.goal ? String(data.knowledgeView?.goal?.headline ?? data.goal.claim ?? '') : t('还没有立目标')),
+				counts.length === 0 ? null : h('div', { className: 'clearai-counts' }, counts.map(([trust, count]) => `${TRUST_WORD[trust]} ${count}`).join(' · ')),
+				...needYou.map((item, index) => h('div', { key: `need-${index}`, className: 'clearai-need' }, h('b', null, t('需要你')), String(item?.text ?? ''))),
+				live.length === 0
+					? null
 					: h(
 							'div',
-							null,
-							...facts.map((row) =>
-								h(
-									'div',
-									{
-										key: row.id,
-										style: S.factRow,
-										/** 这一格**就是**事实库:点这条事实开它的原件(右侧原生预览),不再另挂一个「打开事实库」。 */
-										onClick: row.path === null || row.path === undefined || data.openPreview === undefined ? undefined : () => data.openPreview(row.path),
-										title: row.path === null || row.path === undefined ? '' : `${t('打开 ')}${row.path}`,
-									},
-									h(
-										'div',
-										{ style: S.factClaim },
-										/**
-										 * 复核状态直接说在标题旁边:一条**已撤回**的事实仍留在这里(P5:记录不删),
-										 * 但它已经不能当「已知」引用了——不写出来,读者会照旧引用它。
-										 */
-										dash(row.text),
-										row.review?.decision === 'retracted'
-											? h('span', { style: { ...S.tag, marginLeft: 6 } }, t('人已撤回(记录保留)'))
-											: row.refuted === true
-												? h('span', { style: { ...S.tag, marginLeft: 6 } }, t('被推翻 · 待裁决'))
-												: null,
-									),
-									h(
-										'div',
-										{ style: S.factMeta, title: row.scope === null || row.scope === undefined ? '' : String(row.scope) },
-										/**
-										 * 边界和证据的「依据」是同一类字段 ⇒ **同一条规矩**:列表放摘要、全文进 tooltip。
-										 * 真数据里边界常是 200~300 字,三条事实就把这一格撑到一千多字 ✗(货架只放摘要)。
-										 */
-										`${t('边界:')}${row.scope === null || row.scope === undefined || String(row.scope).trim() === '' ? '(未写——引用前请谨慎)' : brief(row.scope, 80)}${t(' · 支持到 ')}${dash(row.level)}${t(' · 证据 ')}${(row.evidenceIds ?? []).length}${t(' 条')}`,
-										/**
-										 * 原件的标签用**文件名**(「打开原件」四平八稳,但一排下来同样认不出是谁)。
-										 */
-										/**
-										 * 整行已经可点开原件 ⇒ 不再挂一个同样动作的「事实存档」✗(同一动作不开两条路)。
-										 * 原件路径在整行的 tooltip 里(`打开 <path>`)。
-										 */
-										/**
-										 * 跳去它那一步。**不把 `openRail` 当成渲染前提** ——
-										 * 把渲染前提挂在它上面,整条链接会一起消失。
-										 * 拿不到 `openRail` 也照常渲染:点了至少把聚焦设上、并试一次原生切视图。
-										 */
-										stepOfFact(data, row) === null
-											? null
-											: h(
-													Link,
-													{
-														onClick: (event) => {
-															event?.stopPropagation?.()
-															treeFocus.set({ plan: rowPlanOf(data, row), step: stepOfFact(data, row), branch: null })
-															if (data.openRail !== undefined) data.openRail('clearai-worldtree')
-														},
-														title: t('打开世界树并选中产出这条事实的验证步'),
-													},
-													t('在世界树中查看此步骤'),
-												),
-									/**
-									 * **冲突内联标记**:冲突行只给指针,受害的条目自己也要亮出来——
-									 * 读者扫到这一行时不必回头去对那一行指针。
-									 */
-									data.conflictOf !== undefined && data.conflictOf.has(row.id)
-										? h('div', { style: S.row }, h('span', { style: { ...S.tag, borderColor: 'rgba(220,38,38,0.7)', color: '#dc2626' } }, `${t('冲突')} · ${String(data.conflictOf.get(row.id).predicate)}`), h('span', { style: S.faint }, ` ${data.conflictOf.get(row.id).sides.map((side) => `${side.fact}(${side.value})`).join(' ')}`))
-										: null,
-									h(AssertionChips, { assertions: row.assertions, ui: data.assertionUI, promoted: true }),
-									),
-								),
-							),
+							{ className: 'clearai-track' },
+							...stations.flatMap(([name, count], index) => [
+								index === 0 ? null : h('span', { key: `line-${index}`, className: 'clearai-track-line', 'data-on': count > 0 ? '1' : '0' }),
+								h('span', { key: `st-${index}`, className: 'clearai-track-stop', 'data-on': count > 0 ? '1' : '0' }, h('i', null), `${name} ${count}`),
+							]),
 						),
 			)
 		}
 
 		/**
-		 * **「事实」页签**:一个**知识货架**,不是机制说明页。
+		 * **本体格**(中栏视图)。
 		 *
-		 * 上架 = 已确认事实(可用作下一轮已知,按支持等级分级、每条带边界);
-		 * 下架 = 命题(人与模型提出的候选知识,按本体状态分组流转)。
-		 * 默认只回答一个问题:「我现在能信什么」;点开一条命题才回答「凭什么」。
+		 * 取数与从前一样:宿主半的会话投影单元 `clearai` 由插座作为 `useProjection` 交下来。
+		 * 界面状态(图层、全屏、选中、展开哪条、只看哪个词)全是界面的事,一个字节都不进账本。
 		 */
-		function Facts(props) {
-			// 取数与 Panel/Deliverables 同一姿势:宿主半的会话投影单元 `clearai` 由插座作为标准 prop 交下来。
+		function Atlas(props) {
 			const projected = typeof props.useProjection === 'function' ? props.useProjection('clearai') : undefined
 			const [manual, setManual] = React.useState(null)
-			/** 本体格的界面状态:图层次/全景/图带开关/过滤/芯片展开/词汇区开关。全是界面状态,不进账本。 */
 			const [layer, setLayer] = React.useState('ontology')
-			/** 图谱工作区是否打开(真正的全屏 overlay,不是把图带拉高)。界面状态,不进账本。 */
 			const [workspace, setWorkspace] = React.useState(false)
-			const [bandOpen, setBandOpen] = React.useState(true)
 			const [filter, setFilter] = React.useState(null)
-			const [chipKey, setChipKey] = React.useState(null)
-			const [vocabOpen, setVocabOpen] = React.useState(null)
+			const [focusNode, setFocusNode] = React.useState(null)
 			const incoming = useFocus(factsFocus)
+			/** 样式表由 `apply` 挂;面板被单独挂载(截图、预览)时也自己挂一次——同一个标记,不会挂两份。 */
+			React.useEffect(() => {
+				installStyles()
+			}, [])
 			if (projected === undefined || projected === null) {
-				return h('div', { style: S.wrap }, h('div', { style: S.bar }, h('span', { style: S.title }, t('本体'))), h(Empty, null, t('暂无数据。发送第一条消息后,此处显示已确立条目与在验命题。')))
+				return h('div', { className: 'clearai-atlas' }, h(Empty, null, t('还没有内容。发第一条消息后,这里显示本体图和结论。')))
 			}
 			const data = { ...projected, openPreview: props.openPreview, openRail: props.openRail, openSpectator: props.openSpectator }
-			const facts = data.facts ?? []
-			const propositions = (data.goal?.hypotheses ?? []).filter((row) => row.status !== 'confirmed')
-			/** 外面点进来的聚焦优先;手动点行仍然有效(聚焦为 null 时用它)。 */
+			const rows = conclusionsOf(data)
+			const lexicon = data.lexicon ?? null
+			/** 世界树那边点进来的聚焦优先;手动点行仍然有效。 */
 			const focused = incoming === null || incoming === undefined ? null : propositionForStep(data, incoming.step)
 			const open = focused ?? manual
-			/**
-			 * **本体层**:没有词条时下面这一切都不存在(零成本契约)——
-			 * 图带、冲突行、过滤、芯片、维护区,每一个都以「有东西可说」为前提。
-			 */
-			const lexicon = data.lexicon ?? null
-			const hasVocabulary = lexicon !== null && ((lexicon.terms ?? []).length > 0 || (lexicon.predicates ?? []).length > 0)
-			const conflicts = hasVocabulary === true ? (lexicon.conflicts ?? []) : []
-			/** factId → 它卷入的那对冲突(内联标记用;同一事实卷多对时取第一对)。 */
-			const conflictOf = new Map()
-			for (const conflict of conflicts) for (const side of conflict.sides) if (typeof side.fact === 'string' && !conflictOf.has(side.fact)) conflictOf.set(side.fact, conflict)
-			/** 过滤词条:图带点概念节点或芯片动作都会给词条 id;文本兜底匹配。 */
 			const filterTerm = filter === null ? null : ((lexicon?.terms ?? []).find((item) => item.id === filter) ?? (lexicon?.predicates ?? []).find((item) => item.id === filter) ?? { id: filter, label: filter, aliases: [] })
-			const matchedFacts = filterTerm === null ? facts : facts.filter((row) => termMatches(filterTerm, row))
-			const matchedPropositions = filterTerm === null ? propositions : propositions.filter((row) => termMatches(filterTerm, row))
-			const filteredData = filterTerm === null ? data : { ...data, facts: matchedFacts, goal: { ...data.goal, hypotheses: matchedPropositions } }
-			/** 断言芯片的公共道具:词条卡从词汇里查,动作回连过滤与图带。 */
-			const assertionUI = hasVocabulary === true ? { lexicon, openKey: chipKey, onToggle: (key) => setChipKey(chipKey === key ? null : key), onFilter: (id) => { setFilter(id); setChipKey(null) }, onGraph: () => { setBandOpen(true); setChipKey(null) } } : null
-			filteredData.assertionUI = assertionUI
-			filteredData.conflictOf = conflictOf
-			/** 语言先于句子:0 条目 0 命题而有词条时,维护区自动展开。 */
-			const vocabAutoOpen = vocabOpen === null ? (facts.length === 0 && propositions.length > 0 === false && hasVocabulary === true) : vocabOpen
-			const vocabActuallyOpen = vocabOpen === null ? (facts.length === 0 && propositions.length === 0 && hasVocabulary === true) : vocabOpen
-			/**
-			 * **缺口**:折法侧算好的欠账(客户端的唯一来源是投影)。空数组 = 不欠,这一栏整块不出现。
-			 * 实体图空态要用的那条读数也从这里取:`entities_unlanded` 的 count
-			 * 就是「多少个断言主体还没有落到实体图」。
-			 */
+			const shown = filterTerm === null ? rows : rows.filter((row) => termMatches(filterTerm, row))
 			const gaps = Array.isArray(data.knowledge?.gaps) ? data.knowledge.gaps : []
 			const unlandedRow = gaps.find((gap) => gap?.code === 'entities_unlanded')
-			const unlanded = typeof unlandedRow?.count === 'number' ? unlandedRow.count : null
-			/** 缺口行的去处之一:把图带切到实体层(空态的出口就在这一层)。 */
-			const showEntity = () => {
-				setLayer('entity')
-				setBandOpen(true)
-			}
-			const bar = h(
-				'div',
-				{ style: S.bar },
-				h('span', { style: S.title }, t('本体')),
-			)
-			if (hasVocabulary === false) {
-				/** 零成本:没有词条时,这一格与从前逐像素相同(两个货架 + 页眉)——但缺口照报。 */
-				return h('div', { style: S.wrap }, bar, h(GapShelf, { data, onShowEntity: showEntity }), h(FactShelf, { data }), h(PropositionShelf, {
-					data,
-					open,
-					onToggle: (id) => {
-						factsFocus.set(null)
-						setManual(open === id ? null : id)
-					},
-				}))
-			}
 			return h(
 				'div',
-				{ style: S.wrap },
-				bar,
-				/** 缺口行:欠账摆在最前面(它决定这个目标现在能不能收口),每条都带下一步。 */
-				h(GapShelf, { data, onShowEntity: showEntity }),
-				/** 冲突行:仅当有冲突。一行指针 + 内联标记,不做大区块(例外才打扰)。 */
-				conflicts.length > 0
-					? h(
-							'div',
-							{ style: S.section },
-							h('div', { style: S.head }, `${t('冲突')} ${conflicts.length}${t(' 对')}`),
-							...conflicts.map((conflict, index) =>
-								h('div', { key: `cf-${index}`, style: S.row }, `${String(conflict.predicate)} · ${String(conflict.subject)}:`, ...conflict.sides.map((side, sideIndex) => h('span', { key: `cf-${index}-${sideIndex}`, style: S.faint }, ` ${String(side.fact ?? '?')}(${String(side.value)})`)), ` —— ${t('只暴露,不裁决;撤回或维持由人决定')}`),
-							),
-						)
-					: null,
-				bandOpen === false
-					? h('div', { style: S.section }, h('span', { style: S.chipAction, onClick: () => setBandOpen(true) }, t('展开图带')))
-					: h(GraphBand, { lexicon, layer, unlanded, onLayer: setLayer, onFilter: (id) => setFilter(filter === id ? null : id), sessionId: data.sessionId, fullscreen: workspace, onToggleFullscreen: () => setWorkspace(workspace !== true) }),
-				/** 过滤状态行:仅当过滤激活;N/M 说真话,✕ 一键清除。 */
+				{ className: 'clearai-atlas' },
+				h(AtlasHeader, { data, rows }),
+				h(GraphBand, {
+					lexicon,
+					layer,
+					unlanded: typeof unlandedRow?.count === 'number' ? unlandedRow.count : null,
+					onLayer: setLayer,
+					onFilter: (id) => setFilter(filter === id ? null : id),
+					focus: focusNode,
+					sessionId: data.sessionId,
+					fullscreen: workspace,
+					onToggleFullscreen: () => setWorkspace(workspace !== true),
+				}),
 				filterTerm === null
 					? null
 					: h(
 							'div',
-							{ style: S.inline },
-							h('span', { style: S.tag }, `${t('按')}「${String(filterTerm.label ?? filterTerm.id)}」${t('过滤')}:${matchedFacts.length + matchedPropositions.length}/${facts.length + propositions.length}${t(' 条')}`),
-							h('span', { style: S.chipAction, onClick: () => setFilter(null) }, t('清除')),
+							{ className: 'clearai-filter' },
+							`${t('只看与「')}${String(filterTerm.label ?? filterTerm.id)}${t('」相关的')}:${shown.length}/${rows.length}`,
+							h('span', { className: 'clearai-link', onClick: () => setFilter(null) }, t('清除')),
 						),
-				h(FactShelf, { data: filteredData }),
-				h(PropositionShelf, {
-					data: filteredData,
+				h('div', { className: 'clearai-section-head' }, t('结论')),
+				h(ConclusionList, {
+					rows: shown,
 					open,
-					onToggle: (id) => {
-						// 手动点行:先清掉外面的聚焦(否则它一直压着手动选择,点了没反应 ✗)
+					data,
+					onToggle: (key) => {
 						factsFocus.set(null)
-						setManual(open === id ? null : id)
+						setManual(open === key ? null : key)
+					},
+					onFocus: (id) => {
+						const node = (lexicon?.graph?.nodes ?? []).find((item) => item.layer === 'entity' && String(item.ref ?? '') === id)
+						if (node !== undefined) {
+							setLayer('entity')
+							setFocusNode(node.id)
+						}
 					},
 				}),
-				h(VocabBlock, { lexicon, open: vocabActuallyOpen, onToggle: () => setVocabOpen(vocabActuallyOpen !== true), openPreview: props.openPreview, sessionId: data.sessionId }),
 			)
 		}
 
@@ -1594,7 +1345,7 @@ window.__ModuleLoader__.load({
 				 * 而不是散在三个页签里(「进展」那一格因此撤了)。
 				 */
 				h(GoalLine, { goal: data.goal, view: data.knowledgeView, openPreview: props.openPreview }),
-				h(Inbox, { data }),
+				h(NeedYou, { data }),
 				h(
 					'div',
 					{ style: { display: 'flex', gap: 8, alignItems: 'flex-start' } },
@@ -1668,7 +1419,7 @@ window.__ModuleLoader__.load({
 				h(
 					'div',
 					{ style: S.inline },
-					h('span', { style: S.head }, `${t('步 ')}${step.ordinal} · ${step.id}`),
+					h('span', { style: S.head, title: step.id }, `${nth(step.ordinal)}`),
 					h(Link, { onClick: () => props.onClose?.(), title: t('收起详情') }, h('span', { style: S.faint }, t('收起'))),
 				),
 				step === null || step === undefined
@@ -1735,34 +1486,25 @@ window.__ModuleLoader__.load({
 					: h(
 							'div',
 							{ style: { marginTop: 6 } },
-							evidence.map((item) => h('div', { key: item.id, style: S.faint }, `${t('证据 ')}${item.id} · ${item.verdict ?? '—'}${item.level === null || item.level === undefined ? '' : ` · ${item.level}`} · ${item.evaluator ?? '—'}`)),
+							evidence.map((item) => h('div', { key: item.id, style: S.faint }, `${t('检验结果:')}${VERDICT[item.verdict] ?? '—'} · ${howOf(item)}${item.basis ? ` · ${brief(item.basis, 60)}` : ''}`)),
 							audits.map((item) =>
 								h(
 									'div',
 									{ key: item.id, style: S.faint },
-									`${t('评估者 ')}${item.verdict === null || item.verdict === undefined ? '正在裁决' : item.verdict} · ${item.evaluator ?? '—'}`,
-									item.evaluatorSession === null || item.evaluatorSession === undefined ? null : h(Link, { onClick: () => props.openSpectator?.(item.evaluatorSession) }, h('span', { style: S.mono }, `${t(' 旁观 ')}${item.evaluatorSession}`)),
-									item.cardPath === null || item.cardPath === undefined ? null : h(Link, { onClick: () => props.openPreview?.(item.cardPath) }, h('span', { style: S.mono }, t(' 评估卡'))),
+									`${t('独立核验:')}${item.verdict === null || item.verdict === undefined ? t('正在裁决') : (VERDICT[item.verdict] ?? item.verdict)}`,
+									item.evaluatorSession === null || item.evaluatorSession === undefined ? null : h(Link, { onClick: () => props.openSpectator?.(item.evaluatorSession) }, h('span', null, t(' 看核验过程'))),
+									item.cardPath === null || item.cardPath === undefined ? null : h(Link, { onClick: () => props.openPreview?.(item.cardPath) }, h('span', null, t(' 看核验记录'))),
 								),
 							),
 						),
 			)
 		}
 
-		/**
-		 * 人门区:只读。第三阶段起要人的门(L4 放行、同一步连拦、事实被推翻)都由开门的那次工具调用
-		 * 直接弹原生提问卡,面板这里不再有按钮;收件箱读面是空的,第六阶段随面板一起删。
-		 */
-		function Inbox(props) {
-			const data = props.data
-			const items = data === null || data === undefined || !Array.isArray(data.inbox) ? [] : data.inbox
+		/** 需要你:只陈述的几行(计划停下、结论矛盾),没有按钮——要怎么办,在对话里说。 */
+		function NeedYou(props) {
+			const items = Array.isArray(props.data?.needYou) ? props.data.needYou : []
 			if (items.length === 0) return null
-			return h(
-				'div',
-				{ style: S.gate },
-				h('div', { style: S.head }, `${t('需要你 ')}${items.length}`),
-				...items.map((item, index) => h('div', { key: `${item.kind}-${index}`, style: S.gateRow, title: item.kind }, h('span', null, item.title), h('span', { style: S.faint }, item.summary))),
-			)
+			return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, margin: '0 0 8px' } }, ...items.map((item, index) => h('div', { key: `need-${index}`, className: 'clearai-need' }, h('b', null, t('需要你')), String(item?.text ?? ''))))
 		}
 
 		/**
@@ -1815,7 +1557,7 @@ window.__ModuleLoader__.load({
 			 *   需要你 N(人门计数,点了开世界树)· 续跑停着(为什么停,人是可以处置的)。
 			 * 「已达成 · 100%」那一类与原生目标提示说的是同一件事,不在这里重复。
 			 */
-			const inboxCount = Array.isArray(data?.inbox) ? data.inbox.length : 0
+			const inboxCount = Array.isArray(data?.needYou) ? data.needYou.length : 0
 			const blocked = plan.blocked !== null && plan.blocked !== undefined
 			const attention = blocked
 			/**
@@ -1902,65 +1644,6 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * **断言芯片行**:一条已确立条目(或命题)的断言,点开就地展开词条卡。
-		 *
-		 * 为什么是「就地展开」而不是跳走:芯片的用途就是**读这条结论时**顺手看清
-		 * 「这个谓词什么意思、是不是单值、依据是什么」——跳一步,读者的上下文就断了。
-		 * 词条卡的两个人物(筛选此概念 / 在图里看)由外层经 `ui` 递进来。
-		 */
-		const AssertionChips = ({ assertions, ui, promoted }) => {
-			const rows = Array.isArray(assertions) ? assertions : []
-			if (ui === null || ui === undefined || rows.length === 0) return null
-			return h(
-				'div',
-				{ style: S.chipRow },
-				...rows.map((assertion, index) => {
-					const key = `${promoted === false ? 'p' : 'f'}-${index}`
-					const open = ui.openKey === key
-					const predicate = (ui.lexicon?.predicates ?? []).find((item) => item.id === assertion?.predicate) ?? null
-					const label = String(assertion?.chip ?? `${String(assertion?.subject?.id ?? '')} · ${String(assertion?.predicate ?? '')}`)
-					const card =
-						open === false
-							? null
-							: h(
-									'div',
-									{ style: S.chipCard },
-									predicate === null
-										? h('div', { style: S.faint }, t('此谓词已不在词汇中(可能已废止);存量断言仍可读。'))
-										: h('div', null,
-												h('div', { style: S.chipCardTitle }, `${predicate.label ?? predicate.id} · ${predicate.id}`),
-												h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('释义')}:`), ` ${String(predicate.gloss ?? '—')}`),
-												h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('主词域')}:`), ` ${String(predicate.domain ?? '—')}`),
-												h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('值域')}:`), ` ${predicate.range?.term ?? (predicate.range?.form ?? '—') + (predicate.range?.unit ?? '')}`),
-												h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('单值')}:`), ` ${predicate.functional === true ? '✓' : '—'}`),
-												h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('依据')}:`), ` ${String(predicate.basis ?? '—')}`),
-											),
-									h(
-										'div',
-										{ style: S.chipActions },
-										h('span', { style: S.chipAction, onClick: () => ui.onFilter(assertion?.predicate ?? null) }, t('按此谓词过滤')),
-										h('span', { style: S.chipAction, onClick: () => ui.onGraph() }, t('在图里看')),
-									),
-								)
-					return h(
-						'div',
-						{ key, style: S.chipWrap },
-						h(
-							'span',
-							{
-								style: open === true ? { ...S.chip, borderColor: 'rgba(74,163,255,0.9)' } : S.chip,
-								onClick: () => ui.onToggle(key),
-								title: promoted === false ? t('未升格:断言仍在命题上') : t('查看词条'),
-							},
-							`${label}${promoted === false ? t(' · 未升格') : ''}`,
-						),
-						card,
-					)
-				}),
-			)
-		}
-
-		/**
 		 * **力导向布局**(graphology + ForceAtlas2),与参考实现 `refs/semantica/explorer` 同一套。
 		 *
 		 * 为什么不是分层布局:分层只认得「父子」这一种关系,而知识图谱里大量边是**非层级**的
@@ -2036,28 +1719,18 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * **知识 Inspector**:点击图上的节点或边之后,回答「这是什么、凭什么信、谁改过它」。
+		 * **节点小卡**:点图上的一个点或一条边,回答「这是什么、哪些结论用到它」。
 		 *
-		 * 为什么要有它:图能画出来不等于图是知识入口。从前点一个节点只得到「按此过滤」——
-		 * 读的人仍然不知道这个词是什么意思。现在那条链补齐:
-		 *
-		 * ```text
-		 * 概念 → 定义 / 父概念 / 子概念 / 用它的谓词 / 实例 / 相关事实 / 登记修订史
-		 * 断言边 → 事实 → 命题 → 证据 → 出处 → 产生步骤 → 复核态
-		 * ```
-		 *
-		 * 数据**不在这里拼**:组装住在宿主半的 `inspectGraphSelection`(判据只有一处),
-		 * 这一层只请求与渲染。请求失败不清空旧详情——把上一次的结果换成一片空白,
-		 * 读的人会以为「这条知识没了」。
+		 * 数据仍然不在这里拼:组装住在宿主半的 `inspectGraphSelection`(经 `/api/clearai/inspector`),
+		 * 这一层只请求与渲染。卡上只说人话:种类、释义、上下位、关系、用到它的结论;
+		 * 编号、等级代码、证据 id 都不上屏(结论的来历在下面的结论列表里点开看)。
+		 * 请求失败不清空旧内容——把上一次的结果换成一片空白,读的人会以为「这条知识没了」。
 		 */
-		const GraphInspector = ({ selection, sessionId, onFilter, onClose, inspector: injected }) => {
+		const GraphInspector = ({ selection, sessionId, onFilter, onClose, inspector: injected, names }) => {
 			const [state, setState] = React.useState({ loading: false, inspector: null, error: null })
 			const key = selection === null ? '' : `${selection.kind}:${selection.id}`
 			React.useEffect(() => {
-				/**
-				 * 宿主已经把这份读数喂进来时不再问一次。这条缝同时服务两件事:
-				 * 全屏工作区(一次取好、两处渲染)与测试(同步渲染桩里等不到异步结果)。
-				 */
+				/** 宿主已经把读数喂进来时不再问一次(全屏工作区与测试都走这条缝)。 */
 				if (injected !== undefined) return undefined
 				if (key === '' || typeof sessionId !== 'string' || sessionId === '') return undefined
 				let live = true
@@ -2081,112 +1754,78 @@ window.__ModuleLoader__.load({
 			const data = injected === undefined ? state.inspector : injected
 			const busy = injected === undefined && state.loading === true
 			const failure = injected === undefined ? state.error : null
-			const line = (label, value) => (value === null || value === undefined || value === '' ? null : h('div', { style: S.kv }, h('span', { style: S.faint }, `${t(label)}:`), ` ${String(value)}`))
-			/** 事实的一张卡:链的每一段都在这里,读的人不必再去别处找。 */
-			const factCard = (fact, index) =>
-				h(
-					'div',
-					{ key: `f-${fact.id ?? index}`, style: { ...S.chipCard, marginTop: 6 } },
-					h('div', { style: S.chipCardTitle }, `${String(fact.id ?? '')} · ${String(fact.text ?? '')}`),
-					h('div', { style: S.faint }, `${String(fact.level ?? '—')} · ${String(fact.status ?? '')}${fact.at === null || fact.at === undefined ? '' : ` · ${new Date(fact.at).toISOString().slice(0, 19)}`}`),
-					line('边界', fact.scope),
-					fact.hypothesis === null
-						? h('div', { style: S.faint }, t('这条事实没有命题关联(旧账本):不拿文本相等去猜身份。'))
-						: h(
-								'div',
-								null,
-								line('命题', `${fact.hypothesis.id} — ${String(fact.hypothesis.claim ?? '')}`),
-								line('推翻条件', fact.hypothesis.refuteWhen),
-								line('支持到', `${String(fact.hypothesis.supportedLevel ?? '—')}${fact.hypothesis.refutations > 0 ? ` · 推翻 ${fact.hypothesis.refutations}` : ''}`),
-							),
-					...fact.assertions.map((assertion, position) => h('div', { key: `a-${position}`, style: S.kv }, h('span', { style: S.faint }, `${t('断言')}:`), ` ${String(assertion.chip ?? '')}`)),
-					fact.evidence.length === 0
-						? h('div', { style: S.faint }, t('没有证据引用(旧事实或自判)。'))
-						: h(
-								'div',
-								null,
-								...fact.evidence.map((item) =>
-									h(
-										'div',
-										{ key: `e-${item.id}` },
-										line('证据', `${item.id} · ${item.verdict} · ${item.level} · ${item.evaluator}`),
-										item.basis === null ? null : line('依据', item.basis),
-										item.origins.length === 0 ? null : line('出处', item.origins.map((origin) => `${origin.kind}${origin.path === undefined ? '' : `:${origin.path}`}${origin.session === undefined ? '' : `:${origin.session}`}`).join('、')),
-										item.step === null ? null : line('产生步骤', `${item.step.plan}/${item.step.id} · ${String(item.step.doneCriteria ?? '')}`),
-									),
-								),
-							),
-					fact.review === null ? null : line('复核', `${fact.review.decision}${fact.review.reason === null ? '' : ` — ${fact.review.reason}`}`),
-					fact.conflicts.length === 0 ? null : line('冲突', t('这条事实参与了一对冲突读数(只暴露,不裁决)')),
-				)
+			const definition = data?.definition ?? {}
+			const relations = data?.relations ?? {}
+			const kv = (label, value) => (value === null || value === undefined || value === '' ? [] : [h('span', { key: `k-${label}` }, label), h('span', { key: `v-${label}` }, String(value))])
+			const value = definition.value === undefined || definition.value === null ? null : `${String(definition.value)}${definition.unit ? ` ${String(definition.unit)}` : ''}`
+			/** 用到它的结论:写进长期知识的那几条;被人撤回的标「已替换」,卷进矛盾的标「有矛盾」。 */
+			const factTrust = (fact) => (fact.review?.decision === 'retracted' ? 'replaced' : (fact.conflicts ?? []).length > 0 ? 'conflict' : 'credible')
+			const facts = Array.isArray(data?.facts) ? data.facts : []
+			const title = String(selection.label ?? data?.selection?.label ?? selection.id)
+			/** 关系串里的主语 / 宾语是实例 id(`i_jepa`):换成图上的名字(`I-JEPA`)再上屏。 */
+			const named = (text) => [...(names ?? new Map()).entries()].sort((left, right) => right[0].length - left[0].length).reduce((out, [ref, label]) => out.split(ref).join(label), String(text ?? ''))
 			return h(
 				'div',
-				{ style: { ...S.chipCard, marginTop: 6, maxHeight: 360, overflow: 'auto' } },
+				{ className: 'clearai-card' },
 				h(
 					'div',
-					{ style: S.inline },
-					h('span', { style: S.chipCardTitle }, data === null ? `${String(selection.label ?? selection.id)}` : `${String(data.selection.label ?? data.selection.id)}`),
-					h('span', { style: S.faint }, `${String(selection.kind)} · ${String(selection.id)}`),
+					{ className: 'clearai-card-head' },
+					h('span', { className: 'clearai-card-kind' }, KIND_WORD[selection.kind] ?? t('关系')),
+					h('span', { className: 'clearai-card-title' }, title),
 					h('span', { style: { flex: '1 1 auto' } }),
-					h('span', { style: S.chipAction, onClick: onFilter }, t('按此筛选')),
-					h('span', { style: S.chipAction, onClick: onClose }, t('关闭')),
+					h('span', { className: 'clearai-link', onClick: onFilter }, t('只看相关')),
+					h('span', { className: 'clearai-link', onClick: onClose }, t('关闭')),
 				),
-				busy === true ? h('div', { style: S.faint }, t('正在取这条知识的读数…')) : null,
-				failure !== null ? h('div', { style: S.faint }, `${t('取不到读数')}:${failure}`) : null,
-				busy === false && failure === null && data === null ? h('div', { style: S.faint }, t('宿主没有这个对象的读数(可能刚被废止,或它不在当前词汇里)。')) : null,
+				busy === true ? h('div', { className: 'clearai-quiet' }, t('正在取…')) : null,
+				failure !== null ? h('div', { className: 'clearai-quiet' }, `${t('取不到')}:${failure}`) : null,
+				busy === false && failure === null && data === null ? h('div', { className: 'clearai-quiet' }, t('这一项已经不在当前的词里了(可能刚被废止)。')) : null,
 				data === null
 					? null
 					: h(
 							'div',
-							null,
-							data.definition?.gloss === undefined || data.definition.gloss === null ? null : h('div', { style: S.kv }, h('span', { style: S.faint }, `${t('释义')}:`), ` ${String(data.definition.gloss)}`),
-							line('依据', data.definition?.basis),
-							line('状态', data.definition?.status),
-							line('父概念', data.definition?.parentLabel ?? data.definition?.parent),
-							line('主词域', data.definition?.domainLabel ?? data.definition?.domain),
-							line('值域', data.definition?.range === null || data.definition?.range === undefined ? null : JSON.stringify(data.definition.range)),
-							line('形态', data.definition?.form),
-							line('取值', data.definition?.value === undefined || data.definition?.value === null ? null : `${String(data.definition.value)}${data.definition.unit === null || data.definition.unit === undefined ? '' : ` ${String(data.definition.unit)}`}`),
-							line('类型', data.definition?.typeLabel ?? data.definition?.type),
-							line('引用', data.definition?.uses),
-							data.note === null || data.note === undefined ? null : h('div', { style: S.faint }, String(data.note)),
-							data.relations === undefined || data.relations === null
-								? null
-								: h(
-										'div',
-										null,
-										(data.relations.children ?? []).length === 0 ? null : line('子概念', data.relations.children.map((item) => item.label).join('、')),
-										(data.relations.predicates ?? []).length === 0 ? null : line('相关谓词', data.relations.predicates.map((item) => `${item.label}(${item.id})`).join('、')),
-										(data.relations.instances ?? []).length === 0 ? null : line('实例', data.relations.instances.map((item) => `${item.label}×${item.factCount}`).join('、')),
-										(data.relations.edges ?? []).length === 0 ? null : line('关系边', data.relations.edges.map((edge) => `${edge.direction === 'out' ? '→' : '←'}${edge.chip}`).join('、')),
-										(data.relations.subjects ?? []).length === 0 ? null : line('主词', data.relations.subjects.map((item) => item.ref).join('、')),
-									),
-							(data.facts ?? []).length === 0 ? null : h('div', { style: { ...S.faint, marginTop: 6 } }, `${t('相关事实')} ${data.facts.length}${data.factsTruncated > 0 ? t('(还有更多,未列出)') : ''}:`),
-							...(data.facts ?? []).map(factCard),
-							(data.conflicts ?? []).length === 0 ? null : h('div', { style: { ...S.faint, marginTop: 6 } }, `${t('冲突')} ${data.conflicts.length}:${data.conflicts.map((conflict) => `${conflict.predicate} · ${conflict.subject}`).join('、')}`),
-							(data.history ?? []).length === 0 ? null : h('div', { style: { ...S.faint, marginTop: 6 } }, `${t('历史')}:`),
-							...(data.history ?? []).map((event, index) =>
-								h('div', { key: `h-${index}`, style: S.kv }, h('span', { style: S.faint }, event.at === null || event.at === undefined ? '—' : new Date(event.at).toISOString().slice(0, 19)), ` ${String(event.summary ?? event.kind)}${event.reason === null || event.reason === undefined ? '' : ` — ${String(event.reason)}`}`),
+							{ className: 'clearai-kv' },
+							...kv(t('释义'), definition.gloss),
+							...kv(t('上位'), definition.parentLabel ?? definition.parent),
+							...kv(t('下位'), (relations.children ?? []).map((item) => item.label).join('、')),
+							...kv(t('主语'), definition.domainLabel ?? definition.domain),
+							...kv(t('类型'), definition.typeLabel ?? definition.type),
+							...kv(t('取值'), value),
+							...kv(t('依据'), definition.basis),
+							...kv(t('关系'), (relations.edges ?? []).slice(0, 6).map((edge) => named(edge.chip)).join('、')),
+							...kv(t('实例'), (relations.instances ?? []).slice(0, 6).map((item) => item.label).join('、')),
+							definition.status === 'deprecated' ? h('span', { key: 'dep', style: { gridColumn: '1 / -1' }, className: 'clearai-quiet' }, t('这个词已废止,旧结论里的用法照样可读。')) : null,
+						),
+				facts.length === 0
+					? null
+					: h(
+							'div',
+							{ className: 'clearai-card-facts' },
+							h('div', { className: 'clearai-group-head' }, t('用到它的结论'), h('span', null, `${facts.length}${data.factsTruncated > 0 ? '+' : ''}`)),
+							...facts.slice(0, 4).map((fact, index) =>
+								h(
+									'div',
+									{ key: `f-${index}`, className: 'clearai-card-fact' },
+									factTrust(fact) === 'conflict' ? h('span', { className: 'clearai-trust', 'data-trust': 'conflict' }, t('有矛盾')) : h(TrustTag, { trust: factTrust(fact) }),
+									h('span', null, brief(fact.text, 60)),
+									fact.scope && fact.scope !== fact.hypothesis?.refuteWhen ? h('span', { className: 'clearai-row-sub' }, `${t('范围:')}${brief(fact.scope, 40)}`) : null,
+								),
 							),
 						),
 			)
 		}
 
 		/**
-		 * **图带 / 图谱工作区(React Flow)**。
+		 * **星图(React Flow)**:本体图 / 实体图二选一。
 		 *
-		 * 渲染交给 @xyflow/react——拖节点、拖画布、滚轮缩放、框选、MiniMap 都是库的事,
-		 * 我们不再手写 SVG 交互。这一层只做三件 ClearAI 自己的事:
-		 *   · **适配投影**:graphProjection() 的节点 / 边 → React Flow 的 nodes / edges,
-		 *     类型 / 冲突 / 状态的视觉编码在这里(不在投影里,投影是语义不是样式);
-		 *   · **点击语义**:点节点 / 边 = 打开 Inspector;过滤是 Inspector 里的显式动作;
-		 *   · **全屏工作区**:position: fixed 的真 overlay,打开时自动 fit。
-		 *
-		 * 数据不在这里拼:Inspector 的证据链住在宿主半(inspectGraphSelection),
-		 * 这一层只拿投影与路由的结果。所有交互状态(viewport / 选中 / 拖动)是界面状态,
-		 * 一个字节都不进账本。
+		 * 渲染交给 @xyflow/react——拖节点、拖画布、滚轮缩放都是库的事。这一层只做三件 ClearAI 自己的事:
+		 *   · **适配投影**:graphProjection() 的节点 / 边 → React Flow 的 nodes / edges;
+		 *     视觉编码在这里(投影是语义不是样式):点 + 衬线标签;概念是空心圈、实例是实心点、
+		 *     取值是小点;边实线 = 已验证(写进长期知识的断言),虚线 = 待核验(登记了、没过独立裁决),
+		 *     淡线 = 上下位;卷进矛盾的点和边用告警色。
+		 *   · **点击语义**:点节点 / 边 = 打开小卡;「只看相关」是卡上的显式动作。
+		 *   · **全屏**:position: fixed 的真 overlay,打开时自动适配。
 		 */
-		const GraphBand = ({ lexicon, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, unlanded }) => {
+		const GraphBand = ({ lexicon, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, unlanded, focus }) => {
 			const [picked, setPicked] = React.useState(null)
 			const graph = lexicon?.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
 			const conflicts = Array.isArray(lexicon?.conflicts) ? lexicon.conflicts : []
@@ -2194,355 +1833,228 @@ window.__ModuleLoader__.load({
 			const allNodes = graph.nodes.filter((node) => node.layer === layer)
 			const allEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
 			const nodeById = new Map(allNodes.map((node) => [node.id, node]))
+			const countOf = (name) => graph.nodes.filter((node) => node.layer === name).length
+			const entityNames = new Map(graph.nodes.filter((node) => node.kind === 'instance' && typeof node.ref === 'string' && node.ref !== '' && node.label !== node.ref).map((node) => [String(node.ref), String(node.label)]))
 
-		/** 图上的标签只放得下一小段:截断加省略号,全文在 Inspector 里(点开就有)。 */
-		const trimLabel = (text, limit) => {
-			const value = String(text ?? '')
-			return value.length <= limit ? value : `${value.slice(0, limit - 1)}…`
-		}
-
-			/** 视觉编码:类型 → 颜色(概念蓝 / 值形态橙 / 实例绿 / 字面值紫)。 */
-			const nodeStyle = (node) => ({
-				background: node.kind === 'concept' ? 'rgba(74,163,255,0.16)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.16)' : node.kind === 'instance' ? 'rgba(22,163,74,0.16)' : 'rgba(147,51,234,0.16)',
-				border: node.status === 'deprecated' ? '1px dashed rgba(127,127,127,0.4)' : `1px solid ${node.kind === 'concept' ? 'rgba(74,163,255,0.4)' : node.kind === 'value_type' ? 'rgba(217,119,6,0.4)' : node.kind === 'instance' ? 'rgba(22,163,74,0.4)' : 'rgba(147,51,234,0.4)'}`,
-				borderRadius: 6,
-				padding: '6px 12px',
-				fontSize: 12,
-				width: 168,
-				textAlign: 'center',
-			})
-
-		/**
-		 * **节点位置是受控的,所以必须自己接住拖动**。
-		 *
-		 * React Flow 的 `nodes` 是受控 prop:不给 `onNodesChange`,它内部的拖动**没有地方落地**——
-		 * 表现就是**节点根本拖不动**(拖前拖后 transform 一模一样)。
-		 * 位置是**界面状态**(布局不是知识,不进账本),所以它住在这里;
-		 * 换层或图变了就清掉,免得上一张图的拖动痕迹贴到新图上。
-		 */
-		const [dragged, setDragged] = React.useState({})
-		const graphKey = `${layer}|${allNodes.length}|${allEdges.length}`
-		React.useEffect(() => {
-			setDragged({})
-		}, [graphKey])
-		const onNodesChange = React.useCallback((changes) => {
-			setDragged((current) => {
-				let next = current
-				for (const change of changes) {
-					if (change?.type !== 'position' || change.position === undefined) continue
-					if (next === current) next = { ...current }
-					next[change.id] = change.position
-				}
-				return next
-			})
-		}, [])
+			/** 图上的标签只放得下一小段:截断加省略号,全文在小卡里。 */
+			const trimLabel = (text, limit) => {
+				const value = String(text ?? '')
+				return value.length <= limit ? value : `${value.slice(0, limit - 1)}…`
+			}
 
 			/**
-			 * 投影节点 → React Flow 节点。
-			 *
-			 * 坐标 = **力导向松弛过的投影坐标**:投影给的按层折行排布作起点(确定性、读得懂),
-			 * FA2 再把它松弛成这个图**自己的形状**(枢纽、簇)。拿不到 FA2 时就是起点本身。
+			 * **节点位置是受控的,所以必须自己接住拖动**:不给 `onNodesChange`,
+			 * React Flow 内部的拖动没有地方落地,节点根本拖不动。位置是界面状态,换层或图变了就清掉。
 			 */
-			const rfNodes = forceLayout(allNodes.map((node) => ({
-								id: node.id,
-				type: 'default',
-				/** 拖过的以拖动为准(界面状态);没拖过的用布局算出来的。 */
-				position: dragged[node.id] ?? { x: node.x ?? 0, y: node.y ?? 0 },
-				/**
-				 * **尺寸要显式给**。只写在 `style` 里的话,React Flow 要等测量完成才知道它多大,
-				 * 而 **MiniMap 在测量完成之前拿不到宽高就直接跳过这些节点**——缩略图因此是一块空白
-				 * (真机截图里就是那样)。`initialWidth/initialHeight` 是官方的「测量前尺寸」。
-				 */
-				initialWidth: 168,
-				initialHeight: 34,
-				/** 图上只放得下一小段;全文在 Inspector 里,点开就有。 */
-				data: { label: trimLabel(`${node.label ?? node.ref ?? node.id}${node.uses > 0 ? ` (${node.uses})` : ''}`, 22) },
-				style: nodeStyle(node),
-				/** 冲突节点标红。 */
-				...(Array.isArray(node.facts) && node.facts.some((id) => conflicted.has(id)) ? { className: 'clearai-node-conflict' } : {}),
-			})), allEdges.map((edge) => ({ source: edge.from, target: edge.to })))
+			const [dragged, setDragged] = React.useState({})
+			const graphKey = `${layer}|${allNodes.length}|${allEdges.length}`
+			React.useEffect(() => {
+				setDragged({})
+			}, [graphKey])
+			const onNodesChange = React.useCallback((changes) => {
+				setDragged((current) => {
+					let next = current
+					for (const change of changes) {
+						if (change?.type !== 'position' || change.position === undefined) continue
+						if (next === current) next = { ...current }
+						next[change.id] = change.position
+					}
+					return next
+				})
+			}, [])
 
-			/** 投影边 → React Flow 边(类型 / 冲突的视觉编码)。 */
+			/** 一个点的状态:矛盾 > 废止 > 待核验(只登记、没有写进长期知识的事实)> 平常。 */
+			const nodeState = (node) => {
+				if (Array.isArray(node.facts) && node.facts.some((id) => conflicted.has(id))) return 'conflict'
+				if (node.status === 'deprecated') return 'off'
+				if (node.kind !== 'concept' && node.kind !== 'value_type' && node.source === 'asserted' && (node.facts ?? []).length === 0) return 'pending'
+				return 'on'
+			}
+			const selectedId = picked?.kind === 'node' ? picked.node.id : (focus ?? null)
+
+			/**
+			 * 投影节点 → React Flow 节点。坐标 = 力导向松弛过的投影坐标(起点确定 ⇒ 同一份账本同一张图)。
+			 * 尺寸显式给:只写在 style 里的话,React Flow 要等测量完成才知道它多大。
+			 */
+			/**
+			 * 小图(十来个点)不跑力导向:几个点、几条边时它常常把点排成一条线。
+			 * 改成一圈:连得最多的那个点居中(它是这张图的主语),其余按投影顺序绕一圈——确定、好读。
+			 */
+			const small = allNodes.length <= 14
+			const ring = (() => {
+				if (!small) return null
+				const degree = new Map(allNodes.map((node) => [node.id, 0]))
+				for (const edge of allEdges) {
+					if (degree.has(edge.from)) degree.set(edge.from, degree.get(edge.from) + 1)
+					if (degree.has(edge.to)) degree.set(edge.to, degree.get(edge.to) + 1)
+				}
+				const hub = allNodes.length >= 4 ? [...allNodes].sort((left, right) => degree.get(right.id) - degree.get(left.id))[0] : null
+				const around = allNodes.filter((node) => node !== hub)
+				const radius = 120 + around.length * 14
+				const out = new Map()
+				if (hub !== null) out.set(hub.id, { x: 0, y: 0 })
+				around.forEach((node, index) => {
+					const angle = -Math.PI / 2 + (index / around.length) * Math.PI * 2
+					out.set(node.id, { x: Math.cos(angle) * radius * 1.6, y: Math.sin(angle) * radius })
+				})
+				return out
+			})()
+			const layout = small ? (nodes) => nodes : forceLayout
+			const rfNodes = layout(
+				allNodes.map((node) => ({
+					id: node.id,
+					type: 'default',
+					position: dragged[node.id] ?? ring?.get(node.id) ?? { x: node.x ?? 0, y: node.y ?? 0 },
+					initialWidth: 120,
+					initialHeight: 26,
+					selected: node.id === selectedId,
+					data: {
+						label: h(
+							'span',
+							{ className: 'clearai-star', 'data-kind': node.kind, 'data-state': nodeState(node), 'data-sel': node.id === selectedId ? '1' : '0' },
+							h('i', null),
+							h('span', null, trimLabel(node.kind === 'value_type' ? (FORM_WORD[node.ref] ?? node.label ?? node.ref) : (node.label ?? node.ref ?? node.id), 16)),
+						),
+					},
+					className: 'clearai-star-node',
+					style: { background: 'transparent', border: 0, padding: 0, width: 'auto', boxShadow: 'none' },
+				})),
+				allEdges.map((edge) => ({ source: edge.from, target: edge.to })),
+			)
+
+			/** 投影边 → React Flow 边:实线已验证、虚线待核验、淡线上下位、告警色是矛盾。 */
+			const edgeTone = (edge) => {
+				if (edge.kind === 'assertion' && conflicted.has(edge.fact)) return { stroke: 'var(--dsw-alias-state-warn-primary)', strokeWidth: 1.4 }
+				if (edge.kind === 'is_a') return { stroke: 'var(--dsw-alias-border-l3)', strokeWidth: 1, strokeDasharray: '1 3' }
+				if (edge.status === 'retracted') return { stroke: 'var(--dsw-alias-border-l2)', strokeWidth: 1, strokeDasharray: '2 4' }
+				if (edge.kind === 'assertion' && edge.status !== 'live') return { stroke: 'var(--dsw-alias-label-tertiary)', strokeWidth: 1.1, strokeDasharray: '5 4' }
+				return { stroke: edge.kind === 'assertion' ? 'var(--dsw-alias-label-secondary)' : 'var(--dsw-alias-label-tertiary)', strokeWidth: edge.kind === 'assertion' ? 1.3 : 1 }
+			}
 			const rfEdges = allEdges.map((edge) => ({
 				id: edge.id,
 				source: edge.from,
 				target: edge.to,
-				label: edge.label ?? '',
-				labelStyle: { fontSize: 9 },
-				labelBgStyle: { fill: 'var(--dsw-alias-bg-layer-1)', fillOpacity: 0.85 },
-				animated: edge.kind === 'assertion' && edge.status === 'live',
-				style: {
-					stroke: edge.kind === 'assertion' && conflicted.has(edge.fact) ? '#dc2626' : edge.kind === 'is_a' ? 'rgba(127,127,127,0.4)' : 'rgba(74,163,255,0.5)',
-					strokeWidth: edge.kind === 'assertion' ? 1.5 : 1,
-					...(edge.kind === 'is_a' ? { strokeDasharray: '4 3' } : {}),
-				},
+				type: 'straight',
+				label: edge.kind === 'is_a' ? '' : (edge.label ?? ''),
+				labelStyle: { fontSize: 10, fill: 'var(--dsw-alias-label-secondary)' },
+				labelBgStyle: { fill: 'var(--dsw-alias-bg-base)', fillOpacity: 0.9 },
+				labelBgPadding: [3, 1],
+				style: edgeTone(edge),
 			}))
 
-			/** 点击语义:点节点 / 边 = 打开 Inspector。 */
 			const onNodeClick = (_event, node) => {
 				const original = nodeById.get(node.id)
-				if (original === undefined) return
-				setPicked({ kind: 'node', node: original })
+				if (original !== undefined) setPicked({ kind: 'node', node: original })
 			}
 			const onEdgeClick = (_event, edge) => {
 				const original = allEdges.find((item) => item.id === edge.id)
-				if (original === undefined) return
-				setPicked({ kind: 'edge', edge: original })
+				if (original !== undefined) setPicked({ kind: 'edge', edge: original })
 			}
+			/** 结论那边点了「相关」里的一个主语:当成在图上点了它。 */
+			React.useEffect(() => {
+				if (focus === null || focus === undefined) return
+				const original = nodeById.get(focus)
+				if (original !== undefined) setPicked({ kind: 'node', node: original })
+			}, [focus])
 
-			/** Inspector 要看的对象。 */
 			const inspection =
 				picked === null
 					? null
 					: picked.kind === 'edge'
 						? { kind: 'edge', id: picked.edge.id, label: picked.edge.label }
 						: { kind: picked.node.kind, id: picked.node.kind === 'concept' ? String(picked.node.ref ?? '') : picked.node.id, label: picked.node.label ?? picked.node.ref ?? picked.node.id }
-			/** 「按此筛选」:概念筛概念、实例筛实体、断言边筛谓词。 */
-			const filterTarget = picked === null ? null : picked.kind === 'edge' ? picked.edge.predicate ?? null : String(picked.node.ref ?? '')
+			/** 「只看相关」:概念筛概念、实例筛实体、断言边筛谓词。 */
+			const filterTarget = picked === null ? null : picked.kind === 'edge' ? (picked.edge.predicate ?? null) : String(picked.node.ref ?? '')
 
 			/**
-			 * React Flow 的**实例**(用来 fit / 重新适配)。
-			 *
-			 * 注意:v12 里给 `<ReactFlow ref={…}>` 传 ref 拿到的是 DOM 节点,不是带 `fitView` 的
-			 * 实例——这样写调用会**静默变成空操作**。实例要从 `onInit` 拿。
-			 * 真机上踩到过:内联图带先按小画布 fit 了一次,切到全屏后画布大了十倍却没重新适配,
-			 * 于是图缩在左上角一小块(截图里一眼可见)。
+			 * React Flow 的**实例**(用来适配)要从 `onInit` 拿:v12 里 ref 拿到的是 DOM 节点,
+			 * 在它上面调 `fitView` 会静默变成空操作。画布的几何或内容变了就重新适配一次。
 			 */
 			const rfRef = React.useRef(null)
-			/**
-			 * **什么时候重新适配**:画布的**几何**或**内容**变了就得重来一次。
-			 *
-			 * 三件都会让刚才那张图不在眼前:打开/关闭工作区(画布尺寸变了)、
-			 * 切层(整套节点换了)、开/关详情抽屉(画布变窄)。
-			 * React Flow 的视口变换**不会自己跟**这些变化——不重算就得到「详情读得到、图却空了」
-			 * (真机截图里就是这个样子)。这里只在**这几件事发生**时重算,人自己拖过/缩过的视角
-			 * 不会因为数据刷新被夺走。
-			 */
 			React.useEffect(() => {
-				const timer = setTimeout(() => rfRef.current?.fitView?.({ padding: 0.15, duration: 200 }), 60)
+				const timer = setTimeout(() => rfRef.current?.fitView?.({ padding: 0.18, duration: 200 }), 60)
 				return () => clearTimeout(timer)
 			}, [fullscreen, layer, picked !== null, allNodes.length])
 
-			const shell = fullscreen === true ? { position: 'fixed', inset: 0, zIndex: 40, background: 'var(--dsw-alias-bg-layer-1)', padding: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : { ...S.section, padding: 6 }
-			const canvasBox = fullscreen === true ? { flex: '1 1 auto', minHeight: 240, minWidth: 0, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 } : { height: 208, overflow: 'hidden', border: '1px solid rgba(127,127,127,0.18)', borderRadius: 6 }
-			/**
-			 * **工作区里详情走右侧抽屉,不占画布的高度。**
-			 *
-			 * 这条不是审美:详情摆在画布下方时,它一出现画布就变矮,而 React Flow 的视口变换
-			 * 不会跟着变——于是**刚点开的那个节点直接掉出可视区**(真机上就是这样:详情读得到,
-			 * 图却空了)。侧栏只压缩宽度,而宽度方向的适配本来就有 `fitView` 管。
-			 * 内联图带不适用:那里只有两百来像素高,横向没地方放抽屉。
-			 */
+			/** 全屏时小卡走右侧抽屉:摆在画布下方会把画布压矮,刚点开的那个点直接掉出可视区。 */
 			const sideBySide = fullscreen === true
-
+			const empty =
+				layer === 'entity'
+					? `${typeof unlanded === 'number' && unlanded > 0 ? `${t('有 ')}${unlanded}${t(' 个断言的主语还没登记成实例。')}` : t('实体图还空着。')}${t('登记过的实例、写进长期知识的断言会出现在这里。')}`
+					: t('本体图还空着。模型立词之后,概念和关系会长在这里。')
 			return h(
 				'div',
-				{ style: shell },
+				{ className: 'clearai-graph', 'data-full': fullscreen === true ? '1' : '0' },
 				h(
 					'div',
-					{ style: S.inline },
-					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'ontology' ? 1 : 0.5 }, onClick: () => { setPicked(null); onLayer('ontology') } }, t('本体图')),
-					h('span', { style: { ...S.tag, cursor: 'pointer', opacity: layer === 'entity' ? 1 : 0.5 }, onClick: () => { setPicked(null); onLayer('entity') } }, t('实体图')),
-					h('span', { style: { ...S.faint, flex: '1 1 auto' } }, t('点节点看知识详情')),
-					h('span', { style: S.chipAction, onClick: () => rfRef.current?.fitView({ padding: 0.15, duration: 200 }) }, t('适配')),
-					h('span', { style: S.chipAction, onClick: onToggleFullscreen }, fullscreen === true ? t('关闭工作区') : t('打开图谱工作区')),
+					{ className: 'clearai-graph-bar' },
+					h(
+						'span',
+						{ className: 'clearai-seg' },
+						h('span', { 'data-on': layer === 'ontology' ? '1' : '0', onClick: () => { setPicked(null); onLayer('ontology') } }, `${t('本体图')} ${countOf('ontology')}`),
+						h('span', { 'data-on': layer === 'entity' ? '1' : '0', onClick: () => { setPicked(null); onLayer('entity') } }, `${t('实体图')} ${countOf('entity')}`),
+					),
+					h(
+						'span',
+						{ className: 'clearai-legend' },
+						h('span', { 'data-l': 'solid' }, t('已验证')),
+						h('span', { 'data-l': 'dash' }, t('待核验')),
+						conflicts.length > 0 ? h('span', { 'data-l': 'warn' }, `${t('矛盾')} ${conflicts.length}`) : null,
+					),
+					h('span', { style: { flex: '1 1 auto' } }),
+					allNodes.length === 0 ? null : h('span', { className: 'clearai-link', onClick: () => rfRef.current?.fitView?.({ padding: 0.18, duration: 200 }) }, t('适配')),
+					h('span', { className: 'clearai-link', onClick: onToggleFullscreen }, fullscreen === true ? t('退出全屏') : t('全屏')),
 				),
 				h(
 					'div',
-					{ style: { display: 'flex', flexDirection: sideBySide ? 'row' : 'column', gap: 8, flex: '1 1 auto', minHeight: 0, alignItems: 'stretch' } },
-					h(
-						'div',
-						{ style: { display: 'flex', flexDirection: 'column', gap: 6, flex: '1 1 auto', minWidth: 0, minHeight: 0 } },
-				XYFlow === null || XYFlow.ReactFlow === undefined || XYFlow.ReactFlow === null
-					? h('div', { style: S.faint }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('投影还在,事实与命题照常可读。')}`)
-					: allNodes.length === 0
-					? h(
-							'div',
-							{ style: S.faint },
-							/**
-							 * **空态要说清"这一层的东西从哪来"**,不能只说「暂无」。
-							 * 实体层尤其:它是本项目里唯一需要**独立写入口**的一层(RegisterInstance),
-							 * 而图上看不见它时,人最容易得出的错结论是「断言都写了,图迟早会自己长出来」。
-							 * 所以两句:为什么是空的 + 什么不算数。
-							 * 别的层仍是一句平静的「暂无」:那里确实只是还没登记。
-							 */
-							layer === 'entity'
-								? `${typeof unlanded === 'number' && unlanded > 0 ? `${unlanded}${t(' 个断言主体还没落到这一层:')}` : t('这一层还没有实例节点。')}${t('实例靠 RegisterInstance 登记(带出处);断言挂在命题上不算「已知」。')}`
-								: t('此层暂无节点。'),
-						)
-					: h(
-							'div',
-							{ style: canvasBox },
-							h(XYFlow.ReactFlow, {
-								onInit: (instance) => {
-									rfRef.current = instance
-								},
-								onNodesChange,
-								nodes: rfNodes,
-								edges: rfEdges,
-								onNodeClick,
-								onEdgeClick,
-								onPaneClick: () => setPicked(null),
-								fitView: true,
-								minZoom: 0.2,
-								maxZoom: 3,
-								proOptions: { hideAttribution: true },
-								style: { background: 'transparent' },
-								nodesDraggable: true,
-								nodesConnectable: false,
-								elementsSelectable: true,
-								panOnDrag: true,
-								zoomOnScroll: true,
-								zoomOnDoubleClick: false,
-							},
-							h(XYFlow.Controls, { showInteractive: false }),
-							h(XYFlow.MiniMap, {
-								pannable: true,
-								zoomable: true,
-								/**
-								 * **缩略图要看得懂**:默认节点是灰白的,在大图上等于一块空白方块——
-								 * 这里按类型给实色(与画布上的淡色底不同:缩略图里小块面积小,淡色看不见)。
-								 * 遮罩(视口指示)也调淡一点,别把整张缩略图盖成一个白框。
-								 */
-								nodeColor: (node) => {
-									const layerKind = nodeById.get(node.id)?.kind ?? ''
-									if (layerKind === 'concept') return '#6ea8fe'
-									if (layerKind === 'value_type') return '#e0a458'
-									if (layerKind === 'instance') return '#4caf7d'
-									if (layerKind === 'literal') return '#a97fe0'
-									return '#9aa4b2'
-								},
-								maskColor: 'rgba(127,127,127,0.18)',
-								maskStrokeColor: 'rgba(127,127,127,0.45)',
-								style: { background: 'var(--dsw-alias-bg-layer-2)', border: '1px solid rgba(127,127,127,0.25)' },
-							}),
-							h(XYFlow.Background, { variant: 'dots', gap: 20, size: 1, color: 'rgba(127,127,127,0.15)' }),
-						),
-					),
-				allNodes.length > 0
-					? h('div', { style: S.faint }, `${allNodes.length} ${t('个节点')} · ${allEdges.length} ${t('条边')}${conflicts.length > 0 ? ` · ${t('冲突')} ${conflicts.length}` : ''}`)
-					: null,
-					),
+					{ className: 'clearai-graph-body', 'data-side': sideBySide ? '1' : '0' },
+					XYFlow === null || XYFlow.ReactFlow === undefined || XYFlow.ReactFlow === null
+						? h('div', { className: 'clearai-graph-empty' }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('结论照常可读。')}`)
+						: allNodes.length === 0
+							? h('div', { className: 'clearai-graph-empty' }, empty)
+							: h(
+									'div',
+									{ className: 'clearai-graph-canvas' },
+									h(
+										XYFlow.ReactFlow,
+										{
+											onInit: (instance) => {
+												rfRef.current = instance
+											},
+											onNodesChange,
+											nodes: rfNodes,
+											edges: rfEdges,
+											onNodeClick,
+											onEdgeClick,
+											onPaneClick: () => setPicked(null),
+											fitView: true,
+											minZoom: 0.2,
+											maxZoom: 3,
+											proOptions: { hideAttribution: true },
+											style: { background: 'transparent' },
+											nodesDraggable: true,
+											nodesConnectable: false,
+											elementsSelectable: true,
+											panOnDrag: true,
+											zoomOnScroll: true,
+											zoomOnDoubleClick: false,
+										},
+										h(XYFlow.Controls, { showInteractive: false }),
+										h(XYFlow.Background, { variant: 'dots', gap: 22, size: 1, color: 'var(--dsw-alias-border-l2)' }),
+									),
+								),
 					picked === null
 						? null
 						: h(
 								'div',
-								{ style: sideBySide ? { width: 380, flex: '0 0 auto', overflowY: 'auto', minHeight: 0 } : { flex: '0 0 auto' } },
-								h(GraphInspector, {
-									selection: inspection,
-									sessionId,
-									onFilter: () => onFilter(filterTarget),
-									onClose: () => setPicked(null),
-								}),
+								{ className: 'clearai-graph-side' },
+								h(GraphInspector, { selection: inspection, sessionId, names: entityNames, onFilter: () => onFilter(filterTarget), onClose: () => setPicked(null) }),
 							),
 				),
 			)
 		}
 
-		/**
-		 * **词汇维护区**(折叠):词条表、健康度、废止列表、货架入口。
-		 * 默认收起——它是参考材料,不挡结论;**0 条目 0 命题而有词条时自动展开**:
-		 * 语言先于句子时,立好的词得有地方站。
-		 */
-		const VocabBlock = ({ lexicon, open, onToggle, openPreview, sessionId }) => {
-			const terms = Array.isArray(lexicon?.terms) ? lexicon.terms : []
-			const predicates = Array.isArray(lexicon?.predicates) ? lexicon.predicates : []
-			const health = Array.isArray(lexicon?.health) ? lexicon.health : []
-			const warnings = health.filter((issue) => issue.severity === 'warning')
-			const deprecated = [...terms, ...predicates].filter((entry) => entry.status === 'deprecated')
-			/** 编辑是**具名动词的图形前端**:抽屉里填字段,提交走人门通道,面板从不写文件。 */
-			const [drawer, setDrawer] = React.useState(null)
-			const [busy, setBusy] = React.useState(false)
-			const [error, setError] = React.useState(null)
-			const submitOnto = (action, entry) => {
-				setBusy(true)
-				setError(null)
-				fetch('/api/clearai/gate', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ sessionId, action, entry }),
-				})
-					.then((response) => response.json())
-					.then((result) => {
-						if (result.ok !== true) setError((result.problems ?? [result.error ?? 'failed']).join(';').slice(0, 200))
-						else setDrawer(null)
-					})
-					.catch((thrown) => setError(String(thrown?.message ?? thrown)))
-					.finally(() => setBusy(false))
-			}
-			if (terms.length === 0 && predicates.length === 0) return null
-			return h(
-				'div',
-				{ style: S.section },
-				h(
-					'div',
-					{ style: { ...S.head, cursor: 'pointer' }, onClick: onToggle },
-					`${t('词汇')}(${terms.length} ${t('概念')} · ${predicates.length} ${t('谓词')}${deprecated.length > 0 ? ` · ${deprecated.length} ${t('已废止')}` : ''}) ${open === true ? '▾' : '▸'}`,
-				),
-				open === false
-					? null
-					: h(
-							'div',
-							null,
-							...terms.map((term) => h('div', { key: `vt-${term.id}`, style: S.row }, h('span', { style: S.mono }, term.id), h('span', { style: S.faint }, ` ${String(term.label ?? '')}${term.status === 'deprecated' ? ` · ${t('已废止')}` : ''}${term.parent ? ` ↖${term.parent}` : ''}`), term.status === 'deprecated' ? null : h('span', { style: S.chipAction, onClick: () => { const reason = window?.prompt?.(`${t('废止')} ${term.id}:${t('为什么?')}`) ; if (typeof reason === 'string' && reason.trim() !== '') submitOnto('deprecate_entry', { id: term.id, reason: reason.trim() }) } }, t('废止')))),
-							...predicates.map((predicate) => h('div', { key: `vp-${predicate.id}`, style: S.row }, h('span', { style: S.mono }, predicate.id), h('span', { style: S.faint }, ` ${String(predicate.label ?? '')}${predicate.functional === true ? ` · ${t('单值')}` : ''}${predicate.status === 'deprecated' ? ` · ${t('已废止')}` : ''}`), predicate.status === 'deprecated' ? null : h('span', { style: S.chipAction, onClick: () => { const reason = window?.prompt?.(`${t('废止')} ${predicate.id}:${t('为什么?')}`) ; if (typeof reason === 'string' && reason.trim() !== '') submitOnto('deprecate_entry', { id: predicate.id, reason: reason.trim() }) } }, t('废止')))),
-							warnings.length > 0 ? h('div', { style: S.row }, `${t('健康')}:`, ...warnings.map((issue, index) => h('div', { key: `vh-${index}`, style: S.faint }, `  ${issue.id}:${issue.detail}`))) : null,
-							deprecated.length > 0
-								? h('div', { style: S.row }, ...deprecated.map((entry) => h('div', { key: `vd-${entry.id}`, style: S.faint }, `  ${entry.id} — ${String(entry.deprecated?.reason ?? '')}`)))
-								: null,
-							openPreview === undefined ? null : h('span', { style: S.chipAction, onClick: () => openPreview('clear/ontology/domain.md') }, t('打开词汇货架(原生预览)')),
-							/**
-							 * **编辑入口(阶段 E)**:登记概念 / 登记谓词两个表单抽屉;条目行的
-							 * 修订与废止在各自那行(见下)。提交 = 一次人门动词;判据在宿主半,
-							 * 界面只把表单递过去、把问题清单带回来。
-							 */
-							h('div', { style: S.inline },
-								h('span', { style: S.chipAction, onClick: () => setDrawer({ kind: 'term' }) }, `+ ${t('概念')}`),
-								h('span', { style: S.chipAction, onClick: () => setDrawer({ kind: 'predicate' }) }, `+ ${t('谓词')}`),
-							),
-							drawer === null
-								? null
-								: h(OntoDrawer, { drawer, setDrawer, busy, error, onSubmit: submitOnto }),
-						),
-			)
-		}
-
-		/**
-		 * **词汇抽屉**:登记概念/谓词的最小表单。字段与动词参数一一对应;
-		 * 判据不在这里重复——服务端拒了就把问题清单原样亮出来。
-		 */
-		const OntoDrawer = ({ drawer, setDrawer, busy, error, onSubmit }) => {
-			const [form, setForm] = React.useState({ id: '', label: '', gloss: '', basis: '', parent: '', domain: '', unit: '', form: 'quantity', functional: false })
-			const field = (key, placeholder) =>
-				h('input', {
-					value: form[key] ?? '',
-					placeholder,
-					style: { ...S.chip, cursor: 'text', width: '100%' },
-					onInput: (event) => setForm({ ...form, [key]: event?.target?.value ?? '' }),
-				})
-			const isTerm = drawer.kind === 'term'
-			const entry = isTerm
-				? { id: form.id, label: form.label, gloss: form.gloss, basis: form.basis, parent: form.parent === '' ? undefined : form.parent }
-				: { id: form.id, label: form.label, gloss: form.gloss, basis: form.basis, domain: form.domain === '' ? undefined : form.domain, range: { form: form.form, unit: form.unit === '' ? undefined : form.unit }, functional: form.functional === true ? true : undefined }
-			return h(
-				'div',
-				{ style: S.chipCard },
-				h('div', { style: S.chipCardTitle }, isTerm ? t('登记概念') : t('登记谓词')),
-				field('id', 'id(snake_case)'),
-				field('label', isTerm ? t('名称') : t('名称')),
-				field('gloss', t('释义(一句话)')),
-				isTerm ? field('parent', `${t('父概念')} id(可选)`) : field('domain', `${t('主词域')} id(可选)`),
-				isTerm === true ? null : field('unit', `${t('单位')}(可选)`),
-				isTerm === true ? null : h('label', { style: S.faint }, h('input', { type: 'checkbox', checked: form.functional === true, onChange: (event) => setForm({ ...form, functional: event?.target?.checked === true }) }), ` ${t('单值')}`),
-				field('basis', `${t('依据')}(必填)`),
-				error === null ? null : h('div', { style: { color: '#dc2626', fontSize: 11 } }, String(error)),
-				h('div', { style: S.chipActions },
-					h('span', { style: S.chipAction, onClick: busy === true ? undefined : () => onSubmit(isTerm === true ? 'register_term' : 'register_predicate', entry) }, busy === true ? t('提交中…') : t('提交')),
-					h('span', { style: S.chipAction, onClick: () => setDrawer(null) }, t('取消')),
-				),
-			)
-		}
-		const LocalizedFacts = withLocale(Facts)
+		const LocalizedFacts = withLocale(Atlas)
 		const LocalizedWorldTree = withLocale(WorldTree)
 
 		/** 会话预设的 id:面板只在这个模式的会话里出现。 */
@@ -2849,12 +2361,12 @@ window.__ModuleLoader__.load({
 		 * 真的跑一遍渲染路径(捕 undefined 字段访问这类只有渲染时才炸的错)。
 		 * 仍然不是给别的包用的接口。
 		 */
-		exports.__components = { PlanChip, WorldTree, GraphBand, GraphInspector, VocabBlock, AssertionChips, Inbox, TreeDetail, Facts, FactShelf, PropositionShelf, PropositionRow, GapShelf, ClearAIMark, LOOP_LABEL, PROPOSITION_GROUPS }
+		exports.__components = { PlanChip, WorldTree, GraphBand, GraphInspector, NeedYou, TreeDetail, Atlas, AtlasHeader, ConclusionList, ConclusionRow, ConclusionDetail, StationBar, TrustTimeline, ClearAIMark, LOOP_LABEL }
 		/**
 		 * 测试缝之三:命题那一列的**派生**是纯函数(分组、处境、来路、证据链),
 		 * 渲染本身没法在没浏览器的地方细究——把它导出去,让测试直接断言派生结果。
 		 */
-		exports.__propositions = { evidenceOf, transitionsOf, whereOf, judgeOf, originsOf, stepOfFact }
+		exports.__propositions = { evidenceOf, originsOf, stepOfFact, conclusionsOf }
 		/** 测试缝之四:本体格的过滤判据(纯函数)。 */
 		exports.__ontology = { termMatches }
 		return module.exports
