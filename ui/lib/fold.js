@@ -46,9 +46,13 @@ export const MUTATION_KIND = 'clearai'
  *           (`constitution`)与写入计数(`writeCalls`)都从状态里删了。旧日志里的对应事件类型
  *           (`fork/*`、`worldline/*`、`scout/*`、`branch/*`、`git/*`、`clearai/brain` 段、相关人门动作)
  *           不认识就原样跳过,其余部分照常折出来。
+ *   v12 → v13:**步骤完成与结果分开**:步骤的 `tests` 折成 `{hypotheses: id[], level}`(旧账的单条
+ *           `hypothesis` 照旧读);证据带上它针对的判断(`hypothesis`);`step/advanced` 带上交付本身
+ *           (`delivery`:谁判的、凭什么、出处),`step.evidence` 变成 id 数组;结算事实带上两项裁决
+ *           (`holds` / `results`)。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 12
+export const STATE_VERSION = 13
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -75,15 +79,6 @@ export function emptyState() {
 		facts: [],
 		blocks: {},
 		releases: [],
-		/**
-		 * 运行档(人在场 / 无人值守)。**它是部署预设的初值,不是可切换的开关**:
-		 *   · 人门动词 `set_autonomy` 已摘除,面板上那个开关已经不存在;
-		 *   · `effective` = 内核随投影下发的那一份(只有内核知道组合配置),**只用于展示**;
-		 *   · `override`  = 历史日志里可能留下的人门记录。读取侧保留它只是为了旧会话仍然读得通,
-		 *     当前**没有任何写入者**——不要据此认为现在还能切换档位。
-		 *   · 它也不影响续跑:要不要继续由门状态算出来(见内核 turnDemand)。
-		 */
-		autonomy: { override: null, effective: null },
 		/**
 		 * **本体形状**:内核随投影下发的那份声明(对象/状态/边/等级)。
 		 * 为什么进投影而不是在界面里手抄:面板那一格的页眉要从**声明**生成——
@@ -121,16 +116,6 @@ export function emptyState() {
 		 * 只增不删,留最近若干条(它是读数,不是档案)。
 		 */
 		hostHealth: [],
-		/**
-		 * **续跑窗口的账**:我们向平台说过的那句话——「这个窗口归我布防 / 我按了暂停 /
-		 * 我收兵了 / 它不在了而那不是我们干的」。形状见 `applyMutation` 的 `continuation/set`。
-		 *
-		 * 为什么它必须在投影里而不是内核内存里:宿主的 `paused` 相位分不清「人按的」与
-		 * 「策略按的」,而这两者的处置正好相反(人按的绝不覆盖,自己按的要能恢复)。
-		 * 只记在内存里,一次重启就把我们自己的暂停误报成人的暂停——那是一句**不实的话**;
-		 * 而「我们说过的话要有账」本来就是这套设计的纪律(意图工具不能断言事实)。
-		 */
-		continuation: null,
 		/** 正在飞的工具调用(来自 tool/call):让「评估者在裁决」成为一条可看见的事实 */
 		inFlight: null,
 		/** 本会话自己写过的路径(来自 tool/call 的 write/edit):L4 来源分离的判据 */
@@ -139,10 +124,10 @@ export function emptyState() {
 }
 
 /**
- * 等裁决的三个工具:它们的调用在飞时,派生阶段是 `auditing`。
+ * 等裁决的工具:它们的调用在飞时,派生阶段是 `auditing`。`CloseGoal` 是 `Conclude` 的旧名,留着让旧日志照样折。
  * 其余工具不等外部裁决,不该让面板在每次调用时跳一下。
  */
-const VERDICT_WAITERS = new Set(['AdvancePlan', 'CloseGoal'])
+const VERDICT_WAITERS = new Set(['AdvancePlan', 'Conclude', 'CloseGoal'])
 
 /** 记下来的自写路径有上限:它是判据,不是档案(档案在会话日志里)。 */
 const MAX_WRITTEN = 512
@@ -173,6 +158,16 @@ function factFromHypothesis(facts, goalId, hypothesisId, claim) {
 	})
 }
 
+/**
+ * 步骤检验的判断一律折成 `{hypotheses: id[], level}`:新账写 `hypotheses`(可多条),
+ * 旧账只有单条 `hypothesis`。读面只认这一种形状。
+ */
+export function normalizeTests(tests) {
+	if (tests === undefined || tests === null || typeof tests !== 'object') return null
+	const hypotheses = Array.isArray(tests.hypotheses) ? tests.hypotheses.map(String) : typeof tests.hypothesis === 'string' && tests.hypothesis !== '' ? [tests.hypothesis] : []
+	return { hypotheses, level: tests.level ?? null }
+}
+
 function appendSteps(plan, rawSteps) {
 	for (const raw of rawSteps) {
 		plan.steps.push({
@@ -181,7 +176,7 @@ function appendSteps(plan, rawSteps) {
 			do: raw.do,
 			artifacts: raw.artifacts ?? [],
 			done_criteria: raw.done_criteria,
-			tests: raw.tests ?? null,
+			tests: normalizeTests(raw.tests),
 			status: 'open',
 			evidence: null,
 			advancedAt: null,
@@ -339,29 +334,10 @@ export function applyMutation(state, mutation) {
 				closedAt: null,
 				summary: null,
 				blocked: undefined,
-				/**
-				 * 授权记号(ClearAI `plan.confirmed_at` / `confirmed_by`)。
-				 * 两种取得方式,都可考:**显式动作**(人在原生审阅卡上批准 → `by:'user'`)与
-				 * **行为**(交付过一步 → `by:'progress'`,见内核 AdvancePlan)。
-				 * 第三种来源 `by:'autonomy'`(无人值守档在立约时自动确认)**已删除**:
-				 * 那会让「计划经人确认」这条证据变成系统自己签的。读取侧不需要兼容它,
-				 * 因为删除发生在写入侧,历史日志里最多出现 `user` 与 `progress`。
-				 * 注意这是一个**记号**,不是闸门:没确认的计划照样能被交付推起来,那一刻记号按事实补写。
-				 */
-				confirmed_at: mutation.confirmed_at ?? null,
-				confirmed_by: mutation.confirmed_by ?? null,
 				steps: [],
 			}
 			next.plans.push(plan)
 			appendSteps(plan, mutation.steps ?? [])
-			break
-		}
-		case 'plan/confirmed': {
-			// 第一次授权为准(`stamp_confirmed_by_progress` 同款幂等:已确认就不再改写)。
-			const plan = planOf(mutation.plan)
-			if (plan === undefined || plan.confirmed_at !== null) break
-			plan.confirmed_at = mutation.at ?? new Date(at).toISOString()
-			plan.confirmed_by = mutation.by ?? 'user'
 			break
 		}
 		case 'plan/amended': {
@@ -475,6 +451,9 @@ export function applyMutation(state, mutation) {
 			const audit = next.audits.find((item) => item.id === mutation.id)
 			if (audit !== undefined) {
 				audit.verdict = mutation.verdict
+				/** 两项裁决:交付成立吗 + 每条判断的结果。旧账没有这两格,`verdict` 那时说的就是交付成立吗。 */
+				audit.holds = mutation.holds ?? null
+				audit.results = Array.isArray(mutation.results) ? mutation.results : []
 				audit.shortfalls = mutation.shortfalls ?? []
 				audit.basis = mutation.basis ?? null
 				audit.card_path = mutation.card_path ?? null
@@ -487,6 +466,8 @@ export function applyMutation(state, mutation) {
 				id: mutation.id,
 				step: mutation.step,
 				plan: mutation.plan,
+				/** 针对哪条判断;旧账没有这一格(`undefined`),按步骤检验的判断找回来。 */
+				hypothesis: mutation.hypothesis,
 				verdict: mutation.verdict,
 				level: mutation.level,
 				evaluator: mutation.evaluator,
@@ -509,7 +490,13 @@ export function applyMutation(state, mutation) {
 			const step = stepOf(mutation.plan, mutation.step)
 			if (step !== undefined) {
 				settle(step, 'advanced')
-				step.evidence = mutation.evidence
+				/** 新账是证据 id 的数组(每条判断一份,不检验判断就是空数组);旧账是单个 id。 */
+				step.evidence = Array.isArray(mutation.evidence) ? mutation.evidence : mutation.evidence === undefined || mutation.evidence === null ? [] : [mutation.evidence]
+				/** 交付本身:谁判的、凭什么、出处。旧账没有,读面退回到证据。 */
+				step.delivery =
+					mutation.evaluator === undefined
+						? null
+						: { evaluator: mutation.evaluator, basis: mutation.basis ?? null, refs: Array.isArray(mutation.refs) ? mutation.refs : [], origins: Array.isArray(mutation.origins) ? mutation.origins : [] }
 				step.advancedAt = at
 			}
 			break
@@ -559,37 +546,6 @@ export function applyMutation(state, mutation) {
 			fact.review = { decision: mutation.decision === 'retracted' ? 'retracted' : 'kept', reason: mutation.reason ?? null, at, by: mutation.by ?? 'user' }
 			break
 		}
-		case 'continuation/set': {
-			/**
-			 * 续跑窗口的账。四种状态就是「我们说过的话」的全部:
-			 *   · `armed`     —— 我们布了防(或按策略恢复了它):此刻它在为我们跑。
-			 *   · `paused`    —— **我们**按下的暂停,`why` 是真实理由(等裁决 / 等人门 / 阶段边界)。
-			 *   · `stopped`   —— 我们收的兵(目标达成 / 如实放弃 / 计划触礁)。
-			 *   · `withdrawn` —— 它不在了,而**不是我们清的**(我们的清除永远与建同拍):
-			 *                    这是平台上唯一说得出口的解释,所以它也只说这些,不说「谁」干的。
-			 * 一条记录:**窗口在会话里是单数**,所以后一条覆盖前一条,不留历史(历史在会话日志里)。
-			 */
-			next.continuation = {
-				state: typeof mutation.state === 'string' ? mutation.state : 'unknown',
-				goal: mutation.goal ?? null,
-				target: mutation.target ?? null,
-				why: mutation.why ?? null,
-				/**
-				 * 平台对象上那句身份文本的**最后一次观测值**:我们写下它时记我们的,
-				 * 别人改写之后重记他的。判据是「平台上的文本 === 这条记录」⇒ 还是我们的。
-				 */
-				label: mutation.label ?? null,
-				at,
-			}
-			break
-		}
-		/**
-		 * **领域词汇的六个事件**:接纳 / 版本化修订 / 黏性废止(概念与谓词各三条)。
-		 *
-		 * 折法在这里只做解释:把事件折成 `lexicon`。校验(引用是否存在、形状对不对、
-		 * 语义变化有没有偷偷走修订)全部发生在**落账之前**——预设侧的工具与宿主路由
-		 * 用的是 `domain-language.js` 的同一份判据;折法不重复判一遍,否则两份判据必然漂。
-		 */
 		case 'ontology/term_added':
 		case 'ontology/predicate_added':
 		case 'ontology/term_revised':
@@ -786,7 +742,6 @@ export function applyEvent(state, event) {
 			 * 原来找到目录就 return,于是同一条消息里的**运行档被吃掉**,
 			 * 表现是投影里的 effective 档永远停在「还没定档」,而机制那边早就按新档跑了。
 			 */
-			const tier = source.sections.find((section) => section?.name === 'clearai/autonomy')
 			/**
 			 * 内核在**回合之间**观察到的事实(目前:世界线执行者跑完)。
 			 * 与工具结果里的 `meta.mutations` **同形**,所以直接走同一个 `applyMutations`——
@@ -807,7 +762,7 @@ export function applyEvent(state, event) {
 				}
 			}
 			const facts = source.sections.find((section) => section?.name === 'clearai/mutations')
-			if (tier !== undefined || facts !== undefined) {
+			if (facts !== undefined) {
 				let next = clone(state)
 				let touched = false
 				if (facts !== undefined && typeof facts.text === 'string') {
@@ -815,21 +770,6 @@ export function applyEvent(state, event) {
 						const payload = JSON.parse(facts.text)
 						if (Array.isArray(payload?.mutations) && payload.mutations.length > 0) {
 							next = applyMutations(next, stampAt(payload.mutations, typeof event.time === 'number' ? event.time : null))
-							touched = true
-						}
-					} catch {
-						// 同上:坏 payload 不当事实,也不影响别的。
-					}
-				}
-				if (tier !== undefined && typeof tier.text === 'string') {
-					try {
-						const payload = JSON.parse(tier.text)
-						const value = String(payload?.value ?? '')
-						if (value === 'attended' || value === 'unattended') {
-							next.autonomy = {
-								...(next.autonomy ?? {}),
-								effective: { value, preset: String(payload?.preset ?? value), source: payload?.source === 'session' ? 'session' : 'preset', at: typeof event.time === 'number' ? event.time : null },
-							}
 							touched = true
 						}
 					} catch {
@@ -844,15 +784,6 @@ export function applyEvent(state, event) {
 		if (gate === null) return state
 		const at = typeof event.time === 'number' ? event.time : Date.now()
 		const next = clone(state)
-		// **旧日志容忍分支**(写入者已摘除,只有旧日志可能带着):人切运行档曾经是一条人门动作,旧会话里可能留着。
-		// 读到它就照旧记成一条**人的事实**,让历史会话仍然读得通;当前面板上已经没有这个开关,
-		// 新的会话不会再产生这一条。不要据此认为"现在还能切档"——要删这个分支得先确认没有旧日志。
-		if (gate.action === 'set_autonomy') {
-			const value = String(gate.value ?? '')
-			if (!AUTONOMY_VALUES.includes(value)) return next
-			next.autonomy = { ...(next.autonomy ?? {}), override: { value, at } }
-			return next
-		}
 		/**
 		 * 人审查一条事实:标的在 `value`(面板送出的是事实 id),缘由在 `note`。
 		 * 已经审过的不再改(第一次决定为准,与计划授权那条同一条纪律)。
@@ -942,7 +873,7 @@ const TERMINAL_HYPOTHESIS = new Set(['refuted', 'superseded', 'retracted'])
 /**
  * **知识模式(分诊)与缺口读数。**
  *
- * 判据是**结构的,不是词法的**:这里不猜「这句话像不像研究任务」。立约(`SetGoal`)并用
+ * 判据是**结构的,不是词法的**:这里不猜「这句话像不像研究任务」。立约(`Frame`)并用
  * 相互竞争的假设登记它,是模型自己已经做出的那次承诺——它意味着这件事要跨多轮、要有依据、
  * 要有可复核的结论。日常问答从不立约,于是从不进这一档。用词面启发式去猜任务类型,
  * 正是真跑里评估者抓到的那类「硬编码比例」的老路:猜错了没人能复核,而结构判据可以。
@@ -989,7 +920,7 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 				code: 'prose_only_claims',
 				count: proseOnly.length,
 				detail: `${proseOnly.length} 条在验命题只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
-				nextAction: '用 SetGoal 的修订把这条主张写成断言(主词–谓词–宾语),引用已登记的 id',
+				nextAction: '用 Frame 的修订把这条主张写成断言(主词–谓词–宾语),引用已登记的 id',
 			})
 		}
 		/**
@@ -1638,8 +1569,12 @@ export function derive(state) {
 	const hypotheses = state.hypotheses.map((hypothesis) => {
 		const rows = []
 		for (const item of state.evidence) {
+			if (item.hypothesis !== undefined) {
+				if (item.hypothesis === hypothesis.id) rows.push(item)
+				continue
+			}
 			const step = stepOf(item.plan, item.step)
-			if (step?.tests?.hypothesis === hypothesis.id) rows.push(item)
+			if ((normalizeTests(step?.tests)?.hypotheses ?? []).includes(hypothesis.id)) rows.push(item)
 		}
 		const refutations = rows.filter((item) => item.verdict === 'refute').length
 		const inconclusive = rows.filter((item) => item.verdict === 'inconclusive').length
@@ -1683,9 +1618,6 @@ export function derive(state) {
 	 * `plan_is_authorized`:有记号 **或** 已经真的推进过(行为即授权)。
 	 * 第二个分支在 ClearAI 那边是给存量文档用的;这里同样留着——事实与意图冲突时以事实为准。
 	 */
-	const planIsAuthorized = (plan) =>
-		plan !== null && (plan.confirmed_at !== null || plan.steps.some((step) => step.status !== 'open'))
-	const planConfirmationPending = activePlan !== null && activePlan.status === 'active' && !planIsAuthorized(activePlan)
 	let phase = null
 	let progress = null
 	if (state.goal !== null) {
@@ -1737,23 +1669,12 @@ export function derive(state) {
 	 * 这里**只放真门**:不拍板就真的推不动的那种。计划确认不再是条目(它是记号,
 	 * 不是闸门;见 HUMAN_GATE_ACTIONS 的收敛记录)——收件箱里的每一条都经得起「等人是必须的吗」。
 	 */
+	/**
+	 * 收件箱第三阶段起是空的:要人的门(L4 放行、同一步连拦、事实被推翻)都由开门的那次调用
+	 * 当场问人。读面先留着这两格(面板的「需要你」还读它们),第六阶段随面板一起删。
+	 */
 	const inbox = []
-	if (activePlan !== null && activePlan.blocked !== undefined) {
-		inbox.push({
-			kind: 'plan_blocked',
-			title: '计划被拦',
-			summary: `连续 ${activePlan.blocked.attempts} 次未过观测准入:${activePlan.blocked.reason}`,
-			plan: activePlan.id,
-			step: activePlan.blocked.step ?? null,
-			// 「解除阻塞」不是一次点击能表达的事(要改计划或改判据),所以它没有人门动作:
-			// 人说一句「按 X 改」,语义判断归模型(ClearAI 删掉 NL 白名单的同一条理由)。
-			human_action: null,
-			needs: 'word',
-			ask: '说一句怎么改(改计划 / 补判据),语义判断归模型',
-		})
-	}
-	// `has_open_gate`:有一道门开着——调度侧据此不驱动(ClearAI:两个谓词同集)。
-	const hasOpenGate = inbox.length > 0
+	const hasOpenGate = false
 
 	/**
 	 * 事实那一行的**两个读数**(都派生,不另存):
@@ -1778,25 +1699,11 @@ export function derive(state) {
 	const lexicon = normalizeLexicon(state.lexicon)
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
-	for (const fact of factRows) {
-		/**
-		 * **推翻证据只标记事实,撤不撤由人定**(数据本身也可能是错的)。
-		 * 两种结局都要能一键落地,否则这道门没有出口:维持也是一次决定,而且它必须落账,
-		 * 不然「没决定」与「决定维持」在门的状态上长得一模一样,系统会一直等。
-		 */
-		if (fact.refuted !== true || fact.review !== null) continue
-		inbox.push({
-			kind: 'fact_refutation',
-			title: '事实被推翻,等你决定',
-			summary: `「${String(fact.text ?? '').slice(0, 90)}」出现了推翻证据:撤回它,或判证据不可靠、维持原事实。`,
-			plan: null,
-			step: null,
-			/** 标的:面板把 `value` 原样写进人门动作,宿主据此核标的存在、fold 据此落账。 */
-			value: fact.id,
-			human_action: 'retract_fact',
-			needs: 'click',
-		})
-	}
+	/**
+	 * 被推翻、还没审过的事实不进收件箱:这道门由收到推翻证据的那次交付当场问人。
+	 * 没人能答时它留着 `refuted` 读数(事实那一行写着「被推翻 · 待复核」),原生 goal 停下等人。
+	 */
+
 
 	const settlement = state.evidence.map((item) => {
 		const step = stepOf(item.plan, item.step)
@@ -1823,8 +1730,6 @@ export function derive(state) {
 		stepOf,
 		inbox,
 		hasOpenGate,
-		planConfirmationPending,
-		planIsAuthorized,
 		/** 领域词汇与它的两条派生读数(见上面那段:冲突与健康度都只是读数)。 */
 		lexicon,
 		conflicts,
@@ -1857,16 +1762,12 @@ export function derive(state) {
  *   · `promote_skill` —— 外脑已删除,技能走原生技能目录。
  * 旧日志里的这些动作不再折:`parseHumanGate` 按动词表拒收,原样跳过。
  *
- * 已摘除:`set_autonomy`。「在场与否」是**运行时状态**(有没有门开着、有没有裁决在飞),
- * 不是人在面板上按的一个开关;那个档位还顺手把「计划经人确认」变成系统自己签的。
- * 折法里仍留一条**只读**容忍分支(见 `applyEvent` 的注释):旧会话日志里可能有一条这样的记录,
- * 而历史必须继续读得通——但**当前没有任何写入者**,面板上也没有这个开关。
+ * 已摘除:`set_autonomy`(运行档整个删了,旧日志里的这条记录原样跳过);
+ * `retract_fact` / `keep_fact`(这道门改由内核当场问人,见下面的 `LEGACY_GATE_ACTIONS`)。
  */
 export const HUMAN_GATE_MARK = '[clearai·人门]'
 /** 面板上允许出现的动词。表外的动词一律拒(与贡献表同一套「表外的名字不许出现」)。 */
 export const HUMAN_GATE_ACTIONS = [
-	'retract_fact',
-	'keep_fact',
 	/**
 	 * **本体四动词(人的通道)**:面板抽屉发的就是它们;模型有同名语义的工具
 	 * (`RegisterTerm` 等),但这两个面落的是**同一套判据与同一本账**——判据在宿主半的
@@ -1878,8 +1779,12 @@ export const HUMAN_GATE_ACTIONS = [
 	'revise_term',
 	'deprecate_entry',
 ]
-/** 运行档的两个取值。**只用于读取旧日志**里的 `set_autonomy` 记录;当前没有写入口。 */
-export const AUTONOMY_VALUES = ['attended', 'unattended']
+/**
+ * **只在读旧日志时认**的动词:撤回 / 维持事实。第三阶段起这道门由内核在那次交付里当场问人
+ * (答案在进程内落成 `fact/reviewed`),面板不再发这两个动作;但旧会话里人按过的决定
+ * 必须照旧折出来,否则一条已经审过的事实会在重放时又变回「待复核」。
+ */
+const LEGACY_GATE_ACTIONS = ['retract_fact', 'keep_fact']
 
 /** 从一条用户消息里认出人门标记;不是标记就返回 null。 */
 export function parseHumanGate(message) {
@@ -1895,7 +1800,7 @@ export function parseHumanGate(message) {
 	try {
 		const parsed = JSON.parse(line)
 		if (parsed === null || typeof parsed !== 'object') return null
-		if (!HUMAN_GATE_ACTIONS.includes(String(parsed.action))) return null
+		if (!HUMAN_GATE_ACTIONS.includes(String(parsed.action)) && !LEGACY_GATE_ACTIONS.includes(String(parsed.action))) return null
 		return parsed
 	} catch {
 		return null
@@ -1915,28 +1820,16 @@ export function view(state, sessionId) {
 		inbox: derived.inbox,
 		hasOpenGate: derived.hasOpenGate,
 		/**
-		 * 运行档:`value` = 当档(内核下发的那份)、`source` 说明它从哪来(部署预设 / 旧日志里的人门记录)。
-		 * 面板与卡片都读这里 —— 投影是唯一真相。
-		 * 注意**它不是可切换的开关**:`set_autonomy` 已摘除,现在只有部署预设会下发新值;
-		 * `source === 'session'` 只可能来自旧日志。
-		 */
-		/**
 		 * 被闸门裁断过几次(`block/counted`):世界树的**分段通道**画的就是它——
 		 * 这一步磨了几轮、其中几次被驳回。事实在投影里,面板只负责画。
 		 */
 		blocks: state.blocks ?? {},
 		/**
 		 * **人放行**(`human/released`)的痕迹:每一条都带它绑在哪一步上
-		 * 以及凭据(`via:'approval'`,原生审批栈的权威记录)。
+		 * 以及凭据(`via:'ask'`:内核那次交付当场问出来的;旧账里是 `approval`)。
 		 * 面板与测试都读这里 —— 推断出来的放行不该有痕迹,所以这份读数本身就是判据。
 		 */
 		releases: (state.releases ?? []).map((item) => ({ step: item.step ?? null, plan: item.plan ?? null, via: item.via ?? null, call: item.call ?? null, at: item.at ?? null })),
-		autonomy: {
-			value: state.autonomy?.effective?.value ?? null,
-			preset: state.autonomy?.effective?.preset ?? null,
-			source: state.autonomy?.effective?.source ?? null,
-			override: state.autonomy?.override ?? null,
-		},
 		/** 本体形状(面板页眉据此生成,不手抄)。 */
 		ontology: state.ontology ?? null,
 		/**
@@ -1973,21 +1866,6 @@ export function view(state, sessionId) {
 		 * 面板可以画它,内核的 pre-step 把它送进卡——判据与缺口读数一样,只有这一处。
 		 */
 		preflight: knowledgePreflight(state, derived),
-		/**
-		 * 续跑窗口的账:面板读它,于是「续跑停着——等裁决」这种**平台说不出来的话**
-		 * 有地方说。轮数与相位仍然只在原生 dock 上出现(一个事实只在**一块**面上说),
-		 * 这里交出去的只有:状态、它服务的事实对象、以及停下来的真实理由。
-		 */
-		continuation:
-			state.continuation === null || state.continuation === undefined
-				? null
-				: {
-						state: state.continuation.state,
-						goal: state.continuation.goal ?? null,
-						target: state.continuation.target ?? null,
-						why: state.continuation.why ?? null,
-						label: state.continuation.label ?? null,
-					},
 		goal:
 			state.goal === null
 				? null
@@ -2039,7 +1917,9 @@ export function view(state, sessionId) {
 				doneCriteria: step.done_criteria,
 				tests: step.tests,
 				status: step.status,
-				evidenceId: step.evidence,
+				evidenceIds: step.evidence ?? [],
+				/** 交付本身(谁判的、凭什么、出处);旧账为 null。 */
+				delivery: step.delivery ?? null,
 				advancedAt: step.advancedAt,
 				voidReason: step.voidReason,
 			})),
@@ -2053,10 +1933,6 @@ export function view(state, sessionId) {
 						/** 计划自己的一句话(模型建计划时写的)。**给人看的名字**用它,内部 id 退回 tooltip。 */
 						brief: plan.brief ?? '',
 						blocked: plan.blocked ?? null,
-						// 授权记号(ClearAI `plan.confirmed_at` / `confirmed_by`):面板据此显示计划门。
-						confirmedAt: plan.confirmed_at ?? null,
-						confirmedBy: plan.confirmed_by ?? null,
-						confirmationPending: derived.planConfirmationPending && plan === derived.activePlan,
 						steps: plan.steps.map((step) => ({
 							id: step.id,
 							ordinal: step.ordinal,
@@ -2070,7 +1946,9 @@ export function view(state, sessionId) {
 							doneCriteria: step.done_criteria,
 							tests: step.tests,
 							status: step.status,
-							evidenceId: step.evidence,
+							evidenceIds: step.evidence ?? [],
+							/** 交付本身(谁判的、凭什么、出处);旧账为 null。 */
+							delivery: step.delivery ?? null,
 							advancedAt: step.advancedAt,
 							voidReason: step.voidReason,
 						})),
@@ -2101,6 +1979,8 @@ export function view(state, sessionId) {
 			 * `anchor` **必须交出去**:面板要给每条证据指一个**出处**——
 			 * 独立证据指评估卡(文件)、自判证据指它锚定的产物。
 			 */
+			/** 针对哪条判断(旧账为 null:由步骤检验的判断找回来)。 */
+			hypothesis: item.hypothesis ?? null,
 			anchor: item.anchor ?? 'artifact',
 			/** 记账时定下的出处。旧日志没有这个字段 ⇒ 客户端走只读回退。 */
 			origins: item.origins ?? [],

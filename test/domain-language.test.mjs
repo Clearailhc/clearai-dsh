@@ -244,7 +244,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本已 +1(v12:世界线 / 侦察 / 外脑 / 章程读数交还宿主)', fold.STATE_VERSION === 12, String(fold.STATE_VERSION))
+	check('状态版本已 +1(v13:步骤完成与结果分开,证据写明针对哪条判断)', fold.STATE_VERSION === 13, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -287,7 +287,7 @@ console.log('\n【折法:事实带上假设 id 与断言,并按 id 关联】')
 	 * 一次决定(改这一行 + 改 STATE_VERSION 的说明),而不是顺手长出来的——
 	 * 「旧账本逐字段不变」这句话只有在这种对照下才可核对。
 	 */
-	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'autonomy', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'continuation', 'inFlight', 'written']
+	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'inFlight', 'written']
 	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'level', 'evidence', 'path', 'assertions', 'at']
 	check('状态键集合与清单逐字一致(加字段要改这一行)', JSON.stringify(Object.keys(fold.emptyState()).sort()) === JSON.stringify([...STATE_KEYS].sort()), Object.keys(fold.emptyState()).filter((key) => !STATE_KEYS.includes(key)).join(','))
 	check('事实键集合与清单逐字一致', JSON.stringify(Object.keys(legacy.facts[0]).sort()) === JSON.stringify([...FACT_KEYS].sort()), Object.keys(legacy.facts[0]).filter((key) => !FACT_KEYS.includes(key)).join(','))
@@ -737,7 +737,7 @@ console.log('\n【单一叙述源:knowledgeView 的形状与卡上限】')
 	check('view() 把同一份交给面板(宿主经它暴露)', fold.view(state, 's').knowledgeView.headline.now === view.headline.now)
 
 	/**
-	 * **判据逐条**(`SetGoal` 收 `criteria: string[]`,每条一句话、每条可清点)。
+	 * **判据逐条**(`Frame` 收 `criteria: string[]`,每条一句话、每条可清点)。
 	 * 挤成一行会把「第 3 条没做到」抹平,整段重发又会把卡撑爆 ⇒ 三条界都要在:
 	 * 逐条一行(带序号)、每行有上限、条数有上限且超出**如实说**(还有几条 + 全文在哪)。
 	 */

@@ -247,42 +247,20 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	}
 
 	/**
-	 * ①′ 事实复核:**先核标的**。
-	 *
-	 * 这条门和世界线那道一样,标的可能已经不在了(投影前进、事实被别的路径改了)。
-	 * 不核就回一句成功,等于又一个「点了报成功、账上一字未改」的控件——
-	 * 那正是这套界面最不能有的东西(收件箱那个 `fork_adopt` 按钮刚刚栽在这上面)。
+	 * ①′ 事实复核不再走这条路由:推翻证据落账的那次交付**当场问人**(`userQuestions`),
+	 * 面板不再发撤回 / 维持。路由收到这两个动词 ⇒ 400,不落任何消息(旧日志照样折得出来,见内核测试)。
 	 */
 	{
-		/**
-		 * 这一组要一份**有工作目录**的宿主:`stateOf` 先问 `sessions.get`,拿不到会话就退回空状态
-		 * ——没有 cwd 的桩读不到任何投影,撤回自然找不到标的。
-		 */
 		const factHost = makeHost({ cwd: '/tmp/clearai-facts-test' })
 		apply(factHost.ctx)
-		const postFact = async (payload) => {
-			const result = await callRoute(factHost, '/api/clearai/gate', { method: 'POST', body: payload })
-			await new Promise((resolve) => setTimeout(resolve, 0))
-			return result
-		}
 		factHost.projectionState = { ...emptyState(), facts: [{ id: 'fct-2', text: 'X 比 Y 快', scope: null, level: 'L3', evidence: [], path: null, at: 1, review: null }] }
-		const unknownFact = await postFact({ sessionId: 'session-1', action: 'retract_fact', value: 'fct-nope' })
-		check('撤回一条不存在的事实 → 409 fact_not_found(不许回一句成功)', unknownFact.status === 409 && unknownFact.payload?.error === 'fact_not_found', `${unknownFact.status}/${unknownFact.payload?.error}`)
 		const before = factHost.sent.length
-		const retracted = await postFact({ sessionId: 'session-1', action: 'retract_fact', value: 'fct-2', note: '外部数据更正' })
-		check('撤回一条在的事实 → 200,并落一条**署名是人**的人门消息', retracted.status === 200 && retracted.payload?.action === 'retract_fact' && factHost.sent.length === before + 1 && factHost.sent.at(-1).message?.source?.kind === 'user', `${retracted.status}/${factHost.sent.length}`)
-		check('消息里带事实 id 与缘由(落账要靠它)', /fct-2/.test(factHost.sent.at(-1).message.content[0].text) && /外部数据更正/.test(factHost.sent.at(-1).message.content[0].text), factHost.sent.at(-1).message.content[0].text.slice(0, 140))
-		const kept = await postFact({ sessionId: 'session-1', action: 'keep_fact', value: 'fct-2' })
-		check('维持原事实也是一条人门动作(它必须能一键落地,否则那道门没有出口)', kept.status === 200 && kept.payload?.action === 'keep_fact', `${kept.status}/${kept.payload?.action}`)
-		factHost.projectionState = { ...factHost.projectionState, facts: [{ ...factHost.projectionState.facts[0], review: { decision: 'kept', reason: null, at: 2, by: 'user' } }] }
-		const again = await postFact({ sessionId: 'session-1', action: 'keep_fact', value: 'fct-2' })
-		check('已经审过的事实再审 → 409 fact_already_reviewed(第一次决定为准)', again.status === 409 && again.payload?.error === 'fact_already_reviewed', `${again.status}/${again.payload?.error}`)
-
-		/**
-		 * 认可一次临时采纳:同一套纪律——先核那道门还开着没有。
-		 * 标的错、不是临时采纳、已经认可过,一律 409,而不是收下一条什么都不改的动作。
-		 */
-
+		for (const action of ['retract_fact', 'keep_fact']) {
+			const result = await callRoute(factHost, '/api/clearai/gate', { method: 'POST', body: { sessionId: 'session-1', action, value: 'fct-2' } })
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			check(`${action} 不再是路由动词 → 400 unknown_gate_action`, result.status === 400 && result.payload?.error === 'unknown_gate_action', `${result.status}/${result.payload?.error}`)
+		}
+		check('被拒的动词不落任何消息', factHost.sent.length === before, `${factHost.sent.length - before} 条`)
 	}
 
 	// ── 本体四动词(人的通道):同一套判据,路由侧核完才让进日志 ──────────────
@@ -382,8 +360,8 @@ console.log('\n【人门通道:五个动词、只给人、留署名】')
 	// ③ 跑着的会话:插到最近的步边界,不打断它
 	const running = makeHost({ status: 'running', cwd: tempDir('clearai-host-running-') })
 	apply(running.ctx)
-	running.projectionState = { ...emptyState(), facts: [{ id: 'fct-9', text: 'X 比 Y 快', scope: null, level: 'L3', evidence: [], path: null, at: 1, review: null }] }
-	await callRoute(running, '/api/clearai/gate', { method: 'POST', body: { sessionId: 'session-1', action: 'keep_fact', value: 'fct-9' } })
+	running.projectionState = emptyState()
+	await callRoute(running, '/api/clearai/gate', { method: 'POST', body: { sessionId: 'session-1', action: 'register_term', entry: { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' } } })
 	await new Promise((resolve) => setTimeout(resolve, 0))
 	check('running 的会话走 steer(不打断当前回合)', running.sent.length === 1 && running.sent[0].via === 'steer')
 
@@ -447,19 +425,13 @@ console.log('\n【折进投影:砍掉的动词即使格式合法也不生效】'
 	state = applyEvent(state, { type: 'user/message', time: Date.now(), data: { id: 'm2', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"abandon_fork","fork":"f-1","note":"两条都不划算"}` }], source: { kind: 'user' } } })
 	check('旧日志里的分叉裁决动作什么也不改', JSON.stringify(state) === beforeFork && !('forks' in state))
 
-	// 切档:人的事实就地生效,而且是**人**署名的(插件消息里的同名标记不算)。
 	/**
-	 * §34:档位不再由门消息折进来(那个动词已摘掉)。旧日志里若真有 `set_autonomy` 的标记,
-	 * 折叠层仍然认得出它(兼容),但**新会话不会再产生**这种账 —— 这里钉住后者。
+	 * 档位删了(第三阶段):旧日志里若有 `set_autonomy` 的标记,折叠层不再认它,
+	 * 状态里也没有那一格——什么都不改。
 	 */
+	const beforeTier = JSON.stringify(state)
 	state = applyEvent(state, { type: 'user/message', time: Date.now(), data: { id: 'm3', role: 'user', content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"set_autonomy","value":"unattended"}` }], source: { kind: 'user' } } })
-	/**
-	 * 有内容的两条:
-	 *   · **兼容旧日志**:折叠层仍然认得旧标记(不把它折成脏值);
-	 *   · **不认表外值**:`god-mode` 这种永远不会变成"当档"(投影与卡片都不认它)。
-	 */
-	check('兼容:旧日志里的档位标记折得出来(不折成脏值)', ['attended', 'unattended', null, undefined].includes(view(state).autonomy.override?.value ?? null), JSON.stringify(view(state).autonomy.override ?? null))
-	check('表外的档位值永远不生效', view(state).autonomy.value !== 'god-mode' && view(state).autonomy.override?.value !== 'god-mode', JSON.stringify(view(state).autonomy))
+	check('旧日志里的档位标记什么也不改(档位已删)', JSON.stringify(state) === beforeTier && !('autonomy' in state) && !('autonomy' in view(state)))
 }
 
 

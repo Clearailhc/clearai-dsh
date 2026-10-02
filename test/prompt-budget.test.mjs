@@ -173,8 +173,9 @@ check('VERDICT_SCHEMA 取得出来(不是靠猜)', verdict !== null && typeof ve
 
 	// 这套检查是活的:合规样本必须过。
 	const goodSample = {
-		verdict: 'refute',
+		holds: 'no',
 		basis: '判据③不满足:31 条反例里 v17 无具名文献。',
+		results: [{ hypothesis: 'h-abc123', verdict: 'inconclusive', basis: '交付不成立,读不出结果' }],
 		shortfalls: [{ criterion: '③ 语料库每条带可追溯出处', what: 'boundary-negatives-verified.json:24 v17 只写「B站分区形成史」', missing: '一条可点开的一手来源' }],
 		refs: [{ path: 'lab/data/boundary-negatives-verified.json', line: 24 }],
 	}
@@ -199,7 +200,7 @@ check(
 // ═══ ③ 反例(行为面):走真工具面,归一化必须截断 / 拒 ═══════════════════════
 //
 // 只断言源码里有 `slice(0, 1200)` 是**文本**断言;契约要的是「归一化真的会截断」。
-// 所以这里把内核装进一个最小宿主,让它经真正的 `CloseGoal` 路径拿到一份越界裁决,
+// 所以这里把内核装进一个最小宿主,让它经真正的 `Conclude` 路径拿到一份越界裁决,
 // 再看落账的那条 `audit/settled` 事实长什么样。
 
 console.log('\n【③ 反例:越界裁决经真工具面落账时必须被截断/归一】')
@@ -264,7 +265,7 @@ console.log('\n【③ 反例:越界裁决经真工具面落账时必须被截断
 	}
 	apply(ctx, { minHypotheses: 0, requireTypedPromotion: false })
 
-	// 状态:一个开着的目标。CloseGoal 的「先收计划」那道门在没有计划时直接放行。
+	// 状态:一个开着的目标。Conclude 的「先收计划」那道门在没有计划时直接放行。
 	states.set(
 		SESSION,
 		applyMutations(emptyState(), [
@@ -280,8 +281,8 @@ console.log('\n【③ 反例:越界裁决经真工具面落账时必须被截断
 		]),
 	)
 
-	const closeGoal = registered.get('CloseGoal')
-	check('CloseGoal 已注册到工具面(反例走的是真工具)', typeof closeGoal?.execute === 'function')
+	const closeGoal = registered.get('Conclude')
+	check('Conclude 已注册到工具面(反例走的是真工具)', typeof closeGoal?.execute === 'function')
 	check('schema 面:越界样本确实越界(否则这条反例是空跑)', LEGACY_VERDICT.basis.length > (verdict?.properties?.basis?.maxLength ?? 1200) && typeof LEGACY_VERDICT.shortfalls[0] === 'string', `basis=${LEGACY_VERDICT.basis.length}`)
 
 	let result = null

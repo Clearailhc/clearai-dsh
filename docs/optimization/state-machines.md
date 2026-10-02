@@ -35,21 +35,23 @@ stateDiagram-v2
 
 Notes:
 
-- `achieved` requires `ClosePlan` first: the kernel refuses to close a goal while a plan is open.
+- The goal is framed with `Frame` and closed with `Conclude`. `Frame` also creates (or edits) a goal on the host's native goal service, which drives continuation.
+- `achieved` requires `ClosePlan` first: the kernel refuses to close a goal while a plan is open. `achieved` ⇒ the native goal
+  completes and the deliverables are declared; `abandoned` ⇒ the native goal is blocked (`clearai-goal-abandoned`). A native
+  `update_goal` that tries to complete the goal directly is denied by a guard whose reason points to `Conclude`.
 - `abandoned` is an honest giving-up, not failure cleanup — the record stays.
 - Revision only bumps `revision` and appends to `reasons[]`; nothing is deleted.
 - Changing what counts as done is its own event: `criteria/revised` folds into `goal.criteriaHistory[]` (carrying the
   independent `audit` key). It does **not** rewrite the `done_criteria` text (that travels the commit/revision path),
-  so a criterion change stays traceable; this is the key `SetGoal`'s `criteria_verdict` asks for.
+  so a criterion change stays traceable; this is the key `Frame`'s `criteria_verdict` asks for.
 
 ## 2. Plan · implemented
 
-Stored: `state.plans[].{status, blocked, confirmed_at, confirmed_by}`.
+Stored: `state.plans[].{status, blocked}`.
 
 ```mermaid
 stateDiagram-v2
     [*] --> active: plan/created
-    active --> active: plan/confirmed (first authorization wins, idempotent)
     active --> active: plan/amended (add a step; progress unchanged)
     active --> active: plan/refined (change criteria; progress unchanged)
     active --> blocked_by_step: plan/blocked + block/counted
@@ -59,18 +61,12 @@ stateDiagram-v2
     closed --> [*]
 ```
 
-The authorization stamp has two sources and one back-fill:
+Plans carry no authorization stamp (removed in phase 3): it was never a gate and was back-filled on the first delivery.
+To show a person the plan before acting, use the native `/plan`.
 
-| Stamp | Source | Code |
-|---|---|---|
-| `confirmed_by='user'` | native review card returns approved | `kernel.js:2780-2782` |
-| `confirmed_by='progress'` | back-filled when a step is delivered | `kernel.js:3034-3038` |
-| `confirmed_by='autonomy'` | **removed** (the old unattended auto-confirm) | — |
-
-**Authorization is not a hard block**: an unauthorized plan only makes auto continuation `hold`
-(`kernel.js:1898`); `AdvancePlan` still runs and back-fills the stamp under "behaviour is
-authorization". The diagram therefore has no "unauthorized → delivery refused" edge — that edge does
-not exist.
+The call that sets `blocked` **asks the person on the spot** (`userQuestions`): "revise against the gaps" ⇒ `block/cleared`;
+"void this step" ⇒ `plan/voided` + `block/cleared`; nobody can answer ⇒ the plan stays `blocked` and the native goal is
+blocked (`clearai-needs-human`).
 
 ## 3. Step · implemented
 
@@ -79,7 +75,7 @@ Stored: `state.plans[].steps[].status`; rank `RANK = { open: 0, blocked: 0, adva
 ```mermaid
 stateDiagram-v2
     [*] --> open: plan/created (appendSteps)
-    open --> advanced: step/advanced (the only completion verb; admission must pass first)
+    open --> advanced: step/advanced (the delivery holds; support / refute / inconclusive all complete it)
     open --> void: plan/voided (voided with a reason)
     open --> blocked: plan/blocked (consecutive-block threshold reached)
     blocked --> open: block/cleared
@@ -92,6 +88,10 @@ Rank semantics: `advanced` and `void` share rank 1 and never overwrite each othe
 one, so **a downgrade is inexpressible on the write side**.
 
 Ordering invariant: delivery may only land on the first unsettled step, otherwise `out_of_order`.
+
+**Completion is separate from result**: `step/advanced` only says the delivery holds; each result on a hypothesis lands as its
+own `evidence/recorded` (carrying `hypothesis`). One step may test several hypotheses (`tests.hypotheses`), one result each.
+Only a delivery that does not hold (`holds` no / unclear) fails to advance, and counts one block.
 
 ## 4. Hypothesis · implemented
 
@@ -133,21 +133,20 @@ pass the gate", recorded in `block/counted`.
 
 ## 6. Evaluation (audit) · implemented
 
-Stored: `state.audits[].verdict` (`null` means in flight).
+Stored: `state.audits[].{verdict, holds, results}` (`verdict === null` means in flight).
 
 ```mermaid
 stateDiagram-v2
     [*] --> dispatched: audit/dispatched (verdict=null)
-    dispatched --> settled: audit/settled (support / refute / inconclusive)
+    dispatched --> settled: audit/settled (holds = yes / no / unclear, plus one result per hypothesis)
     settled --> [*]
 ```
 
-`derive().pendingAudit` is true when any entry has `verdict === null` → phase `auditing`, continuation
-`hold`. Lost audits are settled by `sweepLostAudits`, which explicitly lets that beat through
-Homomorphic reuse lands an `audit/reused` entry: its `verdict` is `reused`, which is **not** part of the
-`support | refute | inconclusive` decision and does not take the `null` "in flight" sentinel — so a step that reused
-an older verdict never leaves the system waiting.
-(`kernel.js:1904`).
+The evaluator gives two judgments: does the delivery hold (`holds`), and the result on each tested hypothesis (`results[]`:
+support / refute / inconclusive). `derive().pendingAudit` is true when any entry has `verdict === null` → phase `auditing`,
+and the card says it is waiting for a verdict. Homomorphic reuse lands an `audit/reused` entry: its `verdict` is `reused`,
+which is **not** part of the `holds` decision and does not take the `null` "in flight" sentinel — so a step that reused an
+older verdict never leaves the system waiting. Lost audits are settled by `sweepLostAudits`.
 
 ## 7. Evidence · implemented
 
@@ -159,7 +158,7 @@ stateDiagram-v2
     recorded --> recorded: supersedes (new evidence marks it; the old row stays)
 ```
 
-Evidence carries `origins[]` (four kinds of provenance) and `basis_reviewable`.
+Evidence carries `hypothesis` (which hypothesis it bears on), `verdict` (support / refute / inconclusive), `origins[]` (four kinds of provenance) and `basis_reviewable`.
 
 ## 8. Fact · implemented
 
@@ -172,49 +171,29 @@ stateDiagram-v2
 ```
 
 `retracted` **is deliberately absent from this diagram because it is not a stored state**: refuting
-evidence only *marks* the fact (`refuted`, derived), and a person decides to **retract** or to **keep** it —
-both outcomes land as one `fact/reviewed` (a retraction is terminal; the record is kept), and the projection
-reads it back out of `fact.review` as a derived state. The producers are `retract_fact` / `keep_fact` in
-`HUMAN_GATE_ACTIONS` and `markFactReviewed` in the kernel; the truth-table row is `fact-retraction` (implemented).
+evidence only *marks* the fact (`refuted`, derived), and the delivery that records it **asks the person on the spot** to
+**retract** or to **keep** it — both outcomes land as one `fact/reviewed` (a retraction is terminal; the record is kept), and
+the projection reads it back out of `fact.review` as a derived state. The producers are `reviewRefutedFacts` /
+`markFactReviewed` in the kernel; if nobody can answer, the fact stays marked for review and the native goal is blocked.
+`retract_fact` / `keep_fact` gate messages in old logs still fold. The truth-table row is `fact-retraction` (implemented).
 
 ## 9. Worldlines (fork / branch) · removed
 
 Worldlines were removed in phase 2 of the "less is more" rebuild: parallel exploration goes to native subagents, and competing routes are competing hypotheses, each tested by a step. `fork/*`, `worldline/*` and `branch/*` events in old logs are unknown and skipped as-is.
 
 
-## 10. Auto continuation · implemented
+## 10. Auto continuation · handed to the native goal
 
-This is a **harness scheduling state**, not an epistemic one. Stored:
-`state.continuation.state`.
+ClearAI's own continuation window (`continuation/set`, `turnDemand`, the round budget) was removed in phase 3. Continuation
+belongs to the host's native goal; ClearAI touches it in three places only:
 
-```mermaid
-stateDiagram-v2
-    [*] --> absent
-    absent --> armed: continuation/set state=armed
-    armed --> armed: goal still open and every gate closed (keep driving)
-    armed --> paused: goals.pause (blocked / round-limit / human)
-    paused --> armed: goals.resume
-    armed --> stopped: achieved / abandoned / blocked
-    armed --> withdrawn: the platform window is gone and it was not us
-    stopped --> [*]
-    withdrawn --> [*]
-```
+| When | What happens to the native goal |
+|---|---|
+| `Frame` | create one (clearing a completed one first), or edit its objective |
+| `Conclude` achieved / abandoned | complete / block (`clearai-goal-abandoned`) |
+| a person is needed and nobody can answer (stuck plan, L4 release, refuted fact) | block (`clearai-needs-human`) |
 
-`turnDemand`'s decision order (`kernel.js:1892-1917`, **top down, first hit wins**):
-
-```text
-1. plan blocked                     -> stop
-2. plan active but unauthorized      -> hold
-3. an audit in flight (verdict=null) -> hold
-4. inbox non-empty (a gate is open)  -> hold
-5. any open step                     -> drive
-6. goal still open                   -> drive
-7. otherwise                         -> hold
-```
-
-The key fact: **autonomy does not appear in this chain.** The two tiers now differ only in the
-clarification section and the deployment initial value. The default budget
-`DEFAULT_MAX_AUTO_TURNS = 128` takes effect at the arming site (`kernel.js:2001`).
+`continuation/set` events in old logs are unknown and skipped as-is.
 
 ---
 
@@ -310,7 +289,6 @@ ledger facts), so it appears in no state machine:
 | `goal/closed` | §1 Goal | yes |
 | `hypothesis/superseded` | §4 Hypothesis | yes |
 | `plan/created` | §2 Plan | yes |
-| `plan/confirmed` | §2 Plan | yes |
 | `plan/amended` | §2 Plan | yes |
 | `plan/refined` | §2 Plan | yes |
 | `plan/voided` | §3 Step | yes |
@@ -325,8 +303,7 @@ ledger facts), so it appears in no state machine:
 | `evidence/recorded` | §7 Evidence | yes |
 | `fact/promoted` | §8 Fact | yes |
 | `human/released` | §3 Step (L4 release) | yes |
-| `fact/reviewed` | §4 Hypothesis (human review: retract / keep) | yes |
-| `continuation/set` | §10 Auto continuation | yes |
+| `fact/reviewed` | §8 Fact (human review: retract / keep) | yes |
 | `ontology/term_added` | §12 Domain lexicon | yes |
 | `ontology/predicate_added` | §12 Domain lexicon | yes |
 | `ontology/term_revised` | §12 Domain lexicon | yes |

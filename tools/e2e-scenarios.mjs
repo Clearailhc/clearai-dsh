@@ -27,15 +27,15 @@ export const SCENARIOS = {
 		task: [
 			'这个工作区是空的。目标:比较两种 JSON 写法哪种生成的文件更小,把结论写成 lab/winner.txt。',
 			`要求(按顺序做;${DISCIPLINE}):`,
-			'1. SetGoal:判据写清「lab/winner.txt 存在,第一行是更小那种写法的名字,第二行是两份文件的字节数」;登记**两条竞争假设**:',
+			'1. Frame:判据写清「lab/winner.txt 存在,第一行是更小那种写法的名字,第二行是两份文件的字节数」;登记**两条竞争假设**:',
 			'   h-compact:「紧凑 JSON(无空格)比缩进 JSON 小」;h-pretty:「缩进 JSON 比紧凑 JSON 小」。每条写清什么结果会推翻它。',
 			'2. CreatePlan 三步:',
 			'   ① 路线 compact:用 python3 生成 lab/compact/data.json(紧凑写法),并量出字节数;',
 			'   ② 路线 pretty:用 python3 生成 lab/pretty/data.json(缩进写法),并量出字节数;',
 			'   ③ 对照两份读数,写 lab/winner.txt。',
 			'   ① 与 ② 互不依赖,**各自声明不同的产物路径**;你可以用原生子任务把它们并行做完。',
-			'3. 每一步交付时给观测(哪份文件、多少字节),并给两条假设各一个 verdict:成立的给 support,不成立的给 refute。',
-			'4. 做完三步:ClosePlan 收束计划,然后 CloseGoal 结案。',
+			'3. 每一步交付时写清依据(哪份文件、多少字节);检验假设的那一步,给它检验的每条假设一个结果(results):成立的给 support,不成立的给 refute。',
+			'4. 做完三步:ClosePlan 收束计划,然后 Conclude 结案。',
 		].join('\n'),
 		asserts: ({ mutations, exists, readArtifact, evidenceVerdicts }) => {
 			const created = mutations.filter((m) => m.t === 'plan/created')
@@ -63,13 +63,13 @@ export const SCENARIOS = {
 		task: [
 			'这个工作区是空的。目标:用一次**可复查的观测**,判定这台机器的 python3 能不能正常运行一段最小脚本。',
 			`要求(按顺序做;${DISCIPLINE}):`,
-			'1. SetGoal 登记**两条互斥**假设,每条写清什么结果会推翻它:',
+			'1. Frame 登记**两条互斥**假设,每条写清什么结果会推翻它:',
 			'   h-ok:「python3 能正常运行 `python3 -c "print(1+1)"` 并输出 2」;',
 			'   h-no:「python3 不能正常运行上面那段脚本(不存在、或报错)」。',
 			'   判据:lab/python3_verdict.md 存在,且里面写明了被推翻的是哪一条、依据是哪次观测。',
 			'2. CreatePlan 两步计划:第一步做那次观测并把结论写进 lab/python3_verdict.md,第二步核对结论与观测一致。',
-			'3. 真去跑那条命令(bash),把观测如实登记;交付时给每条假设一个 verdict:成立的给 support,**不成立的那条必须给 refute**。',
-			'4. 做完两步:ClosePlan 收束计划,然后 CloseGoal 结案(判据达成了就结案,不要停在「计划已收尾」)。',
+			'3. 真去跑那条命令(bash),把观测如实登记;交付时给这一步检验的每条假设一个结果(results):成立的给 support,**不成立的那条必须给 refute**。',
+			'4. 做完两步:ClosePlan 收束计划,然后 Conclude 结案(判据达成了就结案,不要停在「计划已收尾」)。',
 		].join('\n'),
 		asserts: ({ evidenceVerdicts, promotedIds, hypothesisStatus, exists }) => [
 			{ label: '至少记了一条「推翻」证据(verdict=refute;这条考的是模型的判断,不是机制)', ok: evidenceVerdicts.includes('refute'), detail: evidenceVerdicts.join(',') },
@@ -96,7 +96,7 @@ export const SCENARIOS = {
 		task: [
 			'这个工作区是空的。目标:走完一条四步的数据小链,最后交出 lab/report.md。',
 			`要求(按顺序做;${DISCIPLINE}):`,
-			'1. SetGoal:判据 = 「lab/report.md 存在,且里面给出的均值与 lab/means.json 完全一致」;登记至少两条候选假设。',
+			'1. Frame:判据 = 「lab/report.md 存在,且里面给出的均值与 lab/means.json 完全一致」;登记至少两条候选假设。',
 			'2. CreatePlan 四步:',
 			'   ① 造 lab/raw.csv:3 列 × 20 行数值(自己生成,写清怎么生成的);',
 			'   ② 写 lab/analyze.py,读 raw.csv 算出每列均值,输出 lab/means.json;',
@@ -121,9 +121,9 @@ export const SCENARIOS = {
 			'这个工作区是空的。这一场要**连着做两个目标**。',
 			`要求(按顺序做;${DISCIPLINE}):`,
 			'1. 目标一:在 lab/base.txt 里写下三行文本(自己定内容,但写清规则);判据 = 「lab/base.txt 恰好三行、非空」。登记至少两条候选假设。',
-			'2. 为它建一份两步计划(写文件 → 核对行数),做完 ClosePlan,然后 CloseGoal 结案。',
+			'2. 为它建一份两步计划(写文件 → 核对行数),做完 ClosePlan,然后 Conclude 结案。',
 			'3. 目标二:**基于目标一留下的文件**再做一个可核对的交付——把 lab/base.txt 每行加上行号,写成 lab/numbered.txt;判据 = 「lab/numbered.txt 行数与 lab/base.txt 相同,且每行以行号开头」。',
-			'   同样:SetGoal(至少两条假设)→ CreatePlan(两步)→ 做完 → ClosePlan → CloseGoal。',
+			'   同样:Frame(至少两条假设)→ CreatePlan(两步)→ 做完 → ClosePlan → Conclude。',
 			'4. 两个目标都要真的结案,不要只结一个。',
 		].join('\n'),
 		asserts: ({ countOf, exists, kinds }) => [
@@ -144,12 +144,12 @@ export const SCENARIOS = {
 		task: [
 			'这个工作区是空的。目标:把「一家三口共用的家用网络」整理成本体(概念与关系)与实体图(具体设备),并给出带出处的断言。',
 			`要求(按顺序做;${DISCIPLINE}):`,
-			'1. SetGoal:`headline` 一句话(≤120 字)说清要建什么;判据写成可清点的形态:`lab/ontology.md` 与 `lab/entities.md` 都存在,且 `entities.md` 里每个实例都带出处;登记至少两条候选假设。',
+			'1. Frame:`headline` 一句话(≤120 字)说清要建什么;判据写成可清点的形态:`lab/ontology.md` 与 `lab/entities.md` 都存在,且 `entities.md` 里每个实例都带出处;登记至少两条候选假设。',
 			'2. `RegisterTerm` 至少 4 个概念(例如 设备 / 接口 / 网络 / 厂商),`RegisterPredicate` 至少 2 条关系(例如 属于 / 支持),每条都写依据。',
 			'3. `RegisterInstance` 至少 3 个**具体实例**(每台设备一条):`type` 用你刚登记的概念,`basis` 写清哪份材料,`provenance` 用 `{kind:"named", ref:"…"}` 指向一份具名资料(可以是你自己编的登记表,但要在 lab/ 下落成文件)。',
 			'4. 用 `Assert` 给这 3 个实例各写一句**带出处**的话(谓词用第 2 步登记的),让实体图上真的长出边。',
 			'5. 写两份产物:`lab/ontology.md`(概念与谓词清单,逐条写依据)与 `lab/entities.md`(每个实例一行:实例 · 断言 · 出处)。',
-			'6. 用 `CreatePlan` 把上面这些拆成可交付的步骤并逐步 `AdvancePlan` 交付(产物声明这两份文件),然后 `ClosePlan`;最后 `CloseGoal` 结案。',
+			'6. 用 `CreatePlan` 把上面这些拆成可交付的步骤并逐步 `AdvancePlan` 交付(产物声明这两份文件),然后 `ClosePlan`;最后 `Conclude` 结案。',
 			'   如果结案被门挡下(卡上会点名是哪一道),按它给的下一步补上再结;确实做不到就如实说明。',
 		].join('\n'),
 		asserts: ({ kinds, countOf, exists, readArtifact, mutations, projected, modelVisibleText }) => {
@@ -238,7 +238,7 @@ export const INVARIANTS = [
 	},
 	{
 		/**
-		 * **升格与证据等级自洽**。升格只在 `CloseGoal` 发生,条件是「支持等级 ≥ promote_at_level
+		 * **升格与证据等级自洽**。升格只在 `Conclude` 发生,条件是「支持等级 ≥ promote_at_level
 		 * 且没有被推翻」。所以「没升格」有两种成因:门槛没到(对)与门槛到了却没升(错)——
 		 * 这一条把两者分开:没到级就必须一条都不升,到了级就必须至少升一条。
 		 *
@@ -259,7 +259,7 @@ export const INVARIANTS = [
 			const bestLabel = Object.keys(RANK).find((key) => RANK[key] === best) ?? '无'
 			const detail = `promote_at_level=${threshold} 最高支持证据=${bestLabel} 升格=${promoted}${reached ? '(到级了)' : '(没到级)'}${closed ? '' : ' · 目标未结案'}`
 			/**
-			 * **升格发生在 `CloseGoal` 那一刻**。所以目标还开着时,「到级了却没升格」是**正常的**
+			 * **升格发生在 `Conclude` 那一刻**。所以目标还开着时,「到级了却没升格」是**正常的**
 			 * (还没到升格那一步),不能判违规——只判反方向:没到级就绝不该有升格。
 			 */
 			if (!closed) return { ok: promoted === 0, detail }

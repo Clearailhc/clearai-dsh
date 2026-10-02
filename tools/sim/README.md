@@ -22,7 +22,7 @@ node tools/sim/judge.mjs <运行目录> <剧本名>
 node tools/sim/call.mjs <运行目录> --stop
 ```
 
-剧本在 `tools/e2e-scenarios.mjs`。计划审阅缺省批准;要换答案,给 server 传 `--answers '{"plan-review":"revise:意见"}'`。
+剧本在 `tools/e2e-scenarios.mjs`。系统当场问人时缺省选第一个选项;要换答案,给 server 传 `--answers '{"blocked":"none","release":"先不放行"}'`(键是问题 id 或它的前缀 `release` / `blocked` / `fact`;`none` 模拟没人能答)。
 评估等待缺省 15 分钟(`--audit-timeout` 可改),因为评估者要等编排者派人去判。
 
 ## 测得到什么,测不到什么
@@ -31,4 +31,4 @@ node tools/sim/call.mjs <运行目录> --stop
 - **测不到**:宿主接线(装包、注册、路由)。这部分由 CI 的干净安装与生命周期验收覆盖。原生的 `subagent`、`ask_user_question`、`present` 在这里不存在。
 - **一处偏差**:扮演模型的子代理带着它自己的系统提示词,ClearAI 的提示词是作为任务书交给它的。
 
-基线与历次结果放在 `docs/optimization/sim-runs/`。
+基线与历次结果放在 `docs/optimization/sim-runs/`(第二阶段基线、第三阶段重跑)。

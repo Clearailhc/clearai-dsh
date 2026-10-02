@@ -43,9 +43,10 @@ console.log('\n【① 挂载表:工作方式回来了,第二本账没有】')
 	 * 注释里恰好写着旧包名,断言于是被自己的注释骗过(它显示 ✓,其实那行早就没了)。
 	 */
 	check('workflow 引擎与 delegation realm 在(workflows 服务要有自己的 realm)', /^ {4}- id: workflow-ptc$/m.test(PRESET) && /workflowEngine: true/.test(PRESET))
-	check('tool-goal 仍未挂载(目标只有一本账)', !/@deepseek-ai\/dsh-tool-goal/.test(PRESET))
-	check('command-goal 仍未挂载(原生 /goal 与 ClearAI 目标撞名)', !/dsh-command-goal/.test(PRESET))
-	check('plan-mode 仍未挂载(两套计划纪律不并存)', !/dsh-plan-mode/.test(PRESET))
+	// 第三阶段起挂上:目标层挂在原生 goal 上(Frame 建、Conclude 完成),动手前看计划交给原生 /plan。
+	check('tool-goal 挂上了(原生 goal 是续跑与展示,完成只经 Conclude)', /name: '@deepseek-ai\/dsh-tool-goal'/.test(PRESET))
+	check('command-goal 挂上了(人用原生 /goal 看目标)', /name: '@deepseek-ai\/dsh-command-goal'/.test(PRESET))
+	check('plan-mode 挂上了(动手前给人看计划交给原生 /plan)', /name: '@deepseek-ai\/dsh-plan-mode'/.test(PRESET))
 	check('自带的 / 命令插件已不挂(状态看界面,/goal /plan 由原生接管)', !/plugins\/commands\.js/.test(PRESET) && !/clearai-commands/.test(PRESET))
 	/**
 	 * 知识门是本部署的**产品立场**(内核缺省 false ⇒ 断言始终是加法)。

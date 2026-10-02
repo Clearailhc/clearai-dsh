@@ -9,10 +9,10 @@
 
 | 角色 | 是什么 | 不是什么 |
 |---|---|---|
-| **人** | 用户。只有他能做三件事：在原生审阅卡上批准计划、在原生审批栈里放行 L4、在面板上按人门动词 | 不是系统组件 |
+| **人** | 用户。只有人能做两件事：回答系统当场问的问题（L4 放行、计划卡住、事实被推翻）、在面板上提交本体动词 | 不是系统组件 |
 | **模型** | LLM 推理体。它**发出意图**（工具调用、答复），不执行任何东西 | 不是「Agent 系统」；它不碰账本、不碰文件，一切经宿主转手 |
-| **DSH 宿主** | 引擎：回合循环、工具调度、沙箱与审批、原生审阅卡、子代理、goals 服务（续跑驱动）、会话日志的写入 | 不做认识论判断；它不知道「什么可以被相信」 |
-| **ClearAI 内核** | preset 插件：20 件意图工具 + guard + 运行态卡。**权威变更（mutations）的唯一生产者** | 不执行回合、不渲染界面、不持久化 |
+| **DSH 宿主** | 引擎：回合循环、工具调度、沙箱与审批、子代理、goals 服务（原生目标与续跑）、userQuestions（原生提问卡）、会话日志的写入 | 不做认识论判断；它不知道「什么可以被相信」 |
+| **ClearAI 内核** | preset 插件：19 件意图工具 + guard + 运行态卡。**权威变更（mutations）的唯一生产者** | 不执行回合、不渲染界面、不持久化 |
 | **事实账本** | 只追加的事实记录。**内容是我们的**：clearai 变更事件 + `clear/` 产物与评估卡；**载体是宿主的**：会话日志 + 文件系统。它不存结论——「现在可以相信什么」由投影从它折叠出来 | 不是第二本状态账；状态不从它「读出来」，而是「折出来」 |
 | **投影** | 宿主半 `ui/lib`：fold（账本 → 状态）+ derive（状态 → 视图）+ 面板。**只读本账本，从不写** | 不是缓存，不是副本——同一份事实的一种看法 |
 | **独立评估者** | 内核经宿主派出的 fresh-context 只读子代理（L3+），带 `outputSchema` 回结构化裁决 | 不是执行者的分身；做判分离的那一半 |
@@ -31,7 +31,7 @@ sequenceDiagram
     participant L as 事实账本
     participant P as 投影
 
-    M->>D: 工具调用（意图：SetGoal / AdvancePlan / ...）
+    M->>D: 工具调用（意图：Frame / AdvancePlan / ...）
     D->>K: 调度到插件 execute
     K->>K: 校验 + 算出权威变更（mutations）
     K-->>D: 结果 + meta.mutations
@@ -88,60 +88,56 @@ sequenceDiagram
     participant E as 独立评估者
     participant L as 事实账本
 
-    M->>D: SetGoal(claim, done_criteria, hypotheses)
+    M->>D: Frame(claim, done_criteria, hypotheses)
     D->>K: execute
     K->>L: goal/set（派生阶段 planning）
-    K->>D: precommitRecon：派一次只读侦察（可选，input/ 有材料时）
-    D->>E: 启动子代理
-    E-->>K: scout/settled
+    K->>D: 原生 goal：建一条（或改目标文字），续跑由它驱动
 
-    M->>D: CreatePlan(brief, steps[].done_criteria)
+    M->>D: CreatePlan(brief, steps[].done_criteria, steps[].tests.hypotheses)
     D->>K: execute
     K->>K: validateSteps（判据必填、不自指、≤25 步）
-    K->>D: requestPlanReview
-    D->>H: 原生审阅卡（计划正文）
-    alt approved
-        H-->>K: approved
-        K->>L: plan/created（confirmed_by='user'）
-    else declined / cancelled / unavailable
-        H-->>K: 其余三种结局
-        K->>L: plan/created（confirmed_at=null）
-        Note over K,L: 记号不落；自动续跑 hold；<br/>但交付一步会以 by='progress' 补写
-    end
+    K->>L: plan/created
+    Note over M,H: 想让人在动手前看计划,用原生 /plan;ClearAI 不另起审阅卡
 
-    M->>D: AdvancePlan(step_id, observations)
+    M->>D: AdvancePlan(step_id, basis, results[])
     D->>K: execute
+    opt L4
+        K->>D: userQuestions：当场问人放不放行
+        D->>H: 原生提问卡
+        H-->>K: 放行 / 不放行（没人能答 ⇒ 拒收,原生 goal 置阻塞）
+        K->>L: human/released
+    end
     K->>K: admission：产物存在 / 非空 / 结构合法
     alt 准入没过
-        K->>L: block/counted（连续达 blockedThreshold → plan/blocked）
+        K->>L: block/counted（连续达 blockedThreshold → plan/blocked,当场问人）
     else 准入通过且 L0–L2
-        K->>L: step/advanced + evidence/recorded
+        K->>L: evidence/recorded（每条结果一条）+ step/advanced
     else 准入通过且 L3+
         K->>D: 派 fresh-context 只读评估者
         D->>E: 启动（带 outputSchema）
-        E-->>K: 结构化裁决
-        K->>L: audit/settled + step/advanced（verdict 由系统落）
-    end
-    opt L4
-        K->>D: 原生审批栈（人放行）
-        D->>H: 审批卡
-        H-->>K: approval
-        K->>L: human/released
+        E-->>K: 两份判断:交付成不成立(holds) + 每条判断的结果
+        alt holds = yes
+            K->>L: audit/settled + evidence/recorded（每条结果一条）+ step/advanced
+        else holds = no / unclear
+            K->>L: audit/settled + block/counted（不推进）
+        end
     end
 
-    M->>D: ClosePlan → CloseGoal(outcome=achieved)
+    M->>D: ClosePlan → Conclude(outcome=achieved)
     D->>K: execute
     K->>D: 派目标评估者（合成 step，判据 = goal.done_criteria）
     D->>E: 启动
-    E-->>K: support
+    E-->>K: holds = yes
     K->>L: goal/closed + fact/promoted（达 promote_at_level 且无推翻）
+    K->>D: 原生 goal 完成 + 声明交付物
 ```
 
-三个必须记住的边界：
+必须记住的边界：
 
-1. **准入不裁决**。准入只回答「收不收」，`support / refute` 是评估者或 L0–L2 自判的事。
-2. **L3 以上写 verdict 会被拒绝**（`verdict_not_accepted`）。
-3. **结案前必须先收尾计划**，否则内核拒收。
+1. **准入不裁决**。准入只回答「收不收」，结果（support / refute / inconclusive）是评估者或 L0–L2 自判的事。
+2. **L3 以上自己写结果会被拒绝**（`verdict_not_accepted`）。
+3. **完成与结果分开**：交付成立这一步就完成，结果是推翻或说不清也一样。
+4. **结案前必须先收尾计划**，否则内核拒收。
 
 ## 3. 失败与恢复路径 · 已实现（机制侧）/ 仅提示词（恢复纪律）
 
@@ -189,7 +185,7 @@ sequenceDiagram
     participant S as 原生子任务
     participant L as 事实账本
 
-    M->>D: SetGoal（假设：路线 A、路线 B，各写推翻条件）
+    M->>D: Frame（假设：路线 A、路线 B，各写推翻条件）
     D->>K: execute
     K->>L: goal/set
     M->>D: CreatePlan（步骤 A 检验 h-A，步骤 B 检验 h-B，产物路径各不相同）
@@ -230,7 +226,7 @@ sequenceDiagram
     participant G as 读面（货架 / 卡片 / 面板）
 
     Note over M,P: 知识预检（已实现：不等用户提醒）
-    M->>K: SetGoal（登记命题）
+    M->>K: Frame（登记命题）
     K-->>L: mutation goal/set
     L->>P: fold → derive
     P->>P: knowledgePreflight：主张文本命中词条 label/id/alias（有界，逐条可复核）
@@ -241,7 +237,7 @@ sequenceDiagram
     M->>K: RegisterTerm / RegisterPredicate（带依据）
     K->>K: 校验：id 唯一 · 引用存在 · is_a 不成环 · 值域合法
     K-->>L: mutation ontology/term_added（predicate_added / revised / deprecated 同理）
-    M->>K: SetGoal（假设带 assertions）
+    M->>K: Frame（假设带 assertions）
     K->>K: 校验断言：谓词在 · 主词合域 · 宾语形态对 · 同一事实自洽
     K-->>L: mutation goal/set
     Note over K,L: 以下都是今天已经成立的折法
@@ -265,11 +261,37 @@ sequenceDiagram
    视口 / 拖动 / 可见性归 React Flow；客户端的 Inspector 读数一律经
    `GET /api/clearai/inspector` 向宿主取，自己不拼证据链。交互不产生任何 mutation。
 5. **货架有主人**：`domain.md` 与 `facts/INDEX.md` 是**工作区级**读面，只有拥有账本的会话能铺——
-   写入口自带所有权判据，派出去的子会话（评估者 / 侦察 / 执行者）结构上写不进
+   写入口自带所有权判据，派出去的子会话（评估者 / 执行者）结构上写不进
    （它们与主线共享工作区、却各持一份投影；让它们铺，共享读面就会在「谁最后铺了一拍」之间摆动）。
    行为由 kernel 套件钉、结构由 authority-boundary 套件钉。
 
 ## 6. 人门（human gate）路径 · 已实现
+
+要人拍板的事有两种入口。**当场问**：开门的那次调用自己问人（L4 放行、计划卡住、事实被推翻），答复当场回到那次调用里落账：
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant M as 模型
+    participant D as DSH 宿主
+    participant K as ClearAI 内核
+    participant H as 人
+    participant L as 事实账本
+
+    M->>D: AdvancePlan(...)
+    D->>K: execute
+    K->>D: userQuestions.ask（问题 + 选项）
+    D->>H: 原生提问卡
+    alt 人答了
+        H-->>K: 选项 + 可选的一句话
+        K->>L: human/released / block/cleared / plan/voided / fact/reviewed（by='user'）
+    else 没人能答 / 人撤下了
+        K->>D: 原生 goal 置阻塞（clearai-needs-human）
+        Note over K,L: 账上什么都不改,门保持原样
+    end
+```
+
+**面板**：本体四个动词（register_term / register_predicate / revise_term / deprecate_entry）从面板提交：
 
 ```mermaid
 sequenceDiagram
@@ -281,7 +303,7 @@ sequenceDiagram
     participant K as ClearAI 内核
 
     P-->>H: useProjection('clearai') 推送视图
-    H->>P: 点一个动作（adopt_branch / abandon_fork / promote_skill / retract_fact / keep_fact / confirm_provisional）
+    H->>P: 提交一个本体动词
     P->>D: 提交动词 + 参数
     D->>D: 白名单校验（表外一律拒，取值同层校验）
     D->>L: 变成 source.kind='user' 的消息（只追加）
@@ -291,7 +313,7 @@ sequenceDiagram
     Note over K,L: 内核下一回合 pre-step 读到同一事实——<br/>事实只有一个折法，不分入口
 ```
 
-三条硬约束（每条都有测试）：
+面板那条路的三条硬约束（每条都有测试）：
 
 1. 动词白名单，表外拒绝，取值也在这一层校验。
 2. 这些动词**没有工具 schema**，模型的工具面里不存在它们。

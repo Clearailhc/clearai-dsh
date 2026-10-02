@@ -81,7 +81,7 @@ console.log('\n【① 剧本表自身完整】')
 	})
 	check('每个剧本都有 title/why/task/asserts(缺一样就没法复盘)', incomplete.length === 0, incomplete.join(','))
 	// 任务书必须**点名机制**:测的是装配,任务不说用哪个工具,模型就可能绕开它——那场就白跑了。
-	const MECHANISMS = ['SetGoal', 'CreatePlan', 'ClosePlan', 'CloseGoal']
+	const MECHANISMS = ['Frame', 'CreatePlan', 'ClosePlan', 'Conclude']
 	const vague = names.filter((name) => !MECHANISMS.some((tool) => SCENARIOS[name].task.includes(tool)))
 	check('每个任务书都点名了它要验的机制(否则跑的是模型的自由发挥)', vague.length === 0, vague.join(','))
 }
@@ -151,7 +151,7 @@ console.log('\n【③b 升格与证据等级自洽:两边都要抓】')
 	const amendedSingle = [...HEALTHY, { t: 'plan/amended', step: { id: 'verify-inventory-v2', artifacts: [] } }, { t: 'evidence/recorded', step: 'verify-inventory-v2', verdict: 'support' }]
 	check('证据挂在 AmendPlan 补的步上 ⇒ 放过', evidenceOnAmendedStep.run(contextOf(amendedSingle)).ok === true, JSON.stringify(evidenceOnAmendedStep.run(contextOf(amendedSingle)).detail))
 
-	// 目标未结案时,「到级了没升格」不该判违规(升格只发生在 CloseGoal 那一刻)。
+	// 目标未结案时,「到级了没升格」不该判违规(升格只发生在 Conclude 那一刻)。
 	const openGoal = contextOf([
 		...HEALTHY.filter((m) => m.t !== 'goal/closed'),
 		{ t: 'goal/set', id: 'g1', promote_at_level: 'L2' },
@@ -211,23 +211,25 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 	process.env.DSH_HOME = join(root, 'home')
 	const host = makeSimHost({ workspace, runDir: join(root, 'run') })
 	apply(host.ctx, { ...config, auditTimeoutMs: 5000 })
-	check('装上:20 件工具、21 段提示词', host.tools.size === 20 && host.sections.length === 21, `${host.tools.size} / ${host.sections.length}`)
+	check('装上:19 件工具、21 段提示词', host.tools.size === 19 && host.sections.length === 21, `${host.tools.size} / ${host.sections.length}`)
 
-	const goal = await host.call('SetGoal', { headline: '判定 A', claim: '判定 A 是否成立', done_criteria: '存在一份文件 lab/v.md', hypotheses: [{ claim: 'A 成立', refute_when: '读数不是 2' }, { claim: 'A 不成立', refute_when: '读数是 2' }] })
+	const goal = await host.call('Frame', { headline: '判定 A', claim: '判定 A 是否成立', done_criteria: '存在一份文件 lab/v.md', hypotheses: [{ claim: 'A 成立', refute_when: '读数不是 2' }, { claim: 'A 不成立', refute_when: '读数是 2' }] })
 	check('工具结果给模型的是内核的原话,不是一句 ok', goal.ok === true && /运行态卡/.test(goal.text), goal.text.slice(0, 120))
 	const hypothesis = host.mutations().find((mutation) => mutation.t === 'goal/set')?.hypotheses?.[0]?.id
-	await host.call('CreatePlan', { brief: `## 做法\n${'跑一次,记读数。'.repeat(30)}\n\n## 判据\n读数为 2。`, steps: [{ id: 'run', do: '跑一次', artifacts: ['lab/run.txt'], done_criteria: 'lab/run.txt 存在,含读数', tests: { hypothesis, level: 'L3' } }] })
-	check('计划审阅按预设答案作答(缺省批准),并且记下了', host.humanAnswers.some((answer) => answer.id === 'plan-review' && answer.answer === 'approve'), JSON.stringify(host.humanAnswers))
+	await host.call('CreatePlan', { brief: `## 做法\n${'跑一次,记读数。'.repeat(30)}\n\n## 判据\n读数为 2。`, steps: [{ id: 'run', do: '跑一次', artifacts: ['lab/run.txt'], done_criteria: 'lab/run.txt 存在,含读数', tests: { hypotheses: [hypothesis], level: 'L3' } }] })
+	check('立约时原生 goal 建好了(续跑交给它)', host.goal()?.phase === 'active', JSON.stringify(host.goal()))
+	check('建计划不再问人(审阅记号删了)', host.humanAnswers.length === 0, JSON.stringify(host.humanAnswers))
 	mkdirSync(join(workspace, 'lab'), { recursive: true })
 	writeFileSync(join(workspace, 'lab', 'run.txt'), 'value=2\n')
-	const delivering = host.call('AdvancePlan', { step_id: 'run', observations: [{ ref: 'lab/run.txt', note: 'value=2' }] })
+	const delivering = host.call('AdvancePlan', { step_id: 'run', basis: 'lab/run.txt 第 1 行 value=2' })
 	await new Promise((done) => setTimeout(done, 50))
 	const request = [...host.pending.values()].find((entry) => entry.settled === false)
 	check('L3 交付把评估者挂起来,等外部交回裁决(提示词是正文,不是对象)', request !== undefined && request.prompt.length > 40 && !request.prompt.includes('[object Object]'), String(request?.prompt ?? '').slice(0, 80))
-	host.settle(request.id, { structured: { verdict: 'support', basis: 'lab/run.txt 第 1 行 value=2', refs: [{ path: 'lab/run.txt', line: 1 }] } })
+	host.settle(request.id, { structured: { holds: 'yes', basis: 'lab/run.txt 第 1 行 value=2', results: [{ hypothesis, verdict: 'support', basis: '读数是 2' }], refs: [{ path: 'lab/run.txt', line: 1 }] } })
 	const delivered = await delivering
 	const kinds = host.mutations().map((mutation) => mutation.t)
 	check('交回裁决之后交付落定:派发、结算、推进都在账上', delivered.ok === true && kinds.includes('audit/dispatched') && kinds.includes('audit/settled') && kinds.includes('step/advanced'), kinds.join(','))
+	check('结果针对那条判断落成证据', host.mutations().some((mutation) => mutation.t === 'evidence/recorded' && mutation.hypothesis === hypothesis && mutation.verdict === 'support'), JSON.stringify(host.mutations().filter((mutation) => mutation.t === 'evidence/recorded')))
 	const evaluated = await evaluateLog({ scenario: null, events: host.events, mutations: host.mutations(), workspace, exists: () => true, called: () => true })
 	check('同一个判官认得模拟宿主的日志(不变量全过)', evaluated.checks.every((item) => item.ok), JSON.stringify(evaluated.checks.filter((item) => !item.ok).map((item) => item.label)))
 	rmSync(root, { recursive: true, force: true })

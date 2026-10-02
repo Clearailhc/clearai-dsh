@@ -24,7 +24,7 @@ import { graphProjection } from './domain-language.js'
 const CARD_LIMIT = 3000
 
 /**
- * **判据逐条进卡的三个界**。判据是**多条**的(`SetGoal` 收 `criteria: string[]`,每条一句话),
+ * **判据逐条进卡的三个界**。判据是**多条**的(`Frame` 收 `criteria: string[]`,每条一句话),
  * 挤成一行会把「第 3 条没做到」抹平;而整段重发又会把卡撑爆、断前缀缓存。
  * 每个界都对得上一条纪律:每行有上限(一条千字判据不占满一行)、条数有上限(判据条数不能
  * 决定卡大小)、超出**如实说**(写清还有几条、全文在哪,不静默丢)。
@@ -53,7 +53,7 @@ export const GLOSSARY = {
 	// ── 阶段(派生读数) ──
 	planning: { plain: '还没建计划:先想清楚要怎么回答', where: '运行态卡 · 当前计划', nextAction: '用 CreatePlan 把回答拆成可交付的步骤' },
 	executing: { plain: '执行中:有活动计划且还有未落定的步', where: '运行态卡 · 当前计划', nextAction: '推进第一个未落定步,交付落在它上面' },
-	stage_boundary: { plain: '阶段边界:当前计划的步都落定了,该结案或起新计划', where: '运行态卡 · 当前计划', nextAction: '结案(CloseGoal)或起下一阶段计划' },
+	stage_boundary: { plain: '阶段边界:当前计划的步都落定了,该结案或起新计划', where: '运行态卡 · 当前计划', nextAction: '结案(Conclude)或起下一阶段计划' },
 	auditing: { plain: '在等裁决:有交付/结案在飞,或上一次裁决还没回来', where: '运行态卡 · 阶段(派生)', nextAction: '等评估者回灌;不要重复派同一个裁决' },
 	stalled: { plain: '卡住了:连续几次没通过观测准入,停下等人', where: '运行态卡 · 计划被拦', nextAction: '说一句怎么改(改计划或补判据)' },
 	achieved: { plain: '目标已达成(终局)', where: '运行态卡 · 当前目标', nextAction: '没有待办:要做新事就立新目标' },
@@ -69,7 +69,7 @@ export const GLOSSARY = {
 	inconclusive: { plain: '无法判定次数:判过但判不出来', where: '运行态卡 · 假设状态', nextAction: '补判据或补产物,让下一次判得出结果' },
 	// ── 缺口 code(与 deriveKnowledge 一一对应) ──
 	no_language: { plain: '还没有概念与谓词:换一轮只能靠重读散文取用结论', where: '运行态卡 · 缺口 / 本体面板', nextAction: '先 RegisterTerm 立词,再 RegisterPredicate 说明关系' },
-	prose_only_claims: { plain: '命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断', where: '运行态卡 · 缺口', nextAction: '用 SetGoal 的修订把这条主张写成断言(主词–谓词–宾语),引用已登记的 id' },
+	prose_only_claims: { plain: '命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断', where: '运行态卡 · 缺口', nextAction: '用 Frame 的修订把这条主张写成断言(主词–谓词–宾语),引用已登记的 id' },
 	unstructured_facts: { plain: '已升格事实没带断言:进不了实体图,也不能按概念取用', where: '运行态卡 · 缺口', nextAction: '下次升格时带上 assertions;这条老事实的形态靠新一次升格补' },
 	untouched_claims: { plain: '有命题一条证据都没碰过:没看过不等于没问题', where: '运行态卡 · 缺口 / 结案留痕', nextAction: '给它派一个带 tests 的步骤并交付:支持 / 推翻 / 无法判定都算碰过' },
 	entities_unlanded: { plain: '断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」', where: '运行态卡 · 缺口 / 本体面板 · 实体图', nextAction: '先 RegisterInstance 把实例连出处登记下来；确实不值得留下形态就如实说清' },
@@ -170,7 +170,6 @@ function cardLines(state, derived, options, view) {
 	const issues = Array.isArray(derived?.lexiconIssues) ? derived.lexiconIssues : []
 	const lexicon = isPlainObject(derived?.lexicon) ? derived.lexicon : { terms: [], predicates: [] }
 	const plan = isPlainObject(derived?.activePlan) ? derived.activePlan : null
-	const inbox = Array.isArray(derived?.inbox) ? derived.inbox : []
 	const evidence = Array.isArray(state?.evidence) ? state.evidence : []
 	const facts = Array.isArray(state?.facts) ? state.facts : []
 	const hostHealth = Array.isArray(state?.hostHealth) ? state.hostHealth : []
@@ -187,11 +186,7 @@ function cardLines(state, derived, options, view) {
 	push(`- 正在解决:${view.headline.now}`)
 	push(`- 怎样算完成:${view.headline.done}`)
 	push(`- 我做到哪了:${view.headline.where}`)
-	const autonomy = isPlainObject(state?.autonomy?.effective) ? state.autonomy.effective : null
-	if (autonomy !== null) {
-		push(`- 运行档:${autonomy.value === 'unattended' ? '无人值守' : '人在场'}(部署预设写的;它不是"要不要人参与"的开关——要不要人由**门**决定:计划待确认/等裁决/有人在等)`, 1)
-	}
-	if (goal === null) push('- 当前目标:未立(SetGoal 需要一份「怎样算回答了」的判据)')
+	if (goal === null) push('- 当前目标:未立(Frame 往原生 goal 上挂一份「怎样算回答了」的判据)')
 	else {
 		// claim 可以很长(真跑里上千字):卡上给压缩版,一句话在「正在解决」那行,全文在目标文档里。
 		push(`- 当前目标(${goal.id} · rev${goal.revision} · ${goal.status}):${clamp(String(goal.claim ?? ''), 160)}${String(goal.claim ?? '').length > 160 ? `…(全文 ${String(goal.claim).length} 字在 clear/goals/${goal.id}.md)` : ''}`)
@@ -278,24 +273,16 @@ function cardLines(state, derived, options, view) {
 	}
 	if (plan === null) push('- 当前计划:无活动计划', 1)
 	else {
-		if (derived?.planConfirmationPending) {
-			push('- 授权:记号未落账。未经人批准的计划不会自动续跑;显式推进时,第一次交付会按事实补写归属(行为即授权)')
-		} else if (plan.confirmed_at === null) {
-			push('- 授权:记号未落账,但本计划已推进过——授权已经发生(行为即授权),继续执行')
-		} else {
-			push(`- 授权:已于 ${plan.confirmed_at} 落账(${plan.confirmed_by === 'user' ? '人显式批准' : plan.confirmed_by === 'progress' ? '据推进事实补写归属' : String(plan.confirmed_by)})`)
-		}
 		push(`- 当前计划(${plan.id}${plan.goal === null || plan.goal === undefined ? '' : ` · 目标 ${plan.goal} 的一个阶段`})步骤:`, 1)
 		for (const step of plan.steps.slice(0, 12)) {
-			const tests = step.tests === null || step.tests === undefined ? '' : ` 【验 ${step.tests.hypothesis} · ${step.tests.level}】`
+			const tests = step.tests === null || step.tests === undefined ? '' : ` 【验 ${(step.tests.hypotheses ?? [step.tests.hypothesis]).join('、')} · ${step.tests.level}】`
 			push(`  ${step.ordinal}. [${step.status}] ${step.do}${tests} → 物证:${(step.artifacts ?? []).join(', ') || '(未声明)'}`, 2)
 		}
 		if (plan.steps.length > 12) push(`  · (还有 ${plan.steps.length - 12} 步未展开:面板「计划」里有全部)`, 2)
 		const first = plan.steps.find((step) => step.status === 'open')
 		if (first !== undefined) push(`- 下一个可交付步:${first.id}(交付只能落在第一个未落定步)`)
-		if (plan.blocked !== undefined && plan.blocked !== null) push(`- 计划被拦:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次未过闸,停下等人)`)
+		if (plan.blocked !== undefined && plan.blocked !== null) push(`- 计划被拦:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次未过闸,已问人怎么办;没人答就停下等人)`)
 	}
-	if (derived?.hasOpenGate === true) push(`- 门(等人,${inbox.length} 件):${inbox.map((item) => `${item.kind}·${item.title}`).join(' / ')}`)
 	if (evidence.length > 0) {
 		const last = evidence[evidence.length - 1]
 		push(`- 最近一条证据:${last.id} ${last.verdict}(${last.evaluator} · ${last.level})`, 1)
@@ -358,7 +345,7 @@ export function knowledgeView(state, derived, options = {}) {
 	 */
 	const doneText =
 		goal === null
-			? '还没有立约:没有「怎样算完成」可算——SetGoal 要一份可核对的判据'
+			? '还没有立约:没有「怎样算完成」可算——Frame 要一份可核对的判据'
 			: Array.isArray(goal.criteria) && goal.criteria.length > 0
 				? `${goal.criteria.length} 条:${clamp(goal.criteria.join(' / '), 140)}`
 				: clamp(String(goal.done_criteria ?? ''), 140) || GLOSSARY.done_criteria.plain
@@ -367,7 +354,7 @@ export function knowledgeView(state, derived, options = {}) {
 	const preflight = isPlainObject(options?.preflight) ? options.preflight : null
 	const view = {
 		headline: {
-			now: goal === null ? '还没有立目标(SetGoal 需要一份「怎样算回答了」的判据)' : clamp(goal.headline ?? goal.claim, 160),
+			now: goal === null ? '还没有立目标(Frame 需要一份「怎样算回答了」的判据)' : clamp(goal.headline ?? goal.claim, 160),
 			done: doneText,
 			where:
 				goal === null
@@ -435,8 +422,7 @@ export function knowledgeView(state, derived, options = {}) {
 			return { total: rows.length, last: last === null ? null : { id: last.id ?? null, verdict: last.verdict ?? null, level: last.level ?? null, evaluator: last.evaluator ?? null, at: last.at ?? null } }
 		})(),
 		deliver: {
-			plan: isPlainObject(d.activePlan) ? { id: d.activePlan.id, status: d.activePlan.status, brief: d.activePlan.brief ?? '', confirmedBy: d.activePlan.confirmed_by ?? null } : null,
-			authorized: d.planConfirmationPending !== true,
+			plan: isPlainObject(d.activePlan) ? { id: d.activePlan.id, status: d.activePlan.status, brief: d.activePlan.brief ?? '' } : null,
 			steps: isPlainObject(d.activePlan) ? (d.activePlan.steps ?? []).map((step) => ({ id: step.id, ordinal: step.ordinal, do: step.do, status: step.status, artifacts: step.artifacts ?? [] })) : [],
 			next: isPlainObject(d.activePlan) ? ((d.activePlan.steps ?? []).find((step) => step.status === 'open')?.id ?? null) : null,
 			/** 知识预检(宿主算好的那一份):进了知识模式才有,否则 null。 */

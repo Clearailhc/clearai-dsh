@@ -7,11 +7,11 @@
  * 检查项：
  *   ① 代码定义的工具 ↔ MECHANISM_TOOLS（双向：多一个、少一个都红）
  *   ② CONFIG_KEYS ↔ preset 里 clearai-kernel 行**实际写的**配置键
- *   ③ 提示词段 ↔ 装配缺省（SECTION_TABLE / SECTION_SLOTS）
+ *   ③ 提示词段 ↔ 装配缺省（SECTION_TABLE）
  *   ④ 真值表里 status=implemented 的条目必须给得出代码位置
  *   ⑤ 真值表里 status=removed 的条目不许仍出现在工具目录里
- *   ⑥ 刻意不挂的原生行，必须真的不在 preset 里
- *   ⑦ 续跑默认额度 = 128，且布防点回落到这个常量
+ *   ⑥ 交还原生的那几行，必须真的挂在 preset 里
+ *   ⑦ 原生 goal 只能经 Conclude 完成（守卫在），ClearAI 不自设续跑额度
  *   ⑧ 已摘除的 set_autonomy 不许重新出现在工具目录里
  *   ⑨ 真值表声称的计数与代码常量一致
  *   ⑩ 文档/注释里写下的「N 件工具 / N 段提示词」与代码算出来的数一致
@@ -29,7 +29,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CONFIG_KEYS, MECHANISM_TOOLS, apply } from '../preset/plugins/clearai-kernel.js'
-import { SECTIONS, SECTION_SLOTS, SECTION_TABLE } from '../preset/plugins/prompts.js'
+import { SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
@@ -86,20 +86,11 @@ if (presetKeys !== null) {
 }
 
 // ── ③ 提示词段 ↔ 装配缺省 ────────────────────────────────────────────────────
-const slotVariants = new Set(Object.values(SECTION_SLOTS).flatMap((variants) => Object.values(variants)))
-const expectedMounted = [...SECTION_TABLE.keys()].filter((name) => !slotVariants.has(name))
-const mounted = [...expectedMounted, ...Object.keys(SECTION_SLOTS)]
 check(
-	mounted.length === SECTIONS.length - slotVariants.size + Object.keys(SECTION_SLOTS).length,
-	'③ 提示词段在常数与槽位之间自洽',
-	`SECTIONS=${SECTIONS.length} 槽位变体=${slotVariants.size} 在场=${mounted.length}`,
+	SECTION_TABLE.size === SECTIONS.length && SECTIONS.every((section) => SECTION_TABLE.get(section.name) === section),
+	'③ 段表与段清单逐条一致(没有槽位,每段都在场)',
+	`SECTIONS=${SECTIONS.length} 段表=${SECTION_TABLE.size}`,
 )
-for (const [slot, variants] of Object.entries(SECTION_SLOTS)) {
-	check(
-		Object.values(variants).every((name) => SECTION_TABLE.has(name)),
-		`③ 槽位 ${slot} 的两个变体都在段表里`,
-	)
-}
 
 // ── ④ implemented 条目必须给得出代码位置 ─────────────────────────────────────
 const withoutCode = TABLE.mechanisms.filter((m) => m.status === 'implemented' && (m.source.code === null || m.source.code === undefined))
@@ -109,37 +100,25 @@ check(withoutCode.length === 0, '④ status=implemented 的条目都给了代码
 const removedStillLive = TABLE.mechanisms.filter((m) => m.status === 'removed' && declaredTools.has(m.id))
 check(removedStillLive.length === 0, '⑤ 已删除的机制没有仍留在工具目录里', `仍活着:[${removedStillLive.map((m) => m.id).join(' ')}]`)
 
-// ── ⑥ 刻意不挂的原生行必须真的不在 preset 里 ─────────────────────────────────
+// ── ⑥ 原生行该挂的都挂着 ─────────────────────────────────────────────────
 const presetPluginNames = new Set([...PRESET.matchAll(/name:\s*'(@deepseek-ai\/[^']+)'/g)].map((match) => match[1]))
-// 仍然刻意不挂的:两件都是「第二本账」(原生目标工具/命令与 ClearAI 目标账冲突;
-// plan-mode 与 CreatePlan/AdvancePlan 是两套计划纪律)。
-// todo/subagent/workflow/ralph 曾经是这张单子上的,阶段 5 起挂回来了——它们是工作方式,
-// 产不出一条 clearai 变更(权威边界测试钉死),「不挂」当年防的是「自派裁判」,
-// 而评估者的派遣在内核里,与模型面的 subagent 是两层。
-const mustBeAbsent = [
-	'@deepseek-ai/dsh-tool-goal',
-	'@deepseek-ai/dsh-command-goal',
-	'@deepseek-ai/dsh-plan-mode',
-]
-const present = mustBeAbsent.filter((name) => presetPluginNames.has(name))
-check(present.length === 0, '⑥ 刻意不挂的原生行确实没有挂载(第二本账三件)', `意外在场:[${present.join(' ')}]`)
-// 挂回来的要真的在——防止哪天被手滑摘掉而没人发现。
+// 工作方式(todo/subagent/workflow/ralph)阶段 5 起挂回来;goal 工具/命令与 plan-mode 第三阶段起挂上——
+// 目标层挂在原生 goal 上,动手前给人看计划交给原生 /plan。防的是哪天被手滑摘掉而没人发现。
 const mustBePresent = [
 	'@deepseek-ai/dsh-tool-todo',
 	'@deepseek-ai/dsh-tool-subagent',
 	'@deepseek-ai/dsh-tool-workflow',
 	'@deepseek-ai/dsh-tool-ralph',
+	'@deepseek-ai/dsh-tool-goal',
+	'@deepseek-ai/dsh-command-goal',
+	'@deepseek-ai/dsh-plan-mode',
 ]
 const missing = mustBePresent.filter((name) => !presetPluginNames.has(name))
-check(missing.length === 0, '⑥b 交还原生的工作方式确实挂着(防手滑摘除)', `意外缺席:[${missing.join(' ')}]`)
+check(missing.length === 0, '⑥ 交还原生的那几行确实挂着(防手滑摘除)', `意外缺席:[${missing.join(' ')}]`)
 
-// ── ⑦ 续跑默认额度 = 128，且布防点真的回落到这个常量 ─────────────────────────
-const budgetMatch = /const DEFAULT_MAX_AUTO_TURNS = (\d+)/.exec(KERNEL)
-check(budgetMatch !== null && Number(budgetMatch[1]) === 128, '⑦ 默认续跑额度是 128', `实际:${budgetMatch?.[1] ?? '(找不到常量)'}`)
-check(
-	/const maxGoalRounds = CFG\.maxAutoTurns \?\? DEFAULT_MAX_AUTO_TURNS/.test(KERNEL),
-	'⑦ 布防点回落到 DEFAULT_MAX_AUTO_TURNS（CFG.maxAutoTurns 只记「人写没写」）',
-)
+// ── ⑦ 原生 goal 只能经 Conclude 完成:守卫在 ──────────────────────────────────
+check(/update_goal/.test(KERNEL) && /'complete'/.test(KERNEL) && /kind: 'deny'/.test(KERNEL), '⑦ 内核守卫拦住原生 update_goal 直接完成')
+check(!/DEFAULT_MAX_AUTO_TURNS|maxAutoTurns/.test(KERNEL), '⑦ ClearAI 不再自设续跑额度(归原生 goal)')
 
 // ── ⑧ set_autonomy 不许重新出现 ──────────────────────────────────────────────
 check(!declaredTools.has('set_autonomy'), '⑧ 已摘除的 set_autonomy 没有回到工具目录')
@@ -147,14 +126,10 @@ check(!declaredTools.has('set_autonomy'), '⑧ 已摘除的 set_autonomy 没有�
 // ── ⑨ 真值表声称的计数 ↔ 代码常量 ────────────────────────────────────────────
 const toolEntry = TABLE.mechanisms.find((m) => m.id === 'tool-trimming')
 check(toolEntry !== undefined && toolEntry.source.code.includes('MECHANISM_TOOLS'), '⑨ 真值表把工具目录指向 MECHANISM_TOOLS')
-check(
-	TABLE.mechanisms.some((m) => m.id === 'max-auto-turns' && m.source.code.includes('DEFAULT_MAX_AUTO_TURNS')),
-	'⑨ 真值表把续跑额度指向 DEFAULT_MAX_AUTO_TURNS',
-)
-check(
-	TABLE.mechanisms.some((m) => m.id === 'autonomy-config' && m.status === 'partial'),
-	'⑨ autonomy 在真值表里被标为 partial（它不再是完整的模式系统）',
-)
+for (const id of ['auto-continuation', 'max-auto-turns', 'autonomy-config', 'plan-review', 'plan-reauthorize']) {
+	check(TABLE.mechanisms.some((m) => m.id === id && m.status === 'removed'), `⑨ ${id} 在真值表里标为已删除(第三阶段)`)
+}
+check(!CONFIG_KEYS.includes('autonomy') && !CONFIG_KEYS.includes('maxAutoTurns'), '⑨ 配置白名单里没有 autonomy / maxAutoTurns')
 
 // ── ⑩ 文档与注释里的数字必须与代码一致 ──────────────────────────────────────
 // 「22 件工具」这类数字在几个地方各写了一遍,而它们都漂过:
@@ -183,9 +158,9 @@ for (const orphan of ['clearai-kernel.js', 'kernel.test.mjs']) {
 
 // ── ⑫ 假设数量下限: preset 立了 2,内核有那道门 ──────────────────────────────
 // 「假设 ≥2」曾经是纯文案(minHypotheses 默认 0,提示词里甚至没写)。不缩水原则把它落成了
-// 硬边界:产品立场写在 preset(与 blockedThreshold 同一模式),门在 SetGoal。
+// 硬边界:产品立场写在 preset(与 blockedThreshold 同一模式),门在 Frame。
 check(/minHypotheses:\s*2\b/.test(PRESET), '⑫ preset 把假设数量下限立为 2(产品立场)')
-check(/hypotheses_too_few/.test(KERNEL), '⑫ 内核有 hypotheses_too_few 这道门(SetGoal 入口)')
+check(/hypotheses_too_few/.test(KERNEL), '⑫ 内核有 hypotheses_too_few 这道门(Frame 入口)')
 check(
 	/假设至少两条/.test(PROMPTS),
 	'⑫ loop-contract 写明了假设纪律(模型得先知道规则,门才不会天天误伤)',

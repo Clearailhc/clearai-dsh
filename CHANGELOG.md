@@ -4,6 +4,26 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+**「少即是多」第三阶段:目标层挂到原生 goal,交付与裁决分开。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第三阶段的改动清单。
+
+### Changed
+
+- **完成与结果分开。** 交付成立 ⇒ 这一步完成,不论结果是支持、推翻还是说不清;推翻和说不清都是合法结果,各记一条证据(带 `hypothesis`)。此前推翻的那一步收不了尾,只能作废。
+- **评估者给两份判断**:交付成不成立(`holds`: yes / no / unclear),以及对每条被检验判断的结果(`results[]`)。交付不成立才不推进、计一次连拦。评估卡版本 `clearai.audit.v2`;旧形状的 `verdict` 仍读得懂。
+- **一步可以检验多条判断**:`tests: { hypotheses: [...], level }`(旧的 `tests.hypothesis` 仍接受)。`AdvancePlan` 的参数是 `basis` 与 `results`(L0–L2);L3 以上由评估者给结果。
+- **`SetGoal` → `Frame`、`CloseGoal` → `Conclude`。** `Frame` 在宿主原生 goal 上建(或改)一条目标,续跑由原生 goal 驱动;`Conclude` achieved ⇒ 原生 goal 完成并声明交付物,abandoned ⇒ 原生 goal 置阻塞。守卫拦住原生 `update_goal` 直接完成目标。
+- **人门当场问。** L4 放行、计划连拦到阈值、推翻证据碰到已确立的事实,都由开门的那次调用经原生提问卡(`userQuestions`)当场问人;没人能答 ⇒ 原生 goal 置阻塞(`clearai-needs-human`)。面板上的人门动词只剩本体四个;旧日志里的撤回 / 维持照样折得出来。
+- 挂上原生 `tool-goal`、`command-goal`、`plan-mode`。工具面 19 件,提示词 21 段(澄清协议只剩一段)。投影状态版本升到 13。
+
+### Removed
+
+- ClearAI 自己的续跑窗口(`turnDemand`、布防 / 按住 / 收兵、`continuation/set`)与续跑额度(`maxAutoTurns`)。
+- 运行档(`autonomy`)与两套澄清措辞。
+- 计划审阅记号(`RequestPlanReview`、`plan/confirmed`、`confirmed_by`):它从来不是门;动手前给人看计划用原生 `/plan`。
+- 收件箱里等人处置的条目与面板上的撤回 / 维持按钮;「连续两次无法判定就强制改」那条规则(说不清是合法结果)。
+
+---
+
 **「少即是多」第二阶段:宿主已经有的,交还宿主。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第二阶段的清单删除;机制骨架(目标 / 计划 / 准入 / 证据 / 本体)不动。
 
 ### Removed

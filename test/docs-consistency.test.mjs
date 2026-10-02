@@ -109,7 +109,7 @@ console.log('\n【反向:这些短语没有被一刀切删掉(历史要留着)�
 	const all = SCANNED.map((file) => readFileSync(file, 'utf8')).join('\n')
 	const optimization = readFileSync(join(OPTIMIZATION, 'truth-table.zh-CN.md'), 'utf8')
 	check('真值表里留了历史说法的记录', /6\/512|自动确认|set_autonomy/.test(optimization))
-	check('已知缺口文档点明了"授权不是闸门"', /授权是\*\*记号与归属\*\*|不是闸门/.test(readFileSync(join(PORT, 'docs', 'known-gaps.zh-CN.md'), 'utf8')))
+	check('已知缺口文档留了「计划授权已在第三阶段删掉」的记录', /第三阶段已删掉\*\*计划授权/.test(readFileSync(join(PORT, 'docs', 'known-gaps.zh-CN.md'), 'utf8')))
 	check('扫描面本身非空(不是空跑)', all.length > 10000, `${all.length} 字节`)
 }
 

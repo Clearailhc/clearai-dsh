@@ -126,7 +126,7 @@ console.log('\n【② 守卫:声明里每一个具名守卫,核心里真有那�
 	 */
 	const guards = {
 		independent_verdict_support: /independent_verdict|verdict === 'support'/,
-		independent_verdict_written: /CloseGoal|goal\/closed/,
+		independent_verdict_written: /Conclude|goal\/closed/,
 		admission_passed: /function admissionGate|admission\/checked/,
 		level_judge_split: /SELF_JUDGE_MAX_INDEX/,
 		external_source_for_l4: /l4RejectSelfWritten/,
