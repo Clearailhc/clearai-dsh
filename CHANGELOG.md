@@ -2,6 +2,12 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- 别的会话留下的事实被新证据推翻时不会问人:这一问只认本目标的判断编号。现在判断可带 `retests: "<事实 id>"`,复检被推翻就当场问人撤回还是维持,结论写回事实文件。
+
 ## [0.4.0] — 2026-10-02
 
 这一版包括「少即是多」改造的全部六个阶段(见下面各段)、本体改成文件树,以及中英两种语言的完整支持。
@@ -30,7 +36,6 @@ All notable changes to this project are recorded here. The format follows [Keep 
 ### Fixed
 
 - 后一次 `Conclude` 会把之前目标的假设再升格一次。
-- 别的会话留下的事实被新证据推翻时不会问人:这一问只认本目标的判断编号。现在判断可带 `retests: "<事实 id>"`,复检被推翻就当场问人撤回还是维持,结论写回事实文件。
 - 相对路径能绕过受保护目录;读受保护目录的文件也被拦。
 
 ### Removed
