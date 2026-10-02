@@ -16,7 +16,7 @@
 /** 剧本共用的一份任务书骨架片段。 */
 const DISCIPLINE = '一路做完,不要在中途停下来问我;每一步交付时给观测与判据对照。'
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 export const SCENARIOS = {
@@ -187,7 +187,7 @@ export const SCENARIOS = {
 	'jepa-research': {
 		title: '开放研究:JEPA 世界模型的调研、探索与方向',
 		expectComplete: true,
-		why: '前面几场都是点名机制的小任务。这一场是人真会发来的开放研究题,只在最后点名结案:判断、检验、独立核验、推翻与说不清、本体与实体图、答复的说法,要靠提示词与工具面自己走出来。改造六个阶段落地之后,用它看整体是否符合设计。',
+		why: '前面几场都是点名机制的小任务。这一场是人真会发来的开放研究题,只在最后点名结案:判断、检验、独立核验、推翻与说不清、本体文件与实体图、答复的说法,要靠提示词与工具面自己走出来。本体改成文件树之后,用它看整体是否符合设计。',
 		task: [
 			'这个工作区是空的。请以 JEPA 世界模型为题做一次完整的研究:',
 			'把相关工作调研清楚(从 I-JEPA、V-JEPA 到最新进展,以及它和生成式世界模型、其他自监督方法的区别);',
@@ -195,29 +195,66 @@ export const SCENARIOS = {
 			'结论要能信:哪些已经核实、哪些被推翻、哪些还说不清,都要分清楚;把这个领域的概念和具体工作整理成本体与实体图。',
 			`${DISCIPLINE}判据达成后用 Conclude 结案。`,
 		].join('\n'),
-		asserts: ({ mutations, countOf, evidenceVerdicts, events }) => {
-			const framed = [...mutations].reverse().find((m) => m.t === 'goal/set')
-			const hypotheses = framed?.hypotheses ?? []
-			const registered = mutations.filter((m) => m.t === 'entity/registered')
-			const closed = [...mutations].reverse().find((m) => m.t === 'goal/closed')
-			/** 第六阶段:工具结果与运行态卡里不该出现内核起的编号(`h-xxxxxx`)与机制词。 */
-			const resultText = events
-				.filter((event) => event.type === 'tool/result')
-				.map((event) => JSON.stringify(event.data?.message?.content ?? ''))
-				.join('\n')
-			const leakedIds = [...new Set(resultText.match(/\bh-[a-z0-9]{6}\b/g) ?? [])]
-			return [
-				{ label: '立了至少三条判断', ok: hypotheses.length >= 3, detail: `${hypotheses.length} 条` },
-				{ label: '立了领域词汇(概念 ≥ 5,关系 ≥ 2)', ok: countOf('ontology/term_added') >= 5 && countOf('ontology/predicate_added') >= 2, detail: `概念 ${countOf('ontology/term_added')} · 关系 ${countOf('ontology/predicate_added')}` },
-				{ label: '登记了具体工作(实例 ≥ 5,都带出处)', ok: registered.length >= 5 && registered.every((m) => typeof m.provenance?.ref === 'string' && m.provenance.ref !== ''), detail: `${registered.length} 个` },
-				{ label: '写了带出处的断言(≥ 3)', ok: countOf('entity/asserted') >= 3, detail: `${countOf('entity/asserted')} 条` },
-				{ label: '至少一次独立核验', ok: countOf('audit/settled') >= 1, detail: `派 ${countOf('audit/dispatched')} · 回 ${countOf('audit/settled')}` },
-				{ label: '不只有支持(有推翻或说不清的结果)', ok: evidenceVerdicts.some((verdict) => verdict !== 'support'), detail: evidenceVerdicts.join(',') },
-				{ label: '结案达成,并有结论写进长期知识', ok: closed?.status === 'achieved' && countOf('fact/promoted') >= 1, detail: `结案=${closed?.status ?? '(无)'} 升格=${countOf('fact/promoted')}` },
-				{ label: '工具结果与卡里没有内部编号(第六阶段)', ok: leakedIds.length === 0, detail: leakedIds.join(',') || '无' },
-			]
-		},
+		asserts: (context) => researchAsserts(context),
 	},
+	'navier-stokes': {
+		title: '开放研究:最近被宣布解决的 Navier–Stokes 方程问题',
+		expectComplete: true,
+		why: '与 JEPA 那场同形,换成数学:看本体文件树在「定理、方程、证明、作者」这类领域里是否一样好用,以及「宣布解决」这种说法会不会被如实核验,而不是照单全收。',
+		task: [
+			'这个工作区是空的。数学里那个 Navier–Stokes(纳维–斯托克斯)方程的问题,据说最近被解决了。请做一次完整的研究:',
+			'调研清楚到底解决了什么(哪个版本的问题、在什么假设下、谁做的、发表或审稿到了哪一步),证明的思路和关键步骤是什么,和此前的工作(Leray、Caffarelli–Kohn–Nirenberg、Tao 的平均化模型、Euler / Boussinesq 爆破的计算机辅助证明等)是什么关系;',
+			'动手做一点能复查的探索(数值或符号都可以);最后给出这个方向接下来值得做的问题。',
+			'结论要能信:哪些已经核实、哪些被推翻、哪些还说不清,都要分清楚;把这个领域的概念和具体工作整理成本体与实体图。',
+			`${DISCIPLINE}判据达成后用 Conclude 结案。`,
+		].join('\n'),
+		asserts: (context) => researchAsserts(context),
+	},
+}
+
+/**
+ * 两场开放研究共用的判据:本体是 `clear/ontology/` 下的文件树,事实是 `clear/knowledge/facts/` 下的文件。
+ * 词汇、实体与关系一律从**重放出来的投影**里读(文件经 `workspace/synced` 进账),不数工具调用。
+ */
+function researchAsserts({ mutations, countOf, evidenceVerdicts, events, state, workspace }) {
+	const framed = [...mutations].reverse().find((m) => m.t === 'goal/set')
+	const hypotheses = framed?.hypotheses ?? []
+	const closed = [...mutations].reverse().find((m) => m.t === 'goal/closed')
+	const lexicon = state?.lexicon ?? {}
+	const terms = Array.isArray(lexicon.terms) ? lexicon.terms : []
+	const predicates = Array.isArray(lexicon.predicates) ? lexicon.predicates : []
+	const entities = Array.isArray(state?.entities) ? state.entities : []
+	const relations = Array.isArray(state?.entityAssertions) ? state.entityAssertions : []
+	const problems = Array.isArray(state?.ontologyProblems) ? state.ontologyProblems : []
+	const errors = problems.filter((item) => item.severity === 'error')
+	const nested = terms.filter((term) => typeof term.parent === 'string' && term.parent !== '')
+	const legacyVerbs = events.filter((event) => event.type === 'tool/call' && ['Define', 'Deprecate', 'RegisterInstance', 'Assert'].includes(event.data?.name))
+	let factFiles = 0
+	try {
+		factFiles = readdirSync(join(workspace, 'clear', 'knowledge', 'facts')).filter((name) => name.endsWith('.json')).length
+	} catch {
+		factFiles = 0
+	}
+	/** 第六阶段:工具结果与运行态卡里不该出现内核起的编号(`h-xxxxxx`)与机制词。 */
+	const resultText = events
+		.filter((event) => event.type === 'tool/result')
+		.map((event) => JSON.stringify(event.data?.message?.content ?? ''))
+		.join('\n')
+	const leakedIds = [...new Set(resultText.match(/\bh-[a-z0-9]{6}\b/g) ?? [])]
+	return [
+		{ label: '立了至少三条判断', ok: hypotheses.length >= 3, detail: `${hypotheses.length} 条` },
+		{ label: '本体写成了文件(概念 ≥ 5,关系 ≥ 2)', ok: terms.length >= 5 && predicates.length >= 2, detail: `概念 ${terms.length} · 关系 ${predicates.length}` },
+		{ label: '概念用目录嵌套表达了上下位(至少一个有父概念)', ok: nested.length >= 1, detail: `${nested.length} 个有父概念` },
+		{ label: '具体工作写成了实体文件(≥ 5,都带出处)', ok: entities.length >= 5 && entities.every((m) => typeof m.provenance?.ref === 'string' && m.provenance.ref !== ''), detail: `${entities.length} 个` },
+		{ label: '实体上写了带出处的关系(≥ 3)', ok: relations.length >= 3, detail: `${relations.length} 条` },
+		{ label: '没有去调已删掉的本体工具', ok: legacyVerbs.length === 0, detail: `${legacyVerbs.length} 次` },
+		{ label: '结束时本体文件没有 error 级问题', ok: errors.length === 0, detail: `error ${errors.length} · 共 ${problems.length}${errors.length > 0 ? `:${errors.slice(0, 3).map((item) => `${item.path} ${item.code}`).join(';')}` : ''}` },
+		{ label: '至少一次独立核验', ok: countOf('audit/settled') >= 1, detail: `派 ${countOf('audit/dispatched')} · 回 ${countOf('audit/settled')}` },
+		{ label: '不只有支持(有推翻或说不清的结果)', ok: evidenceVerdicts.some((verdict) => verdict !== 'support'), detail: evidenceVerdicts.join(',') },
+		{ label: '结案达成,并有结论写进长期知识', ok: closed?.status === 'achieved' && countOf('fact/promoted') >= 1, detail: `结案=${closed?.status ?? '(无)'} 升格=${countOf('fact/promoted')}` },
+		{ label: '升格的事实都落成了文件(clear/knowledge/facts/*.json)', ok: factFiles >= countOf('fact/promoted') && factFiles >= 1, detail: `文件 ${factFiles} · 升格 ${countOf('fact/promoted')}` },
+		{ label: '工具结果与卡里没有内部编号(第六阶段)', ok: leakedIds.length === 0, detail: leakedIds.join(',') || '无' },
+	]
 }
 
 /**
