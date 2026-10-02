@@ -516,9 +516,16 @@ window.__ModuleLoader__.load({
 		const levelRank = (value) => LEVEL_RANK[value] ?? -1
 
 		/**
-		 * 一条命题的证据。链是**证据 → 步骤 → 命题**(`evidence.stepId` → `step.tests.hypothesis`),
-		 * 与原始设计 `evidenceForHypothesis` 同一条链:证据挂在步骤上,不直接挂在命题上。
+		 * 一条命题的证据。新账上每条证据写明它针对哪条命题(`evidence.hypothesis`);
+		 * 旧账没有这一格,走**证据 → 步骤 → 命题**(`evidence.stepId` → `step.tests.hypotheses`)那条链。
 		 */
+		/** 一个步骤检验的命题 id(新形状 `tests.hypotheses`;旧形状单条 `tests.hypothesis` 照旧认)。 */
+		function testedOf(meta) {
+			const tests = meta?.tests
+			if (Array.isArray(tests?.hypotheses)) return tests.hypotheses
+			return typeof tests?.hypothesis === 'string' && tests.hypothesis !== '' ? [tests.hypothesis] : []
+		}
+
 		function evidenceOf(data, hypothesisId) {
 			/**
 			 * 走**跨计划**的步骤索引:命题的验证步常常留在**已收尾的旧计划**里
@@ -528,10 +535,13 @@ window.__ModuleLoader__.load({
 			const index = data?.stepIndex ?? {}
 			const steps = new Set(
 				Object.entries(index)
-					.filter(([, meta]) => meta?.tests?.hypothesis === hypothesisId)
+					.filter(([, meta]) => testedOf(meta).includes(hypothesisId))
 					.map(([stepId]) => stepId),
 			)
-			return (data?.evidence ?? []).filter((item) => steps.has(item.stepId)).slice().sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
+			return (data?.evidence ?? [])
+				.filter((item) => (item.hypothesis === null || item.hypothesis === undefined ? steps.has(item.stepId) : item.hypothesis === hypothesisId))
+				.slice()
+				.sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
 		}
 
 		/**
@@ -1475,13 +1485,13 @@ window.__ModuleLoader__.load({
 		/**
 		 * 哪条命题的证据来自这一步(纯函数:可单测)。
 		 *
-		 * 唯一的关系就是**步骤上登记的 `tests.hypothesis`** —— 不猜:这一步没登记命题
+		 * 唯一的关系就是**步骤上登记的 `tests.hypotheses`**(检验几条就取第一条展开)—— 不猜:这一步没登记命题
 		 * (自判的 L0 步骤常常没有)就返回 `null`,界面因此**不乱展开**任何一条命题 ✓。
 		 * (第一版这里写过一个"退一步看证据挂谁"的回退,而它又去查同一个索引 ⇒ 循环 ✗,已删。)
 		 */
 		function propositionForStep(data, stepId) {
 			if (typeof stepId !== 'string' || stepId === '') return null
-			const hypothesis = (data?.stepIndex ?? {})[stepId]?.tests?.hypothesis
+			const hypothesis = testedOf((data?.stepIndex ?? {})[stepId])[0]
 			return typeof hypothesis === 'string' && hypothesis !== '' ? hypothesis : null
 		}
 

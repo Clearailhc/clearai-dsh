@@ -111,13 +111,15 @@ function judge(before, mutations, admittedIn, fail) {
 			const goal = before?.goal ?? null
 			const need = LEVEL_RANK[String(goal?.promote_at_level ?? '')]
 			if (goal !== null && need !== undefined) {
-				/** 顺着 假设(claim 匹配)→ 步骤(tests.hypothesis)→ 证据(support) 这条边走。 */
+				/** 顺着 假设(claim 匹配)→ 证据(新账写明 hypothesis;旧账走步骤的 tests)→ support 这条边走。 */
 				const hypothesis = (Array.isArray(before?.hypotheses) ? before.hypotheses : []).find((item) => String(item.claim ?? '') === String(mutation.text ?? ''))
 				const hypId = hypothesis === undefined ? null : String(hypothesis.id)
 				const stepIds = new Set(
-					hypId === null ? [] : plans.flatMap((plan) => (plan.steps ?? []).filter((s) => String(s?.tests?.hypothesis ?? '') === hypId).map((s) => String(s.id))),
+					hypId === null ? [] : plans.flatMap((plan) => (plan.steps ?? []).filter((s) => (s?.tests?.hypotheses ?? []).map(String).includes(hypId)).map((s) => String(s.id))),
 				)
-				const support = (Array.isArray(before?.evidence) ? before.evidence : []).filter((item) => String(item.verdict) === 'support' && (hypId === null || stepIds.has(String(item.step))))
+				const support = (Array.isArray(before?.evidence) ? before.evidence : []).filter(
+					(item) => String(item.verdict) === 'support' && (hypId === null || (item.hypothesis !== undefined ? String(item.hypothesis) === hypId : stepIds.has(String(item.step)))),
+				)
 				const best = support.reduce((max, item) => Math.max(max, LEVEL_RANK[String(item.level)] ?? -1), -1)
 				if (best < need) fail(`升格有据:fact/promoted 的最高支持等级(${best === -1 ? '无' : `L${best}`})没到目标登记的 promote_at_level(${String(goal.promote_at_level)})`)
 			}

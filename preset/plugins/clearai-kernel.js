@@ -536,6 +536,44 @@ export function apply(ctx, config = {}) {
 		return null
 	}
 
+	/**
+	 * 一个步骤要检验的判断,一律解析成 **id 数组**:新写法 `tests.hypotheses`(可多条),
+	 * 旧写法单条 `tests.hypothesis` 照旧认。一个关键实验可以同时判几条竞争的判断,每条各得一份证据。
+	 * 解析在**立约那一刻**做完,账上存的是 id——主张原文改了也认得出。
+	 */
+	function resolveTests(hypotheses, tests) {
+		if (tests === undefined || tests === null) return { ok: true, tests: null }
+		const wanted = Array.isArray(tests.hypotheses) ? tests.hypotheses : tests.hypothesis !== undefined ? [tests.hypothesis] : []
+		const ids = []
+		for (const raw of wanted) {
+			const found = matchHypothesis(hypotheses, raw)
+			if (found === null) return { ok: false, wanted: String(raw) }
+			if (!ids.includes(found.id)) ids.push(found.id)
+		}
+		return { ok: true, tests: { hypotheses: ids, level: tests.level } }
+	}
+
+	/** 一个已登记步骤检验的判断 id(兼容旧账本的单条写法)。 */
+	function testedBy(step) {
+		const tests = step?.tests
+		if (tests === undefined || tests === null) return []
+		if (Array.isArray(tests.hypotheses)) return tests.hypotheses.map(String)
+		return typeof tests.hypothesis === 'string' && tests.hypothesis !== '' ? [tests.hypothesis] : []
+	}
+
+	/**
+	 * 一条判断收到的证据。新账上每条证据写明它针对哪条判断(`hypothesis`);
+	 * 旧账没有这一格,按「证据 → 步骤 → 步骤检验的判断」那条边找回来。
+	 */
+	function evidenceFor(state, hypothesisId) {
+		const steps = new Map()
+		for (const plan of state?.plans ?? []) for (const step of plan.steps ?? []) steps.set(`${plan.id}:${step.id}`, step)
+		return (state?.evidence ?? []).filter((item) => {
+			if (item.hypothesis !== undefined) return item.hypothesis === hypothesisId
+			return testedBy(steps.get(`${item.plan}:${item.step}`)).includes(hypothesisId)
+		})
+	}
+
 	/** 对不上时**列出全部有效选项**(id 最稳):让模型能照抄,而不是继续猜。 */
 	function hypothesisMenu(hypotheses) {
 		if (hypotheses.length === 0) return '当前目标没有登记任何假设:先用 SetGoal 登记(每条约一句话主张 + 一句推翻条件)。'
@@ -707,7 +745,10 @@ export function apply(ctx, config = {}) {
 		'**纪律:**',
 		'- 只核对不发挥:你的职责是对照标准验收,不是重做方案、不是提改进建议。',
 		'- 你没有写入权限:任何需要产出文件的事都不是你的事。',
-		'- 对假设的裁决只有三个词:support 表示观测满足判定标准且不满足推翻条件,refute 表示满足推翻条件,inconclusive 表示无法判定。推翻是有价值的结果——不要为了让步骤通过而写 support。',
+		'- 你给**两项**裁决,不要混在一起:',
+		'  · **交付成立吗**(`holds`):yes = 判据逐条满足、观测真实;no = 有判据不满足,或观测与记录对不上;unclear = 凭现有材料判不了。',
+		'  · **每条判断的结果**(`results`,这一步检验几条就给几格):对照它的推翻条件读——support = 没碰到推翻条件,refute = 碰到了,inconclusive = 这次观测区分不了。',
+		'- 交付成立与判断被推翻可以同时为真:推翻是有价值的结果,它不让交付失败。不要为了让步骤通过而写 support。',
 		'',
 		'**回包的形状就是你的动作空间(字段长度由 schema 校验,超了会被拒):**',
 		'- `basis` 是**一句话结论**,≤1200 字。**不要在这里写论证**——论证放 `refs`:逐条 `{path, line}` 指到你实际读过的文件与行,让第三方照着就能复核。',
@@ -726,8 +767,22 @@ export function apply(ctx, config = {}) {
 	const VERDICT_SCHEMA = {
 		type: 'object',
 		properties: {
-			verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
+			holds: { type: 'string', enum: ['yes', 'no', 'unclear'], description: '交付成立吗:yes=判据逐条满足、观测真实;no=有判据不满足或观测不真实;unclear=凭现有材料判不了' },
 			basis: { type: 'string', maxLength: 1200, description: '一句话结论(≤1200 字);展开的论证放 refs,不要写在这里' },
+			results: {
+				type: 'array',
+				description: '这一步检验的每条判断各一格:对照它的推翻条件读结果。不检验判断的步骤给空数组。',
+				items: {
+					type: 'object',
+					properties: {
+						hypothesis: { type: 'string', maxLength: 80, description: '判断的 id' },
+						verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
+						basis: { type: 'string', maxLength: 600, description: '一句话:这次观测对照推翻条件读出了什么' },
+					},
+					required: ['hypothesis', 'verdict'],
+					additionalProperties: false,
+				},
+			},
 			shortfalls: {
 				type: 'array',
 				description: '每条缺口一格:哪条判据、你看到什么、还缺什么。不要写散文。',
@@ -765,13 +820,15 @@ export function apply(ctx, config = {}) {
 		 * 目标于是永远结不了案。**先保证裁决到得了,再要求它可复核**;没给 refs 时,
 		 * 下面的正文兜底会把裁决从 markdown 卡片里取回来(并且如实标注它是被救回来的)。
 		 */
-		required: ['verdict', 'basis'],
+		required: ['holds', 'basis'],
 		additionalProperties: false,
 	}
 
 	function evaluatorPrompt(state, step, gate, sessionId) {
 		const goal = state.goal
-		const hypothesis = step.tests?.hypothesis == null ? null : state.hypotheses.find((item) => item.id === step.tests.hypothesis) ?? null
+		const tested = testedBy(step)
+			.map((id) => state.hypotheses.find((item) => item.id === id))
+			.filter((item) => item !== undefined)
 		return [
 			EVALUATOR_DISCIPLINE,
 			'',
@@ -782,7 +839,9 @@ export function apply(ctx, config = {}) {
 			goal === null ? '- 目标:未立' : `- 目标:${goal.claim}`,
 			`- **判定标准(在做之前就已登记)**:${step.done_criteria}`,
 			step.tests == null ? '- 本步未声明验证等级' : `- 验证等级:${step.tests.level}(决定谁可以写裁决)`,
-			hypothesis === null ? '- 本步未挂假设' : `- 本步检验的假设:${hypothesis.claim}(推翻条件:${hypothesis.refute_when})`,
+			...(tested.length === 0
+				? ['- 本步不检验判断:`results` 给空数组']
+				: ['- 本步检验的判断(每条在 `results` 里各给一格):', ...tested.map((item) => `  · ${item.id}:${item.claim}(推翻条件:${item.refute_when})`)]),
 			'',
 			'# 已通过观测准入的坐标(Harness 核验过存在、非空、结构合法)',
 			...(gate.confirmed.length === 0 ? ['- (无)'] : gate.confirmed.map((item) => `- ${item.ref} — ${item.bytes} 字节 — ${item.digest ?? 'digest 不可得'}`)),
@@ -790,7 +849,7 @@ export function apply(ctx, config = {}) {
 			'',
 			`工作目录:${sessionCwdLabel(sessionId)}`,
 			'',
-			'请只读上述坐标与执行记录,拿**已登记的判定标准**对照观测,给出裁决。',
+			'请只读上述坐标与执行记录,给出两项裁决:拿**已登记的判定标准**对照观测,判交付成立吗(`holds`);再拿每条判断的**推翻条件**对照观测,读出它的结果(`results`)。',
 			'准入只核验了「坐标存在且非空」——齐备不等于这一步做完了;判据里的断言(数值、口径、一致性)必须由你逐条核对。',
 			'你不得修改任何文件,不得执行写入命令,不得重做方案。',
 		].join('\n')
@@ -805,7 +864,21 @@ export function apply(ctx, config = {}) {
 	 * 那会让一份合法但旧式的裁决在账上变成"没有缺口"。两种都在,各自如实。
 	 */
 	function normalizeVerdict(value) {
-		const verdict = typeof value?.verdict === 'string' ? value.verdict.toLowerCase() : 'inconclusive'
+		/**
+		 * 旧形状只有一个 `verdict`:那时评估者用它说的是「交付成立吗」(真跑里的依据都写着「判据满足」),
+		 * 所以 support/refute/inconclusive 按 yes/no/unclear 读回来,不把它当成对判断的结果。
+		 */
+		const legacy = typeof value?.verdict === 'string' ? value.verdict.toLowerCase() : null
+		const rawHolds = typeof value?.holds === 'string' ? value.holds.toLowerCase() : null
+		const holds = ['yes', 'no', 'unclear'].includes(rawHolds) ? rawHolds : legacy === 'support' ? 'yes' : legacy === 'refute' ? 'no' : 'unclear'
+		const results = []
+		for (const item of Array.isArray(value?.results) ? value.results : []) {
+			if (item === null || typeof item !== 'object') continue
+			const hypothesis = String(item.hypothesis ?? '').trim()
+			const verdict = String(item.verdict ?? '').toLowerCase()
+			if (hypothesis === '' || !['support', 'refute', 'inconclusive'].includes(verdict)) continue
+			results.push({ hypothesis: hypothesis.slice(0, 80), verdict, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim().slice(0, 600) : null })
+		}
 		const shortfalls = []
 		for (const item of Array.isArray(value?.shortfalls) ? value.shortfalls : []) {
 			if (typeof item === 'string') {
@@ -831,7 +904,8 @@ export function apply(ctx, config = {}) {
 		}
 		const basis = typeof value?.basis === 'string' && value.basis.trim() !== '' ? value.basis.trim() : '评估者未给出依据'
 		return {
-			verdict: ['support', 'refute', 'inconclusive'].includes(verdict) ? verdict : 'inconclusive',
+			holds,
+			results,
 			// 截断是**兜底**:schema 已声明 maxLength,越界的产出本不该到这里;真到了也不能让账本吃下五千字。
 			// 截断标记**算在预算内**:申报多少就必须是多少。
 			basis: basis.length > 1200 ? `${basis.slice(0, 1170)}…(裁到 1200 字;完整论证应由 refs 指认)` : basis,
@@ -882,13 +956,14 @@ export function apply(ctx, config = {}) {
 		 * `basis` 取它之后到下一个标题/表格前的一段(有长度上限)。取不到就如实说取不到——
 		 * 猜一份 support 比丢掉一份 refute 坏得多。
 		 */
-		const verdictMatch = raw.match(/verdict\s*[:：]\s*\**\s*(support|refute|inconclusive)\b/i)
-		if (verdictMatch === null) return { verdict: 'inconclusive', basis: '评估者没有返回可解析的裁决', shortfalls: ['card_unparsable'] }
+		const holdsMatch = raw.match(/holds\s*[:：]\s*\**\s*(yes|no|unclear)\b/i)
+		const verdictMatch = holdsMatch ?? raw.match(/verdict\s*[:：]\s*\**\s*(support|refute|inconclusive)\b/i)
+		if (verdictMatch === null) return { holds: 'unclear', basis: '评估者没有返回可解析的裁决', shortfalls: ['card_unparsable'] }
 		const after = raw.slice(verdictMatch.index + verdictMatch[0].length)
 		const basisMatch = after.match(/basis\s*\*{0,2}\s*[:：]\s*\**\s*([\s\S]{4,1200}?)(?=\n\s*\n|\n#{1,6}\s|\n\|)/i)
 		const basis = (basisMatch === null ? after.slice(0, 400) : basisMatch[1]).replace(/\s+/g, ' ').trim()
 		return {
-			verdict: verdictMatch[1].toLowerCase(),
+			...(holdsMatch === null ? { verdict: verdictMatch[1].toLowerCase() } : { holds: verdictMatch[1].toLowerCase() }),
 			basis: basis === '' ? '评估者给了裁决但没写依据(正文卡片里没有可取的 basis)' : basis,
 			shortfalls: [],
 			/** 读的人要能分辨:这条裁决是从正文里救回来的,不是结构化通道给的。 */
@@ -1081,10 +1156,10 @@ export function apply(ctx, config = {}) {
 			 */
 			const recovered = recoverVerdictFromChildSession(audit.child)
 			if (recovered !== null && recovered.ok === true) {
-				const card = { schema_version: 'clearai.audit.v1', kind: audit.kind ?? 'evidence_audit', step_id: audit.step, auditor_run_id: String(audit.child), verdict: recovered.verdict.verdict, shortfalls: recovered.verdict.shortfalls, card: recovered.verdict.basis, created_at: Date.now() }
+				const card = { schema_version: 'clearai.audit.v2', kind: audit.kind ?? 'evidence_audit', step_id: audit.step, auditor_run_id: String(audit.child), holds: recovered.verdict.holds, results: recovered.verdict.results, shortfalls: recovered.verdict.shortfalls, card: recovered.verdict.basis, created_at: Date.now() }
 				const cardPath = writeAuditCard(sessionId, audit.step, card)
-				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: recovered.verdict.verdict, basis: recovered.verdict.basis, shortfalls: recovered.verdict.shortfalls, card_path: cardPath, digest: audit.digest ?? null })
-				lines.push(`${audit.step}:裁决从子会话日志取回(${recovered.verdict.verdict})`)
+				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: recovered.verdict.holds, holds: recovered.verdict.holds, results: recovered.verdict.results, basis: recovered.verdict.basis, shortfalls: recovered.verdict.shortfalls, card_path: cardPath, digest: audit.digest ?? null })
+				lines.push(`${audit.step}:裁决从子会话日志取回(交付成立:${recovered.verdict.holds})`)
 				continue
 			}
 			if (recovered !== null && recovered.ok !== true) {
@@ -1182,13 +1257,26 @@ export function apply(ctx, config = {}) {
 		return root.slice(0, 16)
 	}
 
+	/**
+	 * 一条结算事实说的「交付成立吗」。新账写在 `holds` 上;旧账只有 `verdict`,
+	 * 那时它说的就是交付成立吗,按 support→yes、refute→no、inconclusive→unclear 读。
+	 */
+	function auditHolds(audit) {
+		const holds = String(audit?.holds ?? '')
+		if (['yes', 'no', 'unclear', 'unknown'].includes(holds)) return holds
+		const legacy = String(audit?.verdict ?? '')
+		if (legacy === 'support') return 'yes'
+		if (legacy === 'refute') return 'no'
+		if (legacy === 'inconclusive') return 'unclear'
+		return legacy
+	}
+
 	/** 投影里最近一条与该 digest 相同、且**真的给出了裁决**的结算事实。 */
 	function reuseAudit(state, stepId, digest) {
 		const matched = (state?.audits ?? []).filter((audit) => String(audit?.step ?? '') === String(stepId) && String(audit?.digest ?? '') === digest)
 		for (let index = matched.length - 1; index >= 0; index -= 1) {
 			const audit = matched[index]
-			const verdict = String(audit?.verdict ?? '')
-			if (!['support', 'refute', 'inconclusive'].includes(verdict)) continue
+			if (!['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
 			return audit
 		}
 		return null
@@ -1231,7 +1319,8 @@ export function apply(ctx, config = {}) {
 					by: String(reused.id ?? ''),
 				})
 				return {
-					verdict: String(reused.verdict ?? 'inconclusive'),
+					holds: auditHolds(reused),
+					results: Array.isArray(reused.results) ? reused.results : [],
 					basis: String(reused.basis ?? ''),
 					shortfalls: Array.isArray(reused.shortfalls) ? reused.shortfalls : [],
 					cardPath: reused.card_path ?? null,
@@ -1275,8 +1364,8 @@ export function apply(ctx, config = {}) {
 				 * 走的是独立落账通道、在 `withPendingFacts` 的合并结果里排在前面,所以折法先建记录、
 				 * 再结它——账上不会留一条永远 `verdict=null` 的悬空派发。
 				 */
-				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', basis: `独立评估者无法派遣(${dispatched.reason})`, shortfalls: ['audit_dispatch_failed'], card_path: null, digest })
-				return { verdict: 'unknown', basis: `独立评估者无法派遣(${dispatched.reason})`, shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
+				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: `独立评估者无法派遣(${dispatched.reason})`, shortfalls: ['audit_dispatch_failed'], card_path: null, digest })
+				return { holds: 'unknown', results: [], basis: `独立评估者无法派遣(${dispatched.reason})`, shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
 			mutations.push({ t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' })
 			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, settled: undefined }
@@ -1295,7 +1384,7 @@ export function apply(ctx, config = {}) {
 		])
 		if (outcome === null) {
 			// 仍在跑:条目留着,下一次交付继续等同一次派遣(不重复派遣)。派发事实已经在上面的 mutations 里。
-			return { verdict: 'pending', basis: `评估者仍在跑(${Math.round(CFG.auditTimeoutMs / 1000)}s 未回)`, shortfalls: ['audit_pending'], cardPath: null, mutations }
+			return { holds: 'pending', results: [], basis: `评估者仍在跑(${Math.round(CFG.auditTimeoutMs / 1000)}s 未回)`, shortfalls: ['audit_pending'], cardPath: null, mutations }
 		}
 		// 已落定:这次派遣的生命周期到此为止。下一次交付是**新的一次评估**(新证据),必须重新派遣。
 		pendingAudits.delete(key)
@@ -1311,8 +1400,8 @@ export function apply(ctx, config = {}) {
 		 * 而"评估者没有悬空"这条不变量也只能红着,连解释都拿不出证据。
 		 */
 		const settleUnknown = (basis, shortfalls) => {
-			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', basis, shortfalls, card_path: null, digest })
-			return { verdict: 'unknown', basis, shortfalls, cardPath: null, digest, mutations }
+			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', holds: 'unknown', basis, shortfalls, card_path: null, digest })
+			return { holds: 'unknown', results: [], basis, shortfalls, cardPath: null, digest, mutations }
 		}
 		const settled = outcome.value
 		const stopReason = String(settled?.stopReason ?? 'completed')
@@ -1325,12 +1414,12 @@ export function apply(ctx, config = {}) {
 		} catch {
 			/* dispose 失败不影响裁决事实 */
 		}
-		const card = { schema_version: 'clearai.audit.v1', kind, step_id: step.id, auditor_run_id: String(entry.run.id), verdict: verdict.verdict, shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
+		const card = { schema_version: 'clearai.audit.v2', kind, step_id: step.id, auditor_run_id: String(entry.run.id), holds: verdict.holds, results: verdict.results, shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
 		const cardPath = writeAuditCard(sessionId, step.id, card)
 		if (cardPath === null) {
 			return settleUnknown('评估卡落盘失败:裁决降级', ['card_persist_failed'])
 		}
-		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.verdict, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
+		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.holds, holds: verdict.holds, results: verdict.results, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
 		return { ...verdict, cardPath, digest, mutations }
 	}
 
@@ -2237,9 +2326,10 @@ export function apply(ctx, config = {}) {
 				claimed.set(key, step.id)
 			}
 			if (step.tests !== undefined && step.tests !== null) {
-				if (typeof step.tests !== 'object') return `${label} 的 tests 必须是 {hypothesis, level}`
+				if (typeof step.tests !== 'object') return `${label} 的 tests 必须是 {hypotheses, level}`
 				if (levelIndexOf(step.tests.level) < 0) return `${label} 的 tests.level 必须是 L0–L4 之一`
-				if (typeof step.tests.hypothesis !== 'string' || step.tests.hypothesis === '') return `${label} 的 tests 缺少 hypothesis`
+				const wanted = Array.isArray(step.tests.hypotheses) ? step.tests.hypotheses : step.tests.hypothesis !== undefined ? [step.tests.hypothesis] : []
+				if (wanted.length === 0 || wanted.some((item) => typeof item !== 'string' || item.trim() === '')) return `${label} 的 tests 要写明检验哪几条判断(hypotheses:id 数组,至少一条)`
 			}
 		}
 		return null
@@ -2420,7 +2510,7 @@ export function apply(ctx, config = {}) {
 					)
 				}
 				const settled = (state.audits ?? []).filter((audit) => String(audit.id) === wanted)
-				const usable = settled.find((audit) => ['support', 'refute', 'inconclusive'].includes(String(audit.verdict)))
+				const usable = settled.find((audit) => ['yes', 'no', 'unclear'].includes(auditHolds(audit)))
 				if (usable === undefined) {
 					const inFlight = settled.some((audit) => audit.verdict === null)
 					return fail(
@@ -2661,8 +2751,8 @@ export function apply(ctx, config = {}) {
 			}
 			const audit = await runEvaluator(sessionId, exec.agent, plan, syntheticStep, gate, 'goal_audit', exec.signal)
 			mutations.push(...audit.mutations)
-			if (audit.verdict === 'pending') return fail('audit_pending', `目标评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试。`, { mutations: audit.mutations })
-			if (audit.verdict !== 'support') {
+			if (audit.holds === 'pending') return fail('audit_pending', `目标评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试。`, { mutations: audit.mutations })
+			if (audit.holds !== 'yes') {
 				/**
 				 * **复用来的裁决不落第二条证据**。
 				 *
@@ -2674,7 +2764,7 @@ export function apply(ctx, config = {}) {
 				if (audit.reused === true) {
 					return fail(
 						'goal_not_achieved',
-						`目标未达成,保持开放。**这一步与上一次是同一份材料,所以复用了上一条独立裁决**(不再重复花钱请人):裁决 ${audit.verdict}。依据:${audit.basis}\n要拿到新判断,先改材料:补观测 / 交付产物 / 修订假设或判据;只是再喊一次结案不会产生新判断。\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}`,
+						`目标未达成,保持开放。**这一步与上一次是同一份材料,所以复用了上一条独立裁决**(不再重复花钱请人):判据达成 ${audit.holds}。依据:${audit.basis}\n要拿到新判断,先改材料:补观测 / 交付产物 / 修订假设或判据;只是再喊一次结案不会产生新判断。\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}`,
 						{ mutations },
 					)
 				}
@@ -2695,7 +2785,9 @@ export function apply(ctx, config = {}) {
 					id: `e-${Math.random().toString(36).slice(2, 8)}`,
 					step: syntheticStep.id,
 					plan: plan?.id ?? 'goal',
-					verdict: audit.verdict === 'unknown' ? 'inconclusive' : audit.verdict,
+					/** 目标级的裁决不是对哪一条判断的结果:不挂判断,只记「判据没达成 / 判不了」。 */
+					hypothesis: null,
+					verdict: audit.holds === 'no' ? 'refute' : 'inconclusive',
 					level: goal.promote_at_level,
 					evaluator: 'independent',
 					basis: audit.basis,
@@ -2711,7 +2803,7 @@ export function apply(ctx, config = {}) {
 				const preview = previewOf(hostService, sessionId, mutations)
 				return fail(
 					'goal_not_achieved',
-					`目标未达成,保持开放。评估者裁决:${audit.verdict}。依据:${audit.basis}${audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : ''}\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}${preview === null ? '\n(运行态卡这一刻取不到:宿主读面不可用。已经发生的事实照旧落账;先看当前账本再谈重试。)' : `\n\n${preview.card}`}`,
+					`目标未达成,保持开放。评估者裁决:判据达成 ${audit.holds}。依据:${audit.basis}${audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : ''}\n未落定步骤:${unfinished.length === 0 ? '无' : unfinished.map((step) => step.id).join(', ')}${preview === null ? '\n(运行态卡这一刻取不到:宿主读面不可用。已经发生的事实照旧落账;先看当前账本再谈重试。)' : `\n\n${preview.card}`}`,
 					{ mutations },
 				)
 			}
@@ -2752,7 +2844,9 @@ export function apply(ctx, config = {}) {
 					text: hypothesis.claim,
 					scope: hypothesis.refute_when ?? null,
 					level: hypothesis.supportedLevel ?? null,
-					evidence: state.evidence.filter((item) => item.verdict === 'support').map((item) => item.id),
+					evidence: evidenceFor(state, hypothesis.id)
+						.filter((item) => item.verdict === 'support')
+						.map((item) => item.id),
 					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
 					path,
 				})
@@ -2801,10 +2895,15 @@ export function apply(ctx, config = {}) {
 			tests: {
 				type: 'object',
 				properties: {
-					hypothesis: { type: 'string', description: '要检验的假设:**填 id 最稳**(h-xxxx,从运行态卡复制);也接受主张原文' },
+					hypotheses: {
+						type: 'array',
+						minItems: 1,
+						items: { type: 'string' },
+						description: '这一步检验哪几条判断:**填 id 最稳**(h-xxxx,从运行态卡复制),也接受主张原文。一次观测同时判几条竞争的判断时(比较那一步),把它们都列上',
+					},
 					level: { type: 'string', enum: LEVELS },
 				},
-				required: ['hypothesis', 'level'],
+				required: ['hypotheses', 'level'],
 				additionalProperties: false,
 			},
 		},
@@ -3336,7 +3435,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'CreatePlan',
 		description:
-			'立约:把复杂任务立成一份计划。每步一句话说清做什么(do)、以何物为证(artifacts)、以及判定标准(done_criteria,在结果出现之前写下)。检验假设的步骤用 tests:{hypothesis, level} 声明验哪条、什么等级。最多 25 步。约立起便锁定:局部挫折改当前步,不要推倒重来。',
+			'立约:把复杂任务立成一份计划。每步一句话说清做什么(do)、以何物为证(artifacts)、以及判定标准(done_criteria,在结果出现之前写下)。检验判断的步骤用 tests:{hypotheses, level} 声明验哪几条、什么等级(比较竞争路线的那一步,把竞争的几条都列上)。最多 25 步。约立起便锁定:局部挫折改当前步,不要推倒重来。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3355,10 +3454,11 @@ export function apply(ctx, config = {}) {
 			if (activePlanOf(state) !== null) return fail('active_plan_exists', '已经有一份活动计划。改它用 AmendPlan / RefinePlan / VoidPlanStep,收它用 ClosePlan。')
 			const problem = validateSteps(args.steps)
 			if (problem !== null) return fail('invalid_steps', problem)
+			const resolvedTests = new Map()
 			for (const step of args.steps) {
-				if (step.tests !== undefined && step.tests !== null && matchHypothesis(state.hypotheses, step.tests.hypothesis) === null) {
-					return fail('unknown_hypothesis', `步骤 ${step.id} 声明的假设对不上任何一条已登记的假设。${hypothesisMenu(state.hypotheses)}`)
-				}
+				const resolved = resolveTests(state.hypotheses, step.tests)
+				if (resolved.ok !== true) return fail('unknown_hypothesis', `步骤 ${step.id} 声明的判断「${resolved.wanted}」对不上任何一条已登记的判断。${hypothesisMenu(state.hypotheses)}`)
+				resolvedTests.set(step.id, resolved.tests)
 			}
 			const warnings = []
 			if (typeof args.brief !== 'string' || args.brief.length < CFG.minBriefChars) warnings.push(`brief 偏短(建议 ≥${CFG.minBriefChars} 字),它是给人读的计划说明`)
@@ -3400,7 +3500,7 @@ export function apply(ctx, config = {}) {
 				brief,
 				confirmed_at: confirmed ? new Date().toISOString() : null,
 				confirmed_by: confirmed ? 'user' : null,
-				steps: args.steps.map((step) => ({ id: step.id, do: step.do, artifacts: step.artifacts ?? [], done_criteria: step.done_criteria, tests: step.tests ?? null })),
+				steps: args.steps.map((step) => ({ id: step.id, do: step.do, artifacts: step.artifacts ?? [], done_criteria: step.done_criteria, tests: resolvedTests.get(step.id) ?? null })),
 			})
 			return done({
 				ok: true,
@@ -3441,7 +3541,9 @@ export function apply(ctx, config = {}) {
 			const problem = validateSteps([args.step], plan.steps)
 			if (problem !== null) return fail('invalid_step', problem)
 			if (plan.steps.some((step) => step.id === args.step.id)) return fail('duplicate_step', `步骤 id 已存在:${args.step.id}`)
-			const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: args.step.tests ?? null }
+			const resolved = resolveTests(state.hypotheses, args.step.tests)
+			if (resolved.ok !== true) return fail('unknown_hypothesis', `步骤 ${args.step.id} 声明的判断「${resolved.wanted}」对不上任何一条已登记的判断。${hypothesisMenu(state.hypotheses)}`)
+			const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: resolved.tests }
 			mutations.push({ t: 'plan/amended', plan: plan.id, step: amended })
 			if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
 			/**
@@ -3579,7 +3681,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'AdvancePlan',
 		description:
-			'交付一步(唯一完成动词):把观测交上来。系统先做观测准入——声明的产物存在、非空、结构合法;准入只看收不收,不做裁决。L0–L2 由你给 verdict 与 basis(依据必须能被复查);L3 以上由系统派独立评估者裁决,你写 verdict 会被拒绝。没有物证,就还没有完成——没有手动标记这回事。',
+			'交付一步(唯一完成动词):把观测交上来。系统先做观测准入——声明的产物存在、非空、结构合法;准入只看收不收,不做裁决。交付成立这一步就完成——它检验的判断被支持、被推翻还是说不清,**都算完成**,结果单独记成证据。L0–L2 由你给 basis(交付凭什么成立,必须能被复查)与 results(这一步检验的每条判断各一格);L3 以上两项都由系统派独立评估者判,你写 results 会被拒绝。没有物证,就还没有完成——没有手动标记这回事。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3589,8 +3691,21 @@ export function apply(ctx, config = {}) {
 					description: '观测:这一步拿到的原始结果(相对 workspace 的路径 + 一句说明)',
 					items: { type: 'object', properties: { ref: { type: 'string' }, note: { type: 'string' } }, required: ['ref'], additionalProperties: false },
 				},
-				verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'], description: '仅 L0–L2 可自判;L3 以上由独立评估者裁决' },
-				basis: { type: 'string', description: '自判依据:引用了哪个产物里的哪个事实(必须可复查)' },
+				basis: { type: 'string', description: '交付凭什么成立:引用了哪个产物里的哪个事实(必须可复查)。仅 L0–L2 由你写' },
+				results: {
+					type: 'array',
+					description: '仅 L0–L2:这一步检验的每条判断各一格,对照它的推翻条件读结果。support=没碰到推翻条件;refute=碰到了;inconclusive=这次观测区分不了。推翻和说不清都不妨碍这一步完成',
+					items: {
+						type: 'object',
+						properties: {
+							hypothesis: { type: 'string', description: '判断 id(也认原文)' },
+							verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
+							basis: { type: 'string', description: '一句话:这次观测对照推翻条件读出了什么(不写就用上面那句 basis)' },
+						},
+						required: ['hypothesis', 'verdict'],
+						additionalProperties: false,
+					},
+				},
 			},
 			required: ['step_id'],
 			additionalProperties: false,
@@ -3695,45 +3810,25 @@ export function apply(ctx, config = {}) {
 				)
 			}
 
-			/**
-			 * **同一步连续拿不到结论 ⇒ 先改点什么,再交**。
-			 *
-			 * 判据是这一步已有 ≥2 条 `inconclusive` 证据。两次都答不上来,第三次原样再交就不是
-			 * 「再试一次」,而是**同一语义动作重复做而没有新事实**——该换法,不该继续烧评估者的时间。
-			 * 改判据(`RefinePlan` 会给 `criteria_versions` 追加一版)或换法(作废/新增步骤)之后门自然放行:
-			 * 它拦的是「什么都没改就再交一次」,不是「这一级不许做第二次」。
-			 *
-			 * 只挂 L3 以上:那两级每次交付都要花一次独立评估,重复的代价是真的;
-			 * L0–L2 由做的人自己判,重试很便宜,判据也是他自己的。
-			 */
-			if (levelIndex > SELF_JUDGE_MAX_INDEX) {
-				const repeats = (state.evidence ?? []).filter((item) => item.step === step.id && item.verdict === 'inconclusive').length
-				const refined = Array.isArray(step.criteria_versions) && step.criteria_versions.length > 1
-				if (repeats >= 2 && !refined) {
-					return fail(
-						'inconclusive_repeat_forced_change',
-						`这一步已经连续 ${repeats} 次无法判定。同一判据下再交一次只是把同一个问题再问一遍:先改判据(\`RefinePlan\`)或换法(\`AmendPlan\` 加一步 / \`VoidPlanStep\` 作废这一步),再交付。`,
-					)
-				}
-			}
-
-			// ④ 裁决:谁可以写
-			let verdict
+			// ④ 两项裁决:交付成立吗 / 每条判断的结果。谁可以写,由等级定
+			const tested = testedBy(step)
 			let evaluator
 			let basis
+			/** 每条被检验的判断一格:`{hypothesis, verdict, basis}`。不检验判断的步骤为空。 */
+			let results = []
 			/** 独立裁决的两件凭据(自判路径下保持 null):评估卡文件与写它的**评估者子会话**。 */
 			let auditCardPath = null
 			let auditSessionId = null
 			/** 复用说明(模型与人都看得到的那一句);不复用时为空串。 */
 			let reuseNote = ''
 			if (levelIndex > SELF_JUDGE_MAX_INDEX) {
-				if (typeof args.verdict === 'string' && args.verdict !== '') {
-					return fail('verdict_not_accepted', `${level} 的证据只能由机器或独立评估者写:做的人不判自己。去掉 verdict/basis 重新交付,系统会派评估者。`)
+				if (Array.isArray(args.results) && args.results.length > 0) {
+					return fail('verdict_not_accepted', `${level} 的两项裁决只能由机器或独立评估者写:做的人不判自己。去掉 results 重新交付,系统会派评估者。`)
 				}
 				const audit = await runEvaluator(sessionId, exec.agent, plan, step, gate, 'evidence_audit', exec.signal)
 				mutations.push(...audit.mutations)
-				if (audit.verdict === 'pending') return fail('audit_pending', `独立评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试——不要重复派遣。`, { mutations })
-				if (audit.verdict === 'unknown') {
+				if (audit.holds === 'pending') return fail('audit_pending', `独立评估者仍在跑:${audit.basis}。先观察当前事实,再谈重试——不要重复派遣。`, { mutations })
+				if (audit.holds === 'unknown') {
 					const count = countBlock('audit_unavailable', audit.basis)
 					const stalled = count >= CFG.blockedThreshold
 					const stalledNote = stalled ? stopContinuation(exec.agent, CONTINUATION_CODES.stalled, `计划 ${plan.id} 第 ${count} 次拿不到独立裁决`, mutations) : ''
@@ -3746,32 +3841,63 @@ export function apply(ctx, config = {}) {
 						{ gate: 'audit_unavailable', blocked: stalled, mutations },
 					)
 				}
-				verdict = audit.verdict
+				/**
+				 * **交付不成立 ⇒ 退回,步骤留在 open**。这是唯一让一步停在原地的裁决:
+				 * 判据没满足、观测与记录对不上,或凭现有材料判不了交付成立没有。
+				 * 判断被推翻**不在**这里——那是结果,不是交付失败。
+				 */
+				if (audit.holds !== 'yes') {
+					const count = countBlock('delivery_not_holding', audit.basis)
+					const stalled = count >= CFG.blockedThreshold
+					const stalledNote = stalled ? stopContinuation(exec.agent, CONTINUATION_CODES.stalled, `计划 ${plan.id} 第 ${count} 次交付不成立`, mutations) : ''
+					return fail(
+						'delivery_not_holding',
+						`独立评估者判这次交付${audit.holds === 'no' ? '**不成立**' : '**判不了成不成立**'},这一步不推进:${audit.basis}` +
+							(audit.shortfalls.length > 0 ? `\n缺口(逐条):\n${audit.shortfalls.map((item) => `- ${verdictText([item])}`).join('\n')}` : '') +
+							(audit.reused === true ? '\n(同一份材料,复用了上一条独立裁决;要拿到新判断先改材料。)' : '') +
+							(stalled ? `\n已达连拦阈值(${count} 次),计划置 blocked——停下等人。` : '') +
+							stalledNote,
+						{ gate: 'delivery_not_holding', evaluator: 'independent', blocked: stalled, mutations },
+					)
+				}
 				evaluator = 'independent'
 				basis = audit.basis
+				/** 评估者漏给的判断如实记「说不清」,并写明是漏给的——不替它猜。 */
+				results = tested.map((id) => {
+					const found = (audit.results ?? []).find((item) => item.hypothesis === id) ?? null
+					return found === null ? { hypothesis: id, verdict: 'inconclusive', basis: '评估者没有给这条判断的结果' } : { hypothesis: id, verdict: found.verdict, basis: found.basis ?? null }
+				})
 				/** 两件凭据从**这一次**的审计结果里取(卡文件 + 评估者子会话);复用也照样带出来。 */
 				auditCardPath = audit.cardPath ?? null
 				auditSessionId = audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? audit.evaluatorSession ?? null
-				/**
-				 * **复用改的是"花不花一次评估",不是"这次交付算不算发生过"**。
-				 *
-				 * 所以证据照旧落(这一步的历史、以及仓库既有的「同一步连续两次无法判定 ⇒ 必须先改法」
-				 * 都靠它),只在依据里说清这一次没有新判断。省下的正好是那两分钟子 run。
-				 */
 				if (audit.reused === true) {
 					reuseNote = `\n**同一条材料**:这次**复用了上一条独立裁决**,没有重复请人。要拿到新判断先改材料——换产物内容、补观测,或用 RefinePlan 改这一步的判据。`
-					basis = `${basis}\n[同一条材料:这次复用了上一条独立裁决,没有重复请人。要拿到新判断,先改材料——换产物内容、补观测,或用 RefinePlan 改这一步的判据。]`
+					basis = `${basis}\n[同一条材料:这次复用了上一条独立裁决,没有重复请人。]`
 				}
 			} else {
-				if (typeof args.verdict !== 'string' || args.verdict === '') {
-					return fail('verdict_required', `${level ?? '未声明等级'} 的交付要你自己给裁决:verdict(support/refute/inconclusive)与 basis(依据)。依据必须能被复查。`)
-				}
 				if (typeof args.basis !== 'string' || args.basis.trim().length < 8) {
-					return fail('basis_required', 'L0–L2 允许自判,但依据必须可复查:写清你引用了哪个产物里的哪个事实。')
+					return fail('basis_required', `${level ?? '未声明等级'} 的交付由你自己判:写清交付凭什么成立(basis)——引用了哪个产物里的哪个事实,必须能被复查。`)
 				}
-				verdict = ['support', 'refute', 'inconclusive'].includes(args.verdict) ? args.verdict : 'inconclusive'
+				const given = Array.isArray(args.results) ? args.results : []
+				const byId = new Map()
+				for (const item of given) {
+					const found = matchHypothesis(state.hypotheses, item?.hypothesis)
+					if (found === null || !tested.includes(found.id)) {
+						return fail('result_not_tested', `「${String(item?.hypothesis ?? '')}」不是这一步检验的判断。这一步检验的是:${tested.length === 0 ? '(无——不检验判断的步骤不给 results)' : tested.join('、')}。`)
+					}
+					if (!['support', 'refute', 'inconclusive'].includes(String(item.verdict))) return fail('result_invalid', '每条结果的 verdict 只能是 support / refute / inconclusive。')
+					byId.set(found.id, { hypothesis: found.id, verdict: item.verdict, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim() : null })
+				}
+				const missing = tested.filter((id) => !byId.has(id))
+				if (missing.length > 0) {
+					return fail(
+						'results_required',
+						`这一步检验 ${tested.length} 条判断,还缺 ${missing.join('、')} 的结果。每条对照它的推翻条件读:support=没碰到推翻条件,refute=碰到了,inconclusive=这次观测区分不了——三种都算这一步完成。`,
+					)
+				}
 				evaluator = 'self'
 				basis = args.basis.trim()
+				results = tested.map((id) => byId.get(id))
 			}
 
 			/**
@@ -3816,7 +3942,7 @@ export function apply(ctx, config = {}) {
 			}
 
 
-			// ⑦ 写证据 + 推进(只增不改)
+			// ⑦ 推进 + 每条判断各记一份证据(只增不改)
 			/**
 			 * **出处在这一刻定下来**:四类入口(产物 / 评估卡 / 评估者子会话 / 人放行)
 			 * 全部解析成事实写进账里,界面只渲染、不猜。
@@ -3830,42 +3956,48 @@ export function apply(ctx, config = {}) {
 				basis,
 				approvalCall: releaseWitness === 'allowed-once' ? String(exec.callId ?? '') : '',
 			})
-			const evidenceId = `e-${Math.random().toString(36).slice(2, 8)}`
-			mutations.push({
-				t: 'evidence/recorded',
-				id: evidenceId,
-				step: step.id,
-				plan: plan.id,
-				verdict,
-				level: level ?? 'L0',
-				evaluator,
-				basis,
-				/** `refs` 一律是**路径**(旧写法把材料 id 混进来,界面按路径去开 ⇒ 什么也打不开)。 */
-				refs: originInfo.paths,
-				origins: originInfo.origins,
-				anchor: evaluator === 'independent' ? 'auditor' : 'artifact',
-				basis_reviewable: evaluator === 'independent' || /[/\\.]/.test(basis),
-			})
-			if (verdict === 'support') {
-				mutations.push({ t: 'step/advanced', plan: plan.id, step: step.id, evidence: evidenceId })
-				mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
+			const evidenceIds = []
+			for (const result of results) {
+				const evidenceId = `e-${Math.random().toString(36).slice(2, 8)}`
+				evidenceIds.push(evidenceId)
+				mutations.push({
+					t: 'evidence/recorded',
+					id: evidenceId,
+					step: step.id,
+					plan: plan.id,
+					/** 证据针对哪条判断:一个关键实验可以同时给几条判断各一份。 */
+					hypothesis: result.hypothesis,
+					verdict: result.verdict,
+					level: level ?? 'L0',
+					evaluator,
+					basis: result.basis ?? basis,
+					/** `refs` 一律是**路径**(旧写法把材料 id 混进来,界面按路径去开 ⇒ 什么也打不开)。 */
+					refs: originInfo.paths,
+					origins: originInfo.origins,
+					anchor: evaluator === 'independent' ? 'auditor' : 'artifact',
+					basis_reviewable: evaluator === 'independent' || /[/\\.]/.test(basis),
+				})
 			}
-			const tail =
-				verdict === 'support'
-					? ''
-					: verdict === 'refute'
-						? '\n推翻是有价值的结果:改判据(RefinePlan)、补一步(AmendPlan)或带因作废(VoidPlanStep)后重来。'
-						: '\n无法判定时如实写 inconclusive:把缺什么补上再交付。'
+			/**
+			 * **交付成立 ⇒ 这一步完成**,不论结果是支持、推翻还是说不清。
+			 * 交付本身(谁判的、凭什么、出处)记在推进这条事实上;判断的状态由证据算。
+			 */
+			mutations.push({ t: 'step/advanced', plan: plan.id, step: step.id, evidence: evidenceIds, evaluator, basis, refs: originInfo.paths, origins: originInfo.origins })
+			mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
+			const word = { support: '支持', refute: '推翻', inconclusive: '说不清' }
+			const outcome = results.length === 0 ? '' : `\n结果:${results.map((item) => `${item.hypothesis} ${word[item.verdict]}`).join(';')}。`
+			const refuted = results.some((item) => item.verdict === 'refute')
 			return done({
-				ok: verdict === 'support',
-				code: verdict === 'support' ? 'advanced' : `not_converged_${verdict}`,
+				ok: true,
+				code: 'advanced',
 				gate: gate.verified_by,
-				verdict,
 				evaluator,
 				blocked: false,
 				message:
-					`步骤 ${step.id} ${verdict === 'support' ? '已交付并推进' : `未收敛(${verdict})`}` +
-					`(${evaluator === 'independent' ? '独立评估者裁决' : '自判,依据已记账'})。观测准入:${gate.verified_by};坐标:${gate.confirmed.map((item) => item.ref).join(', ') || '(无)'}。${tail}${reuseNote}`,
+					`步骤 ${step.id} 已交付并推进(${evaluator === 'independent' ? '独立评估者裁决' : '自判,依据已记账'})。观测准入:${gate.verified_by};坐标:${gate.confirmed.map((item) => item.ref).join(', ') || '(无)'}。` +
+					outcome +
+					(refuted ? '\n推翻是有价值的结果:它和支持一样记进证据,判断的状态由证据算。' : '') +
+					reuseNote,
 			})
 		},
 	})

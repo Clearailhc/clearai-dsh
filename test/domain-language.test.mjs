@@ -244,7 +244,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本已 +1(v12:世界线 / 侦察 / 外脑 / 章程读数交还宿主)', fold.STATE_VERSION === 12, String(fold.STATE_VERSION))
+	check('状态版本已 +1(v13:步骤完成与结果分开,证据写明针对哪条判断)', fold.STATE_VERSION === 13, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()

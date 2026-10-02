@@ -201,7 +201,7 @@ console.log('\n【③ 卡/文档层:裁决要指认判据条目,且没有相反�
 	 * (`criterion` / `what` / `missing`),而不是评估者回的那串原始散文。
 	 * 内核有两处写裁决卡(当场结算 / 从子会话日志回收),两处必须同形。
 	 */
-	const cardWindows = [...KERNEL_SOURCE.matchAll(/schema_version: 'clearai\.audit\.v1'/g)].map((match) => KERNEL_SOURCE.slice(match.index, match.index + 420))
+	const cardWindows = [...KERNEL_SOURCE.matchAll(/schema_version: 'clearai\.audit\.v2'/g)].map((match) => KERNEL_SOURCE.slice(match.index, match.index + 420))
 	const verdictSchemaAt = KERNEL_SOURCE.indexOf('const VERDICT_SCHEMA = {')
 	const verdictSchema = verdictSchemaAt < 0 ? null : extractLiteral(KERNEL_SOURCE, KERNEL_SOURCE.indexOf('{', verdictSchemaAt))
 	check('内核写裁决卡的两处都取得到(当场 + 回收)', cardWindows.length >= 2, String(cardWindows.length))

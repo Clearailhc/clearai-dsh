@@ -287,7 +287,7 @@ function cardLines(state, derived, options, view) {
 		}
 		push(`- 当前计划(${plan.id}${plan.goal === null || plan.goal === undefined ? '' : ` · 目标 ${plan.goal} 的一个阶段`})步骤:`, 1)
 		for (const step of plan.steps.slice(0, 12)) {
-			const tests = step.tests === null || step.tests === undefined ? '' : ` 【验 ${step.tests.hypothesis} · ${step.tests.level}】`
+			const tests = step.tests === null || step.tests === undefined ? '' : ` 【验 ${(step.tests.hypotheses ?? [step.tests.hypothesis]).join('、')} · ${step.tests.level}】`
 			push(`  ${step.ordinal}. [${step.status}] ${step.do}${tests} → 物证:${(step.artifacts ?? []).join(', ') || '(未声明)'}`, 2)
 		}
 		if (plan.steps.length > 12) push(`  · (还有 ${plan.steps.length - 12} 步未展开:面板「计划」里有全部)`, 2)

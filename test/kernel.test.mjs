@@ -56,6 +56,21 @@ function check(label, condition, detail = '') {
 	}
 }
 
+/**
+ * 用例里的评估者回执大多还写成一个 `verdict`——那时评估者用它说的是「交付成立吗」
+ * (依据都写着「判据满足」「重复次数不足」)。这里按两项裁决读回来:
+ * support→交付成立、refute→不成立、inconclusive→判不了;交付成立时,
+ * 这一步检验的每条判断(从任务书里列出的 id 取)记为 support。新写法(带 `holds`)原样交回。
+ */
+function twoPartVerdict(verdict, request) {
+	if (verdict === undefined || verdict === null || typeof verdict !== 'object' || verdict.holds !== undefined || verdict.verdict === undefined) return verdict
+	const { verdict: legacy, reading: _reading, validity: _validity, ...rest } = verdict
+	const holds = legacy === 'support' ? 'yes' : legacy === 'refute' ? 'no' : 'unclear'
+	const prompt = typeof request?.prompt === 'string' ? request.prompt : (request?.prompt ?? []).map((block) => block?.text ?? '').join('\n')
+	const tested = [...String(prompt).matchAll(/^\s+· (h-[a-z0-9]+):/gm)].map((match) => match[1])
+	return { ...rest, holds, results: holds === 'yes' ? tested.map((hypothesis) => ({ hypothesis, verdict: 'support' })) : [] }
+}
+
 // ── 假的宿主:一个内存投影 + 几个服务存根 ──────────────────────────────────
 
 function makeHost() {
@@ -286,7 +301,7 @@ function makeHost() {
 							 */
 							const evaluatorSettle = {
 								output: host.nextVerdictText === undefined ? [] : [{ type: 'text', text: String(host.nextVerdictText) }],
-								structured: host.nextVerdictText === undefined ? host.nextVerdict : undefined,
+								structured: host.nextVerdictText === undefined ? twoPartVerdict(host.nextVerdict, request) : undefined,
 								stopReason: stopOf('Evaluator'),
 							}
 							const evaluatorDelay = Number(host.auditDelayMs ?? 0)
@@ -378,6 +393,17 @@ const trimmedOutputs = []
 /** 一次调用 = 执行 → 取变更记录 → 折进投影。与生产同形(生产由 registry + 投影框架做这两步)。 */
 async function callOn(host, session, name, args) {
 	const tool = host.tools.get(name)
+	/**
+	 * 用例里的交付大多还写成一个 `verdict`:套用到**这一步检验的每条判断**上(不检验判断的步骤丢掉它)。
+	 * 要验多条判断各给不同结果,用例直接写 `results`。
+	 */
+	if (name === 'AdvancePlan' && args !== null && typeof args === 'object' && args.verdict !== undefined && args.results === undefined) {
+		const { verdict, ...rest } = args
+		const plan = (host.service.state(session).plans ?? []).find((item) => item.status === 'active')
+		const step = plan?.steps.find((item) => item.status === 'open')
+		const tested = step?.tests?.hypotheses ?? []
+		args = tested.length === 0 ? rest : { ...rest, results: tested.map((hypothesis) => ({ hypothesis, verdict })) }
+	}
 	const value = await tool.execute(args, { callId: 'call-1', agent: { id: session }, signal: undefined })
 	// 生产同形:宿主按 output.schema 校验工具结果,越界即整次调用失败。
 	if (value !== null && typeof value === 'object' && tool.output?.schema !== undefined) {
@@ -813,7 +839,10 @@ console.log('\n【观测准入:只查收不收,不做裁决】')
 	const pass = await call('AdvancePlan', { step_id: 's1' })
 	check('产物齐备 + 判据非空 → 送评并推进', pass.ok === true && pass.gate === 'needs_audit', `${pass.code}/${pass.gate}`)
 	check('裁决来自独立评估者,不是做的人', pass.evaluator === 'independent')
-	check('评估卡由系统落盘', readFileSync(join(WORKSPACE, 'clear/evidence/audits/s1/child-1.json'), 'utf8').includes('clearai.audit.v1'))
+	check('评估卡由系统落盘(两项裁决都在卡上)', (() => {
+		const card = JSON.parse(readFileSync(join(WORKSPACE, 'clear/evidence/audits/s1/child-1.json'), 'utf8'))
+		return card.schema_version === 'clearai.audit.v2' && card.holds === 'yes' && Array.isArray(card.results)
+	})())
 	// 只读面现在含 `read_image`(看图也是读):断言改成「⊆ 只读集合且都读得到东西」,
 	// 写死名单会让「补一个只读工具」变成「改三处测试」。
 	{
@@ -842,14 +871,15 @@ console.log('\n【做的人不判自己】')
 
 	write('products/report.md', '# 结论\n\n均值差 6.2 个百分点,数据来自 lab/yield.csv 的三次重复。\n')
 	const noVerdict = await call('AdvancePlan', { step_id: 's3' })
-	check('未声明等级的步骤不给裁决 → 拒绝(verdict_required)', noVerdict.ok === false && noVerdict.code === 'verdict_required', String(noVerdict.code))
+	check('不检验判断的步骤不要求给结果,但要写交付凭什么成立 → 没写就拒(basis_required)', noVerdict.ok === false && noVerdict.code === 'basis_required', String(noVerdict.code))
 
 	const noBasis = await call('AdvancePlan', { step_id: 's3', verdict: 'support', basis: '好' })
 	check('依据太短 → 拒绝(basis_required)', noBasis.ok === false && noBasis.code === 'basis_required', String(noBasis.code))
 
 	const selfOk = await call('AdvancePlan', { step_id: 's3', verdict: 'support', basis: 'products/report.md 含均值差 6.2 与数据来源' })
 	check('L0 自判 + 可复查依据 → 推进', selfOk.ok === true && selfOk.evaluator === 'self', String(selfOk.code))
-	check('自判也写进证据面(依据可复查)', eventsOf('evidence/recorded').some((event) => event.evaluator === 'self'))
+	check('不检验判断的步骤不产生证据', !eventsOf('evidence/recorded').some((event) => event.step === 's3'))
+	check('自判的交付记在推进那条事实上(依据可复查)', eventsOf('step/advanced').some((event) => event.step === 's3' && event.evaluator === 'self' && /report\.md/.test(String(event.basis))))
 }
 
 console.log('\n【目录物证与 blocked 出口】')
@@ -2153,7 +2183,7 @@ console.log('\n【评估者已结束 ⇒ 先取回它的裁决,取不回才如�
 		await preStep(host, S, 81)
 		await preStep(host, S, 82)
 		const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
-		check('子会话日志里有裁决 ⇒ **取回**(不是失联):verdict=support 落账', settled.length === 1 && settled[0].verdict === 'support' && /均值差 6\.2/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 160))
+		check('子会话日志里有裁决 ⇒ **取回**(不是失联):旧式 verdict=support 读成交付成立', settled.length === 1 && settled[0].holds === 'yes' && /均值差 6\.2/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 160))
 		check('取回的裁决落了评估卡(凭据与在进程里拿到的那条同构)', typeof settled[0]?.card_path === 'string' && settled[0].card_path.includes('clear/'), String(settled[0]?.card_path))
 	}
 
@@ -2212,21 +2242,30 @@ console.log('\n【fail-closed:没有独立评估者就没有 L3+ 的完成】')
 	check('评估者派不出去 → 不推进(fail-closed)', unavailable.ok === false && unavailable.code === 'evidence_audit_unavailable', String(unavailable.code))
 	check('此时没有写入任何 v1 的证据', !eventsOf('evidence/recorded').some((event) => event.step === 'v1'))
 
-	thisHost.nextVerdict = { verdict: 'refute', basis: '硬信号:均值差 6.2 但样本 n=1,不满足三次重复', shortfalls: ['重复次数不足'] }
-	const refuted = await call('AdvancePlan', { step_id: 'v1' })
-	check('评估者判推翻 → 步骤不推进', refuted.ok === false && refuted.code === 'not_converged_refute', String(refuted.code))
-	check('推翻也写进证据(推翻是有价值的结果)', eventsOf('evidence/recorded').some((event) => event.step === 'v1' && event.verdict === 'refute'))
-	check('推翻的证据来自独立评估者', eventsOf('evidence/recorded').find((event) => event.step === 'v1').evaluator === 'independent')
+	/**
+	 * **交付成立与判断的结果是两件事**(2026-10-02 基线发现):
+	 *   · 评估者判交付**不成立**(判据没满足)⇒ 退回,步骤留在 open,不写任何证据;
+	 *   · 评估者判交付**成立**、判断被**推翻** ⇒ 步骤照常推进,推翻记进证据。
+	 * 旧规则只在「支持」时推进,于是输的那条路线做完了也只能作废——那是范畴错误。
+	 */
+	thisHost.nextVerdict = { holds: 'no', basis: '硬信号:均值差 6.2 但样本 n=1,不满足判据要求的三次重复', shortfalls: [{ criterion: '三次重复', what: 'lab/v.json 只有一个读数', missing: '另外两次' }], results: [] }
+	const notHolding = await call('AdvancePlan', { step_id: 'v1' })
+	check('评估者判交付不成立 → 退回,步骤不推进', notHolding.ok === false && notHolding.code === 'delivery_not_holding', String(notHolding.code))
+	check('交付不成立时不写证据(那不是对判断的结果)', !eventsOf('evidence/recorded').some((event) => event.step === 'v1'))
+	check('退回的话里逐条写出缺口', /三次重复/.test(notHolding.message) && /另外两次/.test(notHolding.message), notHolding.message.slice(0, 160))
 
 	/**
 	 * **材料必须真的变**,否则第二次交付会命中同态复用(材料一字未变 ⇒ 复用上一条裁决)。
 	 * 这里改的正是评估者指出的那个缺口:补上样本数(文件内容变了 ⇒ 产物摘要变了 ⇒ 新一次独立评审)。
 	 */
 	write('lab/v.json', '{"mean_delta":6.2,"n":3}')
-	thisHost.nextVerdict = { verdict: 'support', basis: '硬信号:三次重复齐备,均值差 6.2', shortfalls: [] }
-	const converged = await call('AdvancePlan', { step_id: 'v1' })
-	check('评估者判支持 → 推进', converged.ok === true && converged.verdict === 'support')
-	check('同一个步骤拿到两份证据(重评产生新证据,旧的不改)', eventsOf('evidence/recorded').filter((event) => event.step === 'v1').length === 2)
+	thisHost.nextVerdict = { holds: 'yes', basis: '硬信号:三次重复齐备,均值差 6.2', shortfalls: [], results: [{ hypothesis: HYP, verdict: 'refute', basis: '均值差 6.2 落在推翻条件的范围里' }] }
+	const refuted = await call('AdvancePlan', { step_id: 'v1' })
+	check('交付成立、判断被推翻 → 步骤照常推进(推翻不让交付失败)', refuted.ok === true && refuted.code === 'advanced', String(refuted.code))
+	check('推翻写进证据,针对的是那条判断', eventsOf('evidence/recorded').some((event) => event.step === 'v1' && event.verdict === 'refute' && event.hypothesis === HYP))
+	check('推翻的证据来自独立评估者', eventsOf('evidence/recorded').find((event) => event.step === 'v1').evaluator === 'independent')
+	check('交付本身记在推进那条事实上(谁判的、凭什么)', eventsOf('step/advanced').some((event) => event.step === 'v1' && event.evaluator === 'independent' && /三次重复齐备/.test(String(event.basis))))
+	check('结果说给模型听:推翻是有价值的结果', /推翻/.test(refuted.message), refuted.message.slice(0, 160))
 	const closed = await call('ClosePlan', {})
 	check('收敛后收束这份计划(同时只允许一份活动计划)', closed.ok === true, String(closed.code))
 }
@@ -2521,29 +2560,84 @@ console.log('\n【拿不到裁决要计数:同一件事反复失败必须升级�
 	check('收件箱里出现等人处置的那条门(升级给人的路是已有的那条)', host.service.view(S).inbox.some((item) => item.kind === 'plan_blocked'), JSON.stringify(host.service.view(S).inbox.map((item) => item.kind)))
 }
 
-console.log('\n【同一步连续两次无法判定 ⇒ 必须先改判据或换法】')
+console.log('\n【结果说不清也是完成;判不了交付成不成立才不推进】')
+{
+	/**
+	 * 两种「说不清」要分开(2026-10-02 起):
+	 *   · **交付成立、结果说不清**:这次检验如实做完了,只是区分不了——一次合法的零结果。
+	 *     步骤完成,证据记 inconclusive,判断保持原状;要不要设计更强的检验是下一步的决定,
+	 *     不靠「一直重做到有结论」(那是可选停止)。
+	 *   · **判不了交付成不成立**:材料不足以判断这一步是否按约做到 ⇒ 退回、计连拦,与交付不成立同一条路。
+	 */
+	const host = makeHost()
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-inconclusive'
+	await callOn(host, S, 'SetGoal', { claim: '判断 X 是否成立', done_criteria: '拿到一条裁决', hypotheses: [{ claim: 'X 成立', refute_when: 'X 不成立' }] })
+	const hypothesis = host.service.state(S).hypotheses[0].id
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'i1', do: '测 X', artifacts: ['lab/i1.txt'], done_criteria: 'lab/i1.txt 有读数', tests: { hypotheses: [hypothesis], level: 'L3' } }] })
+	write('lab/i1.txt', 'reading: unknown\n')
+	host.nextVerdict = { holds: 'unclear', basis: '看不出读数是不是这次跑出来的', shortfalls: [], results: [] }
+	const unclear = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
+	check('判不了交付成不成立 ⇒ 不推进,计一次连拦', unclear.ok === false && unclear.code === 'delivery_not_holding' && host.service.state(S).blocks[`${host.service.state(S).plans[0].id}:i1`] === 1, `${unclear.code}`)
+	write('lab/i1.txt', 'reading: 3 runs, spread too wide to call\n')
+	host.nextVerdict = { holds: 'yes', basis: '读数是这次跑出来的,三次重复齐全', shortfalls: [], results: [{ hypothesis, verdict: 'inconclusive', basis: '三次读数的离散度盖过了差异' }] }
+	const nullResult = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
+	check('交付成立、结果说不清 ⇒ 这一步照常完成', nullResult.ok === true && host.service.view(S).plan.advancedCount === 1, `${nullResult.code}/${host.service.view(S).plan.advancedCount}`)
+	check('说不清如实记进证据,针对那条判断', (host.service.state(S).evidence ?? []).some((item) => item.verdict === 'inconclusive' && item.hypothesis === hypothesis))
+	const derived = host.service.derive(S).hypotheses.find((item) => item.id === hypothesis)
+	check('判断保持原状:没有支持等级,也没有被推翻', derived.supportedLevel === null && derived.refutations === 0 && derived.inconclusive === 1, JSON.stringify(derived).slice(0, 160))
+}
+
+console.log('\n【一步检验多条判断:关键实验同时判竞争的两条】')
+{
+	/**
+	 * 竞争路线就是竞争的判断:各条路线各自产出观测,**比较那一步**是关键检验——
+	 * 一份观测同时支持一条、推翻另一条。基线里两场真跑都撞上「一步只能挂一条判断」:
+	 * 为了凑满两条判断被迫拆成两步,输的那条还收不了尾。
+	 */
+	const host = makeHost()
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-crucial'
+	await callOn(host, S, 'SetGoal', { claim: '紧凑与缩进哪种 JSON 更小', done_criteria: 'lab/winner.txt 存在', hypotheses: [{ claim: '紧凑更小', refute_when: '紧凑不小于缩进' }, { claim: '缩进更小', refute_when: '缩进不小于紧凑' }] })
+	const [compact, pretty] = host.service.state(S).hypotheses.map((item) => item.id)
+	const created = await callOn(host, S, 'CreatePlan', {
+		steps: [
+			{ id: 'measure', do: '两种写法各写一份并量字节', artifacts: ['lab/compact.json', 'lab/pretty.json'], done_criteria: '两份文件都在,各记下字节数' },
+			{ id: 'compare', do: '比较两份读数', artifacts: ['lab/winner.txt'], done_criteria: 'lab/winner.txt 第一行是更小的写法', tests: { hypotheses: ['紧凑更小', pretty], level: 'L2' } },
+		],
+	})
+	check('立约时把主张原文解析成 id,一步挂两条判断', created.ok === true && JSON.stringify(host.service.state(S).plans[0].steps[1].tests) === JSON.stringify({ hypotheses: [compact, pretty], level: 'L2' }), JSON.stringify(host.service.state(S).plans[0].steps[1].tests))
+	write('lab/compact.json', '{"a":1}')
+	write('lab/pretty.json', '{\n  "a": 1\n}')
+	const measured = await callOn(host, S, 'AdvancePlan', { step_id: 'measure', basis: 'lab/compact.json 7 字节,lab/pretty.json 12 字节' })
+	check('不检验判断的那一步只要写交付凭什么成立', measured.ok === true, String(measured.code))
+	write('lab/winner.txt', 'compact\n7 < 12\n')
+	const missing = await callOn(host, S, 'AdvancePlan', { step_id: 'compare', basis: 'lab/winner.txt 第一行 compact', results: [{ hypothesis: compact, verdict: 'support' }] })
+	check('检验两条只给了一条结果 ⇒ 拒,并点名缺哪条', missing.ok === false && missing.code === 'results_required' && missing.message.includes(pretty), missing.message.slice(0, 120))
+	const stray = await callOn(host, S, 'AdvancePlan', { step_id: 'compare', basis: 'lab/winner.txt 第一行 compact', results: [{ hypothesis: compact, verdict: 'support' }, { hypothesis: pretty, verdict: 'refute' }, { hypothesis: 'h-nope', verdict: 'support' }] })
+	check('给了这一步没登记检验的判断 ⇒ 拒', stray.ok === false && stray.code === 'result_not_tested', String(stray.code))
+	const crucial = await callOn(host, S, 'AdvancePlan', { step_id: 'compare', basis: 'lab/winner.txt 第一行 compact', results: [{ hypothesis: compact, verdict: 'support' }, { hypothesis: pretty, verdict: 'refute', basis: '缩进 12 字节不小于紧凑 7 字节' }] })
+	check('一份观测同时支持一条、推翻另一条:这一步照常完成', crucial.ok === true && host.service.view(S).plan.advancedCount === 2, `${crucial.code}`)
+	const derived = host.service.derive(S).hypotheses
+	check('两条判断各得一份证据:一条支持到 L2,一条被推翻', derived.find((item) => item.id === compact)?.supportedLevel === 'L2' && derived.find((item) => item.id === pretty)?.status === 'refuted', JSON.stringify(derived.map((item) => [item.id, item.status, item.supportedLevel])))
+	check('每条证据写明它针对哪条判断', host.service.state(S).evidence.filter((item) => item.step === 'compare').map((item) => item.hypothesis).sort().join(',') === [compact, pretty].sort().join(','))
+	check('结果说给模型听:谁支持、谁推翻', /支持/.test(crucial.message) && /推翻/.test(crucial.message), crucial.message.slice(0, 160))
+	const closed = await callOn(host, S, 'ClosePlan', {})
+	check('输的那条路线不必作废,计划照常收尾', closed.ok === true && !host.journal.some((m) => m.t === 'plan/voided'), String(closed.code))
+}
+
+console.log('\n【评估卡正文兜底:新写法 holds 也读得回来】')
 {
 	const host = makeHost()
 	apply(host.ctx, { blockedThreshold: 3 })
-	const S = 'session-inconclusive-repeat'
-	await callOn(host, S, 'SetGoal', { claim: '判断 X 是否成立', done_criteria: '拿到一条裁决', hypotheses: [{ claim: 'X 成立', refute_when: 'X 不成立' }] })
-	const hypothesis = host.service.state(S).hypotheses[0].id
-	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'i1', do: '测 X', artifacts: ['lab/i1.txt'], done_criteria: 'lab/i1.txt 有读数', tests: { hypothesis, level: 'L3' } }] })
-	write('lab/i1.txt', 'reading: unknown\n')
-	host.nextVerdict = { verdict: 'inconclusive', basis: '样本量不足,判不了', shortfalls: ['sample_size'] }
-	const countInconclusive = () => (host.service.state(S).evidence ?? []).filter((item) => item.verdict === 'inconclusive').length
-	// 无法判定**照样落账**(记录不隐藏),只是这一步不推进:`ok:false` + `not_converged_inconclusive`。
-	const first = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
-	check('第一次无法判定照样落账(不逼 verdict,也不隐藏读数)', first.ok === false && first.code === 'not_converged_inconclusive' && countInconclusive() === 1, `${first.code}/${countInconclusive()}`)
-	const second = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
-	check('第二次也无法判定(判据没变)', second.ok === false && second.code === 'not_converged_inconclusive' && countInconclusive() === 2, `${second.code}/${countInconclusive()}`)
-	const third = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
-	check('第三次原样再交 ⇒ 拒绝,并指名要改判据或换法', third.ok === false && third.code === 'inconclusive_repeat_forced_change' && /RefinePlan/.test(String(third.message)) && /VoidPlanStep/.test(String(third.message)), `${third.code}:${String(third.message).slice(0, 140)}`)
-	const refined = await callOn(host, S, 'RefinePlan', { step_id: 'i1', done_criteria: 'lab/i1.txt 里三次重复的均值差 > 5', reason: '把判据写成可测的量' })
-	check('改判据之后就放行(门拦的是「什么都没改」,不是「第二次」)', refined.ok === true, String(refined.code))
-	host.nextVerdict = { verdict: 'support', basis: '按新判据三次重复均值差 6.2', shortfalls: [] }
-	const fourth = await callOn(host, S, 'AdvancePlan', { step_id: 'i1' })
-	check('改判据后的交付正常推进', fourth.ok === true && host.service.view(S).plan.advancedCount === 1, `${fourth.code}/${host.service.view(S).plan.advancedCount}`)
+	const S = 'session-holds-text'
+	await callOn(host, S, 'SetGoal', { claim: 'Q', headline: 'Q', done_criteria: 'lab/q.txt 存在', hypotheses: [{ claim: 'A', refute_when: 'not A' }, { claim: 'B', refute_when: 'not B' }] })
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'q1', do: '写 q', artifacts: ['lab/q.txt'], done_criteria: 'lab/q.txt 存在', tests: { hypotheses: [host.service.state(S).hypotheses[0].id], level: 'L3' } }] })
+	write('lab/q.txt', 'q\n')
+	host.nextVerdictText = '## 评估卡\n\n**holds: no**\n\n**basis**: lab/q.txt 只有一个字母,判据要的读数没有。'
+	const refused = await callOn(host, S, 'AdvancePlan', { step_id: 'q1' })
+	host.nextVerdictText = undefined
+	check('正文里写的是 holds: no ⇒ 读成交付不成立', refused.ok === false && refused.code === 'delivery_not_holding' && host.journal.filter((m) => m.t === 'audit/settled').at(-1)?.holds === 'no', `${refused.code}`)
 }
 
 console.log('\n【事实撤回:推翻证据只标记,撤不撤由人定】')
@@ -2905,19 +2999,19 @@ console.log('\n【宿主降级进账本 + 交付侧同态复用】')
 	write('lab/r.txt', 'reading: 1\n')
 	const evaluators = () => h2.audits.filter((audit) => String(audit.request?.label ?? '').startsWith('评估者')).length
 	const first = await callOn(h2, S2, 'AdvancePlan', { step_id: 'r1' })
-	check('前置:第一次交付由独立评估者否决(步骤保持未落定)', first.ok === false && first.evaluator === 'independent' && first.code === 'not_converged_refute', `${first.code}`)
+	check('前置:第一次交付被独立评估者判为不成立(步骤保持未落定)', first.ok === false && first.evaluator === 'independent' && first.code === 'delivery_not_holding', `${first.code}`)
 	const afterFirst = evaluators()
 	check('前置:第一次确实派过评估者', afterFirst === 1, String(afterFirst))
 	// 同一步再交一次(材料没动):应当复用上一条裁决,不再派评估者。
 	const second = await callOn(h2, S2, 'AdvancePlan', { step_id: 'r1' })
 	check('材料没变的第二次交付:复用旧裁决(不再烧一次子 run)', evaluators() === afterFirst, `${afterFirst} → ${evaluators()}`)
-	check('复用也如实返回同一条裁决的语义', second.ok === false && second.verdict === 'refute' && /复用了上一条独立裁决/.test(String(second.message)), `${second.code}`)
+	check('复用也如实返回同一条裁决的语义', second.ok === false && second.code === 'delivery_not_holding' && /复用了上一条独立裁决/.test(String(second.message)), `${second.code}`)
 	check('账上留下「这次没花钱」这条事实', h2.journal.some((m) => m.t === 'audit/reused'), JSON.stringify(h2.journal.filter((m) => m.t === 'audit/reused')))
-	check('复用来的裁决仍带着出处(评估卡与评估者会话都指得到)', (() => {
-		const row = h2.service.state(S2).evidence.at(-1)
-		const origins = row?.origins ?? []
-		return origins.some((o) => o.kind === 'audit-card') && origins.some((o) => o.kind === 'evaluator-session')
-	})(), JSON.stringify(h2.service.state(S2).evidence.at(-1)?.origins ?? null))
+	check('复用记录指得回原来那一条裁决(出处不因复用而消失)', (() => {
+		const reused = h2.journal.find((m) => m.t === 'audit/reused')
+		const original = h2.journal.find((m) => m.t === 'audit/settled')
+		return reused !== undefined && original !== undefined && reused.by === original.id && typeof original.card_path === 'string'
+	})(), JSON.stringify(h2.journal.filter((m) => m.t === 'audit/reused')))
 }
 
 console.log('\n【评审只写正文卡片时:裁决要能被读回来】')
@@ -2940,7 +3034,7 @@ console.log('\n【评审只写正文卡片时:裁决要能被读回来】')
 	const closed = await callOn(host, S, 'CloseGoal', { outcome: 'achieved' })
 	check('只写正文卡片的 support 裁决能被读回来 ⇒ 结案', closed.ok === true && closed.code === 'goal_achieved', `${closed.code}:${String(closed.message ?? '').slice(0, 120)}`)
 	const settled = host.journal.filter((m) => m.t === 'audit/settled').at(-1) ?? null
-	check('落账的裁决是 support,不是「无法解析」', String(settled?.verdict) === 'support', JSON.stringify(settled ?? null))
+	check('落账的裁决是「判据达成」(旧式 verdict: support 读成交付成立),不是「无法解析」', String(settled?.holds) === 'yes', JSON.stringify(settled ?? null))
 	check('依据是从正文里取到的那句(不是占位话)', /逐条核对通过/.test(String(settled?.basis ?? '')), String(settled?.basis ?? '').slice(0, 100))
 
 	// 反例:正文里明确写了 refute —— 绝不因为"读不到 JSON"就猜成 support。
@@ -2951,7 +3045,7 @@ console.log('\n【评审只写正文卡片时:裁决要能被读回来】')
 	host2.nextVerdictText = '## 评估卡\n\n**verdict: refute**\n\n**basis**: 判据要求三次重复,当前只有一次。'
 	const refused = await callOn(host2, S2, 'CloseGoal', { outcome: 'achieved' })
 	check('正文写 refute ⇒ 目标保持开放(不猜成 support)', refused.ok === false && refused.code === 'goal_not_achieved', String(refused.code))
-	check('落账的裁决是 refute', String((host2.journal.filter((m) => m.t === 'audit/settled').at(-1) ?? {}).verdict) === 'refute', JSON.stringify(host2.journal.filter((m) => m.t === 'audit/settled').at(-1) ?? null))
+	check('落账的裁决是「判据没达成」(旧式 verdict: refute)', String((host2.journal.filter((m) => m.t === 'audit/settled').at(-1) ?? {}).holds) === 'no', JSON.stringify(host2.journal.filter((m) => m.t === 'audit/settled').at(-1) ?? null))
 }
 
 console.log('\n【输出契约:工具返回值必须落在自己声明的 schema 里】')

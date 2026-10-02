@@ -46,9 +46,13 @@ export const MUTATION_KIND = 'clearai'
  *           (`constitution`)与写入计数(`writeCalls`)都从状态里删了。旧日志里的对应事件类型
  *           (`fork/*`、`worldline/*`、`scout/*`、`branch/*`、`git/*`、`clearai/brain` 段、相关人门动作)
  *           不认识就原样跳过,其余部分照常折出来。
+ *   v12 → v13:**步骤完成与结果分开**:步骤的 `tests` 折成 `{hypotheses: id[], level}`(旧账的单条
+ *           `hypothesis` 照旧读);证据带上它针对的判断(`hypothesis`);`step/advanced` 带上交付本身
+ *           (`delivery`:谁判的、凭什么、出处),`step.evidence` 变成 id 数组;结算事实带上两项裁决
+ *           (`holds` / `results`)。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 12
+export const STATE_VERSION = 13
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -173,6 +177,16 @@ function factFromHypothesis(facts, goalId, hypothesisId, claim) {
 	})
 }
 
+/**
+ * 步骤检验的判断一律折成 `{hypotheses: id[], level}`:新账写 `hypotheses`(可多条),
+ * 旧账只有单条 `hypothesis`。读面只认这一种形状。
+ */
+export function normalizeTests(tests) {
+	if (tests === undefined || tests === null || typeof tests !== 'object') return null
+	const hypotheses = Array.isArray(tests.hypotheses) ? tests.hypotheses.map(String) : typeof tests.hypothesis === 'string' && tests.hypothesis !== '' ? [tests.hypothesis] : []
+	return { hypotheses, level: tests.level ?? null }
+}
+
 function appendSteps(plan, rawSteps) {
 	for (const raw of rawSteps) {
 		plan.steps.push({
@@ -181,7 +195,7 @@ function appendSteps(plan, rawSteps) {
 			do: raw.do,
 			artifacts: raw.artifacts ?? [],
 			done_criteria: raw.done_criteria,
-			tests: raw.tests ?? null,
+			tests: normalizeTests(raw.tests),
 			status: 'open',
 			evidence: null,
 			advancedAt: null,
@@ -475,6 +489,9 @@ export function applyMutation(state, mutation) {
 			const audit = next.audits.find((item) => item.id === mutation.id)
 			if (audit !== undefined) {
 				audit.verdict = mutation.verdict
+				/** 两项裁决:交付成立吗 + 每条判断的结果。旧账没有这两格,`verdict` 那时说的就是交付成立吗。 */
+				audit.holds = mutation.holds ?? null
+				audit.results = Array.isArray(mutation.results) ? mutation.results : []
 				audit.shortfalls = mutation.shortfalls ?? []
 				audit.basis = mutation.basis ?? null
 				audit.card_path = mutation.card_path ?? null
@@ -487,6 +504,8 @@ export function applyMutation(state, mutation) {
 				id: mutation.id,
 				step: mutation.step,
 				plan: mutation.plan,
+				/** 针对哪条判断;旧账没有这一格(`undefined`),按步骤检验的判断找回来。 */
+				hypothesis: mutation.hypothesis,
 				verdict: mutation.verdict,
 				level: mutation.level,
 				evaluator: mutation.evaluator,
@@ -509,7 +528,13 @@ export function applyMutation(state, mutation) {
 			const step = stepOf(mutation.plan, mutation.step)
 			if (step !== undefined) {
 				settle(step, 'advanced')
-				step.evidence = mutation.evidence
+				/** 新账是证据 id 的数组(每条判断一份,不检验判断就是空数组);旧账是单个 id。 */
+				step.evidence = Array.isArray(mutation.evidence) ? mutation.evidence : mutation.evidence === undefined || mutation.evidence === null ? [] : [mutation.evidence]
+				/** 交付本身:谁判的、凭什么、出处。旧账没有,读面退回到证据。 */
+				step.delivery =
+					mutation.evaluator === undefined
+						? null
+						: { evaluator: mutation.evaluator, basis: mutation.basis ?? null, refs: Array.isArray(mutation.refs) ? mutation.refs : [], origins: Array.isArray(mutation.origins) ? mutation.origins : [] }
 				step.advancedAt = at
 			}
 			break
@@ -1638,8 +1663,12 @@ export function derive(state) {
 	const hypotheses = state.hypotheses.map((hypothesis) => {
 		const rows = []
 		for (const item of state.evidence) {
+			if (item.hypothesis !== undefined) {
+				if (item.hypothesis === hypothesis.id) rows.push(item)
+				continue
+			}
 			const step = stepOf(item.plan, item.step)
-			if (step?.tests?.hypothesis === hypothesis.id) rows.push(item)
+			if ((normalizeTests(step?.tests)?.hypotheses ?? []).includes(hypothesis.id)) rows.push(item)
 		}
 		const refutations = rows.filter((item) => item.verdict === 'refute').length
 		const inconclusive = rows.filter((item) => item.verdict === 'inconclusive').length
@@ -2039,7 +2068,9 @@ export function view(state, sessionId) {
 				doneCriteria: step.done_criteria,
 				tests: step.tests,
 				status: step.status,
-				evidenceId: step.evidence,
+				evidenceIds: step.evidence ?? [],
+				/** 交付本身(谁判的、凭什么、出处);旧账为 null。 */
+				delivery: step.delivery ?? null,
 				advancedAt: step.advancedAt,
 				voidReason: step.voidReason,
 			})),
@@ -2070,7 +2101,9 @@ export function view(state, sessionId) {
 							doneCriteria: step.done_criteria,
 							tests: step.tests,
 							status: step.status,
-							evidenceId: step.evidence,
+							evidenceIds: step.evidence ?? [],
+							/** 交付本身(谁判的、凭什么、出处);旧账为 null。 */
+							delivery: step.delivery ?? null,
 							advancedAt: step.advancedAt,
 							voidReason: step.voidReason,
 						})),
@@ -2101,6 +2134,8 @@ export function view(state, sessionId) {
 			 * `anchor` **必须交出去**:面板要给每条证据指一个**出处**——
 			 * 独立证据指评估卡(文件)、自判证据指它锚定的产物。
 			 */
+			/** 针对哪条判断(旧账为 null:由步骤检验的判断找回来)。 */
+			hypothesis: item.hypothesis ?? null,
 			anchor: item.anchor ?? 'artifact',
 			/** 记账时定下的出处。旧日志没有这个字段 ⇒ 客户端走只读回退。 */
 			origins: item.origins ?? [],
