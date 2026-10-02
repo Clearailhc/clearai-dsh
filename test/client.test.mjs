@@ -604,7 +604,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	const treePanel = text(components.WorldTree)
 	check('世界树页眉给出目标与判据(撤「进展」之后它们是这一格的起点)', /催化剂 A 是否优于 B/.test(treePanel) && /均值差/.test(treePanel), treePanel.slice(0, 90))
 	
-	check('等你定的那一句在世界树里(只陈述)', /等你定/.test(treePanel) && /计划卡住了/.test(treePanel), treePanel.slice(0, 120))
+	check('待处理的那一句在世界树里(只陈述)', /待处理/.test(treePanel) && /计划卡住了/.test(treePanel), treePanel.slice(0, 120))
 	check('世界树不再重复闭环那一格的东西(假设/观测/事实不在这)', !/观测 ·/.test(treePanel) && !/事实 · 1/.test(treePanel), treePanel.slice(0, 160))
 	/**
 	 * **判据逐条**:`Frame` 收的是 `criteria: string[]`(每条一句话、每条可清点),
@@ -633,7 +633,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	 * 第六阶段「本体」那一格:**图为主**,下面一行一条结论。
 	 *
 	 * 判据都是"用户能不能一眼答上来":
-	 *   · 页眉说在回答什么、一行计数、等你定、四站进度轨(判断 → 检验 → 已验证 → 入本体);
+	 *   · 页眉说在回答什么、一行计数、待处理、四站进度轨(判断 → 检验 → 已验证 → 入本体);
 	 *   · 结论按可信度分组(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换),一行一条;
 	 *   · 点开依次是 进度 → 可信度怎么变的 → 补充;
 	 *   · 内部编号(h-… / e-… / s-…)与机器词(support / refute / proposed)不上屏。
@@ -681,7 +681,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const atlas = react.render(components.Atlas({ useProjection: atlasProjection, sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
 		check('页眉:说在回答什么(目标那句)', atlas.includes('催化剂 A 是否优于 B'), atlas.slice(0, 120))
 		check('页眉:一行计数用六个状态词', /已验证 1 · 验证中 1 · 不确定 1 · 已推翻 1/.test(atlas), atlas.slice(0, 200))
-		check('页眉:等你定那一句只陈述(没有按钮)', atlas.includes('等你定') && atlas.includes('以哪个为准'), atlas.slice(0, 260))
+		check('页眉:待处理那一句只陈述(没有按钮)', atlas.includes('待处理') && atlas.includes('以哪个为准'), atlas.slice(0, 260))
 		check('页眉:四站进度轨带每站人数', /判断 4/.test(atlas) && /检验 3/.test(atlas) && /已验证 1/.test(atlas) && /入本体 1/.test(atlas), atlas.slice(0, 320))
 		check('图带:本体图 / 实体图二选一,带各层点数', atlas.includes('本体图 2') && atlas.includes('实体图 1'), atlas.slice(0, 400))
 		check('结论按可信度分组,一行一条短名', atlas.includes('A 优于 B') && atlas.includes('二分更省') && atlas.includes('温度无关') && atlas.includes('学习率敏感'))
@@ -860,11 +860,11 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	}
 
 	/**
-	 * §35:输入框下那条删了 ⇒ 唯一可点的那件事(「等你定 N」)现在在**工具行的计划 chip** 上,
+	 * §35:输入框下那条删了 ⇒ 唯一可点的那件事(「待处理 N」)现在在**工具行的计划 chip** 上,
 	 * 而且**只多说一句**(人门优先,没有门才说续跑停着的理由)。
 	 */
 	const chipWithGate = text(components.PlanChip)
-	check('计划 chip 上写着「等你定 N」(人门计数,一点直达世界树)', /等你定 1/.test(chipWithGate) && /\d+\/\d+/.test(chipWithGate), chipWithGate.slice(0, 90))
+	check('计划 chip 上写着「待处理 N」(人门计数,一点直达世界树)', /待处理 1/.test(chipWithGate) && /\d+\/\d+/.test(chipWithGate), chipWithGate.slice(0, 90))
 
 	/**
 	 * §17.3 计划面坐在原生 plan 座位上,而状态条只说**平台说不出的那句话**。
@@ -878,7 +878,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	 */
 	check(
 		'计划芯片:一格只放一个符号(进度);等人时**最多**再放一句「为什么在等人」',
-		/^\d+\/\d+(等你定 \d+)?$/.test(String(chip).trim()),
+		/^\d+\/\d+(待处理 \d+)?$/.test(String(chip).trim()),
 		String(chip).trim().slice(0, 60),
 	)
 	check('计划芯片:进度只在芯片上说(§35 之后没有第二条状态行可重复它)', !/步骤 \d+\/\d+/.test(chipWithGate), chipWithGate.slice(0, 140))
@@ -894,14 +894,14 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('计划芯片:没有计划时渲染空(座位保持空着,而不是一个「什么都没有」的假控件)', render(components.PlanChip, { useProjection: () => ({ ...view, plan: null }) }) === '')
 	/**
 	 * 符号**恒定是进度**(形状稳定才学得会):要人注意不在符号上换字,而是换颜色。
-	 * 「等你定 N」由输入框下那条说——那才是事实面该管的事。
+	 * 「待处理 N」由输入框下那条说——那才是事实面该管的事。
 	 */
 	check(
 		'计划芯片:符号恒定是进度,要人注意时用琥珀色(与世界树同一族令牌)',
-		text(components.PlanChip, { useProjection: () => ({ ...view, plan: { ...view.plan, confirmationPending: true } }) }).replace(/等你定\s*\d+/, '') === '1/3' &&
+		text(components.PlanChip, { useProjection: () => ({ ...view, plan: { ...view.plan, confirmationPending: true } }) }).replace(/待处理\s*\d+/, '') === '1/3' &&
 			/color-warning/.test(String(components.PlanChip({ useProjection: () => ({ ...view, plan: { ...view.plan, confirmationPending: true } }) }).props.style?.color ?? '')) &&
 			/color-warning/.test(String(components.PlanChip({ useProjection: () => ({ ...view, plan: { ...view.plan, blocked: { reason: 'x' } } }) }).props.style?.color ?? '')) &&
-			// 有「等你定」时**也该**是琥珀 ⇒ 这条要用"门都关着"的 fixture 才是未染色的情形
+			// 有「待处理」时**也该**是琥珀 ⇒ 这条要用"门都关着"的 fixture 才是未染色的情形
 			components.PlanChip({ useProjection: () => ({ ...view, needYou: [] }), useSessions, sessionId: 's1' }).props.style === undefined &&
 			/color-warning/.test(String(components.PlanChip({ useProjection, useSessions, sessionId: 's1' }).props.style?.color ?? '')),
 	)
@@ -959,12 +959,12 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('世界树不再画车道与收敛(并行探索交给原生子任务)', !/湿法|干法|已采纳|车道/.test(tree), tree.slice(0, 160))
 
 	/**
-	 * 「等你定」只陈述(面板只读):计划卡住、两条结论矛盾。没有按钮——要人的事在对话里问。
+	 * 「待处理」只陈述(面板只读):计划卡住、两条结论矛盾。没有按钮——要人的事在对话里问。
 	 */
 	{
 		const needText = react.render(components.NeedYou({ data: view })).replace(/\s+/g, ' ')
-		check('等你定:一条一行,说人话', /等你定/.test(needText) && /计划卡住了:产物没落盘/.test(needText), needText)
-		check('等你定:不渲染任何按钮(面板没有写入口)', !walkNodes(expandTree(components.NeedYou({ data: view }))).some((node) => node.type === 'button'))
+		check('待处理:一条一行,说人话', /待处理/.test(needText) && /计划卡住了:产物没落盘/.test(needText), needText)
+		check('待处理:不渲染任何按钮(面板没有写入口)', !walkNodes(expandTree(components.NeedYou({ data: view }))).some((node) => node.type === 'button'))
 		check('没有要你做的事 ⇒ 什么都不画', components.NeedYou({ data: { ...view, needYou: [] } }) === null)
 	}
 

@@ -160,7 +160,7 @@ const contNote = cont === null ? '' : cont.state === 'paused' ? ` · 续跑停�
 	const openStep = (projected.plan?.steps ?? []).find((step) => step.status === 'open') ?? null
 	const stepText = openStep === null ? '' : ` · 第 ${openStep.ordinal} 步 ${String(openStep.do ?? '').trim().slice(0, 12)}`
 	const auditWait = (projected.audits ?? []).filter((audit) => audit.verdict == null).length
-	line(`  等你定 ${projected.needYou.length} · 阶段 ${derived.phase ?? '—'} · 完成度 ${projected.goal?.progress == null ? '—' : `${Math.round(projected.goal.progress * 100)}%`}${stepText}${auditWait > 0 ? ` · 待评估 ${auditWait}` : ''}${contNote}`)
+	line(`  待处理 ${projected.needYou.length} · 阶段 ${derived.phase ?? '—'} · 完成度 ${projected.goal?.progress == null ? '—' : `${Math.round(projected.goal.progress * 100)}%`}${stepText}${auditWait > 0 ? ` · 待评估 ${auditWait}` : ''}${contNote}`)
 	if (projected.goal === null) line('  (没有目标:这条整条不渲染——它是事实面,此刻没有事实)')
 }
 void autonomy
