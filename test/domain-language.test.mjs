@@ -307,7 +307,7 @@ console.log('\n【折法:冲突与健康度是派生读数,进读面不进闸门
 	}
 	const derived = fold.derive(state)
 	check('冲突在派生里出现(不必等界面)', derived.conflicts.length === 1, JSON.stringify(derived.conflicts))
-	check('冲突不拦任何动作,只在「需要你」里陈述一行(以哪个为准)', !('hasOpenGate' in derived) && derived.needYou.some((item) => item.kind === 'conflict' && /以哪个为准/.test(item.text) && /WENO5/.test(item.text)), JSON.stringify(derived.needYou))
+	check('冲突不拦任何动作,只在「等你定」里陈述一行(以哪个为准)', !('hasOpenGate' in derived) && derived.needYou.some((item) => item.kind === 'conflict' && /以哪个为准/.test(item.text) && /WENO5/.test(item.text)), JSON.stringify(derived.needYou))
 	check('冲突两侧的事实都没被改动(系统不替你选)', state.facts.length === 2 && state.facts.every((fact) => fact.review === null || fact.review === undefined))
 	const view = fold.view(state, 'session')
 	check('读面带出词汇 / 冲突 / 健康度 / 图', view.lexicon !== undefined && Array.isArray(view.lexicon.conflicts) && Array.isArray(view.lexicon.health) && view.lexicon.graph.nodes.length > 0)
@@ -388,7 +388,7 @@ console.log('\n【知识模式:结构判据 + 缺口是读数,不是拦截】')
 	check('已经跑出证据、而有命题没被碰过 ⇒ 报 untouched_claims', codes(worked).includes('untouched_claims'), JSON.stringify(labelled(worked).gaps))
 	check('被碰过的命题不算在内(只剩没碰过的那条)', labelled(worked).gaps.find((gap) => gap.code === 'untouched_claims')?.count === 1)
 
-	check('缺口是读数:一条也不拦,也不进「需要你」', fold.derive(goalOnly).needYou.length === 0)
+	check('缺口是读数:一条也不拦,也不进「等你定」', fold.derive(goalOnly).needYou.length === 0)
 	check('读面带出知识模式(与卡片同一份派生)', fold.view(goalOnly, 's').knowledge.mode === 'knowledge')
 	check('卡片把缺口逐条说出来(人话,不带 code)', fold.renderCard(goalOnly).includes('还欠的') && !/prose_only_claims|untouched_claims|entities_unlanded/.test(fold.renderCard(goalOnly)))
 	check('结构完整时如实说不欠,而不是沉默', fold.renderCard(promoted).includes('结构完整') || fold.renderCard(promoted).includes('还欠的'), fold.renderCard(promoted).split('\n').filter((line) => line.includes('结构') || line.includes('还欠')).join('|'))

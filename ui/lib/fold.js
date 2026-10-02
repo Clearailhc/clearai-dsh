@@ -1617,7 +1617,7 @@ export function derive(state) {
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
-	 * **需要你**(第六阶段,取代空了的收件箱):只陈述、不放按钮——决定在对话里说,
+	 * **等你定**(第六阶段,取代空了的收件箱):只陈述、不放按钮——决定在对话里说,
 	 * 或由开门的那次调用用原生提问卡问。两类:计划连拦停下了;已写进长期知识的结论互相矛盾。
 	 * 都是派生读数:计划一解封、矛盾一方被推翻,条目自然消失。
 	 */
@@ -1753,7 +1753,7 @@ export function view(state, sessionId) {
 		ok: true,
 		mounted: true,
 		sessionId: sid,
-		/** 需要你:只陈述的几行(计划停下、结论矛盾);面板顶上与输入框旁读同一份。 */
+		/** 等你定:只陈述的几行(计划停下、结论矛盾);面板顶上与输入框旁读同一份。 */
 		needYou: derived.needYou,
 		/**
 		 * 被闸门裁断过几次(`block/counted`):世界树的**分段通道**画的就是它——

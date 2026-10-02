@@ -46,7 +46,7 @@ const viewSchema = z.looseObject({
 	sessionId: z.string().nullable(),
 	goal: z.unknown().nullable(),
 	plan: z.unknown().nullable(),
-	/** 需要你:只陈述的几行(计划停下、结论矛盾),见 fold.js 的 derive。 */
+	/** 等你定:只陈述的几行(计划停下、结论矛盾),见 fold.js 的 derive。 */
 	needYou: z.array(z.unknown()),
 	evidence: z.array(z.unknown()),
 	audits: z.array(z.unknown()),

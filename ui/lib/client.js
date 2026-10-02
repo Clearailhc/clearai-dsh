@@ -4,7 +4,7 @@
  * 它注册三个座位:
  *   中栏 `conversation.view`    本体(页眉 + 本体图 / 实体图 + 按可信度分组的结论)
  *   右栏 `sidebarRightTabs`     世界树(计划的步骤,一行一步)
- *   输入框 `conversation.input`  计划芯片(步数 + 「需要你 N」)
+ *   输入框 `conversation.input`  计划芯片(步数 + 「等你定 N」)
  * 交付与文件改动走 DSH 原生的卡片,技能走原生技能目录,这里都不另做一份。
  * 面板**只读**:没有写入口。要人拍板的事由开门的那次工具调用当场问人,要改词汇就在对话里说。
  *
@@ -105,8 +105,8 @@ window.__ModuleLoader__.load({
 
 		/** 语言命名空间。表按**源文**索引:键就是中文原文,所以漏翻译一条只会退回中文,不会把 key 显示给人。 */
 		const LOCALE_NS = 'clearai'
-		const LOCALE_ZH = {" · 改过 ":" · 改过 "," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:"," 个断言的主语还没登记成实例。":" 个断言的主语还没登记成实例。"," 次":" 次"," 次评估者":" 次评估者"," 步":" 步"," 步)":" 步)"," 看核验记录":" 看核验记录"," 看核验过程":" 看核验过程"," 轮":" 轮","(点一下开右栏「世界树」)":"(点一下开右栏「世界树」)","(点一下开右栏「世界树」看拓扑)":"(点一下开右栏「世界树」看拓扑)","(缺)":"(缺)","clearai 面板:右栏页签类型注册失败 ":"clearai 面板:右栏页签类型注册失败 ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","」相关的":"」相关的","一句话":"一句话","一步检验":"一步检验","上位":"上位","下一步:找一步去检验它":"下一步:找一步去检验它","下一步:换个办法再检验":"下一步:换个办法再检验","下一步:独立核验通过 → 已验证":"下一步:独立核验通过 → 已验证","下一步:结案时写进长期知识":"下一步:结案时写进长期知识","下位":"下位","不确定":"不确定","世界树":"世界树","主语":"主语","事实":"事实","产物":"产物","人撤回":"人撤回","人放行":"人放行","代码":"代码","依据":"依据","值的形态":"值的形态","做什么":"做什么","入本体":"入本体","全屏":"全屏","全文在 ":"全文在 ","公式":"公式","关系":"关系","关闭":"关闭","写进长期知识":"写进长期知识","出自":"出自","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)","判据":"判据","判据:":"判据:","判断":"判断","原生预览打开它":"原生预览打开它","原生预览打开它(计划声明的产物)":"原生预览打开它(计划声明的产物)","取不到":"取不到","取值":"取值","只看与「":"只看与「","只看相关":"只看相关","可信度怎么变的":"可信度怎么变的","可复算":"可复算","命题":"命题","图组件不可用":"图组件不可用","在图上找它":"在图上找它","在检验这一站被推翻,不再往下走。":"在检验这一站被推翻,不再往下走。","实体图":"实体图","实体图还空着。":"实体图还空着。","实例":"实例","审批记录":"审批记录","已交付":"已交付","已作废":"已作废","已推翻":"已推翻","已提出":"已提出","已收尾 · 存档可看":"已收尾 · 存档可看","已替换":"已替换","已被替换,不再往下走。":"已被替换,不再往下走。","已验证":"已验证","引用":"引用","引用已有材料":"引用已有材料","待推进":"待推进","待核验":"待核验","打开「事实」那一格并展开这条命题":"打开「事实」那一格并展开这条命题","打开目标文档(原生预览)":"打开目标文档(原生预览)","打开计划文档(原生预览)":"打开计划文档(原生预览)","推翻":"推翻","提出":"提出","支持":"支持","收起":"收起","收起详情":"收起详情","放行":"放行","数值":"数值","暂无计划。建立后此处显示计划的步骤与闸门。":"暂无计划。建立后此处显示计划的步骤与闸门。","有 ":"有 ","有矛盾":"有矛盾","未声明":"未声明","本体":"本体","本体图":"本体图","本体图还空着。模型立词之后,概念和关系会长在这里。":"本体图还空着。模型立词之后,概念和关系会长在这里。","查看此步骤的证据":"查看此步骤的证据","查看步骤详情":"查看步骤详情","查看评估者":"查看评估者","检验":"检验","检验结果:":"检验结果:","概念":"概念","正在取…":"正在取…","正在裁决":"正在裁决","步 ":"步 ","清除":"清除","点击查看详情":"点击查看详情","点开看进度和来历":"点开看进度和来历","状态":"状态","独立核验":"独立核验","独立核验:":"独立核验:","用到它的结论":"用到它的结论","登记过的实例、写进长期知识的断言会出现在这里。":"登记过的实例、写进长期知识的断言会出现在这里。","盘上没有这个文件":"盘上没有这个文件","目标":"目标","相关":"相关","看核验":"看核验","看记录":"看记录","矛盾":"矛盾","第 n 步":"第 n 步","算错":"算错","类型":"类型","结论":"结论","结论照常可读。":"结论照常可读。","背景(不参与判定):":"背景(不参与判定):","自己推了一遍":"自己推了一遍","自己检验":"自己检验","范围":"范围","范围:":"范围:","补充":"补充","观测":"观测","计划":"计划","计划 ":"计划 ","计划受阻,等人处置":"计划受阻,等人处置","计划已交付 ":"计划已交付 ","计划已收尾(":"计划已收尾(","计划文档":"计划文档","计划的步骤与闸门":"计划的步骤与闸门","证据":"证据","评 ":"评 ","评估":"评估","评估卡":"评估卡","起过 ":"起过 ","还没有内容。发第一条消息后,这里显示本体图和结论。":"还没有内容。发第一条消息后,这里显示本体图和结论。","还没有立目标":"还没有立目标","还没有结论。模型立下判断之后,这里一行一条。":"还没有结论。模型立下判断之后,这里一行一条。","这一项已经不在当前的词里了(可能刚被废止)。":"这一项已经不在当前的词里了(可能刚被废止)。","这个词已废止,旧结论里的用法照样可读。":"这个词已废止,旧结论里的用法照样可读。","进度":"进度","退出全屏":"退出全屏","适配":"适配","释义":"释义","需要你":"需要你","需要你 ":"需要你 ","验证":"验证","验证中":"验证中"}
-		const LOCALE_EN = {" · 改过 ":" · changed "," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: "," 个断言的主语还没登记成实例。":" assertion subjects are not registered as instances yet. "," 次":" times"," 次评估者":" evaluators"," 步":" steps"," 步)":" steps)"," 看核验记录":" Review record"," 看核验过程":" Watch the review"," 轮":" rounds","(点一下开右栏「世界树」)":" (click to open Worldlines)","(点一下开右栏「世界树」看拓扑)":" (click to see the topology in Worldlines)","(缺)":" (missing)","clearai 面板:右栏页签类型注册失败 ":"clearai panel: failed to register the right-sidebar tab type ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","」相关的":"\"","一句话":"Statement","一步检验":"A test","上位":"Broader","下一步:找一步去检验它":"Next: test it in a step","下一步:换个办法再检验":"Next: test it another way","下一步:独立核验通过 → 已验证":"Next: independent check passes → Verified","下一步:结案时写进长期知识":"Next: written to long-term knowledge at close","下位":"Narrower","不确定":"Uncertain","世界树":"Worldlines","主语":"Subject","事实":"Facts","产物":"Deliverables","人撤回":"Withdrawn by a person","人放行":"Released by a person","代码":"Code","依据":"Basis","值的形态":"Value form","做什么":"What it does","入本体":"In ontology","全屏":"Full screen","全文在 ":"Full text at ","公式":"Formula","关系":"Relation","关闭":"Close","写进长期知识":"Written to long-term knowledge","出自":"From","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"Switch back to an earlier worldline set (the plans are all still here, and their documents are archived under clear/goals/plans/)","判据":"Criterion","判据:":"Criterion: ","判断":"Judgment","原生预览打开它":"Open it in the native preview","原生预览打开它(计划声明的产物)":"Open it in the native preview (an artifact declared by the plan)","取不到":"Unavailable","取值":"Value","只看与「":"Only related to \"","只看相关":"Only related","可信度怎么变的":"How trust changed","可复算":"Reproducible","命题":"Propositions","图组件不可用":"The graph component is unavailable","在图上找它":"Find it on the graph","在检验这一站被推翻,不再往下走。":"Refuted at the test stage; it goes no further.","实体图":"Entity graph","实体图还空着。":"The entity graph is empty. ","实例":"Instances","审批记录":"approval record","已交付":"delivered","已作废":"voided","已推翻":"refuted","已提出":"proposed","已收尾 · 存档可看":"closed · archived and readable","已替换":"Replaced","已被替换,不再往下走。":"Replaced; it goes no further.","已验证":"Verified","引用":"Reference","引用已有材料":"Cites existing material","待推进":"to advance","待核验":"Awaiting check","打开「事实」那一格并展开这条命题":"Open the Facts pane and expand this proposition","打开目标文档(原生预览)":"Open the goal document (native preview)","打开计划文档(原生预览)":"Open the plan document (native preview)","推翻":"refute","提出":"Proposed","支持":"support","收起":"Collapse","收起详情":"Collapse details","放行":"release","数值":"Quantity","暂无计划。建立后此处显示计划的步骤与闸门。":"No plan yet. Once created, its steps show here.","有 ":"","有矛盾":"Conflicting","未声明":"not declared","本体":"Ontology","本体图":"Ontology graph","本体图还空着。模型立词之后,概念和关系会长在这里。":"The ontology graph is empty. Concepts and relations appear once terms are defined.","查看此步骤的证据":"see the evidence for this step","查看步骤详情":"view step details","查看评估者":"view evaluator","检验":"Test","检验结果:":"Result: ","概念":"concepts","正在取…":"Loading…","正在裁决":"Deciding","步 ":"step ","清除":"Clear","点击查看详情":"click for details","点开看进度和来历":"Open to see progress and history","状态":"Status","独立核验":"Independent check","独立核验:":"Independent check: ","用到它的结论":"Conclusions using it","登记过的实例、写进长期知识的断言会出现在这里。":"Registered instances and assertions in long-term knowledge appear here.","盘上没有这个文件":"this file is not on disk","目标":"Goal","相关":"Related","看核验":"See check","看记录":"See record","矛盾":"Conflicts","第 n 步":"Step n","算错":"Wrong if","类型":"Type","结论":"CONCLUSIONS","结论照常可读。":"conclusions are still readable.","背景(不参与判定):":"Background (not part of the verdict): ","自己推了一遍":"Reasoned through alone","自己检验":"Self-tested","范围":"Scope","范围:":"Scope: ","补充":"More","观测":"Observation","计划":"Plan","计划 ":"Plan ","计划受阻,等人处置":"plan blocked, waiting for a person","计划已交付 ":"Plan delivered ","计划已收尾(":"Plan closed (","计划文档":"Plan document","计划的步骤与闸门":"Plan steps","证据":"Evidence","评 ":"E","评估":"Evaluation","评估卡":"evaluation card","起过 ":"ran ","还没有内容。发第一条消息后,这里显示本体图和结论。":"Nothing yet. After the first message, the graph and conclusions show here.","还没有立目标":"No goal yet","还没有结论。模型立下判断之后,这里一行一条。":"No conclusions yet. Each judgment gets one line here.","这一项已经不在当前的词里了(可能刚被废止)。":"This item is no longer in the vocabulary (it may have just been deprecated).","这个词已废止,旧结论里的用法照样可读。":"This term is deprecated; older conclusions still read fine.","进度":"Progress","退出全屏":"Exit full screen","适配":"Fit","释义":"Gloss","需要你":"Needs you","需要你 ":"needs you ","验证":"Verification","验证中":"Testing"}
+		const LOCALE_ZH = {" · 改过 ":" · 改过 "," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:"," 个断言的主语还没登记成实例。":" 个断言的主语还没登记成实例。"," 次":" 次"," 次评估者":" 次评估者"," 步":" 步"," 步)":" 步)"," 看核验记录":" 看核验记录"," 看核验过程":" 看核验过程"," 轮":" 轮","(点一下开右栏「世界树」)":"(点一下开右栏「世界树」)","(点一下开右栏「世界树」看拓扑)":"(点一下开右栏「世界树」看拓扑)","(缺)":"(缺)","clearai 面板:右栏页签类型注册失败 ":"clearai 面板:右栏页签类型注册失败 ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","」相关的":"」相关的","一句话":"一句话","一步检验":"一步检验","上位":"上位","下一步:找一步去检验它":"下一步:找一步去检验它","下一步:换个办法再检验":"下一步:换个办法再检验","下一步:独立核验通过 → 已验证":"下一步:独立核验通过 → 已验证","下一步:结案时写进长期知识":"下一步:结案时写进长期知识","下位":"下位","不确定":"不确定","世界树":"世界树","主语":"主语","事实":"事实","产物":"产物","人撤回":"人撤回","人放行":"人放行","代码":"代码","依据":"依据","值的形态":"值的形态","做什么":"做什么","入本体":"入本体","全屏":"全屏","全文在 ":"全文在 ","公式":"公式","关系":"关系","关闭":"关闭","写进长期知识":"写进长期知识","出自":"出自","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)","判据":"判据","判据:":"判据:","判断":"判断","原生预览打开它":"原生预览打开它","原生预览打开它(计划声明的产物)":"原生预览打开它(计划声明的产物)","取不到":"取不到","取值":"取值","只看与「":"只看与「","只看相关":"只看相关","可信度怎么变的":"可信度怎么变的","可复算":"可复算","命题":"命题","图组件不可用":"图组件不可用","在图上找它":"在图上找它","在检验这一站被推翻,不再往下走。":"在检验这一站被推翻,不再往下走。","实体图":"实体图","实体图还空着。":"实体图还空着。","实例":"实例","审批记录":"审批记录","已交付":"已交付","已作废":"已作废","已推翻":"已推翻","已提出":"已提出","已收尾 · 存档可看":"已收尾 · 存档可看","已替换":"已替换","已被替换,不再往下走。":"已被替换,不再往下走。","已验证":"已验证","引用":"引用","引用已有材料":"引用已有材料","待推进":"待推进","待核验":"待核验","打开「事实」那一格并展开这条命题":"打开「事实」那一格并展开这条命题","打开目标文档(原生预览)":"打开目标文档(原生预览)","打开计划文档(原生预览)":"打开计划文档(原生预览)","推翻":"推翻","提出":"提出","支持":"支持","收起":"收起","收起详情":"收起详情","放行":"放行","数值":"数值","暂无计划。建立后此处显示计划的步骤与闸门。":"暂无计划。建立后此处显示计划的步骤与闸门。","有 ":"有 ","有矛盾":"有矛盾","未声明":"未声明","本体":"本体","本体图":"本体图","本体图还空着。模型立词之后,概念和关系会长在这里。":"本体图还空着。模型立词之后,概念和关系会长在这里。","查看此步骤的证据":"查看此步骤的证据","查看步骤详情":"查看步骤详情","查看评估者":"查看评估者","检验":"检验","检验结果:":"检验结果:","概念":"概念","正在取…":"正在取…","正在裁决":"正在裁决","步 ":"步 ","清除":"清除","点击查看详情":"点击查看详情","点开看进度和来历":"点开看进度和来历","状态":"状态","独立核验":"独立核验","独立核验:":"独立核验:","用到它的结论":"用到它的结论","登记过的实例、写进长期知识的断言会出现在这里。":"登记过的实例、写进长期知识的断言会出现在这里。","盘上没有这个文件":"盘上没有这个文件","目标":"目标","相关":"相关","看核验":"看核验","看记录":"看记录","矛盾":"矛盾","第 n 步":"第 n 步","算错":"算错","类型":"类型","结论":"结论","结论照常可读。":"结论照常可读。","背景(不参与判定):":"背景(不参与判定):","自己推了一遍":"自己推了一遍","自己检验":"自己检验","范围":"范围","范围:":"范围:","补充":"补充","观测":"观测","计划":"计划","计划 ":"计划 ","计划受阻,等人处置":"计划受阻,等人处置","计划已交付 ":"计划已交付 ","计划已收尾(":"计划已收尾(","计划文档":"计划文档","计划的步骤与闸门":"计划的步骤与闸门","证据":"证据","评 ":"评 ","评估":"评估","评估卡":"评估卡","起过 ":"起过 ","还没有内容。发第一条消息后,这里显示本体图和结论。":"还没有内容。发第一条消息后,这里显示本体图和结论。","还没有立目标":"还没有立目标","还没有结论。模型立下判断之后,这里一行一条。":"还没有结论。模型立下判断之后,这里一行一条。","这一项已经不在当前的词里了(可能刚被废止)。":"这一项已经不在当前的词里了(可能刚被废止)。","这个词已废止,旧结论里的用法照样可读。":"这个词已废止,旧结论里的用法照样可读。","进度":"进度","退出全屏":"退出全屏","适配":"适配","释义":"释义","等你定":"等你定","等你定 ":"等你定 ","验证":"验证","验证中":"验证中"}
+		const LOCALE_EN = {" · 改过 ":" · changed "," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: "," 个断言的主语还没登记成实例。":" assertion subjects are not registered as instances yet. "," 次":" times"," 次评估者":" evaluators"," 步":" steps"," 步)":" steps)"," 看核验记录":" Review record"," 看核验过程":" Watch the review"," 轮":" rounds","(点一下开右栏「世界树」)":" (click to open Worldlines)","(点一下开右栏「世界树」看拓扑)":" (click to see the topology in Worldlines)","(缺)":" (missing)","clearai 面板:右栏页签类型注册失败 ":"clearai panel: failed to register the right-sidebar tab type ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","」相关的":"\"","一句话":"Statement","一步检验":"A test","上位":"Broader","下一步:找一步去检验它":"Next: test it in a step","下一步:换个办法再检验":"Next: test it another way","下一步:独立核验通过 → 已验证":"Next: independent check passes → Verified","下一步:结案时写进长期知识":"Next: written to long-term knowledge at close","下位":"Narrower","不确定":"Uncertain","世界树":"Worldlines","主语":"Subject","事实":"Facts","产物":"Deliverables","人撤回":"Withdrawn by a person","人放行":"Released by a person","代码":"Code","依据":"Basis","值的形态":"Value form","做什么":"What it does","入本体":"In ontology","全屏":"Full screen","全文在 ":"Full text at ","公式":"Formula","关系":"Relation","关闭":"Close","写进长期知识":"Written to long-term knowledge","出自":"From","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"Switch back to an earlier worldline set (the plans are all still here, and their documents are archived under clear/goals/plans/)","判据":"Criterion","判据:":"Criterion: ","判断":"Judgment","原生预览打开它":"Open it in the native preview","原生预览打开它(计划声明的产物)":"Open it in the native preview (an artifact declared by the plan)","取不到":"Unavailable","取值":"Value","只看与「":"Only related to \"","只看相关":"Only related","可信度怎么变的":"How trust changed","可复算":"Reproducible","命题":"Propositions","图组件不可用":"The graph component is unavailable","在图上找它":"Find it on the graph","在检验这一站被推翻,不再往下走。":"Refuted at the test stage; it goes no further.","实体图":"Entity graph","实体图还空着。":"The entity graph is empty. ","实例":"Instances","审批记录":"approval record","已交付":"delivered","已作废":"voided","已推翻":"refuted","已提出":"proposed","已收尾 · 存档可看":"closed · archived and readable","已替换":"Replaced","已被替换,不再往下走。":"Replaced; it goes no further.","已验证":"Verified","引用":"Reference","引用已有材料":"Cites existing material","待推进":"to advance","待核验":"Awaiting check","打开「事实」那一格并展开这条命题":"Open the Facts pane and expand this proposition","打开目标文档(原生预览)":"Open the goal document (native preview)","打开计划文档(原生预览)":"Open the plan document (native preview)","推翻":"refute","提出":"Proposed","支持":"support","收起":"Collapse","收起详情":"Collapse details","放行":"release","数值":"Quantity","暂无计划。建立后此处显示计划的步骤与闸门。":"No plan yet. Once created, its steps show here.","有 ":"","有矛盾":"Conflicting","未声明":"not declared","本体":"Ontology","本体图":"Ontology graph","本体图还空着。模型立词之后,概念和关系会长在这里。":"The ontology graph is empty. Concepts and relations appear once terms are defined.","查看此步骤的证据":"see the evidence for this step","查看步骤详情":"view step details","查看评估者":"view evaluator","检验":"Test","检验结果:":"Result: ","概念":"concepts","正在取…":"Loading…","正在裁决":"Deciding","步 ":"step ","清除":"Clear","点击查看详情":"click for details","点开看进度和来历":"Open to see progress and history","状态":"Status","独立核验":"Independent check","独立核验:":"Independent check: ","用到它的结论":"Conclusions using it","登记过的实例、写进长期知识的断言会出现在这里。":"Registered instances and assertions in long-term knowledge appear here.","盘上没有这个文件":"this file is not on disk","目标":"Goal","相关":"Related","看核验":"See check","看记录":"See record","矛盾":"Conflicts","第 n 步":"Step n","算错":"Wrong if","类型":"Type","结论":"CONCLUSIONS","结论照常可读。":"conclusions are still readable.","背景(不参与判定):":"Background (not part of the verdict): ","自己推了一遍":"Reasoned through alone","自己检验":"Self-tested","范围":"Scope","范围:":"Scope: ","补充":"More","观测":"Observation","计划":"Plan","计划 ":"Plan ","计划受阻,等人处置":"plan blocked, waiting for a person","计划已交付 ":"Plan delivered ","计划已收尾(":"Plan closed (","计划文档":"Plan document","计划的步骤与闸门":"Plan steps","证据":"Evidence","评 ":"E","评估":"Evaluation","评估卡":"evaluation card","起过 ":"ran ","还没有内容。发第一条消息后,这里显示本体图和结论。":"Nothing yet. After the first message, the graph and conclusions show here.","还没有立目标":"No goal yet","还没有结论。模型立下判断之后,这里一行一条。":"No conclusions yet. Each judgment gets one line here.","这一项已经不在当前的词里了(可能刚被废止)。":"This item is no longer in the vocabulary (it may have just been deprecated).","这个词已废止,旧结论里的用法照样可读。":"This term is deprecated; older conclusions still read fine.","进度":"Progress","退出全屏":"Exit full screen","适配":"Fit","释义":"Gloss","等你定":"Your call","等你定 ":"your call ","验证":"Verification","验证中":"Testing"}
 
 		/**
 		 * 翻译函数:**由原生 locale 座位绑定**(`ctx.locale.bind`),不是我们自建的一套 i18n。
@@ -653,7 +653,7 @@ window.__ModuleLoader__.load({
 		 * ═══ 本体格(第六阶段:图为主) ═══
 		 *
 		 * 一屏三层,自上而下越来越细:
-		 *   ① 页眉:在回答什么 · 一行计数 · 需要你(只陈述)· 迷你进度轨(判断 → 检验 → 已验证 → 入本体);
+		 *   ① 页眉:在回答什么 · 一行计数 · 等你定(只陈述)· 迷你进度轨(判断 → 检验 → 已验证 → 入本体);
 		 *   ② 图:本体图 / 实体图二选一,星图式(点 + 衬线标签;实线已验证、虚线待核验);
 		 *   ③ 结论:一行一条,按可信度分组;点开依次是 进度 → 可信度怎么变的 → 补充。
 		 *
@@ -899,7 +899,7 @@ window.__ModuleLoader__.load({
 			)
 		}
 
-		/** 页眉:在回答什么 · 一行计数 · 需要你 · 迷你进度轨。 */
+		/** 页眉:在回答什么 · 一行计数 · 等你定 · 迷你进度轨。 */
 		function AtlasHeader(props) {
 			const { data, rows } = props
 			const live = rows.filter((row) => row.trust !== 'replaced')
@@ -913,7 +913,7 @@ window.__ModuleLoader__.load({
 				{ className: 'clearai-head' },
 				h('div', { className: 'clearai-question', title: String(data?.goal?.claim ?? '') }, data?.goal ? String(data.knowledgeView?.goal?.headline ?? data.goal.claim ?? '') : t('还没有立目标')),
 				counts.length === 0 ? null : h('div', { className: 'clearai-counts' }, counts.map(([trust, count]) => `${TRUST_WORD[trust]} ${count}`).join(' · ')),
-				...needYou.map((item, index) => h('div', { key: `need-${index}`, className: 'clearai-need' }, h('b', null, t('需要你')), String(item?.text ?? ''))),
+				...needYou.map((item, index) => h('div', { key: `need-${index}`, className: 'clearai-need' }, h('b', null, t('等你定')), String(item?.text ?? ''))),
 				live.length === 0
 					? null
 					: h(
@@ -1500,11 +1500,11 @@ window.__ModuleLoader__.load({
 			)
 		}
 
-		/** 需要你:只陈述的几行(计划停下、结论矛盾),没有按钮——要怎么办,在对话里说。 */
+		/** 等你定:只陈述的几行(计划停下、结论矛盾),没有按钮——要怎么办,在对话里说。 */
 		function NeedYou(props) {
 			const items = Array.isArray(props.data?.needYou) ? props.data.needYou : []
 			if (items.length === 0) return null
-			return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, margin: '0 0 8px' } }, ...items.map((item, index) => h('div', { key: `need-${index}`, className: 'clearai-need' }, h('b', null, t('需要你')), String(item?.text ?? ''))))
+			return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, margin: '0 0 8px' } }, ...items.map((item, index) => h('div', { key: `need-${index}`, className: 'clearai-need' }, h('b', null, t('等你定')), String(item?.text ?? ''))))
 		}
 
 		/**
@@ -1554,7 +1554,7 @@ window.__ModuleLoader__.load({
 			 * 一格只放**一个符号**:进度。要人注意的事不换符号,只换颜色。
 			 *
 			 * 这条工具行上的格子只承担**可点、且只有我们知道**的两句:
-			 *   需要你 N(人门计数,点了开世界树)· 续跑停着(为什么停,人是可以处置的)。
+			 *   等你定 N(人门计数,点了开世界树)· 续跑停着(为什么停,人是可以处置的)。
 			 * 「已达成 · 100%」那一类与原生目标提示说的是同一件事,不在这里重复。
 			 */
 			const inboxCount = Array.isArray(data?.needYou) ? data.needYou.length : 0
@@ -1563,17 +1563,17 @@ window.__ModuleLoader__.load({
 			/**
 			 * 符号**恒定是进度**(形状稳定才学得会):要人注意不在符号上换字,
 			 * 而是换颜色(与世界树同一条规矩:形状说状态,别让人去猜一个 '?')。
-			 * 「需要你 N」就在这一格(`waiting`):门开着是**事实面**上最要紧的一句,
+			 * 「等你定 N」就在这一格(`waiting`):门开着是**事实面**上最要紧的一句,
 			 * 而它可点——点一下开世界树,那里才看得到要裁什么。
 			 */
 			const symbol = `${done}/${total}`
 			const brief = typeof plan.brief === 'string' && plan.brief.trim() !== '' ? plan.brief.trim() : null
 			const meaning = blocked ? t('计划受阻,等人处置') : plan.status === 'closed' ? `${t('计划已收尾(')}${done}/${total}${t(' 步)')}` : `${t('计划已交付 ')}${done}/${total}${t(' 步')}`
 			/**
-			 * 等人时**只说一句**:先「需要你 N」(人门计数),没有门才说续跑停着的原因。
+			 * 等人时**只说一句**:先「等你定 N」(人门计数),没有门才说续跑停着的原因。
 			 * 两者是同一根轴(为什么在等人)⇒ 一格只放一个,不并列。
 			 */
-			const waiting = inboxCount > 0 ? `${t('需要你 ')}${inboxCount}` : null
+			const waiting = inboxCount > 0 ? `${t('等你定 ')}${inboxCount}` : null
 			const attentionNow = attention || waiting !== null
 			return h(
 				'button',
@@ -1607,7 +1607,7 @@ window.__ModuleLoader__.load({
 		 *
 		 * 它说的事(阶段 / 完成度 / 当前步)与**原生目标提示**、与工具行那颗计划 chip 的 `N/M`
 		 * 说的是同一件 ✗ —— 而它**独占一行,把输入框整个顶上去** ✗。
-		 * 唯一可点、且只有我们知道的那一件(「需要你 N」)已经并进计划 chip:
+		 * 唯一可点、且只有我们知道的那一件(「等你定 N」)已经并进计划 chip:
 		 * 同一行、一点直达世界树。剩下的「为什么停」也在那颗 chip 上只说一句。
 		 */
 		/**
@@ -2266,7 +2266,7 @@ window.__ModuleLoader__.load({
 			const railDisposers = new Map()
 
 			/**
-			 * 打开右栏的某张页签(跨面跳转:点「需要你 N」→ 进展)。
+			 * 打开右栏的某张页签(跨面跳转:点「等你定 N」→ 进展)。
 			 * 不再有我们自己的「预览」页签了:预览走**原生**的文档预览(`openNativePreview`)——
 			 * 那一条既有 markdown/图片/pdf/html 的渲染,也有它自己的分页读盘。
 			 */
@@ -2339,7 +2339,7 @@ window.__ModuleLoader__.load({
 			/**
 			 * **输入框下那一条不再注册**:它说的话(阶段 / 完成度 / 当前步)与原生目标提示、
 			 * 与工具行那颗计划 chip 重复 ✗,却**独占一行把输入框顶上去** ✗。
-			 * 唯一可点、且只有我们知道的那件事(「需要你 N」)已经并进计划 chip(同一行,一点直达世界树)。
+			 * 唯一可点、且只有我们知道的那件事(「等你定 N」)已经并进计划 chip(同一行,一点直达世界树)。
 			 */
 			ctx.effect(() => sessions.list.subscribe(() => {
 				for (const sync of seats) sync()
