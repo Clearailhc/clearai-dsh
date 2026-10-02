@@ -4,23 +4,23 @@
 > 权威源是 `docs/optimization/truth-table.json`；改内容改那里，然后跑 `node tools/build-truth-table.mjs`。
 > 交叉校验见 `node tools/verify-truth-table.mjs`。
 
-这份表回答一个问题：**当前代码真正保证的是什么**。它不描述愿望——`设计目标` 与 `已删除` 就是字面意思。
+这份表回答一个问题：**当前代码真正保证的是什么**。它不描述愿望——`设计目标` 就是字面意思。
 
 ## 计数
 
-- 机制条目：**74**
-- 按状态：已实现 51 · 设计目标 1 · 已删除 22
-- 按强度：硬边界 42 · 建议 7 · 原生 3 · 废弃 22
-- 按归宿：保持设计目标 1 · 已删除并记账 22
-- 真正阻断执行的：**21**
+- 机制条目：**51**
+- 按状态：已实现 50 · 设计目标 1
+- 按强度：硬边界 41 · 建议 7 · 原生 3
+- 按归宿：保持设计目标 1
+- 真正阻断执行的：**19**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
 
 ## 代码常量快照
 
 这一节由代码导出，不是手写：
 
-- 机制：3 个（goal / plan / ontology）
-- 意图工具：10 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Define Deprecate RegisterInstance Assert）
+- 机制：2 个（goal / plan）
+- 意图工具：6 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan）
 - 配置键：13 个
 - 提示词段：定义 3 段，同一时刻在场 3 段
 
@@ -33,8 +33,6 @@
 | `hypothesis-registry` | 假设登记与状态派生 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Frame hypotheses` |
 | `criteria-required` | 判据先写（done_criteria 强制） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js validateSteps` |
 | `formal-plan` | 正式计划 | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | `preset/plugins/clearai-kernel.js CreatePlan` |
-| `plan-review` | 已删除:计划审阅记号 | 认识论 | 已删除 | 废弃 | 无 | human | 否 | — |
-| `plan-reauthorize` | 已删除:计划重新呈递审阅 | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
 | `advance-plan` | AdvancePlan：唯一完成动词 | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | `preset/plugins/clearai-kernel.js AdvancePlan` |
 | `plan-amend-no-progress` | RevisePlan(补一步 / 改判据 / 作废)不动进度 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js RevisePlan` |
 | `admission` | 观测准入（只判收不收） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js admission` |
@@ -44,59 +42,38 @@
 | `evidence-record` | 证据登记 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `fact-promotion` | 事实升格 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js persistFact` |
 | `history-retention` | 只追加历史（什么都不删） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/fold.js（全体 case 无删除分支）` |
-| `worldline-fork` | 已删除:世界线分叉（独立工作副本） | 认识论 | 已删除 | 废弃 | 权威 | model | 否 | — |
-| `worldline-metric` | 已删除:预注册指标与算术收敛 | 认识论 | 已删除 | 废弃 | 权威 | system | 是 | — |
-| `worldline-adopt` | 已删除:世界线采纳必须由人按下 | 认识论 | 已删除 | 废弃 | 权威 | human | 否 | — |
 | `block-threshold` | 连拦阈值（证据质量闸） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js blockedThreshold` |
-| `skill-candidate` | 已删除:技能默认候选态（人采纳才进目录） | 认识论 | 已删除 | 废弃 | 权威 | model | 否 | — |
-| `memory-write` | 已删除:记忆写入（字段校验 + 标题去重） | 认识论 | 已删除 | 废弃 | 权威 | model | 否 | — |
 | `l4-universal-gate` | 覆盖每一次评估的通用 L4 门 | 认识论 | 设计目标 | 建议 | 无 | human | 否 | `docs/known-gaps.md` |
 | `verification-lifecycle` | 验证生命周期:哪些保证是活的 | 认识论 | 已实现 | 建议 | 无 | system | 否 | `preset/plugins/clearai-kernel.js countBlock` |
 | `fact-retraction` | 事实撤回:人审查后决定 | 认识论 | 已实现 | 硬边界 | 权威 | human | 否 | `preset/plugins/clearai-kernel.js reviewRefutedFacts` |
 | `observation-provenance` | 观测来源:声明必须与生产者对得上 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/ontology.js VERIFICATION_LOOP` |
-| `plan-auto-confirm` | 已删除:无人值守立约即授权 | 认识论 | 已删除 | 废弃 | 无 | system | 否 | — |
 | `ontology-lexicon-events` | 领域词汇事件折成 state.lexicon | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/domain-language.js applyLexiconMutation` |
 | `assertion-validation` | 断言形态校验（落账之前） | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | 冲突派生（只暴露，不裁决） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | 本体图 / 实体图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/domain-language.js graphProjection` |
-| `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Define` |
-| `entity-registration` | 实体登记(实例是一等写入口) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js RegisterInstance` |
-| `entity-assertion` | 实体断言(登记即产边) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Assert` |
+| `ontology-files` | 领域本体写成文件(三道校验) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA` |
 | `entity-gate` | 实体门(结案唯一的结构关口) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js Conclude` |
-| `level-skip-reason` | 已删除:跳级需具名理由 | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
 | `criteria-revision-gate` | 判据修订要一份独立裁决 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Frame` |
 | `audit-digest-reuse` | 裁决按材料 digest 复用（同态不重派） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js auditDigest` |
+| `workspace-files-sync` | 工作区文件同步(攒下来的事实与本体住在文件里) | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile` |
 | `artifact-path-exclusive` | 产物路径不重叠(同一计划里两步不许声明同一个产物) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js validateSteps` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/plugins/prompts.js loop` |
-| `scout-precommit` | 已删除:立约前侦察（一生一次） | Harness | 已删除 | 废弃 | 权威 | system | 否 | — |
-| `map-scouts` | 已删除:并行侦察（有上限与并发） | Harness | 已删除 | 废弃 | 非权威 | model | 否 | — |
 | `evaluator-readonly-face` | 评估者只读工具面 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js resolveToolFace` |
-| `executor-tool-face` | 已删除:世界线执行者工具面（不含计划/目标动词） | Harness | 已删除 | 废弃 | 权威 | system | 是 | — |
 | `tool-trimming` | 工具面按贡献表裁剪 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js MECHANISM_TOOLS` |
 | `native-todo-disabled` | 原生工作方式(todo/subagent/workflow/ralph)挂载 | Harness | 已实现 | 硬边界 | 无 | system | 否 | `preset/agent.cordis.yml 工作方式段` |
 | `native-goal-disabled` | 原生 goal 工具与命令挂载(目标层挂在原生 goal 上) | Harness | 已实现 | 硬边界 | 无 | system | 否 | `preset/agent.cordis.yml` |
 | `native-plan-mode-disabled` | 原生 plan-mode 挂载(动手前给人看计划) | Harness | 已实现 | 硬边界 | 无 | system | 否 | `preset/agent.cordis.yml` |
 | `subagent-trimmed` | 原生工作方式已挂回(todo / 子代理 / workflow / ralph) | Harness | 已实现 | 硬边界 | 无 | system | 否 | `preset/agent.cordis.yml` |
 | `bash-deny-rules` | Bash 危险命令拒绝规则 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js 危险命令匹配` |
-| `protected-roots` | 系统受保护目录（模型不可直写） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js protectedRoots` |
-| `git-ledger` | 已删除:只追加 git 账本（一律旁路账本，不碰用户仓库） | Harness | 已删除 | 废弃 | 权威 | system | 否 | — |
-| `kernel-panic-recovery` | 已删除:引擎级异常的降权只读恢复 | Harness | 已删除 | 废弃 | 无 | model | 否 | — |
-| `auto-continuation` | 已删除:ClearAI 自己的续跑窗口 | Harness | 已删除 | 废弃 | 无 | system | 否 | — |
-| `max-auto-turns` | 已删除:ClearAI 的续跑轮数上限 | Harness | 已删除 | 废弃 | 无 | system | 否 | — |
-| `autonomy-config` | 已删除:autonomy 运行档 | Harness | 已删除 | 废弃 | 无 | system | 否 | — |
+| `protected-roots` | 系统受保护目录（模型不可直写） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js protectedPath` |
 | `runtime-card` | 每回合派生的运行态卡 | Harness | 已实现 | 建议 | 无 | system | 否 | `ui/lib/fold.js renderCard` |
 | `prompt-sections` | 提示词段(3 段定义 / 3 段在场) | Harness | 已实现 | 建议 | 无 | system | 否 | `preset/plugins/prompts.js SECTIONS` |
-| `exploration-zone` | 已删除:把「探索区」当作一个被命名的模式 | Harness | 已删除 | 废弃 | 非权威 | model | 否 | — |
 | `subrun-lifecycle` | 评估者子 run 的生命周期（一次性句柄 + 从子会话日志取回） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js dispatchSubRun` |
 | `host-invariants` | 宿主不变量（五条契约，落账之前判） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）` |
-| `set-autonomy` | 已删除:人在面板上切换运行档 | Harness | 已删除 | 废弃 | 无 | human | 否 | — |
-| `budget-tiers` | 已删除:人在场 6 轮 / 无人值守 512 轮 | Harness | 已删除 | 废弃 | 无 | system | 否 | — |
 | `non-authoritative-isolation` | 非权威路径写不进权威账本 | Harness | 已实现 | 硬边界 | 无 | system | 是 | `test/authority-boundary.test.mjs` |
-| `ledger-exploration-snapshots` | 已删除:回合边界的工作区快照 | Harness | 已删除 | 废弃 | 权威 | system | 否 | — |
 | `durable-dispatch-facts` | 派发事实独立落账（在 await 之前） | Harness | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts` |
 | `goal-complete-guard` | 守卫:原生 goal 只能经 Conclude 完成 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js update_goal` |
-| `human-gate-actions` | 已删除:人门动作白名单 | 宿主 | 已删除 | 废弃 | 无 | human | 否 | — |
 | `context-pruning` | 上下文剪枝与压缩（宿主原生） | 宿主 | 已实现 | 原生 | 无 | system | 否 | `preset/agent.cordis.yml compaction` |
 | `model-routing` | 模型路由与切换（宿主原生，ClearAI 不持有） | 宿主 | 已实现 | 原生 | 无 | host | 否 | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `host-read-face-degradation` | 宿主读面降级（取不到就空态,不抛） | 宿主 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/index.js sessionsOf` |
@@ -113,7 +90,7 @@
 - **输出**：mutation goal/set;同时在宿主原生 goal 上建(或改)一条目标,由原生的目标驱动负责续跑
 - **阻断执行**：否
 - **原生替代**：dsh-tool-goal / dsh-command-goal(目标的续跑与展示)
-- **理由**：目标与判据必须在工作开始前落账,否则完成度无从派生。续跑交给原生 goal:ClearAI 只决定「什么算完成」,不再自己维护一套续跑窗口。
+- **理由**：目标与判据必须在工作开始前落账,否则完成度无从派生。续跑交给原生 goal:ClearAI 只决定「什么算完成」。
 - **代码**：preset/plugins/clearai-kernel.js Frame; attachNativeGoal; ui/lib/fold.js case 'goal/set'
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
@@ -171,30 +148,6 @@
 - **测试**：test/kernel.test.mjs · **配置**：minBriefChars
 - **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
-### `plan-review` · 已删除:计划审阅记号
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：human
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：dsh-plan-mode 的审阅卡（ClearAI 借用原生审阅界面，不借账）
-- **理由**：计划授权记号删了(第三阶段):它从来不是门——未授权不挡推进,第一次交付就按事实补写。要人在动手前看计划,用原生 /plan(plan-mode 已挂上);ClearAI 不再另起一张审阅卡。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `plan-reauthorize` · 已删除:计划重新呈递审阅
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：model
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：审阅记号删了,重新呈递也就没有对象。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
 ### `advance-plan` · AdvancePlan：唯一完成动词
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
@@ -216,7 +169,7 @@
 - **输出**：plan/amended, plan/refined, plan/voided（进度不变）
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口(第四阶段把 AmendPlan / RefinePlan / VoidPlanStep 合并为 RevisePlan,各自的校验不变,变更事件名不变)。
+- **理由**：进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口 RevisePlan(补步、改判据、作废,各有自己的校验)。
 - **代码**：preset/plugins/clearai-kernel.js RevisePlan; ui/lib/fold.js/323/330
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/loop-philosophy.zh-CN.md
@@ -268,7 +221,7 @@
 - **输出**：人放行 ⇒ 落 human/released 再交评估者;不放行 / 没人能答 ⇒ 拒收
 - **阻断执行**：是
 - **原生替代**：宿主 userQuestions(原生提问卡)
-- **理由**：L4 意味着高代价或不可逆,必须有人按的那一下。门在交付那次调用里当场开、当场关,不再挂在收件箱里等。范围是步骤轴——覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。
+- **理由**：L4 意味着高代价或不可逆,必须有人按的那一下。门在交付那次调用里当场开、当场关。范围是步骤轴——覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。
 - **代码**：preset/plugins/clearai-kernel.js l4Delivery; askHuman; ui/lib/fold.js case 'human/released'
 - **测试**：test/kernel.test.mjs · **配置**：l4RequiresHumanRelease=true, l4RejectSelfWritten=true
 - **提示词**：clearai/loop · **文档**：docs/known-gaps.zh-CN.md
@@ -291,7 +244,7 @@
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：目标结案且假设达到 promote_at_level 且无推翻
 - **输入**：goal, hypothesis, 评估者裁决
-- **输出**：写入 clear/knowledge/facts/<goal>.md + mutation fact/promoted
+- **输出**：写入 clear/knowledge/facts/<事实 id>.json(带升格那一刻用到的词条含义指纹 definitions)+ mutation fact/promoted
 - **阻断执行**：否
 - **原生替代**：无
 - **理由**：事实由系统按门槛算出来，模型不能宣称。
@@ -311,48 +264,6 @@
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/loop-philosophy.zh-CN.md
 
-### `worldline-fork` · 已删除:世界线分叉（独立工作副本）
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：model
-- **触发**：模型调用 ForkPlan 且给出互斥分支与预注册指标
-- **输入**：branches[], decide_by（尺子:量 = 口径 + 方向）
-- **输出**：mutation fork/created, worldline/prepared, worldline/executing, worldline/executed, branch/delivered
-- **阻断执行**：否
-- **原生替代**：dsh-tool-subagent / dsh-tool-workflow
-- **理由**：「少即是多」第二阶段交还宿主:并行探索就是并行检验——竞争路线是竞争的假设,各由一个步骤检验,判据事先写好;并行交给原生子任务。代价是失去每条路线各自的文件副本,由「产物路径不重叠」兜住各自的产出。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `worldline-metric` · 已删除:预注册指标与算术收敛
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：system
-- **触发**：ConvergeFork
-- **输入**：各分支读数 + 预注册尺子
-- **输出**：mutation fork/recommended（读数凑齐即落推荐，只记事实）；fork/converged；算不出来 → fork/undecidable，交人
-- **阻断执行**：是
-- **原生替代**：dsh-tool-subagent / dsh-tool-workflow
-- **理由**：「少即是多」第二阶段交还宿主:「同一把尺子」就是事先写下的判据;两条读数是否可比交给独立评估者。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `worldline-adopt` · 已删除:世界线采纳必须由人按下
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：human
-- **触发**：人在面板上执行 adopt_branch / abandon_fork
-- **输入**：fork id, branch id, reason
-- **输出**：user 来源消息折进投影，写 by:'user'
-- **阻断执行**：否
-- **原生替代**：dsh-tool-subagent / dsh-tool-workflow
-- **理由**：「少即是多」第二阶段交还宿主:落选就是被推翻的假设;两条都成立而互相矛盾时作为冲突交给人,不再有单独的采纳动作。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
 ### `block-threshold` · 连拦阈值（证据质量闸）
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
@@ -361,22 +272,10 @@
 - **输出**：达阈值 → 计划置 blocked,当场问人(按缺口再改 / 作废这一步);没人能答 ⇒ 原生 goal 置阻塞(clearai-needs-human)
 - **阻断执行**：是
 - **原生替代**：无
-- **理由**：它是质量闸不是预算，因此不再按档取值。
+- **理由**：它是质量闸不是预算，因此不按档取值。
 - **代码**：preset/plugins/clearai-kernel.js blockedThreshold; escalateBlocked; ui/lib/fold.js case 'block/counted'
 - **测试**：test/kernel.test.mjs · **配置**：blockedThreshold=2（预设显式值）
 - **提示词**：clearai/loop · **文档**：docs/loop-philosophy.zh-CN.md
-
-### `human-gate-actions` · 已删除:人门动作白名单
-
-- **层**：宿主 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：human
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：原生 ask_user_question(开门的那次调用当场问人)
-- **理由**：面板写入口 /api/clearai/gate 第六阶段整条拿掉:本体编辑抽屉删了,要改词汇就在对话里说,模型用 Define / Deprecate 落同一本账;其余要人拍板的事第三阶段起由开门的那次调用当场问人。旧日志里人按过的动作仍由 fold.js 的 parseHumanGate 照旧折出来。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `single-loop` · 单循环人格（不做多 Agent 编排）
 
@@ -397,38 +296,10 @@
 - **输出**：模型据四拍组织行为
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：七阶段在运行时的压缩表达。
+- **理由**：认识论循环在运行时的压缩表达。
 - **代码**：preset/plugins/prompts.js loop; preset/agent.cordis.yml
 - **测试**：test/prompt-sections.test.mjs（阶段 6 新增） · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/loop-philosophy.zh-CN.md
-
-### `scout-precommit` · 已删除:立约前侦察（一生一次）
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：system
-- **触发**：Frame 落定判据，且 input/ 有材料
-- **输入**：brief
-- **输出**：mutation scout/dispatched + scout/settled
-- **阻断执行**：否
-- **原生替代**：dsh-tool-subagent
-- **理由**：「少即是多」第二阶段交还宿主:立约前要查资料,模型自己读,或派原生子任务只读去查。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `map-scouts` · 已删除:并行侦察（有上限与并发）
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：非权威 · **责任方**：model
-- **触发**：模型调用 MapScouts
-- **输入**：任务清单
-- **输出**：多个只读子 run 的结论
-- **阻断执行**：否
-- **原生替代**：dsh-tool-subagent / dsh-tool-workflow
-- **理由**：「少即是多」第二阶段交还宿主:并行侦察由原生子任务承担。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `evaluator-readonly-face` · 评估者只读工具面
 
@@ -442,20 +313,6 @@
 - **代码**：preset/plugins/clearai-kernel.js resolveToolFace; auditToolFilter
 - **测试**：test/kernel.test.mjs · **配置**：auditToolFilter=[read,glob,grep,read_image]
 - **提示词**：clearai/loop · **文档**：docs/verification-loop.zh-CN.md
-
-### `executor-tool-face` · 已删除:世界线执行者工具面（不含计划/目标动词）
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：system
-- **触发**：派遣世界线执行者时
-- **输入**：候选工具名
-- **输出**：任务书即计划；执行者工具面里根本没有 CreatePlan/AdvancePlan/ClosePlan
-- **阻断执行**：是
-- **原生替代**：dsh-tool-subagent
-- **理由**：「少即是多」第二阶段交还宿主:世界线执行者随世界线一起删除。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `tool-trimming` · 工具面按贡献表裁剪
 
@@ -489,7 +346,7 @@
 - **输出**：tool-goal / command-goal 在面里;原生 goal 只能经 Conclude 完成
 - **阻断执行**：否
 - **原生替代**：dsh-tool-goal / dsh-command-goal
-- **理由**：第三阶段起不再是两本账:原生 goal 是续跑与展示,ClearAI 的目标账决定「什么算完成」。Frame 建原生目标,Conclude 完成或置阻塞,守卫拦住直接完成。
+- **理由**：只有一本账的分工:原生 goal 是续跑与展示,ClearAI 的目标账决定「什么算完成」。Frame 建原生目标,Conclude 完成或置阻塞,守卫拦住直接完成。
 - **代码**：preset/agent.cordis.yml
 - **测试**：test/preset-composition.test.mjs（阶段 5 新增） · **配置**：—
 - **提示词**：— · **文档**：preset/agent.cordis.yml
@@ -534,77 +391,15 @@
 ### `protected-roots` · 系统受保护目录（模型不可直写）
 
 - **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：每次写类工具调用前
+- **触发**：每次写类工具调用前(write / edit / 带写操作的 bash)
 - **输入**：路径
-- **输出**：clear/evidence、clear/knowledge/facts、clear/goals 由系统所有 → deny
+- **输出**：写类工具(write / edit)或带写操作的 bash 碰到 clear/evidence、clear/knowledge/facts、clear/goals、clear/ontology(三支本体目录除外)→ deny;相对路径与绝对路径一样判;只读不拦。写三支本体目录里的 .json 时先在内存里得出全文,单文件校验不过 → deny
 - **阻断执行**：是
 - **原生替代**：无
 - **理由**：事实与评估卡只能由系统落盘。
-- **代码**：preset/plugins/clearai-kernel.js protectedRoots; touchesProtected
+- **代码**：preset/plugins/clearai-kernel.js protectedPath; bashTouchesProtected; ontologyWriteProblems
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/identity · **文档**：docs/design-principles.zh-CN.md
-
-### `git-ledger` · 已删除:只追加 git 账本（一律旁路账本，不碰用户仓库）
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：system
-- **触发**：步骤交付点 / 文件历史查询 / 恢复
-- **输入**：路径或交付点
-- **输出**：mutation git/committed, git/restored, git/snapshot
-- **阻断执行**：否
-- **原生替代**：dsh-workspace-changes
-- **理由**：「少即是多」第二阶段交还宿主:文件改动历史由宿主的 workspace-changes 显示;不再维护自己的 git 账本,也不提供恢复(已接受的代价)。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `kernel-panic-recovery` · 已删除:引擎级异常的降权只读恢复
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：model
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：第五阶段随提示词收成三段删掉:它只由提示词承载(内核与宿主都没有对应的硬约束),细则是宿主异常类型的处置,属于宿主。身份段留下一句通用纪律:结局不明的操作先看当前事实,再谈重试。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `auto-continuation` · 已删除:ClearAI 自己的续跑窗口
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：system
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：dsh-goal-round-driver 执行轮数上限
-- **理由**：续跑交给原生 goal(第三阶段):ClearAI 不再自己布防 / 按住 / 收兵一个续跑窗口。要人的时候由开门的调用当场问;没人能答就把原生 goal 置阻塞,续跑自然停。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `max-auto-turns` · 已删除:ClearAI 的续跑轮数上限
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：system
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：dsh-goal-round-driver
-- **理由**：续跑轮数上限归原生 goal 自己的缺省(maxGoalRounds),ClearAI 不再另设一个数。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `autonomy-config` · 已删除:autonomy 运行档
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：system
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：运行档删了(第三阶段):它剩下的唯一作用是挑两套澄清措辞之一,而「要不要人」本来就由门表达。澄清协议只剩一段。旧日志里人门消息形式的 `set_autonomy` 标记不再折进状态。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `runtime-card` · 每回合派生的运行态卡
 
@@ -627,7 +422,7 @@
 - **输出**：系统提示词段集合
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：提示词解释行为,但按 P1 不是执行边界。第五阶段收成三段:身份(native)、循环(hard)、对人说话(advisory),每段的分类由 `test/prompt-sections.test.mjs` 与内容咬合。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。
+- **理由**：提示词解释行为,但按 P1 不是执行边界。提示词分三段:身份(native)、循环(hard)、对人说话(advisory),每段的分类由 `test/prompt-sections.test.mjs` 与内容咬合。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。
 - **代码**：preset/plugins/prompts.js SECTIONS; preset/plugins/clearai-kernel.js systemPrompt
 - **测试**：test/prompt-sections.test.mjs（阶段 6 新增） · **配置**：contributions.sections
 - **提示词**：自身 · **文档**：docs/design-principles.zh-CN.md
@@ -644,34 +439,6 @@
 - **代码**：preset/agent.cordis.yml compaction
 - **测试**：test/client.test.mjs（装配） · **配置**：thresholdChars=8192, headChars=4096, tailChars=1024
 - **提示词**：— · **文档**：docs/loop-philosophy.zh-CN.md
-
-### `skill-candidate` · 已删除:技能默认候选态（人采纳才进目录）
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：model
-- **触发**：模型调用 SaveSkill
-- **输入**：name, description, 正文
-- **输出**：clear/skills/<name>/SKILL.md，status=candidate；人 promote_skill 后才 modelInvocable
-- **阻断执行**：否
-- **原生替代**：dsh-skill-filesystem / dsh-tool-skill
-- **理由**：「少即是多」第二阶段交还宿主:技能走原生技能目录与 skill 工具,不再自带候选技能与采纳动作。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `memory-write` · 已删除:记忆写入（字段校验 + 标题去重）
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：model
-- **触发**：模型调用 WriteMemory
-- **输入**：lesson 的五字段 / fact 的四字段
-- **输出**：clear/memory/**；按标题跨文件去重
-- **阻断执行**：否
-- **原生替代**：dsh-agent-instructions
-- **理由**：「少即是多」第二阶段交还宿主:已确立的结论就是长期记忆(本体);项目说明走原生 PROJECT.md。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `model-routing` · 模型路由与切换（宿主原生，ClearAI 不持有）
 
@@ -692,22 +459,10 @@
 - **输出**：原生命令结果
 - **阻断执行**：否
 - **原生替代**：dsh-commands 注册表
-- **理由**：菜单是 DSH 原生的人类命令通道。ClearAI 不再贡献自己的命令(第二阶段删除了 `/goal` `/plan` `/evidence` `/worldline` `/plan-review`):状态看界面,`/goal` 与 `/plan` 由原生接管。
+- **理由**：菜单是 DSH 原生的人类命令通道。ClearAI 不贡献自己的命令:状态看界面,`/goal` 与 `/plan` 由原生接管。
 - **代码**：preset/agent.cordis.yml command-compact（唯一的命令行）
 - **测试**：test/preset-composition.test.mjs · **配置**：—
 - **提示词**：— · **文档**：—
-
-### `exploration-zone` · 已删除:把「探索区」当作一个被命名的模式
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：非权威 · **责任方**：model
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：dsh-tool-todo / dsh-tool-subagent
-- **理由**：这个名字底下其实捆了三件事,而它们的状态各不相同:**结构性隔离**(非权威路径写不进权威账本)是一条真机制,已实现并由边界套件钉住,现在有自己的一行;**「工作不设限」**是原生工具挂回之后的既成事实,不需要额外机制;**「一块可以自由停留的区域」**是措辞——把它做成机制等于拿劝告冒充机制(P1),做成界面又只是给同一件事起两个名字。所以它作为**概念**注销,而「探索期产出有据可查」这件事另有落点:回合边界的账本快照。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `subrun-lifecycle` · 评估者子 run 的生命周期（一次性句柄 + 从子会话日志取回）
 
@@ -754,7 +509,7 @@
 - **输出**：block/counted ⇒ plan/blocked ⇒ 当场问人
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行;「从没走过的等级」这条读数第四阶段删了。
+- **理由**：验证机承诺的保证都有落点:①结果永远不来时不无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行。
 - **代码**：preset/plugins/clearai-kernel.js countBlock; docs/verification-loop.md
 - **测试**：test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级理由整套删除); test/ontology.test.mjs(状态表逐行有落点) · **配置**：—
 - **提示词**：— · **文档**：docs/verification-loop.md
@@ -767,7 +522,7 @@
 - **输出**：mutation fact/reviewed;事实文件追加一行;没人能答 ⇒ 事实标着待复核,原生 goal 置阻塞
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：事实带边界(scope):边界被触发时要有一个人能把它撤回,而撤回永不自动——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定。两种结局都落 fact/reviewed,撤回是终态:记录留着、不再作为「已知」被引用。
+- **理由**：事实带边界(scope):边界被触发时要有一个人能把它撤回,而撤回永不自动——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定。两种结局都落 fact/reviewed,撤回是终态:记录留着、不作为「已知」被引用。
 - **代码**：preset/plugins/clearai-kernel.js reviewRefutedFacts; markFactReviewed; ui/lib/fold.js case 'fact/reviewed'; preset/plugins/ontology.js VERIFICATION_LOOP
 - **测试**：test/kernel.test.mjs(当场问人 / 两个结局 / 旧日志兼容) · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/verification-loop.zh-CN.md
@@ -775,51 +530,15 @@
 ### `observation-provenance` · 观测来源:声明必须与生产者对得上
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：交付时登记观测(主线或世界线)
+- **触发**：交付时登记观测
 - **输入**：ref + note
-- **输出**：mutation observation/recorded（source 只有 self 与 scout）
+- **输出**：mutation observation/recorded（source 只有 self）
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：类型的职责是**只声明今天真的可表示的东西**:内核只写过 `self`(主线/世界线的交付)与 `scout`(侦察),所以 `source` 只声明这两个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。
+- **理由**：类型的职责是**只声明今天真的可表示的东西**:内核只写 `self`(交付),所以 `source` 只声明这一个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。
 - **代码**：preset/plugins/ontology.js VERIFICATION_LOOP; preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'
 - **测试**：test/kernel.test.mjs; test/ontology.test.mjs（声明取值与生产者逐一对齐） · **配置**：—
 - **提示词**：— · **文档**：docs/verification-loop.md
-
-### `set-autonomy` · 已删除:人在面板上切换运行档
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：human
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：「要不要人在场」是**运行时状态**,不是面板上的一个开关:有事要拍板就有门开着,没门就继续跑。那个档位还顺手把「计划经人确认」变成系统自己签的——用门代替开关之后,它没有存在的理由。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/known-gaps.md
-
-### `budget-tiers` · 已删除:人在场 6 轮 / 无人值守 512 轮
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：system
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：轮数是**保险丝**,不是用户的档位。原先两档把「我在不在场」变成了配置项,还把「计划经人确认」变成系统自己签的。现在只有一个默认值(128),由**原生**的 round driver 执行上限。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/known-gaps.md
-
-### `plan-auto-confirm` · 已删除:无人值守立约即授权
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：system
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：让系统替人签「这份计划经人确认」,那条证据就是系统自己伪造的——与 L4「人放行」是同一类病。门的意义在于「这一下是人按的」,所以 `confirmed_by` 只剩 `user` 与 `progress`。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/known-gaps.md
 
 ### `non-authoritative-isolation` · 非权威路径写不进权威账本
 
@@ -832,19 +551,6 @@
 - **代码**：test/authority-boundary.test.mjs; ui/lib/fold.js LEGACY_GATE_ACTIONS
 - **测试**：test/authority-boundary.test.mjs（14 项） · **配置**：—
 - **提示词**：— · **文档**：docs/loop-philosophy.zh-CN.md
-
-### `ledger-exploration-snapshots` · 已删除:回合边界的工作区快照
-
-- **层**：Harness · **状态**：已删除 · **强度**：废弃 · **权威**：权威 · **责任方**：system
-- **触发**：本会话调用过会改工作区的工具(write/edit/bash/pwsh),且工作区真的脏
-- **输出**：一次账本提交 + mutation git/snapshot（只留台账）
-- **阻断执行**：否
-- **原生替代**：dsh-workspace-changes
-- **理由**：「少即是多」第二阶段交还宿主:回合边界快照随账本一起删除;每轮改了什么看宿主的改动卡片。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `ontology-lexicon-events` · 领域词汇事件折成 state.lexicon
 
@@ -898,17 +604,17 @@
 - **测试**：test/domain-language.test.mjs · **配置**：—
 - **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
 
-### `ontology-verbs` · 领域词汇的具名动词与货架
+### `ontology-files` · 领域本体写成文件(三道校验)
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
-- **触发**：模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate
-- **输入**：id / label / gloss / aliases / parent / domain / range / functional / basis / reason
-- **输出**：mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
+- **触发**：模型用 write / edit / bash 写 clear/ontology/{concepts,relations,entities}/**.json;每个 pre-step;Frame 与 Conclude 按需同步
+- **输入**：概念 / 关系 / 实体文件(X.json 描述 X,子节点放在同级 X/ 目录;id = 文件名)
+- **输出**：①写入时单文件校验不过 → 拒写;②读取时从文件折出词汇、实体、实体关系与跨文件问题(有问题的节点或边不进图,卡上列出);③升格时断言涉及的本体不成立 → 这条判断不升格;卡上有本体大纲(前两层与节点数)
 - **阻断执行**：否
-- **原生替代**：无
-- **理由**：词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id——同 id 再定义只许改名字、释义、别名。第四阶段把六个写入口合并成 Define / Deprecate、删掉只读的 QueryKnowledge(知识预检已把相关已知送进运行态卡),变更事件名不变。
-- **代码**：preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
-- **测试**：test/kernel.test.mjs · **配置**：—
+- **原生替代**：原生文件工具(write / edit / bash)
+- **理由**：目录天生是嵌套,文件天生跨会话留下,模型天生会读写和挪文件。约束只放在非守不可的三处:格式不对就读不了,引用不对图就断,升格不对真假就混。层次怎么分、词怎么起,系统一概不管。
+- **代码**：ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA; preset/plugins/clearai-kernel.js ontologyWriteProblems ensureOntologySchema syncWorkspace; ui/lib/fold.js case 'workspace/synced'
+- **测试**：test/kernel.test.mjs(写入时拒、读取时折图与问题、升格时不成立就不升格、改义标复核) · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
 
 ### `ontology-panel-graph` · 面板「本体」:图为主的只读读面
@@ -919,36 +625,10 @@
 - **输出**：本体图 / 实体图、按可信度分组的结论(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换)、点开一条的进度 → 可信度怎么变的 → 补充、节点小卡
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：第六阶段:面板只读,图是主角。词条增删改的抽屉与 /api/clearai/gate 一起删了——它是模型工具之外的第二个写入口,而人要改词汇在对话里说一句就够。界面用词与运行态卡同一套,内部编号不上屏。
+- **理由**：面板只读,图是主角。面板不提供第二个写入口:人要改词汇,在对话里说一句,或直接改文件。界面用词与运行态卡同一套,内部编号不上屏。
 - **代码**：ui/lib/client.js GraphBand GraphInspector Atlas conclusionsOf; ui/lib/fold.js trustHistory inspectGraphSelection
 - **测试**：test/client.test.mjs(本体格:图、结论分组、三段展开、节点小卡) · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `entity-registration` · 实体登记(实例是一等写入口)
-
-- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
-- **触发**：模型调 RegisterInstance
-- **输入**：{id, type, label, basis, provenance:{kind,ref}}
-- **输出**：entity/registered 变更 → state.entities[]（实体图节点，带出处）
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：概念是约定（不要依据），实例是观测（必须带出处）。把实体层绑在目标级裁决上时，"本体写得好、实体图是空的"会变成最省力的完成方式。
-- **代码**：preset/plugins/clearai-kernel.js RegisterInstance; ui/lib/domain-language.js validateTerm; ui/lib/fold.js applyMutations
-- **测试**：test/kernel.test.mjs · **配置**：—
-- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
-
-### `entity-assertion` · 实体断言(登记即产边)
-
-- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
-- **触发**：模型调 Assert
-- **输入**：{subject:{id,type}, predicate, object, evidence:{kind,ref}}
-- **输出**：entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：边在观测那一刻成立，与"独立裁决后才升格"的事实边并存但可区分（promoted 带等级与边界，asserted 带出处）。
-- **代码**：preset/plugins/clearai-kernel.js Assert; ui/lib/domain-language.js graphProjection; ui/lib/fold.js applyMutations
-- **测试**：test/kernel.test.mjs · **配置**：—
-- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
+- **提示词**：— · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `entity-gate` · 实体门(结案唯一的结构关口)
 
@@ -958,22 +638,10 @@
 - **输出**：有主体不是实体图节点 ⇒ 拒(entities_unlanded),点名判断与主体;否则放行去独立评估
 - **阻断执行**：是
 - **原生替代**：无
-- **理由**：「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不再要求另用 Assert 把同一句话说一遍。第四阶段把关口从三道收到这一道。
+- **理由**：「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不要求另用 Assert 把同一句话说一遍。
 - **代码**：preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph
 - **测试**：test/kernel.test.mjs(实体门); test/contrast.test.mjs(B 组) · **配置**：requireLandedEntities
-- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/less-is-more-plan.zh-CN.md
-
-### `level-skip-reason` · 已删除:跳级需具名理由
-
-- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：model
-- **触发**：—
-- **阻断执行**：否
-- **原生替代**：无
-- **理由**：第四阶段整套删除(ExplainLevelSkip、level/skipped、untouchedLevels、levels_skipped 缺口与 requireLevelReasons 门):第三阶段重跑里它让小任务结案时多被拦一次、多写一段理由,而等级的职责只有两件——谁来判,以及 L4 要人放行。旧日志里的 level/skipped 安静跳过。
-- **归宿**：已删除并记账
-- **代码**：—
-- **测试**：— · **配置**：—
-- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `criteria-revision-gate` · 判据修订要一份独立裁决
 
@@ -991,7 +659,7 @@
 ### `durable-dispatch-facts` · 派发事实独立落账（在 await 之前）
 
 - **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：派评估者（audit/dispatched）或派侦察（scout/dispatched）时
+- **触发**：派评估者（audit/dispatched）时
 - **输入**：sessionId + 一条已经发生的事实（派发动作本身,不依赖子任务返回什么）
 - **输出**：pendingFacts 里一条待落账事实：本拍的 pre-step 兜底落账（drainPendingFacts）,同一个工具结果的 mutations 里也并进同一条（withPendingFacts,pending 在前、按 id 去重）
 - **阻断执行**：否
@@ -1006,7 +674,7 @@
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：同一状态再次结案（Conclude / 证据审计）,算出来的 digest 与上一次相同
 - **输入**：裁决种类 + 步 id + 目标修订号 + 计划步与产物 + 观测 + 原始假设 + 已升格事实 + 非审计来源证据 + 准入坐标里的产物
-- **输出**：复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不再派评估者;材料一变 digest 就变,必然重派
+- **输出**：复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不派评估者;材料一变 digest 就变,必然重派
 - **阻断执行**：否
 - **原生替代**：无
 - **理由**：digest 只盖材料,所以「重试一次就重烧两三分钟」这件事在机制上不可能发生。一次不确定的结案自己会落一条证据（anchor='auditor'）:把证据集合整个算进 digest,每重试一次 digest 就变一次,复用永远命中不了——而两次之间模型什么都没改,那不是新证据,是同一条评审自己的回声。派生读数（supportedLevel / refutations / inconclusive）同理被排除:它们由证据算出来,算进去等于把回声再算一遍。只有落定过、且真的给出了裁决的那一条才可复用:unknown 不是裁决,它说明那一次没成,正是该重派的理由。
@@ -1025,6 +693,19 @@
 - **理由**：「这一刻读不到」与「世上没有这件事」在界面上长得一模一样:降级抛出去会把一次跑了几分钟的评审整个作废,静默给 undefined 又会让空读数被读成「世上没有这件事」。所以读面一律走方法式取服务、取不到返回空态,并把降级这件事本身记成可观测的事实。只记在进程内还不够——**重启、换进程、离线复判都读不到它**,而这恰恰是最需要事后解释的一条;所以内核在 pre-step 把它落成账本事实,幂等靠内容寻址的 id,而不是靠「记得别写两次」。
 - **代码**：ui/lib/index.js sessionsOf; ui/lib/index.js projectionsOf; ui/lib/index.js hostHealth hostHealthId; preset/plugins/clearai-kernel.js landedHostHealth; ui/lib/fold.js case 'host/inactive'
 - **测试**：test/host.test.mjs（A1/A6:降级不抛、给的就是空态、两个服务各一条健康事实、view() 同源）; test/kernel.test.mjs（pre-step 把观测落成 host/inactive,同一条反复观察只落一条）; test/contrast.test.mjs（属性式服务访问清零） · **配置**：—
+- **提示词**：— · **文档**：docs/optimization/state-machines.zh-CN.md
+
+### `workspace-files-sync` · 工作区文件同步(攒下来的事实与本体住在文件里)
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：每个 pre-step(子会话除外)
+- **输入**：clear/knowledge/facts/*.json 与 clear/ontology/{concepts,relations,entities}/**.json 的当前内容
+- **输出**：变了的文件连内容一起落成一条 workspace/synced,折进 state.workspace.files;派生的事实行合并别的会话的事实(foreign),并给出 definitionsChanged 与「待处理」里的复核提示
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：会话账本只活在一次会话里,而研究要跨会话攒下来。文件是唯一跨会话活着的东西;把它的变化落进账本,投影仍然只吃账本,重放读到的是那一刻的文件。
+- **代码**：preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile; ui/lib/fold.js case 'workspace/synced'; ui/lib/fold.js derive factRows; ui/lib/domain-language.js factFromFile changedDefinitions
+- **测试**：test/kernel.test.mjs(跨会话:另一个会话升格的事实在这里也是已知;定义改了要复核) · **配置**：—
 - **提示词**：— · **文档**：docs/optimization/state-machines.zh-CN.md
 
 ### `artifact-path-exclusive` · 产物路径不重叠(同一计划里两步不许声明同一个产物)
@@ -1051,7 +732,7 @@
 - **理由**：原生 goal 挂上之后,完成有两条路;只留经过独立评估的那条,目标就仍然只有一个完成动词。
 - **代码**：preset/plugins/clearai-kernel.js update_goal; Conclude
 - **测试**：test/kernel.test.mjs · **配置**：—
-- **提示词**：clearai/loop · **文档**：docs/less-is-more-plan.zh-CN.md
+- **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
 ---
 

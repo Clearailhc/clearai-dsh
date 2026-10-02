@@ -9,7 +9,7 @@
 
 1. **状态是派生量，不是存储**。除少数明确标注的存储字段（如 `step.status`），状态由 `derive()` 现算。
 2. **一条边一个事件**。图上标的 `event` 就是内核写的 `mutation.t`，可以在 `fold.js` 的 `switch` 里逐条对上。
-3. **降级不可表示**。`step` 与 `branch` 都有秩（`RANK` / `BRANCH_RANK`），秩只增不减；
+3. **降级不可表示**。`step` 有秩（`RANK`），秩只增不减；
    图上因此不存在「退回」的边。
 
 ---
@@ -56,7 +56,7 @@ stateDiagram-v2
     closed --> [*]
 ```
 
-计划没有授权记号（第三阶段删了）：它从来不是门，第一次交付就按事实补写。要人在动手前看计划，用原生 `/plan`。
+计划没有授权记号。要人在动手前看计划，用原生 `/plan`。
 
 置 `blocked` 的那次调用**当场问人**（`userQuestions`）：「按缺口再改」⇒ `block/cleared`；「作废这一步」⇒ `plan/voided` + `block/cleared`；
 没人能答 ⇒ 计划保持 `blocked`，原生 goal 置阻塞（`clearai-needs-human`）。
@@ -104,7 +104,7 @@ stateDiagram-v2
 - `refuted` 不被后续「不在清单里」改写成 `superseded`（`fold.js:396-411`）。
 - 已升格成事实的假设同样不许被悄悄替代（同一处 `promoted` 判断）。
 - 支持等级 `supportedLevel` 是 `derive()` 现算的最大值，不存。
-- 第四阶段起没有跳级机制了：旧账本里的 `level/skipped` 折叠时静默跳过。`derive()` 改为给每条假设标 `unlanded`
+- 等级只决定谁来判，没有跳级检查。`derive()` 给每条假设标 `unlanded`
   （断言主体里不在实体图上的实例节点），`entities_unlanded` 缺口与 Conclude 的实体门都读它。
 
 ## 5. 观测（observation）· 已实现
@@ -150,7 +150,7 @@ stateDiagram-v2
 
 ## 8. 事实（fact）· 已实现
 
-存储字段：`state.facts[]` + `clear/knowledge/facts/<goal>.md`。
+存储字段：`state.facts[]` + `clear/knowledge/facts/<事实 id>.json`（一条事实一个文件，只有系统写）。
 
 ```mermaid
 stateDiagram-v2
@@ -163,14 +163,14 @@ stateDiagram-v2
 投影再从 `fact.review` 把它读成派生状态。生产者是内核的 `reviewRefutedFacts` / `markFactReviewed`；没人能答 ⇒ 事实标着待复核，
 原生 goal 置阻塞。旧日志里人门消息形式的 `retract_fact` / `keep_fact` 仍折得出来。真值表那一行是 `fact-retraction`（已实现）。
 
-## 9. 世界线（fork / branch）· 已删除
+**跨会话**：事实文件住在项目里，每个会话每一拍把 `clear/knowledge/facts/` 与 `clear/ontology/` 的变化折成一条
+`workspace/synced`（存进 `state.workspace.files`），派生的事实行把别的会话留下的事实一并列出（`foreign`）。
+事实文件里记着升格那一刻用到的词条含义指纹（`definitions`）；之后定义改了，派生读数 `definitionsChanged`
+不为空，「待处理」里多一条「定义已变，这条结论还成立吗」——只提示，不撤回。
 
-世界线已在「少即是多」第二阶段删除:并行探索交给原生子任务,竞争路线就是竞争的假设,各由一个步骤检验。旧日志里的 `fork/*`、`worldline/*`、`branch/*` 事件不认识就原样跳过。
+## 9. 自动续跑 · 交给原生 goal
 
-
-## 10. 自动续跑 · 交给原生 goal
-
-ClearAI 自己的续跑窗口（`continuation/set`、`turnDemand`、续跑额度）在第三阶段删了。续跑是宿主原生 goal 的事；
+续跑是宿主原生 goal 的事；
 ClearAI 只在三个地方碰它：
 
 | 时机 | 对原生 goal 做什么 |
@@ -179,63 +179,60 @@ ClearAI 只在三个地方碰它：
 | `Conclude` achieved / abandoned | 完成 / 置阻塞（`clearai-goal-abandoned`） |
 | 要人而没人能答（计划卡住、L4 放行、事实被推翻） | 置阻塞（`clearai-needs-human`） |
 
-旧日志里的 `continuation/set` 不认识就原样跳过。
 
 ---
 
-## 11. 侦察（scout）· 已删除
+## 10. 领域词汇（lexicon）· 已实现
 
-侦察已在「少即是多」第二阶段删除:要并行查资料,模型用原生 `subagent`。旧日志里的 `scout/*` 事件不认识就原样跳过。
+存储字段：`state.lexicon.{terms[], predicates[]}`。
 
-
-## 12. 领域词汇（lexicon）· 已实现
-
-存储字段：`state.lexicon.{terms[], predicates[]}`——账本里的本体事件折出来的那个形状。
+词汇与实体都**从文件来**：`workspace/synced` 的折法用 `materializeOntology` 从 `clear/ontology/` 下的 JSON 文件树得出 `lexicon` / `entities` / `entityAssertions` / `ontologyProblems`（见 §8）。没有登记词条的工具，也没有写词条的事件；`fold.js` 里的 `ontology/*` 与 `entity/*` 分支是这份投影在内存里的表示形状。
 
 ```mermaid
 stateDiagram-v2
-    [*] --> admitted: ontology/term_added / ontology/predicate_added
-    admitted --> admitted: ontology/term_revised / ontology/predicate_revised（只改展示信息；版本 +1，旧值留痕）
-    admitted --> deprecated: ontology/term_deprecated / ontology/predicate_deprecated（黏性终态，带缘由）
+    [*] --> active: 概念或谓词文件出现（读时三道检查通过）
+    active --> active: 文件被改（含义变了 ⇒ 引用它的事实标「定义已变」）
+    active --> deprecated: 文件里写 status: "deprecated"（黏性：引用它的事实照常可读）
+    active --> problem: 跨文件引用指空（只在图下与卡上列出，不进图）
+    problem --> active: 引用补齐
     deprecated --> [*]
 ```
 
 要点：
 
-- **两种本体是两个字段、两种权威**：`state.ontology` 是**过程本体**的形状（插件自己的后台流转结构，随发布变、不可运行时编辑）；`state.lexicon` 是**领域本体**（项目自己的语言：概念、谓词、值形态），由账本事件治理。
-- **没有删除**：废止只把条目改成 `deprecated`；条目、旧版本，以及引用过它的事实全部留着（与「被推翻的假设保留」同一条）。
-- **语义变化不走修订**：含义、主词域、值域、单值性变了 ⇒ 废止 + 注册新 id。稳定 id 的含义在历史上不许悄悄改变，否则旧事实会被今天的释义重写。
+- **两种本体是两个字段、两种权威**：`state.ontology` 是**过程本体**的形状（插件自己的后台流转结构，随发布变、不可运行时编辑）；`state.lexicon` 是**领域本体**（项目自己的语言：概念、谓词、值形态），由工作区里的文件决定。
+- **废止不是删除**：废止只把条目标成 `deprecated`；引用过它的事实照常可读（与「被推翻的假设保留」同一条）。
+- **语义变化看指纹**：事实记着升格那一刻用到的定义指纹；定义改了，事实上就多一条「定义已变」，只提示、不撤回。
 - 断言与冲突**不在这张图里**：断言随 `fact/promoted` 落在事实上；冲突由 `derive()` 现算（单值谓词 + 同一主体 + 不同客体 + 两侧都未撤回），只暴露、不裁决。
 
 ### 联动：本体层与过程层不互相推进
 
-- **词汇事件不推进任何过程对象**，过程事件也不改词汇——两个状态机不嵌套，它们之间只有**引用**这一种方向性关系（断言引用谓词与概念）。四处握手点见[领域本体 §8](../domain-ontology.zh-CN.md)。
+- **本体文件不推进任何过程对象**，过程事件也不改本体文件——两个状态机不嵌套，它们之间只有**引用**这一种方向性关系（断言引用谓词与概念）。四处握手点见[领域本体 §8](../domain-ontology.zh-CN.md)。
 - **断言只在升格那一刻随事实落地**（`fact/promoted` 的 `hypothesis` 与 `assertions`）；冲突是 `derive()` 的现算读数，**不是状态，也不进闸门**。
 - **读面全是渲染**：`clear/ontology/domain.md`、`clear/knowledge/facts/INDEX.md`、运行态卡、面板本体图——同一份折法，没有第二本账。
 
-## 13. 实体与断言 · 已实现
+## 11. 实体与断言 · 已实现
 
-存储字段：`state.entities[]`、`state.entityAssertions[]`——**实体层的一等写入口**，与「已升格事实」
+派生字段：`state.entities[]`、`state.entityAssertions[]`——从实体文件读出，与「已升格事实」
 （`state.facts[].assertions`）分开存、在投影里合起来画。
 
 ```mermaid
 stateDiagram-v2
-    [*] --> registered: entity/registered（实例 + 依据 + 出处）
-    registered --> registered: entity/asserted（一句带出处的话；边在落账那一刻就成立）
+    [*] --> registered: 实体文件出现（实例 + 类型 + 出处）
+    registered --> registered: 文件里添一条关系（带 evidence；边在读到那一刻就成立）
     registered --> [*]
 ```
 
 要点：
 
-- **约定与观测分开**：`Define` 是约定（概念，不需要依据），`RegisterInstance` 是观测
-  （实例，`basis` 与 `provenance` 必填），`Assert` 说一句关于某个已登记实例的话（`evidence` 必填）。
-- **实体不依赖目标裁决**：`entity/asserted` 在登记那一刻就产边。事实那条路照旧（独立裁决 → `fact/promoted`），
+- **约定与观测分开**：概念文件是约定（不需要依据），实体文件是观测——它的每条关系都必须带 `evidence`。
+- **实体不依赖目标裁决**：实体文件里的关系在读到那一刻就产边。事实那条路照旧（独立裁决 → `fact/promoted`），
   投影里两条边都在：`source='promoted'` 带等级与边界，`source='asserted'` 带出处、未经独立裁决。
 - **主体必须可指认**：断言主体必须是已登记实例（`validateAssertions` 的 `assert_subject_unknown`），
   否则每个字都能读、却没人能核。
 - **升格仍会把断言补挂到同一实体上**（按 `${type}|${id}` 去重）：两条来源是**合并**，不是二选一。
 
-## 14. 宿主读面（降级也是事实）· 已实现
+## 12. 宿主读面（降级也是事实）· 已实现
 
 存储字段：`state.hostHealth[]`（只增，封顶 20 条）。
 
@@ -253,7 +250,7 @@ stateDiagram-v2
 - 会话工作目录取不到时**不写盘**（不回退 `process.cwd()`）：写不出去是诚实的降级，
   写到别处是悄悄改了账本的位置。
 
-## 15. 事件清单覆盖表
+## 13. 事件清单覆盖表
 
 折法认识的**每一个**变更类型都在本节有归属；反过来，本文出现的每个 event 也都在折法词汇表里。
 `只留台账` 那一组不折进视图（它们是账本事实），因此不出现在任何状态机里：
@@ -281,20 +278,21 @@ stateDiagram-v2
 | `fact/promoted` | §8 事实 | 是 |
 | `human/released` | §3 步骤（L4 放行） | 是 |
 | `fact/reviewed` | §8 事实(人审查后撤回 / 维持) | 是 |
-| `ontology/term_added` | §12 领域词汇 | 是 |
-| `ontology/predicate_added` | §12 领域词汇 | 是 |
-| `ontology/term_revised` | §12 领域词汇 | 是 |
-| `ontology/predicate_revised` | §12 领域词汇 | 是 |
-| `ontology/term_deprecated` | §12 领域词汇 | 是 |
-| `ontology/predicate_deprecated` | §12 领域词汇 | 是 |
-| `entity/registered` | §13 实体与断言 | 是 |
-| `entity/asserted` | §13 实体与断言 | 是 |
+| `ontology/term_added` | §10 领域词汇 | 是 |
+| `ontology/predicate_added` | §10 领域词汇 | 是 |
+| `ontology/term_revised` | §10 领域词汇 | 是 |
+| `ontology/predicate_revised` | §10 领域词汇 | 是 |
+| `ontology/term_deprecated` | §10 领域词汇 | 是 |
+| `ontology/predicate_deprecated` | §10 领域词汇 | 是 |
+| `entity/registered` | §11 实体与断言 | 是 |
+| `entity/asserted` | §11 实体与断言 | 是 |
 | `audit/reused` | §6 评估 | 是 |
 | `criteria/revised` | §1 目标（判据修订） | 是 |
-| `host/inactive` | §14 宿主读面 | 是 |
+| `host/inactive` | §12 宿主读面 | 是 |
+| `workspace/synced` | §8 事实（跨会话） | 是 |
 | `admission/checked` | **只留台账** | 否 |
 
-## 16. 与验证本体的关系
+## 14. 与验证本体的关系
 
 `docs/verification-loop.zh-CN.md` 描述的是一份**更完整的**验证本体（八状态机等）。
 它与本文件的区别必须在读的时候分清：

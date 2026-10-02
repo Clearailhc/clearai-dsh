@@ -27,7 +27,7 @@ import { SECTIONS } from '../preset/plugins/prompts.js'
 const PORT = join(import.meta.dirname, '..')
 const KERNEL_SOURCE = readFileSync(join(PORT, 'preset', 'plugins', 'clearai-kernel.js'), 'utf8')
 const CLIENT_SOURCE = readFileSync(join(PORT, 'ui', 'lib', 'client.js'), 'utf8')
-const PROMPT_CORPUS = SECTIONS.map((section) => String(section.text ?? '')).join('\n\n')
+const PROMPT_CORPUS = SECTIONS.map((section) => String(section.text?.zh ?? '')).join('\n\n')
 
 let passed = 0
 let failed = 0
@@ -202,8 +202,9 @@ console.log('\n【③ 卡/文档层:裁决要指认判据条目,且没有相反�
 	 * 内核有两处写裁决卡(当场结算 / 从子会话日志回收),两处必须同形。
 	 */
 	const cardWindows = [...KERNEL_SOURCE.matchAll(/schema_version: 'clearai\.audit\.v2'/g)].map((match) => KERNEL_SOURCE.slice(match.index, match.index + 420))
-	const verdictSchemaAt = KERNEL_SOURCE.indexOf('const VERDICT_SCHEMA = {')
-	const verdictSchema = verdictSchemaAt < 0 ? null : extractLiteral(KERNEL_SOURCE, KERNEL_SOURCE.indexOf('{', verdictSchemaAt))
+	// 裁决 schema 是一个按会话语言出说明的函数(`verdictSchema = () => ({...})`);取它返回的那个字面量,`tr` 取中文。
+	const verdictSchemaAt = KERNEL_SOURCE.indexOf('const verdictSchema = () => ({')
+	const verdictSchema = verdictSchemaAt < 0 ? null : extractLiteral(KERNEL_SOURCE, KERNEL_SOURCE.indexOf('{', verdictSchemaAt), { tr: (zh) => zh })
 	check('内核写裁决卡的两处都取得到(当场 + 回收)', cardWindows.length >= 2, String(cardWindows.length))
 	check('裁决卡存的是归一后的 shortfalls(不是原始散文)', cardWindows.length > 0 && cardWindows.every((window) => /shortfalls:\s*[\w.]*verdict\.shortfalls/.test(window)), cardWindows.map((window) => (window.match(/shortfalls:\s*[^,]*/) ?? ['(缺)'])[0]).join(' | '))
 	check('裁决卡的 card 字段就是被归一/截断过的 basis(短裁决进卡)', cardWindows.length > 0 && cardWindows.every((window) => /card:\s*[\w.]*verdict\.basis/.test(window)), cardWindows.map((window) => (window.match(/card:\s*[^,]*/) ?? ['(缺)'])[0]).join(' | '))

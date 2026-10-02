@@ -168,13 +168,12 @@ sequenceDiagram
     end
 ```
 
-当前状态：准入是机制。只读恢复的纪律原本只在提示词里，第五阶段提示词收成三段时删掉了，
-只在身份段（`clearai/identity`）留一句：结局不明的操作先看当前事实，再谈重试。
+当前状态：准入是机制。只读恢复的纪律是身份段（`clearai/identity`）里的一句：结局不明的操作先看当前事实，再谈重试。
 把它升级为边界需要宿主侧配合，属后续议题。
 
 ## 4. 竞争路线路径 · 已实现
 
-世界线已在第二阶段删除。两条做法迥异的路线就是两条竞争的假设，各由一个步骤检验；
+两条做法迥异的路线就是两条竞争的假设，各由一个步骤检验；
 并行交给宿主自己的子任务。
 
 ```mermaid
@@ -213,9 +212,9 @@ sequenceDiagram
 
 ## 5. 领域本体路径 · 已实现（折法、动词与面板都在跑）
 
-**目的**：说清词汇与断言怎么进账本、又怎么变成图。**折法那一半**（六个词汇事件、断言、冲突与图的派生）
-与**四个动词**（`Define` 立词或修订 / `Deprecate` 废止 / `RegisterInstance` 实例登记 / `Assert` 断言）都已接；**面板也接了**（图带 / 断言芯片 / 冲突行 / 词汇维护区，
-以及经人门通道的图编辑——与模型动词同一套判据、同一本账）。
+**目的**：说清词汇与断言怎么写进文件、又怎么变成图。本体是 `clear/ontology/` 下的 JSON 文件树，
+模型用原生文件工具写；宿主逐次检查写入，经 `workspace/synced` 把文件折成 `state.lexicon`，再派生断言、冲突与图。
+没有专门的本体工具；面板只读。
 
 ```mermaid
 sequenceDiagram
@@ -234,10 +233,10 @@ sequenceDiagram
     P-->>G: 运行态卡多一行「相关已知（可直接引用）」
     G-->>M: 模型拿到可直接引用的 id 清单——先复用，缺才立词
 
-    Note over M,K: 词汇动词（已实现）
-    M->>K: Define（给了 range 是谓词，否则是概念）
-    K->>K: 校验：id 唯一 · 引用存在 · is_a 不成环 · 值域合法
-    K-->>L: mutation ontology/term_added（predicate_added / revised / deprecated 同理）
+    Note over M,K: 本体写成文件（已实现）
+    M->>K: write clear/ontology/concepts|relations|entities/**.json（原生文件工具）
+    K->>K: 写时校验（pre-execute）：JSON · 字段合 SCHEMA.json · id = 文件名；不合格拒写
+    K-->>L: 下一步之前 syncWorkspace → mutation workspace/synced（读时跨文件问题只标）
     M->>K: Frame（假设带 assertions）
     K->>K: 校验断言：谓词在 · 主词合域 · 宾语形态对 · 同一事实自洽
     K-->>L: mutation goal/set

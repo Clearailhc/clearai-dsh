@@ -214,7 +214,7 @@ console.log('\n【A 组 · 宿主半:属性式服务访问必须清零】')
 
 // ═══ B 组 · 结案门:第三阶段证伪那一场被拦四次 → 第四阶段一次也不拦 ═══════════════
 //
-// 现场:`docs/optimization/sim-runs/2026-10-02-p3/falsification/events.jsonl`(随仓库走)。
+// 现场:`test/fixtures/sim-falsification.events.jsonl`(一场模拟宿主里的证伪会话,随仓库走)。
 // 旧读数:计划收尾之后第一次 Conclude 起,被拦四次(跳级没理由 → 没有断言形态 ×2 → 主体没落图),
 // 外加 7 次补救调用。新读数:把同一份账折到第一次 Conclude 之前,结案门一道都不该触发——
 // 跳级理由与「没有断言形态」两道门删了,唯一留下的实体门只看将升格判断的断言主体,而那条判断没写断言。
@@ -222,7 +222,7 @@ console.log('\n【A 组 · 宿主半:属性式服务访问必须清零】')
 
 console.log('\n【B 组 · 结案门:证伪那一场从拦四次到一次不拦】')
 {
-	const LOG = join(PORT, 'docs', 'optimization', 'sim-runs', '2026-10-02-p3', 'falsification', 'events.jsonl')
+	const LOG = join(PORT, 'test', 'fixtures', 'sim-falsification.events.jsonl')
 	const events = readFileSync(LOG, 'utf8').trim().split('\n').map((line) => JSON.parse(line))
 	const calls = new Map(events.filter((event) => event.type === 'tool/call').map((event) => [event.data.callId, event.data.name]))
 	const results = events.filter((event) => event.type === 'tool/result')

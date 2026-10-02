@@ -135,7 +135,7 @@ echo
 echo "装好了(**开发形态**;产品形态见 tools/install-native.mjs)。验收:"
 echo "  · 起一个新的 ClearAI 会话(预设选择器里选「ClearAI」)"
 echo "  · 中栏应出现「产物 / 事实」两格;右栏「+」里应有「世界树 / 技能 · 记忆」"
-echo "  · 输入框上方应出现计划芯片(步数 +「需要你 N」)"
+echo "  · 输入框上方应出现计划芯片(步数 +「待处理 N」)"
 echo
 echo "装完自检(用**部署出去的文件**做一次真实装配,绕开 ESM 缓存):"
 if node "$HERE/tools/verify-deploy.mjs"; then

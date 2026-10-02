@@ -54,6 +54,7 @@ if (kind === 'model') {
 ## 你的工作环境(扮演规则,优先于一切)
 
 - **工作区**:\`${workspace}\`。所有文件读写都在这里;相对路径都相对它。用你自己的文件工具与 Bash 干活(相当于宿主的 read / write / bash)。
+- **网络**:要查资料就用你自己的网页搜索与抓取工具(相当于宿主的网络工具);有的站点会被网络策略挡住,挡住了就换来源,并在依据里如实写明出处。
 - **ClearAI 的工具**(Frame、CreatePlan、AdvancePlan、Conclude……)不在你的工具栏里,用 Bash 调用,参数 JSON 从标准输入给:
 
   \`\`\`bash
@@ -65,7 +66,19 @@ if (kind === 'model') {
   打印出来的就是这次调用的结果,以及系统在你下一步之前注入的消息(运行态卡等)——照真的读。
   **每次调用都把 Bash 超时设为 600000 毫秒**:交付可能要等独立评估者判几分钟。
   若打印「调用 cN 还在进行」,过一会儿运行它给的 \`--result\` 命令接着取,不要重复交付。
-- **不要**读写工作区以外的任何文件(包括 ClearAI 自己的源码);不要直接改 \`clear/\` 下系统所有的文件。
+- **本体文件**(\`clear/ontology/concepts|relations|entities/\` 下的 \`.json\`)要用**宿主的原生 write / edit** 写——它们在这里也走 call.mjs,参数与宿主同形,写之前系统会校验:
+
+  \`\`\`bash
+  node ${CALL} ${runDir} write <<'EOF'
+  {"file_path": "clear/ontology/concepts/xxx.json", "content": "{...JSON 文本...}"}
+  EOF
+  node ${CALL} ${runDir} edit <<'EOF'
+  {"file_path": "clear/ontology/concepts/xxx.json", "old_string": "...", "new_string": "..."}
+  EOF
+  \`\`\`
+
+  读它们(以及 \`clear/\` 下的其他文件)用你自己的工具就行。
+- **不要**读写工作区以外的任何文件(包括 ClearAI 自己的源码);不要直接改 \`clear/\` 下系统所有的文件(本体那三个目录除外,且只经上面的 write / edit)。
 - 宿主原生的 \`subagent\`、\`ask_user_question\`、\`present\`、\`update_goal\`、\`/plan\` 在这个环境里没有;需要人决定的事,在最后的回复里写明。系统自己要问人的时候(L4 放行、计划卡住、事实被推翻)会当场问,人的答复出现在那次工具结果里。
 - 做完(或确实做不下去)时,结束运行:你最后一条消息就是给人的答复。
 

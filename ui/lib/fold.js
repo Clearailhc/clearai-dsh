@@ -16,8 +16,9 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, deriveConflicts, emptyLexicon, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
+import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
+import { bilingual, detectLanguage, messageText, tr, withLanguage } from './lang.js'
 
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
 const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
@@ -53,9 +54,15 @@ export const MUTATION_KIND = 'clearai'
  *   v13 → v14:**缺口与关口收窄**:跳级理由整套删除——假设上不再有 `skips`,派生里不再有
  *           `untouchedLevels`;旧日志里的 `level/skipped` 不认识就原样跳过。缺口只留三种
  *           (`untouched_claims`、`prose_only_claims`、`entities_unlanded`)。
+ *   v14 → v15:**攒下来的东西住在文件里**:多了 `workspace.files`(工作区里事实文件与本体文件
+ *           的内容快照,由 `workspace/synced` 折进来);事实带上 `definitions`(升格那一刻用到的
+ *           词条含义指纹)。派生的事实行合并其它会话留下的事实(`foreign`),并给出
+ *           `definitionsChanged`。本体(词汇、实体、实体关系)改为从本体文件折出来,跨文件问题记在
+ *           `ontologyProblems`。旧日志里没有这些,折出来就是空的。
+ *   v15 → v16:多了 `language`(人说话用的语言,从人的消息折出来):系统写给人的话、面板里的读数都跟着它。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 14
+export const STATE_VERSION = 16
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -119,6 +126,24 @@ export function emptyState() {
 		 * 只增不删,留最近若干条(它是读数,不是档案)。
 		 */
 		hostHealth: [],
+		/**
+		 * **工作区文件快照**(`workspace/synced`):路径 → `{ digest, data }` 或 `{ digest, error }`。
+		 *
+		 * 攒下来的东西(事实、本体)住在项目文件里,跨会话活着;而投影只吃账本。内核每一拍把
+		 * 这两处的**变化**折成一条变更,于是文件内容也是账本里一条可重放的事实——重放、分叉、
+		 * 离线复判读到的都是那一刻的文件,而不是此刻盘上的。
+		 */
+		workspace: { files: {} },
+		/**
+		 * **本体文件的跨文件问题**(第二道校验,只提示):引用断了、类型对不上、单值关系两个取值……
+		 * 有问题的节点或边不进图,问题列在这里,卡片与本体页都读它。
+		 */
+		ontologyProblems: [],
+		/**
+		 * **人说话用的语言**('zh' / 'en';还没听到人说话时为 null)。从人的消息里折出来:
+		 * 工具结果、运行态卡、面板读数都跟着它(见 `lang.js`)。
+		 */
+		language: null,
 		/** 正在飞的工具调用(来自 tool/call):让「评估者在裁决」成为一条可看见的事实 */
 		inFlight: null,
 		/** 本会话自己写过的路径(来自 tool/call 的 write/edit):L4 来源分离的判据 */
@@ -529,8 +554,45 @@ export function applyMutation(state, mutation) {
 				evidence: mutation.evidence ?? [],
 				path: mutation.path ?? null,
 				assertions: Array.isArray(mutation.assertions) ? clone(mutation.assertions) : null,
+				/** 升格那一刻,断言用到的词条各自的含义指纹:之后定义改了,这条事实要复核。 */
+				definitions: mutation.definitions !== null && typeof mutation.definitions === 'object' && !Array.isArray(mutation.definitions) ? clone(mutation.definitions) : null,
 				at,
 			})
+			break
+		}
+		/**
+		 * **工作区同步**(`workspace/synced`,内核发):事实文件与本体文件这一拍的变化。
+		 * 每条 change 是一个文件的新样子(`data` 或读不成时的 `error`),或 `removed`。
+		 * 按路径覆盖,所以同一批变化折两遍结果一样。
+		 */
+		case 'workspace/synced': {
+			const files = next.workspace !== null && typeof next.workspace === 'object' && next.workspace.files !== null && typeof next.workspace.files === 'object' ? next.workspace.files : {}
+			next.workspace = { ...(next.workspace ?? {}), files }
+			for (const change of Array.isArray(mutation.changes) ? mutation.changes : []) {
+				const path = typeof change?.path === 'string' ? change.path : ''
+				if (path === '') continue
+				if (change.removed === true) {
+					delete files[path]
+					continue
+				}
+				files[path] = change.error !== undefined && change.error !== null ? { digest: change.digest ?? null, error: String(change.error) } : { digest: change.digest ?? null, data: change.data ?? null }
+			}
+			/**
+			 * **本体从文件折出来**:词汇、实体、实体断言整份按文件重算——文件就是权威,
+			 * 账本里只记「那一刻文件是什么样」。旧会话里工具写下的本体事件仍折得出来,
+			 * 但一旦这个会话同步过本体文件,就以文件为准(旧会话不迁移)。
+			 */
+			const touchedOntology = (mutation.changes ?? []).some((change) => {
+				const kind = classifyWorkspacePath(change?.path)?.kind
+				return kind !== undefined && kind !== 'fact'
+			})
+			if (touchedOntology || Object.keys(files).some((path) => classifyWorkspacePath(path)?.kind !== 'fact')) {
+				const ontology = materializeOntology(files)
+				next.lexicon = ontology.lexicon
+				next.entities = ontology.entities
+				next.entityAssertions = ontology.entityAssertions
+				next.ontologyProblems = ontology.problems
+			}
 			break
 		}
 		case 'fact/reviewed': {
@@ -692,6 +754,16 @@ function stampAt(mutations, time) {
  * 宿主读已发布 V3 日志时把旧形状抬升成 `plugin:clearai`;但事件被**直接**喂进这个纯函数时
  * (测试、旧导出、重放工具)仍带着旧形状,所以两侧都认。
  */
+/** 人写的一条消息是哪种语言(插件消息、续跑提示不算)。 */
+function humanLanguage(message) {
+	if (message === null || typeof message !== 'object' || message.role !== 'user') return null
+	const kind = message.source?.kind
+	if (kind !== undefined && kind !== 'user') return null
+	const text = messageText(message)
+	if (text.startsWith(HUMAN_GATE_MARK)) return null
+	return detectLanguage(text)
+}
+
 function isClearaiSource(source) {
 	if (source === null || typeof source !== 'object' || !Array.isArray(source.sections)) return false
 	return source.kind === 'plugin:clearai' || (source.kind === 'plugin' && source.plugin === 'clearai')
@@ -707,6 +779,13 @@ function isClearaiSource(source) {
  */
 export function applyEvent(state, event) {
 	if (event === null || typeof event !== 'object') return state
+	// 人说话用的语言:每一条人写的消息都可能改判(没有信号就不改)。这一拍折出来的文字(本体问题等)也用它。
+	const spoken = event.type === 'user/message' ? humanLanguage(event.data) : null
+	const base = spoken !== null && spoken !== state?.language ? { ...state, language: spoken } : state
+	return withLanguage(base?.language, () => foldEvent(base, event))
+}
+
+function foldEvent(state, event) {
 	if (event.type === 'user/message') {
 		// 内核观察到的事实(候选技能、采纳记录、合并目录)走**插件消息的结构化 section**——
 		// 记在会话日志里,所以状态仍然可以从日志重放出来,而不是靠一句散文。
@@ -860,7 +939,7 @@ const TERMINAL_HYPOTHESIS = new Set(['refuted', 'superseded', 'retracted'])
 /**
  * **断言主体落图了吗**:一条判断的断言里,主体还不是实体图节点的那些(去重)。
  *
- * 节点有几种来路,都带出处或独立裁决:`RegisterInstance` 登记的实例、`Assert` 与升格事实里的主体,
+ * 节点有几种来路,都带出处或独立裁决:实体文件(`clear/ontology/entities/`)里的实体与它们的关系、升格事实里的主体,
  * 以及它们以 instance 形态引出的宾语。`derive()` 把读数挂在每条判断上(`unlanded`),
  * 缺口 ③ 与 `Conclude` 的实体门读的都是它——「卡上说落了」与「门说没落」不会出现两种读数。
  */
@@ -917,8 +996,8 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 				gaps.push({
 					code: 'untouched_claims',
 					count: untouched.length,
-					detail: `${untouched.length} 条验证中的判断还没有任何证据碰过(支持 / 推翻 / 不确定都算碰过)`,
-					nextAction: '给它派一个带 tests 的步骤并交付:支持 / 推翻 / 无法判定都算碰过',
+					detail: tr(`${untouched.length} 条验证中的判断还没有任何证据碰过(支持 / 推翻 / 不确定都算碰过)`, `${untouched.length} judgments under test have not been touched by any evidence (support, refute and inconclusive all count)`),
+					nextAction: tr('给它派一个带 tests 的步骤并交付:支持 / 推翻 / 无法判定都算碰过', 'Give it a step with tests and deliver it: support, refute and inconclusive all count'),
 				})
 			}
 		}
@@ -931,8 +1010,8 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 			gaps.push({
 				code: 'prose_only_claims',
 				count: proseOnly.length,
-				detail: `${proseOnly.length} 条验证中的判断只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
-				nextAction: '先 Define 立概念与谓词、RegisterInstance 登记主体,再用 Frame 修订把主张写成断言(主词–谓词–宾语)',
+				detail: tr(`${proseOnly.length} 条验证中的判断只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`, `${proseOnly.length} judgments under test are prose only: whether two conclusions say the same thing can only be judged by rereading them`),
+				nextAction: tr('先在 clear/ontology/ 下写概念、关系与主体的实体文件,再用 Frame 修订把主张写成断言(主词–谓词–宾语)', 'First write concept, relation and subject entity files under clear/ontology/, then revise with Frame to turn the claim into assertions (subject–predicate–object)'),
 			})
 		}
 		/**
@@ -941,15 +1020,21 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 		 *    随便登记一个无关节点不会让它消失。
 		 *
 		 *    为什么看节点、不看边:边由升格本身落下(事实带着它的断言进图),
-		 *    要求在升格之前另用 `Assert` 把同一句话再说一遍,只是让模型重复劳动。
+		 *    要求在升格之前另在实体文件里把同一句话再写一遍,只是让模型重复劳动。
 		 */
 		const unlanded = [...new Map(registered.flatMap((item) => item.unlanded ?? []).map((item) => [`${item.type}|${item.id}`, item])).values()]
 		if (unlanded.length > 0) {
 			gaps.push({
 				code: 'entities_unlanded',
 				count: unlanded.length,
-				detail: `${unlanded.length} 个断言主体还没有落到实体图(${unlanded.map((item) => `${item.type}|${item.id}`).join('、')}):断言只挂在命题上,不构成「已知」`,
-				nextAction: '用 RegisterInstance 把这些主体连出处登记下来;确实不值得留下形态就把断言从判断上拿掉(Frame 修订)',
+				detail: tr(
+					`${unlanded.length} 个断言主体还没有落到实体图(${unlanded.map((item) => `${item.type}|${item.id}`).join('、')}):断言只挂在命题上,不构成「已知」`,
+					`${unlanded.length} assertion subjects are not on the entity graph yet (${unlanded.map((item) => `${item.type}|${item.id}`).join(', ')}): the assertions hang on the proposition only and are not "known"`,
+				),
+				nextAction: tr(
+					'给这些主体各写一个实体文件(clear/ontology/entities/<id>.json,带类型与出处);确实不值得留下形态就把断言从判断上拿掉(Frame 修订)',
+					'Write an entity file for each subject (clear/ontology/entities/<id>.json, with type and source); if one is really not worth keeping, drop the assertion from the judgment (Frame revision)',
+				),
 			})
 		}
 	}
@@ -958,10 +1043,10 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 		/** 一句人话:为什么进了这一档(或为什么没进)。它进卡,所以不许写成术语。 */
 		why:
 			mode === 'knowledge'
-				? `目标还开着,带着 ${registered.length} 条登记过的命题——这是跨轮、要依据、要可复核结论的活`
+				? tr(`目标还开着,带着 ${registered.length} 条登记过的命题——这是跨轮、要依据、要可复核结论的活`, `The goal is open with ${registered.length} registered propositions: work across turns that needs evidence and checkable conclusions`)
 				: open
-					? '目标还开着,但没有登记命题:按普通任务推进'
-					: '没有开着的目标:按普通任务推进',
+					? tr('目标还开着,但没有登记命题:按普通任务推进', 'The goal is open but has no registered propositions: proceed as an ordinary task')
+					: tr('没有开着的目标:按普通任务推进', 'No open goal: proceed as an ordinary task'),
 		gaps,
 	}
 }
@@ -1193,12 +1278,12 @@ function factChain(context, fact) {
  */
 function factHistory(fact, evidence) {
 	const events = []
-	if (fact?.at !== undefined && fact?.at !== null) events.push({ kind: 'fact/promoted', at: fact.at, summary: `升格为事实(支持到 ${fact.level ?? '—'})` })
+	if (fact?.at !== undefined && fact?.at !== null) events.push({ kind: 'fact/promoted', at: fact.at, summary: tr(`升格为事实(支持到 ${fact.level ?? '—'})`, `Promoted to fact (supported to ${fact.level ?? '—'})`) })
 	if (fact?.review !== undefined && fact?.review !== null) {
 		events.push({
 			kind: 'fact/reviewed',
 			at: fact.review.at ?? null,
-			summary: fact.review.decision === 'retracted' ? '人审查后**撤回**(记录保留)' : '人审查后**维持**(判证据不可靠)',
+			summary: fact.review.decision === 'retracted' ? tr('人审查后**撤回**(记录保留)', 'A person reviewed it and **retracted** it (the record is kept)') : tr('人审查后**维持**(判证据不可靠)', 'A person reviewed it and **kept** it (the evidence was judged unreliable)'),
 			reason: fact.review.reason ?? null,
 		})
 	}
@@ -1209,12 +1294,12 @@ function factHistory(fact, evidence) {
 /** 词汇条目的留痕:登记 / 历次修订 / 废止。登记与修订本来就存在词条里(折法保留的)。 */
 function entryHistory(entry, label) {
 	const events = []
-	if (entry?.at !== undefined && entry?.at !== null) events.push({ kind: `${label}_added`, at: entry.at, summary: `登记(依据:${entry.basis ?? '—'})`, by: entry.by ?? null })
+	if (entry?.at !== undefined && entry?.at !== null) events.push({ kind: `${label}_added`, at: entry.at, summary: tr(`登记(依据:${entry.basis ?? '—'})`, `Registered (basis: ${entry.basis ?? '—'})`), by: entry.by ?? null })
 	for (const revision of Array.isArray(entry?.revisions) ? entry.revisions : []) {
-		events.push({ kind: `${label}_revised`, at: revision.at ?? null, summary: `修订到 v${revision.version ?? '?'}`, reason: revision.reason ?? null, by: revision.by ?? null })
+		events.push({ kind: `${label}_revised`, at: revision.at ?? null, summary: tr(`修订到 v${revision.version ?? '?'}`, `Revised to v${revision.version ?? '?'}`), reason: revision.reason ?? null, by: revision.by ?? null })
 	}
 	if (entry?.deprecated !== undefined && entry?.deprecated !== null) {
-		events.push({ kind: `${label}_deprecated`, at: entry.deprecated.at ?? null, summary: '废止(黏性终态,没有复活)', reason: entry.deprecated.reason ?? null, by: entry.deprecated.by ?? null })
+		events.push({ kind: `${label}_deprecated`, at: entry.deprecated.at ?? null, summary: tr('废止(黏性终态,没有复活)', 'Deprecated (final; it does not come back)'), reason: entry.deprecated.reason ?? null, by: entry.deprecated.by ?? null })
 	}
 	return events.filter((event) => event.at !== null || event.kind.endsWith('_deprecated')).sort((left, right) => (left.at ?? 0) - (right.at ?? 0))
 }
@@ -1272,7 +1357,7 @@ function inspectConcept(context, termId) {
 		history: entryHistory(term, 'term'),
 		actions: { canFilter: true, canExpand: true, canEdit: true },
 		/** 词汇是**约定**,不需要证据等级——把它说清楚,免得读的人以为它「没验」。 */
-		note: '概念是约定,不是主张:它不带证据等级。用这个词写下的句子才需要。',
+		note: tr('概念是约定,不是主张:它不带证据等级。用这个词写下的句子才需要。', 'A concept is a convention, not a claim: it carries no evidence level. Only sentences written with it do.'),
 	}
 }
 
@@ -1293,7 +1378,7 @@ function inspectValueType(context, form) {
 		/** 值形态由系统固定,不进领域本体、也没有版本史——如实说空,不编一段。 */
 		history: [],
 		actions: { canFilter: true, canExpand: false, canEdit: false },
-		note: '值形态由系统固定(statement / quantity / formula / code / reference),不独立治理,所以没有版本史。',
+		note: tr('值形态由系统固定(statement / quantity / formula / code / reference),不独立治理,所以没有版本史。', 'Value forms are fixed by the system (statement / quantity / formula / code / reference); they are not governed separately, so they have no version history.'),
 	}
 }
 
@@ -1337,7 +1422,7 @@ function inspectPredicate(context, predicateId) {
 			.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject, sides: conflict.sides.map((side) => ({ fact: side.fact ?? null, value: side.value ?? null })) })),
 		history: entryHistory(predicate, 'predicate'),
 		actions: { canFilter: true, canExpand: true, canEdit: true },
-		note: predicate.functional === true ? '单值谓词:同一主词上两条未撤回的确认事实取值不同时,系统给出一对冲突读数(只暴露,不裁决)。' : null,
+		note: predicate.functional === true ? tr('单值谓词:同一主词上两条未撤回的确认事实取值不同时,系统给出一对冲突读数(只暴露,不裁决)。', 'Single-valued predicate: when two unretracted confirmed facts give different values for the same subject, the system reports a conflict pair (surfaced, not resolved).') : null,
 	}
 }
 
@@ -1389,7 +1474,7 @@ function inspectInstance(context, key) {
 			.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject, sides: conflict.sides.map((side) => ({ fact: side.fact ?? null, value: side.value ?? null })) })),
 		history: [],
 		actions: { canFilter: true, canExpand: true, canEdit: false },
-		note: '实例由断言投影出来,不单独注册、也不做实体消解(同名即同节点);它没有自己的版本史。',
+		note: tr('实例由断言投影出来,不单独注册、也不做实体消解(同名即同节点);它没有自己的版本史。', 'Instances are projected from assertions; they are not registered separately and not resolved (same name means same node); they have no version history of their own.'),
 	}
 }
 
@@ -1430,7 +1515,7 @@ function inspectLiteral(context, key) {
 		conflicts: [],
 		history: [],
 		actions: { canFilter: true, canExpand: true, canEdit: false },
-		note: '字面值是断言里的客体,由事实投影出来;它没有独立生命周期。',
+		note: tr('字面值是断言里的客体,由事实投影出来;它没有独立生命周期。', 'A literal value is the object of an assertion, projected from facts; it has no lifecycle of its own.'),
 	}
 }
 
@@ -1466,7 +1551,7 @@ function inspectEdge(context, edgeId) {
 		conflicts: chain.conflicts,
 		history: chain.history,
 		actions: { canFilter: true, canExpand: true, canEdit: false },
-		note: predicate?.functional === true ? '这条边落在单值谓词上:同一主词出现第二个不同取值时会产生冲突(只暴露,不裁决)。' : null,
+		note: predicate?.functional === true ? tr('这条边落在单值谓词上:同一主词出现第二个不同取值时会产生冲突(只暴露,不裁决)。', 'This edge uses a single-valued predicate: a second, different value for the same subject produces a conflict (surfaced, not resolved).') : null,
 	}
 }
 
@@ -1494,13 +1579,14 @@ function trustHistory(hypothesis, rows) {
 }
 
 /** 五种值形态的名字与一句话解释(名字取自 `domain-language` 的枚举,这里只加给人读的说明)。 */
-const VALUE_FORM_GLOSS = {
-	statement: '短陈述字符串',
-	quantity: '数值 + 单位',
-	formula: '公式源码(LaTeX;本版不做语义解析)',
-	code: '指向工作区里真有的文件路径',
-	reference: '外部引用(文献 / URL / 编号)',
+const VALUE_FORM_GLOSS_TEXT = {
+	statement: ['短陈述字符串', 'A short statement string'],
+	quantity: ['数值 + 单位', 'A number plus a unit'],
+	formula: ['公式源码(LaTeX;本版不做语义解析)', 'Formula source (LaTeX; its meaning is not parsed)'],
+	code: ['指向工作区里真有的文件路径', 'A path to a file that exists in the workspace'],
+	reference: ['外部引用(文献 / URL / 编号)', 'An external reference (paper / URL / identifier)'],
 }
+const VALUE_FORM_GLOSS = bilingual(VALUE_FORM_GLOSS_TEXT)
 
 export function derive(state) {
 	const activePlan = state.plans.find((plan) => plan.status === 'active') ?? null
@@ -1598,11 +1684,36 @@ export function derive(state) {
 	 *   · `refuted`——它的假设收到过推翻证据 ⇒ 这条事实要复核;
 	 *   · `review` ——人已经审查过(撤回 / 维持),决定连缘由一起留着。
 	 */
-	const factRows = (state.facts ?? []).map((fact) => {
+	const lexicon = normalizeLexicon(state.lexicon)
+	const ownFacts = (state.facts ?? []).map((fact) => {
 		const linked = typeof fact.hypothesis === 'string' && fact.hypothesis !== ''
 		const owner = hypotheses.find((item) => (linked ? item.id === fact.hypothesis : String(item.claim ?? '') === String(fact.text ?? '')))
-		return { ...fact, refuted: (owner?.refutations ?? 0) > 0, review: fact.review ?? null }
+		return { ...fact, refuted: (owner?.refutations ?? 0) > 0, review: fact.review ?? null, foreign: false }
 	})
+	/**
+	 * **别的会话留下的事实**(住在 `clear/knowledge/facts/<id>.json`,经 `workspace/synced` 进账)。
+	 * 同一个 id 本会话账上也有就以账上那条为准(它带着推翻读数);文件上的复核结论照样认。
+	 * 它们的假设不在本会话,所以 `refuted` 只能是 false——推翻要在这里重新检验一次才算。
+	 */
+	const ownIds = new Set(ownFacts.map((fact) => fact.id))
+	const foreignFacts = []
+	for (const [path, file] of Object.entries(state.workspace?.files ?? {})) {
+		if (classifyWorkspacePath(path)?.kind !== 'fact' || file?.data === undefined) continue
+		const row = factFromFile(file.data, path)
+		if (row === null) continue
+		if (ownIds.has(row.id)) {
+			const own = ownFacts.find((fact) => fact.id === row.id)
+			if (own.review === null && row.review !== null) own.review = row.review
+			continue
+		}
+		foreignFacts.push({ ...row, refuted: false, foreign: true })
+	}
+	foreignFacts.sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
+	/**
+	 * `definitionsChanged`:升格那一刻用到的词条,**含义**此后改过或已不在的那些 id。
+	 * 只是读数,不撤回事实:改了定义的人知道为什么改,复核交给人与证据。
+	 */
+	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions) }))
 
 	/**
 	 * **领域词汇的派生读数**(两条,都不新存东西):
@@ -1613,7 +1724,6 @@ export function derive(state) {
 	 * 两者都吃 `factRows` 而不是 `state.facts`:事实的复核态与推翻标记是派生的,
 	 * 在这里重算一遍就等于第二份判据。
 	 */
-	const lexicon = normalizeLexicon(state.lexicon)
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
@@ -1622,10 +1732,21 @@ export function derive(state) {
 	 * 都是派生读数:计划一解封、矛盾一方被推翻,条目自然消失。
 	 */
 	const needYou = []
-	if (activePlan !== null && activePlan.blocked !== undefined) needYou.push({ kind: 'plan_blocked', text: `计划停下了:${String(activePlan.blocked.reason ?? '连续没过')},怎么改?` })
+	if (activePlan !== null && activePlan.blocked !== undefined) needYou.push({ kind: 'plan_blocked', text: tr(`计划停下了:${String(activePlan.blocked.reason ?? '连续没过')},怎么改?`, `The plan stopped: ${String(activePlan.blocked.reason ?? 'it kept failing')}. How should it change?`) })
 	for (const conflict of conflicts) {
-		const sides = (conflict.sides ?? []).map((side) => `「${String(side.value ?? '?')}」`).join('和')
-		needYou.push({ kind: 'conflict', text: `${String(conflict.subject ?? '')}的${String(conflict.predicate ?? '')}:${sides}矛盾,以哪个为准?` })
+		const values = (conflict.sides ?? []).map((side) => String(side.value ?? '?'))
+		needYou.push({
+			kind: 'conflict',
+			text: tr(
+				`${String(conflict.subject ?? '')}的${String(conflict.predicate ?? '')}:${values.map((value) => `「${value}」`).join('和')}矛盾,以哪个为准?`,
+				`${String(conflict.predicate ?? '')} of ${String(conflict.subject ?? '')}: ${values.map((value) => `"${value}"`).join(' and ')} conflict. Which one holds?`,
+			),
+		})
+	}
+	for (const fact of factRows) {
+		if (fact.definitionsChanged.length === 0 || fact.review?.decision === 'retracted') continue
+		const head = String(fact.text ?? '').replace(/\s+/g, ' ').trim()
+		needYou.push({ kind: 'definition_changed', fact: fact.id, text: tr(`「${head.length > 40 ? `${head.slice(0, 39)}…` : head}」用到的 ${fact.definitionsChanged.join('、')} 定义已变,这条结论还成立吗?`, `The definitions of ${fact.definitionsChanged.join(', ')} used by "${head.length > 40 ? `${head.slice(0, 39)}…` : head}" changed. Does this conclusion still hold?`) })
 	}
 
 
@@ -1692,7 +1813,7 @@ export const HUMAN_GATE_MARK = '[clearai·人门]'
 /**
  * **只在读旧日志时认**的动词。面板早已没有写入口(第六阶段把 `/api/clearai/gate` 整条拿掉):
  * 撤回 / 维持事实从第三阶段起由内核在那次交付里当场问人;本体四动词随编辑抽屉一起删,
- * 要改词汇就在对话里说,模型用 `Define` / `Deprecate` 落同一本账。
+ * 要改词汇就在对话里说,模型去改 `clear/ontology/` 下的文件。
  * 但旧会话里人按过的决定必须照旧折出来,否则重放时一条审过的事实会变回「待复核」、
  * 人登记的词会凭空消失。
  */
@@ -1780,6 +1901,9 @@ export function view(state, sessionId) {
 			conflicts: derived.conflicts,
 			health: derived.lexiconIssues,
 			graph: graphProjection(state),
+			/** 本体文件里的实体(带所在目录的容器)与跨文件问题:本体页的问题列表读它。 */
+			entities: Array.isArray(state.entities) ? state.entities : [],
+			problems: Array.isArray(state.ontologyProblems) ? state.ontologyProblems : [],
 		},
 		/**
 		 * **知识模式(分诊)**:面板据此把「这一格是知识主场还是普通进展」说清楚,

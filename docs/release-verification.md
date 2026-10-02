@@ -14,7 +14,7 @@ node tools/recheck.mjs --log <a real session.v3.jsonl.zstd>   # suites + deploy 
 bash tools/capture-ui.sh start                            # isolated home + web + debuggable Chrome
 ```
 
-`recheck.mjs` needs a session with real content (a goal, a plan, steps, evidence, facts, skills). Without one it says so and skips the text-budget section rather than inventing numbers.
+`recheck.mjs` needs a session with real content (a goal, a plan, steps, evidence, facts; a sim host `events.jsonl` works too). Without one it says so and skips the text-budget section rather than inventing numbers.
 
 ## 1 · Data plane
 
@@ -25,44 +25,48 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 | Provenance | Every evidence row carries resolvable origins; `refs` are paths | kernel suite | green |
 | Artifact shape | `steps[].artifacts` normalises to `{path, exists}`; never claims "missing" without checking disk | client suite | green |
 
-## 2 · Middle column
+## 2 · Middle column: Ontology
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| **Facts** | Only confirmed propositions are shelved; unshelved ones group by ontology state; machine fields stay off screen | client suite + budget | green · ≤ 1500 chars |
-| Proposition map | Horizontal trunk plus branches; only traversed transitions carry evidence ids | client suite + human look | green · ≤ 1600 chars |
+| **Header** | The question + one line of counts + "to handle" (statements only) + the progress rail (judgment → test → verified → in ontology) | client suite + text budget | green · ≤ 300 chars |
+| **Graph** | Ontology graph / entity graph, one at a time; verified solid, awaiting check dashed; clicking a node opens its term card and filters the list | client suite + human look | green |
+| **Conclusion list** | One line per conclusion, grouped verified / awaiting check / testing / uncertain / refuted / replaced; no internal ids on screen | client suite + text budget | green · ≤ 1500 chars |
+| Opened conclusion | Progress → how trust changed → more; "see check" opens the evaluation card or the evaluator session | client suite + text budget | green · ≤ 1600 chars |
 
-## 3 · Right column
+## 3 · Right column: World Tree
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| **World tree** | A selected row has detail; multiple plans are switchable | client suite + budget | green · ≤ 900 chars |
+| **World Tree** | One line per step (filled when done, outlined while running, hollow when not started); selecting a step shows which judgments it tested and what came out; **several plans switchable** (dropdown) | client suite + text budget | green · ≤ 900 chars |
 
 ## 4 · Tools row and continuation
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| Plan chip | Clickable while a plan awaits review or is blocked, in plain words | client suite | green |
-| Continuation | Rides native `goals`; stops while any gate is open; the round cap is a fuse | kernel + host suites | green |
+| Plan chip | One symbol only, progress; "to handle N" when something needs a person, one click opens the World Tree | client suite + text budget | green · ≤ 40 chars |
+| Continuation | Driven by the native goal; ClearAI has no continuation window and no autonomy toggle; when a person is needed the native goal is set to blocked with the reason | kernel suite (native goal guard, blocking) | green |
 
 ## 5 · Human gates and jumps
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| Inbox | Anything waiting on a person is stated first | client suite | green |
-| Four origin kinds | Artifact / evaluation card → native preview; evaluator → observe the sub-session; approval → stated plainly | client suite | green |
-| Forward jump | "See this step in the world tree" opens the tree with exactly that row selected | client suite + human click | green · human pass |
-| Backward jump | "See the evidence for this step" switches to facts and expands the owning proposition | client suite + human click | green · human pass |
+| Asked on the spot | L4 release, repeated plan rejections, a fact meeting counter-evidence: the call that opened the gate asks through the native question card; with nobody to answer, the goal waits as blocked | kernel suite | green |
+| To handle | A plan stopped after repeated rejections, contradicting conclusions: one line each, statements only, no buttons; header and input box read the same list | client suite | green |
+| Origins | Evaluation card ⇒ native preview; evaluator ⇒ spectator session | client suite (§27b) | green |
+| **Forward jump** | "See this step in the World Tree" opens the tree with **that row selected** (switching plans if needed) | client suite + **human click** | green · human pass |
+| **Backward jump** | Tree detail "see the evidence for this step" switches to the Ontology pane and opens the matching conclusion | client suite (§27e) + **human click** | green · human pass |
 
 ## 6 · Kernel behaviour
 
 | Surface | Criterion | Check | Passing line |
 |---|---|---|---|
-| Intent tools (20) | Output-schema validation and semantic refusals are both asserted | `test/kernel.test.mjs` | green |
-| **Host-side invariants** | Five contracts (referential integrity / admission before advance / no settlement without dispatch / promotion is backed / the fact ratchet) judged **before the append**; a violation raises the host's `InvariantError` owned by `clearai-dsh`. **Scope**: this is a diagnostics surface — the shipped web/headless profiles do **not** mount the service; it is live only where the host already mounts it, plus our long runs. It **no longer folds an index of its own**: state advances through the production fold (`applyEvent` in `fold.js`), and the file keeps only the five contracts plus one `admitted` accumulation (see [authority map](authority-map.md) §2④) | `test/invariant.test.mjs`; the long runs mount `@deepseek-ai/dsh-invariants` for real | green · no `invariant violated` in long runs |
-| Single completion verb | Progress only through `AdvancePlan`; the doer cannot judge its own result | same | green |
-| L4 release | The native approval pair is the only authority | same | green |
+| Six tools | `Frame`, `Conclude`, `CreatePlan`, `AdvancePlan`, `RevisePlan`, `ClosePlan` (the ontology is written as files); output-schema validation and semantic refusals both asserted | `test/kernel.test.mjs` | green |
+| Single completion verb | Progress only through `AdvancePlan`; completion means the delivery holds, the result is recorded separately as evidence; the doer cannot judge its own result (L3 and up go to an independent evaluator) | same | green |
+| Closing | `Conclude` completes the native goal and promotes only after independent evaluation; one entity gate; the native `update_goal(complete)` is stopped by the guard | same | green |
 | Shelves | Fact shelf and ontology shelf rebuild idempotently | same | green |
+| Prompt | Three sections (identity / loop / speaking), classification matches content; no internal ids in cards or tool results | `test/prompt-sections.test.mjs`, `test/readability.test.mjs` | green |
+| **Host-side invariants** | Five contracts (referential integrity / admission before advance / no settlement without dispatch / promotion is backed / the fact ratchet) judged **before the append**; a violation raises the host's `InvariantError` owned by `clearai-dsh`. **Scope**: a diagnostics surface — the shipped web/headless profiles do **not** mount the service; it is live only where the host already mounts it, plus our long runs. State advances through the production fold (`applyEvent` in `fold.js`); the file keeps only the five contracts plus one `admitted` accumulation (see [authority map](authority-map.md) §2④) | `test/invariant.test.mjs` | green · no `invariant violated` in long runs |
 
 ## 7 · Packaging and install
 
@@ -88,18 +92,16 @@ In an isolated home — never your own:
 bash tools/capture-ui.sh start          # copies ~/.dsh to /tmp/clearai-shots and installs the built package
 ```
 
-Then, in the browser:
+Then, in the browser (`node tools/recheck.mjs` prints the same list at the end):
 
 1. **Start a session** and send one message — the model answers (the plugin does not break the app).
-2. The middle column shows **facts**; the right sidebar offers the **world tree**.
-3. On a session with evidence: the proposition map marks traversed transitions with evidence ids; clicking an origin opens the real artifact.
-4. Clicking **"see this step in the world tree"** opens the tree with **that row selected**.
-5. In the tree detail, **"see the evidence for this step"** switches back to facts and expands the matching proposition.
-6. Step artifacts show real paths, never `undefined`; nothing is labelled missing without a disk check.
-7. With several plans, the header dropdown switches to an older tree and marks it archived.
-8. After a goal closes, no stale "step N" remains anywhere.
-9. There is **no** autonomy toggle in the tools row, and creating a plan **always** raises the native plan review — and **only a human approval writes the authorization stamp** (`confirmed_by='user'`; the `'autonomy'` source is deleted).
-   This is **not** "nothing proceeds until a human approves": being unauthorized only makes auto continuation `hold` (it will not drive the next turn), while `AdvancePlan` still runs and back-fills `confirmed_by='progress'` in the same mutation. Authorization is a stamp and an attribution, not a gate — see [Known gaps](known-gaps.md).
+2. The middle column has one pane, **Ontology**; the right sidebar offers the **World Tree**.
+3. On a session with evidence: the header shows the question, counts and the progress rail; the ontology and entity graphs toggle; conclusions are one line each, grouped by status, with no `h-…` ids on screen.
+4. Opening a conclusion shows progress → how trust changed → more; "see check" opens the evaluation card or the evaluator session.
+5. Clicking **"see this step in the World Tree"** opens the tree with **that row selected**.
+6. In the tree detail, **"see the evidence for this step"** switches to the Ontology pane and opens the matching conclusion.
+7. With several plans, the dropdown switches to an older tree and marks it archived.
+8. When something needs a person, the header and the input box both show "to handle N", statements only, no buttons; the decision is asked through the native question card.
 
 Any failure means: do not release. Go back to that component's suite and add a regression first.
 
@@ -110,10 +112,10 @@ real CLI and pnpm, and asserts the sixteen mechanical facts (dependency, bundles
 host row, roster root inside the package, shipped roots intact, preset self-contained, no machine paths).
 Then, in the browser it prints:
 
-1. a session opens on the **ClearAI** preset and the middle column shows **Facts**;
-2. the right sidebar offers the **World tree**;
-3. send one small task (e.g. "copy `input.md` to `products/echo.md` and set a goal for it");
-4. the ledger records `goal/set` and an audit pair, and `products/echo.md` exists;
+1. a session opens on the **ClearAI** preset and the middle column shows **Ontology**;
+2. the right sidebar offers the **World Tree**;
+3. send one small task (e.g. "copy `input.md` to `lab/echo.md`, and frame a goal for it");
+4. the ledger records `goal/set`, and `lab/echo.md` exists;
 5. the page console has no errors.
 
 Two things the tool cannot do for you, both environmental rather than product: the native workspace
@@ -123,5 +125,5 @@ provider that a clean profile does not have.
 
 ## Known unverified items
 
-- **Backward/forward jumps clicked by a human.** Mechanism and data are verified; the end-to-end click needs a session that actually promoted a fact.
+- **Backward/forward jumps clicked by a human.** Mechanism and data are verified; the end-to-end click needs a session with a plan and evidence.
 - **The client half is cached inside the host process too.** After installing, restart `dsh web`; refreshing the browser is not enough.

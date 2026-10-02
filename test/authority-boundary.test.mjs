@@ -103,7 +103,8 @@ console.log('\n【⑥ 工作区级读面:所有权判据住在写入口(子会�
 		const next = KERNEL.indexOf('\n\tfunction ', start + 1)
 		return next < 0 ? KERNEL.slice(start) : KERNEL.slice(start, next)
 	}
-	check('词汇货架的写入口自带所有权判据(isSpawnedChild)', bodyOf('ensureDomainShelf').includes('isSpawnedChild('))
+	check('本体字段定义的写入口自带所有权判据(isSpawnedChild)', bodyOf('ensureOntologySchema').includes('isSpawnedChild('))
+	check('工作区同步的入口自带所有权判据(子会话不同步)', bodyOf('syncWorkspace').includes('isSpawnedChild('))
 	check('事实货架的写入口自带所有权判据(同一条规则,同一个位置)', bodyOf('ensureFactsShelf').includes('isSpawnedChild('))
 	check('判据读的是宿主会话头(谁派出去了,由宿主说了算)', /function isSpawnedChild\(/.test(KERNEL) && /parentSession/.test(KERNEL) && /origin === 'subagent'/.test(KERNEL))
 }

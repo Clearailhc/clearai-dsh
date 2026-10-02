@@ -92,10 +92,6 @@ console.log('\n【交叉校验:声明去问代码】')
 console.log('\n【重构基线:计划点名的不符必须在表里留痕】')
 {
 	const mustTrack = [
-		['plan-review', '审阅记号删了,交给原生 /plan'],
-		['max-auto-turns', '续跑额度归原生 goal'],
-		['auto-continuation', '续跑窗口删了,交给原生 goal'],
-		['autonomy-config', '运行档删了'],
 		['criteria-required', '正常入口已强制判据'],
 		['l4-human-release', '只到步骤级'],
 		['commands-menu', '菜单比 standard 预设薄'],
@@ -112,7 +108,6 @@ console.log('\n【重构基线:计划点名的不符必须在表里留痕】')
 	check('已知不符的条目都写清了差异(不是空串或占位符)', TABLE.mechanisms.filter((m) => m.known_mismatch !== null).every((m) => typeof m.known_mismatch === 'string' && m.known_mismatch.trim().length >= 10))
 	// 已经解决的那两条**不许悄悄长回来**:它们曾是真实的不符,现在代码与文案说的是同一句话。
 	for (const [id, why] of [
-		['plan-review', '审阅记号已删,不再有可不符的地方'],
 		['commands-menu', '命令交给原生,ClearAI 不再贡献自己的命令'],
 	]) {
 		const entry = TABLE.mechanisms.find((m) => m.id === id)

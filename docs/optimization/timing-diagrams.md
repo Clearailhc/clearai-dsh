@@ -176,14 +176,13 @@ sequenceDiagram
     end
 ```
 
-Current status: admission is a mechanism. The read-only recovery discipline was prompt-only and
-was dropped when the prompt shrank to three sections (phase 5); what remains is one line in the
+Current status: admission is a mechanism. The read-only recovery discipline is one line in the
 identity section (`clearai/identity`): when an outcome is unknown, observe the current facts before
 retrying. Making it a boundary needs host-side cooperation and is a later topic.
 
 ## 4. Competing-routes path · implemented
 
-Worldlines were removed in phase 2. Two routes that differ in kind are two competing
+Two routes that differ in kind are two competing
 hypotheses, each tested by one step; the parallelism is the host's own subagents.
 
 ```mermaid
@@ -224,11 +223,10 @@ Key points:
 
 ## 5. Domain-ontology path · implemented (fold, verbs and panel all ship)
 
-**Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. The **fold
-half** (six vocabulary events, assertions, conflict and graph derivation) and the **four verbs**
-(`Define` to register or revise / `Deprecate` / `RegisterInstance` / `Assert`) are wired; **so is the panel** (graph band / assertion chips /
-conflict row / vocabulary maintenance zone, plus graph editing through the human-gate route — the same
-criteria and the same ledger as the model's verbs).
+**Purpose**: to say how vocabulary and assertions are written to files and how they become graphs. The ontology
+is a JSON file tree under `clear/ontology/` that the model writes with native file tools; the host checks
+each write, folds the files into `state.lexicon` via `workspace/synced`, and derives assertions, conflicts
+and graphs from it. There are no dedicated ontology tools; the panel is read-only.
 
 ```mermaid
 sequenceDiagram
@@ -247,10 +245,10 @@ sequenceDiagram
     P-->>G: runtime card gains a "relevant known (directly referenceable)" line
     G-->>M: model receives referenceable ids — reuse first, register only what's missing
 
-    Note over M,K: vocabulary verbs (implemented)
-    M->>K: Define (concept, or predicate when range is given)
-    K->>K: validate: unique id · references exist · acyclic is_a · legal range
-    K-->>L: mutation ontology/term_added (and predicate_added / revised / deprecated)
+    Note over M,K: ontology written as files (implemented)
+    M->>K: write clear/ontology/concepts|relations|entities/**.json (native file tools)
+    K->>K: check on write (pre-execute): JSON · fields match SCHEMA.json · id = file name; otherwise denied
+    K-->>L: before the next step, syncWorkspace → mutation workspace/synced (cross-file problems only flagged)
     M->>K: Frame (hypotheses carrying assertions)
     K->>K: validate assertions: predicate exists · subject in domain · object form · intra-fact consistency
     K-->>L: mutation goal/set

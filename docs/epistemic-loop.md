@@ -1,7 +1,5 @@
 # Epistemic Loop
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md). Code follows in phases; what has landed is tracked in [Known Gaps](known-gaps.md).
-
 The epistemic loop is how ClearAI takes an uncertain question to a **bounded conclusion**. It is not a recursive self-improvement (RSI) claim: the system does not rewrite itself and does not promise automatic capability growth.
 
 ## One loop
@@ -15,7 +13,7 @@ The epistemic loop is how ClearAI takes an uncertain question to a **bounded con
 | Test | Splits work into steps, each with criteria and the artefact it will deliver; optionally which hypothesis it tests and at what level | Criteria are written before results exist; a step cannot declare itself done | `CreatePlan`, `RevisePlan` |
 | Evidence | Does the work, delivers | Admission only decides accept or reject; L3+ dispatches an independent evaluator; L4 first asks a human to release | `AdvancePlan` |
 | Conclusion | Concludes | An independent evaluator checks every goal criterion; only then is the native goal completed and qualifying hypotheses promoted to facts, with scope and level | `Conclude` |
-| Ontology | Writes assertions in the domain vocabulary, registers the concrete things it found | Vocabulary needs a basis; instances and assertions need provenance; conflicts are only surfaced | `Define`, `Deprecate`, `RegisterInstance`, `Assert` |
+| Ontology | Writes assertions in the domain vocabulary, registers the concrete things it found | Vocabulary needs a basis; instances and assertions need provenance; conflicts are only surfaced | none: native file tools on `clear/ontology/**.json` |
 
 Ordinary Q&A sets no goal, so it never enters the loop and costs nothing.
 

@@ -1,7 +1,5 @@
 # ClearAI Glossary
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
-
 Stable ClearAI terms. Authoritative definitions of objects, levels and states live in the [Verification Loop](verification-loop.md); this list gives one line each. UI and reports use plain words, shown in parentheses.
 
 ## ClearAI
@@ -43,7 +41,7 @@ A hypothesis promoted once evidence suffices, with scope, level and evidence, op
 ## Level (strength of the test)
 L0–L4. Decides only who judges, and that L4 needs a human release.
 
-## Human gate (needs you)
+## Human gate (to handle)
 Decisions only a person can make: L4 release, a plan blocked repeatedly, a fact meeting counter-evidence. The call that opened the gate asks the person directly and the answer never passes through the model; if nobody can answer, the goal waits.
 
 ## Domain ontology

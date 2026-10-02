@@ -12,7 +12,7 @@
    `step.status`), state is computed by `derive()`.
 2. **One edge, one event.** The `event` on an edge is exactly the `mutation.t` the kernel writes and
    can be matched line by line against the `switch` in `fold.js`.
-3. **Downgrades are inexpressible.** `step` and `branch` both carry a rank (`RANK` / `BRANCH_RANK`)
+3. **Downgrades are inexpressible.** `step` carries a rank (`RANK`)
    that only increases, so the diagrams contain no "back" edge.
 
 ---
@@ -61,7 +61,7 @@ stateDiagram-v2
     closed --> [*]
 ```
 
-Plans carry no authorization stamp (removed in phase 3): it was never a gate and was back-filled on the first delivery.
+Plans carry no authorization stamp.
 To show a person the plan before acting, use the native `/plan`.
 
 The call that sets `blocked` **asks the person on the spot** (`userQuestions`): "revise against the gaps" ⇒ `block/cleared`;
@@ -114,8 +114,7 @@ Three stickiness rules, all in `fold.js`:
 - `refuted` is not rewritten to `superseded` by a later list that omits it (`fold.js:396-411`).
 - A hypothesis already promoted to fact cannot be quietly replaced either (same `promoted` test).
 - `supportedLevel` is the maximum computed by `derive()`, never stored.
-- Since phase 4 there is no level-skip mechanism: old `level/skipped` events in a ledger are silently skipped by the fold.
-  `derive()` instead marks each hypothesis with `unlanded` (assertion subjects that are not instance nodes on the
+- Levels only decide who judges; there is no level-skip check. `derive()` marks each hypothesis with `unlanded` (assertion subjects that are not instance nodes on the
   entity graph); the `entities_unlanded` gap and the Conclude entity gate both read it.
 
 ## 5. Observation · implemented
@@ -162,7 +161,7 @@ Evidence carries `hypothesis` (which hypothesis it bears on), `verdict` (support
 
 ## 8. Fact · implemented
 
-Stored: `state.facts[]` plus `clear/knowledge/facts/<goal>.md`.
+Stored: `state.facts[]` plus `clear/knowledge/facts/<fact id>.json` (one file per fact, written only by the system).
 
 ```mermaid
 stateDiagram-v2
@@ -177,15 +176,16 @@ the projection reads it back out of `fact.review` as a derived state. The produc
 `markFactReviewed` in the kernel; if nobody can answer, the fact stays marked for review and the native goal is blocked.
 `retract_fact` / `keep_fact` gate messages in old logs still fold. The truth-table row is `fact-retraction` (implemented).
 
-## 9. Worldlines (fork / branch) · removed
+**Across sessions**: fact files live in the project. On every step each session folds the changes under
+`clear/knowledge/facts/` and `clear/ontology/` into one `workspace/synced` (kept in `state.workspace.files`), and the
+derived fact rows also list facts other sessions left behind (`foreign`). A fact file records the meaning fingerprint
+of every term it used at promotion (`definitions`); if a definition changes later, the derived `definitionsChanged`
+is non-empty and the pending list gains "a definition changed; does this conclusion still hold?". It only flags; it
+never retracts.
 
-Worldlines were removed in phase 2 of the "less is more" rebuild: parallel exploration goes to native subagents, and competing routes are competing hypotheses, each tested by a step. `fork/*`, `worldline/*` and `branch/*` events in old logs are unknown and skipped as-is.
+## 9. Auto continuation · handed to the native goal
 
-
-## 10. Auto continuation · handed to the native goal
-
-ClearAI's own continuation window (`continuation/set`, `turnDemand`, the round budget) was removed in phase 3. Continuation
-belongs to the host's native goal; ClearAI touches it in three places only:
+Continuation belongs to the host's native goal; ClearAI touches it in three places only:
 
 | When | What happens to the native goal |
 |---|---|
@@ -193,60 +193,56 @@ belongs to the host's native goal; ClearAI touches it in three places only:
 | `Conclude` achieved / abandoned | complete / block (`clearai-goal-abandoned`) |
 | a person is needed and nobody can answer (stuck plan, L4 release, refuted fact) | block (`clearai-needs-human`) |
 
-`continuation/set` events in old logs are unknown and skipped as-is.
 
 ---
 
-## 11. Scout · removed
+## 10. Domain lexicon · implemented
 
-Scouts were removed in phase 2 of the "less is more" rebuild: for parallel research the model uses the native `subagent`. `scout/*` events in old logs are unknown and skipped as-is.
+Stored field: `state.lexicon.{terms[], predicates[]}`.
 
-
-## 12. Domain lexicon · implemented
-
-Stored field: `state.lexicon.{terms[], predicates[]}` — the shape folded out of the ontology events in the ledger.
+Vocabulary and entities **come from files**: the `workspace/synced` fold derives `lexicon` / `entities` / `entityAssertions` / `ontologyProblems` from the JSON file tree under `clear/ontology/` with `materializeOntology` (see §8). There is no tool that registers terms and no event that writes them; the `ontology/*` and `entity/*` branches in `fold.js` are the in-memory shape of that projection.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> admitted: ontology/term_added / ontology/predicate_added
-    admitted --> admitted: ontology/term_revised / ontology/predicate_revised (display information only; version +1, old values kept)
-    admitted --> deprecated: ontology/term_deprecated / ontology/predicate_deprecated (sticky terminal, with a reason)
+    [*] --> active: a concept or predicate file appears (passes the three read-time checks)
+    active --> active: the file is edited (meaning changed ⇒ facts that cite it are marked "definition changed")
+    active --> deprecated: the file says status: "deprecated" (sticky; facts that cite it stay readable)
+    active --> problem: a cross-file reference dangles (listed under the graph and on the card, kept out of the graph)
+    problem --> active: the reference is fixed
     deprecated --> [*]
 ```
 
 Points:
 
-- **The two ontologies are two fields with two kinds of authority**: `state.ontology` is the shape of the **process ontology** (the plugin's own backend flow — release-scoped, not editable at runtime); `state.lexicon` is the **domain ontology** (the project's own language: concepts, predicates, value forms), governed by ledger events.
-- **There is no delete**: deprecation only flips an entry to `deprecated`; the entry, its old versions and every fact that referenced it stay (the same rule as "a refuted hypothesis is kept").
-- **A semantic change does not go through revision**: if meaning, domain, range or single-valuedness changes, deprecate and register a new id. The meaning of a stable id may not drift through history, or old facts get rewritten by today's gloss.
+- **The two ontologies are two fields with two kinds of authority**: `state.ontology` is the shape of the **process ontology** (the plugin's own backend flow — release-scoped, not editable at runtime); `state.lexicon` is the **domain ontology** (the project's own language: concepts, predicates, value forms), decided by the files in the workspace.
+- **Deprecation is not deletion**: deprecating only marks an entry `deprecated`; facts that cited it stay readable (the same rule as "a refuted hypothesis is kept").
+- **Meaning changes are caught by fingerprints**: a fact records the definition fingerprints it used at promotion; if a definition changes, the fact gains "definition changed" — a flag, never a retraction.
 - Assertions and conflicts are **not in this diagram**: assertions land on facts with `fact/promoted`; conflicts are computed by `derive()` (single-valued predicate + same subject + different objects + neither side retracted) and are surfaced, never adjudicated.
 
 ### Interaction: the ontology layer and the process layer never advance each other
 
-- **Vocabulary events advance no process object**, and process events never change the vocabulary — the two state machines do not nest, and the only directional relation between them is **reference** (an assertion references predicates and concepts). The four handshake points are in [Domain ontology §8](../domain-ontology.md).
+- **Ontology files advance no process object**, and process events never change the ontology files — the two state machines do not nest, and the only directional relation between them is **reference** (an assertion references predicates and concepts). The four handshake points are in [Domain ontology §8](../domain-ontology.md).
 - **An assertion lands only at promotion** (`hypothesis` and `assertions` on `fact/promoted`); a conflict is a reading computed by `derive()` — **not a state, and it enters no gate**.
 - **Every read surface is a rendering**: `clear/ontology/domain.md`, `clear/knowledge/facts/INDEX.md`, the runtime card, the panel's ontology graph — one fold, no second account.
 
-## 13. Entities and assertions · implemented
+## 11. Entities and assertions · implemented
 
-Storage fields: `state.entities[]`, `state.entityAssertions[]` — **a first-class write path for the
-entity layer**, stored separately from promoted facts (`state.facts[].assertions`) and merged only in
+Derived fields: `state.entities[]`, `state.entityAssertions[]` — read from the entity files, stored separately from promoted facts (`state.facts[].assertions`) and merged only in
 the projection.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> registered: entity/registered（instance + basis + provenance）
-    registered --> registered: entity/asserted（one sourced sentence; the edge holds from that moment）
+    [*] --> registered: an entity file appears (instance + type + provenance)
+    registered --> registered: a relation is added to the file (with evidence; the edge holds from the moment it is read)
     registered --> [*]
 ```
 
 Points:
 
-- **Convention and observation are separate**: `Define` is a convention (a concept; no evidence
-  required), `RegisterInstance` is an observation (an instance; `basis` and `provenance` required), and
-  `Assert` says one sourced thing about a registered instance (`evidence` required).
-- **Entities do not wait for the goal verdict**: `entity/asserted` produces an edge at the moment it is
-  recorded. The fact path is unchanged (independent verdict → `fact/promoted`), and the projection
+- **Convention and observation are separate**: a concept file is a convention (no evidence required);
+  an entity file is an observation, and each of its relations must carry `evidence`.
+- **Entities do not wait for the goal verdict**: a relation in an entity file produces an edge at the moment it is
+  read. The fact path is unchanged (independent verdict → `fact/promoted`), and the projection
   carries both kinds: `source='promoted'` with level and scope, `source='asserted'` with provenance and
   no independent verdict.
 - **The subject must be identifiable**: an assertion subject has to be a registered instance
@@ -255,7 +251,7 @@ Points:
 - **Promotion still attaches its assertions to the same entity** (deduped by `${type}|${id}`): the two
   sources **merge**, they are not alternatives.
 
-## 14. Host read faces (degradation is a fact too) · implemented
+## 12. Host read faces (degradation is a fact too) · implemented
 
 Storage field: `state.hostHealth[]` (append-only, capped at 20).
 
@@ -275,7 +271,7 @@ Points:
   `process.cwd()`): failing to write is an honest degradation, writing somewhere else quietly moves the
   ledger.
 
-## 15. Event coverage table
+## 13. Event coverage table
 
 **Every** mutation kind fold understands is assigned a home below; conversely, every event named in
 this document is in fold's vocabulary. The `ledger-only` group never folds into the view (they are
@@ -304,20 +300,21 @@ ledger facts), so it appears in no state machine:
 | `fact/promoted` | §8 Fact | yes |
 | `human/released` | §3 Step (L4 release) | yes |
 | `fact/reviewed` | §8 Fact (human review: retract / keep) | yes |
-| `ontology/term_added` | §12 Domain lexicon | yes |
-| `ontology/predicate_added` | §12 Domain lexicon | yes |
-| `ontology/term_revised` | §12 Domain lexicon | yes |
-| `ontology/predicate_revised` | §12 Domain lexicon | yes |
-| `ontology/term_deprecated` | §12 Domain lexicon | yes |
-| `ontology/predicate_deprecated` | §12 Domain lexicon | yes |
-| `entity/registered` | §13 Entities and assertions | yes |
-| `entity/asserted` | §13 Entities and assertions | yes |
+| `ontology/term_added` | §10 Domain lexicon | yes |
+| `ontology/predicate_added` | §10 Domain lexicon | yes |
+| `ontology/term_revised` | §10 Domain lexicon | yes |
+| `ontology/predicate_revised` | §10 Domain lexicon | yes |
+| `ontology/term_deprecated` | §10 Domain lexicon | yes |
+| `ontology/predicate_deprecated` | §10 Domain lexicon | yes |
+| `entity/registered` | §11 Entities and assertions | yes |
+| `entity/asserted` | §11 Entities and assertions | yes |
 | `audit/reused` | §6 Evaluation | yes |
 | `criteria/revised` | §1 Goal (criterion revision) | yes |
-| `host/inactive` | §14 Host read faces | yes |
+| `host/inactive` | §12 Host read faces | yes |
+| `workspace/synced` | §8 Fact (across sessions) | yes |
 | `admission/checked` | **ledger only** | no |
 
-## 16. Relationship to the verification ontology
+## 14. Relationship to the verification ontology
 
 `docs/verification-loop.md` describes a **more complete** verification ontology (an eight-state
 machine, among other things). The difference matters when reading:

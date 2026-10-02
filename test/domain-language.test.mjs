@@ -150,6 +150,13 @@ console.log('\n【断言:宽松+校验——不提供放行,提供即严校】')
 	check('未登记的谓词要拒', validateAssertions(lexicon, [{ predicate: 'nope', subject: { id: 'x' }, object: { kind: 'statement', value: 'v' } }]).some((item) => item.includes('predicate_unknown')))
 	check('把概念当谓词用要拒', validateAssertions(lexicon, [{ predicate: 'weno_scheme', subject: { id: 'x' }, object: { kind: 'statement', value: 'v' } }]).some((item) => item.includes('predicate_not_predicate')))
 	check('主体类型不合主词域要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x', type: 'test_case' }, object: quantity(5) }]).some((item) => item.includes('subject_type_mismatch')))
+	/** 2026-10-02 JEPA 长测:主体类型是主词域的下位概念却被拒,模型只好废止 8 条谓词、去掉主词域重立一遍。 */
+	check('主体类型是主词域的下位概念:通过', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'WENO5', type: 'weno_scheme' }, object: quantity(5) }]).length === 0)
+	{
+		const withSub = applyLexiconMutation(applyLexiconMutation(lexicon, { t: 'ontology/term_added', id: 'smooth_case', label: '光滑算例', gloss: 'g', parent: 'test_case', basis: 'b' }, 30), { t: 'ontology/predicate_added', id: 'compared_with', label: '对照', domain: 'numerical_scheme', range: { term: 'weno_scheme' }, basis: 'b' }, 31)
+		check('宾语类型是值域的下位概念:通过', validateAssertions(withSub, [{ predicate: 'tested_by', subject: { id: 'WENO5', type: 'weno_scheme' }, object: { kind: 'instance', value: 'sine', type: 'smooth_case' } }]).length === 0)
+		check('宾语类型是值域的上位概念:照样拒(上位不等于下位)', validateAssertions(withSub, [{ predicate: 'compared_with', subject: { id: 'WENO5', type: 'weno_scheme' }, object: { kind: 'instance', value: 'RK', type: 'numerical_scheme' } }]).some((item) => item.includes('object_type_mismatch')))
+	}
 	check('声明了主词域却漏写主体类型要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x' }, object: quantity(5) }]).some((item) => item.includes('subject_type_required')))
 	check('主体类型没登记要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x', type: 'ghost_type' }, object: quantity(5) }]).some((item) => item.includes('subject_type_unknown')))
 	check('宾语形态与值域不符要拒', validateAssertions(lexicon, [{ predicate: 'convergence_order', subject: { id: 'x', type: 'numerical_scheme' }, object: { kind: 'statement', value: 'v' } }]).some((item) => item.includes('object_form_mismatch')))
@@ -244,7 +251,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本已 +1(v14:缺口与关口收窄,跳级理由整套删除)', fold.STATE_VERSION === 14, String(fold.STATE_VERSION))
+	check('状态版本是 v16(多了人说话用的语言)', fold.STATE_VERSION === 16, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -287,8 +294,8 @@ console.log('\n【折法:事实带上假设 id 与断言,并按 id 关联】')
 	 * 一次决定(改这一行 + 改 STATE_VERSION 的说明),而不是顺手长出来的——
 	 * 「旧账本逐字段不变」这句话只有在这种对照下才可核对。
 	 */
-	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'inFlight', 'written']
-	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'level', 'evidence', 'path', 'assertions', 'at']
+	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'workspace', 'ontologyProblems', 'language', 'inFlight', 'written']
+	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'level', 'evidence', 'path', 'assertions', 'definitions', 'at']
 	check('状态键集合与清单逐字一致(加字段要改这一行)', JSON.stringify(Object.keys(fold.emptyState()).sort()) === JSON.stringify([...STATE_KEYS].sort()), Object.keys(fold.emptyState()).filter((key) => !STATE_KEYS.includes(key)).join(','))
 	check('事实键集合与清单逐字一致', JSON.stringify(Object.keys(legacy.facts[0]).sort()) === JSON.stringify([...FACT_KEYS].sort()), Object.keys(legacy.facts[0]).filter((key) => !FACT_KEYS.includes(key)).join(','))
 }
@@ -466,7 +473,7 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 	const noVocab = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g1', claim: '全新领域', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: '全新主张', refute_when: 'rw' }] }])
 	const pf3 = fold.knowledgePreflight(noVocab, fold.derive(noVocab))
 	check('没有命中时 terms/predicates 为空数组(不是 null,不是 undefined)', Array.isArray(pf3.terms) && pf3.terms.length === 0 && Array.isArray(pf3.predicates) && pf3.predicates.length === 0)
-	check('卡里如实说「没命中」并指出动作', fold.renderCard(noVocab).includes('没有命中') && fold.renderCard(noVocab).includes('先立词'))
+	check('卡里如实说「没命中」并指出动作', fold.renderCard(noVocab).includes('没有命中') && fold.renderCard(noVocab).includes('clear/ontology/'))
 
 	// ⑥ 废止的词条不进预检。
 	const deprecated = fold.applyMutations(seededState, [{ t: 'ontology/term_deprecated', id: 'furnace_batch', reason: '不再用' }])
@@ -634,7 +641,7 @@ console.log('\n【缺口:每条都有 code / count / detail / nextAction 四格�
 	 */
 	const registered = fold.applyMutations(state, [{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲', basis: 'R-01', provenance: { kind: 'named', ref: '人' } }])
 	check('登记实例 ⇒ entities_unlanded 消失(出口就是缺口里写的那一个动作)', !fold.derive(registered).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
-	check('nextAction 指的正是 RegisterInstance', /RegisterInstance/.test(unlanded?.nextAction ?? ''))
+	check('nextAction 指的正是给主体写实体文件', /clear\/ontology\/entities/.test(unlanded?.nextAction ?? ''))
 	const asserted = fold.applyMutations(state, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_b', type: 'sucai' }, evidence: { kind: 'named', ref: '人' } }])
 	check('带出处的 Assert 也把主体落成节点 ⇒ 缺口同样消失', !fold.derive(asserted).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
 	const unrelated = fold.applyMutations(state, [{ t: 'entity/registered', id: 'yangben_z', type: 'sucai', label: '无关样本', basis: 'R-09', provenance: { kind: 'named', ref: '人' } }])

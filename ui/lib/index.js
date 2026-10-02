@@ -17,9 +17,10 @@
 
 import { z } from 'zod'
 import { MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
-import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
+import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
 import { install as installInvariants } from './invariant.js'
+import { detectLanguage, tr, withLanguage } from './lang.js'
 
 export const name = 'clearai-host'
 /** 投影注册表与会话存储:两个都是宿主服务,这里只消费。 */
@@ -81,7 +82,8 @@ export function apply(ctx) {
 	const memoView = (state) => {
 		if (state === lastState && lastView !== null) return lastView
 		lastState = state
-		lastView = view(state)
+		// 面板读数跟着人说话的语言(`state.language`);还没听到人说话时沿用当前语言。
+		lastView = withLanguage(state?.language, () => view(state))
 		return lastView
 	}
 
@@ -150,7 +152,7 @@ export function apply(ctx) {
 			sessions = undefined
 		}
 		if (sessions === undefined || sessions === null) {
-			noteHostHealth('sessions', '宿主半此刻拿不到会话服务:读面退回空态(不是「这个会话不存在」)')
+			noteHostHealth('sessions', tr('宿主半此刻拿不到会话服务:读面退回空态(不是「这个会话不存在」)', 'The host half cannot reach the session service right now: readings fall back to empty (this does not mean the session is missing)'))
 			return undefined
 		}
 		return sessions
@@ -165,7 +167,7 @@ export function apply(ctx) {
 			projections = undefined
 		}
 		if (projections === undefined || projections === null) {
-			noteHostHealth('sessionProjections', '宿主半此刻拿不到投影服务:读面退回空态(不是「这个会话没有状态」)')
+			noteHostHealth('sessionProjections', tr('宿主半此刻拿不到投影服务:读面退回空态(不是「这个会话没有状态」)', 'The host half cannot reach the projection service right now: readings fall back to empty (this does not mean the session has no state)'))
 			return undefined
 		}
 		return projections
@@ -183,7 +185,7 @@ export function apply(ctx) {
 	try {
 		ctx.on('internal/status', (fiber, oldValue) => {
 			if (fiber !== ctx.fiber || oldValue !== FIBER_ACTIVE) return
-			const detail = `宿主半 fiber 掉出 ACTIVE(${oldValue} → ${fiber.state}):两个注入服务这一刻都读不到,读面退回空态`
+			const detail = tr(`宿主半 fiber 掉出 ACTIVE(${oldValue} → ${fiber.state}):两个注入服务这一刻都读不到,读面退回空态`, `The host half fiber left ACTIVE (${oldValue} → ${fiber.state}): neither injected service can be read right now, so readings fall back to empty`)
 			noteHostHealth('sessions', detail)
 			noteHostHealth('sessionProjections', detail)
 			ctx.logger?.warn?.(`clearai: ${detail}`)
@@ -234,7 +236,10 @@ export function apply(ctx) {
 	}
 
 	/** 面板视图:与 `state()` 同一份降级读数(健康事实一起交出去)。 */
-	const viewOf = (sessionId) => withHostHealth(view(stateOf(sessionId)))
+	const viewOf = (sessionId) => {
+		const state = stateOf(sessionId)
+		return withHostHealth(withLanguage(state?.language, () => view(state)))
+	}
 
 	/**
 	 * ═══ 面板只读 ═══
@@ -292,7 +297,7 @@ export function apply(ctx) {
 			const projections = projectionsOf()
 			const state = projections === undefined || typeof projections.stateOf !== 'function' ? null : projections.stateOf(session, 'clearai')
 			if (state === null || state === undefined) return reply(200, { ok: true, found: false })
-			const found = inspectGraphSelection(state, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' }, derive(state))
+			const found = withLanguage(state.language, () => inspectGraphSelection(state, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' }, derive(state)))
 			/** 找不到不是错误:那个对象可能刚被废止或本来就不在(如实说 `found: false`,不编一份空的)。 */
 			if (found === null) return reply(200, { ok: true, found: false })
 			return reply(200, { ok: true, found: true, inspector: found })
@@ -309,6 +314,8 @@ export function apply(ctx) {
 				derive: (sessionId) => derive(stateOf(sessionId)),
 				/** 面板视图(与 wire 同一份,降级时一并交出席位健康事实)。 */
 				view: viewOf,
+				/** 一段人写的话是哪种语言(内核在人发消息的那一刻用它,规则只有 `lang.js` 这一份)。 */
+				detectLanguage,
 				/** 运行态卡:注给模型的**事实**。 */
 				renderCard: (sessionId) => renderCard(stateOf(sessionId)),
 				/**
@@ -322,7 +329,7 @@ export function apply(ctx) {
 					 * 不清掉 `inFlight`,交付自己的结果上就会写着「在等裁决」(等的正是它自己)。
 					 */
 					const next = applyMutations({ ...stateOf(sessionId), inFlight: null }, mutations)
-					return { state: next, card: renderCard(next), view: view(next) }
+					return { state: next, derived: derive(next), card: renderCard(next), view: view(next) }
 				},
 				/**
 				 * **领域语言层的判据**(值形状、引用存在、值域、同一事实自洽)与货架正文。
@@ -340,7 +347,14 @@ export function apply(ctx) {
 					 * 而「登记过哪些实例」住在 `state.entities` 里。只递词汇的话,那条判据永远无从判断,
 					 * 只能迁移期一律放行——那就等于没有这条判据。
 					 */
-					validateAssertions: (sessionId, assertions, options = {}) => validateAssertions(stateOf(sessionId), assertions, options),
+					validateAssertions: (sessionId, assertions, options = {}) => validateAssertions(applyMutations(stateOf(sessionId), Array.isArray(options?.mutations) ? options.mutations : []), assertions, options),
+					/**
+					 * **本体文件的第一道校验**(单个文件:格式、字段、id 等于文件名)。内核在模型写
+					 * `clear/ontology/` 之前调它;折法读文件时用的是同一个函数,所以「写得进」与「读得懂」是一回事。
+					 */
+					checkFile: (path, content) => checkOntologyFile(path, content),
+					/** 本体文件的字段定义(内核铺成 `clear/ontology/SCHEMA.json`)。 */
+					schema: () => ONTOLOGY_SCHEMA,
 					/**
 					 * 货架正文。带 `mutations` 时按**这一步之后**的样子渲染——
 					 * 工具在返回前就把货架写好,读的人不必等下一回合。
@@ -350,13 +364,18 @@ export function apply(ctx) {
 						const next = derive(state)
 						// 在途命题也传进去:词汇刚立起来时「引用 0」会让人以为没人用,而断言已经在假设上了。
 						// `view`:货架的「使用」一节与运行态卡 / 右栏读**同一份**叙述(单一叙述源)。
-						return describeDomainShelf(state.lexicon, next.factRows, next.hypotheses, { view: knowledgeViewOf(state) })
+						// 递**整份状态**:实例一节与断言引用读 `state.entities` / `state.entityAssertions`,只递词汇这两节永远是 0。
+						return describeDomainShelf(state, next.factRows, next.hypotheses, { view: knowledgeViewOf(state) })
 					},
+					/**
+					 * 一组断言用到的词条**此刻的含义指纹**(写进事实文件):之后定义改了,事实就知道要复核。
+					 * 带 `mutations` 时按这一步之后的词汇算(工作区刚同步进来的定义也算数)。
+					 */
+					definitions: (sessionId, assertions, mutations = [], said = '') => fingerprintDefinitions(applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : []).lexicon, assertions, { text: said }),
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
 					/**
-					 * **当前的图投影**(节点 / 边)。给内核用:谓词登记与 `Assert` 都要判
-					 * 「这个类型是已登记的概念吗」——判据只有一份,就在这张投影里。只读,不落盘。
+					 * **当前的图投影**(节点 / 边)。只读,不落盘。
 					 */
 					graph: (sessionId) => graphProjection(stateOf(sessionId)),
 				},

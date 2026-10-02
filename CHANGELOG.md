@@ -2,9 +2,58 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] — 2026-10-02
 
-**「少即是多」第五阶段:提示词收成三段。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第五阶段的改动清单。
+这一版包括「少即是多」改造的全部六个阶段(见下面各段)、本体改成文件树,以及中英两种语言的完整支持。
+
+**两种语言。** 系统自己写的每一句话都跟着人说话的语言走。`STATE_VERSION` 16(投影多了 `language`);旧会话不迁移。
+
+### Added
+
+- **语言跟着人走**:人用中文写就是中文,用英文写就是英文,按会话、按人写的消息判(系统注入的消息不算)。覆盖工具结果、运行态卡、问人的话(选项按两种语言都认)、三段提示词、六件工具的说明与参数说明(英文会话在装配提示词时换成英文版)、评估者任务书与裁决 schema、技能、`clear/` 下系统写的文件(目标文档、事实总览、阶段归档、过程本体货架)、本体文件的校验信息。面板跟着界面语言,命令行跟着 `--lang` 或系统语言。
+- **两个真实案例**:[JEPA 世界模型](docs/cases/jepa-world-model.zh-CN.md)与 [Navier–Stokes](docs/cases/navier-stokes.zh-CN.md),原始记录在 `docs/cases/runs/`,中英截图在 `docs/shots/{zh,en}/`(在真 DSH 里回放两场真跑拍的)。
+
+### Changed
+
+- **文档只写现在的设计**:删掉改造方案、诊断与过程记录,旧的三个虚构案例换成两个真实案例。
+
+**本体改成文件树。** 设计见 [领域本体](docs/domain-ontology.zh-CN.md) 第 5、6 节。
+
+### Changed
+
+- **本体是 `clear/ontology/` 下的 JSON 文件树**:`concepts/`、`relations/`、`entities/`,`X.json` 描述 X,孩子放在同级 `X/` 目录(概念嵌套 = is_a,实体嵌套 = 组成)。模型用原生文件工具写,系统写一份 `SCHEMA.json` 说明格式。
+- **三道检查**:写时单文件校验(不合格拒写);读时跨文件校验(只标不拦,问题列在卡上与图下);升格时全量校验(不合格不升格)。
+- **事实写成文件并跨会话累积**:每条一份 `clear/knowledge/facts/<id>.json`,带所用定义的指纹;定义改了,这条事实标「定义已变」进「待处理」。`INDEX.md` 从全部事实文件渲染。
+- **图上目录嵌套成可收起的子图**:点多时默认收到第一层,+N 展开。
+- 结案后提示模型把可复用的做法写成原生技能(`.agents/skills/<名字>/SKILL.md`)。
+
+### Fixed
+
+- 后一次 `Conclude` 会把之前目标的假设再升格一次。
+- 相对路径能绕过受保护目录;读受保护目录的文件也被拦。
+
+### Removed
+
+- 4 件本体工具 `Define` / `Deprecate` / `RegisterInstance` / `Assert`(工具 10 → 6),以及 `clear/ontology/domain.md` 读面。
+
+
+**「少即是多」第六阶段:呈现。** 按改造方案第六阶段的改动清单。机制、十件工具、账本事件与 `STATE_VERSION` 都不变。
+
+### Changed
+
+- **本体格改成图为主。** 页眉一行问题、一行计数、「待处理」和一条进度轨(判断 → 检验 → 已验证 → 入本体);中间是本体图 / 实体图二选一(星图式,已验证的关系实线、待核验虚线);下面是结论清单,一条一行,按 已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换 分组。点开一条依次是 进度、可信度怎么变的、补充。
+- **判断有短名。** `Frame` 的每条判断可带 `name`(十二字以内),没给就取主张开头;工具里引用判断时 id、短名、主张原文都认。账本里的 id 不变。
+- **说人话。** 运行态卡与工具结果不再出现内部编号与 `support / refute`;单次结果只说 支持 / 推翻 / 不确定(`AdvancePlan` 也收这三个中文词),等级写成 自己推了一遍 / 引用已有材料 / 可复算 / 独立核验 / 人放行。卡没变就不再附。
+- **世界树**改成目录式:每步一行,点开才看检验了哪条判断、结果是什么;页眉不带计划编号。
+- 英文界面里右栏页签叫 World Tree(此前误作 Worldlines),结果与状态词首字母大写。
+
+### Removed
+
+- 面板上的命题货架、缺口栏、状态流转图、词汇维护区与本体编辑抽屉;`/api/clearai/gate` 整条路由(人门自第三阶段起由开门的那次调用当场问人)。
+- 收件箱:换成派生的「待处理」(计划连拦停下、结论互相矛盾),只陈述、不放按钮;本体格页眉与输入框旁「待处理 N」读同一份。
+
+
+**「少即是多」第五阶段:提示词收成三段。** 按改造方案第五阶段的改动清单。
 
 ### Changed
 
@@ -15,7 +64,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 - 讲原生工具用法的段(文件读写、网页、技能、委派、Python 环境)、已删机制的残留说法(`lab/` 与 `products/` 目录约定、`PROJECT.md` 占位、`setup_cjk()`、`retract_fact` / `keep_fact`),以及只由提示词承载的「引擎级异常降权只读恢复」细则(身份段留一句:结局不明先看当前事实)。机制、工具、状态形状都不变。
 
-**「少即是多」第四阶段:Conclude 门收紧,工具面收拢。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第四阶段的改动清单。
+**「少即是多」第四阶段:Conclude 门收紧,工具面收拢。** 按改造方案第四阶段的改动清单。
 
 ### Changed
 
@@ -30,7 +79,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - 整套跳级机制:`ExplainLevelSkip`、运行态卡的「未走过」、面板的等级导引。旧账本里的 `level/skipped` 折叠时静默跳过。
 - `CheckPlan`(运行态卡每回合都在)与 `QueryKnowledge`(两轮六场模拟里一次没被调用;词表在 `clear/knowledge/`)。
 
-**「少即是多」第三阶段:目标层挂到原生 goal,交付与裁决分开。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第三阶段的改动清单。
+**「少即是多」第三阶段:目标层挂到原生 goal,交付与裁决分开。** 按改造方案第三阶段的改动清单。
 
 ### Changed
 
@@ -50,7 +99,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ---
 
-**「少即是多」第二阶段:宿主已经有的,交还宿主。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第二阶段的清单删除;机制骨架(目标 / 计划 / 准入 / 证据 / 本体)不动。
+**「少即是多」第二阶段:宿主已经有的,交还宿主。** 按改造方案第二阶段的清单删除;机制骨架(目标 / 计划 / 准入 / 证据 / 本体)不动。
 
 ### Removed
 

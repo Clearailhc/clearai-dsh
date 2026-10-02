@@ -16,10 +16,10 @@
  *   · 独立评估者:`subagents.start()` 挂起,等外部用 `settle` 交回裁决(由另一个只读子代理来判);
  *   · 当场问人(L4 放行、计划卡住、事实被推翻):`userQuestions.ask` 按剧本的预设答案作答;
  */
-import { appendFileSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { applyEvent, applyMutations, derive, emptyState, renderCard, view, MUTATION_KIND } from '../../ui/lib/fold.js'
-import { describeDomainShelf, formatAssertion, validateAssertions, validatePredicate, validateTerm } from '../../ui/lib/domain-language.js'
+import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, validateAssertions, validatePredicate, validateTerm } from '../../ui/lib/domain-language.js'
 
 /** 把内容块里的全部文本取出来(工具结果的块是套娃的)。 */
 export function textOf(blocks) {
@@ -42,6 +42,8 @@ export function textOf(blocks) {
  *   (`release` = L4 放行、`blocked` = 计划卡住、`fact` = 事实被推翻);值是 `first`(缺省:第一个选项)、
  *   某个选项的原文、`none`(没人能答 ⇒ 抛 NO_PROVIDER),或任意一句话(当作人补的话)。
  */
+const NATIVE_FILE_TOOLS = new Set(['write', 'edit'])
+
 export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {} }) {
 	mkdirSync(runDir, { recursive: true })
 	const logFile = join(runDir, 'events.jsonl')
@@ -72,16 +74,19 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 		renderCard: () => renderCard(state),
 		preview: (_id, mutations) => {
 			const next = applyMutations({ ...state, inFlight: null }, mutations)
-			return { state: next, card: renderCard(next), view: view(next) }
+			return { state: next, derived: derive(next), card: renderCard(next), view: view(next) }
 		},
 		domain: {
 			validateTerm: (_id, draft) => validateTerm(state.lexicon, draft),
 			validatePredicate: (_id, draft) => validatePredicate(state.lexicon, draft),
-			validateAssertions: (_id, assertions, options = {}) => validateAssertions(state, assertions, options),
+			validateAssertions: (_id, assertions, options = {}) => validateAssertions(applyMutations(state, Array.isArray(options?.mutations) ? options.mutations : []), assertions, options),
+			definitions: (_id, assertions, mutations = [], said = '') => fingerprintDefinitions(applyMutations(state, Array.isArray(mutations) ? mutations : []).lexicon, assertions, { text: said }),
+			checkFile: (path, content) => checkOntologyFile(path, content),
+			schema: () => ONTOLOGY_SCHEMA,
 			renderShelf: (_id, mutations = []) => {
 				const next = applyMutations(state, Array.isArray(mutations) ? mutations : [])
 				const derived = derive(next)
-				return describeDomainShelf(next.lexicon, derived.factRows, derived.hypotheses)
+				return describeDomainShelf(next, derived.factRows, derived.hypotheses)
 			},
 			format: (_id, assertion) => formatAssertion(state.lexicon, assertion),
 		},
@@ -230,6 +235,7 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 	async function call(name, args) {
 		seq += 1
 		const callId = `call-${seq}`
+		if (NATIVE_FILE_TOOLS.has(name) && !tools.has(name)) return nativeFile(name, args, callId)
 		const tool = tools.get(name)
 		if (tool === undefined) return { text: `没有这件工具:${name}。可用的是:${[...tools.keys()].join('、')}`, ok: false }
 		record({ type: 'tool/call', data: { name, callId, arguments: args } })
@@ -255,6 +261,41 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 		record({ type: 'tool/result', data: { callId, meta: meta?.kind === MUTATION_KIND ? meta : undefined, message: { content: [{ type: 'text', text: resultText }] } } })
 		const injected = await preStep()
 		return { text: injected === '' ? resultText : `${resultText}\n\n── 系统在你下一步之前注入 ──\n${injected}`, ok: value?.ok === true }
+	}
+
+	/**
+	 * **宿主原生的 write / edit**:扮演模型的子代理用自己的文件工具写别的文件都行,
+	 * 但写 `clear/ontology/` 要走这里——与生产一样先过内核的 `tools/pre-execute`(写时校验、受保护目录),
+	 * 放行了才落盘,下一拍的 pre-step 把文件同步进投影。参数与宿主同形:
+	 * write `{file_path, content}`;edit `{file_path, old_string, new_string, replace_all?}`。
+	 */
+	async function nativeFile(name, args, callId) {
+		record({ type: 'tool/call', data: { name, callId, arguments: args } })
+		const finish = async (text) => {
+			record({ type: 'tool/result', data: { callId, message: { content: [{ type: 'text', text }] } } })
+			const injected = await preStep()
+			return { text: injected === '' ? text : `${text}\n\n── 系统在你下一步之前注入 ──\n${injected}`, ok: !text.startsWith('调用被拦下') && !text.startsWith('失败') }
+		}
+		const raw = String(args?.file_path ?? '')
+		const file = isAbsolute(raw) ? raw : resolve(workspace, raw)
+		const rel = relative(workspace, file)
+		if (raw === '' || rel.startsWith('..')) return finish('失败:file_path 要在工作区里')
+		const guard = listeners.get('tools/pre-execute')
+		const decision = guard === undefined ? { kind: 'allow' } : await guard({ name, arguments: { ...args, file_path: file }, agent, callId }, async () => ({ kind: 'allow' }))
+		if (decision?.kind === 'deny' || decision?.kind === 'ask') return finish(`调用被拦下:${decision.reason}`)
+		if (name === 'write') {
+			if (typeof args.content !== 'string') return finish('失败:write 要 content(字符串)')
+			mkdirSync(dirname(file), { recursive: true })
+			writeFileSync(file, args.content)
+			return finish(`已写入 ${rel}(${Buffer.byteLength(args.content)} 字节)`)
+		}
+		if (!existsSync(file)) return finish(`失败:${rel} 不存在`)
+		const before = readFileSync(file, 'utf8')
+		const from = String(args.old_string ?? '')
+		if (from === '' || !before.includes(from)) return finish(`失败:${rel} 里找不到 old_string`)
+		const after = args.replace_all === true ? before.split(from).join(String(args.new_string ?? '')) : before.replace(from, () => String(args.new_string ?? ''))
+		writeFileSync(file, after)
+		return finish(`已修改 ${rel}`)
 	}
 
 	/** 交回一位子代理的结果(评估者的结构化裁决,或一段正文)。 */

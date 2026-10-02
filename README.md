@@ -22,8 +22,8 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.3.1
-# or in the app: Plugins → Add plugin → clearai-dsh@0.3.1
+dsh plugin --profile web add clearai-dsh@0.4.0
+# or in the app: Plugins → Add plugin → clearai-dsh@0.4.0
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
@@ -78,12 +78,12 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.3.1`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.4.0`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.3.1
+dsh plugin --profile web add clearai-dsh@0.4.0
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
@@ -126,10 +126,10 @@ Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), then **create a sessi
 4. Just ask your question. Ordinary Q&A runs as usual; once a goal is set and judgements are registered, the system enters knowledge mode by itself: what is already known comes to you, and conclusions earn their place through evidence. Only decisions only you can make are put to you.
 
 <picture>
-  <img src="docs/shots/zh/jepa-ontology.png" alt="The knowledge graph in ClearAI mode" width="820">
+  <img src="docs/shots/en/jepa-ontology.png" alt="The Ontology pane in ClearAI mode" width="820">
 </picture>
 
-*The ontology graph in ClearAI mode — this real session grew 21 concepts and 9 predicates; the same ledger always yields the same picture. (UI shown is Chinese.)*
+*The Ontology pane after the [JEPA world model](docs/cases/jepa-world-model.md) session: the question, the progress rail, the graph, and the conclusions grouped by status.*
 
 If pnpm is not on PATH: `npm install -g pnpm` (do not `corepack enable` — it installs a version forwarder that may download a pnpm it cannot launch).
 
@@ -148,29 +148,36 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 ## What it looks like
 
-One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Next to the input box: "needs you N".
+One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Next to the input box: "to handle N".
 
-**Ontology** — it answers only your four questions. Its header is the **graph**: the ontology graph (what your domain looks like) and the entity graph (what has actually been verified) toggle with one click, and clicking a node filters by that concept. Below it is **one list of conclusions** grouped by how far they can be trusted: trustworthy (with scope and level), still under test, refuted or unclear. Two contradictory conclusions light up; retracting or keeping is your call.
+**Ontology** — one page for your four questions. At the top: the question, one line of counts, anything you need to handle ("to handle"), and a small progress rail: judgment → test → verified → in ontology. In the middle, the **graph**: the ontology graph (what your domain looks like) and the entity graph (the concrete things found) toggle with one click, and clicking a node filters by it. Below, the **conclusion list**, one line each, grouped by status: verified, awaiting check, testing, uncertain, refuted, replaced; open one to see which station it reached, how its trust changed, and its basis and scope. Two contradictory conclusions light up; retracting or keeping is your call.
 
-**World Tree** — the plan's steps and gates.
+**World Tree** — the plan's steps and gates, one line per step; open one to see which judgments it tested and what came out.
 
 **Deliverables** — at close, the artefacts accepted for each step appear as DSH's native deliverable cards; what changed each turn is in DSH's native change cards.
 
-> The screenshot below shows the interface before this rebuild; it will be retaken when the presentation phase lands.
+**Language** — everything the system writes (tool results, the runtime card, questions to you, the files under `clear/`) follows the language you write in, Chinese or English. The panel follows the UI language.
 
 <picture>
-  <img src="docs/shots/zh/jepa-band.png" alt="The graph band: ontology graph and entity graph" width="820">
+  <img src="docs/shots/en/jepa-ontology-graph.png" alt="The ontology graph, full screen" width="820">
 </picture>
 
-*The band — the ontology graph and the entity graph share one deterministic projection, so the same record always yields the same picture (captured from a real session: 21 concepts, 9 predicates).*
+*The ontology graph, full screen. The ontology graph and the entity graph come from one deterministic projection of the files under `clear/ontology/`, so the same files always give the same picture.*
+
+<picture>
+  <img src="docs/shots/en/ns-refuted.png" alt="A refuted judgment, expanded" width="820">
+</picture>
+
+*A refuted judgment from the [Navier–Stokes](docs/cases/navier-stokes.md) session: it stopped at the test stage, and the record keeps why.*
 
 ---
 
 ## Cases
 
-- [Physical-world process experiment](docs/cases/physical-experiment.md) — sensor thermal drift: the full chain from raising terms to a conflict surfacing
-- [AI for Science](docs/cases/ai4sci.md) — convergence order of WENO reconstructions, and what "we could not resolve it" honestly means
-- [Mathematics](docs/cases/mathematics.md) — keeping finite numerical evidence strictly separate from proof
+Both are real-model sessions run end to end without asking anything; the screenshots replay them in real DSH.
+
+- [JEPA world models](docs/cases/jepa-world-model.md): a literature review, a toy experiment judged by an independent evaluator, and an ontology of 21 concepts, 8 relations and 27 entities
+- [Was Navier–Stokes solved?](docs/cases/navier-stokes.md): two popular claims refuted and kept, an intake rejection handled honestly, and an ontology of 24 concepts, 13 relations and 59 entities
 
 ---
 
@@ -179,8 +186,7 @@ One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Nex
 - [Positioning](docs/positioning.md) · [Domain ontology design](docs/domain-ontology.md)
 - [Epistemic loop](docs/epistemic-loop.md) · [Verification ontology](docs/verification-loop.md) · [Loop philosophy](docs/loop-philosophy.md)
 - [Design principles](docs/design-principles.md) · [Soul map](docs/soul-map.md) · [Glossary](docs/glossary.md)
-- ["Less is more" plan](docs/less-is-more-plan.zh-CN.md) (this round's decisions, prototype spikes and phases; zh-CN)
-- [Development plan](docs/optimization/domain-ontology-plan.md) (with real-run evidence from the Hengtong project)
+- [Mechanism truth table](docs/optimization/truth-table.md) · [State machines](docs/optimization/state-machines.md) · [Timing diagrams](docs/optimization/timing-diagrams.md)
 - [Known gaps](docs/known-gaps.md) · [Authority map](docs/authority-map.md) · [Release verification](docs/release-verification.md)
 
 ## Where it sits in DSH
