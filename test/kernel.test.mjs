@@ -13,13 +13,13 @@
  * 跑法:node test/kernel.test.mjs
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
-import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
+import { describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
@@ -102,7 +102,7 @@ function makeHost() {
 		},
 		preview: (id, mutations) => {
 			const next = applyMutations(service.state(id), mutations)
-			return { state: next, card: renderCard(next), view: view(next) }
+			return { state: next, derived: derive(next), card: renderCard(next), view: view(next) }
 		},
 		/**
 		 * **领域判据的宿主门**(与生产半 `ui/lib/index.js` 的 facade 同形)。
@@ -119,6 +119,7 @@ function makeHost() {
 				return describeDomainShelf(state, next.factRows, next.hypotheses)
 			},
 			format: (id, assertion) => formatAssertion(service.state(id).lexicon, assertion),
+			definitions: (id, assertions, mutations = []) => fingerprintDefinitions(applyMutations(service.state(id), Array.isArray(mutations) ? mutations : []).lexicon, assertions),
 		},
 	}
 	// 宿主的 `goals` 服务桩:目标层挂在它上面。它记下每一次调用,测试据此断言
@@ -1753,12 +1754,45 @@ console.log('\n【升格:达门槛且无推翻的假设 → 事实(由系统写�
 	thisHost.nextVerdict = { verdict: 'support', basis: '判据达成,转写忠实', shortfalls: [] }
 	const closed = await call('Conclude', { outcome: 'achieved' })
 	check('无推翻且达门槛 → 升格为事实', closed.ok === true && /写进长期知识/.test(closed.message), String(closed.code))
-	const promotedGoal = thisHost.service.state(SESSION).goal?.id
-	check(
-		'事实由系统写进 clear/knowledge/facts/',
-		factFiles().some((file) => file.endsWith(`/${promotedGoal}.md`) && readFileSync(file, 'utf8').includes('升格时间')),
-	)
+	const promotedId = eventsOf('fact/promoted')[0]?.id
+	const promotedFile = factFiles().find((file) => file.endsWith(`/${promotedId}.json`))
+	const promotedData = promotedFile === undefined ? null : JSON.parse(readFileSync(promotedFile, 'utf8'))
+	check('事实由系统写进 clear/knowledge/facts/<事实 id>.json', promotedData?.id === promotedId && promotedData?.status === 'established' && promotedData?.history?.[0]?.event === 'promoted', promotedFile ?? '(没有文件)')
+	check('结案消息指向那个事实文件', closed.message.includes(`clear/knowledge/facts/${promotedId}.json`), closed.message)
 	check('升格也记在台账里', eventsOf('fact/promoted').length === 1)
+}
+
+console.log('\n【跨会话:别的会话升格的事实在这里也是已知;定义改了要复核】')
+{
+	const OTHER = 'session-cross'
+	const other = makeHost()
+	apply(other.ctx, {})
+	const promotedId = eventsOf('fact/promoted')[0]?.id
+	await preStep(other, OTHER, 1)
+	const synced = other.journal.filter((mutation) => mutation.t === 'workspace/synced')
+	check('新会话第一拍就把事实文件同步进自己的账', synced.length === 1 && synced[0].changes.some((change) => change.path === `clear/knowledge/facts/${promotedId}.json` && change.data?.id === promotedId), JSON.stringify(synced.map((mutation) => mutation.changes.map((change) => change.path))))
+	const rows = other.service.derive(OTHER).factRows
+	check('别的会话的事实出现在事实行里(foreign)', rows.some((row) => row.id === promotedId && row.foreign === true), JSON.stringify(rows.map((row) => [row.id, row.foreign])))
+	await preStep(other, OTHER, 2)
+	check('文件没变就不再同步', other.journal.filter((mutation) => mutation.t === 'workspace/synced').length === 1)
+	await preStep(thisHost, SESSION, 900)
+	const ownRows = thisHost.service.derive(SESSION).factRows.filter((row) => row.id === promotedId)
+	check('本会话自己的事实与它的文件只算一条(按 id 去重,以账为准)', ownRows.length === 1 && ownRows[0].foreign === false, JSON.stringify(ownRows))
+
+	/** 定义改了:事实文件里记着升格那一刻的指纹,与此刻的词汇对不上 ⇒ 待处理里多一条复核。 */
+	const file = join(WORKSPACE, 'clear/knowledge/facts', `${promotedId}.json`)
+	const data = JSON.parse(readFileSync(file, 'utf8'))
+	writeFileSync(join(WORKSPACE, 'clear/knowledge/facts', 'f-foreign.json'), `${JSON.stringify({ ...data, id: 'f-foreign', text: '外来结论:某谓词定义改过之后它还成立吗', definitions: { yield_of: 'fnv:00000000' }, review: null, status: 'established' }, null, 2)}\n`)
+	await preStep(other, OTHER, 3)
+	const changed = other.service.derive(OTHER).factRows.find((row) => row.id === 'f-foreign')
+	check('定义对不上的事实带着 definitionsChanged', JSON.stringify(changed?.definitionsChanged) === JSON.stringify(['yield_of']), JSON.stringify(changed?.definitionsChanged))
+	check('待处理里多一条「定义已变」', other.service.derive(OTHER).needYou.some((item) => item.kind === 'definition_changed' && item.fact === 'f-foreign'))
+	const index = readFileSync(join(WORKSPACE, 'clear/knowledge/facts/INDEX.md'), 'utf8')
+	check('INDEX.md 汇总所有会话的事实,不只本会话', index.includes('f-foreign') && index.includes(promotedId))
+	rmSync(join(WORKSPACE, 'clear/knowledge/facts', 'f-foreign.json'))
+	await preStep(other, OTHER, 4)
+	check('文件删掉 ⇒ 同步成 removed,事实行里也没了', !other.service.derive(OTHER).factRows.some((row) => row.id === 'f-foreign'))
+	await preStep(thisHost, SESSION, 901)
 }
 
 function factFiles() {

@@ -16,7 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, deriveConflicts, emptyLexicon, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
+import { applyLexiconMutation, changedDefinitions, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
@@ -53,9 +53,13 @@ export const MUTATION_KIND = 'clearai'
  *   v13 → v14:**缺口与关口收窄**:跳级理由整套删除——假设上不再有 `skips`,派生里不再有
  *           `untouchedLevels`;旧日志里的 `level/skipped` 不认识就原样跳过。缺口只留三种
  *           (`untouched_claims`、`prose_only_claims`、`entities_unlanded`)。
+ *   v14 → v15:**攒下来的东西住在文件里**:多了 `workspace.files`(工作区里事实文件与本体文件
+ *           的内容快照,由 `workspace/synced` 折进来);事实带上 `definitions`(升格那一刻用到的
+ *           词条含义指纹)。派生的事实行合并其它会话留下的事实(`foreign`),并给出
+ *           `definitionsChanged`。旧日志里没有这两样,折出来就是空的。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 14
+export const STATE_VERSION = 15
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -119,6 +123,14 @@ export function emptyState() {
 		 * 只增不删,留最近若干条(它是读数,不是档案)。
 		 */
 		hostHealth: [],
+		/**
+		 * **工作区文件快照**(`workspace/synced`):路径 → `{ digest, data }` 或 `{ digest, error }`。
+		 *
+		 * 攒下来的东西(事实、本体)住在项目文件里,跨会话活着;而投影只吃账本。内核每一拍把
+		 * 这两处的**变化**折成一条变更,于是文件内容也是账本里一条可重放的事实——重放、分叉、
+		 * 离线复判读到的都是那一刻的文件,而不是此刻盘上的。
+		 */
+		workspace: { files: {} },
 		/** 正在飞的工具调用(来自 tool/call):让「评估者在裁决」成为一条可看见的事实 */
 		inFlight: null,
 		/** 本会话自己写过的路径(来自 tool/call 的 write/edit):L4 来源分离的判据 */
@@ -529,8 +541,29 @@ export function applyMutation(state, mutation) {
 				evidence: mutation.evidence ?? [],
 				path: mutation.path ?? null,
 				assertions: Array.isArray(mutation.assertions) ? clone(mutation.assertions) : null,
+				/** 升格那一刻,断言用到的词条各自的含义指纹:之后定义改了,这条事实要复核。 */
+				definitions: mutation.definitions !== null && typeof mutation.definitions === 'object' && !Array.isArray(mutation.definitions) ? clone(mutation.definitions) : null,
 				at,
 			})
+			break
+		}
+		/**
+		 * **工作区同步**(`workspace/synced`,内核发):事实文件与本体文件这一拍的变化。
+		 * 每条 change 是一个文件的新样子(`data` 或读不成时的 `error`),或 `removed`。
+		 * 按路径覆盖,所以同一批变化折两遍结果一样。
+		 */
+		case 'workspace/synced': {
+			const files = next.workspace !== null && typeof next.workspace === 'object' && next.workspace.files !== null && typeof next.workspace.files === 'object' ? next.workspace.files : {}
+			next.workspace = { ...(next.workspace ?? {}), files }
+			for (const change of Array.isArray(mutation.changes) ? mutation.changes : []) {
+				const path = typeof change?.path === 'string' ? change.path : ''
+				if (path === '') continue
+				if (change.removed === true) {
+					delete files[path]
+					continue
+				}
+				files[path] = change.error !== undefined && change.error !== null ? { digest: change.digest ?? null, error: String(change.error) } : { digest: change.digest ?? null, data: change.data ?? null }
+			}
 			break
 		}
 		case 'fact/reviewed': {
@@ -1598,11 +1631,36 @@ export function derive(state) {
 	 *   · `refuted`——它的假设收到过推翻证据 ⇒ 这条事实要复核;
 	 *   · `review` ——人已经审查过(撤回 / 维持),决定连缘由一起留着。
 	 */
-	const factRows = (state.facts ?? []).map((fact) => {
+	const lexicon = normalizeLexicon(state.lexicon)
+	const ownFacts = (state.facts ?? []).map((fact) => {
 		const linked = typeof fact.hypothesis === 'string' && fact.hypothesis !== ''
 		const owner = hypotheses.find((item) => (linked ? item.id === fact.hypothesis : String(item.claim ?? '') === String(fact.text ?? '')))
-		return { ...fact, refuted: (owner?.refutations ?? 0) > 0, review: fact.review ?? null }
+		return { ...fact, refuted: (owner?.refutations ?? 0) > 0, review: fact.review ?? null, foreign: false }
 	})
+	/**
+	 * **别的会话留下的事实**(住在 `clear/knowledge/facts/<id>.json`,经 `workspace/synced` 进账)。
+	 * 同一个 id 本会话账上也有就以账上那条为准(它带着推翻读数);文件上的复核结论照样认。
+	 * 它们的假设不在本会话,所以 `refuted` 只能是 false——推翻要在这里重新检验一次才算。
+	 */
+	const ownIds = new Set(ownFacts.map((fact) => fact.id))
+	const foreignFacts = []
+	for (const [path, file] of Object.entries(state.workspace?.files ?? {})) {
+		if (classifyWorkspacePath(path)?.kind !== 'fact' || file?.data === undefined) continue
+		const row = factFromFile(file.data, path)
+		if (row === null) continue
+		if (ownIds.has(row.id)) {
+			const own = ownFacts.find((fact) => fact.id === row.id)
+			if (own.review === null && row.review !== null) own.review = row.review
+			continue
+		}
+		foreignFacts.push({ ...row, refuted: false, foreign: true })
+	}
+	foreignFacts.sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
+	/**
+	 * `definitionsChanged`:升格那一刻用到的词条,**含义**此后改过或已不在的那些 id。
+	 * 只是读数,不撤回事实:改了定义的人知道为什么改,复核交给人与证据。
+	 */
+	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions) }))
 
 	/**
 	 * **领域词汇的派生读数**(两条,都不新存东西):
@@ -1613,7 +1671,6 @@ export function derive(state) {
 	 * 两者都吃 `factRows` 而不是 `state.facts`:事实的复核态与推翻标记是派生的,
 	 * 在这里重算一遍就等于第二份判据。
 	 */
-	const lexicon = normalizeLexicon(state.lexicon)
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
@@ -1626,6 +1683,11 @@ export function derive(state) {
 	for (const conflict of conflicts) {
 		const sides = (conflict.sides ?? []).map((side) => `「${String(side.value ?? '?')}」`).join('和')
 		needYou.push({ kind: 'conflict', text: `${String(conflict.subject ?? '')}的${String(conflict.predicate ?? '')}:${sides}矛盾,以哪个为准?` })
+	}
+	for (const fact of factRows) {
+		if (fact.definitionsChanged.length === 0 || fact.review?.decision === 'retracted') continue
+		const head = String(fact.text ?? '').replace(/\s+/g, ' ').trim()
+		needYou.push({ kind: 'definition_changed', fact: fact.id, text: `「${head.length > 40 ? `${head.slice(0, 39)}…` : head}」用到的 ${fact.definitionsChanged.join('、')} 定义已变,这条结论还成立吗?` })
 	}
 
 

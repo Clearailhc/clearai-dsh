@@ -8,9 +8,9 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **74**
-- By status: Implemented 51 · Design only 1 · Removed 22
-- By strength: Hard boundary 42 · Advisory 7 · Native 3 · Deprecated 22
+- Mechanisms: **75**
+- By status: Implemented 52 · Design only 1 · Removed 22
+- By strength: Hard boundary 43 · Advisory 7 · Native 3 · Deprecated 22
 - By destination: stays design-only 1 · deleted and accounted 22
 - Actually blocking execution: **21**
 - Carrying a known mismatch between docs/comments and code: **1**
@@ -66,6 +66,7 @@ This section is exported from code, not written by hand:
 | `level-skip-reason` | Removed: level skips need a named reason | Epistemic | Removed | Deprecated | None | model | no | — |
 | `criteria-revision-gate` | Criterion revisions need an independent verdict | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Frame` |
 | `audit-digest-reuse` | Verdicts are reused by material digest (same state, no re-dispatch) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js auditDigest` |
+| `workspace-files-sync` | Workspace file sync (accumulated facts and ontology live in files) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile` |
 | `artifact-path-exclusive` | Exclusive artifact paths (no two steps in a plan declare the same artefact) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js validateSteps` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | `preset/plugins/prompts.js loop` |
@@ -291,7 +292,7 @@ This section is exported from code, not written by hand:
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: 目标结案且假设达到 promote_at_level 且无推翻
 - **Input**: goal, hypothesis, 评估者裁决
-- **Output**: 写入 clear/knowledge/facts/<goal>.md + mutation fact/promoted
+- **Output**: 写入 clear/knowledge/facts/<事实 id>.json(带升格那一刻用到的词条含义指纹 definitions)+ mutation fact/promoted
 - **Blocks execution**: no
 - **Native alternative**: none
 - **Rationale**: 事实由系统按门槛算出来，模型不能宣称。
@@ -1025,6 +1026,19 @@ This section is exported from code, not written by hand:
 - **Rationale**: 「这一刻读不到」与「世上没有这件事」在界面上长得一模一样:降级抛出去会把一次跑了几分钟的评审整个作废,静默给 undefined 又会让空读数被读成「世上没有这件事」。所以读面一律走方法式取服务、取不到返回空态,并把降级这件事本身记成可观测的事实。只记在进程内还不够——**重启、换进程、离线复判都读不到它**,而这恰恰是最需要事后解释的一条;所以内核在 pre-step 把它落成账本事实,幂等靠内容寻址的 id,而不是靠「记得别写两次」。
 - **Code**: ui/lib/index.js sessionsOf; ui/lib/index.js projectionsOf; ui/lib/index.js hostHealth hostHealthId; preset/plugins/clearai-kernel.js landedHostHealth; ui/lib/fold.js case 'host/inactive'
 - **Tests**: test/host.test.mjs（A1/A6:降级不抛、给的就是空态、两个服务各一条健康事实、view() 同源）; test/kernel.test.mjs（pre-step 把观测落成 host/inactive,同一条反复观察只落一条）; test/contrast.test.mjs（属性式服务访问清零） · **Config**: —
+- **Prompt**: — · **Docs**: docs/optimization/state-machines.zh-CN.md
+
+### `workspace-files-sync` · Workspace file sync (accumulated facts and ontology live in files)
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 每个 pre-step(子会话除外)
+- **Input**: clear/knowledge/facts/*.json 与 clear/ontology/{concepts,relations,entities}/**.json 的当前内容
+- **Output**: 变了的文件连内容一起落成一条 workspace/synced,折进 state.workspace.files;派生的事实行合并别的会话的事实(foreign),并给出 definitionsChanged 与「待处理」里的复核提示
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 会话账本只活在一次会话里,而研究要跨会话攒下来。文件是唯一跨会话活着的东西;把它的变化落进账本,投影仍然只吃账本,重放读到的是那一刻的文件。
+- **Code**: preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile; ui/lib/fold.js case 'workspace/synced'; ui/lib/fold.js derive factRows; ui/lib/domain-language.js factFromFile changedDefinitions
+- **Tests**: test/kernel.test.mjs(跨会话:另一个会话升格的事实在这里也是已知;定义改了要复核) · **Config**: —
 - **Prompt**: — · **Docs**: docs/optimization/state-machines.zh-CN.md
 
 ### `artifact-path-exclusive` · Exclusive artifact paths (no two steps in a plan declare the same artefact)

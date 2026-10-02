@@ -150,7 +150,7 @@ stateDiagram-v2
 
 ## 8. 事实（fact）· 已实现
 
-存储字段：`state.facts[]` + `clear/knowledge/facts/<goal>.md`。
+存储字段：`state.facts[]` + `clear/knowledge/facts/<事实 id>.json`（一条事实一个文件，只有系统写）。
 
 ```mermaid
 stateDiagram-v2
@@ -162,6 +162,11 @@ stateDiagram-v2
 推翻证据落账的那次交付**当场问人**撤回还是维持原事实——两种结局都落同一条 `fact/reviewed`（撤回是终态，记录保留），
 投影再从 `fact.review` 把它读成派生状态。生产者是内核的 `reviewRefutedFacts` / `markFactReviewed`；没人能答 ⇒ 事实标着待复核，
 原生 goal 置阻塞。旧日志里人门消息形式的 `retract_fact` / `keep_fact` 仍折得出来。真值表那一行是 `fact-retraction`（已实现）。
+
+**跨会话**：事实文件住在项目里，每个会话每一拍把 `clear/knowledge/facts/` 与 `clear/ontology/` 的变化折成一条
+`workspace/synced`（存进 `state.workspace.files`），派生的事实行把别的会话留下的事实一并列出（`foreign`）。
+事实文件里记着升格那一刻用到的词条含义指纹（`definitions`）；之后定义改了，派生读数 `definitionsChanged`
+不为空，「待处理」里多一条「定义已变，这条结论还成立吗」——只提示，不撤回。
 
 ## 9. 世界线（fork / branch）· 已删除
 
@@ -292,6 +297,7 @@ stateDiagram-v2
 | `audit/reused` | §6 评估 | 是 |
 | `criteria/revised` | §1 目标（判据修订） | 是 |
 | `host/inactive` | §14 宿主读面 | 是 |
+| `workspace/synced` | §8 事实（跨会话） | 是 |
 | `admission/checked` | **只留台账** | 否 |
 
 ## 16. 与验证本体的关系

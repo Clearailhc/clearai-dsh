@@ -8,9 +8,9 @@
 
 ## 计数
 
-- 机制条目：**74**
-- 按状态：已实现 51 · 设计目标 1 · 已删除 22
-- 按强度：硬边界 42 · 建议 7 · 原生 3 · 废弃 22
+- 机制条目：**75**
+- 按状态：已实现 52 · 设计目标 1 · 已删除 22
+- 按强度：硬边界 43 · 建议 7 · 原生 3 · 废弃 22
 - 按归宿：保持设计目标 1 · 已删除并记账 22
 - 真正阻断执行的：**21**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
@@ -66,6 +66,7 @@
 | `level-skip-reason` | 已删除:跳级需具名理由 | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
 | `criteria-revision-gate` | 判据修订要一份独立裁决 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Frame` |
 | `audit-digest-reuse` | 裁决按材料 digest 复用（同态不重派） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js auditDigest` |
+| `workspace-files-sync` | 工作区文件同步(攒下来的事实与本体住在文件里) | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile` |
 | `artifact-path-exclusive` | 产物路径不重叠(同一计划里两步不许声明同一个产物) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js validateSteps` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/plugins/prompts.js loop` |
@@ -291,7 +292,7 @@
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
 - **触发**：目标结案且假设达到 promote_at_level 且无推翻
 - **输入**：goal, hypothesis, 评估者裁决
-- **输出**：写入 clear/knowledge/facts/<goal>.md + mutation fact/promoted
+- **输出**：写入 clear/knowledge/facts/<事实 id>.json(带升格那一刻用到的词条含义指纹 definitions)+ mutation fact/promoted
 - **阻断执行**：否
 - **原生替代**：无
 - **理由**：事实由系统按门槛算出来，模型不能宣称。
@@ -1025,6 +1026,19 @@
 - **理由**：「这一刻读不到」与「世上没有这件事」在界面上长得一模一样:降级抛出去会把一次跑了几分钟的评审整个作废,静默给 undefined 又会让空读数被读成「世上没有这件事」。所以读面一律走方法式取服务、取不到返回空态,并把降级这件事本身记成可观测的事实。只记在进程内还不够——**重启、换进程、离线复判都读不到它**,而这恰恰是最需要事后解释的一条;所以内核在 pre-step 把它落成账本事实,幂等靠内容寻址的 id,而不是靠「记得别写两次」。
 - **代码**：ui/lib/index.js sessionsOf; ui/lib/index.js projectionsOf; ui/lib/index.js hostHealth hostHealthId; preset/plugins/clearai-kernel.js landedHostHealth; ui/lib/fold.js case 'host/inactive'
 - **测试**：test/host.test.mjs（A1/A6:降级不抛、给的就是空态、两个服务各一条健康事实、view() 同源）; test/kernel.test.mjs（pre-step 把观测落成 host/inactive,同一条反复观察只落一条）; test/contrast.test.mjs（属性式服务访问清零） · **配置**：—
+- **提示词**：— · **文档**：docs/optimization/state-machines.zh-CN.md
+
+### `workspace-files-sync` · 工作区文件同步(攒下来的事实与本体住在文件里)
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：每个 pre-step(子会话除外)
+- **输入**：clear/knowledge/facts/*.json 与 clear/ontology/{concepts,relations,entities}/**.json 的当前内容
+- **输出**：变了的文件连内容一起落成一条 workspace/synced,折进 state.workspace.files;派生的事实行合并别的会话的事实(foreign),并给出 definitionsChanged 与「待处理」里的复核提示
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：会话账本只活在一次会话里,而研究要跨会话攒下来。文件是唯一跨会话活着的东西;把它的变化落进账本,投影仍然只吃账本,重放读到的是那一刻的文件。
+- **代码**：preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile; ui/lib/fold.js case 'workspace/synced'; ui/lib/fold.js derive factRows; ui/lib/domain-language.js factFromFile changedDefinitions
+- **测试**：test/kernel.test.mjs(跨会话:另一个会话升格的事实在这里也是已知;定义改了要复核) · **配置**：—
 - **提示词**：— · **文档**：docs/optimization/state-machines.zh-CN.md
 
 ### `artifact-path-exclusive` · 产物路径不重叠(同一计划里两步不许声明同一个产物)

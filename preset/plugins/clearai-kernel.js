@@ -19,7 +19,7 @@
  *   P5 什么都不删         → 状态是可重放的投影;refine/void/superseded 的旧值都在
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 
 import { createHash } from 'node:crypto'
 import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'node:path'
@@ -120,11 +120,6 @@ function fail(code, message, extra = {}) {
 function writeTextFile(file, content) {
 	mkdirSync(dirname(file), { recursive: true })
 	writeFileSync(file, content, 'utf8')
-}
-
-function appendTextFile(file, content) {
-	mkdirSync(dirname(file), { recursive: true })
-	appendFileSync(file, content, 'utf8')
 }
 
 const OUTPUT_SCHEMA = {
@@ -1719,8 +1714,96 @@ export function apply(ctx, config = {}) {
 		return `${lines.join('\n')}`
 	}
 
+	// ═══ 工作区同步:攒下来的事实与本体住在文件里,每一拍把变化折进账本 ═══════════════
+	//
+	// 投影只吃账本;而跨会话活着的东西(`clear/knowledge/facts/*.json`、`clear/ontology/**.json`)
+	// 住在项目文件里,谁都可能改(别的会话、模型用原生文件工具、人手改)。所以每一拍扫一次这两处,
+	// 把**变了的**文件连内容一起落成一条 `workspace/synced` 变更——文件内容由此成为可重放的事实。
+	// 读盘按 (mtime, size) 记进程内缓存:没变的文件不重读、不重算摘要。
+
+	const FACTS_REL = ['clear', 'knowledge', 'facts']
+	const ONTOLOGY_REL = ['clear', 'ontology']
+	const ONTOLOGY_BRANCH_DIRS = ['concepts', 'relations', 'entities']
+	/** 读面有界(与 `domain-language.js` 的 `WORKSPACE_LIMITS` 同值):超出的如实报成读不成,不静默截断。 */
+	const WORKSPACE_MAX_FILES = 2000
+	const WORKSPACE_MAX_BYTES = 65536
+	const workspaceReads = new Map()
+
+	/** 工作区里归投影管的 JSON 文件(相对路径,正斜杠)。 */
+	function listWorkspaceFiles(cwd) {
+		const out = []
+		const walk = (relParts, recursive) => {
+			let entries
+			try {
+				entries = readdirSync(join(cwd, ...relParts), { withFileTypes: true })
+			} catch {
+				return
+			}
+			entries.sort((a, b) => a.name.localeCompare(b.name))
+			for (const entry of entries) {
+				if (out.length >= WORKSPACE_MAX_FILES) return
+				if (entry.name.startsWith('.')) continue
+				if (entry.isDirectory()) {
+					if (recursive) walk([...relParts, entry.name], true)
+				} else if (entry.isFile() && entry.name.endsWith('.json')) out.push([...relParts, entry.name].join('/'))
+			}
+		}
+		walk(FACTS_REL, false)
+		for (const branch of ONTOLOGY_BRANCH_DIRS) walk([...ONTOLOGY_REL, branch], true)
+		return out
+	}
+
+	/** 读一个工作区文件 → `{ path, digest, data }` 或 `{ path, digest, error }`。 */
+	function readWorkspaceFile(cwd, path) {
+		const file = join(cwd, ...path.split('/'))
+		let stat
+		try {
+			stat = statSync(file)
+		} catch {
+			return null
+		}
+		const cached = workspaceReads.get(file)
+		if (cached !== undefined && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) return cached.change
+		let change
+		if (stat.size > WORKSPACE_MAX_BYTES) change = { path, digest: `size:${stat.size}:${stat.mtimeMs}`, error: `文件太大(${stat.size} 字节,上限 ${WORKSPACE_MAX_BYTES})` }
+		else {
+			const raw = readFileSync(file, 'utf8')
+			const digest = createHash('sha1').update(raw).digest('hex').slice(0, 16)
+			try {
+				change = { path, digest, data: JSON.parse(raw) }
+			} catch (error) {
+				change = { path, digest, error: `不是合法 JSON:${String(error?.message ?? error).slice(0, 160)}` }
+			}
+		}
+		workspaceReads.set(file, { mtimeMs: stat.mtimeMs, size: stat.size, change })
+		return change
+	}
+
+	/**
+	 * 这一拍工作区相对账本的变化 → 一条 `workspace/synced` 变更;没变返回 null。
+	 * 子会话(评估者)不同步:它们不读这份投影,同步只会往它们的账里塞无关的东西。
+	 */
+	function syncWorkspace(sessionId, state) {
+		if (isSpawnedChild(sessionId)) return null
+		const cwd = sessionCwd(sessionId)
+		if (cwd === null) return null
+		const known = state?.workspace?.files ?? {}
+		const changes = []
+		const seen = new Set()
+		for (const path of listWorkspaceFiles(cwd)) {
+			seen.add(path)
+			const change = readWorkspaceFile(cwd, path)
+			if (change === null) continue
+			if (known[path]?.digest !== change.digest) changes.push(change)
+		}
+		for (const path of Object.keys(known)) if (!seen.has(path)) changes.push({ path, removed: true })
+		if (changes.length === 0) return null
+		const id = `ws-${createHash('sha1').update(JSON.stringify(changes.map((change) => [change.path, change.digest ?? 'removed']))).digest('hex').slice(0, 12)}`
+		return { t: 'workspace/synced', id, changes }
+	}
+
 	/** 写货架;内容没变就返回 null(调用方据此决定要不要在卡里提一句)。 */
-	function ensureFactsShelf(sessionId, state) {
+	function ensureFactsShelf(sessionId, state, mutations = []) {
 		/**
 		 * 与词汇货架**同一条所有权规则,同一个位置**(写入口):子会话的投影里
 		 * 没有主线的事实,让它铺只会按它自己那份重写 `INDEX.md`。
@@ -1730,7 +1813,8 @@ export function apply(ctx, config = {}) {
 		 * 货架要显示「被推翻」那个读数,而它是**派生的**(fold 的 derive),不在原始状态里。
 		 * 所以这里问一次读面,而不是在货架里重算一遍(重算 = 第二份判据,必然漂)。
 		 */
-		const rows = host()?.derive?.(sessionId)?.factRows
+		/** 带上这一拍刚同步进来的文件:别的会话刚升格的事实这一拍就进货架。 */
+		const rows = (mutations.length > 0 ? host()?.preview?.(sessionId, mutations)?.derived?.factRows : undefined) ?? host()?.derive?.(sessionId)?.factRows
 		const body = renderFactsIndex(Array.isArray(rows) ? { ...state, facts: rows } : state)
 		if (body === null) return null
 		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', 'INDEX.md')
@@ -2417,7 +2501,19 @@ export function apply(ctx, config = {}) {
 				if (hypothesis.refutations > 0) continue
 				if (levelIndexOf(hypothesis.supportedLevel) < threshold) continue
 				const factId = `f-${Math.random().toString(36).slice(2, 8)}`
-				const path = persistFact(sessionId, goal, hypothesis, factId)
+				const assertions = Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null
+				const evidence = evidenceFor(state, hypothesis.id)
+					.filter((item) => item.verdict === 'support')
+					.map((item) => item.id)
+				/** 升格这一刻断言用到的词条的含义指纹:之后谁改了定义,这条事实就知道要复核。 */
+				let definitions = null
+				try {
+					definitions = assertions === null ? null : (hostService.domain?.definitions?.(sessionId, assertions, mutations) ?? null)
+				} catch {
+					definitions = null
+				}
+				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope: hypothesis.refute_when ?? null, level: hypothesis.supportedLevel ?? null, evidence, assertions, definitions }
+				const path = persistFact(sessionId, record)
 				/**
 				 * 事实带上**边界**(`scope` = 这条假设的推翻条件):没有边界的事实,下一轮没人敢用;
 				 * 有边界才算「已知」而不是「口号」。它与出处(证据 id)、等级一起进事实库与货架。
@@ -2435,13 +2531,12 @@ export function apply(ctx, config = {}) {
 					text: hypothesis.claim,
 					scope: hypothesis.refute_when ?? null,
 					level: hypothesis.supportedLevel ?? null,
-					evidence: evidenceFor(state, hypothesis.id)
-						.filter((item) => item.verdict === 'support')
-						.map((item) => item.id),
-					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
+					evidence,
+					assertions,
+					definitions,
 					path,
 				})
-				promoted.push(hypothesis.claim)
+				promoted.push({ id: factId, claim: hypothesis.claim })
 			}
 			return done({
 				ok: true,
@@ -2449,7 +2544,7 @@ export function apply(ctx, config = {}) {
 				verdict: 'support',
 				message:
 					`目标已达成(独立评估者的依据:${audit.basis})。` +
-					(promoted.length > 0 ? `\n写进长期知识:${promoted.join(' / ')}(clear/knowledge/facts/${goal.id}.md)` : '\n没有判断达到写进长期知识的门槛。') +
+					(promoted.length > 0 ? `\n写进长期知识:${promoted.map((item) => `${item.claim}(clear/knowledge/facts/${item.id}.json)`).join(' / ')}。之后的会话都读得到它们(总览在 clear/knowledge/facts/INDEX.md)。` : '\n没有判断达到写进长期知识的门槛。') +
 					(untouched.length > 0
 						? `\n结案时有 ${untouched.length} 条判断**一次都没检验过**:${untouched.map((hypothesis) => `「${handleOf(hypothesis)}」`).join('、')}——没检验不是「没问题」,是「没看过」;它们留在账上,随时可以补一次检验。`
 						: '') +
@@ -2460,14 +2555,19 @@ export function apply(ctx, config = {}) {
 		},
 	})
 
-	function persistFact(sessionId, goal, hypothesis, factId) {
-		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${goal.id}.md`)
+	/**
+	 * **一条事实一个文件**(`clear/knowledge/facts/<事实 id>.json`),只有系统写。
+	 *
+	 * 为什么是文件而不只是账本:账本只活在一次会话里,而「攒下来」的意思是下一个会话也读得到。
+	 * 每个会话每一拍把这个目录同步进自己的账(`workspace/synced`),于是别的会话升格的事实
+	 * 在这里也是「已知」,复核结论(撤回 / 维持)也写在同一个文件上。
+	 */
+	function persistFact(sessionId, record) {
+		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${record.id}.json`)
 		if (file === null) return null
+		const at = Date.now()
 		try {
-			appendTextFile(
-				file,
-				`\n## ${factId} · ${hypothesis.claim}\n\n- 假设:${hypothesis.id}(支持到 ${hypothesis.supportedLevel},无推翻)\n- 推翻条件:${hypothesis.refute_when}\n- 来源目标:${goal.id}\n- 升格时间:${new Date().toISOString()}\n`,
-			)
+			writeTextFile(file, `${JSON.stringify({ ...record, session: sessionId, status: 'established', review: null, at, history: [{ event: 'promoted', at, level: record.level ?? null }] }, null, 2)}\n`)
 			return file
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai kernel: 事实落盘失败 ${String(error?.message ?? error)}`)
@@ -3366,21 +3466,24 @@ export function apply(ctx, config = {}) {
 	}
 
 	/**
-	 * 人审查一条事实之后**在它自己那份文件上追加一行**(不改写、不删行)。
+	 * 人审查一条事实之后**把结论写回它自己那个文件**(`status` / `review`,`history` 只追加)。
 	 *
-	 * 为什么在文件里而不是只留在账本:模型读的是 `clear/knowledge/facts/`,撤回过的若还
-	 * 原样躺在那里,下一轮它会照旧引用一条已经作废的事实。行里带 fact id,所以即使多条事实
-	 * 共用一个文件、追加落在最后,也读得出是哪一条被审过。
+	 * 为什么在文件里而不是只留在账本:别的会话与模型读的都是 `clear/knowledge/facts/`,
+	 * 撤回过的若还原样躺在那里,下一轮会照旧引用一条已经作废的事实。
 	 */
 	function markFactReviewed(cwd, fact, review) {
-		const goalId = typeof fact.goal === 'string' && fact.goal !== '' ? fact.goal : 'facts'
-		const file = join(cwd, 'clear', 'knowledge', 'facts', `${goalId}.md`)
-		const why = review.reason === null || review.reason === undefined || String(review.reason).trim() === '' ? '' : `,缘由:${String(review.reason).slice(0, 200)}`
-		const line = review.retracted
-			? `- **撤回记录**(\`${fact.id}\`):人审查后决定**撤回**${why} @ ${new Date().toISOString()}——记录保留,不再作为「已知」引用。\n`
-			: `- **复核记录**(\`${fact.id}\`):有推翻证据,人判定证据不可靠,**维持原事实**${why} @ ${new Date().toISOString()}。\n`
+		if (cwd === null || cwd === undefined || !/^[A-Za-z0-9_-]+$/.test(String(fact?.id ?? ''))) return null
+		const file = join(cwd, 'clear', 'knowledge', 'facts', `${fact.id}.json`)
 		try {
-			appendTextFile(file, line)
+			if (!existsSync(file)) return null
+			const data = JSON.parse(readFileSync(file, 'utf8'))
+			const at = Date.now()
+			const reason = review.reason === null || review.reason === undefined || String(review.reason).trim() === '' ? null : String(review.reason).slice(0, 400)
+			const decision = review.retracted ? 'retracted' : 'kept'
+			data.status = review.retracted ? 'retracted' : 'established'
+			data.review = { decision, reason, at, by: 'user' }
+			data.history = [...(Array.isArray(data.history) ? data.history : []), { event: decision, at, reason }]
+			writeTextFile(file, `${JSON.stringify(data, null, 2)}\n`)
 			return file
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai kernel: 事实复核记录落盘失败 ${String(error?.message ?? error).slice(0, 160)}`)
@@ -3614,6 +3717,16 @@ export function apply(ctx, config = {}) {
 		 */
 		factMutations.push(...drainPendingFacts(sessionId))
 		/**
+		 * **工作区同步**:事实文件与本体文件这一拍的变化(别的会话升格的事实、模型刚写的本体)。
+		 * 放在兜底事实之后:那些是上一步已经发生的事,文件变化是这一拍才看见的。
+		 */
+		try {
+			const synced = syncWorkspace(sessionId, hostService.state(sessionId))
+			if (synced !== null) factMutations.push(synced)
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai: 工作区同步失败 ${String(error?.message ?? error).slice(0, 160)}`)
+		}
+		/**
 		 * 失联的评估者:重启之后 `pendingAudits` 空了,而投影里那条裁决还停在「在跑」——
 		 * 它会把目标按在 hold 上。这里问一次宿主的子代理目录,把「它已经不在跑」如实落成一条事实。
 		 */
@@ -3632,7 +3745,7 @@ export function apply(ctx, config = {}) {
 			 * 事实很少变(升格一次),所以这句话在大多数回合里都不出现。
 			 * 所有权判据(子会话不写)在写入口——见 `ensureFactsShelf`。
 			 */
-			const shelf = ensureFactsShelf(sessionId, hostService.state(sessionId))
+			const shelf = ensureFactsShelf(sessionId, hostService.state(sessionId), factMutations)
 			if (shelf !== null) factsNote = `\n- 事实库多了一条(或边界改了):${shelf}——引用前先看它的边界(推翻条件)。`
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 事实货架重写失败 ${String(error?.message ?? error).slice(0, 160)}`)

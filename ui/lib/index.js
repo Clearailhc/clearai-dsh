@@ -17,7 +17,7 @@
 
 import { z } from 'zod'
 import { MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
-import { describeDomainShelf, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
+import { describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
 import { install as installInvariants } from './invariant.js'
 
@@ -322,7 +322,7 @@ export function apply(ctx) {
 					 * 不清掉 `inFlight`,交付自己的结果上就会写着「在等裁决」(等的正是它自己)。
 					 */
 					const next = applyMutations({ ...stateOf(sessionId), inFlight: null }, mutations)
-					return { state: next, card: renderCard(next), view: view(next) }
+					return { state: next, derived: derive(next), card: renderCard(next), view: view(next) }
 				},
 				/**
 				 * **领域语言层的判据**(值形状、引用存在、值域、同一事实自洽)与货架正文。
@@ -353,6 +353,11 @@ export function apply(ctx) {
 						// 递**整份状态**:实例一节与断言引用读 `state.entities` / `state.entityAssertions`,只递词汇这两节永远是 0。
 						return describeDomainShelf(state, next.factRows, next.hypotheses, { view: knowledgeViewOf(state) })
 					},
+					/**
+					 * 一组断言用到的词条**此刻的含义指纹**(写进事实文件):之后定义改了,事实就知道要复核。
+					 * 带 `mutations` 时按这一步之后的词汇算(工作区刚同步进来的定义也算数)。
+					 */
+					definitions: (sessionId, assertions, mutations = []) => fingerprintDefinitions(applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : []).lexicon, assertions),
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
 					/**

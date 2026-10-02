@@ -159,6 +159,10 @@
     {
       "t": "step/advanced",
       "by": "advance-plan"
+    },
+    {
+      "t": "workspace/synced",
+      "by": "workspace-files-sync"
     }
   ],
   "mechanisms": [
@@ -518,7 +522,7 @@
       },
       "trigger": "目标结案且假设达到 promote_at_level 且无推翻",
       "input": "goal, hypothesis, 评估者裁决",
-      "output": "写入 clear/knowledge/facts/<goal>.md + mutation fact/promoted",
+      "output": "写入 clear/knowledge/facts/<事实 id>.json(带升格那一刻用到的词条含义指纹 definitions)+ mutation fact/promoted",
       "blocks_execution": false,
       "native_dsh_alternative": null,
       "rationale": "事实由系统按门槛算出来，模型不能宣称。",
@@ -1913,6 +1917,30 @@
       "blocks_execution": false,
       "native_dsh_alternative": "Cordis 的方法式取服务 ctx.get(name)（取不到只回 undefined;属性式访问在 fiber 非 ACTIVE 时当场抛 cannot get required service in inactive context）",
       "rationale": "「这一刻读不到」与「世上没有这件事」在界面上长得一模一样:降级抛出去会把一次跑了几分钟的评审整个作废,静默给 undefined 又会让空读数被读成「世上没有这件事」。所以读面一律走方法式取服务、取不到返回空态,并把降级这件事本身记成可观测的事实。只记在进程内还不够——**重启、换进程、离线复判都读不到它**,而这恰恰是最需要事后解释的一条;所以内核在 pre-step 把它落成账本事实,幂等靠内容寻址的 id,而不是靠「记得别写两次」。",
+      "known_mismatch": null
+    },
+    {
+      "id": "workspace-files-sync",
+      "name": "工作区文件同步(攒下来的事实与本体住在文件里)",
+      "name_en": "Workspace file sync (accumulated facts and ontology live in files)",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile; ui/lib/fold.js case 'workspace/synced'; ui/lib/fold.js derive factRows; ui/lib/domain-language.js factFromFile changedDefinitions",
+        "tests": "test/kernel.test.mjs(跨会话:另一个会话升格的事实在这里也是已知;定义改了要复核)",
+        "config": null,
+        "prompt": null,
+        "docs": "docs/optimization/state-machines.zh-CN.md"
+      },
+      "trigger": "每个 pre-step(子会话除外)",
+      "input": "clear/knowledge/facts/*.json 与 clear/ontology/{concepts,relations,entities}/**.json 的当前内容",
+      "output": "变了的文件连内容一起落成一条 workspace/synced,折进 state.workspace.files;派生的事实行合并别的会话的事实(foreign),并给出 definitionsChanged 与「待处理」里的复核提示",
+      "blocks_execution": false,
+      "native_dsh_alternative": null,
+      "rationale": "会话账本只活在一次会话里,而研究要跨会话攒下来。文件是唯一跨会话活着的东西;把它的变化落进账本,投影仍然只吃账本,重放读到的是那一刻的文件。",
       "known_mismatch": null
     },
     {

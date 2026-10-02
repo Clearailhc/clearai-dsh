@@ -1006,3 +1006,112 @@ export function describeDomainGraph(lexicon) {
 	lines.push('```', '')
 	return lines.join('\n')
 }
+
+// ═══ 工作区文件:事实与本体住在项目里 ═══════════════════════════════════════
+//
+// 会话账本只活在一次会话里,而研究要跨会话攒下来。所以「攒下来的东西」住在工作区的文件里:
+//   · `clear/knowledge/facts/<id>.json`:升格的事实,一条一个文件,只有系统写;
+//   · `clear/ontology/{concepts,relations,entities}/**.json`:本体,模型用原生文件工具直接写。
+// 内核每一拍把这两处的变化折成一条 `workspace/synced` 变更,投影从文件内容派生词汇、实体与
+// 事实——折法仍然只吃账本,文件是账本之外唯一的输入,而且进账本时就是一条可重放的事实。
+
+/** 事实文件所在的目录(相对工作区)。 */
+export const FACTS_DIR = 'clear/knowledge/facts'
+/** 本体文件树的根(相对工作区)。 */
+export const ONTOLOGY_DIR = 'clear/ontology'
+/** 本体文件树的三支:目录名 → 文件种类。 */
+export const ONTOLOGY_BRANCHES = { concepts: 'concept', relations: 'relation', entities: 'entity' }
+/** 读面有界:文件数与单个文件的字节数都有上限,超出的如实报成问题,不静默截断。 */
+export const WORKSPACE_LIMITS = { files: 2000, bytes: 65536 }
+
+/** FNV-1a(32 位):浏览器与宿主两侧都能算的同步散列,只用来比「变没变」。 */
+function hashText(value) {
+	let h = 0x811c9dc5
+	const source = String(value)
+	for (let index = 0; index < source.length; index += 1) {
+		h ^= source.charCodeAt(index)
+		h = Math.imul(h, 0x01000193) >>> 0
+	}
+	return h.toString(16).padStart(8, '0')
+}
+
+/**
+ * 一个词条**含义**的指纹:概念看释义与父概念,谓词看主词域、值域与单值性。
+ * 名字、别名、依据不进指纹——改名不改义,事实不必因此复核。
+ */
+export function definitionFingerprint(entry) {
+	if (!isPlainObject(entry)) return null
+	const meaning = 'range' in entry || 'domain' in entry ? { domain: text(entry.domain), range: isPlainObject(entry.range) ? { term: text(entry.range.term), form: text(entry.range.form), unit: text(entry.range.unit) } : null, functional: entry.functional === true } : { gloss: text(entry.gloss), parent: text(entry.parent) }
+	return `fnv:${hashText(JSON.stringify(meaning))}`
+}
+
+/** 一组断言用到的词条(谓词、主体类型、宾语类型),各自此刻的含义指纹。 */
+export function fingerprintDefinitions(lexicon, assertions) {
+	const normalized = normalizeLexicon(lexicon)
+	const out = {}
+	const take = (id) => {
+		const key = text(id)
+		if (key === '' || key in out) return
+		const found = findEntry(normalized, key)
+		if (found !== null) out[key] = definitionFingerprint(found.entry)
+	}
+	for (const assertion of Array.isArray(assertions) ? assertions : []) {
+		take(assertion?.predicate)
+		take(assertion?.subject?.type)
+		take(assertion?.object?.type)
+	}
+	return out
+}
+
+/** 事实升格以后,它用到的词条里**含义改过或已不在**的那些 id。 */
+export function changedDefinitions(lexicon, definitions) {
+	if (!isPlainObject(definitions)) return []
+	const normalized = normalizeLexicon(lexicon)
+	const changed = []
+	for (const [id, fingerprint] of Object.entries(definitions)) {
+		const found = findEntry(normalized, id)
+		if (found === null || definitionFingerprint(found.entry) !== fingerprint) changed.push(id)
+	}
+	return changed
+}
+
+/**
+ * 工作区路径 → 它是哪种文件。认不出的返回 null(不是本体也不是事实,不归投影管)。
+ * `dirs` 是本体文件在它那一支里的上级目录(由近及远的反序:最后一个就是直接上级)。
+ */
+export function classifyWorkspacePath(path) {
+	const parts = String(path ?? '').replace(/\\/g, '/').split('/').filter((part) => part !== '' && part !== '.')
+	if (parts.length === 0 || !parts.at(-1).endsWith('.json')) return null
+	const id = parts.at(-1).slice(0, -'.json'.length)
+	const facts = FACTS_DIR.split('/')
+	if (parts.length === facts.length + 1 && facts.every((part, index) => parts[index] === part)) return { kind: 'fact', id, dirs: [] }
+	const root = ONTOLOGY_DIR.split('/')
+	if (parts.length >= root.length + 2 && root.every((part, index) => parts[index] === part)) {
+		const kind = ONTOLOGY_BRANCHES[parts[root.length]]
+		if (kind === undefined) return null
+		return { kind, id, dirs: parts.slice(root.length + 1, -1) }
+	}
+	return null
+}
+
+/**
+ * 事实文件 → 事实行(与 `fact/promoted` 折出来的同形)。复核写在文件的 `status` / `review` 上。
+ */
+export function factFromFile(data, path) {
+	if (!isPlainObject(data) || text(data.id) === '' || text(data.text) === '') return null
+	const review = isPlainObject(data.review) ? { decision: data.review.decision === 'retracted' ? 'retracted' : 'kept', reason: data.review.reason ?? null, at: data.review.at ?? null, by: data.review.by ?? 'user' } : null
+	return {
+		id: text(data.id),
+		goal: data.goal ?? null,
+		hypothesis: data.hypothesis ?? null,
+		text: String(data.text),
+		scope: data.scope ?? null,
+		level: data.level ?? null,
+		evidence: Array.isArray(data.evidence) ? data.evidence : [],
+		assertions: Array.isArray(data.assertions) ? clone(data.assertions) : null,
+		definitions: isPlainObject(data.definitions) ? clone(data.definitions) : null,
+		path: path ?? null,
+		at: typeof data.at === 'number' ? data.at : null,
+		review,
+	}
+}

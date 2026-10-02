@@ -162,7 +162,7 @@ Evidence carries `hypothesis` (which hypothesis it bears on), `verdict` (support
 
 ## 8. Fact · implemented
 
-Stored: `state.facts[]` plus `clear/knowledge/facts/<goal>.md`.
+Stored: `state.facts[]` plus `clear/knowledge/facts/<fact id>.json` (one file per fact, written only by the system).
 
 ```mermaid
 stateDiagram-v2
@@ -176,6 +176,13 @@ evidence only *marks* the fact (`refuted`, derived), and the delivery that recor
 the projection reads it back out of `fact.review` as a derived state. The producers are `reviewRefutedFacts` /
 `markFactReviewed` in the kernel; if nobody can answer, the fact stays marked for review and the native goal is blocked.
 `retract_fact` / `keep_fact` gate messages in old logs still fold. The truth-table row is `fact-retraction` (implemented).
+
+**Across sessions**: fact files live in the project. On every step each session folds the changes under
+`clear/knowledge/facts/` and `clear/ontology/` into one `workspace/synced` (kept in `state.workspace.files`), and the
+derived fact rows also list facts other sessions left behind (`foreign`). A fact file records the meaning fingerprint
+of every term it used at promotion (`definitions`); if a definition changes later, the derived `definitionsChanged`
+is non-empty and the pending list gains "a definition changed; does this conclusion still hold?". It only flags; it
+never retracts.
 
 ## 9. Worldlines (fork / branch) · removed
 
@@ -315,6 +322,7 @@ ledger facts), so it appears in no state machine:
 | `audit/reused` | §6 Evaluation | yes |
 | `criteria/revised` | §1 Goal (criterion revision) | yes |
 | `host/inactive` | §14 Host read faces | yes |
+| `workspace/synced` | §8 Fact (across sessions) | yes |
 | `admission/checked` | **ledger only** | no |
 
 ## 16. Relationship to the verification ontology
