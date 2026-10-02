@@ -35,8 +35,8 @@ const option = (flag) => {
 const { applyEvent, emptyState, inspectGraphSelection, derive, view } = await import(join(PORT, 'ui', 'lib', 'fold.js'))
 
 /** 折一份会话日志(与宿主投影同一份 fold,不是另写一遍)。 */
-function foldSession(file) {
-	const text = execFileSync('zstd', ['-dc', file], { encoding: 'utf8', maxBuffer: 1 << 30 })
+function foldSession(file, plain = false) {
+	const text = plain ? readFileSync(file, 'utf8') : execFileSync('zstd', ['-dc', file], { encoding: 'utf8', maxBuffer: 1 << 30 })
 	let state = emptyState()
 	let header = null
 	for (const line of text.split('\n')) {
@@ -85,13 +85,17 @@ if (argv.includes('--list')) {
 	process.exit(0)
 }
 
-const wanted = option('--session')
+/**
+ * `--events <file.jsonl>`:不走 DSH_HOME,直接折一份明文事件日志(模拟宿主跑出来的 `events.jsonl` 就是这个形状)。
+ */
+const eventsFile = option('--events')
+const wanted = option('--session') ?? (eventsFile === undefined ? undefined : '')
 if (wanted === undefined) {
 	console.log('用法:node tools/panel-shots.mjs --session <id 前缀> [--out docs/marketing/zhihu/images] [--prefix panel]')
 	console.log('      node tools/panel-shots.mjs --list')
 	process.exit(2)
 }
-const match = listSessions().find((entry) => entry.sid.includes(wanted))
+const match = eventsFile !== undefined ? { sid: option('--sid') ?? 'session-1', file: eventsFile, plain: true } : listSessions().find((entry) => entry.sid.includes(wanted))
 if (match === undefined) {
 	console.log(`✗ 没找到含本体的会话:${wanted}(先用 --list 看有哪些)`)
 	process.exit(1)
@@ -108,7 +112,7 @@ try {
 	process.exit(0)
 }
 
-const { state, header } = foldSession(match.file)
+const { state, header } = foldSession(match.file, match.plain === true)
 const cwd = typeof header?.cwd === 'string' && header.cwd !== '' ? header.cwd : null
 const sessionId = match.sid
 const projection = view(state, sessionId)
@@ -129,7 +133,7 @@ try {
 		join(stage, 'index.html'),
 		`<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff;color-scheme:light}#root{padding:0}
 		/* 截图用:把面板底色交给页面,免得透明背景在 PNG 里发灰(与 graph-shots 同一套变量) */
-		:root{--dsw-alias-bg-layer-1:#fff;--dsw-alias-bg-layer-2:#f7f8fa;--dsw-alias-label-primary:#1f2328;--dsw-alias-label-secondary:#5c6370;--dsw-alias-label-tertiary:#8b93a1;--dsw-alias-border-l1:#e6e8eb;--dsw-alias-border-l2:#dfe2e6;--dsw-alias-border-l3:#d0d4d9;--dsw-alias-state-warn-primary:#d9822b}
+		:root{--dsw-alias-bg-base:#fff;--dsw-alias-label-primary-inverted:#fff;--dsw-alias-state-error-primary:#d14343;--dsw-alias-brand-primary:#3b5bdb;--dsw-alias-interactive-bg-hover:#f0f1f3;--dsw-alias-bg-layer-1:#fff;--dsw-alias-bg-layer-2:#f7f8fa;--dsw-alias-label-primary:#1f2328;--dsw-alias-label-secondary:#5c6370;--dsw-alias-label-tertiary:#8b93a1;--dsw-alias-border-l1:#e6e8eb;--dsw-alias-border-l2:#dfe2e6;--dsw-alias-border-l3:#d0d4d9;--dsw-alias-state-warn-primary:#d9822b}
 		</style></head><body><div id="root"></div>
 <script src="/runtime.js"></script><script src="/client.js"></script><script src="/probe.js"></script></body></html>`,
 	)
@@ -153,7 +157,7 @@ try {
 		ontology: { useProjection: () => projection, openPreview: () => true, openRail: noop, openSpectator: noop },
 		worldlines: { useSessions, sessionId, openPreview: () => true, openSpectator: noop },
 	}
-	const component = { ontology: C.Facts, worldlines: C.WorldTree }
+	const component = { ontology: C.Atlas, worldlines: C.WorldTree }
 	window.__MOUNT__ = (name) => {
 		try {
 			window.__ROOT__ = window.__ROOT__ ?? window.__CREATE_ROOT__(document.getElementById('root'))
@@ -174,7 +178,10 @@ try {
 	const real = window.fetch.bind(window)
 	window.fetch = (input, init) => {
 		const url = String(typeof input === 'string' ? input : (input?.url ?? ''))
-		if (url.includes('/api/clearai/inspector')) return json(window.__INSPECTOR__ ?? { ok: true, found: false })
+		if (url.includes('/api/clearai/inspector')) {
+		const query = new URL(url, location.href).searchParams
+		return json((window.__INSPECTOR__ ?? {})[query.get('kind') + ':' + query.get('id')] ?? { ok: true, found: false })
+	}
 		if (url.includes('/api/clearai/')) return json({ ok: false, error: 'shot_stub' })
 		return real(input, init)
 	}
@@ -184,11 +191,19 @@ try {
 	const html = readFileSync(join(stage, 'index.html'), 'utf8').replace('<script src="/runtime.js">', '<script src="/prefetch.js"></script><script src="/runtime.js">')
 	writeFileSync(join(stage, 'index.html'), html)
 
+	/**
+	 * 每个点、每条边的读数都在 Node 侧按宿主同一个函数算好,按「kind:id」交给页面
+	 * (与面板发出的查询同一种键:概念用词条 id,其余用图上的 id)。
+	 */
 	const inspector = (() => {
-		const node = (projection.lexicon?.graph?.nodes ?? []).find((item) => item.layer === 'ontology')
-		if (node === undefined) return { ok: true, found: false }
-		const found = inspectGraphSelection(state, { kind: 'node', id: node.id }, derived)
-		return found === null ? { ok: true, found: false } : { ok: true, found: true, inspector: found }
+		const table = {}
+		const put = (kind, id) => {
+			const found = inspectGraphSelection(state, { kind, id }, derived)
+			table[`${kind}:${id}`] = found === null ? { ok: true, found: false } : { ok: true, found: true, inspector: found }
+		}
+		for (const node of projection.lexicon?.graph?.nodes ?? []) put(node.kind, node.kind === 'concept' ? String(node.ref ?? '') : node.id)
+		for (const edge of projection.lexicon?.graph?.edges ?? []) put('edge', edge.id)
+		return table
 	})()
 
 	const server = createServer((request, reply) => {
@@ -205,8 +220,8 @@ try {
 	await new Promise((resolve_) => server.listen(0, '127.0.0.1', resolve_))
 	const base = `http://127.0.0.1:${server.address().port}`
 
-	const browser = await chromium.launch({ channel: 'chrome', headless: true })
-	const page = await browser.newPage({ viewport: { width: 780, height: 940 }, deviceScaleFactor: 2 })
+	const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, headless: true } : { channel: 'chrome', headless: true })
+	const page = await browser.newPage({ viewport: { width: Number(option('--width') ?? 780), height: Number(option('--height') ?? 940) }, deviceScaleFactor: 2 })
 	await page.addInitScript(() => {
 		window.__pending = []
 		window.__ModuleLoader__ = { mode: 'queue', pendingQueue: window.__pending, load: (registration) => window.__pending.push(registration) }
@@ -233,6 +248,12 @@ try {
 		await page.waitForFunction(() => window.__READY__ === true, { timeout: 15000 })
 		await page.evaluate((panel) => window.__MOUNT__(panel), name)
 		await page.waitForTimeout(1400)
+		/** `--click 文本`(可多次):挂好之后依次点一下,拍展开后的样子。 */
+		for (let index = 0; index < argv.length; index += 1) {
+			if (argv[index] !== '--click' || name !== PANELS[0]) continue
+			await page.getByText(argv[index + 1], { exact: false }).first().click()
+			await page.waitForTimeout(500)
+		}
 		const diag = await page.evaluate(() => ({
 			html: document.getElementById('root')?.innerHTML.length ?? 0,
 			mountError: window.__MOUNT_ERROR__ ?? null,

@@ -71,7 +71,7 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 		view: () => view(state),
 		renderCard: () => renderCard(state),
 		preview: (_id, mutations) => {
-			const next = applyMutations(state, mutations)
+			const next = applyMutations({ ...state, inFlight: null }, mutations)
 			return { state: next, card: renderCard(next), view: view(next) }
 		},
 		domain: {

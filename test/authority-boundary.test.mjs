@@ -60,24 +60,17 @@ console.log('\n【② 投影侧只有两个变更入口,且都被标记把守】
 	check('插件消息入口被 clearai/mutations 段名把守', guards.some((context) => /section\?\.name === 'clearai\/mutations'/.test(context)))
 }
 
-console.log('\n【③ 人门动词不走变更通道(没有工具 schema)】')
+console.log('\n【③ 面板没有写入口(人门通道第六阶段整条拿掉)】')
 {
-	const gateMatch = FOLD.match(/export const HUMAN_GATE_ACTIONS = \[([^\]]+)\]/)
-	const gateVerbs = gateMatch === null ? [] : [...gateMatch[1].matchAll(/'([a-z_]+)'/g)].map((match) => match[1])
-	check('人门白名单可解析且非空', gateVerbs.length >= 3, gateVerbs.join(' '))
+	const HOST = readFileSync(join(PORT, 'ui', 'lib', 'index.js'), 'utf8')
+	check('宿主半不再注册 /api/clearai/gate', !HOST.includes("'/api/clearai/gate'"))
+	check('投影侧不再导出人门动词白名单(只剩读旧日志的那份)', !/export const HUMAN_GATE_ACTIONS/.test(FOLD) && /const LEGACY_GATE_ACTIONS = \[/.test(FOLD))
+	check('内核侧也不再留那份镜像', !/HUMAN_GATE_ACTIONS/.test(KERNEL))
 	const toolsMatch = KERNEL.match(/export const MECHANISM_TOOLS = \[([\s\S]*?)\]/)
 	const toolNames = toolsMatch === null ? [] : [...toolsMatch[1].matchAll(/name: '([A-Z][A-Za-z]+)'/g)].map((match) => match[1])
-	const leaked = gateVerbs.filter((verb) => toolNames.some((name) => name.toLowerCase() === verb))
-	check('人门动词没有一个出现在工具目录里(模型工具面不存在它们)', leaked.length === 0, leaked.join(' '))
-	check('人门动词也不以 defineTool 形式存在', !gateVerbs.some((verb) => new RegExp(`defineTool\\(\\s*\\{[^}]*name: '${verb}'`).test(KERNEL)))
-	/**
-	 * 清单在**两个平面各有一份**(预设不能 import 宿主半,只能逐字镜像)——
-	 * 没有这条,其中一份悄悄少一个动词时,那个动词在一个入口变成「不存在的动作」,
-	 * 在另一个入口却仍然落账:同一个决定,两套真相。
-	 */
-	const kernelGateMatch = KERNEL.match(/export const HUMAN_GATE_ACTIONS = \[([\s\S]*?)\]/)
-	const kernelGateVerbs = kernelGateMatch === null ? [] : [...kernelGateMatch[1].matchAll(/'([a-z_]+)'/g)].map((match) => match[1])
-	check('内核那份人门清单与投影侧逐字一致(镜像不许漂)', [...gateVerbs].sort().join(',') === [...kernelGateVerbs].sort().join(','), `fold:${gateVerbs.join(',')} · kernel:${kernelGateVerbs.join(',')}`)
+	const legacyMatch = FOLD.match(/const LEGACY_GATE_ACTIONS = \[([^\]]+)\]/)
+	const legacyVerbs = legacyMatch === null ? [] : [...legacyMatch[1].matchAll(/'([a-z_]+)'/g)].map((match) => match[1])
+	check('旧日志动词没有一个出现在工具目录里', legacyVerbs.length > 0 && !legacyVerbs.some((verb) => toolNames.some((name) => name.toLowerCase() === verb)), legacyVerbs.join(' '))
 }
 
 console.log('\n【④ 标记常量两侧同源】')

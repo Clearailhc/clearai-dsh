@@ -307,11 +307,11 @@ console.log('\n【折法:冲突与健康度是派生读数,进读面不进闸门
 	}
 	const derived = fold.derive(state)
 	check('冲突在派生里出现(不必等界面)', derived.conflicts.length === 1, JSON.stringify(derived.conflicts))
-	check('冲突不产生闸门(它是读数,不是等人处置的门)', derived.hasOpenGate === false)
+	check('冲突不拦任何动作,只在「待处理」里陈述一行(以哪个为准)', !('hasOpenGate' in derived) && derived.needYou.some((item) => item.kind === 'conflict' && /以哪个为准/.test(item.text) && /WENO5/.test(item.text)), JSON.stringify(derived.needYou))
 	check('冲突两侧的事实都没被改动(系统不替你选)', state.facts.length === 2 && state.facts.every((fact) => fact.review === null || fact.review === undefined))
 	const view = fold.view(state, 'session')
 	check('读面带出词汇 / 冲突 / 健康度 / 图', view.lexicon !== undefined && Array.isArray(view.lexicon.conflicts) && Array.isArray(view.lexicon.health) && view.lexicon.graph.nodes.length > 0)
-	check('卡片把冲突说出来并说明「不替你选」', fold.renderCard(state).includes('冲突') && fold.renderCard(state).includes('系统不替你选'))
+	check('卡片把冲突说出来并说明「不替你选」', fold.renderCard(state).includes('矛盾') && fold.renderCard(state).includes('系统不替你选'))
 	check('撤回一侧之后冲突消失', fold.derive(fold.applyMutations(state, [{ t: 'fact/reviewed', fact: 'f2', decision: 'retracted', reason: 'bad' }])).conflicts.length === 0)
 }
 
@@ -388,10 +388,10 @@ console.log('\n【知识模式:结构判据 + 缺口是读数,不是拦截】')
 	check('已经跑出证据、而有命题没被碰过 ⇒ 报 untouched_claims', codes(worked).includes('untouched_claims'), JSON.stringify(labelled(worked).gaps))
 	check('被碰过的命题不算在内(只剩没碰过的那条)', labelled(worked).gaps.find((gap) => gap.code === 'untouched_claims')?.count === 1)
 
-	check('缺口是读数:一条也不拦(没有闸门)', fold.derive(goalOnly).hasOpenGate === false)
+	check('缺口是读数:一条也不拦,也不进「待处理」', fold.derive(goalOnly).needYou.length === 0)
 	check('读面带出知识模式(与卡片同一份派生)', fold.view(goalOnly, 's').knowledge.mode === 'knowledge')
-	check('卡片把缺口逐条说出来', fold.renderCard(goalOnly).includes('知识模式') && fold.renderCard(goalOnly).includes('缺口'))
-	check('结构完整时如实说不欠,而不是沉默', fold.renderCard(promoted).includes('结构完整') || fold.renderCard(promoted).includes('缺口'), fold.renderCard(promoted).split('\n').filter((line) => line.includes('知识模式')).join('|'))
+	check('卡片把缺口逐条说出来(人话,不带 code)', fold.renderCard(goalOnly).includes('还欠的') && !/prose_only_claims|untouched_claims|entities_unlanded/.test(fold.renderCard(goalOnly)))
+	check('结构完整时如实说不欠,而不是沉默', fold.renderCard(promoted).includes('结构完整') || fold.renderCard(promoted).includes('还欠的'), fold.renderCard(promoted).split('\n').filter((line) => line.includes('结构') || line.includes('还欠')).join('|'))
 }
 
 console.log('\n【假设身份:一个 id 只对应一条主张(真跑里卡上出现 6~8 行读数的那条)】')
@@ -460,7 +460,7 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 
 	// ④ 卡里真的说出来。
 	const card = fold.renderCard(seededState)
-	check('卡里有「相关已知」一行,带可直接引用的 id', card.includes('相关已知') && card.includes('furnace_batch') && card.includes('oxygen_ppm'))
+	check('卡里有「已有的词」一行,带可直接引用的 id', card.includes('已有的词') && card.includes('furnace_batch') && card.includes('oxygen_ppm'))
 
 	// ⑤ 没命中时如实说,不把空读数写成「世上没有」。
 	const noVocab = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g1', claim: '全新领域', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: '全新主张', refute_when: 'rw' }] }])
@@ -735,7 +735,7 @@ console.log('\n【单一叙述源:knowledgeView 的形状与卡上限】')
 	 */
 	check('卡里不带判据全文(压缩版 + 指针)', !fold.renderCard(state).includes('D'.repeat(400)) && fold.renderCard(state).includes('clear/goals/g1.md'))
 	const revised = fold.applyMutations(state, [{ t: 'criteria/revised', goal: 'g1', revision: 2, from: 'D'.repeat(400), to: 'D'.repeat(400), reason: 'r', audit: 'a-1' }])
-	check('判据改过 ⇒ 卡里写明第几次修订、谁裁的、全文在哪', fold.renderCard(revised).includes('a-1') && fold.renderCard(revised).includes('clear/goals/g1.md') && !fold.renderCard(revised).includes('D'.repeat(400)))
+	check('判据改过 ⇒ 卡里写明改过几次、全文在哪(裁决编号不上卡)', fold.renderCard(revised).includes('判据改过 1 次') && !fold.renderCard(revised).includes('a-1') && fold.renderCard(revised).includes('clear/goals/g1.md') && !fold.renderCard(revised).includes('D'.repeat(400)))
 	check('view() 把同一份交给面板(宿主经它暴露)', fold.view(state, 's').knowledgeView.headline.now === view.headline.now)
 
 	/**
@@ -770,11 +770,11 @@ console.log('\n【单一叙述源:knowledgeView 的形状与卡上限】')
 	/** 改过判据:逐条照列,留痕在同一张卡上(第几次修订 + 谁裁的)。 */
 	const listedRevised = fold.applyMutations(listed, [{ t: 'criteria/revised', goal: 'g2', revision: 2, from: 'D', to: 'D2', reason: 'r', audit: 'audit-9' }])
 	const revisedListedCard = fold.renderCard(listedRevised)
-	check('改过判据:逐条仍在,留痕写清第几次修订与独立裁决', /^\s+1\. 第一条/m.test(revisedListedCard) && revisedListedCard.includes('第 1 次修订') && revisedListedCard.includes('audit-9'))
+	check('改过判据:逐条仍在,留痕写清第几次修订与独立裁决', /^\s+1\. 第一条/m.test(revisedListedCard) && revisedListedCard.includes('判据改过 1 次') && !revisedListedCard.includes('audit-9'))
 	/** 清单是空数组 ⇒ 与「没有清单」同一处置:退回压缩版 + 指针,不出现一个「判据(0 条)」小节。 */
 	const emptyList = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g3', claim: 'C', done_criteria: 'D'.repeat(400), promote_at_level: 'L3', revision: 1, criteria: [], hypotheses: [] }])
 	const emptyListCard = fold.renderCard(emptyList)
-	check('判据清单空数组 ⇒ 压缩版 + 指针(不写「0 条」小节)', emptyListCard.includes('立约时那一份') && emptyListCard.includes('clear/goals/g3.md') && !emptyListCard.includes('判据(0 条'))
+	check('判据清单空数组 ⇒ 压缩版 + 指针(不写「0 条」小节)', emptyListCard.includes('clear/goals/g3.md') && !emptyListCard.includes('(0 条'))
 }
 
 

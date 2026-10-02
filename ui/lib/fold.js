@@ -17,7 +17,7 @@
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
 import { applyLexiconMutation, deriveConflicts, emptyLexicon, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
-import { knowledgeView } from './knowledge-view.js'
+import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
 const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
@@ -271,12 +271,15 @@ export function applyMutation(state, mutation) {
 					if (String(known.claim ?? '') !== claim) continue
 					known.refute_when = hypothesis.refute_when
 					known.version = hypothesis.version ?? known.version
+					if (typeof hypothesis.name === 'string' && hypothesis.name !== '') known.name = hypothesis.name
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
 					continue
 				}
 				next.hypotheses.push({
 					id: hypothesis.id,
 					goal: mutation.id,
+					/** 短名(第六阶段起,模型自己起);旧日志没有它,读的一侧取主张开头。 */
+					...(typeof hypothesis.name === 'string' && hypothesis.name !== '' ? { name: hypothesis.name } : {}),
 					claim,
 					refute_when: hypothesis.refute_when,
 					status: 'proposed',
@@ -763,7 +766,7 @@ export function applyEvent(state, event) {
 				if (touched) return next
 			}
 		}
-		// 人在面板上按下的人门动作 → 落成**事实**(不是请求)。
+		// 旧日志里人在面板上按下的人门动作 → 照旧落成**事实**(面板已不再发)。
 		const gate = parseHumanGate(event.data)
 		if (gate === null) return state
 		const at = typeof event.time === 'number' ? event.time : Date.now()
@@ -914,7 +917,7 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 				gaps.push({
 					code: 'untouched_claims',
 					count: untouched.length,
-					detail: `${untouched.length} 条在验命题还没有任何证据碰过(支持 / 推翻 / 无法判定都算碰过)`,
+					detail: `${untouched.length} 条验证中的判断还没有任何证据碰过(支持 / 推翻 / 不确定都算碰过)`,
 					nextAction: '给它派一个带 tests 的步骤并交付:支持 / 推翻 / 无法判定都算碰过',
 				})
 			}
@@ -928,7 +931,7 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 			gaps.push({
 				code: 'prose_only_claims',
 				count: proseOnly.length,
-				detail: `${proseOnly.length} 条在验命题只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
+				detail: `${proseOnly.length} 条验证中的判断只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
 				nextAction: '先 Define 立概念与谓词、RegisterInstance 登记主体,再用 Frame 修订把主张写成断言(主词–谓词–宾语)',
 			})
 		}
@@ -1467,6 +1470,29 @@ function inspectEdge(context, edgeId) {
 	}
 }
 
+
+/**
+ * **可信度怎么变的**:按证据落账的先后重放一遍,每一笔记下「之前 → 之后」。
+ * 面板「点开一条」的第二段读的就是它;分组判据仍只有 `trustOf` 一处,这里只是逐笔调用。
+ * 升格(写进长期知识)和撤回不在这里——它们由读的一侧接在末尾(见 `view`)。
+ */
+function trustHistory(hypothesis, rows) {
+	const history = [{ kind: 'proposed', at: hypothesis.at ?? null, to: 'testing' }]
+	let replay = { status: 'proposed', supportedLevel: null, refutations: 0, inconclusive: 0 }
+	const ordered = rows
+		.map((item, index) => ({ item, index }))
+		.sort((left, right) => (left.item.at ?? 0) - (right.item.at ?? 0) || left.index - right.index)
+		.map(({ item }) => item)
+	for (const item of ordered) {
+		const from = trustOf(replay)
+		if (item.verdict === 'refute') replay = { ...replay, refutations: replay.refutations + 1 }
+		else if (item.verdict === 'inconclusive') replay = { ...replay, inconclusive: replay.inconclusive + 1 }
+		else if (item.verdict === 'support' && LEVELS.indexOf(String(item.level ?? '').toUpperCase()) > LEVELS.indexOf(String(replay.supportedLevel ?? '').toUpperCase())) replay = { ...replay, supportedLevel: item.level }
+		history.push({ kind: 'evidence', id: item.id ?? null, at: item.at ?? null, plan: item.plan ?? null, step: item.step ?? null, verdict: item.verdict, level: item.level ?? null, evaluator: item.evaluator ?? null, basis: item.basis ?? null, from, to: trustOf(replay) })
+	}
+	return history
+}
+
 /** 五种值形态的名字与一句话解释(名字取自 `domain-language` 的枚举,这里只加给人读的说明)。 */
 const VALUE_FORM_GLOSS = {
 	statement: '短陈述字符串',
@@ -1517,7 +1543,7 @@ export function derive(state) {
 		else if (status === 'proposed' && rows.length > 0) status = 'alive'
 		// 被推翻是黏性终态:「已被替代」不该改写「已被推翻」——两件事。
 		if (status !== 'superseded' && status !== 'refuted' && status !== 'retracted' && refutations > 0) status = 'refuted'
-		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive, unlanded: subjectsOffGraph(hypothesis, instanceNodes) }
+		return { ...hypothesis, status, supportedLevel: supportedLevel < 0 ? null : `L${supportedLevel}`, refutations, inconclusive, unlanded: subjectsOffGraph(hypothesis, instanceNodes), history: trustHistory(hypothesis, rows) }
 	})
 
 	/**
@@ -1568,21 +1594,6 @@ export function derive(state) {
 	}
 
 	/**
-	 * 收件箱:每一道门都是**状态锚**(由派生事实算出,不依赖中断记录)——门一解决,条目自然消失,
-	 * 不可能残留成僵尸。
-	 * 条目只带**分诊信息**(标题/摘要/指向),不带全部正文:收件箱是分诊,不是问诊。
-	 *
-	 * 这里**只放真门**:不拍板就真的推不动的那种。计划确认不再是条目(它是记号,
-	 * 不是闸门;见 HUMAN_GATE_ACTIONS 的收敛记录)——收件箱里的每一条都经得起「等人是必须的吗」。
-	 */
-	/**
-	 * 收件箱第三阶段起是空的:要人的门(L4 放行、同一步连拦、事实被推翻)都由开门的那次调用
-	 * 当场问人。读面先留着这两格(面板的「需要你」还读它们),第六阶段随面板一起删。
-	 */
-	const inbox = []
-	const hasOpenGate = false
-
-	/**
 	 * 事实那一行的**两个读数**(都派生,不另存):
 	 *   · `refuted`——它的假设收到过推翻证据 ⇒ 这条事实要复核;
 	 *   · `review` ——人已经审查过(撤回 / 维持),决定连缘由一起留着。
@@ -1606,9 +1617,16 @@ export function derive(state) {
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
-	 * 被推翻、还没审过的事实不进收件箱:这道门由收到推翻证据的那次交付当场问人。
-	 * 没人能答时它留着 `refuted` 读数(事实那一行写着「被推翻 · 待复核」),原生 goal 停下等人。
+	 * **待处理**(第六阶段,取代空了的收件箱):只陈述、不放按钮——决定在对话里说,
+	 * 或由开门的那次调用用原生提问卡问。两类:计划连拦停下了;已写进长期知识的结论互相矛盾。
+	 * 都是派生读数:计划一解封、矛盾一方被推翻,条目自然消失。
 	 */
+	const needYou = []
+	if (activePlan !== null && activePlan.blocked !== undefined) needYou.push({ kind: 'plan_blocked', text: `计划停下了:${String(activePlan.blocked.reason ?? '连续没过')},怎么改?` })
+	for (const conflict of conflicts) {
+		const sides = (conflict.sides ?? []).map((side) => `「${String(side.value ?? '?')}」`).join('和')
+		needYou.push({ kind: 'conflict', text: `${String(conflict.subject ?? '')}的${String(conflict.predicate ?? '')}:${sides}矛盾,以哪个为准?` })
+	}
 
 
 	const settlement = state.evidence.map((item) => {
@@ -1634,8 +1652,7 @@ export function derive(state) {
 		factRows,
 		settlement,
 		stepOf,
-		inbox,
-		hasOpenGate,
+		needYou,
 		/** 领域词汇与它的两条派生读数(见上面那段:冲突与健康度都只是读数)。 */
 		lexicon,
 		conflicts,
@@ -1672,25 +1689,14 @@ export function derive(state) {
  * `retract_fact` / `keep_fact`(这道门改由内核当场问人,见下面的 `LEGACY_GATE_ACTIONS`)。
  */
 export const HUMAN_GATE_MARK = '[clearai·人门]'
-/** 面板上允许出现的动词。表外的动词一律拒(与贡献表同一套「表外的名字不许出现」)。 */
-export const HUMAN_GATE_ACTIONS = [
-	/**
-	 * **本体四动词(人的通道)**:面板抽屉发的就是它们;模型有同名语义的工具
-	 * (`Define` / `Deprecate`),但这两个面落的是**同一套判据与同一本账**——判据在宿主半的
-	 * `domain` 门里,词汇事件只有一种折法。这个数组在内核那一侧有一份**逐字镜像**
-	 * (预设面不能 import 这一层),两边相等由 authority-boundary 套件钉死。
-	 */
-	'register_term',
-	'register_predicate',
-	'revise_term',
-	'deprecate_entry',
-]
 /**
- * **只在读旧日志时认**的动词:撤回 / 维持事实。第三阶段起这道门由内核在那次交付里当场问人
- * (答案在进程内落成 `fact/reviewed`),面板不再发这两个动作;但旧会话里人按过的决定
- * 必须照旧折出来,否则一条已经审过的事实会在重放时又变回「待复核」。
+ * **只在读旧日志时认**的动词。面板早已没有写入口(第六阶段把 `/api/clearai/gate` 整条拿掉):
+ * 撤回 / 维持事实从第三阶段起由内核在那次交付里当场问人;本体四动词随编辑抽屉一起删,
+ * 要改词汇就在对话里说,模型用 `Define` / `Deprecate` 落同一本账。
+ * 但旧会话里人按过的决定必须照旧折出来,否则重放时一条审过的事实会变回「待复核」、
+ * 人登记的词会凭空消失。
  */
-const LEGACY_GATE_ACTIONS = ['retract_fact', 'keep_fact']
+const LEGACY_GATE_ACTIONS = ['retract_fact', 'keep_fact', 'register_term', 'register_predicate', 'revise_term', 'deprecate_entry']
 
 /** 从一条用户消息里认出人门标记;不是标记就返回 null。 */
 export function parseHumanGate(message) {
@@ -1706,25 +1712,49 @@ export function parseHumanGate(message) {
 	try {
 		const parsed = JSON.parse(line)
 		if (parsed === null || typeof parsed !== 'object') return null
-		if (!HUMAN_GATE_ACTIONS.includes(String(parsed.action)) && !LEGACY_GATE_ACTIONS.includes(String(parsed.action))) return null
+		if (!LEGACY_GATE_ACTIONS.includes(String(parsed.action))) return null
 		return parsed
 	} catch {
 		return null
 	}
 }
 
+/** 一条判断升格成的事实(按 id 关联;旧账本按文本找回)。 */
+function factOf(state, hypothesis) {
+	return (state.facts ?? []).find((item) => item.hypothesis === hypothesis.id) ?? (state.facts ?? []).find((item) => item.hypothesis === undefined && String(item.text ?? '') === String(hypothesis.claim ?? '')) ?? null
+}
+
+function factRow(state, hypothesis) {
+	const fact = factOf(state, hypothesis)
+	return fact === null ? null : { id: fact.id, text: fact.text ?? null, scope: fact.scope ?? null, level: fact.level ?? null, at: fact.at ?? null, retracted: fact.review?.decision === 'retracted' }
+}
+
+/** 面板读的历程:步骤换成「第几步」,末尾接上升格与撤回(它们不是证据,但同样改了可信度)。 */
+function historyRows(state, hypothesis) {
+	const ordinalOf = (planId, stepId) => {
+		const plan = state.plans.find((item) => item.id === planId)
+		return plan?.steps?.find((step) => step.id === stepId)?.ordinal ?? null
+	}
+	const rows = (hypothesis.history ?? []).map((row) => (row.kind === 'evidence' ? { ...row, ordinal: ordinalOf(row.plan, row.step) } : { ...row }))
+	const fact = factOf(state, hypothesis)
+	const last = () => rows[rows.length - 1]?.to ?? 'testing'
+	if (fact !== null) rows.push({ kind: 'promoted', at: fact.at ?? null, level: fact.level ?? null, from: last(), to: 'credible' })
+	if (fact?.review?.decision === 'retracted') rows.push({ kind: 'retracted', at: fact.review.at ?? null, reason: fact.review.reason ?? null, from: last(), to: 'replaced' })
+	return rows
+}
+
 /** 面板契约。浏览器读的就是这个,一字不改。 */
 export function view(state, sessionId) {
 	const derived = derive(state)
+	const promotedIds = new Set((state.facts ?? []).map((fact) => fact?.hypothesis).filter((id) => typeof id === 'string'))
 	const plan = derived.activePlan ?? derived.closedPlans[derived.closedPlans.length - 1] ?? null
 	const sid = sessionId === undefined || sessionId === null ? (state.sessionId ?? null) : String(sessionId)
 	return {
 		ok: true,
 		mounted: true,
 		sessionId: sid,
-		/** 收件箱(面板「需要你 N」的数据面):只有分诊信息,正文在各自的视图里。 */
-		inbox: derived.inbox,
-		hasOpenGate: derived.hasOpenGate,
+		/** 待处理:只陈述的几行(计划停下、结论矛盾);面板顶上与输入框旁读同一份。 */
+		needYou: derived.needYou,
 		/**
 		 * 被闸门裁断过几次(`block/counted`):世界树的**分段通道**画的就是它——
 		 * 这一步磨了几轮、其中几次被驳回。事实在投影里,面板只负责画。
@@ -1789,13 +1819,20 @@ export function view(state, sessionId) {
 						closeVerdict: state.goal.closeVerdict ?? null,
 						hypotheses: derived.hypotheses.map((hypothesis) => ({
 							id: hypothesis.id,
+							name: handleOf(hypothesis),
+							/** 可信度分组(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换),面板与卡同一份。 */
+							trust: trustOf(hypothesis, promotedIds.has(hypothesis.id)),
 							claim: hypothesis.claim,
 							refuteWhen: hypothesis.refute_when,
 							status: hypothesis.status,
 							supportedLevel: hypothesis.supportedLevel,
 							refutations: hypothesis.refutations,
 							inconclusive: hypothesis.inconclusive,
-								version: hypothesis.version,
+							version: hypothesis.version,
+							/** 「可信度怎么变的」:逐笔的之前 → 之后,末尾接上写进长期知识 / 被撤回。 */
+							history: historyRows(state, hypothesis),
+							/** 写进长期知识的那条(没升格就是 null):补充段的「范围」读它。 */
+							fact: factRow(state, hypothesis),
 							/** 断言随假设走(未升格):面板同画芯片(chip 同样在投影侧算好),标注「未升格」。 */
 							assertions: Array.isArray(hypothesis.assertions)
 								? hypothesis.assertions.map((assertion) => ({ ...assertion, chip: formatAssertion(state.lexicon, assertion) }))
@@ -1922,6 +1959,8 @@ export function view(state, sessionId) {
 		facts: derived.factRows.map((item) => ({
 			id: item.id,
 			text: item.text,
+			/** 产出它的那条判断(旧账本没有,面板把这种事实单独列成一行)。 */
+			hypothesis: item.hypothesis ?? null,
 			/** 边界(推翻条件)与支持等级:面板与货架都要显示它——「已知」必须带边界。 */
 			scope: item.scope ?? null,
 			level: item.level ?? null,

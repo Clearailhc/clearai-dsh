@@ -81,6 +81,22 @@ export const GLOSSARY = {
 /** 等级那五个(`levels` 是给消费方一个不用过滤的入口,与 `GLOSSARY` 同源)。 */
 export const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
 
+/**
+ * **说人话的三张小表**(第六阶段)。内部名不改;卡、工具结果与面板上一律写右边那一列。
+ * 模型读到什么就会照着说什么——所以卡先说人话,答复才说得出人话。
+ */
+export const LEVEL_WORD = { L0: '自己推了一遍', L1: '引用已有材料', L2: '可复算', L3: '独立核验', L4: '人放行' }
+export const VERDICT_WORD = { support: '支持', refute: '推翻', inconclusive: '不确定' }
+/** 判断短名的上限(字);没起名时取主张开头这么多字。与内核同一个数。 */
+export const HANDLE_LIMIT = 12
+/** 一条判断的短名:模型起的名字;旧日志没有,就取主张开头。 */
+export function handleOf(hypothesis) {
+	const name = typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : ''
+	if (name !== '') return name
+	const claim = String(hypothesis?.claim ?? '').replace(/\s+/g, ' ').trim()
+	return claim.length <= HANDLE_LIMIT ? claim : `${claim.slice(0, HANDLE_LIMIT)}…`
+}
+
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const oneLine = (value) => String(value ?? '').replace(/\s+/g, ' ').trim()
 const clamp = (value, max) => {
@@ -91,7 +107,12 @@ const clamp = (value, max) => {
 /** 卡上的时间由调用方给(读面不读时钟);给了毫秒数就按本地时间格式化。 */
 
 /** 人话的阶段名;表外的阶段原样给(不猜)。 */
-const phasePlain = (phase) => (phase === null || phase === undefined ? '阶段还没算出来' : GLOSSARY[phase]?.plain ?? String(phase))
+/**
+ * 进度那一格只放一个短语:词汇表里的 plain 是「词:解释」,卡上取冒号前那半句。
+ * 「阶段边界」本身是内部词,换成它要人做的那件事。
+ */
+const PHASE_SHORT = { stage_boundary: '这份计划做完了,该结案或起新计划' }
+const phasePlain = (phase) => (phase === null || phase === undefined ? '阶段还没算出来' : (PHASE_SHORT[phase] ?? String(GLOSSARY[phase]?.plain ?? phase).split(':')[0]))
 
 /**
  * **卡文本的行装配**(带优先级)。
@@ -144,9 +165,57 @@ function fitLines(lines, limit = CARD_LIMIT) {
 }
 
 /**
+ * **可信度分组**(第六阶段):一条判断此刻落在哪一组。面板的清单、卡上的判断、图上的颜色读同一份。
+ *
+ *   · 已验证——独立核验过(或已写进长期知识),而且没被推翻;
+ *   · 待核验——有支持的结果,但都是做的人自己判的;
+ *   · 不确定——检验过,但只得到「不确定」;
+ *   · 验证中——还没有任何结果;
+ *   · 已推翻 / 已替换 / 已撤回——终态,留着不删。
+ */
+export const TRUST = [
+	{ key: 'credible', label: '已验证' },
+	{ key: 'pending', label: '待核验' },
+	{ key: 'testing', label: '验证中' },
+	{ key: 'unclear', label: '不确定' },
+	{ key: 'refuted', label: '已推翻' },
+	{ key: 'replaced', label: '已替换' },
+]
+export const TRUST_LABEL = Object.fromEntries(TRUST.map((item) => [item.key, item.label]))
+const levelRank = (level) => LEVELS.indexOf(String(level ?? ''))
+export function trustOf(hypothesis, promoted = false) {
+	const status = String(hypothesis?.status ?? '')
+	if (status === 'refuted' || (hypothesis?.refutations ?? 0) > 0) return 'refuted'
+	if (status === 'superseded' || status === 'retracted') return 'replaced'
+	if (promoted === true || status === 'confirmed') return 'credible'
+	const level = levelRank(hypothesis?.supportedLevel)
+	if (level >= 3) return 'credible'
+	if (level >= 0) return 'pending'
+	if ((hypothesis?.inconclusive ?? 0) > 0) return 'unclear'
+	return 'testing'
+}
+
+/** 一条判断的读数,一句人话(卡上与面板同一句)。 */
+export function readingOf(hypothesis) {
+	const parts = []
+	const level = hypothesis?.supportedLevel
+	if (level !== null && level !== undefined) parts.push(`支持(${LEVEL_WORD[level] ?? level})`)
+	if ((hypothesis?.refutations ?? 0) > 0) parts.push(`推翻 ${hypothesis.refutations} 次`)
+	if ((hypothesis?.inconclusive ?? 0) > 0) parts.push(`不确定 ${hypothesis.inconclusive} 次`)
+	return parts.length === 0 ? '还没检验' : parts.join(' · ')
+}
+
+/** 步骤状态的人话。 */
+const STEP_WORD = { open: '待做', advanced: '已交付', void: '已作废' }
+
+/**
  * **卡的正文**。它只读已经算好的 `view` 与 `(state, derived)`,不重算任何判据——
  * 同一份账本永远给出同一串字节:卡里**不带时刻**——时间戳会让同一个状态的卡每分钟变一次,
  * 按内容去重的那条纪律因此失效。要看「什么时候发生」,账本里有事件时间。
+ *
+ * **第六阶段起只说人话**:没有目标 id、修订号、阶段码、命题状态码、证据 id、缺口 code。
+ * 判断用短名(模型起的,没起就取主张开头),结果用「支持 / 推翻 / 不确定」,
+ * 等级用「自己推了一遍 … 人放行」。模型读到什么就会照着说什么。
  */
 function cardLines(state, derived, options, view) {
 	const goal = isPlainObject(state?.goal) ? state.goal : null
@@ -162,134 +231,98 @@ function cardLines(state, derived, options, view) {
 	const hostHealth = Array.isArray(state?.hostHealth) ? state.hostHealth : []
 	const graph = graphProjection(state)
 	const entityNodes = graph.nodes.filter((node) => node.layer === 'entity')
+	const promotedIds = new Set(facts.map((fact) => fact?.hypothesis).filter((id) => typeof id === 'string'))
+	const byId = new Map(hypotheses.map((hypothesis) => [hypothesis.id, hypothesis]))
+	const nameOf = (id) => (byId.has(id) ? `「${handleOf(byId.get(id))}」` : '一条已不在账上的判断')
 	const lines = []
 	const push = (value, tier = 0) => lines.push({ text: value, tier })
-	push('【运行态卡 · Harness-owned state】')
-	/**
-	 * **卡里不写时刻**。分钟级的时间戳对决策没有信息量,却让"同一个状态的卡"每过一分钟就变一次
-	 * ——按内容去重的那条纪律因此永远失效,整卡重发。真需要精确时间,`bash date` 是工具的活。
-	 * 要看"什么时候发生",账本里有事件时间。
-	 */
-	push(`- 正在解决:${view.headline.now}`)
-	push(`- 怎样算完成:${view.headline.done}`)
-	push(`- 我做到哪了:${view.headline.where}`)
-	if (goal === null) push('- 当前目标:未立(Frame 往原生 goal 上挂一份「怎样算回答了」的判据)')
+	push('【现在的状态】')
+	push(`- 在回答:${view.headline.now}`)
+	if (goal === null) push('- 怎样算答完:还没定(用 Frame 写下判据与判断)')
 	else {
-		// claim 可以很长(真跑里上千字):卡上给压缩版,一句话在「正在解决」那行,全文在目标文档里。
-		push(`- 当前目标(${goal.id} · rev${goal.revision} · ${goal.status}):${clamp(String(goal.claim ?? ''), 160)}${String(goal.claim ?? '').length > 160 ? `…(全文 ${String(goal.claim).length} 字在 clear/goals/${goal.id}.md)` : ''}`)
 		/**
-		 * **判据正文只出现一次,在顶部「怎样算完成」那一行**;这里只交代
-		 * "改过没有、谁裁的、全文在哪"。
-		 *
-		 * 为什么要这么抠:一段千余字的判据在几百步里反复重发,换来的只是"读得慢 + 前缀缓存断"。
-		 * 全文的家是 `clear/goals/{goalId}.md`(内核在每次目标变更后幂等落盘),
-		 * 要逐字核对的场合(评估者、人复核、模型自己重读)去读它;
-		 * **修订后的第一张卡**仍会补全文一次(见内核 pre-step)——那时模型必须逐字看到新尺子。
+		 * **判据逐条**,每行 80 字封顶、最多 6 条;全文的家在目标文档里。
+		 * 判据正文只在这里出现一次:它是尺子,不是叙述。
 		 */
-		const criteriaLength = String(goal.done_criteria ?? '').length
 		const criteriaLines = Array.isArray(view.goal.criteriaLines) ? view.goal.criteriaLines : []
 		const criteriaTotal = typeof view.goal.criteriaTotal === 'number' ? view.goal.criteriaTotal : criteriaLines.length
 		const criteriaDoc = view.goal.docPath ?? `clear/goals/${goal.id}.md`
-		const revisionNote = view.goal.criteriaChanged
-			? `第 ${view.goal.criteriaHistory.length} 次修订 · 独立裁决 ${view.goal.criteriaHistory[view.goal.criteriaHistory.length - 1]?.audit ?? '—'} · `
-			: '立约时那一份 · '
 		if (criteriaLines.length > 0) {
-			/**
-			 * **逐条一行**。判据是清点清单:「第 3 条没做到」只有逐条列出来才看得见。
-			 * 但逐条不等于整段重发——每行 80 字封顶、最多 6 条,超出写清还有几条与全文在哪。
-			 * 于是「判据多长」不再决定卡多大,而欠账仍然看得见。
-			 *
-			 * 指针写进**这一行**(tier 0):显存紧张时被丢的是细节行,不是「全文在哪」。
-			 */
-			push(`- 判据(${criteriaTotal} 条,逐条;全文在 ${criteriaDoc}):`)
+			push(`- 怎样算答完(${criteriaTotal} 条):`)
 			const shown = criteriaLines.slice(0, CRITERIA_ROWS_MAX)
-			/**
-			 * 逐条那几行与旧的那句压缩判据**同一档**(tier 0):尺子不许被挤掉。
-			 * 这条不是新加的优待——原来那一行判据就是 tier 0,这里只是把它拆成多行。
-			 */
 			for (let index = 0; index < shown.length; index += 1) push(`  ${index + 1}. ${clamp(shown[index], CRITERIA_LINE_LIMIT)}`)
-			if (criteriaTotal > shown.length) push(`  · (还有 ${criteriaTotal - shown.length} 条,全文在 ${criteriaDoc})`, 1)
-			push(`  · 判据留痕:${revisionNote}全文 ${criteriaLength} 字在 ${criteriaDoc}`, 1)
-		} else if (view.goal.criteriaChanged) {
-			const last = view.goal.criteriaHistory[view.goal.criteriaHistory.length - 1]
-			push(`- 判据:第 ${view.goal.criteriaHistory.length} 次修订 · 独立裁决 ${last?.audit ?? '—'} · 全文 ${criteriaLength} 字在 clear/goals/${goal.id}.md`)
-		} else if (criteriaLength > 0) {
-			push(`- 判据:立约时那一份 · 全文 ${criteriaLength} 字在 clear/goals/${goal.id}.md`)
-		} else push(`- 判据:${GLOSSARY.done_criteria.plain}`)
-		const progress = derived?.progress === null || derived?.progress === undefined ? '无法计算' : `${Math.round(derived.progress * 100)}%`
-		push(`- 阶段(派生):${derived?.phase ?? '—'} · 完成度(派生):${progress}`)
+			if (criteriaTotal > shown.length) push(`  · 还有 ${criteriaTotal - shown.length} 条,全文在 ${criteriaDoc}`, 1)
+		} else {
+			const full = String(goal.done_criteria ?? '')
+			push(`- 怎样算答完:${clamp(full, 140) || GLOSSARY.done_criteria.plain}${oneLine(full).length > 140 ? `(全文在 ${criteriaDoc})` : ''}`)
+		}
+		if (view.goal.criteriaChanged) push(`  · 判据改过 ${view.goal.criteriaHistory.length} 次(每次都有独立裁决),全文在 ${criteriaDoc}`, 1)
+		const steps = plan === null ? null : plan.steps.filter((step) => step.status !== 'void')
+		const stepNote = steps === null ? '' : ` · 计划做到第 ${steps.filter((step) => step.status === 'advanced').length} / ${steps.length} 步`
+		push(`- 进度:${phasePlain(derived?.phase)}${stepNote}`)
 	}
 	if (hostHealth.length > 0) {
 		const last = hostHealth[hostHealth.length - 1]
-		push(`- 宿主读面降级 ${hostHealth.length} 次(最近:${last?.scope ?? '未知'} · ${clamp(last?.detail, 100)})——${GLOSSARY[String(last?.scope)]?.plain ?? GLOSSARY.sessions.plain}`)
+		push(`- 读不到宿主 ${hostHealth.length} 次(最近:${clamp(last?.detail, 100)})——${GLOSSARY[String(last?.scope)]?.plain ?? GLOSSARY.sessions.plain}`)
 	}
 	if (hypotheses.length > 0) {
-		push('- 假设状态(由证据算出):')
-		for (const hypothesis of hypotheses.slice(0, 10)) {
-			/**
-			 * 三样全零 = **没人碰过它**,与「判过但无法判定」是两回事:
-			 * 前者要如实说「未触及」,后者本来就有「无法判定 n」这个读数。
-			 */
-			const untouched = (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0
-			const readings = untouched ? '(未触及)' : `(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive})`
-			push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}`)
+		push('- 判断:')
+		const shown = hypotheses.slice(0, 10)
+		for (const group of TRUST) {
+			const rows = shown.filter((hypothesis) => trustOf(hypothesis, promotedIds.has(hypothesis.id)) === group.key)
+			if (rows.length === 0) continue
+			push(`  ${group.label}:`)
+			for (const hypothesis of rows) {
+				const terminal = group.key === 'refuted' || group.key === 'replaced'
+				push(`    · ${typeof hypothesis.name === 'string' && hypothesis.name.trim() !== '' ? `「${hypothesis.name.trim()}」${clamp(hypothesis.claim, 120)}` : `「${clamp(hypothesis.claim, 120)}」`}${terminal ? '' : ` — 算错的条件:${clamp(hypothesis.refute_when, 100)}`} · ${readingOf(hypothesis)}`, terminal ? 1 : 0)
+			}
 		}
-		if (hypotheses.length > 10) push(`  · (还有 ${hypotheses.length - 10} 条命题未展开:面板「命题」里有全部)`, 2)
+		if (hypotheses.length > 10) push(`  · 还有 ${hypotheses.length - 10} 条判断没展开(面板「本体」里有全部)`, 2)
 	}
-	if (knowledge.mode === 'knowledge') {
-		push(`- 知识模式:${knowledge.why}`)
-		const preflight = view.deliver.preflight
-		if (preflight !== null && (preflight.terms.length > 0 || preflight.predicates.length > 0)) {
-			const more = (count) => (count > 0 ? `(还有 ${count} 个未列出)` : '')
-			push(
-				`  · 相关已知(词面命中,可直接引用):概念 ${preflight.terms.map((term) => `${term.id}${term.label === term.id ? '' : `(${term.label})`}`).join('、') || '无'}${more(preflight.termsTruncated)};谓词 ${preflight.predicates.map((predicate) => `${predicate.id}${predicate.label === predicate.id ? '' : `(${predicate.label})`}`).join('、') || '无'}${more(preflight.predicatesTruncated)}`,
-				1,
-			)
-			if (preflight.facts.length > 0) push(`  · 可复用事实 ${preflight.facts.length} 条:${preflight.facts.map((fact) => `${fact.id}(${fact.level ?? '?'})`).join('、')}${preflight.factsTruncated > 0 ? `(还有 ${preflight.factsTruncated} 条未列出)` : ''}`, 1)
-		} else {
-			push('  · 相关已知:当前主张文本没有命中任何已有概念 / 谓词——要写断言就先立词(带依据),别把查不到当成不存在', 1)
-		}
-		if (gaps.length === 0) {
-			push('  · 结构完整:语言、断言的命题、带断言的已升格事实、证据覆盖、实体图、跳级理由、词条引用这七项今天都不欠')
-		} else {
-			const total = gaps.reduce((sum, gap) => sum + (Number(gap.count) || 0), 0)
-			push(`  · 缺口 ${total} 条(${gaps.map((gap) => `${gap.code} ${gap.count}`).join(' · ')}):`)
-			for (const gap of gaps) push(`    - ${gap.code}:${gap.detail} → 下一步:${gap.nextAction}`)
-		}
-	}
-	if (plan === null) push('- 当前计划:无活动计划', 1)
-	else {
-		push(`- 当前计划(${plan.id}${plan.goal === null || plan.goal === undefined ? '' : ` · 目标 ${plan.goal} 的一个阶段`})步骤:`, 1)
+	if (plan === null) {
+		if (goal !== null && String(goal.status) === 'open') push('- 计划:还没有(用 CreatePlan 把检验拆成步骤)', 1)
+	} else {
+		push('- 计划:', 1)
 		for (const step of plan.steps.slice(0, 12)) {
-			const tests = step.tests === null || step.tests === undefined ? '' : ` 【验 ${(step.tests.hypotheses ?? [step.tests.hypothesis]).join('、')} · ${step.tests.level}】`
-			push(`  ${step.ordinal}. [${step.status}] ${step.do}${tests} → 物证:${(step.artifacts ?? []).join(', ') || '(未声明)'}`, 2)
+			const tested = Array.isArray(step.tests?.hypotheses) ? step.tests.hypotheses : typeof step.tests?.hypothesis === 'string' ? [step.tests.hypothesis] : []
+			const tests = tested.length === 0 ? '' : ` · 检验 ${tested.map(nameOf).join('、')}(${LEVEL_WORD[step.tests.level] ?? step.tests.level ?? '未定'})`
+			push(`  第 ${step.ordinal} 步(${step.id})${clamp(step.do, 60)} · ${STEP_WORD[step.status] ?? step.status}${tests}`, 2)
 		}
-		if (plan.steps.length > 12) push(`  · (还有 ${plan.steps.length - 12} 步未展开:面板「计划」里有全部)`, 2)
+		if (plan.steps.length > 12) push(`  · 还有 ${plan.steps.length - 12} 步没展开(右栏「世界树」里有全部)`, 2)
 		const first = plan.steps.find((step) => step.status === 'open')
-		if (first !== undefined) push(`- 下一个可交付步:${first.id}(交付只能落在第一个未落定步)`)
-		if (plan.blocked !== undefined && plan.blocked !== null) push(`- 计划被拦:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次未过闸,已问人怎么办;没人答就停下等人)`)
+		if (first !== undefined) push(`- 下一步:交付第 ${first.ordinal} 步(${first.id})——只能交付第一个没做完的步`)
+		else if (goal !== null && String(goal.status) === 'open') push('- 下一步:计划的步都做完了,ClosePlan 收尾,然后 Conclude 结案或开下一阶段')
+		if (plan.blocked !== undefined && plan.blocked !== null) push(`- 计划停下等人:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次没过,已经问人怎么办;没人答就等着)`)
 	}
 	if (evidence.length > 0) {
 		const last = evidence[evidence.length - 1]
-		push(`- 最近一条证据:${last.id} ${last.verdict}(${last.evaluator} · ${last.level})`, 1)
+		const who = last.evaluator === 'independent' ? '独立核验' : LEVEL_WORD[last.level] ?? '自己判的'
+		push(`- 最近一次结果:${last.hypothesis === null || last.hypothesis === undefined ? '目标判据' : nameOf(last.hypothesis)}${VERDICT_WORD[last.verdict] ?? last.verdict}(${who})`, 1)
 	}
-	if (facts.length > 0) push(`- 已升格事实:${facts.length} 条`, 1)
+	if (facts.length > 0) push(`- 已写进长期知识:${facts.length} 条`, 1)
 	if (lexicon.terms.length > 0 || lexicon.predicates.length > 0) {
-		const typed = facts.filter((fact) => Array.isArray(fact.assertions) && fact.assertions.length > 0).length
-		push(`- 领域词汇:${lexicon.terms.length} 个概念 · ${lexicon.predicates.length} 个谓词;已升格事实里 ${typed}/${facts.length} 条带类型化断言`, 1)
-		if (issues.some((issue) => issue.severity === 'warning')) push(`  · 词汇健康度有 ${issues.filter((issue) => issue.severity === 'warning').length} 条待看(悬空引用 / 成环;在面板「本体」里)`, 1)
-	}
-	if (entityNodes.length > 0) {
-		const assertionEdges = graph.edges.filter((edge) => edge.kind === 'assertion')
-		push(`- 实体图:${view.entities.length} 个实例节点(已登记 ${view.entityCounts.registered} · 已升格 ${view.entityCounts.promoted} · 实体断言 ${view.entityCounts.asserted}) · ${assertionEdges.length} 条实体边(登记只产节点,Assert 才产边)`, 1)
+		push(`- 词汇:${lexicon.terms.length} 个概念 · ${lexicon.predicates.length} 种关系${entityNodes.length > 0 ? ` · 实体图上 ${entityNodes.length} 个实例` : ''}`, 1)
+		if (issues.some((issue) => issue.severity === 'warning')) push(`  · 词汇里有 ${issues.filter((issue) => issue.severity === 'warning').length} 处要看(引用了不存在的词,或绕成了环)`, 1)
+	} else if (entityNodes.length > 0) push(`- 实体图上 ${entityNodes.length} 个实例`, 1)
+	if (knowledge.mode === 'knowledge') {
+		const preflight = view.deliver.preflight
+		if (preflight !== null && (preflight.terms.length > 0 || preflight.predicates.length > 0)) {
+			const more = (count) => (count > 0 ? `(还有 ${count} 个)` : '')
+			const named = (entry) => (entry.label === entry.id ? entry.id : `${entry.label}(${entry.id})`)
+			push(`- 已有的词,可直接用:概念 ${preflight.terms.map(named).join('、') || '无'}${more(preflight.termsTruncated)};关系 ${preflight.predicates.map(named).join('、') || '无'}${more(preflight.predicatesTruncated)}`, 1)
+			if (preflight.facts.length > 0) push(`  · 能复用的已知 ${preflight.facts.length} 条${preflight.factsTruncated > 0 ? `(还有 ${preflight.factsTruncated} 条)` : ''}`, 1)
+		} else push('- 已有的词里没有命中这些判断的:要写「主体 · 关系 · 对象」就先立词(Define,带依据);查不到不等于不存在', 1)
+		if (gaps.length === 0) push('- 结构完整:判断都写成了断言、都检验过、主体都在实体图上')
+		/** 缺口只给模型(人看不到):说清欠什么、下一步做什么,不写 code。 */
+		for (const gap of gaps) push(`- 还欠的:${gap.detail} → ${gap.nextAction}`)
 	}
 	for (const conflict of conflicts.slice(0, 3)) {
-		const sides = conflict.sides.map((side) => `${side.fact ?? '?'}(${side.value})`).join(' 对 ')
-		push(`- **冲突(${conflict.predicate} · ${conflict.subject})**:${sides}——两条都还没被撤回。它是读数不是裁决:要么用证据推翻一侧,要么由人撤回一侧;系统不替你选。`)
+		const sides = conflict.sides.map((side) => `「${side.value}」`).join(' 对 ')
+		push(`- **矛盾**(${conflict.subject} 的 ${conflict.predicate}):${sides}。系统不替你选:用证据推翻一边,或请人定。`)
 	}
-	if (conflicts.length > 3) push(`- (还有 ${conflicts.length - 3} 对冲突未展开:面板「本体」里有全部)`, 2)
-	if (goal !== null && Array.isArray(goal.unjudged) && goal.unjudged.length > 0) push(`- 结案留痕:有 ${goal.unjudged.length} 条假设没有被任何证据触及(${goal.unjudged.join(', ')})`)
-	push('- 提醒:进度、阶段、假设状态都是系统算出来的;你不能声明它们,只能通过交付与裁决推进。')
+	if (conflicts.length > 3) push(`- 还有 ${conflicts.length - 3} 处矛盾没展开(面板「本体」里有全部)`, 2)
+	if (goal !== null && Array.isArray(goal.unjudged) && goal.unjudged.length > 0) push(`- 结案时没检验过的判断:${goal.unjudged.map(nameOf).join('、')}`)
+	push('- 进度和可信度由系统按证据算,你只能通过交付推进。对人说起时用短名和这里的词,不写编号。')
 	return lines
 }
 
@@ -345,7 +378,7 @@ export function knowledgeView(state, derived, options = {}) {
 			where:
 				goal === null
 					? '还没开始:立约之后才有进度可算'
-					: `${phasePlain(phase)} · 完成度 ${progress === null ? '无法计算' : `${Math.round(progress * 100)}%`}${live.length > 0 ? ` · ${live.length} 条在验命题` : ''}${gaps.length > 0 ? ` · ${gaps.length} 条缺口` : ''}`,
+					: `${phasePlain(phase)} · 完成度 ${progress === null ? '无法计算' : `${Math.round(progress * 100)}%`}${live.length > 0 ? ` · ${live.length} 条判断验证中` : ''}${gaps.length > 0 ? ` · ${gaps.length} 条缺口` : ''}`,
 		},
 		goal:
 			goal === null

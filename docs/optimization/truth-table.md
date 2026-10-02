@@ -9,9 +9,9 @@ This table answers one question: **what the current code actually guarantees**. 
 ## Counts
 
 - Mechanisms: **74**
-- By status: Implemented 52 · Design only 1 · Removed 21
-- By strength: Hard boundary 43 · Advisory 7 · Native 3 · Deprecated 21
-- By destination: stays design-only 1 · deleted and accounted 21
+- By status: Implemented 51 · Design only 1 · Removed 22
+- By strength: Hard boundary 42 · Advisory 7 · Native 3 · Deprecated 22
+- By destination: stays design-only 1 · deleted and accounted 22
 - Actually blocking execution: **21**
 - Carrying a known mismatch between docs/comments and code: **1**
 
@@ -96,12 +96,12 @@ This section is exported from code, not written by hand:
 | `ledger-exploration-snapshots` | Removed: Workspace snapshot at the turn boundary | Harness | Removed | Deprecated | Authoritative | system | no | — |
 | `durable-dispatch-facts` | Dispatch facts land independently, before the first await | Harness | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts` |
 | `goal-complete-guard` | Guard: the native goal completes only through Conclude | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js update_goal` |
-| `human-gate-actions` | Human-gate action whitelist | Host | Implemented | Hard boundary | Authoritative | human | no | `ui/lib/index.js 人门通道` |
+| `human-gate-actions` | Removed: human-gate action whitelist | Host | Removed | Deprecated | None | human | no | — |
 | `context-pruning` | Context pruning and compaction, native to the host | Host | Implemented | Native | None | system | no | `preset/agent.cordis.yml compaction` |
 | `model-routing` | Model routing and switching, host-native and not owned by ClearAI | Host | Implemented | Native | None | host | no | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `host-read-face-degradation` | Host read faces degrade to empty state instead of throwing | Host | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/index.js sessionsOf` |
 | `commands-menu` | Human `/` command menu | UX | Implemented | Native | None | human | no | `preset/agent.cordis.yml command-compact（唯一的命令行）` |
-| `ontology-panel-graph` | Ontology panel: rendering plus entry editing over the human gate (no canvas drag-to-connect) | UX | Implemented | Advisory | None | human | no | `ui/lib/index.js ONTOLOGY_GATE_ACTIONS` |
+| `ontology-panel-graph` | Ontology panel: graph-first, read-only | UX | Implemented | Advisory | None | human | no | `ui/lib/client.js GraphBand GraphInspector Atlas conclusionsOf` |
 
 ## Detail
 
@@ -366,18 +366,17 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: blockedThreshold=2（预设显式值）
 - **Prompt**: clearai/loop · **Docs**: docs/loop-philosophy.zh-CN.md
 
-### `human-gate-actions` · Human-gate action whitelist
+### `human-gate-actions` · Removed: human-gate action whitelist
 
-- **Layer**: Host · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: human
-- **Trigger**: 面板提交人门动词
-- **Input**: register_term / register_predicate / revise_term / deprecate_entry
-- **Output**: user 来源消息折进投影,写 by:'user'
+- **Layer**: Host · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: human
+- **Trigger**: —
 - **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 面板上的人门动词只剩本体四个,两侧各一份(宿主半与内核),靠等价性用例钉住。其余要人拍板的事(L4 放行、计划卡住、事实被推翻)由开门的那次调用当场问人,不再经过面板与收件箱;旧日志里的撤回 / 维持仍折得出来。
-- **Code**: ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS
-- **Tests**: test/host.test.mjs · **Config**: —
-- **Prompt**: clearai/loop · **Docs**: docs/design-principles.zh-CN.md
+- **Native alternative**: 原生 ask_user_question(开门的那次调用当场问人)
+- **Rationale**: 面板写入口 /api/clearai/gate 第六阶段整条拿掉:本体编辑抽屉删了,要改词汇就在对话里说,模型用 Define / Deprecate 落同一本账;其余要人拍板的事第三阶段起由开门的那次调用当场问人。旧日志里人按过的动作仍由 fold.js 的 parseHumanGate 照旧折出来。
+- **Destination**: deleted and accounted
+- **Code**: —
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `single-loop` · Single-loop persona, no free multi-agent orchestration
 
@@ -830,7 +829,7 @@ This section is exported from code, not written by hand:
 - **Blocks execution**: yes
 - **Native alternative**: none
 - **Rationale**: 这是把「工作方式」与「确认知识」解耦的那条**负向保证**:干活不设限,但干活的路径结构上产不出一条权威变更——权威账本只能由主线过观测准入与唯一完成动词写入。它是「探索可以自由、事实必须严格」这句话里**承重**的那一半,所以它有一行。
-- **Code**: test/authority-boundary.test.mjs; ui/lib/index.js HUMAN_GATE_ACTIONS
+- **Code**: test/authority-boundary.test.mjs; ui/lib/fold.js LEGACY_GATE_ACTIONS
 - **Tests**: test/authority-boundary.test.mjs（14 项） · **Config**: —
 - **Prompt**: — · **Docs**: docs/loop-philosophy.zh-CN.md
 
@@ -912,18 +911,18 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `ontology-panel-graph` · Ontology panel: rendering plus entry editing over the human gate (no canvas drag-to-connect)
+### `ontology-panel-graph` · Ontology panel: graph-first, read-only
 
 - **Layer**: UX · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: human
-- **Trigger**: 人在面板的词条行 / 抽屉里提交人门动作（登记 / 修订 / 废止）
-- **Input**: POST /api/clearai/gate 的 {action, entry:{id,label,gloss,basis,parent,domain,range,reason,…}}
-- **Output**: 一条署名 human 的人门消息 → 折法落成 ontology/term_added / ontology/predicate_added / ontology/term_revised / ontology/term_deprecated / ontology/predicate_deprecated（by:'user'），图与货架随投影刷新
+- **Trigger**: 人打开中栏「本体」
+- **Input**: 会话投影 clearai(view)与 GET /api/clearai/inspector
+- **Output**: 本体图 / 实体图、按可信度分组的结论(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换)、点开一条的进度 → 可信度怎么变的 → 补充、节点小卡
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 编辑面是**具名动词的图形前端**，不是第二套写入路径：人门通道复用与模型工具同一份纯函数判据（表外的动词与取值都进不了日志），落账一律 by:'user'。**编辑 = 经人门通道的词条增删改**（登记概念 / 登记谓词两个表单抽屉，条目行上的修订 / 废止）；画布上只有点选、缩放、平移与筛选，**不做拖拽连线**——拖动表达语义太松，而抽屉表单能强制要 domain / range / 值形态 / 依据，且拖动与缩放不产生任何账本事件。
-- **Code**: ui/lib/index.js ONTOLOGY_GATE_ACTIONS; ui/lib/client.js submitOnto register_term register_predicate deprecate_entry; ui/lib/fold.js applyLexiconMutation ontology/term_added
-- **Tests**: test/host.test.mjs（人门通道:登记 / 修订 / 废止的取值校验与落账、白名单逐字等价） · **Config**: —
-- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
+- **Rationale**: 第六阶段:面板只读,图是主角。词条增删改的抽屉与 /api/clearai/gate 一起删了——它是模型工具之外的第二个写入口,而人要改词汇在对话里说一句就够。界面用词与运行态卡同一套,内部编号不上屏。
+- **Code**: ui/lib/client.js GraphBand GraphInspector Atlas conclusionsOf; ui/lib/fold.js trustHistory inspectGraphSelection
+- **Tests**: test/client.test.mjs(本体格:图、结论分组、三段展开、节点小卡) · **Config**: —
+- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `entity-registration` · Entity registration (instances as a first-class write path)
 
