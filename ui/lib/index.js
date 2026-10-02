@@ -364,7 +364,7 @@ export function apply(ctx) {
 					 * 一组断言用到的词条**此刻的含义指纹**(写进事实文件):之后定义改了,事实就知道要复核。
 					 * 带 `mutations` 时按这一步之后的词汇算(工作区刚同步进来的定义也算数)。
 					 */
-					definitions: (sessionId, assertions, mutations = []) => fingerprintDefinitions(applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : []).lexicon, assertions),
+					definitions: (sessionId, assertions, mutations = [], said = '') => fingerprintDefinitions(applyMutations(stateOf(sessionId), Array.isArray(mutations) ? mutations : []).lexicon, assertions, { text: said }),
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
 					/**

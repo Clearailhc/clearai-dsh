@@ -2541,10 +2541,15 @@ export function apply(ctx, config = {}) {
 				const evidence = evidenceFor(state, hypothesis.id)
 					.filter((item) => item.verdict === 'support')
 					.map((item) => item.id)
-				/** 升格这一刻断言用到的词条的含义指纹:之后谁改了定义,这条事实就知道要复核。 */
+				/**
+				 * 升格这一刻它用到的词条的含义指纹:之后谁改了定义,这条事实就知道要复核。
+				 * 「用到」= 断言引用的,加上主张与边界原文里按词面提到的(模型很少写断言,见 fingerprintDefinitions)。
+				 */
 				let definitions = null
 				try {
-					definitions = assertions === null ? null : (hostService.domain?.definitions?.(sessionId, assertions, mutations) ?? null)
+					const said = `${hypothesis.claim ?? ''}\n${hypothesis.refute_when ?? ''}`
+					const found = hostService.domain?.definitions?.(sessionId, assertions ?? [], mutations, said) ?? null
+					definitions = found !== null && Object.keys(found).length > 0 ? found : null
 				} catch {
 					definitions = null
 				}

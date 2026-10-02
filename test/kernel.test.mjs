@@ -121,7 +121,7 @@ function makeHost() {
 				return describeDomainShelf(state, next.factRows, next.hypotheses)
 			},
 			format: (id, assertion) => formatAssertion(service.state(id).lexicon, assertion),
-			definitions: (id, assertions, mutations = []) => fingerprintDefinitions(applyMutations(service.state(id), Array.isArray(mutations) ? mutations : []).lexicon, assertions),
+			definitions: (id, assertions, mutations = [], said = '') => fingerprintDefinitions(applyMutations(service.state(id), Array.isArray(mutations) ? mutations : []).lexicon, assertions, { text: said }),
 		},
 	}
 	// 宿主的 `goals` 服务桩:目标层挂在它上面。它记下每一次调用,测试据此断言
@@ -967,6 +967,37 @@ console.log('\n【完成度:终局优先,升格算数(2026-09-11 长测抓到的
 	check('结案成功(独立评估者裁决)', closed.ok === true, String(closed.code))
 	check('评估者依据里的判断 id 换成短名(工具结果不出现内部编号)', String(closed.message).includes('「甲成立」经 g1 步检验') && !String(closed.message).includes(hypothesisId), String(closed.message).slice(0, 200))
 	check('终局优先:目标 achieved ⇒ 完成度 100%(不再回落到假设口径的 0%)', host.service.view(S).goal?.progress === 1, String(host.service.view(S).goal?.progress))
+}
+
+console.log('\n【事实按词面挂上本体:没写断言的判断,升格时也记下它提到的概念的定义指纹】')
+{
+	/**
+	 * 两场真跑(JEPA / Navier–Stokes)里 18 条判断一条都没写结构化断言,事实与本体成了两张互不引用的表,
+	 * 「定义已变」从来触发不了。修法:升格时按主张与边界原文的词面把概念与关系挂上。
+	 */
+	const host = makeHost()
+	const ws = tempDir('clearai-mention-')
+	execFileSync('git', ['init', '-q'], { cwd: ws })
+	execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: ws })
+	host.cwd = ws
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-mention'
+	writeOntology(ws, 'concepts/line_yield', { id: 'line_yield', label: '良率', gloss: '合格件占全部产出的比例', basis: '质检规程 Q-1' })
+	writeOntology(ws, 'concepts/kiln', { id: 'kiln', label: '窑炉', gloss: '烧结设备', basis: '设备台账' })
+	await callOn(host, S, 'Frame', { claim: '查清良率', done_criteria: 'lab/y.txt 有读数', hypotheses: [{ claim: '换配方后良率高于 90%', refute_when: '良率不高于 90%' }] })
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'y1', do: '读数', artifacts: ['lab/y.txt'], done_criteria: 'lab/y.txt 存在', tests: { hypothesis: host.service.state(S).hypotheses[0].id, level: 'L3' } }] })
+	writeText(join(ws, 'lab', 'y.txt'), '良率 93%\n')
+	host.nextVerdict = { verdict: 'support', basis: '读数 93%', reading: '93', validity: 'usable' }
+	await callOn(host, S, 'AdvancePlan', { step_id: 'y1', observations: [{ ref: 'lab/y.txt' }] })
+	await callOn(host, S, 'ClosePlan', { summary: '做完了' })
+	const closed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+	const fact = (host.service.state(S).facts ?? [])[0]
+	check('没写断言的判断照样升格', closed.ok === true && fact !== undefined, String(closed.code))
+	check('事实记下了原文提到的概念(良率),没提到的(窑炉)不挂', fact?.definitions !== null && typeof fact?.definitions?.line_yield === 'string' && !('kiln' in (fact?.definitions ?? {})), JSON.stringify(fact?.definitions))
+	writeOntology(ws, 'concepts/line_yield', { id: 'line_yield', label: '良率', gloss: '一次通过检验的件数占投入件数的比例', basis: '质检规程 Q-2' })
+	await preStep(host, S, 9)
+	const changed = host.service.derive(S).factRows.find((row) => row.id === fact?.id)
+	check('改了良率的释义 ⇒ 这条事实标「定义已变」', Array.isArray(changed?.definitionsChanged) && changed.definitionsChanged.includes('line_yield'), JSON.stringify(changed?.definitionsChanged))
 }
 
 console.log('\n【实体门:将要升格的结论,主体必须在图上(结案唯一的结构关口;机制缺省关,preset 里开)】')

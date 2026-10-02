@@ -1059,7 +1059,7 @@ export function definitionFingerprint(entry) {
 }
 
 /** 一组断言用到的词条(谓词、主体类型、宾语类型),各自此刻的含义指纹。 */
-export function fingerprintDefinitions(lexicon, assertions) {
+export function fingerprintDefinitions(lexicon, assertions, options = {}) {
 	const normalized = normalizeLexicon(lexicon)
 	const out = {}
 	const take = (id) => {
@@ -1072,6 +1072,20 @@ export function fingerprintDefinitions(lexicon, assertions) {
 		take(assertion?.predicate)
 		take(assertion?.subject?.type)
 		take(assertion?.object?.type)
+	}
+	/**
+	 * **按词面挂上**(`options.text`):真跑里模型几乎不给判断写结构化断言,
+	 * 只靠断言的话事实与本体是两张互不引用的表,「定义已变」永远触发不了。
+	 * 所以升格时也按主张原文里出现的词(id / 名字 / 别名,去空白、不分大小写、至少两个字)
+	 * 把概念与关系挂上——与知识预检同一条词面规则,有界、可复核。
+	 */
+	const said = text(options?.text).replace(/\s+/g, '').toLowerCase()
+	if (said !== '') {
+		for (const entry of [...(normalized.terms ?? []), ...(normalized.predicates ?? [])]) {
+			if (entry?.status === 'deprecated') continue
+			const names = [entry?.id, entry?.label, ...(Array.isArray(entry?.aliases) ? entry.aliases : [])].map((name) => text(name).replace(/\s+/g, '').toLowerCase()).filter((name) => name.length >= 2)
+			if (names.some((name) => said.includes(name))) take(entry.id)
+		}
 	}
 	return out
 }

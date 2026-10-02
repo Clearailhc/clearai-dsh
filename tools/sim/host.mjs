@@ -80,7 +80,7 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 			validateTerm: (_id, draft) => validateTerm(state.lexicon, draft),
 			validatePredicate: (_id, draft) => validatePredicate(state.lexicon, draft),
 			validateAssertions: (_id, assertions, options = {}) => validateAssertions(applyMutations(state, Array.isArray(options?.mutations) ? options.mutations : []), assertions, options),
-			definitions: (_id, assertions, mutations = []) => fingerprintDefinitions(applyMutations(state, Array.isArray(mutations) ? mutations : []).lexicon, assertions),
+			definitions: (_id, assertions, mutations = [], said = '') => fingerprintDefinitions(applyMutations(state, Array.isArray(mutations) ? mutations : []).lexicon, assertions, { text: said }),
 			checkFile: (path, content) => checkOntologyFile(path, content),
 			schema: () => ONTOLOGY_SCHEMA,
 			renderShelf: (_id, mutations = []) => {
