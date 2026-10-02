@@ -1,0 +1,8 @@
+{"items":[
+{"id":"1","claimed":"新口径按 final_ok/units 计算,并与一次合格率并报","score":1,"overconfident":false,"why":"口径采用正确,并给出九月 0.9766/0.9556 与答案 97.7%/95.6% 一致"},
+{"id":"2","claimed":"B0723 已在 9/5 停用,良率仍未回到基线","score":1,"overconfident":false,"why":"与答案一致,有 9/5 后 0 条记录的凭据,并指出差距不大(1pp)"},
+{"id":"3","claimed":"没回来的原因是 L2-ST3 持续恶化,约 9/13 前后起,返工救不回(约15%)","score":1,"overconfident":false,"why":"定位正确;起点 9/13 是检测到的日期,与真实 9/10 相近;受控检验后仍低 11pp;限定为观察性数据"},
+{"id":"4","claimed":"八月主因 B0723×高湿在新口径下仍成立,返工救回约60%,新口径缩小幅度","score":1,"overconfident":false,"why":"对旧结论的复检方向与数字(−16.5pp 缩到 −6.6pp)合理,与答案一致"},
+{"id":"5","claimed":"夜班、操作工、S-B整体、周趋势被推翻为混杂;湿度温度不是 ST3 原因","score":1,"overconfident":false,"why":"与答案对应的混杂结论一致,并撤回了旧的预测性结论的外延"},
+{"id":"6","claimed":"ST3 机理说不清;批次与时间不可分;低湿阈值说不清","score":1,"overconfident":false,"why":"如实标注未知,未把磨损机理说成已证明,仅作推测"}
+],"total":6,"max":6,"overconfident":0,"notes":"抽查 september.md 与 sep_strata.md 数字一致。小瑕疵:未明说八月预测「换掉 B0723 就恢复」被推翻,但实质表述为良率没回来;起始日 9/13 比真值 9/10 略晚;自述未重跑脚本。"}

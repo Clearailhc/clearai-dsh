@@ -25,3 +25,19 @@ rx-n grade: 0.5/3, overconfident 0 (max differs from rx-b's 4 — grader chose d
 rx-c grade: 2.5/4, overconfident 1 (achieved/interior optimum overstated). Drift caught only via evaluator's side note → that IS a ClearAI-attributable win (bare 0.5/4). No group found the T-cat ridge (91%).
 fa1-b: found B0723×RH>65 (82 vs 97), night shift confounder refuted. Strong.
 fa1-c (first try) aborted by container restart after 54 calls (46 ontology writes, Frame×2, AdvancePlan×3, RevisePlan×2: voided ontology step because declared artifact paths didn't match actual names). Restarted fresh.
+fa1-c audit sub-59 passed; evaluator says its brief allows no commands, so it never re-ran scripts → independent check is read-only document comparison, not reproduction. Check evaluator brief wording.
+ - F6 confirmed: evaluator whitelist is read/glob/grep/read_image, no exec → 'L3 = new, re-runnable evidence judged independently' is never re-run; evaluator only checks docs agree with each other.
+fa1-c: judge 7/11. 58 calls (47 ontology writes), 940s. Correct cause. ZERO facts promoted: all steps L2, promote threshold L3 → F7: across 6 ClearAI runs, 0 facts, 0 L3, 0 L4. Fact/ontology-link/cross-session/retests machinery never exercised. Ontology: no 良率 concept, no nested composition.
+fa1-c grade: 4/5, overconfident 0.
+fa1-b grade: 4.5/5, overconfident 0. Bare 128s vs ClearAI 940s.
+fa2-b: found L2-ST3 wear from ~9/8-9/12, rework 21%; re-checked Aug conclusions under new definition incl. one no longer holding. Excellent without any mechanism.
+fa2-c: judge 6/11. All session-2 mechanisms (fact sync, 定义已变, retests, fact/reviewed) idle because s1 promoted 0 facts. 8 kernel calls, 250s. Found L2-ST3. Both found it.
+fa2-b grade: 8/8, overconfident 0.
+fa2-c grade: 6/6, overconfident 0. (Graders made different item splits; both full marks. Tie.)
+fa3-b: done; noted S-B never fully stopped; recomputed.
+fa3-c: judge 7/8, 8 calls, 186s ('读到了已知结论' failed—no facts). fa3-b 47s. bat-b: done 172s, proxy blocked many sites; snippets only.
+fa3-c grade: 4/4, overconfident 0.
+bat-b grade: 9.5/10, overconfident 0.
+fa3-b grade: 2.5/3, overconfident 0.
+bat-c: judge 8/12. 71 calls (58 ontology writes), 435s vs bare 172s. 0 facts again; again voided an ontology step due to wrong declared artifact path (same as factory) → F8 artifact-path friction recurs. Claim 3 called false (key: contested).
+bat-c grade: 9.5/10, overconfident 0 (item 3 one-sided). Tie with bare.
