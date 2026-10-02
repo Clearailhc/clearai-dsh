@@ -8,10 +8,10 @@
 
 ## 计数
 
-- 机制条目：**75**
-- 按状态：已实现 52 · 设计目标 1 · 已删除 22
-- 按强度：硬边界 43 · 建议 7 · 原生 3 · 废弃 22
-- 按归宿：保持设计目标 1 · 已删除并记账 22
+- 机制条目：**76**
+- 按状态：已实现 50 · 设计目标 1 · 已删除 25
+- 按强度：硬边界 41 · 建议 7 · 原生 3 · 废弃 25
+- 按归宿：保持设计目标 1 · 已删除并记账 25
 - 真正阻断执行的：**21**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
 
@@ -19,8 +19,8 @@
 
 这一节由代码导出，不是手写：
 
-- 机制：3 个（goal / plan / ontology）
-- 意图工具：10 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Define Deprecate RegisterInstance Assert）
+- 机制：2 个（goal / plan）
+- 意图工具：6 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan）
 - 配置键：13 个
 - 提示词段：定义 3 段，同一时刻在场 3 段
 
@@ -59,9 +59,10 @@
 | `assertion-validation` | 断言形态校验（落账之前） | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | 冲突派生（只暴露，不裁决） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | 本体图 / 实体图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/domain-language.js graphProjection` |
-| `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Define` |
-| `entity-registration` | 实体登记(实例是一等写入口) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js RegisterInstance` |
-| `entity-assertion` | 实体断言(登记即产边) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Assert` |
+| `ontology-files` | 领域本体写成文件(三道校验) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA` |
+| `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
+| `entity-registration` | 实体登记(实例是一等写入口) | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
+| `entity-assertion` | 实体断言(登记即产边) | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
 | `entity-gate` | 实体门(结案唯一的结构关口) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js Conclude` |
 | `level-skip-reason` | 已删除:跳级需具名理由 | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
 | `criteria-revision-gate` | 判据修订要一份独立裁决 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Frame` |
@@ -80,7 +81,7 @@
 | `native-plan-mode-disabled` | 原生 plan-mode 挂载(动手前给人看计划) | Harness | 已实现 | 硬边界 | 无 | system | 否 | `preset/agent.cordis.yml` |
 | `subagent-trimmed` | 原生工作方式已挂回(todo / 子代理 / workflow / ralph) | Harness | 已实现 | 硬边界 | 无 | system | 否 | `preset/agent.cordis.yml` |
 | `bash-deny-rules` | Bash 危险命令拒绝规则 | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js 危险命令匹配` |
-| `protected-roots` | 系统受保护目录（模型不可直写） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js protectedRoots` |
+| `protected-roots` | 系统受保护目录（模型不可直写） | Harness | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js protectedPath` |
 | `git-ledger` | 已删除:只追加 git 账本（一律旁路账本，不碰用户仓库） | Harness | 已删除 | 废弃 | 权威 | system | 否 | — |
 | `kernel-panic-recovery` | 已删除:引擎级异常的降权只读恢复 | Harness | 已删除 | 废弃 | 无 | model | 否 | — |
 | `auto-continuation` | 已删除:ClearAI 自己的续跑窗口 | Harness | 已删除 | 废弃 | 无 | system | 否 | — |
@@ -535,13 +536,13 @@
 ### `protected-roots` · 系统受保护目录（模型不可直写）
 
 - **层**：Harness · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：每次写类工具调用前
+- **触发**：每次写类工具调用前(write / edit / 带写操作的 bash)
 - **输入**：路径
-- **输出**：clear/evidence、clear/knowledge/facts、clear/goals 由系统所有 → deny
+- **输出**：写类工具(write / edit)或带写操作的 bash 碰到 clear/evidence、clear/knowledge/facts、clear/goals、clear/ontology(三支本体目录除外)→ deny;相对路径与绝对路径一样判;只读不拦。写三支本体目录里的 .json 时先在内存里得出全文,单文件校验不过 → deny
 - **阻断执行**：是
 - **原生替代**：无
 - **理由**：事实与评估卡只能由系统落盘。
-- **代码**：preset/plugins/clearai-kernel.js protectedRoots; touchesProtected
+- **代码**：preset/plugins/clearai-kernel.js protectedPath; bashTouchesProtected; ontologyWriteProblems
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/identity · **文档**：docs/design-principles.zh-CN.md
 
@@ -899,18 +900,32 @@
 - **测试**：test/domain-language.test.mjs · **配置**：—
 - **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
 
-### `ontology-verbs` · 领域词汇的具名动词与货架
+### `ontology-files` · 领域本体写成文件(三道校验)
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **触发**：模型用 write / edit / bash 写 clear/ontology/{concepts,relations,entities}/**.json;每个 pre-step;Frame 与 Conclude 按需同步
+- **输入**：概念 / 关系 / 实体文件(X.json 描述 X,子节点放在同级 X/ 目录;id = 文件名)
+- **输出**：①写入时单文件校验不过 → 拒写;②读取时从文件折出词汇、实体、实体关系与跨文件问题(有问题的节点或边不进图,卡上列出);③升格时断言涉及的本体不成立 → 这条判断不升格;卡上有本体大纲(前两层与节点数)
+- **阻断执行**：否
+- **原生替代**：原生文件工具(write / edit / bash)
+- **理由**：目录天生是嵌套,文件天生跨会话留下,模型天生会读写和挪文件。约束只放在非守不可的三处:格式不对就读不了,引用不对图就断,升格不对真假就混。层次怎么分、词怎么起,系统一概不管。
+- **代码**：ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA; preset/plugins/clearai-kernel.js ontologyWriteProblems ensureOntologySchema syncWorkspace; ui/lib/fold.js case 'workspace/synced'
+- **测试**：test/kernel.test.mjs(写入时拒、读取时折图与问题、升格时不成立就不升格、改义标复核) · **配置**：—
+- **提示词**：clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
+
+### `ontology-verbs` · 领域词汇的具名动词与货架
+
+- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：model
 - **触发**：模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate
 - **输入**：id / label / gloss / aliases / parent / domain / range / functional / basis / reason
 - **输出**：mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id——同 id 再定义只许改名字、释义、别名。第四阶段把六个写入口合并成 Define / Deprecate、删掉只读的 QueryKnowledge(知识预检已把相关已知送进运行态卡),变更事件名不变。
-- **代码**：preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
-- **测试**：test/kernel.test.mjs · **配置**：—
-- **提示词**：clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
+- **理由**：本体改成工作区里的 JSON 文件树,模型用原生文件工具直接写(clear/ontology/{concepts,relations,entities}/**.json);Define / Deprecate 与词汇货架 domain.md 一起删了:文件本身就是读面。改义从「拦」改成「查」:事实记下定义指纹,定义一改就标「需复核」。
+- **归宿**：已删除并记账
+- **代码**：—
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
 
 ### `ontology-panel-graph` · 面板「本体」:图为主的只读读面
 
@@ -927,29 +942,31 @@
 
 ### `entity-registration` · 实体登记(实例是一等写入口)
 
-- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：model
 - **触发**：模型调 RegisterInstance
 - **输入**：{id, type, label, basis, provenance:{kind,ref}}
 - **输出**：entity/registered 变更 → state.entities[]（实体图节点，带出处）
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：概念是约定（不要依据），实例是观测（必须带出处）。把实体层绑在目标级裁决上时，"本体写得好、实体图是空的"会变成最省力的完成方式。
-- **代码**：preset/plugins/clearai-kernel.js RegisterInstance; ui/lib/domain-language.js validateTerm; ui/lib/fold.js applyMutations
-- **测试**：test/kernel.test.mjs · **配置**：—
-- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
+- **理由**：实体改成 clear/ontology/entities/ 下的文件(带类型、依据与出处),RegisterInstance 删了。
+- **归宿**：已删除并记账
+- **代码**：—
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
 
 ### `entity-assertion` · 实体断言(登记即产边)
 
-- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
+- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：model
 - **触发**：模型调 Assert
 - **输入**：{subject:{id,type}, predicate, object, evidence:{kind,ref}}
 - **输出**：entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：边在观测那一刻成立，与"独立裁决后才升格"的事实边并存但可区分（promoted 带等级与边界，asserted 带出处）。
-- **代码**：preset/plugins/clearai-kernel.js Assert; ui/lib/domain-language.js graphProjection; ui/lib/fold.js applyMutations
-- **测试**：test/kernel.test.mjs · **配置**：—
-- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/domain-ontology.zh-CN.md
+- **理由**：实体之间的关系写在实体文件自己的 relations 里(每条带出处),Assert 删了;写下那一刻就进图这一点不变。
+- **归宿**：已删除并记账
+- **代码**：—
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/domain-ontology.zh-CN.md
 
 ### `entity-gate` · 实体门(结案唯一的结构关口)
 

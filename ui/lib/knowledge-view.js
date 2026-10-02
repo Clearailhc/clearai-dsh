@@ -18,7 +18,7 @@
  * 面向人的新字符串一律先落在 `GLOSSARY`(内部词 → 一句 plain + 在哪看 + 下一步做什么);
  * `client.js` 的 `LOCALE_ZH/LOCALE_EN` 与它同源登记。
  */
-import { graphProjection } from './domain-language.js'
+import { graphProjection, ontologyOutline } from './domain-language.js'
 
 /** 卡文本上限。模型每一步只读这一张卡,而卡是**每回合**重算的:它必须小到能进预算。 */
 const CARD_LIMIT = 3000
@@ -59,7 +59,7 @@ export const GLOSSARY = {
 	achieved: { plain: '目标已达成(终局)', where: '运行态卡 · 当前目标', nextAction: '没有待办:要做新事就立新目标' },
 	abandoned: { plain: '目标已如实放弃(终局)', where: '运行态卡 · 当前目标', nextAction: '没有待办:放弃也是结论,记录保留' },
 	// ── 实体图的三个来源 ──
-	registered: { plain: '已登记:某实例在某出处下被登记下来(一等写入口)', where: '本体面板 · 实体图节点', nextAction: '用 Assert 给它挂断言,图才长出边' },
+	registered: { plain: '已登记:某实例在某出处下被登记下来(一等写入口)', where: '本体面板 · 实体图节点', nextAction: '在它的实体文件里写 relations(每条带出处),图才长出边' },
 	promoted: { plain: '已升格:来自过了独立裁决的事实断言', where: '本体面板 · 实体图边', nextAction: '它已经带等级与边界;要改就去改那条事实' },
 	asserted: { plain: '实体断言:登记那一刻就成立的边,有出处但未经独立裁决', where: '本体面板 · 实体图虚线边', nextAction: '要让它进「已知」就把它升格成事实(走独立裁决)' },
 	// ── 派生读数 ──
@@ -67,9 +67,9 @@ export const GLOSSARY = {
 	refutations: { plain: '被推翻次数:收到过几条推翻证据', where: '运行态卡 · 假设状态', nextAction: '被推翻是终态:要么改主张换 id,要么如实放弃' },
 	inconclusive: { plain: '无法判定次数:判过但判不出来', where: '运行态卡 · 假设状态', nextAction: '补判据或补产物,让下一次判得出结果' },
 	// ── 缺口 code(与 deriveKnowledge 一一对应) ──
-	prose_only_claims: { plain: '命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断', where: '运行态卡 · 缺口', nextAction: '先 Define 立概念与谓词、RegisterInstance 登记主体,再用 Frame 修订把主张写成断言(主词–谓词–宾语)' },
+	prose_only_claims: { plain: '命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断', where: '运行态卡 · 缺口', nextAction: '先在 clear/ontology/ 下写概念、关系与主体的实体文件,再用 Frame 修订把主张写成断言(主词–谓词–宾语)' },
 	untouched_claims: { plain: '有命题一条证据都没碰过:没看过不等于没问题', where: '运行态卡 · 缺口 / 结案留痕', nextAction: '给它派一个带 tests 的步骤并交付:支持 / 推翻 / 无法判定都算碰过' },
-	entities_unlanded: { plain: '断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」', where: '运行态卡 · 缺口 / 本体面板 · 实体图', nextAction: '用 RegisterInstance 把这些主体连出处登记下来;确实不值得留下形态就把断言从判断上拿掉(Frame 修订)' },
+	entities_unlanded: { plain: '断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」', where: '运行态卡 · 缺口 / 本体面板 · 实体图', nextAction: '给这些主体各写一个实体文件(clear/ontology/entities/<id>.json,带类型与出处);确实不值得留下形态就把断言从判断上拿掉(Frame 修订)' },
 	// ── 判据 ──
 	done_criteria: { plain: '判据没改过:它还是立约时那一份(要原文读账本里的 done_criteria)', where: '运行态卡 · 当前目标 / 账本', nextAction: '要改判据就走修订,并带一份独立裁决的 auditKey' },
 	criteria_verdict: { plain: '判据改动要有一份独立裁决:改「怎样算完成」不能被顺手做掉', where: '账本 · goal.criteriaHistory', nextAction: '拿独立裁决的 auditKey 再改判据文本' },
@@ -299,11 +299,29 @@ function cardLines(state, derived, options, view) {
 		const who = last.evaluator === 'independent' ? '独立核验' : LEVEL_WORD[last.level] ?? '自己判的'
 		push(`- 最近一次结果:${last.hypothesis === null || last.hypothesis === undefined ? '目标判据' : nameOf(last.hypothesis)}${VERDICT_WORD[last.verdict] ?? last.verdict}(${who})`, 1)
 	}
-	if (facts.length > 0) push(`- 已写进长期知识:${facts.length} 条`, 1)
-	if (lexicon.terms.length > 0 || lexicon.predicates.length > 0) {
-		push(`- 词汇:${lexicon.terms.length} 个概念 · ${lexicon.predicates.length} 种关系${entityNodes.length > 0 ? ` · 实体图上 ${entityNodes.length} 个实例` : ''}`, 1)
-		if (issues.some((issue) => issue.severity === 'warning')) push(`  · 词汇里有 ${issues.filter((issue) => issue.severity === 'warning').length} 处要看(引用了不存在的词,或绕成了环)`, 1)
+	/** 事实行含别的会话留下的(`foreign`):攒下来的东西从这里开始被看见。 */
+	const factRows = Array.isArray(derived?.factRows) ? derived.factRows : facts
+	if (factRows.length > 0) {
+		const foreign = factRows.filter((fact) => fact?.foreign === true).length
+		const changed = factRows.filter((fact) => Array.isArray(fact?.definitionsChanged) && fact.definitionsChanged.length > 0 && fact?.review?.decision !== 'retracted').length
+		push(`- 已写进长期知识:${factRows.length} 条${foreign > 0 ? `(${foreign} 条来自以前的会话)` : ''},总览在 clear/knowledge/facts/INDEX.md${changed > 0 ? `;其中 ${changed} 条用到的定义后来改过,需复核` : ''}`, 1)
+	}
+	/**
+	 * **本体大纲**:概念树与实体树的前两层(每支标节点数)、关系总数、跨文件问题。
+	 * 细节在 clear/ontology/ 下的文件里,模型自己去读。
+	 */
+	const outline = ontologyOutline(state)
+	const ontologyProblems = Array.isArray(state?.ontologyProblems) ? state.ontologyProblems : []
+	if (outline.concepts.total > 0 || outline.entities.total > 0 || outline.relations > 0) {
+		push(`- 本体(clear/ontology/):${outline.concepts.total} 个概念 · ${outline.relations} 种关系 · ${outline.entities.total} 个实体 · ${Array.isArray(state?.entityAssertions) ? state.entityAssertions.length : 0} 条实体关系`, 1)
+		if (outline.concepts.lines.length > 0) push(`  · 概念树:${outline.concepts.lines.join(';')}${outline.concepts.more > 0 ? `;顶层还有 ${outline.concepts.more} 个` : ''}`, 1)
+		if (outline.entities.lines.length > 0) push(`  · 实体树:${outline.entities.lines.join(';')}${outline.entities.more > 0 ? `;顶层还有 ${outline.entities.more} 个` : ''}`, 1)
 	} else if (entityNodes.length > 0) push(`- 实体图上 ${entityNodes.length} 个实例`, 1)
+	if (ontologyProblems.length > 0) {
+		push(`- 本体文件有 ${ontologyProblems.length} 处问题(有问题的节点或关系没进图):`, 1)
+		for (const item of ontologyProblems.slice(0, 5)) push(`  · ${item.path}:${clamp(item.detail, 160)}`, 1)
+		if (ontologyProblems.length > 5) push(`  · 还有 ${ontologyProblems.length - 5} 处(面板「本体」里有全部)`, 2)
+	} else if (issues.some((issue) => issue.severity === 'warning')) push(`- 词汇里有 ${issues.filter((issue) => issue.severity === 'warning').length} 处要看(引用了不存在的词,或绕成了环)`, 1)
 	if (knowledge.mode === 'knowledge') {
 		const preflight = view.deliver.preflight
 		if (preflight !== null && (preflight.terms.length > 0 || preflight.predicates.length > 0)) {
@@ -311,7 +329,7 @@ function cardLines(state, derived, options, view) {
 			const named = (entry) => (entry.label === entry.id ? entry.id : `${entry.label}(${entry.id})`)
 			push(`- 已有的词,可直接用:概念 ${preflight.terms.map(named).join('、') || '无'}${more(preflight.termsTruncated)};关系 ${preflight.predicates.map(named).join('、') || '无'}${more(preflight.predicatesTruncated)}`, 1)
 			if (preflight.facts.length > 0) push(`  · 能复用的已知 ${preflight.facts.length} 条${preflight.factsTruncated > 0 ? `(还有 ${preflight.factsTruncated} 条)` : ''}`, 1)
-		} else push('- 已有的词里没有命中这些判断的:要写「主体 · 关系 · 对象」就先立词(Define,带依据);查不到不等于不存在', 1)
+		} else push('- 已有的词里没有命中这些判断的:要写「主体 · 关系 · 对象」就先在 clear/ontology/ 下写概念与关系文件(字段见 SCHEMA.json);查不到不等于不存在', 1)
 		if (gaps.length === 0) push('- 结构完整:判断都写成了断言、都检验过、主体都在实体图上')
 		/** 缺口只给模型(人看不到):说清欠什么、下一步做什么,不写 code。 */
 		for (const gap of gaps) push(`- 还欠的:${gap.detail} → ${gap.nextAction}`)

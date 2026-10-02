@@ -16,7 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, changedDefinitions, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
+import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
@@ -56,7 +56,8 @@ export const MUTATION_KIND = 'clearai'
  *   v14 → v15:**攒下来的东西住在文件里**:多了 `workspace.files`(工作区里事实文件与本体文件
  *           的内容快照,由 `workspace/synced` 折进来);事实带上 `definitions`(升格那一刻用到的
  *           词条含义指纹)。派生的事实行合并其它会话留下的事实(`foreign`),并给出
- *           `definitionsChanged`。旧日志里没有这两样,折出来就是空的。
+ *           `definitionsChanged`。本体(词汇、实体、实体关系)改为从本体文件折出来,跨文件问题记在
+ *           `ontologyProblems`。旧日志里没有这些,折出来就是空的。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
 export const STATE_VERSION = 15
@@ -131,6 +132,11 @@ export function emptyState() {
 		 * 离线复判读到的都是那一刻的文件,而不是此刻盘上的。
 		 */
 		workspace: { files: {} },
+		/**
+		 * **本体文件的跨文件问题**(第二道校验,只提示):引用断了、类型对不上、单值关系两个取值……
+		 * 有问题的节点或边不进图,问题列在这里,卡片与本体页都读它。
+		 */
+		ontologyProblems: [],
 		/** 正在飞的工具调用(来自 tool/call):让「评估者在裁决」成为一条可看见的事实 */
 		inFlight: null,
 		/** 本会话自己写过的路径(来自 tool/call 的 write/edit):L4 来源分离的判据 */
@@ -564,6 +570,22 @@ export function applyMutation(state, mutation) {
 				}
 				files[path] = change.error !== undefined && change.error !== null ? { digest: change.digest ?? null, error: String(change.error) } : { digest: change.digest ?? null, data: change.data ?? null }
 			}
+			/**
+			 * **本体从文件折出来**:词汇、实体、实体断言整份按文件重算——文件就是权威,
+			 * 账本里只记「那一刻文件是什么样」。旧会话里工具写下的本体事件仍折得出来,
+			 * 但一旦这个会话同步过本体文件,就以文件为准(旧会话不迁移)。
+			 */
+			const touchedOntology = (mutation.changes ?? []).some((change) => {
+				const kind = classifyWorkspacePath(change?.path)?.kind
+				return kind !== undefined && kind !== 'fact'
+			})
+			if (touchedOntology || Object.keys(files).some((path) => classifyWorkspacePath(path)?.kind !== 'fact')) {
+				const ontology = materializeOntology(files)
+				next.lexicon = ontology.lexicon
+				next.entities = ontology.entities
+				next.entityAssertions = ontology.entityAssertions
+				next.ontologyProblems = ontology.problems
+			}
 			break
 		}
 		case 'fact/reviewed': {
@@ -893,7 +915,7 @@ const TERMINAL_HYPOTHESIS = new Set(['refuted', 'superseded', 'retracted'])
 /**
  * **断言主体落图了吗**:一条判断的断言里,主体还不是实体图节点的那些(去重)。
  *
- * 节点有几种来路,都带出处或独立裁决:`RegisterInstance` 登记的实例、`Assert` 与升格事实里的主体,
+ * 节点有几种来路,都带出处或独立裁决:实体文件(`clear/ontology/entities/`)里的实体与它们的关系、升格事实里的主体,
  * 以及它们以 instance 形态引出的宾语。`derive()` 把读数挂在每条判断上(`unlanded`),
  * 缺口 ③ 与 `Conclude` 的实体门读的都是它——「卡上说落了」与「门说没落」不会出现两种读数。
  */
@@ -965,7 +987,7 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 				code: 'prose_only_claims',
 				count: proseOnly.length,
 				detail: `${proseOnly.length} 条验证中的判断只有散文主张:两条结论是不是在说同一件事,只能靠重读判断`,
-				nextAction: '先 Define 立概念与谓词、RegisterInstance 登记主体,再用 Frame 修订把主张写成断言(主词–谓词–宾语)',
+				nextAction: '先在 clear/ontology/ 下写概念、关系与主体的实体文件,再用 Frame 修订把主张写成断言(主词–谓词–宾语)',
 			})
 		}
 		/**
@@ -974,7 +996,7 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 		 *    随便登记一个无关节点不会让它消失。
 		 *
 		 *    为什么看节点、不看边:边由升格本身落下(事实带着它的断言进图),
-		 *    要求在升格之前另用 `Assert` 把同一句话再说一遍,只是让模型重复劳动。
+		 *    要求在升格之前另在实体文件里把同一句话再写一遍,只是让模型重复劳动。
 		 */
 		const unlanded = [...new Map(registered.flatMap((item) => item.unlanded ?? []).map((item) => [`${item.type}|${item.id}`, item])).values()]
 		if (unlanded.length > 0) {
@@ -982,7 +1004,7 @@ export function deriveKnowledge(state, hypotheses, factRows, lexicon) {
 				code: 'entities_unlanded',
 				count: unlanded.length,
 				detail: `${unlanded.length} 个断言主体还没有落到实体图(${unlanded.map((item) => `${item.type}|${item.id}`).join('、')}):断言只挂在命题上,不构成「已知」`,
-				nextAction: '用 RegisterInstance 把这些主体连出处登记下来;确实不值得留下形态就把断言从判断上拿掉(Frame 修订)',
+				nextAction: '给这些主体各写一个实体文件(clear/ontology/entities/<id>.json,带类型与出处);确实不值得留下形态就把断言从判断上拿掉(Frame 修订)',
 			})
 		}
 	}
@@ -1754,7 +1776,7 @@ export const HUMAN_GATE_MARK = '[clearai·人门]'
 /**
  * **只在读旧日志时认**的动词。面板早已没有写入口(第六阶段把 `/api/clearai/gate` 整条拿掉):
  * 撤回 / 维持事实从第三阶段起由内核在那次交付里当场问人;本体四动词随编辑抽屉一起删,
- * 要改词汇就在对话里说,模型用 `Define` / `Deprecate` 落同一本账。
+ * 要改词汇就在对话里说,模型去改 `clear/ontology/` 下的文件。
  * 但旧会话里人按过的决定必须照旧折出来,否则重放时一条审过的事实会变回「待复核」、
  * 人登记的词会凭空消失。
  */
@@ -1842,6 +1864,9 @@ export function view(state, sessionId) {
 			conflicts: derived.conflicts,
 			health: derived.lexiconIssues,
 			graph: graphProjection(state),
+			/** 本体文件里的实体(带所在目录的容器)与跨文件问题:本体页的问题列表读它。 */
+			entities: Array.isArray(state.entities) ? state.entities : [],
+			problems: Array.isArray(state.ontologyProblems) ? state.ontologyProblems : [],
 		},
 		/**
 		 * **知识模式(分诊)**:面板据此把「这一格是知识主场还是普通进展」说清楚,

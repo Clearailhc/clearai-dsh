@@ -8,10 +8,10 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **75**
-- By status: Implemented 52 · Design only 1 · Removed 22
-- By strength: Hard boundary 43 · Advisory 7 · Native 3 · Deprecated 22
-- By destination: stays design-only 1 · deleted and accounted 22
+- Mechanisms: **76**
+- By status: Implemented 50 · Design only 1 · Removed 25
+- By strength: Hard boundary 41 · Advisory 7 · Native 3 · Deprecated 25
+- By destination: stays design-only 1 · deleted and accounted 25
 - Actually blocking execution: **21**
 - Carrying a known mismatch between docs/comments and code: **1**
 
@@ -19,8 +19,8 @@ This table answers one question: **what the current code actually guarantees**. 
 
 This section is exported from code, not written by hand:
 
-- Mechanisms: 3 (goal / plan / ontology)
-- Intent tools: 10 (Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Define Deprecate RegisterInstance Assert)
+- Mechanisms: 2 (goal / plan)
+- Intent tools: 6 (Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan)
 - Config keys: 13
 - Prompt sections: 3 defined, 3 mounted at any moment
 
@@ -59,9 +59,10 @@ This section is exported from code, not written by hand:
 | `assertion-validation` | Assertion shape validation (before anything lands) | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | Ontology and entity graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js graphProjection` |
-| `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Define` |
-| `entity-registration` | Entity registration (instances as a first-class write path) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js RegisterInstance` |
-| `entity-assertion` | Entity assertion (edge holds on record) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Assert` |
+| `ontology-files` | Domain ontology as files (three checks) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA` |
+| `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Removed | Deprecated | None | model | no | — |
+| `entity-registration` | Entity registration (instances as a first-class write path) | Epistemic | Removed | Deprecated | None | model | no | — |
+| `entity-assertion` | Entity assertion (edge holds on record) | Epistemic | Removed | Deprecated | None | model | no | — |
 | `entity-gate` | Entity gate (the only structural gate at Conclude) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
 | `level-skip-reason` | Removed: level skips need a named reason | Epistemic | Removed | Deprecated | None | model | no | — |
 | `criteria-revision-gate` | Criterion revisions need an independent verdict | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Frame` |
@@ -80,7 +81,7 @@ This section is exported from code, not written by hand:
 | `native-plan-mode-disabled` | Native plan mode mounted, for showing the plan before acting | Harness | Implemented | Hard boundary | None | system | no | `preset/agent.cordis.yml` |
 | `subagent-trimmed` | Native working tools are mounted (todo / subagents / workflow / ralph) | Harness | Implemented | Hard boundary | None | system | no | `preset/agent.cordis.yml` |
 | `bash-deny-rules` | Bash deny rules | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js 危险命令匹配` |
-| `protected-roots` | Protected roots the model cannot write | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js protectedRoots` |
+| `protected-roots` | Protected roots the model cannot write | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js protectedPath` |
 | `git-ledger` | Removed: Append-only git ledger, always a side ledger (never the user's repo) | Harness | Removed | Deprecated | Authoritative | system | no | — |
 | `kernel-panic-recovery` | Removed: read-only downgraded recovery after engine-level failure | Harness | Removed | Deprecated | None | model | no | — |
 | `auto-continuation` | Removed: ClearAI-owned continuation window | Harness | Removed | Deprecated | None | system | no | — |
@@ -535,13 +536,13 @@ This section is exported from code, not written by hand:
 ### `protected-roots` · Protected roots the model cannot write
 
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: 每次写类工具调用前
+- **Trigger**: 每次写类工具调用前(write / edit / 带写操作的 bash)
 - **Input**: 路径
-- **Output**: clear/evidence、clear/knowledge/facts、clear/goals 由系统所有 → deny
+- **Output**: 写类工具(write / edit)或带写操作的 bash 碰到 clear/evidence、clear/knowledge/facts、clear/goals、clear/ontology(三支本体目录除外)→ deny;相对路径与绝对路径一样判;只读不拦。写三支本体目录里的 .json 时先在内存里得出全文,单文件校验不过 → deny
 - **Blocks execution**: yes
 - **Native alternative**: none
 - **Rationale**: 事实与评估卡只能由系统落盘。
-- **Code**: preset/plugins/clearai-kernel.js protectedRoots; touchesProtected
+- **Code**: preset/plugins/clearai-kernel.js protectedPath; bashTouchesProtected; ontologyWriteProblems
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/identity · **Docs**: docs/design-principles.zh-CN.md
 
@@ -899,18 +900,32 @@ This section is exported from code, not written by hand:
 - **Tests**: test/domain-language.test.mjs · **Config**: —
 - **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `ontology-verbs` · Named verbs for the domain vocabulary, and the shelf
+### `ontology-files` · Domain ontology as files (three checks)
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 模型用 write / edit / bash 写 clear/ontology/{concepts,relations,entities}/**.json;每个 pre-step;Frame 与 Conclude 按需同步
+- **Input**: 概念 / 关系 / 实体文件(X.json 描述 X,子节点放在同级 X/ 目录;id = 文件名)
+- **Output**: ①写入时单文件校验不过 → 拒写;②读取时从文件折出词汇、实体、实体关系与跨文件问题(有问题的节点或边不进图,卡上列出);③升格时断言涉及的本体不成立 → 这条判断不升格;卡上有本体大纲(前两层与节点数)
+- **Blocks execution**: no
+- **Native alternative**: 原生文件工具(write / edit / bash)
+- **Rationale**: 目录天生是嵌套,文件天生跨会话留下,模型天生会读写和挪文件。约束只放在非守不可的三处:格式不对就读不了,引用不对图就断,升格不对真假就混。层次怎么分、词怎么起,系统一概不管。
+- **Code**: ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA; preset/plugins/clearai-kernel.js ontologyWriteProblems ensureOntologySchema syncWorkspace; ui/lib/fold.js case 'workspace/synced'
+- **Tests**: test/kernel.test.mjs(写入时拒、读取时折图与问题、升格时不成立就不升格、改义标复核) · **Config**: —
+- **Prompt**: clearai/loop · **Docs**: docs/domain-ontology.zh-CN.md
+
+### `ontology-verbs` · Named verbs for the domain vocabulary, and the shelf
+
+- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
 - **Trigger**: 模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate
 - **Input**: id / label / gloss / aliases / parent / domain / range / functional / basis / reason
 - **Output**: mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id——同 id 再定义只许改名字、释义、别名。第四阶段把六个写入口合并成 Define / Deprecate、删掉只读的 QueryKnowledge(知识预检已把相关已知送进运行态卡),变更事件名不变。
-- **Code**: preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
-- **Tests**: test/kernel.test.mjs · **Config**: —
-- **Prompt**: clearai/loop · **Docs**: docs/domain-ontology.zh-CN.md
+- **Rationale**: 本体改成工作区里的 JSON 文件树,模型用原生文件工具直接写(clear/ontology/{concepts,relations,entities}/**.json);Define / Deprecate 与词汇货架 domain.md 一起删了:文件本身就是读面。改义从「拦」改成「查」:事实记下定义指纹,定义一改就标「需复核」。
+- **Destination**: deleted and accounted
+- **Code**: —
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
 
 ### `ontology-panel-graph` · Ontology panel: graph-first, read-only
 
@@ -927,29 +942,31 @@ This section is exported from code, not written by hand:
 
 ### `entity-registration` · Entity registration (instances as a first-class write path)
 
-- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
 - **Trigger**: 模型调 RegisterInstance
 - **Input**: {id, type, label, basis, provenance:{kind,ref}}
 - **Output**: entity/registered 变更 → state.entities[]（实体图节点，带出处）
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 概念是约定（不要依据），实例是观测（必须带出处）。把实体层绑在目标级裁决上时，"本体写得好、实体图是空的"会变成最省力的完成方式。
-- **Code**: preset/plugins/clearai-kernel.js RegisterInstance; ui/lib/domain-language.js validateTerm; ui/lib/fold.js applyMutations
-- **Tests**: test/kernel.test.mjs · **Config**: —
-- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/domain-ontology.zh-CN.md
+- **Rationale**: 实体改成 clear/ontology/entities/ 下的文件(带类型、依据与出处),RegisterInstance 删了。
+- **Destination**: deleted and accounted
+- **Code**: —
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
 
 ### `entity-assertion` · Entity assertion (edge holds on record)
 
-- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
+- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
 - **Trigger**: 模型调 Assert
 - **Input**: {subject:{id,type}, predicate, object, evidence:{kind,ref}}
 - **Output**: entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 边在观测那一刻成立，与"独立裁决后才升格"的事实边并存但可区分（promoted 带等级与边界，asserted 带出处）。
-- **Code**: preset/plugins/clearai-kernel.js Assert; ui/lib/domain-language.js graphProjection; ui/lib/fold.js applyMutations
-- **Tests**: test/kernel.test.mjs · **Config**: —
-- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/domain-ontology.zh-CN.md
+- **Rationale**: 实体之间的关系写在实体文件自己的 relations 里(每条带出处),Assert 删了;写下那一刻就进图这一点不变。
+- **Destination**: deleted and accounted
+- **Code**: —
+- **Tests**: — · **Config**: —
+- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
 
 ### `entity-gate` · Entity gate (the only structural gate at Conclude)
 

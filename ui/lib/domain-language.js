@@ -587,6 +587,19 @@ export function graphProjection(state) {
 				facts: [],
 			})
 		}
+		/**
+		 * **组成 / 属于**:实体文件放在另一个实体的目录里(`line_a/kiln_3.json`)就是它的一部分。
+		 * 节点带上 `container`(界面据此画可折叠的子图),同时出一条 `part_of` 边。
+		 */
+		const byRef = new Map([...instances.values()].map((node) => [node.ref, node]))
+		for (const entity of Array.isArray(state?.entities) ? state.entities : []) {
+			const parent = text(entity?.parent)
+			if (parent === '' || !byRef.has(parent)) continue
+			const node = instances.get(`${text(entity.type)}|${text(entity.id)}`)
+			if (node === undefined) continue
+			node.container = byRef.get(parent).id
+			edges.push({ id: `part_of:${node.id}`, kind: 'part_of', layer: 'entity', source: 'registered', predicate: null, label: '属于', from: node.id, to: node.container, status: 'asserted', level: null, fact: null, scope: null, claim: null })
+		}
 	}
 	for (const fact of facts) {
 		const status = fact?.review?.decision === 'retracted' ? 'retracted' : fact?.refuted === true ? 'refuted' : 'live'
@@ -899,7 +912,7 @@ export function describeDomainShelf(lexiconOrState, facts, hypotheses = [], opti
 	}
 	lines.push(`## 个体(实例)(${entityNodes.length})`, '', '> 这一节是**具体物**:某个实例在某出处下成立——它带类型与出处,不是约定,也不能再当概念用。', '')
 	if (entityNodes.length === 0) {
-		lines.push('(没有实例。`RegisterInstance` 登记一个,`Assert` 让它在图上长出边——只登记节点不产边,图仍然是空的。)', '')
+		lines.push('(没有实例。在 `clear/ontology/entities/` 下写一个实体文件,它的 `relations` 让它在图上长出边——只有节点没有边,图仍然是空的。)', '')
 	} else {
 		lines.push('| id | 名称 | 类型 | 来源 | 依据 / 出处 |', '|---|---|---|---|---|')
 		for (const node of entityNodes) {
@@ -1113,5 +1126,310 @@ export function factFromFile(data, path) {
 		path: path ?? null,
 		at: typeof data.at === 'number' ? data.at : null,
 		review,
+	}
+}
+
+// ═══ 本体文件树:字段、单文件校验、从文件折出词汇与实体 ═════════════════════════
+//
+// 本体由模型用原生文件工具直接写,住在 `clear/ontology/{concepts,relations,entities}/` 下:
+//   · 命名规则只有一条:`X.json` 描述节点 X,它的子节点放在同级的 `X/` 目录里;
+//   · 概念目录嵌套 = is_a,实体目录嵌套 = 组成 / 属于,关系目录只是分组;
+//   · 身份是 id(= 文件名),位置是目录。引用只用 id,所以整支目录挪走就是重新分层,引用不断。
+// 校验分三道:写入时查**单个文件**(这里的 `checkOntologyFile`,不过就拒写);读取时查**跨文件**
+// (`materializeOntology` 的 problems,只提示、有问题的节点或边不进图);升格时把断言涉及的
+// 节点全查一遍(就是 `validateAssertions`,不过就不升格)。
+
+/** 实体 id 比概念宽:具体物的名字常带大写与短横(`V-JEPA_2`),但仍是一个文件名能装下的键。 */
+const ENTITY_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,59}$/
+const PROVENANCE_KINDS = ['url', 'named', 'backref']
+const ONTOLOGY_STATUS = ['active', 'deprecated']
+
+/**
+ * 三种本体文件的字段定义。内核把它铺成 `clear/ontology/SCHEMA.json`(只读),
+ * 写入时的校验与这份定义是同一份:字段在这里改,两边一起变。
+ */
+export const ONTOLOGY_SCHEMA = {
+	about: '本体文件的字段定义(系统铺设,只读)。命名规则:X.json 描述节点 X,它的子节点放在同级的 X/ 目录里;id 必须等于文件名。概念目录嵌套 = is_a;实体目录嵌套 = 组成 / 属于;关系可以平铺,也可以分目录(只是分组)。引用一律只写 id,挪目录不断引用。写入时只查单个文件;引用断了、类型对不上等跨文件问题在卡片上提示,升格时才拦。',
+	concept: {
+		where: 'clear/ontology/concepts/**/<id>.json',
+		required: { id: 'slug:小写字母开头,字母/数字/下划线,≤40,等于文件名', label: '给人看的名字', gloss: '一句话释义:它指什么' },
+		optional: { aliases: '别名数组', basis: '依据:哪份材料让这个词成立', status: 'active | deprecated', replaced_by: '废止后由哪个 id 接替', note: '备注' },
+		example: { id: 'jepa', label: '联合嵌入预测架构', aliases: ['JEPA'], gloss: '在表示空间里从上下文预测目标的表示,不还原像素', basis: 'LeCun 2022' },
+	},
+	relation: {
+		where: 'clear/ontology/relations/**/<id>.json',
+		required: { id: 'slug,同概念(概念与关系共用一个 id 空间)', label: '给人看的名字', range: `宾语是哪种东西:一个概念 id(宾语是该概念的实体),或 {"form": ${VALUE_FORMS.map((form) => `"${form}"`).join(' | ')}, "unit"?: "..."}(宾语是字面值)` },
+		optional: { gloss: '一句话释义', domain: '主语必须是哪个概念(下位概念也算)', functional: 'true = 单值:同一主语只能有一个取值,两个不同取值会被报成冲突', basis: '依据', status: 'active | deprecated', replaced_by: '接替的 id', note: '备注' },
+		example: { id: 'derived_from', label: '衍生自', domain: 'method', range: 'method', functional: false },
+	},
+	entity: {
+		where: 'clear/ontology/entities/**/<id>.json',
+		required: { id: '字母或数字开头,字母/数字/下划线/短横,≤60,等于文件名', label: '给人看的名字', type: '它是哪个概念的实体(概念 id)', basis: '依据:哪份材料让它可以被指认', provenance: `出处 {"kind": ${PROVENANCE_KINDS.map((kind) => `"${kind}"`).join(' | ')}, "ref": "链接 / 文献名 / 工作区里的文件"}` },
+		optional: {
+			aliases: '别名数组',
+			relations: '它对外的关系,每条一个出处:{"predicate": 关系 id, "object": 另一个实体的 id} 或 {"predicate": 关系 id, "value": 字面值, "unit"?: 单位};两种都要带 "evidence": {"kind", "ref"}',
+			note: '备注',
+		},
+		example: {
+			id: 'v_jepa_2_ac',
+			label: 'V-JEPA 2-AC',
+			type: 'world_model',
+			basis: '动作条件的 V-JEPA 2',
+			provenance: { kind: 'named', ref: 'sources/vjepa2.md' },
+			relations: [
+				{ predicate: 'derived_from', object: 'v_jepa_2', evidence: { kind: 'named', ref: 'V-JEPA 2 论文' } },
+				{ predicate: 'released_year', value: 2025, evidence: { kind: 'named', ref: 'V-JEPA 2 论文' } },
+			],
+		},
+	},
+}
+
+const FIELDS = {
+	concept: ['id', 'label', 'gloss', 'aliases', 'basis', 'status', 'replaced_by', 'note'],
+	relation: ['id', 'label', 'gloss', 'domain', 'range', 'functional', 'basis', 'status', 'replaced_by', 'note'],
+	entity: ['id', 'label', 'type', 'basis', 'provenance', 'aliases', 'relations', 'note'],
+}
+const RELATION_FIELDS = ['predicate', 'object', 'value', 'unit', 'evidence', 'note']
+
+/** 一个出处对象的形状问题(没有就返回 null)。 */
+function evidenceShape(value, at) {
+	if (!isPlainObject(value)) return `${at}要是 {"kind", "ref"} 对象`
+	if (!PROVENANCE_KINDS.includes(text(value.kind))) return `${at}.kind 只能是 ${PROVENANCE_KINDS.join(' / ')}`
+	if (text(value.ref) === '') return `${at}.ref 不能为空`
+	return null
+}
+
+/**
+ * **第一道校验:单个文件**。给路径与解析好的内容(或原文),返回问题清单(空 = 通过)。
+ * 只查这一个文件自己:JSON 能解析、字段齐且类型对、id 等于文件名、枚举取值合法。
+ * 引用指向的东西在不在**不查**——模型改一组文件时中间状态必然暂时不一致,
+ * 这时就查跨文件引用,等于逼它按固定顺序写。
+ */
+export function checkOntologyFile(path, content) {
+	const place = classifyWorkspacePath(path)
+	if (place === null || place.kind === 'fact') return [`不是本体文件的位置:本体文件要放在 ${ONTOLOGY_DIR}/{concepts,relations,entities}/ 下,扩展名 .json`]
+	let data = content
+	if (typeof content === 'string') {
+		try {
+			data = JSON.parse(content)
+		} catch (error) {
+			return [`不是合法 JSON:${String(error?.message ?? error).slice(0, 160)}`]
+		}
+	}
+	if (!isPlainObject(data)) return ['文件内容要是一个 JSON 对象']
+	const kind = place.kind
+	const problems = []
+	const pattern = kind === 'entity' ? ENTITY_ID_PATTERN : ID_PATTERN
+	if (!pattern.test(place.id)) problems.push(kind === 'entity' ? `文件名「${place.id}」不能当实体 id:字母或数字开头,只用字母/数字/下划线/短横,≤60` : `文件名「${place.id}」不能当 id:小写字母开头,只用小写字母/数字/下划线,≤40`)
+	if (data.id !== undefined && text(data.id) !== place.id) problems.push(`id「${text(data.id)}」要等于文件名「${place.id}」(身份就是文件名;改 id 就是改文件名)`)
+	const extra = Object.keys(data).filter((key) => !FIELDS[kind].includes(key))
+	if (extra.length > 0) problems.push(`不认识的字段:${extra.join('、')}(${kind === 'concept' ? '概念' : kind === 'relation' ? '关系' : '实体'}可用:${FIELDS[kind].join('、')};详见 ${ONTOLOGY_DIR}/SCHEMA.json)`)
+	if (text(data.label) === '') problems.push('label 必填:给人看的名字')
+	if (data.aliases !== undefined && (!Array.isArray(data.aliases) || data.aliases.some((alias) => typeof alias !== 'string'))) problems.push('aliases 只能是字符串数组')
+	for (const key of ['basis', 'gloss', 'note', 'replaced_by']) if (data[key] !== undefined && data[key] !== null && typeof data[key] !== 'string') problems.push(`${key} 只能是字符串`)
+	if (data.status !== undefined && !ONTOLOGY_STATUS.includes(text(data.status))) problems.push(`status 只能是 ${ONTOLOGY_STATUS.join(' / ')}`)
+	if (kind === 'concept' && text(data.gloss) === '') problems.push('gloss 必填:一句话说清它指什么,不然引用它的人各读各的')
+	if (kind === 'relation') {
+		if (data.domain !== undefined && data.domain !== null && !ID_PATTERN.test(text(data.domain))) problems.push('domain 要是一个概念 id')
+		if (data.functional !== undefined && typeof data.functional !== 'boolean') problems.push('functional 只能是 true / false')
+		const range = data.range
+		if (typeof range === 'string') {
+			if (!ID_PATTERN.test(text(range))) problems.push('range 写成字符串时要是一个概念 id')
+		} else if (isPlainObject(range)) {
+			const form = text(range.form)
+			const term = text(range.term)
+			if (form !== '' && term !== '') problems.push('range 只能二选一:一个概念 id,或 {"form"}')
+			else if (term !== '') {
+				if (!ID_PATTERN.test(term)) problems.push('range.term 要是一个概念 id')
+			} else if (!VALUE_FORMS.includes(form)) problems.push(`range.form 只能是 ${VALUE_FORMS.join(' / ')}`)
+			if (range.unit !== undefined && typeof range.unit !== 'string') problems.push('range.unit 只能是字符串')
+		} else problems.push(`range 必填:一个概念 id(宾语是实体),或 {"form": ${VALUE_FORMS.join(' | ')}}(宾语是字面值)`)
+	}
+	if (kind === 'entity') {
+		if (!ID_PATTERN.test(text(data.type))) problems.push('type 必填:它是哪个概念的实体(概念 id)')
+		if (text(data.basis) === '') problems.push('basis 必填:实体是观测,要说清哪份材料让它可以被指认')
+		const shape = evidenceShape(data.provenance, 'provenance')
+		if (shape !== null) problems.push(`${shape}(实体没有出处就进不了图)`)
+		if (data.relations !== undefined) {
+			if (!Array.isArray(data.relations)) problems.push('relations 只能是数组')
+			else
+				data.relations.forEach((relation, index) => {
+					const at = `relations[${index}]`
+					if (!isPlainObject(relation)) return problems.push(`${at} 要是对象`)
+					const unknown = Object.keys(relation).filter((key) => !RELATION_FIELDS.includes(key))
+					if (unknown.length > 0) problems.push(`${at} 不认识的字段:${unknown.join('、')}(可用:${RELATION_FIELDS.join('、')})`)
+					if (!ID_PATTERN.test(text(relation.predicate))) problems.push(`${at}.predicate 要是一个关系 id`)
+					const hasObject = relation.object !== undefined
+					const hasValue = relation.value !== undefined
+					if (hasObject === hasValue) problems.push(`${at} 要么给 object(另一个实体的 id),要么给 value(字面值),二选一`)
+					else if (hasObject && !ENTITY_ID_PATTERN.test(text(relation.object))) problems.push(`${at}.object 要是一个实体 id`)
+					if (relation.unit !== undefined && typeof relation.unit !== 'string') problems.push(`${at}.unit 只能是字符串`)
+					const evidence = evidenceShape(relation.evidence, `${at}.evidence`)
+					if (evidence !== null) problems.push(`${evidence}(一条关系一个出处;没有出处的话是意见,不是观测)`)
+				})
+		}
+	}
+	return problems
+}
+
+/** 关系文件的值域 → 词汇里的值域形状(`{term}` 或 `{form, unit?}`)。 */
+function rangeOf(range) {
+	if (typeof range === 'string') return { term: text(range) }
+	if (!isPlainObject(range)) return null
+	if (text(range.term) !== '') return { term: text(range.term) }
+	return text(range.unit) === '' ? { form: text(range.form) } : { form: text(range.form), unit: text(range.unit) }
+}
+
+/**
+ * **从工作区文件折出本体**(第二道校验在这里):词汇(概念 + 关系)、实体、实体断言、问题清单。
+ *
+ * 读的是 `state.workspace.files`(路径 → `{digest, data|error}`),所以它是纯函数:
+ * 同一批文件永远折出同一张图。跨文件的问题只**提示**,有问题的节点或边不进图——
+ * 图上画出来的每一样东西都是这门语言认得的。
+ */
+export function materializeOntology(files) {
+	const problems = []
+	const flag = (path, id, code, detail, severity = 'warning') => problems.push({ path, id, code, detail, severity })
+	const entries = Object.entries(isPlainObject(files) ? files : {})
+		.map(([path, file]) => ({ path, file, place: classifyWorkspacePath(path) }))
+		.filter((item) => item.place !== null && item.place.kind !== 'fact')
+		.sort((a, b) => (a.path < b.path ? -1 : 1))
+	const terms = []
+	const predicates = []
+	const entityRows = []
+	const ids = new Map()
+	for (const { path, file, place } of entries) {
+		if (file?.error !== undefined && file?.error !== null) {
+			flag(path, place.id, 'file_unreadable', String(file.error), 'error')
+			continue
+		}
+		const shape = checkOntologyFile(path, file?.data)
+		if (shape.length > 0) {
+			flag(path, place.id, 'file_invalid', shape.join(';'), 'error')
+			continue
+		}
+		const data = file.data
+		/** 概念与关系共用一个 id 空间(断言里谓词与类型都是这里的名字);实体自成一个空间。 */
+		const space = place.kind === 'entity' ? 'entity' : 'lexicon'
+		const key = `${space}:${place.id}`
+		if (ids.has(key)) {
+			flag(path, place.id, 'duplicate_id', `id「${place.id}」重复了:${ids.get(key)} 已经用了它(这一份不进图)`, 'error')
+			continue
+		}
+		ids.set(key, path)
+		const status = text(data.status) === 'deprecated' ? 'deprecated' : 'admitted'
+		const parent = place.dirs.length === 0 ? null : place.dirs.at(-1)
+		if (place.kind === 'concept') {
+			terms.push({ id: place.id, label: text(data.label), gloss: text(data.gloss), aliases: Array.isArray(data.aliases) ? data.aliases.map(String) : [], parent, status, basis: text(data.basis) || null, replacedBy: text(data.replaced_by) || null, path })
+		} else if (place.kind === 'relation') {
+			predicates.push({ id: place.id, label: text(data.label), gloss: text(data.gloss), domain: text(data.domain) || null, range: rangeOf(data.range), functional: data.functional === true, status, basis: text(data.basis) || null, replacedBy: text(data.replaced_by) || null, path })
+		} else {
+			entityRows.push({ place, path, data, parent })
+		}
+	}
+	const lexicon = { terms, predicates }
+	for (const term of terms) {
+		if (term.parent === null) continue
+		const found = findEntry(lexicon, term.parent)
+		if (found === null || found.kind !== 'term') flag(term.path, term.id, 'dangling_parent', `它放在目录「${term.parent}/」里,但没有概念文件 ${term.parent}.json:上一层不成立`, 'info')
+	}
+	for (const predicate of predicates) {
+		if (predicate.domain !== null && findEntry(lexicon, predicate.domain)?.kind !== 'term') flag(predicate.path, predicate.id, 'dangling_domain', `主语概念「${predicate.domain}」不存在`)
+		const term = text(predicate.range?.term)
+		if (term !== '' && findEntry(lexicon, term)?.kind !== 'term') flag(predicate.path, predicate.id, 'dangling_range', `宾语概念「${term}」不存在`)
+	}
+	const entities = []
+	const entityById = new Map()
+	for (const { place, path, data, parent } of entityRows) {
+		const type = text(data.type)
+		const typeEntry = findEntry(lexicon, type)
+		if (typeEntry === null || typeEntry.kind !== 'term') {
+			flag(path, place.id, 'entity_type_unknown', `类型「${type}」不是已有的概念:先写概念文件,这个实体才进图`)
+			continue
+		}
+		const entity = { id: place.id, type, label: text(data.label), basis: text(data.basis), provenance: { kind: text(data.provenance.kind), ref: text(data.provenance.ref) }, aliases: Array.isArray(data.aliases) ? data.aliases.map(String) : [], parent, path, relations: Array.isArray(data.relations) ? data.relations : [] }
+		entities.push(entity)
+		entityById.set(entity.id, entity)
+	}
+	const entityAssertions = []
+	const functionalSeen = new Map()
+	for (const entity of entities) {
+		if (entity.parent !== null && !entityById.has(entity.parent)) flag(entity.path, entity.id, 'dangling_container', `它放在目录「${entity.parent}/」里,但没有实体文件 ${entity.parent}.json:「属于」这一层不成立`, 'info')
+		entity.relations.forEach((relation, index) => {
+			const predicateId = text(relation.predicate)
+			const found = findEntry(lexicon, predicateId)
+			const where = `${entity.id} 的第 ${index + 1} 条关系`
+			if (found === null || found.kind !== 'predicate') {
+				flag(entity.path, entity.id, 'relation_unknown', `${where}:关系「${predicateId}」没有关系文件`)
+				return
+			}
+			let object
+			if (relation.object !== undefined) {
+				const target = entityById.get(text(relation.object))
+				if (target === undefined) {
+					flag(entity.path, entity.id, 'dangling_object', `${where}:宾语实体「${text(relation.object)}」不存在(或它自己没进图)`)
+					return
+				}
+				object = { kind: 'instance', value: target.id, type: target.type }
+			} else {
+				const form = text(found.entry.range?.form) || (typeof relation.value === 'number' ? 'quantity' : 'statement')
+				object = { kind: form, value: relation.value }
+				const unit = text(relation.unit) || text(found.entry.range?.unit)
+				if (unit !== '') object.unit = unit
+			}
+			const assertion = { id: `${entity.id}#${index + 1}`, subject: { id: entity.id, type: entity.type }, predicate: predicateId, object, evidence: { kind: text(relation.evidence.kind), ref: text(relation.evidence.ref) } }
+			const invalid = validateAssertion(lexicon, assertion)
+			if (invalid.length > 0) {
+				flag(entity.path, entity.id, 'relation_invalid', `${where}:${invalid.join(';')}`)
+				return
+			}
+			if (found.entry.functional === true) {
+				const key = `${predicateId}\u0000${entity.id}`
+				const value = objectKey(object)
+				if (functionalSeen.has(key) && functionalSeen.get(key) !== value) flag(entity.path, entity.id, 'functional_conflict', `${where}:「${predicateId}」是单值关系,${entity.id} 却有两个取值(${functionalSeen.get(key)} 与 ${value})`)
+				functionalSeen.set(key, value)
+			}
+			entityAssertions.push(assertion)
+		})
+	}
+	return {
+		lexicon,
+		entities: entities.map(({ relations, ...entity }) => entity),
+		entityAssertions,
+		problems,
+	}
+}
+
+/**
+ * **本体大纲**(卡片上那一段):概念树与实体树的前两层,每一支标上它底下有多少个节点;
+ * 关系只报总数。模型一眼看得出哪里深、哪里平、哪些节点还散在顶层——
+ * 「让模型感受到结构」的全部做法就是这一段,有上限,细节它自己去读文件。
+ */
+export function ontologyOutline(state, limit = 12) {
+	const lexicon = normalizeLexicon(state?.lexicon)
+	const entities = Array.isArray(state?.entities) ? state.entities : []
+	const tree = (nodes, parentOf) => {
+		const children = new Map()
+		for (const node of nodes) {
+			const parent = parentOf(node)
+			const key = parent !== null && nodes.some((item) => item.id === parent) ? parent : null
+			children.set(key, [...(children.get(key) ?? []), node.id])
+		}
+		const count = (id) => (children.get(id) ?? []).reduce((sum, child) => sum + 1 + count(child), 0)
+		const roots = (children.get(null) ?? []).sort()
+		const shown = roots.slice(0, limit).map((id) => {
+			const kids = (children.get(id) ?? []).sort()
+			const below = count(id)
+			const sub = kids.slice(0, 6).map((kid) => (count(kid) > 0 ? `${kid}(${count(kid)})` : kid))
+			return below === 0 ? id : `${id}(${below}):${sub.join('、')}${kids.length > 6 ? ` 等 ${kids.length} 支` : ''}`
+		})
+		return { total: nodes.length, roots: roots.length, lines: shown, more: Math.max(0, roots.length - limit) }
+	}
+	return {
+		concepts: tree(lexicon.terms, (term) => text(term.parent) || null),
+		relations: lexicon.predicates.length,
+		entities: tree(entities, (entity) => text(entity.parent) || null),
+		assertions: Array.isArray(state?.entityAssertions) ? state.entityAssertions.length : 0,
+		problems: Array.isArray(state?.ontologyProblems) ? state.ontologyProblems.length : 0,
 	}
 }

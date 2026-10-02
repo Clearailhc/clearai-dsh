@@ -19,7 +19,7 @@ import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
-import { describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
+import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
@@ -112,7 +112,9 @@ function makeHost() {
 		domain: {
 			validateTerm: (id, draft) => validateTerm(service.state(id).lexicon, draft),
 			validatePredicate: (id, draft) => validatePredicate(service.state(id).lexicon, draft),
-			validateAssertions: (id, assertions, options = {}) => validateAssertions(service.state(id), assertions, options),
+			validateAssertions: (id, assertions, options = {}) => validateAssertions(applyMutations(service.state(id), Array.isArray(options?.mutations) ? options.mutations : []), assertions, options),
+			checkFile: (path, content) => checkOntologyFile(path, content),
+			schema: () => ONTOLOGY_SCHEMA,
 			renderShelf: (id, mutations = []) => {
 				const state = applyMutations(service.state(id), Array.isArray(mutations) ? mutations : [])
 				const next = derive(state)
@@ -460,6 +462,12 @@ const writeText = (path, content) => {
 	writeFileSync(path, content)
 }
 
+/**
+ * 本体由模型用原生文件工具直接写(`clear/ontology/{concepts,relations,entities}/**.json`)。
+ * 测试里同样直接写文件:`rel` 是 `concepts/furnace_batch` 这样的相对路径(不带 .json)。
+ */
+const writeOntology = (ws, rel, data) => writeText(join(ws, 'clear', 'ontology', `${rel}.json`), `${JSON.stringify(data, null, 2)}\n`)
+
 const write = (rel, content) => {
 	const parts = rel.split('/')
 	if (parts.length > 1) mkdirSync(join(WORKSPACE, parts.slice(0, -1).join('/')), { recursive: true })
@@ -526,10 +534,10 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 {
 	const NAMES = [
 		'Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan',
-		'Define', 'Deprecate', 'RegisterInstance', 'Assert',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
-	check('工具面恰好 10 件(实测,不是推断)', thisHost.tools.size === 10, `${thisHost.tools.size} 件`)
+	// 本体四件(Define / Deprecate / RegisterInstance / Assert)删了:本体由模型直接写文件。
+	check('工具面恰好 6 件(实测,不是推断)', thisHost.tools.size === 6, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -552,8 +560,8 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	rejects('未知机制名 → 装配期抛错', { contributions: { mechanisms: { telepathy: true } } }, /unknown_mechanism:clearai-kernel:telepathy/)
 	rejects(
 		'关掉机制却仍要装它的工具 → 装配期抛错',
-		{ contributions: { mechanisms: { ontology: false }, tools: ['Assert'] } },
-		/tool_of_disabled_mechanism:clearai-kernel:Assert:ontology/,
+		{ contributions: { mechanisms: { plan: false }, tools: ['Frame', 'CreatePlan'] } },
+		/tool_of_disabled_mechanism:clearai-kernel:CreatePlan:plan/,
 	)
 	// 2026-09-11:contributions 里的 `budgets` 块与 `tokenBudget` 一起删了(它们从未被执行)。
 	// 两个数值旋钮现在是**普通配置键**,校验也跟着从 contributions 搬到配置面。
@@ -567,7 +575,7 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	rejects('已摘除的 collectRetryMs 不再被接受(它从来没有人读)', { collectRetryMs: 0 }, /unknown_config:clearai-kernel:collectRetryMs/)
 	rejects('已摘除的 executorTimeoutMs 不再被接受(它从来没有人读)', { executorTimeoutMs: 1 }, /unknown_config:clearai-kernel:executorTimeoutMs/)
 	// 交还宿主的机制:它们的机制名与配置键都必须装配期炸,不许静默无效。
-	for (const mechanism of ['worldline', 'scout', 'brain', 'ledger']) {
+	for (const mechanism of ['worldline', 'scout', 'brain', 'ledger', 'ontology']) {
 		rejects(`已删除的机制 ${mechanism} 不再被接受`, { contributions: { mechanisms: { [mechanism]: true } } }, new RegExp(`unknown_mechanism:clearai-kernel:${mechanism}`))
 	}
 	// 第三阶段:运行档与续跑轮数交还原生 goal(续跑由原生驱动做,没有「档」)。
@@ -586,12 +594,12 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 		check('组合文件里有贡献表、没有运行档(运行档第三阶段删了)', keys.includes('contributions') && !keys.includes('autonomy') && !keys.includes('maxAutoTurns'))
 	}
 
-	// 裁剪真的生效:关掉领域语言机制 → 它的四件工具不再出现在工具面里。
+	// 裁剪真的生效:关掉计划机制 → 它的四件工具不再出现在工具面里。
 	const trimmed = makeHost()
-	apply(trimmed.ctx, { contributions: { mechanisms: { ontology: false } } })
+	apply(trimmed.ctx, { contributions: { mechanisms: { plan: false } } })
 	check(
-		'关掉领域语言机制 → 4 件词汇工具真的没装(剩 6 件)',
-		trimmed.tools.size === 6 && !trimmed.tools.has('Assert') && !trimmed.tools.has('Define') && trimmed.tools.has('AdvancePlan'),
+		'关掉计划机制 → 4 件计划工具真的没装(剩 2 件)',
+		trimmed.tools.size === 2 && !trimmed.tools.has('AdvancePlan') && trimmed.tools.has('Frame'),
 		`${trimmed.tools.size} 件`,
 	)
 	// 只裁工具面、不动机制:能装出来的最小面就是清单本身。
@@ -975,10 +983,10 @@ console.log('\n【实体门:将要升格的结论,主体必须在图上(结案�
 		host.cwd = ws
 		apply(host.ctx, { blockedThreshold: 3, ...config })
 		const S = `session-entity-gate-${String(config.requireLandedEntities)}-${String(assertions)}`
-		await callOn(host, S, 'Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
-		await callOn(host, S, 'Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: '现场记录 R-01' })
-		await callOn(host, S, 'Define', { id: 'fed_by', label: '原料来自', domain: 'furnace_batch', range: { term: 'furnace_batch' }, basis: '现场记录 R-01' })
-		await callOn(host, S, 'RegisterInstance', { id: 'T1', type: 'furnace_batch', label: 'T1 炉次', basis: '现场记录 R-01', provenance: { kind: 'named', ref: '现场记录 R-01' } })
+		writeOntology(ws, 'concepts/furnace_batch', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+		writeOntology(ws, 'relations/oxygen_ppm', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: '现场记录 R-01' })
+		writeOntology(ws, 'relations/fed_by', { id: 'fed_by', label: '原料来自', domain: 'furnace_batch', range: 'furnace_batch', basis: '现场记录 R-01' })
+		writeOntology(ws, 'entities/T1', { id: 'T1', type: 'furnace_batch', label: 'T1 炉次', basis: '现场记录 R-01', provenance: { kind: 'named', ref: '现场记录 R-01' } })
 		const framed = await callOn(host, S, 'Frame', {
 			claim: '把炉次氧含量查清',
 			done_criteria: '氧含量有读数与出处',
@@ -996,7 +1004,7 @@ console.log('\n【实体门:将要升格的结论,主体必须在图上(结案�
 				{ claim: 'T3 炉次也一样', refute_when: 'T3 复测不是 10ppm' },
 			],
 		})
-		check(`前置:目标立起(断言${assertions ? '带着还没落图的主体 T2' : '没写'})`, framed.ok === true, String(framed.code))
+		check(`前置:目标立起(断言${assertions ? '带着还没落图的主体 T2' : '没写'})`, framed.ok === true, String(framed.message))
 		const [first] = host.service.state(S).hypotheses
 		await callOn(host, S, 'CreatePlan', {
 			steps: [{ id: 'g1', do: '读仪表记录', artifacts: ['lab/g1.txt'], done_criteria: 'lab/g1.txt 存在', tests: { hypotheses: [first.id], level: 'L3' } }],
@@ -1017,20 +1025,20 @@ console.log('\n【实体门:将要升格的结论,主体必须在图上(结案�
 		check('主体没落图 ⇒ 拒(entities_unlanded)', blocked.ok === false && blocked.code === 'entities_unlanded', String(blocked.code))
 		check('拒在**派评估者之前**(那一次子 run 没有白花)', host.service.state(S).audits.length === dispatchedBefore, `${dispatchedBefore} → ${host.service.state(S).audits.length} 次派发`)
 		check('门点名是哪条判断、哪个主体', String(blocked.message).includes(first.id) && String(blocked.message).includes('furnace_batch|T2'), String(blocked.message).slice(0, 160))
-		check('门指的出口是 RegisterInstance,并说清不必再 Assert 同一句话', /RegisterInstance/.test(String(blocked.message)) && /不必再/.test(String(blocked.message)))
+		check('门指的出口是给主体写实体文件,并说清不必再写同一句话', /clear\/ontology\/entities/.test(String(blocked.message)) && /不必/.test(String(blocked.message)))
 		check('只有散文、没被检验的那条判断不进门的名单', !String(blocked.message).includes(host.service.state(S).hypotheses[1].id))
 		check('目标保持开放', host.service.state(S).goal.status === 'open')
 		check('卡上的缺口与门是同一份读数(entities_unlanded 点到 T2)', host.service.derive(S).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded' && gap.count === 1 && gap.detail.includes('furnace_batch|T2')))
 
-		const inst = await callOn(host, S, 'RegisterInstance', { id: 'T2', type: 'furnace_batch', label: 'T2 炉次', basis: '现场记录 R-02', provenance: { kind: 'named', ref: '现场记录 R-02' } })
-		check('登记 T2(唯一要补的动作)', inst.ok === true, String(inst.code))
+		writeOntology(host.cwd, 'entities/T2', { id: 'T2', type: 'furnace_batch', label: 'T2 炉次', basis: '现场记录 R-02', provenance: { kind: 'named', ref: '现场记录 R-02' } })
 		const passed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-		check('登记之后放行,不需要再 Assert', passed.ok === true, String(passed.code))
+		check('写好 T2 的实体文件之后放行(结案当场同步,不必等下一拍)', passed.ok === true, String(passed.code))
+		check('结案那次调用带着这次同步(T2 的文件进了账)', host.journal.some((mutation) => mutation.t === 'workspace/synced' && mutation.changes.some((change) => change.path === 'clear/ontology/entities/T2.json')))
 		const fact = host.service.state(S).facts[0]
 		check('升格的事实带着断言,并指得回它的判断', Array.isArray(fact?.assertions) && fact.assertions.length === 2 && fact.hypothesis === first.id)
 		const edges = graphProjection(host.service.state(S)).edges.filter((edge) => edge.kind === 'assertion')
 		check('边由升格落下:T2 的氧含量在实体图上', edges.some((edge) => edge.from === 'furnace_batch|T2' && edge.predicate === 'oxygen_ppm' && edge.source === 'promoted'), JSON.stringify(edges.map((edge) => `${edge.from}-${edge.predicate}`)))
-		check('账上没有一条 Assert(没有重复劳动)', !host.journal.some((mutation) => mutation.t === 'entity/asserted'))
+		check('没有为同一句话另写一条实体关系(没有重复劳动)', !host.journal.some((mutation) => mutation.t === 'entity/asserted') && host.service.state(S).entityAssertions.length === 0)
 	}
 
 	// ② 同一份状态、门关着:不挡(门是机制,不是文案)。
@@ -1050,14 +1058,13 @@ console.log('\n【实体门:将要升格的结论,主体必须在图上(结案�
 	}
 }
 
-console.log('\n【货架所有权:派出去的子会话不许重铺主线的读面】')
+console.log('\n【货架所有权:派出去的子会话不许重铺主线的读面,也不同步工作区】')
 {
 	/**
-	 * 真跑里评估者两次报 `clear/ontology/domain.md` 是 7 行占位版,主线连读三次都是
-	 * 96 行 21 词条、md5 稳定——两边各自稳定,谁都没说谎。根因:子会话与主线**共享工作区**,
-	 * 但它自己的投影里没有词汇;它的 pre-step 也走 `ensureDomainShelf`,
-	 * `renderShelf(子会话)` 渲染出的正是「(还没有词条…)」占位版,于是把共享货架重写掉。
-	 * 文件在「谁最后铺了一拍」之间摆动。事实货架(`facts/INDEX.md`)是同一种病。
+	 * 真跑里评估者两次报词汇货架是 7 行占位版,主线连读三次都是 96 行 21 词条——两边各自稳定,
+	 * 谁都没说谎。根因:子会话与主线**共享工作区**,但它自己的投影里没有词汇,它的 pre-step
+	 * 却照样按自己那份重写共享的读面。词汇货架如今删了(本体就是文件,评估者直接读),
+	 * 事实货架(`facts/INDEX.md`)与本体字段定义(`SCHEMA.json`)仍是同一种病。
 	 *
 	 * 规则一句话:**工作区级读面属于拥有账本的会话;子会话只读,永远不写。**
 	 */
@@ -1068,17 +1075,11 @@ console.log('\n【货架所有权:派出去的子会话不许重铺主线的读�
 	host.cwd = ws
 	apply(host.ctx, {})
 	const P = 'session-shelf-owner'
-	const term = await callOn(host, P, 'Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
-	const pred = await callOn(host, P, 'Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, basis: 'GB/T 5121' })
-	check('前置:词汇真的立起来了', term.ok === true && pred.ok === true, `${term.code}/${pred.code}`)
-	const domain = join(ws, 'clear', 'ontology', 'domain.md')
+	writeOntology(ws, 'concepts/furnace_batch', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
 	const factsIndex = join(ws, 'clear', 'knowledge', 'facts', 'INDEX.md')
-	const domainBefore = readFileSync(domain, 'utf8')
-	check('前置:主线的词汇货架真有内容(不是占位版)', domainBefore.includes('furnace_batch') && !domainBefore.includes('还没有词条'), domainBefore.slice(0, 60))
+	const schema = join(ws, 'clear', 'ontology', 'SCHEMA.json')
 
 	// ① 子会话:同一份工作区,但身份是派生会话(评估者就是这个形状)。
-	//    给它自己的投影塞一条事实、事实货架放一个哨兵:没有护栏时,它会按**自己的**
-	//    投影重写这两份读面(词汇 → 占位版;事实 → 它那条)。
 	host.childSessions = {
 		'child-evaluator': { header: { cwd: ws, parentSession: P, origin: 'subagent' }, ownEvents: () => [] },
 	}
@@ -1088,18 +1089,16 @@ console.log('\n【货架所有权:派出去的子会话不许重铺主线的读�
 	)
 	writeText(factsIndex, 'SENTINEL:主线的事实货架\n')
 	await preStep(host, 'child-evaluator', 1)
-	check('子会话的 pre-step **不重写**词汇货架', readFileSync(domain, 'utf8') === domainBefore)
-	check('子会话的 pre-step 也不重写事实货架(同一条所有权规则)', readFileSync(factsIndex, 'utf8') === 'SENTINEL:主线的事实货架\n')
+	check('子会话的 pre-step 不重写事实货架', readFileSync(factsIndex, 'utf8') === 'SENTINEL:主线的事实货架\n')
+	check('子会话的 pre-step 不铺本体字段定义', !existsSync(schema))
+	check('子会话不同步工作区(它的账里没有本体文件)', !host.journal.some((mutation) => mutation.t === 'workspace/synced'))
 
-	// ② 对照:拥有账本的会话照常维护——词汇变了,货架跟着长。
+	// ② 对照:拥有账本的会话照常维护——字段定义铺出来,本体文件同步进账。
 	host.childSessions = {}
-	await callOn(host, P, 'Define', { id: 'heating_rate', label: '升温速率', gloss: 'g', basis: 'b' })
 	await preStep(host, P, 1)
-	check('主线自己的 pre-step 照常维护货架(新词条长出来了)', readFileSync(domain, 'utf8').includes('heating_rate') && readFileSync(domain, 'utf8') !== domainBefore)
-
-	// ③ 反例自检:护栏拦的是真实会发生的重写(子会话的投影里确实另有内容)。
-	check('子会话的投影里没有主线的词汇(不带护栏时它会写出占位版)', (host.service.state('child-evaluator').lexicon?.terms ?? []).length === 0)
-	check('子会话的投影里有它自己的事实(不带护栏时它会重写事实货架)', host.service.state('child-evaluator').facts.length === 1)
+	check('主线的 pre-step 铺出 SCHEMA.json(与宿主半的字段定义同一份)', existsSync(schema) && JSON.parse(readFileSync(schema, 'utf8')).concept?.required?.gloss !== undefined)
+	check('主线的 pre-step 把本体文件同步进账,词汇从文件折出来', (host.service.state(P).lexicon?.terms ?? []).some((term) => term.id === 'furnace_batch'))
+	check('三支目录铺好了(模型知道往哪写)', ['concepts', 'relations', 'entities'].every((branch) => existsSync(join(ws, 'clear', 'ontology', branch))))
 }
 
 console.log('\n【失联的评估者:重启之后不再被一条等不到的裁决按死(2026-09-11,AUDIT §14-D)】')
@@ -1354,7 +1353,7 @@ console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 10)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 6)
 	}
 
 console.log('\n【技能目录:面板与模型看同一张表(合并目录随投影下发)】')
@@ -1804,49 +1803,74 @@ function factFiles() {
 	}
 }
 
-console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
+console.log('\n【领域本体写成文件:写入时单文件校验 · 读取时从文件折图 · 断言链 · 冲突只暴露】')
 {
 	/** 一条断言的构造器:同一主体、同一谓词,只换取值——冲突那一段靠的就是它。 */
 	const assertion = (value) => ({ predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value, unit: 'ppm' } })
+	const guard = thisHost.listeners.get('tools/pre-execute')
+	const attempt = (name, args) => guard({ name, arguments: args, agent: { id: SESSION }, callId: `c-${name}` }, async () => ({ kind: 'allow' }))
+	const json = (value) => `${JSON.stringify(value, null, 2)}\n`
 
-	// ① 词汇动词:判据与折法同源,拒绝都发生在**落账之前**
-	const noBasis = await call('Define', { id: 'no_basis_term', label: '无依据概念', gloss: 'g', basis: '' })
-	check('概念缺依据 → 拒(约定可以自愿,不能无来由)', noBasis.ok === false && /basis_required/.test(String(noBasis.message)), String(noBasis.code))
-	const badId = await call('Define', { id: 'Bad-Id', label: 'L', gloss: 'g', basis: 'b' })
-	check('概念 id 形状不对 → 拒', badId.ok === false && /id_shape/.test(String(badId.message)))
-	const registered = await call('Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
-	check('登记概念 → 通过', registered.ok === true && registered.code === 'term_registered', String(registered.code))
-	check('概念落进货架(读面由系统写)', readFileSync(join(WORKSPACE, 'clear/ontology/domain.md'), 'utf8').includes('furnace_batch'))
-	const asPredicate = await call('Define', { id: 'furnace_batch', label: '炉次', range: { form: 'quantity' }, basis: 'b' })
-	check('同一 id 换成谓词 → 拒(概念与谓词共用一个命名空间)', asPredicate.ok === false && asPredicate.code === 'kind_mismatch', String(asPredicate.code))
-	const same = await call('Define', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: 'b' })
-	check('同一 id、展示信息也一样 → 拒(没有要改的,不重复记账)', same.ok === false && same.code === 'nothing_to_revise', String(same.code))
-	const ghostParent = await call('Define', { id: 'narrow_batch', label: 'N', gloss: 'g', basis: 'b', parent: 'ghost_concept' })
-	check('父概念不存在 → 拒', ghostParent.ok === false && /parent_unknown/.test(String(ghostParent.message)))
-	check('登记子概念(is_a 边)→ 通过', (await call('Define', { id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', basis: 'b', parent: 'furnace_batch' })).ok === true)
-	const ambiguous = await call('Define', { id: 'oxygen_ppm', label: '氧含量', range: { term: 'furnace_batch', form: 'quantity' }, basis: 'b' })
-	check('值域二选一:同时给 term 与 form → 拒', ambiguous.ok === false && /range_ambiguous/.test(String(ambiguous.message)))
-	const ghostDomain = await call('Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'ghost_concept', range: { form: 'quantity' }, basis: 'b' })
-	check('主词域不存在 → 拒', ghostDomain.ok === false && /domain_unknown/.test(String(ghostDomain.message)))
-	const predicate = await call('Define', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' })
-	check('登记谓词(量形态 · 单值)→ 通过', predicate.ok === true && predicate.code === 'predicate_registered', String(predicate.code))
+	// ① 第一道校验:写入时只查这一个文件,不对就拒(相对路径与绝对路径一样判)
+	const noGloss = await attempt('write', { file_path: 'clear/ontology/concepts/furnace_batch.json', content: json({ id: 'furnace_batch', label: '炉次' }) })
+	check('概念缺释义 → 拒这次写入,原因原样回给模型', noGloss.kind === 'deny' && /gloss 必填/.test(String(noGloss.reason)), String(noGloss.reason))
+	const badId = await attempt('write', { file_path: join(WORKSPACE, 'clear/ontology/concepts/Bad-Id.json'), content: json({ label: 'L', gloss: 'g' }) })
+	check('文件名不能当 id → 拒', badId.kind === 'deny' && /不能当 id/.test(String(badId.reason)))
+	const idMismatch = await attempt('write', { file_path: 'clear/ontology/concepts/furnace_batch.json', content: json({ id: 'furnace', label: '炉次', gloss: 'g' }) })
+	check('id 与文件名不一致 → 拒(身份就是文件名)', idMismatch.kind === 'deny' && /要等于文件名/.test(String(idMismatch.reason)))
+	const notJson = await attempt('write', { file_path: 'clear/ontology/relations/oxygen_ppm.json', content: '{ label: 氧含量 ' })
+	check('不是合法 JSON → 拒', notJson.kind === 'deny' && /不是合法 JSON/.test(String(notJson.reason)))
+	const extraField = await attempt('write', { file_path: 'clear/ontology/concepts/furnace_batch.json', content: json({ label: '炉次', gloss: 'g', colour: 'red' }) })
+	check('不认识的字段 → 拒,并列出可用字段', extraField.kind === 'deny' && /不认识的字段:colour/.test(String(extraField.reason)) && /SCHEMA\.json/.test(String(extraField.reason)))
+	const entityNoProvenance = await attempt('write', { file_path: 'clear/ontology/entities/B1.json', content: json({ label: 'B1', type: 'furnace_batch', basis: 'b' }) })
+	check('实体没有出处 → 拒', entityNoProvenance.kind === 'deny' && /provenance/.test(String(entityNoProvenance.reason)))
+	const danglingOk = await attempt('write', { file_path: 'clear/ontology/entities/B0.json', content: json({ label: 'B0', type: 'ghost_concept', basis: 'b', provenance: { kind: 'named', ref: 'r' } }) })
+	check('引用的概念还不存在 → 写入放行(跨文件的事不在写入时查)', danglingOk.kind === 'allow', String(danglingOk.reason))
+	const good = await attempt('write', { file_path: 'clear/ontology/concepts/furnace_batch.json', content: json({ id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' }) })
+	check('合格的概念文件 → 放行', good.kind === 'allow', String(good.reason))
+	const notOntology = await attempt('write', { file_path: 'clear/ontology/concepts/README.md', content: '笔记' })
+	check('本体目录里不是 .json 的文件 → 放行(读的时候也不认)', notOntology.kind === 'allow')
+	const schemaWrite = await attempt('write', { file_path: 'clear/ontology/SCHEMA.json', content: '{}' })
+	check('字段定义 SCHEMA.json 由系统所有 → 拒', schemaWrite.kind === 'deny' && /由系统所有/.test(String(schemaWrite.reason)))
+	const relativeFact = await attempt('write', { file_path: 'clear/knowledge/facts/forged.json', content: '{}' })
+	check('相对路径写事实 → 拒(从前只比绝对路径,相对写法绕过去了)', relativeFact.kind === 'deny')
+	const readFacts = await attempt('bash', { command: 'cat clear/knowledge/facts/INDEX.md 2>/dev/null' })
+	check('只读地看事实 → 放行(攒下来的东西就是要被读)', readFacts.kind === 'allow', String(readFacts.reason))
+	const readTool = await attempt('read', { file_path: join(WORKSPACE, 'clear/knowledge/facts/INDEX.md') })
+	check('原生 read 读事实 → 放行', readTool.kind === 'allow')
+	const moveBranch = await attempt('bash', { command: 'mkdir -p clear/ontology/concepts/process && mv clear/ontology/concepts/a.json clear/ontology/concepts/process/' })
+	check('用 bash 在本体三支目录里挪文件 → 放行(挪目录就是重新分层)', moveBranch.kind === 'allow', String(moveBranch.reason))
+	const forgeBash = await attempt('bash', { command: 'echo {} > clear/knowledge/facts/x.json' })
+	check('用 bash 往事实目录里写 → 拒', forgeBash.kind === 'deny')
 
-	/**
-	 * **实例要先登记**(契约:断言的主体必须可指认)。
-	 * B1 是具体的一次炉次(观测),不是概念——只立词不立实例,那句断言读得出、没人能核。
-	 */
-	const b1 = await call('RegisterInstance', { id: 'B1', type: 'furnace_batch', label: 'B1 炉次', basis: '化验单 L-08', provenance: { kind: 'named', ref: '化验单 L-08' } })
-	check('登记实例(带出处)→ 通过', b1.ok === true && b1.code === 'instance_registered', String(b1.code))
-	/** 2026-10-02 JEPA 长测:货架只拿到词汇,实例一节永远是 0,结案评估者据此判「交付对不上记录」。 */
-	check('登记的实例落进货架的「个体(实例)」一节', /## 个体\(实例\)\(1\)/.test(readFileSync(join(WORKSPACE, 'clear/ontology/domain.md'), 'utf8')) && readFileSync(join(WORKSPACE, 'clear/ontology/domain.md'), 'utf8').includes('B1'))
+	/** 模型实际写文件(写入时的检查上面已经过了一遍)。 */
+	writeOntology(WORKSPACE, 'concepts/furnace_batch', { id: 'furnace_batch', label: '炉次', gloss: '一次熔铸循环', basis: '现场记录 R-01' })
+	writeOntology(WORKSPACE, 'concepts/furnace_batch/narrow_batch', { id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', basis: 'b' })
+	writeOntology(WORKSPACE, 'concepts/lab_sample', { id: 'lab_sample', label: '化验样品', gloss: 'g', basis: 'b' })
+	writeOntology(WORKSPACE, 'relations/oxygen_ppm', { id: 'oxygen_ppm', label: '氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: 'GB/T 5121' })
+	writeOntology(WORKSPACE, 'entities/B1', { id: 'B1', type: 'furnace_batch', label: 'B1 炉次', basis: '化验单 L-08', provenance: { kind: 'named', ref: '化验单 L-08' } })
+	writeEditCheck: {
+		const before = readFileSync(join(WORKSPACE, 'clear/ontology/entities/B1.json'), 'utf8')
+		const brokenEdit = await attempt('edit', { file_path: 'clear/ontology/entities/B1.json', old_string: '"type": "furnace_batch",', new_string: '' })
+		check('局部编辑先在内存里套用再查:删掉必填的 type → 拒', brokenEdit.kind === 'deny' && /type 必填/.test(String(brokenEdit.reason)), String(brokenEdit.reason))
+		check('被拒的编辑没有碰盘上的文件', readFileSync(join(WORKSPACE, 'clear/ontology/entities/B1.json'), 'utf8') === before)
+		break writeEditCheck
+	}
+	rmSync(join(WORKSPACE, 'clear/ontology/entities/B0.json'), { force: true })
 
-	// ② 断言链:Frame 在落账之前严校(提供即严校;不提供放行)
+	// ② 第二道:读取时从文件折出图(目录嵌套 = is_a)
+	await preStep(thisHost, SESSION, 950)
+	const lexicon = thisHost.service.state(SESSION).lexicon
+	check('pre-step 把本体文件同步进账,词汇从文件折出来', lexicon.terms.some((term) => term.id === 'furnace_batch') && lexicon.predicates.some((item) => item.id === 'oxygen_ppm'), JSON.stringify(lexicon.terms.map((term) => term.id)))
+	check('目录嵌套就是 is_a:narrow_batch 的父概念是 furnace_batch', lexicon.terms.find((term) => term.id === 'narrow_batch')?.parent === 'furnace_batch')
+	check('实体从文件进图', thisHost.service.state(SESSION).entities.some((entity) => entity.id === 'B1' && entity.type === 'furnace_batch'))
+
+	// ③ 断言链:Frame 在落账之前严校(提供即严校;不提供放行)
 	const ghostPredicate = await call('Frame', {
 		claim: 'C', done_criteria: 'D 可核对',
 		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [{ predicate: 'ghost_pred', subject: { id: 'B1', type: 'furnace_batch' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } }] }],
 	})
-	check('引用未登记谓词的断言 → 落账之前被拒', ghostPredicate.ok === false && /predicate_unknown/.test(String(ghostPredicate.message)))
-	await call('Define', { id: 'lab_sample', label: '化验样品', gloss: 'g', basis: 'b' })
+	check('引用不存在的关系 → 落账之前被拒', ghostPredicate.ok === false && /predicate_unknown/.test(String(ghostPredicate.message)))
 	const wrongType = await call('Frame', {
 		claim: 'C', done_criteria: 'D 可核对',
 		hypotheses: [{ claim: 'h', refute_when: 'r', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B1', type: 'lab_sample' }, object: { kind: 'quantity', value: 8, unit: 'ppm' } }] }],
@@ -1866,23 +1890,24 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 			{ claim: '来料是主因', refute_when: '来料同一批时波动仍大' },
 		],
 	})
-	check('带断言的假设 → 通过(断言是加法,不是门槛)', goal.ok === true, String(goal.code))
+	check('带断言的假设 → 通过(断言是加法,不是门槛)', goal.ok === true, String(goal.message))
 	const hypothesisId = eventsOf('goal/set').slice(-1)[0].hypotheses[0].id
-	check('断言随假设落账(折法里读得到)', Array.isArray(thisHost.service.state(SESSION).hypotheses.find((item) => item.id === hypothesisId)?.assertions))
 
-	// ③ 升格:身份与内容一起定型
+	// ④ 升格:身份、内容与定义指纹一起定型
 	await call('CreatePlan', { steps: [{ id: 'd1', do: '整理 20 炉次台账', artifacts: ['lab/o2.md'], done_criteria: 'lab/o2.md 写明每炉次氧含量与工艺参数', tests: { hypothesis: hypothesisId, level: 'L0' } }] })
 	write('lab/o2.md', '# 20 炉次台账\n\n逐炉次列出氧含量读数与同时段的温度窗、拉速、一冷二冷强度与覆盖剂状态;读数取自主控记录的同一批化验单,单位 ppm。\n\n结论:参数可分组的炉次之间氧含量差异明显,而同一参数组内波动较小。\n')
 	const delivered = await call('AdvancePlan', { step_id: 'd1', verdict: 'support', basis: 'lab/o2.md 写明每炉次读数与参数' })
 	check('L0 步骤交付 → 通过', delivered.ok === true, `${String(delivered.code)} :: ${String(delivered.message).slice(0, 200)}`)
 	await call('ClosePlan', {})
 	thisHost.nextVerdict = { verdict: 'support', basis: '判据达成,转写忠实', shortfalls: [] }
-	check('第一条目标达成 → 升格', (await call('Conclude', { outcome: 'achieved' })).ok === true)
+	const concluded = await call('Conclude', { outcome: 'achieved' })
+	check('第一条目标达成 → 升格', concluded.ok === true && /写进长期知识/.test(String(concluded.message)))
+	check('成功结案提醒把可复用的做法写成原生技能', /\.agents\/skills\//.test(String(concluded.message)))
 	const first = eventsOf('fact/promoted').slice(-1)[0]
-	check('升格带着产出它的假设 id(按 id 关联,不是按文本)', first.hypothesis === hypothesisId, String(first.hypothesis))
-	check('升格带着类型化断言', Array.isArray(first.assertions) && first.assertions.length === 1)
+	check('升格带着产出它的假设 id 与类型化断言', first.hypothesis === hypothesisId && Array.isArray(first.assertions) && first.assertions.length === 1)
+	check('升格带着用到的定义指纹(谓词与主体类型)', typeof first.definitions?.oxygen_ppm === 'string' && typeof first.definitions?.furnace_batch === 'string', JSON.stringify(first.definitions))
 
-	// ④ 冲突:两条未撤回的事实互相矛盾 → 只暴露,不裁决,不改任何一侧
+	// ⑤ 冲突:两条未撤回的事实互相矛盾 → 只暴露,不裁决,不改任何一侧
 	await call('Frame', {
 		claim: '换个炉次复核氧含量',
 		done_criteria: '复核读数落在 lab/o3.md',
@@ -1900,52 +1925,51 @@ console.log('\n【领域语言:词汇动词 · 断言链 · 冲突只暴露】')
 	const conflict = derived.conflicts.find((item) => item.predicate === 'oxygen_ppm')
 	check('同一单值谓词、同一主体、两个取值 → 派生一对冲突', conflict !== undefined && conflict.sides.length === 2, JSON.stringify(derived.conflicts.map((item) => item.predicate)))
 	check('冲突只在「待处理」里陈述一行,不带按钮、不拦', derived.needYou.some((item) => item.kind === 'conflict' && /oxygen_ppm|氧含量/.test(item.text) && /以哪个为准/.test(item.text)), JSON.stringify(derived.needYou))
-	check('冲突不改任何一侧(两条事实都在,都没被撤回)', derived.factRows.filter((item) => item.predicate === undefined && Array.isArray(item.assertions) && item.assertions.some((row) => row.predicate === 'oxygen_ppm')).every((item) => item.review === null || item.review === undefined))
 	const cardText = thisHost.service.renderCard(SESSION)
 	check('运行态卡把矛盾说出来并说明不替你选', /矛盾/.test(cardText) && /系统不替你选/.test(cardText))
+	check('运行态卡带本体大纲(概念树与实体树,标节点数)', /本体\(clear\/ontology\/\)/.test(cardText) && /furnace_batch\(1\):narrow_batch/.test(cardText), cardText.split('\n').filter((line) => /本体|概念树/.test(line)).join(' | '))
 
-	/**
-	 * **主体没登记过 ⇒ 拒**(`assert_subject_unknown`),而 `legacy: true` 一次性放行。
-	 * 这一对是契约 §4 的正反两面:门要真的在,迁移开关也要真的有出口。
-	 */
+	/** 主体没有实体文件 ⇒ 拒(`assert_subject_unknown`),而 `legacy: true` 一次性放行。 */
 	const unregistered = await call('Frame', {
 		claim: 'C4', done_criteria: 'D4 可核对',
 		hypotheses: [{ claim: 'h4', refute_when: 'r4', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B9', type: 'furnace_batch' }, object: { kind: 'quantity', value: 7, unit: 'ppm' } }] }],
 	})
-	check('主体没登记过 → 拒(主词可指认是能被复核的前提)', unregistered.ok === false && /assert_subject_unknown/.test(String(unregistered.message)), String(unregistered.code))
+	check('主体没有实体文件 → 拒(主词可指认是能被复核的前提)', unregistered.ok === false && /assert_subject_unknown/.test(String(unregistered.message)), String(unregistered.code))
 	const legacyGoal = await call('Frame', {
 		claim: 'C4', done_criteria: 'D4 可核对', legacy: true, reason: '迁移期一次性放行',
 		hypotheses: [{ claim: 'h4', refute_when: 'r4', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B9', type: 'furnace_batch' }, object: { kind: 'quantity', value: 7, unit: 'ppm' } }] }],
 	})
 	check('legacy:true → 放行(迁移期出口真的通)', legacyGoal.ok === true, String(legacyGoal.code))
 
-	// ⑤ 修订 / 废止:同 id 再定义只改展示信息,语义不可;废止黏性且挡住新断言
-	const revisedCall = await call('Define', { id: 'furnace_batch', gloss: '一次熔铸循环(含熔炼与铸造)', basis: '把释义写全' })
-	check('同 id 再定义展示信息 → 修订', revisedCall.ok === true && revisedCall.code === 'term_revised', String(revisedCall.code))
-	const revised = thisHost.service.state(SESSION).lexicon.terms.find((item) => item.id === 'furnace_batch')
-	check('修订只动展示信息:版本 +1,父链不动', revised.version === 2 && (revised.parent ?? null) === null)
-	const reparent = await call('Define', { id: 'furnace_batch', parent: 'narrow_batch', basis: '想改父概念' })
-	check('同 id 再定义改了父概念 → 拒(语义变了要换 id)', reparent.ok === false && reparent.code === 'semantics_changed' && /Deprecate/.test(String(reparent.message)), String(reparent.code))
-	const refunction = await call('Define', { id: 'oxygen_ppm', functional: false, basis: '想改成多值' })
-	check('同 id 再定义改了谓词的单值性 → 拒', refunction.ok === false && refunction.code === 'semantics_changed', String(refunction.code))
-	const relabel = await call('Define', { id: 'oxygen_ppm', label: '熔体氧含量', functional: true, range: { form: 'quantity', unit: 'ppm' }, basis: '名字写全' })
-	check('同 id 再定义谓词:语义字段原样带上、只改名字 → 修订', relabel.ok === true && relabel.code === 'predicate_revised', String(relabel.code))
-	check('废止概念 → 通过(记录保留)', (await call('Deprecate', { id: 'narrow_batch', reason: '与父概念无法区分' })).ok === true)
-	check('废止是黏性终态:第二次不记账', (await call('Deprecate', { id: 'narrow_batch', reason: 'again' })).code === 'already_deprecated')
-	await call('RegisterInstance', { id: 'B2', type: 'narrow_batch', label: 'B2 炉次', basis: '化验单 L-09', provenance: { kind: 'named', ref: '化验单 L-09' } })
+	// ⑥ 改义从「拦」改成「查」:改名不触发复核,改含义触发
+	writeOntology(WORKSPACE, 'relations/oxygen_ppm', { id: 'oxygen_ppm', label: '熔体氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: true, basis: '名字写全' })
+	await preStep(thisHost, SESSION, 951)
+	check('只改名字 → 已升格的事实不标「定义已变」', derive(thisHost.service.state(SESSION)).factRows.every((row) => row.definitionsChanged.length === 0))
+	writeOntology(WORKSPACE, 'relations/oxygen_ppm', { id: 'oxygen_ppm', label: '熔体氧含量', domain: 'furnace_batch', range: { form: 'quantity', unit: 'ppm' }, functional: false, basis: '改成多值' })
+	await preStep(thisHost, SESSION, 952)
+	const changedRows = derive(thisHost.service.state(SESSION)).factRows.filter((row) => row.definitionsChanged.includes('oxygen_ppm'))
+	check('改了单值性 → 用到它的事实标「定义已变」(不拦,也不撤回)', changedRows.length === 2 && changedRows.every((row) => row.review === null || row.review === undefined), JSON.stringify(changedRows.map((row) => [row.id, row.foreign, row.text])))
+	check('待处理里列出要复核的事实', derive(thisHost.service.state(SESSION)).needYou.filter((item) => item.kind === 'definition_changed').length === 2)
+	check('卡上说有几条事实需复核', /需复核/.test(thisHost.service.renderCard(SESSION)))
+
+	// ⑦ 废止写在文件上:引用它的新断言被拒
+	writeOntology(WORKSPACE, 'concepts/furnace_batch/narrow_batch', { id: 'narrow_batch', label: '窄窗口炉次', gloss: 'g', basis: 'b', status: 'deprecated', replaced_by: 'furnace_batch' })
+	writeOntology(WORKSPACE, 'entities/B2', { id: 'B2', type: 'narrow_batch', label: 'B2 炉次', basis: '化验单 L-09', provenance: { kind: 'named', ref: '化验单 L-09' } })
 	const useDeprecated = await call('Frame', {
 		claim: 'C3', done_criteria: 'D3 可核对',
 		hypotheses: [{ claim: 'h3', refute_when: 'r3', assertions: [{ predicate: 'oxygen_ppm', subject: { id: 'B2', type: 'narrow_batch' }, object: { kind: 'quantity', value: 9, unit: 'ppm' } }] }],
 	})
 	check('引用已废止概念的新断言 → 拒', useDeprecated.ok === false && /deprecated/.test(String(useDeprecated.message)))
 
-	// ⑦ 词汇货架是系统所有:做的人写不进
-	const preExecuteShelf = thisHost.listeners.get('tools/pre-execute')
-	const forgedShelf = await preExecuteShelf(
-		{ name: 'write', arguments: { file_path: join(WORKSPACE, 'clear/ontology/domain.md'), content: '我宣布这就是词汇' }, agent: { id: SESSION }, callId: 'c-forge-shelf' },
-		async () => ({ kind: 'allow' }),
-	)
-	check('直接写词汇货架 → 拒(词条只能经动词落账)', forgedShelf.kind === 'deny' && /clear\/ontology/.test(String(forgedShelf.reason)), String(forgedShelf.kind))
+	// ⑧ 跨文件的问题只提示:有问题的关系不进图,卡上逐条列出
+	writeOntology(WORKSPACE, 'entities/B3', { id: 'B3', type: 'furnace_batch', label: 'B3', basis: 'b', provenance: { kind: 'named', ref: 'r' }, relations: [{ predicate: 'fed_by', object: 'B1', evidence: { kind: 'named', ref: 'r' } }] })
+	await preStep(thisHost, SESSION, 953)
+	const problems = thisHost.service.state(SESSION).ontologyProblems
+	check('引用了不存在的关系 → 列成问题(relation_unknown),那条关系不进图', problems.some((item) => item.code === 'relation_unknown' && item.id === 'B3') && !thisHost.service.state(SESSION).entityAssertions.some((item) => item.subject.id === 'B3'), JSON.stringify(problems))
+	check('卡上说本体文件有几处问题', /本体文件有 \d+ 处问题/.test(thisHost.service.renderCard(SESSION)))
+	rmSync(join(WORKSPACE, 'clear/ontology/entities/B3.json'))
+	rmSync(join(WORKSPACE, 'clear/ontology/entities/B2.json'))
+	await preStep(thisHost, SESSION, 954)
 }
 
 console.log('\n【跳级理由整套删除(第四阶段):等级只决定谁来判,不再有「未走过的等级」】')
@@ -2103,35 +2127,27 @@ console.log('\n【首回合的系统事实:本体声明与货架那句话必须�
 	)
 }
 
-console.log('\n【实体两件:新机制必须有行为证据,不是只有声明】')
+console.log('\n【实体写成文件:关系带出处,写下那一刻就进图(不等目标裁决)】')
 {
 	const host = makeHost()
+	const ws = tempDir('clearai-entity-files-')
+	host.cwd = ws
 	apply(host.ctx, {})
 	const S = 'session-entity'
-
-	// ① 概念先立起来(实例要有 type)。
-	const term = await callOn(host, S, 'Define', { id: 'sucai', label: '素材', gloss: '被挪用的原始材料', basis: '测试用' })
-	check('前置:概念登记成功', term.ok === true, String(term.code))
-	const pred = await callOn(host, S, 'Define', { id: 'cheng_wei', label: '被称为', gloss: '某材料曾被称为某概念', range: { term: 'sucai' }, basis: '测试用' })
-	check('前置:谓词登记成功', pred.ok === true, String(pred.code))
-
-	// ② 实例:出处必填、type 必须是已登记概念。
-	const noProv = await callOn(host, S, 'RegisterInstance', { id: 'yangben_a', type: 'sucai', label: '样本甲', basis: '语料 p01' })
-	check('实例没有出处 → 拒(实例是观测,不是约定)', noProv.ok === false && noProv.code === 'instance_provenance_required', String(noProv.code))
-	const badType = await callOn(host, S, 'RegisterInstance', { id: 'yangben_a', type: 'meiyou_zhege', label: '样本甲', basis: '语料 p01', provenance: { kind: 'named', ref: '语料 p01' } })
-	check('实例的类型不是已登记概念 → 拒', badType.ok === false && badType.code === 'instance_type_unknown', String(badType.code))
-	const inst = await callOn(host, S, 'RegisterInstance', { id: 'yangben_a', type: 'sucai', label: '样本甲', basis: '语料 p01', provenance: { kind: 'named', ref: '语料 p01' } })
-	check('实例登记成功(带出处)', inst.ok === true && inst.code === 'instance_registered', String(inst.code))
-	check('实例登记真的落进了账本', host.journal.filter((m) => m.t === 'entity/registered').length === 1, JSON.stringify(host.journal.filter((m) => m.t === 'entity/registered').length))
-
-	// ③ 断言:主体必须已登记;未登记 → 拒;登记 → 落边。
-	const ghost = await callOn(host, S, 'Assert', { subject: { id: 'yangben_b', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'chouxiang', type: 'sucai' }, evidence: { kind: 'named', ref: '语料 p02' } })
-	check('断言主体没登记过 → 拒(主词可指认是能被复核的前提)', ghost.ok === false && ghost.code === 'assert_subject_not_registered', String(ghost.code))
-	const noEvidence = await callOn(host, S, 'Assert', { subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'chouxiang', type: 'sucai' }, evidence: { kind: 'named', ref: '' } })
-	check('断言没有出处 → 拒(没有出处的话是意见,不是观测)', noEvidence.ok === false && noEvidence.code === 'assert_evidence_required', String(noEvidence.code))
-	const asserted = await callOn(host, S, 'Assert', { subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'chouxiang', type: 'sucai' }, evidence: { kind: 'named', ref: '语料 p02' } })
-	check('断言落账(带出处即成立,不等目标裁决)', asserted.ok === true && asserted.code === 'entity_asserted', String(asserted.code))
-	check('实体断言真的落进了账本(边在登记那一刻成立)', host.journal.filter((m) => m.t === 'entity/asserted').length === 1, JSON.stringify(host.journal.filter((m) => m.t === 'entity/asserted').length))
+	writeOntology(ws, 'concepts/sucai', { id: 'sucai', label: '素材', gloss: '被挪用的原始材料', basis: '测试用' })
+	writeOntology(ws, 'relations/cheng_wei', { id: 'cheng_wei', label: '被称为', gloss: '某材料曾被称为某概念', range: 'sucai', basis: '测试用' })
+	writeOntology(ws, 'entities/chouxiang', { id: 'chouxiang', type: 'sucai', label: '抽象', basis: '语料 p02', provenance: { kind: 'named', ref: '语料 p02' } })
+	writeOntology(ws, 'entities/chouxiang/yangben_a', {
+		id: 'yangben_a', type: 'sucai', label: '样本甲', basis: '语料 p01', provenance: { kind: 'named', ref: '语料 p01' },
+		relations: [{ predicate: 'cheng_wei', object: 'chouxiang', evidence: { kind: 'named', ref: '语料 p02' } }],
+	})
+	await preStep(host, S, 1)
+	const state = host.service.state(S)
+	check('实体从文件进账(带类型与出处)', state.entities.some((entity) => entity.id === 'yangben_a' && entity.provenance?.ref === '语料 p01'))
+	check('实体文件里的关系就是实体图的边(带出处,不等目标裁决)', state.entityAssertions.some((item) => item.subject.id === 'yangben_a' && item.predicate === 'cheng_wei' && item.object.value === 'chouxiang' && item.evidence.ref === '语料 p02'), JSON.stringify(state.entityAssertions))
+	const graph = graphProjection(state)
+	check('图上那条边标成 asserted(有出处、未经独立裁决)', graph.edges.some((edge) => edge.kind === 'assertion' && edge.status === 'asserted' && edge.from === 'sucai|yangben_a'))
+	check('目录嵌套 = 属于:yangben_a 的容器是 chouxiang,并有一条 part_of 边', graph.nodes.find((node) => node.id === 'sucai|yangben_a')?.container === 'sucai|chouxiang' && graph.edges.some((edge) => edge.kind === 'part_of' && edge.from === 'sucai|yangben_a'))
 
 	// ④ 跳级理由那件工具已经删了(第四阶段):目录里没有它。
 	check('ExplainLevelSkip 不在工具面上', !host.tools.has('ExplainLevelSkip'))
@@ -2139,6 +2155,34 @@ console.log('\n【实体两件:新机制必须有行为证据,不是只有声明
 	// ⑤ 一句话目标:超 120 字当场拒。
 	const long = await callOn(host, 'session-long', 'Frame', { claim: '长'.repeat(200), done_criteria: '有 1 份产物' })
 	check('目标一句话超 120 字 → 拒(headline 现算也一样拒)', long.ok === false && long.code === 'headline_too_long', String(long.code))
+}
+
+console.log('\n【第三道校验:升格这一刻本体不成立 ⇒ 不写进长期知识,回执写明卡在哪】')
+{
+	const host = makeHost()
+	const ws = tempDir('clearai-promotion-check-')
+	host.cwd = ws
+	apply(host.ctx, { blockedThreshold: 3 })
+	const S = 'session-promotion-check'
+	writeOntology(ws, 'concepts/kiln', { id: 'kiln', label: '窑', gloss: '烧结用的窑', basis: 'b' })
+	writeOntology(ws, 'relations/peak_temp', { id: 'peak_temp', label: '峰值温度', domain: 'kiln', range: { form: 'quantity', unit: 'C' }, basis: 'b' })
+	writeOntology(ws, 'entities/kiln_3', { id: 'kiln_3', type: 'kiln', label: '3 号窑', basis: 'b', provenance: { kind: 'named', ref: '台账' } })
+	const framed = await callOn(host, S, 'Frame', {
+		claim: '3 号窑峰值温度', done_criteria: 'lab/k.md 写明读数', promote_at_level: 'L0',
+		hypotheses: [{ claim: '3 号窑峰值 900C', refute_when: '读数不是 900', assertions: [{ predicate: 'peak_temp', subject: { id: 'kiln_3', type: 'kiln' }, object: { kind: 'quantity', value: 900, unit: 'C' } }] }],
+	})
+	check('前置:立约时本体成立,断言通过', framed.ok === true, String(framed.message))
+	const hid = host.service.state(S).hypotheses[0].id
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'k1', do: '读台账', artifacts: ['lab/k.md'], done_criteria: 'lab/k.md 写明读数', tests: { hypotheses: [hid], level: 'L0' } }] })
+	writeText(join(ws, 'lab', 'k.md'), '# 读数\n\n3 号窑峰值温度读数为 900C,取自当班台账第 12 页,读数可复查。\n')
+	await callOn(host, S, 'AdvancePlan', { step_id: 'k1', verdict: 'support', basis: 'lab/k.md 写明读数' })
+	await callOn(host, S, 'ClosePlan', {})
+	rmSync(join(ws, 'clear', 'ontology', 'relations', 'peak_temp.json'))
+	host.nextVerdict = { verdict: 'support', basis: '判据达成', shortfalls: [] }
+	const closed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+	check('目标照样达成(本体问题不挡结案)', closed.ok === true, String(closed.code))
+	check('断言用到的关系已不在 ⇒ 这条判断不升格', host.journal.filter((mutation) => mutation.t === 'fact/promoted').length === 0)
+	check('回执写明没写进长期知识、卡在哪', /没有写进长期知识/.test(String(closed.message)) && /peak_temp/.test(String(closed.message)), String(closed.message).slice(0, 300))
 }
 
 console.log('\n【同态结案:状态没变就不重复花钱请裁决】')

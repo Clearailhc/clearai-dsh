@@ -66,11 +66,11 @@
     },
     {
       "t": "entity/asserted",
-      "by": "entity-assertion"
+      "by": "ontology-lexicon-events"
     },
     {
       "t": "entity/registered",
-      "by": "entity-registration"
+      "by": "ontology-lexicon-events"
     },
     {
       "t": "evidence/recorded",
@@ -977,15 +977,15 @@
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js protectedRoots; touchesProtected",
+        "code": "preset/plugins/clearai-kernel.js protectedPath; bashTouchesProtected; ontologyWriteProblems",
         "tests": "test/kernel.test.mjs",
         "config": null,
         "prompt": "clearai/identity",
         "docs": "docs/design-principles.zh-CN.md"
       },
-      "trigger": "每次写类工具调用前",
+      "trigger": "每次写类工具调用前(write / edit / 带写操作的 bash)",
       "input": "路径",
-      "output": "clear/evidence、clear/knowledge/facts、clear/goals 由系统所有 → deny",
+      "output": "写类工具(write / edit)或带写操作的 bash 碰到 clear/evidence、clear/knowledge/facts、clear/goals、clear/ontology(三支本体目录除外)→ deny;相对路径与绝对路径一样判;只读不拦。写三支本体目录里的 .json 时先在内存里得出全文,单文件校验不过 → deny",
       "blocks_execution": true,
       "native_dsh_alternative": null,
       "rationale": "事实与评估卡只能由系统落盘。",
@@ -1679,19 +1679,43 @@
       "known_mismatch": null
     },
     {
-      "id": "ontology-verbs",
-      "name": "领域词汇的具名动词与货架",
-      "name_en": "Named verbs for the domain vocabulary, and the shelf",
+      "id": "ontology-files",
+      "name": "领域本体写成文件(三道校验)",
+      "name_en": "Domain ontology as files (three checks)",
       "layer": "epistemic",
       "status": "implemented",
       "hardness": "hard",
       "authority": "authoritative",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'",
-        "tests": "test/kernel.test.mjs",
+        "code": "ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA; preset/plugins/clearai-kernel.js ontologyWriteProblems ensureOntologySchema syncWorkspace; ui/lib/fold.js case 'workspace/synced'",
+        "tests": "test/kernel.test.mjs(写入时拒、读取时折图与问题、升格时不成立就不升格、改义标复核)",
         "config": null,
         "prompt": "clearai/loop",
+        "docs": "docs/domain-ontology.zh-CN.md"
+      },
+      "trigger": "模型用 write / edit / bash 写 clear/ontology/{concepts,relations,entities}/**.json;每个 pre-step;Frame 与 Conclude 按需同步",
+      "input": "概念 / 关系 / 实体文件(X.json 描述 X,子节点放在同级 X/ 目录;id = 文件名)",
+      "output": "①写入时单文件校验不过 → 拒写;②读取时从文件折出词汇、实体、实体关系与跨文件问题(有问题的节点或边不进图,卡上列出);③升格时断言涉及的本体不成立 → 这条判断不升格;卡上有本体大纲(前两层与节点数)",
+      "blocks_execution": false,
+      "native_dsh_alternative": "原生文件工具(write / edit / bash)",
+      "rationale": "目录天生是嵌套,文件天生跨会话留下,模型天生会读写和挪文件。约束只放在非守不可的三处:格式不对就读不了,引用不对图就断,升格不对真假就混。层次怎么分、词怎么起,系统一概不管。",
+      "known_mismatch": null
+    },
+    {
+      "id": "ontology-verbs",
+      "name": "领域词汇的具名动词与货架",
+      "name_en": "Named verbs for the domain vocabulary, and the shelf",
+      "layer": "epistemic",
+      "status": "removed",
+      "hardness": "deprecated",
+      "authority": "none",
+      "actor": "model",
+      "source": {
+        "code": null,
+        "tests": null,
+        "config": null,
+        "prompt": null,
         "docs": "docs/domain-ontology.zh-CN.md"
       },
       "trigger": "模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate",
@@ -1699,8 +1723,9 @@
       "output": "mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id——同 id 再定义只许改名字、释义、别名。第四阶段把六个写入口合并成 Define / Deprecate、删掉只读的 QueryKnowledge(知识预检已把相关已知送进运行态卡),变更事件名不变。",
-      "known_mismatch": null
+      "rationale": "本体改成工作区里的 JSON 文件树,模型用原生文件工具直接写(clear/ontology/{concepts,relations,entities}/**.json);Define / Deprecate 与词汇货架 domain.md 一起删了:文件本身就是读面。改义从「拦」改成「查」:事实记下定义指纹,定义一改就标「需复核」。",
+      "known_mismatch": null,
+      "destination": "deleted"
     },
     {
       "id": "ontology-panel-graph",
@@ -1731,48 +1756,50 @@
       "name": "实体登记(实例是一等写入口)",
       "name_en": "Entity registration (instances as a first-class write path)",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js RegisterInstance; ui/lib/domain-language.js validateTerm; ui/lib/fold.js applyMutations",
+        "code": null,
+        "tests": null,
         "config": null,
-        "docs": "docs/domain-ontology.zh-CN.md",
-        "prompt": "preset/plugins/prompts.js clearai/loop",
-        "tests": "test/kernel.test.mjs"
+        "prompt": null,
+        "docs": "docs/domain-ontology.zh-CN.md"
       },
       "trigger": "模型调 RegisterInstance",
       "input": "{id, type, label, basis, provenance:{kind,ref}}",
       "output": "entity/registered 变更 → state.entities[]（实体图节点，带出处）",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "概念是约定（不要依据），实例是观测（必须带出处）。把实体层绑在目标级裁决上时，\"本体写得好、实体图是空的\"会变成最省力的完成方式。",
+      "rationale": "实体改成 clear/ontology/entities/ 下的文件(带类型、依据与出处),RegisterInstance 删了。",
       "known_mismatch": null,
       "layer": "epistemic",
-      "status": "implemented",
-      "hardness": "hard",
-      "authority": "authoritative",
-      "actor": "model"
+      "status": "removed",
+      "hardness": "deprecated",
+      "authority": "none",
+      "actor": "model",
+      "destination": "deleted"
     },
     {
       "id": "entity-assertion",
       "name": "实体断言(登记即产边)",
       "name_en": "Entity assertion (edge holds on record)",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js Assert; ui/lib/domain-language.js graphProjection; ui/lib/fold.js applyMutations",
+        "code": null,
+        "tests": null,
         "config": null,
-        "docs": "docs/domain-ontology.zh-CN.md",
-        "prompt": "preset/plugins/prompts.js clearai/loop",
-        "tests": "test/kernel.test.mjs"
+        "prompt": null,
+        "docs": "docs/domain-ontology.zh-CN.md"
       },
       "trigger": "模型调 Assert",
       "input": "{subject:{id,type}, predicate, object, evidence:{kind,ref}}",
       "output": "entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "边在观测那一刻成立，与\"独立裁决后才升格\"的事实边并存但可区分（promoted 带等级与边界，asserted 带出处）。",
+      "rationale": "实体之间的关系写在实体文件自己的 relations 里(每条带出处),Assert 删了;写下那一刻就进图这一点不变。",
       "known_mismatch": null,
       "layer": "epistemic",
-      "status": "implemented",
-      "hardness": "hard",
-      "authority": "authoritative",
-      "actor": "model"
+      "status": "removed",
+      "hardness": "deprecated",
+      "authority": "none",
+      "actor": "model",
+      "destination": "deleted"
     },
     {
       "id": "entity-gate",

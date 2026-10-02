@@ -294,7 +294,7 @@ console.log('\n【折法:事实带上假设 id 与断言,并按 id 关联】')
 	 * 一次决定(改这一行 + 改 STATE_VERSION 的说明),而不是顺手长出来的——
 	 * 「旧账本逐字段不变」这句话只有在这种对照下才可核对。
 	 */
-	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'workspace', 'inFlight', 'written']
+	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'workspace', 'ontologyProblems', 'inFlight', 'written']
 	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'level', 'evidence', 'path', 'assertions', 'definitions', 'at']
 	check('状态键集合与清单逐字一致(加字段要改这一行)', JSON.stringify(Object.keys(fold.emptyState()).sort()) === JSON.stringify([...STATE_KEYS].sort()), Object.keys(fold.emptyState()).filter((key) => !STATE_KEYS.includes(key)).join(','))
 	check('事实键集合与清单逐字一致', JSON.stringify(Object.keys(legacy.facts[0]).sort()) === JSON.stringify([...FACT_KEYS].sort()), Object.keys(legacy.facts[0]).filter((key) => !FACT_KEYS.includes(key)).join(','))
@@ -473,7 +473,7 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 	const noVocab = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g1', claim: '全新领域', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: '全新主张', refute_when: 'rw' }] }])
 	const pf3 = fold.knowledgePreflight(noVocab, fold.derive(noVocab))
 	check('没有命中时 terms/predicates 为空数组(不是 null,不是 undefined)', Array.isArray(pf3.terms) && pf3.terms.length === 0 && Array.isArray(pf3.predicates) && pf3.predicates.length === 0)
-	check('卡里如实说「没命中」并指出动作', fold.renderCard(noVocab).includes('没有命中') && fold.renderCard(noVocab).includes('先立词'))
+	check('卡里如实说「没命中」并指出动作', fold.renderCard(noVocab).includes('没有命中') && fold.renderCard(noVocab).includes('clear/ontology/'))
 
 	// ⑥ 废止的词条不进预检。
 	const deprecated = fold.applyMutations(seededState, [{ t: 'ontology/term_deprecated', id: 'furnace_batch', reason: '不再用' }])
@@ -641,7 +641,7 @@ console.log('\n【缺口:每条都有 code / count / detail / nextAction 四格�
 	 */
 	const registered = fold.applyMutations(state, [{ t: 'entity/registered', id: 'yangben_a', type: 'sucai', label: '样本甲', basis: 'R-01', provenance: { kind: 'named', ref: '人' } }])
 	check('登记实例 ⇒ entities_unlanded 消失(出口就是缺口里写的那一个动作)', !fold.derive(registered).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
-	check('nextAction 指的正是 RegisterInstance', /RegisterInstance/.test(unlanded?.nextAction ?? ''))
+	check('nextAction 指的正是给主体写实体文件', /clear\/ontology\/entities/.test(unlanded?.nextAction ?? ''))
 	const asserted = fold.applyMutations(state, [{ t: 'entity/asserted', id: 'ea1', subject: { id: 'yangben_a', type: 'sucai' }, predicate: 'cheng_wei', object: { kind: 'instance', value: 'yangben_b', type: 'sucai' }, evidence: { kind: 'named', ref: '人' } }])
 	check('带出处的 Assert 也把主体落成节点 ⇒ 缺口同样消失', !fold.derive(asserted).knowledge.gaps.some((gap) => gap.code === 'entities_unlanded'))
 	const unrelated = fold.applyMutations(state, [{ t: 'entity/registered', id: 'yangben_z', type: 'sucai', label: '无关样本', basis: 'R-09', provenance: { kind: 'named', ref: '人' } }])

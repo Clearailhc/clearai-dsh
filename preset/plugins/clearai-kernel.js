@@ -183,10 +183,10 @@ export const MECHANISM_TOOLS = {
 	goal: ['Frame', 'Conclude'],
 	plan: ['CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan'],
 	/**
-	 * 领域语言:四个写入口——立词(概念与谓词,同 id 再定义即修订)、废止、**实例登记**、**带出处的断言**。
-	 * 「约定」与「观测」各走各的门:概念不需依据,实例与断言必须带出处。
+	 * 领域本体没有工具:模型用原生文件工具直接写 `clear/ontology/{concepts,relations,entities}/**.json`,
+	 * 写入时由 `tools/pre-execute` 查单个文件,读取时折法从文件折出图(见 `syncWorkspace`)。
+	 * 从前的 Define / Deprecate / RegisterInstance / Assert 四件随之删除。
 	 */
-	ontology: ['Define', 'Deprecate', 'RegisterInstance', 'Assert'],
 }
 const TOOL_CATALOG = new Set(Object.values(MECHANISM_TOOLS).flat())
 
@@ -289,7 +289,7 @@ export function apply(ctx, config = {}) {
 		/**
 		 * **实体门**(结案唯一的结构关口;机制缺省关,preset 里开):将要升格的判断里,
 		 * 断言主体还不是实体图节点 ⇒ 结案被拒。它挡的是「本体写得漂亮、实体图是空的」。
-		 * 出口两条:`RegisterInstance` 补登记,或把断言从判断上拿掉 / 如实 abandoned。
+		 * 出口两条:给主体写实体文件(`clear/ontology/entities/<id>.json`),或把断言从判断上拿掉 / 如实 abandoned。
 		 */
 		requireLandedEntities: config.requireLandedEntities === true,
 		bashDenyRules: config.bashDenyRules !== false,
@@ -1432,7 +1432,7 @@ export function apply(ctx, config = {}) {
 	}
 
 	/** 开一次调用的上下文:拿宿主读面、取状态、备一个变更列表。 */
-	function open(exec) {
+	function open(exec, options = {}) {
 		const hostService = host()
 		if (hostService === undefined) {
 			return { ok: false, response: fail('host_missing', '宿主包 clearai-dsh 没有挂载:状态机不在(它是会话日志的投影)。先装上它,再谈工具。') }
@@ -1461,6 +1461,24 @@ export function apply(ctx, config = {}) {
 					`宿主读面这一刻不可用(${String(error?.message ?? error).slice(0, 200)})。**已经发生的事实照旧落账**(派发记录不丢);现在先看当前账本,再谈重试——不要重做一遍已经做过的事。`,
 					{ mutations: [] },
 				),
+			}
+		}
+		/**
+		 * **按需同步工作区**(`options.sync`,Frame 与 Conclude 用):模型可能刚在同一拍里写完
+		 * 实体或概念文件就立约 / 结案,等下一拍的 pre-step 才同步就晚了。这里先把变化落成一条
+		 * `workspace/synced` 放进这次调用的变更里,并按「同步之后」的样子交出状态与派生。
+		 */
+		if (options.sync === true) {
+			const base = hostService.state(sessionId)
+			let synced = null
+			try {
+				synced = syncWorkspace(sessionId, base)
+			} catch (error) {
+				ctx.logger?.warn?.(`clearai: 工作区同步失败 ${String(error?.message ?? error).slice(0, 160)}`)
+			}
+			if (synced !== null) {
+				const preview = previewOf(hostService, sessionId, [synced])
+				if (preview !== null) return { ok: true, hostService, sessionId, state: preview.state, derived: preview.derived ?? null, mutations: [synced], done: null }
 			}
 		}
 		return { ok: true, hostService, sessionId, state: hostService.state(sessionId), mutations: [], done: null }
@@ -1805,7 +1823,7 @@ export function apply(ctx, config = {}) {
 	/** 写货架;内容没变就返回 null(调用方据此决定要不要在卡里提一句)。 */
 	function ensureFactsShelf(sessionId, state, mutations = []) {
 		/**
-		 * 与词汇货架**同一条所有权规则,同一个位置**(写入口):子会话的投影里
+		 * 所有权判据在写入口:子会话的投影里
 		 * 没有主线的事实,让它铺只会按它自己那份重写 `INDEX.md`。
 		 */
 		if (isSpawnedChild(sessionId)) return null
@@ -1829,44 +1847,6 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
-	/**
-	 * **领域词汇货架**:把折出来的词汇落成 `clear/ontology/domain.md`。
-	 *
-	 * 与过程本体货架同一条纪律(读面 + 幂等),但**触发时机不同**:过程本体随发布版本,
-	 * 一个会话铺一次就够;词汇每一步都可能变,所以每个本体动词落账之后都要重铺一遍——
-	 * 内容没变就不重写(文件时间戳是给人的读数,不是噪声)。
-	 *
-	 * 带 `mutations` 时按**这一步之后**的样子渲染:工具返回前货架就已更新,读的人不必等下一回合。
-	 */
-	/**
-	 * 铺领域词汇货架(幂等)。
-	 *
-	 * **写入口自带所有权判据:派出去的子会话结构上写不进这份文件。**
-	 *
-	 * 规则一句话:工作区级读面属于拥有账本的会话。子会话(评估者)与主线
-	 * 共享同一个工作区,却持有**另一份(空的)投影**——让它照自己的投影重铺,
-	 * `renderShelf(子会话)` 渲染出的就是「还没有词条」的占位版。真跑里评估者两次读到
-	 * 7 行占位版、主线连读三次都是 96 行 21 词条,两边各自稳定:文件在「谁最后铺了一拍」
-	 * 之间摆动,而两边谁都没说谎。子会话**读**这份货架(评估者核对判据正要读它),但不写。
-	 *
-	 * 判据放在**写函数里**而不是调用点,与 `tools/pre-execute` 拒模型写 `clear/` 是同一条
-	 * 纪律:边界住在咽喉点,新增多少调用点都绕不过(不可表达优于不可违反)。
-	 */
-	function ensureDomainShelf(hostService, sessionId, mutations = []) {
-		if (hostService?.domain?.renderShelf === undefined) return ''
-		if (isSpawnedChild(sessionId)) return ''
-		try {
-			const body = hostService.domain.renderShelf(sessionId, Array.isArray(mutations) ? mutations : [])
-			const file = sessionFile(sessionId, 'clear', 'ontology', 'domain.md')
-		if (file === null) return null
-			if (existsSync(file) && readFileSync(file, 'utf8') === body) return ''
-			writeTextFile(file, body)
-			return `\n词汇货架已更新:${join('clear', 'ontology', 'domain.md')}(概念 / 谓词 / 图 / 引用)。**它是读面,不是权威**——要改词汇就调注册 / 修订 / 废止动词。`
-		} catch (error) {
-			ctx.logger?.warn?.(`clearai domain shelf: 写入失败 ${String(error?.message ?? error).slice(0, 160)}`)
-			return ''
-		}
-	}
 
 	/**
 	 * **目标文档**:把当前目标(一句话、判据全文、假设、修订留痕)落成
@@ -1932,16 +1912,28 @@ export function apply(ctx, config = {}) {
 		return hostService?.domain ?? null
 	}
 
-	/** 在折出来的词汇里找一个条目(概念或谓词)。判据与折法同源:读的就是 `state.lexicon`。 */
-	function findLexiconEntry(state, id) {
-		const lexicon = state?.lexicon ?? {}
-		const wanted = String(id ?? '').trim()
-		if (wanted === '') return null
-		const term = (Array.isArray(lexicon.terms) ? lexicon.terms : []).find((item) => item.id === wanted)
-		if (term !== undefined) return { kind: 'term', entry: term }
-		const predicate = (Array.isArray(lexicon.predicates) ? lexicon.predicates : []).find((item) => item.id === wanted)
-		if (predicate !== undefined) return { kind: 'predicate', entry: predicate }
-		return null
+	/**
+	 * **本体文件树的地基**:`clear/ontology/SCHEMA.json`(字段定义,只读)与三支目录。
+	 *
+	 * 本体由模型用原生文件工具直接写;它要知道往哪写、每种文件有哪些字段。字段定义与写入时的
+	 * 校验是同一份(宿主半的 `domain.schema` / `domain.checkFile`),所以这里只把它铺出来。
+	 * 幂等:内容没变就不重写。子会话(评估者)不铺:它们只读。
+	 */
+	function ensureOntologySchema(hostService, sessionId) {
+		if (isSpawnedChild(sessionId) || typeof hostService?.domain?.schema !== 'function') return null
+		const cwd = sessionCwd(sessionId)
+		if (cwd === null) return null
+		try {
+			for (const branch of ONTOLOGY_BRANCH_DIRS) mkdirSync(join(cwd, ...ONTOLOGY_REL, branch), { recursive: true })
+			const file = join(cwd, ...ONTOLOGY_REL, 'SCHEMA.json')
+			const body = `${JSON.stringify(hostService.domain.schema(), null, 2)}\n`
+			if (existsSync(file) && readFileSync(file, 'utf8') === body) return null
+			writeTextFile(file, body)
+			return file
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai ontology: 字段定义写入失败 ${String(error?.message ?? error).slice(0, 160)}`)
+			return null
+		}
 	}
 
 	/**
@@ -2123,7 +2115,7 @@ export function apply(ctx, config = {}) {
 		},
 		output: CARD_OUTPUT,
 		async execute(args, exec) {
-			const call = open(exec)
+			const call = open(exec, { sync: true })
 			if (call.ok !== true) return call.response
 			const { hostService, sessionId, state, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
@@ -2165,9 +2157,9 @@ export function apply(ctx, config = {}) {
 					if (judge === null) return fail('domain_unavailable', '这一层的宿主没有提供领域判据(domain facade):无法校验断言。请检查宿主半与预设是否同版本。')
 					// `legacy`:迁移期一次性放行「主体还没登记」这条(`Frame` 的 `legacy:true`)——
 					// 旧会话的断言主体在登记实例这条路存在之前就写下了,不该因为补上了机制而追溯失败。
-					const problems = judge.validateAssertions(sessionId, hypothesis.assertions, { legacy })
+					const problems = judge.validateAssertions(sessionId, hypothesis.assertions, { legacy, mutations })
 					if (problems.length > 0) {
-						return fail('assertions_rejected', `这条假设的断言不能成立(先注册词汇,或改断言):\n${problems.map((item) => `- ${item}`).join('\n')}`)
+						return fail('assertions_rejected', `这条假设的断言不能成立(先在 clear/ontology/ 下写好用到的概念、关系与主体实体文件,或改断言):\n${problems.map((item) => `- ${item}`).join('\n')}`)
 					}
 				}
 			}
@@ -2330,7 +2322,7 @@ export function apply(ctx, config = {}) {
 		},
 		output: CARD_OUTPUT,
 		async execute(args, exec) {
-			const call = open(exec)
+			const call = open(exec, { sync: true })
 			if (call.ok !== true) return call.response
 			const { hostService, sessionId, state, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
@@ -2367,7 +2359,7 @@ export function apply(ctx, config = {}) {
 					}。\n为什么不让跳过:事实是在**收尾**这条路上沉淀的(假设 → 事实),先结目标就等于跳过沉淀 ✗。\n要接着做:把剩下的步交付或用 RevisePlan(void)作废,然后 \`ClosePlan\`;要放弃这个目标就用 \`Conclude(outcome="abandoned")\`(那条路不受此限)。`,
 				)
 			}
-			const derived = hostService.derive(sessionId)
+			const derived = call.derived ?? hostService.derive(sessionId)
 			/**
 			 * **实体门:将要升格的结论,主体必须在图上。**(结案唯一的结构关口)
 			 *
@@ -2380,7 +2372,7 @@ export function apply(ctx, config = {}) {
 			 * 判断上的 `unlanded`,与卡上缺口 ③ 同一份读数。
 			 *
 			 * 为什么看节点、不看边:边由升格本身落下(事实带着断言进图);要求升格之前另用
-			 * `Assert` 把同一句话再说一遍,只是让模型重复劳动——第三阶段重跑里它就这样多花了一轮。
+			 * 实体文件里把同一句话再写一遍,只是让模型重复劳动——第三阶段重跑里它就这样多花了一轮。
 			 *
 			 * 第四阶段删掉的两道门:「跳级没写理由」(`ExplainLevelSkip` 整套删除)与
 			 * 「将升格的命题没有断言形态」(降为缺口)。依据见 `docs/less-is-more-plan.zh-CN.md` 第四阶段。
@@ -2399,7 +2391,7 @@ export function apply(ctx, config = {}) {
 						'entities_unlanded',
 						`有 ${offGraph.length} 条将要升格的判断,断言主体还不在实体图上:\n${offGraph
 							.map((hypothesis) => `- ${hypothesis.id}(${hypothesis.supportedLevel}):${hypothesis.unlanded.map((subject) => `${subject.type}|${subject.id}`).join('、')}`)
-							.join('\n')}\n为什么不让跳过:升格会把这些断言连同主体一起写进实体图;主体没有出处,图上就多出一个无从复核的节点。\n两条出口:① 用 \`RegisterInstance\` 把这些主体连出处登记下来,然后重新结案(不必再 \`Assert\` 同一句话,升格会落下这条边);② 这些断言不值得留下形态,就用 \`Frame\` 修订把它们从判断上拿掉,或如实 \`Conclude(outcome="abandoned")\`。`,
+							.join('\n')}\n为什么不让跳过:升格会把这些断言连同主体一起写进实体图;主体没有出处,图上就多出一个无从复核的节点。\n两条出口:① 给这些主体各写一个实体文件(\`clear/ontology/entities/<id>.json\`,带类型与出处),然后重新结案(不必在实体文件里再写同一句话,升格会落下这条边);② 这些断言不值得留下形态,就用 \`Frame\` 修订把它们从判断上拿掉,或如实 \`Conclude(outcome="abandoned")\`。`,
 						{ mutations },
 					)
 				}
@@ -2496,12 +2488,36 @@ export function apply(ctx, config = {}) {
 			}
 			const threshold = levelIndexOf(goal.promote_at_level)
 			const promoted = []
+			/** 升格时第三道校验没过的判断:不升格,回执里写清卡在哪。 */
+			const held = []
 			for (const hypothesis of derived.hypotheses) {
+				/**
+				 * 只升格**这个目标**的判断,且每条只升格一次:上一个目标的判断状态仍是 alive,
+				 * 不挡的话下一次结案会把它再写一遍(同一条结论两个事实文件)。
+				 */
+				if (typeof hypothesis.goal === 'string' && hypothesis.goal !== goal.id) continue
+				if ((state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id)) continue
 				if (hypothesis.status !== 'alive' && hypothesis.status !== 'proposed') continue
 				if (hypothesis.refutations > 0) continue
 				if (levelIndexOf(hypothesis.supportedLevel) < threshold) continue
-				const factId = `f-${Math.random().toString(36).slice(2, 8)}`
 				const assertions = Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null
+				/**
+				 * **第三道校验(升格时)**:断言涉及的谓词、类型、主体此刻都要在本体文件里成立。
+				 * 平时跨文件的问题只提示(模型改一组文件时中间态必然不一致);写进长期知识这一刻不行。
+				 */
+				if (assertions !== null && assertions.length > 0) {
+					let problems = []
+					try {
+						problems = hostService.domain?.validateAssertions?.(sessionId, assertions, { mutations }) ?? []
+					} catch (error) {
+						problems = [`校验这一刻做不了:${String(error?.message ?? error).slice(0, 160)}`]
+					}
+					if (problems.length > 0) {
+						held.push(`「${handleOf(hypothesis)}」:${problems.map(String).join(';')}`)
+						continue
+					}
+				}
+				const factId = `f-${Math.random().toString(36).slice(2, 8)}`
 				const evidence = evidenceFor(state, hypothesis.id)
 					.filter((item) => item.verdict === 'support')
 					.map((item) => item.id)
@@ -2544,11 +2560,14 @@ export function apply(ctx, config = {}) {
 				verdict: 'support',
 				message:
 					`目标已达成(独立评估者的依据:${audit.basis})。` +
+					(held.length > 0 ? `\n这几条判断够格了,但断言用到的本体此刻不成立,**没有写进长期知识**(它们照旧留在记录里;改好本体文件后,要在之后的目标里再检验一次才能写进长期知识):\n${held.map((item) => `- ${item}`).join('\n')}` : '') +
 					(promoted.length > 0 ? `\n写进长期知识:${promoted.map((item) => `${item.claim}(clear/knowledge/facts/${item.id}.json)`).join(' / ')}。之后的会话都读得到它们(总览在 clear/knowledge/facts/INDEX.md)。` : '\n没有判断达到写进长期知识的门槛。') +
 					(untouched.length > 0
 						? `\n结案时有 ${untouched.length} 条判断**一次都没检验过**:${untouched.map((hypothesis) => `「${handleOf(hypothesis)}」`).join('、')}——没检验不是「没问题」,是「没看过」;它们留在账上,随时可以补一次检验。`
 						: '') +
 					'\n被推翻与被替换的判断都留在记录里。' +
+					/** 「怎么做」也要攒下来:这次摸出的可复用做法写成原生技能,下次宿主会列出来。 */
+					'\n这次如果摸出了以后还会用的做法(怎么查、怎么算、怎么验),写成原生技能:.agents/skills/<名字>/SKILL.md(description 写清什么时候用)。' +
 					continuationNote +
 					declareDeliverables(exec, sessionId, delivered),
 			})
@@ -2603,324 +2622,6 @@ export function apply(ctx, config = {}) {
 		additionalProperties: false,
 	}
 
-
-	// ── 领域语言(本体动词)─────────────────────────────────────────────────
-	/**
-	 * 两个动词 = 领域词汇的**全部写入口**:`Define` 立词与修订(概念与谓词同一件),`Deprecate` 废止。
-	 *
-	 * 它们只做一件事:把「这个领域有哪些概念、哪些谓词、关系取什么值形态」写进账本事件,
-	 * 由折法折成 `state.lexicon`;再由同一份折法长出本体图、冲突读数与货架。
-	 * 事件名沿用从前那七个动词的(`ontology/term_added` 等),所以旧日志照旧折得出来。
-	 *
-	 * 四条贯穿所有动词的纪律:
-	 *   · **判据只有一份**——校验经 `hostService.domain.*`(与折法、读面同源),预设侧不复制规则;
-	 *   · **依据必填**——约定可以自愿,不能无来由;
-	 *   · **没有删除**——修订留版本,废止留缘由且是黏性终态;
-	 *   · **语义变化必须换 id**——同 id 再定义只许改展示信息;改含义/主词域/值域走「废止 + 新 id」。
-	 */
-	const TERM_SEMANTICS = ['parent']
-	const PREDICATE_SEMANTICS = ['domain', 'range', 'functional']
-	const sameValue = (left, right) => JSON.stringify(left ?? null) === JSON.stringify(right ?? null)
-
-	defineTool({
-		name: 'Define',
-		description:
-			'立一个领域词:**不带 `range` 的是概念**(本体图上的节点),**带 `range` 的是谓词**(本体图上的边)。id 用小写 slug;`basis` 必填——哪份材料、哪条事实或人说的哪句话让这个词成立。概念可给 `parent`(is_a,只能连概念)与 `aliases`;谓词的值域二选一:`range={form:"quantity"|"statement"|"formula"|"code"|"reference",unit?}`(宾语是字面值)或 `range={term:"<概念 id>"}`(宾语是另一个概念的实例),`domain` 可选(主词域),`functional=true` 表示单值(同一主体出现两个不同取值时投影给出一对冲突,只暴露不裁决)。**同 id 再定义即修订**:只许改名字、释义、别名(旧值留在账上);含义变了(父概念 / 主词域 / 值域 / 单值性)要先 `Deprecate` 旧词、换一个新 id。登记是约定不是主张:它不需要证据等级,但从此可以出现在断言里。',
-		parameters: {
-			type: 'object',
-			properties: {
-				id: { type: 'string', description: '小写字母开头的 slug(字母/数字/下划线,≤40)' },
-				label: { type: 'string', description: '给人看的名字(新词必填)' },
-				gloss: { type: 'string', description: '一句话释义(新概念必填)' },
-				basis: { type: 'string', description: '依据:哪份材料 / 哪条事实 / 谁说的;修订时写为什么改' },
-				aliases: { type: 'array', items: { type: 'string' }, description: '别名(仅概念,可选)' },
-				parent: { type: 'string', description: '父概念 id(仅概念,可选,is_a)' },
-				domain: { type: 'string', description: '主词域:概念 id(仅谓词,可选)' },
-				range: {
-					type: 'object',
-					description: '值域(给了它就是谓词):{form,unit?} 或 {term}',
-					properties: {
-						form: { type: 'string', enum: ['statement', 'quantity', 'formula', 'code', 'reference'] },
-						unit: { type: 'string' },
-						term: { type: 'string' },
-					},
-					additionalProperties: false,
-				},
-				functional: { type: 'boolean', description: '是否单值(仅谓词,默认否)' },
-			},
-			required: ['id', 'basis'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const judge = domainJudge(hostService)
-			if (judge === null) return fail('domain_unavailable', '这一层的宿主没有提供领域判据(domain facade):无法校验词汇。请检查宿主半与预设是否同版本。')
-			const id = String(args.id ?? '').trim()
-			const basis = typeof args.basis === 'string' ? args.basis.trim() : ''
-			const existing = findLexiconEntry(state, id)
-			if (existing === null) {
-				if (args.range === undefined) {
-					const problems = judge.validateTerm(sessionId, args)
-					if (problems.length > 0) return fail('term_rejected', `这个概念不能登记:\n${problems.map((item) => `- ${item}`).join('\n')}`)
-					mutations.push({
-						t: 'ontology/term_added',
-						id,
-						label: String(args.label).trim(),
-						gloss: String(args.gloss).trim(),
-						aliases: Array.isArray(args.aliases) ? args.aliases.map((alias) => String(alias)) : [],
-						parent: args.parent === undefined ? null : String(args.parent).trim(),
-						basis,
-					})
-					const note = ensureDomainShelf(hostService, sessionId, mutations)
-					return done({ ok: true, code: 'term_registered', message: `概念 ${id} 已登记。它现在是本体图上的一个节点:新断言可以引用它。${note}` })
-				}
-				if (args.aliases !== undefined || args.parent !== undefined) return fail('predicate_rejected', '谓词没有别名与父概念:aliases / parent 只属于概念(不带 range 的那种)。')
-				const problems = judge.validatePredicate(sessionId, args)
-				if (problems.length > 0) return fail('predicate_rejected', `这个谓词不能登记:\n${problems.map((item) => `- ${item}`).join('\n')}`)
-				mutations.push({
-					t: 'ontology/predicate_added',
-					id,
-					label: String(args.label).trim(),
-					gloss: args.gloss === undefined ? '' : String(args.gloss).trim(),
-					domain: args.domain === undefined ? null : String(args.domain).trim(),
-					range: args.range,
-					functional: args.functional === true,
-					basis,
-				})
-				const note = ensureDomainShelf(hostService, sessionId, mutations)
-				return done({
-					ok: true,
-					code: 'predicate_registered',
-					message: `谓词 ${id} 已登记(${args.range?.term ? `宾语是概念 ${args.range.term} 的实例` : `宾语取 ${args.range?.form} 形态`}${args.functional === true ? ' · 单值' : ''})。下一步:在 Frame 的假设里带上断言,引用它。${note}`,
-				})
-			}
-			/**
-			 * **同 id 再定义 = 修订**,只许动展示信息。语义字段给了就要与现值一致——
-			 * 稳定 id 的含义在历史上悄悄改变,等于拿今天的释义重写所有旧事实。
-			 */
-			const kindName = existing.kind === 'term' ? '概念' : '谓词'
-			if (existing.entry.status === 'deprecated') return fail(existing.kind === 'term' ? 'term_deprecated' : 'predicate_deprecated', `${kindName} ${id} 已废止,不能再定义(要恢复语义就换一个新 id)。`)
-			if (existing.kind === 'term' && (args.range !== undefined || args.domain !== undefined || args.functional !== undefined)) {
-				return fail('kind_mismatch', `id ${id} 已经是一个概念:range / domain / functional 只属于谓词。要立谓词就换一个 id(概念与谓词共用一个命名空间)。`)
-			}
-			if (existing.kind === 'predicate' && (args.aliases !== undefined || args.parent !== undefined)) {
-				return fail('kind_mismatch', `id ${id} 已经是一个谓词:aliases / parent 只属于概念。`)
-			}
-			const semantics = existing.kind === 'term' ? TERM_SEMANTICS : PREDICATE_SEMANTICS
-			const changed = semantics.filter((key) => args[key] !== undefined && !sameValue(key === 'functional' ? args[key] === true : args[key], key === 'functional' ? existing.entry[key] === true : existing.entry[key]))
-			if (changed.length > 0) {
-				return fail(
-					'semantics_changed',
-					`${kindName} ${id} 已经登记过,这次改了它的含义(${changed.join(' / ')})。同 id 再定义只许改名字、释义、别名——含义变了要先 \`Deprecate\` 旧词,再用一个新 id \`Define\`。`,
-				)
-			}
-			const display = existing.kind === 'term' ? ['label', 'gloss', 'aliases'] : ['label', 'gloss']
-			const revised = display.filter((key) => args[key] !== undefined && !sameValue(key === 'aliases' ? args[key].map(String) : String(args[key]).trim(), existing.entry[key]))
-			if (revised.length === 0) return fail('nothing_to_revise', `${kindName} ${id} 已经登记过,而且这次给的名字、释义、别名都与现值相同:没有要改的。`)
-			const pick = (key) => (revised.includes(key) ? (key === 'aliases' ? args.aliases.map(String) : String(args[key]).trim()) : undefined)
-			mutations.push(
-				existing.kind === 'term'
-					? { t: 'ontology/term_revised', id, label: pick('label'), gloss: pick('gloss'), aliases: pick('aliases'), reason: basis }
-					: { t: 'ontology/predicate_revised', id, label: pick('label'), gloss: pick('gloss'), reason: basis },
-			)
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({ ok: true, code: existing.kind === 'term' ? 'term_revised' : 'predicate_revised', message: `${kindName} ${id} 已修订(改了 ${revised.join(' / ')};版本 +1,旧值留在账上)。${note}` })
-		},
-	})
-
-	/**
-	 * **废止是黏性终态**:没有复活这条路。存量事实照旧可读(历史留着),
-	 * 引用它的**新**断言会被拒,并在货架上标明「所用术语已废止」。
-	 */
-	defineTool({
-		name: 'Deprecate',
-		description:
-			'废止一个概念或谓词:缘由必填。**没有删除**——条目、旧版本与引用过它的事实全部留着;新断言不许再引用它,存量事实在货架上标明「所用术语已废止」。要恢复语义就用新 id 再 `Define`(那是覆盖,不是复活)。',
-		parameters: {
-			type: 'object',
-			properties: { id: { type: 'string', description: '概念或谓词的 id' }, reason: { type: 'string', description: '为什么废止(必填)' } },
-			required: ['id', 'reason'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const entry = findLexiconEntry(state, args.id)
-			if (entry === null) return fail('unknown_entry', `词汇里没有这个条目:${String(args.id)}`)
-			if (entry.entry.status === 'deprecated') return fail('already_deprecated', `${String(args.id)} 已经是废止状态(这一步不会重复记账)。`)
-			if (typeof args.reason !== 'string' || args.reason.trim() === '') return fail('reason_required', '废止要写缘由:为什么这个词不再用。')
-			mutations.push({ t: entry.kind === 'term' ? 'ontology/term_deprecated' : 'ontology/predicate_deprecated', id: String(args.id), reason: String(args.reason).trim() })
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({
-				ok: true,
-				code: 'entry_deprecated',
-				message: `${entry.kind === 'term' ? '概念' : '谓词'} ${String(args.id)} 已废止(记录保留,新断言不许再引用;引用过它的事实照旧可读)。${note}`,
-			})
-		},
-	})
-
-	/**
-	 * ── 实体两件:实例与关于它的断言 ──────────────────────────────────────────
-	 *
-	 * **为什么要单独立这两件**:原来实体层的节点与边**只**来自
-	 * 已升格事实,而事实是"目标级独立裁决判 support"之后才发的奖励。于是一条观察要变成实体,
-	 * 必须同时满足「命题登记了 + 断言类型合法 + 证据够门槛 + 无推翻 + **整条目标的四条散文判据
-	 * 都被评估者认可**」——最后那一条与这条观察毫无关系,却握着实体层的存在性。
-	 * 失效模式是**比例失衡**:本体层可以堆出几十个词(登记是约定,不花代价),而实体图可能
-	 * 一个节点都没有——账面上"本体建好了",实际上一条可复核的观测都没留下来。
-	 *
-	 * 修法是把「约定」与「观测」分开,各给一个写入口:
-	 *   · `Define` = 约定(概念,不需要依据);
-	 *   · `RegisterInstance` = 观测(实例,**必须**带依据与出处);
-	 *   · `Assert` = 关于某个实例的一句话(**必须**带出处),它**在落账那一刻就进实体图**。
-	 * 事实层照旧:独立裁决过的结论仍然升格成事实,实体图因此有两类边
-	 * (带等级的 `promoted` 与带出处的 `asserted`),两条都看得见。
-	 */
-	defineTool({
-		name: 'RegisterInstance',
-		description:
-			'登记一个**实例**(实体图上的节点):某个具体的人 / 作品 / 事件 / 样本。与 `Define` 的分工是硬的——概念是**约定**(不需要依据),实例是**观测**(`basis` 与 `provenance` 必填)。`type` 必须是已登记的概念。实例自己不带关系;要让它连上别的节点就用 `Assert`。',
-		parameters: {
-			type: 'object',
-			properties: {
-				id: { type: 'string', description: '实例 id:小写 slug 或原文名(字母/数字/下划线/短横,≤60)' },
-				type: { type: 'string', description: '它是什么概念的实例(已登记的 term id)' },
-				label: { type: 'string', description: '给人看的名字' },
-				basis: { type: 'string', description: '依据:哪份材料 / 哪条观测让这个实例成立' },
-				provenance: {
-					type: 'object',
-					description: '出处:能指认到的东西。url = 可打开的链接;named = 具名文献 / 条目;backref = 工作区里已有的文件或条目 id',
-					properties: {
-						kind: { type: 'string', enum: ['url', 'named', 'backref'] },
-						ref: { type: 'string', description: '链接、文献名或文件路径' },
-					},
-					required: ['kind', 'ref'],
-					additionalProperties: false,
-				},
-			},
-			required: ['id', 'type', 'label', 'basis', 'provenance'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const id = String(args.id ?? '').trim()
-			const type = String(args.type ?? '').trim()
-			const label = String(args.label ?? '').trim()
-			const basis = String(args.basis ?? '').trim()
-			const kind = String(args.provenance?.kind ?? '').trim()
-			const ref = String(args.provenance?.ref ?? '').trim()
-			if (!/^[A-Za-z0-9_-]{1,60}$/.test(id)) return fail('instance_id_invalid', 'id 只能用字母/数字/下划线/短横(≤60):它是图上的稳定键,不能含空格与标点。')
-			if (label === '') return fail('instance_label_required', '实例要有一个人能读的名字。')
-			if (basis === '') return fail('instance_basis_required', '实例是**观测**不是约定:写清哪份材料让它可以被指认。')
-			if (!['url', 'named', 'backref'].includes(kind) || ref === '') {
-				return fail('instance_provenance_required', '出处必填:`{kind:"url"|"named"|"backref", ref:"…"}`。没有出处的实例进不了实体图——那是它与概念的区别。')
-			}
-			const terms = Array.isArray(stateOf(sessionId)?.lexicon?.terms) ? stateOf(sessionId).lexicon.terms : []
-			const known = terms.find((term) => String(term.id) === type)
-			if (known === undefined) return fail('instance_type_unknown', `type ${type} 不是已登记的概念。先 Define 立这个概念(它才是约定那一侧),再登记实例。`)
-			if (String(known.status ?? 'admitted') === 'deprecated') return fail('instance_type_deprecated', `概念 ${type} 已废止:新断言不许再引用它。`)
-			mutations.push({ t: 'entity/registered', id, type, label, basis, provenance: { kind, ref } })
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({
-				ok: true,
-				code: 'instance_registered',
-				message: `实例 ${id} 已登记为 ${type} 的实例(出处:${kind} · ${ref})。它现在是实体图上的一个节点——**还没有边**:要让它连上别的节点,用 \`Assert\` 写一句带出处的话。${note}`,
-			})
-		},
-	})
-
-	defineTool({
-		name: 'Assert',
-		description:
-			'说一句关于某个**已登记实例**的话(主词–谓词–宾语),并带上出处。它**在落账那一刻就进实体图**:不需要等目标级独立裁决。这是把"查到的实体"变成"实体图谱"的那条路。带等级的结论仍走假设 → 证据 → 升格那条路(那才叫事实);`Assert` 记的是**观测**,图上的边会标成 `asserted` 与事实边区分。',
-		parameters: {
-			type: 'object',
-			properties: {
-				subject: {
-					type: 'object',
-					properties: { id: { type: 'string' }, type: { type: 'string' } },
-					required: ['id', 'type'],
-					additionalProperties: false,
-				},
-				predicate: { type: 'string', description: '已登记的谓词 id' },
-				object: {
-					type: 'object',
-					properties: {
-						kind: { type: 'string', enum: ['instance', 'statement', 'quantity', 'formula', 'code', 'reference'] },
-						value: {},
-						type: { type: 'string', description: 'kind=instance 时,宾语所属概念 id' },
-						unit: { type: 'string' },
-					},
-					required: ['kind'],
-					additionalProperties: false,
-				},
-				evidence: {
-					type: 'object',
-					properties: { kind: { type: 'string', enum: ['url', 'named', 'backref'] }, ref: { type: 'string' } },
-					required: ['kind', 'ref'],
-					additionalProperties: false,
-				},
-			},
-			required: ['subject', 'predicate', 'object', 'evidence'],
-			additionalProperties: false,
-		},
-		output: CARD_OUTPUT,
-		async execute(args, exec) {
-			const call = open(exec)
-			if (call.ok !== true) return call.response
-			const { hostService, sessionId, state, mutations } = call
-			const done = finish(hostService, sessionId, mutations)
-			const judge = domainJudge(hostService)
-			if (judge === null) return fail('domain_unavailable', '这一层的宿主没有提供领域判据(domain facade):无法校验断言。请检查宿主半与预设是否同版本。')
-			const subjectId = String(args.subject?.id ?? '').trim()
-			const subjectType = String(args.subject?.type ?? '').trim()
-			const predicateId = String(args.predicate ?? '').trim()
-			const kind = String(args.evidence?.kind ?? '').trim()
-			const ref = String(args.evidence?.ref ?? '').trim()
-			if (subjectId === '' || subjectType === '') return fail('assert_subject_required', '主词要同时给 `id` 与 `type`(type 是它所属的概念)。')
-			if (predicateId === '') return fail('assert_predicate_required', '谓词必填:先 `Define`(带 range)立一条关系,再说这句话。')
-			if (!['url', 'named', 'backref'].includes(kind) || ref === '') return fail('assert_evidence_required', '出处必填:`{kind:"url"|"named"|"backref", ref:"…"}`。**没有出处的话是意见,不是观测**——它不进实体图。')
-			const projection = hostService.domain.graph?.(sessionId) ?? null
-			const registered = Array.isArray(stateOf(sessionId)?.entities) ? stateOf(sessionId).entities : []
-			if (!registered.some((entity) => String(entity.id) === subjectId && String(entity.type) === subjectType)) {
-				return fail('assert_subject_not_registered', `主词 ${subjectType}|${subjectId} 还不是实体图上的节点。先 \`RegisterInstance\` 把它连出处登记下来,再说关于它的话——**主词可指认**是这句话能被复核的前提。`)
-			}
-			if (projection !== null && Array.isArray(projection.nodes)) {
-				const types = new Set(projection.nodes.filter((node) => node?.kind === 'concept').map((node) => String(node.ref)))
-				if (!types.has(subjectType)) return fail('assert_subject_type_unknown', `主词的类型 ${subjectType} 不是已登记的概念。`)
-				const objectType = String(args.object?.type ?? '').trim()
-				if (String(args.object?.kind) === 'instance' && objectType !== '' && !types.has(objectType)) return fail('assert_object_type_unknown', `宾语的类型 ${objectType} 不是已登记的概念。`)
-			}
-			const problems = judge.validateAssertions(sessionId, [{ predicate: predicateId, subject: { id: subjectId, type: subjectType }, object: args.object }])
-			if (problems.length > 0) return fail('assertion_rejected', `这句话不能成立:\n${problems.map((item) => `- ${item}`).join('\n')}`)
-			const assertionId = `as-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
-			mutations.push({
-				t: 'entity/asserted',
-				id: assertionId,
-				subject: { id: subjectId, type: subjectType },
-				predicate: predicateId,
-				object: args.object,
-				evidence: { kind, ref },
-			})
-			const note = ensureDomainShelf(hostService, sessionId, mutations)
-			return done({
-				ok: true,
-				code: 'entity_asserted',
-				message: `${subjectType}|${subjectId} —${predicateId}→ 已落账(出处:${kind} · ${ref})。它现在**在实体图上有一条边**;这条边走的是"带出处的观测",与升格事实那条"带等级的结论"分开标注。${note}`,
-			})
-		},
-	})
 
 	defineTool({
 		name: 'CreatePlan',
@@ -3528,22 +3229,80 @@ export function apply(ctx, config = {}) {
 		['拉起宿主应用', (command) => /\.app\/Contents\/MacOS\/|\bopen\s+-a\b/.test(command)],
 	]
 
-	function protectedRoots(sessionId) {
+	/**
+	 * 系统所有的四格:`evidence` / `knowledge/facts` / `goals` / `ontology`(相对工作区)。
+	 * `ontology` 里**模型可写**的是三支本体目录(`concepts` / `relations` / `entities`);
+	 * 字段定义 `SCHEMA.json` 与过程本体那份货架仍归系统。
+	 */
+	const PROTECTED_REL = [['clear', 'evidence'], ['clear', 'knowledge', 'facts'], ['clear', 'goals'], ['clear', 'ontology']]
+	const OPEN_REL = ONTOLOGY_BRANCH_DIRS.map((branch) => ['clear', 'ontology', branch])
+
+	/** 工作区内的相对路径(正斜杠);在工作区外或取不到工作区返回 null。 */
+	function workspaceRelative(sessionId, value) {
 		const cwd = sessionCwd(sessionId)
-		/**
-		 * 系统所有的四格:`evidence` / `facts` / `goals`,加上 `ontology`(词汇货架)。
-		 * 为什么词汇也在此列:货架是**渲染**,词条的权威在账本事件里——
-		 * 谁直接改那份 markdown,谁就制造了一份谁也不认的词汇表(面板读的是折法)。
-		 */
-		return [join(cwd, 'clear', 'evidence'), join(cwd, 'clear', 'knowledge', 'facts'), join(cwd, 'clear', 'goals'), join(cwd, 'clear', 'ontology')]
+		if (cwd === null || typeof value !== 'string' || value.trim() === '') return null
+		const rel = relative(cwd, isAbsolute(value) ? value : resolvePath(cwd, value)).split('\\').join('/')
+		if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) return null
+		return rel
 	}
 
-	function touchesProtected(sessionId, value) {
-		if (typeof value !== 'string' || value === '') return null
-		for (const root of protectedRoots(sessionId)) {
-			if (value.includes(root)) return root
+	const underRel = (rel, parts) => rel === parts.join('/') || rel.startsWith(`${parts.join('/')}/`)
+
+	/**
+	 * 一个**文件路径**落在系统所有的格子里吗(返回那一格,否则 null)。
+	 * 相对路径与绝对路径一样判(从前只比绝对路径的子串,`clear/knowledge/facts/x` 这样的相对写法直接绕过去了)。
+	 */
+	function protectedPath(sessionId, value) {
+		const rel = workspaceRelative(sessionId, value)
+		if (rel === null) return null
+		if (OPEN_REL.some((parts) => underRel(rel, parts))) return null
+		const root = PROTECTED_REL.find((parts) => underRel(rel, parts))
+		return root === undefined ? null : root.join('/')
+	}
+
+	/** bash 命令里**写**系统格子的迹象:命令里出现了那一格(相对或绝对写法)且带写操作。只读命令不拦。 */
+	const WRITE_HINT = /((?<![0-9&])>(?!&|\s*\/dev\/null)|\b(rm|mv|cp|tee|touch|mkdir|ln|chmod|truncate|install|rsync|dd)\b|\bsed\s+-i|\bperl\s+-[a-z]*i)/
+	function bashTouchesProtected(sessionId, command) {
+		if (typeof command !== 'string' || command === '' || !WRITE_HINT.test(command)) return null
+		const cwd = sessionCwd(sessionId)
+		for (const parts of PROTECTED_REL) {
+			const rel = parts.join('/')
+			const forms = cwd === null ? [rel] : [rel, join(cwd, ...parts)]
+			for (const form of forms) {
+				let index = command.indexOf(form)
+				while (index !== -1) {
+					const rest = command.slice(index + form.length)
+					/** 写的是三支本体目录:放行(挪目录正是重新分层的方式)。 */
+					if (!(parts.at(-1) === 'ontology' && ONTOLOGY_BRANCH_DIRS.some((branch) => rest.startsWith(`/${branch}`)))) return rel
+					index = command.indexOf(form, index + form.length)
+				}
+			}
 		}
 		return null
+	}
+
+	/**
+	 * **第一道校验**:模型用 write / edit 写本体文件时,先在内存里得出写完之后的全文,
+	 * 用宿主半的 `domain.checkFile` 查单个文件。不过就拒这次写,原因原样回给模型。
+	 * 不是 `.json` 的文件不归本体管(放行,读的时候也不认)。
+	 */
+	function ontologyWriteProblems(hostService, sessionId, name, args) {
+		const rel = workspaceRelative(sessionId, args?.file_path)
+		if (rel === null || !rel.endsWith('.json') || !OPEN_REL.some((parts) => underRel(rel, parts))) return null
+		if (typeof hostService?.domain?.checkFile !== 'function') return null
+		let content = null
+		if (name === 'write') content = typeof args.content === 'string' ? args.content : null
+		else if (name === 'edit') {
+			const file = join(sessionCwd(sessionId), ...rel.split('/'))
+			if (!existsSync(file)) return null
+			const before = readFileSync(file, 'utf8')
+			const from = String(args.old_string ?? '')
+			if (from === '' || !before.includes(from)) return null
+			content = args.replace_all === true ? before.split(from).join(String(args.new_string ?? '')) : before.replace(from, () => String(args.new_string ?? ''))
+		}
+		if (content === null) return null
+		const problems = hostService.domain.checkFile(rel, content)
+		return problems.length === 0 ? null : { rel, problems }
 	}
 
 	/**
@@ -3599,10 +3358,24 @@ export function apply(ctx, config = {}) {
 				}
 			}
 			{
-				// 「评估卡与事实只能由系统写」:做的人写不进证据面
-				const suspect = touchesProtected(sessionId, args.file_path) ?? touchesProtected(sessionId, args.path) ?? (exec.name === 'bash' ? touchesProtected(sessionId, args.command) : null)
+				/**
+				 * 「评估卡、事实、目标只能由系统写」:做的人写不进这几格。只拦**写**:
+				 * 读事实文件正是攒下来的东西被用上的方式。本体三支目录(`clear/ontology/{concepts,relations,entities}`)
+				 * 是模型自己的,写进去要过第一道校验。
+				 */
+				const writing = exec.name === 'write' || exec.name === 'edit'
+				const suspect = writing ? (protectedPath(sessionId, args.file_path) ?? protectedPath(sessionId, args.path)) : exec.name === 'bash' ? bashTouchesProtected(sessionId, args.command) : null
 				if (suspect !== null) {
-					return { kind: 'deny', reason: `clear/evidence、clear/knowledge/facts、clear/goals、clear/ontology 由系统所有,做的人不能写:${suspect}。事实、评估卡与词汇货架只能由系统落盘(词汇要改就调注册/修订/废止动词)。` }
+					return {
+						kind: 'deny',
+						reason: `${suspect} 由系统所有,做的人不能写(clear/evidence、clear/knowledge/facts、clear/goals、clear/ontology 的 SCHEMA.json 与货架)。事实只由独立评估之后的结案写;本体请写在 clear/ontology/concepts、relations、entities 下。`,
+					}
+				}
+				if (writing && hostService !== undefined) {
+					const rejected = ontologyWriteProblems(hostService, sessionId, exec.name, args)
+					if (rejected !== null) {
+						return { kind: 'deny', reason: `本体文件 ${rejected.rel} 没写进去,单个文件的格式不对:\n${rejected.problems.map((item) => `- ${item}`).join('\n')}\n字段定义在 clear/ontology/SCHEMA.json。` }
+					}
 				}
 			}
 			if (CFG.bashDenyRules && exec.name === 'bash' && typeof args.command === 'string') {
@@ -3649,15 +3422,8 @@ export function apply(ctx, config = {}) {
 			ontologyShelved.add(sessionId)
 			if (shelf !== null) ontologyNote = `\n- 本体已就位(${CONTRIB.ontology.objects.length} 个对象 · ${CONTRIB.ontology.levels.length} 级):${join('clear', 'ontology', `${CONTRIB.ontology.id}.md`)}——交付前对照它(哪些状态合法、每一级谁来判)。`
 		}
-		/**
-		 * **领域词汇货架**每一拍都重铺一次(幂等:内容没变就不重写)。
-		 *
-		 * 为什么不像过程本体那样只铺一次:那一份随**发布版本**,这一份随**会话**——
-		 * 一个项目今天没用词汇、明天开始用,货架必须自己长出来,而不是等人记得去建。
-		 * 它也不进卡:货架的位置在提示词里说一次就够,每拍重复就是往上下文里灌水。
-		 * 所有权判据(子会话不写)在写入口——见 `ensureDomainShelf`。
-		 */
-		ensureDomainShelf(host(), sessionId)
+		/** 本体文件树的地基(SCHEMA.json 与三支目录),幂等;位置在提示词里说,不进卡。 */
+		ensureOntologySchema(hostService, sessionId)
 		let turnNote = ''
 		/** 事实货架那句话说一次就够(事实很少变)。 */
 		let factsNote = ''

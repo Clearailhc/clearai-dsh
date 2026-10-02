@@ -17,7 +17,7 @@
 
 import { z } from 'zod'
 import { MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, emptyState, inspectGraphSelection, renderCard, view } from './fold.js'
-import { describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
+import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
 import { install as installInvariants } from './invariant.js'
 
@@ -340,7 +340,14 @@ export function apply(ctx) {
 					 * 而「登记过哪些实例」住在 `state.entities` 里。只递词汇的话,那条判据永远无从判断,
 					 * 只能迁移期一律放行——那就等于没有这条判据。
 					 */
-					validateAssertions: (sessionId, assertions, options = {}) => validateAssertions(stateOf(sessionId), assertions, options),
+					validateAssertions: (sessionId, assertions, options = {}) => validateAssertions(applyMutations(stateOf(sessionId), Array.isArray(options?.mutations) ? options.mutations : []), assertions, options),
+					/**
+					 * **本体文件的第一道校验**(单个文件:格式、字段、id 等于文件名)。内核在模型写
+					 * `clear/ontology/` 之前调它;折法读文件时用的是同一个函数,所以「写得进」与「读得懂」是一回事。
+					 */
+					checkFile: (path, content) => checkOntologyFile(path, content),
+					/** 本体文件的字段定义(内核铺成 `clear/ontology/SCHEMA.json`)。 */
+					schema: () => ONTOLOGY_SCHEMA,
 					/**
 					 * 货架正文。带 `mutations` 时按**这一步之后**的样子渲染——
 					 * 工具在返回前就把货架写好,读的人不必等下一回合。
@@ -361,8 +368,7 @@ export function apply(ctx) {
 					/** 一条断言的一行人话(货架 / 卡片 / 查询共用同一句话,免得三处各写一套)。 */
 					format: (sessionId, assertion) => formatAssertion(stateOf(sessionId).lexicon, assertion),
 					/**
-					 * **当前的图投影**(节点 / 边)。给内核用:谓词登记与 `Assert` 都要判
-					 * 「这个类型是已登记的概念吗」——判据只有一份,就在这张投影里。只读,不落盘。
+					 * **当前的图投影**(节点 / 边)。只读,不落盘。
 					 */
 					graph: (sessionId) => graphProjection(stateOf(sessionId)),
 				},

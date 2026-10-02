@@ -145,16 +145,17 @@ export const SCENARIOS = {
 			'这个工作区是空的。目标:把「一家三口共用的家用网络」整理成本体(概念与关系)与实体图(具体设备),并给出带出处的断言。',
 			`要求(按顺序做;${DISCIPLINE}):`,
 			'1. Frame:`headline` 一句话(≤120 字)说清要建什么;判据写成可清点的形态:`lab/ontology.md` 与 `lab/entities.md` 都存在,且 `entities.md` 里每个实例都带出处;登记至少两条候选假设。',
-			'2. 用 `Define` 立至少 4 个概念(例如 设备 / 接口 / 网络 / 厂商)与至少 2 条关系(带 `range`,例如 属于 / 支持),每条都写依据。',
-			'3. `RegisterInstance` 至少 3 个**具体实例**(每台设备一条):`type` 用你刚登记的概念,`basis` 写清哪份材料,`provenance` 用 `{kind:"named", ref:"…"}` 指向一份具名资料(可以是你自己编的登记表,但要在 lab/ 下落成文件)。',
-			'4. 用 `Assert` 给这 3 个实例各写一句**带出处**的话(谓词用第 2 步登记的),让实体图上真的长出边。',
+			'2. 在 `clear/ontology/concepts/` 下写至少 4 个概念文件(例如 设备 / 接口 / 网络 / 厂商),在 `clear/ontology/relations/` 下写至少 2 个关系文件(带 `range`,例如 属于 / 支持),每条都写依据;字段看 `clear/ontology/SCHEMA.json`。',
+			'3. 在 `clear/ontology/entities/` 下写至少 3 个**具体实体**(每台设备一个文件):`type` 用你写的概念,`basis` 写清哪份材料,`provenance` 用 `{kind:"named", ref:"…"}` 指向一份具名资料(可以是你自己编的登记表,但要在 lab/ 下落成文件)。',
+			'4. 给这 3 个实体各在自己文件的 `relations` 里写一条**带出处**的关系(关系用第 2 步写的),让实体图上真的长出边。',
 			'5. 写两份产物:`lab/ontology.md`(概念与谓词清单,逐条写依据)与 `lab/entities.md`(每个实例一行:实例 · 断言 · 出处)。',
 			'6. 用 `CreatePlan` 把上面这些拆成可交付的步骤并逐步 `AdvancePlan` 交付(产物声明这两份文件),然后 `ClosePlan`;最后 `Conclude` 结案。',
 			'   如果结案被门挡下(卡上会点名是哪一道),按它给的下一步补上再结;确实做不到就如实说明。',
 		].join('\n'),
 		asserts: ({ kinds, countOf, exists, readArtifact, mutations, projected, modelVisibleText }) => {
-			const registered = mutations.filter((m) => m.t === 'entity/registered')
-			const asserted = mutations.filter((m) => m.t === 'entity/asserted')
+			/** 本体由模型写文件、经 `workspace/synced` 进账:实体与关系都从投影里读。 */
+			const registered = Array.isArray(projected?.lexicon?.entities) ? projected.lexicon.entities : []
+			const asserted = (projected?.lexicon?.graph?.edges ?? []).filter((edge) => edge.kind === 'assertion' && edge.status === 'asserted')
 			/**
 			 * 图的投影挂在 `view().lexicon.graph` 上(不是 `view().graph`)——判据必须读**真的那份**:
 			 * 读错位置会得到"0 节点"这种假失败,而它看起来像产品缺陷。
@@ -163,9 +164,9 @@ export const SCENARIOS = {
 			const entityNodes = (projectedGraph.nodes ?? []).filter((node) => node.layer === 'entity')
 			const entityEdges = (projectedGraph.edges ?? []).filter((edge) => edge.kind === 'assertion')
 			return [
-				{ label: '登记了至少 3 个实例(entity/registered ≥ 3)', ok: registered.length >= 3, detail: `registered=${registered.length}(${registered.map((m) => m.id).join(',')})` },
+				{ label: '写了至少 3 个实体文件且进了图', ok: registered.length >= 3, detail: `entities=${registered.length}(${registered.map((m) => m.id ?? m.ref).join(',')})` },
 				{ label: '每个实例都带出处(kind+ref 非空)', ok: registered.length > 0 && registered.every((m) => typeof m.provenance?.ref === 'string' && m.provenance.ref !== ''), detail: JSON.stringify(registered.map((m) => m.provenance ?? null)).slice(0, 160) },
-				{ label: '写了至少 3 条带出处的断言(entity/asserted ≥ 3)', ok: asserted.length >= 3, detail: `asserted=${asserted.length}` },
+				{ label: '写了至少 3 条带出处的实体关系', ok: asserted.length >= 3, detail: `asserted=${asserted.length}` },
 				{ label: '实体图上有节点(投影 entity 层非空)', ok: entityNodes.length >= 3, detail: `${entityNodes.length} 个节点` },
 				{ label: '实体图上有边(断言真的进了图)', ok: entityEdges.length >= 3, detail: `${entityEdges.length} 条边` },
 				{ label: '两份产物在盘上', ok: exists('lab/ontology.md') && exists('lab/entities.md'), detail: `ontology=${exists('lab/ontology.md')} entities=${exists('lab/entities.md')}` },
@@ -177,9 +178,9 @@ export const SCENARIOS = {
 				{
 					label: '条件断言:结案成功 ⇒ 实体图上必须有边(空实体图不许结案)',
 					ok: !kinds.has('goal/closed') || asserted.length >= 1,
-					detail: `goal/closed=${countOf('goal/closed')} entity/asserted=${asserted.length}`,
+					detail: `goal/closed=${countOf('goal/closed')} asserted=${asserted.length}`,
 				},
-				{ label: '卡上确实把实体这条路指给过模型(可读性不是装饰)', ok: /RegisterInstance|实体图/.test(modelVisibleText), detail: modelVisibleText.includes('RegisterInstance') ? '点名过 RegisterInstance' : '只提过实体图' },
+				{ label: '卡上确实把实体这条路指给过模型(可读性不是装饰)', ok: /clear\/ontology\/entities|实体图/.test(modelVisibleText), detail: modelVisibleText.includes('clear/ontology/entities') ? '点名过实体文件' : '只提过实体图' },
 			]
 		},
 	},
