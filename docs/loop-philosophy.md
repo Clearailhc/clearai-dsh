@@ -53,7 +53,7 @@ Criteria are written before results exist; L0–L2 may self-judge with a reviewa
 
 ### P5 · Delete nothing
 
-Refuted judgements, rejected artefacts and retracted facts all stay. A refuted judgement is an asset: it records a dead end, which is a real output of exploration.
+Refuted judgements, rejected artefacts and retracted facts all stay. A refuted judgement is an asset: it records a dead end, which is a real output of exploration. So refutation must cost nothing: the step that tested it completes as usual and never needs a void to close.
 
 ### P6 · Growing the ontology is native to the loop
 
@@ -73,7 +73,9 @@ Every decision in this version uses this one ruler: what directly serves the loo
 
 **One completing action**: `AdvancePlan` is the only action that advances a step; `RevisePlan` (add a step, change criteria, void) never changes progress. With one action that advances, "who advanced this step" always has an answer.
 
-**Parallel exploration needs no mechanism of its own.** Worldlines used to run routes in separate file copies, compare them on a pre-declared measure, and let a person adopt one. This version reduces that to the loop itself: competing routes are competing judgements, the measure is the criteria written in advance, losing is being refuted, contradiction is a conflict; the parallelism goes to native subagents. The cost is file isolation — the host's subagents share one working directory — so one cheap mechanism is added: steps in one plan may not declare the same artefact path.
+**Completion is separate from the result**: a step is an act, and whether it is done depends only on whether the delivery holds; a judgement is a claim, and whether it holds is computed from evidence. Deciding that an act is done by whether its result favours the judgement would penalise refutation and reward rewriting a refutation as support. So a delivery gets two judgments — does it hold, and what does it mean for each judgement — and supports, refutes and inconclusive all count as done.
+
+**Parallel exploration needs no mechanism of its own.** Worldlines used to run routes in separate file copies, compare them on a pre-declared measure, and let a person adopt one. This version reduces that to the loop itself: competing routes are competing judgements, the measure is the criteria written in advance, the comparison step is the crucial test where one observation judges the competing judgements, losing is being refuted, contradiction is a conflict; the parallelism goes to native subagents. The cost is file isolation — the host's subagents share one working directory — so one cheap mechanism is added: steps in one plan may not declare the same artefact path.
 
 ---
 
