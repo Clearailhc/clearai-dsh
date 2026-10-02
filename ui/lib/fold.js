@@ -290,6 +290,7 @@ export function applyMutation(state, mutation) {
 					known.refute_when = hypothesis.refute_when
 					known.version = hypothesis.version ?? known.version
 					if (typeof hypothesis.name === 'string' && hypothesis.name !== '') known.name = hypothesis.name
+					if (typeof hypothesis.retests === 'string' && hypothesis.retests !== '') known.retests = hypothesis.retests
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
 					continue
 				}
@@ -300,6 +301,8 @@ export function applyMutation(state, mutation) {
 					...(typeof hypothesis.name === 'string' && hypothesis.name !== '' ? { name: hypothesis.name } : {}),
 					claim,
 					refute_when: hypothesis.refute_when,
+					/** 复检的是哪条已有事实(事实 id;可以是别的会话留下的)。 */
+					...(typeof hypothesis.retests === 'string' && hypothesis.retests !== '' ? { retests: hypothesis.retests } : {}),
 					status: 'proposed',
 					version: hypothesis.version ?? 1,
 					/**
@@ -1654,15 +1657,18 @@ export function derive(state) {
 	 *   · `review` ——人已经审查过(撤回 / 维持),决定连缘由一起留着。
 	 */
 	const lexicon = normalizeLexicon(state.lexicon)
+	/** 声明了 `retests` 的判断被推翻 ⇒ 它复检的那条事实也算被推翻(跨会话只认事实 id)。 */
+	const retestRefuted = new Set(hypotheses.filter((item) => typeof item.retests === 'string' && (item.refutations ?? 0) > 0).map((item) => item.retests))
 	const ownFacts = (state.facts ?? []).map((fact) => {
 		const linked = typeof fact.hypothesis === 'string' && fact.hypothesis !== ''
 		const owner = hypotheses.find((item) => (linked ? item.id === fact.hypothesis : String(item.claim ?? '') === String(fact.text ?? '')))
-		return { ...fact, refuted: (owner?.refutations ?? 0) > 0, review: fact.review ?? null, foreign: false }
+		return { ...fact, refuted: (owner?.refutations ?? 0) > 0 || retestRefuted.has(fact.id), review: fact.review ?? null, foreign: false }
 	})
 	/**
 	 * **别的会话留下的事实**(住在 `clear/knowledge/facts/<id>.json`,经 `workspace/synced` 进账)。
 	 * 同一个 id 本会话账上也有就以账上那条为准(它带着推翻读数);文件上的复核结论照样认。
-	 * 它们的假设不在本会话,所以 `refuted` 只能是 false——推翻要在这里重新检验一次才算。
+	 * 它们的假设不在本会话,所以推翻要在这里重新检验一次才算:本会话的判断用 `retests` 指向它,
+	 * 那条判断被推翻,这条事实就标「被推翻」。
 	 */
 	const ownIds = new Set(ownFacts.map((fact) => fact.id))
 	const foreignFacts = []
@@ -1675,7 +1681,7 @@ export function derive(state) {
 			if (own.review === null && row.review !== null) own.review = row.review
 			continue
 		}
-		foreignFacts.push({ ...row, refuted: false, foreign: true })
+		foreignFacts.push({ ...row, refuted: retestRefuted.has(row.id), foreign: true })
 	}
 	foreignFacts.sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
 	/**

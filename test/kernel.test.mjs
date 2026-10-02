@@ -1364,6 +1364,47 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		check('人选撤回 ⇒ 落 fact/reviewed(撤回 + 人的缘由),事实那一行跟着变', reviewed?.decision === 'retracted' && reviewed.reason === '新机器上 Y 更快' && host.service.state(S).facts.find((item) => item.id === fact.id)?.review?.decision === 'retracted', JSON.stringify(reviewed))
 		check('交付照常完成,复核结果说给模型听', refuting.ok === true && /撤回/.test(refuting.message), refuting.message.slice(0, 200))
 	}
+
+	// ④ 跨会话:新会话的判断用 retests 指向别的会话留下的事实,复检被推翻 ⇒ 同样当场问人
+	{
+		const first = makeHost()
+		apply(first.ctx, { blockedThreshold: 3 })
+		const A = 'session-retest-origin'
+		await callOn(first, A, 'Frame', { claim: 'P 比 Q 省电?', done_criteria: '存在 lab/p.txt', promote_at_level: 'L2', hypotheses: [{ claim: 'P 比 Q 省电', refute_when: 'Q 更省电' }] })
+		const [saves] = first.service.state(A).hypotheses.map((item) => item.id)
+		await callOn(first, A, 'CreatePlan', { steps: [{ id: 'p1', do: '测一次', artifacts: ['lab/p.txt'], done_criteria: 'lab/p.txt 含两次读数', tests: { hypotheses: [saves], level: 'L2' } }] })
+		write('lab/p.txt', 'p=1.0 q=2.0\n')
+		await callOn(first, A, 'AdvancePlan', { step_id: 'p1', basis: 'lab/p.txt p=1.0 q=2.0', results: [{ hypothesis: saves, verdict: 'support' }] })
+		await callOn(first, A, 'ClosePlan', {})
+		first.nextVerdict = { holds: 'yes', basis: 'lab/p.txt 在', shortfalls: [], results: [] }
+		await callOn(first, A, 'Conclude', { outcome: 'achieved' })
+		const fact = first.service.state(A).facts.find((item) => item.hypothesis === saves)
+		check('前置:会话一升格了事实', fact !== undefined)
+
+		const second = makeHost()
+		apply(second.ctx, { blockedThreshold: 3 })
+		const B = 'session-retest-later'
+		const unknown = await callOn(second, B, 'Frame', { claim: '复检', done_criteria: '存在 lab/p2.txt', hypotheses: [{ claim: 'P 仍比 Q 省电', refute_when: 'Q 更省电', retests: 'f-nope00' }] })
+		check('retests 指向不存在的事实 ⇒ 当场拒,说清怎么写', unknown.ok === false && unknown.code === 'retests_unknown', unknown.code)
+		await callOn(second, B, 'Frame', { claim: '复检', done_criteria: '存在 lab/p2.txt', hypotheses: [{ claim: 'P 仍比 Q 省电', refute_when: 'Q 更省电', retests: fact.id }] })
+		const [again] = second.service.state(B).hypotheses.map((item) => item.id)
+		check('判断带着 retests 落账', second.service.state(B).hypotheses[0]?.retests === fact.id && again !== saves, JSON.stringify(second.service.state(B).hypotheses[0]))
+		await callOn(second, B, 'CreatePlan', { steps: [{ id: 'p2', do: '新负载下再测', artifacts: ['lab/p2.txt'], done_criteria: 'lab/p2.txt 含两次读数', tests: { hypotheses: [again], level: 'L2' } }] })
+		write('lab/p2.txt', 'p=3.0 q=2.0\n')
+		second.userQuestions = answering((question) => ({ label: question.options[0].label, note: '新负载下 Q 更省电' }))
+		const refuting = await callOn(second, B, 'AdvancePlan', { step_id: 'p2', basis: 'lab/p2.txt p=3.0 q=2.0', results: [{ hypothesis: again, verdict: 'refute', basis: 'Q 更省电' }] })
+		check('别的会话的事实被复检推翻 ⇒ 那次交付当场问人', second.userQuestions.asked.length === 1 && /P 比 Q 省电/.test(second.userQuestions.asked[0].questions[0].question), JSON.stringify(second.userQuestions.asked.map((request) => request.questions[0].question)))
+		const reviewed = second.journal.find((mutation) => mutation.t === 'fact/reviewed')
+		check('人选撤回 ⇒ 落 fact/reviewed,指向那条事实', reviewed?.fact === fact.id && reviewed.decision === 'retracted', JSON.stringify(reviewed))
+		const onDisk = JSON.parse(readFileSync(join(WORKSPACE, 'clear/knowledge/facts', `${fact.id}.json`), 'utf8'))
+		check('结论写回事实文件(下一个会话也看得到撤回)', onDisk.status === 'retracted' && onDisk.review?.decision === 'retracted', JSON.stringify({ status: onDisk.status, review: onDisk.review }))
+		check('交付照常完成,复核结果说给模型听', refuting.ok === true && /撤回/.test(refuting.message), refuting.message.slice(0, 200))
+		await preStep(second, B, 50)
+		const row = second.service.derive(B).factRows.find((item) => item.id === fact.id)
+		check('事实行:别的会话的事实标「被推翻」,并带着人的撤回', row?.foreign === true && row.refuted === true && row.review?.decision === 'retracted', JSON.stringify(row && { foreign: row.foreign, refuted: row.refuted, review: row.review }))
+		const first2 = await callOn(first, A, 'Frame', { claim: '再看一次', done_criteria: '存在 lab/p3.txt', hypotheses: [{ claim: 'P 比 Q 省电', refute_when: 'Q 更省电', retests: fact.id }] })
+		check('本会话自己的事实也能用 retests 指(按事实 id 找到)', first2.ok === true, first2.code)
+	}
 }
 
 console.log('\n【旧日志里的撤回 / 维持:面板不再发这两个动作,但历史照样折得出来】')

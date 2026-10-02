@@ -1656,10 +1656,22 @@ export function apply(ctx, config = {}) {
 	 * 没人能答 ⇒ 事实标着「被推翻、待复核」,原生 goal 置为阻塞。
 	 */
 	async function reviewRefutedFacts(exec, sessionId, state, refutedHypotheses, basis, mutations) {
-		const pending = (state.facts ?? []).filter((fact) => refutedHypotheses.includes(fact.hypothesis) && (fact.review === undefined || fact.review === null))
-		if (pending.length === 0) return ''
+		/**
+		 * 两条路找到被推翻的事实:本目标里升格的(判断 id 对得上),以及被推翻的判断声明了
+		 * `retests` 的那条——它可能是别的会话留下的,判断 id 对不上,只有事实 id 跨会话不变。
+		 */
+		const retested = state.hypotheses.filter((item) => refutedHypotheses.includes(item.id) && typeof item.retests === 'string').map((item) => item.retests)
+		const pending = []
+		for (const fact of state.facts ?? []) if (refutedHypotheses.includes(fact.hypothesis) || retested.includes(fact.id)) pending.push(fact)
+		for (const id of retested) {
+			if (pending.some((fact) => fact.id === id)) continue
+			const fact = findFact(sessionId, state, id)
+			if (fact !== null) pending.push(fact)
+		}
+		const open = pending.filter((fact) => fact.review === undefined || fact.review === null)
+		if (open.length === 0) return ''
 		const notes = []
-		for (const fact of pending) {
+		for (const fact of open) {
 			const asked = await askHuman(exec, {
 				id: `fact-${fact.id}`,
 				header: '已确立的结论被推翻了',
@@ -2103,6 +2115,11 @@ export function apply(ctx, config = {}) {
 							name: { type: 'string', description: '短名,十二字以内,你自己起(如「python3 能跑」)。之后说起这条判断、在别的工具里引用它,都用这个名字' },
 							claim: { type: 'string' },
 							refute_when: { type: 'string' },
+							retests: {
+								type: 'string',
+								description:
+									'这条判断在复检哪条已写进长期知识的事实:写那条事实的 id(clear/knowledge/facts/<id>.json 的文件名)。复检被推翻时,系统会当场问人撤回还是维持那条事实——别的会话留下的事实也一样',
+							},
 							assertions: {
 								type: 'array',
 								description: '断言:主词–谓词–宾语(引用领域词汇里的 id)',
@@ -2159,7 +2176,7 @@ export function apply(ctx, config = {}) {
 				: carried
 					? state.hypotheses
 							.filter((item) => item.goal === state.goal.id && item.status !== 'superseded')
-							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}) }))
+							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}) }))
 					: []
 			const names = hypotheses.map((hypothesis) => (typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : '')).filter((name) => name !== '')
 			if (new Set(names).size !== names.length) return fail('hypothesis_name_duplicate', '两条判断用了同一个短名:短名是用来区分判断的,换一个。')
@@ -2167,6 +2184,9 @@ export function apply(ctx, config = {}) {
 				if (typeof hypothesis?.claim !== 'string' || hypothesis.claim.trim() === '') return fail('hypothesis_claim_required', '每条假设要有一句话主张。')
 				if (typeof hypothesis?.refute_when !== 'string' || hypothesis.refute_when.trim() === '') return fail('hypothesis_refute_required', '每条假设必须写清「什么结果会推翻它」——没有推翻条件的假设无法被检验。')
 				if (hypothesis?.name !== undefined && (typeof hypothesis.name !== 'string' || hypothesis.name.trim().length > HANDLE_LIMIT + 4)) return fail('hypothesis_name_too_long', `判断的短名要短:${HANDLE_LIMIT} 字以内,能让人一眼认出是哪条就够。`)
+				if (hypothesis?.retests !== undefined && hypothesis.retests !== null && findFact(sessionId, state, hypothesis.retests) === null) {
+					return fail('retests_unknown', `retests 指向的事实「${String(hypothesis.retests).slice(0, 40)}」不在 clear/knowledge/facts/ 里:写那条事实文件名里的 id(如 f-ab12cd),或者去掉 retests。`)
+				}
 				/**
 				 * **宽松+校验**:不写断言放行(断言是加法),写了就在**落账之前**严校——
 				 * 引用不存在的谓词 / 概念、宾语形态不合值域、同一事实自相矛盾,一律当场拒。
@@ -2289,6 +2309,8 @@ export function apply(ctx, config = {}) {
 					...(given !== '' ? { name: given } : kept !== '' ? { name: kept } : {}),
 					claim,
 					refute_when: hypothesis.refute_when.trim(),
+					/** 复检哪条已有事实(跨会话的身份是事实 id;判断 id 只活在本目标里)。 */
+					...(typeof hypothesis.retests === 'string' && hypothesis.retests.trim() !== '' ? { retests: hypothesis.retests.trim() } : {}),
 					/** 断言随假设落账;没写就是 null(加法,不是门槛)。 */
 					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
 					version: index + 1,
@@ -3197,6 +3219,26 @@ export function apply(ctx, config = {}) {
 	 * 为什么在文件里而不是只留在账本:别的会话与模型读的都是 `clear/knowledge/facts/`,
 	 * 撤回过的若还原样躺在那里,下一轮会照旧引用一条已经作废的事实。
 	 */
+	/**
+	 * 按事实 id 找一条事实:先看本会话的账,再看工作区里的事实文件(别的会话留下的)。
+	 * 找不到返回 null。读文件而不是只读同步进来的快照:Frame 那一拍的同步可能还没跑。
+	 */
+	function findFact(sessionId, state, id) {
+		const key = String(id ?? '').trim()
+		if (!/^[A-Za-z0-9_-]+$/.test(key)) return null
+		const own = (state.facts ?? []).find((fact) => fact.id === key)
+		if (own !== undefined) return own
+		const cwd = sessionCwd(sessionId)
+		if (cwd === null) return null
+		try {
+			const data = JSON.parse(readFileSync(join(cwd, 'clear', 'knowledge', 'facts', `${key}.json`), 'utf8'))
+			if (String(data?.id ?? '') !== key || typeof data?.text !== 'string') return null
+			return { id: key, text: data.text, hypothesis: data.hypothesis ?? null, review: data.review ?? null, foreign: true }
+		} catch {
+			return null
+		}
+	}
+
 	function markFactReviewed(cwd, fact, review) {
 		if (cwd === null || cwd === undefined || !/^[A-Za-z0-9_-]+$/.test(String(fact?.id ?? ''))) return null
 		const file = join(cwd, 'clear', 'knowledge', 'facts', `${fact.id}.json`)

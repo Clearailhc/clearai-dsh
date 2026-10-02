@@ -183,6 +183,7 @@ export const LONG_HORIZON = {
 				{ label: '读到了会话一的事实(同步进本会话)', ok: /clear\/knowledge\/facts|已知|长期知识/.test(modelVisibleText) && facts.length >= 1, detail: `文件 ${facts.length}` },
 				{ label: '「定义已变」出现过(良率口径改了)', ok: /定义已变/.test(modelVisibleText), detail: /定义已变/.test(modelVisibleText) ? '出现' : '没出现' },
 				{ label: '有推翻证据(换批次后良率恢复的说法不成立)', ok: evidenceVerdicts.includes('refute'), detail: evidenceVerdicts.join(',') },
+				{ label: '复检旧事实的判断写了 retests', ok: mutations.some((m) => m.t === 'goal/set' && (m.hypotheses ?? []).some((h) => typeof h.retests === 'string')), detail: mutations.filter((m) => m.t === 'goal/set').flatMap((m) => (m.hypotheses ?? []).map((h) => h.retests ?? '-')).join(',') },
 				{ label: '旧事实遇到反例时当场问了人(fact/reviewed)', ok: countOf('fact/reviewed') >= 1, detail: `fact/reviewed=${countOf('fact/reviewed')} · 本会话账上的事实 ${foreign}` },
 				{ label: '结案了', ok: goalsClosed(mutations).length >= 1, detail: goalsClosed(mutations).join(',') || '(无)' },
 			]

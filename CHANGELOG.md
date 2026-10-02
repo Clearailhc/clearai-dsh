@@ -17,6 +17,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 ### Fixed
 
 - 后一次 `Conclude` 会把之前目标的假设再升格一次。
+- 别的会话留下的事实被新证据推翻时不会问人:这一问只认本目标的判断编号。现在判断可带 `retests: "<事实 id>"`,复检被推翻就当场问人撤回还是维持,结论写回事实文件。
 - 相对路径能绕过受保护目录;读受保护目录的文件也被拦。
 
 ### Removed
