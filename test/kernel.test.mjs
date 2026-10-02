@@ -668,6 +668,8 @@ console.log('\n【假设数量下限:首次立约就要候选对比(preset 立 2
 	check('登记 2 条 → 立起', f2.ok === true && f2.code === 'goal_set', String(f2.code))
 	const f3 = await callOn(floorHost, F, 'Frame', { claim: 'x 改口径', done_criteria: 'z 存在', reason: '换了判据' })
 	check('修订目标不带新假设 → 不受下限限制', f3.ok === true && f3.code === 'goal_revised', String(f3.code))
+	/** 2026-10-02 JEPA 长测:只改判据、漏传判断列表,已被支持的判断全被落成「已替换」。 */
+	check('修订时不传 hypotheses = 判断不变(不是全部替换掉)', /登记了 2 条判断/.test(String(f3.message)), String(f3.message).slice(0, 80))
 
 	// 默认形态(不写配置)保持机制中立:0 条也能立——下限是产品立场,不是引擎偏见。
 	const freeHost = makeHost()

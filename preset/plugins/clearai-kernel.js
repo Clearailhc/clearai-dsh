@@ -2000,7 +2000,7 @@ export function apply(ctx, config = {}) {
 				hypotheses: {
 					type: 'array',
 					description:
-						'候选假设:每条一句话主张 + 一句推翻条件;可带**类型化断言**(可选,提供即严校:谓词与概念必须已登记、宾语形态要合值域、同一事实里不许自相矛盾)。不写断言照旧成立——断言是加法,不是门槛。',
+						'候选假设:每条一句话主张 + 一句推翻条件;可带**类型化断言**(可选,提供即严校:谓词与概念必须已登记、宾语形态要合值域、同一事实里不许自相矛盾)。不写断言照旧成立——断言是加法,不是门槛。修订目标时不传这一项 = 判断不变;传了就是这一版的完整清单,没列出的会记成「已替换」。',
 					items: {
 						type: 'object',
 						properties: {
@@ -2052,7 +2052,19 @@ export function apply(ctx, config = {}) {
 			const legacy = args.legacy === true
 			const criteriaList = (Array.isArray(args.criteria) ? args.criteria : []).map((item) => String(item ?? '').trim()).filter((item) => item !== '')
 			const criteriaNote = typeof args.criteria_note === 'string' && args.criteria_note.trim() !== '' ? args.criteria_note.trim() : null
-			const hypotheses = Array.isArray(args.hypotheses) ? args.hypotheses : []
+			/**
+			 * **修订时没传 `hypotheses` = 判断不变**,不是「一条都不要了」。
+			 * 只改判据的修订若把缺省读成空清单,已被支持的判断会一起落成「已替换」,
+			 * 而替换是终态,按原文补登也回不来。要撤掉判断就显式列出留下的那几条。
+			 */
+			const carried = args.hypotheses === undefined && state.goal !== null && state.goal.status === 'open'
+			const hypotheses = Array.isArray(args.hypotheses)
+				? args.hypotheses
+				: carried
+					? state.hypotheses
+							.filter((item) => item.goal === state.goal.id && item.status !== 'superseded')
+							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}) }))
+					: []
 			const names = hypotheses.map((hypothesis) => (typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : '')).filter((name) => name !== '')
 			if (new Set(names).size !== names.length) return fail('hypothesis_name_duplicate', '两条判断用了同一个短名:短名是用来区分判断的,换一个。')
 			for (const hypothesis of hypotheses) {
@@ -2210,7 +2222,7 @@ export function apply(ctx, config = {}) {
 				ok: true,
 				code: isRevision ? 'goal_revised' : 'goal_set',
 				message:
-					`${isRevision ? `目标已修订(第 ${revision} 版)` : '目标已立'},登记了 ${hypotheses.length} 条判断${nextHypotheses.length === 0 ? '' : `:${nextHypotheses.map((item) => `「${handleOf(item)}」`).join('、')}`}。` +
+					`${isRevision ? `目标已修订(第 ${revision} 版)` : '目标已立'},${carried ? '判断沿用上一版,' : ''}登记了 ${hypotheses.length} 条判断${nextHypotheses.length === 0 ? '' : `:${nextHypotheses.map((item) => `「${handleOf(item)}」`).join('、')}`}。` +
 					// 原生 goal 上那一句给人看:用目标的一句话,不写 id。
 					attachNativeGoal(exec.agent, clip(headline === '' ? String(args.claim ?? '') : headline, 120)),
 			})
