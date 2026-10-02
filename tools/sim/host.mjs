@@ -14,8 +14,7 @@
  *
  * 宿主里由人或别的模型做的事,这里交给外部:
  *   · 独立评估者:`subagents.start()` 挂起,等外部用 `settle` 交回裁决(由另一个只读子代理来判);
- *   · 计划审阅:`userQuestions.ask` 按剧本的预设答案作答;
- *   · L4 人放行:这个形态没有审批通道,如实拒绝(与 headless 形态相同)。
+ *   · 当场问人(L4 放行、计划卡住、事实被推翻):`userQuestions.ask` 按剧本的预设答案作答;
  */
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -39,7 +38,9 @@ export function textOf(blocks) {
  * @param {string} options.workspace  模型干活的目录(内核的 cwd)
  * @param {string} options.runDir     会话日志与挂起请求落在这里
  * @param {string} [options.sessionId]
- * @param {Record<string, string>} [options.answers]  人门的预设答案:`plan-review` → `approve` | `revise:<意见>`
+ * @param {Record<string, string>} [options.answers]  当场问人的预设答案。键是问题 id,或它的前缀
+ *   (`release` = L4 放行、`blocked` = 计划卡住、`fact` = 事实被推翻);值是 `first`(缺省:第一个选项)、
+ *   某个选项的原文、`none`(没人能答 ⇒ 抛 NO_PROVIDER),或任意一句话(当作人补的话)。
  */
 export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {} }) {
 	mkdirSync(runDir, { recursive: true })
@@ -90,7 +91,7 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 	const goals = {
 		get: () => hostGoal,
 		create(_agent, request) {
-			hostGoal = { id: 'hg-1', revision: 1, objective: request.objective, phase: 'active', maxGoalRounds: request.maxGoalRounds ?? 24, roundsStarted: 0, activation: 'armed' }
+			hostGoal = { id: 'hg-1', revision: 1, objective: request.objective, phase: 'active', maxGoalRounds: request.maxGoalRounds ?? 128, roundsStarted: 0, activation: 'armed' }
 			return hostGoal
 		},
 		edit(_agent, _ref, request) {
@@ -121,16 +122,20 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 		},
 	}
 
-	/** 人门:按剧本预设作答,每一次都记下来(判分与复盘要看得见人答了什么)。 */
+	/** 当场问人:按剧本预设作答,每一次都记下来(判分与复盘要看得见人答了什么)。 */
 	const userQuestions = {
 		async ask(request) {
-			const answersOut = (request?.questions ?? []).map((question) => {
-				const preset = String(answers[question.id] ?? 'approve')
-				const approve = question.intent?.approve ?? question.options?.[0]?.label
-				const answer = preset === 'approve' ? { id: question.id, selected: [approve] } : { id: question.id, selected: [], custom: preset.replace(/^revise:/, '') }
-				humanAnswers.push({ id: question.id, header: question.header ?? null, answer: preset })
-				return answer
-			})
+			const answersOut = []
+			for (const question of request?.questions ?? []) {
+				const id = String(question.id ?? '')
+				const preset = String(answers[id] ?? answers[id.split('-')[0]] ?? 'first')
+				const labels = (question.options ?? []).map((option) => option.label)
+				humanAnswers.push({ id, header: question.header ?? null, question: question.question ?? null, answer: preset })
+				if (preset === 'none') throw Object.assign(new Error('no provider'), { code: 'NO_PROVIDER' })
+				if (preset === 'first') answersOut.push({ id, selected: labels.slice(0, 1) })
+				else if (labels.includes(preset)) answersOut.push({ id, selected: [preset] })
+				else answersOut.push({ id, selected: labels.slice(0, 1), custom: preset })
+			}
 			return { answers: answersOut }
 		},
 	}

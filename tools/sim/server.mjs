@@ -5,7 +5,7 @@
  *   · 编排者取「交给模型的那份说明」(提示词段 + 工具目录)。
  *
  * 用法:
- *   node tools/sim/server.mjs --run <运行目录> --workspace <工作区> [--answers '{"plan-review":"approve"}'] [--audit-timeout 900000]
+ *   node tools/sim/server.mjs --run <运行目录> --workspace <工作区> [--answers '{"release":"first","blocked":"none"}'] [--audit-timeout 900000]
  *
  * 起来之后在 `<运行目录>/port` 写下端口号;会话日志落在 `<运行目录>/events.jsonl`。
  * 走 HTTP 而不是一次性子进程:评估者在飞时,内核的那次调用要**一直挂着**等裁决,

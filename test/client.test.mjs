@@ -608,7 +608,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('要你拍板的那一下在世界树里(人门区在最前)', /需要你|计划待确认/.test(treePanel), treePanel.slice(0, 120))
 	check('世界树不再重复闭环那一格的东西(假设/观测/事实不在这)', !/观测 ·/.test(treePanel) && !/事实 · 1/.test(treePanel), treePanel.slice(0, 160))
 	/**
-	 * **判据逐条**:`SetGoal` 收的是 `criteria: string[]`(每条一句话、每条可清点),
+	 * **判据逐条**:`Frame` 收的是 `criteria: string[]`(每条一句话、每条可清点),
 	 * 挤成一句「判据:均值差…」会把「第 3 条没做到」抹平。面板与**运行态卡读同一份**
 	 * (`knowledgeView.goal.criteriaLines`),所以这里断言的是那份投影在屏上的形状:
 	 * 序号、修订史与谁裁的、全文指针、以及哪一段不参与判定。
@@ -1289,9 +1289,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const inboxText = react.render(components.Inbox({ data: wordGate })).replace(/\s+/g, ' ')
 		check('要一句话的门:不给按钮(它不是点击能表达的)', !/要你采纳/.test(inboxText), inboxText.slice(0, 160))
 		/**
-		 * 被推翻的事实:那道门有**两个**结局,而且两个都必须能一键落地——
-		 * 只给「撤回」的话,「判定证据不可靠、维持原事实」就只能靠不说话,而门开着按住续跑,
-		 * 系统于是等一个永远不会来的动作。
+		 * 被推翻的事实:撤回 / 维持现在由**那次交付当场问人**(原生提问卡),面板不再发这两个动作。
+		 * 收件箱只读:即使旧数据里有这一条,也不渲染按钮——面板上没有一个点了不落账的控件。
 		 */
 		{
 			const refuted = {
@@ -1300,31 +1299,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 				inbox: [{ kind: 'fact_refutation', title: '事实被推翻,等你决定', summary: '「X 比 Y 快」出现了推翻证据:撤回它,或判证据不可靠、维持原事实。', plan: null, step: null, value: 'fct-1', human_action: 'retract_fact', needs: 'click' }],
 				facts: [{ id: 'fct-1', text: 'X 比 Y 快', scope: null, level: 'L3', evidenceIds: [], path: null, at: 1, refuted: true, review: null }],
 			}
-			const text = react.render(components.Inbox({ data: refuted })).replace(/\s+/g, ' ')
-			check('被推翻的事实:撤回与维持两个按钮都在(少一个那道门就没有出口)', /撤回事实/.test(text) && /维持原事实/.test(text), text.slice(0, 200))
-			/**
-			 * 撤回是**两步**:机制只记录,「值得索要理由」在界面上——
-			 * 撤回改变的是下一轮模型会引用什么;而「维持原事实」不改任何面,所以它是一键。
-			 * 这份渲染桩的 `useState` 是空实现,所以这里断言的是**初始态**:缘由没写之前,
-			 * 「确认撤回」根本不存在(它要点开之后才出现)。
-			 */
-			{
-				const tree = walkNodes(components.Inbox({ data: refuted }))
-				const label = (node) => flatNode(node)
-				check('撤回先要写缘由:初始态只有「撤回事实」,没有「确认撤回」', tree.some((node) => label(node) === '撤回事实') && !tree.some((node) => label(node) === '确认撤回'))
-				check('那颗按钮的提示写着「两步」而不是「一键」', tree.some((node) => String(node.props?.title ?? '').includes('填写缘由后提交')), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => node.props?.title)))
-			}
-			// 用带状态的桩**驱动**两步:点「撤回事实」→ 再画一遍,缘由框与「确认撤回」才出现,且缘由空时提交不了。
-			{
-				const { exports: bundled, render } = loadClientWithStatefulReact()
-				const props = { data: refuted }
-				const first = walkNodes(render(bundled.__components.Inbox, props))
-				first.find((node) => node.type === 'button' && flatNode(node) === '撤回事实')?.props?.onClick()
-				const second = walkNodes(render(bundled.__components.Inbox, props))
-				const confirm = second.find((node) => node.type === 'button' && flatNode(node) === '确认撤回')
-				const input = second.find((node) => node.type === 'input' && String(node.props?.placeholder ?? '').includes('撤回缘由'))
-				check('点了「撤回事实」⇒ 缘由框与「确认撤回」出现,缘由空时提交按钮是灰的', confirm !== undefined && input !== undefined && confirm.props?.disabled === true, JSON.stringify({ confirm: confirm?.props?.disabled, input: input !== undefined }))
-			}
+			const tree = walkNodes(components.Inbox({ data: refuted }))
+			check('收件箱只读:不渲染撤回 / 维持按钮(这道门改由交付当场问人)', !tree.some((node) => node.type === 'button'), JSON.stringify(tree.filter((node) => node.type === 'button').map((node) => flatNode(node))))
 			const shelf = react.render(components.FactShelf({ useProjection: () => refuted })).replace(/\s+/g, ' ')
 			check('事实那一行如实标出「被推翻,等你决定」(引用它之前要看这条)', /被推翻 · 待裁决/.test(shelf), shelf.slice(0, 180))
 			const retractedFacts = { ...refuted, inbox: [], facts: [{ ...refuted.facts[0], review: { decision: 'retracted', reason: '外部数据更正', at: 2, by: 'user' } }] }

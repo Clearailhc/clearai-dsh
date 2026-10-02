@@ -85,6 +85,37 @@
 - id: tool-skill
   name: '@deepseek-ai/dsh-tool-skill'
 
+# ── 目标与计划模式交给原生(第三阶段) ─────────────────────────────────────────
+# 目标的文字、续跑、暂停、完成都在原生 goal 上:模型用 create/get/update_goal,人用 /goal 与界面。
+# ClearAI 只往当前 goal 上挂判据与判断(Frame),完成只能经 Conclude(先过独立评估);
+# 模型直接调 update_goal(action=complete) 会被内核守卫拒绝。
+# 人想先审计划,用原生 /plan(计划模式,exit_plan_mode 交人审阅);ClearAI 不再自带审阅卡与授权记号。
+- id: command-goal
+  name: '@deepseek-ai/dsh-command-goal'
+- id: tool-goal
+  name: '@deepseek-ai/dsh-tool-goal'
+- id: planning
+  name: cordis:group
+  group: true
+  isolate:
+    planMode: true
+  config:
+    - id: plan-mode
+      name: '@deepseek-ai/dsh-plan-mode'
+      config:
+        section: |
+          You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+          Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+          The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+          Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+          Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+          When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+
 # ── 压缩(上下文是受控资源) ─────────────────────────────────────────────────
 
 # `compaction-basic` 通过 ctx.get 读 `toolResultPruner`,所以剪枝器必须与它同一个 realm。
@@ -111,7 +142,7 @@
 
 # ── 认识论内核(本预设的灵魂) ───────────────────────────────────────────────
 
-# 20 件意图工具(目标 2 + 计划 8 + 领域语言 10:
+# 19 件意图工具(目标 2 + 计划 7 + 领域语言 10:
 #   概念注册/修订/废止 6 + **实例登记 1** + **带出处的断言 1** + **跳级理由 1** + 查询 1,见 `MECHANISM_TOOLS`)
 # + 一个 guard + 每回合派生的运行态卡 + 面板数据路由。
 # 逐条对照 docs/loop-philosophy.md 的哲学,见 ./plugins/clearai-kernel.js 的文件头。
@@ -121,10 +152,9 @@
 #
 # 装配是**清单驱动**的:工具面、提示词段、机制开关全部查表,代码里不出现模式名。
 #
-# 续跑:需要继续时,内核在宿主 `goals` 服务上布防一枚**续跑令牌**——计划收尾而目标未达成时,
-# 由宿主的回合驱动自己开下一轮。**要不要继续由门状态决定**(未授权 / 等裁决 / 有人在等 → 停),
-# 与运行档无关。宿主目标只当**驱动器**,内核从不读它做判断(事实仍然只从投影里算出来);
-# 达成→收回,触礁/放弃→置阻塞,重启后自动补防。
+# 目标挂在原生 goal 上:Frame 挂判据与判断(没有原生 goal 就建一枚),Conclude 先过独立评估、
+# 通过才把原生 goal 置为完成;续跑由原生 goal 的驱动自己做。需要人而没人能答、或模型如实放弃时,
+# 内核把原生 goal 置为阻塞并写明原因。
 # 配置项就是机制的旋钮:
 - id: clearai-kernel
   # 用**包内子路径**而不是 `./plugins/…`:宿主 ≥0.1.7-alpha.1 起,预设是声明行
@@ -164,7 +194,7 @@
     requireLandedEntities: true
     # 判据修订门:改判据文本要带一份独立裁决的 auditKey。
     # 为什么要有它:判据是"怎样算完成",它一变前面所有工作的验收含义跟着变——
-    # 允许在同一次 SetGoal 里顺手改掉,等于允许把"做不到"重新定义成"做到了"。
+    # 允许在同一次 Frame 里顺手改掉,等于允许把"做不到"重新定义成"做到了"。
     requireCriteriaVerdict: true
     # 跳级门:有等级被跳过而没写理由 ⇒ 结案被拒。
     # 为什么要有它:supportedLevel 只是支持证据的最大值,跳级本来零代价——
@@ -186,36 +216,16 @@
       - read_image
     # 每回合派生的运行态卡(只在状态变化时注入:前缀稳定是硬约束)
     runtimeCard: true
-    # 运行档:人在场 / 无人值守。**它只决定一件事**:澄清协议装哪一段
-    # (槽位 clarification 收敛;两套措辞互斥,永不同时在场)。
-    #
-    # 它**不决定**下面这些——写清楚是因为这四处曾经被误认为跟着档走:
-    #   · 计划授权 —— 计划**永远**要人在原生审阅卡上批准(CreatePlan 里没有自动确认分支,
-    #     confirmed_by 只有 'user' 与 'progress');
-    #   · 续跑策略 —— 要不要继续由 turnDemand 从**门状态**算出来(未授权/裁决在飞/门开着 → hold);
-    #   · 续跑轮数 —— 只有一个默认值 128,不按档取;
-    #   · 面板开关 —— 人门动词 set_autonomy 已摘除,当前没有切换入口。
-    #
-    # 所以这里写的是**部署初值**,不是"人此刻在不在场"的表示。
-    # 真正表达"要不要人"的是**门**:计划待确认 / 等裁决 / 有人在等。
-    autonomy: attended
-    # 续跑轮数上限。**刻意不写**:不写就回落到 DEFAULT_MAX_AUTO_TURNS(128),在布防点现算。
-    # 显式写一个数就两档都用它。这个键存在的意义是**保险丝**:够长到能跑完一件真活,
-    # 又短到不会无声烧掉一整夜。
-    # 执行者是**原生**:数字传到宿主目标的 maxGoalRounds,到限由 `dsh-goal-round-driver`
-    # 自己 block(code='round-limit')——上限真的是机制在执行,不是一句嘱咐。
     # 上下文预算不在这里:那是原生 `dsh-token-meter` + `dsh-compaction-basic` 的活。
     # 贡献表(ClearAI `composition.py` 的装配语义):装配根遍历清单,清单里出现表外的名字
     # 当场抛错——未知机制 / 未知工具 / 未知段 / 已关机制却仍列着它的工具,四种错法都在装配期炸,
     # 而不是静默少装一件工具、等某一轮才发现。
     #
-    # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(20 件意图工具、22 段提示词定义、
-    # 同一时刻 21 段在场——澄清协议那一段由 autonomy 在两套措辞里收敛)。
+    # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(19 件意图工具、21 段提示词,全部在场)。
     # 这些数字不靠人眼维持:`node tools/verify-truth-table.mjs` 会拿代码算出来的数核对它们。
     # 要裁剪就把 tools 或 sections 显式写出来:
-    #   tools: [SetGoal, CreatePlan, AdvancePlan, ...]      # 名字必须都在工具目录里
-    #   sections: [clearai/foundation, clearai/loop-contract, clarification, ...]
-    # `clarification` 是槽位名;直接写两套措辞里的哪一个会被拒绝(同时在场不可表示)。
+    #   tools: [Frame, CreatePlan, AdvancePlan, ...]      # 名字必须都在工具目录里
+    #   sections: [clearai/foundation, clearai/loop-contract, clearai/clarification, ...]
     contributions:
       mechanisms:
         goal: true
@@ -298,11 +308,8 @@
 
 # ── 刻意不挂的行(是决策,不是遗漏) ─────────────────────────────────────────
 #
-# · `tool-goal` / `command-goal`:DSH 的 goals 服务已经被内核用作**续跑驱动器**
-#   (布防/收兵都走它);再挂上模型面的 goal 工具,模型就能自己声明目标状态——
-#   那是第二本账。ClearAI 的目标账只有一本,由内核持有,面板显示的就是它。
-# · `plan-mode`:那是 DSH 的计划模式,与本内核的 CreatePlan/AdvancePlan 是两套计划纪律。
-#   同时挂上就是第二本账。要它就得先决定哪一本是唯一账本。
+# (原先这里还有 `tool-goal` / `command-goal` / `plan-mode`:第三阶段起它们都挂上了,
+#  目标与计划审阅交给原生,见上面「目标与计划模式交给原生」那一节。)
 #
 # 曾经不挂、现在**挂回来了**的(阶段 5,权威边界由 test/authority-boundary.test.mjs 钉死):
 # · `tool-todo` / `tool-subagent` / `tool-workflow` / `tool-ralph`:这些是**工作方式**,

@@ -101,13 +101,6 @@ if (scenarioName !== undefined && scenario === null) {
 
 const useWorkspace = option('--workspace')
 /**
- * `--autonomy attended|unattended` / `--max-turns N`:覆盖内核那一行的配置。
- * 「当档」是人可以随时切的,但 headless 跑动要先把初值定下来——无人值守档立约即授权、按轮数自己跑,
- * 正好用来验「有界的自动续跑」。
- */
-const autonomy = option('--autonomy')
-const maxTurns = option('--max-turns')
-/**
  * `--skills`:换一个**小场景**验「人引用技能」那条链路(面板「引用」按钮发的就是这条消息)。
  *
  * 为什么单开一场:默认任务要求模型立目标建计划,如果在它前面加一个 `/技能名` 手势,
@@ -124,8 +117,7 @@ const freeform = argv.includes('--freeform')
 /**
  * `--expect-complete`:这一场**应该跑到收尾**(目标结案、没有未落定步骤)。
  *
- * 为什么不设成默认:有一批场景**故意**在半路停(「建完计划就停,不要执行步骤」、`--max-turns 1`
- * 的截断场),给它们扣一顶「没跑完」的帽子是冤枉。但长链验收场必须显式要求,
+ * 为什么不设成默认:有一批场景**故意**在半路停(「建完计划就停,不要执行步骤」),给它们扣一顶「没跑完」的帽子是冤枉。但长链验收场必须显式要求,
  * 否则「半路停下」会伪装成一排 ✓(R3 之前就是这样:24 通过,而链根本没走完)。
  */
 const expectComplete = argv.includes('--expect-complete') || scenario?.expectComplete === true
@@ -138,9 +130,6 @@ const expectComplete = argv.includes('--expect-complete') || scenario?.expectCom
  *   ② 把 `dist/clearai-dsh` **装进去**(`dsh plugin add`;没有 pnpm 就手工对账并如实标注);
  *   ③ 补丁层里只插**名册一行**(headless 不挂名册),root 指向包内的 `presets/`;
  *   ④ 于是这场跑的是**包里的行 + 包里的预设 + 包里的模板**。
- *
- * 代价如实说:`--autonomy` / `--max-turns` 这类覆盖在装出来的形态里**注入不进去**
- * (配置在预设里,预设随包),所以那一场用包里的缺省值;`--installed` 会打印这句话。
  */
 const installedMode = argv.includes('--installed')
 /**
@@ -148,7 +137,7 @@ const installedMode = argv.includes('--installed')
  * `--installed` 与它组合时,装出来的 profile 也从 **web** 缺省模板来(名册只在挂它的部署里存在)。
  */
 const resident = argv.includes('--resident')
-const VALUE_FLAGS = new Set(['--workspace', '--autonomy', '--max-turns', '--scenario'])
+const VALUE_FLAGS = new Set(['--workspace', '--scenario'])
 const task =
 	argv
 		.filter((item, index) => !item.startsWith('--') && !VALUE_FLAGS.has(argv[index - 1] ?? ''))
@@ -322,12 +311,7 @@ const missing = presetRows
 			)
 			return { ...row, config }
 		}
-		// 内核那一行:按命令行覆盖当档与轮数上限(其余配置照抄预设)。
-		if (row.id !== 'clearai-kernel') return row
-		const config = { ...(row.config ?? {}) }
-		if (autonomy !== undefined) config.autonomy = autonomy
-		if (maxTurns !== undefined) config.maxAutoTurns = Number(maxTurns)
-		return { ...row, config }
+		return row
 	})
 const personaRow = presetRows.find((row) => row.id === 'persona')
 /**
@@ -414,7 +398,6 @@ const before = {
 console.log(`  工作区:${workspace}${tempWorkspace ? '(临时)' : '(现成,跑完不动)'}`)
 if (scenario !== null) console.log(`  剧本:${scenarioName} · ${scenario.title}\n  为什么要它:${scenario.why}`)
 console.log(`  跑之前:章程占位 ${before.constitution.placeholders}/${before.constitution.items} · products/ ${before.products.length} 个文件 · 已有会话 ${before.logs} 个`)
-if (autonomy !== undefined || maxTurns !== undefined) console.log(`  覆盖:autonomy=${autonomy ?? '(预设)'} maxAutoTurns=${maxTurns ?? '(预设)'}`)
 const started = Date.now()
 const profileName = installedHome === null ? (resident ? 'web' : 'headless') : installedProfile
 const run = spawnSync(DSH_LAUNCH.command, [...DSH_LAUNCH.prefix, '--patch', hostPatchFile, '--patch', patchFile, '--profile', profileName, task], {
@@ -605,7 +588,7 @@ const resultOf = (name) => {
 }
 
 const planShaped = !skillsScenario && !freeform
-check('模型真的用了意图工具(SetGoal)', planShaped ? called('SetGoal') : true, toolCalls.map((event) => event.data?.name).join(','))
+check('模型真的用了意图工具(Frame)', planShaped ? called('Frame') : true, toolCalls.map((event) => event.data?.name).join(','))
 check('模型真的建了计划(CreatePlan)—— 这正是 2026-09-10 全军覆没的那一件', planShaped ? called('CreatePlan') : true, toolCalls.map((event) => event.data?.name).join(','))
 {
 	const result = resultOf('CreatePlan')

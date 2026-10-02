@@ -6,7 +6,7 @@
  *   这里只有一份**权威源**（JSON），markdown 是它的纯函数输出：
  *   同一个 commit 跑两次，产物逐字节相同。
  *
- * 生成物里会附上**代码常量快照**（机制数、工具数、配置键数、段数、默认续跑额度），
+ * 生成物里会附上**代码常量快照**（机制数、工具数、配置键数、段数），
  * 让读表的人一眼看出「表里写的」与「代码里有的」是不是同一件事。
  * 交叉校验由 `tools/verify-truth-table.mjs` 负责——本脚本只负责渲染。
  *
@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CONFIG_KEYS, MECHANISM_TOOLS } from '../preset/plugins/clearai-kernel.js'
-import { SECTIONS, SECTION_SLOTS } from '../preset/plugins/prompts.js'
+import { SECTIONS } from '../preset/plugins/prompts.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
@@ -60,14 +60,12 @@ function load() {
 /** 代码常量快照：真值表说的事，代码里到底有多少。 */
 function codeSnapshot() {
 	const tools = Object.values(MECHANISM_TOOLS).flat()
-	const slotVariants = Object.values(SECTION_SLOTS).flatMap((variants) => Object.values(variants))
 	return {
 		mechanisms: Object.keys(MECHANISM_TOOLS),
 		tools,
 		configKeys: CONFIG_KEYS,
 		sectionsDefined: SECTIONS.length,
-		sectionsMounted: SECTIONS.length - slotVariants.length + Object.keys(SECTION_SLOTS).length,
-		slots: SECTION_SLOTS,
+		sectionsMounted: SECTIONS.length,
 	}
 }
 
@@ -93,10 +91,10 @@ function tableRows(table, labels, lang) {
 	const lines = []
 	const head =
 		lang === 'zh'
-			? '| id | 机制 | 层 | 状态 | 强度 | 权威 | 责任方 | 阻断执行 | 受 autonomy 影响 | 代码位置 |'
-			: '| id | Mechanism | Layer | Status | Strength | Authority | Actor | Blocks | autonomy | Code |'
+			? '| id | 机制 | 层 | 状态 | 强度 | 权威 | 责任方 | 阻断执行 | 代码位置 |'
+			: '| id | Mechanism | Layer | Status | Strength | Authority | Actor | Blocks | Code |'
 	lines.push(head)
-	lines.push('|---|---|---|---|---|---|---|---|---|---|')
+	lines.push('|---|---|---|---|---|---|---|---|---|')
 	for (const layer of LAYER_ORDER) {
 		for (const m of table.mechanisms.filter((entry) => entry.layer === layer)) {
 			const code = m.source.code === null ? '—' : `\`${String(m.source.code).split(';')[0].trim()}\``
@@ -110,7 +108,6 @@ function tableRows(table, labels, lang) {
 					labels.authority[m.authority],
 					m.actor,
 					m.blocks_execution ? (lang === 'zh' ? '是' : 'yes') : (lang === 'zh' ? '否' : 'no'),
-					m.affected_by_autonomy ? (lang === 'zh' ? '**是**' : '**yes**') : (lang === 'zh' ? '否' : 'no'),
 					code,
 				].join(' | ').replace(/^/, '| ').replace(/$/, ' |'),
 			)
@@ -131,7 +128,7 @@ function detailSections(table, lang) {
 			lines.push(`- **触发**：${m.trigger}`)
 			if (m.input && m.input !== '—') lines.push(`- **输入**：${m.input}`)
 			if (m.output && m.output !== '—') lines.push(`- **输出**：${m.output}`)
-			lines.push(`- **阻断执行**：${m.blocks_execution ? '是' : '否'} · **受 autonomy 影响**：${m.affected_by_autonomy ? '是' : '否'}`)
+			lines.push(`- **阻断执行**：${m.blocks_execution ? '是' : '否'}`)
 			lines.push(`- **原生替代**：${m.native_dsh_alternative ?? '无'}`)
 			lines.push(`- **理由**：${m.rationale}`)
 			if (m.destination !== undefined) lines.push(`- **归宿**：${DESTINATION[m.destination]?.zh ?? m.destination}`)
@@ -143,7 +140,7 @@ function detailSections(table, lang) {
 			lines.push(`- **Trigger**: ${m.trigger}`)
 			if (m.input && m.input !== '—') lines.push(`- **Input**: ${m.input}`)
 			if (m.output && m.output !== '—') lines.push(`- **Output**: ${m.output}`)
-			lines.push(`- **Blocks execution**: ${m.blocks_execution ? 'yes' : 'no'} · **Affected by autonomy**: ${m.affected_by_autonomy ? 'yes' : 'no'}`)
+			lines.push(`- **Blocks execution**: ${m.blocks_execution ? 'yes' : 'no'}`)
 			lines.push(`- **Native alternative**: ${m.native_dsh_alternative ?? 'none'}`)
 			lines.push(`- **Rationale**: ${m.rationale}`)
 			if (m.destination !== undefined) lines.push(`- **Destination**: ${DESTINATION[m.destination]?.en ?? m.destination}`)
@@ -172,7 +169,6 @@ function renderZh(table) {
 	lines.push(`- 按强度：${counts.hardness}`)
 	lines.push(`- 按归宿：${counts.destination}`)
 	lines.push(`- 真正阻断执行的：**${table.mechanisms.filter((m) => m.blocks_execution).length}**`)
-	lines.push(`- 受 autonomy 影响的：**${table.mechanisms.filter((m) => m.affected_by_autonomy).length}**`)
 	lines.push(`- 存在已知不符（文档 / 注释与代码不一致）的：**${table.mechanisms.filter((m) => m.known_mismatch !== null).length}**`, '')
 	lines.push('## 代码常量快照', '')
 	lines.push('这一节由代码导出，不是手写：')
@@ -180,7 +176,7 @@ function renderZh(table) {
 	lines.push(`- 机制：${snap.mechanisms.length} 个（${snap.mechanisms.join(' / ')}）`)
 	lines.push(`- 意图工具：${snap.tools.length} 件（${snap.tools.join(' ')}）`)
 	lines.push(`- 配置键：${snap.configKeys.length} 个`)
-	lines.push(`- 提示词段：定义 ${snap.sectionsDefined} 段，同一时刻在场 ${snap.sectionsMounted} 段（槽位 ${Object.keys(snap.slots).join(' / ')} 二选一）`, '')
+	lines.push(`- 提示词段：定义 ${snap.sectionsDefined} 段，同一时刻在场 ${snap.sectionsMounted} 段`, '')
 	lines.push('## 总表', '')
 	lines.push(...tableRows(table, ZH, 'zh'), '')
 	lines.push('## 逐条明细', '')
@@ -205,14 +201,13 @@ function renderEn(table) {
 	lines.push(`- By strength: ${counts.hardness}`)
 	lines.push(`- By destination: ${counts.destination}`)
 	lines.push(`- Actually blocking execution: **${table.mechanisms.filter((m) => m.blocks_execution).length}**`)
-	lines.push(`- Affected by autonomy: **${table.mechanisms.filter((m) => m.affected_by_autonomy).length}**`)
 	lines.push(`- Carrying a known mismatch between docs/comments and code: **${table.mechanisms.filter((m) => m.known_mismatch !== null).length}**`, '')
 	lines.push('## Code constant snapshot', '')
 	lines.push('This section is exported from code, not written by hand:', '')
 	lines.push(`- Mechanisms: ${snap.mechanisms.length} (${snap.mechanisms.join(' / ')})`)
 	lines.push(`- Intent tools: ${snap.tools.length} (${snap.tools.join(' ')})`)
 	lines.push(`- Config keys: ${snap.configKeys.length}`)
-	lines.push(`- Prompt sections: ${snap.sectionsDefined} defined, ${snap.sectionsMounted} mounted at any moment (the ${Object.keys(snap.slots).join(' / ')} slot picks one of two)`, '')
+	lines.push(`- Prompt sections: ${snap.sectionsDefined} defined, ${snap.sectionsMounted} mounted at any moment`, '')
 	lines.push('## Summary', '')
 	lines.push(...tableRows(table, EN, 'en'), '')
 	lines.push('## Detail', '')

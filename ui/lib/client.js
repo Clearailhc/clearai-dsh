@@ -357,27 +357,7 @@ window.__ModuleLoader__.load({
 			return h('span', { className: 'clearai-link', title: props.title, onClick: props.onClick }, props.children)
 		}
 
-		/**
-		 * 读一个面板自己的 HTTP 响应。
-		 *
-		 * 为什么不能直接 `response.json()`:那条路上失败时返回的是**纯文本**
-		 * (`connection` 层查不到 exact fetch route 就回 `404 "not found"`),
-		 * 直接 parse 会抛出 `Unexpected token 'o', "not found" is not valid JSON`
-		 * ——人看到的是解析器的抱怨,不是发生了什么。
-		 * 这里统一成 `{ ok, status, payload, error }`,`error` 里带上状态码与原文。
-		 */
-		const readResponse = async (response) => {
-			const text = await response.text()
-			let payload = null
-			try {
-				payload = text === '' ? null : JSON.parse(text)
-			} catch {
-				payload = null
-			}
-			if (payload !== null && payload.ok === true) return { ok: true, status: response.status, payload, error: null }
-			const reason = payload !== null && typeof payload.error === 'string' ? payload.error : `${response.status} ${text.slice(0, 80)}`.trim()
-			return { ok: false, status: response.status, payload, error: reason }
-		}
+
 
 		function Tag(props) {
 			return h('span', { style: props.strong === true ? S.tagStrong : S.tag }, props.children)
@@ -425,7 +405,7 @@ window.__ModuleLoader__.load({
 		/**
 		 * **目标那一块**(世界树页眉):主张一行 + **判据小节**(逐条带序号)。
 		 *
-		 * 判据是**多条**的清点清单(`SetGoal` 收 `criteria: string[]`)⇒ 挤成一句「判据:均值差…」
+		 * 判据是**多条**的清点清单(`Frame` 收 `criteria: string[]`)⇒ 挤成一句「判据:均值差…」
 		 * 会把「第 3 条没做到」抹平。所以逐条列出来,修订史与全文指针各占一行。
 		 * 读的是 `knowledgeView` 那一份(与运行态卡**同一份**);拿不到(旧宿主 / 测试桩)时
 		 * 退回原来那句摘要——面板不许因为缺一份投影而空白,也不许自己再拼一套判据。
@@ -1870,112 +1850,18 @@ window.__ModuleLoader__.load({
 		}
 
 		/**
-		 * 人门区。**人门优先于运行态**——等人的事永远最先说。
-		 * 写通道只给人:模型能调的工具面里没有这些动词。按下去之后由宿主平面把它变成一条
-		 * 带结构化标记的用户消息,折进投影(`by:'user'`),面板随投影自己更新。
+		 * 人门区:只读。第三阶段起要人的门(L4 放行、同一步连拦、事实被推翻)都由开门的那次工具调用
+		 * 直接弹原生提问卡,面板这里不再有按钮;收件箱读面是空的,第六阶段随面板一起删。
 		 */
 		function Inbox(props) {
 			const data = props.data
-			const sessionId = data === null || data === undefined ? null : data.sessionId
 			const items = data === null || data === undefined || !Array.isArray(data.inbox) ? [] : data.inbox
-			const [busy, setBusy] = React.useState(null)
-			const [error, setError] = React.useState(null)
-			/**
-			 * 撤回一条事实要写缘由,按事实 id 分开存(同一屏上可能有多条被推翻的事实)。
-			 * **机制只记录**,「值得索要理由」这条规矩在界面上——
-			 * 撤回改变的是下一轮模型会引用什么,而「维持原事实」不改任何面,所以它是一键。
-			 */
-			const [retractFact, setRetract] = React.useState(null)
-			const [retractNote, setRetractNote] = React.useState('')
 			if (items.length === 0) return null
-			const send = (item, extra) => {
-				setBusy(`${item.kind}:${item.plan || ''}:${item.step || ''}`)
-				setError(null)
-				/**
-				 * `value` 是**标的**(比如被推翻的那条事实的 id):宿主据此先核它还在不在,
-				 * 核不到就回 409,而不是收下一条什么都不改的动作。
-				 */
-				const body = { sessionId, action: item.human_action, plan: item.plan ?? null, value: item.value ?? null, note: extra?.note ?? null }
-				fetch('/api/clearai/gate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
-					.then(readResponse)
-					.then((result) => {
-						if (result.ok !== true) setError(result.error)
-					})
-					.catch((thrown) => setError(String(thrown?.message ?? thrown)))
-					.finally(() => setBusy(null))
-			}
-			/**
-			 * 收件箱里只有**真门**。门要什么由**数据**说(`item.needs`),不在这里按 kind 猜:
-			 *   · `click` ⇒ 给按钮(事实复核:撤回 / 维持);
-			 *   · `word`  ⇒ 给**一句提示**(解除阻塞这类门本来就不是点击能表达的)。
-			 */
-			const label = (item) => (item.needs === 'click' && item.kind === 'fact_refutation' ? t('撤回事实') : null)
 			return h(
 				'div',
 				{ style: S.gate },
 				h('div', { style: S.head }, `${t('需要你 ')}${items.length}`),
-				...items.map((item, index) => {
-					return h(
-						'div',
-						{ key: `${item.kind}-${index}`, style: S.gateRow, title: item.kind },
-						/** 机器词**不上屏** —— 进 tooltip,给人看的是标题那句话。 */
-						label(item) === null ? null : h('span', { style: S.tagStrong }, `${t('要你')}${label(item)}`),
-						h('span', null, item.title),
-						h('span', { style: S.faint }, item.summary),
-						label(item) !== null
-							? h(
-									'button',
-									{
-										type: 'button',
-										className: 'clearai-btn',
-										disabled: busy !== null,
-										/** 撤回先开缘由框(两步):「为什么撤回」是最值得留下的那句话。 */
-										onClick: () => setRetract(item.value),
-										title: t('撤回需填写缘由后提交'),
-									},
-									label(item),
-								)
-							: item.needs === 'word'
-								? h('span', { style: { ...S.faint, opacity: 0.9 } }, `${t('')}${item.ask ?? '说一句你的决定'}`)
-								: null,
-						/**
-						 * 事实复核那道门有**两个**结局,而且两个都必须能一键落地:
-						 * 只给「撤回」的话,「判定证据不可靠、维持原事实」就只能靠不说话——
-						 * 而门开着会按住续跑,于是系统一直等一个永远不会来的动作。
-						 */
-						item.kind === 'fact_refutation'
-							? h(
-									'button',
-									{ type: 'button', className: 'clearai-btn', disabled: busy !== null, onClick: () => send({ ...item, human_action: 'keep_fact' }, null) },
-									t('维持原事实'),
-								)
-							: null,
-						item.kind === 'fact_refutation' && retractFact === item.value
-							? h(
-									'span',
-									{ style: { display: 'inline-flex', gap: 6, alignItems: 'center' } },
-									h('input', {
-										value: retractNote,
-										placeholder: t('撤回缘由(必填)'),
-										onChange: (event) => setRetractNote(event.target.value),
-										style: { fontSize: 11.5, padding: '2px 6px', borderRadius: 6, border: '.5px solid var(--dsw-alias-border-l3)', background: 'transparent', color: 'inherit', minWidth: 140 },
-									}),
-									h(
-										'button',
-										{
-											type: 'button',
-											className: 'clearai-btn',
-											disabled: busy !== null || retractNote.trim() === '',
-											onClick: () => send(item, { note: retractNote.trim() }),
-											title: retractNote.trim() === '' ? t('缘由必填') : t('确认撤回(记录保留,不再作为「已知」引用)'),
-										},
-										t('确认撤回'),
-									),
-								)
-							: null,
-					)
-				}),
-				error === null ? null : h('div', { style: S.faint }, `${t('发送失败:')}${error}`),
+				...items.map((item, index) => h('div', { key: `${item.kind}-${index}`, style: S.gateRow, title: item.kind }, h('span', null, item.title), h('span', { style: S.faint }, item.summary))),
 			)
 		}
 
@@ -1985,31 +1871,6 @@ window.__ModuleLoader__.load({
 		 * 拿不到会话服务就退化成一行文本 id:宁可少一个按钮,也不假装能跳。
 		 */
 
-		/**
-		 * 续跑档的两个小工具(纯函数,便于直接断言文案)。
-		 *
-		 * **说行为,不说机制**:人要回答的是「我走开的时候它还接着干吗」,不是「这是哪个档」。
-		 * 哲学词(人在场 / 无人值守)留在文档、运行态卡与提示词里——那些读者是模型和写文档的人;
-		 * 给人点的那一格说人话,并在 tooltip 里注明两个词是一回事。
-		 *
-		 * 为什么是「多问我 / 自己拿主意」而不是「先问我 / 别问我」:两档都**会**为不可约的判断开门
-		 * (湿实验、护栏级授权、L4 放行),所以只能写程度,不能写绝对——绝对的说法是假承诺。
-		 */
-		const TIER_TEXT = lazyTable(() => ({ attended: t('多问我'), unattended: t('自己拿主意') }))
-		const TIER_HINT = lazyTable(() => ({
-			attended: t('续跑:多问我——每个阶段收尾就停下,等你给下一阶段(文档里叫「人在场」)。点一下切成「自己拿主意」。'),
-			unattended: t('续跑:自己拿主意——立约即授权,按轮数自己往下跑,只在不可约的判断上开门(文档里叫「无人值守」)。点一下切成「多问我」。'),
-		}))
-		const tierLabel = (value, pending) => `${TIER_TEXT[value] ?? value}${pending ? '(已切,下一步生效)' : ''}`
-
-		/**
-		 * 「多问我 / 自己跑」那个开关**删掉了**。
-		 *
-		 * 第一性原理 + 奥坎姆:「我要不要在场」是**运行时状态**——有没有门开着、有没有裁决在飞、
-		 * 有没有开着的步;这些系统自己知道 ✗,不该要用户预先声明。
-		 * 而且那一档还顺手把「计划经人确认」变成系统自己签的 ✗(与 L4「人放行」同一类病)。
-		 * 续跑本身走**原生 goal**(宿主的回合驱动);我们只决定"什么时候该布防、给多大保险丝"。
-		 */
 		/**
 		 * 计划的小图形:一棵**迷你世界树**——一根脊柱、一条岔、两个节点。
 		 * 用 `currentColor`:颜色留给状态(等人确认 = 琥珀,受阻 = 琥珀,收尾 = 灰),形状留给语义。
@@ -2055,9 +1916,8 @@ window.__ModuleLoader__.load({
 			 * 「已达成 · 100%」那一类与原生目标提示说的是同一件事,不在这里重复。
 			 */
 			const inboxCount = Array.isArray(data?.inbox) ? data.inbox.length : 0
-			const pending = plan.confirmationPending === true
 			const blocked = plan.blocked !== null && plan.blocked !== undefined
-			const attention = pending || blocked
+			const attention = blocked
 			/**
 			 * 符号**恒定是进度**(形状稳定才学得会):要人注意不在符号上换字,
 			 * 而是换颜色(与世界树同一条规矩:形状说状态,别让人去猜一个 '?')。
@@ -2066,7 +1926,7 @@ window.__ModuleLoader__.load({
 			 */
 			const symbol = `${done}/${total}`
 			const brief = typeof plan.brief === 'string' && plan.brief.trim() !== '' ? plan.brief.trim() : null
-			const meaning = pending ? t('计划在建,**等你确认**') : blocked ? t('计划受阻,等人处置') : plan.status === 'closed' ? `${t('计划已收尾(')}${done}/${total}${t(' 步)')}` : `${t('计划已交付 ')}${done}/${total}${t(' 步')}`
+			const meaning = blocked ? t('计划受阻,等人处置') : plan.status === 'closed' ? `${t('计划已收尾(')}${done}/${total}${t(' 步)')}` : `${t('计划已交付 ')}${done}/${total}${t(' 步')}`
 			/**
 			 * 等人时**只说一句**:先「需要你 N」(人门计数),没有门才说续跑停着的原因。
 			 * 两者是同一根轴(为什么在等人)⇒ 一格只放一个,不并列。

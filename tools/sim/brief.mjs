@@ -54,7 +54,7 @@ if (kind === 'model') {
 ## 你的工作环境(扮演规则,优先于一切)
 
 - **工作区**:\`${workspace}\`。所有文件读写都在这里;相对路径都相对它。用你自己的文件工具与 Bash 干活(相当于宿主的 read / write / bash)。
-- **ClearAI 的工具**(SetGoal、CreatePlan、AdvancePlan……)不在你的工具栏里,用 Bash 调用,参数 JSON 从标准输入给:
+- **ClearAI 的工具**(Frame、CreatePlan、AdvancePlan、Conclude……)不在你的工具栏里,用 Bash 调用,参数 JSON 从标准输入给:
 
   \`\`\`bash
   node ${CALL} ${runDir} <工具名> <<'EOF'
@@ -66,7 +66,7 @@ if (kind === 'model') {
   **每次调用都把 Bash 超时设为 600000 毫秒**:交付可能要等独立评估者判几分钟。
   若打印「调用 cN 还在进行」,过一会儿运行它给的 \`--result\` 命令接着取,不要重复交付。
 - **不要**读写工作区以外的任何文件(包括 ClearAI 自己的源码);不要直接改 \`clear/\` 下系统所有的文件。
-- 宿主原生的 \`subagent\`、\`ask_user_question\`、\`present\` 在这个环境里没有;需要人决定的事,在最后的回复里写明。计划审阅会由系统自动请人,人的答复会出现在工具结果里。
+- 宿主原生的 \`subagent\`、\`ask_user_question\`、\`present\`、\`update_goal\`、\`/plan\` 在这个环境里没有;需要人决定的事,在最后的回复里写明。系统自己要问人的时候(L4 放行、计划卡住、事实被推翻)会当场问,人的答复出现在那次工具结果里。
 - 做完(或确实做不下去)时,结束运行:你最后一条消息就是给人的答复。
 
 ## 任务(人发来的第一条消息)

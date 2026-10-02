@@ -241,7 +241,7 @@ export function apply(ctx) {
 	 * ═══ 人门通道(D2=B:面板可写,但只写人门动作)═══
 	 *
 	 * 三条硬约束,每一条都有测试盯着:
-	 *   ① **动词白名单**:撤回 / 维持事实,以及本体四动词;
+	 *   ① **动词白名单**:本体四动词(撤回 / 维持事实第三阶段起由内核在那次交付里当场问人,不走这里);
 	 *      表外一律拒(与贡献表同一套「表外的名字不许出现」)——**取值**也在这一层校验,
 	 *      宁可 400,也不静默半生效;
 	 *      `set_autonomy` 已摘掉:「在场与否」是运行时状态,不该是面板上的一个开关 ✗;
@@ -252,7 +252,8 @@ export function apply(ctx) {
 	 *
 	 * 已砍掉的动词(奥卡姆:它们是重复,或它们服务的机制已经交还宿主):
 	 *   · `adopt_branch` / `abandon_fork` / `confirm_provisional` / `promote_skill` —— 世界线与外脑已删除;
-	 *   · `confirm_plan` —— 原生 `dsh-plan-mode` 就是「用户复核的出口」;而授权本来就「交付即落账」;
+	 *   · `confirm_plan` —— 计划审阅交给原生 `dsh-plan-mode`(`/plan`),ClearAI 不再有授权记号;
+	 *   · `retract_fact` / `keep_fact` —— 由收到推翻证据的那次交付当场问人(答案在进程内落账);
 	 *   · `invoke_skill` —— 原生 `/` 技能触发器做同一件事(还带候选菜单),我们那条只是在旁边
 	 *     又写了一遍同一个手势。
 	 *
@@ -362,30 +363,11 @@ export function apply(ctx) {
 				}
 				if (problems.length > 0) return reply(400, { ok: false, error: 'entry_rejected', problems })
 			}
-			/**
-			 * 撤回 / 维持一条事实:先**核标的还在不在**。
-			 *
-			 * 如果不核,面板会收到一句成功、而账本上一字未改——「点了报成功、什么都没做」
-			 * 正是这套界面最不能有的那类东西。
-			 */
-			if (action === 'retract_fact' || action === 'keep_fact') {
-				const projected = view(stateOf(sessionId))
-				const fact = (projected.facts ?? []).find((item) => item.id === detail.value)
-				if (fact === undefined) return reply(409, { ok: false, error: 'fact_not_found' })
-				if (fact.review !== null && fact.review !== undefined) return reply(409, { ok: false, error: 'fact_already_reviewed' })
-			}
 			const human =
-				action === 'retract_fact'
-							? `人审查了被推翻的那条事实(${detail.value ?? '?'})后决定**撤回**它${detail.note === null ? '' : `,缘由:${detail.note}`}。`
-							: action === 'keep_fact'
-								? `人审查了被推翻的那条事实(${detail.value ?? '?'})后判定**证据不可靠,维持原事实**${detail.note === null ? '' : `,缘由:${detail.note}`}。`
-							: ONTOLOGY_GATE_ACTIONS.includes(action)
+				ONTOLOGY_GATE_ACTIONS.includes(action)
 								? `人在本体格里${action === 'register_term' ? `登记了概念「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'register_predicate' ? `登记了谓词「${detail.entry?.label ?? detail.entry?.id ?? '?'}」` : action === 'revise_term' ? `修订了「${detail.entry?.id ?? '?'}」的展示信息` : `废止了「${detail.entry?.id ?? '?'}」`}${detail.entry?.basis ? `,依据:${detail.entry.basis}` : ''}${detail.entry?.reason ? `,缘由:${detail.entry.reason}` : ''}。`
 								: '人在面板上做了一个动作。'
-			const followUp =
-				ONTOLOGY_GATE_ACTIONS.includes(action)
-					? '这条词汇变更已落账(`by:user`),与模型工具落的是同一本账、同一套判据;词汇货架会在下一拍同步'
-					: '这个决定已经落账,并会写进 `clear/knowledge/facts/` 那一份(下一轮引用它之前先看那条记录)'
+			const followUp = '这条词汇变更已落账(`by:user`),与模型工具落的是同一本账、同一套判据;词汇货架会在下一拍同步'
 			try {
 				appendHumanGate(agent, { detail, human, followUp })
 			} catch (error) {
@@ -436,26 +418,8 @@ export function apply(ctx) {
 				derive: (sessionId) => derive(stateOf(sessionId)),
 				/** 面板视图(与 wire 同一份,降级时一并交出席位健康事实)。 */
 				view: viewOf,
-				/**
-				 * 运行态卡:注给模型的**事实**。
-				 *
-				 * `overrides.autonomy`:面板上曾可以切档,而那一拍投影里还是旧档
-				 * (消息先入 inbox、后落日志,而 pre-step 跑在它落账之前)。切档入口已经摘除,
-				 * 但**这条覆盖通道保留**:一是旧会话日志里仍有那种记录,二是它保证了"卡片说的就是
-				 * 这一回合真正要跑的机制"这条不变量——两句话互相矛盾比一句话过期更糟
-				 * (旧投影与新消息同框时,模型会被矛盾卡住——所以宁缺毋假)。
-				 */
-				renderCard: (sessionId, overrides = {}) => {
-					const state = stateOf(sessionId)
-					if (overrides.autonomy !== 'attended' && overrides.autonomy !== 'unattended') return renderCard(state)
-					return renderCard({
-						...state,
-						autonomy: {
-							...(state.autonomy ?? {}),
-							effective: { value: overrides.autonomy, source: 'session', preset: state.autonomy?.effective?.preset ?? null },
-						},
-					})
-				},
+				/** 运行态卡:注给模型的**事实**。 */
+				renderCard: (sessionId) => renderCard(stateOf(sessionId)),
 				/**
 				 * 预演:把本次调用要落的变更先折一遍,好让工具返回的卡片是**这一步之后**的样子。
 				 * 投影要到结果落账才前进,而工具在返回时就需要说清新状态——

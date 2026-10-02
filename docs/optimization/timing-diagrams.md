@@ -9,10 +9,10 @@
 
 | Role | What it is | What it is not |
 |---|---|---|
-| **Human** | The user. Only they can do three things: approve a plan on the native review card, release L4 on the native approval stack, press a human-gate verb on the panel | not a system component |
+| **Human** | The user. Only they can do two things: answer the questions the system asks on the spot (L4 release, a stuck plan, a refuted fact), and submit an ontology verb on the panel | not a system component |
 | **Model** | The LLM reasoner. It **emits intent** (tool calls, answers) and executes nothing | not "the agent system"; it touches neither the ledger nor files — everything passes through the host |
-| **DSH host** | The engine: the turn loop, tool dispatch, sandbox and approvals, the native review card, subagents, the goals service (continuation driver), writing the session log | makes no epistemic judgments; it does not know "what may be believed" |
-| **ClearAI kernel** | The preset plugin: 20 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
+| **DSH host** | The engine: the turn loop, tool dispatch, sandbox and approvals, subagents, the goals service (native goal and continuation), userQuestions (the native question card), writing the session log | makes no epistemic judgments; it does not know "what may be believed" |
+| **ClearAI kernel** | The preset plugin: 19 intent tools + guard + the runtime card. **The only producer of authoritative mutations** | does not run turns, render UI, or persist |
 | **Fact ledger** | The append-only record of facts. **The content is ours**: clearai mutation events + `clear/` artifacts and evaluation cards; **the carrier is the host's**: the session log + the filesystem. It stores no conclusions — "what may be believed now" is folded out of it by the projection | not a second state book; state is not "read" from it but "folded" out of it |
 | **Projection** | The host-side half `ui/lib`: fold (ledger → state) + derive (state → views) + the panel. **Reads the ledger, never writes** | not a cache, not a copy — one view of the same facts |
 | **Independent evaluator** | A fresh-context read-only subagent dispatched by the kernel via the host (L3+), returning a structured verdict through `outputSchema` | not the executor's twin; the other half of doer ≠ judge |
@@ -32,7 +32,7 @@ sequenceDiagram
     participant L as Fact ledger
     participant P as Projection
 
-    M->>D: tool call (intent: SetGoal / AdvancePlan / ...)
+    M->>D: tool call (intent: Frame / AdvancePlan / ...)
     D->>K: dispatch to the plugin's execute
     K->>K: validate + compute authoritative mutations
     K-->>D: result + meta.mutations
@@ -95,61 +95,57 @@ sequenceDiagram
     participant E as Independent evaluator
     participant L as Fact ledger
 
-    M->>D: SetGoal(claim, done_criteria, hypotheses)
+    M->>D: Frame(claim, done_criteria, hypotheses)
     D->>K: execute
     K->>L: goal/set (derived stage: planning)
-    K->>D: precommitRecon: dispatch one read-only scout (optional, when input/ has material)
-    D->>E: start subagent
-    E-->>K: scout/settled
+    K->>D: native goal: create one (or edit its objective); it drives continuation
 
-    M->>D: CreatePlan(brief, steps[].done_criteria)
+    M->>D: CreatePlan(brief, steps[].done_criteria, steps[].tests.hypotheses)
     D->>K: execute
     K->>K: validateSteps (criteria required, non-self-referential, ≤25 steps)
-    K->>D: requestPlanReview
-    D->>H: native review card (the plan text)
-    alt approved
-        H-->>K: approved
-        K->>L: plan/created (confirmed_by='user')
-    else declined / cancelled / unavailable
-        H-->>K: the three other outcomes
-        K->>L: plan/created (confirmed_at=null)
-        Note over K,L: no stamp; auto continuation holds;<br/>an advance back-fills by='progress'
-    end
+    K->>L: plan/created
+    Note over M,H: to show a person the plan before acting, use the native /plan; ClearAI raises no review card of its own
 
-    M->>D: AdvancePlan(step_id, observations)
+    M->>D: AdvancePlan(step_id, basis, results[])
     D->>K: execute
+    opt L4
+        K->>D: userQuestions: ask the person on the spot whether to release
+        D->>H: native question card
+        H-->>K: release / hold (nobody can answer ⇒ refused, native goal blocked)
+        K->>L: human/released
+    end
     K->>K: admission: artifact exists / non-empty / structurally valid
     alt admission failed
-        K->>L: block/counted (reaching blockedThreshold → plan/blocked)
+        K->>L: block/counted (reaching blockedThreshold → plan/blocked, the person is asked on the spot)
     else admitted, L0–L2
-        K->>L: step/advanced + evidence/recorded
+        K->>L: evidence/recorded (one per result) + step/advanced
     else admitted, L3+
         K->>D: dispatch a fresh-context read-only evaluator
         D->>E: start (with outputSchema)
-        E-->>K: structured verdict
-        K->>L: audit/settled + step/advanced (the verdict is written by the system)
-    end
-    opt L4
-        K->>D: native approval stack (human release)
-        D->>H: approval card
-        H-->>K: approval
-        K->>L: human/released
+        E-->>K: two judgments: does the delivery hold (holds) + a result per hypothesis
+        alt holds = yes
+            K->>L: audit/settled + evidence/recorded (one per result) + step/advanced
+        else holds = no / unclear
+            K->>L: audit/settled + block/counted (no advance)
+        end
     end
 
-    M->>D: ClosePlan → CloseGoal(outcome=achieved)
+    M->>D: ClosePlan → Conclude(outcome=achieved)
     D->>K: execute
     K->>D: dispatch the goal evaluator (synthetic step, criteria = goal.done_criteria)
     D->>E: start
-    E-->>K: support
+    E-->>K: holds = yes
     K->>L: goal/closed + fact/promoted (promote_at_level reached, no refutation)
+    K->>D: complete the native goal + declare deliverables
 ```
 
-Three boundaries to remember:
+Boundaries to remember:
 
-1. **Admission does not judge**. Admission only answers "accept or not"; `support / refute`
+1. **Admission does not judge**. Admission only answers "accept or not"; the result (support / refute / inconclusive)
    belongs to the evaluator or to L0–L2 self-judgment.
-2. **Writing a verdict at L3 or above is rejected** (`verdict_not_accepted`).
-3. **The plan must be closed before the goal**, or the kernel refuses.
+2. **Writing results yourself at L3 or above is rejected** (`verdict_not_accepted`).
+3. **Completion is separate from result**: a delivery that holds completes the step, even when the result is a refutation or inconclusive.
+4. **The plan must be closed before the goal**, or the kernel refuses.
 
 ## 3. Failure and recovery path · implemented (mechanism side) / prompt-only (recovery discipline)
 
@@ -198,7 +194,7 @@ sequenceDiagram
     participant S as Native subagent
     participant L as Fact ledger
 
-    M->>D: SetGoal(hypotheses: route A, route B — each with refute_when)
+    M->>D: Frame(hypotheses: route A, route B — each with refute_when)
     D->>K: execute
     K->>L: goal/set
     M->>D: CreatePlan(step A tests h-A, step B tests h-B, distinct artifacts)
@@ -243,7 +239,7 @@ sequenceDiagram
     participant G as Read surfaces (shelf / card / panel)
 
     Note over M,P: knowledge preflight (implemented: no user reminder needed)
-    M->>K: SetGoal (registering propositions)
+    M->>K: Frame (registering propositions)
     K-->>L: mutation goal/set
     L->>P: fold → derive
     P->>P: knowledgePreflight: claim text matches entry label/id/alias (bounded, auditable)
@@ -254,7 +250,7 @@ sequenceDiagram
     M->>K: RegisterTerm / RegisterPredicate (with a basis)
     K->>K: validate: unique id · references exist · acyclic is_a · legal range
     K-->>L: mutation ontology/term_added (and predicate_added / revised / deprecated)
-    M->>K: SetGoal (hypotheses carrying assertions)
+    M->>K: Frame (hypotheses carrying assertions)
     K->>K: validate assertions: predicate exists · subject in domain · object form · intra-fact consistency
     K-->>L: mutation goal/set
     Note over K,L: everything below is the fold as it stands today
@@ -275,9 +271,36 @@ Five boundaries (each has a test, or is written into [Known gaps](../known-gaps.
 2. **Conflicts are surfaced only**: computed by `derive()`, they retract no side, decide nothing about which is true, and **enter no gate**; handling one goes through the existing human gate (`fact/reviewed`).
 3. **Graphs are renderings**: `graphProjection()` is a deterministic pure function (the same ledger always yields the same graph) and coordinates never enter the ledger.
 4. **The graph is a rendering, not a second ledger**: `graphProjection()` yields pure semantics (nodes / edges / bounds); the viewport, dragging and visibility belong to React Flow. The client's Inspector readings always come from `GET /api/clearai/inspector`, so it never assembles an evidence chain itself. Interaction produces no mutation at all.
-5. **The shelf has an owner**: `domain.md` and `facts/INDEX.md` are **workspace-level** read surfaces, and only the session that owns the ledger may lay them — the ownership check lives inside the write functions, so spawned children (evaluator / scout / executor) structurally cannot write them. Children share the workspace with the primary line yet hold a separate, empty projection; if they re-laid the shelf, the shared read surface would oscillate with whoever stepped last. Behavior is pinned by the kernel suite, structure by the authority-boundary suite.
+5. **The shelf has an owner**: `domain.md` and `facts/INDEX.md` are **workspace-level** read surfaces, and only the session that owns the ledger may lay them — the ownership check lives inside the write functions, so spawned children (evaluator / executor) structurally cannot write them. Children share the workspace with the primary line yet hold a separate, empty projection; if they re-laid the shelf, the shared read surface would oscillate with whoever stepped last. Behavior is pinned by the kernel suite, structure by the authority-boundary suite.
 
 ## 6. Human gate path · implemented
+
+Decisions that need a person have two entry points. **Asked on the spot**: the call that opens the gate asks the person itself
+(L4 release, a stuck plan, a refuted fact), and the answer comes back into that same call and is recorded there:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant M as Model
+    participant D as DSH host
+    participant K as ClearAI kernel
+    participant H as Human
+    participant L as Fact ledger
+
+    M->>D: AdvancePlan(...)
+    D->>K: execute
+    K->>D: userQuestions.ask (question + options)
+    D->>H: native question card
+    alt the person answers
+        H-->>K: an option + an optional sentence
+        K->>L: human/released / block/cleared / plan/voided / fact/reviewed (by='user')
+    else nobody can answer / the person withdraws it
+        K->>D: block the native goal (clearai-needs-human)
+        Note over K,L: nothing changes in the ledger; the gate stays as it was
+    end
+```
+
+**The panel**: the four ontology verbs (register_term / register_predicate / revise_term / deprecate_entry) are submitted from the panel:
 
 ```mermaid
 sequenceDiagram
@@ -289,7 +312,7 @@ sequenceDiagram
     participant K as ClearAI kernel
 
     P-->>H: useProjection('clearai') pushes views
-    H->>P: press an action (adopt_branch / abandon_fork / promote_skill / retract_fact / keep_fact / confirm_provisional)
+    H->>P: submit an ontology verb
     P->>D: submit verb + arguments
     D->>D: whitelist check (anything off-list is refused; values checked on the same layer)
     D->>L: becomes a source.kind='user' message (append-only)
@@ -299,7 +322,7 @@ sequenceDiagram
     Note over K,L: the kernel reads the same fact at its next pre-step —<br/>a fact has exactly one fold, regardless of entry point
 ```
 
-Three hard constraints (each pinned by a test):
+Three hard constraints on the panel path (each pinned by a test):
 
 1. A verb whitelist; anything off-list is refused, and values are checked on the same layer.
 2. These verbs **have no tool schema** — they do not exist in the model's tool surface.

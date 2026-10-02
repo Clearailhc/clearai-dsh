@@ -6,7 +6,7 @@
  * 与磁盘上的新代码无关。这个脚本用 cache-busting 的 URL 导入**部署路径**上的内核,喂**部署的
  * 组合文件**里的 config,做一次真实 `apply`。
  *
- * 它证明的是:部署的文件本身能装配、清单与配置面与代码相符(工具数 / 段数 / autonomy / 机制)。
+ * 它证明的是:部署的文件本身能装配、清单与配置面与代码相符(工具数 / 段数 / 机制)。
  * 工具与段数以部署那一刻的组合为准(真值表有权威计数;别在这里再抄一份会过期的数)。
  * 它**不**证明运行期行为:那需要重启宿主(见 ROADMAP 开发纪律 1)。
  *
@@ -142,7 +142,7 @@ const mechanisms = Object.entries(config.contributions?.mechanisms ?? {}).filter
 console.log('✓ 装配成功(部署的组合文件 + 部署的内核,绕开 ESM 缓存)')
 console.log(`  工具面:${tools.size} 件`)
 console.log(`  段:${sections.length} 段 · 澄清协议 = ${clarifications.join(',') || '(缺失!)'}`)
-console.log(`  机制:${mechanisms.join('/')} · autonomy = ${config.autonomy ?? '(缺省 attended)'}`)
+console.log(`  机制:${mechanisms.join('/')}`)
 
 /**
  * 宿主包也一起验:它里面的**两条面板路由**必须挂在 connection 的 exact fetch 表上
@@ -202,6 +202,6 @@ if (existsSync(HOST_PKG)) {
 }
 console.log(`  宿主包:${hostOk ? '✓' : '✗'} ${hostNote}`)
 
-const ok = tools.size === 20 && sections.length === 21 && clarifications.length === 1 && hostOk
+const ok = tools.size === 19 && sections.length === 21 && clarifications.length === 1 && hostOk
 console.log(ok ? '\n部署自洽。(运行期验收仍需重启宿主:内核按 URL 缓存。)' : '\n✗ 实测数字与预期不符。')
 process.exit(ok ? 0 : 1)

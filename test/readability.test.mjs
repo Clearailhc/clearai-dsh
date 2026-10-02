@@ -89,7 +89,7 @@ function markdownSection(text, pattern) {
 
 console.log('\n【① 无「全文超限」:给模型看的目标字段有长度上限机制】')
 const setGoalParameters = (() => {
-	const marker = "name: 'SetGoal',"
+	const marker = "name: 'Frame',"
 	const start = KERNEL_SOURCE.indexOf(marker)
 	if (start < 0) return null
 	const parametersAt = KERNEL_SOURCE.indexOf('parameters: {', start)
@@ -99,8 +99,8 @@ const setGoalParameters = (() => {
 {
 	const properties = setGoalParameters?.properties ?? {}
 	const headline = properties.headline ?? null
-	check('SetGoal 参数取得到(否则下面的断言是空的)', setGoalParameters !== null, String(setGoalParameters))
-	check('SetGoal 新增 headline 字段(一句话目标)', headline !== null, JSON.stringify(Object.keys(properties)))
+	check('Frame 参数取得到(否则下面的断言是空的)', setGoalParameters !== null, String(setGoalParameters))
+	check('Frame 新增 headline 字段(一句话目标)', headline !== null, JSON.stringify(Object.keys(properties)))
 	check('headline 声明了长度上限(maxLength 是数,≤120 字)', typeof headline?.maxLength === 'number' && headline.maxLength <= 120, JSON.stringify(headline))
 	/**
 	 * **「一句话目标」是硬的,但"必须多传一个字段"不是。**

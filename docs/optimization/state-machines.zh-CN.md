@@ -32,20 +32,21 @@ stateDiagram-v2
 
 要点：
 
-- `achieved` 之前必须先 `ClosePlan`：内核拒收「计划还开着」的结案。
+- 立约是 `Frame`，结案是 `Conclude`。`Frame` 同时在宿主原生 goal 上建（或改）一条目标，续跑由原生 goal 驱动。
+- `achieved` 之前必须先 `ClosePlan`：内核拒收「计划还开着」的结案。`achieved` ⇒ 原生 goal 完成并声明交付物；
+  `abandoned` ⇒ 原生 goal 置阻塞（`clearai-goal-abandoned`）。原生 `update_goal` 想直接完成目标会被守卫拒绝，理由指向 `Conclude`。
 - `abandoned` 是如实放弃，不是失败清洗——记录保留。
 - 修订只增 `revision` 并追加 `reasons[]`，旧段不删。
 - 改「怎样算完成」这件事本身还有一条：`criteria/revised` 折进 `goal.criteriaHistory[]`（带独立裁决的 `audit`）。
-  它**不改** `done_criteria` 文本（文本走立约 / 修订那条路），改判据因此可查；`SetGoal` 的 `criteria_verdict` 要的就是这份审计键。
+  它**不改** `done_criteria` 文本（文本走立约 / 修订那条路），改判据因此可查；`Frame` 的 `criteria_verdict` 要的就是这份审计键。
 
 ## 2. 计划（plan）· 已实现
 
-存储字段：`state.plans[].{status, blocked, confirmed_at, confirmed_by}`。
+存储字段：`state.plans[].{status, blocked}`。
 
 ```mermaid
 stateDiagram-v2
     [*] --> active: plan/created
-    active --> active: plan/confirmed（首次授权为准，幂等）
     active --> active: plan/amended（补一步，进度不变）
     active --> active: plan/refined（改判据，进度不变）
     active --> blocked_by_step: plan/blocked + block/counted
@@ -55,17 +56,10 @@ stateDiagram-v2
     closed --> [*]
 ```
 
-授权记号的两条来源与一条补写：
+计划没有授权记号（第三阶段删了）：它从来不是门，第一次交付就按事实补写。要人在动手前看计划，用原生 `/plan`。
 
-| 记号 | 来源 | 代码 |
-|---|---|---|
-| `confirmed_by='user'` | 原生审阅卡返回 approved | `kernel.js:2780-2782` |
-| `confirmed_by='progress'` | 交付一步时补写 | `kernel.js:3034-3038` |
-| `confirmed_by='autonomy'` | **已删除**（原无人值守自动确认） | — |
-
-**授权不是硬阻断**：未授权的计划只让自动续跑 `hold`（`kernel.js:1898`），
-`AdvancePlan` 本身照常执行并按「行为即授权」补写记号。图里因此不画「未授权 → 拒绝交付」的边——
-那条边不存在。
+置 `blocked` 的那次调用**当场问人**（`userQuestions`）：「按缺口再改」⇒ `block/cleared`；「作废这一步」⇒ `plan/voided` + `block/cleared`；
+没人能答 ⇒ 计划保持 `blocked`，原生 goal 置阻塞（`clearai-needs-human`）。
 
 ## 3. 步骤（step）· 已实现
 
@@ -74,7 +68,7 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> open: plan/created（appendSteps）
-    open --> advanced: step/advanced（唯一完成动词，且必须先过准入）
+    open --> advanced: step/advanced（交付成立；结果支持 / 推翻 / 说不清都算完成）
     open --> void: plan/voided（带因作废）
     open --> blocked: plan/blocked（连拦达阈值）
     blocked --> open: block/cleared
@@ -87,6 +81,9 @@ stateDiagram-v2
 
 序位不变量：交付只能落在第一个未落定步，否则 `out_of_order`。
 
+**完成与结果分开**：`step/advanced` 只说交付成立；对判断的结果各落一条 `evidence/recorded`（带 `hypothesis`）。
+一步可以检验多条判断（`tests.hypotheses`），每条一个结果。交付不成立（`holds` 为 no / unclear）才不推进，计一次连拦。
+
 ## 4. 假设（hypothesis）· 已实现
 
 存储字段：`state.hypotheses[].status`（`proposed` / `superseded`）+ `derive()` 现算的 `alive` / `refuted`。
@@ -95,7 +92,7 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> proposed: goal/set 登记
     proposed --> alive: 出现第一条关联证据
-    alive --> refuted: 证据 verdict=refute（黏性终态）
+    alive --> refuted: 针对它的证据 verdict=refute（黏性终态）
     proposed --> superseded: hypothesis/superseded
     alive --> superseded: hypothesis/superseded
     refuted --> [*]
@@ -124,19 +121,20 @@ stateDiagram-v2
 
 ## 6. 评估（audit）· 已实现
 
-存储字段：`state.audits[].verdict`（`null` 表示在飞）。
+存储字段：`state.audits[].{verdict, holds, results}`（`verdict === null` 表示在飞）。
 
 ```mermaid
 stateDiagram-v2
     [*] --> dispatched: audit/dispatched（verdict=null）
-    dispatched --> settled: audit/settled（support / refute / inconclusive）
+    dispatched --> settled: audit/settled（holds = yes / no / unclear，外加每条判断一个结果）
     settled --> [*]
 ```
 
-`derive().pendingAudit` = 存在 `verdict === null` 的条目 → 阶段为 `auditing`，续跑 `hold`。
-同态复用记一条 `audit/reused`：`verdict` 是 `reused`，**不进** `support | refute | inconclusive` 这条判定，
+评估者给两份判断：交付成不成立（`holds`），以及对每条被检验判断的结果（`results[]`：support / refute / inconclusive）。
+`derive().pendingAudit` = 存在 `verdict === null` 的条目 → 阶段为 `auditing`，卡上写「在等裁决」。
+同态复用记一条 `audit/reused`：`verdict` 是 `reused`，**不进** `holds` 这条判定，
 也不占 `null` 那个「在飞」的哨兵——所以复用旧裁决的步骤不会让系统一直等。
-失联裁决由 `sweepLostAudits` 收口，并把「这一拍刚判定失联」显式放行（`kernel.js:1904`）。
+失联裁决由 `sweepLostAudits` 收口。
 
 ## 7. 证据（evidence）· 已实现
 
@@ -148,7 +146,7 @@ stateDiagram-v2
     recorded --> recorded: supersedes（新证据标记，旧证据不删）
 ```
 
-证据带 `origins[]`（四类出处）与 `basis_reviewable`。
+证据带 `hypothesis`（针对哪条判断）、`verdict`（support / refute / inconclusive）、`origins[]`（四类出处）与 `basis_reviewable`。
 
 ## 8. 事实（fact）· 已实现
 
@@ -161,46 +159,27 @@ stateDiagram-v2
 ```
 
 `retracted` **不在本图里，因为它不是一个被存储的状态**：推翻证据只**标记**事实（`refuted`，派生），
-由人决定**撤回**或**维持原事实**——两种结局都落同一条 `fact/reviewed`（撤回是终态，记录保留），
-投影再从 `fact.review` 把它读成派生状态。生产者在 `HUMAN_GATE_ACTIONS` 的 `retract_fact` / `keep_fact`
-与内核的 `markFactReviewed`；真值表那一行是 `fact-retraction`（已实现）。
+推翻证据落账的那次交付**当场问人**撤回还是维持原事实——两种结局都落同一条 `fact/reviewed`（撤回是终态，记录保留），
+投影再从 `fact.review` 把它读成派生状态。生产者是内核的 `reviewRefutedFacts` / `markFactReviewed`；没人能答 ⇒ 事实标着待复核，
+原生 goal 置阻塞。旧日志里人门消息形式的 `retract_fact` / `keep_fact` 仍折得出来。真值表那一行是 `fact-retraction`（已实现）。
 
 ## 9. 世界线（fork / branch）· 已删除
 
 世界线已在「少即是多」第二阶段删除:并行探索交给原生子任务,竞争路线就是竞争的假设,各由一个步骤检验。旧日志里的 `fork/*`、`worldline/*`、`branch/*` 事件不认识就原样跳过。
 
 
-## 10. 自动续跑（continuation）· 已实现
+## 10. 自动续跑 · 交给原生 goal
 
-这是 **Harness 调度状态**，不是认识论状态。存储字段：`state.continuation.state`。
+ClearAI 自己的续跑窗口（`continuation/set`、`turnDemand`、续跑额度）在第三阶段删了。续跑是宿主原生 goal 的事；
+ClearAI 只在三个地方碰它：
 
-```mermaid
-stateDiagram-v2
-    [*] --> absent
-    absent --> armed: continuation/set state=armed
-    armed --> armed: 目标未达成且门都关着（继续驱动）
-    armed --> paused: goals.pause（blocked / round-limit / 人按）
-    paused --> armed: goals.resume
-    armed --> stopped: 达成 / 放弃 / 阻塞
-    armed --> withdrawn: 平台上的窗口不见了，而那不是我们干的
-    stopped --> [*]
-    withdrawn --> [*]
-```
+| 时机 | 对原生 goal 做什么 |
+|---|---|
+| `Frame` | 建一条（已完成的先清掉再建），或改目标文字 |
+| `Conclude` achieved / abandoned | 完成 / 置阻塞（`clearai-goal-abandoned`） |
+| 要人而没人能答（计划卡住、L4 放行、事实被推翻） | 置阻塞（`clearai-needs-human`） |
 
-`turnDemand` 的判定顺序（`kernel.js:1892-1917`，**自上而下，先命中者胜**）：
-
-```text
-1. 计划 blocked                → stop
-2. 计划 active 但未授权        → hold
-3. 有裁决在飞（verdict=null）  → hold
-4. 收件箱非空（有门开着）      → hold
-5. 有 open 的步骤              → drive
-6. 目标仍 open                 → drive
-7. 其余                        → hold
-```
-
-关键事实：**这条链里没有 autonomy**。两档差异只剩澄清协议段与部署初值。
-默认额度 `DEFAULT_MAX_AUTO_TURNS = 128`，在布防点生效（`kernel.js:2001`）。
+旧日志里的 `continuation/set` 不认识就原样跳过。
 
 ---
 
@@ -287,7 +266,6 @@ stateDiagram-v2
 | `goal/closed` | §1 目标 | 是 |
 | `hypothesis/superseded` | §4 假设 | 是 |
 | `plan/created` | §2 计划 | 是 |
-| `plan/confirmed` | §2 计划 | 是 |
 | `plan/amended` | §2 计划 | 是 |
 | `plan/refined` | §2 计划 | 是 |
 | `plan/voided` | §3 步骤 | 是 |
@@ -302,8 +280,7 @@ stateDiagram-v2
 | `evidence/recorded` | §7 证据 | 是 |
 | `fact/promoted` | §8 事实 | 是 |
 | `human/released` | §3 步骤（L4 放行） | 是 |
-| `fact/reviewed` | §4 假设(人审查后撤回 / 维持) | 是 |
-| `continuation/set` | §10 自动续跑 | 是 |
+| `fact/reviewed` | §8 事实(人审查后撤回 / 维持) | 是 |
 | `ontology/term_added` | §12 领域词汇 | 是 |
 | `ontology/predicate_added` | §12 领域词汇 | 是 |
 | `ontology/term_revised` | §12 领域词汇 | 是 |
