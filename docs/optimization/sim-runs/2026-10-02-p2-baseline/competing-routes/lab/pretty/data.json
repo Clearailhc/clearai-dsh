@@ -1,0 +1,131 @@
+{
+  "project": "json-size-lab",
+  "version": 1,
+  "tags": [
+    "alpha",
+    "beta",
+    "gamma"
+  ],
+  "records": [
+    {
+      "id": 0,
+      "name": "item-0",
+      "value": 0.0,
+      "active": true
+    },
+    {
+      "id": 1,
+      "name": "item-1",
+      "value": 1.5,
+      "active": false
+    },
+    {
+      "id": 2,
+      "name": "item-2",
+      "value": 3.0,
+      "active": true
+    },
+    {
+      "id": 3,
+      "name": "item-3",
+      "value": 4.5,
+      "active": false
+    },
+    {
+      "id": 4,
+      "name": "item-4",
+      "value": 6.0,
+      "active": true
+    },
+    {
+      "id": 5,
+      "name": "item-5",
+      "value": 7.5,
+      "active": false
+    },
+    {
+      "id": 6,
+      "name": "item-6",
+      "value": 9.0,
+      "active": true
+    },
+    {
+      "id": 7,
+      "name": "item-7",
+      "value": 10.5,
+      "active": false
+    },
+    {
+      "id": 8,
+      "name": "item-8",
+      "value": 12.0,
+      "active": true
+    },
+    {
+      "id": 9,
+      "name": "item-9",
+      "value": 13.5,
+      "active": false
+    },
+    {
+      "id": 10,
+      "name": "item-10",
+      "value": 15.0,
+      "active": true
+    },
+    {
+      "id": 11,
+      "name": "item-11",
+      "value": 16.5,
+      "active": false
+    },
+    {
+      "id": 12,
+      "name": "item-12",
+      "value": 18.0,
+      "active": true
+    },
+    {
+      "id": 13,
+      "name": "item-13",
+      "value": 19.5,
+      "active": false
+    },
+    {
+      "id": 14,
+      "name": "item-14",
+      "value": 21.0,
+      "active": true
+    },
+    {
+      "id": 15,
+      "name": "item-15",
+      "value": 22.5,
+      "active": false
+    },
+    {
+      "id": 16,
+      "name": "item-16",
+      "value": 24.0,
+      "active": true
+    },
+    {
+      "id": 17,
+      "name": "item-17",
+      "value": 25.5,
+      "active": false
+    },
+    {
+      "id": 18,
+      "name": "item-18",
+      "value": 27.0,
+      "active": true
+    },
+    {
+      "id": 19,
+      "name": "item-19",
+      "value": 28.5,
+      "active": false
+    }
+  ]
+}

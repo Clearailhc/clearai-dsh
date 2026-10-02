@@ -1,0 +1,80 @@
+{
+  "scenario": "long-plan",
+  "judgedAt": "2026-10-02T01:42:16.285Z",
+  "toolCalls": 10,
+  "toolHistogram": {
+    "SetGoal": 1,
+    "CreatePlan": 1,
+    "AdvancePlan": 5,
+    "ExplainLevelSkip": 2,
+    "ClosePlan": 1
+  },
+  "mutationHistogram": "goal/set×1 continuation/set×1 plan/created×1 observation/recorded×9 admission/checked×4 evidence/recorded×4 step/advanced×4 block/cleared×4 level/skipped×2 audit/dispatched×1 audit/settled×1 plan/closed×1",
+  "goalStatus": "open",
+  "projectedSteps": 4,
+  "openSteps": [],
+  "passed": 10,
+  "failed": 0,
+  "checks": [
+    {
+      "label": "没有跳过准入的推进(每个 step/advanced 之前都有该步的 admission/checked)",
+      "ok": true,
+      "detail": "",
+      "kind": "invariant"
+    },
+    {
+      "label": "评估者没有悬空(每个 audit/dispatched 都有 audit/settled)",
+      "ok": true,
+      "detail": "dispatched=1 settled=1",
+      "kind": "invariant"
+    },
+    {
+      "label": "证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)",
+      "ok": true,
+      "detail": "",
+      "kind": "invariant"
+    },
+    {
+      "label": "升格与证据等级自洽(没到级不升格,到了级必须升格)",
+      "ok": true,
+      "detail": "promote_at_level=L3 最高支持证据=L3 升格=0(到级了) · 目标未结案",
+      "kind": "invariant"
+    },
+    {
+      "label": "声明的物证真的在盘上(主线步骤的 artifacts)",
+      "ok": true,
+      "detail": "声明 6 条,已推进步缺 0 条:",
+      "kind": "invariant"
+    },
+    {
+      "label": "推进了至少三步(step/advanced ≥ 3)",
+      "ok": true,
+      "detail": "advanced=4",
+      "kind": "scenario"
+    },
+    {
+      "label": "计划真的是四步上下(投影里 ≥ 3 步)",
+      "ok": true,
+      "detail": "4 步",
+      "kind": "scenario"
+    },
+    {
+      "label": "数据产物在盘上(lab/raw.csv)",
+      "ok": true,
+      "detail": "lab/raw.csv",
+      "kind": "scenario"
+    },
+    {
+      "label": "计算产物在盘上(lab/means.json)",
+      "ok": true,
+      "detail": "lab/means.json",
+      "kind": "scenario"
+    },
+    {
+      "label": "报告在盘上(lab/report.md)",
+      "ok": true,
+      "detail": "lab/report.md",
+      "kind": "scenario"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# Observation: python3 minimal script
+timestamp_utc: 2026-10-02T01:40:11Z
+command: python3 -c "print(1+1)"
+command_v_python3: /usr/local/bin/python3
+python3_version: Python 3.11.15
+exit_code: 0
+stdout: 2
+stderr: 
