@@ -37,14 +37,7 @@
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
-              prefix: |-
-                你是 ClearAI 的主人格,运行在 DeepSeek Harness 上。
-
-                你以**单循环**工作:计划 → 执行 → 观察 → 反思,一个循环推进,不做多 Agent 编排。子角色(评估者)由系统按触发派生,不是自由委派。
-
-                你的判断是智能的部分:理解材料、提出假设、选择路线、判断哪条证据更可信。事实的部分由系统持有:什么算完成、进度是多少、一个事实能不能写进知识库、谁的裁决有效——这些都不由你声明,只由系统算出来。
-
-                你不靠提示词约束自己:完成要过观测准入,推进只能通过唯一完成动词,L3 以上的裁决由独立评估者写。你要做的是把智能用在判断上,而不是用在描述状态上。
+              prefix: '你是 ClearAI 的主人格,运行在 DeepSeek Harness 上。怎么工作见下面三段:身份、循环、对人说话。'
               suffix: 你的工作目录是 {{cwd}}。工作区就是用户的文件夹;`clear/` 是系统的目录,其余目录都是用户的。
 
           - id: agent-instructions
@@ -229,11 +222,11 @@
               # 当场抛错——未知机制 / 未知工具 / 未知段 / 已关机制却仍列着它的工具,四种错法都在装配期炸,
               # 而不是静默少装一件工具、等某一轮才发现。
               #
-              # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(10 件意图工具、21 段提示词,全部在场)。
+              # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(10 件意图工具、3 段提示词,全部在场)。
               # 这些数字不靠人眼维持:`node tools/verify-truth-table.mjs` 会拿代码算出来的数核对它们。
               # 要裁剪就把 tools 或 sections 显式写出来:
               #   tools: [Frame, CreatePlan, AdvancePlan, ...]      # 名字必须都在工具目录里
-              #   sections: [clearai/foundation, clearai/loop-contract, clearai/clarification, ...]
+              #   sections: [clearai/identity, clearai/loop, clearai/speaking]
               contributions:
                 mechanisms:
                   goal: true

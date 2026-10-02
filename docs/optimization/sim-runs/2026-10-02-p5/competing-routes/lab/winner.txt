@@ -1,0 +1,2 @@
+compact
+compact=425 pretty=803

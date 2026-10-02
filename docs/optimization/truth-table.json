@@ -175,7 +175,7 @@
         "code": "preset/plugins/clearai-kernel.js Frame; attachNativeGoal; ui/lib/fold.js case 'goal/set'",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/state-protocol",
+        "prompt": "clearai/loop",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "模型调用 Frame 并给出 claim / done_criteria / hypotheses",
@@ -199,7 +199,7 @@
         "code": "preset/plugins/clearai-kernel.js Conclude; syntheticStep; runEvaluator; completeNativeGoal; blockNativeGoal; declareDeliverables; ui/lib/fold.js case 'goal/closed'",
         "tests": "test/kernel.test.mjs",
         "config": "l4RequiresHumanRelease, auditProvider, auditTimeoutMs, auditToolFilter",
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/verification-loop.zh-CN.md"
       },
       "trigger": "模型调用 Conclude(outcome=achieved|abandoned)",
@@ -223,7 +223,7 @@
         "code": "preset/plugins/clearai-kernel.js Frame hypotheses; ui/lib/fold.js case 'hypothesis/superseded'",
         "tests": "test/kernel.test.mjs",
         "config": "minHypotheses（内核默认 0 = 机制中立；preset 立 2 = 产品立场，与 blockedThreshold 同一模式）",
-        "prompt": "clearai/loop-contract",
+        "prompt": "clearai/loop",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "Frame 登记 hypotheses；证据到位后由 fold 派生支持等级",
@@ -247,7 +247,7 @@
         "code": "preset/plugins/clearai-kernel.js validateSteps; CreatePlan 调用点",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/plan-governance",
+        "prompt": "clearai/loop",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "CreatePlan / RevisePlan(add) 校验步骤",
@@ -271,7 +271,7 @@
         "code": "preset/plugins/clearai-kernel.js CreatePlan; MAX_PLAN_STEPS=25; ui/lib/fold.js case 'plan/created'",
         "tests": "test/kernel.test.mjs",
         "config": "minBriefChars",
-        "prompt": "clearai/plan-rhythm, clearai/plan-governance",
+        "prompt": "clearai/loop",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "模型调用 CreatePlan",
@@ -345,7 +345,7 @@
         "code": "preset/plugins/clearai-kernel.js AdvancePlan; SELF_JUDGE_MAX_INDEX 自判上限; ui/lib/fold.js case 'step/advanced'",
         "tests": "test/kernel.test.mjs",
         "config": "blockedThreshold, l4RequiresHumanRelease, l4RejectSelfWritten",
-        "prompt": "clearai/loop-contract",
+        "prompt": "clearai/loop",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "模型调用 AdvancePlan 并携带交付声明",
@@ -369,7 +369,7 @@
         "code": "preset/plugins/clearai-kernel.js RevisePlan; ui/lib/fold.js/323/330",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/plan-governance",
+        "prompt": "clearai/loop",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "模型调用 RevisePlan 的三种动作之一",
@@ -393,7 +393,7 @@
         "code": "preset/plugins/clearai-kernel.js admission; verdict_not_accepted; ui/lib/fold.js case 'audit/dispatched'",
         "tests": "test/kernel.test.mjs",
         "config": "blockedThreshold",
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "AdvancePlan 交付时",
@@ -417,7 +417,7 @@
         "code": "preset/plugins/clearai-kernel.js SELF_JUDGE_MAX_INDEX=2; ;",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/verification-loop.zh-CN.md"
       },
       "trigger": "AdvancePlan 携带 tests.level",
@@ -441,7 +441,7 @@
         "code": "preset/plugins/clearai-kernel.js runEvaluator / resolveToolFace / evaluatorPrompt / writeAuditCard; ui/lib/fold.js case audit/dispatched",
         "tests": "test/kernel.test.mjs",
         "config": "auditProvider=spawn, auditTimeoutMs, auditToolFilter",
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/verification-loop.zh-CN.md"
       },
       "trigger": "准入判定 needs_audit（产物齐备且 done_criteria 非空）时的 L3+ 步骤",
@@ -465,7 +465,7 @@
         "code": "preset/plugins/clearai-kernel.js l4Delivery; askHuman; ui/lib/fold.js case 'human/released'",
         "tests": "test/kernel.test.mjs",
         "config": "l4RequiresHumanRelease=true, l4RejectSelfWritten=true",
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/known-gaps.zh-CN.md"
       },
       "trigger": "L4 步骤交付",
@@ -489,7 +489,7 @@
         "code": "preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'evidence/recorded'",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "步骤推进时携带 basis / 来源",
@@ -513,7 +513,7 @@
         "code": "preset/plugins/clearai-kernel.js persistFact; promote_at_level 门槛; ui/lib/fold.js case 'fact/promoted'",
         "tests": "test/kernel.test.mjs",
         "config": "l4RejectSelfWritten",
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "目标结案且假设达到 promote_at_level 且无推翻",
@@ -537,7 +537,7 @@
         "code": "ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js RevisePlan",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/context-discipline",
+        "prompt": "clearai/loop",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "任何状态变更",
@@ -636,7 +636,7 @@
         "code": "preset/plugins/clearai-kernel.js blockedThreshold; escalateBlocked; ui/lib/fold.js case 'block/counted'",
         "tests": "test/kernel.test.mjs",
         "config": "blockedThreshold=2（预设显式值）",
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "同一件事连续冲闸未过",
@@ -660,7 +660,7 @@
         "code": "ui/lib/index.js 人门通道; ui/lib/fold.js HUMAN_GATE_ACTIONS",
         "tests": "test/host.test.mjs",
         "config": null,
-        "prompt": "clearai/state-protocol",
+        "prompt": "clearai/loop",
         "docs": "docs/design-principles.zh-CN.md"
       },
       "trigger": "面板提交人门动词",
@@ -681,13 +681,13 @@
       "authority": "none",
       "actor": "model",
       "source": {
-        "code": "preset/agent.cordis.yml persona; preset/plugins/prompts.js foundation",
+        "code": "preset/agent.cordis.yml persona; preset/plugins/prompts.js identity / loop",
         "tests": "test/prompt-sections.test.mjs（阶段 6 新增）",
         "config": null,
-        "prompt": "clearai/foundation",
+        "prompt": "clearai/identity, clearai/loop",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
-      "trigger": "每回合的 persona 与 foundation 段",
+      "trigger": "每回合的 persona 与身份、循环两段",
       "input": "—",
       "output": "模型被要求以单一主循环推进",
       "blocks_execution": false,
@@ -705,10 +705,10 @@
       "authority": "none",
       "actor": "model",
       "source": {
-        "code": "preset/plugins/prompts.js exploration-rhythm; preset/agent.cordis.yml",
+        "code": "preset/plugins/prompts.js loop; preset/agent.cordis.yml",
         "tests": "test/prompt-sections.test.mjs（阶段 6 新增）",
         "config": null,
-        "prompt": "clearai/exploration-rhythm",
+        "prompt": "clearai/loop",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "每回合注入",
@@ -782,7 +782,7 @@
         "code": "preset/plugins/clearai-kernel.js resolveToolFace; auditToolFilter",
         "tests": "test/kernel.test.mjs",
         "config": "auditToolFilter=[read,glob,grep,read_image]",
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/verification-loop.zh-CN.md"
       },
       "trigger": "派遣评估者时",
@@ -927,7 +927,7 @@
         "code": "preset/agent.cordis.yml",
         "tests": "test/preset-composition.test.mjs（阶段 5 新增）",
         "config": null,
-        "prompt": "clearai/delegation",
+        "prompt": "clearai/loop",
         "docs": "preset/agent.cordis.yml"
       },
       "trigger": "装配期",
@@ -975,7 +975,7 @@
         "code": "preset/plugins/clearai-kernel.js protectedRoots; touchesProtected",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/verification",
+        "prompt": "clearai/identity",
         "docs": "docs/design-principles.zh-CN.md"
       },
       "trigger": "每次写类工具调用前",
@@ -1013,27 +1013,28 @@
     },
     {
       "id": "kernel-panic-recovery",
-      "name": "引擎级异常的降权只读恢复",
-      "name_en": "Read-only downgraded recovery after engine-level failure",
-      "layer": "harness",
-      "status": "implemented",
-      "hardness": "advisory",
-      "authority": "none",
-      "actor": "model",
+      "name": "已删除:引擎级异常的降权只读恢复",
+      "name_en": "Removed: read-only downgraded recovery after engine-level failure",
       "source": {
-        "code": "preset/plugins/prompts.js execution-discipline（KernelPanic / EffectOutcomeUnknown）",
-        "tests": "test/prompt-sections.test.mjs（阶段 6 新增）",
+        "code": null,
         "config": null,
-        "prompt": "clearai/execution-discipline",
-        "docs": "docs/loop-philosophy.zh-CN.md"
+        "docs": "docs/less-is-more-plan.zh-CN.md",
+        "prompt": null,
+        "tests": null
       },
-      "trigger": "KernelPanic / EffectOutcomeUnknown",
+      "trigger": "—",
       "input": "—",
-      "output": "恢复回合只允许只读工具，禁止 bash/子 Agent 重放",
+      "output": "—",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "效果未知时先观察当前事实,再谈重试。**只由提示词承载**(`prompts.js` 的 execution-discipline);内核与宿主两半都没有针对它的硬约束——这是 hardness=advisory 的含义,不是缺口。",
-      "known_mismatch": null
+      "rationale": "第五阶段随提示词收成三段删掉:它只由提示词承载(内核与宿主都没有对应的硬约束),细则是宿主异常类型的处置,属于宿主。身份段留下一句通用纪律:结局不明的操作先看当前事实,再谈重试。",
+      "known_mismatch": null,
+      "layer": "harness",
+      "status": "removed",
+      "hardness": "deprecated",
+      "authority": "none",
+      "actor": "model",
+      "destination": "deleted"
     },
     {
       "id": "auto-continuation",
@@ -1123,7 +1124,7 @@
         "code": "ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice",
         "tests": "test/kernel.test.mjs, test/host.test.mjs",
         "config": "runtimeCard=true",
-        "prompt": "clearai/state-protocol",
+        "prompt": "clearai/identity",
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "状态变化时随回合注入",
@@ -1136,8 +1137,8 @@
     },
     {
       "id": "prompt-sections",
-      "name": "提示词段(21 段定义 / 21 段在场)",
-      "name_en": "Prompt sections (21 defined / 21 in place)",
+      "name": "提示词段(3 段定义 / 3 段在场)",
+      "name_en": "Prompt sections (3 defined / 3 in place)",
       "layer": "harness",
       "status": "implemented",
       "hardness": "advisory",
@@ -1155,7 +1156,7 @@
       "output": "系统提示词段集合",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "提示词解释行为,但按 P1 不是执行边界。每一段都带 `hard` / `native` / `advisory` 分类,并由 `test/prompt-sections.test.mjs` 咬合内容与分类。剩下来的是**厚薄**上的取舍(与原生重复的说明还能再下沉),属编辑口味,不是机制缺口。",
+      "rationale": "提示词解释行为,但按 P1 不是执行边界。第五阶段收成三段:身份(native)、循环(hard)、对人说话(advisory),每段的分类由 `test/prompt-sections.test.mjs` 与内容咬合。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。",
       "known_mismatch": null
     },
     {
@@ -1171,7 +1172,7 @@
         "code": "preset/agent.cordis.yml compaction",
         "tests": "test/client.test.mjs（装配）",
         "config": "thresholdChars=8192, headChars=4096, tailChars=1024",
-        "prompt": "clearai/context-discipline",
+        "prompt": null,
         "docs": "docs/loop-philosophy.zh-CN.md"
       },
       "trigger": "工具结果超阈值 / 手动 /compact",
@@ -1318,7 +1319,7 @@
         "code": "preset/plugins/clearai-kernel.js dispatchSubRun; sweepEndedAudits; recoverVerdictFromChildSession",
         "tests": "test/kernel.test.mjs（裁决落结算事实 / 先取回再落 unknown）",
         "config": "auditProvider=spawn, auditTimeoutMs",
-        "prompt": "clearai/delegation",
+        "prompt": "clearai/loop",
         "docs": "docs/optimization/e2e-longruns.zh-CN.md"
       },
       "trigger": "内核派独立评估者",
@@ -1417,7 +1418,7 @@
         "code": "preset/plugins/clearai-kernel.js reviewRefutedFacts; markFactReviewed; ui/lib/fold.js case 'fact/reviewed'; preset/plugins/ontology.js VERIFICATION_LOOP",
         "tests": "test/kernel.test.mjs(当场问人 / 两个结局 / 旧日志兼容)",
         "config": null,
-        "prompt": "clearai/verification",
+        "prompt": "clearai/loop",
         "docs": "docs/verification-loop.zh-CN.md"
       },
       "trigger": "推翻证据碰到已确立的事实 ⇒ 落账的那次交付当场问人「撤回」还是「维持原事实」",
@@ -1685,7 +1686,7 @@
         "code": "preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/domain-language",
+        "prompt": "clearai/loop",
         "docs": "docs/domain-ontology.zh-CN.md"
       },
       "trigger": "模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate",
@@ -1728,7 +1729,7 @@
         "code": "preset/plugins/clearai-kernel.js RegisterInstance; ui/lib/domain-language.js validateTerm; ui/lib/fold.js applyMutations",
         "config": null,
         "docs": "docs/domain-ontology.zh-CN.md",
-        "prompt": "preset/plugins/prompts.js clearai/domain-language",
+        "prompt": "preset/plugins/prompts.js clearai/loop",
         "tests": "test/kernel.test.mjs"
       },
       "trigger": "模型调 RegisterInstance",
@@ -1752,7 +1753,7 @@
         "code": "preset/plugins/clearai-kernel.js Assert; ui/lib/domain-language.js graphProjection; ui/lib/fold.js applyMutations",
         "config": null,
         "docs": "docs/domain-ontology.zh-CN.md",
-        "prompt": "preset/plugins/prompts.js clearai/domain-language",
+        "prompt": "preset/plugins/prompts.js clearai/loop",
         "tests": "test/kernel.test.mjs"
       },
       "trigger": "模型调 Assert",
@@ -1776,7 +1777,7 @@
         "code": "preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph",
         "config": "requireLandedEntities",
         "docs": "docs/less-is-more-plan.zh-CN.md",
-        "prompt": "preset/plugins/prompts.js clearai/domain-language",
+        "prompt": "preset/plugins/prompts.js clearai/loop",
         "tests": "test/kernel.test.mjs(实体门); test/contrast.test.mjs(B 组)"
       },
       "trigger": "Conclude(achieved),知识模式下,在派评估者之前",
@@ -1825,7 +1826,7 @@
         "code": "preset/plugins/clearai-kernel.js Frame; ui/lib/fold.js applyMutations",
         "config": "requireCriteriaVerdict",
         "docs": "docs/epistemic-loop.zh-CN.md",
-        "prompt": "preset/plugins/prompts.js clearai/loop-contract",
+        "prompt": "preset/plugins/prompts.js clearai/loop",
         "tests": "test/kernel.test.mjs"
       },
       "trigger": "Frame 修订且 done_criteria 文本变了",
@@ -1926,7 +1927,7 @@
         "code": "preset/plugins/clearai-kernel.js validateSteps; normalizePath",
         "tests": "test/kernel.test.mjs（产物路径不重叠）",
         "config": null,
-        "prompt": "clearai/delegation",
+        "prompt": "clearai/loop",
         "docs": "docs/verification-loop.zh-CN.md"
       },
       "trigger": "CreatePlan / RevisePlan(add)",
@@ -1950,7 +1951,7 @@
         "code": "preset/plugins/clearai-kernel.js update_goal; Conclude",
         "tests": "test/kernel.test.mjs",
         "config": null,
-        "prompt": "clearai/loop-contract",
+        "prompt": "clearai/loop",
         "docs": "docs/less-is-more-plan.zh-CN.md"
       },
       "trigger": "模型调用原生 update_goal(action=complete),而 ClearAI 目标还开着",

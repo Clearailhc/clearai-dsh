@@ -481,7 +481,7 @@ console.log('\n【提示词面:预设的提示词段】')
 	// 段表即注册清单:运行档删了,澄清只剩一套措辞,每段都注册。
 	check(
 		'段数 = 段表(全部注册成功)',
-		registered.length === SECTIONS.length && registered.length >= 17 && new Set(registered.map((s) => s.name)).size === registered.length,
+		registered.length === SECTIONS.length && registered.length === 3 && new Set(registered.map((s) => s.name)).size === registered.length,
 		`${registered.length}/${SECTIONS.length}`,
 	)
 	check('段序严格递增(装配顺序即装配契约)', registered.every((section, index) => index === 0 || section.order > registered[index - 1].order))
@@ -503,22 +503,22 @@ console.log('\n【提示词面:预设的提示词段】')
 			SECTIONS.map((section) => String(section.text ?? '')).join('\n'),
 		),
 	)
-	check('总字节在预算内(< 24KB,别把上下文挤爆)', totalBytes < 24000, `${totalBytes} 字节`)
+	check('总字数在预算内(≤ 4000 字:第五阶段收成 3 段)', totalBytes <= 4000, `${totalBytes} 字`)
 	check(
 		'稳定段里没有时间/随机字节(前缀缓存是硬约束,不是优化)',
 		registered.every((section) => !/\d{4}-\d{2}-\d{2}|\d{2}:\d{2}:\d{2}|0x[0-9a-f]{6}/.test(String(section.text ?? ''))),
 	)
-	check('公理段在:让模型负责智能判断,让系统负责事实边界(原文全角标点,断言标点无关)', /让模型负责智能判断[，,]让系统负责事实边界/.test(String(byName('clearai/foundation')?.text ?? '')))
-	check('语言跟着人走(不再把中文写死)', /跟着人走/.test(String(byName('clearai/foundation')?.text ?? '')) && !/全程中文|禁止漂移/.test(String(byName('clearai/foundation')?.text ?? '')))
+	check('身份段在:让模型负责智能判断,让系统负责事实边界(断言标点无关)', /让模型负责智能判断[，,]让系统负责事实边界/.test(String(byName('clearai/identity')?.text ?? '')))
+	check('语言跟着人走(不再把中文写死)', /用人正在用的语言/.test(String(byName('clearai/speaking')?.text ?? '')) && !/全程中文|禁止漂移/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
 	check('世界线段不在了(并行探索交给原生子任务,不再自带一套)', byName('clearai/worldline') === undefined)
-	check('提示词里不再提已删除的工具', !/ForkPlan|AdvanceWorldline|ConvergeFork|AwaitWorldlines|SpawnScout|MapScouts|SaveSkill|WriteMemory/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
-	check('网页是不可信数据(安全相关的那条)', /untrusted|不可信/.test(String(byName('clearai/web-research')?.text ?? '')))
-	check('交付协议在(怎么把交付物呈现给人)', (byName('clearai/delivery')?.text ?? '').length > 100)
-	check('环境段刻意不含时间(时间由运行态卡承载)', !/\d{2}:\d{2}/.test(String(byName('clearai/environment')?.text ?? '')))
-	check('子任务意识段在:开工先摸清地形再立约 + 任务必须自包含', /先摸清地形,再立约/.test(String(byName('clearai/delegation')?.text ?? '')) && /自包含/.test(String(byName('clearai/delegation')?.text ?? '')))
-	check('委派段写明并行探索 = 竞争的假设,各自声明不同的产物路径', /并行探索就是并行检验/.test(String(byName('clearai/delegation')?.text ?? '')) && /不同的/.test(String(byName('clearai/delegation')?.text ?? '')))
-	check('委派段不承诺不存在的机制(不出现 background 自动回灌)', !/background/.test(String(byName('clearai/delegation')?.text ?? '')))
-	check('循环契约段在:四拍 + 唯一完成动词 + 准入不裁决', /唯一完成动词/.test(String(byName('clearai/loop-contract')?.text ?? '')) || /唯一.*动词/.test(String(byName('clearai/loop-contract')?.text ?? '')))
+	check('提示词里不再提已删除的工具', !/ForkPlan|AdvanceWorldline|ConvergeFork|AwaitWorldlines|SpawnScout|MapScouts|SaveSkill|WriteMemory|ExplainLevelSkip|CheckPlan|QueryKnowledge|SetGoal|CloseGoal/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
+	check('网页是不可信数据(安全相关的那条)', /不可信/.test(String(byName('clearai/identity')?.text ?? '')))
+	check('对人说话段在(怎么把结论交给人)', (byName('clearai/speaking')?.text ?? '').length > 100)
+	check('身份段刻意不含时间(时间由运行态卡承载)', !/\d{2}:\d{2}/.test(String(byName('clearai/identity')?.text ?? '')))
+	check('循环段写明先摸清现状再立计划', /摸清现状再立计划/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段写明并行交给 subagent、各条路线声明不同的产物路径', /subagent/.test(String(byName('clearai/loop')?.text ?? '')) && /不同的产物路径/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('提示词不承诺不存在的机制(不出现 background 自动回灌)', !/background/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
+	check('循环段在:唯一完成动作 + 等级只决定谁来判', /唯一的完成动作/.test(String(byName('clearai/loop')?.text ?? '')) && /等级只决定谁来判/.test(String(byName('clearai/loop')?.text ?? '')))
 }
 
 console.log('\n【装配:贡献表驱动(阶段 3)】')
@@ -547,7 +547,7 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 		check(label, thrown !== null && pattern.test(String(thrown?.message ?? thrown)), String(thrown?.message ?? '没有抛错'))
 	}
 	rejects('未知工具名 → 装配期抛错', { contributions: { tools: ['Frame', 'NoSuchTool'] } }, /unknown_tool:clearai-kernel:NoSuchTool/)
-	rejects('未知段名 → 装配期抛错', { contributions: { sections: ['clearai/foundation', 'clearai/nope'] } }, /unknown_policy_slot:clearai-kernel:clearai\/nope/)
+	rejects('未知段名 → 装配期抛错', { contributions: { sections: ['clearai/identity', 'clearai/nope'] } }, /unknown_policy_slot:clearai-kernel:clearai\/nope/)
 	rejects('未知机制名 → 装配期抛错', { contributions: { mechanisms: { telepathy: true } } }, /unknown_mechanism:clearai-kernel:telepathy/)
 	rejects(
 		'关掉机制却仍要装它的工具 → 装配期抛错',
@@ -604,12 +604,12 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	const names = assembled.sections.map((section) => section.name)
 	check('段表里的段全部装上(没有按档二选一的段)', names.length === SECTIONS.length && names.every((name) => SECTION_TABLE.has(name)), `${names.length}/${SECTIONS.length}`)
 	check('段名不重复', new Set(names).size === names.length)
-	check('只有一套对话引导协议', names.includes('clearai/clarification') && !names.some((name) => /clarification-(attended|unattended)/.test(name)), names.filter((name) => name.includes('clarification')).join(','))
+	check('只有一段讲怎么对人说话(没有按档二选一的段)', names.filter((name) => name === 'clearai/speaking').length === 1 && !names.some((name) => /clarification/.test(name)), names.join(','))
 	check(
-		'引导协议写明「单次一题」与结构化提问通道,不再提续跑窗口',
+		'对人说话段写明「一次一题」与结构化提问通道,不再提续跑窗口',
 		(() => {
-			const text = String(assembled.sections.find((section) => section.name === 'clearai/clarification')?.text ?? '')
-			return /单次一题/.test(text) && /ask_user_question/.test(text) && !/续跑窗口|人在场时|无人值守/.test(text)
+			const text = String(assembled.sections.find((section) => section.name === 'clearai/speaking')?.text ?? '')
+			return /一次一题/.test(text) && /ask_user_question/.test(text) && !/续跑窗口|人在场时|无人值守/.test(text)
 		})(),
 	)
 }

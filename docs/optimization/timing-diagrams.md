@@ -176,9 +176,10 @@ sequenceDiagram
     end
 ```
 
-Current status: the ledger and admission are mechanisms; **the recovery discipline itself lives
-only in the prompts** (`clearai/execution-discipline`). Upgrading it from advice to boundary
-needs host-side cooperation and is a later topic.
+Current status: admission is a mechanism. The read-only recovery discipline was prompt-only and
+was dropped when the prompt shrank to three sections (phase 5); what remains is one line in the
+identity section (`clearai/identity`): when an outcome is unknown, observe the current facts before
+retrying. Making it a boundary needs host-side cooperation and is a later topic.
 
 ## 4. Competing-routes path · implemented
 

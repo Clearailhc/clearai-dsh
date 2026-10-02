@@ -31,4 +31,4 @@ node tools/sim/call.mjs <运行目录> --stop
 - **测不到**:宿主接线(装包、注册、路由)。这部分由 CI 的干净安装与生命周期验收覆盖。原生的 `subagent`、`ask_user_question`、`present` 在这里不存在。
 - **一处偏差**:扮演模型的子代理带着它自己的系统提示词,ClearAI 的提示词是作为任务书交给它的。
 
-基线与历次结果放在 `docs/optimization/sim-runs/`(第二阶段基线、第三阶段重跑、第四阶段重跑)。
+基线与历次结果放在 `docs/optimization/sim-runs/`(第二阶段基线、第三、第四、第五阶段重跑)。

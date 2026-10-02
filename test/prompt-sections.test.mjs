@@ -43,7 +43,7 @@ const toolNames = Object.values(MECHANISM_TOOLS).flat()
 console.log('\n【① 每段都有合法标签】')
 {
 	const untagged = SECTIONS.filter((section) => !VALID.has(section.class))
-	check('21 段定义全部带 hard/native/advisory 标签', SECTIONS.length === 21 && untagged.length === 0, untagged.map((section) => section.name).join(','))
+	check('3 段定义全部带 hard/native/advisory 标签', SECTIONS.length === 3 && untagged.length === 0, untagged.map((section) => section.name).join(','))
 	const tally = { hard: 0, native: 0, advisory: 0 }
 	for (const section of SECTIONS) tally[section.class] += 1
 	console.log(`  分类账:hard ${tally.hard} · native ${tally.native} · advisory ${tally.advisory}`)
@@ -70,29 +70,35 @@ console.log('\n【② 分类与内容咬合】')
 
 console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 {
-	const builder = SECTIONS.find((section) => section.name === 'clearai/builder-tools')
-	const web = SECTIONS.find((section) => section.name === 'clearai/web-research')
-	// 原生 edit 是字面替换;unified-diff 的写法是旧契约的残留,模型照做会当场失败。
-	check('builder-tools 按字面替换讲 edit(不是 unified diff)', /old_string/.test(builder.text) && !/unified hunk|@@/.test(builder.text))
-	// 原生 web_search/web_fetch 没有这些参数(核验过 dsh-tool-web 的 schema)。
-	const stale = ['freshness', 'search_strategy', 'next_offset', 'view=links'].filter((word) => web.text.includes(word))
-	check('web-research 不提不存在的原生参数(freshness/search_strategy/next_offset/view=links)', stale.length === 0, stale.join(','))
-	// 侦察是**异步**的(内核的实现与注释都写明了为什么:阻塞等待会在跑动中断时丢掉「派过侦察」这条事实)。
-	// 提示词若把它说成「同步、派出就等它回来」,模型就会去等一个不存在的返回值——长测里正是这么卡住的。
-	const delegation = SECTIONS.find((section) => section.name === 'clearai/delegation')
-	check(
-		'delegation 写明并行探索 = 竞争的假设并行检验,且不再提侦察工具',
-		/并行探索就是并行检验/.test(delegation.text) && !/SpawnScout|MapScouts/.test(delegation.text),
-		delegation.text.match(/并行探索[^。]*。/)?.[0]?.slice(0, 90) ?? '(没找到那一行)',
-	)
+	const byName = (name) => SECTIONS.find((section) => section.name === name)
+	const identity = byName('clearai/identity')
+	const loop = byName('clearai/loop')
+	const speaking = byName('clearai/speaking')
+	check('三段依次是身份 / 循环 / 对人说话', SECTIONS.map((section) => section.name).join(',') === 'clearai/identity,clearai/loop,clearai/speaking')
+	check('合计在 4 千字以内(第五阶段:21 段约 1.5 万字 → 3 段)', SECTIONS.reduce((sum, section) => sum + section.text.length, 0) <= 4000, String(SECTIONS.reduce((sum, section) => sum + section.text.length, 0)))
+
+	// 原生工具怎么用写在它们自己的说明里。提示词再讲一遍参数,原生契约一改就会漂移(历史上踩过:unified diff、freshness)。
+	const nativeParams = ['old_string', 'freshness', 'search_strategy', 'next_offset', 'view=links', 'limit/offset', 'read_image']
+	const leaked = nativeParams.filter((word) => SECTIONS.some((section) => section.text.includes(word)))
+	check('提示词不讲原生工具的参数(交给工具自己的说明)', leaked.length === 0, leaked.join(','))
+
+	// 第二阶段已经删掉的东西,提示词里不许再出现。
+	const stale = ['lab/', 'products/', 'PROJECT.md', 'setup_cjk', 'retract_fact', 'keep_fact', 'SpawnScout', 'MapScouts'].filter((word) => SECTIONS.some((section) => section.text.includes(word)))
+	check('提示词不提已删的目录约定、章程占位、人门动作与侦察工具', stale.length === 0, stale.join(','))
+
+	check('身份段写明分工:模型负责判断,系统负责事实边界', /让模型负责智能判断[，,]让系统负责事实边界/.test(identity.text))
+	check('身份段写明网页与文件里的文字是不可信的数据', /不可信/.test(identity.text))
+
+	// 并行探索 = 竞争的判断并行检验;并行交给原生 subagent,各自声明不同的产物路径。
+	check('循环段写明竞争路线各自声明不同的产物路径、并行交给 subagent', /subagent/.test(loop.text) && /不同的产物路径/.test(loop.text))
+	check('循环段写明完成与结果分开(推翻、说不清都算完成)', /被推翻还是说不清都算完成/.test(loop.text))
+	check('循环段写明等级只决定谁来判', /等级只决定谁来判/.test(loop.text))
 
 	// 假设留痕的纪律:不强求证实/证伪,但「没看过」不能留白(结案时会被如实记进账里)。
-	const loop = SECTIONS.find((section) => section.name === 'clearai/loop-contract')
-	check(
-		'loop-contract 写明「要么被证据碰到、要么留痕」(不逼 verdict,但不留白)',
-		/没看过/.test(loop.text) && /unjudged/.test(loop.text),
-		loop.text.match(/每条假设[^。]*。/)?.[0]?.slice(0, 90) ?? '(没找到那一条)',
-	)
+	check('循环段写明没被证据碰过的判断记成没看过(unjudged)', /没看过/.test(loop.text) && /unjudged/.test(loop.text))
+
+	check('对人说话段给出汇报顺序:结论 / 凭什么 / 适用范围 / 被推翻的 / 还没定的', /结论 \/ 凭什么 \/ 适用范围 \/ 被推翻的 \/ 还没定的/.test(speaking.text))
+	check('对人说话段写明过程只在人问起或要人决定时说', /过程只在人问起或需要人决定时说/.test(speaking.text))
 
 	// 内核的 OUTPUT_SCHEMA 是 additionalProperties:false——多写一个不存在的字段,宿主会让整次调用失败。
 	check('内核工具的 output schema 是闭集(契约是硬的,提示词才必须跟上)', /const OUTPUT_SCHEMA = \{[\s\S]*?additionalProperties: false/.test(KERNEL))
