@@ -27,7 +27,7 @@ const check = (label, condition, detail = '') => {
 	}
 }
 
-const { SCENARIOS, INVARIANTS } = await import(join(PORT, 'tools', 'e2e-scenarios.mjs'))
+const { SCENARIOS, INVARIANTS, evaluateLog } = await import(join(PORT, 'tools', 'e2e-scenarios.mjs'))
 
 /** 把一串变更包成不变量要的上下文(与 e2e-run.mjs 里那份同形)。 */
 function contextOf(mutations, overrides = {}) {
@@ -192,6 +192,45 @@ console.log('\n【④ 剧本断言:用坏上下文必须红】')
 	const clean = contextOf([], { promotedIds: ['h1'], hypothesisStatus: { h1: 'alive', h2: 'refuted' }, evidenceVerdicts: ['support', 'refute'] })
 	const guardOk = falsification.asserts(clean).find((assertion) => assertion.label.includes('升格成事实'))
 	check('同一断言在干净日志上放过', guardOk.ok === true, JSON.stringify(guardOk.detail))
+}
+
+console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官】')
+{
+	const { mkdtempSync, writeFileSync, mkdirSync, rmSync } = await import('node:fs')
+	const { tmpdir } = await import('node:os')
+	const { readKernelConfig } = await import(join(PORT, 'tools', 'sim', 'config.mjs'))
+	const { makeSimHost } = await import(join(PORT, 'tools', 'sim', 'host.mjs'))
+	const { apply } = await import(join(PORT, 'preset', 'plugins', 'clearai-kernel.js'))
+
+	const config = readKernelConfig(join(PORT, 'preset', 'agent.cordis.yml'))
+	check('配置读取:与预设同一份(连拦阈值、假设下限、机制贡献)', config.blockedThreshold === 2 && config.minHypotheses === 2 && config.contributions?.mechanisms?.goal === true && Array.isArray(config.auditToolFilter), JSON.stringify(config).slice(0, 160))
+
+	const root = mkdtempSync(join(tmpdir(), 'clearai-sim-'))
+	const workspace = join(root, 'ws')
+	mkdirSync(workspace, { recursive: true })
+	process.env.DSH_HOME = join(root, 'home')
+	const host = makeSimHost({ workspace, runDir: join(root, 'run') })
+	apply(host.ctx, { ...config, auditTimeoutMs: 5000 })
+	check('装上:20 件工具、21 段提示词', host.tools.size === 20 && host.sections.length === 21, `${host.tools.size} / ${host.sections.length}`)
+
+	const goal = await host.call('SetGoal', { headline: '判定 A', claim: '判定 A 是否成立', done_criteria: '存在一份文件 lab/v.md', hypotheses: [{ claim: 'A 成立', refute_when: '读数不是 2' }, { claim: 'A 不成立', refute_when: '读数是 2' }] })
+	check('工具结果给模型的是内核的原话,不是一句 ok', goal.ok === true && /运行态卡/.test(goal.text), goal.text.slice(0, 120))
+	const hypothesis = host.mutations().find((mutation) => mutation.t === 'goal/set')?.hypotheses?.[0]?.id
+	await host.call('CreatePlan', { brief: `## 做法\n${'跑一次,记读数。'.repeat(30)}\n\n## 判据\n读数为 2。`, steps: [{ id: 'run', do: '跑一次', artifacts: ['lab/run.txt'], done_criteria: 'lab/run.txt 存在,含读数', tests: { hypothesis, level: 'L3' } }] })
+	check('计划审阅按预设答案作答(缺省批准),并且记下了', host.humanAnswers.some((answer) => answer.id === 'plan-review' && answer.answer === 'approve'), JSON.stringify(host.humanAnswers))
+	mkdirSync(join(workspace, 'lab'), { recursive: true })
+	writeFileSync(join(workspace, 'lab', 'run.txt'), 'value=2\n')
+	const delivering = host.call('AdvancePlan', { step_id: 'run', observations: [{ ref: 'lab/run.txt', note: 'value=2' }] })
+	await new Promise((done) => setTimeout(done, 50))
+	const request = [...host.pending.values()].find((entry) => entry.settled === false)
+	check('L3 交付把评估者挂起来,等外部交回裁决(提示词是正文,不是对象)', request !== undefined && request.prompt.length > 40 && !request.prompt.includes('[object Object]'), String(request?.prompt ?? '').slice(0, 80))
+	host.settle(request.id, { structured: { verdict: 'support', basis: 'lab/run.txt 第 1 行 value=2', refs: [{ path: 'lab/run.txt', line: 1 }] } })
+	const delivered = await delivering
+	const kinds = host.mutations().map((mutation) => mutation.t)
+	check('交回裁决之后交付落定:派发、结算、推进都在账上', delivered.ok === true && kinds.includes('audit/dispatched') && kinds.includes('audit/settled') && kinds.includes('step/advanced'), kinds.join(','))
+	const evaluated = await evaluateLog({ scenario: null, events: host.events, mutations: host.mutations(), workspace, exists: () => true, called: () => true })
+	check('同一个判官认得模拟宿主的日志(不变量全过)', evaluated.checks.every((item) => item.ok), JSON.stringify(evaluated.checks.filter((item) => !item.ok).map((item) => item.label)))
+	rmSync(root, { recursive: true, force: true })
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
