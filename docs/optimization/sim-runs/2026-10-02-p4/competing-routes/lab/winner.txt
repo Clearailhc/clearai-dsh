@@ -1,2 +1,0 @@
-compact
-compact=1212 bytes, pretty=2109 bytes

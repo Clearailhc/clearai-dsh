@@ -1,7 +1,5 @@
 # Verification Loop: Objects, Levels, Flow and Terms
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md). Code follows in phases; what has landed is tracked in [Known Gaps](known-gaps.md).
-
 How a judgement becomes a fact you can safely cite. This document defines the objects, levels, flow and vocabulary; other documents, prompts and code comments defer to it.
 
 ## 1. The principle
@@ -90,9 +88,9 @@ All state is folded from the session log; the model has no writable state field.
 
 **Step**: `open → advanced` or `open → void` (voiding needs a reason). A delivery that holds advances the step whether the result supports, refutes or is inconclusive; a delivery that does not hold is refused and the step stays `open`. A downgrade cannot be expressed: there is no "reject and redo" path.
 
-**Verification** — derived, not stored. These nine names were once the design of a stored state machine; none of them is stored. Each is either a recorded fact, computed by `derive()`, or unrepresentable on purpose:
+**Verification** — derived, not stored. None of these nine states is stored. Each is either a recorded fact, computed by `derive()`, or unrepresentable on purpose:
 
-| State | Meaning | Where it lives today |
+| State | Meaning | Where it lives |
 |---|---|---|
 | planned | Draft criteria | Unrepresentable by design: `CreatePlan` rejects steps without criteria, so they are never stored |
 | registered | Criteria registered | The step itself — the hypotheses it tests (one or more) and the level, plus criteria; `plan/created` is the moment of registration |

@@ -171,6 +171,8 @@ const readPresetMeta = (file) => {
 // ── ④ 宿主半 / 浏览器半:同一份源,两个出口 ─────────────────────────────────
 copy(join(PORT, 'ui', 'lib', 'index.js'), join(OUT, 'lib', 'host.js'))
 copy(join(PORT, 'ui', 'lib', 'fold.js'), join(OUT, 'lib', 'fold.js'))
+// 语言读口(宿主半各模块与内核共用一条规则:跟着人说话的语言走)。
+copy(join(PORT, 'ui', 'lib', 'lang.js'), join(OUT, 'lib', 'lang.js'))
 // 领域语言层的纯函数:折法与宿主路由都 import 它,所以它必须跟着走
 // (少拷这一个文件,包里的 fold 会在 import 那一刻就报模块找不到)。
 copy(join(PORT, 'ui', 'lib', 'domain-language.js'), join(OUT, 'lib', 'domain-language.js'))

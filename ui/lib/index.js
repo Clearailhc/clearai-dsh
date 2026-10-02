@@ -20,6 +20,7 @@ import { MUTATION_KIND, STATE_VERSION, applyEvent, applyMutations, derive, empty
 import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from './domain-language.js'
 import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
 import { install as installInvariants } from './invariant.js'
+import { detectLanguage, tr, withLanguage } from './lang.js'
 
 export const name = 'clearai-host'
 /** 投影注册表与会话存储:两个都是宿主服务,这里只消费。 */
@@ -81,7 +82,8 @@ export function apply(ctx) {
 	const memoView = (state) => {
 		if (state === lastState && lastView !== null) return lastView
 		lastState = state
-		lastView = view(state)
+		// 面板读数跟着人说话的语言(`state.language`);还没听到人说话时沿用当前语言。
+		lastView = withLanguage(state?.language, () => view(state))
 		return lastView
 	}
 
@@ -150,7 +152,7 @@ export function apply(ctx) {
 			sessions = undefined
 		}
 		if (sessions === undefined || sessions === null) {
-			noteHostHealth('sessions', '宿主半此刻拿不到会话服务:读面退回空态(不是「这个会话不存在」)')
+			noteHostHealth('sessions', tr('宿主半此刻拿不到会话服务:读面退回空态(不是「这个会话不存在」)', 'The host half cannot reach the session service right now: readings fall back to empty (this does not mean the session is missing)'))
 			return undefined
 		}
 		return sessions
@@ -165,7 +167,7 @@ export function apply(ctx) {
 			projections = undefined
 		}
 		if (projections === undefined || projections === null) {
-			noteHostHealth('sessionProjections', '宿主半此刻拿不到投影服务:读面退回空态(不是「这个会话没有状态」)')
+			noteHostHealth('sessionProjections', tr('宿主半此刻拿不到投影服务:读面退回空态(不是「这个会话没有状态」)', 'The host half cannot reach the projection service right now: readings fall back to empty (this does not mean the session has no state)'))
 			return undefined
 		}
 		return projections
@@ -183,7 +185,7 @@ export function apply(ctx) {
 	try {
 		ctx.on('internal/status', (fiber, oldValue) => {
 			if (fiber !== ctx.fiber || oldValue !== FIBER_ACTIVE) return
-			const detail = `宿主半 fiber 掉出 ACTIVE(${oldValue} → ${fiber.state}):两个注入服务这一刻都读不到,读面退回空态`
+			const detail = tr(`宿主半 fiber 掉出 ACTIVE(${oldValue} → ${fiber.state}):两个注入服务这一刻都读不到,读面退回空态`, `The host half fiber left ACTIVE (${oldValue} → ${fiber.state}): neither injected service can be read right now, so readings fall back to empty`)
 			noteHostHealth('sessions', detail)
 			noteHostHealth('sessionProjections', detail)
 			ctx.logger?.warn?.(`clearai: ${detail}`)
@@ -234,7 +236,10 @@ export function apply(ctx) {
 	}
 
 	/** 面板视图:与 `state()` 同一份降级读数(健康事实一起交出去)。 */
-	const viewOf = (sessionId) => withHostHealth(view(stateOf(sessionId)))
+	const viewOf = (sessionId) => {
+		const state = stateOf(sessionId)
+		return withHostHealth(withLanguage(state?.language, () => view(state)))
+	}
 
 	/**
 	 * ═══ 面板只读 ═══
@@ -292,7 +297,7 @@ export function apply(ctx) {
 			const projections = projectionsOf()
 			const state = projections === undefined || typeof projections.stateOf !== 'function' ? null : projections.stateOf(session, 'clearai')
 			if (state === null || state === undefined) return reply(200, { ok: true, found: false })
-			const found = inspectGraphSelection(state, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' }, derive(state))
+			const found = withLanguage(state.language, () => inspectGraphSelection(state, { kind: url.searchParams.get('kind') ?? '', id: url.searchParams.get('id') ?? '' }, derive(state)))
 			/** 找不到不是错误:那个对象可能刚被废止或本来就不在(如实说 `found: false`,不编一份空的)。 */
 			if (found === null) return reply(200, { ok: true, found: false })
 			return reply(200, { ok: true, found: true, inspector: found })
@@ -309,6 +314,8 @@ export function apply(ctx) {
 				derive: (sessionId) => derive(stateOf(sessionId)),
 				/** 面板视图(与 wire 同一份,降级时一并交出席位健康事实)。 */
 				view: viewOf,
+				/** 一段人写的话是哪种语言(内核在人发消息的那一刻用它,规则只有 `lang.js` 这一份)。 */
+				detectLanguage,
 				/** 运行态卡:注给模型的**事实**。 */
 				renderCard: (sessionId) => renderCard(stateOf(sessionId)),
 				/**

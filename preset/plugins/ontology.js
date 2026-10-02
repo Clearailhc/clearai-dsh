@@ -145,23 +145,65 @@ export function validateOntology(spec) {
 	return problems
 }
 
-/** 一份给人/给模型读的说明(markdown)。货架写的就是它。 */
-export function describeOntology(spec) {
-	const lines = [`# 本体:${spec.id}`, '', spec.note, '', '## 对象']
+/**
+ * 货架那份说明的英文版:键是声明里的中文原文(声明本身只有一份,是数据)。
+ * 只收货架上真会印出来的那几处:总说明、对象说明、落点、五级说明。
+ */
+const ENGLISH = new Map([
+	['九个对象 + 五级验证。声明是数据;实例状态由事实算出来(见文件头那条红线)。', 'Nine objects plus five verification levels. The declaration is data; instance states are computed from facts.'],
+	['只靠推理的快速合理性检查;依据必须可复查', 'A quick plausibility check by reasoning alone; the basis must be checkable'],
+	['已有知识:文献、数据库是否已回答或已否定', 'Existing knowledge: whether literature or databases already answer or rule it out'],
+	['已有数据或小规模计算', 'Existing data or a small computation'],
+	['新产生且可重跑的证据;判据先写后做,裁决由独立评估者写', 'Newly produced, re-runnable evidence; criteria written before the work, verdict written by an independent evaluator'],
+	['不可重复或来自外部的证据;先登记标准,人放行(原生审批栈的权威记录)', 'Unrepeatable or external evidence; criteria registered first, released by a person (the native approval stack is the authoritative record)'],
+	['这一平面的一等对象(那一侧记在 goal 文档里);status 是派生值,声明里没有它的住处', 'A first-class object (recorded in the goal document); status is derived and has no place in the declaration'],
+	[
+		'状态由证据算:**confirmed 那条边的落账在 fact 对象那边**(升格成事实 ⇒ 面板把它读成已确认),假设自己没有那条变更;refuted 与 retracted 都是黏性终态(与「目标侧被推翻的计划不可复活」同一个病同一个修法),而 retracted 是**人的动作**、落账在 fact 对象上(`fact/retracted`);不声明 status',
+		'Status is computed from evidence: **the confirmed edge is recorded on the fact object** (promoted to a fact, so the panel reads it as confirmed); the judgment itself has no such change. refuted and retracted are sticky terminal states, and retracted is **a person\'s act**, recorded on the fact object (`fact/retracted`); status is not declared',
+	],
+	['「受阻」是字段不是状态(它会被清掉);授权记号也是字段——有记号或已推进过都算授权', '"Blocked" is a field, not a state (it gets cleared); the authorization mark is a field too: a mark or earlier progress both count as authorization'],
+	[
+		'这一平面上它同时就是「一次验证」(step.tests = hypothesis + level);没有「降级重做」那条边:秩明令降级不可表示;「受阻」不在步的状态里——它是计划上的字段(见 plan 的自环)',
+		'A step is also one verification (step.tests = hypothesis + level); there is no "downgrade and redo" edge; "blocked" is not a step state but a field on the plan (see the plan self-loop)',
+	],
+	['fold.hypotheses(goal/set 一起落)', 'fold.hypotheses (recorded together with goal/set)'],
+	['fold.materials(收下的)+ 准入账(不收的)', 'fold.materials (accepted) + intake ledger (rejected)'],
+	[
+		'`received` 活在一次交付调用之内(候选观测):收下的才成为对象,不收的只留一条准入事实——「不收」不是对象的终态,是账本上的一行。来源取值与生产者**逐一对齐**(见 `source` 字段的说明):类型只声明今天真能发生的那些',
+		'`received` lives inside one delivery call (a candidate observation): only accepted ones become objects; a rejected one leaves just an intake fact, a line in the ledger rather than a terminal state. Source values match their producers **one to one**: the type declares only what can actually happen today',
+	],
+	['写下就不改;重评产生新的一条。做的人与判的人按等级分开(L3 以上只能由独立评估者写)', 'Never changed once written; a re-evaluation adds a new one. Who works and who judges are split by level (from L3 up, only an independent evaluator writes)'],
+	['与步骤上的收敛记录分开;anchor 说这条证据钉在哪(独立裁决 / 物证)', 'Kept apart from the step\'s own record; anchor says what the evidence is pinned to (an independent verdict or an output)'],
+	[
+		'升格由系统做;每条带边界(scope)与等级,下一轮作为「已知」引用时先看边界。货架在 clear/knowledge/facts/INDEX.md(面板「事实」那一格读的是同一张表)。被推翻只**标记**(refuted,派生),撤回是**人的动作**(retracted,落 fact/retracted)——两件事分开记,因为数据自己也可能错',
+		'Promotion is done by the system; each fact carries a boundary (scope) and a level, and the boundary is checked before citing it as known. The shelf is clear/knowledge/facts/INDEX.md (the panel reads the same table). Refutation only **marks** a fact (refuted, derived); retraction is **a person\'s act** (retracted, recorded as fact/retracted). They are kept apart because the data itself can be wrong',
+	],
+	['fold.releases(原生审批栈的审计对是权威记录)', 'fold.releases (the native approval stack is the authoritative record)'],
+	['L4 的人放行:一次一放行;步级的事实一落,同一步重试不再问人)', 'A person\'s release for L4: one release per delivery; once the step-level fact lands, retrying the same step does not ask again'],
+])
+
+/** 一份给人/给模型读的说明(markdown)。货架写的就是它;`lang` 是会话的语言。 */
+export function describeOntology(spec, lang = 'zh') {
+	const en = lang === 'en'
+	const say = (text) => (en ? (ENGLISH.get(text) ?? text) : text)
+	const list = (items) => items.join(en ? ', ' : '、')
+	const lines = en ? [`# Ontology: ${spec.id}`, '', say(spec.note), '', '## Objects'] : [`# 本体:${spec.id}`, '', spec.note, '', '## 对象']
 	for (const obj of spec.objects) {
-		lines.push('', `### ${obj.name}`, `- 状态:${obj.states.join(' → ')}`, `- 初始:${obj.initial} · 终态:${obj.terminal.length === 0 ? '(无)' : obj.terminal.join('、')}`)
-		if (obj.persistence !== '') lines.push(`- 落点:${obj.persistence}(不新建存储)`)
-		if (obj.event_kind !== '') lines.push(`- 每次转移发:${obj.event_kind}`)
+		const terminal = obj.terminal.length === 0 ? (en ? '(none)' : '(无)') : list(obj.terminal)
+		lines.push('', `### ${obj.name}`, en ? `- States: ${obj.states.join(' → ')}` : `- 状态:${obj.states.join(' → ')}`, en ? `- Initial: ${obj.initial} · terminal: ${terminal}` : `- 初始:${obj.initial} · 终态:${terminal}`)
+		if (obj.persistence !== '') lines.push(en ? `- Stored in: ${say(obj.persistence)} (no new storage)` : `- 落点:${obj.persistence}(不新建存储)`)
+		if (obj.event_kind !== '') lines.push(en ? `- Each transition emits: ${obj.event_kind}` : `- 每次转移发:${obj.event_kind}`)
 		for (const edge of obj.transitions) {
-			lines.push(`  - ${edge.from} → ${edge.to}:由 **${edge.actor}** 发起,当 ${edge.on}${edge.guards.length === 0 ? '' : `(守卫:${edge.guards.join('、')})`}`)
+			const guards = edge.guards.length === 0 ? '' : en ? ` (guards: ${list(edge.guards)})` : `(守卫:${list(edge.guards)})`
+			lines.push(en ? `  - ${edge.from} → ${edge.to}: started by **${edge.actor}** on ${edge.on}${guards}` : `  - ${edge.from} → ${edge.to}:由 **${edge.actor}** 发起,当 ${edge.on}${guards}`)
 		}
-		if (obj.fields.length > 0) lines.push(`- 字段:${obj.fields.map((item) => `${item.name}${item.values === null ? '' : `(${item.values.join('|')})`}`).join('、')}`)
-		if (obj.note !== '') lines.push(`- 说明:${obj.note}`)
+		if (obj.fields.length > 0) lines.push(`${en ? '- Fields: ' : '- 字段:'}${list(obj.fields.map((item) => `${item.name}${item.values === null ? '' : `(${item.values.join('|')})`}`))}`)
+		if (obj.note !== '') lines.push(en ? `- Note: ${say(obj.note)}` : `- 说明:${obj.note}`)
 	}
 	if (spec.levels.length > 0) {
-		lines.push('', '## 五级')
+		lines.push('', en ? '## Five levels' : '## 五级')
 		for (const item of spec.levels) {
-			lines.push(`- **${item.id}** 判者 ${item.judge} · 来源 ${item.sources.join('、')} · 门 ${item.gate} —— ${item.note}`)
+			lines.push(en ? `- **${item.id}** judge ${item.judge} · sources ${list(item.sources)} · gate ${item.gate}: ${say(item.note)}` : `- **${item.id}** 判者 ${item.judge} · 来源 ${list(item.sources)} · 门 ${item.gate} —— ${item.note}`)
 		}
 	}
 	return `${lines.join('\n')}\n`

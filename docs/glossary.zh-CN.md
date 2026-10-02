@@ -1,7 +1,5 @@
 # ClearAI 术语表
 
-> **改造中。** 本文按[「少即是多」方案](less-is-more-plan.zh-CN.md)描述目标设计。
-
 本表定义 ClearAI 的稳定术语。对象、等级与状态的权威定义在[验证闭环](verification-loop.zh-CN.md)；这里只给一句话释义。界面与汇报一律用人话，括号里是界面上的说法。
 
 ## ClearAI

@@ -1,2 +1,0 @@
-compact
-compact=3595 pretty=7352

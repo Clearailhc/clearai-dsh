@@ -5,11 +5,11 @@
  * 而且每一条都长得像正常句子——`Goal 档自动确认`、`6/512`、`run.current_step`、
  * `set_autonomy` 面板开关……读的人无法从语气上分辨它说的是现在还是两年前。
  *
- * 规则只有一条:**这些短语可以出现,但那一行必须同时带上"这是历史/已删/已改"的标记。**
- * 于是「保留历史」与「不许冒充现状」两件事同时成立——P5(什么都不删)与诚实描述并存。
+ * 规则:**这些短语可以出现,但那一行必须同时带上"这是历史/已删/已改"的标记。**
+ * 文档本身只写现行设计;历史归 CHANGELOG 与 git。
  *
  * 扫描面:
- *   · docs/**.md(除 docs/optimization/,那里是本次收敛的账本,本来就要引用旧说法)
+ *   · docs/**.md(除 docs/optimization/,那里是机制真值表与图,另有校验)
  *   · preset/agent.cordis.yml 与 preset/plugins/*.js(注释与提示词正文)
  *   · README / CHANGELOG 之外的根文档
  * CHANGELOG 刻意豁免:它的职责就是记录当时发生了什么。
@@ -104,12 +104,22 @@ console.log('\n【禁用短语:可以出现,但那一行必须标明是历史】
 	check('没有"以现在时"出现的历史说法', offenders.length === 0, offenders.slice(0, 6).join(' ;; '))
 }
 
-console.log('\n【反向:这些短语没有被一刀切删掉(历史要留着)】')
+console.log('\n【文档只写现行设计:不讲改造史】')
 {
+	/**
+	 * 改造的来龙去脉归 CHANGELOG 与 git;文档只描述现在的样子。
+	 * 「第三阶段删掉了……」这类句子读者用不上,只会让人分不清哪句是现状。
+	 */
+	const docs = walk(join(PORT, 'docs')).filter((file) => file.endsWith('.md') && !file.includes('/marketing/'))
+	const roots = [...docs, join(PORT, 'README.md'), join(PORT, 'README.zh-CN.md')]
 	const all = SCANNED.map((file) => readFileSync(file, 'utf8')).join('\n')
-	const optimization = readFileSync(join(OPTIMIZATION, 'truth-table.zh-CN.md'), 'utf8')
-	check('真值表里留了历史说法的记录', /6\/512|自动确认|set_autonomy/.test(optimization))
-	check('已知缺口文档留了「计划授权已在第三阶段删掉」的记录', /第三阶段已删掉\*\*计划授权/.test(readFileSync(join(PORT, 'docs', 'known-gaps.zh-CN.md'), 'utf8')))
+	const offenders = []
+	for (const file of roots) {
+		for (const [index, line] of readFileSync(file, 'utf8').split('\n').entries()) {
+			if (/第[一二三四五六]阶段|少即是多|改造前|改造中|\bPhase [1-6]\b|less-is-more/.test(line)) offenders.push(`${relative(PORT, file)}:${index + 1} 「${line.trim().slice(0, 60)}」`)
+		}
+	}
+	check('文档里没有改造阶段的叙述', offenders.length === 0, offenders.slice(0, 6).join(' ;; '))
 	check('扫描面本身非空(不是空跑)', all.length > 10000, `${all.length} 字节`)
 }
 

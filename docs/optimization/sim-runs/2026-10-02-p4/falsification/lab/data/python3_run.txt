@@ -1,8 +1,0 @@
-# python3 最小脚本运行观测
-time_utc: 2026-10-02T06:59:34Z
-command: python3 -c "print(1+1)"
-which_python3: /usr/bin/python3
-python3_version: Python 3.11.15
-exit_code: 0
-stdout: 2
-stderr: 

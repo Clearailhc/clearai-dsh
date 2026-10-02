@@ -1,7 +1,5 @@
 # DSH integration
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md); the install, build and verification sections reflect the currently published form.
-
 ClearAI is a native DSH plugin. It adds an epistemic layer on DSH's **composition surface** and leaves the DSH engine untouched. This document explains how the repository maps onto that surface, what installs where, and how to build and verify it.
 
 ## One package, three surfaces
@@ -18,13 +16,13 @@ The split is not cosmetic. Client modules are only discovered through rows of th
 
 ## Use the host, do not rebuild it
 
-Besides ClearAI's own plugins, the preset composes these native DSH capabilities; ClearAI no longer ships its own versions:
+Besides ClearAI's own plugins, the preset composes these native DSH capabilities:
 
 | Capability | Native package | How ClearAI uses it |
 |---|---|---|
 | Goals and continuation | `dsh-goal`, `dsh-tool-goal`, `dsh-goal-round-driver` | `Frame` attaches criteria and judgements; `Conclude` calls `ctx.goals.complete()` after independent evaluation; a guard rejects the model completing it directly |
 | Plan review | `dsh-plan-mode` | `/plan` when the person wants to review a plan |
-| Subagents and orchestration | `dsh-subagent`, `dsh-tool-workflow` | Dispatching independent evaluators; the model tests competing judgements in parallel (replacing worldlines) |
+| Subagents and orchestration | `dsh-subagent`, `dsh-tool-workflow` | Dispatching independent evaluators; the model tests competing judgements in parallel |
 | Asking the person | `dsh-user-questions` | The call that opens a gate calls `ctx.userQuestions.ask()` |
 | Deliverables | `dsh-tool-present`, deliverable cards | At close the kernel appends one `deliverables/presented` |
 | File changes | `dsh-workspace-changes` | No own ledger |
@@ -54,7 +52,7 @@ The package is a pure function of the source; `node tools/build-package.mjs` per
 
 The host half travels in the patch layer automatically. The agent preset does not: a preset is a **declaration line in the composition**, and the package has to contribute that line itself.
 
-Since host `0.1.7-alpha.1` the roster no longer scans root directories. Each preset is one `- id: preset-<id>` row (`@deepseek-ai/dsh-agent-preset`) whose `config.plugins` carries the whole plugin list:
+Each preset is one `- id: preset-<id>` row (`@deepseek-ai/dsh-agent-preset`) whose `config.plugins` carries the whole plugin list:
 
 ```yaml
 - insert:
@@ -69,14 +67,14 @@ Since host `0.1.7-alpha.1` the roster no longer scans root directories. Each pre
 
 That file — `presets/clearai/clearai.patch.yml` — is **derived from `preset/agent.cordis.yml` at build time** (one source, never a hand-copied second list) and is mounted through the manifest's `dsh.bundle.patch`. Nothing is written at install time and no copy lands in the user's home.
 
-Hosts at or below `0.1.6-alpha.2` have no such row and scan a root directory instead; `0.2.3` is the last release that could serve them. Users who want to edit the preset can still seed it into their own root with `bin/clearai.mjs seed`, which records hashes and never overwrites edits.
+Users who want to edit the preset can seed it into their own root with `bin/clearai.mjs seed`, which records hashes and never overwrites edits.
 
 ## Install
 
-In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.3.1` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
+In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.4.0` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.3.1
+dsh plugin --profile web add clearai-dsh@0.4.0
 ```
 
 The version is pinned on purpose: pnpm ≥ 11 holds back versions published within the last day, and a bare package name falls back to the previous release instead of failing. The plugin manager forwards the spec unchanged (`pnpm add <spec>` in `@deepseek-ai/dsh-plugin-manager`) and never compares the version that landed with the one asked for, so that downgrade is reported as a success. The README's *Why the version is pinned* has the mechanism and the one-line exemption that makes a bare name work.

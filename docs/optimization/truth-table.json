@@ -187,7 +187,7 @@
       "output": "mutation goal/set;同时在宿主原生 goal 上建(或改)一条目标,由原生的目标驱动负责续跑",
       "blocks_execution": false,
       "native_dsh_alternative": "dsh-tool-goal / dsh-command-goal(目标的续跑与展示)",
-      "rationale": "目标与判据必须在工作开始前落账,否则完成度无从派生。续跑交给原生 goal:ClearAI 只决定「什么算完成」,不再自己维护一套续跑窗口。",
+      "rationale": "目标与判据必须在工作开始前落账,否则完成度无从派生。续跑交给原生 goal:ClearAI 只决定「什么算完成」。",
       "known_mismatch": null
     },
     {
@@ -287,56 +287,6 @@
       "known_mismatch": null
     },
     {
-      "id": "plan-review",
-      "name": "已删除:计划审阅记号",
-      "name_en": "Removed: plan review stamp",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "human",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-plan-mode 的审阅卡（ClearAI 借用原生审阅界面，不借账）",
-      "rationale": "计划授权记号删了(第三阶段):它从来不是门——未授权不挡推进,第一次交付就按事实补写。要人在动手前看计划,用原生 /plan(plan-mode 已挂上);ClearAI 不再另起一张审阅卡。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "plan-reauthorize",
-      "name": "已删除:计划重新呈递审阅",
-      "name_en": "Removed: re-present a plan for review",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "model",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "审阅记号删了,重新呈递也就没有对象。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
       "id": "advance-plan",
       "name": "AdvancePlan：唯一完成动词",
       "name_en": "AdvancePlan: the only completion verb",
@@ -381,7 +331,7 @@
       "output": "plan/amended, plan/refined, plan/voided（进度不变）",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口(第四阶段把 AmendPlan / RefinePlan / VoidPlanStep 合并为 RevisePlan,各自的校验不变,变更事件名不变)。",
+      "rationale": "进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口 RevisePlan(补步、改判据、作废,各有自己的校验)。",
       "known_mismatch": null
     },
     {
@@ -477,7 +427,7 @@
       "output": "人放行 ⇒ 落 human/released 再交评估者;不放行 / 没人能答 ⇒ 拒收",
       "blocks_execution": true,
       "native_dsh_alternative": "宿主 userQuestions(原生提问卡)",
-      "rationale": "L4 意味着高代价或不可逆,必须有人按的那一下。门在交付那次调用里当场开、当场关,不再挂在收件箱里等。范围是步骤轴——覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。",
+      "rationale": "L4 意味着高代价或不可逆,必须有人按的那一下。门在交付那次调用里当场开、当场关。范围是步骤轴——覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。",
       "known_mismatch": null
     },
     {
@@ -553,81 +503,6 @@
       "known_mismatch": null
     },
     {
-      "id": "worldline-fork",
-      "name": "已删除:世界线分叉（独立工作副本）",
-      "name_en": "Removed: Worldline fork with independent working copies",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "model",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "模型调用 ForkPlan 且给出互斥分支与预注册指标",
-      "input": "branches[], decide_by（尺子:量 = 口径 + 方向）",
-      "output": "mutation fork/created, worldline/prepared, worldline/executing, worldline/executed, branch/delivered",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
-      "rationale": "「少即是多」第二阶段交还宿主:并行探索就是并行检验——竞争路线是竞争的假设,各由一个步骤检验,判据事先写好;并行交给原生子任务。代价是失去每条路线各自的文件副本,由「产物路径不重叠」兜住各自的产出。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "worldline-metric",
-      "name": "已删除:预注册指标与算术收敛",
-      "name_en": "Removed: Pre-registered metric and arithmetic convergence",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "ConvergeFork",
-      "input": "各分支读数 + 预注册尺子",
-      "output": "mutation fork/recommended（读数凑齐即落推荐，只记事实）；fork/converged；算不出来 → fork/undecidable，交人",
-      "blocks_execution": true,
-      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
-      "rationale": "「少即是多」第二阶段交还宿主:「同一把尺子」就是事先写下的判据;两条读数是否可比交给独立评估者。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "worldline-adopt",
-      "name": "已删除:世界线采纳必须由人按下",
-      "name_en": "Removed: Worldline adoption is a human act",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "human",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "人在面板上执行 adopt_branch / abandon_fork",
-      "input": "fork id, branch id, reason",
-      "output": "user 来源消息折进投影，写 by:'user'",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
-      "rationale": "「少即是多」第二阶段交还宿主:落选就是被推翻的假设;两条都成立而互相矛盾时作为冲突交给人,不再有单独的采纳动作。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
       "id": "block-threshold",
       "name": "连拦阈值（证据质量闸）",
       "name_en": "Consecutive-block threshold, a quality gate",
@@ -648,33 +523,8 @@
       "output": "达阈值 → 计划置 blocked,当场问人(按缺口再改 / 作废这一步);没人能答 ⇒ 原生 goal 置阻塞(clearai-needs-human)",
       "blocks_execution": true,
       "native_dsh_alternative": null,
-      "rationale": "它是质量闸不是预算，因此不再按档取值。",
+      "rationale": "它是质量闸不是预算，因此不按档取值。",
       "known_mismatch": null
-    },
-    {
-      "id": "human-gate-actions",
-      "name": "已删除:人门动作白名单",
-      "name_en": "Removed: human-gate action whitelist",
-      "layer": "host",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "human",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": "原生 ask_user_question(开门的那次调用当场问人)",
-      "rationale": "面板写入口 /api/clearai/gate 第六阶段整条拿掉:本体编辑抽屉删了,要改词汇就在对话里说,模型用 Define / Deprecate 落同一本账;其余要人拍板的事第三阶段起由开门的那次调用当场问人。旧日志里人按过的动作仍由 fold.js 的 parseHumanGate 照旧折出来。",
-      "known_mismatch": null,
-      "destination": "deleted"
     },
     {
       "id": "single-loop",
@@ -721,58 +571,8 @@
       "output": "模型据四拍组织行为",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "七阶段在运行时的压缩表达。",
+      "rationale": "认识论循环在运行时的压缩表达。",
       "known_mismatch": null
-    },
-    {
-      "id": "scout-precommit",
-      "name": "已删除:立约前侦察（一生一次）",
-      "name_en": "Removed: Pre-commit reconnaissance",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "Frame 落定判据，且 input/ 有材料",
-      "input": "brief",
-      "output": "mutation scout/dispatched + scout/settled",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-tool-subagent",
-      "rationale": "「少即是多」第二阶段交还宿主:立约前要查资料,模型自己读,或派原生子任务只读去查。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "map-scouts",
-      "name": "已删除:并行侦察（有上限与并发）",
-      "name_en": "Removed: Parallel scouting with caps",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "non-authoritative",
-      "actor": "model",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "模型调用 MapScouts",
-      "input": "任务清单",
-      "output": "多个只读子 run 的结论",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-tool-subagent / dsh-tool-workflow",
-      "rationale": "「少即是多」第二阶段交还宿主:并行侦察由原生子任务承担。",
-      "known_mismatch": null,
-      "destination": "deleted"
     },
     {
       "id": "evaluator-readonly-face",
@@ -797,31 +597,6 @@
       "native_dsh_alternative": "dsh-subagent 的 tools.restrict",
       "rationale": "判的人不能改产物。",
       "known_mismatch": null
-    },
-    {
-      "id": "executor-tool-face",
-      "name": "已删除:世界线执行者工具面（不含计划/目标动词）",
-      "name_en": "Removed: Worldline executor face, no plan/goal verbs",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "派遣世界线执行者时",
-      "input": "候选工具名",
-      "output": "任务书即计划；执行者工具面里根本没有 CreatePlan/AdvancePlan/ClosePlan",
-      "blocks_execution": true,
-      "native_dsh_alternative": "dsh-tool-subagent",
-      "rationale": "「少即是多」第二阶段交还宿主:世界线执行者随世界线一起删除。",
-      "known_mismatch": null,
-      "destination": "deleted"
     },
     {
       "id": "tool-trimming",
@@ -892,7 +667,7 @@
       "output": "tool-goal / command-goal 在面里;原生 goal 只能经 Conclude 完成",
       "blocks_execution": false,
       "native_dsh_alternative": "dsh-tool-goal / dsh-command-goal",
-      "rationale": "第三阶段起不再是两本账:原生 goal 是续跑与展示,ClearAI 的目标账决定「什么算完成」。Frame 建原生目标,Conclude 完成或置阻塞,守卫拦住直接完成。",
+      "rationale": "只有一本账的分工:原生 goal 是续跑与展示,ClearAI 的目标账决定「什么算完成」。Frame 建原生目标,Conclude 完成或置阻塞,守卫拦住直接完成。",
       "known_mismatch": null
     },
     {
@@ -992,131 +767,6 @@
       "known_mismatch": null
     },
     {
-      "id": "git-ledger",
-      "name": "已删除:只追加 git 账本（一律旁路账本，不碰用户仓库）",
-      "name_en": "Removed: Append-only git ledger, always a side ledger (never the user's repo)",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "步骤交付点 / 文件历史查询 / 恢复",
-      "input": "路径或交付点",
-      "output": "mutation git/committed, git/restored, git/snapshot",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-workspace-changes",
-      "rationale": "「少即是多」第二阶段交还宿主:文件改动历史由宿主的 workspace-changes 显示;不再维护自己的 git 账本,也不提供恢复(已接受的代价)。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "kernel-panic-recovery",
-      "name": "已删除:引擎级异常的降权只读恢复",
-      "name_en": "Removed: read-only downgraded recovery after engine-level failure",
-      "source": {
-        "code": null,
-        "config": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md",
-        "prompt": null,
-        "tests": null
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "第五阶段随提示词收成三段删掉:它只由提示词承载(内核与宿主都没有对应的硬约束),细则是宿主异常类型的处置,属于宿主。身份段留下一句通用纪律:结局不明的操作先看当前事实,再谈重试。",
-      "known_mismatch": null,
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "model",
-      "destination": "deleted"
-    },
-    {
-      "id": "auto-continuation",
-      "name": "已删除:ClearAI 自己的续跑窗口",
-      "name_en": "Removed: ClearAI-owned continuation window",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-goal-round-driver 执行轮数上限",
-      "rationale": "续跑交给原生 goal(第三阶段):ClearAI 不再自己布防 / 按住 / 收兵一个续跑窗口。要人的时候由开门的调用当场问;没人能答就把原生 goal 置阻塞,续跑自然停。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "max-auto-turns",
-      "name": "已删除:ClearAI 的续跑轮数上限",
-      "name_en": "Removed: ClearAI continuation round budget",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-goal-round-driver",
-      "rationale": "续跑轮数上限归原生 goal 自己的缺省(maxGoalRounds),ClearAI 不再另设一个数。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "autonomy-config",
-      "name": "已删除:autonomy 运行档",
-      "name_en": "Removed: autonomy run tier",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "运行档删了(第三阶段):它剩下的唯一作用是挑两套澄清措辞之一,而「要不要人」本来就由门表达。澄清协议只剩一段。旧日志里人门消息形式的 `set_autonomy` 标记不再折进状态。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
       "id": "runtime-card",
       "name": "每回合派生的运行态卡",
       "name_en": "Per-turn runtime card",
@@ -1161,7 +811,7 @@
       "output": "系统提示词段集合",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "提示词解释行为,但按 P1 不是执行边界。第五阶段收成三段:身份(native)、循环(hard)、对人说话(advisory),每段的分类由 `test/prompt-sections.test.mjs` 与内容咬合。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。",
+      "rationale": "提示词解释行为,但按 P1 不是执行边界。提示词分三段:身份(native)、循环(hard)、对人说话(advisory),每段的分类由 `test/prompt-sections.test.mjs` 与内容咬合。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。",
       "known_mismatch": null
     },
     {
@@ -1187,56 +837,6 @@
       "native_dsh_alternative": "dsh-compaction-basic / dsh-command-compact（即原生本体）",
       "rationale": "上下文是受控资源；执行它的本来就是原生，ClearAI 只做装配声明。",
       "known_mismatch": null
-    },
-    {
-      "id": "skill-candidate",
-      "name": "已删除:技能默认候选态（人采纳才进目录）",
-      "name_en": "Removed: Skills default to candidate until a human promotes them",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "model",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "模型调用 SaveSkill",
-      "input": "name, description, 正文",
-      "output": "clear/skills/<name>/SKILL.md，status=candidate；人 promote_skill 后才 modelInvocable",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-skill-filesystem / dsh-tool-skill",
-      "rationale": "「少即是多」第二阶段交还宿主:技能走原生技能目录与 skill 工具,不再自带候选技能与采纳动作。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "memory-write",
-      "name": "已删除:记忆写入（字段校验 + 标题去重）",
-      "name_en": "Removed: Memory write with field contract and title dedup",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "model",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "模型调用 WriteMemory",
-      "input": "lesson 的五字段 / fact 的四字段",
-      "output": "clear/memory/**；按标题跨文件去重",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-agent-instructions",
-      "rationale": "「少即是多」第二阶段交还宿主:已确立的结论就是长期记忆(本体);项目说明走原生 PROJECT.md。",
-      "known_mismatch": null,
-      "destination": "deleted"
     },
     {
       "id": "model-routing",
@@ -1283,33 +883,8 @@
       "output": "原生命令结果",
       "blocks_execution": false,
       "native_dsh_alternative": "dsh-commands 注册表",
-      "rationale": "菜单是 DSH 原生的人类命令通道。ClearAI 不再贡献自己的命令(第二阶段删除了 `/goal` `/plan` `/evidence` `/worldline` `/plan-review`):状态看界面,`/goal` 与 `/plan` 由原生接管。",
+      "rationale": "菜单是 DSH 原生的人类命令通道。ClearAI 不贡献自己的命令:状态看界面,`/goal` 与 `/plan` 由原生接管。",
       "known_mismatch": null
-    },
-    {
-      "id": "exploration-zone",
-      "name": "已删除:把「探索区」当作一个被命名的模式",
-      "name_en": "Removed: the exploration zone as a named mode",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "non-authoritative",
-      "actor": "model",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/epistemic-loop.zh-CN.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-tool-todo / dsh-tool-subagent",
-      "rationale": "这个名字底下其实捆了三件事,而它们的状态各不相同:**结构性隔离**(非权威路径写不进权威账本)是一条真机制,已实现并由边界套件钉住,现在有自己的一行;**「工作不设限」**是原生工具挂回之后的既成事实,不需要额外机制;**「一块可以自由停留的区域」**是措辞——把它做成机制等于拿劝告冒充机制(P1),做成界面又只是给同一件事起两个名字。所以它作为**概念**注销,而「探索期产出有据可查」这件事另有落点:回合边界的账本快照。",
-      "known_mismatch": null,
-      "destination": "deleted"
     },
     {
       "id": "subrun-lifecycle",
@@ -1333,7 +908,7 @@
       "blocks_execution": false,
       "native_dsh_alternative": "subagents.start()（原生一次性句柄）——不借用可续跑与结算通知：通知是 best-effort，不能当账本的承重结构",
       "known_mismatch": null,
-      "notes": "侦察、世界线执行者与横评仲裁已随第二阶段删除,只剩评估者这一类子 run。",
+      "notes": "子 run 只有评估者这一类。",
       "rationale": "子任务的生命周期由内核掌握,但**结束与存活的权威是宿主**:`subagents.listChildren` 与 `subagent/end`。宿主说已结束 ⇒ **先从子会话自己的日志取回**,取不回才如实落 unknown,理由写清(`ended_uncollected` ≠ `lost`)。结算只报事实不给建议:要不要重试是计划层的决定。"
     },
     {
@@ -1407,7 +982,7 @@
       "output": "block/counted ⇒ plan/blocked ⇒ 当场问人",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行;「从没走过的等级」这条读数第四阶段删了。",
+      "rationale": "验证机承诺的保证都有落点:①结果永远不来时不无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行。",
       "known_mismatch": null
     },
     {
@@ -1431,7 +1006,7 @@
       "output": "mutation fact/reviewed;事实文件追加一行;没人能答 ⇒ 事实标着待复核,原生 goal 置阻塞",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "事实带边界(scope):边界被触发时要有一个人能把它撤回,而撤回永不自动——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定。两种结局都落 fact/reviewed,撤回是终态:记录留着、不再作为「已知」被引用。",
+      "rationale": "事实带边界(scope):边界被触发时要有一个人能把它撤回,而撤回永不自动——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定。两种结局都落 fact/reviewed,撤回是终态:记录留着、不作为「已知」被引用。",
       "known_mismatch": null
     },
     {
@@ -1450,88 +1025,13 @@
         "prompt": null,
         "docs": "docs/verification-loop.md"
       },
-      "trigger": "交付时登记观测(主线或世界线)",
+      "trigger": "交付时登记观测",
       "input": "ref + note",
-      "output": "mutation observation/recorded（source 只有 self 与 scout）",
+      "output": "mutation observation/recorded（source 只有 self）",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "类型的职责是**只声明今天真的可表示的东西**:内核只写过 `self`(主线/世界线的交付)与 `scout`(侦察),所以 `source` 只声明这两个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。",
+      "rationale": "类型的职责是**只声明今天真的可表示的东西**:内核只写 `self`(交付),所以 `source` 只声明这一个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。",
       "known_mismatch": null
-    },
-    {
-      "id": "set-autonomy",
-      "name": "已删除:人在面板上切换运行档",
-      "name_en": "Removed: switching the run tier from the panel",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "human",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/known-gaps.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "「要不要人在场」是**运行时状态**,不是面板上的一个开关:有事要拍板就有门开着,没门就继续跑。那个档位还顺手把「计划经人确认」变成系统自己签的——用门代替开关之后,它没有存在的理由。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "budget-tiers",
-      "name": "已删除:人在场 6 轮 / 无人值守 512 轮",
-      "name_en": "Removed: 6-round / 512-round budget tiers",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/known-gaps.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "轮数是**保险丝**,不是用户的档位。原先两档把「我在不在场」变成了配置项,还把「计划经人确认」变成系统自己签的。现在只有一个默认值(128),由**原生**的 round driver 执行上限。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
-      "id": "plan-auto-confirm",
-      "name": "已删除:无人值守立约即授权",
-      "name_en": "Removed: unattended plans auto-confirmed themselves",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/known-gaps.md"
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "让系统替人签「这份计划经人确认」,那条证据就是系统自己伪造的——与 L4「人放行」是同一类病。门的意义在于「这一下是人按的」,所以 `confirmed_by` 只剩 `user` 与 `progress`。",
-      "known_mismatch": null,
-      "destination": "deleted"
     },
     {
       "id": "non-authoritative-isolation",
@@ -1556,31 +1056,6 @@
       "native_dsh_alternative": null,
       "rationale": "这是把「工作方式」与「确认知识」解耦的那条**负向保证**:干活不设限,但干活的路径结构上产不出一条权威变更——权威账本只能由主线过观测准入与唯一完成动词写入。它是「探索可以自由、事实必须严格」这句话里**承重**的那一半,所以它有一行。",
       "known_mismatch": null
-    },
-    {
-      "id": "ledger-exploration-snapshots",
-      "name": "已删除:回合边界的工作区快照",
-      "name_en": "Removed: Workspace snapshot at the turn boundary",
-      "layer": "harness",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "authoritative",
-      "actor": "system",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
-      },
-      "trigger": "本会话调用过会改工作区的工具(write/edit/bash/pwsh),且工作区真的脏",
-      "input": "—",
-      "output": "一次账本提交 + mutation git/snapshot（只留台账）",
-      "blocks_execution": false,
-      "native_dsh_alternative": "dsh-workspace-changes",
-      "rationale": "「少即是多」第二阶段交还宿主:回合边界快照随账本一起删除;每轮改了什么看宿主的改动卡片。",
-      "known_mismatch": null,
-      "destination": "deleted"
     },
     {
       "id": "ontology-lexicon-events",
@@ -1703,31 +1178,6 @@
       "known_mismatch": null
     },
     {
-      "id": "ontology-verbs",
-      "name": "领域词汇的具名动词与货架",
-      "name_en": "Named verbs for the domain vocabulary, and the shelf",
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "model",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/domain-ontology.zh-CN.md"
-      },
-      "trigger": "模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate",
-      "input": "id / label / gloss / aliases / parent / domain / range / functional / basis / reason",
-      "output": "mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "本体改成工作区里的 JSON 文件树,模型用原生文件工具直接写(clear/ontology/{concepts,relations,entities}/**.json);Define / Deprecate 与词汇货架 domain.md 一起删了:文件本身就是读面。改义从「拦」改成「查」:事实记下定义指纹,定义一改就标「需复核」。",
-      "known_mismatch": null,
-      "destination": "deleted"
-    },
-    {
       "id": "ontology-panel-graph",
       "name": "面板「本体」:图为主的只读读面",
       "name_en": "Ontology panel: graph-first, read-only",
@@ -1741,65 +1191,15 @@
         "tests": "test/client.test.mjs(本体格:图、结论分组、三段展开、节点小卡)",
         "config": null,
         "prompt": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md"
+        "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "人打开中栏「本体」",
       "input": "会话投影 clearai(view)与 GET /api/clearai/inspector",
       "output": "本体图 / 实体图、按可信度分组的结论(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换)、点开一条的进度 → 可信度怎么变的 → 补充、节点小卡",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "第六阶段:面板只读,图是主角。词条增删改的抽屉与 /api/clearai/gate 一起删了——它是模型工具之外的第二个写入口,而人要改词汇在对话里说一句就够。界面用词与运行态卡同一套,内部编号不上屏。",
+      "rationale": "面板只读,图是主角。面板不提供第二个写入口:人要改词汇,在对话里说一句,或直接改文件。界面用词与运行态卡同一套,内部编号不上屏。",
       "known_mismatch": null
-    },
-    {
-      "id": "entity-registration",
-      "name": "实体登记(实例是一等写入口)",
-      "name_en": "Entity registration (instances as a first-class write path)",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/domain-ontology.zh-CN.md"
-      },
-      "trigger": "模型调 RegisterInstance",
-      "input": "{id, type, label, basis, provenance:{kind,ref}}",
-      "output": "entity/registered 变更 → state.entities[]（实体图节点，带出处）",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "实体改成 clear/ontology/entities/ 下的文件(带类型、依据与出处),RegisterInstance 删了。",
-      "known_mismatch": null,
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "model",
-      "destination": "deleted"
-    },
-    {
-      "id": "entity-assertion",
-      "name": "实体断言(登记即产边)",
-      "name_en": "Entity assertion (edge holds on record)",
-      "source": {
-        "code": null,
-        "tests": null,
-        "config": null,
-        "prompt": null,
-        "docs": "docs/domain-ontology.zh-CN.md"
-      },
-      "trigger": "模型调 Assert",
-      "input": "{subject:{id,type}, predicate, object, evidence:{kind,ref}}",
-      "output": "entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "实体之间的关系写在实体文件自己的 relations 里(每条带出处),Assert 删了;写下那一刻就进图这一点不变。",
-      "known_mismatch": null,
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "model",
-      "destination": "deleted"
     },
     {
       "id": "entity-gate",
@@ -1808,7 +1208,7 @@
       "source": {
         "code": "preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph",
         "config": "requireLandedEntities",
-        "docs": "docs/less-is-more-plan.zh-CN.md",
+        "docs": "docs/epistemic-loop.zh-CN.md",
         "prompt": "preset/plugins/prompts.js clearai/loop",
         "tests": "test/kernel.test.mjs(实体门); test/contrast.test.mjs(B 组)"
       },
@@ -1817,38 +1217,13 @@
       "output": "有主体不是实体图节点 ⇒ 拒(entities_unlanded),点名判断与主体;否则放行去独立评估",
       "blocks_execution": true,
       "native_dsh_alternative": null,
-      "rationale": "「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不再要求另用 Assert 把同一句话说一遍。第四阶段把关口从三道收到这一道。",
+      "rationale": "「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不要求另用 Assert 把同一句话说一遍。",
       "known_mismatch": null,
       "layer": "epistemic",
       "status": "implemented",
       "hardness": "hard",
       "authority": "authoritative",
       "actor": "system"
-    },
-    {
-      "id": "level-skip-reason",
-      "name": "已删除:跳级需具名理由",
-      "name_en": "Removed: level skips need a named reason",
-      "source": {
-        "code": null,
-        "config": null,
-        "docs": "docs/less-is-more-plan.zh-CN.md",
-        "prompt": null,
-        "tests": null
-      },
-      "trigger": "—",
-      "input": "—",
-      "output": "—",
-      "blocks_execution": false,
-      "native_dsh_alternative": null,
-      "rationale": "第四阶段整套删除(ExplainLevelSkip、level/skipped、untouchedLevels、levels_skipped 缺口与 requireLevelReasons 门):第三阶段重跑里它让小任务结案时多被拦一次、多写一段理由,而等级的职责只有两件——谁来判,以及 L4 要人放行。旧日志里的 level/skipped 安静跳过。",
-      "known_mismatch": null,
-      "layer": "epistemic",
-      "status": "removed",
-      "hardness": "deprecated",
-      "authority": "none",
-      "actor": "model",
-      "destination": "deleted"
     },
     {
       "id": "criteria-revision-gate",
@@ -1890,7 +1265,7 @@
         "prompt": null,
         "tests": "test/kernel.test.mjs（派遣事实立刻落账,不随工具结果的成败起落）; test/contrast.test.mjs（结构判据:第一次 await 之前就有独立落账调用）"
       },
-      "trigger": "派评估者（audit/dispatched）或派侦察（scout/dispatched）时",
+      "trigger": "派评估者（audit/dispatched）时",
       "input": "sessionId + 一条已经发生的事实（派发动作本身,不依赖子任务返回什么）",
       "output": "pendingFacts 里一条待落账事实：本拍的 pre-step 兜底落账（drainPendingFacts）,同一个工具结果的 mutations 里也并进同一条（withPendingFacts,pending 在前、按 id 去重）",
       "blocks_execution": false,
@@ -1916,7 +1291,7 @@
       },
       "trigger": "同一状态再次结案（Conclude / 证据审计）,算出来的 digest 与上一次相同",
       "input": "裁决种类 + 步 id + 目标修订号 + 计划步与产物 + 观测 + 原始假设 + 已升格事实 + 非审计来源证据 + 准入坐标里的产物",
-      "output": "复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不再派评估者;材料一变 digest 就变,必然重派",
+      "output": "复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不派评估者;材料一变 digest 就变,必然重派",
       "blocks_execution": false,
       "native_dsh_alternative": null,
       "rationale": "digest 只盖材料,所以「重试一次就重烧两三分钟」这件事在机制上不可能发生。一次不确定的结案自己会落一条证据（anchor='auditor'）:把证据集合整个算进 digest,每重试一次 digest 就变一次,复用永远命中不了——而两次之间模型什么都没改,那不是新证据,是同一条评审自己的回声。派生读数（supportedLevel / refutations / inconclusive）同理被排除:它们由证据算出来,算进去等于把回声再算一遍。只有落定过、且真的给出了裁决的那一条才可复用:unknown 不是裁决,它说明那一次没成,正是该重派的理由。",
@@ -2008,7 +1383,7 @@
         "tests": "test/kernel.test.mjs",
         "config": null,
         "prompt": "clearai/loop",
-        "docs": "docs/less-is-more-plan.zh-CN.md"
+        "docs": "docs/epistemic-loop.zh-CN.md"
       },
       "trigger": "模型调用原生 update_goal(action=complete),而 ClearAI 目标还开着",
       "input": "原生工具调用参数",

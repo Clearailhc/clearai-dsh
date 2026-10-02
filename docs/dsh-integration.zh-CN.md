@@ -1,7 +1,5 @@
 # DSH 集成
 
-> **改造中。** 本文按[「少即是多」方案](less-is-more-plan.zh-CN.md)描述目标设计；安装、构建与验证一节反映当前已发布的形态。
-
 ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面**上，DSH 引擎一行不改。本文说明这份仓库如何映射到那一层、什么东西装到哪里、以及怎么构建与验证。
 
 ## 一个包，三个面
@@ -18,17 +16,17 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 ## 用宿主的，不自己做
 
-预设除了 ClearAI 自己的插件，还组合了这些 DSH 原生能力；对应的东西 ClearAI 不再自带：
+预设除了 ClearAI 自己的插件，还组合了这些 DSH 原生能力；对应的东西 ClearAI 不自带：
 
 | 能力 | 原生包 | ClearAI 怎么用 |
 |---|---|---|
 | 目标与续跑 | `dsh-goal`、`dsh-tool-goal`、`dsh-goal-round-driver` | `Frame` 挂判据与判断；`Conclude` 过独立评估后调 `ctx.goals.complete()`；守卫拒绝模型直接完成 |
 | 计划审阅 | `dsh-plan-mode` | 人想审计划时用 `/plan` |
-| 子代理与编排 | `dsh-subagent`、`dsh-tool-workflow` | 派独立评估者；模型并行检验多条竞争判断（取代世界线） |
+| 子代理与编排 | `dsh-subagent`、`dsh-tool-workflow` | 派独立评估者；模型并行检验多条竞争判断 |
 | 问人 | `dsh-user-questions` | 开门的那次调用直接 `ctx.userQuestions.ask()` |
 | 交付 | `dsh-tool-present`、交付卡片 | 结案时内核追加一条 `deliverables/presented` |
-| 文件改动 | `dsh-workspace-changes` | 不再维护自己的账本 |
-| 技能与项目说明 | `dsh-skill`、`PROJECT.md` | 不再自带模板与记忆 |
+| 文件改动 | `dsh-workspace-changes` | 不维护自己的账本 |
+| 技能与项目说明 | `dsh-skill`、`PROJECT.md` | 不自带模板与记忆 |
 
 ## 源 → 包 的映射
 
@@ -54,7 +52,7 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 宿主半随补丁层自动生效；agent 预设不能——预设是**组合里的一条声明行**，这条行得由包自己贡献。
 
-宿主 `0.1.7-alpha.1` 起名册不再扫 root 目录：一个预设就是一条 `- id: preset-<id>` 行（`@deepseek-ai/dsh-agent-preset`），插件列表整个放在它的 `config.plugins` 里：
+一个预设就是一条 `- id: preset-<id>` 行（`@deepseek-ai/dsh-agent-preset`），插件列表整个放在它的 `config.plugins` 里：
 
 ```yaml
 - insert:
@@ -69,14 +67,14 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 这份文件（`presets/clearai/clearai.patch.yml`）**由 `preset/agent.cordis.yml` 在构建期派生**（一个源，不手抄第二份），经清单里的 `dsh.bundle.patch` 挂上。安装期不写任何东西，也不往用户家目录塞副本。
 
-`0.1.6-alpha.2` 及更早的宿主没有这条行、只扫 root 目录；`0.2.3` 是最后能服务它们的版本。想改预设的人仍然可以用 `bin/clearai.mjs seed` 播种到自己的根——它记哈希、**不覆盖**人改过的文件。
+想改预设的人可以用 `bin/clearai.mjs seed` 播种到自己的根——它记哈希、**不覆盖**人改过的文件。
 
 ## 安装
 
-在应用里：侧栏**「插件」→ 添加插件**填 `clearai-dsh@0.3.1`，走的是 DSH 自己的插件管理器——设置里的**插件列表**是**只读清单**，不是安装入口。开终端则是同一次安装：
+在应用里：侧栏**「插件」→ 添加插件**填 `clearai-dsh@0.4.0`，走的是 DSH 自己的插件管理器——设置里的**插件列表**是**只读清单**，不是安装入口。开终端则是同一次安装：
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.3.1
+dsh plugin --profile web add clearai-dsh@0.4.0
 ```
 
 版本是**刻意钉住**的：pnpm ≥ 11 会压住一天内发布的版本，而裸包名不会报错、会**回退到上一版**。插件管理器把 spec 原样转下去（`@deepseek-ai/dsh-plugin-manager` 里就是 `pnpm add <spec>`），并且**不比对**装到的是不是你要求的，于是这次降级被报成安装成功。机制与那句一次性豁免写在 README 的「为什么要钉版本」里。
