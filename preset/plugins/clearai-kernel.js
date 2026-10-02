@@ -3070,7 +3070,7 @@ export function apply(ctx, config = {}) {
 			 * 「拿不到裁决」原来不计数,于是评估者失联或提供方不可用时,模型可以一次次重新交付、
 			 * 每次 fail-closed,而**永远不会升级给人**:同一语义动作反复做、不带来新事实,
 			 * 正是这套失败哲学要停下来的那一种(每次恢复都要带来新东西)。计数之后,
-			 * 它落到同一道已有的门(`plan/blocked` ⇒ 收件箱里那条等人处置的条目)。
+			 * 它落到同一道已有的门(`plan/blocked` ⇒ 「待处理」里那条等人处置的条目)。
 			 */
 			const countBlock = (kind, detail) => {
 				const count = (state.blocks[`${plan.id}:${step.id}`] ?? 0) + 1

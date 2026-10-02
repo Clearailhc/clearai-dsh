@@ -22,7 +22,7 @@
  *   node tools/verify-clean-install.mjs --keep             # 留着临时 home 便于人工看
  *
  * 浏览器那半(必须人/工具驱动,脚本不假装做了):
- *   新会话 → 预设选择器里选 ClearAI → 中栏出现 Deliverables/Facts、右栏出现 Worldlines/Skills · Memory
+ *   新会话 → 预设选择器里选 ClearAI → 中栏出现 Ontology(本体)、右栏出现 World Tree(世界树)
  *   → 发一个真任务 → 账上出现 goal/set 与审计。规范写法见 docs/release-verification.md。
  *
  * 依赖:node 22 · `pnpm` 在 PATH 上(没有就用 `corepack enable --install-directory ~/.local/bin`)。
@@ -347,7 +347,7 @@ if (UI) {
 	console.log(`    google-chrome --headless=new --no-sandbox --window-size=1680,1050 \\`)
 	console.log(`      --remote-debugging-port=9350 --user-data-dir=/tmp/clean-chrome '<上面打印的带 token URL>'`)
 	console.log(`    node tools/ui-drive.mjs eval "(document.body.innerText||'').slice(0,200)"`)
-	console.log(`  该断言:中栏出现 Deliverables/Facts、右栏出现 Worldlines/Skills · Memory、pageerror 为空。`)
+	console.log(`  该断言:中栏出现 Ontology(本体)、右栏出现 World Tree(世界树)、pageerror 为空。`)
 	console.log(`  收工:kill ${child.pid}${KEEP ? '' : ` && rm -rf ${HOME_DIR}`}`)
 } else if (!KEEP) {
 	rmSync(HOME_DIR, { recursive: true, force: true })

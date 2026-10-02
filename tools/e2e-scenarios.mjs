@@ -183,6 +183,40 @@ export const SCENARIOS = {
 			]
 		},
 	},
+	'jepa-research': {
+		title: '开放研究:JEPA 世界模型的调研、探索与方向',
+		expectComplete: true,
+		why: '前面几场都是点名机制的小任务。这一场是人真会发来的开放研究题,只在最后点名结案:判断、检验、独立核验、推翻与说不清、本体与实体图、答复的说法,要靠提示词与工具面自己走出来。改造六个阶段落地之后,用它看整体是否符合设计。',
+		task: [
+			'这个工作区是空的。请以 JEPA 世界模型为题做一次完整的研究:',
+			'把相关工作调研清楚(从 I-JEPA、V-JEPA 到最新进展,以及它和生成式世界模型、其他自监督方法的区别);',
+			'动手做一点能复查的探索;最后给出未来值得做的研究方向。',
+			'结论要能信:哪些已经核实、哪些被推翻、哪些还说不清,都要分清楚;把这个领域的概念和具体工作整理成本体与实体图。',
+			`${DISCIPLINE}判据达成后用 Conclude 结案。`,
+		].join('\n'),
+		asserts: ({ mutations, countOf, evidenceVerdicts, events }) => {
+			const framed = [...mutations].reverse().find((m) => m.t === 'goal/set')
+			const hypotheses = framed?.hypotheses ?? []
+			const registered = mutations.filter((m) => m.t === 'entity/registered')
+			const closed = [...mutations].reverse().find((m) => m.t === 'goal/closed')
+			/** 第六阶段:工具结果与运行态卡里不该出现内核起的编号(`h-xxxxxx`)与机制词。 */
+			const resultText = events
+				.filter((event) => event.type === 'tool/result')
+				.map((event) => JSON.stringify(event.data?.message?.content ?? ''))
+				.join('\n')
+			const leakedIds = [...new Set(resultText.match(/\bh-[a-z0-9]{6}\b/g) ?? [])]
+			return [
+				{ label: '立了至少三条判断', ok: hypotheses.length >= 3, detail: `${hypotheses.length} 条` },
+				{ label: '立了领域词汇(概念 ≥ 5,关系 ≥ 2)', ok: countOf('ontology/term_added') >= 5 && countOf('ontology/predicate_added') >= 2, detail: `概念 ${countOf('ontology/term_added')} · 关系 ${countOf('ontology/predicate_added')}` },
+				{ label: '登记了具体工作(实例 ≥ 5,都带出处)', ok: registered.length >= 5 && registered.every((m) => typeof m.provenance?.ref === 'string' && m.provenance.ref !== ''), detail: `${registered.length} 个` },
+				{ label: '写了带出处的断言(≥ 3)', ok: countOf('entity/asserted') >= 3, detail: `${countOf('entity/asserted')} 条` },
+				{ label: '至少一次独立核验', ok: countOf('audit/settled') >= 1, detail: `派 ${countOf('audit/dispatched')} · 回 ${countOf('audit/settled')}` },
+				{ label: '不只有支持(有推翻或说不清的结果)', ok: evidenceVerdicts.some((verdict) => verdict !== 'support'), detail: evidenceVerdicts.join(',') },
+				{ label: '结案达成,并有结论写进长期知识', ok: closed?.status === 'achieved' && countOf('fact/promoted') >= 1, detail: `结案=${closed?.status ?? '(无)'} 升格=${countOf('fact/promoted')}` },
+				{ label: '工具结果与卡里没有内部编号(第六阶段)', ok: leakedIds.length === 0, detail: leakedIds.join(',') || '无' },
+			]
+		},
+	},
 }
 
 /**

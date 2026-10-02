@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 发布前 recheck(机械面)。对应 `docs/pre-release-recheck.md`。
+ * 发布前 recheck(机械面)。对应 `docs/release-verification.zh-CN.md`。
  *
  * 它做三件事:
  *   ① 跑**全部单测**(五套)与**装机自检**——功能面;
@@ -33,13 +33,12 @@ const SKIP_SUITES = argv.includes('--skip-suites')
 
 /** 每一块面的**字数预算**(拿真数据渲染出来的可见文字数)。 */
 const BUDGETS = [
-	// §35:输入框下那条(StatusStrip)与档位开关(TierControl)都删了 ⇒ 预算表跟着它们走
+	// 第六阶段:中栏是一格「本体」(页眉 + 图 + 结论清单),右栏是世界树;工具行只剩计划芯片
 	{ surface: '计划面(工具行)', limit: 40, pick: (C, props) => C.PlanChip(props) },
-	{ surface: '续跑注(工具行,只在有话时说)', limit: 40, pick: (C, props) => C.ContinuationNote(props) },
-	{ surface: '事实(默认)', limit: 1500, pick: (C, props) => C.Facts(props) },
-	{ surface: '命题展开(一条)', limit: 1600, pick: (C, props, data) => C.PropositionShelf({ data, open: (data.goal?.hypotheses ?? []).find((h) => h.status !== 'confirmed')?.id ?? null, onToggle: () => {} }) },
+	{ surface: '本体格页眉(问题 · 计数 · 待处理 · 进度轨)', limit: 300, pick: (C, props, data, P) => C.AtlasHeader({ data, rows: P.conclusionsOf(data) }) },
+	{ surface: '结论清单(默认,全收起)', limit: 1500, pick: (C, props, data, P) => C.ConclusionList({ rows: P.conclusionsOf(data), open: null, onToggle: () => {}, data }) },
+	{ surface: '结论展开(一条)', limit: 1600, pick: (C, props, data, P) => { const rows = P.conclusionsOf(data); const row = rows.find((item) => item.trust !== 'replaced') ?? rows[0]; return row === undefined ? null : C.ConclusionDetail({ row, data }) } },
 	{ surface: '世界树', limit: 900, pick: (C, props) => C.WorldTree(props) },
-	{ surface: '技能 · 记忆', limit: 2600, pick: (C, props) => C.BrainTab(props) },
 ]
 
 let failed = 0
@@ -48,7 +47,7 @@ const section = (title) => line(`\n=== ${title} ===`)
 
 // ── ① 单测与装机自检 ────────────────────────────────────────────────────────
 if (!SKIP_SUITES) {
-	section('① 单测(五套)')
+	section('① 单测(全部套件)')
 	try {
 		const out = execFileSync('bash', [join(PORT, 'test', 'run.sh')], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 		const summary = out.split('\n').find((row) => row.includes('通过,')) ?? '(没有结果行)'
@@ -102,7 +101,9 @@ if (LOG === null || !existsSync(LOG)) {
 		throw new Error(`不该 require ${name}`)
 	}
 	new Function('window', 'require', 'console', client)(globalThis.window, require, console)
-	const C = registration.factory(require).__components
+	const exported = registration.factory(require)
+	const C = exported.__components
+	const P = exported.__propositions
 	const data = { ...projected, openPreview: () => {}, openRail: () => {}, openSpectator: () => {} }
 	const props = { useProjection: () => data, useSessions: (selector) => selector({ byId: { s1: { projectionValues: { clearai: data } } } }), sessionId: 's1', openPreview: () => {}, openRail: () => {}, openSpectator: () => {} }
 	const texts = []
@@ -114,11 +115,11 @@ if (LOG === null || !existsSync(LOG)) {
 		if (typeof node.type === 'function') { visit(node.type({ ...(node.props ?? {}), children: node.children })); return }
 		visit(node.children ?? [])
 	}
-	line(`  会话:目标 ${projected.goal === null ? '无' : '有'} · 计划 ${(projected.plans ?? []).length} 份 · 命题 ${(projected.goal?.hypotheses ?? []).length} 条 · 事实 ${(projected.facts ?? []).length} 条`)
+	line(`  会话:目标 ${projected.goal === null ? '无' : '有'} · 计划 ${(projected.plans ?? []).length} 份 · 判断 ${(projected.goal?.hypotheses ?? []).length} 条 · 事实 ${(projected.facts ?? []).length} 条`)
 	for (const budget of BUDGETS) {
 		texts.length = 0
 		try {
-			visit(budget.pick(C, props, data))
+			visit(budget.pick(C, props, data, P))
 		} catch (error) {
 			failed += 1
 			line(`  ✗ ${budget.surface}:渲染就炸了 — ${String(error?.message ?? error).slice(0, 120)}`)
@@ -132,17 +133,16 @@ if (LOG === null || !existsSync(LOG)) {
 }
 
 // ── ④ 人工项(机器验不了)─────────────────────────────────────────────────
-section('④ 人工闸(在隔离家里点一遍,见 docs/pre-release-recheck.md)')
+section('④ 人工闸(在隔离家里点一遍,见 docs/release-verification.zh-CN.md)')
 for (const item of [
 	'新建对话 → 发一句话 → 模型回话(证明没把 app 拖垮)',
-	'中栏有「产物 / 事实」;右栏「+」里有「世界树 / 技能 · 记忆」',
-	'命题展开:走过那跳有证据 id;点证据出处开得出预览',
+	'中栏只有「本体」一格;右栏「+」里有「世界树」',
+	'本体格:页眉有问题、计数、进度轨;本体图 / 实体图能切换;结论一行一条、按状态分组,屏上没有内部编号',
+	'点开一条结论:进度 → 可信度怎么变的 → 补充;「看核验」开得出评估卡或评估者会话',
 	'点「在世界树里看这一步」⇒ 树打开且那一行被选中',
-	'树详情「看这一步的证据」⇒ 切回事实并展开对应命题',
-	'步骤详情的产物显示真实路径、没查过的不写「缺」',
+	'树详情「查看此步骤的证据」⇒ 切回本体格并展开对应结论',
 	'多份计划的会话:下拉能切到旧世界树',
-	'工具行没有档位开关(§34);计划 chip 上「待处理 N」一点直达世界树(§35)',
-	'输入框下**没有**我们那一行(§35);续跑停着/已撤回只在有话时出现在工具行',
+	'有要人处理的事时,页眉与计划芯片旁都是「待处理 N」,只陈述、没有按钮',
 ]) line(`  · ${item}`)
 
 section(failed === 0 ? '结果:机械面全过(人工闸还要点)' : `结果:${failed} 项没过`)

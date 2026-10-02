@@ -168,26 +168,28 @@ Process objects, domain vocabulary and a single test each have their own lifecyc
 
 ## 9. UI: the Ontology pane
 
-The middle column has one pane, **Ontology**. It answers the person's first three questions: what can I trust now; what was refuted and what is unclear; what does it add up to. The fourth — what do you need from me — sits next to the input box ("needs you N").
+The middle column has one pane, **Ontology**. One page answers the person's four questions: what can I trust now; what was refuted and what is unclear; what does it add up to; what do you need from me. The fourth is the same list in the header and next to the input box ("to handle N").
 
-| Block | When | Content |
-|---|---|---|
-| **Header graph** | Whenever vocabulary exists; collapsible | Ontology graph ｜ entity graph toggle; clicking a node filters the list below; expandable to full view |
-| Filter line | Only while filtering | "Filtered by X: N/M · clear", counting what did not match |
-| **Conclusion list** | Always | One list grouped by trust: **trustworthy** (facts, with scope and level) → **still under test** → **refuted or unclear** (including conflicts and pending reviews); retracted items collapsed at the end |
+One screen, three layers, each finer than the one above:
 
-Each row is in plain words: the conclusion, why, and its scope; an assertion chip expands the term card in place (definition, basis, domain, range, citation count). Conflicts are marked on the two affected rows.
+| Layer | Content |
+|---|---|
+| **Header** | One line for the question being answered + one line of counts + "to handle" (a plan stopped after repeated rejections, conclusions that contradict each other; one line each, statements only, no buttons) + a small progress rail: judgment → test → verified → in ontology, with a count per station |
+| **Graph (the main thing)** | **Ontology graph ｜ entity graph**, one at a time. Concepts in serif type, instances as small squares with their type in small print; verified relations solid, awaiting check dashed, refuted and uncertain each in their own colour. Clicking a node opens its term card and filters the list below (one line "only related to X · clear", with honest counts); full-screen available |
+| **Conclusion list** | One line per conclusion, grouped by status: **verified / awaiting check / testing / uncertain / refuted / replaced**, each tagged with the step it came from. Opening one shows three parts in order: **progress** (which station it has reached), **how trust changed** (one line per change: which step, from what to what), **more** (basis, scope, what would make it wrong, related concepts and instances) |
+
+A single test's result uses three words only: **support / refute / uncertain**. Levels are written in plain words: reasoned through alone / cites existing material / reproducible / independent check / released by a person. Internal ids never reach the screen; people see a judgment's short name and "step n".
 
 **No-explosion contract:**
 
-1. **Zero cost**: with no goal and no vocabulary the pane is an empty hint, with no blocks laid out.
-2. **Ordered by trust**: trustworthy first, unclear last; process does not enter this pane.
-3. **The graph is header and index**: clicking a concept node filters; no separate chip row.
+1. **Zero cost**: with no goal and no vocabulary the pane is a one-line hint, with no blocks laid out.
+2. **Layered**: glance at the header, scan the list, open a line for basis and history.
+3. **The graph is the main thing and the index**: clicking a node filters; no separate chip row.
 4. **Expand in place, no jumps**: the only cross-pane jump is "see that step in the World Tree".
-5. **Interrupt only for exceptions**: conflicts and pending reviews take one pointer line each.
-6. **Filters tell the truth**: one status line + clear, with N/M stating what did not match.
+5. **Interrupt only for exceptions**: anything that needs a person takes one line under "to handle"; a contradiction is marked on the two affected lines.
+6. **Filters tell the truth**: one status line + clear, stating how many did not match.
 
-**The pane is read-only.** Process never appears as editable content here: steps and gates are in the World Tree on the right.
+**The pane is read-only.** Terms cannot be registered or edited by hand here; to change the vocabulary, say so in the conversation. Process never appears as editable content: steps and gates are in the World Tree on the right, one line per step, and opening a step shows which judgments it tested and what came out.
 
 ---
 

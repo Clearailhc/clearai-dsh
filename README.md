@@ -148,11 +148,11 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 ## What it looks like
 
-One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Next to the input box: "needs you N".
+One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Next to the input box: "to handle N".
 
-**Ontology** — it answers only your four questions. Its header is the **graph**: the ontology graph (what your domain looks like) and the entity graph (what has actually been verified) toggle with one click, and clicking a node filters by that concept. Below it is **one list of conclusions** grouped by how far they can be trusted: trustworthy (with scope and level), still under test, refuted or unclear. Two contradictory conclusions light up; retracting or keeping is your call.
+**Ontology** — one page for your four questions. At the top: the question, one line of counts, anything you need to handle ("to handle"), and a small progress rail: judgment → test → verified → in ontology. In the middle, the **graph**: the ontology graph (what your domain looks like) and the entity graph (the concrete things found) toggle with one click, and clicking a node filters by it. Below, the **conclusion list**, one line each, grouped by status: verified, awaiting check, testing, uncertain, refuted, replaced; open one to see which station it reached, how its trust changed, and its basis and scope. Two contradictory conclusions light up; retracting or keeping is your call.
 
-**World Tree** — the plan's steps and gates.
+**World Tree** — the plan's steps and gates, one line per step; open one to see which judgments it tested and what came out.
 
 **Deliverables** — at close, the artefacts accepted for each step appear as DSH's native deliverable cards; what changed each turn is in DSH's native change cards.
 

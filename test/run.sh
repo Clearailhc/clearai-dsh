@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # 跑全部测试。三份跑源,两份跑**装出来的那一份**(宿主半与客户端半)。
 #
-#   test/kernel.test.mjs   状态怎么算:准入、算术、闸门、投影 fold、预算与续跑
-#   test/host.test.mjs     人按下的那一下会变成什么:人门路由、消息署名、折进投影
+#   test/kernel.test.mjs   状态怎么算:准入、算术、闸门、投影 fold、原生 goal 守卫
+#   test/host.test.mjs     宿主半:投影单元、消息署名、折进投影、降级与健康事实
 #   test/client.test.mjs   客户端接线:注册在哪个插座、钥匙是什么、预设进出
 #   test/ontology.test.mjs 本体:声明与折法/内核的**交叉校验**(声明了却没接线必须当场红)
 #   test/truth-table.test.mjs 真值表:机制声明去问代码,并校验生成物与源同步
