@@ -205,7 +205,7 @@ window.__ModuleLoader__.load({
 .clearai-treerow:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-treerow[data-sel="1"]{background:var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))}
 /* ── 本体格(第六阶段):期刊式排版 + 进度轨。颜色只用主题令牌,深浅色跟着宿主走。 ── */
-.clearai-atlas{height:100%;overflow-y:auto;box-sizing:border-box;padding:22px 26px 36px;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-primary)}
+.clearai-atlas{height:100%;overflow-y:auto;box-sizing:border-box;padding:22px 26px 180px;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-primary)}
 .clearai-serif,.clearai-question,.clearai-row-title,.clearai-card-title,.clearai-star>span{font-family:ui-serif,"Songti SC","Noto Serif SC","Source Han Serif SC",Georgia,serif}
 .clearai-head{display:flex;flex-direction:column;gap:6px;padding-bottom:16px;margin-bottom:16px;border-bottom:.5px solid var(--dsw-alias-border-l2)}
 .clearai-question{font-size:19px;font-weight:600;line-height:1.45;letter-spacing:.01em}
@@ -314,10 +314,12 @@ window.__ModuleLoader__.load({
 		/** 把上面那段 CSS 挂进页面(带 data-plugin 标记,宿主按包名记账,卸载时收掉)。 */
 		function installStyles() {
 			if (typeof document === 'undefined') return () => {}
-			const existing = document.querySelector('style[data-plugin="clearai-dsh"]')
+			/** 只认自己那一张:图组件的样式表也挂着 data-plugin="clearai-dsh"(data-clearai="xyflow"),按包名查会误以为已经挂过。 */
+			const existing = document.querySelector('style[data-plugin="clearai-dsh"][data-clearai="panel"]')
 			if (existing !== null) return () => {}
 			const tag = document.createElement('style')
 			tag.dataset.plugin = 'clearai-dsh'
+			tag.dataset.clearai = 'panel'
 			tag.textContent = CSS
 			document.head.append(tag)
 			return () => {
@@ -1191,7 +1193,7 @@ window.__ModuleLoader__.load({
 			const gap = total <= 1 ? 0 : Math.min(TREE.arcGap, slot * 0.5)
 			return { strokeDasharray: `${slot - gap} ${circumference - slot + gap}`, strokeDashoffset: -(index * slot) }
 		}
-		/** 要画的弧:只取闸门轮次,封顶 3 段(超出的轮数由行右的 `∞N` 徽标承载)。 */
+		/** 要画的弧:只取闸门轮次,封顶 3 段(超出的轮数由行右的 「N 轮」承载)。 */
 		function treeArcs(marks) {
 			// 无事发生(一次就过)= 不画弧:节点保持一个干净的圆点。
 			if (marks.fails === 0 && marks.rounds <= 1) return []
@@ -1231,7 +1233,8 @@ window.__ModuleLoader__.load({
 			/** 页眉那一句:计划的首个非空行,过长再截(整篇在 tooltip 与「计划文档」里)。 */
 			const briefLine = String(plan.brief ?? '').split('\n').map((line) => line.trim()).find((line) => line !== '' && !line.startsWith('#')) ?? ''
 			const briefText = String(plan.brief ?? '').trim()
-			const titleText = briefLine === '' ? plan.id : `${brief(briefLine, 44)} · ${plan.id}`
+			/** 计划编号(p-…)不上屏:人认的是那一句思路。 */
+			const titleText = briefLine === '' ? '' : brief(briefLine, 44)
 			/** 外面点进来的聚焦优先;手动点行仍然有效(聚焦为 null 时用它)。 */
 			const focused = rowIndexOf(rows, focus)
 			const selected = focused === null ? manual : focused
@@ -1384,7 +1387,7 @@ window.__ModuleLoader__.load({
 											...(marks.greyed
 												? { color: 'var(--dsw-alias-label-secondary)', opacity: 0.55, textDecoration: 'line-through' }
 												: marks.done
-													? { opacity: 0.6, textDecoration: 'line-through' }
+													? { color: 'var(--dsw-alias-label-secondary)' }
 													: {}),
 										},
 									},
@@ -1393,10 +1396,11 @@ window.__ModuleLoader__.load({
 								stat === null ? null : h(
 									'span',
 									{ style: { flex: '0 0 auto', display: 'flex', gap: 6, ...S.faint, marginLeft: 'auto' } },
-									stat.marks.loops.rounds > 0
-										? h('span', { title: `${stat.marks.loops.rounds}${t(' 轮')}${stat.marks.loops.fails > 0 ? ` · 其中 ${stat.marks.loops.fails} 次被驳回` : ''}` }, `∞${stat.marks.loops.rounds}`)
+									/** 说人话:只有返工过才说「做了 N 轮」;起过独立核验就写「独立核验」。 */
+									stat.marks.loops.rounds > 1
+										? h('span', { title: `${stat.marks.loops.rounds}${t(' 轮')}${stat.marks.loops.fails > 0 ? ` · 其中 ${stat.marks.loops.fails} 次被驳回` : ''}` }, `${stat.marks.loops.rounds}${t(' 轮')}`)
 										: null,
-									stat.judges > 0 ? h('span', { title: `${t('起过 ')}${stat.judges}${t(' 次评估者')}` }, `${t('评 ')}${stat.judges}`) : null,
+									stat.judges > 0 ? h('span', { title: `${t('起过 ')}${stat.judges}${t(' 次评估者')}` }, t('独立核验')) : null,
 								),
 							)
 						}),
@@ -1879,6 +1883,7 @@ window.__ModuleLoader__.load({
 			/**
 			 * 小图(十来个点)不跑力导向:几个点、几条边时它常常把点排成一条线。
 			 * 改成一圈:连得最多的那个点居中(它是这张图的主语),其余按投影顺序绕一圈——确定、好读。
+			 * 点少(六个以内)时不放中心:边都是圈上的弦,不会从某个点身上穿过去、压住它的标签。
 			 */
 			const small = allNodes.length <= 14
 			const ring = (() => {
@@ -1888,7 +1893,7 @@ window.__ModuleLoader__.load({
 					if (degree.has(edge.from)) degree.set(edge.from, degree.get(edge.from) + 1)
 					if (degree.has(edge.to)) degree.set(edge.to, degree.get(edge.to) + 1)
 				}
-				const hub = allNodes.length >= 4 ? [...allNodes].sort((left, right) => degree.get(right.id) - degree.get(left.id))[0] : null
+				const hub = allNodes.length >= 7 ? [...allNodes].sort((left, right) => degree.get(right.id) - degree.get(left.id))[0] : null
 				const around = allNodes.filter((node) => node !== hub)
 				const radius = 120 + around.length * 14
 				const out = new Map()

@@ -510,6 +510,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	
 	check('对象的人话名字表也在缝上(交叉校验要用它:声明里每个对象都得有名字)', components.LOOP_LABEL !== undefined && components.LOOP_LABEL.hypothesis === '命题' && components.LOOP_LABEL.fact === '事实')
 	check('不再有自建预览组件(预览交给 DSH 原生文档预览)', components.PreviewTab === undefined)
+	/** 真 DSH 里实测:图组件的样式表也带 data-plugin="clearai-dsh",按包名判「已挂过」会让面板 CSS 整张不挂。 */
+	check('面板样式表按自己的标记查重(不被图组件那张挡住)', source.includes(`style[data-plugin="clearai-dsh"][data-clearai="panel"]`) && source.includes(`tag.dataset.clearai = 'panel'`))
 
 	const view = {
 		sessionId: 's1',
