@@ -1,0 +1,16 @@
+【lh-factory-2 · 长程三 · 生产分析(会话二):九月数据与口径变化】
+  工具调用 8 次:Frame×1 CreatePlan×2 AdvancePlan×3 ClosePlan×1 Conclude×1
+  变更:goal/set×1 plan/created×1 observation/recorded×4 admission/checked×3 evidence/recorded×9 step/advanced×3 block/cleared×3 plan/closed×1 audit/dispatched×1 audit/settled×1 goal/closed×1 fact/promoted×4
+  目标:achieved · 计划 3 步 · 未落定 (无)
+  ✓ [不变量] 没有跳过准入的推进(每个 step/advanced 之前都有该步的 admission/checked)
+  ✓ [不变量] 评估者没有悬空(每个 audit/dispatched 都有 audit/settled)
+  ✓ [不变量] 证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)
+  ✓ [不变量] 升格与证据等级自洽(没到级不升格,到了级必须升格)
+  ✓ [不变量] 声明的物证真的在盘上(主线步骤的 artifacts)
+  ✓ [剧本] 读到了会话一的事实(同步进本会话)
+  ✗ [剧本] 「定义已变」出现过(良率口径改了) — 没出现
+  ✓ [剧本] 有推翻证据(换批次后良率恢复的说法不成立)
+  ✓ [剧本] 复检旧事实的判断写了 retests
+  ✗ [剧本] 旧事实遇到反例时当场问了人(fact/reviewed) — fact/reviewed=0 · 本会话账上的事实 4
+  ✓ [剧本] 结案了
+  结果:9 通过,2 失败
