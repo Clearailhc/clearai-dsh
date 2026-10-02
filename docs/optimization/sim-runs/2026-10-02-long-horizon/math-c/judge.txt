@@ -1,0 +1,16 @@
+【lh-math · 长程一 · 数学:七条整数说法的甄别】
+  工具调用 9 次:Frame×1 CreatePlan×1 AdvancePlan×5 ClosePlan×1 Conclude×1
+  变更:goal/set×1 plan/created×1 observation/recorded×7 admission/checked×5 evidence/recorded×7 step/advanced×5 block/cleared×5 plan/closed×1 audit/dispatched×1 audit/settled×1 goal/closed×1
+  目标:achieved · 计划 5 步 · 未落定 (无)
+  ✓ [不变量] 没有跳过准入的推进(每个 step/advanced 之前都有该步的 admission/checked)
+  ✓ [不变量] 评估者没有悬空(每个 audit/dispatched 都有 audit/settled)
+  ✓ [不变量] 证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)
+  ✓ [不变量] 升格与证据等级自洽(没到级不升格,到了级必须升格)
+  ✓ [不变量] 声明的物证真的在盘上(主线步骤的 artifacts)
+  ✓ [剧本] 七条都立成了判断(≥ 7)
+  ✗ [剧本] 有推翻,也有说不清 — support,support,support,support,support,support,support
+  ✗ [剧本] 用到了 L1(文献)与 L2/L3(计算)两类等级 — L1
+  ✓ [剧本] 至少一次独立核验
+  ✓ [剧本] 结案了
+  ✓ [剧本] 升格的事实 ≤ 2 条(七条里只有一条真、可证)
+  结果:9 通过,2 失败

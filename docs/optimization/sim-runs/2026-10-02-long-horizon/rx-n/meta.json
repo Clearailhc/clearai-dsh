@@ -1,0 +1,9 @@
+{
+  "workspace": "/tmp/claude-0/runs/rx-n/ws",
+  "port": 45969,
+  "startedAt": "2026-10-02T22:07:05.572Z",
+  "answers": {
+    "release": "先不放行"
+  },
+  "auditTimeoutMs": 900000
+}
