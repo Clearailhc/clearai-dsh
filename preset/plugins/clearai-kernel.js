@@ -2493,7 +2493,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Conclude',
 		description:
-			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成、达门槛的判断升格为事实、各步收下的产物声明为交付卡片。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
+			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成;评估者同时逐条判还活着的判断,判为支持的(或中途已达门槛的)升格为事实;各步收下的产物声明为交付卡片。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -2565,15 +2565,22 @@ export function apply(ctx, config = {}) {
 			 * 第四阶段删掉的两道门:「跳级没写理由」(`ExplainLevelSkip` 整套删除)与
 			 * 「将升格的命题没有断言形态」(降为缺口)。依据见 `docs/less-is-more-plan.zh-CN.md` 第四阶段。
 			 */
+			/**
+			 * **结案评估顺带判每条还活着的判断**(这一目标的、没被推翻过、还没成事实的)。
+			 *
+			 * 为什么:升格原来只看模型自己给步骤标的等级,而 L0–L2 允许自判——真跑里模型一律标 L1/L2,
+			 * 于是 9 次运行 0 条事实,跨会话复用与复检全部空转。结案这次独立评估是唯一必然发生的独立判断,
+			 * 让它逐条读判断:它判「支持」的,与中途到了门槛的一样升格。不加新机制、不多派一次评估者。
+			 */
+			const candidates = derived.hypotheses.filter(
+				(hypothesis) =>
+					(typeof hypothesis.goal !== 'string' || hypothesis.goal === goal.id) &&
+					(hypothesis.status === 'alive' || hypothesis.status === 'proposed') &&
+					(hypothesis.refutations ?? 0) === 0 &&
+					!(state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id),
+			)
 			if (CFG.requireLandedEntities && derived.knowledge.mode === 'knowledge') {
-				const threshold = levelIndexOf(goal.promote_at_level)
-				const promotable = derived.hypotheses.filter(
-					(hypothesis) =>
-						(hypothesis.status === 'alive' || hypothesis.status === 'proposed') &&
-						(hypothesis.refutations ?? 0) === 0 &&
-						levelIndexOf(hypothesis.supportedLevel) >= threshold,
-				)
-				const offGraph = promotable.filter((hypothesis) => (hypothesis.unlanded ?? []).length > 0)
+				const offGraph = candidates.filter((hypothesis) => (hypothesis.unlanded ?? []).length > 0)
 				if (offGraph.length > 0) {
 					return fail(
 						'entities_unlanded',
@@ -2585,7 +2592,14 @@ export function apply(ctx, config = {}) {
 				}
 			}
 			const unfinished = plan === null ? [] : plan.steps.filter((step) => step.status === 'open')
-			const syntheticStep = { id: `goal:${goal.id}`, ordinal: 0, do: tr(`核验目标 ${goal.id} 的判据与转写忠实度`, `Check goal ${goal.id} against its criteria and transcription fidelity`), done_criteria: goal.done_criteria, artifacts: [], tests: null }
+			const syntheticStep = {
+				id: `goal:${goal.id}`,
+				ordinal: 0,
+				do: tr(`核验目标 ${goal.id} 的判据与转写忠实度`, `Check goal ${goal.id} against its criteria and transcription fidelity`),
+				done_criteria: goal.done_criteria,
+				artifacts: [],
+				tests: candidates.length === 0 ? null : { hypotheses: candidates.map((hypothesis) => hypothesis.id), level: goal.promote_at_level },
+			}
 			const gate = {
 				confirmed: [
 					...state.evidence.map((item) => ({ ref: `evidence:${item.id}`, bytes: 0, digest: `verdict=${item.verdict}` })),
@@ -2658,8 +2672,45 @@ export function apply(ctx, config = {}) {
 			 * 三样全零 = **没人碰过它**。不强制证实/证伪——但「没看过」不能被写成「没问题」,
 			 * 所以这里把它记进结案那条变更里,卡片与面板都说得出来。
 			 */
+			/** 结案评估对每条判断的结果,各记一份独立证据(等级记成目标的升格门槛:判它的是独立评估者)。 */
+			const goalOrigin = buildEvidenceOrigins({
+				cwd: sessionCwd(sessionId),
+				accepted: [],
+				confirmed: [],
+				cardPath: audit.cardPath ?? null,
+				evaluatorSession: audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? null,
+				basis: audit.basis,
+			})
+			const judged = new Map()
+			for (const result of audit.results ?? []) {
+				const hypothesis = candidates.find((item) => item.id === result.hypothesis || item.name === result.hypothesis)
+				if (hypothesis === undefined || judged.has(hypothesis.id)) continue
+				const evidenceId = `e-${Math.random().toString(36).slice(2, 8)}`
+				judged.set(hypothesis.id, { verdict: result.verdict, evidence: evidenceId })
+				mutations.push({
+					t: 'evidence/recorded',
+					id: evidenceId,
+					step: syntheticStep.id,
+					plan: plan?.id ?? 'goal',
+					hypothesis: hypothesis.id,
+					verdict: result.verdict,
+					level: goal.promote_at_level,
+					evaluator: 'independent',
+					basis: result.basis ?? audit.basis,
+					refs: goalOrigin.paths,
+					origins: goalOrigin.origins,
+					anchor: 'auditor',
+					basis_reviewable: true,
+				})
+			}
+			const refutedAtClose = [...judged].filter(([, item]) => item.verdict === 'refute').map(([id]) => id)
+			const factReview =
+				refutedAtClose.length === 0
+					? ''
+					: await reviewRefutedFacts(exec, sessionId, state, refutedAtClose, (audit.results ?? []).find((item) => item.verdict === 'refute')?.basis ?? audit.basis, mutations)
 			const untouched = derived.hypotheses.filter(
-				(hypothesis) => (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0,
+				(hypothesis) =>
+					!judged.has(hypothesis.id) && (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0,
 			)
 			mutations.push({ t: 'goal/closed', id: goal.id, status: 'achieved', verdict: 'support', note: args.note ?? null, unjudged: untouched.map((hypothesis) => hypothesis.id) })
 			const continuationNote = completeNativeGoal(exec.agent)
@@ -2688,7 +2739,11 @@ export function apply(ctx, config = {}) {
 				if ((state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id)) continue
 				if (hypothesis.status !== 'alive' && hypothesis.status !== 'proposed') continue
 				if (hypothesis.refutations > 0) continue
-				if (levelIndexOf(hypothesis.supportedLevel) < threshold) continue
+				const atClose = judged.get(hypothesis.id)
+				if (atClose?.verdict === 'refute') continue
+				const reached = levelIndexOf(hypothesis.supportedLevel) >= threshold
+				if (!reached && atClose?.verdict !== 'support') continue
+				const factLevel = reached ? hypothesis.supportedLevel : goal.promote_at_level
 				const assertions = Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null
 				/**
 				 * **第三道校验(升格时)**:断言涉及的谓词、类型、主体此刻都要在本体文件里成立。
@@ -2710,6 +2765,7 @@ export function apply(ctx, config = {}) {
 				const evidence = evidenceFor(state, hypothesis.id)
 					.filter((item) => item.verdict === 'support')
 					.map((item) => item.id)
+				if (atClose?.verdict === 'support') evidence.push(atClose.evidence)
 				/**
 				 * 升格这一刻它用到的词条的含义指纹:之后谁改了定义,这条事实就知道要复核。
 				 * 「用到」= 断言引用的,加上主张与边界原文里按词面提到的(模型很少写断言,见 fingerprintDefinitions)。
@@ -2722,7 +2778,7 @@ export function apply(ctx, config = {}) {
 				} catch {
 					definitions = null
 				}
-				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope: hypothesis.refute_when ?? null, level: hypothesis.supportedLevel ?? null, evidence, assertions, definitions }
+				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions }
 				const path = persistFact(sessionId, record)
 				/**
 				 * 事实带上**边界**(`scope` = 这条假设的推翻条件):没有边界的事实,下一轮没人敢用;
@@ -2740,7 +2796,7 @@ export function apply(ctx, config = {}) {
 					hypothesis: hypothesis.id,
 					text: hypothesis.claim,
 					scope: hypothesis.refute_when ?? null,
-					level: hypothesis.supportedLevel ?? null,
+					level: factLevel ?? null,
 					evidence,
 					assertions,
 					definitions,
@@ -2762,6 +2818,7 @@ export function apply(ctx, config = {}) {
 						? tr(`\n结案时有 ${untouched.length} 条判断**一次都没检验过**:${untouched.map((hypothesis) => `「${handleOf(hypothesis)}」`).join('、')}——没检验不是「没问题」,是「没看过」;它们留在账上,随时可以补一次检验。`, `\nAt conclusion, ${untouched.length} judgment(s) were **never tested**: ${untouched.map((hypothesis) => `"${handleOf(hypothesis)}"`).join(', ')}. Untested does not mean fine; it means not looked at. They stay in the ledger and can be tested any time.`)
 						: '') +
 					tr('\n被推翻与被替换的判断都留在记录里。', '\nRefuted and replaced judgments stay in the record.') +
+						factReview +
 					/** 「怎么做」也要攒下来:这次摸出的可复用做法写成原生技能,下次宿主会列出来。 */
 					tr('\n这次如果摸出了以后还会用的做法(怎么查、怎么算、怎么验),写成原生技能:.agents/skills/<名字>/SKILL.md(description 写清什么时候用)。', '\nIf this run found a method worth reusing (how to look up, compute or verify), write it as a native skill: .agents/skills/<name>/SKILL.md (with a description that says when to use it).') +
 					continuationNote +
@@ -3878,7 +3935,7 @@ export function apply(ctx, config = {}) {
 		},
 		Conclude: {
 			description:
-				'Conclude: hand the goal in for acceptance. This is the only way to complete a goal (the native "complete goal" is refused). The system **always** dispatches an independent evaluator to check the goal criteria and transcription fidelity item by item; only when the criteria are met does the goal conclude as achieved: the native goal is marked complete, judgments that reach the threshold are promoted to facts, and the outputs accepted by each step are declared as a deliverables card. Otherwise the goal stays open and the gaps come back. **Order**: before achieved, close the plan first (`ClosePlan`). Abandoning (`abandoned`) is not limited by this: the native goal is marked blocked with the reason, and a person decides whether to end it.',
+				'Conclude: hand the goal in for acceptance. This is the only way to complete a goal (the native "complete goal" is refused). The system **always** dispatches an independent evaluator to check the goal criteria and transcription fidelity item by item; only when the criteria are met does the goal conclude as achieved: the native goal is marked complete; the evaluator also judges each live judgment, and those it supports (or that already reached the threshold) are promoted to facts; and the outputs accepted by each step are declared as a deliverables card. Otherwise the goal stays open and the gaps come back. **Order**: before achieved, close the plan first (`ClosePlan`). Abandoning (`abandoned`) is not limited by this: the native goal is marked blocked with the reason, and a person decides whether to end it.',
 			params: {
 				outcome: 'achieved = criteria met; abandoned = give up after stating the blocker honestly',
 				note: 'Conclusion note',

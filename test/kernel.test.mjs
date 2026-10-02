@@ -1417,6 +1417,31 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const first2 = await callOn(first, A, 'Frame', { claim: '再看一次', done_criteria: '存在 lab/p3.txt', hypotheses: [{ claim: 'P 比 Q 省电', refute_when: 'Q 更省电', retests: fact.id }] })
 		check('本会话自己的事实也能用 retests 指(按事实 id 找到)', first2.ok === true, first2.code)
 	}
+
+	// ⑤ 结案评估逐条判判断:模型自判到 L1 的判断,被结案评估者判「支持」就升格;判「推翻」的不升格
+	{
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		const S = 'session-close-judges'
+		await callOn(host, S, 'Frame', { claim: 'R 与 T 哪个更稳?', done_criteria: '存在 lab/r.txt', hypotheses: [{ claim: 'R 比 T 更稳', refute_when: 'T 波动更小' }, { claim: 'T 比 R 更稳', refute_when: 'R 波动更小' }] })
+		const [steady, other] = host.service.state(S).hypotheses.map((item) => item.id)
+		await callOn(host, S, 'CreatePlan', { steps: [{ id: 'r1', do: '各测十次', artifacts: ['lab/r.txt'], done_criteria: 'lab/r.txt 含两组标准差', tests: { hypotheses: [steady, other], level: 'L1' } }] })
+		write('lab/r.txt', 'sd_r=0.2 sd_t=0.9\n')
+		await callOn(host, S, 'AdvancePlan', { step_id: 'r1', basis: 'lab/r.txt sd_r=0.2 sd_t=0.9', results: [{ hypothesis: steady, verdict: 'support' }, { hypothesis: other, verdict: 'refute' }] })
+		await callOn(host, S, 'ClosePlan', {})
+		const before = host.audits.length
+		host.nextVerdict = { holds: 'yes', basis: 'lab/r.txt 在,判据达成', shortfalls: [], results: [{ hypothesis: steady, verdict: 'support', basis: 'sd_r 0.2 小于 sd_t 0.9' }] }
+		const closed = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+		const raw = host.audits.at(-1)?.request?.prompt
+		const prompt = typeof raw === 'string' ? raw : (raw ?? []).map((block) => block?.text ?? '').join('\n')
+		check('结案评估任务书列出还活着的判断,被推翻的不列', prompt.includes(`· ${steady}:`) && !prompt.includes(`· ${other}:`), prompt.slice(0, 300))
+		check('结案只派一次评估者(不为判断另派)', host.audits.length === before + 1, String(host.audits.length - before))
+		const atClose = host.journal.filter((mutation) => mutation.t === 'evidence/recorded' && mutation.step === `goal:${host.service.state(S).goal.id}`)
+		check('结案评估的结果记成独立证据', atClose.length === 1 && atClose[0].hypothesis === steady && atClose[0].evaluator === 'independent', JSON.stringify(atClose))
+		const promoted = host.journal.filter((mutation) => mutation.t === 'fact/promoted')
+		check('自判只到 L1 的判断,经结案评估支持 ⇒ 升格', closed.ok === true && promoted.length === 1 && promoted[0].hypothesis === steady && promoted[0].evidence.includes(atClose[0].id), JSON.stringify(promoted))
+		check('被推翻的判断不升格', !promoted.some((mutation) => mutation.hypothesis === other))
+	}
 }
 
 console.log('\n【旧日志里的撤回 / 维持:面板不再发这两个动作,但历史照样折得出来】')
@@ -1510,6 +1535,8 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		})
 		check('前置:这一步交付成功(证据只碰到第一条假设)', delivered.ok === true, JSON.stringify(delivered.code ?? null))
 		await callOn(host, H, 'ClosePlan', { summary: '这一阶段做完了' })
+		// 结案评估者也没给第二条结果:它照旧是「没看过」
+		host.nextVerdict = { holds: 'yes', basis: '有结论文件', shortfalls: [], results: [] }
 		const closed = await callOn(host, H, 'Conclude', { outcome: 'achieved' })
 		check('结案成功(判据达成了)', closed.ok === true, JSON.stringify(closed.code ?? null))
 		const closedMutation = host.journal.filter((m) => m.t === 'goal/closed').at(-1)
@@ -1807,6 +1834,8 @@ console.log('\n【目标收尾:无条件派审计,只有评估者说达成才算
 		legacy: true,
 	})
 	check('前置:目标修订成功(材料变了)', revised.ok === true, String(revised.code))
+	// 结案评估者只判交付、不给判断结果:这里只看「被推翻的那条」不升格
+	thisHost.nextVerdict = { holds: 'yes', basis: '判据逐条核对通过,转写忠实', shortfalls: [], results: [] }
 	const achieved = await call('Conclude', { outcome: 'achieved' })
 	check('评估者说达成 → 结案', achieved.ok === true && achieved.code === 'goal_achieved', String(achieved.code))
 	check('目标级审计无条件派发', thisHost.audits.some((audit) => audit.request.label.includes('目标评估者')))
@@ -1987,7 +2016,8 @@ console.log('\n【领域本体写成文件:写入时单文件校验 · 读取时
 	const delivered = await call('AdvancePlan', { step_id: 'd1', verdict: 'support', basis: 'lab/o2.md 写明每炉次读数与参数' })
 	check('L0 步骤交付 → 通过', delivered.ok === true, `${String(delivered.code)} :: ${String(delivered.message).slice(0, 200)}`)
 	await call('ClosePlan', {})
-	thisHost.nextVerdict = { verdict: 'support', basis: '判据达成,转写忠实', shortfalls: [] }
+	// 结案评估者不给判断结果:这里只看到了门槛的那一条怎么升格
+	thisHost.nextVerdict = { holds: 'yes', basis: '判据达成,转写忠实', shortfalls: [], results: [] }
 	const concluded = await call('Conclude', { outcome: 'achieved' })
 	check('第一条目标达成 → 升格', concluded.ok === true && /写进长期知识/.test(String(concluded.message)))
 	check('成功结案提醒把可复用的做法写成原生技能', /\.agents\/skills\//.test(String(concluded.message)))
@@ -2280,7 +2310,11 @@ console.log('\n【同态结案:状态没变就不重复花钱请裁决】')
 	const host = makeHost()
 	apply(host.ctx, {})
 	const S = 'session-reuse'
-	host.nextVerdict = { verdict: 'support', basis: '判据逐条对上了', shortfalls: [] }
+	/**
+	 * 用「没达成」那条路测:达成时结案评估会给每条判断各落一条证据、升格事实,状态本来就变了;
+	 * 判据没达成时什么都不落,状态一字不变,正是该复用的形态。
+	 */
+	host.nextVerdict = { holds: 'no', basis: '判据还差一条读数', shortfalls: [], results: [] }
 	const goal = await callOn(host, S, 'Frame', {
 		claim: '同态结案会不会重复派评估者',
 		headline: '同态结案会不会重复派评估者',
@@ -2289,21 +2323,17 @@ console.log('\n【同态结案:状态没变就不重复花钱请裁决】')
 	})
 	check('前置:目标立起', goal.ok === true, String(goal.code))
 	const first = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-	check('前置:第一次结案走完(评估者裁决 support)', first.ok === true, String(first.code))
+	check('前置:第一次结案走完(评估者裁决没达成)', first.ok === false && first.code === 'goal_not_achieved', String(first.code))
 	const evaluators = () => host.audits.filter((audit) => String(audit.request?.label ?? '').includes('目标评估者')).length
 	check('第一次结案确实派过一次目标评估者', evaluators() === 1, String(evaluators()))
 
 	/**
 	 * **同态复用的判据是状态内容**(`auditDigest`:裁决种类 / 步 / 目标修订号 / 准入坐标 / 证据集合),
-	 * 不是"模型又喊了一次结案"。
-	 *
-	 * 这里把目标**原样退回 open**(证据、修订号、准入坐标都不动),再结一次:
-	 * digest 与上一次逐字相同 ⇒ 系统应当复用那条已经落定的裁决,而不是再派一个评估者。
+	 * 不是"模型又喊了一次结案"。状态没变再结一次:系统应当复用那条已经落定的裁决,而不是再派一个评估者。
 	 * 这条判据挡住的是真实运行里发生过的形态——零工具调用、状态没变,却每次重烧一两分钟。
 	 */
-	host.states.set(S, { ...host.service.state(S), goal: { ...host.service.state(S).goal, status: 'open' } })
 	const second = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-	check('第二次结案仍然成功(复用旧裁决)', second.ok === true, String(second.code))
+	check('第二次结案复用旧裁决(仍没达成)', second.ok === false && /复用了上一条独立裁决/.test(String(second.message)), String(second.code))
 	check('状态没变 ⇒ 不重复派遣(评估者仍然只有 1 个)', evaluators() === 1, String(evaluators()))
 	check('账上如实留下「这次没花钱」这条事实', host.journal.some((mutation) => mutation.t === 'audit/reused'), JSON.stringify(host.journal.filter((m) => String(m.t).startsWith('audit/')).map((m) => m.t)))
 }
