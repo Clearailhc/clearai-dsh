@@ -239,6 +239,30 @@
 
 **测试**:内核、宿主、客户端、长测、真值表、状态机文档同步;模拟宿主补上原生 goal 的守卫与提问卡;合并前用同样三个剧本再跑一次,与第二阶段基线对比。
 
+### 第四阶段的改动清单(2026-10-02)
+
+依据是第三阶段重跑(`docs/optimization/sim-runs/2026-10-02-p3/`):证伪那一场对一个「跑一次 python3」的任务,`Conclude` 被拦了四次、多花 7 次补救调用。逐次看,四次里三次来自这一阶段本就要删的门,剩下一次是门的提示指错了出口:
+
+1. 跳级没写理由 → 补 `ExplainLevelSkip`(这道门整套删除);
+2. 到门槛的命题没有断言形态 → 立概念、立谓词、用 `Frame` 重列(这道门删除,降为只给模型的缺口);
+3. `Frame` 修订因断言主体没登记被拒 → 登记实例;
+4. 断言主体没落图 → 提示说「先 RegisterInstance」,可实例已经登记了,判据其实要的是一条**边**,模型只好再 `Assert` 一句与断言一字不差的话。
+
+| 改什么 | 代码 | 用户看得见的变化 |
+|---|---|---|
+| 关口 3 → 1 | `Conclude` 只留实体门:**将要升格的判断**里,每个断言主体都必须是实体图上带出处的节点(登记过的实例)。判据只看这几条——没到门槛的判断还不是结论,不欠这一笔;边由升格本身落下,不再要求另用 `Assert` 把同一句话再说一遍。删掉 `requireTypedPromotion` 与 `requireLevelReasons` 两个键 | 小任务结案不再被「跳级」「没有形态」拦 |
+| 缺口 7 → 3 | 只留:**判断没被任何证据碰过**(`untouched_claims`)、**判断只有散文没有断言**(`prose_only_claims`)、**断言主体没落图**(`entities_unlanded`,判据与实体门同一条:主体是不是图上的节点)。删掉 `no_language`、`unstructured_facts`、`levels_skipped`、`orphan_terms` | 卡上与面板上的缺口少一半;每条的「下一步」都指得到真出口 |
+| 删跳级理由 | `ExplainLevelSkip`、`level/skipped` 折法、派生的 `untouchedLevels` 与卡上「未走过 L0/L1」那一截;等级只决定谁来判,以及 L4 要人放行 | 卡上不再列「未走过的等级」 |
+| 计划工具 6 → 4 | `AmendPlan` / `RefinePlan` / `VoidPlanStep` 合并为 `RevisePlan`(`action: add / refine / void`,各自的校验不变);删 `CheckPlan`(每次工具返回都带运行态卡,它只是再打印一遍) | 无 |
+| 本体工具 8 → 4 | `RegisterTerm` / `RegisterPredicate` / `ReviseTerm` / `RevisePredicate` 合并为 `Define`:带 `range` 的是谓词,不带的是概念;**同 id 再定义即修订**——只许改名字、释义、别名,改含义(父概念 / 主词域 / 值域 / 单值性)照旧拒,要废止旧的、换新 id。`DeprecateTerm` / `DeprecatePredicate` 合并为 `Deprecate`。删 `QueryKnowledge`:进入知识模式时运行态卡已经主动带上相关的词汇、事实与冲突(知识预检),全文在 `clear/knowledge/`;它在两轮共六场模拟里一次都没被调用 | 无 |
+| 账本形状 | 变更事件名都不改(`ontology/term_added`、`plan/amended` 等),旧日志照旧折得出来;旧日志里的 `level/skipped` 被安静跳过。`STATE_VERSION` 升一版 | 旧会话照样打得开 |
+
+工具因此从 19 件收到 10 件,与第四节一致:`Frame`、`Conclude`、`CreatePlan`、`AdvancePlan`、`RevisePlan`、`ClosePlan`、`Define`、`Deprecate`、`RegisterInstance`、`Assert`。
+
+**提示词**这一阶段仍只改到「名字与行为对得上」;三段式改写留到第五阶段。
+
+**测试**:内核、领域语言、对照、可读性、长测、真值表、状态机与时序图同步;合并前用同样三个剧本再跑一次,与第二阶段基线、第三阶段重跑对比。
+
 ## 九、请你确认
 
 1. 第二节的分工,尤其「ClearAI 只做三件事」,是否准确?
