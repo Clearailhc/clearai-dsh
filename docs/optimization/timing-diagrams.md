@@ -176,14 +176,13 @@ sequenceDiagram
     end
 ```
 
-Current status: admission is a mechanism. The read-only recovery discipline was prompt-only and
-was dropped when the prompt shrank to three sections (phase 5); what remains is one line in the
+Current status: admission is a mechanism. The read-only recovery discipline is one line in the
 identity section (`clearai/identity`): when an outcome is unknown, observe the current facts before
 retrying. Making it a boundary needs host-side cooperation and is a later topic.
 
 ## 4. Competing-routes path · implemented
 
-Worldlines were removed in phase 2. Two routes that differ in kind are two competing
+Two routes that differ in kind are two competing
 hypotheses, each tested by one step; the parallelism is the host's own subagents.
 
 ```mermaid
@@ -224,11 +223,10 @@ Key points:
 
 ## 5. Domain-ontology path · implemented (fold, verbs and panel all ship)
 
-**Purpose**: to say how vocabulary and assertions enter the ledger and how they become graphs. The ontology
+**Purpose**: to say how vocabulary and assertions are written to files and how they become graphs. The ontology
 is a JSON file tree under `clear/ontology/` that the model writes with native file tools; the host checks
 each write, folds the files into `state.lexicon` via `workspace/synced`, and derives assertions, conflicts
-and graphs from it. The four ontology tools (`Define` / `Deprecate` / `RegisterInstance` / `Assert`) were
-removed; the panel is read-only.
+and graphs from it. There are no dedicated ontology tools; the panel is read-only.
 
 ```mermaid
 sequenceDiagram

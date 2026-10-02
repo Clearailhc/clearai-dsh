@@ -4,15 +4,15 @@
 > The source of record is `docs/optimization/truth-table.json`; edit it and run `node tools/build-truth-table.mjs`.
 > Cross-checking lives in `node tools/verify-truth-table.mjs`.
 
-This table answers one question: **what the current code actually guarantees**. It does not describe wishes — `Design only` and `Removed` mean exactly that.
+This table answers one question: **what the current code actually guarantees**. It does not describe wishes — `Design only` means exactly that.
 
 ## Counts
 
-- Mechanisms: **76**
-- By status: Implemented 50 · Design only 1 · Removed 25
-- By strength: Hard boundary 41 · Advisory 7 · Native 3 · Deprecated 25
-- By destination: stays design-only 1 · deleted and accounted 25
-- Actually blocking execution: **21**
+- Mechanisms: **51**
+- By status: Implemented 50 · Design only 1
+- By strength: Hard boundary 41 · Advisory 7 · Native 3
+- By destination: stays design-only 1
+- Actually blocking execution: **19**
 - Carrying a known mismatch between docs/comments and code: **1**
 
 ## Code constant snapshot
@@ -33,8 +33,6 @@ This section is exported from code, not written by hand:
 | `hypothesis-registry` | Hypothesis registry and derived state | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Frame hypotheses` |
 | `criteria-required` | Criteria-before-work enforcement | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js validateSteps` |
 | `formal-plan` | Formal plan | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | `preset/plugins/clearai-kernel.js CreatePlan` |
-| `plan-review` | Removed: plan review stamp | Epistemic | Removed | Deprecated | None | human | no | — |
-| `plan-reauthorize` | Removed: re-present a plan for review | Epistemic | Removed | Deprecated | None | model | no | — |
 | `advance-plan` | AdvancePlan: the only completion verb | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | `preset/plugins/clearai-kernel.js AdvancePlan` |
 | `plan-amend-no-progress` | RevisePlan (add / refine / void) does not move progress | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js RevisePlan` |
 | `admission` | Admission: intake only, never a verdict | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js admission` |
@@ -44,37 +42,24 @@ This section is exported from code, not written by hand:
 | `evidence-record` | Evidence recording | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `fact-promotion` | Fact promotion | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js persistFact` |
 | `history-retention` | Append-only history | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/fold.js（全体 case 无删除分支）` |
-| `worldline-fork` | Removed: Worldline fork with independent working copies | Epistemic | Removed | Deprecated | Authoritative | model | no | — |
-| `worldline-metric` | Removed: Pre-registered metric and arithmetic convergence | Epistemic | Removed | Deprecated | Authoritative | system | yes | — |
-| `worldline-adopt` | Removed: Worldline adoption is a human act | Epistemic | Removed | Deprecated | Authoritative | human | no | — |
 | `block-threshold` | Consecutive-block threshold, a quality gate | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js blockedThreshold` |
-| `skill-candidate` | Removed: Skills default to candidate until a human promotes them | Epistemic | Removed | Deprecated | Authoritative | model | no | — |
-| `memory-write` | Removed: Memory write with field contract and title dedup | Epistemic | Removed | Deprecated | Authoritative | model | no | — |
 | `l4-universal-gate` | A universal L4 gate over every evaluation | Epistemic | Design only | Advisory | None | human | no | `docs/known-gaps.md` |
 | `verification-lifecycle` | Verification lifecycle: which guarantees are live | Epistemic | Implemented | Advisory | None | system | no | `preset/plugins/clearai-kernel.js countBlock` |
 | `fact-retraction` | Fact retraction by human decision | Epistemic | Implemented | Hard boundary | Authoritative | human | no | `preset/plugins/clearai-kernel.js reviewRefutedFacts` |
 | `observation-provenance` | Observation provenance: declared sources vs producers | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/ontology.js VERIFICATION_LOOP` |
-| `plan-auto-confirm` | Removed: unattended plans auto-confirmed themselves | Epistemic | Removed | Deprecated | None | system | no | — |
 | `ontology-lexicon-events` | Domain vocabulary events fold into state.lexicon | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js applyLexiconMutation` |
 | `assertion-validation` | Assertion shape validation (before anything lands) | Epistemic | Implemented | Hard boundary | Authoritative | model | yes | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | Ontology and entity graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js graphProjection` |
 | `ontology-files` | Domain ontology as files (three checks) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA` |
-| `ontology-verbs` | Named verbs for the domain vocabulary, and the shelf | Epistemic | Removed | Deprecated | None | model | no | — |
-| `entity-registration` | Entity registration (instances as a first-class write path) | Epistemic | Removed | Deprecated | None | model | no | — |
-| `entity-assertion` | Entity assertion (edge holds on record) | Epistemic | Removed | Deprecated | None | model | no | — |
 | `entity-gate` | Entity gate (the only structural gate at Conclude) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
-| `level-skip-reason` | Removed: level skips need a named reason | Epistemic | Removed | Deprecated | None | model | no | — |
 | `criteria-revision-gate` | Criterion revisions need an independent verdict | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Frame` |
 | `audit-digest-reuse` | Verdicts are reused by material digest (same state, no re-dispatch) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js auditDigest` |
 | `workspace-files-sync` | Workspace file sync (accumulated facts and ontology live in files) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile` |
 | `artifact-path-exclusive` | Exclusive artifact paths (no two steps in a plan declare the same artefact) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js validateSteps` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | `preset/plugins/prompts.js loop` |
-| `scout-precommit` | Removed: Pre-commit reconnaissance | Harness | Removed | Deprecated | Authoritative | system | no | — |
-| `map-scouts` | Removed: Parallel scouting with caps | Harness | Removed | Deprecated | Non-authoritative | model | no | — |
 | `evaluator-readonly-face` | Evaluator read-only tool face | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js resolveToolFace` |
-| `executor-tool-face` | Removed: Worldline executor face, no plan/goal verbs | Harness | Removed | Deprecated | Authoritative | system | yes | — |
 | `tool-trimming` | Tool face trimmed by the contribution table | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js MECHANISM_TOOLS` |
 | `native-todo-disabled` | Native working tools (todo/subagent/workflow/ralph) mounted | Harness | Implemented | Hard boundary | None | system | no | `preset/agent.cordis.yml 工作方式段` |
 | `native-goal-disabled` | Native goal tool and command mounted; the goal layer sits on the native goal | Harness | Implemented | Hard boundary | None | system | no | `preset/agent.cordis.yml` |
@@ -82,23 +67,13 @@ This section is exported from code, not written by hand:
 | `subagent-trimmed` | Native working tools are mounted (todo / subagents / workflow / ralph) | Harness | Implemented | Hard boundary | None | system | no | `preset/agent.cordis.yml` |
 | `bash-deny-rules` | Bash deny rules | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js 危险命令匹配` |
 | `protected-roots` | Protected roots the model cannot write | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js protectedPath` |
-| `git-ledger` | Removed: Append-only git ledger, always a side ledger (never the user's repo) | Harness | Removed | Deprecated | Authoritative | system | no | — |
-| `kernel-panic-recovery` | Removed: read-only downgraded recovery after engine-level failure | Harness | Removed | Deprecated | None | model | no | — |
-| `auto-continuation` | Removed: ClearAI-owned continuation window | Harness | Removed | Deprecated | None | system | no | — |
-| `max-auto-turns` | Removed: ClearAI continuation round budget | Harness | Removed | Deprecated | None | system | no | — |
-| `autonomy-config` | Removed: autonomy run tier | Harness | Removed | Deprecated | None | system | no | — |
 | `runtime-card` | Per-turn runtime card | Harness | Implemented | Advisory | None | system | no | `ui/lib/fold.js renderCard` |
 | `prompt-sections` | Prompt sections (3 defined / 3 in place) | Harness | Implemented | Advisory | None | system | no | `preset/plugins/prompts.js SECTIONS` |
-| `exploration-zone` | Removed: the exploration zone as a named mode | Harness | Removed | Deprecated | Non-authoritative | model | no | — |
 | `subrun-lifecycle` | Evaluator sub-run lifecycle (one-shot handle, recovery from the child log) | Harness | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js dispatchSubRun` |
 | `host-invariants` | Host-side invariants (five contracts, judged before the append) | Harness | Implemented | Hard boundary | Authoritative | system | yes | `ui/lib/invariant.js（五条契约 + 用生产折法 applyEvent 推进）` |
-| `set-autonomy` | Removed: switching the run tier from the panel | Harness | Removed | Deprecated | None | human | no | — |
-| `budget-tiers` | Removed: 6-round / 512-round budget tiers | Harness | Removed | Deprecated | None | system | no | — |
 | `non-authoritative-isolation` | Non-authoritative paths cannot write the authoritative ledger | Harness | Implemented | Hard boundary | None | system | yes | `test/authority-boundary.test.mjs` |
-| `ledger-exploration-snapshots` | Removed: Workspace snapshot at the turn boundary | Harness | Removed | Deprecated | Authoritative | system | no | — |
 | `durable-dispatch-facts` | Dispatch facts land independently, before the first await | Harness | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js landFact pendingFacts withPendingFacts` |
 | `goal-complete-guard` | Guard: the native goal completes only through Conclude | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js update_goal` |
-| `human-gate-actions` | Removed: human-gate action whitelist | Host | Removed | Deprecated | None | human | no | — |
 | `context-pruning` | Context pruning and compaction, native to the host | Host | Implemented | Native | None | system | no | `preset/agent.cordis.yml compaction` |
 | `model-routing` | Model routing and switching, host-native and not owned by ClearAI | Host | Implemented | Native | None | host | no | `宿主平面（ClearAI 未注册任何 provider/model 状态）` |
 | `host-read-face-degradation` | Host read faces degrade to empty state instead of throwing | Host | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/index.js sessionsOf` |
@@ -115,7 +90,7 @@ This section is exported from code, not written by hand:
 - **Output**: mutation goal/set;同时在宿主原生 goal 上建(或改)一条目标,由原生的目标驱动负责续跑
 - **Blocks execution**: no
 - **Native alternative**: dsh-tool-goal / dsh-command-goal(目标的续跑与展示)
-- **Rationale**: 目标与判据必须在工作开始前落账,否则完成度无从派生。续跑交给原生 goal:ClearAI 只决定「什么算完成」,不再自己维护一套续跑窗口。
+- **Rationale**: 目标与判据必须在工作开始前落账,否则完成度无从派生。续跑交给原生 goal:ClearAI 只决定「什么算完成」。
 - **Code**: preset/plugins/clearai-kernel.js Frame; attachNativeGoal; ui/lib/fold.js case 'goal/set'
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
@@ -173,30 +148,6 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: minBriefChars
 - **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
-### `plan-review` · Removed: plan review stamp
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: human
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: dsh-plan-mode 的审阅卡（ClearAI 借用原生审阅界面，不借账）
-- **Rationale**: 计划授权记号删了(第三阶段):它从来不是门——未授权不挡推进,第一次交付就按事实补写。要人在动手前看计划,用原生 /plan(plan-mode 已挂上);ClearAI 不再另起一张审阅卡。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `plan-reauthorize` · Removed: re-present a plan for review
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 审阅记号删了,重新呈递也就没有对象。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
 ### `advance-plan` · AdvancePlan: the only completion verb
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: model
@@ -218,7 +169,7 @@ This section is exported from code, not written by hand:
 - **Output**: plan/amended, plan/refined, plan/voided（进度不变）
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口(第四阶段把 AmendPlan / RefinePlan / VoidPlanStep 合并为 RevisePlan,各自的校验不变,变更事件名不变)。
+- **Rationale**: 进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口 RevisePlan(补步、改判据、作废,各有自己的校验)。
 - **Code**: preset/plugins/clearai-kernel.js RevisePlan; ui/lib/fold.js/323/330
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/loop-philosophy.zh-CN.md
@@ -270,7 +221,7 @@ This section is exported from code, not written by hand:
 - **Output**: 人放行 ⇒ 落 human/released 再交评估者;不放行 / 没人能答 ⇒ 拒收
 - **Blocks execution**: yes
 - **Native alternative**: 宿主 userQuestions(原生提问卡)
-- **Rationale**: L4 意味着高代价或不可逆,必须有人按的那一下。门在交付那次调用里当场开、当场关,不再挂在收件箱里等。范围是步骤轴——覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。
+- **Rationale**: L4 意味着高代价或不可逆,必须有人按的那一下。门在交付那次调用里当场开、当场关。范围是步骤轴——覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。
 - **Code**: preset/plugins/clearai-kernel.js l4Delivery; askHuman; ui/lib/fold.js case 'human/released'
 - **Tests**: test/kernel.test.mjs · **Config**: l4RequiresHumanRelease=true, l4RejectSelfWritten=true
 - **Prompt**: clearai/loop · **Docs**: docs/known-gaps.zh-CN.md
@@ -313,48 +264,6 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/loop-philosophy.zh-CN.md
 
-### `worldline-fork` · Removed: Worldline fork with independent working copies
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: model
-- **Trigger**: 模型调用 ForkPlan 且给出互斥分支与预注册指标
-- **Input**: branches[], decide_by（尺子:量 = 口径 + 方向）
-- **Output**: mutation fork/created, worldline/prepared, worldline/executing, worldline/executed, branch/delivered
-- **Blocks execution**: no
-- **Native alternative**: dsh-tool-subagent / dsh-tool-workflow
-- **Rationale**: 「少即是多」第二阶段交还宿主:并行探索就是并行检验——竞争路线是竞争的假设,各由一个步骤检验,判据事先写好;并行交给原生子任务。代价是失去每条路线各自的文件副本,由「产物路径不重叠」兜住各自的产出。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `worldline-metric` · Removed: Pre-registered metric and arithmetic convergence
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: ConvergeFork
-- **Input**: 各分支读数 + 预注册尺子
-- **Output**: mutation fork/recommended（读数凑齐即落推荐，只记事实）；fork/converged；算不出来 → fork/undecidable，交人
-- **Blocks execution**: yes
-- **Native alternative**: dsh-tool-subagent / dsh-tool-workflow
-- **Rationale**: 「少即是多」第二阶段交还宿主:「同一把尺子」就是事先写下的判据;两条读数是否可比交给独立评估者。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `worldline-adopt` · Removed: Worldline adoption is a human act
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: human
-- **Trigger**: 人在面板上执行 adopt_branch / abandon_fork
-- **Input**: fork id, branch id, reason
-- **Output**: user 来源消息折进投影，写 by:'user'
-- **Blocks execution**: no
-- **Native alternative**: dsh-tool-subagent / dsh-tool-workflow
-- **Rationale**: 「少即是多」第二阶段交还宿主:落选就是被推翻的假设;两条都成立而互相矛盾时作为冲突交给人,不再有单独的采纳动作。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
 ### `block-threshold` · Consecutive-block threshold, a quality gate
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
@@ -363,22 +272,10 @@ This section is exported from code, not written by hand:
 - **Output**: 达阈值 → 计划置 blocked,当场问人(按缺口再改 / 作废这一步);没人能答 ⇒ 原生 goal 置阻塞(clearai-needs-human)
 - **Blocks execution**: yes
 - **Native alternative**: none
-- **Rationale**: 它是质量闸不是预算，因此不再按档取值。
+- **Rationale**: 它是质量闸不是预算，因此不按档取值。
 - **Code**: preset/plugins/clearai-kernel.js blockedThreshold; escalateBlocked; ui/lib/fold.js case 'block/counted'
 - **Tests**: test/kernel.test.mjs · **Config**: blockedThreshold=2（预设显式值）
 - **Prompt**: clearai/loop · **Docs**: docs/loop-philosophy.zh-CN.md
-
-### `human-gate-actions` · Removed: human-gate action whitelist
-
-- **Layer**: Host · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: human
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: 原生 ask_user_question(开门的那次调用当场问人)
-- **Rationale**: 面板写入口 /api/clearai/gate 第六阶段整条拿掉:本体编辑抽屉删了,要改词汇就在对话里说,模型用 Define / Deprecate 落同一本账;其余要人拍板的事第三阶段起由开门的那次调用当场问人。旧日志里人按过的动作仍由 fold.js 的 parseHumanGate 照旧折出来。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `single-loop` · Single-loop persona, no free multi-agent orchestration
 
@@ -399,38 +296,10 @@ This section is exported from code, not written by hand:
 - **Output**: 模型据四拍组织行为
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 七阶段在运行时的压缩表达。
+- **Rationale**: 认识论循环在运行时的压缩表达。
 - **Code**: preset/plugins/prompts.js loop; preset/agent.cordis.yml
 - **Tests**: test/prompt-sections.test.mjs（阶段 6 新增） · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/loop-philosophy.zh-CN.md
-
-### `scout-precommit` · Removed: Pre-commit reconnaissance
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: Frame 落定判据，且 input/ 有材料
-- **Input**: brief
-- **Output**: mutation scout/dispatched + scout/settled
-- **Blocks execution**: no
-- **Native alternative**: dsh-tool-subagent
-- **Rationale**: 「少即是多」第二阶段交还宿主:立约前要查资料,模型自己读,或派原生子任务只读去查。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `map-scouts` · Removed: Parallel scouting with caps
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: Non-authoritative · **Actor**: model
-- **Trigger**: 模型调用 MapScouts
-- **Input**: 任务清单
-- **Output**: 多个只读子 run 的结论
-- **Blocks execution**: no
-- **Native alternative**: dsh-tool-subagent / dsh-tool-workflow
-- **Rationale**: 「少即是多」第二阶段交还宿主:并行侦察由原生子任务承担。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `evaluator-readonly-face` · Evaluator read-only tool face
 
@@ -444,20 +313,6 @@ This section is exported from code, not written by hand:
 - **Code**: preset/plugins/clearai-kernel.js resolveToolFace; auditToolFilter
 - **Tests**: test/kernel.test.mjs · **Config**: auditToolFilter=[read,glob,grep,read_image]
 - **Prompt**: clearai/loop · **Docs**: docs/verification-loop.zh-CN.md
-
-### `executor-tool-face` · Removed: Worldline executor face, no plan/goal verbs
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: 派遣世界线执行者时
-- **Input**: 候选工具名
-- **Output**: 任务书即计划；执行者工具面里根本没有 CreatePlan/AdvancePlan/ClosePlan
-- **Blocks execution**: yes
-- **Native alternative**: dsh-tool-subagent
-- **Rationale**: 「少即是多」第二阶段交还宿主:世界线执行者随世界线一起删除。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `tool-trimming` · Tool face trimmed by the contribution table
 
@@ -491,7 +346,7 @@ This section is exported from code, not written by hand:
 - **Output**: tool-goal / command-goal 在面里;原生 goal 只能经 Conclude 完成
 - **Blocks execution**: no
 - **Native alternative**: dsh-tool-goal / dsh-command-goal
-- **Rationale**: 第三阶段起不再是两本账:原生 goal 是续跑与展示,ClearAI 的目标账决定「什么算完成」。Frame 建原生目标,Conclude 完成或置阻塞,守卫拦住直接完成。
+- **Rationale**: 只有一本账的分工:原生 goal 是续跑与展示,ClearAI 的目标账决定「什么算完成」。Frame 建原生目标,Conclude 完成或置阻塞,守卫拦住直接完成。
 - **Code**: preset/agent.cordis.yml
 - **Tests**: test/preset-composition.test.mjs（阶段 5 新增） · **Config**: —
 - **Prompt**: — · **Docs**: preset/agent.cordis.yml
@@ -546,68 +401,6 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/identity · **Docs**: docs/design-principles.zh-CN.md
 
-### `git-ledger` · Removed: Append-only git ledger, always a side ledger (never the user's repo)
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: 步骤交付点 / 文件历史查询 / 恢复
-- **Input**: 路径或交付点
-- **Output**: mutation git/committed, git/restored, git/snapshot
-- **Blocks execution**: no
-- **Native alternative**: dsh-workspace-changes
-- **Rationale**: 「少即是多」第二阶段交还宿主:文件改动历史由宿主的 workspace-changes 显示;不再维护自己的 git 账本,也不提供恢复(已接受的代价)。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `kernel-panic-recovery` · Removed: read-only downgraded recovery after engine-level failure
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 第五阶段随提示词收成三段删掉:它只由提示词承载(内核与宿主都没有对应的硬约束),细则是宿主异常类型的处置,属于宿主。身份段留下一句通用纪律:结局不明的操作先看当前事实,再谈重试。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `auto-continuation` · Removed: ClearAI-owned continuation window
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: system
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: dsh-goal-round-driver 执行轮数上限
-- **Rationale**: 续跑交给原生 goal(第三阶段):ClearAI 不再自己布防 / 按住 / 收兵一个续跑窗口。要人的时候由开门的调用当场问;没人能答就把原生 goal 置阻塞,续跑自然停。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `max-auto-turns` · Removed: ClearAI continuation round budget
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: system
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: dsh-goal-round-driver
-- **Rationale**: 续跑轮数上限归原生 goal 自己的缺省(maxGoalRounds),ClearAI 不再另设一个数。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `autonomy-config` · Removed: autonomy run tier
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: system
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 运行档删了(第三阶段):它剩下的唯一作用是挑两套澄清措辞之一,而「要不要人」本来就由门表达。澄清协议只剩一段。旧日志里人门消息形式的 `set_autonomy` 标记不再折进状态。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
 ### `runtime-card` · Per-turn runtime card
 
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: system
@@ -629,7 +422,7 @@ This section is exported from code, not written by hand:
 - **Output**: 系统提示词段集合
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 提示词解释行为,但按 P1 不是执行边界。第五阶段收成三段:身份(native)、循环(hard)、对人说话(advisory),每段的分类由 `test/prompt-sections.test.mjs` 与内容咬合。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。
+- **Rationale**: 提示词解释行为,但按 P1 不是执行边界。提示词分三段:身份(native)、循环(hard)、对人说话(advisory),每段的分类由 `test/prompt-sections.test.mjs` 与内容咬合。每个工具怎么用写在工具自己的说明里,现在是什么状态由运行态卡给。
 - **Code**: preset/plugins/prompts.js SECTIONS; preset/plugins/clearai-kernel.js systemPrompt
 - **Tests**: test/prompt-sections.test.mjs（阶段 6 新增） · **Config**: contributions.sections
 - **Prompt**: 自身 · **Docs**: docs/design-principles.zh-CN.md
@@ -646,34 +439,6 @@ This section is exported from code, not written by hand:
 - **Code**: preset/agent.cordis.yml compaction
 - **Tests**: test/client.test.mjs（装配） · **Config**: thresholdChars=8192, headChars=4096, tailChars=1024
 - **Prompt**: — · **Docs**: docs/loop-philosophy.zh-CN.md
-
-### `skill-candidate` · Removed: Skills default to candidate until a human promotes them
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: model
-- **Trigger**: 模型调用 SaveSkill
-- **Input**: name, description, 正文
-- **Output**: clear/skills/<name>/SKILL.md，status=candidate；人 promote_skill 后才 modelInvocable
-- **Blocks execution**: no
-- **Native alternative**: dsh-skill-filesystem / dsh-tool-skill
-- **Rationale**: 「少即是多」第二阶段交还宿主:技能走原生技能目录与 skill 工具,不再自带候选技能与采纳动作。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `memory-write` · Removed: Memory write with field contract and title dedup
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: model
-- **Trigger**: 模型调用 WriteMemory
-- **Input**: lesson 的五字段 / fact 的四字段
-- **Output**: clear/memory/**；按标题跨文件去重
-- **Blocks execution**: no
-- **Native alternative**: dsh-agent-instructions
-- **Rationale**: 「少即是多」第二阶段交还宿主:已确立的结论就是长期记忆(本体);项目说明走原生 PROJECT.md。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `model-routing` · Model routing and switching, host-native and not owned by ClearAI
 
@@ -694,22 +459,10 @@ This section is exported from code, not written by hand:
 - **Output**: 原生命令结果
 - **Blocks execution**: no
 - **Native alternative**: dsh-commands 注册表
-- **Rationale**: 菜单是 DSH 原生的人类命令通道。ClearAI 不再贡献自己的命令(第二阶段删除了 `/goal` `/plan` `/evidence` `/worldline` `/plan-review`):状态看界面,`/goal` 与 `/plan` 由原生接管。
+- **Rationale**: 菜单是 DSH 原生的人类命令通道。ClearAI 不贡献自己的命令:状态看界面,`/goal` 与 `/plan` 由原生接管。
 - **Code**: preset/agent.cordis.yml command-compact（唯一的命令行）
 - **Tests**: test/preset-composition.test.mjs · **Config**: —
 - **Prompt**: — · **Docs**: —
-
-### `exploration-zone` · Removed: the exploration zone as a named mode
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: Non-authoritative · **Actor**: model
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: dsh-tool-todo / dsh-tool-subagent
-- **Rationale**: 这个名字底下其实捆了三件事,而它们的状态各不相同:**结构性隔离**(非权威路径写不进权威账本)是一条真机制,已实现并由边界套件钉住,现在有自己的一行;**「工作不设限」**是原生工具挂回之后的既成事实,不需要额外机制;**「一块可以自由停留的区域」**是措辞——把它做成机制等于拿劝告冒充机制(P1),做成界面又只是给同一件事起两个名字。所以它作为**概念**注销,而「探索期产出有据可查」这件事另有落点:回合边界的账本快照。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `subrun-lifecycle` · Evaluator sub-run lifecycle (one-shot handle, recovery from the child log)
 
@@ -756,7 +509,7 @@ This section is exported from code, not written by hand:
 - **Output**: block/counted ⇒ plan/blocked ⇒ 当场问人
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行;「从没走过的等级」这条读数第四阶段删了。
+- **Rationale**: 验证机承诺的保证都有落点:①结果永远不来时不无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行。
 - **Code**: preset/plugins/clearai-kernel.js countBlock; docs/verification-loop.md
 - **Tests**: test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级理由整套删除); test/ontology.test.mjs(状态表逐行有落点) · **Config**: —
 - **Prompt**: — · **Docs**: docs/verification-loop.md
@@ -769,7 +522,7 @@ This section is exported from code, not written by hand:
 - **Output**: mutation fact/reviewed;事实文件追加一行;没人能答 ⇒ 事实标着待复核,原生 goal 置阻塞
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 事实带边界(scope):边界被触发时要有一个人能把它撤回,而撤回永不自动——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定。两种结局都落 fact/reviewed,撤回是终态:记录留着、不再作为「已知」被引用。
+- **Rationale**: 事实带边界(scope):边界被触发时要有一个人能把它撤回,而撤回永不自动——数据自己也可能错,所以「判证据不可靠、维持原事实」同样是一次要落账的决定。两种结局都落 fact/reviewed,撤回是终态:记录留着、不作为「已知」被引用。
 - **Code**: preset/plugins/clearai-kernel.js reviewRefutedFacts; markFactReviewed; ui/lib/fold.js case 'fact/reviewed'; preset/plugins/ontology.js VERIFICATION_LOOP
 - **Tests**: test/kernel.test.mjs(当场问人 / 两个结局 / 旧日志兼容) · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/verification-loop.zh-CN.md
@@ -777,51 +530,15 @@ This section is exported from code, not written by hand:
 ### `observation-provenance` · Observation provenance: declared sources vs producers
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: 交付时登记观测(主线或世界线)
+- **Trigger**: 交付时登记观测
 - **Input**: ref + note
-- **Output**: mutation observation/recorded（source 只有 self 与 scout）
+- **Output**: mutation observation/recorded（source 只有 self）
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 类型的职责是**只声明今天真的可表示的东西**:内核只写过 `self`(主线/世界线的交付)与 `scout`(侦察),所以 `source` 只声明这两个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。
+- **Rationale**: 类型的职责是**只声明今天真的可表示的东西**:内核只写 `self`(交付),所以 `source` 只声明这一个。一个取值要存在,必须同时有**生产者**与**消费它的决策**——否则它就是类型里的一句假话(声明了「有种观测来自人上传」,而那条路不存在)。`test/ontology.test.mjs` 现在把声明的取值集合与内核真的写过的集合**逐一对齐**:将来真接上一个人上传入口,那条断言会红,那时回来把取值加进声明。
 - **Code**: preset/plugins/ontology.js VERIFICATION_LOOP; preset/plugins/clearai-kernel.js buildEvidenceOrigins; ui/lib/fold.js case 'observation/recorded'
 - **Tests**: test/kernel.test.mjs; test/ontology.test.mjs（声明取值与生产者逐一对齐） · **Config**: —
 - **Prompt**: — · **Docs**: docs/verification-loop.md
-
-### `set-autonomy` · Removed: switching the run tier from the panel
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: human
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 「要不要人在场」是**运行时状态**,不是面板上的一个开关:有事要拍板就有门开着,没门就继续跑。那个档位还顺手把「计划经人确认」变成系统自己签的——用门代替开关之后,它没有存在的理由。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/known-gaps.md
-
-### `budget-tiers` · Removed: 6-round / 512-round budget tiers
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: system
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 轮数是**保险丝**,不是用户的档位。原先两档把「我在不在场」变成了配置项,还把「计划经人确认」变成系统自己签的。现在只有一个默认值(128),由**原生**的 round driver 执行上限。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/known-gaps.md
-
-### `plan-auto-confirm` · Removed: unattended plans auto-confirmed themselves
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: system
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 让系统替人签「这份计划经人确认」,那条证据就是系统自己伪造的——与 L4「人放行」是同一类病。门的意义在于「这一下是人按的」,所以 `confirmed_by` 只剩 `user` 与 `progress`。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/known-gaps.md
 
 ### `non-authoritative-isolation` · Non-authoritative paths cannot write the authoritative ledger
 
@@ -834,19 +551,6 @@ This section is exported from code, not written by hand:
 - **Code**: test/authority-boundary.test.mjs; ui/lib/fold.js LEGACY_GATE_ACTIONS
 - **Tests**: test/authority-boundary.test.mjs（14 项） · **Config**: —
 - **Prompt**: — · **Docs**: docs/loop-philosophy.zh-CN.md
-
-### `ledger-exploration-snapshots` · Removed: Workspace snapshot at the turn boundary
-
-- **Layer**: Harness · **Status**: Removed · **Strength**: Deprecated · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: 本会话调用过会改工作区的工具(write/edit/bash/pwsh),且工作区真的脏
-- **Output**: 一次账本提交 + mutation git/snapshot（只留台账）
-- **Blocks execution**: no
-- **Native alternative**: dsh-workspace-changes
-- **Rationale**: 「少即是多」第二阶段交还宿主:回合边界快照随账本一起删除;每轮改了什么看宿主的改动卡片。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
 
 ### `ontology-lexicon-events` · Domain vocabulary events fold into state.lexicon
 
@@ -913,20 +617,6 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs(写入时拒、读取时折图与问题、升格时不成立就不升格、改义标复核) · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/domain-ontology.zh-CN.md
 
-### `ontology-verbs` · Named verbs for the domain vocabulary, and the shelf
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
-- **Trigger**: 模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate
-- **Input**: id / label / gloss / aliases / parent / domain / range / functional / basis / reason
-- **Output**: mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 本体改成工作区里的 JSON 文件树,模型用原生文件工具直接写(clear/ontology/{concepts,relations,entities}/**.json);Define / Deprecate 与词汇货架 domain.md 一起删了:文件本身就是读面。改义从「拦」改成「查」:事实记下定义指纹,定义一改就标「需复核」。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
-
 ### `ontology-panel-graph` · Ontology panel: graph-first, read-only
 
 - **Layer**: UX · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: human
@@ -935,38 +625,10 @@ This section is exported from code, not written by hand:
 - **Output**: 本体图 / 实体图、按可信度分组的结论(已验证 / 待核验 / 验证中 / 不确定 / 已推翻 / 已替换)、点开一条的进度 → 可信度怎么变的 → 补充、节点小卡
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 第六阶段:面板只读,图是主角。词条增删改的抽屉与 /api/clearai/gate 一起删了——它是模型工具之外的第二个写入口,而人要改词汇在对话里说一句就够。界面用词与运行态卡同一套,内部编号不上屏。
+- **Rationale**: 面板只读,图是主角。面板不提供第二个写入口:人要改词汇,在对话里说一句,或直接改文件。界面用词与运行态卡同一套,内部编号不上屏。
 - **Code**: ui/lib/client.js GraphBand GraphInspector Atlas conclusionsOf; ui/lib/fold.js trustHistory inspectGraphSelection
 - **Tests**: test/client.test.mjs(本体格:图、结论分组、三段展开、节点小卡) · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `entity-registration` · Entity registration (instances as a first-class write path)
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
-- **Trigger**: 模型调 RegisterInstance
-- **Input**: {id, type, label, basis, provenance:{kind,ref}}
-- **Output**: entity/registered 变更 → state.entities[]（实体图节点，带出处）
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 实体改成 clear/ontology/entities/ 下的文件(带类型、依据与出处),RegisterInstance 删了。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
-
-### `entity-assertion` · Entity assertion (edge holds on record)
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
-- **Trigger**: 模型调 Assert
-- **Input**: {subject:{id,type}, predicate, object, evidence:{kind,ref}}
-- **Output**: entity/asserted 变更 → state.entityAssertions[]；投影里 kind='assertion'、source='asserted' 的边
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 实体之间的关系写在实体文件自己的 relations 里(每条带出处),Assert 删了;写下那一刻就进图这一点不变。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/domain-ontology.zh-CN.md
+- **Prompt**: — · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `entity-gate` · Entity gate (the only structural gate at Conclude)
 
@@ -976,22 +638,10 @@ This section is exported from code, not written by hand:
 - **Output**: 有主体不是实体图节点 ⇒ 拒(entities_unlanded),点名判断与主体;否则放行去独立评估
 - **Blocks execution**: yes
 - **Native alternative**: none
-- **Rationale**: 「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不再要求另用 Assert 把同一句话说一遍。第四阶段把关口从三道收到这一道。
+- **Rationale**: 「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不要求另用 Assert 把同一句话说一遍。
 - **Code**: preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph
 - **Tests**: test/kernel.test.mjs(实体门); test/contrast.test.mjs(B 组) · **Config**: requireLandedEntities
-- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/less-is-more-plan.zh-CN.md
-
-### `level-skip-reason` · Removed: level skips need a named reason
-
-- **Layer**: Epistemic · **Status**: Removed · **Strength**: Deprecated · **Authority**: None · **Actor**: model
-- **Trigger**: —
-- **Blocks execution**: no
-- **Native alternative**: none
-- **Rationale**: 第四阶段整套删除(ExplainLevelSkip、level/skipped、untouchedLevels、levels_skipped 缺口与 requireLevelReasons 门):第三阶段重跑里它让小任务结案时多被拦一次、多写一段理由,而等级的职责只有两件——谁来判,以及 L4 要人放行。旧日志里的 level/skipped 安静跳过。
-- **Destination**: deleted and accounted
-- **Code**: —
-- **Tests**: — · **Config**: —
-- **Prompt**: — · **Docs**: docs/less-is-more-plan.zh-CN.md
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `criteria-revision-gate` · Criterion revisions need an independent verdict
 
@@ -1009,7 +659,7 @@ This section is exported from code, not written by hand:
 ### `durable-dispatch-facts` · Dispatch facts land independently, before the first await
 
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: 派评估者（audit/dispatched）或派侦察（scout/dispatched）时
+- **Trigger**: 派评估者（audit/dispatched）时
 - **Input**: sessionId + 一条已经发生的事实（派发动作本身,不依赖子任务返回什么）
 - **Output**: pendingFacts 里一条待落账事实：本拍的 pre-step 兜底落账（drainPendingFacts）,同一个工具结果的 mutations 里也并进同一条（withPendingFacts,pending 在前、按 id 去重）
 - **Blocks execution**: no
@@ -1024,7 +674,7 @@ This section is exported from code, not written by hand:
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: 同一状态再次结案（Conclude / 证据审计）,算出来的 digest 与上一次相同
 - **Input**: 裁决种类 + 步 id + 目标修订号 + 计划步与产物 + 观测 + 原始假设 + 已升格事实 + 非审计来源证据 + 准入坐标里的产物
-- **Output**: 复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不再派评估者;材料一变 digest 就变,必然重派
+- **Output**: 复用那条已经落定的裁决（verdict ∈ support/refute/inconclusive）并落一条 audit/reused,不派评估者;材料一变 digest 就变,必然重派
 - **Blocks execution**: no
 - **Native alternative**: none
 - **Rationale**: digest 只盖材料,所以「重试一次就重烧两三分钟」这件事在机制上不可能发生。一次不确定的结案自己会落一条证据（anchor='auditor'）:把证据集合整个算进 digest,每重试一次 digest 就变一次,复用永远命中不了——而两次之间模型什么都没改,那不是新证据,是同一条评审自己的回声。派生读数（supportedLevel / refutations / inconclusive）同理被排除:它们由证据算出来,算进去等于把回声再算一遍。只有落定过、且真的给出了裁决的那一条才可复用:unknown 不是裁决,它说明那一次没成,正是该重派的理由。
@@ -1082,7 +732,7 @@ This section is exported from code, not written by hand:
 - **Rationale**: 原生 goal 挂上之后,完成有两条路;只留经过独立评估的那条,目标就仍然只有一个完成动词。
 - **Code**: preset/plugins/clearai-kernel.js update_goal; Conclude
 - **Tests**: test/kernel.test.mjs · **Config**: —
-- **Prompt**: clearai/loop · **Docs**: docs/less-is-more-plan.zh-CN.md
+- **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ---
 

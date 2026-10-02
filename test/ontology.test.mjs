@@ -115,7 +115,7 @@ console.log('\n【①′ 验证状态表:每一行都要指得出今天的落点
 	const LANDING = /(Unrepresentable by design|unrepresentable|not a state|Facts, not a state|derive\(\)|plan\/|audit\/|observation\/|evidence\/|human\/released|RevisePlan|VoidPlanStep|inFlight|block\/counted|tests: \{hypothesis, level\}|l4Delivery)/
 	const homeless = rows.filter((row) => !LANDING.test(row[3])).map((row) => row[1])
 	check('每一行都指得出今天的落点(事实 / 现算 / 刻意不可表示)', homeless.length === 0, homeless.join(','))
-	check('表头写明它是落点记录,不是运行时保证', /Where it lives today/.test(doc) && /derived, not stored/i.test(doc))
+	check('表头写明它是落点记录,不是运行时保证', /\| Where it lives \|/.test(doc) && /derived, not stored/i.test(doc))
 }
 
 console.log('\n【② 守卫:声明里每一个具名守卫,核心里真有那一处实现】')

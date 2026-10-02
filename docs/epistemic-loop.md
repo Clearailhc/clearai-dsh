@@ -1,7 +1,5 @@
 # Epistemic Loop
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md). Code follows in phases; what has landed is tracked in [Known Gaps](known-gaps.md).
-
 The epistemic loop is how ClearAI takes an uncertain question to a **bounded conclusion**. It is not a recursive self-improvement (RSI) claim: the system does not rewrite itself and does not promise automatic capability growth.
 
 ## One loop

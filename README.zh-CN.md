@@ -180,8 +180,7 @@ node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
 - [定位](docs/positioning.zh-CN.md) · [领域本体设计](docs/domain-ontology.zh-CN.md)
 - [认识论循环](docs/epistemic-loop.zh-CN.md) · [验证本体](docs/verification-loop.zh-CN.md) · [循环哲学](docs/loop-philosophy.zh-CN.md)
 - [设计原则](docs/design-principles.zh-CN.md) · [灵魂映射](docs/soul-map.zh-CN.md) · [术语表](docs/glossary.zh-CN.md)
-- [「少即是多」方案](docs/less-is-more-plan.zh-CN.md)（本轮改造的决定、原型验证与阶段）
-- [开发计划](docs/optimization/domain-ontology-plan.zh-CN.md)（含亨通真跑读数）
+- [机制真值表](docs/optimization/truth-table.zh-CN.md) · [状态机](docs/optimization/state-machines.zh-CN.md) · [时序图](docs/optimization/timing-diagrams.zh-CN.md)
 - [已知缺口](docs/known-gaps.zh-CN.md) · [权威归属](docs/authority-map.zh-CN.md) · [发布验收](docs/release-verification.zh-CN.md)
 
 ## 它落在 DSH 的哪一层

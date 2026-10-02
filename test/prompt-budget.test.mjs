@@ -74,7 +74,8 @@ function extractLiteral(source, marker) {
 			if (depth === 0) {
 				const text = source.slice(openIndex, index + 1)
 				try {
-					return { value: new Function(`return (${text})`)(), text }
+					// 内核里的说明按会话语言出(`tr(中文, 英文)`);这里取中文那一版。
+					return { value: new Function('tr', `return (${text})`)((zh) => zh), text }
 				} catch (error) {
 					return { value: null, text, error: String(error?.message ?? error) }
 				}
@@ -125,7 +126,7 @@ function shapeProblems(schema, value, path = 'value') {
 // ═══ ① VERDICT_SCHEMA 的形状 ═══════════════════════════════════════════
 
 console.log('\n【① VERDICT_SCHEMA:短裁决 + 逐条 refs 是声明出来的】')
-const verdictLiteral = extractLiteral(KERNEL_SOURCE, 'const VERDICT_SCHEMA = {')
+const verdictLiteral = extractLiteral(KERNEL_SOURCE, 'const verdictSchema = () => ({')
 const verdict = verdictLiteral?.value ?? null
 check('VERDICT_SCHEMA 取得出来(不是靠猜)', verdict !== null && typeof verdict === 'object', verdictLiteral?.error ?? '未找到')
 {
@@ -185,8 +186,10 @@ check('VERDICT_SCHEMA 取得出来(不是靠猜)', verdict !== null && typeof ve
 // ═══ ② EVALUATOR_DISCIPLINE:要短裁决 + 逐条 refs ═════════════════════════
 
 console.log('\n【② EVALUATOR_DISCIPLINE:短裁决 + 逐条 refs,不是长篇论证】')
-const disciplineLiteral = extractLiteral(KERNEL_SOURCE, 'const EVALUATOR_DISCIPLINE = [')
-const discipline = typeof disciplineLiteral?.value?.join === 'function' ? disciplineLiteral.value.join('\n') : ''
+const disciplineLiteral = extractLiteral(KERNEL_SOURCE, 'const EVALUATOR_DISCIPLINE_TEXT = {')
+const discipline = typeof disciplineLiteral?.value?.zh?.join === 'function' ? disciplineLiteral.value.zh.join('\n') : ''
+const disciplineEn = typeof disciplineLiteral?.value?.en?.join === 'function' ? disciplineLiteral.value.en.join('\n') : ''
+check('评估者纪律有英文版,且同样点名 refs 与字数上限', /refs/.test(disciplineEn) && /≤\s*1200/.test(disciplineEn), disciplineEn.slice(0, 120))
 check('EVALUATOR_DISCIPLINE 取得出来', discipline.length > 200, `长度 ${discipline.length}`)
 check('纪律里点名 refs(逐条指到文件与行)', /refs/.test(discipline))
 check('纪律里有字数上限(短裁决是写明的预算)', /(≤|不超过|最多|上限)[^。\n]{0,12}\d{2,4}\s*字/.test(discipline), discipline.slice(0, 120))

@@ -1,7 +1,5 @@
 # Authority Map
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
-
 One question: **who produces each fact, where it lives, and who consumes it.**
 
 > Every fact has **one authoritative source**; each kind of failure is explained in **one place**; without evidence the system can **quietly say it does not know**.

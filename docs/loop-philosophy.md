@@ -1,7 +1,5 @@
 # Loop Philosophy: Let Mechanisms Hold the Fact Boundary
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
-
 This document answers: **why ClearAI looks the way it does**. Every principle should land in a mechanism or a test; one that does not is only a preference.
 
 ---
@@ -19,7 +17,7 @@ Questions of the second kind have a correct answer that does not depend on who a
 
 **Origin.** The biggest risk of doing research with AI is not failing to answer but answering too smoothly: what is known, guessed and invented all come out in the same voice, people cannot tell which sentence to trust, and the next session starts from zero. Epistemology answers "why can I trust this sentence"; ontology answers "what do these conclusions add up to".
 
-**The scaffold principle.** Models keep getting stronger. ClearAI supplies only what a model cannot and should not do for itself; the rest goes to the model or to the host. So this version's main move is subtraction: nothing the host already has gets a second copy, and the prompt keeps only the skeleton.
+**The scaffold principle.** Models keep getting stronger. ClearAI supplies only what a model cannot and should not do for itself; the rest goes to the model or to the host. So ClearAI subtracts: nothing the host already has gets a second copy, and the prompt keeps only the skeleton.
 
 ---
 
@@ -67,7 +65,7 @@ A real run gave a counter-intuitive result: what changed behaviour was mainly **
 
 > question → judgement (state what would prove it wrong) → a test that could fail → evidence → bounded conclusion → grows into the ontology
 
-Every decision in this version uses this one ruler: what directly serves the loop stays; what does not is deleted or handed to the host. It replaces the old "seven stages" and "four runtime beats" — two descriptions of the same thing; we keep one.
+Every decision uses this one ruler: what directly serves the loop stays; what does not is left out or handed to the host.
 
 **Admission does not adjudicate** — the part of this design we are most sure of. Admission checks only that an artefact exists, is non-empty and is well-formed. It answers "accept or not", never "what does it show", so admission cannot contaminate a conclusion; the verdict is left whole to the evaluator.
 
@@ -75,13 +73,13 @@ Every decision in this version uses this one ruler: what directly serves the loo
 
 **Completion is separate from the result**: a step is an act, and whether it is done depends only on whether the delivery holds; a judgement is a claim, and whether it holds is computed from evidence. Deciding that an act is done by whether its result favours the judgement would penalise refutation and reward rewriting a refutation as support. So a delivery gets two judgments — does it hold, and what does it mean for each judgement — and supports, refutes and inconclusive all count as done.
 
-**Parallel exploration needs no mechanism of its own.** Worldlines used to run routes in separate file copies, compare them on a pre-declared measure, and let a person adopt one. This version reduces that to the loop itself: competing routes are competing judgements, the measure is the criteria written in advance, the comparison step is the crucial test where one observation judges the competing judgements, losing is being refuted, contradiction is a conflict; the parallelism goes to native subagents. The cost is file isolation — the host's subagents share one working directory — so one cheap mechanism is added: steps in one plan may not declare the same artefact path.
+**Parallel exploration needs no mechanism of its own.** It is the loop itself: competing routes are competing judgements, the measure is the criteria written in advance, the comparison step is the crucial test where one observation judges the competing judgements, losing is being refuted, contradiction is a conflict; the parallelism goes to native subagents. The cost is file isolation — the host's subagents share one working directory — so one cheap mechanism is added: steps in one plan may not declare the same artefact path.
 
 ---
 
 ## 3. Safety belongs to the host
 
-This section used to say "after-the-fact restore replaces up-front approval", resting on our own git ledger. This version hands file history back to the host, which shows what changed each turn but **cannot restore**. So the premise moves: safety is carried up front by the host's **permission presets and approvals**, no longer after the fact by our ledger. This is an accepted cost, recorded in section 6 of the [plan](less-is-more-plan.zh-CN.md).
+ClearAI does not manage file history: the host shows what changed each turn but **cannot restore**. So safety is carried up front by the host's **permission presets and approvals**, not by after-the-fact rollback. This is an accepted cost.
 
 ---
 

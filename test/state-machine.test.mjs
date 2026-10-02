@@ -102,12 +102,11 @@ console.log('\n【③ 中英两份文档的 event 集合一致】')
 console.log('\n【④ 不变量必须写在文档里,而不只在代码里】')
 {
 	check('秩(RANK)与「降级不可表示」写明', zh.includes('降级不可表示') && zh.includes('RANK'))
-	check('世界线分支秩 BRANCH_RANK 写明', zh.includes('BRANCH_RANK'))
 	check('序位不变量 out_of_order 写明', zh.includes('out_of_order'))
-	check('计划没有授权记号(第三阶段删了),动手前看计划交给原生 /plan', !zh.includes('confirmed_by') && zh.includes('/plan'))
-	check('续跑交给原生 goal:写明 ClearAI 碰它的三个时机,不再有 turnDemand 与续跑额度', /## 10\. 自动续跑[^\n]*原生 goal/.test(zh) && zh.includes('clearai-needs-human') && !zh.includes('DEFAULT_MAX_AUTO_TURNS') && !/`turnDemand` 的判定顺序/.test(zh))
+	check('计划没有授权记号,动手前看计划交给原生 /plan', !zh.includes('confirmed_by') && zh.includes('/plan'))
+	check('续跑交给原生 goal:写明 ClearAI 碰它的三个时机,不再有 turnDemand 与续跑额度', /## 9\. 自动续跑[^\n]*原生 goal/.test(zh) && zh.includes('clearai-needs-human') && !zh.includes('DEFAULT_MAX_AUTO_TURNS') && !/`turnDemand` 的判定顺序/.test(zh))
 	check('完成与结果分开写明(交付成立即完成,结果各落一条证据)', zh.includes('完成与结果分开') && zh.includes('holds'))
-	check('世界线与侦察两节写明已删除(旧日志里的事件被安静跳过)', /## 9\. 世界线[^\n]*已删除/.test(zh) && /## 11\. 侦察[^\n]*已删除/.test(zh) && zh.includes('原样跳过'))
+	check('只写现行机制:没有世界线、侦察这些不存在的节', !/## \d+\. (世界线|侦察)/.test(zh) && !/## \d+\. (Worldlines|Scout)/.test(en))
 	check('retracted 的生产者写明(人的 fact/reviewed,不再声称没有生产者)', zh.includes('fact/reviewed') && !/retracted[^\n]{0,60}没有(任何)?生产者/.test(zh))
 }
 
@@ -148,7 +147,6 @@ console.log('\n【⑥ 状态机文档与真值表互相指认】')
 	const table = JSON.parse(read('docs/optimization/truth-table.json'))
 	check('状态机文档指向真值表', zh.includes('truth-table.zh-CN.md'))
 	check('真值表指向状态机文档或计划', table.mechanisms.every((m) => m.source !== undefined))
-	check('计划里登记了这两份文档', read('docs/optimization/plan.zh-CN.md').includes('state-machines.zh-CN.md'))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

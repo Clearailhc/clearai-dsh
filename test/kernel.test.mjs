@@ -20,7 +20,10 @@ import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
 import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
-import { SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
+import { SECTIONS as BILINGUAL_SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
+import { detectLanguage } from '../ui/lib/lang.js'
+/** 段有中英两版;这里的断言读中文那一版(英文那一版另有一组检查)。 */
+const SECTIONS = BILINGUAL_SECTIONS.map((section) => ({ ...section, text: section.text.zh }))
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
 // 跑测试不该往用户真实的 ~/.dsh 里塞东西(之前一直塞了,已清理)。
@@ -341,7 +344,8 @@ function makeHost() {
 			},
 			systemPrompt: {
 				section(section) {
-					sections.push(section)
+					// 段文本是一个函数(按会话的语言挑一版);没有会话时是中文。
+					sections.push({ ...section, text: typeof section.text === 'function' ? section.text({}) : section.text, render: section.text })
 					return () => {}
 				},
 			},
@@ -496,13 +500,15 @@ console.log('\n【提示词面:预设的提示词段】')
 	check('段序严格递增(装配顺序即装配契约)', registered.every((section, index) => index === 0 || section.order > registered[index - 1].order))
 	check(
 		'每段都有名字、序与正文,且不携带旧出处记录',
-		SECTIONS.every(
+		BILINGUAL_SECTIONS.every(
 			(section) =>
 				typeof section.name === 'string' &&
 				section.name.length > 3 &&
 				typeof section.order === 'number' &&
-				typeof section.text === 'string' &&
-				section.text.length > 0 &&
+				typeof section.text?.zh === 'string' &&
+				section.text.zh.length > 0 &&
+				typeof section.text?.en === 'string' &&
+				section.text.en.length > 0 &&
 				section.source === undefined,
 		),
 	)
@@ -634,16 +640,22 @@ console.log('\n【判据先写后做:入口强制 + 自指检测】')
 	const r3 = await call('Frame', { claim: 'x', done_criteria: '结果记录在对话中' })
 	check('判据自指(记录在对话中)→ 拒绝', r3.ok === false && r3.code === 'criteria_self_reference')
 
+	const longName = (name) => call('Frame', { claim: 'x', done_criteria: '三次重复实验产率均值高于 B,数据落在 lab/yield.csv', hypotheses: [{ claim: 'A 的产率高于 B', refute_when: '均值不高于 B', name }, { claim: 'y', refute_when: 'z' }] })
+	const longEnglish = await longName('Catalyst A beats catalyst B on yield at sixty')
+	check('短名按显示宽度算:英文太长 → 拒绝', longEnglish.ok === false && longEnglish.code === 'hypothesis_name_too_long', String(longEnglish.code))
+	const longChinese = await longName('催化剂甲在六十度时的产率比催化剂乙高')
+	check('短名按显示宽度算:中文超过十六字 → 拒绝', longChinese.ok === false && longChinese.code === 'hypothesis_name_too_long', String(longChinese.code))
+
 	const r4 = await call('Frame', {
 		claim: '催化剂 A 在 60℃ 下产率高于 B',
 		done_criteria: '三次重复实验产率均值高于 B 至少 5 个百分点,数据落在 lab/yield.csv',
 		promote_at_level: 'L3',
 		hypotheses: [
-			{ claim: 'A 的产率高于 B', refute_when: '三次重复均值不高于 B' },
+			{ claim: 'A 的产率高于 B', refute_when: '三次重复均值不高于 B', name: 'A beats B on yield at 60C' },
 			{ claim: '链长是主因', refute_when: '控制链长后差异消失' },
 		],
 	})
-	check('合法目标 → 立起', r4.ok === true && r4.code === 'goal_set', String(r4.code))
+	check('合法目标 → 立起(二十来个字母的英文短名照收)', r4.ok === true && r4.code === 'goal_set', String(r4.code))
 	check('日志里留下 goal/set(假设就写在同一条变更里)', eventsOf('goal/set').length === 1 && eventsOf('goal/set')[0].hypotheses.length === 2)
 	check('投影把两条假设折进了状态', thisHost.service.state(SESSION).hypotheses.length === 2)
 
@@ -2190,6 +2202,8 @@ console.log('\n【实体写成文件:关系带出处,写下那一刻就进图(�
 	// ⑤ 一句话目标:超 120 字当场拒。
 	const long = await callOn(host, 'session-long', 'Frame', { claim: '长'.repeat(200), done_criteria: '有 1 份产物' })
 	check('目标一句话超 120 字 → 拒(headline 现算也一样拒)', long.ok === false && long.code === 'headline_too_long', String(long.code))
+	const english = await callOn(host, 'session-english', 'Frame', { claim: 'Does catalyst A give a higher yield than catalyst B at sixty degrees across three repeated runs in the same reactor', done_criteria: 'one result file lab/yield.csv with three runs' })
+	check('英文目标按宽度算:一百多个字母的一句话照收(120 是汉字数)', english.ok === true, String(english.code))
 }
 
 console.log('\n【第三道校验:升格这一刻本体不成立 ⇒ 不写进长期知识,回执写明卡在哪】')
@@ -2477,6 +2491,63 @@ console.log('\n【旧日志照样能读:交还宿主的机制留下的事件被�
 	check('视图照常算得出来,也不再交出这几格', projected !== null && !('forks' in projected) && !('scouts' in projected) && !('brain' in projected) && !('skills' in projected))
 	const gate = parseHumanGate({ source: { kind: 'user' }, content: [{ type: 'text', text: `${HUMAN_GATE_MARK} {"action":"adopt_branch","fork":"f-old","branch":"b1"}` }] })
 	check('旧日志里的世界线人门动作不再被认成动作', gate === null, JSON.stringify(gate))
+}
+
+
+console.log('\n【两种语言:系统写的话跟着人说话的语言走】')
+{
+	const host = makeHost()
+	host.service.detectLanguage = detectLanguage
+	apply(host.ctx, {})
+	const EN = 'session-english'
+	const ZH = 'session-chinese'
+	const claimed = host.listeners.get('agent/inbox/claimed')
+	check('注册了 agent/inbox/claimed(从人写的消息认语言)', typeof claimed === 'function')
+	claimed({ agent: { id: EN }, message: { role: 'user', content: 'Does catalyst A beat catalyst B on yield?' }, turn: 1 })
+	claimed({ agent: { id: ZH }, message: { role: 'user', content: '催化剂 A 的产率是否高于 B?' }, turn: 1 })
+	// 系统注入的消息不算人说话:英文会话里插一条中文的运行态卡,语言不变。
+	claimed({ agent: { id: EN }, message: { role: 'user', content: '运行态卡:目标与判据', source: { kind: 'clearai' } }, turn: 2 })
+
+	const frame = (session, args) => callOn(host, session, 'Frame', args)
+	const empty = await frame(EN, { claim: 'Does A beat B', done_criteria: '  ' })
+	check('英文会话:拒绝的说明是英文', empty.ok === false && /^Criteria cannot be empty/.test(String(empty.message ?? empty.error ?? '')), String(empty.message ?? empty.error ?? ''))
+	const set = await frame(EN, {
+		claim: 'Catalyst A gives a higher yield than catalyst B',
+		done_criteria: 'Three repeated runs give a mean yield for A above B, written to lab/yield.csv',
+		hypotheses: [
+			{ name: 'A beats B', claim: 'A has a higher mean yield than B', refute_when: 'The mean for A is not above B' },
+			{ name: 'No difference', claim: 'A and B have the same yield', refute_when: 'The means differ by more than 2 points' },
+		],
+	})
+	check('英文会话:立约的回执是英文', set.ok === true && /^Goal set/.test(String(set.message)) && !/[一-鿿]/.test(String(set.message).replace(/「[^」]*」/g, '')), String(set.message))
+	const zhSet = await frame(ZH, { claim: '催化剂 A 的产率高于 B', done_criteria: '三次重复实验产率均值高于 B,数据落在 lab/yield.csv', hypotheses: [{ claim: 'A 的产率高于 B', refute_when: '均值不高于 B' }, { claim: '两者一样', refute_when: '均值差超过 2 个点' }] })
+	check('中文会话:同一个工具的回执照旧是中文', zhSet.ok === true && /^目标已立/.test(String(zhSet.message)), String(zhSet.message))
+	const plan = await callOn(host, EN, 'CreatePlan', { brief: 'short', steps: [{ id: 's1', do: 'Run the experiment', artifacts: ['lab/yield.csv'], done_criteria: 'Three runs are recorded in lab/yield.csv', tests: { hypotheses: ['A beats B'], level: 'L2' } }] })
+	check('英文会话:计划回执与提醒都是英文', plan.ok === true && /^Plan created/.test(String(plan.message)) && /brief is short/.test(String(plan.message)), String(plan.message))
+
+	const step = await preStep(host, EN, 3)
+	const card = String(step?.messages?.at(-1)?.content?.[0]?.text ?? step?.messages?.at(-1)?.source?.sections?.[0]?.text ?? '')
+	check('英文会话:运行态卡是英文', card.length > 0 && !/[一-鿿]/.test(card.replace(/「[^」]*」|"[^"]*"/g, '')), card.split('\n').find((line) => /[一-鿿]/.test(line)) ?? card.slice(0, 120))
+
+	const sectionsEn = host.sections.map((section) => section.render({ agent: { id: EN } }))
+	const sectionsZh = host.sections.map((section) => section.render({ agent: { id: ZH } }))
+	check('英文会话拿英文的提示词段,中文会话拿中文的', sectionsEn.every((text) => !/[一-鿿]/.test(text)) && sectionsZh.every((text) => /[一-鿿]/.test(text)) && /^# ClearAI · you judge/.test(sectionsEn[0]))
+
+	const assemble = host.listeners.get('system-prompt/assemble')
+	const schemas = [...host.tools.values()].map((tool) => ({ name: tool.name, description: tool.description, parameters: structuredClone(tool.parameters) }))
+	const native = { name: 'read', description: '读文件', parameters: { type: 'object', properties: {} } }
+	const forEn = await assemble({ tools: [...schemas, native] }, { agent: { id: EN } }, async () => ({ tools: [...schemas, native] }))
+	const forZh = await assemble({ tools: schemas }, { agent: { id: ZH } }, async () => ({ tools: schemas }))
+	const descriptions = (tool) => JSON.stringify([tool.description, tool.parameters])
+	check('英文会话:六件工具的说明与参数说明都换成英文', forEn.tools.filter((tool) => tool.name !== 'read').every((tool) => !/[一-鿿]/.test(descriptions(tool).replace(/"enum":\[[^\]]*\]/g, ''))), forEn.tools.find((tool) => tool.name !== 'read' && /[一-鿿]/.test(descriptions(tool).replace(/"enum":\[[^\]]*\]/g, '')))?.name ?? '')
+	check('英文会话:别的插件的工具原样不动', forEn.tools.find((tool) => tool.name === 'read')?.description === '读文件')
+	check('中文会话:工具说明保持中文', forZh.tools.every((tool) => /[一-鿿]/.test(tool.description)))
+	const shape = (value) => (Array.isArray(value) ? value.map(shape) : value !== null && typeof value === 'object' ? Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'description').map(([key, item]) => [key, shape(item)])) : value)
+	check('换说明不碰 schema 的形状(只改 description)', forEn.tools.every((tool, index) => tool.name === 'read' || JSON.stringify(shape(tool.parameters)) === JSON.stringify(shape(schemas[index].parameters))))
+
+	const guard = host.listeners.get('tools/pre-execute')
+	const denied = await guard({ name: 'bash', arguments: { command: 'sudo rm -rf /' }, agent: { id: EN } }, async () => ({ kind: 'allow' }))
+	check('英文会话:写入闸门的拒绝理由是英文', denied?.kind === 'deny' && !/[一-鿿]/.test(String(denied.reason)), String(denied?.reason))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

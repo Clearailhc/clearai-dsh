@@ -32,7 +32,9 @@ const check = (label, condition, detail = '') => {
 	}
 }
 
-const { SECTIONS } = await import('../preset/plugins/prompts.js')
+const { SECTIONS: BILINGUAL_SECTIONS } = await import('../preset/plugins/prompts.js')
+/** 段有中英两版;分类与内容的咬合按中文那一版查(英文版是同一段的译文)。 */
+const SECTIONS = BILINGUAL_SECTIONS.map((section) => ({ ...section, text: section.text.zh }))
 const { MECHANISM_TOOLS } = await import('../preset/plugins/clearai-kernel.js')
 const KERNEL = readFileSync(join(PORT, 'preset', 'plugins', 'clearai-kernel.js'), 'utf8')
 const FOLD = readFileSync(join(PORT, 'ui', 'lib', 'fold.js'), 'utf8')

@@ -1,7 +1,5 @@
 # Design Principles
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
-
 These principles turn ClearAI's epistemology into behaviour DSH can enforce. They describe mechanisms, not wishes; the implementation mapping is in the [Soul Map](soul-map.md).
 
 ## Do only what the host cannot

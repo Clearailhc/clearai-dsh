@@ -179,8 +179,7 @@ One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Nex
 - [Positioning](docs/positioning.md) · [Domain ontology design](docs/domain-ontology.md)
 - [Epistemic loop](docs/epistemic-loop.md) · [Verification ontology](docs/verification-loop.md) · [Loop philosophy](docs/loop-philosophy.md)
 - [Design principles](docs/design-principles.md) · [Soul map](docs/soul-map.md) · [Glossary](docs/glossary.md)
-- ["Less is more" plan](docs/less-is-more-plan.zh-CN.md) (this round's decisions, prototype spikes and phases; zh-CN)
-- [Development plan](docs/optimization/domain-ontology-plan.md) (with real-run evidence from the Hengtong project)
+- [Mechanism truth table](docs/optimization/truth-table.md) · [State machines](docs/optimization/state-machines.md) · [Timing diagrams](docs/optimization/timing-diagrams.md)
 - [Known gaps](docs/known-gaps.md) · [Authority map](docs/authority-map.md) · [Release verification](docs/release-verification.md)
 
 ## Where it sits in DSH

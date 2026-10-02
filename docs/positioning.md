@@ -1,7 +1,5 @@
 # ClearAI Positioning
 
-> **Being rebuilt.** This document describes the target design from the ["less is more" plan](less-is-more-plan.zh-CN.md).
-
 ## What it is
 
 ClearAI is a **DSH-native ontology discovery and exploration platform**: AI grows a living **domain ontology** in a real project — the project's own vocabulary, conclusions established through the loop, and their graph. The epistemic loop is how the ontology is produced: every judgement states what would prove it wrong, goes through a test that could fail, and becomes a bounded conclusion on evidence before it grows into the ontology.

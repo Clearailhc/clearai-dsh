@@ -126,9 +126,8 @@ check(!declaredTools.has('set_autonomy'), '⑧ 已摘除的 set_autonomy 没有�
 // ── ⑨ 真值表声称的计数 ↔ 代码常量 ────────────────────────────────────────────
 const toolEntry = TABLE.mechanisms.find((m) => m.id === 'tool-trimming')
 check(toolEntry !== undefined && toolEntry.source.code.includes('MECHANISM_TOOLS'), '⑨ 真值表把工具目录指向 MECHANISM_TOOLS')
-for (const id of ['auto-continuation', 'max-auto-turns', 'autonomy-config', 'plan-review', 'plan-reauthorize']) {
-	check(TABLE.mechanisms.some((m) => m.id === id && m.status === 'removed'), `⑨ ${id} 在真值表里标为已删除(第三阶段)`)
-}
+// 表只写现行机制:删掉的机制连条目一起删,不留记录。
+check(TABLE.mechanisms.every((m) => m.status !== 'removed'), '⑨ 真值表只收现行机制(没有 status=removed 的条目)')
 check(!CONFIG_KEYS.includes('autonomy') && !CONFIG_KEYS.includes('maxAutoTurns'), '⑨ 配置白名单里没有 autonomy / maxAutoTurns')
 
 // ── ⑩ 文档与注释里的数字必须与代码一致 ──────────────────────────────────────
