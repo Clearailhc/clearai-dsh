@@ -64,17 +64,12 @@ export const GLOSSARY = {
 	asserted: { plain: '实体断言:登记那一刻就成立的边,有出处但未经独立裁决', where: '本体面板 · 实体图虚线边', nextAction: '要让它进「已知」就把它升格成事实(走独立裁决)' },
 	// ── 派生读数 ──
 	supportedLevel: { plain: '支持到哪一级:所有支持证据里最高的那一级', where: '运行态卡 · 假设状态', nextAction: '等级不够就补更硬的那一档证据' },
-	untouchedLevels: { plain: '从没走过的等级:已用到最高级之下、一条证据都没有的级', where: '运行态卡 · 假设状态', nextAction: '低等级不适用就写明理由(跳级不违规,但要说清)' },
 	refutations: { plain: '被推翻次数:收到过几条推翻证据', where: '运行态卡 · 假设状态', nextAction: '被推翻是终态:要么改主张换 id,要么如实放弃' },
 	inconclusive: { plain: '无法判定次数:判过但判不出来', where: '运行态卡 · 假设状态', nextAction: '补判据或补产物,让下一次判得出结果' },
 	// ── 缺口 code(与 deriveKnowledge 一一对应) ──
-	no_language: { plain: '还没有概念与谓词:换一轮只能靠重读散文取用结论', where: '运行态卡 · 缺口 / 本体面板', nextAction: '先 RegisterTerm 立词,再 RegisterPredicate 说明关系' },
-	prose_only_claims: { plain: '命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断', where: '运行态卡 · 缺口', nextAction: '用 Frame 的修订把这条主张写成断言(主词–谓词–宾语),引用已登记的 id' },
-	unstructured_facts: { plain: '已升格事实没带断言:进不了实体图,也不能按概念取用', where: '运行态卡 · 缺口', nextAction: '下次升格时带上 assertions;这条老事实的形态靠新一次升格补' },
+	prose_only_claims: { plain: '命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断', where: '运行态卡 · 缺口', nextAction: '先 Define 立概念与谓词、RegisterInstance 登记主体,再用 Frame 修订把主张写成断言(主词–谓词–宾语)' },
 	untouched_claims: { plain: '有命题一条证据都没碰过:没看过不等于没问题', where: '运行态卡 · 缺口 / 结案留痕', nextAction: '给它派一个带 tests 的步骤并交付:支持 / 推翻 / 无法判定都算碰过' },
-	entities_unlanded: { plain: '断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」', where: '运行态卡 · 缺口 / 本体面板 · 实体图', nextAction: '先 RegisterInstance 把实例连出处登记下来；确实不值得留下形态就如实说清' },
-	levels_skipped: { plain: '有等级被跳过而没写理由:跳级不违规,但要说清为什么不适用', where: '运行态卡 · 假设状态 / 缺口', nextAction: '用 ExplainLevelSkip 写明「为什么这一级在本项目里不适用」' },
-	orphan_terms: { plain: '有概念没有任何结论引用:它们还只是约定,不是已知', where: '本体面板 · 零引用的概念', nextAction: '要么在断言里用起来,要么在货架上如实标出「未被引用」' },
+	entities_unlanded: { plain: '断言的主体还没有落到实体图上:句子只挂在命题上,不构成「已知」', where: '运行态卡 · 缺口 / 本体面板 · 实体图', nextAction: '用 RegisterInstance 把这些主体连出处登记下来;确实不值得留下形态就把断言从判断上拿掉(Frame 修订)' },
 	// ── 判据 ──
 	done_criteria: { plain: '判据没改过:它还是立约时那一份(要原文读账本里的 done_criteria)', where: '运行态卡 · 当前目标 / 账本', nextAction: '要改判据就走修订,并带一份独立裁决的 auditKey' },
 	criteria_verdict: { plain: '判据改动要有一份独立裁决:改「怎样算完成」不能被顺手做掉', where: '账本 · goal.criteriaHistory', nextAction: '拿独立裁决的 auditKey 再改判据文本' },
@@ -98,14 +93,6 @@ const clamp = (value, max) => {
 /** 人话的阶段名;表外的阶段原样给(不猜)。 */
 const phasePlain = (phase) => (phase === null || phase === undefined ? '阶段还没算出来' : GLOSSARY[phase]?.plain ?? String(phase))
 
-/** 一条命题的跳级理由(`level/skipped` 折出来的那几段),有才写。 */
-function skipLine(hypothesis) {
-	const skips = Array.isArray(hypothesis?.skips) ? hypothesis.skips : []
-	if (skips.length === 0) return ''
-	const parts = skips.map((skip) => `${(skip?.levels ?? []).join('/')}(${clamp(skip?.reason, 60) || '未写理由'})`)
-	return ` · 已说明跳过 ${parts.join(';')}`
-}
-
 /**
  * **卡文本的行装配**(带优先级)。
  *
@@ -125,7 +112,7 @@ function fitLines(lines, limit = CARD_LIMIT) {
 		}
 	}
 	if (dropped > 0) {
-		const note = `- …(卡片为 ${limit} 字符上限省去 ${dropped} 行细节:完整读数在面板「运行态」与 CheckPlan 里)`
+		const note = `- …(卡片为 ${limit} 字符上限省去 ${dropped} 行细节:完整读数在面板「运行态」里)`
 		/** 给这句提示**留出位置**:丢了行却不说,读的人会把这张卡当成全部。 */
 		while (measure(kept) + note.length + 1 > limit) {
 			let index = -1
@@ -142,7 +129,7 @@ function fitLines(lines, limit = CARD_LIMIT) {
 		if (measure(kept) + note.length + 1 <= limit) kept.push({ text: note, tier: 0 })
 	}
 	if (measure(kept) > limit) {
-		const note = `- …(卡片到达 ${limit} 字符上限,后面的行没有展开:完整读数在面板「运行态」与 CheckPlan 里)`
+		const note = `- …(卡片到达 ${limit} 字符上限,后面的行没有展开:完整读数在面板「运行态」里)`
 		const out = []
 		let total = 0
 		for (const item of kept) {
@@ -244,9 +231,8 @@ function cardLines(state, derived, options, view) {
 			 * 前者要如实说「未触及」,后者本来就有「无法判定 n」这个读数。
 			 */
 			const untouched = (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0
-			const skipped = (hypothesis.untouchedLevels ?? []).length === 0 ? '' : ` · 未走过 ${hypothesis.untouchedLevels.join('/')}`
-			const readings = untouched ? '(未触及)' : `(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive}${skipped})`
-			push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}${skipLine(hypothesis)}`)
+			const readings = untouched ? '(未触及)' : `(支持到 ${hypothesis.supportedLevel ?? '—'} · 推翻 ${hypothesis.refutations} · 无法判定 ${hypothesis.inconclusive})`
+			push(`  · ${hypothesis.id} [${hypothesis.status}] ${hypothesis.claim} — 推翻条件:${hypothesis.refute_when}${readings}`)
 		}
 		if (hypotheses.length > 10) push(`  · (还有 ${hypotheses.length - 10} 条命题未展开:面板「命题」里有全部)`, 2)
 	}
@@ -394,8 +380,6 @@ export function knowledgeView(state, derived, options = {}) {
 			supportedLevel: hypothesis.supportedLevel ?? null,
 			refutations: hypothesis.refutations ?? 0,
 			inconclusive: hypothesis.inconclusive ?? 0,
-			untouchedLevels: Array.isArray(hypothesis.untouchedLevels) ? hypothesis.untouchedLevels : [],
-			skips: Array.isArray(hypothesis.skips) ? hypothesis.skips : [],
 			/** 一句读数(与卡上同一句):`未触及` 与「无法判定」分得开。 */
 			readings: (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0 ? '未触及' : `支持到 ${hypothesis.supportedLevel ?? '—'}`,
 			/** 已带断言的条数(断言的人话芯片在投影侧算好,这里只报数)。 */

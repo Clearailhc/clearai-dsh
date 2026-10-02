@@ -126,8 +126,8 @@ const setGoalParameters = (() => {
 
 console.log('\n【② 缺口必须带 nextAction(且去掉它会红)】')
 /**
- * 七种缺口里,`no_language` 要求词汇是空的,`orphan_terms` 要求词汇非空——
- * 所以用一个状态凑不齐,分两个状态取**并集**再断言。这是如实的分法,不是回避。
+ * 三种缺口(第四阶段从七种收下来的):一条没被碰过的判断、一条只有散文的判断、
+ * 一个还没落图的断言主体。分两个状态取**并集**再断言,与从前同一种构造。
  */
 const languageState = applyMutations(emptyState(), [
 	{
@@ -140,7 +140,6 @@ const languageState = applyMutations(emptyState(), [
 		hypotheses: [
 			// 一条从没被证据碰过、也没有断言的命题:untouched_claims + prose_only_claims。
 			{ id: 'h-read-0', claim: '还没被任何证据碰过的命题', refute_when: '出现反例' },
-			// 一条只有 L3 证据的命题:untouchedLevels = L0/L1/L2 ⇒ levels_skipped。
 			{ id: 'h-read-1', claim: '只有散文主张的命题', refute_when: '出现反例' },
 		],
 	},
@@ -176,8 +175,9 @@ const lexiconKnowledge = deriveKnowledge(lexiconState, lexiconDerived.hypotheses
 
 const allGaps = [...(languageKnowledge.gaps ?? []), ...(lexiconKnowledge.gaps ?? [])]
 const gapCodes = [...new Set(allGaps.map((gap) => gap.code))].sort()
-const EXPECTED_GAP_CODES = ['entities_unlanded', 'levels_skipped', 'no_language', 'orphan_terms', 'prose_only_claims', 'unstructured_facts', 'untouched_claims']
-check('前提:七种缺口都被真的构造出来了(否则下面每条都是空跑)', EXPECTED_GAP_CODES.every((code) => gapCodes.includes(code)), gapCodes.join(','))
+const EXPECTED_GAP_CODES = ['entities_unlanded', 'prose_only_claims', 'untouched_claims']
+check('前提:三种缺口都被真的构造出来了(否则下面每条都是空跑)', EXPECTED_GAP_CODES.every((code) => gapCodes.includes(code)), gapCodes.join(','))
+check('缺口只有这三种(第四阶段删掉的四种不再出现)', gapCodes.join(',') === EXPECTED_GAP_CODES.join(','), gapCodes.join(','))
 check('每个缺口都带非空 nextAction', allGaps.length > 0 && allGaps.every((gap) => typeof gap.nextAction === 'string' && gap.nextAction.trim() !== ''), JSON.stringify(allGaps.map((gap) => `${gap.code}:${String(gap.nextAction ?? '').slice(0, 12)}`)))
 check('每个缺口都带人话 detail(不是术语)', allGaps.every((gap) => typeof gap.detail === 'string' && gap.detail.trim() !== ''), JSON.stringify(allGaps.map((gap) => gap.code)))
 check('每个缺口都带可清点的 count', allGaps.every((gap) => typeof gap.count === 'number'), JSON.stringify(allGaps.map((gap) => `${gap.code}:${String(gap.count)}`)))

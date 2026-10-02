@@ -112,7 +112,7 @@ console.log('\n【①′ 验证状态表:每一行都要指得出今天的落点
 	const rows = [...doc.matchAll(/^\| (planned|registered|authorized|submitted|awaiting|observed|evaluated|expired|aborted) \|([^|]*)\|([^|]*)\|/gm)]
 	check('状态表读得到全部九个名字(表被删或改名都会红)', rows.length === 9, `${rows.length} 行`)
 	/** 落点词:折法里真有的变更类型 / 现算函数 / 明确的「不是状态」。 */
-	const LANDING = /(Unrepresentable by design|unrepresentable|not a state|Facts, not a state|derive\(\)|plan\/|audit\/|observation\/|evidence\/|human\/released|VoidPlanStep|inFlight|block\/counted|tests: \{hypothesis, level\}|l4Delivery)/
+	const LANDING = /(Unrepresentable by design|unrepresentable|not a state|Facts, not a state|derive\(\)|plan\/|audit\/|observation\/|evidence\/|human\/released|RevisePlan|VoidPlanStep|inFlight|block\/counted|tests: \{hypothesis, level\}|l4Delivery)/
 	const homeless = rows.filter((row) => !LANDING.test(row[3])).map((row) => row[1])
 	check('每一行都指得出今天的落点(事实 / 现算 / 刻意不可表示)', homeless.length === 0, homeless.join(','))
 	check('表头写明它是落点记录,不是运行时保证', /Where it lives today/.test(doc) && /derived, not stored/i.test(doc))

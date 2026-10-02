@@ -13,7 +13,7 @@
 #   test/preset-composition.test.mjs 组合:挂载表(回来了什么/仍不挂什么)与 / 命令契约
 #   test/prompt-sections.test.mjs  段分类:hard/native/advisory 与内容咬合 + 原生契约不漂移
 #   test/e2e-scenarios.test.mjs   长测剧本与不变量(反例必须红——断言本身也要有人管)
-#   test/contrast.test.mjs        真实现场的前后对照:派发事实在 await 前落账、实体图反事实、跳级缺口
+#   test/contrast.test.mjs        真实现场的前后对照:派发事实在 await 前落账、实体图反事实、第四阶段实体门
 #   test/readability.test.mjs     可读性:缺口必须带下一步、术语有落点、无孤儿概念混进结论
 #   test/prompt-budget.test.mjs   裁决卡的形状即预算:schema 的长度与引用要求
 #

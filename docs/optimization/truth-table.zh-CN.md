@@ -8,11 +8,11 @@
 
 ## 计数
 
-- 机制条目：**73**
-- 按状态：已实现 53 · 设计目标 1 · 已删除 19
-- 按强度：硬边界 43 · 建议 8 · 原生 3 · 废弃 19
-- 按归宿：保持设计目标 1 · 已删除并记账 19
-- 真正阻断执行的：**20**
+- 机制条目：**74**
+- 按状态：已实现 53 · 设计目标 1 · 已删除 20
+- 按强度：硬边界 43 · 建议 8 · 原生 3 · 废弃 20
+- 按归宿：保持设计目标 1 · 已删除并记账 20
+- 真正阻断执行的：**21**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
 
 ## 代码常量快照
@@ -20,8 +20,8 @@
 这一节由代码导出，不是手写：
 
 - 机制：3 个（goal / plan / ontology）
-- 意图工具：19 件（Frame Conclude CreatePlan CheckPlan AmendPlan RefinePlan VoidPlanStep ClosePlan AdvancePlan RegisterTerm RegisterPredicate ReviseTerm RevisePredicate DeprecateTerm DeprecatePredicate RegisterInstance Assert ExplainLevelSkip QueryKnowledge）
-- 配置键：15 个
+- 意图工具：10 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Define Deprecate RegisterInstance Assert）
+- 配置键：13 个
 - 提示词段：定义 21 段，同一时刻在场 21 段
 
 ## 总表
@@ -36,7 +36,7 @@
 | `plan-review` | 已删除:计划审阅记号 | 认识论 | 已删除 | 废弃 | 无 | human | 否 | — |
 | `plan-reauthorize` | 已删除:计划重新呈递审阅 | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
 | `advance-plan` | AdvancePlan：唯一完成动词 | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | `preset/plugins/clearai-kernel.js AdvancePlan` |
-| `plan-amend-no-progress` | AmendPlan / RefinePlan / VoidPlanStep 不动进度 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js AmendPlan` |
+| `plan-amend-no-progress` | RevisePlan(补一步 / 改判据 / 作废)不动进度 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js RevisePlan` |
 | `admission` | 观测准入（只判收不收） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js admission` |
 | `self-judge-limit` | L0–L2 允许自判，L3+ 拒绝自判 | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js SELF_JUDGE_MAX_INDEX=2` |
 | `independent-evaluator` | 独立评估者（fresh context + 只读工具面） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js runEvaluator / resolveToolFace / evaluatorPrompt / writeAuditCard` |
@@ -59,10 +59,11 @@
 | `assertion-validation` | 断言形态校验（落账之前） | 认识论 | 已实现 | 硬边界 | 权威 | model | 是 | `ui/lib/domain-language.js validateAssertions` |
 | `conflict-derivation` | 冲突派生（只暴露，不裁决） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | 本体图 / 实体图投影（确定性布局） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/domain-language.js graphProjection` |
-| `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js RegisterTerm` |
+| `ontology-verbs` | 领域词汇的具名动词与货架 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Define` |
 | `entity-registration` | 实体登记(实例是一等写入口) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js RegisterInstance` |
 | `entity-assertion` | 实体断言(登记即产边) | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Assert` |
-| `level-skip-reason` | 跳级需具名理由 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js ExplainLevelSkip` |
+| `entity-gate` | 实体门(结案唯一的结构关口) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js Conclude` |
+| `level-skip-reason` | 已删除:跳级需具名理由 | 认识论 | 已删除 | 废弃 | 无 | model | 否 | — |
 | `criteria-revision-gate` | 判据修订要一份独立裁决 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Frame` |
 | `audit-digest-reuse` | 裁决按材料 digest 复用（同态不重派） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js auditDigest` |
 | `artifact-path-exclusive` | 产物路径不重叠(同一计划里两步不许声明同一个产物) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js validateSteps` |
@@ -146,7 +147,7 @@
 ### `criteria-required` · 判据先写（done_criteria 强制）
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：CreatePlan / AmendPlan 校验步骤
+- **触发**：CreatePlan / RevisePlan(add) 校验步骤
 - **输入**：steps[].done_criteria
 - **输出**：装配期拒绝：缺少判据、长度 < 4、或判据自指
 - **阻断执行**：是
@@ -155,7 +156,7 @@
 - **代码**：preset/plugins/clearai-kernel.js validateSteps; CreatePlan 调用点
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/plan-governance · **文档**：docs/epistemic-loop.zh-CN.md
-- **已知不符**：「每条进入系统的路径都校验判据」靠**测试**维持,不由类型保证:正常入口(`CreatePlan` / `AmendPlan` 经 `validateSteps`)强制判据,而旧会话日志、内部构造的计划对象、以及将来新增的入口不受它约束。
+- **已知不符**：「每条进入系统的路径都校验判据」靠**测试**维持,不由类型保证:正常入口(`CreatePlan` / `RevisePlan(add)` 经 `validateSteps`)强制判据,而旧会话日志、内部构造的计划对象、以及将来新增的入口不受它约束。
 
 ### `formal-plan` · 正式计划
 
@@ -207,16 +208,16 @@
 - **测试**：test/kernel.test.mjs · **配置**：blockedThreshold, l4RequiresHumanRelease, l4RejectSelfWritten
 - **提示词**：clearai/loop-contract · **文档**：docs/loop-philosophy.zh-CN.md
 
-### `plan-amend-no-progress` · AmendPlan / RefinePlan / VoidPlanStep 不动进度
+### `plan-amend-no-progress` · RevisePlan(补一步 / 改判据 / 作废)不动进度
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
-- **触发**：模型调用三者之一
+- **触发**：模型调用 RevisePlan 的三种动作之一
 - **输入**：步骤增补 / 判据修订 / 作废理由
 - **输出**：plan/amended, plan/refined, plan/voided（进度不变）
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。
-- **代码**：preset/plugins/clearai-kernel.js AmendPlan; RefinePlan; VoidPlanStep; ui/lib/fold.js/323/330
+- **理由**：进度只由 AdvancePlan 改变，避免多入口推进导致的归属不清。改约只有一个入口(第四阶段把 AmendPlan / RefinePlan / VoidPlanStep 合并为 RevisePlan,各自的校验不变,变更事件名不变)。
+- **代码**：preset/plugins/clearai-kernel.js RevisePlan; ui/lib/fold.js/323/330
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/plan-governance · **文档**：docs/loop-philosophy.zh-CN.md
 
@@ -306,7 +307,7 @@
 - **阻断执行**：否
 - **原生替代**：无
 - **理由**：被推翻的假设是资产：它记录了此路不通。
-- **代码**：ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js VoidPlanStep
+- **代码**：ui/lib/fold.js（全体 case 无删除分支）; preset/plugins/clearai-kernel.js RevisePlan
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/context-discipline · **文档**：docs/loop-philosophy.zh-CN.md
 
@@ -750,13 +751,13 @@
 ### `verification-lifecycle` · 验证生命周期:哪些保证是活的
 
 - **层**：认识论 · **状态**：已实现 · **强度**：建议 · **权威**：无 · **责任方**：system
-- **触发**：拿不到裁决 / 判不了交付成不成立 / 某条假设跳过了低等级
-- **输出**：block/counted ⇒ plan/blocked ⇒ 当场问人;untouchedLevels(派生读数)
+- **触发**：拿不到裁决 / 判不了交付成不成立
+- **输出**：block/counted ⇒ plan/blocked ⇒ 当场问人
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状;③「跳级」只记事实:从没走过的等级是一条派生读数。
-- **代码**：preset/plugins/clearai-kernel.js countBlock; ui/lib/fold.js untouchedLevels; docs/verification-loop.md
-- **测试**：test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级读数); test/ontology.test.mjs(状态表逐行有落点) · **配置**：—
+- **理由**：文档里那台验证机是设计记录;它真正承诺的保证都有落点:①结果永远不来时不再无声重试——拿不到裁决、判不了交付成不成立,与准入没过共用同一个连拦计数,到阈值就当场问人;②「说不清」是合法的空结果,不是失败:交付成立的那一步照常完成,判断保持原状。等级只决定谁来判,以及 L4 要人放行;「从没走过的等级」这条读数第四阶段删了。
+- **代码**：preset/plugins/clearai-kernel.js countBlock; docs/verification-loop.md
+- **测试**：test/kernel.test.mjs(拿不到裁决计数 / 说不清也是完成 / 跳级理由整套删除); test/ontology.test.mjs(状态表逐行有落点) · **配置**：—
 - **提示词**：— · **文档**：docs/verification-loop.md
 
 ### `fact-retraction` · 事实撤回:人审查后决定
@@ -901,13 +902,13 @@
 ### `ontology-verbs` · 领域词汇的具名动词与货架
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
-- **触发**：模型调用 RegisterTerm / RegisterPredicate / ReviseTerm / RevisePredicate / DeprecateTerm / DeprecatePredicate / QueryKnowledge
-- **输入**：id / label / gloss / domain / range / functional / basis / reason
+- **触发**：模型调用 Define(不带 range 是概念,带 range 是谓词;同 id 再定义即修订)/ Deprecate
+- **输入**：id / label / gloss / aliases / parent / domain / range / functional / basis / reason
 - **输出**：mutation ontology/term_added（predicate_added / *_revised / *_deprecated 同理）+ clear/ontology/domain.md 重铺
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id。
-- **代码**：preset/plugins/clearai-kernel.js RegisterTerm; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
+- **理由**：词条只能经具名动词落账（判据经宿主 facade 与折法同源）；货架由系统幂等渲染，是读面不是权威。没有删除：修订留版本、废止留缘由且黏性，语义变化必须换 id——同 id 再定义只许改名字、释义、别名。第四阶段把六个写入口合并成 Define / Deprecate、删掉只读的 QueryKnowledge(知识预检已把相关已知送进运行态卡),变更事件名不变。
+- **代码**：preset/plugins/clearai-kernel.js Define; preset/plugins/clearai-kernel.js Deprecate; preset/plugins/clearai-kernel.js ensureDomainShelf; ui/lib/fold.js case 'ontology/term_added'
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/domain-language · **文档**：docs/domain-ontology.zh-CN.md
 
@@ -950,18 +951,30 @@
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：preset/plugins/prompts.js clearai/domain-language · **文档**：docs/domain-ontology.zh-CN.md
 
-### `level-skip-reason` · 跳级需具名理由
+### `entity-gate` · 实体门(结案唯一的结构关口)
 
-- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：model
-- **触发**：模型调 ExplainLevelSkip；或结案时缺口 levels_skipped 存在
-- **输入**：{hypothesis, levels[], reason}
-- **输出**：level/skipped 变更 → hypotheses[].skips[]；缺口 levels_skipped 随之消失
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：Conclude(achieved),知识模式下,在派评估者之前
+- **输入**：将要升格的判断(达门槛、无推翻)的断言主体
+- **输出**：有主体不是实体图节点 ⇒ 拒(entities_unlanded),点名判断与主体;否则放行去独立评估
+- **阻断执行**：是
+- **原生替代**：无
+- **理由**：「本体写得漂亮、实体图是空的」是最容易交付出来的假完成。门只看将要升格的判断:没到门槛的不是结论,只有散文的判断只在卡上列成缺口、不拦。判据是主体是不是图上的节点,不是有没有边——边由升格本身落下,不再要求另用 Assert 把同一句话说一遍。第四阶段把关口从三道收到这一道。
+- **代码**：preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph
+- **测试**：test/kernel.test.mjs(实体门); test/contrast.test.mjs(B 组) · **配置**：requireLandedEntities
+- **提示词**：preset/plugins/prompts.js clearai/domain-language · **文档**：docs/less-is-more-plan.zh-CN.md
+
+### `level-skip-reason` · 已删除:跳级需具名理由
+
+- **层**：认识论 · **状态**：已删除 · **强度**：废弃 · **权威**：无 · **责任方**：model
+- **触发**：—
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：supportedLevel 只是支持证据的最大值，所以"一路只在最贵那一级交付"本来零代价；跳级不违规，但必须说清这一级为什么不适用，理由要点到该检查的对象名。
-- **代码**：preset/plugins/clearai-kernel.js ExplainLevelSkip; ui/lib/fold.js deriveKnowledge
-- **测试**：test/contrast.test.mjs · **配置**：requireLevelReasons
-- **提示词**：preset/plugins/prompts.js clearai/loop-contract · **文档**：docs/verification-loop.zh-CN.md
+- **理由**：第四阶段整套删除(ExplainLevelSkip、level/skipped、untouchedLevels、levels_skipped 缺口与 requireLevelReasons 门):第三阶段重跑里它让小任务结案时多被拦一次、多写一段理由,而等级的职责只有两件——谁来判,以及 L4 要人放行。旧日志里的 level/skipped 安静跳过。
+- **归宿**：已删除并记账
+- **代码**：—
+- **测试**：— · **配置**：—
+- **提示词**：— · **文档**：docs/less-is-more-plan.zh-CN.md
 
 ### `criteria-revision-gate` · 判据修订要一份独立裁决
 
@@ -1018,7 +1031,7 @@
 ### `artifact-path-exclusive` · 产物路径不重叠(同一计划里两步不许声明同一个产物)
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：CreatePlan / AmendPlan
+- **触发**：CreatePlan / RevisePlan(add)
 - **输入**：步骤的 artifacts
 - **输出**：撞上已有步骤(作废的不算)的产物路径即拒
 - **阻断执行**：是

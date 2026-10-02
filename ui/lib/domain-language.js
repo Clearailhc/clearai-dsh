@@ -453,9 +453,9 @@ export function lexiconHealth(lexicon, facts) {
 /**
  * **每个概念被引用了多少次**:断言主体的类型、谓词声明的主词域 / 值域、以及实体断言的类型。
  *
- * 为什么要单独一份判据:「零引用」这件事有两处读者——货架上那一节,与 `deriveKnowledge`
- * 的 `orphan_terms` 缺口。两处各算一遍,迟早会出现「货架说没人用、缺口说用了」这种
- * 同一件事两种读数;所以引用面只在这里定义一次,两边都读它。
+ * 为什么要单独一份判据:「零引用」这件事有两处读者——货架上「零引用的概念」那一节,
+ * 与同一份货架里概念那一列的引用数。两处各算一遍,迟早会出现「引用 0 却没进零引用一节」这种
+ * 同一件事两种读数;所以引用面只在这里定义一次,两边都读它。(第四阶段起它不再是缺口,只是货架读数。)
  */
 export function termUsage(lexicon, facts, entityAssertions = []) {
 	const normalized = normalizeLexicon(lexicon)
@@ -828,7 +828,7 @@ export function applyLexiconMutation(lexicon, mutation, at) {
  * 读的人分不出哪些是可复用的语言、哪些是一次具体的记录。每节开头一句「这一节是什么」。
  *
  * **零引用的概念单独一节**:注册了却没有任何结论引用它,那它还是约定、不是已知。
- * 这一节是这句话的可见面(与 `orphan_terms` 缺口读的是同一件事)。
+ * 这一节是这句话的可见面(只是货架读数,不是缺口)。
  *
  * 第一个参数收两种形状:整份**状态**(推荐,个体那一节要有实体面)或旧的**词汇**;
  * `options.view` 传 `knowledge-view.js` 的 `knowledgeView()` 输出时,「使用」一节读的就是
@@ -850,7 +850,7 @@ export function describeDomainShelf(lexiconOrState, facts, hypotheses = [], opti
 	const entityNodes = state === null ? [] : graphProjection(state).nodes.filter((node) => node.layer === 'entity' && node.kind === 'instance')
 	/**
 	 * **引用面读同一份判据**:概念那一列用 `termUsage`(断言主体 + 主词域 / 值域),
-	 * 与 `orphan_terms` 缺口 / 零引用那一节完全同源——否则会出现「引用 0 却没进零引用一节」
+	 * 与零引用那一节完全同源——否则会出现「引用 0 却没进零引用一节」
 	 * 这种同一张表里两种读数打架的形状。谓词那一列数的是断言条数。
 	 */
 	const termRefs = termUsage(normalized, rows, entityAssertions)
@@ -866,7 +866,7 @@ export function describeDomainShelf(lexiconOrState, facts, hypotheses = [], opti
 		if (predicate !== '') predicateRefs.set(predicate, (predicateRefs.get(predicate) ?? 0) + 1)
 	}
 	const conflicts = deriveConflicts(rows, normalized)
-	/** 零引用的概念:与 `deriveKnowledge` 的 `orphan_terms` 缺口读**同一份**引用面。 */
+	/** 零引用的概念:与概念那一列读**同一份**引用面。 */
 	const orphans = terms.filter((term) => term.status !== 'deprecated' && (termRefs.get(term.id) ?? 0) === 0)
 	const lines = [
 		'# 领域本体(项目词汇)',

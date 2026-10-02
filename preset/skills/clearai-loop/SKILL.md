@@ -18,9 +18,9 @@ description: Use when working inside the ClearAI preset and you need the loop's 
 | 情况 | 动作 |
 |---|---|
 | 命中的词条能表达 | 直接用 id 引用,不重复登记 |
-| 要写断言但谓词不存在 | `RegisterTerm` / `RegisterPredicate` 立最小一组(每个带依据) |
+| 要写断言但词不存在 | `Define` 立最小一组概念与谓词(每个带依据);主体用 `RegisterInstance` 连出处登记 |
 | 核心假设准备登记 | `Frame` 里连 `assertions` 一起写 |
-| 预检摘要不够精确 | `QueryKnowledge` 按概念 / 谓词 / 主体精确取 |
+| 预检摘要不够用 | 读 `clear/knowledge/` 与 `clear/ontology/domain.md` 全文 |
 | 只出现一次且不需要比较 | 保留 claim,不造词 |
 | 单步、一次性、无复用 | 不建本体(普通任务连知识模式都不进) |
 
@@ -41,11 +41,11 @@ description: Use when working inside the ClearAI preset and you need the loop's 
 | 观察 | 拿到结果 | 登记观测(只追加) |
 | 反思 | `AdvancePlan` 交付 | 观测准入 → 裁决 → 写证据 → 推进 |
 
-`AdvancePlan` 是**唯一**能推进循环的动词。另外三个动词明确不动进度,并在返回值里告诉你 `progress_changed: false`:
+`AdvancePlan` 是**唯一**能推进循环的动词。`RevisePlan` 明确不动进度,并在返回值里告诉你 `progress_changed: false`,它有三种动作:
 
-- `AmendPlan` —— 补一步(漏了活)。
-- `RefinePlan` —— 改判定标准(不改进度;旧判据留痕)。
-- `VoidPlanStep` —— 带因作废(作废留痕光明正大;为凑完成而造证是大忌)。
+- `action="add"` —— 补一步(漏了活)。
+- `action="refine"` —— 改判定标准(不改进度;旧判据留痕)。
+- `action="void"` —— 带因作废(作废留痕光明正大;为凑完成而造证是大忌)。
 
 ## 观测准入:它只回答「收不收」
 

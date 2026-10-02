@@ -263,7 +263,7 @@ console.log('\n【③ 反例:越界裁决经真工具面落账时必须被截断
 		tools: { register: (entry) => registered.set(entry.name, entry) },
 		systemPrompt: { section() {} },
 	}
-	apply(ctx, { minHypotheses: 0, requireTypedPromotion: false })
+	apply(ctx, { minHypotheses: 0 })
 
 	// 状态:一个开着的目标。Conclude 的「先收计划」那道门在没有计划时直接放行。
 	states.set(

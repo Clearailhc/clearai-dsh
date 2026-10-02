@@ -4,6 +4,21 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+**「少即是多」第四阶段:Conclude 门收紧,工具面收拢。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第四阶段的改动清单。
+
+### Changed
+
+- **Conclude 只剩一道实体门**(`requireLandedEntities`),而且只管**将要升格**的判断(存活、零推翻、支持等级够升格):它断言里的每个主体都得是实体图上的实例节点(登记过的实例,或 Assert / 已升格事实带出来的节点)。「落图」从「要有一条边」改成「节点在」,所以 `RegisterInstance` 一次就够,不必再 `Assert` 同一句话。门在派评估者之前判,拦下不花评估。
+- **缺口 7 → 3**:留下 `untouched_claims`、`prose_only_claims`、`entities_unlanded`。`entities_unlanded` 的读数列出具体的 `类型|id`,出路写明 `RegisterInstance` 或 Frame 修订。
+- **工具 19 → 10**:`Frame`、`Conclude`、`CreatePlan`、`AdvancePlan`、`RevisePlan`、`ClosePlan`、`Define`、`Deprecate`、`RegisterInstance`、`Assert`。`RevisePlan` 以 `action: add | refine | void` 合并了改计划、补判据、作废一步;`Define` 给了 `range` 是谓词、否则是概念,同 id 再 Define 是修订展示字段,改语义(上位、定义域、值域、函数性)拒为 `semantics_changed`;`Deprecate` 兼管概念与谓词。账本事件名不变。
+- 投影状态版本升到 14:假设带 `unlanded`,不再有 `skips` / `untouchedLevels`。
+
+### Removed
+
+- 配置 `requireTypedPromotion`、`requireLevelReasons`(写了在组装时报 `unknown_config`);缺口 `no_language`、`unstructured_facts`、`levels_skipped`、`orphan_terms`。
+- 整套跳级机制:`ExplainLevelSkip`、运行态卡的「未走过」、面板的等级导引。旧账本里的 `level/skipped` 折叠时静默跳过。
+- `CheckPlan`(运行态卡每回合都在)与 `QueryKnowledge`(两轮六场模拟里一次没被调用;词表在 `clear/knowledge/`)。
+
 **「少即是多」第三阶段:目标层挂到原生 goal,交付与裁决分开。** 按[改造方案](docs/less-is-more-plan.zh-CN.md)第三阶段的改动清单。
 
 ### Changed
