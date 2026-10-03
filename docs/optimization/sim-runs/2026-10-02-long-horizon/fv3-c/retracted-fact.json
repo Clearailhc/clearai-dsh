@@ -1,0 +1,38 @@
+{
+  "id": "f-0uctdy",
+  "goal": "g-murk74cs2o1k",
+  "hypothesis": "h-94m40r",
+  "text": "产线(L1/L2)与工位(ST1–ST4)不是原因",
+  "scope": "B0723 分层之外,某条线或某工位仍明显偏低",
+  "level": "L3",
+  "evidence": [
+    "e-jfzse5",
+    "e-bgg3y7"
+  ],
+  "assertions": null,
+  "definitions": {
+    "production_line": "fnv:ed988848",
+    "station": "fnv:3ffb9db0"
+  },
+  "session": "sim",
+  "status": "retracted",
+  "review": {
+    "decision": "retracted",
+    "reason": null,
+    "at": 1790994890471,
+    "by": "user"
+  },
+  "at": 1790981751064,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1790981751064,
+      "level": "L3"
+    },
+    {
+      "event": "retracted",
+      "at": 1790994890471,
+      "reason": null
+    }
+  ]
+}
