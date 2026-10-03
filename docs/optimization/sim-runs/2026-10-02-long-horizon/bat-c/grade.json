@@ -1,0 +1,12 @@
+{"items":[
+{"id":"1","claimed":"假,半固态","score":1,"overconfident":false,"why":"与答案一致"},
+{"id":"2","claimed":"假,301 Wh/kg","score":1,"overconfident":false,"why":"与答案一致"},
+{"id":"3","claimed":"假(里程真,FEST准固态)","score":0.5,"overconfident":false,"why":"事实依据正确,但判死假而未标注梅赛德斯称固态的争议"},
+{"id":"4","claimed":"真","score":1,"overconfident":false,"why":"一致"},
+{"id":"5","claimed":"真(目标与协议)","score":1,"overconfident":false,"why":"正确标注是目标"},
+{"id":"6","claimed":"真(公司计划)","score":1,"overconfident":false,"why":"正确标注是计划"},
+{"id":"7","claimed":"有争议,倾向假","score":1,"overconfident":false,"why":"判有争议并给出蔚来在先的口径依据"},
+{"id":"8","claimed":"真(示范线)","score":1,"overconfident":false,"why":"一致"},
+{"id":"9","claimed":"假,交付的是B1样品","score":1,"overconfident":false,"why":"一致"},
+{"id":"10","claimed":"假,180 vs 260/360","score":1,"overconfident":false,"why":"一致"}
+],"total":9.5,"max":10,"overconfident":0,"notes":"报告自述出处来自搜索摘要、未读全文,诚实。第3条略偏一边倒。"}

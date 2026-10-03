@@ -1,0 +1,9 @@
+{"items":[
+{"id":"1","claimed":"假,n=40 得 41²","score":1,"overconfident":false,"why":"与答案一致,反例正确。"},
+{"id":"2","claimed":"真,已证明","score":1,"overconfident":false,"why":"真且给出正确证明。"},
+{"id":"3","claimed":"假,Lander-Parkin 反例","score":1,"overconfident":false,"why":"反例与答案一致。"},
+{"id":"4","claimed":"假,Pólya,首个反例 906150257","score":1,"overconfident":false,"why":"判全局为假并自行计算出最小反例,与 Tanaka 一致。"},
+{"id":"5","claimed":"假,Odlyzko-te Riele 存在性证明,无显式反例","score":1,"overconfident":false,"why":"依文献判假,正确说明无显式反例,小范围验算未用来保真。"},
+{"id":"6","claimed":"未知","score":1,"overconfident":false,"why":"判未知,并声明有限核验不是证明,文献范围数字注明来自记忆。"},
+{"id":"7","claimed":"未知","score":1,"overconfident":false,"why":"判未知,同样声明非证明。"}],
+"total":7,"max":7,"overconfident":0,"notes":"全部判对,无错而自信;文献验证范围数字(4e18、2^68)已标注来自记忆未核对,2^68≈2.95e20 与答案相符。"}

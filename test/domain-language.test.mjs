@@ -465,9 +465,19 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 	const pf2 = fold.knowledgePreflight(withAssertions, fold.derive(withAssertions))
 	check('断言引用的谓词算「在用」(即使词面不命中)', pf2.predicates.some((predicate) => predicate.id === 'oxygen_ppm'))
 
+	// ③b 事实几乎都没有断言:升格时按词面挂上的定义命中,也算相关;卡上给原话与边界。
+	const withFacts = fold.applyMutations(seededState, [
+		{ t: 'fact/promoted', id: 'f-ox', goal: 'g0', hypothesis: 'h0', text: '二号炉氧含量偏高', scope: '换了氧探头后读数不变', level: 'L3', definitions: { furnace_batch: 'fnv:1' } },
+		{ t: 'fact/promoted', id: 'f-other', goal: 'g0', hypothesis: 'h9', text: '与本题无关的结论', scope: 's', level: 'L3', definitions: { unrelated: 'fnv:2' } },
+	])
+	const pfFacts = fold.knowledgePreflight(withFacts, fold.derive(withFacts))
+	check('定义里挂着命中概念的事实进预检(没有断言也算)', pfFacts.facts.some((fact) => fact.id === 'f-ox') && !pfFacts.facts.some((fact) => fact.id === 'f-other'), JSON.stringify(pfFacts.facts.map((fact) => fact.id)))
+	const factCard = fold.renderCard(withFacts)
+	check('卡上递出相关事实的原话与边界', factCard.includes('二号炉氧含量偏高') && factCard.includes('边界:换了氧探头后读数不变'), factCard.split('\n').filter((line) => line.includes('边界')).join(' | '))
+
 	// ④ 卡里真的说出来。
 	const card = fold.renderCard(seededState)
-	check('卡里有「已有的词」一行,带可直接引用的 id', card.includes('已有的词') && card.includes('furnace_batch') && card.includes('oxygen_ppm'))
+	check('卡里有「用到的概念 / 关系」,带可直接引用的 id', card.includes('这些判断用到的概念') && card.includes('furnace_batch') && card.includes('oxygen_ppm'))
 
 	// ⑤ 没命中时如实说,不把空读数写成「世上没有」。
 	const noVocab = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g1', claim: '全新领域', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: '全新主张', refute_when: 'rw' }] }])

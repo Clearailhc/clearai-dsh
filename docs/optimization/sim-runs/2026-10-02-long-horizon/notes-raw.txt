@@ -1,0 +1,43 @@
+math-b: 7/7 (strict 6.5), overconfident 0, 126s, 6 tool uses. Bare baseline already saturates task 1 → ClearAI value must show in calibration/process, not correctness.
+math-c: judge 9/11. 225s, 15 tool uses, 9 kernel calls, 1 audit (Conclude only).
+ - F1 Model framed hypotheses as its own verdicts ("1假","6未知") → all 7 evidence = support; no refutation ever recorded; DSH would show 7 支持, never 已推翻.
+ - F2 Model labelled every step L1 (incl. computations that by definition are L2/L3) → self-judged every step, no step-level evaluator. Kernel doesn't check level vs evidence kind (scripts+outputs = new reproducible evidence = L3).
+ - Answer equal to bare (both correct); ClearAI cost ~1.8x time.
+math-c grade: 7/7, overconfident 0 (C computed Pólya itself; B too). Tie.
+bin1-c: judge 7/9. 197s. Correctly abandoned with the 7.53% upper bound (planted ≈7.5%). Heuristic only 1.26% (odd instances have known-optimal triplets; weak search).
+ - F3 Conclude(abandoned) dispatches no evaluator; ontology.js:232 declares guard independent_verdict_written but kernel (clearai-kernel.js:2514) does not enforce it → ontology vs code drift. Abandon is unchecked self-judgment (here correct).
+ - F4 No skill written (.agents/skills) – nothing prompts it; session-2 reuse relies on files only.
+ - F2 again: all steps L1/self-judged → 0 independent checks in whole run.
+ - Ignored the "typed assertions / ontology" nudge.
+bin1-c grade: 1/1, not overconfident.
+bin1-b: also found 7.53% bound, heuristic 0% (vs C 1.26%). No ClearAI diff in correctness of conclusion.
+bin1-b grade: 1/1. Tie on s1 (both 7.53%). C heuristic 1.26% vs B 0%; C took 197s vs B 289s.
+bin2-b: 0% on set-b, bound 7.51%, done.
+bin2-c grade: 1/1 (grader read '只评:2' as item 2 — pass descriptive session text next time; key has no s2-specific items). bin2-c: C heuristic 1.14% on set-b, 1 audit (Conclude), achieved, 7 kernel calls. B heuristic still 0%. Note: C claimed 'why u at bound 说不清' while B explained it.
+bin2-b grade: 1/1. Task 5 overall: tie on honesty; C built a working heuristic (1.26%/1.14%) vs B 0%; C validated packings; s2 reuse similar (both reused files).
+rx-b grade: 0.5/4, overconfident 1 (claims plateau 84-88 as verified, true optimum 91 at cat1.44/T159). Noticed 8°C offset but didn't infer drift. 36 runs, 72s.
+rx-c audit sub-10: evaluator noticed T_ref 8°C mismatch the model never reported, but passed (not a registered criterion) → evaluator bound to model-authored criteria can't fail on unasked issues. Recipe 170/4/1.0/60 (=OFAT-ish).
+rx-c/rx-n judge 8/11 each. KEY F5: L4 human-release gate never fired in either run. Both ran the one-shot pilot directly via Bash and labelled every step L1. rx-n had answers release=先不放行 yet pilot ran anyway. Levels are self-declared; kernel can't see the irreversible command. → L4 gate is opt-in; "人放行" is not enforced.
+ - F2 again: all L1, 0 step audits; only Conclude audit.
+ - rx-c: evaluator noted the T_ref drift; model fixed report AFTER closing as achieved (post-hoc 更正). rx-n noticed 8°C at run30 but dismissed. Neither inferred persistent drift.
+ - recipes: rx-n 170/3.5/1.2/85 ~88.8; rx-c 170/4/1.0/60; bare 172/3.5/1.1/60 (0.5/4).
+rx-n grade: 0.5/3, overconfident 0 (max differs from rx-b's 4 — grader chose different item split; compare totals carefully).
+rx-c grade: 2.5/4, overconfident 1 (achieved/interior optimum overstated). Drift caught only via evaluator's side note → that IS a ClearAI-attributable win (bare 0.5/4). No group found the T-cat ridge (91%).
+fa1-b: found B0723×RH>65 (82 vs 97), night shift confounder refuted. Strong.
+fa1-c (first try) aborted by container restart after 54 calls (46 ontology writes, Frame×2, AdvancePlan×3, RevisePlan×2: voided ontology step because declared artifact paths didn't match actual names). Restarted fresh.
+fa1-c audit sub-59 passed; evaluator says its brief allows no commands, so it never re-ran scripts → independent check is read-only document comparison, not reproduction. Check evaluator brief wording.
+ - F6 confirmed: evaluator whitelist is read/glob/grep/read_image, no exec → 'L3 = new, re-runnable evidence judged independently' is never re-run; evaluator only checks docs agree with each other.
+fa1-c: judge 7/11. 58 calls (47 ontology writes), 940s. Correct cause. ZERO facts promoted: all steps L2, promote threshold L3 → F7: across 6 ClearAI runs, 0 facts, 0 L3, 0 L4. Fact/ontology-link/cross-session/retests machinery never exercised. Ontology: no 良率 concept, no nested composition.
+fa1-c grade: 4/5, overconfident 0.
+fa1-b grade: 4.5/5, overconfident 0. Bare 128s vs ClearAI 940s.
+fa2-b: found L2-ST3 wear from ~9/8-9/12, rework 21%; re-checked Aug conclusions under new definition incl. one no longer holding. Excellent without any mechanism.
+fa2-c: judge 6/11. All session-2 mechanisms (fact sync, 定义已变, retests, fact/reviewed) idle because s1 promoted 0 facts. 8 kernel calls, 250s. Found L2-ST3. Both found it.
+fa2-b grade: 8/8, overconfident 0.
+fa2-c grade: 6/6, overconfident 0. (Graders made different item splits; both full marks. Tie.)
+fa3-b: done; noted S-B never fully stopped; recomputed.
+fa3-c: judge 7/8, 8 calls, 186s ('读到了已知结论' failed—no facts). fa3-b 47s. bat-b: done 172s, proxy blocked many sites; snippets only.
+fa3-c grade: 4/4, overconfident 0.
+bat-b grade: 9.5/10, overconfident 0.
+fa3-b grade: 2.5/3, overconfident 0.
+bat-c: judge 8/12. 71 calls (58 ontology writes), 435s vs bare 172s. 0 facts again; again voided an ontology step due to wrong declared artifact path (same as factory) → F8 artifact-path friction recurs. Claim 3 called false (key: contested).
+bat-c grade: 9.5/10, overconfident 0 (item 3 one-sided). Tie with bare.

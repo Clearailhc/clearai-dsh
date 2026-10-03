@@ -10,19 +10,55 @@
  * 两份都**不**指向仓库:扮演模型的子代理读不到判分用的断言,评估者读不到做的人的思路。
  */
 import { request as httpRequest } from 'node:http'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { SCENARIOS } from '../e2e-scenarios.mjs'
+import { LONG_HORIZON } from './long-horizon/scenarios.mjs'
 
 const CALL = resolve(fileURLToPath(new URL('./call.mjs', import.meta.url)))
 
 const [kind, runArg, target] = process.argv.slice(2)
-if (!['model', 'evaluator'].includes(kind) || runArg === undefined || target === undefined) {
-	console.error('用法:node tools/sim/brief.mjs model <运行目录> <剧本名> | evaluator <运行目录> <请求 id>')
+if (!['model', 'evaluator', 'bare'].includes(kind) || runArg === undefined || target === undefined) {
+	console.error('用法:node tools/sim/brief.mjs model <运行目录> <剧本名> | evaluator <运行目录> <请求 id> | bare <运行目录> <剧本名> <工作区>')
 	process.exit(2)
 }
 const runDir = resolve(runArg)
+/** 剧本:短测剧本与长程剧本(`long-horizon/scenarios.mjs`)同一个名字空间。 */
+const scenarioOf = (name) => SCENARIOS[name] ?? LONG_HORIZON[name]
+/** 长程剧本的任务书是函数(要知道运行目录);准备数据也在生成说明时做。 */
+const taskOf = (scenario, workspace, field = 'task') => {
+	const task = scenario[field] ?? scenario.task
+	return typeof task === 'function' ? task({ runDir, workspace }) : task
+}
+
+if (kind === 'bare') {
+	// 对照组:同一份任务书,不装 ClearAI,不起模拟宿主。
+	const scenario = scenarioOf(target)
+	const workspace = resolve(process.argv[5] ?? join(runDir, 'ws'))
+	if (scenario === undefined) {
+		console.error(`没有这个剧本:${target}`)
+		process.exit(2)
+	}
+	mkdirSync(workspace, { recursive: true })
+	writeFileSync(join(runDir, 'meta.json'), JSON.stringify({ workspace, scenario: target, bare: true }))
+	scenario.setup?.({ runDir, workspace })
+	const text = `# 任务
+
+- **工作区**:\`${workspace}\`。所有文件读写都在这里;相对路径都相对它。用你自己的文件工具与 Bash 干活。
+- **网络**:要查资料就用你自己的网页搜索与抓取工具;被挡住就换来源,并如实写明出处。
+- **不要**读写工作区以外的任何文件(任务书里明确给出的命令除外)。
+- 没有人能中途回答你的问题;需要人决定的事,在最后的回复里写明。
+- 做完(或确实做不下去)时结束运行:你最后一条消息就是给人的答复。
+
+## 人发来的第一条消息
+
+${taskOf(scenario, workspace, 'bareTask')}
+`
+	writeFileSync(join(runDir, 'bare-brief.md'), text)
+	console.log(join(runDir, 'bare-brief.md'))
+	process.exit(0)
+}
 const port = Number(readFileSync(join(runDir, 'port'), 'utf8').trim())
 
 const get = (path) =>
@@ -37,12 +73,13 @@ const get = (path) =>
 	})
 
 if (kind === 'model') {
-	const scenario = SCENARIOS[target]
+	const scenario = scenarioOf(target)
 	if (scenario === undefined) {
-		console.error(`没有这个剧本:${target}。有:${Object.keys(SCENARIOS).join('、')}`)
+		console.error(`没有这个剧本:${target}。有:${[...Object.keys(SCENARIOS), ...Object.keys(LONG_HORIZON)].join('、')}`)
 		process.exit(2)
 	}
 	const workspace = String(JSON.parse(readFileSync(join(runDir, 'meta.json'), 'utf8')).workspace)
+	scenario.setup?.({ runDir, workspace })
 	const brief = await get('/brief')
 	const tools = brief.tools
 		.map((tool) => `### ${tool.name}\n\n${tool.description}\n\n参数 schema:\n\`\`\`json\n${JSON.stringify(tool.parameters)}\n\`\`\``)
@@ -84,7 +121,7 @@ if (kind === 'model') {
 
 ## 任务(人发来的第一条消息)
 
-${scenario.task}
+${taskOf(scenario, workspace)}
 
 ---
 
@@ -110,7 +147,7 @@ ${tools}
 	const workspace = String(JSON.parse(readFileSync(join(runDir, 'meta.json'), 'utf8')).workspace)
 	const text = `# 你是 ClearAI 派出的独立评估者
 
-工作区:\`${workspace}\`。**只读**:只用读文件、列目录、搜索(相当于工具白名单 ${JSON.stringify(item.toolFilter?.allow ?? [])});不要写文件、不要执行命令、不要读工作区以外的东西。
+工作区:\`${workspace}\`。${(item.toolFilter?.allow ?? []).includes('bash') ? `**原工作区只读**:可以读文件、列目录、搜索(相当于工具白名单 ${JSON.stringify(item.toolFilter.allow)});要复跑脚本,只在任务里给的副本目录里用 Bash 运行,不要在原工作区写文件或运行命令。` : `**只读**:只用读文件、列目录、搜索(相当于工具白名单 ${JSON.stringify(item.toolFilter?.allow ?? [])});不要写文件、不要执行命令、不要读工作区以外的东西。`}
 相对路径都相对工作区。
 
 ## 人格
@@ -129,7 +166,7 @@ ${item.prompt}
 ${JSON.stringify(item.outputSchema)}
 \`\`\`
 
-判完之后,用这条命令把裁决交回(这是唯一允许你运行的命令;它只把裁决交给系统,不碰工作区):
+判完之后,用这条命令把裁决交回(它只把裁决交给系统,不碰工作区):
 
 \`\`\`bash
 node ${CALL} ${runDir} --settle ${target} <<'EOF'

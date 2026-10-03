@@ -1174,7 +1174,7 @@ export const ONTOLOGY_SCHEMA = bilingual({
 		required: {
 			id: ['slug:小写字母开头,字母/数字/下划线,≤40,等于文件名', 'slug: starts with a lowercase letter; letters, digits, underscores; ≤40; equals the file name'],
 			label: ['给人看的名字', 'the human-readable name'],
-			gloss: ['一句话释义:它指什么', 'one-sentence gloss: what it refers to'],
+			gloss: ['一句话释义:它指什么;度量(良率、收率……)写明口径,也就是怎么算', 'one-sentence gloss: what it refers to; for a measure (yield, conversion …) state its definition, that is, how it is computed'],
 		},
 		optional: {
 			aliases: ['别名数组', 'array of aliases'],
