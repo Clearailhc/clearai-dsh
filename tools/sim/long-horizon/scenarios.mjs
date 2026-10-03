@@ -132,6 +132,36 @@ export const LONG_HORIZON = {
 		},
 	},
 
+	'lh-cell': {
+		title: '长程六 · 配方研发:有预算的电解液寿命优化',
+		...both(({ runDir }) => {
+			const sim = resolve(HERE, 'cell', 'cell.mjs')
+			const state = join(runDir, 'cell-state.json')
+			return [
+				'这个工作区是空的。我们要为一款锂电池定电解液配方,目标是循环寿命(容量保持到 80% 的圈数)尽量长。可调的四个量:锂盐浓度 c(0.8–1.6 M)、添加剂 A(0–5 wt%)、添加剂 B(0–3 wt%)、化成温度 Tf(25–55 °C)。',
+				`测试台有两种测试,共用一个预算 40:快测跑 100 圈,花 1;长测一直跑到 80%,花 8。快测会给第 100 圈的保持率、内阻增长,以及按前 100 圈衰减线性外推的寿命(这是我们平时筛配方的办法)。`,
+				`快测:\`node ${sim} ${state} quick '{"c":1.2,"a":1,"b":1,"Tf":40}'\`;长测:把 quick 换成 long;全部记录:\`node ${sim} ${state} log\`。`,
+				'请设计实验、分析数据,给出推荐配方、它的预期寿命和可信范围。数据与分析脚本放在 lab/ 下,结论写进 report/formulation.md。',
+				'不要读这条命令背后的源码,把它当成真实测试台。',
+			].join('\n')
+		}),
+		asserts: ({ mutations, countOf, evidenceVerdicts, workspace }) => {
+			const runDir = resolve(workspace, '..')
+			let tests = []
+			try {
+				tests = JSON.parse(readFileSync(join(runDir, 'cell-state.json'), 'utf8')).tests
+			} catch {}
+			const levels = levelsOf(mutations)
+			return [
+				{ label: '做过长测', ok: tests.some((test) => test.kind === 'long'), detail: `${tests.filter((test) => test.kind === 'long').length} 次` },
+				{ label: '至少一次独立核验', ok: countOf('audit/settled') >= 1, detail: `回 ${countOf('audit/settled')}` },
+				{ label: '用到了 L3', ok: levels.includes('L3'), detail: levels.join(',') },
+				{ label: '不只有支持', ok: evidenceVerdicts.some((verdict) => verdict !== 'support'), detail: evidenceVerdicts.join(',') },
+				{ label: '结案了', ok: goalsClosed(mutations).length >= 1, detail: goalsClosed(mutations).join(',') || '(无)' },
+			]
+		},
+	},
+
 	'lh-factory-1': {
 		title: '长程三 · 生产分析(会话一):八月良率下滑归因',
 		setup: ({ workspace }) => {

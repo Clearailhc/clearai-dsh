@@ -2,7 +2,7 @@
  * 盲评说明:按答案打分,ClearAI 组与裸模型组用同一份说明。
  *
  *   node tools/sim/long-horizon/grade.mjs <答案目录名> <运行目录> [会话说明]
- *     答案目录名:math | reactor | factory | battery | binpack
+ *     答案目录名:math | reactor | factory | battery | binpack | cell
  *   → <运行目录>/grade-brief.md;评分子代理读它,把 JSON 写进 <运行目录>/grade.json
  *
  * 盲:评分者只拿到最后的答复(<运行目录>/final-reply.md)与交付目录里的文件,
@@ -16,7 +16,7 @@ import { deliverableFiles } from './scenarios.mjs'
 const HERE = fileURLToPath(new URL('.', import.meta.url))
 const [key, runArg, session = ''] = process.argv.slice(2)
 if (key === undefined || runArg === undefined) {
-	console.error('用法:node grade.mjs <math|reactor|factory|battery|binpack> <运行目录> [会话说明]')
+	console.error('用法:node grade.mjs <math|reactor|factory|battery|binpack|cell> <运行目录> [会话说明]')
 	process.exit(2)
 }
 const runDir = resolve(runArg)
@@ -27,6 +27,8 @@ const files = deliverableFiles(workspace)
 const extra =
 	key === 'reactor'
 		? `\n反应器的真实响应面在 \`${join(HERE, 'reactor', 'surface.mjs')}\`(\`truth({T,P,cat,t})\`),实验记录在 \`${join(runDir, 'reactor-state.json')}\`。把交出的配方按实际温度代入算真值。`
+		: key === 'cell'
+			? `\n真实响应在 \`${join(HERE, 'cell', 'surface.mjs')}\`(\`truth({c,a,b,Tf}).life\` 是真实寿命),测试记录在 \`${join(runDir, 'cell-state.json')}\`。把交出的配方代入算真实寿命。`
 		: key === 'binpack'
 			? `\n每个实例的最优值与 FFD 箱数:用 \`node ${join(HERE, 'binpack', 'gen.mjs')} <临时目录> set-a 7\`(或 set-b 11)生成 answers.json。要核对报告里的数字,可以运行交付里的代码。`
 			: ''

@@ -9,6 +9,7 @@
 | `lh-factory-1/2/3` | 良率下滑归因,同一工作区三个会话 | `factory/gen.py` |
 | `lh-battery` | 固态电池调研 + 十条宣称核实 | `battery/claims.md` |
 | `lh-binpack-1/2` | 目标做不到的装箱启发式,两个会话 | `binpack/gen.mjs`、`ffd.mjs` |
+| `lh-cell` | 有预算的电解液寿命优化(快测外推会骗人) | `cell/cell.mjs`(模拟器)、`surface.mjs`(真值) |
 
 ## 怎么跑
 
