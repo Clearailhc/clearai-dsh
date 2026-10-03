@@ -298,6 +298,8 @@ function makeHost() {
 								throw new Error('provider refuses every variant')
 							}
 							audits.push({ provider, request })
+							// `onAudit`:评估者「运行」的那一刻(查副本在不在、模拟评估者动了产物)。
+							host.onAudit?.(request)
 							// `auditNeverSettles` / `auditDelayMs`:让评估者**晚一点**（或永不）落定——
 							// 「回合结束时它还在飞」这件事才测得到。
 							/**
@@ -1441,6 +1443,78 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const promoted = host.journal.filter((mutation) => mutation.t === 'fact/promoted')
 		check('自判只到 L1 的判断,经结案评估支持 ⇒ 升格', closed.ok === true && promoted.length === 1 && promoted[0].hypothesis === steady && promoted[0].evidence.includes(atClose[0].id), JSON.stringify(promoted))
 		check('被推翻的判断不升格', !promoted.some((mutation) => mutation.hypothesis === other))
+		const after = renderCard(host.service.state(S))
+		check('目标结了 ⇒ 卡上递出事实原话与边界(下一个目标立题前就看得到)', after.includes('以前留下的事实') && after.includes('R 比 T 更稳') && after.includes('边界:T 波动更小'), after.split('\n').filter((line) => line.includes('事实') || line.includes('边界')).join(' | '))
+	}
+
+	// ⑥ 工作板:对手可选(写了才跟踪),检验全是「支持」时按症状提醒,立题前递以前的事实原话
+	{
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3, minHypotheses: 2 })
+		const S = 'session-board'
+		const plain = await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', hypotheses: [{ claim: '磁盘慢', refute_when: '磁盘延迟正常' }, { claim: '锁竞争', refute_when: '锁等待为零' }] })
+		check('不写对手照样立题(对手是可选的,不为竞争而竞争)', plain.ok === true, plain.code)
+		const strayRival = await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', reason: '补对手', hypotheses: [{ name: '磁盘', claim: '磁盘慢', refute_when: '磁盘延迟正常', rival: '网络' }, { claim: '锁竞争', refute_when: '锁等待为零' }] })
+		check('rival 指向不在这一版里的判断 ⇒ 当场拒', strayRival.ok === false && strayRival.code === 'rival_unknown', strayRival.code)
+		const noSplit = await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', reason: '补对手', hypotheses: [{ name: '磁盘', claim: '磁盘慢', refute_when: '磁盘延迟正常', rival: '锁' }, { name: '锁', claim: '锁竞争', refute_when: '锁等待为零' }] })
+		check('给了 rival 没给 split_by ⇒ 当场拒(说不出区分观测就还不是对手)', noSplit.ok === false && noSplit.code === 'split_by_required', noSplit.code)
+		await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', reason: '补对手', hypotheses: [{ name: '磁盘', claim: '磁盘慢', refute_when: '磁盘延迟正常', rival: '锁', split_by: '把数据放进内存盘再测:磁盘说法下变快,锁说法下不变' }, { name: '锁', claim: '锁竞争', refute_when: '锁等待为零' }] })
+		const [disk, lock] = host.service.state(S).hypotheses.filter((item) => item.status !== 'superseded').map((item) => item.id)
+		check('对手按 id 落账,带区分观测', host.service.state(S).hypotheses.find((item) => item.id === disk)?.rival === lock && /内存盘/.test(host.service.state(S).hypotheses.find((item) => item.id === disk)?.split_by ?? ''))
+		const planned = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'u1', do: '只看磁盘', artifacts: ['lab/u.txt'], done_criteria: 'lab/u.txt 有延迟', tests: { hypotheses: [disk], level: 'L1' } }] })
+		check('卡上:这一对还没分出,计划里没有一步同时检验它们', /对手:「磁盘」对「锁」/.test(String(planned.card)) && /还没有一步同时检验这一对/.test(String(planned.card)), String(planned.card).split('\n').filter((line) => line.includes('对手')).join(' | '))
+		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'u2', do: '内存盘对照', artifacts: ['lab/u2.txt'], done_criteria: 'lab/u2.txt 有两组耗时', tests: { hypotheses: [disk, lock], level: 'L1' } } })
+		write('lab/u.txt', 'disk_ms=40\n')
+		const first = await callOn(host, S, 'AdvancePlan', { step_id: 'u1', basis: 'lab/u.txt disk_ms=40', verdict: 'support' })
+		check('卡上:找到会同时检验这一对的那一步', /会同时检验这一对/.test(String(first.card ?? first.message)), String(first.message).split('\n').filter((line) => line.includes('对手')).join(' | '))
+		write('lab/u2.txt', 'ram=12 disk=30\n')
+		const settled = await callOn(host, S, 'AdvancePlan', { step_id: 'u2', basis: 'lab/u2.txt ram=12 disk=30', results: [{ hypothesis: disk, verdict: 'support' }, { hypothesis: lock, verdict: 'refute' }] })
+		check('卡上:分出来了,说清是哪条被推翻', /已分出:「锁」被推翻/.test(String(settled.message)), String(settled.message).split('\n').filter((line) => line.includes('对手')).join(' | '))
+
+		const weak = makeHost()
+		apply(weak.ctx, { blockedThreshold: 3 })
+		const W = 'session-weak-tests'
+		await callOn(weak, W, 'Frame', { claim: 'V 好不好?', done_criteria: '存在 lab/w3.txt', hypotheses: [{ name: 'V 快', claim: 'V 快', refute_when: 'V 比基线慢' }] })
+		const [fast] = weak.service.state(W).hypotheses.map((item) => item.id)
+		await callOn(weak, W, 'CreatePlan', { steps: [1, 2, 3].map((n) => ({ id: `w${n}`, do: `第 ${n} 次`, artifacts: [`lab/w${n}.txt`], done_criteria: `lab/w${n}.txt 有耗时`, tests: { hypotheses: [fast], level: 'L1' } })) })
+		const cards = []
+		for (const n of [1, 2, 3]) {
+			write(`lab/w${n}.txt`, `ms=${n}\n`)
+			cards.push(String((await callOn(weak, W, 'AdvancePlan', { step_id: `w${n}`, basis: `lab/w${n}.txt ms=${n}`, verdict: 'support' })).message))
+		}
+		check('两次全是支持 ⇒ 不提醒(症状还不成立)', !/检验可能太弱/.test(cards[1]))
+		check('三次全是支持 ⇒ 卡上提醒检验可能太弱', /3 次检验全是「支持」/.test(cards[2]), cards[2].slice(-400))
+	}
+
+	// ⑦ 评估者复跑:工作区副本(不含 clear/)+ bash;评估后副本删掉;评估期间产物被改 ⇒ 裁决不认
+	{
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3, auditRerun: true })
+		const S = 'session-rerun'
+		await callOn(host, S, 'Frame', { claim: 'Z 的均值?', done_criteria: '存在 lab/z.txt', hypotheses: [{ name: '大于一', claim: '均值大于 1', refute_when: '均值不大于 1' }] })
+		const [above] = host.service.state(S).hypotheses.map((item) => item.id)
+		await callOn(host, S, 'CreatePlan', { steps: [{ id: 'z1', do: '算均值', artifacts: ['lab/z.txt'], done_criteria: 'lab/z.txt 有均值', tests: { hypotheses: [above], level: 'L3' } }] })
+		write('lab/z.txt', 'mean=2\n')
+		let copy = null
+		let copied = false
+		host.onAudit = (request) => {
+			const said = typeof request.prompt === 'string' ? request.prompt : (request.prompt ?? []).map((block) => block?.text ?? '').join('\n')
+			copy = /副本在 ([^\s(（]+)/.exec(said)?.[1] ?? null
+			copied = copy !== null && existsSync(join(copy, 'lab', 'z.txt')) && !existsSync(join(copy, 'clear'))
+		}
+		host.nextVerdict = { holds: 'yes', basis: '复跑 mean=2', shortfalls: [], results: [{ hypothesis: above, verdict: 'support' }] }
+		const ok = await callOn(host, S, 'AdvancePlan', { step_id: 'z1' })
+		const request = host.audits.at(-1)?.request
+		check('任务书给出副本路径,副本里有产物、没有 clear/', copied, String(copy))
+		check('评估者的工具面多了 bash', (request?.toolFilter?.allow ?? []).includes('bash'), JSON.stringify(request?.toolFilter))
+		check('评估结束后副本删掉', ok.ok === true && copy !== null && !existsSync(copy), String(copy))
+
+		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'z2', do: '再算一次', artifacts: ['lab/z2.txt'], done_criteria: 'lab/z2.txt 有均值', tests: { hypotheses: [above], level: 'L3' } } })
+		write('lab/z2.txt', 'mean=3\n')
+		host.onAudit = () => write('lab/z2.txt', 'mean=9\n')
+		const touched = await callOn(host, S, 'AdvancePlan', { step_id: 'z2' })
+		check('评估期间收下的产物被改 ⇒ 裁决不认,这一步不推进', touched.ok === false && touched.code === 'evaluator_touched_outputs' && host.service.state(S).plans[0].steps.find((step) => step.id === 'z2')?.status === 'open', touched.code)
+		host.onAudit = undefined
 	}
 }
 

@@ -298,6 +298,8 @@ export function applyMutation(state, mutation) {
 					known.version = hypothesis.version ?? known.version
 					if (typeof hypothesis.name === 'string' && hypothesis.name !== '') known.name = hypothesis.name
 					if (typeof hypothesis.retests === 'string' && hypothesis.retests !== '') known.retests = hypothesis.retests
+					if (typeof hypothesis.rival === 'string' && hypothesis.rival !== '') known.rival = hypothesis.rival
+					if (typeof hypothesis.split_by === 'string' && hypothesis.split_by !== '') known.split_by = hypothesis.split_by
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
 					continue
 				}
@@ -310,6 +312,9 @@ export function applyMutation(state, mutation) {
 					refute_when: hypothesis.refute_when,
 					/** 复检的是哪条已有事实(事实 id;可以是别的会话留下的)。 */
 					...(typeof hypothesis.retests === 'string' && hypothesis.retests !== '' ? { retests: hypothesis.retests } : {}),
+					/** 对手(另一条判断的 id)与区分它们的观测。 */
+					...(typeof hypothesis.rival === 'string' && hypothesis.rival !== '' ? { rival: hypothesis.rival } : {}),
+					...(typeof hypothesis.split_by === 'string' && hypothesis.split_by !== '' ? { split_by: hypothesis.split_by } : {}),
 					status: 'proposed',
 					version: hypothesis.version ?? 1,
 					/**
@@ -1092,9 +1097,17 @@ export function knowledgePreflight(state, derived) {
 	const matchedPredicates = predicates.filter((predicate) => usedPredicates.has(predicate.id) || hits(predicate))
 	const matchedTermIds = new Set(matchedTerms.map((term) => term.id))
 	const matchedPredicateIds = new Set(matchedPredicates.map((predicate) => predicate.id))
-	/** 事实:断言引用了命中的谓词,或主词类型是命中的概念。 */
-	const matchedFacts = factRows.filter((fact) =>
-		(Array.isArray(fact.assertions) ? fact.assertions : []).some((assertion) => matchedPredicateIds.has(String(assertion?.predicate ?? '')) || matchedTermIds.has(String(assertion?.subject?.type ?? ''))),
+	/**
+	 * 事实:断言引用了命中的谓词或概念;**或**升格时按词面挂上的定义里有命中的词(真跑里事实几乎都没有断言,
+	 * 只认断言等于从不命中);**或**有判断用 `retests` 指着它。撤回的不给。
+	 */
+	const retested = new Set(hypotheses.map((item) => item.retests).filter((id) => typeof id === 'string'))
+	const matchedFacts = factRows.filter(
+		(fact) =>
+			fact.review?.decision !== 'retracted' &&
+			(retested.has(fact.id) ||
+				Object.keys(fact.definitions ?? {}).some((id) => matchedTermIds.has(id) || matchedPredicateIds.has(id)) ||
+				(Array.isArray(fact.assertions) ? fact.assertions : []).some((assertion) => matchedPredicateIds.has(String(assertion?.predicate ?? '')) || matchedTermIds.has(String(assertion?.subject?.type ?? '')))),
 	)
 	return {
 		mode: 'knowledge',
@@ -1104,7 +1117,7 @@ export function knowledgePreflight(state, derived) {
 		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
 		predicatesTruncated: Math.max(0, matchedPredicates.length - LIMIT),
 		/** 命中的既有事实(可复用的「已知」)。 */
-		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: fact.scope ?? null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null })),
+		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: fact.scope ?? null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null, foreign: fact.foreign === true })),
 		factsTruncated: Math.max(0, matchedFacts.length - LIMIT),
 		/** 冲突:有就带上(它们约束「哪些结论还不能随便写)。 */
 		conflicts: conflicts.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject })),

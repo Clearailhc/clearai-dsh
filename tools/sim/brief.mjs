@@ -147,7 +147,7 @@ ${tools}
 	const workspace = String(JSON.parse(readFileSync(join(runDir, 'meta.json'), 'utf8')).workspace)
 	const text = `# 你是 ClearAI 派出的独立评估者
 
-工作区:\`${workspace}\`。**只读**:只用读文件、列目录、搜索(相当于工具白名单 ${JSON.stringify(item.toolFilter?.allow ?? [])});不要写文件、不要执行命令、不要读工作区以外的东西。
+工作区:\`${workspace}\`。${(item.toolFilter?.allow ?? []).includes('bash') ? `**原工作区只读**:可以读文件、列目录、搜索(相当于工具白名单 ${JSON.stringify(item.toolFilter.allow)});要复跑脚本,只在任务里给的副本目录里用 Bash 运行,不要在原工作区写文件或运行命令。` : `**只读**:只用读文件、列目录、搜索(相当于工具白名单 ${JSON.stringify(item.toolFilter?.allow ?? [])});不要写文件、不要执行命令、不要读工作区以外的东西。`}
 相对路径都相对工作区。
 
 ## 人格
@@ -166,7 +166,7 @@ ${item.prompt}
 ${JSON.stringify(item.outputSchema)}
 \`\`\`
 
-判完之后,用这条命令把裁决交回(这是唯一允许你运行的命令;它只把裁决交给系统,不碰工作区):
+判完之后,用这条命令把裁决交回(它只把裁决交给系统,不碰工作区):
 
 \`\`\`bash
 node ${CALL} ${runDir} --settle ${target} <<'EOF'
