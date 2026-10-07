@@ -2381,7 +2381,7 @@ export function apply(ctx, config = {}) {
 				hypotheses: {
 					type: 'array',
 					description:
-						'候选假设:每条一句话主张 + 一句推翻条件;可带**类型化断言**(可选,提供即严校:谓词与概念必须已登记、宾语形态要合值域、同一事实里不许自相矛盾)。不写断言照旧成立——断言是加法,不是门槛。修订目标时不传这一项 = 判断不变;传了就是这一版的完整清单,没列出的会记成「已替换」。',
+						'候选假设:每条一句话主张 + 一句推翻条件,一条只说一件事(「A,且 B」拆成两条);可带**类型化断言**(可选,提供即严校:谓词与概念必须已登记、宾语形态要合值域、同一事实里不许自相矛盾)。不写断言照旧成立——断言是加法,不是门槛。修订目标时不传这一项 = 判断不变;传了就是这一版的完整清单,没列出的会记成「已替换」。',
 					items: {
 						type: 'object',
 						properties: {
@@ -4209,7 +4209,7 @@ export function apply(ctx, config = {}) {
 				'irreversible.items.action': 'One line: what this action is',
 				'irreversible.items.command': 'Command signature: text that always appears in such a command (e.g. "reactor.mjs state.json pilot")',
 				hypotheses:
-					'Candidate judgments: each a one-sentence claim plus a refutation condition; may carry **typed assertions** (optional, strictly checked when given: predicates and concepts must exist, object forms must fit the range, no contradiction within one fact). Leaving out assertions is fine; they add, they do not gate. When revising the goal, omitting this keeps the judgments; passing it gives this version\'s full list, and any judgment not listed is recorded as replaced.',
+					'Candidate judgments: each a one-sentence claim plus a refutation condition, one thing per judgment (split "A, and B" into two); may carry **typed assertions** (optional, strictly checked when given: predicates and concepts must exist, object forms must fit the range, no contradiction within one fact). Leaving out assertions is fine; they add, they do not gate. When revising the goal, omitting this keeps the judgments; passing it gives this version\'s full list, and any judgment not listed is recorded as replaced.',
 				'hypotheses.items.name': 'Short name, within about 12 CJK characters or 20-odd letters, chosen by you (e.g. "python3 runs"). Use this name whenever you mention or reference the judgment in other tools',
 				'hypotheses.items.retests': 'Which fact already in long-term knowledge this judgment re-tests: the fact id (the file name in clear/knowledge/facts/<id>.json). Copy that fact\'s original statement as the claim and test it again on new data; do not write "it is refuted" as the claim. When this judgment is refuted, the system asks a person on the spot whether to retract or keep that fact, including facts left by other sessions',
 				'hypotheses.items.assertions': 'Assertions: subject, predicate, object (ids from the domain vocabulary)',
