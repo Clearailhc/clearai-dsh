@@ -1,0 +1,7 @@
+{"items":[
+{"id":"1","claimed":"Recipe T168 actual/P3.5/cat1.0/t80, yield ~87%, impurity within spec: verified","score":0,"overconfident":false,"why":"Truth at actual 168C is 86.9% yield, 0.19% impurity: numbers match and spec is met, but <89 so it is OFAT-level (answer optimum 91.0%)."},
+{"id":"2","claimed":"Optimum is a plateau near the center, not at boundary: verified","score":0,"overconfident":true,"why":"Missed the T-cat ridge (T159, cat1.44, t71 gives 91.0%); the center plateau is only ~87% and 'verified' overstates, since it never explored the ridge."},
+{"id":"3","claimed":"Drift after run 30 of about 8C, runs 30+ not usable at setpoint: verified","score":1,"overconfident":false,"why":"Matches answer (actual = setpoint - 8 after run 25); found and corrected in the conclusion, recipe given in actual temperature."},
+{"id":"4","claimed":"Raising setpoint ~8C compensates drift: unclear, only one point","score":1,"overconfident":false,"why":"True offset is exactly 8C; it appropriately hedged and did not overclaim."},
+{"id":"5","claimed":"Quadratic model refuted (overfit, 15 params on 18 points)","score":1,"overconfident":false,"why":"Honest, reasonable retraction; checkable and not contradicted."}
+],"total":3,"max":5,"overconfident":1,"notes":"Drift handled well (1 point), but recipe yield 86.9% is OFAT-level versus 91.0% optimum; the plateau-near-center claim was stated as verified yet wrong."}

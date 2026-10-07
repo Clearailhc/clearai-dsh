@@ -1,0 +1,350 @@
+{
+  "tests": [
+    {
+      "test": 1,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 1,
+        "b": 1,
+        "Tf": 40
+      },
+      "retention_100_pct": 97.77,
+      "dcir_rise_100_pct": 7.4,
+      "extrapolated_life_cycles": 898
+    },
+    {
+      "test": 2,
+      "kind": "quick",
+      "recipe": {
+        "c": 0.8,
+        "a": 0,
+        "b": 0,
+        "Tf": 25
+      },
+      "retention_100_pct": 95.54,
+      "dcir_rise_100_pct": 2.6,
+      "extrapolated_life_cycles": 448
+    },
+    {
+      "test": 3,
+      "kind": "quick",
+      "recipe": {
+        "c": 0.8,
+        "a": 0,
+        "b": 3,
+        "Tf": 55
+      },
+      "retention_100_pct": 98.56,
+      "dcir_rise_100_pct": 19.2,
+      "extrapolated_life_cycles": 1393
+    },
+    {
+      "test": 4,
+      "kind": "quick",
+      "recipe": {
+        "c": 0.8,
+        "a": 5,
+        "b": 0,
+        "Tf": 55
+      },
+      "retention_100_pct": 97.01,
+      "dcir_rise_100_pct": 4.2,
+      "extrapolated_life_cycles": 668
+    },
+    {
+      "test": 5,
+      "kind": "quick",
+      "recipe": {
+        "c": 0.8,
+        "a": 5,
+        "b": 3,
+        "Tf": 25
+      },
+      "retention_100_pct": 98.88,
+      "dcir_rise_100_pct": 16.4,
+      "extrapolated_life_cycles": 1786
+    },
+    {
+      "test": 6,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.6,
+        "a": 0,
+        "b": 0,
+        "Tf": 55
+      },
+      "retention_100_pct": 95.52,
+      "dcir_rise_100_pct": 3.3,
+      "extrapolated_life_cycles": 446
+    },
+    {
+      "test": 7,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.6,
+        "a": 0,
+        "b": 3,
+        "Tf": 25
+      },
+      "retention_100_pct": 98.28,
+      "dcir_rise_100_pct": 17.3,
+      "extrapolated_life_cycles": 1162
+    },
+    {
+      "test": 8,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.6,
+        "a": 5,
+        "b": 0,
+        "Tf": 25
+      },
+      "retention_100_pct": 96.71,
+      "dcir_rise_100_pct": 3.9,
+      "extrapolated_life_cycles": 608
+    },
+    {
+      "test": 9,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.6,
+        "a": 5,
+        "b": 3,
+        "Tf": 55
+      },
+      "retention_100_pct": 98.88,
+      "dcir_rise_100_pct": 17.5,
+      "extrapolated_life_cycles": 1787
+    },
+    {
+      "test": 10,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 2.5,
+        "b": 1.5,
+        "Tf": 40
+      },
+      "retention_100_pct": 97.96,
+      "dcir_rise_100_pct": 8.6,
+      "extrapolated_life_cycles": 979
+    },
+    {
+      "test": 11,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 0,
+        "b": 1.5,
+        "Tf": 40
+      },
+      "retention_100_pct": 97.82,
+      "dcir_rise_100_pct": 11.3,
+      "extrapolated_life_cycles": 917
+    },
+    {
+      "test": 12,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 5,
+        "b": 1.5,
+        "Tf": 40
+      },
+      "retention_100_pct": 98.5,
+      "dcir_rise_100_pct": 9,
+      "extrapolated_life_cycles": 1331
+    },
+    {
+      "test": 13,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 2.5,
+        "b": 0,
+        "Tf": 40
+      },
+      "retention_100_pct": 96.9,
+      "dcir_rise_100_pct": 2.9,
+      "extrapolated_life_cycles": 646
+    },
+    {
+      "test": 14,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 2.5,
+        "b": 3,
+        "Tf": 40
+      },
+      "retention_100_pct": 98.99,
+      "dcir_rise_100_pct": 17.9,
+      "extrapolated_life_cycles": 1977
+    },
+    {
+      "test": 15,
+      "kind": "quick",
+      "recipe": {
+        "c": 0.8,
+        "a": 2.5,
+        "b": 1.5,
+        "Tf": 40
+      },
+      "retention_100_pct": 98.19,
+      "dcir_rise_100_pct": 9.3,
+      "extrapolated_life_cycles": 1108
+    },
+    {
+      "test": 16,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.6,
+        "a": 2.5,
+        "b": 1.5,
+        "Tf": 40
+      },
+      "retention_100_pct": 97.92,
+      "dcir_rise_100_pct": 8,
+      "extrapolated_life_cycles": 960
+    },
+    {
+      "test": 17,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 2.5,
+        "b": 1.5,
+        "Tf": 25
+      },
+      "retention_100_pct": 97.75,
+      "dcir_rise_100_pct": 7.8,
+      "extrapolated_life_cycles": 891
+    },
+    {
+      "test": 18,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 2.5,
+        "b": 1.5,
+        "Tf": 55
+      },
+      "retention_100_pct": 97.94,
+      "dcir_rise_100_pct": 8.9,
+      "extrapolated_life_cycles": 971
+    },
+    {
+      "test": 19,
+      "kind": "long",
+      "recipe": {
+        "c": 1.2,
+        "a": 2.5,
+        "b": 3,
+        "Tf": 40
+      },
+      "life_cycles": 611,
+      "retention_pct_at": {
+        "200": 97.96,
+        "400": 95.93,
+        "600": 81.69
+      }
+    },
+    {
+      "test": 20,
+      "kind": "long",
+      "recipe": {
+        "c": 1.2,
+        "a": 2.5,
+        "b": 1.5,
+        "Tf": 40
+      },
+      "life_cycles": 735,
+      "retention_pct_at": {
+        "200": 96.68,
+        "400": 92.36,
+        "600": 89.03,
+        "800": 68.77
+      }
+    },
+    {
+      "test": 21,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 5,
+        "b": 0.75,
+        "Tf": 40
+      },
+      "retention_100_pct": 98.05,
+      "dcir_rise_100_pct": 7.7,
+      "extrapolated_life_cycles": 1025
+    },
+    {
+      "test": 22,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 5,
+        "b": 1,
+        "Tf": 40
+      },
+      "retention_100_pct": 98.55,
+      "dcir_rise_100_pct": 9,
+      "extrapolated_life_cycles": 1383
+    },
+    {
+      "test": 23,
+      "kind": "quick",
+      "recipe": {
+        "c": 0.8,
+        "a": 5,
+        "b": 1,
+        "Tf": 40
+      },
+      "retention_100_pct": 98.06,
+      "dcir_rise_100_pct": 7.8,
+      "extrapolated_life_cycles": 1030
+    },
+    {
+      "test": 24,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 5,
+        "b": 1,
+        "Tf": 55
+      },
+      "retention_100_pct": 98.01,
+      "dcir_rise_100_pct": 7.8,
+      "extrapolated_life_cycles": 1004
+    },
+    {
+      "test": 25,
+      "kind": "quick",
+      "recipe": {
+        "c": 1.2,
+        "a": 5,
+        "b": 1,
+        "Tf": 25
+      },
+      "retention_100_pct": 97.76,
+      "dcir_rise_100_pct": 7.6,
+      "extrapolated_life_cycles": 895
+    },
+    {
+      "test": 26,
+      "kind": "quick",
+      "recipe": {
+        "c": 1,
+        "a": 5,
+        "b": 1.5,
+        "Tf": 40
+      },
+      "retention_100_pct": 98.44,
+      "dcir_rise_100_pct": 8.7,
+      "extrapolated_life_cycles": 1278
+    }
+  ],
+  "spent": 40
+}
