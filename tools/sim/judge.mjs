@@ -29,7 +29,17 @@ const events = readFileSync(join(runDir, 'events.jsonl'), 'utf8')
 	.split('\n')
 	.filter((line) => line.trim() !== '')
 	.map((line) => JSON.parse(line))
-const mutations = events.flatMap((event) => (event.type === 'tool/result' && event.data?.meta?.kind === MUTATION_KIND ? event.data.meta.mutations ?? [] : []))
+/** 变更有两条通道:工具结果的 meta,与回合之间注入消息里的 `clearai/mutations` 段(例如拦在命令上的放行)。 */
+const noticeMutations = (event) => {
+	const section = (event.data?.source?.sections ?? []).find((item) => item?.name === 'clearai/mutations')
+	if (section === undefined) return []
+	try {
+		return JSON.parse(section.text).mutations ?? []
+	} catch {
+		return []
+	}
+}
+const mutations = events.flatMap((event) => (event.type === 'tool/result' && event.data?.meta?.kind === MUTATION_KIND ? event.data.meta.mutations ?? [] : event.type === 'user/message' ? noticeMutations(event) : []))
 const toolCalls = events.filter((event) => event.type === 'tool/call')
 
 const evaluated = await evaluateLog({
