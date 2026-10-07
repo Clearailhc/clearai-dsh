@@ -337,6 +337,66 @@ export function readingOf(hypothesis) {
 /** 步骤状态的人话。 */
 const STEP_WORD = bilingual({ open: ['待做', 'to do'], advanced: ['已交付', 'delivered'], void: ['已作废', 'voided'] })
 
+/** 连续几次全是「支持」才提醒检验可能太弱(少于这个数,全是支持很正常)。 */
+const WEAK_TEST_RESULTS = 3
+
+/** 一条事实在卡上的一行:原话、边界、等级;来自别的会话的标出来。 */
+function factLine(fact) {
+	const scope = oneLine(fact?.scope ?? '')
+	return tr(
+		`  · 「${clamp(fact?.text, 100)}」${scope === '' ? '' : ` — 边界:${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}`,
+		`  · "${clamp(fact?.text, 100)}"${scope === '' ? '' : ` — boundary: ${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}`,
+	)
+}
+
+/**
+ * **对手那一格**(工作板):每对互为对手的判断,分出来没有、计划里有没有一步能分出它们。
+ *
+ * 为什么要摆出来:各自找支持的判断最后都会被「支持」。一对对手的好结局是一条被推翻;
+ * 两条都被支持说明做过的观测没有区分它们。这一格不判谁对,只说这一对还差什么。
+ */
+export function rivalLines(hypotheses, plan, promotedIds, nameOf) {
+	const byId = new Map(hypotheses.map((hypothesis) => [hypothesis.id, hypothesis]))
+	const seen = new Set()
+	const lines = []
+	for (const hypothesis of hypotheses) {
+		const other = typeof hypothesis.rival === 'string' ? byId.get(hypothesis.rival) : undefined
+		if (other === undefined) continue
+		const key = [hypothesis.id, other.id].sort().join('|')
+		if (seen.has(key)) continue
+		seen.add(key)
+		const trustA = trustOf(hypothesis, promotedIds.has(hypothesis.id))
+		const trustB = trustOf(other, promotedIds.has(other.id))
+		if (trustA === 'replaced' || trustB === 'replaced') continue
+		const split = oneLine(hypothesis.split_by ?? other.split_by ?? '')
+		let reading
+		let open = false
+		if (trustA === 'refuted' && trustB === 'refuted') reading = tr('两条都被推翻:换一对解释', 'both refuted: find another pair of explanations')
+		else if (trustA === 'refuted' || trustB === 'refuted') reading = tr(`已分出:${nameOf(trustA === 'refuted' ? hypothesis.id : other.id)}被推翻`, `settled: ${nameOf(trustA === 'refuted' ? hypothesis.id : other.id)} is refuted`)
+		else if (['credible', 'pending'].includes(trustA) && ['credible', 'pending'].includes(trustB)) {
+			reading = tr('两条都被支持:做过的观测没有区分它们', 'both supported: the observations so far did not tell them apart')
+			open = true
+		} else {
+			reading = tr('还没分出', 'not settled yet')
+			open = true
+		}
+		let next = ''
+		if (open) {
+			const steps = plan === null ? [] : plan.steps.filter((step) => step.status === 'open')
+			const testsBoth = steps.find((step) => {
+				const tested = Array.isArray(step.tests?.hypotheses) ? step.tests.hypotheses : []
+				return tested.includes(hypothesis.id) && tested.includes(other.id)
+			})
+			next =
+				testsBoth !== undefined
+					? tr(` → 第 ${testsBoth.ordinal} 步会同时检验这一对`, ` → step ${testsBoth.ordinal} tests the pair together`)
+					: tr(' → 计划里还没有一步同时检验这一对:用 RevisePlan 补一步去做这个区分观测', ' → no open step tests the pair together: add one with RevisePlan that makes this observation')
+		}
+		lines.push(tr(`  对手:${nameOf(hypothesis.id)}对${nameOf(other.id)}${split === '' ? '' : `,区分观测:${clamp(split, 100)}`} · ${reading}${next}`, `  Rivals: ${nameOf(hypothesis.id)} vs ${nameOf(other.id)}${split === '' ? '' : `; deciding observation: ${clamp(split, 100)}`} · ${reading}${next}`))
+	}
+	return lines
+}
+
 /**
  * **卡的正文**。它只读已经算好的 `view` 与 `(state, derived)`,不重算任何判据——
  * 同一份账本永远给出同一串字节:卡里**不带时刻**——时间戳会让同一个状态的卡每分钟变一次,
@@ -410,6 +470,16 @@ function cardLines(state, derived, options, view) {
 			}
 		}
 		if (hypotheses.length > 10) push(tr(`  · 还有 ${hypotheses.length - 10} 条判断没展开(面板「本体」里有全部)`, `  · ${hypotheses.length - 10} more judgments not shown (all are in the Ontology pane)`), 2)
+		for (const line of rivalLines(hypotheses, plan, promotedIds, nameOf)) push(line)
+		/**
+		 * **按症状提醒,不按格式要求**:检验了几次,次次都是「支持」,没有一次推翻或说不清——
+		 * 这往往不是判断都对,而是检验太弱(任何解释都会给出同样的结果)。没有这个症状就一个字不加。
+		 */
+		const goalIds = new Set(hypotheses.filter((hypothesis) => goal !== null && hypothesis.goal === goal.id).map((hypothesis) => hypothesis.id))
+		const verdicts = evidence.filter((item) => goalIds.has(item.hypothesis)).map((item) => item.verdict)
+		if (verdicts.length >= WEAK_TEST_RESULTS && verdicts.every((verdict) => verdict === 'support')) {
+			push(tr(`- 到现在 ${verdicts.length} 次检验全是「支持」,没有一次推翻或说不清:检验可能太弱。有没有另一种解释也会给出同样的结果?找一个两者预测不同的观测去做。`, `- All ${verdicts.length} results so far are "support", with no refutation or unclear result: the tests may be too weak. Would another explanation give the same results? Find an observation on which the two predict differently and make it.`))
+		}
 	}
 	if (plan === null) {
 		if (goal !== null && String(goal.status) === 'open') push(tr('- 计划:还没有(用 CreatePlan 把检验拆成步骤)', '- Plan: none yet (use CreatePlan to split the tests into steps)'), 1)
@@ -447,6 +517,17 @@ function cardLines(state, derived, options, view) {
 		)
 	}
 	/**
+	 * **立题之前**(或上一个目标已结):以前留下的事实原话与边界直接摆出来(最多 5 条)。立题是最该看已知的时刻,
+	 * 这时还没有判断可以拿来做词面命中,所以按新近给。
+	 */
+	if (goal === null || String(goal.status) !== 'open') {
+		const usable = factRows.filter((fact) => fact?.review?.decision !== 'retracted' && fact?.refuted !== true)
+		if (usable.length > 0) {
+			push(tr('- 以前留下的事实(立题前先看;要复检哪条,就在判断上写 retests,claim 照抄原话):', '- Facts left earlier (read before framing; to re-test one, put retests on a judgment with the original statement as the claim):'), 1)
+			for (const fact of usable.slice(-5).reverse()) push(factLine(fact), 1)
+		}
+	}
+	/**
 	 * **本体大纲**:概念树与实体树的前两层(每支标节点数)、关系总数、跨文件问题。
 	 * 细节在 clear/ontology/ 下的文件里,模型自己去读。
 	 */
@@ -459,10 +540,10 @@ function cardLines(state, derived, options, view) {
 				`- 本体(clear/ontology/):${outline.concepts.total} 个概念 · ${outline.relations} 种关系 · ${outline.entities.total} 个实体 · ${entityRelations} 条实体关系`,
 				`- Ontology (clear/ontology/): ${outline.concepts.total} concepts · ${outline.relations} relation types · ${outline.entities.total} entities · ${entityRelations} entity relations`,
 			),
-			1,
+			2,
 		)
-		if (outline.concepts.lines.length > 0) push(tr(`  · 概念树:${outline.concepts.lines.join(';')}${outline.concepts.more > 0 ? `;顶层还有 ${outline.concepts.more} 个` : ''}`, `  · Concept tree: ${outline.concepts.lines.join('; ')}${outline.concepts.more > 0 ? `; ${outline.concepts.more} more at the top level` : ''}`), 1)
-		if (outline.entities.lines.length > 0) push(tr(`  · 实体树:${outline.entities.lines.join(';')}${outline.entities.more > 0 ? `;顶层还有 ${outline.entities.more} 个` : ''}`, `  · Entity tree: ${outline.entities.lines.join('; ')}${outline.entities.more > 0 ? `; ${outline.entities.more} more at the top level` : ''}`), 1)
+		if (outline.concepts.lines.length > 0) push(tr(`  · 概念树:${outline.concepts.lines.join(';')}${outline.concepts.more > 0 ? `;顶层还有 ${outline.concepts.more} 个` : ''}`, `  · Concept tree: ${outline.concepts.lines.join('; ')}${outline.concepts.more > 0 ? `; ${outline.concepts.more} more at the top level` : ''}`), 2)
+		if (outline.entities.lines.length > 0) push(tr(`  · 实体树:${outline.entities.lines.join(';')}${outline.entities.more > 0 ? `;顶层还有 ${outline.entities.more} 个` : ''}`, `  · Entity tree: ${outline.entities.lines.join('; ')}${outline.entities.more > 0 ? `; ${outline.entities.more} more at the top level` : ''}`), 2)
 	} else if (entityNodes.length > 0) push(tr(`- 实体图上 ${entityNodes.length} 个实例`, `- ${entityNodes.length} instances on the entity graph`), 1)
 	if (ontologyProblems.length > 0) {
 		push(tr(`- 本体文件有 ${ontologyProblems.length} 处问题(有问题的节点或关系没进图):`, `- Ontology files have ${ontologyProblems.length} problems (the affected nodes or relations stay off the graph):`), 1)
@@ -474,14 +555,22 @@ function cardLines(state, derived, options, view) {
 	}
 	if (knowledge.mode === 'knowledge') {
 		const preflight = view.deliver.preflight
-		if (preflight !== null && (preflight.terms.length > 0 || preflight.predicates.length > 0)) {
+		if (preflight !== null && (preflight.terms.length > 0 || preflight.predicates.length > 0 || preflight.facts.length > 0)) {
+			/**
+			 * **递原文,不递名单**:命中的概念给它的释义(度量就是口径),命中的事实给原话与边界。
+			 * 只给名字,模型得自己去翻文件——真跑里它从不去翻,本体于是从没影响过一次判断。
+			 */
 			const more = (count) => (count > 0 ? tr(`(还有 ${count} 个)`, ` (${count} more)`) : '')
 			const named = (entry) => (entry.label === entry.id ? entry.id : `${entry.label}(${entry.id})`)
-			const none = tr('无', 'none')
-			const terms = preflight.terms.map(named).join(tr('、', ', ')) || none
-			const predicates = preflight.predicates.map(named).join(tr('、', ', ')) || none
-			push(tr(`- 已有的词,可直接用:概念 ${terms}${more(preflight.termsTruncated)};关系 ${predicates}${more(preflight.predicatesTruncated)}`, `- Existing terms you can use: concepts ${terms}${more(preflight.termsTruncated)}; relations ${predicates}${more(preflight.predicatesTruncated)}`), 1)
-			if (preflight.facts.length > 0) push(tr(`  · 能复用的已知 ${preflight.facts.length} 条${preflight.factsTruncated > 0 ? `(还有 ${preflight.factsTruncated} 条)` : ''}`, `  · ${preflight.facts.length} known facts to reuse${preflight.factsTruncated > 0 ? ` (${preflight.factsTruncated} more)` : ''}`), 1)
+			if (preflight.terms.length > 0) {
+				push(tr(`- 这些判断用到的概念(释义就是口径,算法变了先改它)${more(preflight.termsTruncated)}:`, `- Concepts these judgments use (the gloss is the definition; if how it is computed changes, update it first)${more(preflight.termsTruncated)}:`), 1)
+				for (const term of preflight.terms.slice(0, 4)) push(`  · ${named(term)}:${clamp(term.gloss, 100) || tr('(没写释义)', '(no gloss)')}`, 1)
+			}
+			if (preflight.predicates.length > 0) push(tr(`- 用到的关系:${preflight.predicates.slice(0, 6).map(named).join('、')}${more(preflight.predicatesTruncated)}`, `- Relations in use: ${preflight.predicates.slice(0, 6).map(named).join(', ')}${more(preflight.predicatesTruncated)}`), 2)
+			if (preflight.facts.length > 0) {
+				push(tr(`- 和这些判断有关的已知${more(preflight.factsTruncated)}(引用前看边界;要复检就在判断上写 retests):`, `- Known facts related to these judgments${more(preflight.factsTruncated)} (check the boundary before citing; to re-test, put retests on a judgment):`), 1)
+				for (const fact of preflight.facts.slice(0, 3)) push(factLine(fact), 1)
+			}
 		} else
 			push(
 				tr(

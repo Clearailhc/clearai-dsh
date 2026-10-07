@@ -19,7 +19,8 @@
  *   P5 什么都不删         → 状态是可重放的投影;refine/void/superseded 的旧值都在
  */
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 
 import { createHash } from 'node:crypto'
 import { AsyncLocalStorage } from 'node:async_hooks'
@@ -206,6 +207,7 @@ export const CONFIG_KEYS = [
 	'auditProvider',
 	'auditTimeoutMs',
 	'auditToolFilter',
+	'auditRerun',
 	'runtimeCard',
 	'contributions',
 ]
@@ -334,6 +336,7 @@ export function apply(ctx, config = {}) {
 		// (见 resolveToolFace):`read_image` 只在挂了 `attachments` 的部署里存在,名单里写了它、
 		// 部署里没有,`tools.restrict` 会**直接抛**(未知工具名)→ 评估整条路 fail-closed。
 		auditToolFilter: config.auditToolFilter ?? ['read', 'glob', 'grep', 'read_image'],
+		auditRerun: config.auditRerun === true,
 		runtimeCard: config.runtimeCard !== false,
 		/** 贡献表。缺省 = 全开;要裁剪就从这里裁,而不是去改装配代码。 */
 		contributions: config.contributions ?? {},
@@ -445,6 +448,21 @@ export function apply(ctx, config = {}) {
 	 * 而当时只认 id,错误信息又不列出有效 id——它于是逐字猜哪里差了一个标点,白烧了三轮上下文。
 	 * 「机制把模型逼进猜谜」是机制的问题,不是模型的问题。
 	 */
+	/** Frame 这一版里 `hypothesis.rival` 指的是第几条(按短名或主张原文认;认不出或指自己给 -1)。 */
+	function rivalIndex(hypotheses, hypothesis) {
+		const wanted = String(hypothesis?.rival ?? '').trim()
+		if (wanted === '') return -1
+		return hypotheses.findIndex((item) => item !== hypothesis && (String(item?.name ?? '').trim() === wanted || String(item?.claim ?? '').trim() === wanted))
+	}
+
+	/** 修订时沿用判断:账上的对手是 id,传回 Frame 的校验要换成对手的短名(没有短名用主张)。 */
+	function rivalArgs(state, hypothesis) {
+		if (typeof hypothesis.rival !== 'string') return {}
+		const other = state.hypotheses.find((item) => item.id === hypothesis.rival && item.status !== 'superseded')
+		if (other === undefined) return {}
+		return { rival: other.name ?? other.claim, split_by: hypothesis.split_by ?? '' }
+	}
+
 	function matchHypothesis(hypotheses, wanted) {
 		const raw = String(wanted ?? '').trim()
 		if (raw === '') return null
@@ -734,7 +752,7 @@ export function apply(ctx, config = {}) {
 			'你是独立评估者:拿着判定标准与产物,做冷静、可复核的评估,产出一张结构化评估卡。你没有参与探索,不背任何方案的立场——这正是你可信的原因。',
 			'',
 			'**三层信道(按幻觉风险):**',
-			'1. 硬信号(零幻觉,最可信):产物自带的客观数字、文件是否存在及字段是否齐、以及执行记录。直接读取已落盘的产物,照抄进评估卡——不要自行写文件、不要执行命令、不要润色或估计。',
+			'1. 硬信号(零幻觉,最可信):产物自带的客观数字、文件是否存在及字段是否齐、以及执行记录。直接读取已落盘的产物,照抄进评估卡;任务书给了工作区副本时,可以在副本里复跑产物自带的脚本,复跑读数同样是硬信号。不要在原工作区写文件或执行命令,不要润色或估计。',
 			'2. 领域信号(逐条核对):逐条对照判据给结论(通过/不通过/不适用 + 一句证据),不发挥、不新增标准。',
 			'3. 软判断(有幻觉风险,须隔离标注):报告完整性、方案合理性这类主观项可以给,但必须显式标注「主观评估」。',
 			'',
@@ -756,7 +774,7 @@ export function apply(ctx, config = {}) {
 			'You are an independent evaluator: with the criteria and the outputs in hand, make a calm, checkable evaluation and produce a structured evaluation card. You took no part in the work and hold no stake in any approach; that is why you can be trusted.',
 			'',
 			'**Three channels (by hallucination risk):**',
-			'1. Hard signals (no hallucination, most trusted): objective numbers in the outputs, whether files exist and have their fields, and the execution record. Read the outputs on disk and copy them into the card; do not write files, run commands, polish or estimate.',
+			'1. Hard signals (no hallucination, most trusted): objective numbers in the outputs, whether files exist and have their fields, and the execution record. Read the outputs on disk and copy them into the card; when the brief gives a copy of the workspace, you may re-run the outputs\' own scripts there, and re-run readings are hard signals too. Do not write files or run commands in the original workspace, and do not polish or estimate.',
 			'2. Domain signals (check one by one): give a finding per criterion (pass / fail / not applicable + one line of evidence); do not improvise or add criteria.',
 			'3. Soft judgments (hallucination risk, keep them separate): subjective items such as report completeness or soundness may be given, but must be labelled "subjective".',
 			'',
@@ -844,7 +862,7 @@ export function apply(ctx, config = {}) {
 		additionalProperties: false,
 	})
 
-	function evaluatorPrompt(state, step, gate, sessionId) {
+	function evaluatorPrompt(state, step, gate, sessionId, rerunDir = null) {
 		const goal = state.goal
 		const tested = testedBy(step)
 			.map((id) => state.hypotheses.find((item) => item.id === id))
@@ -892,14 +910,18 @@ export function apply(ctx, config = {}) {
 					'',
 					'请只读上述坐标与执行记录,给出两项裁决:拿**已登记的判定标准**对照观测,判交付成立吗(`holds`);再拿每条判断的**推翻条件**对照观测,读出它的结果(`results`)。',
 					'准入只核验了「坐标存在且非空」——齐备不等于这一步做完了;判据里的断言(数值、口径、一致性)必须由你逐条核对。',
-					'你不得修改任何文件,不得执行写入命令,不得重做方案。',
+					rerunDir === null
+						? '你不得修改任何文件,不得执行写入命令,不得重做方案。'
+						: `原工作区只读:不要在里面写文件或运行命令。要核对数字就复跑:工作区副本在 ${rerunDir}(不含 clear/),cd 进去运行产物自带的脚本,对照它打印的结果。复跑的读数是硬信号;不要重做方案。`,
 				],
 				[
 					`Working directory: ${sessionCwdLabel(sessionId)}`,
 					'',
 					'Read only the outputs above and the execution record, and give two verdicts: check the observations against the **registered criteria** to decide whether the delivery holds (`holds`); then read each judgment against its **refutation condition** to give its result (`results`).',
 					'Admission only checked that the outputs exist and are non-empty; that is not the same as the step being done. You must check the claims in the criteria (numbers, definitions, consistency) one by one.',
-					'You may not modify any file, run write commands or redo the work.',
+					rerunDir === null
+						? 'You may not modify any file, run write commands or redo the work.'
+						: `The original workspace is read-only: do not write files or run commands in it. To check numbers, re-run: a copy of the workspace is at ${rerunDir} (without clear/); cd into it and run the scripts the outputs came from, and compare what they print. Re-run readings are hard signals; do not redo the work.`,
 				],
 			),
 		].join('\n')
@@ -1399,16 +1421,18 @@ export function apply(ctx, config = {}) {
 			 */
 			const pendingId = `audit:pending:${kind}:${step.id}:${digest}`
 			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, capability: null, evaluator_session: null, status: 'dispatching' })
+			const rerunDir = CFG.auditRerun ? rerunCopy(sessionId, auditKey) : null
 			const dispatched = await dispatchSubRun({
 				label: `${kind === 'goal_audit' ? tr('目标评估者', 'Goal evaluator') : tr('评估者', 'Evaluator')} · ${step.id}`,
 				persona: evaluatorDiscipline(),
-				prompt: evaluatorPrompt(stateOf(sessionId), step, gate, sessionId),
+				prompt: evaluatorPrompt(stateOf(sessionId), step, gate, sessionId, rerunDir),
 				outputSchema: verdictSchema(),
-				toolFilter: { allow: resolveToolFace(agent, CFG.auditToolFilter) },
+				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, 'bash']) },
 				parent: agent,
 				signal,
 			})
 			if (dispatched.ok !== true) {
+				dropRerunCopy(rerunDir)
 				/**
 				 * 派不出去:把那条"正在派"如实结掉。结算与派发**同 id**,且上面那条 pending
 				 * 走的是独立落账通道、在 `withPendingFacts` 的合并结果里排在前面,所以折法先建记录、
@@ -1418,7 +1442,7 @@ export function apply(ctx, config = {}) {
 				return { holds: 'unknown', results: [], basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
 			mutations.push({ t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' })
-			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, settled: undefined }
+			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, rerunDir, settled: undefined }
 			pendingAudits.set(key, entry)
 			entry.settled = dispatched.run.result.then(
 				(value) => ({ ok: true, value }),
@@ -1438,6 +1462,7 @@ export function apply(ctx, config = {}) {
 		}
 		// 已落定:这次派遣的生命周期到此为止。下一次交付是**新的一次评估**(新证据),必须重新派遣。
 		pendingAudits.delete(key)
+		dropRerunCopy(entry.rerunDir ?? null)
 		if (outcome.ok !== true) {
 			return settleUnknown(tr(`评估者失败:${String(outcome.error?.message ?? outcome.error)}`, `The evaluator failed: ${String(outcome.error?.message ?? outcome.error)}`), ['audit_failed'])
 		}
@@ -1471,6 +1496,37 @@ export function apply(ctx, config = {}) {
 		}
 		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.holds, holds: verdict.holds, results: verdict.results, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
 		return { ...verdict, cardPath, digest, mutations }
+	}
+
+	/**
+	 * **复跑用的工作区副本**:评估者可以在这里跑脚本核数字,原工作区一个字节不碰。
+	 *
+	 * 为什么要它:L3 的定义是「新产生、可重跑」,而只能读文件的评估者从不重跑,只核对文件彼此是否一致——
+	 * 一份自洽但算错的结果照样过。副本不带 `clear/`(账本与评估卡不是复跑的材料)。复制失败就不给副本,
+	 * 评估照旧只读,不因此失败。
+	 */
+	function rerunCopy(sessionId, auditKey) {
+		const cwd = sessionCwd(sessionId)
+		if (cwd === null) return null
+		const target = join(tmpdir(), `clearai-rerun-${auditKey}`)
+		const skip = new Set([join(cwd, 'clear'), join(cwd, '.git'), join(cwd, 'node_modules')])
+		try {
+			cpSync(cwd, target, { recursive: true, filter: (source) => !skip.has(source) })
+			return target
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 复跑副本没建成 ${String(error?.message ?? error).slice(0, 160)}`)
+			dropRerunCopy(target)
+			return null
+		}
+	}
+
+	function dropRerunCopy(dir) {
+		if (dir === null) return
+		try {
+			rmSync(dir, { recursive: true, force: true })
+		} catch {
+			/* 删不掉留在临时目录里,不影响裁决 */
+		}
 	}
 
 	/** 评估卡落盘(系统的面)。写不进 → 返回 null,调用方 fail-closed。 */
@@ -1775,10 +1831,22 @@ export function apply(ctx, config = {}) {
 	 * 没人能答 ⇒ 事实标着「被推翻、待复核」,原生 goal 置为阻塞。
 	 */
 	async function reviewRefutedFacts(exec, sessionId, state, refutedHypotheses, basis, mutations) {
-		const pending = (state.facts ?? []).filter((fact) => refutedHypotheses.includes(fact.hypothesis) && (fact.review === undefined || fact.review === null))
-		if (pending.length === 0) return ''
+		/**
+		 * 两条路找到被推翻的事实:本目标里升格的(判断 id 对得上),以及被推翻的判断声明了
+		 * `retests` 的那条——它可能是别的会话留下的,判断 id 对不上,只有事实 id 跨会话不变。
+		 */
+		const retested = state.hypotheses.filter((item) => refutedHypotheses.includes(item.id) && typeof item.retests === 'string').map((item) => item.retests)
+		const pending = []
+		for (const fact of state.facts ?? []) if (refutedHypotheses.includes(fact.hypothesis) || retested.includes(fact.id)) pending.push(fact)
+		for (const id of retested) {
+			if (pending.some((fact) => fact.id === id)) continue
+			const fact = findFact(sessionId, state, id)
+			if (fact !== null) pending.push(fact)
+		}
+		const open = pending.filter((fact) => fact.review === undefined || fact.review === null)
+		if (open.length === 0) return ''
 		const notes = []
-		for (const fact of pending) {
+		for (const fact of open) {
 			const asked = await askHuman(exec, {
 				id: `fact-${fact.id}`,
 				header: tr('已确立的结论被推翻了', 'An established conclusion was refuted'),
@@ -2244,6 +2312,19 @@ export function apply(ctx, config = {}) {
 							name: { type: 'string', description: '短名,十二个汉字或二十来个字母以内,你自己起(如「python3 能跑」)。之后说起这条判断、在别的工具里引用它,都用这个名字' },
 							claim: { type: 'string' },
 							refute_when: { type: 'string' },
+							rival: {
+								type: 'string',
+								description: '可选。只在真有两种解释说得通时写:它的对手,同一现象的另一种解释(写那条判断的短名)。卡上会跟着这一对分出来没有',
+							},
+							split_by: {
+								type: 'string',
+								description: '和 rival 一起给:哪个观测上两条的预测不同(做了它,至少有一条会被推翻)。计划里要有一步同时检验这一对',
+							},
+							retests: {
+								type: 'string',
+								description:
+									'这条判断在复检哪条已写进长期知识的事实:写那条事实的 id(clear/knowledge/facts/<id>.json 的文件名)。claim 照抄那条事实原来的说法、拿新数据再验一遍,不要写成「它被推翻了」:这条判断被推翻,系统才会当场问人撤回还是维持那条事实——别的会话留下的事实也一样',
+							},
 							assertions: {
 								type: 'array',
 								description: '断言:主词–谓词–宾语(引用领域词汇里的 id)',
@@ -2300,7 +2381,7 @@ export function apply(ctx, config = {}) {
 				: carried
 					? state.hypotheses
 							.filter((item) => item.goal === state.goal.id && item.status !== 'superseded')
-							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}) }))
+							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...rivalArgs(state, item), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}) }))
 					: []
 			const names = hypotheses.map((hypothesis) => (typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : '')).filter((name) => name !== '')
 			if (new Set(names).size !== names.length) return fail('hypothesis_name_duplicate', tr('两条判断用了同一个短名:短名是用来区分判断的,换一个。', 'Two judgments share a short name; short names tell judgments apart, so pick another.'))
@@ -2308,6 +2389,14 @@ export function apply(ctx, config = {}) {
 				if (typeof hypothesis?.claim !== 'string' || hypothesis.claim.trim() === '') return fail('hypothesis_claim_required', tr('每条假设要有一句话主张。', 'Each judgment needs a one-sentence claim.'))
 				if (typeof hypothesis?.refute_when !== 'string' || hypothesis.refute_when.trim() === '') return fail('hypothesis_refute_required', tr('每条假设必须写清「什么结果会推翻它」——没有推翻条件的假设无法被检验。', 'Each judgment must say what result would refute it; a judgment with no refutation condition cannot be tested.'))
 				if (hypothesis?.name !== undefined && (typeof hypothesis.name !== 'string' || textWidth(hypothesis.name.trim()) > (HANDLE_LIMIT + 4) * 2)) return fail('hypothesis_name_too_long', tr(`判断的短名要短:${HANDLE_LIMIT} 个汉字(或约 ${HANDLE_LIMIT * 2} 个字母)以内,能让人一眼认出是哪条就够。`, `Keep the short name short: within ${HANDLE_LIMIT} CJK characters (about ${HANDLE_LIMIT * 2} letters), just enough to recognize the judgment at a glance.`))
+				if (hypothesis?.rival !== undefined && hypothesis.rival !== null) {
+					const other = rivalIndex(hypotheses, hypothesis)
+					if (other === -1) return fail('rival_unknown', tr(`rival「${clip(String(hypothesis.rival), 40)}」对不上这次列出的任何一条判断:写对手那条的短名(或主张原文),对手也要列在这一版里。`, `rival "${clip(String(hypothesis.rival), 40)}" matches none of the judgments listed here: use the rival's short name (or claim text), and list the rival in this version too.`))
+					if (typeof hypothesis.split_by !== 'string' || hypothesis.split_by.trim() === '') return fail('split_by_required', tr('给了 rival 就要给 split_by:哪个观测上两条的预测不同。说不出这样的观测,两条就还不是对手。', 'rival needs split_by: the observation on which the two predict differently. If no such observation exists, they are not rivals yet.'))
+				}
+				if (hypothesis?.retests !== undefined && hypothesis.retests !== null && findFact(sessionId, state, hypothesis.retests) === null) {
+					return fail('retests_unknown', tr(`retests 指向的事实「${String(hypothesis.retests).slice(0, 40)}」不在 clear/knowledge/facts/ 里:写那条事实文件名里的 id(如 f-ab12cd),或者去掉 retests。`, `The fact retests points to ("${String(hypothesis.retests).slice(0, 40)}") is not in clear/knowledge/facts/: use the id from that fact's file name (such as f-ab12cd), or drop retests.`))
+				}
 				/**
 				 * **宽松+校验**:不写断言放行(断言是加法),写了就在**落账之前**严校——
 				 * 引用不存在的谓词 / 概念、宾语形态不合值域、同一事实自相矛盾,一律当场拒。
@@ -2430,10 +2519,18 @@ export function apply(ctx, config = {}) {
 					...(given !== '' ? { name: given } : kept !== '' ? { name: kept } : {}),
 					claim,
 					refute_when: hypothesis.refute_when.trim(),
+					/** 复检哪条已有事实(跨会话的身份是事实 id;判断 id 只活在本目标里)。 */
+					...(typeof hypothesis.retests === 'string' && hypothesis.retests.trim() !== '' ? { retests: hypothesis.retests.trim() } : {}),
+					...(typeof hypothesis.split_by === 'string' && hypothesis.split_by.trim() !== '' ? { split_by: hypothesis.split_by.trim() } : {}),
 					/** 断言随假设落账;没写就是 null(加法,不是门槛)。 */
 					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
 					version: index + 1,
 				}
+			})
+			/** 对手按 id 记(名字可以改,身份不变);两条互为对手只需写在一边。 */
+			hypotheses.forEach((hypothesis, index) => {
+				const other = hypothesis?.rival === undefined || hypothesis.rival === null ? -1 : rivalIndex(hypotheses, hypothesis)
+				if (other !== -1) nextHypotheses[index].rival = nextHypotheses[other].id
 			})
 			mutations.push({
 				t: 'goal/set',
@@ -2471,7 +2568,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Conclude',
 		description:
-			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成、达门槛的判断升格为事实、各步收下的产物声明为交付卡片。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
+			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成;评估者同时逐条判还活着的判断,判为支持的(或中途已达门槛的)升格为事实;各步收下的产物声明为交付卡片。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -2543,15 +2640,22 @@ export function apply(ctx, config = {}) {
 			 * 第四阶段删掉的两道门:「跳级没写理由」(`ExplainLevelSkip` 整套删除)与
 			 * 「将升格的命题没有断言形态」(降为缺口)。依据见 `docs/less-is-more-plan.zh-CN.md` 第四阶段。
 			 */
+			/**
+			 * **结案评估顺带判每条还活着的判断**(这一目标的、没被推翻过、还没成事实的)。
+			 *
+			 * 为什么:升格原来只看模型自己给步骤标的等级,而 L0–L2 允许自判——真跑里模型一律标 L1/L2,
+			 * 于是 9 次运行 0 条事实,跨会话复用与复检全部空转。结案这次独立评估是唯一必然发生的独立判断,
+			 * 让它逐条读判断:它判「支持」的,与中途到了门槛的一样升格。不加新机制、不多派一次评估者。
+			 */
+			const candidates = derived.hypotheses.filter(
+				(hypothesis) =>
+					(typeof hypothesis.goal !== 'string' || hypothesis.goal === goal.id) &&
+					(hypothesis.status === 'alive' || hypothesis.status === 'proposed') &&
+					(hypothesis.refutations ?? 0) === 0 &&
+					!(state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id),
+			)
 			if (CFG.requireLandedEntities && derived.knowledge.mode === 'knowledge') {
-				const threshold = levelIndexOf(goal.promote_at_level)
-				const promotable = derived.hypotheses.filter(
-					(hypothesis) =>
-						(hypothesis.status === 'alive' || hypothesis.status === 'proposed') &&
-						(hypothesis.refutations ?? 0) === 0 &&
-						levelIndexOf(hypothesis.supportedLevel) >= threshold,
-				)
-				const offGraph = promotable.filter((hypothesis) => (hypothesis.unlanded ?? []).length > 0)
+				const offGraph = candidates.filter((hypothesis) => (hypothesis.unlanded ?? []).length > 0)
 				if (offGraph.length > 0) {
 					return fail(
 						'entities_unlanded',
@@ -2563,7 +2667,14 @@ export function apply(ctx, config = {}) {
 				}
 			}
 			const unfinished = plan === null ? [] : plan.steps.filter((step) => step.status === 'open')
-			const syntheticStep = { id: `goal:${goal.id}`, ordinal: 0, do: tr(`核验目标 ${goal.id} 的判据与转写忠实度`, `Check goal ${goal.id} against its criteria and transcription fidelity`), done_criteria: goal.done_criteria, artifacts: [], tests: null }
+			const syntheticStep = {
+				id: `goal:${goal.id}`,
+				ordinal: 0,
+				do: tr(`核验目标 ${goal.id} 的判据与转写忠实度`, `Check goal ${goal.id} against its criteria and transcription fidelity`),
+				done_criteria: goal.done_criteria,
+				artifacts: [],
+				tests: candidates.length === 0 ? null : { hypotheses: candidates.map((hypothesis) => hypothesis.id), level: goal.promote_at_level },
+			}
 			const gate = {
 				confirmed: [
 					...state.evidence.map((item) => ({ ref: `evidence:${item.id}`, bytes: 0, digest: `verdict=${item.verdict}` })),
@@ -2636,8 +2747,45 @@ export function apply(ctx, config = {}) {
 			 * 三样全零 = **没人碰过它**。不强制证实/证伪——但「没看过」不能被写成「没问题」,
 			 * 所以这里把它记进结案那条变更里,卡片与面板都说得出来。
 			 */
+			/** 结案评估对每条判断的结果,各记一份独立证据(等级记成目标的升格门槛:判它的是独立评估者)。 */
+			const goalOrigin = buildEvidenceOrigins({
+				cwd: sessionCwd(sessionId),
+				accepted: [],
+				confirmed: [],
+				cardPath: audit.cardPath ?? null,
+				evaluatorSession: audit.mutations.find((mutation) => mutation.t === 'audit/dispatched')?.evaluator_session ?? null,
+				basis: audit.basis,
+			})
+			const judged = new Map()
+			for (const result of audit.results ?? []) {
+				const hypothesis = candidates.find((item) => item.id === result.hypothesis || item.name === result.hypothesis)
+				if (hypothesis === undefined || judged.has(hypothesis.id)) continue
+				const evidenceId = `e-${Math.random().toString(36).slice(2, 8)}`
+				judged.set(hypothesis.id, { verdict: result.verdict, evidence: evidenceId })
+				mutations.push({
+					t: 'evidence/recorded',
+					id: evidenceId,
+					step: syntheticStep.id,
+					plan: plan?.id ?? 'goal',
+					hypothesis: hypothesis.id,
+					verdict: result.verdict,
+					level: goal.promote_at_level,
+					evaluator: 'independent',
+					basis: result.basis ?? audit.basis,
+					refs: goalOrigin.paths,
+					origins: goalOrigin.origins,
+					anchor: 'auditor',
+					basis_reviewable: true,
+				})
+			}
+			const refutedAtClose = [...judged].filter(([, item]) => item.verdict === 'refute').map(([id]) => id)
+			const factReview =
+				refutedAtClose.length === 0
+					? ''
+					: await reviewRefutedFacts(exec, sessionId, state, refutedAtClose, (audit.results ?? []).find((item) => item.verdict === 'refute')?.basis ?? audit.basis, mutations)
 			const untouched = derived.hypotheses.filter(
-				(hypothesis) => (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0,
+				(hypothesis) =>
+					!judged.has(hypothesis.id) && (hypothesis.supportedLevel === null || hypothesis.supportedLevel === undefined) && (hypothesis.refutations ?? 0) === 0 && (hypothesis.inconclusive ?? 0) === 0,
 			)
 			mutations.push({ t: 'goal/closed', id: goal.id, status: 'achieved', verdict: 'support', note: args.note ?? null, unjudged: untouched.map((hypothesis) => hypothesis.id) })
 			const continuationNote = completeNativeGoal(exec.agent)
@@ -2666,7 +2814,11 @@ export function apply(ctx, config = {}) {
 				if ((state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id)) continue
 				if (hypothesis.status !== 'alive' && hypothesis.status !== 'proposed') continue
 				if (hypothesis.refutations > 0) continue
-				if (levelIndexOf(hypothesis.supportedLevel) < threshold) continue
+				const atClose = judged.get(hypothesis.id)
+				if (atClose?.verdict === 'refute') continue
+				const reached = levelIndexOf(hypothesis.supportedLevel) >= threshold
+				if (!reached && atClose?.verdict !== 'support') continue
+				const factLevel = reached ? hypothesis.supportedLevel : goal.promote_at_level
 				const assertions = Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null
 				/**
 				 * **第三道校验(升格时)**:断言涉及的谓词、类型、主体此刻都要在本体文件里成立。
@@ -2688,6 +2840,7 @@ export function apply(ctx, config = {}) {
 				const evidence = evidenceFor(state, hypothesis.id)
 					.filter((item) => item.verdict === 'support')
 					.map((item) => item.id)
+				if (atClose?.verdict === 'support') evidence.push(atClose.evidence)
 				/**
 				 * 升格这一刻它用到的词条的含义指纹:之后谁改了定义,这条事实就知道要复核。
 				 * 「用到」= 断言引用的,加上主张与边界原文里按词面提到的(模型很少写断言,见 fingerprintDefinitions)。
@@ -2700,7 +2853,7 @@ export function apply(ctx, config = {}) {
 				} catch {
 					definitions = null
 				}
-				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope: hypothesis.refute_when ?? null, level: hypothesis.supportedLevel ?? null, evidence, assertions, definitions }
+				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions }
 				const path = persistFact(sessionId, record)
 				/**
 				 * 事实带上**边界**(`scope` = 这条假设的推翻条件):没有边界的事实,下一轮没人敢用;
@@ -2718,7 +2871,7 @@ export function apply(ctx, config = {}) {
 					hypothesis: hypothesis.id,
 					text: hypothesis.claim,
 					scope: hypothesis.refute_when ?? null,
-					level: hypothesis.supportedLevel ?? null,
+					level: factLevel ?? null,
 					evidence,
 					assertions,
 					definitions,
@@ -2740,6 +2893,7 @@ export function apply(ctx, config = {}) {
 						? tr(`\n结案时有 ${untouched.length} 条判断**一次都没检验过**:${untouched.map((hypothesis) => `「${handleOf(hypothesis)}」`).join('、')}——没检验不是「没问题」,是「没看过」;它们留在账上,随时可以补一次检验。`, `\nAt conclusion, ${untouched.length} judgment(s) were **never tested**: ${untouched.map((hypothesis) => `"${handleOf(hypothesis)}"`).join(', ')}. Untested does not mean fine; it means not looked at. They stay in the ledger and can be tested any time.`)
 						: '') +
 					tr('\n被推翻与被替换的判断都留在记录里。', '\nRefuted and replaced judgments stay in the record.') +
+						factReview +
 					/** 「怎么做」也要攒下来:这次摸出的可复用做法写成原生技能,下次宿主会列出来。 */
 					tr('\n这次如果摸出了以后还会用的做法(怎么查、怎么算、怎么验),写成原生技能:.agents/skills/<名字>/SKILL.md(description 写清什么时候用)。', '\nIf this run found a method worth reusing (how to look up, compute or verify), write it as a native skill: .agents/skills/<name>/SKILL.md (with a description that says when to use it).') +
 					continuationNote +
@@ -3131,8 +3285,14 @@ export function apply(ctx, config = {}) {
 				if (Array.isArray(args.results) && args.results.length > 0) {
 					return fail('verdict_not_accepted', tr(`${level} 的两项裁决只能由机器或独立评估者写:做的人不判自己。去掉 results 重新交付,系统会派评估者。`, `At ${level}, both verdicts can only be written by a machine check or an independent evaluator; the worker does not judge itself. Deliver again without results and the system will dispatch an evaluator.`))
 				}
+				/** 评估者能跑命令之后,收下的产物在评估前后必须一字不差:改过就不认这份裁决。 */
+				const digestsOf = () => gate.confirmed.map((item) => (readableCwd ? sha256File(isAbsolute(item.ref) ? item.ref : resolvePath(cwd, item.ref)) : null)).join('|')
+				const beforeAudit = CFG.auditRerun ? digestsOf() : ''
 				const audit = await runEvaluator(sessionId, exec.agent, plan, step, gate, 'evidence_audit', exec.signal)
 				mutations.push(...audit.mutations)
+				if (CFG.auditRerun && audit.reused !== true && ['yes', 'no', 'unclear'].includes(audit.holds) && digestsOf() !== beforeAudit) {
+					return fail('evaluator_touched_outputs', tr('评估期间,收下的产物被改动过(评估者应当只在副本里复跑):这份裁决不认。重新交付会再派一次评估。', 'The accepted outputs changed during evaluation (the evaluator should re-run only in the copy), so this verdict is not accepted. Delivering again dispatches a new evaluation.'), { mutations })
+				}
 				if (audit.holds === 'pending') return fail('audit_pending', tr(`独立评估者仍在跑:${plainIds(sessionId, audit.basis)}。先观察当前事实,再谈重试——不要重复派遣。`, `The independent evaluator is still running: ${plainIds(sessionId, audit.basis)}. Look at the current facts before retrying; do not dispatch again.`), { mutations })
 				if (audit.holds === 'unknown') {
 					const count = countBlock('audit_unavailable', audit.basis)
@@ -3352,6 +3512,26 @@ export function apply(ctx, config = {}) {
 	 * 为什么在文件里而不是只留在账本:别的会话与模型读的都是 `clear/knowledge/facts/`,
 	 * 撤回过的若还原样躺在那里,下一轮会照旧引用一条已经作废的事实。
 	 */
+	/**
+	 * 按事实 id 找一条事实:先看本会话的账,再看工作区里的事实文件(别的会话留下的)。
+	 * 找不到返回 null。读文件而不是只读同步进来的快照:Frame 那一拍的同步可能还没跑。
+	 */
+	function findFact(sessionId, state, id) {
+		const key = String(id ?? '').trim()
+		if (!/^[A-Za-z0-9_-]+$/.test(key)) return null
+		const own = (state.facts ?? []).find((fact) => fact.id === key)
+		if (own !== undefined) return own
+		const cwd = sessionCwd(sessionId)
+		if (cwd === null) return null
+		try {
+			const data = JSON.parse(readFileSync(join(cwd, 'clear', 'knowledge', 'facts', `${key}.json`), 'utf8'))
+			if (String(data?.id ?? '') !== key || typeof data?.text !== 'string') return null
+			return { id: key, text: data.text, hypothesis: data.hypothesis ?? null, review: data.review ?? null, foreign: true }
+		} catch {
+			return null
+		}
+	}
+
 	function markFactReviewed(cwd, fact, review) {
 		if (cwd === null || cwd === undefined || !/^[A-Za-z0-9_-]+$/.test(String(fact?.id ?? ''))) return null
 		const file = join(cwd, 'clear', 'knowledge', 'facts', `${fact.id}.json`)
@@ -3829,13 +4009,16 @@ export function apply(ctx, config = {}) {
 				hypotheses:
 					'Candidate judgments: each a one-sentence claim plus a refutation condition; may carry **typed assertions** (optional, strictly checked when given: predicates and concepts must exist, object forms must fit the range, no contradiction within one fact). Leaving out assertions is fine; they add, they do not gate. When revising the goal, omitting this keeps the judgments; passing it gives this version\'s full list, and any judgment not listed is recorded as replaced.',
 				'hypotheses.items.name': 'Short name, within about 12 CJK characters or 20-odd letters, chosen by you (e.g. "python3 runs"). Use this name whenever you mention or reference the judgment in other tools',
+				'hypotheses.items.rival': 'Optional. Only when two explanations both fit: its rival, another explanation of the same thing (the other judgment\'s short name). The card then tracks whether the pair has been settled',
+				'hypotheses.items.split_by': 'Given with rival: the observation on which the two predict differently (making it refutes at least one). The plan should have a step that tests the pair together',
+				'hypotheses.items.retests': 'Which fact already in long-term knowledge this judgment re-tests: the fact id (the file name in clear/knowledge/facts/<id>.json). Copy that fact\'s original statement as the claim and test it again on new data; do not write "it is refuted" as the claim. When this judgment is refuted, the system asks a person on the spot whether to retract or keep that fact, including facts left by other sessions',
 				'hypotheses.items.assertions': 'Assertions: subject, predicate, object (ids from the domain vocabulary)',
 				reason: 'Required when revising the goal: one sentence on why (not needed the first time)',
 			},
 		},
 		Conclude: {
 			description:
-				'Conclude: hand the goal in for acceptance. This is the only way to complete a goal (the native "complete goal" is refused). The system **always** dispatches an independent evaluator to check the goal criteria and transcription fidelity item by item; only when the criteria are met does the goal conclude as achieved: the native goal is marked complete, judgments that reach the threshold are promoted to facts, and the outputs accepted by each step are declared as a deliverables card. Otherwise the goal stays open and the gaps come back. **Order**: before achieved, close the plan first (`ClosePlan`). Abandoning (`abandoned`) is not limited by this: the native goal is marked blocked with the reason, and a person decides whether to end it.',
+				'Conclude: hand the goal in for acceptance. This is the only way to complete a goal (the native "complete goal" is refused). The system **always** dispatches an independent evaluator to check the goal criteria and transcription fidelity item by item; only when the criteria are met does the goal conclude as achieved: the native goal is marked complete; the evaluator also judges each live judgment, and those it supports (or that already reached the threshold) are promoted to facts; and the outputs accepted by each step are declared as a deliverables card. Otherwise the goal stays open and the gaps come back. **Order**: before achieved, close the plan first (`ClosePlan`). Abandoning (`abandoned`) is not limited by this: the native goal is marked blocked with the reason, and a person decides whether to end it.',
 			params: {
 				outcome: 'achieved = criteria met; abandoned = give up after stating the blocker honestly',
 				note: 'Conclusion note',

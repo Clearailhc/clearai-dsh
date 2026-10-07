@@ -191,6 +191,9 @@
     auditProvider: spawn
     auditTimeoutMs: 240000
     # 评估者只读:工具面只给 read/glob/grep;provider 不支持时会降级,降级事实写进台账
+    # 评估者可以复跑:内核把工作区(不含 clear/)复制到临时目录,评估者在副本里跑产物自带的脚本核数字,
+    # 工具面因此多一个 bash;原工作区只读。L3「可重跑」这才名副其实。
+    auditRerun: true
     auditToolFilter:
       - read
       - glob

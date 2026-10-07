@@ -1,0 +1,16 @@
+【lh-factory-1 · 长程三 · 生产分析(会话一):八月良率下滑归因】
+  工具调用 58 次:Frame×1 CreatePlan×1 AdvancePlan×5 write×47 RevisePlan×2 ClosePlan×1 Conclude×1
+  变更:goal/set×1 plan/created×1 observation/recorded×11 admission/checked×5 evidence/recorded×5 step/advanced×4 block/cleared×4 block/counted×1 plan/voided×1 plan/amended×1 plan/closed×1 audit/dispatched×1 audit/settled×1 goal/closed×1
+  目标:achieved · 计划 5 步 · 未落定 (无)
+  ✓ [不变量] 没有跳过准入的推进(每个 step/advanced 之前都有该步的 admission/checked)
+  ✓ [不变量] 评估者没有悬空(每个 audit/dispatched 都有 audit/settled)
+  ✓ [不变量] 证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)
+  ✓ [不变量] 升格与证据等级自洽(没到级不升格,到了级必须升格)
+  ✓ [不变量] 声明的物证真的在盘上(主线步骤的 artifacts)
+  ✓ [剧本] 有推翻或说不清(夜班那条应当不成立)
+  ✓ [剧本] 至少一次独立核验
+  ✗ [剧本] 升格了事实(给会话二、三用) — 0 条
+  ✗ [剧本] 事实挂上了本体(definitions 非空)
+  ✗ [剧本] 本体里有「良率」这类概念 — 7 个概念
+  ✗ [剧本] 实体用了目录嵌套表达「组成」 — 0/32
+  结果:7 通过,4 失败

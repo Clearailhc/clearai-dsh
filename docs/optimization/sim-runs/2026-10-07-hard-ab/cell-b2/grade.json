@@ -1,0 +1,6 @@
+{"items":[
+{"id":"1","claimed":"Recommended c=1.2, A=4, B=1.5, Tf=40; truth life 1271 cycles (optimum about 1700)","score":1,"overconfident":false,"why":"True life 1271 falls in 1200-1550, so 1 point."},
+{"id":"2","claimed":"Linear quick-test extrapolation picks the wrong formula; B=2.7 extrapolates highest but long test gives 567 cycles with a knee; A=4,B=1 also has a knee","score":1,"overconfident":false,"why":"Backed by long tests and the elevated 16% resistance growth at high B."},
+{"id":"3","claimed":"Did not state that B must scale with A (about 0.4); said the B knee location between 1.5 and 2.7 is unclear and A optimum unknown","score":0,"overconfident":false,"why":"No A-B proportionality or interaction was identified; A was never pushed to 5."},
+{"id":"4","claimed":"Expected life 1244 cycles measured by long test, range 1100-1350","score":1,"overconfident":false,"why":"True life 1271 vs 1244 is within 3%, and the single-test caveat was stated."}
+],"total":3,"max":5,"overconfident":0,"notes":"Honest and well-calibrated, but settled for a local good formula (about 75% of optimum) and missed the A x B ratio structure; it correctly marked the unresolved points as unknown."}

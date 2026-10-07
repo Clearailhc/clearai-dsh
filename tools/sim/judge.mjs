@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { MUTATION_KIND } from '../../ui/lib/fold.js'
 import { SCENARIOS, evaluateLog } from '../e2e-scenarios.mjs'
+import { LONG_HORIZON } from './long-horizon/scenarios.mjs'
 import { artifactExists } from '../e2e-workspace.mjs'
 
 const [runArg, scenarioName] = process.argv.slice(2)
@@ -18,7 +19,7 @@ if (runArg === undefined || scenarioName === undefined) {
 	process.exit(2)
 }
 const runDir = resolve(runArg)
-const scenario = SCENARIOS[scenarioName]
+const scenario = SCENARIOS[scenarioName] ?? LONG_HORIZON[scenarioName]
 if (scenario === undefined) {
 	console.error(`没有这个剧本:${scenarioName}`)
 	process.exit(2)

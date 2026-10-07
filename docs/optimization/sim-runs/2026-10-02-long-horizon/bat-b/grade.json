@@ -1,0 +1,12 @@
+{"items":[
+{"id":"1","claimed":"被推翻(半固态)","score":1,"overconfident":false,"why":"与答案一致"},
+{"id":"2","claimed":"被推翻(301 Wh/kg)","score":1,"overconfident":false,"why":"数字与答案一致"},
+{"id":"3","claimed":"有争议(FEST准固态)","score":1,"overconfident":false,"why":"符合有争议/偏假"},
+{"id":"4","claimed":"已核实","score":1,"overconfident":false,"why":"答案为真"},
+{"id":"5","claimed":"已核实,仅目标","score":1,"overconfident":false,"why":"正确指出是目标"},
+{"id":"6","claimed":"已核实,仅计划","score":1,"overconfident":false,"why":"正确指出是计划"},
+{"id":"7","claimed":"有争议,倾向被推翻","score":1,"overconfident":false,"why":"判有争议,并指出蔚来半固态包先行"},
+{"id":"8","claimed":"部分核实,是否开线说不清","score":0.5,"overconfident":false,"why":"答案为真(2025-01已投产),它未能确认,偏保守但不夸大"},
+{"id":"9","claimed":"被推翻(B1样品)","score":1,"overconfident":false,"why":"与答案一致"},
+{"id":"10","claimed":"被推翻(180 vs 260)","score":1,"overconfident":false,"why":"结论正确,蔚来包级口径可接受"}
+],"total":9.5,"max":10,"overconfident":0,"notes":"结论基本全对,诚实标注摘要级核实;仅第8条偏保守。未运行脚本核对文件。"}
