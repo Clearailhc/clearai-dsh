@@ -8,11 +8,11 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **51**
-- By status: Implemented 50 · Design only 1
-- By strength: Hard boundary 41 · Advisory 7 · Native 3
+- Mechanisms: **53**
+- By status: Implemented 52 · Design only 1
+- By strength: Hard boundary 42 · Advisory 8 · Native 3
 - By destination: stays design-only 1
-- Actually blocking execution: **19**
+- Actually blocking execution: **20**
 - Carrying a known mismatch between docs/comments and code: **1**
 
 ## Code constant snapshot
@@ -20,8 +20,8 @@ This table answers one question: **what the current code actually guarantees**. 
 This section is exported from code, not written by hand:
 
 - Mechanisms: 2 (goal / plan)
-- Intent tools: 6 (Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan)
-- Config keys: 13
+- Intent tools: 7 (Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Anomaly)
+- Config keys: 14
 - Prompt sections: 3 defined, 3 mounted at any moment
 
 ## Summary
@@ -38,7 +38,9 @@ This section is exported from code, not written by hand:
 | `admission` | Admission: intake only, never a verdict | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js admission` |
 | `self-judge-limit` | Self-judgement capped at L2 | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js SELF_JUDGE_MAX_INDEX=2` |
 | `independent-evaluator` | Independent evaluator, fresh context, read-only face | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js runEvaluator / resolveToolFace / evaluatorPrompt / writeAuditCard` |
+| `expectation-anomaly` | Expectations and unexplained items (anomalies): steps may carry an expectation; misses become unexplained items on the card with three destinations | Epistemic | Implemented | Advisory | Authoritative | model | no | `preset/plugins/clearai-kernel.js STEP_SCHEMA.expect / RevisePlan(expect) / AdvancePlan.anomalies / Anomaly / anomalyBrief / verdictSchema.anomalies` |
 | `l4-human-release` | L4 step/branch human release | Epistemic | Implemented | Hard boundary | Authoritative | human | yes | `preset/plugins/clearai-kernel.js l4Delivery` |
+| `irreversible-command-release` | Irreversible actions gated at the command: Frame declares a command signature, and a matching bash call asks a person before it runs | Epistemic | Implemented | Hard boundary | Authoritative | human | yes | `preset/plugins/clearai-kernel.js releaseIrreversible / guardTool` |
 | `evidence-record` | Evidence recording | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `fact-promotion` | Fact promotion | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js persistFact` |
 | `history-retention` | Append-only history | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/fold.js（全体 case 无删除分支）` |
@@ -213,6 +215,19 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: auditProvider=spawn, auditTimeoutMs, auditToolFilter
 - **Prompt**: clearai/loop · **Docs**: docs/verification-loop.zh-CN.md
 
+### `expectation-anomaly` · Expectations and unexplained items (anomalies): steps may carry an expectation; misses become unexplained items on the card with three destinations
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Advisory · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 模型写预期、交付时登记不符、用 Anomaly 登记或消解;评估者在裁决里报没登记的异常
+- **Input**: 预期文本;哪里不符;去处(explained / ruled_out / escalated)与理由
+- **Output**: step/expected, anomaly/opened, anomaly/resolved;audit/settled 带 anomalies 时折成评估者发现的未解释项
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 失分最多的不是没核,而是看见了异常却把它解释过去。写下的预期让落空可见;未解释项不阻塞结案,但随交付交给评估者,由评估者判它动不动摇结论。
+- **Code**: preset/plugins/clearai-kernel.js STEP_SCHEMA.expect / RevisePlan(expect) / AdvancePlan.anomalies / Anomaly / anomalyBrief / verdictSchema.anomalies; ui/lib/fold.js case 'anomaly/opened' / 'anomaly/resolved' / 'audit/settled'
+- **Tests**: test/kernel.test.mjs · **Config**: —
+- **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
+
 ### `l4-human-release` · L4 step/branch human release
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: human
@@ -225,6 +240,19 @@ This section is exported from code, not written by hand:
 - **Code**: preset/plugins/clearai-kernel.js l4Delivery; askHuman; ui/lib/fold.js case 'human/released'
 - **Tests**: test/kernel.test.mjs · **Config**: l4RequiresHumanRelease=true, l4RejectSelfWritten=true
 - **Prompt**: clearai/loop · **Docs**: docs/known-gaps.zh-CN.md
+
+### `irreversible-command-release` · Irreversible actions gated at the command: Frame declares a command signature, and a matching bash call asks a person before it runs
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: human
+- **Trigger**: bash 命令里出现 Frame 声明过的命令特征
+- **Input**: 那次调用当场问人(宿主 userQuestions)的答复
+- **Output**: 放行 ⇒ 落 human/released(带 action)并执行;不放行 / 没人能答 ⇒ 拒(没人能答时原生 goal 停下等人)
+- **Blocks execution**: yes
+- **Native alternative**: 宿主 userQuestions(原生提问卡)
+- **Rationale**: 步骤级的放行挂在交付上,而不可逆的动作往往就是一条命令:先跑了再交付,门就晚了。拦在命令上,门才在动作之前。
+- **Code**: preset/plugins/clearai-kernel.js releaseIrreversible / guardTool; ui/lib/fold.js case 'human/released'
+- **Tests**: test/kernel.test.mjs · **Config**: l4RequiresHumanRelease=true
+- **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `evidence-record` · Evidence recording
 

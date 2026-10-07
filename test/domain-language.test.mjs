@@ -251,7 +251,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本是 v16(多了人说话用的语言)', fold.STATE_VERSION === 16, String(fold.STATE_VERSION))
+	check('状态版本是 v17(多了预期与未解释项)', fold.STATE_VERSION === 17, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -294,7 +294,7 @@ console.log('\n【折法:事实带上假设 id 与断言,并按 id 关联】')
 	 * 一次决定(改这一行 + 改 STATE_VERSION 的说明),而不是顺手长出来的——
 	 * 「旧账本逐字段不变」这句话只有在这种对照下才可核对。
 	 */
-	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'workspace', 'ontologyProblems', 'language', 'inFlight', 'written']
+	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'anomalies', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'workspace', 'ontologyProblems', 'language', 'inFlight', 'written']
 	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'level', 'evidence', 'path', 'assertions', 'definitions', 'at']
 	check('状态键集合与清单逐字一致(加字段要改这一行)', JSON.stringify(Object.keys(fold.emptyState()).sort()) === JSON.stringify([...STATE_KEYS].sort()), Object.keys(fold.emptyState()).filter((key) => !STATE_KEYS.includes(key)).join(','))
 	check('事实键集合与清单逐字一致', JSON.stringify(Object.keys(legacy.facts[0]).sort()) === JSON.stringify([...FACT_KEYS].sort()), Object.keys(legacy.facts[0]).filter((key) => !FACT_KEYS.includes(key)).join(','))

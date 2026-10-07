@@ -18,7 +18,7 @@
  * 面向人的新字符串一律先落在 `GLOSSARY`(内部词 → 一句 plain + 在哪看 + 下一步做什么);
  * `client.js` 的 `LOCALE_ZH/LOCALE_EN` 与它同源登记。
  */
-import { graphProjection, ontologyOutline } from './domain-language.js'
+import { graphProjection } from './domain-language.js'
 import { bilingual, tr } from './lang.js'
 
 /** 卡文本上限。模型每一步只读这一张卡,而卡是**每回合**重算的:它必须小到能进预算。 */
@@ -192,7 +192,8 @@ export const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
  * **说人话的三张小表**(第六阶段)。内部名不改;卡、工具结果与面板上一律写右边那一列。
  * 模型读到什么就会照着说什么——所以卡先说人话,答复才说得出人话。
  */
-export const LEVEL_WORD = bilingual({ L0: ['自己推了一遍', 'reasoned through alone'], L1: ['引用已有材料', 'cites existing material'], L2: ['可复算', 'reproducible'], L3: ['独立核验', 'independent check'], L4: ['人放行', 'released by a person'] })
+/** 等级只说三档:L0–L2 合并成「自己检验」(旧账里的 L0 / L1 也这么读),L3 独立评估,L4 人放行。 */
+export const LEVEL_WORD = bilingual({ L0: ['自己检验', 'self-tested'], L1: ['自己检验', 'self-tested'], L2: ['自己检验', 'self-tested'], L3: ['独立核验', 'independent check'], L4: ['人放行', 'released by a person'] })
 export const VERDICT_WORD = bilingual({ support: ['支持', 'support'], refute: ['推翻', 'refute'], inconclusive: ['不确定', 'inconclusive'] })
 /** 判断短名的上限(汉字);没起名时取主张开头这么宽。与内核同一个数。 */
 export const HANDLE_LIMIT = 12
@@ -337,9 +338,6 @@ export function readingOf(hypothesis) {
 /** 步骤状态的人话。 */
 const STEP_WORD = bilingual({ open: ['待做', 'to do'], advanced: ['已交付', 'delivered'], void: ['已作废', 'voided'] })
 
-/** 连续几次全是「支持」才提醒检验可能太弱(少于这个数,全是支持很正常)。 */
-const WEAK_TEST_RESULTS = 3
-
 /** 一条事实在卡上的一行:原话、边界、等级;来自别的会话的标出来。 */
 function factLine(fact) {
 	const scope = oneLine(fact?.scope ?? '')
@@ -347,54 +345,6 @@ function factLine(fact) {
 		`  · 「${clamp(fact?.text, 100)}」${scope === '' ? '' : ` — 边界:${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}`,
 		`  · "${clamp(fact?.text, 100)}"${scope === '' ? '' : ` — boundary: ${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}`,
 	)
-}
-
-/**
- * **对手那一格**(工作板):每对互为对手的判断,分出来没有、计划里有没有一步能分出它们。
- *
- * 为什么要摆出来:各自找支持的判断最后都会被「支持」。一对对手的好结局是一条被推翻;
- * 两条都被支持说明做过的观测没有区分它们。这一格不判谁对,只说这一对还差什么。
- */
-export function rivalLines(hypotheses, plan, promotedIds, nameOf) {
-	const byId = new Map(hypotheses.map((hypothesis) => [hypothesis.id, hypothesis]))
-	const seen = new Set()
-	const lines = []
-	for (const hypothesis of hypotheses) {
-		const other = typeof hypothesis.rival === 'string' ? byId.get(hypothesis.rival) : undefined
-		if (other === undefined) continue
-		const key = [hypothesis.id, other.id].sort().join('|')
-		if (seen.has(key)) continue
-		seen.add(key)
-		const trustA = trustOf(hypothesis, promotedIds.has(hypothesis.id))
-		const trustB = trustOf(other, promotedIds.has(other.id))
-		if (trustA === 'replaced' || trustB === 'replaced') continue
-		const split = oneLine(hypothesis.split_by ?? other.split_by ?? '')
-		let reading
-		let open = false
-		if (trustA === 'refuted' && trustB === 'refuted') reading = tr('两条都被推翻:换一对解释', 'both refuted: find another pair of explanations')
-		else if (trustA === 'refuted' || trustB === 'refuted') reading = tr(`已分出:${nameOf(trustA === 'refuted' ? hypothesis.id : other.id)}被推翻`, `settled: ${nameOf(trustA === 'refuted' ? hypothesis.id : other.id)} is refuted`)
-		else if (['credible', 'pending'].includes(trustA) && ['credible', 'pending'].includes(trustB)) {
-			reading = tr('两条都被支持:做过的观测没有区分它们', 'both supported: the observations so far did not tell them apart')
-			open = true
-		} else {
-			reading = tr('还没分出', 'not settled yet')
-			open = true
-		}
-		let next = ''
-		if (open) {
-			const steps = plan === null ? [] : plan.steps.filter((step) => step.status === 'open')
-			const testsBoth = steps.find((step) => {
-				const tested = Array.isArray(step.tests?.hypotheses) ? step.tests.hypotheses : []
-				return tested.includes(hypothesis.id) && tested.includes(other.id)
-			})
-			next =
-				testsBoth !== undefined
-					? tr(` → 第 ${testsBoth.ordinal} 步会同时检验这一对`, ` → step ${testsBoth.ordinal} tests the pair together`)
-					: tr(' → 计划里还没有一步同时检验这一对:用 RevisePlan 补一步去做这个区分观测', ' → no open step tests the pair together: add one with RevisePlan that makes this observation')
-		}
-		lines.push(tr(`  对手:${nameOf(hypothesis.id)}对${nameOf(other.id)}${split === '' ? '' : `,区分观测:${clamp(split, 100)}`} · ${reading}${next}`, `  Rivals: ${nameOf(hypothesis.id)} vs ${nameOf(other.id)}${split === '' ? '' : `; deciding observation: ${clamp(split, 100)}`} · ${reading}${next}`))
-	}
-	return lines
 }
 
 /**
@@ -418,8 +368,6 @@ function cardLines(state, derived, options, view) {
 	const evidence = Array.isArray(state?.evidence) ? state.evidence : []
 	const facts = Array.isArray(state?.facts) ? state.facts : []
 	const hostHealth = Array.isArray(state?.hostHealth) ? state.hostHealth : []
-	const graph = graphProjection(state)
-	const entityNodes = graph.nodes.filter((node) => node.layer === 'entity')
 	const promotedIds = new Set(facts.map((fact) => fact?.hypothesis).filter((id) => typeof id === 'string'))
 	const byId = new Map(hypotheses.map((hypothesis) => [hypothesis.id, hypothesis]))
 	const nameOf = (id) => (byId.has(id) ? tr(`「${handleOf(byId.get(id))}」`, `"${handleOf(byId.get(id))}"`) : tr('一条已不在账上的判断', 'a judgment no longer on record'))
@@ -470,16 +418,6 @@ function cardLines(state, derived, options, view) {
 			}
 		}
 		if (hypotheses.length > 10) push(tr(`  · 还有 ${hypotheses.length - 10} 条判断没展开(面板「本体」里有全部)`, `  · ${hypotheses.length - 10} more judgments not shown (all are in the Ontology pane)`), 2)
-		for (const line of rivalLines(hypotheses, plan, promotedIds, nameOf)) push(line)
-		/**
-		 * **按症状提醒,不按格式要求**:检验了几次,次次都是「支持」,没有一次推翻或说不清——
-		 * 这往往不是判断都对,而是检验太弱(任何解释都会给出同样的结果)。没有这个症状就一个字不加。
-		 */
-		const goalIds = new Set(hypotheses.filter((hypothesis) => goal !== null && hypothesis.goal === goal.id).map((hypothesis) => hypothesis.id))
-		const verdicts = evidence.filter((item) => goalIds.has(item.hypothesis)).map((item) => item.verdict)
-		if (verdicts.length >= WEAK_TEST_RESULTS && verdicts.every((verdict) => verdict === 'support')) {
-			push(tr(`- 到现在 ${verdicts.length} 次检验全是「支持」,没有一次推翻或说不清:检验可能太弱。有没有另一种解释也会给出同样的结果?找一个两者预测不同的观测去做。`, `- All ${verdicts.length} results so far are "support", with no refutation or unclear result: the tests may be too weak. Would another explanation give the same results? Find an observation on which the two predict differently and make it.`))
-		}
 	}
 	if (plan === null) {
 		if (goal !== null && String(goal.status) === 'open') push(tr('- 计划:还没有(用 CreatePlan 把检验拆成步骤)', '- Plan: none yet (use CreatePlan to split the tests into steps)'), 1)
@@ -493,9 +431,30 @@ function cardLines(state, derived, options, view) {
 		}
 		if (plan.steps.length > 12) push(tr(`  · 还有 ${plan.steps.length - 12} 步没展开(右栏「世界树」里有全部)`, `  · ${plan.steps.length - 12} more steps not shown (all are in the World Tree on the right)`), 2)
 		const first = plan.steps.find((step) => step.status === 'open')
-		if (first !== undefined) push(tr(`- 下一步:交付第 ${first.ordinal} 步(${first.id})——只能交付第一个没做完的步`, `- Next: deliver step ${first.ordinal} (${first.id}); only the first unfinished step can be delivered`))
+		if (first !== undefined) {
+			push(tr(`- 下一步:交付第 ${first.ordinal} 步(${first.id})——只能交付第一个没做完的步`, `- Next: deliver step ${first.ordinal} (${first.id}); only the first unfinished step can be delivered`))
+			/** 预期可选,但卡上提醒:没写下来的预期,落空了也看不见。 */
+			if (typeof first.expect === 'string' && first.expect !== '') push(tr(`  预期:${clamp(first.expect, 160)}——结果对不上的地方写进 anomalies,不要解释过去`, `  Expected: ${clamp(first.expect, 160)}; whatever does not match goes in anomalies, do not explain it away`))
+			else push(tr('  动手前写下预期(RevisePlan action="expect":预计看到什么、从哪条关系或经验来),落空才看得见', '  Before acting, write the expectation (RevisePlan action="expect": what you expect and from which relation or lesson), so a miss is visible'), 1)
+		}
 		else if (goal !== null && String(goal.status) === 'open') push(tr('- 下一步:计划的步都做完了,ClosePlan 收尾,然后 Conclude 结案或开下一阶段', '- Next: every step is done; ClosePlan, then Conclude or start the next stage'))
 		if (plan.blocked !== undefined && plan.blocked !== null) push(tr(`- 计划停下等人:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次没过,已经问人怎么办;没人答就等着)`, `- Plan stopped, waiting for a person: ${plan.blocked.reason} (failed ${plan.blocked.attempts}× in a row; a person has been asked; wait if nobody answers)`))
+	}
+	/**
+	 * **未解释项**:卡上最不能省的一格。开着的逐条摆出来,直到被解释、写明理由排除、或交给人;
+	 * 评估者报的标出来(那是做的人自己没看见的)。
+	 */
+	const anomalies = Array.isArray(state?.anomalies) ? state.anomalies : []
+	const openAnomalies = anomalies.filter((item) => item?.status === 'open')
+	if (openAnomalies.length > 0) {
+		push(tr(`- 未解释(${openAnomalies.length} 条开着;用 Anomaly 解释、排除或交给人,不要解释过去):`, `- Unexplained (${openAnomalies.length} open; explain, rule out or hand to a person with Anomaly; do not explain them away):`))
+		for (const item of openAnomalies.slice(0, 8)) push(tr(`  · ${item.id}${item.by === 'evaluator' ? '(评估者发现)' : ''}:${clamp(item.what, 140)}${item.anchor ? ` · 在 ${clamp(item.anchor, 30)}` : ''}`, `  · ${item.id}${item.by === 'evaluator' ? ' (found by the evaluator)' : ''}: ${clamp(item.what, 140)}${item.anchor ? ` · on ${clamp(item.anchor, 30)}` : ''}`))
+		if (openAnomalies.length > 8) push(tr(`  · 还有 ${openAnomalies.length - 8} 条`, `  · ${openAnomalies.length - 8} more`), 1)
+	}
+	const settledAnomalies = anomalies.length - openAnomalies.length
+	if (settledAnomalies > 0) {
+		const escalated = anomalies.filter((item) => item?.status === 'escalated').length
+		push(tr(`- 已处理的未解释:${settledAnomalies} 条${escalated > 0 ? `(${escalated} 条交给人)` : ''},结案时随交付交给评估者`, `- Unexplained items handled: ${settledAnomalies}${escalated > 0 ? ` (${escalated} handed to a person)` : ''}; they go to the evaluator with the delivery`), 2)
 	}
 	if (evidence.length > 0) {
 		const last = evidence[evidence.length - 1]
@@ -528,23 +487,10 @@ function cardLines(state, derived, options, view) {
 		}
 	}
 	/**
-	 * **本体大纲**:概念树与实体树的前两层(每支标节点数)、关系总数、跨文件问题。
-	 * 细节在 clear/ontology/ 下的文件里,模型自己去读。
+	 * 本体提纲与计数不上卡(它从没改变过下一步):卡上只出现被判断引用到的本体项(见下面的预检)。
+	 * 跨文件问题照旧报——那是要修的东西。
 	 */
-	const outline = ontologyOutline(state)
 	const ontologyProblems = Array.isArray(state?.ontologyProblems) ? state.ontologyProblems : []
-	if (outline.concepts.total > 0 || outline.entities.total > 0 || outline.relations > 0) {
-		const entityRelations = Array.isArray(state?.entityAssertions) ? state.entityAssertions.length : 0
-		push(
-			tr(
-				`- 本体(clear/ontology/):${outline.concepts.total} 个概念 · ${outline.relations} 种关系 · ${outline.entities.total} 个实体 · ${entityRelations} 条实体关系`,
-				`- Ontology (clear/ontology/): ${outline.concepts.total} concepts · ${outline.relations} relation types · ${outline.entities.total} entities · ${entityRelations} entity relations`,
-			),
-			2,
-		)
-		if (outline.concepts.lines.length > 0) push(tr(`  · 概念树:${outline.concepts.lines.join(';')}${outline.concepts.more > 0 ? `;顶层还有 ${outline.concepts.more} 个` : ''}`, `  · Concept tree: ${outline.concepts.lines.join('; ')}${outline.concepts.more > 0 ? `; ${outline.concepts.more} more at the top level` : ''}`), 2)
-		if (outline.entities.lines.length > 0) push(tr(`  · 实体树:${outline.entities.lines.join(';')}${outline.entities.more > 0 ? `;顶层还有 ${outline.entities.more} 个` : ''}`, `  · Entity tree: ${outline.entities.lines.join('; ')}${outline.entities.more > 0 ? `; ${outline.entities.more} more at the top level` : ''}`), 2)
-	} else if (entityNodes.length > 0) push(tr(`- 实体图上 ${entityNodes.length} 个实例`, `- ${entityNodes.length} instances on the entity graph`), 1)
 	if (ontologyProblems.length > 0) {
 		push(tr(`- 本体文件有 ${ontologyProblems.length} 处问题(有问题的节点或关系没进图):`, `- Ontology files have ${ontologyProblems.length} problems (the affected nodes or relations stay off the graph):`), 1)
 		for (const item of ontologyProblems.slice(0, 5)) push(`  · ${item.path}: ${clamp(item.detail, 160)}`, 1)

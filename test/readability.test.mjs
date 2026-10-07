@@ -94,7 +94,7 @@ const setGoalParameters = (() => {
 	if (start < 0) return null
 	const parametersAt = KERNEL_SOURCE.indexOf('parameters: {', start)
 	if (parametersAt < 0) return null
-	return extractLiteral(KERNEL_SOURCE, KERNEL_SOURCE.indexOf('{', parametersAt), { LEVELS: [] })
+	return extractLiteral(KERNEL_SOURCE, KERNEL_SOURCE.indexOf('{', parametersAt), { LEVELS: [], MODEL_LEVELS: [] })
 })()
 {
 	const properties = setGoalParameters?.properties ?? {}

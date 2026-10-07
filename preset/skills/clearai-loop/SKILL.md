@@ -15,7 +15,7 @@ description: Use when working inside the ClearAI preset and a delivery keeps get
 2. 声明的是**目录**吗?目录不是物证,改为声明具体文件。零字节文件同样拒:空文件不是观测。
 3. **结构合法**吗?`.json` 要能解析;`.md` 去掉标题行后不足 20 个字算「只有标题」。别的扩展名不做结构判定。
 4. 一个产物都没声明 → `no_anchor`:不改变世界的步骤没有可验收的东西。
-5. 都过了且判据非空 → 不是放行,而是送评(L3 以上派独立评估者;L0–L2 用你给的 `basis` 与 `results`)。
+5. 都过了且判据非空 → 不是放行,而是送评(L3 以上派独立评估者;L2 自己检验用你给的 `basis` 与 `results`)。
 
 准入不看判据里的任何断言:数值、口径、一致性都不看。`touch` 一个文件也能过准入,所以过了准入绝不等于这一步做完了。
 
@@ -34,6 +34,7 @@ description: Use when working inside the ClearAI preset and a delivery keeps get
 |---|---|---|
 | `holds` | 交付成立吗:判据逐条满足、观测真实 | yes / no / unclear |
 | `results` | 这一步检验的每条判断,对照推翻条件读出了什么 | support / refute / inconclusive |
+| `anomalies` | 原始数据里你没登记的异常、站不住的排除理由 | 每条一句;系统记成「评估者发现」的未解释项 |
 
 `holds=yes` 这一步就完成,不管 `results` 是支持、推翻还是说不清。推翻和说不清照样记成证据,判断的状态由证据算。评估卡写不进来时裁决降级为 `unknown`,这一步不推进,绝不静默放行。
 
@@ -69,7 +70,7 @@ When you deliver with `AdvancePlan`, the system checks in this order:
 2. Is a declared output a **directory**? A directory is not proof; declare concrete files. Zero-byte files are refused too: an empty file is not an observation.
 3. Is the **structure valid**? `.json` must parse; a `.md` with fewer than 20 characters after removing the title line counts as "title only". Other extensions get no structural check.
 4. No output declared at all → `no_anchor`: a step that changes nothing has nothing to accept.
-5. All passed and the criteria are non-empty → this is not approval but referral (an independent evaluator from L3 up; your `basis` and `results` at L0–L2).
+5. All passed and the criteria are non-empty → this is not approval but referral (an independent evaluator from L3 up; your `basis` and `results` at L2, self-tested).
 
 Intake does not look at any assertion in the criteria: values, definitions and consistency are not checked. `touch` on a file passes intake, so passing intake never means the step is done.
 
@@ -88,6 +89,7 @@ One card carries two verdicts, each answering its own question:
 |---|---|---|
 | `holds` | Does the delivery hold: every criterion met, observations real | yes / no / unclear |
 | `results` | For each judgment the step tests, what the observation shows against its refutation condition | support / refute / inconclusive |
+| `anomalies` | Anomalies in the raw data you did not record, and ruling-out reasons that do not hold | one sentence each; the system records them as unexplained items found by the evaluator |
 
 With `holds=yes` the step is complete, whatever `results` says. Refute and inconclusive are recorded as evidence all the same, and the judgment's status is computed from the evidence. If the card cannot be written, the verdict degrades to `unknown` and the step does not advance; it is never silently let through.
 

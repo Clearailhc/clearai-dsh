@@ -250,6 +250,28 @@ stateDiagram-v2
 - 会话工作目录取不到时**不写盘**（不回退 `process.cwd()`）：写不出去是诚实的降级，
   写到别处是悄悄改了账本的位置。
 
+## 12b. 未解释项（anomaly）· 已实现
+
+存储字段：`state.anomalies[].{status, by, reason, explainedBy}`。认识论里的「反常」：和预期或本体对不上的观测。
+
+```mermaid
+stateDiagram-v2
+    [*] --> open: anomaly/opened（交付时登记 / Anomaly open）
+    [*] --> open: audit/settled 带 anomalies（评估者发现，by=evaluator）
+    open --> explained: anomaly/resolved outcome=explained
+    open --> ruled_out: anomaly/resolved outcome=ruled_out
+    open --> escalated: anomaly/resolved outcome=escalated
+    explained --> [*]
+    ruled_out --> [*]
+    escalated --> [*]
+```
+
+要点：
+
+- 步骤可以带预期（`expect`，`plan/created` / `plan/amended` 一起落，或动手前用 `step/expected` 补写）。预期落空的地方记成未解释项。
+- 未解释项不阻塞结案；结案（以及每次独立评估）时随交付交给评估者，排除的理由由评估者核。
+- 去处只有一个：处理过的不能再处理。
+
 ## 13. 事件清单覆盖表
 
 折法认识的**每一个**变更类型都在本节有归属；反过来，本文出现的每个 event 也都在折法词汇表里。
@@ -290,6 +312,9 @@ stateDiagram-v2
 | `criteria/revised` | §1 目标（判据修订） | 是 |
 | `host/inactive` | §12 宿主读面 | 是 |
 | `workspace/synced` | §8 事实（跨会话） | 是 |
+| `step/expected` | §3 步骤（预期） | 是 |
+| `anomaly/opened` | §12b 未解释项 | 是 |
+| `anomaly/resolved` | §12b 未解释项 | 是 |
 | `admission/checked` | **只留台账** | 否 |
 
 ## 14. 与验证本体的关系

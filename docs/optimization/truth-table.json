@@ -41,6 +41,14 @@
       "by": "ledger-only"
     },
     {
+      "t": "anomaly/opened",
+      "by": "expectation-anomaly"
+    },
+    {
+      "t": "anomaly/resolved",
+      "by": "expectation-anomaly"
+    },
+    {
       "t": "audit/dispatched",
       "by": "independent-evaluator"
     },
@@ -159,6 +167,10 @@
     {
       "t": "step/advanced",
       "by": "advance-plan"
+    },
+    {
+      "t": "step/expected",
+      "by": "expectation-anomaly"
     },
     {
       "t": "workspace/synced",
@@ -407,6 +419,30 @@
       "known_mismatch": null
     },
     {
+      "id": "expectation-anomaly",
+      "name": "预期与未解释项(反常):步骤可写预期,落空记成未解释项挂在卡上,只有三个去处",
+      "name_en": "Expectations and unexplained items (anomalies): steps may carry an expectation; misses become unexplained items on the card with three destinations",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "advisory",
+      "authority": "authoritative",
+      "actor": "model",
+      "source": {
+        "code": "preset/plugins/clearai-kernel.js STEP_SCHEMA.expect / RevisePlan(expect) / AdvancePlan.anomalies / Anomaly / anomalyBrief / verdictSchema.anomalies; ui/lib/fold.js case 'anomaly/opened' / 'anomaly/resolved' / 'audit/settled'",
+        "tests": "test/kernel.test.mjs",
+        "config": null,
+        "prompt": "clearai/loop",
+        "docs": "docs/epistemic-loop.zh-CN.md"
+      },
+      "trigger": "模型写预期、交付时登记不符、用 Anomaly 登记或消解;评估者在裁决里报没登记的异常",
+      "input": "预期文本;哪里不符;去处(explained / ruled_out / escalated)与理由",
+      "output": "step/expected, anomaly/opened, anomaly/resolved;audit/settled 带 anomalies 时折成评估者发现的未解释项",
+      "blocks_execution": false,
+      "native_dsh_alternative": null,
+      "rationale": "失分最多的不是没核,而是看见了异常却把它解释过去。写下的预期让落空可见;未解释项不阻塞结案,但随交付交给评估者,由评估者判它动不动摇结论。",
+      "known_mismatch": null
+    },
+    {
       "id": "l4-human-release",
       "name": "L4 步骤/分支级人工放行",
       "name_en": "L4 step/branch human release",
@@ -428,6 +464,30 @@
       "blocks_execution": true,
       "native_dsh_alternative": "宿主 userQuestions(原生提问卡)",
       "rationale": "L4 意味着高代价或不可逆,必须有人按的那一下。门在交付那次调用里当场开、当场关。范围是步骤轴——覆盖每一次评估的通用门另立一行(见 l4-universal-gate)。",
+      "known_mismatch": null
+    },
+    {
+      "id": "irreversible-command-release",
+      "name": "不可逆动作拦在命令上:Frame 声明命令特征,匹配的 bash 执行前当场问人",
+      "name_en": "Irreversible actions gated at the command: Frame declares a command signature, and a matching bash call asks a person before it runs",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "human",
+      "source": {
+        "code": "preset/plugins/clearai-kernel.js releaseIrreversible / guardTool; ui/lib/fold.js case 'human/released'",
+        "tests": "test/kernel.test.mjs",
+        "config": "l4RequiresHumanRelease=true",
+        "prompt": "clearai/loop",
+        "docs": "docs/epistemic-loop.zh-CN.md"
+      },
+      "trigger": "bash 命令里出现 Frame 声明过的命令特征",
+      "input": "那次调用当场问人(宿主 userQuestions)的答复",
+      "output": "放行 ⇒ 落 human/released(带 action)并执行;不放行 / 没人能答 ⇒ 拒(没人能答时原生 goal 停下等人)",
+      "blocks_execution": true,
+      "native_dsh_alternative": "宿主 userQuestions(原生提问卡)",
+      "rationale": "步骤级的放行挂在交付上,而不可逆的动作往往就是一条命令:先跑了再交付,门就晚了。拦在命令上,门才在动作之前。",
       "known_mismatch": null
     },
     {

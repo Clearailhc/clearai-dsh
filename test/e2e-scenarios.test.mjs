@@ -211,7 +211,7 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 	process.env.DSH_HOME = join(root, 'home')
 	const host = makeSimHost({ workspace, runDir: join(root, 'run') })
 	apply(host.ctx, { ...config, auditTimeoutMs: 5000 })
-	check('装上:6 件工具、3 段提示词', host.tools.size === 6 && host.sections.length === 3, `${host.tools.size} / ${host.sections.length}`)
+	check('装上:7 件工具、3 段提示词', host.tools.size === 7 && host.sections.length === 3, `${host.tools.size} / ${host.sections.length}`)
 
 	const goal = await host.call('Frame', { headline: '判定 A', claim: '判定 A 是否成立', done_criteria: '存在一份文件 lab/v.md', hypotheses: [{ claim: 'A 成立', refute_when: '读数不是 2' }, { claim: 'A 不成立', refute_when: '读数是 2' }] })
 	check('工具结果给模型的是内核的原话,不是一句 ok', goal.ok === true && /现在的状态/.test(goal.text), goal.text.slice(0, 120))

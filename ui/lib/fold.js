@@ -60,9 +60,13 @@ export const MUTATION_KIND = 'clearai'
  *           `definitionsChanged`。本体(词汇、实体、实体关系)改为从本体文件折出来,跨文件问题记在
  *           `ontologyProblems`。旧日志里没有这些,折出来就是空的。
  *   v15 → v16:多了 `language`(人说话用的语言,从人的消息折出来):系统写给人的话、面板里的读数都跟着它。
+ *   v16 → v17:**预期与未解释**:步骤带 `expect`(`step/expected` 也能补写);多了 `anomalies`(未解释项,
+ *           `anomaly/opened` / `anomaly/resolved` 折进来,评估者报的随 `audit/settled` 一起来);目标带
+ *           `irreversible`(不可逆动作的命令特征);放行带 `action`。对手判断(`rival` / `split_by`)删了,
+ *           旧账里的这两格不再读。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 16
+export const STATE_VERSION = 17
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -89,6 +93,11 @@ export function emptyState() {
 		facts: [],
 		blocks: {},
 		releases: [],
+		/**
+		 * **未解释项**(认识论里的「反常」):和预期或本体对不上的观测。只有三个去处:
+		 * 被解释(`explained`)、写明理由排除(`ruled_out`)、交给人(`escalated`);没去处的就是开着(`open`)。
+		 */
+		anomalies: [],
 		/**
 		 * **本体形状**:内核随投影下发的那份声明(对象/状态/边/等级)。
 		 * 为什么进投影而不是在界面里手抄:面板那一格的页眉要从**声明**生成——
@@ -205,6 +214,8 @@ function appendSteps(plan, rawSteps) {
 			artifacts: raw.artifacts ?? [],
 			done_criteria: raw.done_criteria,
 			tests: normalizeTests(raw.tests),
+			/** 动手前写下的预期(可选);落空的地方记成未解释项。 */
+			expect: typeof raw.expect === 'string' && raw.expect !== '' ? raw.expect : null,
 			status: 'open',
 			evidence: null,
 			advancedAt: null,
@@ -226,6 +237,7 @@ export function applyMutation(state, mutation) {
 	if (mutation === null || typeof mutation !== 'object' || typeof mutation.t !== 'string') return state
 	const at = typeof mutation.at === 'number' ? mutation.at : 0
 	const next = clone(state)
+	if (!Array.isArray(next.anomalies)) next.anomalies = []
 	const RANK = { open: 0, blocked: 0, advanced: 1, void: 1 }
 	const settle = (step, status) => {
 		if (step === undefined || step === null) return
@@ -243,6 +255,7 @@ export function applyMutation(state, mutation) {
 				previous.claim = mutation.claim
 				previous.done_criteria = mutation.done_criteria
 				previous.promote_at_level = mutation.promote_at_level
+				if (Array.isArray(mutation.irreversible)) previous.irreversible = clone(mutation.irreversible)
 				/** 修订可以带上新的速览与判据清单(没带就保持旧值——「不提供」不等于「清空」)。 */
 				if (typeof mutation.headline === 'string' && mutation.headline !== '') previous.headline = mutation.headline
 				if (Array.isArray(mutation.criteria)) previous.criteria = clone(mutation.criteria)
@@ -255,6 +268,8 @@ export function applyMutation(state, mutation) {
 					claim: mutation.claim,
 					done_criteria: mutation.done_criteria,
 					promote_at_level: mutation.promote_at_level,
+					/** 不可逆动作:`{action, command}`,命令里出现 `command` 那段原文就要人放行。 */
+					irreversible: Array.isArray(mutation.irreversible) ? clone(mutation.irreversible) : [],
 					status: 'open',
 					revision: mutation.revision ?? 1,
 					reasons: [mutation.reason ?? null],
@@ -298,8 +313,6 @@ export function applyMutation(state, mutation) {
 					known.version = hypothesis.version ?? known.version
 					if (typeof hypothesis.name === 'string' && hypothesis.name !== '') known.name = hypothesis.name
 					if (typeof hypothesis.retests === 'string' && hypothesis.retests !== '') known.retests = hypothesis.retests
-					if (typeof hypothesis.rival === 'string' && hypothesis.rival !== '') known.rival = hypothesis.rival
-					if (typeof hypothesis.split_by === 'string' && hypothesis.split_by !== '') known.split_by = hypothesis.split_by
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
 					continue
 				}
@@ -312,9 +325,6 @@ export function applyMutation(state, mutation) {
 					refute_when: hypothesis.refute_when,
 					/** 复检的是哪条已有事实(事实 id;可以是别的会话留下的)。 */
 					...(typeof hypothesis.retests === 'string' && hypothesis.retests !== '' ? { retests: hypothesis.retests } : {}),
-					/** 对手(另一条判断的 id)与区分它们的观测。 */
-					...(typeof hypothesis.rival === 'string' && hypothesis.rival !== '' ? { rival: hypothesis.rival } : {}),
-					...(typeof hypothesis.split_by === 'string' && hypothesis.split_by !== '' ? { split_by: hypothesis.split_by } : {}),
 					status: 'proposed',
 					version: hypothesis.version ?? 1,
 					/**
@@ -384,6 +394,27 @@ export function applyMutation(state, mutation) {
 			if (step === undefined || step.status !== 'open') break
 			step.done_criteria = mutation.new_criteria
 			step.criteria_versions.push(mutation.new_criteria) // 旧版本留着,什么都不删
+			break
+		}
+		case 'step/expected': {
+			const step = stepOf(mutation.plan, mutation.step)
+			if (step === undefined || step.status !== 'open') break
+			step.expect = String(mutation.expect ?? '') || null
+			break
+		}
+		case 'anomaly/opened': {
+			if (next.anomalies.some((item) => item.id === mutation.id)) break
+			next.anomalies.push({ id: mutation.id, what: String(mutation.what ?? ''), anchor: mutation.anchor ?? null, step: mutation.step ?? null, by: mutation.by ?? 'model', status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+			break
+		}
+		case 'anomaly/resolved': {
+			const item = next.anomalies.find((entry) => entry.id === mutation.id)
+			if (item === undefined || item.status !== 'open') break
+			if (!['explained', 'ruled_out', 'escalated'].includes(mutation.outcome)) break
+			item.status = mutation.outcome
+			item.reason = mutation.reason ?? null
+			item.explainedBy = mutation.by ?? null
+			item.resolvedAt = at
 			break
 		}
 		case 'plan/voided': {
@@ -492,6 +523,13 @@ export function applyMutation(state, mutation) {
 				audit.card_path = mutation.card_path ?? null
 				if (mutation.digest !== undefined) audit.digest = mutation.digest ?? null
 			}
+			/** 评估者报的、做的人没登记的异常:记成未解释项(id 由裁决 id 派生,重放幂等)。 */
+			const found = Array.isArray(mutation.anomalies) ? mutation.anomalies : []
+			for (const [index, item] of found.entries()) {
+				const id = `${mutation.id}#u${index + 1}`
+				if (next.anomalies.some((entry) => entry.id === id)) continue
+				next.anomalies.push({ id, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+			}
 			break
 		}
 		case 'evidence/recorded': {
@@ -542,6 +580,8 @@ export function applyMutation(state, mutation) {
 				via: mutation.via ?? null,
 				at,
 				call: mutation.call ?? null,
+				/** 放行的是哪件不可逆动作(拦在命令上的那道门);步级放行没有这一格。 */
+				...(typeof mutation.action === 'string' && mutation.action !== '' ? { action: mutation.action } : {}),
 			})
 			break
 		}

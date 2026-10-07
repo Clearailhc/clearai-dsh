@@ -271,6 +271,28 @@ Points:
   `process.cwd()`): failing to write is an honest degradation, writing somewhere else quietly moves the
   ledger.
 
+## 12b. Unexplained items (anomaly) · implemented
+
+Stored fields: `state.anomalies[].{status, by, reason, explainedBy}`. What epistemology calls an anomaly: an observation that does not fit the expectation or the ontology.
+
+```mermaid
+stateDiagram-v2
+    [*] --> open: anomaly/opened (recorded at delivery / Anomaly open)
+    [*] --> open: audit/settled with anomalies (found by the evaluator, by=evaluator)
+    open --> explained: anomaly/resolved outcome=explained
+    open --> ruled_out: anomaly/resolved outcome=ruled_out
+    open --> escalated: anomaly/resolved outcome=escalated
+    explained --> [*]
+    ruled_out --> [*]
+    escalated --> [*]
+```
+
+Notes:
+
+- A step may carry an expectation (`expect`, landed with `plan/created` / `plan/amended`, or written before acting with `step/expected`). Where it misses, an unexplained item is recorded.
+- Unexplained items do not block concluding; at close (and at every independent evaluation) they go to the evaluator with the delivery, and the evaluator checks the reasons for ruling any out.
+- Each has one destination: a handled item cannot be handled again.
+
 ## 13. Event coverage table
 
 **Every** mutation kind fold understands is assigned a home below; conversely, every event named in
@@ -312,6 +334,9 @@ ledger facts), so it appears in no state machine:
 | `criteria/revised` | §1 Goal (criterion revision) | yes |
 | `host/inactive` | §12 Host read faces | yes |
 | `workspace/synced` | §8 Fact (across sessions) | yes |
+| `step/expected` | §3 Step (expectation) | yes |
+| `anomaly/opened` | §12b Unexplained items | yes |
+| `anomaly/resolved` | §12b Unexplained items | yes |
 | `admission/checked` | **ledger only** | no |
 
 ## 14. Relationship to the verification ontology
