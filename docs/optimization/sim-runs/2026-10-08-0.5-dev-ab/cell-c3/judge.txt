@@ -1,0 +1,15 @@
+【lh-cell · 长程六 · 配方研发:有预算的电解液寿命优化】
+  工具调用 16 次:Frame×1 CreatePlan×1 bash×3 AdvancePlan×7 RevisePlan×2 ClosePlan×1 Conclude×1
+  变更:goal/set×1 plan/created×1 observation/recorded×10 anomaly/opened×9 admission/checked×6 step/advanced×5 block/cleared×5 step/expected×1 audit/dispatched×2 audit/settled×2 block/counted×1 plan/refined×1 evidence/recorded×2 plan/closed×1 goal/closed×1
+  目标:abandoned · 计划 5 步 · 未落定 (无)
+  ✓ [不变量] 没有跳过准入的推进(每个 step/advanced 之前都有该步的 admission/checked)
+  ✓ [不变量] 评估者没有悬空(每个 audit/dispatched 都有 audit/settled)
+  ✓ [不变量] 证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)
+  ✓ [不变量] 升格与证据等级自洽(没到级不升格,到了级必须升格)
+  ✓ [不变量] 声明的物证真的在盘上(主线步骤的 artifacts)
+  ✓ [剧本] 做过长测
+  ✓ [剧本] 至少一次独立核验
+  ✓ [剧本] 用到了 L3
+  ✓ [剧本] 不只有支持
+  ✓ [剧本] 结案了
+  结果:10 通过,0 失败
