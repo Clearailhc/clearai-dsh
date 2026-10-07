@@ -223,20 +223,17 @@ if (spec === null) {
 	check('③ 组合里 clearai-host 恰好一行', (composed.match(/- id: clearai-host/g) ?? []).length === 1, String((composed.match(/- id: clearai-host/g) ?? []).length))
 	check('③′ 宿主行用的是包名(不是路径)', /name:\s*'?clearai-dsh'?/.test(composed.slice(composed.indexOf('clearai-host'), composed.indexOf('clearai-host') + 120)))
 	/**
-	 * 预设注册在宿主 0.1.7-alpha.1 换代了:旧的「root 目录扫描」→「组合里的声明行」。
-	 * 断言按**组合里出现哪一代的名册行**分档;旧断言不删,只在新宿主上让位。
-	 * 依据与实测:lab/release/0.2.3-release-blocker.md、lab/adapter/0.2.4-design.md。
+	 * 预设走**组合里的声明行**:宿主 ≥0.2.0 的名册(`@deepseek-ai/dsh-agent-preset-registry`)
+	 * 不扫目录、不收预设路径。旧的「root 目录扫描」那一档(≤0.1.6-alpha.2)已不再支持,判据也随之删掉。
 	 */
-	const legacyRoster = composed.includes('- id: agent-presets')
 	const modernRegistry = composed.includes('- id: agent-preset-registry')
-	console.log(`  · 宿主的名册机制:${modernRegistry ? '声明行(≥0.1.7-alpha.1)' : legacyRoster ? 'root 目录(≤0.1.6-alpha.2)' : '都没找到'}`)
+	check('④ 名册注册表行在(agent-preset-registry)', modernRegistry)
 
 	if (modernRegistry) {
-		check('④ 新机制:名册注册表行在(agent-preset-registry)', true)
 		const at = composed.indexOf('- id: preset-clearai')
 		const decl = at < 0 ? '' : composed.slice(at, at + 600)
 		check(
-			'④′ 新机制:预设声明行在,且 id/name/description/order/plugins 齐备',
+			'④′ 预设声明行在,且 id/name/description/order/plugins 齐备',
 			at >= 0 && /name:\s*'@deepseek-ai\/dsh-agent-preset'/.test(decl) && /\bid: clearai\b/.test(decl) && /\border:\s*\d+/.test(decl) && /\bplugins:/.test(decl),
 			decl.replace(/\s+/g, ' ').slice(0, 120),
 		)
@@ -282,10 +279,6 @@ if (spec === null) {
 			entry !== null && entry.broken === undefined,
 			entry === null ? '(没有 clearai 条目)' : String(entry.broken ?? '').replace(/\s+/g, ' ').slice(0, 220),
 		)
-	} else {
-		const rosterLine = composed.slice(composed.indexOf('includeShippedRoot'), composed.indexOf('includeShippedRoot') + 600)
-		check('④ 名册 root 指向包内 presets/,且 trust 是 system', /node_modules\/clearai-dsh\/presets\//.test(rosterLine) && /trust:\s*system/.test(rosterLine), rosterLine.replace(/\s+/g, ' ').slice(0, 120))
-		check('④′ 没有把发行版 root 挤掉(includeShippedRoot 仍为 true)', /includeShippedRoot:\s*true/.test(composed))
 	}
 
 	const presetDir = join(PROFILE, 'node_modules', 'clearai-dsh', 'presets', 'clearai')

@@ -12,7 +12,7 @@
     - id: clearai-host
       name: 'clearai-dsh'
 
-# ── 预设不在这里声明 root:宿主 ≥0.1.7-alpha.1 起名册不再扫目录 ────────────────
+# ── 预设不在这里声明 root:宿主的名册不扫目录(本包要求宿主 ≥0.2.0-rc.2)──────────
 #
 # 0.2.3 及以前走的是「root 目录」机制:宿主自带 `- id: agent-presets` 行,本文件覆盖它的
 # config,把 root 指到包内 presets/,归属落在 system 信任层。
@@ -28,5 +28,5 @@
 # 依据与实测:`lab/release/0.2.3-release-blocker.md`、`lab/adapter/0.2.4-design.md`。
 #
 # 预设本体现在由 `presets/clearai/clearai.patch.yml` 承载(构建期由 preset/agent.cordis.yml
-# 生成,经 package.json 的 `dsh.bundle.patch` 数组挂上)。想改预设的人仍有两条路:
-# `clearai-dsh seed`(播种到用户根,可改可回滚)或复制成新 id。
+# 生成,经 package.json 的 `dsh.bundle.patch` 数组挂上)。想改预设的人:把声明行复制一份、
+# 换一个 id,作为自己的 bundle patch 装(`clearai-dsh seed` 那条播种到用户根的路已随旧名册删掉)。

@@ -67,7 +67,7 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 这份文件（`presets/clearai/clearai.patch.yml`）**由 `preset/agent.cordis.yml` 在构建期派生**（一个源，不手抄第二份），经清单里的 `dsh.bundle.patch` 挂上。安装期不写任何东西，也不往用户家目录塞副本。
 
-想改预设的人可以用 `bin/clearai.mjs seed` 播种到自己的根——它记哈希、**不覆盖**人改过的文件。
+宿主的预设名册不扫目录、也不收预设路径，所以「播种到自己的根」这条路已经没有了。想改预设，就把声明行复制一份、换一个 id，作为自己的 bundle patch 装上。
 
 ## 安装
 
@@ -93,7 +93,7 @@ npx clearai-dsh install
 
 重启 DSH 进程（宿主半按模块 URL 缓存），然后在预设选择器里选 **ClearAI**。
 
-开发形态用 `install.sh`：它把仓库里的源直接摊进真实 `DSH_HOME`，改内核立刻生效；它是**开发**工具，不是产品路径。
+开发形态用 `install.sh`：它从仓库里的源构建出包，再用 `dsh plugin add` 装进去——就是产品那条路，只是包来自本地构建。旧的开发形态（把预设拷进 `~/.dsh/.agent-presets`）已经不起作用：宿主的预设名册不扫目录，预设只能经包里的声明行进名册。
 
 ## 构建与验证
 

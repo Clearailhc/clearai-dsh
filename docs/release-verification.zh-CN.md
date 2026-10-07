@@ -75,7 +75,7 @@ node tools/recheck.mjs --log ~/.dsh/sessions/<桶>/<会话>/session.v3.jsonl.zst
 | 面 | 判据 | 怎么验 | 通过线 |
 |---|---|---|---|
 | 发行物 | 逐字节可重建、关键出口齐、文件清单稳定 | `tools/build-package.mjs` + `verify-package.mjs` | 25/0 |
-| 装机 | 三处落点正确;覆写前**自动备份**;可一条命令回滚 | `install.sh` + `backup-home.sh`(隔离家实测) | 自检通过 · 回滚可用 |
+| 装机(开发) | 构建出包、经 `dsh plugin add` 装进 profile(与产品同一条路);组合里 `clearai-host` 与 `preset-clearai` 两行都在 | `install.sh`(= `build-package` + `install-native` + `verify-deploy`,隔离家实测) | 自检通过 |
 | 隔离真启动 | 真 `DSH_HOME` + 真 `dsh web` + 真 Chrome:能新建对话、面板挂载 | 人工闸(下) | 三项全过 |
 
 ---

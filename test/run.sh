@@ -21,7 +21,7 @@
 # 所以它们先做逐字节比对——部署落后于源就直接红。
 # 那个 DSH_HOME 里没装插件时,这两份**如实跳过**(不是失败);要真正跑到它们:
 #
-#   bash install.sh                                   # 开发形态:仓库的源摊进 ~/.dsh
+#   bash install.sh                                   # 开发形态:从源构建出包,再 dsh plugin add
 #   node tools/install-native.mjs --profile web       # 产品形态:装构建出来的包
 #
 # 跑法:bash test/run.sh [遍数]

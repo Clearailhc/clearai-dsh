@@ -79,7 +79,7 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 | Surface | Criterion | Check | Passing line |
 |---|---|---|---|
 | Artifact | Byte-for-byte rebuildable, exports present, file inventory stable | `build-package.mjs` + `verify-package.mjs` | 25/0 |
-| Install | Three landing points correct; automatic backup before overwrite; one-command rollback | `install.sh` + `backup-home.sh` | self-check passes |
+| Install (dev) | Builds the package and installs it through `dsh plugin add` (the same path as the product); `clearai-host` and `preset-clearai` both in the composition | `install.sh` (calls `build-package` + `install-native` + `verify-deploy`) | self-check passes |
 | Isolated real start | Real `DSH_HOME`, real `dsh web`, real Chrome: session starts, panels mount | human gate below | all pass |
 
 ---

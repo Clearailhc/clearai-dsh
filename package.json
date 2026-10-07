@@ -37,7 +37,7 @@
   ],
   "engines": {
     "node": ">=22",
-    "dsh": ">=0.1.7-alpha.1"
+    "dsh": ">=0.2.0-rc.2"
   },
   "dependencies": {
     "zod": "^4.6.1"

@@ -67,7 +67,7 @@ Each preset is one `- id: preset-<id>` row (`@deepseek-ai/dsh-agent-preset`) who
 
 That file — `presets/clearai/clearai.patch.yml` — is **derived from `preset/agent.cordis.yml` at build time** (one source, never a hand-copied second list) and is mounted through the manifest's `dsh.bundle.patch`. Nothing is written at install time and no copy lands in the user's home.
 
-Users who want to edit the preset can seed it into their own root with `bin/clearai.mjs seed`, which records hashes and never overwrites edits.
+The host's preset registry neither scans directories nor accepts preset paths, so there is no "seed it into your own root" path any more. To edit the preset, copy the declaration line under a new id and install it as your own bundle patch.
 
 ## Install
 
@@ -93,7 +93,7 @@ It deliberately does **not** bootstrap a profile or hand-reconcile one. The CLI 
 
 Restart the DSH process (the host half is cached per module URL), then pick **ClearAI** in the preset picker.
 
-For development, `install.sh` lays the repository's source directly into a real `DSH_HOME` so kernel edits take effect immediately; it is a developer tool, not the product path.
+For development, `install.sh` builds the package from the repository's source and installs it with `dsh plugin add` — the product path with a local build. The older development form (copying the preset into `~/.dsh/.agent-presets`) no longer works: the host's preset registry does not scan directories, so the preset only reaches the roster through the package's declaration line.
 
 ## Build and verify
 

@@ -9,7 +9,7 @@
  * 装配表(源 → 包里):
  *   package.json                 → package.json            (清单:唯一一份,就在仓库根)
  *   pack/cordis.patch.yml        → cordis.patch.yml        (宿主行)
- *   pack/bin/clearai.mjs         → bin/clearai.mjs         (安装侧:doctor / root-yaml / seed)
+ *   pack/bin/clearai.mjs         → bin/clearai.mjs         (安装侧:doctor / install)
  *   preset/                      → presets/clearai/        (agent.cordis.yml + plugins/ + skills/ + preset.yml)
  *   ui/lib/index.js              → lib/host.js             (宿主半:投影单元 + 路由)
  *   ui/lib/fold.js               → lib/fold.js             (纯 fold,宿主半 import 它)
@@ -92,10 +92,11 @@ for (const name of readdirSync(join(PORT, 'preset'))) {
 
 // ── ②′ 预设声明行:宿主 ≥0.1.7-alpha.1 的注册形态 ───────────────────────────
 /**
- * 同一个预设从此有**两个消费者、一份源**:
- *   · 旧机制(≤0.1.6-alpha.2)读 `presets/clearai/agent.cordis.yml`(名册扫 root 目录);
- *   · 新机制(≥0.1.7-alpha.1)读**这里生成的** `presets/clearai/clearai.patch.yml` ——
- *     一条 `- id: preset-clearai` 声明行,`config.plugins` 里放整份插件列表。
+ * 同一个预设**两个文件、一份源**:
+ *   · 宿主的名册(本包要求宿主 ≥0.2.0-rc.2)只读**这里生成的** `presets/clearai/clearai.patch.yml` ——
+ *     一条 `- id: preset-clearai` 声明行,`config.plugins` 里放整份插件列表;
+ *   · `presets/clearai/agent.cordis.yml` 仍随包走,但宿主不读它:它是开发工具
+ *     (`verify-deploy` / `e2e-run`)摊平预设用的源。
  * 两者都由 `preset/agent.cordis.yml` 派生,不手抄第二份(手抄就是第二本账)。
  *
  * 为什么声明行文件放在 `presets/clearai/` 里:声明行 plugins 里的**相对基准**

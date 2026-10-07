@@ -348,7 +348,13 @@ const hostPatch = [
 	 * 引用完整性 / 准入先于推进 / 结算必有派遣 / 升格有据 / 事实棘轮。
 	 * 违反时宿主抛带稳定错误码与归属包名的 `InvariantError`,这场长测当场红,而不是等归档人肉核。
 	 */
-	...(present.has('invariants') ? [] : [{ insert: [{ id: 'invariants', name: '@deepseek-ai/dsh-invariants' }] }]),
+	/**
+	 * 只在宿主**还带着这个包**时插:`@deepseek-ai/dsh-invariants` 在 0.2.1-alpha.1 里从发行版移除了
+	 * (CLI 的依赖树里不再有它,API 目录里 `invariants` 服务也没了)。照旧硬插,宿主会报
+	 * `invariants (@deepseek-ai/dsh-invariants): failed to import` 并跳过这一行——不致命,但长测
+	 * 读起来像「不变量在场」,其实一条都没判。
+	 */
+	...(present.has('invariants') || !existsSync(join(CHECKOUT, 'node_modules', '@deepseek-ai', 'dsh-invariants', 'package.json')) ? [] : [{ insert: [{ id: 'invariants', name: '@deepseek-ai/dsh-invariants' }] }]),
 ]
 const presetPatch = [
 	...disabledRows.map((id) => ({ id, disabled: true })),
