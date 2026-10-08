@@ -20,11 +20,14 @@ Three meanings in one shape, nothing spare. That is why it was chosen.
 | `logo-512.png` · `logo-512-dark.png` | the mark, transparent, ink / inverted | README (light / dark) |
 | `logo-lockup.png` · `logo-lockup-dark.png` | the lockup, ink / inverted | README, npm page |
 | `build-icons.mjs` | **the generator**: master → the four bitmaps above | re-run it after any change to the master |
+| `social-preview.svg` · `social-preview.png` | **the GitHub repository card image** (1280×640; GitHub requires < 1 MB) | uploaded by hand in *Settings → General → Social preview* |
+| `build-social-preview.mjs` | **the generator**: lockup + claim + the ontology figure → the two files above | re-run it after any change to the brand, the claim or the figure |
 
 Bitmaps are never hand-edited: `build-icons.mjs` regenerates the whole set in one command, and a hand-exported file would be a second ledger for the brand.
 
 ```bash
 node brand/build-icons.mjs      # needs google-chrome on PATH (headless rasteriser)
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" node brand/build-social-preview.mjs   # repo card image
 ```
 
 ## Rules
@@ -34,6 +37,7 @@ node brand/build-icons.mjs      # needs google-chrome on PATH (headless rasteris
 - **The dot stays emerald `#10B981`.** It is a product-semantic colour (the world tree's "adopted / settled"), and does not follow the theme.
 - **Do not move the dot back to the centre.** A dot at the centre is © and CircleCI (ring plus centre dot — same structure); our dot sits **in the opening**.
 - **Do not straighten the opening.** An opening pointing due right is just a `c`; angled up-right (centred on −35°) is what makes it recognisable.
+- **The repo card only reads the social preview.** GitHub's topic/search cards scale the image to the container width and clip it at `max-height:275px`, so lockup, title and the one-line claim all sit inside the top 43%; the lower half (ontology figure, loop stages) is decoration that survives being cropped away. README images never appear on a card.
 - Backgrounds: light `#FBFAF7` (warm paper) / dark `#1C1A18` (warm ink); brand teal `#3E8E7A`.
 
 ## What was removed

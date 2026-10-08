@@ -73,10 +73,12 @@ for (const name of ['README.md', 'README.zh-CN.md', 'LICENSE', 'CHANGELOG.md']) 
 }
 // 品牌位图随包走:README 里那张组合标要在 npm 页面上也认得出来。
 // 只带**资产与说明**:生成器是开发工具,不进发行物(纪律②:发行物只带该带的)。
+// social-preview.* 是 **GitHub 仓库卡片**用的图(在仓库设置里上传),npm 页面用不到,同样不带。
+const BRAND_SKIP = new Set(['build-icons.mjs', 'build-social-preview.mjs', 'social-preview.svg', 'social-preview.png'])
 if (existsSync(join(PORT, 'brand'))) {
 	mkdirSync(join(OUT, 'brand'), { recursive: true })
 	for (const name of readdirSync(join(PORT, 'brand'))) {
-		if (name === 'build-icons.mjs') continue
+		if (BRAND_SKIP.has(name)) continue
 		copy(join(PORT, 'brand', name), join(OUT, 'brand', name))
 	}
 }
