@@ -1458,7 +1458,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const planned = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'u1', do: '测磁盘延迟', artifacts: ['lab/u.txt'], done_criteria: 'lab/u.txt 有延迟', tests: { hypotheses: [disk], level: 'L1' }, expect: '磁盘慢的话延迟 > 20 ms(来自判断「磁盘」)' }, { id: 'u2', do: '测锁等待', artifacts: ['lab/u2.txt'], done_criteria: 'lab/u2.txt 有锁等待' }] })
 		check('步骤带预期落账', host.service.state(S).plans[0].steps[0].expect?.includes('20 ms') === true)
 		check('旧等级 L1 收成自判(L2)', host.service.state(S).plans[0].steps[0].tests.level === 'L2', host.service.state(S).plans[0].steps[0].tests.level)
-		check('卡上:下一步给出它的预期', /预期:磁盘慢的话延迟 > 20 ms/.test(String(planned.card ?? '')), String(planned.card ?? '').split('\n').filter((line) => line.includes('预期')).join(' | '))
+		check('卡上:下一步给出它的预测', /预测:磁盘慢的话延迟 > 20 ms/.test(String(planned.card ?? '')), String(planned.card ?? '').split('\n').filter((line) => line.includes('预测')).join(' | '))
 		write('lab/u.txt', 'disk_ms=3\nref_ms=9\n')
 		const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'u1', basis: 'lab/u.txt disk_ms=3', verdict: 'refute', anomalies: [{ what: '参考盘 ref_ms=9 比被测盘还慢,说不通', anchor: 'disk-0' }] })
 		const opened = host.service.state(S).anomalies ?? []
@@ -1519,7 +1519,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		check('不匹配的命令照常放行(不打扰)', lab?.kind === 'allow', JSON.stringify(lab))
 		host.userQuestions = answering((question) => question.options[1])
 		const refused = await guard({ name: 'bash', arguments: { command: 'cd lab && node reactor.mjs state.json pilot \'{"T":160}\'' }, agent: { id: S }, callId: 'c-pilot-1' }, allow)
-		check('匹配的命令:人不放行 ⇒ 拒,说明不要绕', refused?.kind === 'deny' && /跑中试/.test(refused.reason) && /不要换个写法绕过去/.test(refused.reason), JSON.stringify(refused))
+		check('匹配的命令:人不放行 ⇒ 拒,说明不要绕', refused?.kind === 'deny' && /跑中试/.test(refused.reason) && /不要改写命令以绕过此限制/.test(refused.reason), JSON.stringify(refused))
 		check('问题由内核写:说清是哪件不可逆动作', /跑中试/.test(host.userQuestions.asked[0]?.questions[0]?.question ?? '') && /^release/.test(host.userQuestions.asked[0]?.questions[0]?.id ?? ''))
 		host.userQuestions = answering((question) => question.options[0])
 		const released = await guard({ name: 'bash', arguments: { command: 'node reactor.mjs state.json pilot \'{"T":160}\'' }, agent: { id: S }, callId: 'c-pilot-2' }, allow)

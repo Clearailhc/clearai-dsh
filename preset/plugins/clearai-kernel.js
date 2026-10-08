@@ -431,7 +431,7 @@ export function apply(ctx, config = {}) {
 		const lines = []
 		if (found.length > 0) lines.push(tr(`评估者看到 ${found.length} 处没登记的异常,已记成未解释项挂在卡上:${found.map((item) => clip(item.what, 80)).join(';')}。先弄清它们,再往下走。`, `The evaluator saw ${found.length} anomaly(ies) you did not record; they are now unexplained items on the card: ${found.map((item) => clip(item.what, 80)).join('; ')}. Sort them out before moving on.`))
 		if (opened.length > 0) lines.push(tr(`登记了 ${opened.length} 条未解释(${opened.map((item) => item.id).join('、')}):它们挂在卡上,直到被解释、写明理由排除、或交给人(Anomaly)。`, `${opened.length} unexplained item(s) recorded (${opened.map((item) => item.id).join(', ')}): they stay on the card until explained, ruled out with a reason, or handed to a person (Anomaly).`))
-		else if (typeof step?.expect === 'string' && step.expect !== '') lines.push(tr(`这一步的预期是「${clip(step.expect, 80)}」。结果和它对不上的话,用 Anomaly 登记,不要解释过去。`, `This step expected "${clip(step.expect, 80)}". If the result does not match, record it with Anomaly; do not explain it away.`))
+		else if (typeof step?.expect === 'string' && step.expect !== '') lines.push(tr(`这一步的预测是「${clip(step.expect, 80)}」。结果与预测不符时,用 Anomaly 登记,不要强行解释。`, `This step expected "${clip(step.expect, 80)}". If the result does not match, record it with Anomaly; do not explain it away.`))
 		return lines.length === 0 ? '' : `\n${lines.join('\n')}`
 	}
 
@@ -1908,16 +1908,26 @@ export function apply(ctx, config = {}) {
 
 	/** 问人时的选项文字(按会话语言给);答案两种语言都认。 */
 	const CHOICES = {
-		releaseYes: ['放行这次交付', 'Release this delivery'],
-		releaseNo: ['先不放行', 'Not now'],
-		releaseCommand: ['放行这条命令', 'Release this command'],
-		stallContinue: ['让它按缺口再改', 'Let it fix the gaps'],
-		stallVoid: ['作废这一步', 'Void this step'],
-		factRetract: ['撤回这条事实', 'Retract this fact'],
+		releaseYes: ['批准此次交付', 'Approve this delivery'],
+		releaseNo: ['暂不批准', 'Not now'],
+		releaseCommand: ['批准执行此命令', 'Approve this command'],
+		stallContinue: ['按缺口继续修改', 'Let it fix the gaps'],
+		stallVoid: ['作废此步骤', 'Void this step'],
+		factRetract: ['撤回此事实', 'Retract this fact'],
 		factKeep: ['维持原事实', 'Keep the fact'],
 	}
+	/** 0.5.1 前的选项文字:旧剧本(`--answers`)与旧会话里人已选过的答案照样认。 */
+	const LEGACY_CHOICES = {
+		releaseYes: ['放行这次交付', 'Release this delivery'],
+		releaseNo: ['先不放行'],
+		releaseCommand: ['放行这条命令', 'Release this command'],
+		stallContinue: ['让它按缺口再改'],
+		stallVoid: ['作废这一步'],
+		factRetract: ['撤回这条事实'],
+		factKeep: [],
+	}
 	const choiceLabel = (key) => tr(...CHOICES[key])
-	const chose = (asked, key) => CHOICES[key].includes(asked?.choice)
+	const chose = (asked, key) => CHOICES[key].includes(asked?.choice) || LEGACY_CHOICES[key].includes(asked?.choice)
 	/** 没问到人的原因,一句人话。 */
 	const unanswered = (asked) => (asked.reason === 'cancelled' ? tr('人把问题撤下了', 'the person withdrew the question') : tr('没有人能回答', 'nobody can answer'))
 
@@ -1929,8 +1939,8 @@ export function apply(ctx, config = {}) {
 	async function escalateBlocked(exec, plan, step, attempts, reason, mutations) {
 		const asked = await askHuman(exec, {
 			id: `blocked-${plan.id}-${step.id}`,
-			header: tr('这一步卡住了', 'This step is stuck'),
-			question: tr(`步骤 ${step.id}(${clip(step.do, 60)})连续 ${attempts} 次没过:${clip(reason, 200)}。怎么办?`, `Step ${step.id} (${clip(step.do, 60)}) failed ${attempts} times in a row: ${clip(reason, 200)}. What should happen?`),
+			header: tr('此步骤受阻', 'This step is stuck'),
+			question: tr(`步骤 ${step.id}(${clip(step.do, 60)})连续 ${attempts} 次未通过:${clip(reason, 200)}。请选择处理方式。`, `Step ${step.id} (${clip(step.do, 60)}) failed ${attempts} times in a row: ${clip(reason, 200)}. What should happen?`),
 			options: [
 				{ label: choiceLabel('stallContinue'), description: tr('模型按缺口改判据或换做法后再交;你可以补一句方向。', 'The model revises the criteria or the approach against the gaps and delivers again; you can add a hint.') },
 				{ label: choiceLabel('stallVoid'), description: tr('这一步不做了,带原因作废(记录保留)。', 'Drop this step and void it with a reason (the record stays).') },
@@ -1977,8 +1987,8 @@ export function apply(ctx, config = {}) {
 		for (const fact of open) {
 			const asked = await askHuman(exec, {
 				id: `fact-${fact.id}`,
-				header: tr('已确立的结论被推翻了', 'An established conclusion was refuted'),
-				question: tr(`「${clip(fact.text, 120)}」出现了推翻证据:${clip(basis, 200)}。撤回它,还是判这次证据不可靠、维持原事实?`, `Refuting evidence arrived for "${clip(fact.text, 120)}": ${clip(basis, 200)}. Retract it, or judge this evidence unreliable and keep the fact?`),
+				header: tr('已确立的结论出现推翻证据', 'An established conclusion was refuted'),
+				question: tr(`「${clip(fact.text, 120)}」出现推翻证据:${clip(basis, 200)}。请选择撤回此事实,或判定本次证据不可靠并维持原事实。`, `Refuting evidence arrived for "${clip(fact.text, 120)}": ${clip(basis, 200)}. Retract it, or judge this evidence unreliable and keep the fact?`),
 				options: [
 					{ label: choiceLabel('factRetract'), description: tr('它不再算已确立的结论(记录保留)。', 'It no longer counts as an established conclusion (the record stays).') },
 					{ label: choiceLabel('factKeep'), description: tr('这次证据不可靠,事实保留;推翻证据照样留在账上。', 'This evidence is unreliable and the fact stays; the refuting evidence stays on record too.') },
@@ -2455,7 +2465,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Frame',
 		description:
-			'立约或修订:往当前原生 goal 上挂一份「怎样算回答了」的判据(done_criteria)与候选判断(每条一句话主张 + 一句「什么结果会推翻它」)。没有原生 goal 时会建一个,目标那一句话(headline)就是它的说法;续跑、暂停由原生 goal 管。修订必须带 reason,版本 +1,旧值全部留痕;改判据文本要带一份独立裁决。不可逆的动作写进 irreversible(匹配的命令执行前要人放行)。同一时间只开一个目标;它跨计划存在,一张 Plan 只承载它的一个阶段。',
+			'立约或修订:往当前原生 goal 上挂一份「怎样算回答了」的判据(done_criteria)与候选判断(每条一句话主张 + 一句「什么结果会推翻它」)。没有原生 goal 时会建一个,目标那一句话(headline)就是它的说法;续跑、暂停由原生 goal 管。修订必须带 reason,版本 +1,旧值全部留痕;改判据文本要带一份独立裁决。不可逆的动作写进 irreversible(匹配的命令执行前须经人工批准)。同一时间只开一个目标;它跨计划存在,一张 Plan 只承载它的一个阶段。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -2476,7 +2486,7 @@ export function apply(ctx, config = {}) {
 				promote_at_level: { type: 'string', enum: MODEL_LEVELS, description: '升格门槛(默认 L3)' },
 				irreversible: {
 					type: 'array',
-					description: '不可逆的动作:做了就收不回、或结果不可重复的那几件(跑中试、下单、发出去的消息……)。每件写一句说明和它的命令特征(命令里一定会出现的一段原文)。匹配的命令执行前要人放行。修订目标时不传 = 不变',
+					description: '不可逆的动作:做了就收不回、或结果不可重复的那几件(跑中试、下单、发出去的消息……)。每件写一句说明和它的命令特征(命令里一定会出现的一段原文)。匹配的命令执行前须经人工批准。修订目标时不传 = 不变',
 					items: {
 						type: 'object',
 						properties: {
@@ -2922,7 +2932,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Conclude',
 		description:
-			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成;评估者同时逐条判还活着的判断,判为支持的(或中途已达门槛的)升格为事实;各步收下的产物声明为交付卡片;随结案提议的经验(`lessons`)由评估者逐条核,支持的写进 clear/knowledge/lessons/。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
+			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成;评估者同时逐条判尚在考察中的判断,判为支持的(或中途已达门槛的)升格为事实;各步收下的产物声明为交付卡片;随结案提议的经验(`lessons`)由评估者逐条核,支持的写进 clear/knowledge/lessons/。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3380,14 +3390,14 @@ export function apply(ctx, config = {}) {
 						items: { type: 'string' },
 						description: '这一步检验哪几条判断:填判断的短名(也认主张原文)。一次观测同时判几条竞争的判断时(比较那一步),把它们都列上',
 					},
-					level: { type: 'string', enum: MODEL_LEVELS, description: 'L2 = 自判(你写结果与依据);L3 = 独立评估(系统派评估者判);L4 = 人放行(不可重复或来自外部的证据,先过人)' },
+					level: { type: 'string', enum: MODEL_LEVELS, description: 'L2 = 自判(你写结果与依据);L3 = 独立评估(系统派评估者判);L4 = 人工批准(不可重复或来自外部的证据,须先经人工批准)' },
 				},
 				required: ['hypotheses', 'level'],
 				additionalProperties: false,
 			},
 			expect: {
 				type: 'string',
-				description: '可选,动手前写:这一步预计看到什么(尽量给数或方向),以及预期从哪来(本体里的哪条关系 / 哪条经验 / 哪条判断,或直说是直觉)。写下来,落空才看得见',
+				description: '可选,执行前填写:这一步预计观察到什么(尽量给出数值或方向),以及预测的来源(本体中的哪条关系 / 哪条经验 / 哪条判断,或注明为直觉)。事先写下,预测落空时才能被发现',
 			},
 			serves: { type: 'string', description: '可选:这一步服务哪个问题或调研板块(id);不写即归当前问题' },
 			predictions: {
@@ -3404,7 +3414,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'CreatePlan',
 		description:
-			'立约:把复杂任务立成一份计划。每步一句话说清做什么(do)、以何物为证(artifacts)、以及判定标准(done_criteria,在结果出现之前写下);可带预期(expect:预计看到什么、从哪来)。检验判断的步骤用 tests:{hypotheses, level} 声明验哪几条、什么等级(比较竞争路线的那一步,把竞争的几条都列上)。最多 25 步。约立起便锁定:局部挫折改当前步,不要推倒重来。',
+			'立约:把复杂任务立成一份计划。每步一句话说清做什么(do)、以何物为证(artifacts)、以及判定标准(done_criteria,在结果出现之前写下);可带预测(expect:预计观察到什么,以及预测的来源)。检验判断的步骤用 tests:{hypotheses, level} 声明验哪几条、什么等级(比较竞争路线的那一步,把竞争的几条都列上)。最多 25 步。约立起便锁定:局部挫折改当前步,不要推倒重来。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3465,14 +3475,14 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'RevisePlan',
 		description:
-			'改当前计划,不动进度(返回 progress_changed=false),四种动作:`action="expect"` 给还没做的一步写下预期(给 `step_id` 与 `expect`:动手前写,落空才看得见);`action="add"` 补一步(漏了活就补上,给 `step`);`action="refine"` 精化一步的判定标准(给 `step_id` 与新的 `done_criteria`,旧判据留在日志里);`action="void"` 带因作废一步(给 `step_id` 与 `reason`:发现某步本不该存在就作废并说明缘由——作废留痕光明正大,为凑完成而造证是大忌;已交付的步不能作废)。',
+			'改当前计划,不动进度(返回 progress_changed=false),四种动作:`action="expect"` 为尚未执行的步骤写下预测(给 `step_id` 与 `expect`,或按候选假设给 `predictions`;须在执行前写,预测落空时才能被发现);`action="add"` 补一步(漏了活就补上,给 `step`);`action="refine"` 精化一步的判定标准(给 `step_id` 与新的 `done_criteria`,旧判据留在日志里);`action="void"` 带因作废一步(给 `step_id` 与 `reason`:发现某步本不该存在就作废并说明缘由——作废留痕光明正大,为凑完成而造证是大忌;已交付的步不能作废)。',
 		parameters: {
 			type: 'object',
 			properties: {
-				action: { type: 'string', enum: ['expect', 'add', 'refine', 'void'], description: 'expect=写预期;add=补一步;refine=改判据;void=带因作废' },
+				action: { type: 'string', enum: ['expect', 'add', 'refine', 'void'], description: 'expect=写预测;add=补一步;refine=改判据;void=带因作废' },
 				step: { ...STEP_SCHEMA, description: 'action=add:新步' },
 				step_id: { type: 'string', description: 'action=expect / refine / void:哪一步' },
-				expect: { type: 'string', description: 'action=expect:预计看到什么,以及预期从哪来(关系 / 经验 / 判断,或直觉)' },
+				expect: { type: 'string', description: 'action=expect:预计观察到什么,以及预测的来源(关系 / 经验 / 判断,或直觉)' },
 				predictions: { ...STEP_SCHEMA.properties.predictions, description: 'action=expect,可选:按候选假设分别写预测;与 expect 二者至少给一个' },
 				done_criteria: { type: 'string', description: 'action=refine:新的判定标准' },
 				reason: { type: 'string', description: '为什么改(action=void 必填)' },
@@ -3507,14 +3517,14 @@ export function apply(ctx, config = {}) {
 			const step = plan.steps.find((item) => item.id === args.step_id)
 			if (step === undefined) return fail('unknown_step', tr(`没有这一步:${args.step_id}`, `No such step: ${args.step_id}`))
 			if (args.action === 'expect') {
-				if (step.status !== 'open') return fail('step_settled', tr(`步骤 ${step.id} 已落定(${step.status}):预期要在动手前写。`, `Step ${step.id} is settled (${step.status}); expectations are written before acting.`))
+				if (step.status !== 'open') return fail('step_settled', tr(`步骤 ${step.id} 已结束(${step.status}):预测须在执行前写下。`, `Step ${step.id} is settled (${step.status}); expectations are written before acting.`))
 				const expect = String(args.expect ?? '').trim()
 				const extras = resolveStepExtras(state, { id: step.id, predictions: args.predictions })
 				if (extras.ok !== true) return fail(extras.code, extras.message)
 				const predictions = extras.extra.predictions ?? []
-				if (expect.length < 4 && predictions.length === 0) return fail('expect_required', tr('预期不能为空:写预计看到什么,以及它从哪来;或按候选假设分别写 predictions。', 'The expectation cannot be empty: say what you expect to see and where that comes from, or write predictions per candidate hypothesis.'))
+				if (expect.length < 4 && predictions.length === 0) return fail('expect_required', tr('预测不能为空:写明预计观察到什么及其来源;或按候选假设分别填写 predictions。', 'The expectation cannot be empty: say what you expect to see and where that comes from, or write predictions per candidate hypothesis.'))
 				mutations.push({ t: 'step/expected', plan: plan.id, step: step.id, ...(expect.length >= 4 ? { expect } : {}), ...(predictions.length > 0 ? { predictions } : {}) })
-				return done({ ok: true, code: 'step_expected', progress_changed: false, message: tr(`步骤 ${step.id} 的预期已记下。交付时拿结果对它:对不上的地方写进 AdvancePlan 的 anomalies。`, `Expectation recorded for step ${step.id}. When you deliver, compare the result with it: whatever does not match goes in AdvancePlan's anomalies.`) })
+				return done({ ok: true, code: 'step_expected', progress_changed: false, message: tr(`步骤 ${step.id} 的预测已记录。交付时将结果与之对照,不符之处写入 AdvancePlan 的 anomalies。`, `Expectation recorded for step ${step.id}. When you deliver, compare the result with it: whatever does not match goes in AdvancePlan's anomalies.`) })
 			}
 			if (args.action === 'refine') {
 				if (step.status !== 'open') return fail('step_settled', tr(`步骤 ${step.id} 已落定(${step.status}),判据不再可改。`, `Step ${step.id} is settled (${step.status}); its criteria can no longer change.`))
@@ -3583,7 +3593,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'AdvancePlan',
 		description:
-			'交付一步(唯一完成动词):把观测交上来。系统先做观测准入——声明的产物存在、非空、结构合法;准入只看收不收,不做裁决。交付成立这一步就完成——它检验的判断被支持、被推翻还是说不清,**都算完成**,结果单独记成证据。结果和预期对不上的地方写进 anomalies。L2(自判)由你给 basis(交付凭什么成立,必须能被复查)与 results(这一步检验的每条判断各一格);L3 以上两项都由系统派独立评估者判,你写 results 会被拒绝。没有物证,就还没有完成——没有手动标记这回事。',
+			'交付一步(唯一完成动词):把观测交上来。系统先做观测准入——声明的产物存在、非空、结构合法;准入只看收不收,不做裁决。交付成立这一步就完成——它检验的判断被支持、被推翻还是说不清,**都算完成**,结果单独记成证据。结果与预测不符之处写进 anomalies。L2(自判)由你给 basis(交付成立的依据,必须能被复查)与 results(这一步检验的每条判断各一格);L3 以上两项都由系统派独立评估者判,你写 results 会被拒绝。没有物证,就还没有完成——没有手动标记这回事。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3595,10 +3605,10 @@ export function apply(ctx, config = {}) {
 				},
 				anomalies: {
 					type: 'array',
-					description: '未解释:这一步的结果里和预期或本体对不上的地方、说不通的读数(一条一句,写哪里不符)。它们挂在卡上,直到被解释、写明理由排除、或交给人(用 Anomaly 工具)。不要把它们解释过去',
-					items: { type: 'object', properties: { what: { type: 'string', description: '哪里不符:预期什么、实际什么' }, anchor: { type: 'string', description: '可选:在哪个实体或装置上(实体 id 或名字)' }, touches: { type: 'array', items: { type: 'string' }, description: '可选:涉及的量(概念 id)、候选假设(判断 id)或已确立的事实(事实 id)。点名事实的,该事实回到「待核验」;结案时,涉及答案的未解释项须在「尚未确定的事项」中写明影响' } }, required: ['what'], additionalProperties: false },
+					description: '未解释:这一步结果中与预测或本体不符之处、无法解释的读数(每条一句,写明何处不符)。它们挂在卡上,直到被解释、写明理由排除、或交给人(用 Anomaly 工具)。不要强行解释',
+					items: { type: 'object', properties: { what: { type: 'string', description: '何处不符:预测为何、实际为何' }, anchor: { type: 'string', description: '可选:在哪个实体或装置上(实体 id 或名字)' }, touches: { type: 'array', items: { type: 'string' }, description: '可选:涉及的量(概念 id)、候选假设(判断 id)或已确立的事实(事实 id)。点名事实的,该事实回到「待核验」;结案时,涉及答案的未解释项须在「尚未确定的事项」中写明影响' } }, required: ['what'], additionalProperties: false },
 				},
-				basis: { type: 'string', description: '交付凭什么成立:引用了哪个产物里的哪个事实(必须可复查)。仅自判(L2)由你写' },
+				basis: { type: 'string', description: '交付成立的依据:引用了哪个产物里的哪个事实(必须可复查)。仅自判(L2)由你写' },
 				results: {
 					type: 'array',
 					description: '仅自判(L2):这一步检验的每条判断各一格,对照它的推翻条件读结果:没碰到推翻条件是「支持」,碰到了是「推翻」,这次观测区分不了是「不确定」。推翻和不确定都不妨碍这一步完成',
@@ -3732,8 +3742,8 @@ export function apply(ctx, config = {}) {
 			if (releaseTarget !== null && !releaseTarget.released) {
 				const asked = await askHuman(exec, {
 					id: `release-${step.id}`,
-					header: tr('L4 要人放行', 'L4 needs release'),
-					question: tr(`步骤 ${step.id}(${clip(step.do, 60)})是 L4:新产生的、不可重复或来自外部的证据。放行这次交付吗?`, `Step ${step.id} (${clip(step.do, 60)}) is L4: new, unrepeatable or external evidence. Release this delivery?`),
+					header: tr('L4 须经人工批准', 'L4 needs approval'),
+					question: tr(`步骤 ${step.id}(${clip(step.do, 60)})属于 L4:新产生的、不可重复或来自外部的证据。是否批准此次交付?`, `Step ${step.id} (${clip(step.do, 60)}) is L4: new, unrepeatable or external evidence. Release this delivery?`),
 					detail: tr(`判据:${step.done_criteria}`, `Criteria: ${step.done_criteria}`),
 					options: [
 						{ label: choiceLabel('releaseYes'), description: tr('交给独立评估者判。', 'Hand it to the independent evaluator.') },
@@ -3744,8 +3754,8 @@ export function apply(ctx, config = {}) {
 					const why = asked.ok !== true ? unanswered(asked) : tr(`人选了「${asked.choice ?? '没选'}」${asked.note === null ? '' : `:${asked.note}`}`, `the person chose "${asked.choice ?? 'nothing'}"${asked.note === null ? '' : `: ${asked.note}`}`)
 					return fail(
 						'human_release_missing',
-						tr(`L4 的交付要人放行,这一次没有放行(${why})。等级是事实的属性,放行是人的动作——不能推断。`, `An L4 delivery needs a person to release it, and this one was not released (${why}). The level is a property of the fact; release is a person's act and cannot be inferred. `) +
-							(asked.ok === true ? '' : blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, tr(`步骤 ${step.id} 是 L4,等人放行。`, `Step ${step.id} is L4 and waits for a person to release it.`))),
+						tr(`L4 的交付须经人工批准,本次未获批准(${why})。等级是事实的属性,批准是人的行为,不能推断。`, `An L4 delivery needs a person to release it, and this one was not released (${why}). The level is a property of the fact; release is a person's act and cannot be inferred. `) +
+							(asked.ok === true ? '' : blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, tr(`步骤 ${step.id} 是 L4,等待人工批准。`, `Step ${step.id} is L4 and waits for a person to release it.`))),
 						mutations.length > 0 ? { mutations } : {},
 					)
 				}
@@ -3830,7 +3840,7 @@ export function apply(ctx, config = {}) {
 				}
 			} else {
 				if (typeof args.basis !== 'string' || args.basis.trim().length < 8) {
-					return fail('basis_required', tr(`${level ?? '未声明等级'} 的交付由你自己判:写清交付凭什么成立(basis)——引用了哪个产物里的哪个事实,必须能被复查。`, `At ${level ?? 'an undeclared level'} you judge the delivery yourself: write why it holds (basis), citing which fact in which output, so it can be checked.`))
+					return fail('basis_required', tr(`${level ?? '未声明等级'} 的交付由你自己判:写清交付成立的依据(basis)——引用了哪个产物里的哪个事实,必须能被复查。`, `At ${level ?? 'an undeclared level'} you judge the delivery yourself: write why it holds (basis), citing which fact in which output, so it can be checked.`))
 				}
 				const given = Array.isArray(args.results) ? args.results : []
 				const byId = new Map()
@@ -3952,17 +3962,17 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Anomaly',
 		description:
-			'未解释项(反常):和预期或本体对不上的观测、说不通的读数。`action="open"` 登记一条(给 `what`,可选 `anchor`);`action="resolve"` 给它一个去处(给 `id`、`outcome` 与 `reason`):explained = 被一条判断、关系或新查到的原因解释了(`by` 写是哪条);ruled_out = 写明理由排除(比如证实是录入错误);escalated = 交给人。不要为了让卡干净而排除:评估者会核排除的理由。',
+			'未解释项(反常):与预测或本体不符的观测、无法解释的读数。`action="open"` 登记一条(给 `what`,可选 `anchor`);`action="resolve"` 给它一个去处(给 `id`、`outcome` 与 `reason`):explained = 被一条判断、关系或新查到的原因解释了(`by` 写是哪条);ruled_out = 写明理由排除(比如证实是录入错误);escalated = 交给人。不要为了让卡干净而排除:评估者会核排除的理由。',
 		parameters: {
 			type: 'object',
 			properties: {
 				action: { type: 'string', enum: ['open', 'resolve'] },
-				what: { type: 'string', description: 'action=open:哪里不符——预期什么、实际什么' },
+				what: { type: 'string', description: 'action=open:何处不符——预测为何、实际为何' },
 				anchor: { type: 'string', description: 'action=open,可选:在哪个实体或装置上' },
 				touches: { type: 'array', items: { type: 'string' }, description: 'action=open,可选:涉及的量(概念 id)、候选假设(判断 id)或已确立的事实(事实 id)。点名事实的,该事实回到「待核验」' },
 				id: { type: 'string', description: 'action=resolve:哪一条(u-… 的 id)' },
 				outcome: { type: 'string', enum: ANOMALY_OUTCOMES, description: 'explained=已解释;ruled_out=排除;escalated=交给人' },
-				reason: { type: 'string', description: 'action=resolve:凭什么(解释是什么 / 为什么能排除 / 要人定什么)' },
+				reason: { type: 'string', description: 'action=resolve:依据(解释是什么 / 为何可以排除 / 需要人决定什么)' },
 				by: { type: 'string', description: 'action=resolve,可选:解释它的那条判断、关系或事实' },
 			},
 			required: ['action'],
@@ -3976,7 +3986,7 @@ export function apply(ctx, config = {}) {
 			const done = finish(hostService, sessionId, mutations)
 			if (args.action === 'open') {
 				const opened = openAnomalies(sessionId, [{ what: args.what, anchor: args.anchor, touches: args.touches }], { step: firstOpenStep(activePlanOf(state))?.id ?? null, by: 'model' })
-				if (opened.length === 0) return fail('what_required', tr('要写哪里不符:预期什么、实际什么。', 'Say what does not fit: what was expected and what was seen.'))
+				if (opened.length === 0) return fail('what_required', tr('要写何处不符:预测为何、实际为何。', 'Say what does not fit: what was expected and what was seen.'))
 				mutations.push(...opened)
 				return done({ ok: true, code: 'anomaly_opened', message: tr(`已登记未解释 ${opened[0].id}。它挂在卡上,直到被解释、排除或交给人。`, `Unexplained item ${opened[0].id} recorded. It stays on the card until explained, ruled out or handed to a person.`) })
 			}
@@ -3987,7 +3997,7 @@ export function apply(ctx, config = {}) {
 			if (target === undefined) return fail('unknown_anomaly', tr(`没有这条开着的未解释:${wanted || '(没给 id)'}。开着的:${known.map((item) => `${item.id}(${clip(item.what, 30)})`).join('、') || '(没有)'}`, `No open unexplained item ${wanted || '(no id given)'}. Open ones: ${known.map((item) => `${item.id} (${clip(item.what, 30)})`).join(', ') || '(none)'}`))
 			if (!ANOMALY_OUTCOMES.includes(args.outcome)) return fail('outcome_required', tr('outcome 只能是 explained / ruled_out / escalated。', 'outcome must be explained, ruled_out or escalated.'))
 			const reason = String(args.reason ?? '').trim()
-			if (reason.length < 4) return fail('reason_required', tr('要写凭什么:解释是什么、为什么能排除、或要人定什么。', 'Say on what grounds: the explanation, why it can be ruled out, or what a person must decide.'))
+			if (reason.length < 4) return fail('reason_required', tr('须写明依据:解释是什么、为何可以排除,或需要人决定什么。', 'Say on what grounds: the explanation, why it can be ruled out, or what a person must decide.'))
 			const by = String(args.by ?? '').trim()
 			mutations.push({ t: 'anomaly/resolved', id: target.id, outcome: args.outcome, reason: reason.slice(0, 600), ...(by === '' ? {} : { by: by.slice(0, 120) }) })
 			const word = { explained: tr('已解释', 'explained'), ruled_out: tr('已排除', 'ruled out'), escalated: tr('交给人', 'handed to a person') }[args.outcome]
@@ -4254,8 +4264,8 @@ export function apply(ctx, config = {}) {
 		const step = firstOpenStep(plan)
 		const asked = await askHuman(exec, {
 			id: `release-cmd-${String(exec.callId ?? Date.now().toString(36))}`,
-			header: tr('不可逆动作要人放行', 'Irreversible action needs release'),
-			question: tr(`这条命令是声明过的不可逆动作「${clip(action.action, 60)}」。放行吗?`, `This command is a declared irreversible action ("${clip(action.action, 60)}"). Release it?`),
+			header: tr('不可逆动作须经人工批准', 'Irreversible action needs approval'),
+			question: tr(`此命令属于已声明的不可逆动作「${clip(action.action, 60)}」。是否批准执行?`, `This command is a declared irreversible action ("${clip(action.action, 60)}"). Release it?`),
 			detail: clip(command, 300),
 			options: [
 				{ label: choiceLabel('releaseCommand'), description: tr('让它执行。', 'Let it run.') },
@@ -4270,8 +4280,8 @@ export function apply(ctx, config = {}) {
 		return {
 			kind: 'deny',
 			reason:
-				tr(`「${action.action}」是不可逆动作,这次没有放行(${why})。不要换个写法绕过去:等人放行,或改计划。`, `"${action.action}" is irreversible and was not released this time (${why}). Do not rewrite the command to get around this: wait for a person, or change the plan.`) +
-				(asked.ok === true ? '' : blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, tr(`不可逆动作「${action.action}」等人放行。`, `The irreversible action "${action.action}" waits for a person to release it.`))),
+				tr(`「${action.action}」是不可逆动作,本次未获批准(${why})。不要改写命令以绕过此限制:等待人工批准,或修改计划。`, `"${action.action}" is irreversible and was not released this time (${why}). Do not rewrite the command to get around this: wait for a person, or change the plan.`) +
+				(asked.ok === true ? '' : blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, tr(`不可逆动作「${action.action}」等待人工批准。`, `The irreversible action "${action.action}" waits for a person to release it.`))),
 		}
 	}
 

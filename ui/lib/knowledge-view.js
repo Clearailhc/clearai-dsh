@@ -420,7 +420,7 @@ function cardLines(state, derived, options, view) {
 				const terminal = group.key === 'refuted' || group.key === 'replaced'
 				const named = typeof hypothesis.name === 'string' && hypothesis.name.trim() !== ''
 				const head = tr(named ? `「${hypothesis.name.trim()}」${clamp(hypothesis.claim, 120)}` : `「${clamp(hypothesis.claim, 120)}」`, named ? `"${hypothesis.name.trim()}" ${clamp(hypothesis.claim, 120)}` : `"${clamp(hypothesis.claim, 120)}"`)
-				const refute = terminal ? '' : tr(` — 算错的条件:${clamp(hypothesis.refute_when, 100)}`, ` — wrong if: ${clamp(hypothesis.refute_when, 100)}`)
+				const refute = terminal ? '' : tr(` — 推翻条件:${clamp(hypothesis.refute_when, 100)}`, ` — wrong if: ${clamp(hypothesis.refute_when, 100)}`)
 				push(`    · ${head}${refute} · ${readingOf(hypothesis)}`, terminal ? 1 : 0)
 			}
 		}
@@ -474,7 +474,7 @@ function cardLines(state, derived, options, view) {
 				if (next.indistinct === true) push(tr('  注意:各候选的预测相同,这一步区分不了它们;应改用能区分的检验(RevisePlan)', '  Warning: every candidate predicts the same, so this step cannot tell them apart; switch to a test that can (RevisePlan)'))
 				else push(tr('  结果与预测不符的地方写进 anomalies,不要解释过去', '  Whatever contradicts the predictions goes in anomalies; do not explain it away'), 1)
 			}
-			if (typeof first.expect === 'string' && first.expect !== '') push(tr(`  预期:${clamp(first.expect, 160)}——结果对不上的地方写进 anomalies,不要解释过去`, `  Expected: ${clamp(first.expect, 160)}; whatever does not match goes in anomalies, do not explain it away`))
+			if (typeof first.expect === 'string' && first.expect !== '') push(tr(`  预测:${clamp(first.expect, 160)}。结果与预测不符之处写入 anomalies,不要强行解释`, `  Expected: ${clamp(first.expect, 160)}; whatever does not match goes in anomalies, do not explain it away`))
 			else if (predictions.length === 0) push(tr('  动手前写下预测(RevisePlan action="expect":按候选分别写 predictions,或写 expect 并注明来自哪条关系或经验),落空才看得见', '  Before acting, write predictions (RevisePlan action="expect": predictions per candidate, or expect with the relation or lesson it comes from), so a miss is visible'), 1)
 		}
 		else if (goal !== null && String(goal.status) === 'open') push(tr('- 下一步:计划的步都做完了,ClosePlan 收尾,然后 Conclude 结案(answers 按问题写结论、依据、尚未确定的事项、待您决策)或开下一阶段', '- Next: every step is done; ClosePlan, then Conclude (answers per question: conclusion, basis, open points, decisions for the user) or start the next stage'))
@@ -514,7 +514,7 @@ function cardLines(state, derived, options, view) {
 		const score = (lesson) => (lesson.about ?? []).filter((item) => item !== '' && context.includes(String(item).toLowerCase())).length
 		const ranked = lessonRows.map((lesson, index) => ({ lesson, index, score: score(lesson) })).sort((a, b) => b.score - a.score || a.index - b.index)
 		const kindWord = { trap: tr('常见误区', 'common pitfall'), check: tr('前置核查', 'check first'), shortcut: tr('不可取的捷径', 'misleading shortcut'), prior: tr('先验知识', 'prior') }
-		push(tr(`- 以前留下的经验(${lessonRows.length} 条;定计划、写预期前先看,用上了就在预期里写明来自哪条):`, `- Lessons left earlier (${lessonRows.length}; read before planning or writing an expectation, and name the one you use in the expectation):`), 1)
+		push(tr(`- 以前留下的经验(${lessonRows.length} 条;制定计划、写预测前先阅读,引用时在预测中注明来自哪条):`, `- Lessons left earlier (${lessonRows.length}; read before planning or writing an expectation, and name the one you use in the expectation):`), 1)
 		for (const { lesson } of ranked.slice(0, 6)) push(`  · ${lesson.id} · ${kindWord[lesson.kind] ?? lesson.kind} · ${clamp(lesson.text, 160)}${lesson.boundary ? tr(`(不适用:${clamp(lesson.boundary, 80)})`, ` (does not apply: ${clamp(lesson.boundary, 80)})`) : ''}`, 1)
 		if (lessonRows.length > 6) push(tr(`  · 还有 ${lessonRows.length - 6} 条(clear/knowledge/lessons/)`, `  · ${lessonRows.length - 6} more (clear/knowledge/lessons/)`), 2)
 	}
@@ -573,7 +573,7 @@ function cardLines(state, derived, options, view) {
 			const telling = preflight.predicates.filter((predicate) => predicate.shape || predicate.check)
 			const plain = preflight.predicates.filter((predicate) => !(predicate.shape || predicate.check))
 			if (telling.length > 0) {
-				push(tr('- 用到的关系(预期从这里来):', '- Relations in use (expectations come from these):'), 1)
+				push(tr('- 用到的关系(预测的来源):', '- Relations in use (expectations come from these):'), 1)
 				for (const predicate of telling.slice(0, 4)) push(`  · ${named(predicate)}${predicate.shape ? tr(`:${SHAPE_WORD[predicate.shape] ?? predicate.shape}`, `: ${SHAPE_WORD[predicate.shape] ?? predicate.shape}`) : ''}${predicate.gloss ? tr(`(${clamp(predicate.gloss, 80)})`, ` (${clamp(predicate.gloss, 80)})`) : ''}${predicate.check ? tr(` · 读数这样核:${clamp(predicate.check, 80)}`, ` · check readings by: ${clamp(predicate.check, 80)}`) : ''}`, 1)
 			}
 			if (plain.length > 0) push(tr(`- 用到的关系:${plain.slice(0, 6).map(named).join('、')}${more(preflight.predicatesTruncated)}`, `- Relations in use: ${plain.slice(0, 6).map(named).join(', ')}${more(preflight.predicatesTruncated)}`), 2)
