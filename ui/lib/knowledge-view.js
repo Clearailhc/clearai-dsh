@@ -67,7 +67,7 @@ export const GLOSSARY = bilingual({
 		nextAction: ['派一次独立评估,把评估卡作为出处', 'Get one independent evaluation and cite its evaluation card'],
 	},
 	L4: {
-		plain: ['人放行:交付前有人看过并批准', 'Released by a person: someone looked at it and approved before delivery'],
+		plain: ['人工批准:交付前已有人审阅并批准', 'Released by a person: someone looked at it and approved before delivery'],
 		where: ['docs/verification-loop.md 的等级表', 'the level table in docs/verification-loop.md'],
 		nextAction: ['等一次人的放行记录;没有人就不要声称到过这一级', 'Wait for a person to release it; without one, do not claim this level'],
 	},
@@ -192,8 +192,8 @@ export const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
  * **说人话的三张小表**(第六阶段)。内部名不改;卡、工具结果与面板上一律写右边那一列。
  * 模型读到什么就会照着说什么——所以卡先说人话,答复才说得出人话。
  */
-/** 等级只说三档:L0–L2 合并成「自己检验」(旧账里的 L0 / L1 也这么读),L3 独立评估,L4 人放行。 */
-export const LEVEL_WORD = bilingual({ L0: ['自己检验', 'self-tested'], L1: ['自己检验', 'self-tested'], L2: ['自己检验', 'self-tested'], L3: ['独立核验', 'independent check'], L4: ['人放行', 'released by a person'] })
+/** 等级只说三档:L0–L2 合并成「自行检验」(旧账里的 L0 / L1 也这么读),L3 独立评估,L4 人工批准。 */
+export const LEVEL_WORD = bilingual({ L0: ['自行检验', 'self-tested'], L1: ['自行检验', 'self-tested'], L2: ['自行检验', 'self-tested'], L3: ['独立核验', 'independent check'], L4: ['人工批准', 'approved by a person'] })
 export const VERDICT_WORD = bilingual({ support: ['支持', 'support'], refute: ['推翻', 'refute'], inconclusive: ['不确定', 'inconclusive'] })
 /** 判断短名的上限(汉字);没起名时取主张开头这么宽。与内核同一个数。 */
 export const HANDLE_LIMIT = 12

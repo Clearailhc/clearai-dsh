@@ -243,24 +243,14 @@ console.log('\n【客户端接线:注册在哪个插座、钥匙是什么】')
 	 */
 	check('输入框下不再挂我们的条(§35:整行让出来)', seat('conversation.composer.dock').length === 0, seat('conversation.composer.dock').map((entry) => entry.options.id).join(','))
 
-	// 右栏:类型定义 + 体 + 标题,三样都要在
-	const kinds = host.tabDefinitions.map((definition) => definition.kind)
-	
-	check('预览页签不预先注册(第一次真的点开才注册)', !kinds.includes('clearai-preview'), kinds.join(','))
-	check('每张类型都带标题与 guide(右栏「+」里列得出来)', host.tabDefinitions.every((definition) => typeof definition.title === 'function' && Array.isArray(definition.guide) && definition.guide.length > 0))
-	
 	/**
-	 * §23 图标:与 dsh 自己的页签同一套(原生图标的 `icon` 组件交给 guide)。
-	 * 拿不到那个模块时留空 ⇒ 原生默认字形——所以这里只要求"给了组件就一定是函数"。
-	 *
-	 * 用原生那套,自己的标留给"我们自己那一格"用(见 ClearAIMark)。
+	 * 0.5.1:右栏不再注册页签——世界树并入探索货架的「过程记录」。
+	 * 中栏两格:探索(过程)紧挨本体(结果),探索排在前面。
 	 */
-	check(
-		'页签的 guide 带 icon(原生那套)',
-		host.tabDefinitions.every((definition) => definition.guide.every((entry) => entry.icon === undefined || typeof entry.icon === 'function')) &&
-			host.tabDefinitions.some((definition) => definition.guide.some((entry) => typeof entry.icon === 'function')),
-		JSON.stringify(host.tabDefinitions.map((definition) => definition.guide.map((entry) => typeof entry.icon))),
-	)
+	check('右栏不再注册页签(世界树并入探索货架)', host.tabDefinitions.length === 0 && seat('sidebar.right.pane.tab').length === 0, JSON.stringify(host.tabDefinitions.map((definition) => definition.kind)))
+	const views = seat('conversation.view').map((entry) => entry.options)
+	check('中栏两格:探索在本体之前', views.length === 2 && views[0].id === 'clearai-explore' && views[1].id === 'clearai-facts' && views[0].order < views[1].order, JSON.stringify(views.map((view) => [view.id, view.order])))
+	check('注册前先 inject 了插座(不硬塞)', host.injections.includes('conversation.view') && host.injections.includes('conversation.input.plan'), host.injections.join(','))
 	{
 		// 我们自己的标记仍然在(留给面板自己的位置用):画面要对 —— 开口的 c + 一颗事实点。
 		const mark = bundle.exports.__components?.ClearAIMark
@@ -268,12 +258,6 @@ console.log('\n【客户端接线:注册在哪个插座、钥匙是什么】')
 		const kids = svg?.children ?? []
 		check('主标记组件在,画面是开口的 c + 一颗事实点(emerald)', typeof mark === 'function' && svg.props?.viewBox === '0 0 1024 1024' && kids.length === 2 && kids[1].props?.fill === '#10B981' && kids[0].props?.strokeDasharray === '270 90')
 	}
-	const bodies = host.registrations.filter((entry) => entry.options.name === 'sidebar.right.pane.tab')
-	
-	check('体都是可调用的组件工厂', bodies.every((entry) => typeof entry.component === 'function'))
-	const titles = host.registrations.filter((entry) => entry.options.name === 'sidebar.right.pane.tab.title')
-	check('页签的标题注册了(keyed,钥匙同一把)', titles.length === 1 && titles[0].options.key === 'clearai-worldtree', JSON.stringify(titles.map((entry) => entry.options.key)))
-	check('注册前先 inject 了插座(不硬塞)', host.injections.includes('sidebar.right.pane.tab') && host.injections.includes('sidebar.right.pane.tab.title'), host.injections.join(','))
 }
 
 /**
@@ -615,7 +599,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	 * 序号、修订史与谁裁的、全文指针、以及哪一段不参与判定。
 	 */
 	check('目标那块把判据逐条列出来(带序号,不是压成一句)', /1\. 均值差 ≥ 5%/.test(treePanel) && /2\. 留出集实测有读数/.test(treePanel) && /3\. 语料每条带可追溯出处/.test(treePanel), treePanel.slice(0, 220))
-	check('判据小节标出条数、改过几次与最近一次独立裁决', /判据 · 3/.test(treePanel) && /改过 1 次/.test(treePanel) && /audit-7/.test(treePanel), treePanel.slice(0, 220))
+	check('判据小节标出条数、修订几次与最近一次独立裁决', /判据 · 3/.test(treePanel) && /已修订 1 次/.test(treePanel) && /audit-7/.test(treePanel), treePanel.slice(0, 220))
 	check('判据小节给出全文指引(沿用目标文档那条既有做法)', /全文在 clear\/goals\/g1\.md/.test(text(components.WorldTree, { openPreview: () => true })), treePanel.slice(0, 240))
 	check('criteria_note 单独标成不参与判定的背景', /背景\(不参与判定\)/.test(treePanel) && /口径可随复核改/.test(treePanel), treePanel.slice(0, 260))
 	/** 投影里没有逐条那一份(旧宿主 / 这个字段出现之前的目标)时:退回原来那句摘要,不空白、不另拼一套。 */
@@ -680,17 +664,92 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			},
 		}
 		const atlasProjection = (key) => (key === 'clearai' ? atlasView : undefined)
-		const atlas = react.render(components.Atlas({ useProjection: atlasProjection, sessionId: 's1', openRail: () => {}, openPreview: () => {} })).replace(/\s+/g, ' ')
-		check('页眉:说在回答什么(目标那句)', atlas.includes('催化剂 A 是否优于 B'), atlas.slice(0, 120))
-		check('页眉:一行计数用六个状态词', /已验证 1 · 验证中 1 · 不确定 1 · 已推翻 1/.test(atlas), atlas.slice(0, 200))
-		check('页眉:待处理那一句只陈述(没有按钮)', atlas.includes('待处理') && atlas.includes('以哪个为准'), atlas.slice(0, 260))
-		check('页眉:四站进度轨带每站人数', /判断 4/.test(atlas) && /检验 3/.test(atlas) && /已验证 1/.test(atlas) && /入本体 1/.test(atlas), atlas.slice(0, 320))
+		const atlas = react.render(components.Atlas({ useProjection: atlasProjection, sessionId: 's1', openPreview: () => {} })).replace(/\s+/g, ' ')
+		/** 0.5.1:判断的计数、进度轨与全部判断移到探索货架的「过程记录」;本体货架只放结果。 */
+		const explore = (extra = {}) => react.render(components.ExploreView({ useProjection: atlasProjection, sessionId: 's1', openPreview: () => {}, ...extra })).replace(/\s+/g, ' ')
+		const exploreOpen = (() => {
+			const realState = react.useState
+			react.useState = (initial) => [initial === false ? true : initial, () => {}]
+			try {
+				return explore()
+			} finally {
+				react.useState = realState
+			}
+		})()
+		check('本体货架页眉:说在回答什么(目标那句)', atlas.includes('催化剂 A 是否优于 B'), atlas.slice(0, 120))
+		check('本体货架只列已确立的事实(推翻的、在验的不在这里)', atlas.includes('已确立的事实') && atlas.includes('A 优于 B') && !atlas.includes('二分更省') && !atlas.includes('温度无关'), atlas.slice(-300))
+		check('探索货架:待您处理那一句只陈述(没有按钮)', exploreOpen.includes('待您处理(1)') && exploreOpen.includes('以哪个为准'), exploreOpen.slice(0, 260))
+		check('过程记录:一行计数用状态词', /已验证 1 · 验证中 1 · 不确定 1 · 已推翻 1/.test(exploreOpen), exploreOpen.slice(0, 400))
+		check('过程记录:四站进度轨带每站人数', /判断 4/.test(exploreOpen) && /检验 3/.test(exploreOpen) && /已验证 1/.test(exploreOpen) && /纳入本体 1/.test(exploreOpen), exploreOpen.slice(0, 500))
 		check('图带:本体图 / 实体图二选一,带各层点数', atlas.includes('本体图 2') && atlas.includes('实体图 1'), atlas.slice(0, 400))
-		check('结论按可信度分组,一行一条短名', atlas.includes('A 优于 B') && atlas.includes('二分更省') && atlas.includes('温度无关') && atlas.includes('学习率敏感'))
-		check('结论行带「第几步」,不摆内部编号', atlas.includes('第 3 步') && !/h-aa11|h-bb22|e-1|\bs1\b|f-1/.test(atlas), atlas.slice(-400))
-		check('不出现机器词(support / refute / proposed / alive)', !/\bsupport\b|\brefute\b|\bproposed\b|\balive\b/.test(atlas))
-		check('不再出现旧用词(站住 / 已确认 / 在验 / 本体货架)', !/站住|已确认|在验|本体货架/.test(atlas))
+		check('过程记录里判断按可信度分组,一行一条短名', exploreOpen.includes('A 优于 B') && exploreOpen.includes('二分更省') && exploreOpen.includes('温度无关') && exploreOpen.includes('学习率敏感'))
+		check('判断行带「第几步」,不摆内部编号', exploreOpen.includes('第 3 步') && !/h-aa11|h-bb22|e-1|\bs1\b|f-1/.test(exploreOpen), exploreOpen.slice(-400))
+		check('过程记录默认折叠:只给一行摘要', !explore().includes('二分更省') && explore().includes('过程记录'), explore().slice(-200))
+		check('不出现机器词(support / refute / proposed / alive)', !/\bsupport\b|\brefute\b|\bproposed\b|\balive\b/.test(atlas + exploreOpen))
+		check('不再出现旧用词(站住 / 已确认 / 在验 / 世界树)', !/站住|已确认|在验|世界树/.test(atlas + exploreOpen))
 		check('本体图上值的形态说人话(quantity → 数值)', !atlas.includes('quantity'), atlas.slice(0, 400))
+
+		/** 0.5.1 探索货架:问题、候选与各自预测、新发现的问题(按钮只替人发话)、结论卡。 */
+		const exploring = {
+			...atlasView,
+			goal: {
+				...atlasView.goal,
+				answers: [
+					{ question: 'q1', conclusion: '选 A', basis: ['三种方法同根'], open: [{ about: ['h-bb22'], effect: '若温度相关,A 的优势可能缩小' }], decide: ['是否进入中试'] },
+					{ question: 'q2', conclusion: '', basis: [], open: [], decide: [], unanswered: '预算用尽' },
+				],
+			},
+			plan: { ...(atlasView.plan ?? {}), id: 'p-1', totalCount: 3, advancedCount: 1, steps: atlasView.plan?.steps ?? [] },
+			exploration: {
+				mode: 'solve',
+				current: 'q1',
+				areas: [],
+				questions: [
+					{ id: 'q1', text: '催化剂 A 是否优于 B', status: 'open', implicit: false, area: null, counts: { examining: 2 }, candidates: [
+						{ id: 'h-x1', name: '温度主导', claim: '温度主导', state: 'examining', from: null, refuteWhen: null, refutations: 0, inconclusive: 0 },
+						{ id: 'h-x2', name: '配比主导', claim: '配比主导', state: 'examining', from: null, refuteWhen: null, refutations: 0, inconclusive: 0 },
+					] },
+					{ id: 'q2', text: '副产物从哪一步产生', status: 'emergent', implicit: false, area: null, counts: {}, candidates: [] },
+				],
+				next: { ordinal: 2, do: '在两档温度下各测一次', predictions: [{ hypothesis: 'h-x1', name: '温度主导', expect: '产率相差 > 5%' }, { hypothesis: 'h-x2', name: '配比主导', expect: '产率相差 > 5%' }], indistinct: true },
+			},
+		}
+		const sentTexts = []
+		const exploreText = react.render(components.ExploreView({ useProjection: (key) => (key === 'clearai' ? exploring : undefined), sessionId: 's1', send: (text) => (sentTexts.push(text), true) })).replace(/\s+/g, ' ')
+		check('探索货架:问题与候选假设、当前问题标在页眉', exploreText.includes('问题 1') && exploreText.includes('温度主导') && exploreText.includes('当前问题 1 / 共 2'), exploreText.slice(0, 300))
+		check('下一步按候选列出预测;预测相同如实说区分不了', exploreText.includes('若「温度主导」成立,预测') && exploreText.includes('各候选假设的预测相同,此步骤无法区分它们'), exploreText)
+		const nextText = react.render(components.NextBox({ next: { ...exploring.exploration.next, indistinct: false } })).replace(/\s+/g, ' ')
+		check('预测不同:不出警告,只说如何调整', !nextText.includes('无法区分') && nextText.includes('如需调整计划'), nextText)
+		check('新发现的问题带「立为问题 / 暂缓」两个按钮', exploreText.includes('新发现的问题') && exploreText.includes('立为问题') && exploreText.includes('暂缓'), exploreText)
+		const findButtons = (node, out = []) => {
+			if (node === null || typeof node !== 'object') return out
+			if (Array.isArray(node)) {
+				node.forEach((child) => findButtons(child, out))
+				return out
+			}
+			if (node.type === 'button') out.push(node)
+			if (typeof node.type === 'function') findButtons(node.type({ ...(node.props ?? {}), children: node.children }), out)
+			findButtons(node.children, out)
+			return out
+		}
+		const outcomes = []
+		const emergentButtons = findButtons(components.EmergentActions({ question: exploring.exploration.questions[1], send: (text) => (sentTexts.push(text), true), sent: {}, onSent: (id, kind) => outcomes.push([id, kind]) }))
+		emergentButtons.find((button) => String(button.children).includes('立为问题'))?.props.onClick()
+		check('「立为问题」只发一句话给模型(界面不改状态)', sentTexts.some((text) => text.includes('副产物从哪一步产生') && text.includes('立为问题')) && outcomes.some(([id, kind]) => id === 'q2' && kind === 'pursue'), JSON.stringify({ sentTexts, outcomes }))
+		const failedOutcomes = []
+		findButtons(components.EmergentActions({ question: exploring.exploration.questions[1], send: undefined, sent: {}, onSent: (id, kind) => failedOutcomes.push(kind) }))
+			.find((button) => String(button.children).includes('暂缓'))
+			?.props.onClick()
+		check('发不出去时如实记为失败(不假装发了)', failedOutcomes[0] === 'failed', JSON.stringify(failedOutcomes))
+		const answersText = react.render(components.AnswerCards({ data: exploring, openExplore: () => {} })).replace(/\s+/g, ' ')
+		check('结论卡四部分:结论 / 依据 / 尚未确定的事项 / 待您决策', ['结论', '选 A', '依据', '三种方法同根', '尚未确定的事项', 'A 的优势可能缩小', '待您决策', '是否进入中试', '查看探索记录'].every((word) => answersText.includes(word)), answersText)
+		check('多个问题时按问题切换', answersText.includes('问题 1') && answersText.includes('问题 2'), answersText.slice(0, 120))
+		const atlasWithAnswers = react.render(components.Atlas({ useProjection: (key) => (key === 'clearai' ? exploring : undefined), sessionId: 's1', openPreview: () => {} })).replace(/\s+/g, ' ')
+		check('本体货架带出结论卡', atlasWithAnswers.includes('待您决策') && atlasWithAnswers.includes('选 A'), atlasWithAnswers.slice(0, 300))
+		const chipText = (projection) => react.render(components.PlanChip({ useProjection: () => projection })).replace(/\s+/g, ' ')
+		check('计划芯片:求解时写「问题 i/n · 待检验假设 k 个」', chipText(exploring).includes('问题 1/2 · 待检验假设 2 个'), chipText(exploring))
+		const surveying = { ...exploring, exploration: { ...exploring.exploration, mode: 'survey', areas: [{ id: 'a1', name: '工艺', state: 'clear', judgments: 2, verified: 1, openAnomalies: 0 }, { id: 'a2', name: '原料', state: 'in_progress', judgments: 1, verified: 0, openAnomalies: 1 }] } }
+		check('计划芯片:调研时写「板块 已厘清/总数」与待您决定的问题数', chipText(surveying).includes('板块 1/2 · 1 个问题待您决定'), chipText(surveying))
 
 		const props = bundle.exports.__propositions
 		const rows = props.conclusionsOf(atlasView)
@@ -703,36 +762,36 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 
 		/** 点开一条:进度 → 可信度怎么变的 → 补充(直接渲染展开区;行的展开状态是组件自己的 useState)。 */
 		const opened = react.render(components.ConclusionDetail({ row: byName('A 优于 B'), data: atlasView, onFocus: () => {} })).replace(/\s+/g, ' ')
-		const order = ['进度', '可信度怎么变的', '补充'].map((word) => opened.indexOf(word))
-		check('展开区三段依次是 进度 → 可信度怎么变的 → 补充', order.every((at) => at >= 0) && order[0] < order[1] && order[1] < order[2], opened.slice(0, 200))
+		const order = ['进度', '可信度变化', '补充说明'].map((word) => opened.indexOf(word))
+		check('展开区三段依次是 进度 → 可信度变化 → 补充说明', order.every((at) => at >= 0) && order[0] < order[1] && order[1] < order[2], opened.slice(0, 200))
 		check('可信度的每一笔:第几步 · 支持 · 独立核验 · 之前 → 之后', /第 1 步:支持 · 独立核验 · 验证中 → 已验证/.test(opened), opened.slice(0, 400))
-		check('补充里有 依据 / 算错 / 相关 / 出自(范围与算错相同就不重复)', opened.includes('依据') && opened.includes('算错') && opened.includes('相关') && opened.includes('出自') && !opened.includes('范围'), opened.slice(-400))
+		check('补充说明里有 依据 / 推翻条件 / 相关 / 来源(范围与推翻条件相同就不重复)', opened.includes('依据') && opened.includes('推翻条件') && opened.includes('相关') && opened.includes('来源') && !opened.includes('范围'), opened.slice(-400))
 		check('相关里用实例在图上的名字,而不是 id', opened.includes('催化剂 A') && !opened.includes('cat_a'), opened.slice(-300))
-		check('依据带「看核验」入口', opened.includes('看核验'))
+		check('依据带「查看核验」入口', opened.includes('查看核验'))
 		{
 			const calls = []
 			const el = components.ConclusionDetail({ row: byName('A 优于 B'), data: { ...atlasView, openPreview: (path) => calls.push(path) }, onFocus: () => {} })
 			const link = walkNodes(expandTree(el)).find((node) => node.props?.onClick !== undefined && String(node.props?.title ?? '').includes('audits'))
 			link?.props.onClick()
-			check('点「看核验」⇒ 原生预览打开评估卡', calls.some((path) => path.includes('audits/s1/run-1.json')), JSON.stringify(calls))
+			check('点「查看核验」⇒ 原生预览打开评估卡', calls.some((path) => path.includes('audits/s1/run-1.json')), JSON.stringify(calls))
 		}
 		const refutedDetail = react.render(components.ConclusionDetail({ row: byName('二分更省'), data: atlasView })).replace(/\s+/g, ' ')
-		check('被推翻那条:进度条说清停在哪,不给下一步', refutedDetail.includes('在检验这一站被推翻') && !refutedDetail.includes('下一步'), refutedDetail.slice(0, 300))
+		check('被推翻那条:进度条说清停在哪,不给下一步', refutedDetail.includes('在检验阶段被推翻') && !refutedDetail.includes('下一步'), refutedDetail.slice(0, 300))
 		check('被推翻那一笔写「推翻」', /第 3 步:推翻/.test(refutedDetail), refutedDetail.slice(0, 300))
 		const pendingDetail = react.render(components.ConclusionDetail({ row: byName('温度无关'), data: atlasView })).replace(/\s+/g, ' ')
-		check('还没检验的:时间线末尾给下一步', pendingDetail.includes('下一步:找一步去检验它'), pendingDetail.slice(0, 300))
+		check('还没检验的:时间线末尾给下一步', pendingDetail.includes('下一步:安排步骤对其进行检验'), pendingDetail.slice(0, 300))
 		const unclearDetail = react.render(components.ConclusionDetail({ row: byName('学习率敏感'), data: atlasView })).replace(/\s+/g, ' ')
-		check('不确定那一笔写「不确定」,自己检验说到了哪一级', /第 4 步:不确定 · 自己检验/.test(unclearDetail), unclearDetail.slice(0, 300))
+		check('不确定那一笔写「不确定」,自己检验说到了哪一级', /第 4 步:不确定 · 自行检验/.test(unclearDetail), unclearDetail.slice(0, 300))
 
 		// ── 图带 ──
 		{
 			const emptyGraph = { graph: { nodes: [], edges: [], bounds: { width: 0, height: 0 } }, conflicts: [] }
 			const entityEmpty = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'entity', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
-			check('实体图空态说人话(不点名内部工具)', entityEmpty.includes('实体图还空着') && !entityEmpty.includes('RegisterInstance'), entityEmpty.slice(0, 200))
+			check('实体图空态说人话(不点名内部工具)', entityEmpty.includes('实体图暂无内容') && !entityEmpty.includes('RegisterInstance'), entityEmpty.slice(0, 200))
 			const unlanded = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'entity', unlanded: 3, fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
-			check('实体图空着但有断言没落地:说清有几个', unlanded.includes('3') && unlanded.includes('还没写成实体文件'), unlanded.slice(0, 200))
+			check('实体图空着但有断言没落地:说清有几个', unlanded.includes('3') && unlanded.includes('尚未建立实体文件'), unlanded.slice(0, 200))
 			const ontoEmpty = react.render(components.GraphBand({ lexicon: emptyGraph, layer: 'ontology', fullscreen: false, onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
-			check('本体图空态与实体图可区分', ontoEmpty.includes('本体图还空着'), ontoEmpty.slice(0, 200))
+			check('本体图空态与实体图可区分', ontoEmpty.includes('本体图暂无内容'), ontoEmpty.slice(0, 200))
 			check('本体图空态指向本体文件', ontoEmpty.includes('clear/ontology/concepts/'), ontoEmpty.slice(0, 200))
 		}
 		{
@@ -758,7 +817,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('藏起来的叶子之间的边改连到枝上,同类边去重', crossing.length === 1, JSON.stringify(flow?.props?.edges?.map((edge) => `${edge.source}>${edge.target}`)))
 			check('不留自环', (flow?.props?.edges ?? []).every((edge) => edge.source !== edge.target))
 			const text = String(flatNode(tree))
-			check('读时查出的文件问题列在图下,说清哪个文件', text.includes('本体文件有 1 处问题') && text.includes('clear/ontology/relations/bad.json'), text.slice(-300))
+			check('读时查出的文件问题列在图下,说清哪个文件', text.includes('本体文件有 1 项问题') && text.includes('clear/ontology/relations/bad.json'), text.slice(-300))
 		}
 		{
 			const many = (count) => Array.from({ length: count }, (_, index) => ({ id: `term:t${String(index).padStart(2, '0')}`, kind: 'concept', layer: 'ontology', ref: `t${index}`, label: `概念${String(index).padStart(2, '0')}`, status: 'admitted', x: (index % 8) * 200, y: Math.floor(index / 8) * 120 }))
@@ -783,7 +842,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		{
 			const broken = loadClientBundleWithoutXyflow()
 			const rendered = broken.react.render(broken.exports.__components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} })).replace(/\s+/g, ' ')
-			check('拿不到图组件时如实说原因,结论照常可读', /图组件不可用\(.+?\)/.test(rendered) && rendered.includes('结论照常可读'), rendered.slice(0, 200))
+			check('拿不到图组件时如实说原因,结论照常可读', /图组件不可用\(.+?\)/.test(rendered) && rendered.includes('结论仍可正常查看'), rendered.slice(0, 200))
 		}
 
 		// ── 点一个点 / 一条边:小卡 ──
@@ -801,10 +860,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const card = react.render(components.GraphInspector({ selection: inspector.selection, inspector, names: new Map([['cat_a', '催化剂 A']]), sessionId: 's1', onFilter: () => {}, onClose: () => {} })).replace(/\s+/g, ' ')
 			check('小卡:标题是名字,带释义 / 主语 / 依据', card.includes('产率') && card.includes('每批的产率') && card.includes('催化剂') && card.includes('实验记录'), card.slice(0, 200))
 			check('小卡:关系串里的实例 id 换成图上的名字', card.includes('催化剂 A · 产率 = 62%') && !card.includes('cat_a'), card)
-			check('小卡:用到它的结论带状态签(已验证 / 有矛盾)', card.includes('用到它的结论') && card.includes('已验证') && card.includes('有矛盾'), card)
+			check('小卡:用到它的结论带状态签(已验证 / 有矛盾)', card.includes('引用此项的结论') && card.includes('已验证') && card.includes('有矛盾'), card)
 			check('小卡:范围与算错相同时不重复', !card.includes('范围:均值差') && card.includes('范围:复测'), card)
 			check('小卡:不摆内部编号', !/f-1|f-2|h-aa11/.test(card), card)
-			check('小卡:「只看相关」与「关闭」两个显式动作', card.includes('只看相关') && card.includes('关闭'))
+			check('小卡:「只看相关」与「关闭」两个显式动作', card.includes('仅显示相关项') && card.includes('关闭'))
 		}
 	}
 
@@ -939,10 +998,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	)
 	const rails = []
 	// 计划那一格是工具行形态的按钮(无边框、次级文字色),点一下开世界树。
-	const chipButton = components.PlanChip({ useProjection, useSessions, sessionId: 's1', openRail: (kind) => rails.push(kind) })
+	const chipButton = components.PlanChip({ useProjection, useSessions, sessionId: 's1', openExplore: () => rails.push('clearai-explore') })
 	check('计划芯片是工具行形态的按钮(不是自造药丸)', chipButton.type === 'button' && chipButton.props.className === 'clearai-toolctl', String(chipButton.props.className))
 	chipButton.props.onClick()
-	check('计划芯片点一下开右栏「世界树」(界面不造第二个动词)', rails.includes('clearai-worldtree'), rails.join(','))
+	check('计划芯片点一下打开探索货架(界面不造第二个动词)', rails.includes('clearai-explore'), rails.join(','))
 	check('计划芯片在输入被锁时按不动(不抢原生 composer 的锁语义)', components.PlanChip({ useProjection, useSessions, sessionId: 's1', locked: true, openRail: () => {} }).props.disabled === true)
 
 	/**
@@ -1021,7 +1080,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('树详情:字符串产物也读得出路径(不再 undefined)', /lab\/a\.csv/.test(detail) && /products\/b\.md/.test(detail) && !/undefined/.test(detail), detail.slice(0, 200))
 			check('没查过盘 ⇒ 不说「缺」(折法不碰盘,凭什么说它不在)', !/\(缺\)/.test(detail), detail.slice(0, 200))
 			const missing = react.render(components.TreeDetail({ row: { kind: 'step', lane: 0, step: { ...stringArtifacts.plan.steps[0], artifacts: [{ path: 'lab/gone.csv', exists: false }] } }, data: stringArtifacts, openPreview: () => {}, openSpectator: () => {}, onClose: () => {} })).replace(/\s+/g, ' ')
-			check('宿主查过且不在盘上 ⇒ 才写「(缺)」', /lab\/gone\.csv\(缺\)/.test(missing), missing.slice(0, 160))
+			check('宿主查过且不在盘上 ⇒ 才写「(缺)」', /lab\/gone\.csv\(缺失\)/.test(missing), missing.slice(0, 160))
 		}
 		/**
 		 * §32 **多份世界树**:一个对话会有多个计划,已收尾的没被删 ⇒ 给切换入口,
@@ -1043,7 +1102,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	// 投影为空:世界树(计划面)与事实格(闭环面)都要给平静空态,不抛、不显示堆栈
 	const emptyTree = react.render(components.WorldTree({ useProjection: () => undefined, sessionId: 's1' }))
 	const emptyFacts = react.render(components.Atlas({ useProjection: () => undefined, sessionId: 's1' }))
-	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /还没有内容/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
+	check('投影为空时渲染平静空态(不抛、不显示堆栈)', /暂无计划/.test(emptyTree) && /暂无内容/.test(emptyFacts), `${emptyTree.slice(0, 40)} | ${emptyFacts.slice(0, 40)}`)
 
 	// 空视图也要能渲染:这是最常见的崩溃点(字段全 undefined)。
 	const emptyView = { sessionId: 's1', goal: null, plan: null, evidence: [], materials: [], facts: [], audits: [], settlement: [], needYou: [] }
@@ -1194,7 +1253,7 @@ console.log('\n【世界树拓扑:一条脊柱(纯函数,直接断言)】')
 	}
 	const stepRow = { kind: 'step', lane: 0, step: { id: 's2', ordinal: 2, do: '跑乙做法', status: 'open', doneCriteria: '有读数', voidReason: null, level: 'L3', artifacts: [{ path: 'products/report.md', exists: true }, { path: 'lab/missing.csv', exists: false }] } }
 	const stepText = react.render(TreeDetail({ row: stepRow, data: detailData, openPreview: () => true, openSpectator: () => true, onClose: () => {} })).replace(/\s+/g, ' ')
-	check('详情:把这一步的判据/状态/产物都摊开', /判据/.test(stepText) && /有读数/.test(stepText) && /products\/report\.md/.test(stepText) && /lab\/missing\.csv\(缺\)/.test(stepText), stepText.slice(0, 200))
+	check('详情:把这一步的判据/状态/产物都摊开', /判据/.test(stepText) && /有读数/.test(stepText) && /products\/report\.md/.test(stepText) && /lab\/missing\.csv\(缺失\)/.test(stepText), stepText.slice(0, 200))
 	check('详情:检验结果与独立核验的状态都在,说人话(还没回来的说「正在裁决」;不摆证据编号)', /检验结果:支持 · 独立核验/.test(stepText) && /正在裁决/.test(stepText) && !/\be1\b|support/.test(stepText), stepText.slice(0, 200))
 	check('详情:不再有采纳 / 放弃分叉的动作', !/采纳此世界线|放弃探索/.test(stepText))
 }
@@ -1234,7 +1293,7 @@ console.log('\n【服务的声明面:用到的每一个都必须在 inject 里(2
 	const missing = [...used].filter((name) => !propertyRead.has(name) && !declared.has(name) && new RegExp(`ctx\\.${name}\\b`).test(code))
 	check('属性读法用到的服务全都声明在 inject 里(漏一个 = 静默不注册)', missing.length === 0, `漏了:${missing.join(',')}`)
 	check('可选服务走 ctx.get(不硬塞进 inject):layout 就是这一路', /ctx\.get\('layout'\)/.test(code) && !declared.has('layout'), JSON.stringify([...declared]))
-	check('四个服务名与平台的真实服务一致(名字写错同样静默失效)', ['slots', 'sessions', 'sidebarRightTabs', 'sidebarRight'].every((name) => declared.has(name)), [...declared].join(','))
+	check('三个服务名与平台的真实服务一致(名字写错同样静默失效)', ['slots', 'sessions', 'sidebarRight'].every((name) => declared.has(name)), [...declared].join(','))
 	// 宿主那一侧的模块级依赖:让我们的 bundle 在提供这些服务的模块之后到达(原生包同样声明)。
 	const manifest = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'ui', 'package.json'), 'utf8'))
 	const moduleInjects = manifest?.dsh?.client?.inject ?? []
@@ -1242,7 +1301,7 @@ console.log('\n【服务的声明面:用到的每一个都必须在 inject 里(2
 	// 假 ctx 只给**属性**形式的服务:再退回 `ctx.get('x')` 读法会立刻红。
 	const host = makeClientContext()
 	bundle.exports.apply(host.ctx)
-	check('照真实契约(属性形式)注册得下去', host.registrations.length > 0 && host.tabDefinitions.length === 1, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
+	check('照真实契约(属性形式)注册得下去', host.registrations.length > 0 && host.tabDefinitions.length === 0, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
 }
 
 console.log('\n【图谱渲染:React Flow 那一行真的在部署件里】')
@@ -1312,7 +1371,7 @@ console.log('\n【预设定界:不是 ClearAI 的会话里一个都不注册】'
 	bundle.exports.apply(host.ctx)
 	check('非本预设:中栏与右栏都不注册', host.registrations.length === 0 && host.tabDefinitions.length === 0, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
 	host.flipPreset('clearai')
-	check('切到本预设:席位与页签都长出来(跟着会话走)', host.registrations.length > 0 && host.tabDefinitions.length === 1, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
+	check('切到本预设:席位长出来,不再有右栏页签(跟着会话走)', host.registrations.length > 0 && host.tabDefinitions.length === 0, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
 	check(
 		'§34:工具行**不再**注册档位开关(clearai-tier 已随「多问我/自己跑」一起删掉)',
 		!host.registrations.some((entry) => entry.options.id === 'clearai-tier'),

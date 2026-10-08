@@ -2354,6 +2354,8 @@ export function view(state, sessionId) {
 			/** 还开着、点名涉及它的未解释项:有就回到「待核验」。 */
 			questioned: item.questioned ?? [],
 		})),
+		/** 经验(本体货架列出;与卡上同一份,含别的会话留下的)。 */
+		lessons: (derived.lessonRows ?? []).map((item) => ({ id: item.id, kind: item.kind ?? 'trap', text: item.text ?? '', boundary: item.boundary ?? null, about: item.about ?? [] })),
 	}
 }
 
