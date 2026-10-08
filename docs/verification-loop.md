@@ -31,19 +31,15 @@ A level decides two things only: **who judges**, and **that L4 needs a human rel
 
 | Level | Definition | Who judges | Accepted observations |
 |---|---|---|---|
-| L0 | A quick plausibility check by reasoning | The doer, with a reviewable basis | Derivations, calculations |
-| L1 | Existing knowledge: literature, databases | The doer, with a reviewable basis | Citations |
-| L2 | Existing data or small computation | The doer, with a reviewable basis | Data, scripts and output |
+| L2 | Self-tested: reasoning, literature, existing data or small computation | The doer, with a reviewable basis | Derivations, citations, data, scripts and output |
 | L3 | New, reproducible evidence | An independent evaluator, or a machine | The doer's output, which must be re-runnable |
 | L4 | New evidence that cannot be repeated or comes from outside | An independent evaluator, after a human release | Files the doer wrote do not count |
 
-A machine evaluator (proof checker, test, statistics script) counts as independent at every level. What the five levels mean in a given field lives in project skills; the engine knows only the five abstract levels.
+There are three levels only: self-tested (L2), independently checked (L3), human release (L4). L0 and L1 in older sessions read as L2; nothing is migrated. A machine evaluator (proof checker, test, statistics script) counts as independent at every level. What the three levels mean in a given field lives in project skills; the engine knows only the three abstract levels.
 
 | Level | Mathematics | Physics | Life sciences |
 |---|---|---|---|
-| L0 | Small cases, magnitude, edge cases | Dimensions, limits, conservation | Dose ranges, pathway plausibility |
-| L1 | Already proved or refuted in the literature | Literature, handbook data | Literature, public databases |
-| L2 | Numerical checks, symbolic computation | Re-analysis of existing data | Re-analysis of existing omics data |
+| L2 | Small cases, literature, numerical checks | Dimensions and limits, handbook data, re-analysis of existing data | Pathway plausibility, public databases, re-analysis of existing omics data |
 | L3 | Systematic counterexample search, machine-checked proof | Numerical simulation | Computational models, new analysis of public data |
 | L4 | Peer review | Experiments, facility time | Wet lab, clinical |
 
@@ -56,7 +52,7 @@ Human     Model                      System                      Independent eva
  │  ┌ each ┤ do the work
  │  │      │ AdvancePlan ──────────▶ │ admission: exists, non-empty, well-formed
  │◀─┼──────┼── L4: asks the human to release
- │  │      │                         │ L0–L2: record the doer's two judgments
+ │  │      │                         │ L2: record the doer's two judgments   
  │  │      │                         │ L3+: dispatch evaluator ─▶ │ reads artefacts and record only
  │  │      │                         │ ◀──────── evaluation card ─┤
  │  │      │ ◀── accepted / blocked (what is missing)  delivery holds → step done; result recorded as evidence, hypothesis status computed
@@ -137,7 +133,7 @@ Use the left column across the repository. UI and reports use the plain words in
 | Verdict | delivery holds + result per hypothesis | accepted or not / what it shows | — |
 | Evidence | `evidence[]` | why | — |
 | Fact | `fact/promoted` | a conclusion you can trust | confirmed conclusion |
-| Level | `L0`–`L4` (upper case) | strength of the test | — |
+| Level | `L2`–`L4` (upper case; old `L0`/`L1` read as `L2`) | strength of the test | — |
 | Promotion threshold | `promote_at_level` | — | acceptance threshold |
 
 ## 8. Relation to the domain ontology

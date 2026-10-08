@@ -16,7 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
+import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 import { bilingual, detectLanguage, messageText, tr, withLanguage } from './lang.js'
 
@@ -60,9 +60,15 @@ export const MUTATION_KIND = 'clearai'
  *           `definitionsChanged`。本体(词汇、实体、实体关系)改为从本体文件折出来,跨文件问题记在
  *           `ontologyProblems`。旧日志里没有这些,折出来就是空的。
  *   v15 → v16:多了 `language`(人说话用的语言,从人的消息折出来):系统写给人的话、面板里的读数都跟着它。
+ *   v16 → v17:**预期与未解释**:步骤带 `expect`(`step/expected` 也能补写);多了 `anomalies`(未解释项,
+ *           `anomaly/opened` / `anomaly/resolved` 折进来,评估者报的随 `audit/settled` 一起来);目标带
+ *           `irreversible`(不可逆动作的命令特征);放行带 `action`。对手判断(`rival` / `split_by`)删了,
+ *           旧账里的这两格不再读。
+ *   v17 → v18:多了 `lessons`(经验:结案时经独立评估核过的「下次要留意什么」,`lesson/recorded` 折进来;
+ *           别的会话留下的从 `clear/knowledge/lessons/<id>.json` 经 `workspace/synced` 进来)。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 16
+export const STATE_VERSION = 18
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -89,6 +95,13 @@ export function emptyState() {
 		facts: [],
 		blocks: {},
 		releases: [],
+		/**
+		 * **未解释项**(认识论里的「反常」):和预期或本体对不上的观测。只有三个去处:
+		 * 被解释(`explained`)、写明理由排除(`ruled_out`)、交给人(`escalated`);没去处的就是开着(`open`)。
+		 */
+		anomalies: [],
+		/** **经验**:本会话结案写下的(别的会话的在工作区文件里,派生时合进来)。 */
+		lessons: [],
 		/**
 		 * **本体形状**:内核随投影下发的那份声明(对象/状态/边/等级)。
 		 * 为什么进投影而不是在界面里手抄:面板那一格的页眉要从**声明**生成——
@@ -205,6 +218,8 @@ function appendSteps(plan, rawSteps) {
 			artifacts: raw.artifacts ?? [],
 			done_criteria: raw.done_criteria,
 			tests: normalizeTests(raw.tests),
+			/** 动手前写下的预期(可选);落空的地方记成未解释项。 */
+			expect: typeof raw.expect === 'string' && raw.expect !== '' ? raw.expect : null,
 			status: 'open',
 			evidence: null,
 			advancedAt: null,
@@ -226,6 +241,7 @@ export function applyMutation(state, mutation) {
 	if (mutation === null || typeof mutation !== 'object' || typeof mutation.t !== 'string') return state
 	const at = typeof mutation.at === 'number' ? mutation.at : 0
 	const next = clone(state)
+	if (!Array.isArray(next.anomalies)) next.anomalies = []
 	const RANK = { open: 0, blocked: 0, advanced: 1, void: 1 }
 	const settle = (step, status) => {
 		if (step === undefined || step === null) return
@@ -243,6 +259,7 @@ export function applyMutation(state, mutation) {
 				previous.claim = mutation.claim
 				previous.done_criteria = mutation.done_criteria
 				previous.promote_at_level = mutation.promote_at_level
+				if (Array.isArray(mutation.irreversible)) previous.irreversible = clone(mutation.irreversible)
 				/** 修订可以带上新的速览与判据清单(没带就保持旧值——「不提供」不等于「清空」)。 */
 				if (typeof mutation.headline === 'string' && mutation.headline !== '') previous.headline = mutation.headline
 				if (Array.isArray(mutation.criteria)) previous.criteria = clone(mutation.criteria)
@@ -255,6 +272,8 @@ export function applyMutation(state, mutation) {
 					claim: mutation.claim,
 					done_criteria: mutation.done_criteria,
 					promote_at_level: mutation.promote_at_level,
+					/** 不可逆动作:`{action, command}`,命令里出现 `command` 那段原文就要人放行。 */
+					irreversible: Array.isArray(mutation.irreversible) ? clone(mutation.irreversible) : [],
 					status: 'open',
 					revision: mutation.revision ?? 1,
 					reasons: [mutation.reason ?? null],
@@ -298,8 +317,6 @@ export function applyMutation(state, mutation) {
 					known.version = hypothesis.version ?? known.version
 					if (typeof hypothesis.name === 'string' && hypothesis.name !== '') known.name = hypothesis.name
 					if (typeof hypothesis.retests === 'string' && hypothesis.retests !== '') known.retests = hypothesis.retests
-					if (typeof hypothesis.rival === 'string' && hypothesis.rival !== '') known.rival = hypothesis.rival
-					if (typeof hypothesis.split_by === 'string' && hypothesis.split_by !== '') known.split_by = hypothesis.split_by
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
 					continue
 				}
@@ -312,9 +329,6 @@ export function applyMutation(state, mutation) {
 					refute_when: hypothesis.refute_when,
 					/** 复检的是哪条已有事实(事实 id;可以是别的会话留下的)。 */
 					...(typeof hypothesis.retests === 'string' && hypothesis.retests !== '' ? { retests: hypothesis.retests } : {}),
-					/** 对手(另一条判断的 id)与区分它们的观测。 */
-					...(typeof hypothesis.rival === 'string' && hypothesis.rival !== '' ? { rival: hypothesis.rival } : {}),
-					...(typeof hypothesis.split_by === 'string' && hypothesis.split_by !== '' ? { split_by: hypothesis.split_by } : {}),
 					status: 'proposed',
 					version: hypothesis.version ?? 1,
 					/**
@@ -384,6 +398,44 @@ export function applyMutation(state, mutation) {
 			if (step === undefined || step.status !== 'open') break
 			step.done_criteria = mutation.new_criteria
 			step.criteria_versions.push(mutation.new_criteria) // 旧版本留着,什么都不删
+			break
+		}
+		case 'step/expected': {
+			const step = stepOf(mutation.plan, mutation.step)
+			if (step === undefined || step.status !== 'open') break
+			step.expect = String(mutation.expect ?? '') || null
+			break
+		}
+		case 'anomaly/opened': {
+			if (next.anomalies.some((item) => item.id === mutation.id)) break
+			next.anomalies.push({ id: mutation.id, what: String(mutation.what ?? ''), anchor: mutation.anchor ?? null, step: mutation.step ?? null, by: mutation.by ?? 'model', status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+			break
+		}
+		case 'lesson/recorded': {
+			if (!Array.isArray(next.lessons)) next.lessons = []
+			if (next.lessons.some((item) => item.id === mutation.id)) break
+			next.lessons.push({
+				id: mutation.id,
+				goal: mutation.goal ?? null,
+				text: String(mutation.text ?? ''),
+				kind: mutation.kind ?? 'trap',
+				about: Array.isArray(mutation.about) ? mutation.about.map(String) : [],
+				evidence: mutation.evidence ?? null,
+				boundary: mutation.boundary ?? null,
+				status: 'active',
+				path: mutation.path ?? null,
+				at,
+			})
+			break
+		}
+		case 'anomaly/resolved': {
+			const item = next.anomalies.find((entry) => entry.id === mutation.id)
+			if (item === undefined || item.status !== 'open') break
+			if (!['explained', 'ruled_out', 'escalated'].includes(mutation.outcome)) break
+			item.status = mutation.outcome
+			item.reason = mutation.reason ?? null
+			item.explainedBy = mutation.by ?? null
+			item.resolvedAt = at
 			break
 		}
 		case 'plan/voided': {
@@ -492,6 +544,13 @@ export function applyMutation(state, mutation) {
 				audit.card_path = mutation.card_path ?? null
 				if (mutation.digest !== undefined) audit.digest = mutation.digest ?? null
 			}
+			/** 评估者报的、做的人没登记的异常:记成未解释项(id 由裁决 id 派生,重放幂等)。 */
+			const found = Array.isArray(mutation.anomalies) ? mutation.anomalies : []
+			for (const [index, item] of found.entries()) {
+				const id = `${mutation.id}#u${index + 1}`
+				if (next.anomalies.some((entry) => entry.id === id)) continue
+				next.anomalies.push({ id, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+			}
 			break
 		}
 		case 'evidence/recorded': {
@@ -542,6 +601,8 @@ export function applyMutation(state, mutation) {
 				via: mutation.via ?? null,
 				at,
 				call: mutation.call ?? null,
+				/** 放行的是哪件不可逆动作(拦在命令上的那道门);步级放行没有这一格。 */
+				...(typeof mutation.action === 'string' && mutation.action !== '' ? { action: mutation.action } : {}),
 			})
 			break
 		}
@@ -592,9 +653,9 @@ export function applyMutation(state, mutation) {
 			 */
 			const touchedOntology = (mutation.changes ?? []).some((change) => {
 				const kind = classifyWorkspacePath(change?.path)?.kind
-				return kind !== undefined && kind !== 'fact'
+				return kind !== undefined && kind !== 'fact' && kind !== 'lesson'
 			})
-			if (touchedOntology || Object.keys(files).some((path) => classifyWorkspacePath(path)?.kind !== 'fact')) {
+			if (touchedOntology || Object.keys(files).some((path) => !['fact', 'lesson'].includes(classifyWorkspacePath(path)?.kind))) {
 				const ontology = materializeOntology(files)
 				next.lexicon = ontology.lexicon
 				next.entities = ontology.entities
@@ -1085,7 +1146,9 @@ export function knowledgePreflight(state, derived) {
 	const factRows = Array.isArray(derived?.factRows) ? derived.factRows : []
 	const conflicts = Array.isArray(derived?.conflicts) ? derived.conflicts : []
 	/** 命题的文本面:目标主张 + 每条命题的主张(去空白后做包含判断)。 */
-	const claimText = [state?.goal?.claim, ...hypotheses.map((item) => item.claim)].filter((text) => typeof text === 'string' && text !== '').map((text) => String(text).replace(/\s+/g, ''))
+	/** 加上下一步要做什么与它的预期:预期引用的关系也要递到眼前。 */
+	const nextStep = (derived?.activePlan?.steps ?? []).find((step) => step?.status === 'open') ?? null
+	const claimText = [state?.goal?.claim, ...hypotheses.map((item) => item.claim), nextStep?.do, nextStep?.expect].filter((text) => typeof text === 'string' && text !== '').map((text) => String(text).replace(/\s+/g, ''))
 	/** 命题已经引用的谓词(断言在假设上时就该算「在用」)。 */
 	const usedPredicates = new Set(hypotheses.flatMap((item) => (Array.isArray(item.assertions) ? item.assertions : [])).map((assertion) => String(assertion?.predicate ?? '')))
 	const hits = (entry) => {
@@ -1112,9 +1175,9 @@ export function knowledgePreflight(state, derived) {
 	return {
 		mode: 'knowledge',
 		/** 词面命中的词汇:模型接下来要写的结论大概率会用到它们。 */
-		terms: matchedTerms.slice(0, LIMIT).map((term) => ({ id: term.id, label: term.label, gloss: term.gloss, parent: term.parent ?? null, status: term.status, uses: term.uses ?? 0, basis: term.basis ?? null })),
+		terms: matchedTerms.slice(0, LIMIT).map((term) => ({ id: term.id, label: term.label, gloss: term.gloss, kind: term.kind ?? null, unit: term.unit ?? null, parent: term.parent ?? null, status: term.status, uses: term.uses ?? 0, basis: term.basis ?? null })),
 		termsTruncated: Math.max(0, matchedTerms.length - LIMIT),
-		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
+		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, gloss: predicate.gloss ?? '', kind: predicate.kind ?? null, shape: predicate.shape ?? null, check: predicate.check ?? null, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
 		predicatesTruncated: Math.max(0, matchedPredicates.length - LIMIT),
 		/** 命中的既有事实(可复用的「已知」)。 */
 		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: fact.scope ?? null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null, foreign: fact.foreign === true })),
@@ -1743,6 +1806,18 @@ export function derive(state) {
 	 * 两者都吃 `factRows` 而不是 `state.facts`:事实的复核态与推翻标记是派生的,
 	 * 在这里重算一遍就等于第二份判据。
 	 */
+	/**
+	 * **经验行**:本会话写下的,加上别的会话留在 `clear/knowledge/lessons/` 的。同 id 以文件为准
+	 * (人可以在文件上标 `status: "retracted"` 撤回);撤回的不再推送。新的在前。
+	 */
+	const lessonById = new Map()
+	for (const item of state.lessons ?? []) lessonById.set(item.id, { ...item })
+	for (const [path, file] of Object.entries(state.workspace?.files ?? {})) {
+		if (classifyWorkspacePath(path)?.kind !== 'lesson' || file?.data === undefined) continue
+		const row = lessonFromFile(file.data, path)
+		if (row !== null) lessonById.set(row.id, { ...lessonById.get(row.id), ...row, at: row.at ?? lessonById.get(row.id)?.at ?? null })
+	}
+	const lessonRows = [...lessonById.values()].filter((item) => item.status !== 'retracted').sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
@@ -1790,6 +1865,7 @@ export function derive(state) {
 		closedPlans,
 		pendingAudit,
 		factRows,
+		lessonRows,
 		settlement,
 		stepOf,
 		needYou,

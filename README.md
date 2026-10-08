@@ -22,8 +22,8 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.4.0
-# or in the app: Plugins → Add plugin → clearai-dsh@0.4.0
+dsh plugin --profile web add clearai-dsh@0.5.0
+# or in the app: Plugins → Add plugin → clearai-dsh@0.5.0
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
@@ -74,16 +74,16 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
-**Requirements:** DSH ≥ `0.1.7-alpha.1` — that generation introduced the composition declaration line this preset rides on. Verified against the host's `0.1.7-rc.2` and `0.2.0-rc.1`.
+**Requirements:** DSH ≥ `0.2.0-rc.2` (the current `latest`). The preset is registered through a composition declaration line, which is the only way the host's preset registry finds presets. Verified against the host's `0.2.0-rc.2`, and also checked against `0.2.1-alpha.1`. Hosts older than `0.2.0` are no longer supported.
 
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.4.0`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.0`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.4.0
+dsh plugin --profile web add clearai-dsh@0.5.0
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
@@ -116,7 +116,7 @@ dsh plugin --profile web add github:Clearailhc/clearai-dsh
 
 Git fetches source rather than build artifacts, so pnpm ≥10 will refuse to run the `prepare` script until you add an `allowBuilds` entry to the profile's `pnpm-workspace.yaml`. That grant means *permission for this package's code to execute on your machine at install time* — grant it only if you have read the source, and pin a commit. If you just want to use ClearAI, use the npm install above.
 
-The installer's output follows your system language (`--lang zh|en` overrides it, `doctor` / `seed` / `unseed` take the same flag). Its only runtime dependency is `zod`; the graph stack is bundled into the client half at build time.
+The installer's output follows your system language (`--lang zh|en` overrides it, and `doctor` takes the same flag). Its only runtime dependency is `zod`; the graph stack is bundled into the client half at build time.
 
 Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), then **create a session and switch to the `ClearAI` mode in the picker at the top**:
 

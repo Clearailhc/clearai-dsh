@@ -22,8 +22,8 @@ ClearAI 是一个**本体发现与探索平台**，核心由两个概念支撑�
 
 ```bash
 # 安装（npm 包，预构建——无需构建步骤，不会触发 allowBuilds 授权）
-dsh plugin --profile web add clearai-dsh@0.4.0
-# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.4.0
+dsh plugin --profile web add clearai-dsh@0.5.0
+# 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.5.0
 ```
 
 重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
@@ -74,16 +74,16 @@ ClearAI **不**声称递归自我改进。它提供的是自我改进系统所�
 
 ## 安装与使用
 
-**要求：** DSH ≥ `0.1.7-alpha.1`——预设靠的是那一代引入的组合声明行。已在宿主的 `0.1.7-rc.2` 与 `0.2.0-rc.1` 上验过。
+**要求：** DSH ≥ `0.2.0-rc.2`（当前的 `latest`）。预设靠组合里的声明行注册，宿主的预设名册只认这一种。已在宿主的 `0.2.0-rc.2` 上验过，`0.2.1-alpha.1` 也核过。`0.2.0` 以前的宿主不再支持。
 
 **推荐——在应用里装，并把版本钉住：**
 
-侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.4.0`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
+侧栏打开**「插件」→ 添加插件**，填 `clearai-dsh@0.5.0`，安装。这就是 DSH 自己的插件管理器：它把你填的东西交给 pnpm，校验这个包声明了组合包、与当前宿主兼容，然后当场生效。（设置里的**插件列表**是**只读清单**；安装入口在侧栏那个「插件」页。）
 
 **或者开终端——同一次安装：**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.4.0
+dsh plugin --profile web add clearai-dsh@0.5.0
 ```
 
 从 npm registry 装预构建产物。本机不跑任何编译，因此不需要批准 `allowBuilds` 授权——命令返回时插件就已经可用。
@@ -116,7 +116,7 @@ dsh plugin --profile web add github:Clearailhc/clearai-dsh
 
 Git 拉的是源码而不是构建产物，所以 pnpm ≥10 会拒绝运行 `prepare` 脚本，直到你在该 profile 的 `pnpm-workspace.yaml` 里加上 `allowBuilds` 条目。那条授权的含义是**允许该包代码在安装时于你机器上执行**——只在你读过源码后再授权，并且固定 commit。如果你只是想用 ClearAI，请用上面的 npm 安装。
 
-安装侧的输出**跟系统语言走**（`--lang zh|en` 可覆盖；`doctor` / `seed` / `unseed` 同样认这个开关）。运行时依赖只有 `zod`——图谱那套栈在构建期就打进客户端了。
+安装侧的输出**跟系统语言走**（`--lang zh|en` 可覆盖；`doctor` 同样认这个开关）。运行时依赖只有 `zod`——图谱那套栈在构建期就打进客户端了。
 
 
 装完重启 `dsh web`（`npx @deepseek-ai/dsh web`），然后**新建会话，在顶部的模式选择器里切换到 `ClearAI`**：

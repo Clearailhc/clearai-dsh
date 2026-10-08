@@ -335,6 +335,9 @@ export const INVARIANTS = [
 			 * (还没到升格那一步),不能判违规——只判反方向:没到级就绝不该有升格。
 			 */
 			if (!closed) return { ok: promoted === 0, detail }
+			/** 如实放弃的目标不走验收,也就不升格:到没到级都必须一条不升。 */
+			const abandoned = mutations.some((m) => m.t === 'goal/closed' && m.status === 'abandoned')
+			if (abandoned) return { ok: promoted === 0, detail: `${detail} · 目标放弃` }
 			return { ok: reached ? promoted >= 1 : promoted === 0, detail }
 		},
 	},

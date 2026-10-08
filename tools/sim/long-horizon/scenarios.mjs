@@ -10,7 +10,7 @@
  * `task` / `bareTask` 是函数:收 `{ runDir, workspace }`,因为反应器的状态文件在运行目录里;
  * `setup` 在生成说明之前把数据拷进工作区。
  */
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -320,6 +320,47 @@ export const LONG_HORIZON = {
 		},
 	},
 }
+
+/**
+ * **同一现场的三题序列**(阶段二的门槛:第 3 题用不用得上前两题的经验)。
+ * 三题共用一个工作区(前面的文件都还在)和同一套小试装置;每题自己的运行目录里有自己的装置状态。
+ * 任务书不提醒「装置会漂」或「因素会耦合」,只像人一样说「还是那套装置」。
+ */
+const SITE_LINES = { s1: 'a-line', s2: 'b-line', s3: 'c-line' }
+const SITE_TEXT = {
+	s1: '这是一套小试反应装置,接下来几个项目都会用它。第一个项目是 A 线的液相加氢。可调的四个量:温度 T(140–200 °C)、压力 P(1–6 bar)、催化剂用量 cat(0.2–2.0 wt%)、停留时间 t(20–120 min)。产品规格:杂质低于 0.5%。',
+	s2: '还是那套小试装置。这次是 B 线的酯化。可调的四个量:温度 T(100–160 °C)、醇酸比 r(1–4)、催化剂用量 cat(0.5–3.0 wt%)、反应时间 t(30–240 min)。产品规格:杂质低于 0.6%。',
+	s3: '还是那套小试装置。这次是 C 线的胺化。可调的四个量:温度 T(120–180 °C)、压力 P(2–10 bar)、催化剂用量 cat(0.5–2.5 wt%)、停留时间 t(30–150 min)。产品规格:杂质低于 0.2%。',
+}
+const SITE_CENTER = { s1: '{"T":170,"P":3,"cat":1.0,"t":60}', s2: '{"T":130,"r":2,"cat":1.5,"t":120}', s3: '{"T":150,"P":6,"cat":1.5,"t":90}' }
+function siteTask(variant) {
+	return {
+		title: `现场序列 · 第 ${variant.slice(1)} 题`,
+		setup: ({ runDir }) => {
+			const file = join(runDir, 'rig-state.json')
+			if (!existsSync(file)) writeFileSync(file, JSON.stringify({ variant, runs: [] }, null, 2))
+		},
+		...both(({ runDir }) => {
+			const rig = resolve(HERE, 'site', 'rig.mjs')
+			const state = join(runDir, 'rig-state.json')
+			const line = SITE_LINES[variant]
+			return [
+				SITE_TEXT[variant],
+				`小试用这条命令,每次一组条件,这个项目总预算 30 次,用完就没有了:\`node ${rig} ${state} run '${SITE_CENTER[variant]}'\`。全部已做记录:\`node ${rig} ${state} log\`。`,
+				'目标:在规格内收率尽量高。请设计实验、分析数据,给出推荐配方和它的可信范围。',
+				`这个项目的数据与脚本放在 lab/${line}/ 下,结论写进 report/${line}.md。`,
+				'不要读这条命令背后的源码,把它当成真实装置。',
+			].join('\n')
+		}),
+		asserts: ({ mutations, countOf, evidenceVerdicts }) => [
+			{ label: '至少一次独立核验', ok: countOf('audit/settled') >= 1, detail: `回 ${countOf('audit/settled')}` },
+			{ label: '不只有支持', ok: evidenceVerdicts.some((verdict) => verdict !== 'support'), detail: evidenceVerdicts.join(',') },
+			{ label: '结案了', ok: goalsClosed(mutations).length >= 1, detail: goalsClosed(mutations).join(',') || '(无)' },
+		],
+	}
+}
+for (const variant of Object.keys(SITE_LINES)) LONG_HORIZON[`lh-site-${variant.slice(1)}`] = siteTask(variant)
+export { SITE_LINES }
 
 /** 说明里提到的任务目录(盲评只读这些产物,不读 clear/,免得认出是哪一组)。 */
 export const DELIVERABLE_DIRS = ['report', 'lab', 'analysis', 'bench', 'src']

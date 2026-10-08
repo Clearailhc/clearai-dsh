@@ -47,7 +47,7 @@ The model may **request**, not **declare**. Step state, hypothesis state and pro
 
 ### P4 · The doer does not judge their own work
 
-Criteria are written before results exist; L0–L2 may self-judge with a reviewable basis; L3+ dispatches an independent evaluator with a fresh context reading artefacts only, and the system writes the evaluation card, not the evaluated party. Completing a goal also needs independent evaluation.
+Criteria are written before results exist; L2 may self-judge with a reviewable basis; L3+ dispatches an independent evaluator with a fresh context reading artefacts only, and the system writes the evaluation card, not the evaluated party. Completing a goal also needs independent evaluation.
 
 ### P5 · Delete nothing
 

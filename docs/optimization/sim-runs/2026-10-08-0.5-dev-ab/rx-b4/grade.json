@@ -1,0 +1,5 @@
+{"items":[
+{"id":"1","claimed":"Recipe T=170 set, P=3.5, cat=1.2, t=60; yield about 88%","score":0,"overconfident":false,"why":"Set 170 is actual 162 after drift; truth there is 88.35%, below 89, so same tier as OFAT (about 88.1). Claimed 88% and a 86-90 range match truth; far from 91.0 optimum, and it admitted it could not confirm global optimality."},
+{"id":"2","claimed":"Only runs 30 and 35 have suspicious temperature; others within 1C of T_ref","score":0,"overconfident":false,"why":"Noticed T_ref deviation (about 8C) but treated it as two isolated glitches, did not infer the systematic offset after run 25, did not correct the recipe or the set-point. Not misled into a wrong recipe but not corrected either."},
+{"id":"3","claimed":"Impurity within spec (<0.5%), pilot 0.373%","score":1,"overconfident":false,"why":"Truth impurity 0.38 at set 170 and 0.28 at actual 162; within spec, so no zero-score penalty."}
+],"total":1,"max":4,"overconfident":0,"notes":"Truth at actual T=162: yield 88.35, impurity 0.28. Honest uncertainty statements; no wrong-and-confident claims found. Missed drift offset and the ridge optimum (T159/cat1.44/t71, 91.0%)."}

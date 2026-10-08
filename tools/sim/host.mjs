@@ -16,6 +16,7 @@
  *   · 独立评估者:`subagents.start()` 挂起,等外部用 `settle` 交回裁决(由另一个只读子代理来判);
  *   · 当场问人(L4 放行、计划卡住、事实被推翻):`userQuestions.ask` 按剧本的预设答案作答;
  */
+import { spawnSync } from 'node:child_process'
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { applyEvent, applyMutations, derive, emptyState, renderCard, view, MUTATION_KIND } from '../../ui/lib/fold.js'
@@ -43,6 +44,8 @@ export function textOf(blocks) {
  *   某个选项的原文、`none`(没人能答 ⇒ 抛 NO_PROVIDER),或任意一句话(当作人补的话)。
  */
 const NATIVE_FILE_TOOLS = new Set(['write', 'edit'])
+/** 宿主原生的 bash:先过内核的 `tools/pre-execute`(危险命令、系统所有的路径、声明过的不可逆动作),放行了才在工作区里跑。 */
+const NATIVE_SHELL = 'bash'
 
 export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {} }) {
 	mkdirSync(runDir, { recursive: true })
@@ -236,6 +239,7 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 		seq += 1
 		const callId = `call-${seq}`
 		if (NATIVE_FILE_TOOLS.has(name) && !tools.has(name)) return nativeFile(name, args, callId)
+		if (name === NATIVE_SHELL && !tools.has(name)) return nativeShell(args, callId)
 		const tool = tools.get(name)
 		if (tool === undefined) return { text: `没有这件工具:${name}。可用的是:${[...tools.keys()].join('、')}`, ok: false }
 		record({ type: 'tool/call', data: { name, callId, arguments: args } })
@@ -296,6 +300,28 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 		const after = args.replace_all === true ? before.split(from).join(String(args.new_string ?? '')) : before.replace(from, () => String(args.new_string ?? ''))
 		writeFileSync(file, after)
 		return finish(`已修改 ${rel}`)
+	}
+
+	/**
+	 * **宿主原生的 bash**:与生产同形,先过 `tools/pre-execute`;放行了才在工作区里跑,
+	 * 输出(stdout + stderr + 退出码)原样交回。要人放行的命令,问人的答复由剧本预设作答。
+	 */
+	async function nativeShell(args, callId) {
+		record({ type: 'tool/call', data: { name: NATIVE_SHELL, callId, arguments: args } })
+		const finish = async (text, ok) => {
+			record({ type: 'tool/result', data: { callId, message: { content: [{ type: 'text', text }] } } })
+			const injected = await preStep()
+			return { text: injected === '' ? text : `${text}\n\n── 系统在你下一步之前注入 ──\n${injected}`, ok }
+		}
+		const command = String(args?.command ?? '')
+		if (command.trim() === '') return finish('失败:bash 要 command(字符串)', false)
+		const guard = listeners.get('tools/pre-execute')
+		const decision = guard === undefined ? { kind: 'allow' } : await guard({ name: NATIVE_SHELL, arguments: { command }, agent, callId }, async () => ({ kind: 'allow' }))
+		if (decision?.kind === 'deny' || decision?.kind === 'ask') return finish(`调用被拦下:${decision.reason}`, false)
+		const run = spawnSync('bash', ['-c', command], { cwd: workspace, encoding: 'utf8', timeout: Number(args?.timeout_ms ?? 300000), maxBuffer: 16 * 1024 * 1024 })
+		const out = `${run.stdout ?? ''}${run.stderr ? `\n[stderr]\n${run.stderr}` : ''}`.trim()
+		const code = run.status ?? (run.error ? String(run.error.message) : 'killed')
+		return finish(`${out.length > 30000 ? `${out.slice(0, 30000)}\n…(截断)` : out}\n[exit ${code}]`, run.status === 0)
 	}
 
 	/** 交回一位子代理的结果(评估者的结构化裁决,或一段正文)。 */

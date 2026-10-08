@@ -8,11 +8,11 @@
 
 ## 计数
 
-- 机制条目：**51**
-- 按状态：已实现 50 · 设计目标 1
-- 按强度：硬边界 41 · 建议 7 · 原生 3
+- 机制条目：**54**
+- 按状态：已实现 53 · 设计目标 1
+- 按强度：硬边界 42 · 建议 9 · 原生 3
 - 按归宿：保持设计目标 1
-- 真正阻断执行的：**19**
+- 真正阻断执行的：**20**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
 
 ## 代码常量快照
@@ -20,8 +20,8 @@
 这一节由代码导出，不是手写：
 
 - 机制：2 个（goal / plan）
-- 意图工具：6 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan）
-- 配置键：13 个
+- 意图工具：7 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Anomaly）
+- 配置键：14 个
 - 提示词段：定义 3 段，同一时刻在场 3 段
 
 ## 总表
@@ -38,9 +38,12 @@
 | `admission` | 观测准入（只判收不收） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js admission` |
 | `self-judge-limit` | L0–L2 允许自判，L3+ 拒绝自判 | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js SELF_JUDGE_MAX_INDEX=2` |
 | `independent-evaluator` | 独立评估者（fresh context + 只读工具面） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js runEvaluator / resolveToolFace / evaluatorPrompt / writeAuditCard` |
+| `expectation-anomaly` | 预期与未解释项(反常):步骤可写预期,落空记成未解释项挂在卡上,只有三个去处 | 认识论 | 已实现 | 建议 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js STEP_SCHEMA.expect / RevisePlan(expect) / AdvancePlan.anomalies / Anomaly / anomalyBrief / verdictSchema.anomalies` |
 | `l4-human-release` | L4 步骤/分支级人工放行 | 认识论 | 已实现 | 硬边界 | 权威 | human | 是 | `preset/plugins/clearai-kernel.js l4Delivery` |
+| `irreversible-command-release` | 不可逆动作拦在命令上:Frame 声明命令特征,匹配的 bash 执行前当场问人 | 认识论 | 已实现 | 硬边界 | 权威 | human | 是 | `preset/plugins/clearai-kernel.js releaseIrreversible / guardTool` |
 | `evidence-record` | 证据登记 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `fact-promotion` | 事实升格 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js persistFact` |
+| `lessons` | 经验:结案时提议「下次怎么做」,结案评估者对照记录逐条核,支持的写进 clear/knowledge/lessons/,在立题、定计划、写预期前摆上卡 | 认识论 | 已实现 | 建议 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Conclude.lessons / lessonBrief / verdictSchema.lessons / persistLesson` |
 | `history-retention` | 只追加历史（什么都不删） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/fold.js（全体 case 无删除分支）` |
 | `block-threshold` | 连拦阈值（证据质量闸） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js blockedThreshold` |
 | `l4-universal-gate` | 覆盖每一次评估的通用 L4 门 | 认识论 | 设计目标 | 建议 | 无 | human | 否 | `docs/known-gaps.md` |
@@ -213,6 +216,19 @@
 - **测试**：test/kernel.test.mjs · **配置**：auditProvider=spawn, auditTimeoutMs, auditToolFilter
 - **提示词**：clearai/loop · **文档**：docs/verification-loop.zh-CN.md
 
+### `expectation-anomaly` · 预期与未解释项(反常):步骤可写预期,落空记成未解释项挂在卡上,只有三个去处
+
+- **层**：认识论 · **状态**：已实现 · **强度**：建议 · **权威**：权威 · **责任方**：model
+- **触发**：模型写预期、交付时登记不符、用 Anomaly 登记或消解;评估者在裁决里报没登记的异常
+- **输入**：预期文本;哪里不符;去处(explained / ruled_out / escalated)与理由
+- **输出**：step/expected, anomaly/opened, anomaly/resolved;audit/settled 带 anomalies 时折成评估者发现的未解释项
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：失分最多的不是没核,而是看见了异常却把它解释过去。写下的预期让落空可见;未解释项不阻塞结案,但随交付交给评估者,由评估者判它动不动摇结论。
+- **代码**：preset/plugins/clearai-kernel.js STEP_SCHEMA.expect / RevisePlan(expect) / AdvancePlan.anomalies / Anomaly / anomalyBrief / verdictSchema.anomalies; ui/lib/fold.js case 'anomaly/opened' / 'anomaly/resolved' / 'audit/settled'
+- **测试**：test/kernel.test.mjs · **配置**：—
+- **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
+
 ### `l4-human-release` · L4 步骤/分支级人工放行
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：human
@@ -225,6 +241,19 @@
 - **代码**：preset/plugins/clearai-kernel.js l4Delivery; askHuman; ui/lib/fold.js case 'human/released'
 - **测试**：test/kernel.test.mjs · **配置**：l4RequiresHumanRelease=true, l4RejectSelfWritten=true
 - **提示词**：clearai/loop · **文档**：docs/known-gaps.zh-CN.md
+
+### `irreversible-command-release` · 不可逆动作拦在命令上:Frame 声明命令特征,匹配的 bash 执行前当场问人
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：human
+- **触发**：bash 命令里出现 Frame 声明过的命令特征
+- **输入**：那次调用当场问人(宿主 userQuestions)的答复
+- **输出**：放行 ⇒ 落 human/released(带 action)并执行;不放行 / 没人能答 ⇒ 拒(没人能答时原生 goal 停下等人)
+- **阻断执行**：是
+- **原生替代**：宿主 userQuestions(原生提问卡)
+- **理由**：步骤级的放行挂在交付上,而不可逆的动作往往就是一条命令:先跑了再交付,门就晚了。拦在命令上,门才在动作之前。
+- **代码**：preset/plugins/clearai-kernel.js releaseIrreversible / guardTool; ui/lib/fold.js case 'human/released'
+- **测试**：test/kernel.test.mjs · **配置**：l4RequiresHumanRelease=true
+- **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `evidence-record` · 证据登记
 
@@ -250,6 +279,19 @@
 - **理由**：事实由系统按门槛算出来，模型不能宣称。
 - **代码**：preset/plugins/clearai-kernel.js persistFact; promote_at_level 门槛; ui/lib/fold.js case 'fact/promoted'
 - **测试**：test/kernel.test.mjs · **配置**：l4RejectSelfWritten
+- **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
+
+### `lessons` · 经验:结案时提议「下次怎么做」,结案评估者对照记录逐条核,支持的写进 clear/knowledge/lessons/,在立题、定计划、写预期前摆上卡
+
+- **层**：认识论 · **状态**：已实现 · **强度**：建议 · **权威**：权威 · **责任方**：model
+- **触发**：模型在 Conclude(outcome=achieved) 里给 lessons
+- **输入**：每条:text、kind(trap/check/shortcut/prior)、about、evidence、boundary
+- **输出**：写入 clear/knowledge/lessons/<经验 id>.json + mutation lesson/recorded;没被支持的在回执里列出,不写
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：单次任务里 ClearAI 多出来的主要是对反常的纪律;探索深度要靠跨任务带过来的做法(哪台装置要先核、哪类体系先斜向扫)。经验改变注意力与做法,事实改变信念,所以分开放;两者都要独立评估过才写。放弃的目标不核,也不写。
+- **代码**：preset/plugins/clearai-kernel.js Conclude.lessons / lessonBrief / verdictSchema.lessons / persistLesson; ui/lib/fold.js case 'lesson/recorded' / derive lessonRows; ui/lib/knowledge-view.js 经验段
+- **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `history-retention` · 只追加历史（什么都不删）

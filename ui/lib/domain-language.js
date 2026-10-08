@@ -1026,12 +1026,17 @@ export function describeDomainGraph(lexicon) {
 //
 // 会话账本只活在一次会话里,而研究要跨会话攒下来。所以「攒下来的东西」住在工作区的文件里:
 //   · `clear/knowledge/facts/<id>.json`:升格的事实,一条一个文件,只有系统写;
+//   · `clear/knowledge/lessons/<id>.json`:结案时经独立评估核过的经验,一条一个文件,只有系统写;
 //   · `clear/ontology/{concepts,relations,entities}/**.json`:本体,模型用原生文件工具直接写。
 // 内核每一拍把这两处的变化折成一条 `workspace/synced` 变更,投影从文件内容派生词汇、实体与
 // 事实——折法仍然只吃账本,文件是账本之外唯一的输入,而且进账本时就是一条可重放的事实。
 
 /** 事实文件所在的目录(相对工作区)。 */
 export const FACTS_DIR = 'clear/knowledge/facts'
+/** 经验文件所在的目录(相对工作区)。 */
+export const LESSONS_DIR = 'clear/knowledge/lessons'
+/** 经验的四类:坑、要核的读数、会骗人的捷径、先验。 */
+export const LESSON_KINDS = ['trap', 'check', 'shortcut', 'prior']
 /** 本体文件树的根(相对工作区)。 */
 export const ONTOLOGY_DIR = 'clear/ontology'
 /** 本体文件树的三支:目录名 → 文件种类。 */
@@ -1056,7 +1061,11 @@ function hashText(value) {
  */
 export function definitionFingerprint(entry) {
 	if (!isPlainObject(entry)) return null
-	const meaning = 'range' in entry || 'domain' in entry ? { domain: text(entry.domain), range: isPlainObject(entry.range) ? { term: text(entry.range.term), form: text(entry.range.form), unit: text(entry.range.unit) } : null, functional: entry.functional === true } : { gloss: text(entry.gloss), parent: text(entry.parent) }
+	/** 单位与形状只在写了时进指纹:没写这两格的旧词条,指纹与从前逐字相同。 */
+	const meaning =
+		'range' in entry || 'domain' in entry
+			? { domain: text(entry.domain), range: isPlainObject(entry.range) ? { term: text(entry.range.term), form: text(entry.range.form), unit: text(entry.range.unit) } : null, functional: entry.functional === true, ...(text(entry.shape) === '' ? {} : { shape: text(entry.shape) }) }
+			: { gloss: text(entry.gloss), parent: text(entry.parent), ...(text(entry.unit) === '' ? {} : { unit: text(entry.unit) }) }
 	return `fnv:${hashText(JSON.stringify(meaning))}`
 }
 
@@ -1114,6 +1123,8 @@ export function classifyWorkspacePath(path) {
 	const id = parts.at(-1).slice(0, -'.json'.length)
 	const facts = FACTS_DIR.split('/')
 	if (parts.length === facts.length + 1 && facts.every((part, index) => parts[index] === part)) return { kind: 'fact', id, dirs: [] }
+	const lessons = LESSONS_DIR.split('/')
+	if (parts.length === lessons.length + 1 && lessons.every((part, index) => parts[index] === part)) return { kind: 'lesson', id, dirs: [] }
 	const root = ONTOLOGY_DIR.split('/')
 	if (parts.length >= root.length + 2 && root.every((part, index) => parts[index] === part)) {
 		const kind = ONTOLOGY_BRANCHES[parts[root.length]]
@@ -1145,6 +1156,26 @@ export function factFromFile(data, path) {
 	}
 }
 
+/**
+ * 经验文件 → 经验行(与 `lesson/recorded` 折出来的同形)。`status: "retracted"` 的不再推送。
+ * 经验改变的是注意力与做法(「这台装置的温度要拿参考读数核」),事实改变的是信念。
+ */
+export function lessonFromFile(data, path) {
+	if (!isPlainObject(data) || text(data.id) === '' || text(data.text) === '') return null
+	return {
+		id: text(data.id),
+		goal: data.goal ?? null,
+		text: String(data.text),
+		kind: LESSON_KINDS.includes(data.kind) ? data.kind : 'trap',
+		about: Array.isArray(data.about) ? data.about.map(String).filter((item) => item.trim() !== '').slice(0, 6) : [],
+		evidence: typeof data.evidence === 'string' ? data.evidence : null,
+		boundary: typeof data.boundary === 'string' ? data.boundary : null,
+		status: data.status === 'retracted' ? 'retracted' : 'active',
+		path: path ?? null,
+		at: typeof data.at === 'number' ? data.at : null,
+	}
+}
+
 // ═══ 本体文件树:字段、单文件校验、从文件折出词汇与实体 ═════════════════════════
 //
 // 本体由模型用原生文件工具直接写,住在 `clear/ontology/{concepts,relations,entities}/` 下:
@@ -1164,6 +1195,14 @@ const ONTOLOGY_STATUS = ['active', 'deprecated']
  * 三种本体文件的字段定义。内核把它铺成 `clear/ontology/SCHEMA.json`(只读),
  * 写入时的校验与这份定义是同一份:字段在这里改,两边一起变。
  */
+/**
+ * **本体只留能产出预期的东西**:概念分三类,度量必须写单位(释义就是口径);关系分四类,
+ * 「影响」带大致形状——预期就从这里来(「温度升,杂质单调升」);「测量」写清怎么核读数。
+ */
+export const CONCEPT_KINDS = ['category', 'measure', 'phenomenon']
+export const RELATION_KINDS = ['affects', 'defines', 'measures', 'manifests_as']
+export const RELATION_SHAPES = ['increasing', 'decreasing', 'peak', 'threshold', 'coupled']
+
 export const ONTOLOGY_SCHEMA = bilingual({
 	about: [
 		'本体文件的字段定义(系统铺设,只读)。命名规则:X.json 描述节点 X,它的子节点放在同级的 X/ 目录里;id 必须等于文件名。概念目录嵌套 = is_a;实体目录嵌套 = 组成 / 属于;关系可以平铺,也可以分目录(只是分组)。引用一律只写 id,挪目录不断引用。写入时只查单个文件;引用断了、类型对不上等跨文件问题在卡片上提示,升格时才拦。',
@@ -1177,6 +1216,8 @@ export const ONTOLOGY_SCHEMA = bilingual({
 			gloss: ['一句话释义:它指什么;度量(良率、收率……)写明口径,也就是怎么算', 'one-sentence gloss: what it refers to; for a measure (yield, conversion …) state its definition, that is, how it is computed'],
 		},
 		optional: {
+			kind: ['category = 类别(反应器、催化剂);measure = 度量(收率、杂质,要写 unit);phenomenon = 现象(漂移、失活)', 'category (reactor, catalyst); measure (yield, impurity; needs unit); phenomenon (drift, deactivation)'],
+			unit: ['单位(度量必填,无量纲写 "1")', 'unit (required for a measure; "1" if dimensionless)'],
 			aliases: ['别名数组', 'array of aliases'],
 			basis: ['依据:哪份材料让这个词成立', 'basis: which material establishes this term'],
 			status: 'active | deprecated',
@@ -1203,6 +1244,9 @@ export const ONTOLOGY_SCHEMA = bilingual({
 		},
 		optional: {
 			gloss: ['一句话释义', 'one-sentence gloss'],
+			kind: ['affects = 影响(一个量怎样随另一个量变);defines = 定义(一个度量怎么算);measures = 测量(哪个仪器测哪个量);manifests_as = 表现为(一个现象在读数上什么样)', 'affects (how one quantity moves with another); defines (how a measure is computed); measures (which instrument reads which quantity); manifests_as (what a phenomenon looks like in the readings)'],
+			shape: [`影响的大致形状:${RELATION_SHAPES.join(' | ')};预期从这里来`, `rough shape of an effect: ${RELATION_SHAPES.join(' | ')}; expectations come from it`],
+			check: ['测量关系:读数怎么核(参考探头、标样、重复点)', 'for a measurement: how to check the reading (reference probe, standard, repeat point)'],
 			domain: ['主语必须是哪个概念(下位概念也算)', 'which concept the subject must be (subconcepts count)'],
 			functional: ['true = 单值:同一主语只能有一个取值,两个不同取值会被报成冲突', 'true = single-valued: one value per subject; two different values are reported as a conflict'],
 			basis: ['依据', 'basis'],
@@ -1226,6 +1270,7 @@ export const ONTOLOGY_SCHEMA = bilingual({
 		},
 		optional: {
 			aliases: ['别名数组', 'array of aliases'],
+			history: ['带日期的经历:[{"at": "YYYY-MM-DD", "what": "校准 / 更换 / 发现漂移", "evidence"?: {"kind", "ref"}}]', 'dated history: [{"at": "YYYY-MM-DD", "what": "calibrated / replaced / drift found", "evidence"?: {"kind", "ref"}}]'],
 			relations: [
 				'它对外的关系,每条一个出处:{"predicate": 关系 id, "object": 另一个实体的 id} 或 {"predicate": 关系 id, "value": 字面值, "unit"?: 单位};两种都要带 "evidence": {"kind", "ref"}',
 				'its outgoing relations, each with a source: {"predicate": relation id, "object": another entity id} or {"predicate": relation id, "value": literal, "unit"?: unit}; both need "evidence": {"kind", "ref"}',
@@ -1247,10 +1292,11 @@ export const ONTOLOGY_SCHEMA = bilingual({
 })
 
 const FIELDS = {
-	concept: ['id', 'label', 'gloss', 'aliases', 'basis', 'status', 'replaced_by', 'note'],
-	relation: ['id', 'label', 'gloss', 'domain', 'range', 'functional', 'basis', 'status', 'replaced_by', 'note'],
-	entity: ['id', 'label', 'type', 'basis', 'provenance', 'aliases', 'relations', 'note'],
+	concept: ['id', 'label', 'gloss', 'kind', 'unit', 'aliases', 'basis', 'status', 'replaced_by', 'note'],
+	relation: ['id', 'label', 'gloss', 'kind', 'shape', 'check', 'domain', 'range', 'functional', 'basis', 'status', 'replaced_by', 'note'],
+	entity: ['id', 'label', 'type', 'basis', 'provenance', 'aliases', 'relations', 'history', 'note'],
 }
+
 const RELATION_FIELDS = ['predicate', 'object', 'value', 'unit', 'evidence', 'note']
 
 /** 一个出处对象的形状问题(没有就返回 null)。 */
@@ -1269,7 +1315,7 @@ function evidenceShape(value, at) {
  */
 export function checkOntologyFile(path, content) {
 	const place = classifyWorkspacePath(path)
-	if (place === null || place.kind === 'fact') return [tr(`不是本体文件的位置:本体文件要放在 ${ONTOLOGY_DIR}/{concepts,relations,entities}/ 下,扩展名 .json`, `Not an ontology file location: ontology files go under ${ONTOLOGY_DIR}/{concepts,relations,entities}/ with a .json extension`)]
+	if (place === null || place.kind === 'fact' || place.kind === 'lesson') return [tr(`不是本体文件的位置:本体文件要放在 ${ONTOLOGY_DIR}/{concepts,relations,entities}/ 下,扩展名 .json`, `Not an ontology file location: ontology files go under ${ONTOLOGY_DIR}/{concepts,relations,entities}/ with a .json extension`)]
 	let data = content
 	if (typeof content === 'string') {
 		try {
@@ -1298,9 +1344,18 @@ export function checkOntologyFile(path, content) {
 	for (const key of ['basis', 'gloss', 'note', 'replaced_by']) if (data[key] !== undefined && data[key] !== null && typeof data[key] !== 'string') problems.push(tr(`${key} 只能是字符串`, `${key} must be a string`))
 	if (data.status !== undefined && !ONTOLOGY_STATUS.includes(text(data.status))) problems.push(tr(`status 只能是 ${ONTOLOGY_STATUS.join(' / ')}`, `status must be ${ONTOLOGY_STATUS.join(' / ')}`))
 	if (kind === 'concept' && text(data.gloss) === '') problems.push(tr('gloss 必填:一句话说清它指什么,不然引用它的人各读各的', 'gloss is required: one sentence on what it refers to, or everyone who cites it reads it differently'))
+	if (kind === 'concept') {
+		if (data.kind !== undefined && !CONCEPT_KINDS.includes(text(data.kind))) problems.push(tr(`kind 只能是 ${CONCEPT_KINDS.join(' / ')}(类别 / 度量 / 现象)`, `kind must be ${CONCEPT_KINDS.join(' / ')}`))
+		if (data.unit !== undefined && typeof data.unit !== 'string') problems.push(tr('unit 只能是字符串', 'unit must be a string'))
+		if (text(data.kind) === 'measure' && text(data.unit) === '') problems.push(tr('度量要写 unit(无量纲写 "1"):口径和单位不写下来,「定义已变」就无从发现', 'a measure needs a unit (write "1" if dimensionless): without the definition and unit written down, a changed definition cannot be noticed'))
+	}
 	if (kind === 'relation') {
 		if (data.domain !== undefined && data.domain !== null && !ID_PATTERN.test(text(data.domain))) problems.push(tr('domain 要是一个概念 id', 'domain must be a concept id'))
 		if (data.functional !== undefined && typeof data.functional !== 'boolean') problems.push(tr('functional 只能是 true / false', 'functional must be true / false'))
+		if (data.kind !== undefined && !RELATION_KINDS.includes(text(data.kind))) problems.push(tr(`kind 只能是 ${RELATION_KINDS.join(' / ')}(影响 / 定义 / 测量 / 表现为)`, `kind must be ${RELATION_KINDS.join(' / ')}`))
+		if (data.shape !== undefined && !RELATION_SHAPES.includes(text(data.shape))) problems.push(tr(`shape 只能是 ${RELATION_SHAPES.join(' / ')}(单调升 / 单调降 / 有峰 / 阈值 / 与别的量耦合)`, `shape must be ${RELATION_SHAPES.join(' / ')}`))
+		if (data.shape !== undefined && data.kind !== undefined && text(data.kind) !== 'affects') problems.push(tr('shape 只给「影响」(kind=affects)的关系', 'shape only applies to an affects relation (kind=affects)'))
+		if (data.check !== undefined && typeof data.check !== 'string') problems.push(tr('check 只能是字符串', 'check must be a string'))
 		const range = data.range
 		if (typeof range === 'string') {
 			if (!ID_PATTERN.test(text(range))) problems.push(tr('range 写成字符串时要是一个概念 id', 'range given as a string must be a concept id'))
@@ -1319,6 +1374,13 @@ export function checkOntologyFile(path, content) {
 		if (text(data.basis) === '') problems.push(tr('basis 必填:实体是观测,要说清哪份材料让它可以被指认', 'basis is required: an entity is an observation, so say which material identifies it'))
 		const shape = evidenceShape(data.provenance, 'provenance')
 		if (shape !== null) problems.push(tr(`${shape}(实体没有出处就进不了图)`, `${shape} (an entity without a source cannot enter the graph)`))
+		if (data.history !== undefined) {
+			if (!Array.isArray(data.history)) problems.push(tr('history 只能是数组', 'history must be an array'))
+			else
+				data.history.forEach((item, index) => {
+					if (!isPlainObject(item) || !/^\d{4}-\d{2}-\d{2}/.test(text(item.at)) || text(item.what) === '') problems.push(tr(`history[${index}] 要是 {"at": "YYYY-MM-DD", "what": "发生了什么"}`, `history[${index}] must be {"at": "YYYY-MM-DD", "what": "what happened"}`))
+				})
+		}
 		if (data.relations !== undefined) {
 			if (!Array.isArray(data.relations)) problems.push(tr('relations 只能是数组', 'relations must be an array'))
 			else
@@ -1361,7 +1423,7 @@ export function materializeOntology(files) {
 	const flag = (path, id, code, detail, severity = 'warning') => problems.push({ path, id, code, detail, severity })
 	const entries = Object.entries(isPlainObject(files) ? files : {})
 		.map(([path, file]) => ({ path, file, place: classifyWorkspacePath(path) }))
-		.filter((item) => item.place !== null && item.place.kind !== 'fact')
+		.filter((item) => item.place !== null && item.place.kind !== 'fact' && item.place.kind !== 'lesson')
 		.sort((a, b) => (a.path < b.path ? -1 : 1))
 	const terms = []
 	const predicates = []
@@ -1389,9 +1451,9 @@ export function materializeOntology(files) {
 		const status = text(data.status) === 'deprecated' ? 'deprecated' : 'admitted'
 		const parent = place.dirs.length === 0 ? null : place.dirs.at(-1)
 		if (place.kind === 'concept') {
-			terms.push({ id: place.id, label: text(data.label), gloss: text(data.gloss), aliases: Array.isArray(data.aliases) ? data.aliases.map(String) : [], parent, status, basis: text(data.basis) || null, replacedBy: text(data.replaced_by) || null, path })
+			terms.push({ id: place.id, label: text(data.label), gloss: text(data.gloss), ...(CONCEPT_KINDS.includes(text(data.kind)) ? { kind: text(data.kind) } : {}), ...(text(data.unit) === '' ? {} : { unit: text(data.unit) }), aliases: Array.isArray(data.aliases) ? data.aliases.map(String) : [], parent, status, basis: text(data.basis) || null, replacedBy: text(data.replaced_by) || null, path })
 		} else if (place.kind === 'relation') {
-			predicates.push({ id: place.id, label: text(data.label), gloss: text(data.gloss), domain: text(data.domain) || null, range: rangeOf(data.range), functional: data.functional === true, status, basis: text(data.basis) || null, replacedBy: text(data.replaced_by) || null, path })
+			predicates.push({ id: place.id, label: text(data.label), gloss: text(data.gloss), ...(RELATION_KINDS.includes(text(data.kind)) ? { kind: text(data.kind) } : {}), ...(RELATION_SHAPES.includes(text(data.shape)) ? { shape: text(data.shape) } : {}), ...(text(data.check) === '' ? {} : { check: text(data.check) }), domain: text(data.domain) || null, range: rangeOf(data.range), functional: data.functional === true, status, basis: text(data.basis) || null, replacedBy: text(data.replaced_by) || null, path })
 		} else {
 			entityRows.push({ place, path, data, parent })
 		}

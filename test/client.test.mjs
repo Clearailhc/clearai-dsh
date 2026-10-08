@@ -722,7 +722,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		const pendingDetail = react.render(components.ConclusionDetail({ row: byName('温度无关'), data: atlasView })).replace(/\s+/g, ' ')
 		check('还没检验的:时间线末尾给下一步', pendingDetail.includes('下一步:找一步去检验它'), pendingDetail.slice(0, 300))
 		const unclearDetail = react.render(components.ConclusionDetail({ row: byName('学习率敏感'), data: atlasView })).replace(/\s+/g, ' ')
-		check('不确定那一笔写「不确定」,自己检验说到了哪一级', /第 4 步:不确定 · 可复算/.test(unclearDetail), unclearDetail.slice(0, 300))
+		check('不确定那一笔写「不确定」,自己检验说到了哪一级', /第 4 步:不确定 · 自己检验/.test(unclearDetail), unclearDetail.slice(0, 300))
 
 		// ── 图带 ──
 		{

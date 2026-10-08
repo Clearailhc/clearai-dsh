@@ -541,11 +541,11 @@ console.log('\n【提示词面:预设的提示词段】')
 console.log('\n【装配:贡献表驱动(阶段 3)】')
 {
 	const NAMES = [
-		'Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan',
+		'Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan', 'Anomaly',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
 	// 本体四件(Define / Deprecate / RegisterInstance / Assert)删了:本体由模型直接写文件。
-	check('工具面恰好 6 件(实测,不是推断)', thisHost.tools.size === 6, `${thisHost.tools.size} 件`)
+	check('工具面恰好 7 件(实测,不是推断)', thisHost.tools.size === 7, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -1447,43 +1447,88 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		check('目标结了 ⇒ 卡上递出事实原话与边界(下一个目标立题前就看得到)', after.includes('以前留下的事实') && after.includes('R 比 T 更稳') && after.includes('边界:T 波动更小'), after.split('\n').filter((line) => line.includes('事实') || line.includes('边界')).join(' | '))
 	}
 
-	// ⑥ 工作板:对手可选(写了才跟踪),检验全是「支持」时按症状提醒,立题前递以前的事实原话
+	// ⑥ 预期与未解释:预期写在步骤上,落空记成未解释项挂在卡上,只有三个去处;评估者也能报;对手判断与弱检验提示已删
 	{
 		const host = makeHost()
 		apply(host.ctx, { blockedThreshold: 3, minHypotheses: 2 })
-		const S = 'session-board'
-		const plain = await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', hypotheses: [{ claim: '磁盘慢', refute_when: '磁盘延迟正常' }, { claim: '锁竞争', refute_when: '锁等待为零' }] })
-		check('不写对手照样立题(对手是可选的,不为竞争而竞争)', plain.ok === true, plain.code)
-		const strayRival = await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', reason: '补对手', hypotheses: [{ name: '磁盘', claim: '磁盘慢', refute_when: '磁盘延迟正常', rival: '网络' }, { claim: '锁竞争', refute_when: '锁等待为零' }] })
-		check('rival 指向不在这一版里的判断 ⇒ 当场拒', strayRival.ok === false && strayRival.code === 'rival_unknown', strayRival.code)
-		const noSplit = await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', reason: '补对手', hypotheses: [{ name: '磁盘', claim: '磁盘慢', refute_when: '磁盘延迟正常', rival: '锁' }, { name: '锁', claim: '锁竞争', refute_when: '锁等待为零' }] })
-		check('给了 rival 没给 split_by ⇒ 当场拒(说不出区分观测就还不是对手)', noSplit.ok === false && noSplit.code === 'split_by_required', noSplit.code)
-		await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', reason: '补对手', hypotheses: [{ name: '磁盘', claim: '磁盘慢', refute_when: '磁盘延迟正常', rival: '锁', split_by: '把数据放进内存盘再测:磁盘说法下变快,锁说法下不变' }, { name: '锁', claim: '锁竞争', refute_when: '锁等待为零' }] })
-		const [disk, lock] = host.service.state(S).hypotheses.filter((item) => item.status !== 'superseded').map((item) => item.id)
-		check('对手按 id 落账,带区分观测', host.service.state(S).hypotheses.find((item) => item.id === disk)?.rival === lock && /内存盘/.test(host.service.state(S).hypotheses.find((item) => item.id === disk)?.split_by ?? ''))
-		const planned = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'u1', do: '只看磁盘', artifacts: ['lab/u.txt'], done_criteria: 'lab/u.txt 有延迟', tests: { hypotheses: [disk], level: 'L1' } }] })
-		check('卡上:这一对还没分出,计划里没有一步同时检验它们', /对手:「磁盘」对「锁」/.test(String(planned.card)) && /还没有一步同时检验这一对/.test(String(planned.card)), String(planned.card).split('\n').filter((line) => line.includes('对手')).join(' | '))
-		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'u2', do: '内存盘对照', artifacts: ['lab/u2.txt'], done_criteria: 'lab/u2.txt 有两组耗时', tests: { hypotheses: [disk, lock], level: 'L1' } } })
-		write('lab/u.txt', 'disk_ms=40\n')
-		const first = await callOn(host, S, 'AdvancePlan', { step_id: 'u1', basis: 'lab/u.txt disk_ms=40', verdict: 'support' })
-		check('卡上:找到会同时检验这一对的那一步', /会同时检验这一对/.test(String(first.card ?? first.message)), String(first.message).split('\n').filter((line) => line.includes('对手')).join(' | '))
-		write('lab/u2.txt', 'ram=12 disk=30\n')
-		const settled = await callOn(host, S, 'AdvancePlan', { step_id: 'u2', basis: 'lab/u2.txt ram=12 disk=30', results: [{ hypothesis: disk, verdict: 'support' }, { hypothesis: lock, verdict: 'refute' }] })
-		check('卡上:分出来了,说清是哪条被推翻', /已分出:「锁」被推翻/.test(String(settled.message)), String(settled.message).split('\n').filter((line) => line.includes('对手')).join(' | '))
+		const S = 'session-anomaly'
+		const stray = await callOn(host, S, 'Frame', { claim: 'U 为什么慢?', done_criteria: '存在 lab/u.txt', hypotheses: [{ name: '磁盘', claim: '磁盘慢', refute_when: '磁盘延迟正常', rival: '锁' }, { name: '锁', claim: '锁竞争', refute_when: '锁等待为零' }] })
+		check('对手判断删了:rival 不再被读,也不落账', stray.ok === true && host.service.state(S).hypotheses.every((item) => item.rival === undefined), JSON.stringify(host.service.state(S).hypotheses))
+		const [disk] = host.service.state(S).hypotheses.map((item) => item.id)
+		const planned = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'u1', do: '测磁盘延迟', artifacts: ['lab/u.txt'], done_criteria: 'lab/u.txt 有延迟', tests: { hypotheses: [disk], level: 'L1' }, expect: '磁盘慢的话延迟 > 20 ms(来自判断「磁盘」)' }, { id: 'u2', do: '测锁等待', artifacts: ['lab/u2.txt'], done_criteria: 'lab/u2.txt 有锁等待' }] })
+		check('步骤带预期落账', host.service.state(S).plans[0].steps[0].expect?.includes('20 ms') === true)
+		check('旧等级 L1 收成自判(L2)', host.service.state(S).plans[0].steps[0].tests.level === 'L2', host.service.state(S).plans[0].steps[0].tests.level)
+		check('卡上:下一步给出它的预期', /预期:磁盘慢的话延迟 > 20 ms/.test(String(planned.card ?? '')), String(planned.card ?? '').split('\n').filter((line) => line.includes('预期')).join(' | '))
+		write('lab/u.txt', 'disk_ms=3\nref_ms=9\n')
+		const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'u1', basis: 'lab/u.txt disk_ms=3', verdict: 'refute', anomalies: [{ what: '参考盘 ref_ms=9 比被测盘还慢,说不通', anchor: 'disk-0' }] })
+		const opened = host.service.state(S).anomalies ?? []
+		check('交付时登记的未解释项落账(开着)', delivered.ok === true && opened.length === 1 && opened[0].status === 'open' && opened[0].anchor === 'disk-0', JSON.stringify(opened))
+		const card = renderCard(host.service.state(S))
+		check('卡上:未解释项逐条挂着', /未解释\(1 条开着/.test(card) && /ref_ms=9/.test(card), card.split('\n').filter((line) => line.includes('未解释') || line.includes('ref_ms')).join(' | '))
+		check('卡上:没写预期的下一步提醒先写预期', /动手前写下预期/.test(card))
+		check('卡上不再有弱检验提示与对手那一格', !/检验可能太弱/.test(card) && !/对手:/.test(card))
+		const noReason = await callOn(host, S, 'Anomaly', { action: 'resolve', id: opened[0].id, outcome: 'ruled_out' })
+		check('排除要写理由', noReason.ok === false && noReason.code === 'reason_required', noReason.code)
+		const expected = await callOn(host, S, 'RevisePlan', { action: 'expect', step_id: 'u2', expect: '锁竞争的话等待 > 50%(直觉)' })
+		check('RevisePlan expect:动手前给还没做的一步补写预期', expected.ok === true && host.service.state(S).plans[0].steps[1].expect?.includes('50%') === true, expected.code)
+		const more = await callOn(host, S, 'Anomaly', { action: 'open', what: '两次测量间隔 1 分钟,读数差了 3 倍' })
+		check('Anomaly open:随时登记一条', more.ok === true && (host.service.state(S).anomalies ?? []).length === 2, more.code)
+		const resolved = await callOn(host, S, 'Anomaly', { action: 'resolve', id: opened[0].id, outcome: 'explained', reason: '参考盘是机械盘,被测盘是固态盘', by: '磁盘' })
+		check('Anomaly resolve:给一个去处,理由与出处落账', resolved.ok === true && host.service.state(S).anomalies[0].status === 'explained' && host.service.state(S).anomalies[0].explainedBy === '磁盘', JSON.stringify(host.service.state(S).anomalies[0]))
+		const again = await callOn(host, S, 'Anomaly', { action: 'resolve', id: opened[0].id, outcome: 'ruled_out', reason: '再处理一次' })
+		check('处理过的不能再处理(去处只有一个)', again.ok === false && again.code === 'unknown_anomaly', again.code)
 
-		const weak = makeHost()
-		apply(weak.ctx, { blockedThreshold: 3 })
-		const W = 'session-weak-tests'
-		await callOn(weak, W, 'Frame', { claim: 'V 好不好?', done_criteria: '存在 lab/w3.txt', hypotheses: [{ name: 'V 快', claim: 'V 快', refute_when: 'V 比基线慢' }] })
-		const [fast] = weak.service.state(W).hypotheses.map((item) => item.id)
-		await callOn(weak, W, 'CreatePlan', { steps: [1, 2, 3].map((n) => ({ id: `w${n}`, do: `第 ${n} 次`, artifacts: [`lab/w${n}.txt`], done_criteria: `lab/w${n}.txt 有耗时`, tests: { hypotheses: [fast], level: 'L1' } })) })
-		const cards = []
-		for (const n of [1, 2, 3]) {
-			write(`lab/w${n}.txt`, `ms=${n}\n`)
-			cards.push(String((await callOn(weak, W, 'AdvancePlan', { step_id: `w${n}`, basis: `lab/w${n}.txt ms=${n}`, verdict: 'support' })).message))
-		}
-		check('两次全是支持 ⇒ 不提醒(症状还不成立)', !/检验可能太弱/.test(cards[1]))
-		check('三次全是支持 ⇒ 卡上提醒检验可能太弱', /3 次检验全是「支持」/.test(cards[2]), cards[2].slice(-400))
+		// 评估者:任务书里带未解释项与「查数据可不可信」;裁决里的 anomalies 记成未解释项(评估者发现)
+		const audited = makeHost()
+		apply(audited.ctx, { blockedThreshold: 3 })
+		const A = 'session-anomaly-audit'
+		await callOn(audited, A, 'Frame', { claim: 'T 的最优温度?', done_criteria: '存在 lab/t.txt', hypotheses: [{ name: '160 最好', claim: '160 °C 收率最高', refute_when: '别的温度更高' }] })
+		const [best] = audited.service.state(A).hypotheses.map((item) => item.id)
+		await callOn(audited, A, 'CreatePlan', { steps: [{ id: 't1', do: '扫温度', artifacts: ['lab/t.txt'], done_criteria: 'lab/t.txt 有收率', tests: { hypotheses: [best], level: 'L3' } }] })
+		write('lab/t.txt', 'T=160 yield=88 T_ref=152\n')
+		audited.nextVerdict = { holds: 'yes', basis: '判据满足', shortfalls: [], results: [{ hypothesis: best, verdict: 'support' }], anomalies: [{ what: 'lab/t.txt:1 T_ref=152 比 T 低 8 °C', matters: 'yes' }] }
+		const advanced = await callOn(audited, A, 'AdvancePlan', { step_id: 't1', observations: [{ ref: 'lab/t.txt' }], anomalies: [{ what: '收率比文献高 5 个点' }] })
+		const raw = audited.audits.at(-1)?.request?.prompt
+		const prompt = typeof raw === 'string' ? raw : (raw ?? []).map((block) => block?.text ?? '').join('\n')
+		check('评估任务书带这次登记的未解释项', /未解释项/.test(prompt) && /收率比文献高 5 个点/.test(prompt), prompt.split('\n').filter((line) => line.includes('未解释') || line.includes('收率')).join(' | '))
+		check('评估者纪律要求查数据可不可信', /数字复跑对得上不等于数据可信/.test(prompt))
+		const found = (audited.service.state(A).anomalies ?? []).filter((item) => item.by === 'evaluator')
+		check('评估者报的异常记成未解释项,工具结果说出来', advanced.ok === true && found.length === 1 && /T_ref=152/.test(found[0].what) && /评估者看到 1 处没登记的异常/.test(advanced.message), `${advanced.code} ${JSON.stringify(found)}`)
+		check('卡上标出评估者发现的那条', /评估者发现/.test(renderCard(audited.service.state(A))))
+	}
+
+	// ⑥b 不可逆动作:Frame 声明命令特征,匹配的 bash 执行前当场问人;不放行就拒
+	{
+		const answering = (pick) => ({
+			asked: [],
+			async ask(request) {
+				this.asked.push(request)
+				return { answers: request.questions.map((question) => ({ id: question.id, selected: [pick(question).label] })) }
+			},
+		})
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		const S = 'session-irreversible'
+		const framed = await callOn(host, S, 'Frame', { claim: '配方', done_criteria: '存在 report/r.md', hypotheses: [{ claim: '配方可放大', refute_when: '中试收率低于 85%' }], irreversible: [{ action: '跑中试', command: 'reactor.mjs state.json pilot' }] })
+		check('Frame 记下不可逆动作', framed.ok === true && host.service.state(S).goal.irreversible?.[0]?.command === 'reactor.mjs state.json pilot', JSON.stringify(host.service.state(S).goal.irreversible))
+		const bad = await callOn(host, S, 'Frame', { claim: '配方', done_criteria: '存在 report/r.md', reason: '试一下', irreversible: [{ action: '跑中试', command: 'x' }] })
+		check('命令特征太短 ⇒ 拒', bad.ok === false && bad.code === 'irreversible_invalid', bad.code)
+		const guard = host.listeners.get('tools/pre-execute')
+		const allow = async () => ({ kind: 'allow' })
+		const lab = await guard({ name: 'bash', arguments: { command: 'node reactor.mjs state.json run {}' }, agent: { id: S }, callId: 'c-run' }, allow)
+		check('不匹配的命令照常放行(不打扰)', lab?.kind === 'allow', JSON.stringify(lab))
+		host.userQuestions = answering((question) => question.options[1])
+		const refused = await guard({ name: 'bash', arguments: { command: 'cd lab && node reactor.mjs state.json pilot \'{"T":160}\'' }, agent: { id: S }, callId: 'c-pilot-1' }, allow)
+		check('匹配的命令:人不放行 ⇒ 拒,说明不要绕', refused?.kind === 'deny' && /跑中试/.test(refused.reason) && /不要换个写法绕过去/.test(refused.reason), JSON.stringify(refused))
+		check('问题由内核写:说清是哪件不可逆动作', /跑中试/.test(host.userQuestions.asked[0]?.questions[0]?.question ?? '') && /^release/.test(host.userQuestions.asked[0]?.questions[0]?.id ?? ''))
+		host.userQuestions = answering((question) => question.options[0])
+		const released = await guard({ name: 'bash', arguments: { command: 'node reactor.mjs state.json pilot \'{"T":160}\'' }, agent: { id: S }, callId: 'c-pilot-2' }, allow)
+		check('人放行 ⇒ 命令照常执行', released?.kind === 'allow', JSON.stringify(released))
+		const nobody = makeHost()
+		apply(nobody.ctx, { blockedThreshold: 3 })
+		await callOn(nobody, 'session-irr-nobody', 'Frame', { claim: '配方', done_criteria: '存在 report/r.md', irreversible: [{ action: '跑中试', command: 'pilot' }] })
+		const unanswered = await nobody.listeners.get('tools/pre-execute')({ name: 'bash', arguments: { command: 'node r.mjs pilot' }, agent: { id: 'session-irr-nobody' }, callId: 'c-n' }, allow)
+		check('没人能答 ⇒ 拒,原生 goal 停下等人', unanswered?.kind === 'deny' && nobody.hostGoal?.phase === 'blocked', `${unanswered?.kind} ${nobody.hostGoal?.phase}`)
 	}
 
 	// ⑦ 评估者复跑:工作区副本(不含 clear/)+ bash;评估后副本删掉;评估期间产物被改 ⇒ 裁决不认
@@ -1540,7 +1585,7 @@ console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 6)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 7)
 	}
 
 console.log('\n【技能目录:面板与模型看同一张表(合并目录随投影下发)】')
@@ -1994,6 +2039,71 @@ function factFiles() {
 	}
 }
 
+console.log('\n【经验:结案时提议,评估者逐条核,支持的写进 clear/knowledge/lessons/,下个会话的卡上看得到】')
+{
+	const g = await call('Frame', {
+		claim: '这台反应器的温度读数是否可信',
+		done_criteria: 'lab/temp.md 写明参考温度与设定温度的偏差',
+		promote_at_level: 'L2',
+		hypotheses: [{ claim: '读数在第 25 次之后偏低约 8 度', refute_when: '参考温度与设定一致' }],
+	})
+	check('前置:立题', g.ok === true, String(g.code))
+	const h = eventsOf('goal/set').slice(-1)[0].hypotheses[0].id
+	await call('CreatePlan', { steps: [{ id: 'k1', do: '对比参考温度', artifacts: ['lab/temp.md'], done_criteria: 'lab/temp.md 写明偏差', tests: { hypotheses: [h], level: 'L2' } }] })
+	write('lab/temp.md', '# 温度核对\n\n第 25 次之后参考温度比设定低约 8 度,第 30、35、40 次都一样,所以读数在漂移之后偏低。\n')
+	await call('AdvancePlan', { step_id: 'k1', verdict: 'support', basis: 'lab/temp.md 列了三次参考温度' })
+	await call('ClosePlan', {})
+	let brief = ''
+	thisHost.onAudit = (request) => {
+		brief = typeof request?.prompt === 'string' ? request.prompt : (request?.prompt ?? []).map((block) => block?.text ?? '').join('\n')
+	}
+	thisHost.nextVerdict = {
+		holds: 'yes',
+		basis: '判据达成',
+		shortfalls: [],
+		results: [{ hypothesis: h, verdict: 'support' }],
+		lessons: [
+			{ lesson: 'L1', verdict: 'support', basis: 'lab/temp.md 第 3 行' },
+			{ lesson: 'L2', verdict: 'refute', basis: '记录里没有压力的数据' },
+		],
+	}
+	const closed = await call('Conclude', {
+		outcome: 'achieved',
+		lessons: [
+			{ text: '这台反应器的温度先拿参考读数核一次再用', kind: 'check', about: ['反应器', '温度'], evidence: 'lab/temp.md', boundary: '换了热电偶之后' },
+			{ text: '压力不重要,可以不扫', kind: 'shortcut', about: ['压力'] },
+		],
+	})
+	thisHost.onAudit = undefined
+	check('结案通过', closed.ok === true && closed.code === 'goal_achieved', String(closed.code))
+	check('评估者任务书里列了待核的经验(L1、L2)', /待核的经验/.test(brief) && /L1 · /.test(brief) && /L2 · /.test(brief), brief.slice(-400))
+	const recorded = eventsOf('lesson/recorded')
+	check('只有被支持的那条记成经验', recorded.length === 1 && recorded[0].kind === 'check' && recorded[0].text.includes('参考读数'), JSON.stringify(recorded))
+	const lessonFile = join(WORKSPACE, 'clear/knowledge/lessons', `${recorded[0]?.id}.json`)
+	const data = existsSync(lessonFile) ? JSON.parse(readFileSync(lessonFile, 'utf8')) : null
+	check('经验由系统写成文件', data?.id === recorded[0]?.id && data?.status === 'active' && data?.boundary === '换了热电偶之后', lessonFile)
+	check('回执说清写下的与没写下的', closed.message.includes(`clear/knowledge/lessons/${recorded[0]?.id}.json`) && /没写下的经验/.test(closed.message) && /被推翻/.test(closed.message), closed.message.slice(-400))
+
+	const preExecute = thisHost.listeners.get('tools/pre-execute')
+	const forged = await preExecute({ name: 'write', arguments: { file_path: join(WORKSPACE, 'clear/knowledge/lessons/l-forged.json'), content: '{}' }, agent: { id: SESSION }, callId: 'c-lesson-forge' }, async () => ({ kind: 'allow' }))
+	check('做的人写不了 clear/knowledge/lessons', forged.kind === 'deny', String(forged.kind))
+
+	const OTHER = 'session-lessons'
+	const other = makeHost()
+	apply(other.ctx, {})
+	await preStep(other, OTHER, 1)
+	const rows = other.service.derive(OTHER).lessonRows
+	check('别的会话第一拍就读到这条经验', rows.some((row) => row.id === recorded[0]?.id), JSON.stringify(rows))
+	const card = renderCard(other.service.state(OTHER))
+	check('立题前的卡上摆出以前的经验', card.includes('以前留下的经验') && card.includes('参考读数'), card.split('\n').filter((line) => line.includes('经验')).join('|'))
+
+	writeFileSync(lessonFile, `${JSON.stringify({ ...data, status: 'retracted' }, null, 2)}\n`)
+	await preStep(other, OTHER, 2)
+	check('人在文件上撤回 ⇒ 不再推送', !other.service.derive(OTHER).lessonRows.some((row) => row.id === recorded[0]?.id))
+	rmSync(lessonFile)
+	await preStep(thisHost, SESSION, 902)
+}
+
 console.log('\n【领域本体写成文件:写入时单文件校验 · 读取时从文件折图 · 断言链 · 冲突只暴露】')
 {
 	/** 一条断言的构造器:同一主体、同一谓词,只换取值——冲突那一段靠的就是它。 */
@@ -2119,7 +2229,7 @@ console.log('\n【领域本体写成文件:写入时单文件校验 · 读取时
 	check('冲突只在「待处理」里陈述一行,不带按钮、不拦', derived.needYou.some((item) => item.kind === 'conflict' && /oxygen_ppm|氧含量/.test(item.text) && /以哪个为准/.test(item.text)), JSON.stringify(derived.needYou))
 	const cardText = thisHost.service.renderCard(SESSION)
 	check('运行态卡把矛盾说出来并说明不替你选', /矛盾/.test(cardText) && /系统不替你选/.test(cardText))
-	check('运行态卡带本体大纲(概念树与实体树,标节点数)', /本体\(clear\/ontology\/\)/.test(cardText) && /furnace_batch\(1\):narrow_batch/.test(cardText), cardText.split('\n').filter((line) => /本体|概念树/.test(line)).join(' | '))
+	check('运行态卡不带本体提纲与计数(只给被判断引用到的本体项)', !/本体\(clear\/ontology\/\)/.test(cardText) && !/概念树/.test(cardText), cardText.split('\n').filter((line) => /本体|概念树/.test(line)).join(' | '))
 
 	/** 主体没有实体文件 ⇒ 拒(`assert_subject_unknown`),而 `legacy: true` 一次性放行。 */
 	const unregistered = await call('Frame', {

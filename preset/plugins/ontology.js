@@ -13,8 +13,8 @@
  *
  * ## 声明必须描述**派生的真实语义**,不是理想化
  *
- * 1. **对象是九个**:目标 / 计划 / 步骤是折法里的一等对象(goal / plan / step),
- *    与假设、观测、评估、证据、事实并列声明。
+ * 1. **对象是十个**:目标 / 计划 / 步骤是折法里的一等对象(goal / plan / step),
+ *    与假设、观测、未解释项、评估、证据、事实、放行并列声明。
  * 2. **`step` 承载验证**:一个步骤最多承载一次验证(`step.tests`),
  *    这是「一步一验」的落地形态。
  * 3. **降级不可表示**:折法的秩
@@ -150,7 +150,7 @@ export function validateOntology(spec) {
  * 只收货架上真会印出来的那几处:总说明、对象说明、落点、五级说明。
  */
 const ENGLISH = new Map([
-	['九个对象 + 五级验证。声明是数据;实例状态由事实算出来(见文件头那条红线)。', 'Nine objects plus five verification levels. The declaration is data; instance states are computed from facts.'],
+	['十个对象 + 五级验证(给模型选的只有 L2 / L3 / L4 三档)。声明是数据;实例状态由事实算出来(见文件头那条红线)。', 'Ten objects plus five verification levels (the model chooses among only L2 / L3 / L4). The declaration is data; instance states are computed from facts.'],
 	['只靠推理的快速合理性检查;依据必须可复查', 'A quick plausibility check by reasoning alone; the basis must be checkable'],
 	['已有知识:文献、数据库是否已回答或已否定', 'Existing knowledge: whether literature or databases already answer or rule it out'],
 	['已有数据或小规模计算', 'Existing data or a small computation'],
@@ -214,11 +214,11 @@ export function describeOntology(spec, lang = 'zh') {
  * 四处差异见文件头)。
  */
 export const VERIFICATION_LOOP = ontology('verification-loop', {
-	note: '九个对象 + 五级验证。声明是数据;实例状态由事实算出来(见文件头那条红线)。',
+	note: '十个对象 + 五级验证(给模型选的只有 L2 / L3 / L4 三档)。声明是数据;实例状态由事实算出来(见文件头那条红线)。',
 	levels: [
-		level('L0', { judge: 'self', sources: ['self'], note: '只靠推理的快速合理性检查;依据必须可复查' }),
-		level('L1', { judge: 'self', sources: ['self'], note: '已有知识:文献、数据库是否已回答或已否定' }),
-		level('L2', { judge: 'self', sources: ['self'], note: '已有数据或小规模计算' }),
+		level('L0', { judge: 'self', sources: ['self'], note: '旧账:读作自己检验(与 L2 合并,新写的 L0 当 L2 收)' }),
+		level('L1', { judge: 'self', sources: ['self'], note: '旧账:读作自己检验(与 L2 合并,新写的 L1 当 L2 收)' }),
+		level('L2', { judge: 'self', sources: ['self'], note: '自己检验:推理、已有知识、已有数据或小规模计算;依据必须可复查' }),
 		level('L3', { judge: 'independent', sources: ['self'], gate: 'registered_criteria', note: '新产生且可重跑的证据;判据先写后做,裁决由独立评估者写' }),
 		level('L4', { judge: 'independent', sources: ['human_upload', 'file_drop', 'callback', 'pull'], gate: 'human_release', note: '不可重复或来自外部的证据;先登记标准,人放行(原生审批栈的权威记录)' }),
 	],
@@ -348,6 +348,20 @@ export const VERIFICATION_LOOP = ontology('verification-loop', {
 			persistence: 'clear/knowledge/facts/',
 			event_kind: 'fact/promoted',
 			note: '升格由系统做;每条带边界(scope)与等级,下一轮作为「已知」引用时先看边界。货架在 clear/knowledge/facts/INDEX.md(面板「事实」那一格读的是同一张表)。被推翻只**标记**(refuted,派生),撤回是**人的动作**(retracted,落 fact/retracted)——两件事分开记,因为数据自己也可能错',
+		}),
+		object('anomaly', {
+			states: ['open', 'explained', 'ruled_out', 'escalated'],
+			initial: 'open',
+			terminal: ['explained', 'ruled_out', 'escalated'],
+			transitions: [
+				transition('open', 'explained', 'model', 'anomaly_explained', [], '被一条判断、关系或新查到的原因解释(写明是哪条)', 'anomaly/resolved'),
+				transition('open', 'ruled_out', 'model', 'anomaly_ruled_out', [], '写明理由排除;理由由评估者核', 'anomaly/resolved'),
+				transition('open', 'escalated', 'model', 'anomaly_escalated', [], '交给人;随交付交给评估者与人', 'anomaly/resolved'),
+			],
+			fields: [field('what'), field('anchor', { required: false }), field('by', { values: ['model', 'evaluator'] }), field('reason', { required: false })],
+			persistence: 'fold.anomalies',
+			event_kind: 'anomaly/opened',
+			note: '认识论里的「反常」:和预期或本体对不上的观测。评估者报的随 audit/settled 一起来(by=evaluator)。不阻塞结案,但结案时随交付交给评估者',
 		}),
 		object('release', {
 			states: ['granted'],

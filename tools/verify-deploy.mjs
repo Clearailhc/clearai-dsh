@@ -16,8 +16,8 @@
  * 跑法:node tools/verify-deploy.mjs
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs'
+import { delimiter, join } from 'node:path'
 import { homedir } from 'node:os'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
@@ -26,16 +26,16 @@ import { pathToFileURL } from 'node:url'
  * 预设与宿主半现在都来自**装出来的包**(产品形态):
  *   <profile>/node_modules/clearai-dsh/presets/clearai
  *   <profile>/node_modules/clearai-dsh/lib/host.js
- * 开发形态(install.sh 摊进 ~/.dsh)也仍然认:`~/.dsh/.agent-presets/clearai` 存在就用它。
- * 两者都不在 ⇒ 如实说没装,而不是拿一个不存在的路径去 import。
+ * 开发形态(install.sh)现在也是同一个包,所以只认这一处:旧开发形态留在 `~/.dsh/.agent-presets/clearai`
+ * 的拷贝宿主 ≥0.2.0 不读(名册不扫目录),先读它等于验一份没人加载的旧文件。
+ * 不在 ⇒ 如实说没装,而不是拿一个不存在的路径去 import。
  */
 const HOME_DIR = process.env.DSH_HOME ?? join(process.env.HOME, '.dsh')
 const PROFILE = process.env.DSH_PROFILE ?? 'web'
 const PACKAGE_DIR = join(HOME_DIR, 'profiles', PROFILE, 'node_modules', 'clearai-dsh')
-const DEV_PRESET = join(HOME_DIR, '.agent-presets', 'clearai')
-const PRESET = existsSync(join(DEV_PRESET, 'plugins', 'clearai-kernel.js')) ? DEV_PRESET : join(PACKAGE_DIR, 'presets', 'clearai')
+const PRESET = join(PACKAGE_DIR, 'presets', 'clearai')
 if (!existsSync(join(PRESET, 'plugins', 'clearai-kernel.js'))) {
-	console.log(`✗ 没找到装出来的预设(找过 ${DEV_PRESET} 与 ${PRESET})。先装:node tools/install-native.mjs --profile ${PROFILE}`)
+	console.log(`✗ 没找到装出来的预设(找过 ${PRESET})。先装:node tools/install-native.mjs --profile ${PROFILE}`)
 	process.exit(2)
 }
 
@@ -73,6 +73,16 @@ const ymlText = readFileSync(join(PRESET, 'agent.cordis.yml'), 'utf8')
  * 而不是把某台机器上的绝对路径写死(那条旧路径在别的机器上就是「模块找不到」)。
  */
 function loadYaml() {
+	/** PATH 上的 `dsh`(全局装 / 前缀装)优先:顺着 bin 的真实路径找到 CLI 包,从那里解析 yaml。 */
+	for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+		const bin = join(dir, 'dsh')
+		if (dir === '' || !existsSync(bin)) continue
+		try {
+			return createRequire(realpathSync(bin))('yaml')
+		} catch {
+			/* 这一份解析不到,继续找 */
+		}
+	}
 	const roots = [join(process.env.HOME ?? homedir(), '.npm', '_npx')]
 	for (const root of roots) {
 		for (const entry of existsSync(root) ? readdirSync(root) : []) {
@@ -80,7 +90,7 @@ function loadYaml() {
 			if (existsSync(dshPkg)) return createRequire(dshPkg)('yaml')
 		}
 	}
-	throw new Error('找不到 DSH 宿主自带的 yaml 包(查过 ~/.npm/_npx/*)。宿主装了它就在。')
+	throw new Error('找不到 DSH 宿主自带的 yaml 包(查过 PATH 上的 dsh 与 ~/.npm/_npx/*)。宿主装了它就在。')
 }
 let strictRows = null
 try {
@@ -137,11 +147,18 @@ try {
 	process.exit(1)
 }
 
-const clarifications = sections.filter((section) => section.name.includes('clarification')).map((section) => section.name)
 const mechanisms = Object.entries(config.contributions?.mechanisms ?? {}).filter(([, on]) => on).map(([key]) => key)
+/**
+ * 预期数字**不在这里抄**:从部署的那一份目录里现算(工具目录 = 开着的机制拥有的工具,段 = 段表全量)。
+ * 这里原来写死了 19 件工具 / 21 段 / 1 段澄清协议——第五阶段收成 3 段、6 件之后它就一直红着。
+ */
+const { SECTIONS } = await import(pathToFileURL(join(PRESET, 'plugins', 'prompts.js')).href + '?probe=' + Date.now())
+const expectedTools = mechanisms.flatMap((key) => module.MECHANISM_TOOLS?.[key] ?? [])
+const toolsOk = expectedTools.length > 0 && expectedTools.every((name) => tools.has(name)) && tools.size === expectedTools.length
+const sectionsOk = Array.isArray(SECTIONS) && sections.length === SECTIONS.length
 console.log('✓ 装配成功(部署的组合文件 + 部署的内核,绕开 ESM 缓存)')
-console.log(`  工具面:${tools.size} 件`)
-console.log(`  段:${sections.length} 段 · 澄清协议 = ${clarifications.join(',') || '(缺失!)'}`)
+console.log(`  工具面:${tools.size} 件(目录:${expectedTools.join(', ')})${toolsOk ? '' : ' ✗'}`)
+console.log(`  段:${sections.length} 段(段表 ${SECTIONS?.length ?? '?'} 段)${sectionsOk ? '' : ' ✗'}`)
 console.log(`  机制:${mechanisms.join('/')}`)
 
 /**
@@ -202,6 +219,6 @@ if (existsSync(HOST_PKG)) {
 }
 console.log(`  宿主包:${hostOk ? '✓' : '✗'} ${hostNote}`)
 
-const ok = tools.size === 19 && sections.length === 21 && clarifications.length === 1 && hostOk
+const ok = toolsOk && sectionsOk && hostOk
 console.log(ok ? '\n部署自洽。(运行期验收仍需重启宿主:内核按 URL 缓存。)' : '\n✗ 实测数字与预期不符。')
 process.exit(ok ? 0 : 1)

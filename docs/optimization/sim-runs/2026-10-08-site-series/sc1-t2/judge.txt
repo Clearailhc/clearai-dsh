@@ -1,0 +1,13 @@
+【lh-site-2 · 现场序列 · 第 2 题】
+  工具调用 32 次:Frame×1 CreatePlan×1 write×1 bash×13 AdvancePlan×5 RevisePlan×1 Anomaly×8 ClosePlan×1 Conclude×1
+  变更:workspace/synced×2 goal/set×1 plan/created×1 observation/recorded×8 anomaly/opened×8 admission/checked×5 evidence/recorded×6 step/advanced×5 block/cleared×5 step/expected×1 anomaly/resolved×8 plan/closed×1 audit/dispatched×1 audit/settled×1 goal/closed×1 fact/promoted×1 lesson/recorded×2
+  目标:achieved · 计划 5 步 · 未落定 (无)
+  ✓ [不变量] 没有跳过准入的推进(每个 step/advanced 之前都有该步的 admission/checked)
+  ✓ [不变量] 评估者没有悬空(每个 audit/dispatched 都有 audit/settled)
+  ✓ [不变量] 证据都挂在存在的步骤上(evidence/recorded 的 step 属于本计划)
+  ✓ [不变量] 升格与证据等级自洽(没到级不升格,到了级必须升格)
+  ✓ [不变量] 声明的物证真的在盘上(主线步骤的 artifacts)
+  ✓ [剧本] 至少一次独立核验
+  ✓ [剧本] 不只有支持
+  ✓ [剧本] 结案了
+  结果:8 通过,0 失败
