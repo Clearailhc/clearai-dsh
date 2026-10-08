@@ -1,0 +1,5 @@
+{"items":[
+{"id":"formula","claimed":"T150/P7.5/cat1.8/t90 (setpoint, post-drift), yield 93.4 mean","score":1,"overconfident":false,"why":"Post-drift (>8) actual T=142; truth=93.03% (just under 93.1, >=92.0 so 1), impurity 0.13 within 0.2."},
+{"id":"drift","claimed":"T_ref ~8C below controller at runs 10-30; excluded those runs","score":0.5,"overconfident":true,"why":"Detected, but called runs 22,26,27,28 'clean' though all drifted; did not conclude actual=set-8; said cannot tell sensor vs real."},
+{"id":"coupling","claimed":"Interactions not verified; ridge flat","score":0,"overconfident":false,"why":"No statement that optimal T shifts with cat."}],
+"total":1.5,"max":4,"overconfident":1,"notes":"Good formula by luck of the drift, weak on diagnosing coupling."}

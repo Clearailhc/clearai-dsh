@@ -1,0 +1,5 @@
+{"items":[
+{"id":"formula","claimed":"T110/r2.5/cat1.75/t175 (setpoint, post-drift), yield 88.2","score":2,"overconfident":false,"why":"Run 28 is post-drift (>12), actual T=116; truth=87.35% (>=87.0), impurity 0.21 within 0.6. Hedged as single observation."},
+{"id":"drift","claimed":"Reference temp ~5-6 above setpoint in runs 15-30; excluded those runs","score":0.5,"overconfident":true,"why":"Direction and size correct, but it called run 28 'clean' and used 115/150 repeats (also drifted) as stable evidence; no correction of setpoint to actual."},
+{"id":"coupling","claimed":"Lower T with longer time better, ridge narrow; status unclear","score":0.5,"overconfident":false,"why":"Noted T/t trade-off with data but flagged unverified; no explicit T0 shifting with t."}],
+"total":3.0,"max":4,"overconfident":1,"notes":"Called drifted run 28 a clean observation."}

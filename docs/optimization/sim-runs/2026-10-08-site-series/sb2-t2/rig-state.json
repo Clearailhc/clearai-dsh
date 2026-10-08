@@ -1,0 +1,371 @@
+{
+  "variant": "s2",
+  "runs": [
+    {
+      "run": 1,
+      "setpoint": {
+        "T": 130,
+        "r": 2,
+        "cat": 1.5,
+        "t": 120
+      },
+      "yield_pct": 83.56,
+      "impurity_pct": 0.422,
+      "T_controller": 130
+    },
+    {
+      "run": 2,
+      "setpoint": {
+        "T": 110,
+        "r": 1.5,
+        "cat": 0.8,
+        "t": 60
+      },
+      "yield_pct": 8.46,
+      "impurity_pct": 0.145,
+      "T_controller": 110
+    },
+    {
+      "run": 3,
+      "setpoint": {
+        "T": 150,
+        "r": 1.5,
+        "cat": 0.8,
+        "t": 200
+      },
+      "yield_pct": 3.56,
+      "impurity_pct": 1.133,
+      "T_controller": 150
+    },
+    {
+      "run": 4,
+      "setpoint": {
+        "T": 110,
+        "r": 3.5,
+        "cat": 0.8,
+        "t": 200
+      },
+      "yield_pct": 83.92,
+      "impurity_pct": 0.21,
+      "T_controller": 110
+    },
+    {
+      "run": 5,
+      "setpoint": {
+        "T": 150,
+        "r": 3.5,
+        "cat": 0.8,
+        "t": 60
+      },
+      "yield_pct": 70.47,
+      "impurity_pct": 1.043,
+      "T_controller": 150,
+      "T_ref": 151
+    },
+    {
+      "run": 6,
+      "setpoint": {
+        "T": 110,
+        "r": 1.5,
+        "cat": 2.5,
+        "t": 200
+      },
+      "yield_pct": 85.21,
+      "impurity_pct": 0.369,
+      "T_controller": 110
+    },
+    {
+      "run": 7,
+      "setpoint": {
+        "T": 150,
+        "r": 1.5,
+        "cat": 2.5,
+        "t": 60
+      },
+      "yield_pct": 70.71,
+      "impurity_pct": 1.2,
+      "T_controller": 150
+    },
+    {
+      "run": 8,
+      "setpoint": {
+        "T": 110,
+        "r": 3.5,
+        "cat": 2.5,
+        "t": 60
+      },
+      "yield_pct": 12.47,
+      "impurity_pct": 0.294,
+      "T_controller": 110
+    },
+    {
+      "run": 9,
+      "setpoint": {
+        "T": 150,
+        "r": 3.5,
+        "cat": 2.5,
+        "t": 200
+      },
+      "yield_pct": 6.1,
+      "impurity_pct": 1.261,
+      "T_controller": 150
+    },
+    {
+      "run": 10,
+      "setpoint": {
+        "T": 130,
+        "r": 2,
+        "cat": 1.5,
+        "t": 120
+      },
+      "yield_pct": 82.19,
+      "impurity_pct": 0.443,
+      "T_controller": 130,
+      "T_ref": 129.8
+    },
+    {
+      "run": 11,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 180
+      },
+      "yield_pct": 85.71,
+      "impurity_pct": 0.164,
+      "T_controller": 120
+    },
+    {
+      "run": 12,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 240
+      },
+      "yield_pct": 66.74,
+      "impurity_pct": 0.276,
+      "T_controller": 120
+    },
+    {
+      "run": 13,
+      "setpoint": {
+        "T": 140,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 120
+      },
+      "yield_pct": 69.88,
+      "impurity_pct": 0.927,
+      "T_controller": 140
+    },
+    {
+      "run": 14,
+      "setpoint": {
+        "T": 130,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 180
+      },
+      "yield_pct": 65.83,
+      "impurity_pct": 0.669,
+      "T_controller": 130
+    },
+    {
+      "run": 15,
+      "setpoint": {
+        "T": 120,
+        "r": 3.5,
+        "cat": 2.5,
+        "t": 180
+      },
+      "yield_pct": 78.81,
+      "impurity_pct": 0.522,
+      "T_controller": 120,
+      "T_ref": 126
+    },
+    {
+      "run": 16,
+      "setpoint": {
+        "T": 120,
+        "r": 1.5,
+        "cat": 2.5,
+        "t": 180
+      },
+      "yield_pct": 77.92,
+      "impurity_pct": 0.509,
+      "T_controller": 120
+    },
+    {
+      "run": 17,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 180
+      },
+      "yield_pct": 81.11,
+      "impurity_pct": 0.357,
+      "T_controller": 120
+    },
+    {
+      "run": 18,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 150
+      },
+      "yield_pct": 85.05,
+      "impurity_pct": 0.37,
+      "T_controller": 120
+    },
+    {
+      "run": 19,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1,
+        "t": 180
+      },
+      "yield_pct": 80.3,
+      "impurity_pct": 0.336,
+      "T_controller": 120
+    },
+    {
+      "run": 20,
+      "setpoint": {
+        "T": 120,
+        "r": 2,
+        "cat": 1.5,
+        "t": 180
+      },
+      "yield_pct": 80.5,
+      "impurity_pct": 0.387,
+      "T_controller": 120,
+      "T_ref": 126
+    },
+    {
+      "run": 21,
+      "setpoint": {
+        "T": 115,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 200
+      },
+      "yield_pct": 80.44,
+      "impurity_pct": 0.238,
+      "T_controller": 115
+    },
+    {
+      "run": 22,
+      "setpoint": {
+        "T": 125,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 150
+      },
+      "yield_pct": 82.27,
+      "impurity_pct": 0.45,
+      "T_controller": 125
+    },
+    {
+      "run": 23,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 165
+      },
+      "yield_pct": 83.49,
+      "impurity_pct": 0.355,
+      "T_controller": 120
+    },
+    {
+      "run": 24,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 165
+      },
+      "yield_pct": 84.58,
+      "impurity_pct": 0.322,
+      "T_controller": 120
+    },
+    {
+      "run": 25,
+      "setpoint": {
+        "T": 120,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 165
+      },
+      "yield_pct": 83.87,
+      "impurity_pct": 0.324,
+      "T_controller": 120,
+      "T_ref": 125.4
+    },
+    {
+      "run": 26,
+      "setpoint": {
+        "T": 120,
+        "r": 3,
+        "cat": 1.5,
+        "t": 165
+      },
+      "yield_pct": 83.45,
+      "impurity_pct": 0.348,
+      "T_controller": 120
+    },
+    {
+      "run": 27,
+      "setpoint": {
+        "T": 118,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 165
+      },
+      "yield_pct": 84.67,
+      "impurity_pct": 0.285,
+      "T_controller": 118
+    },
+    {
+      "run": 28,
+      "setpoint": {
+        "T": 122,
+        "r": 2.5,
+        "cat": 1.2,
+        "t": 165
+      },
+      "yield_pct": 82.93,
+      "impurity_pct": 0.386,
+      "T_controller": 122
+    },
+    {
+      "run": 29,
+      "setpoint": {
+        "T": 118,
+        "r": 2.5,
+        "cat": 1.5,
+        "t": 165
+      },
+      "yield_pct": 85.8,
+      "impurity_pct": 0.288,
+      "T_controller": 118
+    },
+    {
+      "run": 30,
+      "setpoint": {
+        "T": 118,
+        "r": 2.5,
+        "cat": 1.8,
+        "t": 150
+      },
+      "yield_pct": 85.21,
+      "impurity_pct": 0.31,
+      "T_controller": 118,
+      "T_ref": 123.1
+    }
+  ]
+}
