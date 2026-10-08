@@ -66,9 +66,13 @@ export const MUTATION_KIND = 'clearai'
  *           旧账里的这两格不再读。
  *   v17 → v18:多了 `lessons`(经验:结案时经独立评估核过的「下次要留意什么」,`lesson/recorded` 折进来;
  *           别的会话留下的从 `clear/knowledge/lessons/<id>.json` 经 `workspace/synced` 进来)。
+ *   v18 → v19:**探索的结构**:目标带 `mode`(广度调研 / 定向求解)、`questions`(问题)、`areas`(调研板块)
+ *           与结案时的 `answers`(按问题的结论四部分);判断带 `question`(属于哪个问题或板块)与 `from`
+ *           (由本体里哪条关系提出);步骤带 `serves` 与按候选分别写的 `predictions`;未解释项带 `touches`
+ *           (涉及的量、判断或事实)。全部可选:旧日志折出来就是整个目标一个问题。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 18
+export const STATE_VERSION = 19
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -209,6 +213,32 @@ export function normalizeTests(tests) {
 	return { hypotheses, level: tests.level ?? null }
 }
 
+/** 预测清单的唯一形状:`[{hypothesis, expect}]`,空的去掉。 */
+export function normalizePredictions(raw) {
+	if (!Array.isArray(raw)) return []
+	return raw
+		.map((item) => ({ hypothesis: String(item?.hypothesis ?? '').trim(), expect: String(item?.expect ?? '').trim() }))
+		.filter((item) => item.hypothesis !== '' && item.expect !== '')
+}
+
+/** 问题与板块的唯一形状(目标上的读面):id、一句话、状态、所属板块。 */
+const QUESTION_STATUS = ['open', 'emergent', 'parked']
+function normalizeQuestions(raw) {
+	if (!Array.isArray(raw)) return null
+	return raw
+		.map((item) => ({
+			id: String(item?.id ?? '').trim(),
+			text: String(item?.text ?? '').trim(),
+			status: QUESTION_STATUS.includes(item?.status) ? item.status : 'open',
+			area: typeof item?.area === 'string' && item.area.trim() !== '' ? item.area.trim() : null,
+		}))
+		.filter((item) => item.id !== '' && item.text !== '')
+}
+function normalizeAreas(raw) {
+	if (!Array.isArray(raw)) return null
+	return raw.map((item) => ({ id: String(item?.id ?? '').trim(), name: String(item?.name ?? '').trim() })).filter((item) => item.id !== '' && item.name !== '')
+}
+
 function appendSteps(plan, rawSteps) {
 	for (const raw of rawSteps) {
 		plan.steps.push({
@@ -220,6 +250,10 @@ function appendSteps(plan, rawSteps) {
 			tests: normalizeTests(raw.tests),
 			/** 动手前写下的预期(可选);落空的地方记成未解释项。 */
 			expect: typeof raw.expect === 'string' && raw.expect !== '' ? raw.expect : null,
+			/** 这一步服务哪个问题或板块(可选;不写就挂在当前问题下)。 */
+			serves: typeof raw.serves === 'string' && raw.serves !== '' ? raw.serves : null,
+			/** 按候选分别写的预测:`{hypothesis, expect}`。各候选预测相同的一步区分不了它们。 */
+			predictions: normalizePredictions(raw.predictions),
 			status: 'open',
 			evidence: null,
 			advancedAt: null,
@@ -264,6 +298,11 @@ export function applyMutation(state, mutation) {
 				if (typeof mutation.headline === 'string' && mutation.headline !== '') previous.headline = mutation.headline
 				if (Array.isArray(mutation.criteria)) previous.criteria = clone(mutation.criteria)
 				if (typeof mutation.criteria_note === 'string') previous.criteria_note = mutation.criteria_note
+				if (typeof mutation.mode === 'string' && mutation.mode !== '') previous.mode = mutation.mode
+				const questions = normalizeQuestions(mutation.questions)
+				if (questions !== null) previous.questions = questions
+				const areas = normalizeAreas(mutation.areas)
+				if (areas !== null) previous.areas = areas
 				previous.reasons.push(mutation.reason ?? null)
 			} else {
 				if (previous !== null && previous.status === 'open') previous.status = 'superseded'
@@ -295,6 +334,13 @@ export function applyMutation(state, mutation) {
 					 * `audit`,所以每一次改动都能指回是谁裁的。它只增不删(判据的历史就是判据的一部分)。
 					 */
 					criteriaHistory: [],
+					/** 工作方式:`survey`(广度调研)/ `solve`(定向求解)/ `survey_then_solve`;没写就是 null。 */
+					mode: typeof mutation.mode === 'string' && mutation.mode !== '' ? mutation.mode : null,
+					/** 问题与调研板块(可选)。没有问题时,整个目标就是唯一的问题。 */
+					questions: normalizeQuestions(mutation.questions) ?? [],
+					areas: normalizeAreas(mutation.areas) ?? [],
+					/** 结案时按问题写的结论四部分(`Conclude.answers`)。 */
+					answers: [],
 				}
 			}
 			for (const hypothesis of mutation.hypotheses ?? []) {
@@ -318,6 +364,8 @@ export function applyMutation(state, mutation) {
 					if (typeof hypothesis.name === 'string' && hypothesis.name !== '') known.name = hypothesis.name
 					if (typeof hypothesis.retests === 'string' && hypothesis.retests !== '') known.retests = hypothesis.retests
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
+					if (typeof hypothesis.question === 'string' && hypothesis.question !== '') known.question = hypothesis.question
+					if (typeof hypothesis.from === 'string' && hypothesis.from !== '') known.from = hypothesis.from
 					continue
 				}
 				next.hypotheses.push({
@@ -336,6 +384,10 @@ export function applyMutation(state, mutation) {
 					 * 不写断言照旧成立(宽松+校验);写了就是「这条主张用这门语言怎么说」。
 					 */
 					assertions: Array.isArray(hypothesis.assertions) ? clone(hypothesis.assertions) : null,
+					/** 属于哪个问题或板块(id);没写就归当前目标的第一个问题。 */
+					...(typeof hypothesis.question === 'string' && hypothesis.question !== '' ? { question: hypothesis.question } : {}),
+					/** 由本体里哪条关系提出(关系 id);没写或写「直觉」都如实显示。 */
+					...(typeof hypothesis.from === 'string' && hypothesis.from !== '' ? { from: hypothesis.from } : {}),
 					at,
 				})
 			}
@@ -348,6 +400,7 @@ export function applyMutation(state, mutation) {
 				next.goal.closeVerdict = mutation.verdict ?? null
 				// 结案时如实记下「没被任何证据触及的假设」:未判不是「没问题」,是「没看过」。
 				next.goal.unjudged = Array.isArray(mutation.unjudged) ? mutation.unjudged.slice() : []
+				if (Array.isArray(mutation.answers)) next.goal.answers = clone(mutation.answers)
 			}
 			break
 		}
@@ -403,12 +456,13 @@ export function applyMutation(state, mutation) {
 		case 'step/expected': {
 			const step = stepOf(mutation.plan, mutation.step)
 			if (step === undefined || step.status !== 'open') break
-			step.expect = String(mutation.expect ?? '') || null
+			if (mutation.expect !== undefined) step.expect = String(mutation.expect ?? '') || null
+			if (Array.isArray(mutation.predictions)) step.predictions = normalizePredictions(mutation.predictions)
 			break
 		}
 		case 'anomaly/opened': {
 			if (next.anomalies.some((item) => item.id === mutation.id)) break
-			next.anomalies.push({ id: mutation.id, what: String(mutation.what ?? ''), anchor: mutation.anchor ?? null, step: mutation.step ?? null, by: mutation.by ?? 'model', status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+			next.anomalies.push({ id: mutation.id, what: String(mutation.what ?? ''), anchor: mutation.anchor ?? null, touches: Array.isArray(mutation.touches) ? mutation.touches.map(String) : [], step: mutation.step ?? null, by: mutation.by ?? 'model', status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
 			break
 		}
 		case 'lesson/recorded': {
@@ -1795,7 +1849,13 @@ export function derive(state) {
 	 * `definitionsChanged`:升格那一刻用到的词条,**含义**此后改过或已不在的那些 id。
 	 * 只是读数,不撤回事实:改了定义的人知道为什么改,复核交给人与证据。
 	 */
-	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions) }))
+	/**
+	 * `questioned`:还开着、且点名涉及这条事实的未解释项(`touches` 里写了事实 id)。
+	 * 有它,这条事实就回到「待核验」:写进长期知识的东西遇到说不通的读数,不能照旧当已知用。
+	 */
+	const openAnomalies = (state.anomalies ?? []).filter((item) => item?.status === 'open')
+	const questionedBy = (id) => openAnomalies.filter((item) => (item.touches ?? []).includes(id)).map((item) => item.id)
+	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions), questioned: questionedBy(fact.id) }))
 
 	/**
 	 * **领域词汇的派生读数**(两条,都不新存东西):
@@ -1875,7 +1935,88 @@ export function derive(state) {
 		lexiconIssues,
 		/** 知识模式(分诊)与缺口读数:结构判据,不猜词面(见 `deriveKnowledge`)。 */
 		knowledge: deriveKnowledge(state, hypotheses, factRows, lexicon),
+		/** 探索的结构:问题 → 候选假设(或板块 → 新发现的问题)、下一步各候选的预测(见 `deriveExploration`)。 */
+		exploration: deriveExploration(state, hypotheses, lexicon, activePlan),
 	}
+}
+
+/** 候选假设的四种状态(界面:考察中 / 已排除 / 已采纳 / 暂不考察),由可信度分组算出,不另存。 */
+const CANDIDATE_STATE = { credible: 'adopted', refuted: 'excluded', replaced: 'set_aside', pending: 'examining', testing: 'examining', unclear: 'examining' }
+
+/**
+ * **探索的结构**(派生,不存):课题 → 问题 → 候选假设 → 步骤;广度调研时课题 → 调研板块 → 问题。
+ *
+ * 问题与板块由模型立题时写(`Frame.questions` / `areas`),判断用 `question` 指明属于哪个问题或板块。
+ * 没写问题的目标就是一个问题(旧会话照样读得通);没指明归属的判断归第一个问题。
+ * 候选的状态只从证据来(可信度分组的另一种读法),界面与卡读同一份。
+ *
+ * `untapped`:本体里带形状的「影响」关系,还没有任何候选由它提出——只列出,不强制。
+ * `next.indistinct`:下一步给每个候选都写了预测,但预测全一样:这一步区分不了它们。
+ */
+export function deriveExploration(state, hypotheses, lexicon, activePlan) {
+	const goal = state?.goal ?? null
+	if (goal === null) return null
+	const promoted = new Set((state.facts ?? []).map((fact) => fact?.hypothesis).filter((id) => typeof id === 'string'))
+	const mine = hypotheses.filter((item) => typeof item.goal !== 'string' || item.goal === goal.id)
+	const declared = Array.isArray(goal.questions) ? goal.questions : []
+	const areas = Array.isArray(goal.areas) ? goal.areas : []
+	const areaIds = new Set(areas.map((area) => area.id))
+	const answers = Array.isArray(goal.answers) ? goal.answers : []
+	const questions =
+		declared.length > 0
+			? declared.map((item) => ({ ...item, implicit: false }))
+			: areas.length > 0
+				? []
+				: [{ id: 'goal', text: String(goal.headline ?? goal.claim ?? ''), status: 'open', area: null, implicit: true }]
+	const fallback = questions.find((item) => item.status === 'open')?.id ?? questions[0]?.id ?? null
+	const homeOf = (hypothesis) => {
+		const wanted = typeof hypothesis.question === 'string' ? hypothesis.question : ''
+		if (questions.some((item) => item.id === wanted) || areaIds.has(wanted)) return wanted
+		return fallback
+	}
+	const candidateOf = (hypothesis) => ({
+		id: hypothesis.id,
+		name: handleOf(hypothesis),
+		claim: hypothesis.claim ?? '',
+		refuteWhen: hypothesis.refute_when ?? '',
+		from: typeof hypothesis.from === 'string' && hypothesis.from !== '' ? hypothesis.from : null,
+		state: CANDIDATE_STATE[trustOf(hypothesis, promoted.has(hypothesis.id))] ?? 'examining',
+		supportedLevel: hypothesis.supportedLevel ?? null,
+		refutations: hypothesis.refutations ?? 0,
+		inconclusive: hypothesis.inconclusive ?? 0,
+	})
+	const count = (rows) => ({ examining: rows.filter((row) => row.state === 'examining').length, excluded: rows.filter((row) => row.state === 'excluded').length, adopted: rows.filter((row) => row.state === 'adopted').length, setAside: rows.filter((row) => row.state === 'set_aside').length })
+	const questionRows = questions.map((question) => {
+		const candidates = mine.filter((hypothesis) => homeOf(hypothesis) === question.id).map(candidateOf)
+		const answer = answers.find((item) => item?.question === question.id) ?? (question.implicit ? (answers[0] ?? null) : null)
+		return { ...question, status: answer !== null && answer !== undefined ? 'answered' : question.status, candidates, counts: count(candidates) }
+	})
+	const openAnomalies = (state.anomalies ?? []).filter((item) => item?.status === 'open')
+	const steps = activePlan?.steps ?? []
+	const areaRows = areas.map((area) => {
+		const linked = mine.filter((hypothesis) => homeOf(hypothesis) === area.id || questions.some((question) => question.area === area.id && homeOf(hypothesis) === question.id)).map(candidateOf)
+		const served = steps.some((step) => step.serves === area.id)
+		const touched = openAnomalies.filter((item) => (item.touches ?? []).includes(area.id) || (item.touches ?? []).includes(area.name)).length
+		const settled = linked.length > 0 && linked.every((row) => row.state === 'adopted' || row.state === 'excluded' || row.state === 'set_aside')
+		const state = linked.length === 0 && !served ? 'not_started' : settled && touched === 0 ? 'clear' : 'in_progress'
+		return { id: area.id, name: area.name, state, judgments: linked.length, verified: linked.filter((row) => row.state === 'adopted').length, openAnomalies: touched, questions: questionRows.filter((question) => question.area === area.id).map((question) => question.id) }
+	})
+	const current = questionRows.find((question) => question.status === 'open' && question.counts.examining > 0) ?? questionRows.find((question) => question.status === 'open') ?? null
+	const cited = new Set(mine.map((hypothesis) => hypothesis.from).filter((from) => typeof from === 'string'))
+	const untapped = (lexicon?.predicates ?? []).filter((predicate) => predicate.kind === 'affects' && typeof predicate.shape === 'string' && predicate.status !== 'deprecated' && !cited.has(predicate.id)).map((predicate) => ({ id: predicate.id, label: predicate.label || predicate.id, shape: predicate.shape }))
+	const first = steps.find((step) => step.status === 'open') ?? null
+	let next = null
+	if (first !== null) {
+		const named = new Map(mine.map((hypothesis) => [hypothesis.id, hypothesis]))
+		const byName = (key) => mine.find((hypothesis) => hypothesis.id === key || hypothesis.name === key) ?? null
+		const predictions = (first.predictions ?? []).map((item) => {
+			const hypothesis = byName(item.hypothesis)
+			return { hypothesis: hypothesis?.id ?? null, name: hypothesis === null ? item.hypothesis : handleOf(named.get(hypothesis.id)), expect: item.expect }
+		})
+		const distinct = new Set(predictions.map((item) => item.expect.replace(/\s+/g, '')))
+		next = { step: first.id, ordinal: first.ordinal, do: first.do, serves: first.serves ?? null, expect: first.expect ?? null, predictions, indistinct: predictions.length >= 2 && distinct.size === 1 }
+	}
+	return { mode: goal.mode ?? null, questions: questionRows, areas: areaRows, current: current?.id ?? null, untapped, next, answers }
 }
 
 /**
@@ -1984,6 +2125,10 @@ export function view(state, sessionId) {
 		releases: (state.releases ?? []).map((item) => ({ step: item.step ?? null, plan: item.plan ?? null, via: item.via ?? null, call: item.call ?? null, at: item.at ?? null })),
 		/** 本体形状(面板页眉据此生成,不手抄)。 */
 		ontology: state.ontology ?? null,
+		/** 探索的结构(探索货架读它;与卡上「你在哪」同一份派生)。 */
+		exploration: derived.exploration,
+		/** 未解释项(探索货架「过程记录」与本体货架的复核标记读它)。 */
+		anomalies: (state.anomalies ?? []).map((item) => ({ id: item.id, what: item.what, anchor: item.anchor ?? null, touches: item.touches ?? [], step: item.step ?? null, by: item.by ?? 'model', status: item.status, reason: item.reason ?? null, explainedBy: item.explainedBy ?? null, at: item.at ?? null })),
 		/**
 		 * **领域词汇的读面**:概念、谓词、冲突、健康读数与图投影。
 		 *
@@ -2036,6 +2181,10 @@ export function view(state, sessionId) {
 						// 结案留痕:没被任何证据触及的假设。未判不是「没问题」,是「没看过」。
 						unjudged: Array.isArray(state.goal.unjudged) ? state.goal.unjudged.slice() : [],
 						closeVerdict: state.goal.closeVerdict ?? null,
+						headline: state.goal.headline ?? null,
+						mode: state.goal.mode ?? null,
+						/** 结案时按问题写的结论四部分(本体货架的结论卡读它)。 */
+						answers: Array.isArray(state.goal.answers) ? state.goal.answers : [],
 						hypotheses: derived.hypotheses.map((hypothesis) => ({
 							id: hypothesis.id,
 							name: handleOf(hypothesis),
@@ -2043,6 +2192,8 @@ export function view(state, sessionId) {
 							trust: trustOf(hypothesis, promotedIds.has(hypothesis.id)),
 							claim: hypothesis.claim,
 							refuteWhen: hypothesis.refute_when,
+							question: hypothesis.question ?? null,
+							from: hypothesis.from ?? null,
 							status: hypothesis.status,
 							supportedLevel: hypothesis.supportedLevel,
 							refutations: hypothesis.refutations,
@@ -2076,6 +2227,9 @@ export function view(state, sessionId) {
 				artifacts: (step.artifacts ?? []).map((artifact) => (typeof artifact === 'string' ? { path: artifact, exists: null } : artifact)),
 				doneCriteria: step.done_criteria,
 				tests: step.tests,
+				expect: step.expect ?? null,
+				serves: step.serves ?? null,
+				predictions: step.predictions ?? [],
 				status: step.status,
 				evidenceIds: step.evidence ?? [],
 				/** 交付本身(谁判的、凭什么、出处);旧账为 null。 */
@@ -2105,6 +2259,9 @@ export function view(state, sessionId) {
 							artifacts: (step.artifacts ?? []).map((artifact) => (typeof artifact === 'string' ? { path: artifact, exists: null } : artifact)),
 							doneCriteria: step.done_criteria,
 							tests: step.tests,
+							expect: step.expect ?? null,
+							serves: step.serves ?? null,
+							predictions: step.predictions ?? [],
 							status: step.status,
 							evidenceIds: step.evidence ?? [],
 							/** 交付本身(谁判的、凭什么、出处);旧账为 null。 */
@@ -2194,6 +2351,8 @@ export function view(state, sessionId) {
 			/** 派生:收到过推翻证据(要复核)与人的审查决定(撤回 / 维持)。 */
 			refuted: item.refuted === true,
 			review: item.review ?? null,
+			/** 还开着、点名涉及它的未解释项:有就回到「待核验」。 */
+			questioned: item.questioned ?? [],
 		})),
 	}
 }
