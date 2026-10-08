@@ -293,6 +293,23 @@ Notes:
 - Unexplained items do not block concluding; at close (and at every independent evaluation) they go to the evaluator with the delivery, and the evaluator checks the reasons for ruling any out.
 - Each has one destination: a handled item cannot be handled again.
 
+## 12c. Lessons (lesson) · implemented
+
+Stored fields: `state.lessons[].{kind, about, evidence, boundary, status}`; the file `clear/knowledge/lessons/<id>.json` wins over the ledger row.
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: lesson/recorded (goal achieved + the goal evaluator supports it)
+    [*] --> active: workspace/synced (a lesson file left by another session)
+    active --> retracted: a person sets status=retracted in the file
+    retracted --> [*]
+```
+
+Notes:
+
+- Lessons are proposed only with `Conclude(outcome="achieved")`; the goal evaluator judges each against the record (`lessons` on its verdict). Refuted or inconclusive ones are listed in the receipt and not written. An abandoned goal writes none.
+- A lesson changes how to work next time; a fact changes what is believed. The card shows lessons before framing, planning and writing an expectation; ones whose `about` matches the goal or the next step come first.
+
 ## 13. Event coverage table
 
 **Every** mutation kind fold understands is assigned a home below; conversely, every event named in
@@ -337,6 +354,7 @@ ledger facts), so it appears in no state machine:
 | `step/expected` | §3 Step (expectation) | yes |
 | `anomaly/opened` | §12b Unexplained items | yes |
 | `anomaly/resolved` | §12b Unexplained items | yes |
+| `lesson/recorded` | §12c Lessons | yes |
 | `admission/checked` | **ledger only** | no |
 
 ## 14. Relationship to the verification ontology

@@ -272,6 +272,23 @@ stateDiagram-v2
 - 未解释项不阻塞结案；结案（以及每次独立评估）时随交付交给评估者，排除的理由由评估者核。
 - 去处只有一个：处理过的不能再处理。
 
+## 12c. 经验（lesson）· 已实现
+
+存储字段：`state.lessons[].{kind, about, evidence, boundary, status}`；同 id 以文件 `clear/knowledge/lessons/<id>.json` 为准。
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: lesson/recorded（目标 achieved + 结案评估者判支持）
+    [*] --> active: workspace/synced（别的会话留下的经验文件）
+    active --> retracted: 人在文件上把 status 改成 retracted
+    retracted --> [*]
+```
+
+要点：
+
+- 经验只随 `Conclude(outcome="achieved")` 提议；结案评估者对照记录逐条判（裁决里的 `lessons`）。被推翻或说不清的在回执里列出，不写。放弃的目标不写经验。
+- 经验改变下次怎么做，事实改变信念。卡上在立题、定计划、写预期前摆出经验；`about` 命中目标或下一步的排前面。
+
 ## 13. 事件清单覆盖表
 
 折法认识的**每一个**变更类型都在本节有归属；反过来，本文出现的每个 event 也都在折法词汇表里。
@@ -315,6 +332,7 @@ stateDiagram-v2
 | `step/expected` | §3 步骤（预期） | 是 |
 | `anomaly/opened` | §12b 未解释项 | 是 |
 | `anomaly/resolved` | §12b 未解释项 | 是 |
+| `lesson/recorded` | §12c 经验 | 是 |
 | `admission/checked` | **只留台账** | 否 |
 
 ## 14. 与验证本体的关系

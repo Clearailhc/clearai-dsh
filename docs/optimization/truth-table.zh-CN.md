@@ -8,9 +8,9 @@
 
 ## 计数
 
-- 机制条目：**53**
-- 按状态：已实现 52 · 设计目标 1
-- 按强度：硬边界 42 · 建议 8 · 原生 3
+- 机制条目：**54**
+- 按状态：已实现 53 · 设计目标 1
+- 按强度：硬边界 42 · 建议 9 · 原生 3
 - 按归宿：保持设计目标 1
 - 真正阻断执行的：**20**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
@@ -43,6 +43,7 @@
 | `irreversible-command-release` | 不可逆动作拦在命令上:Frame 声明命令特征,匹配的 bash 执行前当场问人 | 认识论 | 已实现 | 硬边界 | 权威 | human | 是 | `preset/plugins/clearai-kernel.js releaseIrreversible / guardTool` |
 | `evidence-record` | 证据登记 | 认识论 | 已实现 | 硬边界 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `fact-promotion` | 事实升格 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js persistFact` |
+| `lessons` | 经验:结案时提议「下次怎么做」,结案评估者对照记录逐条核,支持的写进 clear/knowledge/lessons/,在立题、定计划、写预期前摆上卡 | 认识论 | 已实现 | 建议 | 权威 | model | 否 | `preset/plugins/clearai-kernel.js Conclude.lessons / lessonBrief / verdictSchema.lessons / persistLesson` |
 | `history-retention` | 只追加历史（什么都不删） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `ui/lib/fold.js（全体 case 无删除分支）` |
 | `block-threshold` | 连拦阈值（证据质量闸） | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js blockedThreshold` |
 | `l4-universal-gate` | 覆盖每一次评估的通用 L4 门 | 认识论 | 设计目标 | 建议 | 无 | human | 否 | `docs/known-gaps.md` |
@@ -278,6 +279,19 @@
 - **理由**：事实由系统按门槛算出来，模型不能宣称。
 - **代码**：preset/plugins/clearai-kernel.js persistFact; promote_at_level 门槛; ui/lib/fold.js case 'fact/promoted'
 - **测试**：test/kernel.test.mjs · **配置**：l4RejectSelfWritten
+- **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
+
+### `lessons` · 经验:结案时提议「下次怎么做」,结案评估者对照记录逐条核,支持的写进 clear/knowledge/lessons/,在立题、定计划、写预期前摆上卡
+
+- **层**：认识论 · **状态**：已实现 · **强度**：建议 · **权威**：权威 · **责任方**：model
+- **触发**：模型在 Conclude(outcome=achieved) 里给 lessons
+- **输入**：每条:text、kind(trap/check/shortcut/prior)、about、evidence、boundary
+- **输出**：写入 clear/knowledge/lessons/<经验 id>.json + mutation lesson/recorded;没被支持的在回执里列出,不写
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：单次任务里 ClearAI 多出来的主要是对反常的纪律;探索深度要靠跨任务带过来的做法(哪台装置要先核、哪类体系先斜向扫)。经验改变注意力与做法,事实改变信念,所以分开放;两者都要独立评估过才写。放弃的目标不核,也不写。
+- **代码**：preset/plugins/clearai-kernel.js Conclude.lessons / lessonBrief / verdictSchema.lessons / persistLesson; ui/lib/fold.js case 'lesson/recorded' / derive lessonRows; ui/lib/knowledge-view.js 经验段
+- **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `history-retention` · 只追加历史（什么都不删）

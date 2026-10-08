@@ -1026,12 +1026,17 @@ export function describeDomainGraph(lexicon) {
 //
 // 会话账本只活在一次会话里,而研究要跨会话攒下来。所以「攒下来的东西」住在工作区的文件里:
 //   · `clear/knowledge/facts/<id>.json`:升格的事实,一条一个文件,只有系统写;
+//   · `clear/knowledge/lessons/<id>.json`:结案时经独立评估核过的经验,一条一个文件,只有系统写;
 //   · `clear/ontology/{concepts,relations,entities}/**.json`:本体,模型用原生文件工具直接写。
 // 内核每一拍把这两处的变化折成一条 `workspace/synced` 变更,投影从文件内容派生词汇、实体与
 // 事实——折法仍然只吃账本,文件是账本之外唯一的输入,而且进账本时就是一条可重放的事实。
 
 /** 事实文件所在的目录(相对工作区)。 */
 export const FACTS_DIR = 'clear/knowledge/facts'
+/** 经验文件所在的目录(相对工作区)。 */
+export const LESSONS_DIR = 'clear/knowledge/lessons'
+/** 经验的四类:坑、要核的读数、会骗人的捷径、先验。 */
+export const LESSON_KINDS = ['trap', 'check', 'shortcut', 'prior']
 /** 本体文件树的根(相对工作区)。 */
 export const ONTOLOGY_DIR = 'clear/ontology'
 /** 本体文件树的三支:目录名 → 文件种类。 */
@@ -1114,6 +1119,8 @@ export function classifyWorkspacePath(path) {
 	const id = parts.at(-1).slice(0, -'.json'.length)
 	const facts = FACTS_DIR.split('/')
 	if (parts.length === facts.length + 1 && facts.every((part, index) => parts[index] === part)) return { kind: 'fact', id, dirs: [] }
+	const lessons = LESSONS_DIR.split('/')
+	if (parts.length === lessons.length + 1 && lessons.every((part, index) => parts[index] === part)) return { kind: 'lesson', id, dirs: [] }
 	const root = ONTOLOGY_DIR.split('/')
 	if (parts.length >= root.length + 2 && root.every((part, index) => parts[index] === part)) {
 		const kind = ONTOLOGY_BRANCHES[parts[root.length]]
@@ -1142,6 +1149,26 @@ export function factFromFile(data, path) {
 		path: path ?? null,
 		at: typeof data.at === 'number' ? data.at : null,
 		review,
+	}
+}
+
+/**
+ * 经验文件 → 经验行(与 `lesson/recorded` 折出来的同形)。`status: "retracted"` 的不再推送。
+ * 经验改变的是注意力与做法(「这台装置的温度要拿参考读数核」),事实改变的是信念。
+ */
+export function lessonFromFile(data, path) {
+	if (!isPlainObject(data) || text(data.id) === '' || text(data.text) === '') return null
+	return {
+		id: text(data.id),
+		goal: data.goal ?? null,
+		text: String(data.text),
+		kind: LESSON_KINDS.includes(data.kind) ? data.kind : 'trap',
+		about: Array.isArray(data.about) ? data.about.map(String).filter((item) => item.trim() !== '').slice(0, 6) : [],
+		evidence: typeof data.evidence === 'string' ? data.evidence : null,
+		boundary: typeof data.boundary === 'string' ? data.boundary : null,
+		status: data.status === 'retracted' ? 'retracted' : 'active',
+		path: path ?? null,
+		at: typeof data.at === 'number' ? data.at : null,
 	}
 }
 
@@ -1361,7 +1388,7 @@ export function materializeOntology(files) {
 	const flag = (path, id, code, detail, severity = 'warning') => problems.push({ path, id, code, detail, severity })
 	const entries = Object.entries(isPlainObject(files) ? files : {})
 		.map(([path, file]) => ({ path, file, place: classifyWorkspacePath(path) }))
-		.filter((item) => item.place !== null && item.place.kind !== 'fact')
+		.filter((item) => item.place !== null && item.place.kind !== 'fact' && item.place.kind !== 'lesson')
 		.sort((a, b) => (a.path < b.path ? -1 : 1))
 	const terms = []
 	const predicates = []

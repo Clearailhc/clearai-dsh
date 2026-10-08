@@ -2039,6 +2039,71 @@ function factFiles() {
 	}
 }
 
+console.log('\n【经验:结案时提议,评估者逐条核,支持的写进 clear/knowledge/lessons/,下个会话的卡上看得到】')
+{
+	const g = await call('Frame', {
+		claim: '这台反应器的温度读数是否可信',
+		done_criteria: 'lab/temp.md 写明参考温度与设定温度的偏差',
+		promote_at_level: 'L2',
+		hypotheses: [{ claim: '读数在第 25 次之后偏低约 8 度', refute_when: '参考温度与设定一致' }],
+	})
+	check('前置:立题', g.ok === true, String(g.code))
+	const h = eventsOf('goal/set').slice(-1)[0].hypotheses[0].id
+	await call('CreatePlan', { steps: [{ id: 'k1', do: '对比参考温度', artifacts: ['lab/temp.md'], done_criteria: 'lab/temp.md 写明偏差', tests: { hypotheses: [h], level: 'L2' } }] })
+	write('lab/temp.md', '# 温度核对\n\n第 25 次之后参考温度比设定低约 8 度,第 30、35、40 次都一样,所以读数在漂移之后偏低。\n')
+	await call('AdvancePlan', { step_id: 'k1', verdict: 'support', basis: 'lab/temp.md 列了三次参考温度' })
+	await call('ClosePlan', {})
+	let brief = ''
+	thisHost.onAudit = (request) => {
+		brief = typeof request?.prompt === 'string' ? request.prompt : (request?.prompt ?? []).map((block) => block?.text ?? '').join('\n')
+	}
+	thisHost.nextVerdict = {
+		holds: 'yes',
+		basis: '判据达成',
+		shortfalls: [],
+		results: [{ hypothesis: h, verdict: 'support' }],
+		lessons: [
+			{ lesson: 'L1', verdict: 'support', basis: 'lab/temp.md 第 3 行' },
+			{ lesson: 'L2', verdict: 'refute', basis: '记录里没有压力的数据' },
+		],
+	}
+	const closed = await call('Conclude', {
+		outcome: 'achieved',
+		lessons: [
+			{ text: '这台反应器的温度先拿参考读数核一次再用', kind: 'check', about: ['反应器', '温度'], evidence: 'lab/temp.md', boundary: '换了热电偶之后' },
+			{ text: '压力不重要,可以不扫', kind: 'shortcut', about: ['压力'] },
+		],
+	})
+	thisHost.onAudit = undefined
+	check('结案通过', closed.ok === true && closed.code === 'goal_achieved', String(closed.code))
+	check('评估者任务书里列了待核的经验(L1、L2)', /待核的经验/.test(brief) && /L1 · /.test(brief) && /L2 · /.test(brief), brief.slice(-400))
+	const recorded = eventsOf('lesson/recorded')
+	check('只有被支持的那条记成经验', recorded.length === 1 && recorded[0].kind === 'check' && recorded[0].text.includes('参考读数'), JSON.stringify(recorded))
+	const lessonFile = join(WORKSPACE, 'clear/knowledge/lessons', `${recorded[0]?.id}.json`)
+	const data = existsSync(lessonFile) ? JSON.parse(readFileSync(lessonFile, 'utf8')) : null
+	check('经验由系统写成文件', data?.id === recorded[0]?.id && data?.status === 'active' && data?.boundary === '换了热电偶之后', lessonFile)
+	check('回执说清写下的与没写下的', closed.message.includes(`clear/knowledge/lessons/${recorded[0]?.id}.json`) && /没写下的经验/.test(closed.message) && /被推翻/.test(closed.message), closed.message.slice(-400))
+
+	const preExecute = thisHost.listeners.get('tools/pre-execute')
+	const forged = await preExecute({ name: 'write', arguments: { file_path: join(WORKSPACE, 'clear/knowledge/lessons/l-forged.json'), content: '{}' }, agent: { id: SESSION }, callId: 'c-lesson-forge' }, async () => ({ kind: 'allow' }))
+	check('做的人写不了 clear/knowledge/lessons', forged.kind === 'deny', String(forged.kind))
+
+	const OTHER = 'session-lessons'
+	const other = makeHost()
+	apply(other.ctx, {})
+	await preStep(other, OTHER, 1)
+	const rows = other.service.derive(OTHER).lessonRows
+	check('别的会话第一拍就读到这条经验', rows.some((row) => row.id === recorded[0]?.id), JSON.stringify(rows))
+	const card = renderCard(other.service.state(OTHER))
+	check('立题前的卡上摆出以前的经验', card.includes('以前留下的经验') && card.includes('参考读数'), card.split('\n').filter((line) => line.includes('经验')).join('|'))
+
+	writeFileSync(lessonFile, `${JSON.stringify({ ...data, status: 'retracted' }, null, 2)}\n`)
+	await preStep(other, OTHER, 2)
+	check('人在文件上撤回 ⇒ 不再推送', !other.service.derive(OTHER).lessonRows.some((row) => row.id === recorded[0]?.id))
+	rmSync(lessonFile)
+	await preStep(thisHost, SESSION, 902)
+}
+
 console.log('\n【领域本体写成文件:写入时单文件校验 · 读取时从文件折图 · 断言链 · 冲突只暴露】')
 {
 	/** 一条断言的构造器:同一主体、同一谓词,只换取值——冲突那一段靠的就是它。 */

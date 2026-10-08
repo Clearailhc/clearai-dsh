@@ -16,7 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
+import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 import { bilingual, detectLanguage, messageText, tr, withLanguage } from './lang.js'
 
@@ -64,9 +64,11 @@ export const MUTATION_KIND = 'clearai'
  *           `anomaly/opened` / `anomaly/resolved` 折进来,评估者报的随 `audit/settled` 一起来);目标带
  *           `irreversible`(不可逆动作的命令特征);放行带 `action`。对手判断(`rival` / `split_by`)删了,
  *           旧账里的这两格不再读。
+ *   v17 → v18:多了 `lessons`(经验:结案时经独立评估核过的「下次要留意什么」,`lesson/recorded` 折进来;
+ *           别的会话留下的从 `clear/knowledge/lessons/<id>.json` 经 `workspace/synced` 进来)。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 17
+export const STATE_VERSION = 18
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -98,6 +100,8 @@ export function emptyState() {
 		 * 被解释(`explained`)、写明理由排除(`ruled_out`)、交给人(`escalated`);没去处的就是开着(`open`)。
 		 */
 		anomalies: [],
+		/** **经验**:本会话结案写下的(别的会话的在工作区文件里,派生时合进来)。 */
+		lessons: [],
 		/**
 		 * **本体形状**:内核随投影下发的那份声明(对象/状态/边/等级)。
 		 * 为什么进投影而不是在界面里手抄:面板那一格的页眉要从**声明**生成——
@@ -407,6 +411,23 @@ export function applyMutation(state, mutation) {
 			next.anomalies.push({ id: mutation.id, what: String(mutation.what ?? ''), anchor: mutation.anchor ?? null, step: mutation.step ?? null, by: mutation.by ?? 'model', status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
 			break
 		}
+		case 'lesson/recorded': {
+			if (!Array.isArray(next.lessons)) next.lessons = []
+			if (next.lessons.some((item) => item.id === mutation.id)) break
+			next.lessons.push({
+				id: mutation.id,
+				goal: mutation.goal ?? null,
+				text: String(mutation.text ?? ''),
+				kind: mutation.kind ?? 'trap',
+				about: Array.isArray(mutation.about) ? mutation.about.map(String) : [],
+				evidence: mutation.evidence ?? null,
+				boundary: mutation.boundary ?? null,
+				status: 'active',
+				path: mutation.path ?? null,
+				at,
+			})
+			break
+		}
 		case 'anomaly/resolved': {
 			const item = next.anomalies.find((entry) => entry.id === mutation.id)
 			if (item === undefined || item.status !== 'open') break
@@ -632,9 +653,9 @@ export function applyMutation(state, mutation) {
 			 */
 			const touchedOntology = (mutation.changes ?? []).some((change) => {
 				const kind = classifyWorkspacePath(change?.path)?.kind
-				return kind !== undefined && kind !== 'fact'
+				return kind !== undefined && kind !== 'fact' && kind !== 'lesson'
 			})
-			if (touchedOntology || Object.keys(files).some((path) => classifyWorkspacePath(path)?.kind !== 'fact')) {
+			if (touchedOntology || Object.keys(files).some((path) => !['fact', 'lesson'].includes(classifyWorkspacePath(path)?.kind))) {
 				const ontology = materializeOntology(files)
 				next.lexicon = ontology.lexicon
 				next.entities = ontology.entities
@@ -1783,6 +1804,18 @@ export function derive(state) {
 	 * 两者都吃 `factRows` 而不是 `state.facts`:事实的复核态与推翻标记是派生的,
 	 * 在这里重算一遍就等于第二份判据。
 	 */
+	/**
+	 * **经验行**:本会话写下的,加上别的会话留在 `clear/knowledge/lessons/` 的。同 id 以文件为准
+	 * (人可以在文件上标 `status: "retracted"` 撤回);撤回的不再推送。新的在前。
+	 */
+	const lessonById = new Map()
+	for (const item of state.lessons ?? []) lessonById.set(item.id, { ...item })
+	for (const [path, file] of Object.entries(state.workspace?.files ?? {})) {
+		if (classifyWorkspacePath(path)?.kind !== 'lesson' || file?.data === undefined) continue
+		const row = lessonFromFile(file.data, path)
+		if (row !== null) lessonById.set(row.id, { ...lessonById.get(row.id), ...row, at: row.at ?? lessonById.get(row.id)?.at ?? null })
+	}
+	const lessonRows = [...lessonById.values()].filter((item) => item.status !== 'retracted').sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
@@ -1830,6 +1863,7 @@ export function derive(state) {
 		closedPlans,
 		pendingAudit,
 		factRows,
+		lessonRows,
 		settlement,
 		stepOf,
 		needYou,

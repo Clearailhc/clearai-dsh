@@ -38,7 +38,7 @@ description: Use when working inside the ClearAI preset and a delivery keeps get
 
 `holds=yes` 这一步就完成,不管 `results` 是支持、推翻还是说不清。推翻和说不清照样记成证据,判断的状态由证据算。评估卡写不进来时裁决降级为 `unknown`,这一步不推进,绝不静默放行。
 
-评估卡、证据、事实由系统落盘;`clear/evidence`、`clear/knowledge/facts`、`clear/goals` 你都写不了。重评产生新证据,旧证据不改不删。
+评估卡、证据、事实由系统落盘;`clear/evidence`、`clear/knowledge/facts`、`clear/knowledge/lessons`、`clear/goals` 你都写不了。重评产生新证据,旧证据不改不删。
 
 ## 本体文件被拒或被标出来
 
@@ -53,6 +53,8 @@ description: Use when working inside the ClearAI preset and a delivery keeps get
 要重新检验一条已有事实(定义变了、新数据与它矛盾、换了条件),Frame 时给那条判断写 `retests: "<事实 id>"`(事实 id 就是 `clear/knowledge/facts/<id>.json` 的文件名)。别的会话留下的事实也这样做:复检被推翻时,系统会当场问人撤回还是维持那条事实;不写 `retests`,旧事实不会知道它被推翻了。
 
 ## 结案之后
+
+经验在结案那一次提:`Conclude(outcome="achieved", lessons=[…])`,每条一句「下次怎么做」,带类别(坑 `trap` / 先核 `check` / 会骗人的捷径 `shortcut` / 先验 `prior`)、涉及的装置或量(`about`)、这次记录里的凭据和不适用的条件。评估者对照记录逐条判,支持的写进 `clear/knowledge/lessons/`,之后的会话在立题、定计划、写预期前看到。人要撤回一条,把文件里的 `status` 改成 `retracted`。放弃的目标不核,也不写经验。
 
 结案成功、而这次摸出了一套以后还会用的做法(怎么查、怎么算、怎么验),把它写成原生技能:`.agents/skills/<名字>/SKILL.md`,开头的 `description` 写清什么时候用。下次宿主会把它列出来。只做了一次、不会再用的,不写。
 
@@ -93,7 +95,7 @@ One card carries two verdicts, each answering its own question:
 
 With `holds=yes` the step is complete, whatever `results` says. Refute and inconclusive are recorded as evidence all the same, and the judgment's status is computed from the evidence. If the card cannot be written, the verdict degrades to `unknown` and the step does not advance; it is never silently let through.
 
-The system writes evaluator cards, evidence and facts; you cannot write `clear/evidence`, `clear/knowledge/facts` or `clear/goals`. A re-evaluation adds new evidence; old evidence is never changed or deleted.
+The system writes evaluator cards, evidence and facts; you cannot write `clear/evidence`, `clear/knowledge/facts`, `clear/knowledge/lessons` or `clear/goals`. A re-evaluation adds new evidence; old evidence is never changed or deleted.
 
 ## When an ontology file is refused or flagged
 
@@ -106,5 +108,7 @@ Ontology files (`clear/ontology/{concepts,relations,entities}/**.json`) go throu
 A fact marked "definition changed" on the card: a concept or relation it used at promotion later changed meaning (definition, broader term, subject domain, object range, single-valuedness). Check whether it still holds; if not, test it again as a judgment in a new goal. Renaming or changing aliases does not trigger this mark.
 
 ## After concluding
+
+Lessons are proposed in the conclusion itself: `Conclude(outcome="achieved", lessons=[…])`, each one sentence on what to do next time, with a kind (pitfall `trap` / check first `check` / misleading shortcut `shortcut` / prior `prior`), the equipment or quantities involved (`about`), the evidence in this run's record and when it does not apply. The evaluator judges each against the record; supported ones are written to `clear/knowledge/lessons/`, and later sessions see them before framing, planning and writing expectations. To retract one, a person sets `status` to `retracted` in its file. An abandoned goal is not checked and writes no lessons.
 
 If the conclusion succeeds and the run found a method worth reusing (how to look up, compute or verify), write it as a native skill: `.agents/skills/<name>/SKILL.md`, with a `description` at the top that says when to use it. The host lists it next time. Skip anything done once and never needed again.

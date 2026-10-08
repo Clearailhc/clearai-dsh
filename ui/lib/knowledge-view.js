@@ -462,6 +462,22 @@ function cardLines(state, derived, options, view) {
 		const target = last.hypothesis === null || last.hypothesis === undefined ? tr('目标判据', 'goal criteria') : nameOf(last.hypothesis)
 		push(tr(`- 最近一次结果:${target}${VERDICT_WORD[last.verdict] ?? last.verdict}(${who})`, `- Latest result: ${target} ${VERDICT_WORD[last.verdict] ?? last.verdict} (${who})`), 1)
 	}
+	/**
+	 * **经验**:以前结案时核过的「下次怎么做」。只在要做决定的时候摆出来:立题前、定计划前、
+	 * 下一步动手而还没写预期时。与眼下目标和下一步提到同一装置或量的排在前面。
+	 */
+	const lessonRows = Array.isArray(derived?.lessonRows) ? derived.lessonRows : []
+	const nextStep = plan === null ? null : (plan.steps.find((step) => step.status === 'open') ?? null)
+	const deciding = goal === null || String(goal.status) !== 'open' || plan === null || (nextStep !== null && (typeof nextStep.expect !== 'string' || nextStep.expect === ''))
+	if (lessonRows.length > 0 && deciding) {
+		const context = `${goal?.claim ?? ''}\n${nextStep?.do ?? ''}`.toLowerCase()
+		const score = (lesson) => (lesson.about ?? []).filter((item) => item !== '' && context.includes(String(item).toLowerCase())).length
+		const ranked = lessonRows.map((lesson, index) => ({ lesson, index, score: score(lesson) })).sort((a, b) => b.score - a.score || a.index - b.index)
+		const kindWord = { trap: tr('坑', 'trap'), check: tr('先核', 'check'), shortcut: tr('别走的捷径', 'misleading shortcut'), prior: tr('先验', 'prior') }
+		push(tr(`- 以前留下的经验(${lessonRows.length} 条;定计划、写预期前先看,用上了就在预期里写明来自哪条):`, `- Lessons left earlier (${lessonRows.length}; read before planning or writing an expectation, and name the one you use in the expectation):`), 1)
+		for (const { lesson } of ranked.slice(0, 6)) push(`  · ${lesson.id} · ${kindWord[lesson.kind] ?? lesson.kind} · ${clamp(lesson.text, 160)}${lesson.boundary ? tr(`(不适用:${clamp(lesson.boundary, 80)})`, ` (does not apply: ${clamp(lesson.boundary, 80)})`) : ''}`, 1)
+		if (lessonRows.length > 6) push(tr(`  · 还有 ${lessonRows.length - 6} 条(clear/knowledge/lessons/)`, `  · ${lessonRows.length - 6} more (clear/knowledge/lessons/)`), 2)
+	}
 	/** 事实行含别的会话留下的(`foreign`):攒下来的东西从这里开始被看见。 */
 	const factRows = Array.isArray(derived?.factRows) ? derived.factRows : facts
 	if (factRows.length > 0) {

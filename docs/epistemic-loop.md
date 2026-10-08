@@ -8,13 +8,13 @@ The epistemic loop is ClearAI's core loop, and it runs both ways: it uses the on
 
 | Beat | The model | The system guarantees | Tools |
 |---|---|---|---|
-| Recall | Reads the facts and concept glosses the card hands it | Before framing and while judgements are written, related facts (statement and boundary) and the glosses of the concepts in use go on the card | runtime card |
+| Recall | Reads the facts, lessons and concept glosses the card hands it | Before framing and while judgements are written, related facts (statement and boundary) and the glosses of the concepts in use go on the card; lessons checked earlier are shown before framing, planning and writing expectations | runtime card |
 | Frame | Writes the person's question as a goal with criteria; proposes judgements, each with what would refute it; declares irreversible actions | At least two judgements, refutation condition required; criteria hang on the host's native goal and are written before the work | native goal, `Frame` |
 | Expect | Before each step, writes what it expects to see and where that comes from (relation / lesson / judgement, or plainly intuition) | The expectation is kept on the step and the card shows it for the next step; leaving it out is not blocked | `CreatePlan`, `RevisePlan(action="expect")` |
 | Act, observe | Does the work, delivers | Admission only decides accept or reject; a declared irreversible command asks a person before it runs; L3+ dispatches an independent evaluator; L4 first asks a person to release | native bash, `AdvancePlan` |
 | Compare | Records where the result does not fit the expectation or the ontology as an unexplained item (anomaly) and gives it a destination | Unexplained items stay on the card with three destinations only: explained, ruled out with a stated reason, handed to a person | `AdvancePlan.anomalies`, `Anomaly` |
-| Conclude | Concludes | An independent evaluator checks three things: are the criteria met, could the remaining unexplained items shake the conclusion, can the data itself be trusted; only then is the native goal completed | `Conclude` |
-| Consolidate | Writes concepts, relations and entities in the domain vocabulary | Judgements the evaluator supports are promoted to facts with boundary and level; retracting an old fact is a person's decision | native file tools on `clear/ontology/**.json` |
+| Conclude | Concludes, proposing the lessons this run found (what to do next time) | An independent evaluator checks three things: are the criteria met, could the remaining unexplained items shake the conclusion, can the data itself be trusted; only then is the native goal completed | `Conclude` |
+| Consolidate | Writes concepts, relations and entities in the domain vocabulary | Judgements the evaluator supports are promoted to facts with boundary and level; lessons the evaluator supports are written to `clear/knowledge/lessons/`; retracting an old fact is a person's decision | native file tools on `clear/ontology/**.json` |
 
 Ordinary Q&A sets no goal, so it never enters the loop and costs nothing.
 

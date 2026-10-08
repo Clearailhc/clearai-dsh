@@ -8,9 +8,9 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **53**
-- By status: Implemented 52 · Design only 1
-- By strength: Hard boundary 42 · Advisory 8 · Native 3
+- Mechanisms: **54**
+- By status: Implemented 53 · Design only 1
+- By strength: Hard boundary 42 · Advisory 9 · Native 3
 - By destination: stays design-only 1
 - Actually blocking execution: **20**
 - Carrying a known mismatch between docs/comments and code: **1**
@@ -43,6 +43,7 @@ This section is exported from code, not written by hand:
 | `irreversible-command-release` | Irreversible actions gated at the command: Frame declares a command signature, and a matching bash call asks a person before it runs | Epistemic | Implemented | Hard boundary | Authoritative | human | yes | `preset/plugins/clearai-kernel.js releaseIrreversible / guardTool` |
 | `evidence-record` | Evidence recording | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js buildEvidenceOrigins` |
 | `fact-promotion` | Fact promotion | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js persistFact` |
+| `lessons` | Lessons: "what to do next time" proposed at conclusion, checked one by one against the record by the goal evaluator; supported ones are written to clear/knowledge/lessons/ and shown on the card before framing, planning and writing expectations | Epistemic | Implemented | Advisory | Authoritative | model | no | `preset/plugins/clearai-kernel.js Conclude.lessons / lessonBrief / verdictSchema.lessons / persistLesson` |
 | `history-retention` | Append-only history | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/fold.js（全体 case 无删除分支）` |
 | `block-threshold` | Consecutive-block threshold, a quality gate | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js blockedThreshold` |
 | `l4-universal-gate` | A universal L4 gate over every evaluation | Epistemic | Design only | Advisory | None | human | no | `docs/known-gaps.md` |
@@ -278,6 +279,19 @@ This section is exported from code, not written by hand:
 - **Rationale**: 事实由系统按门槛算出来，模型不能宣称。
 - **Code**: preset/plugins/clearai-kernel.js persistFact; promote_at_level 门槛; ui/lib/fold.js case 'fact/promoted'
 - **Tests**: test/kernel.test.mjs · **Config**: l4RejectSelfWritten
+- **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
+
+### `lessons` · Lessons: "what to do next time" proposed at conclusion, checked one by one against the record by the goal evaluator; supported ones are written to clear/knowledge/lessons/ and shown on the card before framing, planning and writing expectations
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Advisory · **Authority**: Authoritative · **Actor**: model
+- **Trigger**: 模型在 Conclude(outcome=achieved) 里给 lessons
+- **Input**: 每条:text、kind(trap/check/shortcut/prior)、about、evidence、boundary
+- **Output**: 写入 clear/knowledge/lessons/<经验 id>.json + mutation lesson/recorded;没被支持的在回执里列出,不写
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 单次任务里 ClearAI 多出来的主要是对反常的纪律;探索深度要靠跨任务带过来的做法(哪台装置要先核、哪类体系先斜向扫)。经验改变注意力与做法,事实改变信念,所以分开放;两者都要独立评估过才写。放弃的目标不核,也不写。
+- **Code**: preset/plugins/clearai-kernel.js Conclude.lessons / lessonBrief / verdictSchema.lessons / persistLesson; ui/lib/fold.js case 'lesson/recorded' / derive lessonRows; ui/lib/knowledge-view.js 经验段
+- **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `history-retention` · Append-only history

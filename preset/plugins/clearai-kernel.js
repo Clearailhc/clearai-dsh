@@ -870,6 +870,20 @@ export function apply(ctx, config = {}) {
 					additionalProperties: false,
 				},
 			},
+			lessons: {
+				type: 'array',
+				description: tr('任务书列了待核的经验(L1、L2……)时,每条各一格;没列就给空数组。', 'When the brief lists lessons to check (L1, L2, ...), one entry each; otherwise an empty array.'),
+				items: {
+					type: 'object',
+					properties: {
+						lesson: { type: 'string', maxLength: 20, description: tr('经验编号,如 L1', 'the lesson number, e.g. L1') },
+						verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
+						basis: { type: 'string', maxLength: 400, description: tr('一句话:记录里哪处支持或推翻它', 'One sentence: where in the record it is supported or refuted') },
+					},
+					required: ['lesson', 'verdict'],
+					additionalProperties: false,
+				},
+			},
 			refs: {
 				type: 'array',
 				description: tr('逐条证据引用:文件与行号。裁决要能被第三方照着复核。', 'Evidence references, one per file and line, so a third party can check the verdict.'),
@@ -1033,11 +1047,20 @@ export function apply(ctx, config = {}) {
 			const matters = ['yes', 'no', 'unclear'].includes(item?.matters) ? item.matters : 'unclear'
 			anomalies.push({ what: what.slice(0, 400), matters })
 		}
+		const lessons = []
+		for (const item of Array.isArray(value?.lessons) ? value.lessons : []) {
+			if (item === null || typeof item !== 'object') continue
+			const lesson = String(item.lesson ?? '').trim().toUpperCase()
+			const verdict = String(item.verdict ?? '').toLowerCase()
+			if (!/^L\d+$/.test(lesson) || !['support', 'refute', 'inconclusive'].includes(verdict)) continue
+			lessons.push({ lesson, verdict, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim().slice(0, 400) : null })
+		}
 		const basis = typeof value?.basis === 'string' && value.basis.trim() !== '' ? value.basis.trim() : tr('评估者未给出依据', 'the evaluator gave no basis')
 		return {
 			holds,
 			results,
 			anomalies,
+			lessons,
 			// 截断是**兜底**:schema 已声明 maxLength,越界的产出本不该到这里;真到了也不能让账本吃下五千字。
 			// 截断标记**算在预算内**:申报多少就必须是多少。
 			basis: basis.length > 1200 ? tr(`${basis.slice(0, 1170)}…(裁到 1200 字;完整论证应由 refs 指认)`, `${basis.slice(0, 1170)}… (cut to 1200 characters; the full argument belongs in refs)`) : basis,
@@ -1551,7 +1574,7 @@ export function apply(ctx, config = {}) {
 		} catch {
 			/* dispose 失败不影响裁决事实 */
 		}
-		const card = { schema_version: 'clearai.audit.v2', kind, step_id: step.id, auditor_run_id: String(entry.run.id), holds: verdict.holds, results: verdict.results, anomalies: verdict.anomalies, shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
+		const card = { schema_version: 'clearai.audit.v2', kind, step_id: step.id, auditor_run_id: String(entry.run.id), holds: verdict.holds, results: verdict.results, anomalies: verdict.anomalies, ...(verdict.lessons.length > 0 ? { lessons: verdict.lessons } : {}), shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
 		const cardPath = writeAuditCard(sessionId, step.id, card)
 		if (cardPath === null) {
 			return settleUnknown(tr('评估卡落盘失败:裁决降级', 'Could not save the evaluation card: verdict downgraded'), ['card_persist_failed'])
@@ -2031,6 +2054,9 @@ export function apply(ctx, config = {}) {
 	// 读盘按 (mtime, size) 记进程内缓存:没变的文件不重读、不重算摘要。
 
 	const FACTS_REL = ['clear', 'knowledge', 'facts']
+	const LESSONS_REL = ['clear', 'knowledge', 'lessons']
+	/** 经验的四类(与 `domain-language.js` 的 `LESSON_KINDS` 同值):坑、要先核的、会骗人的捷径、先验。 */
+	const LESSON_KINDS = ['trap', 'check', 'shortcut', 'prior']
 	const ONTOLOGY_REL = ['clear', 'ontology']
 	const ONTOLOGY_BRANCH_DIRS = ['concepts', 'relations', 'entities']
 	/** 读面有界(与 `domain-language.js` 的 `WORKSPACE_LIMITS` 同值):超出的如实报成读不成,不静默截断。 */
@@ -2058,6 +2084,7 @@ export function apply(ctx, config = {}) {
 			}
 		}
 		walk(FACTS_REL, false)
+		walk(LESSONS_REL, false)
 		for (const branch of ONTOLOGY_BRANCH_DIRS) walk([...ONTOLOGY_REL, branch], true)
 		return out
 	}
@@ -2632,15 +2659,63 @@ export function apply(ctx, config = {}) {
 
 	// ── Conclude ──────────────────────────────────────────────────────────
 
+	/** 结案时提议的经验:去掉空的、限 5 条,字段裁到能放进一张卡。 */
+	function proposedLessonsOf(value) {
+		const out = []
+		for (const item of Array.isArray(value) ? value : []) {
+			const text = typeof item?.text === 'string' ? item.text.trim() : ''
+			if (text === '' || out.length >= 5) continue
+			out.push({
+				text: text.slice(0, 300),
+				kind: LESSON_KINDS.includes(item.kind) ? item.kind : 'trap',
+				about: Array.isArray(item.about) ? item.about.map((entry) => String(entry).trim()).filter((entry) => entry !== '').slice(0, 6) : [],
+				evidence: typeof item.evidence === 'string' && item.evidence.trim() !== '' ? item.evidence.trim().slice(0, 300) : null,
+				boundary: typeof item.boundary === 'string' && item.boundary.trim() !== '' ? item.boundary.trim().slice(0, 300) : null,
+			})
+		}
+		return out
+	}
+
+	/** 交给结案评估者的那一段:待核的经验,编号 L1……,判法写在一起。 */
+	function lessonBrief(lessons) {
+		if (lessons.length === 0) return []
+		const kindWord = { trap: tr('坑', 'trap'), check: tr('要核的', 'check'), shortcut: tr('会骗人的捷径', 'misleading shortcut'), prior: tr('先验', 'prior') }
+		return [
+			tr('# 待核的经验(做的人提议:下次在同类现场要怎么做)', '# Lessons to check (proposed by the worker: what to do differently next time in a similar setting)'),
+			...lessons.map((item, index) => `- L${index + 1} · ${kindWord[item.kind]} · ${item.text}${item.evidence ? tr(`(凭据:${item.evidence})`, ` (evidence: ${item.evidence})`) : ''}${item.boundary ? tr(`(不适用:${item.boundary})`, ` (does not apply: ${item.boundary})`) : ''}`),
+			tr(
+				'每条在 `lessons` 里各给一格:support = 记录里确实发生过它说的事,而且照它做下次会更好;refute = 记录与它矛盾,或照它做会误导;inconclusive = 凭记录判不了,或它只是这次结论的复述。经验不影响 `holds`。',
+				'Give one `lessons` entry each: support = the record shows what it says happened, and following it would do better next time; refute = the record contradicts it, or following it would mislead; inconclusive = the record cannot decide, or it only restates this run\'s conclusion. Lessons do not affect `holds`.',
+			),
+		]
+	}
+
 	defineTool({
 		name: 'Conclude',
 		description:
-			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成;评估者同时逐条判还活着的判断,判为支持的(或中途已达门槛的)升格为事实;各步收下的产物声明为交付卡片。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
+			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成;评估者同时逐条判还活着的判断,判为支持的(或中途已达门槛的)升格为事实;各步收下的产物声明为交付卡片;随结案提议的经验(`lessons`)由评估者逐条核,支持的写进 clear/knowledge/lessons/。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
 		parameters: {
 			type: 'object',
 			properties: {
 				outcome: { type: 'string', enum: ['achieved', 'abandoned'], description: 'achieved=判据已达成;abandoned=如实说清阻塞后放弃' },
 				note: { type: 'string', description: '结案说明' },
+				lessons: {
+					type: 'array',
+					maxItems: 5,
+					description: '经验(可选,只在 achieved 时核):这次摸出的、下次在同类现场改变做法的东西,不是这次结论的复述。评估者逐条对照记录核,判为支持的写进 clear/knowledge/lessons/,之后的会话在立题和定计划时会看到',
+					items: {
+						type: 'object',
+						properties: {
+							text: { type: 'string', description: '一句话,下次怎么做(「这台装置的温度读数先拿参考温度核一次」)' },
+							kind: { type: 'string', enum: LESSON_KINDS, description: 'trap=会踩的坑;check=要先核的读数或假设;shortcut=省事但会骗人的做法;prior=对这类体系的先验(例如「两个因素常常耦合,先做斜向扫描」)' },
+							about: { type: 'array', items: { type: 'string' }, description: '涉及的装置、量或概念(短名,用来下次匹配)' },
+							evidence: { type: 'string', description: '这次记录里哪处表明了它(步骤、文件)' },
+							boundary: { type: 'string', description: '在什么条件下不适用' },
+						},
+						required: ['text', 'kind'],
+						additionalProperties: false,
+					},
+				},
 			},
 			required: ['outcome'],
 			additionalProperties: false,
@@ -2742,11 +2817,13 @@ export function apply(ctx, config = {}) {
 				artifacts: [],
 				tests: candidates.length === 0 ? null : { hypotheses: candidates.map((hypothesis) => hypothesis.id), level: goal.promote_at_level },
 			}
+			const proposedLessons = proposedLessonsOf(args.lessons)
 			const gate = {
 				confirmed: [
 					...state.evidence.map((item) => ({ ref: `evidence:${item.id}`, bytes: 0, digest: `verdict=${item.verdict}` })),
 					...derived.hypotheses.map((item) => ({ ref: `hypothesis:${item.id}`, bytes: 0, digest: `${item.status}/支持到${item.supportedLevel ?? '—'}` })),
 				],
+				extra: lessonBrief(proposedLessons),
 			}
 			const audit = await runEvaluator(sessionId, exec.agent, plan, syntheticStep, gate, 'goal_audit', exec.signal)
 			mutations.push(...audit.mutations)
@@ -2946,6 +3023,21 @@ export function apply(ctx, config = {}) {
 				})
 				promoted.push({ id: factId, claim: hypothesis.claim })
 			}
+			/** 评估者判为支持的经验写成文件;别的如实说出来,不写。 */
+			const lessonVerdicts = new Map((audit.lessons ?? []).map((item) => [item.lesson, item]))
+			const keptLessons = []
+			const droppedLessons = []
+			proposedLessons.forEach((lesson, index) => {
+				const verdict = lessonVerdicts.get(`L${index + 1}`) ?? null
+				if (verdict?.verdict !== 'support') {
+					droppedLessons.push(`${quote(lesson.text)}${tr(':', ': ')}${verdict === null ? tr('评估者没判', 'the evaluator gave no verdict') : `${verdict.verdict === 'refute' ? tr('被推翻', 'refuted') : tr('说不清', 'inconclusive')}${verdict.basis ? `(${verdict.basis})` : ''}`}`)
+					return
+				}
+				const record = { id: `l-${Math.random().toString(36).slice(2, 8)}`, goal: goal.id, ...lesson, basis: verdict.basis }
+				const path = persistLesson(sessionId, record)
+				mutations.push({ t: 'lesson/recorded', id: record.id, goal: goal.id, text: lesson.text, kind: lesson.kind, about: lesson.about, evidence: lesson.evidence, boundary: lesson.boundary, basis: verdict.basis, path })
+				keptLessons.push(record)
+			})
 			return done({
 				ok: true,
 				code: 'goal_achieved',
@@ -2960,6 +3052,8 @@ export function apply(ctx, config = {}) {
 						? tr(`\n结案时有 ${untouched.length} 条判断**一次都没检验过**:${untouched.map((hypothesis) => `「${handleOf(hypothesis)}」`).join('、')}——没检验不是「没问题」,是「没看过」;它们留在账上,随时可以补一次检验。`, `\nAt conclusion, ${untouched.length} judgment(s) were **never tested**: ${untouched.map((hypothesis) => `"${handleOf(hypothesis)}"`).join(', ')}. Untested does not mean fine; it means not looked at. They stay in the ledger and can be tested any time.`)
 						: '') +
 					tr('\n被推翻与被替换的判断都留在记录里。', '\nRefuted and replaced judgments stay in the record.') +
+					(keptLessons.length > 0 ? tr(`\n写下的经验:${keptLessons.map((item) => `${item.text}(clear/knowledge/lessons/${item.id}.json)`).join(' / ')}。之后的会话立题和定计划时会看到。`, `\nLessons written: ${keptLessons.map((item) => `${item.text} (clear/knowledge/lessons/${item.id}.json)`).join(' / ')}. Later sessions see them when framing and planning.`) : '') +
+					(droppedLessons.length > 0 ? tr(`\n没写下的经验:\n${droppedLessons.map((item) => `- ${item}`).join('\n')}`, `\nLessons not written:\n${droppedLessons.map((item) => `- ${item}`).join('\n')}`) : '') +
 						factReview +
 					/** 「怎么做」也要攒下来:这次摸出的可复用做法写成原生技能,下次宿主会列出来。 */
 					tr('\n这次如果摸出了以后还会用的做法(怎么查、怎么算、怎么验),写成原生技能:.agents/skills/<名字>/SKILL.md(description 写清什么时候用)。', '\nIf this run found a method worth reusing (how to look up, compute or verify), write it as a native skill: .agents/skills/<name>/SKILL.md (with a description that says when to use it).') +
@@ -2985,6 +3079,25 @@ export function apply(ctx, config = {}) {
 			return file
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai kernel: 事实落盘失败 ${String(error?.message ?? error)}`)
+			return null
+		}
+	}
+
+	/**
+	 * **一条经验一个文件**(`clear/knowledge/lessons/<经验 id>.json`),只有系统写。
+	 *
+	 * 经验与事实分开放:事实改变信念(「T 与 cat 沿斜脊耦合」),经验改变下一次怎么做
+	 * (「这台装置的温度要拿参考读数核」)。两者都要过独立评估才写,写了下个会话就读得到。
+	 * 人要撤回一条,在文件上把 `status` 改成 `retracted`。
+	 */
+	function persistLesson(sessionId, record) {
+		const file = sessionFile(sessionId, 'clear', 'knowledge', 'lessons', `${record.id}.json`)
+		if (file === null) return null
+		try {
+			writeTextFile(file, `${JSON.stringify({ ...record, session: sessionId, status: 'active', at: Date.now() }, null, 2)}\n`)
+			return file
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 经验落盘失败 ${String(error?.message ?? error)}`)
 			return null
 		}
 	}
@@ -3750,7 +3863,7 @@ export function apply(ctx, config = {}) {
 	 * `ontology` 里**模型可写**的是三支本体目录(`concepts` / `relations` / `entities`);
 	 * 字段定义 `SCHEMA.json` 与过程本体那份货架仍归系统。
 	 */
-	const PROTECTED_REL = [['clear', 'evidence'], ['clear', 'knowledge', 'facts'], ['clear', 'goals'], ['clear', 'ontology']]
+	const PROTECTED_REL = [['clear', 'evidence'], ['clear', 'knowledge', 'facts'], ['clear', 'knowledge', 'lessons'], ['clear', 'goals'], ['clear', 'ontology']]
 	const OPEN_REL = ONTOLOGY_BRANCH_DIRS.map((branch) => ['clear', 'ontology', branch])
 
 	/** 工作区内的相对路径(正斜杠);在工作区外或取不到工作区返回 null。 */
@@ -3922,7 +4035,7 @@ export function apply(ctx, config = {}) {
 				if (suspect !== null) {
 					return {
 						kind: 'deny',
-						reason: tr(`${suspect} 由系统所有,做的人不能写(clear/evidence、clear/knowledge/facts、clear/goals、clear/ontology 的 SCHEMA.json 与货架)。事实只由独立评估之后的结案写;本体请写在 clear/ontology/concepts、relations、entities 下。`, `${suspect} is owned by the system and the worker cannot write it (clear/evidence, clear/knowledge/facts, clear/goals, and SCHEMA.json and the shelf in clear/ontology). Facts are written only when a goal concludes after independent evaluation; write the ontology under clear/ontology/concepts, relations and entities.`),
+						reason: tr(`${suspect} 由系统所有,做的人不能写(clear/evidence、clear/knowledge/facts、clear/knowledge/lessons、clear/goals、clear/ontology 的 SCHEMA.json 与货架)。事实与经验只由独立评估之后的结案写;本体请写在 clear/ontology/concepts、relations、entities 下。`, `${suspect} is owned by the system and the worker cannot write it (clear/evidence, clear/knowledge/facts, clear/knowledge/lessons, clear/goals, and SCHEMA.json and the shelf in clear/ontology). Facts and lessons are written only when a goal concludes after independent evaluation; write the ontology under clear/ontology/concepts, relations and entities.`),
 					}
 				}
 				if (writing && hostService !== undefined) {
@@ -4218,10 +4331,16 @@ export function apply(ctx, config = {}) {
 		},
 		Conclude: {
 			description:
-				'Conclude: hand the goal in for acceptance. This is the only way to complete a goal (the native "complete goal" is refused). The system **always** dispatches an independent evaluator to check the goal criteria and transcription fidelity item by item; only when the criteria are met does the goal conclude as achieved: the native goal is marked complete; the evaluator also judges each live judgment, and those it supports (or that already reached the threshold) are promoted to facts; and the outputs accepted by each step are declared as a deliverables card. Otherwise the goal stays open and the gaps come back. **Order**: before achieved, close the plan first (`ClosePlan`). Abandoning (`abandoned`) is not limited by this: the native goal is marked blocked with the reason, and a person decides whether to end it.',
+				'Conclude: hand the goal in for acceptance. This is the only way to complete a goal (the native "complete goal" is refused). The system **always** dispatches an independent evaluator to check the goal criteria and transcription fidelity item by item; only when the criteria are met does the goal conclude as achieved: the native goal is marked complete; the evaluator also judges each live judgment, and those it supports (or that already reached the threshold) are promoted to facts; and the outputs accepted by each step are declared as a deliverables card; lessons proposed with the conclusion (`lessons`) are checked one by one, and supported ones are written to clear/knowledge/lessons/. Otherwise the goal stays open and the gaps come back. **Order**: before achieved, close the plan first (`ClosePlan`). Abandoning (`abandoned`) is not limited by this: the native goal is marked blocked with the reason, and a person decides whether to end it.',
 			params: {
 				outcome: 'achieved = criteria met; abandoned = give up after stating the blocker honestly',
 				note: 'Conclusion note',
+				lessons: 'Lessons (optional, checked only on achieved): what this run found that changes how to work next time in a similar setting, not a restatement of this run\'s conclusion. The evaluator checks each against the record; supported ones are written to clear/knowledge/lessons/, and later sessions see them when framing and planning',
+				'lessons.items.text': 'One sentence on what to do next time ("check this rig\'s temperature against the reference reading first")',
+				'lessons.items.kind': 'trap = a pitfall; check = a reading or assumption to check first; shortcut = a convenient method that misleads; prior = a prior about this kind of system (e.g. "two factors are often coupled; scan diagonally first")',
+				'lessons.items.about': 'The equipment, quantities or concepts involved (short names, used to match next time)',
+				'lessons.items.evidence': 'Where in this run\'s record it showed (step, file)',
+				'lessons.items.boundary': 'When it does not apply',
 			},
 		},
 		CreatePlan: {
