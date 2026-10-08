@@ -16,16 +16,22 @@ import { deliverableFiles } from './scenarios.mjs'
 const HERE = fileURLToPath(new URL('.', import.meta.url))
 const [key, runArg, session = ''] = process.argv.slice(2)
 if (key === undefined || runArg === undefined) {
-	console.error('用法:node grade.mjs <math|reactor|factory|battery|binpack|cell> <运行目录> [会话说明]')
+	console.error('用法:node grade.mjs <math|reactor|factory|battery|binpack|cell|site-s1|site-s2|site-s3> <运行目录> [会话说明]')
 	process.exit(2)
 }
 const runDir = resolve(runArg)
 const workspace = String(JSON.parse(readFileSync(join(runDir, 'meta.json'), 'utf8')).workspace)
-const answer = readFileSync(join(HERE, key, 'answer-key.md'), 'utf8')
+/** 现场序列的三题共用一个目录:`site-s1|s2|s3`。 */
+const site = /^site-(s[123])$/.exec(key)
+const answer = readFileSync(site === null ? join(HERE, key, 'answer-key.md') : join(HERE, 'site', `answer-${site[1]}.md`), 'utf8')
 const reply = existsSync(join(runDir, 'final-reply.md')) ? readFileSync(join(runDir, 'final-reply.md'), 'utf8') : '(没有最后的答复)'
-const files = deliverableFiles(workspace)
+const SITE_LINE = { s1: 'a-line', s2: 'b-line', s3: 'c-line' }
+/** 三题共用工作区:只给这一题的产物。 */
+const files = deliverableFiles(workspace).filter((file) => site === null || file.includes(`/${SITE_LINE[site[1]]}`))
 const extra =
-	key === 'reactor'
+	site !== null
+		? `\n真实响应面在 \`${join(HERE, 'site', 'surface.mjs')}\`(\`VARIANTS.${site[1]}.truth({...})\`),实验记录在 \`${join(runDir, 'rig-state.json')}\`。把交出的配方按实际温度代入算真值。`
+		: key === 'reactor'
 		? `\n反应器的真实响应面在 \`${join(HERE, 'reactor', 'surface.mjs')}\`(\`truth({T,P,cat,t})\`),实验记录在 \`${join(runDir, 'reactor-state.json')}\`。把交出的配方按实际温度代入算真值。`
 		: key === 'cell'
 			? `\n真实响应在 \`${join(HERE, 'cell', 'surface.mjs')}\`(\`truth({c,a,b,Tf}).life\` 是真实寿命),测试记录在 \`${join(runDir, 'cell-state.json')}\`。把交出的配方代入算真实寿命。`
