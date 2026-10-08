@@ -4,6 +4,14 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+### Added
+
+- 案例[和裸模型对照](docs/cases/bare-model-ab.zh-CN.md)(中英两份),README 新增「和裸模型比」一节:开发集上的三组对照、两边都看到异常之后的差别,以及两边都没变好的地方。已知缺口里写明这份证据只来自开发集。
+
+### Fixed
+
+- GitHub Release 说明里的相对链接点不开:`tools/changelog-section.mjs` 把正文里的相对链接改写成指向本版 tag 的绝对地址。
+
 ## [0.5.0] — 2026-10-08
 
 这一版是 0.5 升级的阶段一与阶段二:预期与未解释项、评估者查数据可信、不可逆命令拦在执行前、三档等级、经验与本体分类,宿主下界提到 DSH 0.2。

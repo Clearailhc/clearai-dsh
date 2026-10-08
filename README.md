@@ -172,12 +172,29 @@ One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Nex
 
 ---
 
+## Against the bare model
+
+Same model, same tools and budget: one arm runs with ClearAI, one without it, on the same tasks with planted traps, graded blind. These are early dev-set results (the developers wrote the tasks, and the samples are small), not a formal validity result.
+
+| Experiment | ClearAI | Bare model |
+|---|---|---|
+| Reactor task: the control thermocouple drifts 8 °C mid-run, 4 runs each | 3/4 found it and corrected for the actual temperature | 1/4 |
+| One rig, 3 lines in a row: the drift changes direction and onset each time, 3 series each | 5/6 corrected in the later tasks; task-3 mean 1.5 / 4 | 1/6; 1.17 / 4 |
+| Electrolyte task: no data trap, 4 runs each | 2.25 / 5 | 2.25 / 5 |
+
+Both arms **saw** the reference reading disagree. The difference is what came next. With ClearAI, the model writes an expectation before acting. A missed expectation cannot be explained away: it must be explained, ruled out with a reason, or handed to a person. An independent evaluator then checks the raw data again. Lessons left by an earlier task, once an evaluator has checked them, get cited when the next task writes its expectations.
+
+What did not improve for either arm is exploration depth. Recipes landed just as far from the true optimum, and nobody found the coupling between temperature and a second factor. The cost is about 2.2× the tokens. The walkthrough and the graders' words are in [Case: against the bare model](docs/cases/bare-model-ab.md); every record is in [docs/optimization/sim-runs/](docs/optimization/sim-runs/).
+
+---
+
 ## Cases
 
-Both are real-model sessions run end to end without asking anything; the screenshots replay them in real DSH.
+The first two are real-model sessions run end to end without asking anything; the screenshots replay them in real DSH. The third is a simulated A/B against the bare model.
 
 - [JEPA world models](docs/cases/jepa-world-model.md): a literature review, a toy experiment judged by an independent evaluator, and an ontology of 21 concepts, 8 relations and 27 entities
 - [Was Navier–Stokes solved?](docs/cases/navier-stokes.md): two popular claims refuted and kept, an intake rejection handled honestly, and an ontology of 24 concepts, 13 relations and 59 entities
+- [Against the bare model](docs/cases/bare-model-ab.md): on the same drifting bench rig, how ClearAI and the bare model each handle a reference reading that disagrees (dev set, blind graded)
 
 ---
 

@@ -6,7 +6,7 @@ These are the **honest boundaries** of this release. Each item is either not bui
 
 ## Not built
 
-- **The eight-state verification machine.** [The verification ontology](verification-loop.md) describes the full state machine for verification objects. What is built is the part the kernel actually executes: propositions, observations, audits, evidence, facts, and the five levels L0–L4. The fuller lifecycle is a design goal.
+- **The eight-state verification machine.** [The verification ontology](verification-loop.md) describes the full state machine for verification objects. What is built is the part the kernel actually executes: propositions, observations, audits, evidence, facts, and the three levels L2 / L3 / L4. The fuller lifecycle is a design goal.
 - **A universal L4 human-release gate.** **Step-level** L4 release is built: the delivering call asks a person on the spot; only a release hands the work to the evaluator, and a refusal or no answer rejects it. A global gate covering every audit is not built.
 - **The four external sources (human upload / file drop / callback / pull).** The level table (L4) lists them, but **observations have exactly one source, `self`** — the type declares only values that have a real producer. When those inputs exist, the values go into the declaration.
 - **No manual ontology editing in the panel.** The ontology panel is read-only: to change the ontology, say so in the conversation and the model edits the files under `clear/ontology/` (or edit the files yourself); the same three checks apply.
@@ -18,6 +18,7 @@ These are the **honest boundaries** of this release. Each item is either not bui
 
 ## Verified only to the stated depth
 
+- **The evidence against the bare model comes from a dev set only.** The tasks in [against the bare model](cases/bare-model-ab.md) were written by the developers, with 3–4 runs per arm, graded blind, with no significance test; ClearAI wins on finding and correcting the drift, and recipes and exploration depth are a tie. A formal validation on tasks written by someone who has not seen the code, with 6 runs per arm and ablations, has not been done.
 - **The two long runs are samples, not statistics.** The [JEPA world model](cases/jepa-world-model.md) and [Navier–Stokes](cases/navier-stokes.md) cases are complete sessions a real model ran in the simulated host (`tools/sim/`): ontology, entities, layering and promotion all worked, with zero rejected writes. They show the path works, not that the model always takes it; entity nesting (`contains`) was used once across both runs, and the skill reminder was never taken up.
 - **The entity gate's blocking branch is covered by unit and replay tests only.** `entities_unlanded` (a judgement about to be promoted whose subject is not on the entity graph is refused) never fired in the two real runs — the model wrote the entities first both times. The risk of "creating an empty entity just to pass the gate" has not been observed.
 - **Domain-vocabulary validation stops at "shape".** Value forms, subject domains, ranges, `is_a` cycles and self-conflicting facts are checked before promotion; unit conversion and numeric tolerance are **not** checked, formula semantics are **not** parsed, and whether a `code`-form value points to an existing file is **not** checked.
