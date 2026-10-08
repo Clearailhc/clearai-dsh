@@ -16,7 +16,7 @@
 ClearAI is an **ontology discovery and exploration platform**, built on two core concepts:
 
 - **Domain ontology** (what you get) — your project's own vocabulary, the knowledge entries established through the loop, and their graphs. At the end of a research session you hold a continuously growing knowledge structure, retrievable next round by concept.
-- **Epistemic loop** (how you get it) — question → judgement (state what would prove it wrong) → a test that could fail → evidence → bounded conclusion → grows into the ontology. Every edge is tested by evidence and independent evaluation.
+- **Epistemic loop** (how you get it) — question → ontology (how the relevant quantities are measured and how they affect each other) → candidate hypotheses with their predictions → a test that could fail → evidence → bounded conclusion → grows into the ontology. Every edge is tested by evidence and independent evaluation.
 
 > Other knowledge graphs pile up edges by extraction and assertion; here every edge has to be earned through the loop.
 
@@ -57,6 +57,7 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 | Completion | The model declares it | The system computes it from delivered evidence |
 | Verdict | Whoever did it, says so | Separated — above a level, the doer cannot judge themselves |
 | Failure | Deleted, retried, forgotten | Kept: a refuted hypothesis is a result, not noise |
+| Stopping | The model feels it is done | Every candidate and anomaly that could change the answer is handled, or written into the open points |
 | What accumulates | A chat transcript | **An ontology**: every edge earned through the loop |
 
 <picture>
@@ -65,6 +66,13 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 </picture>
 
 *Inside the ring is the instrument's read-out: the L0–L4 axis, the **pre-registered** threshold as a dashed line, and five observations with error bars — the supported one filled, the inconclusive drawn as a dashed circle, the refuted left in place with a slash through it (nothing is deleted). The emerald dot at the opening is the one reading that crossed the threshold and settled as a fact.*
+
+In the loop the ontology comes first, not last:
+
+- **The ontology is written at framing.** Which quantities the answer involves, what measures each one, how the reading is checked, and how the quantities affect each other are written in one go with the framing. A measure with no measuring method cannot be framed.
+- **The ontology yields the candidates.** Each question lists at least two candidate hypotheses, each naming the relation it comes from; before each step the model writes a prediction per candidate, and a step that predicts the same for all of them is flagged as unable to tell them apart.
+- **Anomalies need a destination.** A reading that does not fit the prediction or the ontology becomes an unexplained item: explained, ruled out with a reason, or written into the answer. One that touches an established fact sends that fact back to awaiting check.
+- **Answers are delivered per question.** Each in four parts: conclusion / basis / open points / for you to decide. While a candidate still under examination or an open unexplained item is missing from the answer, the goal cannot close as achieved.
 
 State is derived from the session record with no second store; the tools the model holds contain no field in which it could declare a step complete, and a goal completes only after independent evaluation. ClearAI does only what the host cannot — the epistemic contract, the domain ontology, presentation; goal continuation, subagents, asking you, deliverable cards and file history all come from DSH itself.
 
@@ -123,13 +131,13 @@ Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), then **create a sessi
 1. Open `dsh web` and click "New session";
 2. Click the current mode name at the top (default: **Standard mode**) to open the preset list;
 3. Pick **ClearAI** — its card reads "利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.";
-4. Just ask your question. Ordinary Q&A runs as usual; once a goal is set and judgements are registered, the system enters knowledge mode by itself: what is already known comes to you, and conclusions earn their place through evidence. Only decisions only you can make are put to you.
+4. Just ask your question. Ordinary Q&A runs as usual; once a goal is set, the system enters knowledge mode by itself: what is already known comes to you, the ontology is written with the framing, and conclusions earn their place through evidence. The process is in the Explore pane, the conclusions in the Ontology pane. Only decisions only you can make are put to you.
 
 <picture>
   <img src="docs/shots/en/jepa-ontology.png" alt="The Ontology pane in ClearAI mode" width="820">
 </picture>
 
-*The Ontology pane after the [JEPA world model](docs/cases/jepa-world-model.md) session: the question, the progress rail, the graph, and the conclusions grouped by status.*
+*The Ontology pane after the [JEPA world model](docs/cases/jepa-world-model.md) session (0.5.0 layout; from 0.5.1 the progress rail and the full judgment list move to the process record in the Explore pane, and the Ontology pane holds answer cards, graphs, established facts and lessons).*
 
 If pnpm is not on PATH: `npm install -g pnpm` (do not `corepack enable` — it installs a version forwarder that may download a pnpm it cannot launch).
 
@@ -174,7 +182,7 @@ Two panes in the middle: **Explore** and **Ontology**. Explore holds the process
 
 ## Against the bare model
 
-Same model, same tools and budget: one arm runs with ClearAI, one without it, on the same tasks with planted traps, graded blind. These are early dev-set results (the developers wrote the tasks, and the samples are small), not a formal validity result.
+Same model, same tools and budget: one arm runs with ClearAI, one without it, on the same tasks with planted traps, graded blind. These are early dev-set results for 0.5.0 (the developers wrote the tasks, and the samples are small), not a formal validity result; the 0.5.1 comparison is not finished yet.
 
 | Experiment | ClearAI | Bare model |
 |---|---|---|
@@ -182,9 +190,9 @@ Same model, same tools and budget: one arm runs with ClearAI, one without it, on
 | One rig, 3 lines in a row: the drift changes direction and onset each time, 3 series each | 5/6 corrected in the later tasks; task-3 mean 1.5 / 4 | 1/6; 1.17 / 4 |
 | Electrolyte task: no data trap, 4 runs each | 2.25 / 5 | 2.25 / 5 |
 
-Both arms **saw** the reference reading disagree. The difference is what came next. With ClearAI, the model writes an expectation before acting. A missed expectation cannot be explained away: it must be explained, ruled out with a reason, or handed to a person. An independent evaluator then checks the raw data again. Lessons left by an earlier task, once an evaluator has checked them, get cited when the next task writes its expectations.
+Both arms **saw** the reference reading disagree. The difference is what came next. With ClearAI, the model writes a prediction before acting. A missed prediction cannot be explained away: it must be explained, ruled out with a reason, or handed to a person. An independent evaluator then checks the raw data again. Lessons left by an earlier task, once an evaluator has checked them, get cited when the next task writes its predictions.
 
-What did not improve for either arm is exploration depth. Recipes landed just as far from the true optimum, and nobody found the coupling between temperature and a second factor. The cost is about 2.2× the tokens. The walkthrough and the graders' words are in [Case: against the bare model](docs/cases/bare-model-ab.md); every record is in [docs/optimization/sim-runs/](docs/optimization/sim-runs/).
+What did not improve for either arm is exploration depth. Recipes landed just as far from the true optimum, and nobody found the coupling between temperature and a second factor. The cost is about 2.2× the tokens. The candidate hypotheses, per-candidate predictions and stop check in 0.5.1 target exactly this. The walkthrough and the graders' words are in [Case: against the bare model](docs/cases/bare-model-ab.md); every record is in [docs/optimization/sim-runs/](docs/optimization/sim-runs/).
 
 ---
 
