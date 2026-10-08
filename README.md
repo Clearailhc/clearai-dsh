@@ -22,8 +22,8 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.5.0
-# or in the app: Plugins → Add plugin → clearai-dsh@0.5.0
+dsh plugin --profile web add clearai-dsh@0.5.1
+# or in the app: Plugins → Add plugin → clearai-dsh@0.5.1
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
@@ -78,12 +78,12 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.0`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.1`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.5.0
+dsh plugin --profile web add clearai-dsh@0.5.1
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
@@ -148,11 +148,11 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 ## What it looks like
 
-One pane in the middle: **Ontology**. One pane on the right: **World Tree**. Next to the input box: "to handle N".
+Two panes in the middle: **Explore** and **Ontology**. Explore holds the process; Ontology holds only results. The plan chip next to the input box shows exploration progress ("Question 1/2 · hypotheses to test: 2" or "Areas 3/6 · 1 question(s) awaiting your decision"); click it to open Explore.
 
-**Ontology** — one page for your four questions. At the top: the question, one line of counts, anything you need to handle ("to handle"), and a small progress rail: judgment → test → verified → in ontology. In the middle, the **graph**: the ontology graph (what your domain looks like) and the entity graph (the concrete things found) toggle with one click, and clicking a node filters by it. Below, the **conclusion list**, one line each, grouped by status: verified, awaiting check, testing, uncertain, refuted, replaced; open one to see which station it reached, how its trust changed, and its basis and scope. Two contradictory conclusions light up; retracting or keeping is your call.
+**Explore** — what is being answered, which possibilities are still open, and what comes next. The header gives the topic and mode (survey / solve), the current question and plan progress. Below come the items awaiting you, the survey areas (in survey mode), each question's candidate hypotheses (being examined / excluded / adopted / set aside; open one for its source, refutation condition, prediction and related records), the next step with each candidate's prediction (with a note when the predictions are identical and the step cannot tell them apart), and unexplained observations. A newly found question carries two buttons, "Make it a question" and "Park"; pressing one sends a sentence to the model on your behalf, and the model revises the framing. At the bottom, a collapsed **process record**: judgment counts and the progress rail, every judgment, and the plan's steps and gates.
 
-**World Tree** — the plan's steps and gates, one line per step; open one to see which judgments it tested and what came out.
+**Ontology** — conclusions and long-term knowledge. At the top, an **answer card** per question in four parts: conclusion / basis / open points / for you to decide. In the middle, the **graph**: the ontology graph (what your domain looks like) and the entity graph (the concrete things found) toggle with one click, and clicking a node filters by it. Below, the **established facts** and **lessons**. Two contradictory conclusions light up; retracting or keeping is your call.
 
 **Deliverables** — at close, the artefacts accepted for each step appear as DSH's native deliverable cards; what changed each turn is in DSH's native change cards.
 

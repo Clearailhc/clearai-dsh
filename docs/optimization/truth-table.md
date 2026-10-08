@@ -8,11 +8,11 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **54**
-- By status: Implemented 53 · Design only 1
-- By strength: Hard boundary 42 · Advisory 9 · Native 3
+- Mechanisms: **57**
+- By status: Implemented 56 · Design only 1
+- By strength: Hard boundary 44 · Advisory 9 · Native 4
 - By destination: stays design-only 1
-- Actually blocking execution: **20**
+- Actually blocking execution: **22**
 - Carrying a known mismatch between docs/comments and code: **1**
 
 ## Code constant snapshot
@@ -21,7 +21,7 @@ This section is exported from code, not written by hand:
 
 - Mechanisms: 2 (goal / plan)
 - Intent tools: 7 (Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Anomaly)
-- Config keys: 14
+- Config keys: 16
 - Prompt sections: 3 defined, 3 mounted at any moment
 
 ## Summary
@@ -55,11 +55,14 @@ This section is exported from code, not written by hand:
 | `conflict-derivation` | Conflict derivation (surfaced, never adjudicated) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js deriveConflicts` |
 | `graph-projection` | Ontology and entity graph projection (deterministic layout) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `ui/lib/domain-language.js graphProjection` |
 | `ontology-files` | Domain ontology as files (three checks) | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `ui/lib/domain-language.js checkOntologyFile materializeOntology ontologyOutline ONTOLOGY_SCHEMA` |
-| `entity-gate` | Entity gate (the only structural gate at Conclude) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
+| `entity-gate` | Entity gate (one of the structural gates at Conclude) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
 | `criteria-revision-gate` | Criterion revisions need an independent verdict | Epistemic | Implemented | Hard boundary | Authoritative | model | no | `preset/plugins/clearai-kernel.js Frame` |
 | `audit-digest-reuse` | Verdicts are reused by material digest (same state, no re-dispatch) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js auditDigest` |
 | `workspace-files-sync` | Workspace file sync (accumulated facts and ontology live in files) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile` |
 | `artifact-path-exclusive` | Exclusive artifact paths (no two steps in a plan declare the same artefact) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js validateSteps` |
+| `measures-gate` | Measurement requirement: the ontology written at framing says how each measure is measured | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Frame` |
+| `answers-stop-check` | Stop check: an achieved close needs everything that could change the answer written into it | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
+| `anomaly-questions-fact` | An unexplained item sends an established fact back to awaiting check | Epistemic | Implemented | Native | Authoritative | system | no | `ui/lib/fold.js questionedBy` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | `preset/plugins/prompts.js loop` |
 | `evaluator-readonly-face` | Evaluator read-only tool face | Harness | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js resolveToolFace` |
@@ -672,7 +675,7 @@ This section is exported from code, not written by hand:
 - **Tests**: test/client.test.mjs(本体格:图、结论分组、三段展开、节点小卡) · **Config**: —
 - **Prompt**: — · **Docs**: docs/epistemic-loop.zh-CN.md
 
-### `entity-gate` · Entity gate (the only structural gate at Conclude)
+### `entity-gate` · Entity gate (one of the structural gates at Conclude)
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
 - **Trigger**: Conclude(achieved),知识模式下,在派评估者之前
@@ -775,6 +778,45 @@ This section is exported from code, not written by hand:
 - **Code**: preset/plugins/clearai-kernel.js update_goal; Conclude
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
+
+### `measures-gate` · Measurement requirement: the ontology written at framing says how each measure is measured
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 第一次 Frame(立新目标),requireMeasures 打开(ClearAI 预设)
+- **Input**: Frame.ontology 与工作区里已有的 clear/ontology/ 文件
+- **Output**: 本体里没有度量,或某个度量不是任何带非空 check 的测量关系的值域 ⇒ 拒(measures_required),列出缺项;否则内核校验并写入本体文件
+- **Blocks execution**: yes
+- **Native alternative**: none
+- **Rationale**: 真宿主复盘里唯一的错误事实,来自把设定值回读当成釜温:缺的正是一条「测量」关系。只要求说清测量,不要求编造对手假设;内核默认关,只在 ClearAI 预设打开。
+- **Code**: preset/plugins/clearai-kernel.js Frame; unmeasured
+- **Tests**: test/kernel.test.mjs(0.5.1:本体随立题写入,测量门槛) · **Config**: requireMeasures
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
+
+### `answers-stop-check` · Stop check: an achieved close needs everything that could change the answer written into it
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: Conclude(achieved),requireAnswers 打开(ClearAI 预设),在派评估者之前
+- **Input**: Conclude.answers 与折出的 exploration(问题、候选、未解释项)
+- **Output**: 有问题既无结论也无未回答原因、或仍在考察中的候选 / 开着的未解释项 / 新发现或暂缓的问题没出现在任何 open[].about 里 ⇒ 拒(answers_incomplete),列出缺项;可改以 partial 结案
+- **Blocks execution**: yes
+- **Native alternative**: none
+- **Rationale**: 「探索到决策不再改变为止」落到可检查的形式:只查写没写,不判写得对不对(判断归独立评估者)。覆盖了复盘中「看见漂移、配方仍按设定温度交付」的情形。
+- **Code**: preset/plugins/clearai-kernel.js Conclude; unsettledForAnswers
+- **Tests**: test/kernel.test.mjs(0.5.1:按候选写预测、停止检查) · **Config**: requireAnswers
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
+
+### `anomaly-questions-fact` · An unexplained item sends an established fact back to awaiting check
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Native · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 开着的未解释项的 touches 点名某条事实 id
+- **Input**: anomalies(open)与 facts
+- **Output**: 投影里该事实带 questioned,卡上标「待核验」,直到该项被解释或排除;事实本身不改、不撤回
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 状态由证据算出,不另设人工开关;撤回仍然只由人决定。
+- **Code**: ui/lib/fold.js questionedBy; ui/lib/knowledge-view.js factLine
+- **Tests**: test/kernel.test.mjs(未解释项让事实回到待核验) · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ---
 

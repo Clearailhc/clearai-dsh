@@ -39,10 +39,10 @@ The result of an evaluation: supports, refutes or inconclusive, with a level and
 A hypothesis promoted once evidence suffices, with scope, level and evidence, optionally with assertions. A human may retract it; the record stays.
 
 ## Level (strength of the test)
-L0–L4. Decides only who judges, and that L4 needs a human release.
+L0–L4. Decides only who judges, and that L4 needs a person's approval.
 
 ## Human gate (to handle)
-Decisions only a person can make: L4 release, a plan blocked repeatedly, a fact meeting counter-evidence. The call that opened the gate asks the person directly and the answer never passes through the model; if nobody can answer, the goal waits.
+Decisions only a person can make: L4 approval, a plan blocked repeatedly, a fact meeting counter-evidence. The call that opened the gate asks the person directly and the answer never passes through the model; if nobody can answer, the goal waits.
 
 ## Domain ontology
 The language layer of project knowledge: concepts, predicates, value forms. A convention, not an empirical claim: admitted with a basis, display details revisable, deprecation sticky, any change of meaning needs a new id. In product context "ontology" means this.
@@ -71,11 +71,11 @@ A reading computed from the record, each pointing to an action that would close 
 ## Ontology graph / entity graph
 The ontology graph shows concepts and predicates — what the language allows. The entity graph shows instances and assertions — what has been said, each edge carrying its level and review state. They are drawn separately.
 
-## Ontology (UI)
-The single middle pane: the graph as its header, and below it one list of conclusions grouped by how far they can be trusted.
+## Explore (UI)
+Middle pane for the process: questions, candidate hypotheses with their predictions, the next step, unexplained observations, and a collapsed process record (judgments, the plan's steps and gates).
 
-## World Tree (UI)
-The right pane: the plan's steps and gates.
+## Ontology (UI)
+Middle pane for results: answer cards per question, the ontology and entity graphs, established facts, lessons.
 
 ## RSI (recursive self-improvement)
 A system using its own output to improve how it works in future. ClearAI makes no RSI claim.

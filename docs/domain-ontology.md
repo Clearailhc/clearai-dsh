@@ -26,7 +26,7 @@ So the loop's output is not a string but **bounded knowledge**: asserted content
 
 **The domain ontology is a language, not an a-priori framework.** Terms are conventions, not empirical claims: their authority comes from being adopted, used and deprecable, not from evidence levels. That unties two knots: the vocabulary is usable before the first goal has produced any fact (language precedes sentences); terms need no verification — sentences written with them do.
 
-**The process is not project knowledge.** It is not in the record and not editable at runtime; changing it means changing code and releasing. In the UI it appears as **state shape**: steps and gates in the World Tree, conclusions grouped by trust in the Ontology pane.
+**The process is not project knowledge.** It is not in the record and not editable at runtime; changing it means changing code and releasing. In the UI it appears as **state shape**: questions, candidates and steps in the Explore pane, conclusions and established facts in the Ontology pane.
 
 ```mermaid
 flowchart TD
@@ -188,30 +188,45 @@ Process objects, domain vocabulary and a single test each have their own lifecyc
 
 ---
 
-## 9. UI: the Ontology pane
+## 9. UI: the Explore and Ontology panes
 
-The middle column has one pane, **Ontology**. One page answers the person's four questions: what can I trust now; what was refuted and what is unclear; what does it add up to; what do you need from me. The fourth is the same list in the header and next to the input box ("to handle N").
+Two panes in the middle: **Explore** holds the process, **Ontology** holds only results. The person's four questions split across them: what is being answered, which possibilities are still open, and what comes next (Explore); what the conclusion rests on and what needs my decision (the answer cards in Ontology). The plan chip next to the input box shows exploration progress; clicking it opens Explore.
 
-One screen, three layers, each finer than the one above:
+**Explore**, top to bottom:
 
-| Layer | Content |
+| Block | Content |
 |---|---|
-| **Header** | One line for the question being answered + one line of counts + "to handle" (a plan stopped after repeated rejections, conclusions that contradict each other; one line each, statements only, no buttons) + a small progress rail: judgment → test → verified → in ontology, with a count per station |
-| **Graph (the main thing)** | **Ontology graph ｜ entity graph**, one at a time. Directory nesting is drawn as collapsible subgraphs (collapsed to the first level when the graph is large; +N expands); file problems found on read are listed under the graph. Concepts in serif type, instances as small squares with their type in small print; verified relations solid, awaiting check dashed, refuted and uncertain each in their own colour. Clicking a node opens its term card and filters the list below (one line "only related to X · clear", with honest counts); full-screen available |
-| **Conclusion list** | One line per conclusion, grouped by status: **verified / awaiting check / testing / uncertain / refuted / replaced**, each tagged with the step it came from. Opening one shows three parts in order: **progress** (which station it has reached), **how trust changed** (one line per change: which step, from what to what), **more** (basis, scope, what would make it wrong, related concepts and instances) |
+| **Header** | The topic + one line of tags: mode (survey / solve), how many survey areas are clear, the current question, plan progress |
+| **Awaiting you** | A plan stopped after repeated rejections, conclusions that contradict each other; one line each, statements only |
+| **Survey areas** | In survey mode: each area's state (clear / in progress / not started), its judgments and adopted count, open unexplained observations; newly found questions hang under their area |
+| **Questions** | One block per question: candidate hypotheses by state (being examined / excluded / adopted / set aside); opening one shows its source (which ontology relation, or intuition), refutation condition, prediction, basis for exclusion or adoption, and related records |
+| **Next step** | What to do, and each candidate's prediction; when the predictions are identical, a note that the step cannot tell them apart |
+| **Unexplained observations** | Each open one, with the quantities, candidates or facts it touches |
+| **Process record** | Collapsed by default: judgment counts and the progress rail (judgment → test → verified → in ontology), every judgment (grouped by trust; open one for progress, trust changes and notes), the plan's steps and gates |
 
-A single test's result uses three words only: **support / refute / uncertain**. Levels are written in plain words: reasoned through alone / cites existing material / reproducible / independent check / released by a person. Internal ids never reach the screen; people see a judgment's short name and "step n".
+A newly found question carries two buttons, "Make it a question" and "Park". They write no state: each sends one sentence to the model on the person's behalf, and the model records it with a Frame revision. When the message cannot be sent, the pane says to raise it in the conversation.
 
-**No-explosion contract:**
+**Ontology**, top to bottom:
 
-1. **Zero cost**: with no goal and no vocabulary the pane is a one-line hint, with no blocks laid out.
-2. **Layered**: glance at the header, scan the list, open a line for basis and history.
-3. **The graph is the main thing and the index**: clicking a node filters; no separate chip row.
-4. **Expand in place, no jumps**: the only cross-pane jump is "see that step in the World Tree".
-5. **Interrupt only for exceptions**: anything that needs a person takes one line under "to handle"; a contradiction is marked on the two affected lines.
+| Block | Content |
+|---|---|
+| **Answer cards** | Switchable per question, in four parts: conclusion / basis / open points / for you to decide |
+| **Graph (the main thing)** | **Ontology graph ｜ entity graph**, one at a time. Directory nesting is drawn as collapsible subgraphs (collapsed to the first level when the graph is large; +N expands); file problems found on read are listed under the graph. Concepts in serif type, instances as small squares with their type in small print; verified relations solid, awaiting check dashed, refuted and uncertain each in their own colour. Clicking a node opens its term card and filters the list below (one line "related only · clear", with honest counts); full-screen available |
+| **Established facts** | Only verified conclusions, each marked with the step it came from; open one for progress, trust changes and notes (basis, scope, refutation condition, related concepts and instances) |
+| **Lessons** | Lessons carried across tasks: common pitfalls / checks first / shortcuts to avoid / prior knowledge |
+
+A single test result uses only three words: **supported / refuted / inconclusive**. Levels come in three tiers: self-tested / independent check / approved by a person. Internal ids stay off screen; people know a judgment by its short name and "step N".
+
+**The no-explosion contract:**
+
+1. **Zero cost**: with no goal and no terms, each pane is one empty-state sentence, no blocks.
+2. **Layered**: Ontology leads with the conclusions, Explore with the questions and the next step; the process record opens on demand.
+3. **The graph is both the main thing and the index**: clicking a node filters; no separate chip row.
+4. **Two jumps only**: "View the exploration record" on an answer card opens Explore; "view the conclusion" on a question opens Ontology.
+5. **Interrupt only for exceptions**: things a person must handle each take one line under "awaiting you"; contradictions are marked on the two affected rows.
 6. **Filters tell the truth**: one status line + clear, stating how many did not match.
 
-**The pane is read-only.** Terms cannot be registered or edited by hand here; to change the ontology, say so in the conversation or edit the files under `clear/ontology/`. Process never appears as editable content: steps and gates are in the World Tree on the right, one line per step, and opening a step shows which judgments it tested and what came out.
+**Both panes are read-only.** Terms cannot be registered or edited by hand here; to change the ontology, say so in the conversation or edit the files under `clear/ontology/`.
 
 ---
 

@@ -1291,8 +1291,8 @@
     },
     {
       "id": "entity-gate",
-      "name": "实体门(结案唯一的结构关口)",
-      "name_en": "Entity gate (the only structural gate at Conclude)",
+      "name": "实体门(结案时的结构关口之一)",
+      "name_en": "Entity gate (one of the structural gates at Conclude)",
       "source": {
         "code": "preset/plugins/clearai-kernel.js Conclude; ui/lib/fold.js subjectsOffGraph",
         "config": "requireLandedEntities",
@@ -1479,6 +1479,78 @@
       "blocks_execution": true,
       "native_dsh_alternative": "dsh-tool-goal",
       "rationale": "原生 goal 挂上之后,完成有两条路;只留经过独立评估的那条,目标就仍然只有一个完成动词。",
+      "known_mismatch": null
+    },
+    {
+      "id": "measures-gate",
+      "name": "测量门槛:立题时本体须写明度量如何测量",
+      "name_en": "Measurement requirement: the ontology written at framing says how each measure is measured",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "preset/plugins/clearai-kernel.js Frame; unmeasured",
+        "tests": "test/kernel.test.mjs(0.5.1:本体随立题写入,测量门槛)",
+        "config": "requireMeasures",
+        "prompt": "preset/plugins/prompts.js clearai/loop",
+        "docs": "docs/epistemic-loop.zh-CN.md"
+      },
+      "trigger": "第一次 Frame(立新目标),requireMeasures 打开(ClearAI 预设)",
+      "input": "Frame.ontology 与工作区里已有的 clear/ontology/ 文件",
+      "output": "本体里没有度量,或某个度量不是任何带非空 check 的测量关系的值域 ⇒ 拒(measures_required),列出缺项;否则内核校验并写入本体文件",
+      "blocks_execution": true,
+      "native_dsh_alternative": null,
+      "rationale": "真宿主复盘里唯一的错误事实,来自把设定值回读当成釜温:缺的正是一条「测量」关系。只要求说清测量,不要求编造对手假设;内核默认关,只在 ClearAI 预设打开。",
+      "known_mismatch": null
+    },
+    {
+      "id": "answers-stop-check",
+      "name": "停止检查:会改变答案的事项都写进结论才能达成结案",
+      "name_en": "Stop check: an achieved close needs everything that could change the answer written into it",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "preset/plugins/clearai-kernel.js Conclude; unsettledForAnswers",
+        "tests": "test/kernel.test.mjs(0.5.1:按候选写预测、停止检查)",
+        "config": "requireAnswers",
+        "prompt": "preset/plugins/prompts.js clearai/loop",
+        "docs": "docs/epistemic-loop.zh-CN.md"
+      },
+      "trigger": "Conclude(achieved),requireAnswers 打开(ClearAI 预设),在派评估者之前",
+      "input": "Conclude.answers 与折出的 exploration(问题、候选、未解释项)",
+      "output": "有问题既无结论也无未回答原因、或仍在考察中的候选 / 开着的未解释项 / 新发现或暂缓的问题没出现在任何 open[].about 里 ⇒ 拒(answers_incomplete),列出缺项;可改以 partial 结案",
+      "blocks_execution": true,
+      "native_dsh_alternative": null,
+      "rationale": "「探索到决策不再改变为止」落到可检查的形式:只查写没写,不判写得对不对(判断归独立评估者)。覆盖了复盘中「看见漂移、配方仍按设定温度交付」的情形。",
+      "known_mismatch": null
+    },
+    {
+      "id": "anomaly-questions-fact",
+      "name": "未解释项使已确立的事实回到待核验",
+      "name_en": "An unexplained item sends an established fact back to awaiting check",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "native",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "ui/lib/fold.js questionedBy; ui/lib/knowledge-view.js factLine",
+        "tests": "test/kernel.test.mjs(未解释项让事实回到待核验)",
+        "config": null,
+        "prompt": "preset/plugins/prompts.js clearai/loop",
+        "docs": "docs/epistemic-loop.zh-CN.md"
+      },
+      "trigger": "开着的未解释项的 touches 点名某条事实 id",
+      "input": "anomalies(open)与 facts",
+      "output": "投影里该事实带 questioned,卡上标「待核验」,直到该项被解释或排除;事实本身不改、不撤回",
+      "blocks_execution": false,
+      "native_dsh_alternative": null,
+      "rationale": "状态由证据算出,不另设人工开关;撤回仍然只由人决定。",
       "known_mismatch": null
     }
   ]

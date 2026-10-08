@@ -8,7 +8,7 @@
  *   ③ 列出**机器验不了**的人工项,提醒去点一遍。
  *
  * 为什么要有「字数预算」这一节:信息堆积不会让任何断言变红 ✗ ——
- * 它是本项目反复吃到的亏(世界树 1794 字、技能页 4741 字都是**量出来**才发现的)。
+ * 它是本项目反复吃到的亏(旧世界树 1794 字、技能页 4741 字都是**量出来**才发现的)。
  * 预算不是审美洁癖:它是"默认少而准、细节靠点开"这条纪律的可执行判据。
  *
  * 用法:
@@ -33,12 +33,14 @@ const SKIP_SUITES = argv.includes('--skip-suites')
 
 /** 每一块面的**字数预算**(拿真数据渲染出来的可见文字数)。 */
 const BUDGETS = [
-	// 第六阶段:中栏是一格「本体」(页眉 + 图 + 结论清单),右栏是世界树;工具行只剩计划芯片
+	// 0.5.1:中栏两格「探索」(过程)与「本体」(结果);右栏不再有 ClearAI 页签;工具行只剩计划芯片
 	{ surface: '计划面(工具行)', limit: 40, pick: (C, props) => C.PlanChip(props) },
-	{ surface: '本体格页眉(问题 · 计数 · 待处理 · 进度轨)', limit: 300, pick: (C, props, data, P) => C.AtlasHeader({ data, rows: P.conclusionsOf(data) }) },
+	{ surface: '探索格(默认,过程记录收起)', limit: 1500, pick: (C, props) => C.ExploreView(props) },
+	{ surface: '本体格页眉(在回答什么)', limit: 300, pick: (C, props, data, P) => C.AtlasHeader({ data, rows: P.conclusionsOf(data) }) },
+	{ surface: '结论卡(当前问题)', limit: 1200, pick: (C, props, data) => C.AnswerCards({ data }) },
 	{ surface: '结论清单(默认,全收起)', limit: 1500, pick: (C, props, data, P) => C.ConclusionList({ rows: P.conclusionsOf(data), open: null, onToggle: () => {}, data }) },
 	{ surface: '结论展开(一条)', limit: 1600, pick: (C, props, data, P) => { const rows = P.conclusionsOf(data); const row = rows.find((item) => item.trust !== 'replaced') ?? rows[0]; return row === undefined ? null : C.ConclusionDetail({ row, data }) } },
-	{ surface: '世界树', limit: 900, pick: (C, props) => C.WorldTree(props) },
+	{ surface: '计划(过程记录里)', limit: 900, pick: (C, props) => C.WorldTree(props) },
 ]
 
 let failed = 0
@@ -136,13 +138,14 @@ if (LOG === null || !existsSync(LOG)) {
 section('④ 人工闸(在隔离家里点一遍,见 docs/release-verification.zh-CN.md)')
 for (const item of [
 	'新建对话 → 发一句话 → 模型回话(证明没把 app 拖垮)',
-	'中栏只有「本体」一格;右栏「+」里有「世界树」',
-	'本体格:页眉有问题、计数、进度轨;本体图 / 实体图能切换;结论一行一条、按状态分组,屏上没有内部编号',
-	'点开一条结论:进度 → 可信度怎么变的 → 补充;「看核验」开得出评估卡或评估者会话',
-	'点「在世界树里看这一步」⇒ 树打开且那一行被选中',
-	'树详情「查看此步骤的证据」⇒ 切回本体格并展开对应结论',
-	'多份计划的会话:下拉能切到旧世界树',
-	'有要人处理的事时,页眉与计划芯片旁都是「待处理 N」,只陈述、没有按钮',
+	'中栏有「探索」与「本体」两格;右栏没有 ClearAI 的页签',
+	'探索格:页眉有课题与标签;问题下列出候选假设;下一步带各候选的预测;屏上没有内部编号',
+	'本体格:结论卡四部分齐全;本体图 / 实体图能切换;已确立的事实点开是进度 → 可信度变化 → 补充说明',
+	'结论卡「查看探索记录」⇒ 切到探索',
+	'过程记录里计划详情「查看此步骤的证据」⇒ 对应判断展开',
+	'多份计划的会话:过程记录里的下拉能切到旧计划',
+	'有要人处理的事时,探索格与计划芯片旁都是「待处理 N」,只陈述、没有按钮',
+	'新发现的问题点「立为问题」⇒ 对话里出现替人发出的那句话',
 ]) line(`  · ${item}`)
 
 section(failed === 0 ? '结果:机械面全过(人工闸还要点)' : `结果:${failed} 项没过`)

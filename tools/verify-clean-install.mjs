@@ -340,7 +340,7 @@ if (UI) {
 	console.log(`    google-chrome --headless=new --no-sandbox --window-size=1680,1050 \\`)
 	console.log(`      --remote-debugging-port=9350 --user-data-dir=/tmp/clean-chrome '<上面打印的带 token URL>'`)
 	console.log(`    node tools/ui-drive.mjs eval "(document.body.innerText||'').slice(0,200)"`)
-	console.log(`  该断言:中栏出现 Ontology(本体)、右栏出现 World Tree(世界树)、pageerror 为空。`)
+	console.log(`  该断言:中栏出现 Explore(探索)与 Ontology(本体)、pageerror 为空。`)
 	console.log(`  收工:kill ${child.pid}${KEEP ? '' : ` && rm -rf ${HOME_DIR}`}`)
 } else if (!KEEP) {
 	rmSync(HOME_DIR, { recursive: true, force: true })

@@ -10,7 +10,7 @@ The published package is `clearai-dsh`. A single install places three things on 
 |---|---|---|
 | Host composition (patch layer) | Row `clearai-host` → the host half: the session projection unit `clearai`, its read routes, and the browser module declaration | `pack/cordis.patch.yml`, `ui/lib/index.js` |
 | Agent preset (roster) | ClearAI's ten tools, three prompt sections and guards, plus the native DSH capabilities it composes | `preset/` |
-| Client module (browser) | The Ontology pane in the middle, the World Tree pane on the right | `ui/lib/client.js` |
+| Client module (browser) | The Explore and Ontology panes in the middle, the plan chip next to the input box | `ui/lib/client.js` |
 
 The split is not cosmetic. Client modules are only discovered through rows of the **host** loader, so the browser half must sit in the patch layer. The projection unit is process-wide and registers once, so it cannot live in a preset that gets rebuilt. Conversely, the judgment side — tools, prompt sections, skills — is exactly what "one session's capabilities" means, so it belongs to the preset.
 
@@ -71,10 +71,10 @@ The host's preset registry neither scans directories nor accepts preset paths, s
 
 ## Install
 
-In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.5.0` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
+In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.5.1` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.5.0
+dsh plugin --profile web add clearai-dsh@0.5.1
 ```
 
 The version is pinned on purpose: pnpm ≥ 11 holds back versions published within the last day, and a bare package name falls back to the previous release instead of failing. The plugin manager forwards the spec unchanged (`pnpm add <spec>` in `@deepseek-ai/dsh-plugin-manager`) and never compares the version that landed with the one asked for, so that downgrade is reported as a success. The README's *Why the version is pinned* has the mechanism and the one-line exemption that makes a bare name work.

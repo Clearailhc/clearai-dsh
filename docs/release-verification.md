@@ -25,37 +25,41 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 | Provenance | Every evidence row carries resolvable origins; `refs` are paths | kernel suite | green |
 | Artifact shape | `steps[].artifacts` normalises to `{path, exists}`; never claims "missing" without checking disk | client suite | green |
 
-## 2 · Middle column: Ontology
+## 2 · Middle column: Explore
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| **Header** | The question + one line of counts + "to handle" (statements only) + the progress rail (judgment → test → verified → in ontology) | client suite + text budget | green · ≤ 300 chars |
+| **Header** | The topic + tags for mode, survey areas, current question and plan progress | client suite | green |
+| **Questions and candidates** | One block per question; candidates listed as being examined / excluded / adopted / set aside; opening one shows its source, refutation condition, prediction and related records; no internal ids on screen | client suite | green |
+| **Next step** | What to do + each candidate's prediction; a note when the predictions are identical and the step cannot tell them apart | client suite | green |
+| **Newly found questions** | "Make it a question" / "Park" only send a sentence to the model on the person's behalf and write no state; when sending fails, the pane says so | client suite | green |
+| **Process record** | Collapsed by default; expanded it shows judgment counts and the progress rail, every judgment, and the plan's steps and gates (one line per step, several plans switchable) | client suite + text budget | green |
+
+## 3 · Middle column: Ontology
+
+| Component | Criterion | Check | Passing line |
+|---|---|---|---|
+| **Answer cards** | Switchable per question, four parts: conclusion / basis / open points / for you to decide | client suite | green |
 | **Graph** | Ontology graph / entity graph, one at a time; verified solid, awaiting check dashed; clicking a node opens its term card and filters the list | client suite + human look | green |
-| **Conclusion list** | One line per conclusion, grouped verified / awaiting check / testing / uncertain / refuted / replaced; no internal ids on screen | client suite + text budget | green · ≤ 1500 chars |
-| Opened conclusion | Progress → how trust changed → more; "see check" opens the evaluation card or the evaluator session | client suite + text budget | green · ≤ 1600 chars |
-
-## 3 · Right column: World Tree
-
-| Component | Criterion | Check | Passing line |
-|---|---|---|---|
-| **World Tree** | One line per step (filled when done, outlined while running, hollow when not started); selecting a step shows which judgments it tested and what came out; **several plans switchable** (dropdown) | client suite + text budget | green · ≤ 900 chars |
+| **Established facts** | Only verified conclusions, one line each; opening one shows progress → trust changes → notes; "View check" opens the evaluation card or the evaluator session | client suite + text budget | green · ≤ 1600 chars |
+| **Lessons** | Listed as common pitfalls / checks first / shortcuts to avoid / prior knowledge | client suite | green |
 
 ## 4 · Tools row and continuation
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| Plan chip | One symbol only, progress; "to handle N" when something needs a person, one click opens the World Tree | client suite + text budget | green · ≤ 40 chars |
+| Plan chip | Shows exploration progress ("Question i/n · hypotheses to test: k" or "Areas x/y", falling back to step counts when there are no questions or areas); changes colour and carries "to handle N" when something needs a person; one click opens Explore | client suite + text budget | green · ≤ 40 chars |
 | Continuation | Driven by the native goal; ClearAI has no continuation window and no autonomy toggle; when a person is needed the native goal is set to blocked with the reason | kernel suite (native goal guard, blocking) | green |
 
 ## 5 · Human gates and jumps
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| Asked on the spot | L4 release, repeated plan rejections, a fact meeting counter-evidence: the call that opened the gate asks through the native question card; with nobody to answer, the goal waits as blocked | kernel suite | green |
-| To handle | A plan stopped after repeated rejections, contradicting conclusions: one line each, statements only, no buttons; header and input box read the same list | client suite | green |
+| Asked on the spot | L4 approval, repeated plan rejections, a fact meeting counter-evidence: the call that opened the gate asks through the native question card; with nobody to answer, the goal waits as blocked | kernel suite | green |
+| To handle | A plan stopped after repeated rejections, contradicting conclusions: one line each, statements only, no buttons; Explore and the input box read the same list | client suite | green |
 | Origins | Evaluation card ⇒ native preview; evaluator ⇒ spectator session | client suite (§27b) | green |
-| **Forward jump** | "See this step in the World Tree" opens the tree with **that row selected** (switching plans if needed) | client suite + **human click** | green · human pass |
-| **Backward jump** | Tree detail "see the evidence for this step" switches to the Ontology pane and opens the matching conclusion | client suite (§27e) + **human click** | green · human pass |
+| **Pane jumps** | "View the exploration record" on an answer card opens Explore; "view the conclusion" on a question opens Ontology | client suite + **human click** | green · human pass |
+| **Step → judgment** | "see the evidence for this step" in the plan detail of the process record opens the matching judgment | client suite (§27e) + **human click** | green · human pass |
 
 ## 6 · Kernel behaviour
 
@@ -95,13 +99,14 @@ bash tools/capture-ui.sh start          # copies ~/.dsh to /tmp/clearai-shots an
 Then, in the browser (`node tools/recheck.mjs` prints the same list at the end):
 
 1. **Start a session** and send one message — the model answers (the plugin does not break the app).
-2. The middle column has one pane, **Ontology**; the right sidebar offers the **World Tree**.
-3. On a session with evidence: the header shows the question, counts and the progress rail; the ontology and entity graphs toggle; conclusions are one line each, grouped by status, with no `h-…` ids on screen.
-4. Opening a conclusion shows progress → how trust changed → more; "see check" opens the evaluation card or the evaluator session.
-5. Clicking **"see this step in the World Tree"** opens the tree with **that row selected**.
-6. In the tree detail, **"see the evidence for this step"** switches to the Ontology pane and opens the matching conclusion.
-7. With several plans, the dropdown switches to an older tree and marks it archived.
-8. When something needs a person, the header and the input box both show "to handle N", statements only, no buttons; the decision is asked through the native question card.
+2. The middle column has two panes, **Explore** and **Ontology**; the right sidebar has no ClearAI tab.
+3. On a session with evidence: the Explore header shows the topic and its tags, each question lists its candidate hypotheses, and the next step shows each candidate's prediction; no `h-…` ids on screen.
+4. In Ontology: the answer card has all four parts; the ontology and entity graphs toggle; opening an established fact shows progress → trust changes → notes, and "View check" opens the evaluation card or the evaluator session.
+5. On an answer card, **"View the exploration record"** switches to Explore.
+6. Expanding the process record, **"see the evidence for this step"** in the plan detail opens the matching judgment.
+7. With several plans, the dropdown in the process record switches to an older plan and marks it archived.
+8. When something needs a person, Explore and the input box both show "to handle N", statements only, no buttons; the decision is asked through the native question card.
+9. On a newly found question, **"Make it a question"** puts the sentence sent on your behalf into the conversation.
 
 Any failure means: do not release. Go back to that component's suite and add a regression first.
 
@@ -112,8 +117,8 @@ real CLI and pnpm, and asserts the sixteen mechanical facts (dependency, bundles
 host row, roster root inside the package, shipped roots intact, preset self-contained, no machine paths).
 Then, in the browser it prints:
 
-1. a session opens on the **ClearAI** preset and the middle column shows **Ontology**;
-2. the right sidebar offers the **World Tree**;
+1. a session opens on the **ClearAI** preset and the middle column shows **Explore** and **Ontology**;
+2. the right sidebar has no ClearAI tab;
 3. send one small task (e.g. "copy `input.md` to `lab/echo.md`, and frame a goal for it");
 4. the ledger records `goal/set`, and `lab/echo.md` exists;
 5. the page console has no errors.

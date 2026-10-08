@@ -27,15 +27,15 @@ The system does not supply the tests — that is domain knowledge, from the rese
 
 ## 3. Levels
 
-A level decides two things only: **who judges**, and **that L4 needs a human release**. It follows from three properties: is the evidence existing or newly produced; can it be re-run with the same result; can a machine judge it.
+A level decides two things only: **who judges**, and **that L4 needs a person's approval**. It follows from three properties: is the evidence existing or newly produced; can it be re-run with the same result; can a machine judge it.
 
 | Level | Definition | Who judges | Accepted observations |
 |---|---|---|---|
 | L2 | Self-tested: reasoning, literature, existing data or small computation | The doer, with a reviewable basis | Derivations, citations, data, scripts and output |
 | L3 | New, reproducible evidence | An independent evaluator, or a machine | The doer's output, which must be re-runnable |
-| L4 | New evidence that cannot be repeated or comes from outside | An independent evaluator, after a human release | Files the doer wrote do not count |
+| L4 | New evidence that cannot be repeated or comes from outside | An independent evaluator, after a person approves | Files the doer wrote do not count |
 
-There are three levels only: self-tested (L2), independently checked (L3), human release (L4). L0 and L1 in older sessions read as L2; nothing is migrated. A machine evaluator (proof checker, test, statistics script) counts as independent at every level. What the three levels mean in a given field lives in project skills; the engine knows only the three abstract levels.
+There are three levels only: self-tested (L2), independently checked (L3), approved by a person (L4). L0 and L1 in older sessions read as L2; nothing is migrated. A machine evaluator (proof checker, test, statistics script) counts as independent at every level. What the three levels mean in a given field lives in project skills; the engine knows only the three abstract levels.
 
 | Level | Mathematics | Physics | Life sciences |
 |---|---|---|---|
@@ -51,7 +51,7 @@ Human     Model                      System                      Independent eva
  │         │ CreatePlan: step = work + artefact + criteria [+ which hypothesis, level]
  │  ┌ each ┤ do the work
  │  │      │ AdvancePlan ──────────▶ │ admission: exists, non-empty, well-formed
- │◀─┼──────┼── L4: asks the human to release
+ │◀─┼──────┼── L4: asks a person to approve
  │  │      │                         │ L2: record the doer's two judgments   
  │  │      │                         │ L3+: dispatch evaluator ─▶ │ reads artefacts and record only
  │  │      │                         │ ◀──────── evaluation card ─┤
@@ -63,7 +63,7 @@ Human     Model                      System                      Independent eva
  │◀────────┼── refuting evidence hits a promoted fact: asks the human to retract or keep
 ```
 
-A human appears in three places: asking the question; the gates that need a person (L4 release, repeated blocks, a fact meeting counter-evidence), asked directly by the call that opened them; and at any time through `/goal` or the native UI to pause or end the goal — a human ending the goal establishes nothing.
+A human appears in three places: asking the question; the gates that need a person (L4 approval, repeated blocks, a fact meeting counter-evidence), asked directly by the call that opened them; and at any time through `/goal` or the native UI to pause or end the goal — a human ending the goal establishes nothing.
 
 ## 5. State
 
@@ -90,7 +90,7 @@ All state is folded from the session log; the model has no writable state field.
 |---|---|---|
 | planned | Draft criteria | Unrepresentable by design: `CreatePlan` rejects steps without criteria, so they are never stored |
 | registered | Criteria registered | The step itself — the hypotheses it tests (one or more) and the level, plus criteria; `plan/created` is the moment of registration |
-| authorized | A human released it (L4 only) | Not a state: a release fact (`human/released`) recorded when `AdvancePlan` asks the person |
+| authorized | A person approved it (L4 only) | Not a state: an approval record (`human/released`) recorded when `AdvancePlan` asks the person |
 | submitted | Running | Derived: the step is open; `inFlight` marks the delivery in progress |
 | awaiting | Waiting for a result | The child's own facts: `audit/dispatched` |
 | observed | Result received | `observation/recorded`, registered on delivery |
@@ -110,7 +110,7 @@ All state is folded from the session log; the model has no writable state field.
 | Completion is separate from the result | A delivery that holds advances the step; the result (supports / refutes / inconclusive) is recorded separately as evidence. A refutation never leaves the step stuck or forces a void |
 | Admission only accepts or rejects | Artefact exists, is non-empty, well-formed; no judgement of what it shows |
 | The doer does not judge their own work | L3+ rejects caller-supplied verdicts and dispatches an independent evaluator (read-only, fresh context, structured output); it makes both judgments, reading the result against the refutation conditions |
-| L4 needs a human release | `AdvancePlan` asks the human when delivering an L4 step; files the doer wrote do not count as L4 observations |
+| L4 needs a person's approval | `AdvancePlan` asks the human when delivering an L4 step; files the doer wrote do not count as L4 observations |
 | Stop for a human after repeated blocks | At the threshold, `AdvancePlan` asks the human; revising criteria or changing approach releases it |
 | Completing a goal needs independent evaluation | Only `Conclude` completes the native goal; a guard rejects the model completing it directly |
 | Nothing is deleted | Refuted hypotheses, rejected artefacts, retracted facts all remain; the session log is append-only |
