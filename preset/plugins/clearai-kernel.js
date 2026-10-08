@@ -2945,7 +2945,7 @@ export function apply(ctx, config = {}) {
 						type: 'object',
 						properties: {
 							question: { type: 'string', description: '哪个问题(id);目标没列问题时可省略' },
-							conclusion: { type: 'string', description: '结论:一两句话,带数值与条件(例如按实际温度而非设定温度表述)' },
+							conclusion: { type: 'string', description: '结论:一两句话,带数值与适用条件' },
 							basis: { type: 'array', items: { type: 'string' }, description: '依据:每个已采纳、已排除的候选假设或已核验的读数各一行,注明对应的实验或来源' },
 							open: {
 								type: 'array',
@@ -2965,7 +2965,7 @@ export function apply(ctx, config = {}) {
 					items: {
 						type: 'object',
 						properties: {
-							text: { type: 'string', description: '一句话,下次怎么做(「这台装置的温度读数先拿参考温度核一次」)' },
+							text: { type: 'string', description: '一句话,下次怎么做(「这类装置的关键读数先用独立来源核一次」)' },
 							kind: { type: 'string', enum: LESSON_KINDS, description: 'trap=会踩的坑;check=要先核的读数或假设;shortcut=省事但会骗人的做法;prior=对这类体系的先验(例如「两个因素常常耦合,先做斜向扫描」)' },
 							about: { type: 'array', items: { type: 'string' }, description: '涉及的装置、量或概念(短名,用来下次匹配)' },
 							evidence: { type: 'string', description: '这次记录里哪处表明了它(步骤、文件)' },
@@ -4641,14 +4641,14 @@ export function apply(ctx, config = {}) {
 				outcome: 'achieved = criteria met; abandoned = give up after stating the blocker honestly',
 				answers: 'Conclusions (on achieved, one per question; one in total if the goal lists no questions): conclusion / basis / open points / decisions for the user. Intermediate judgments and process stay out. Candidate hypotheses still being examined without support, and open unexplained items, must go in the open points with how the conclusion would change if they hold',
 				'answers.items.question': 'Which question (id); may be omitted when the goal lists no questions',
-				'answers.items.conclusion': 'Conclusion: one or two sentences with values and conditions (e.g. stated at the actual temperature, not the setpoint)',
+				'answers.items.conclusion': 'Conclusion: one or two sentences with values and the conditions under which they hold',
 				'answers.items.basis': 'Basis: one line per adopted or excluded candidate hypothesis or verified reading, naming the experiment or source',
 				'answers.items.open': 'Open points: what each concerns (about: candidate short names, unexplained item ids or question ids) and its effect on the conclusion (effect: if it holds, how the conclusion changes)',
 				'answers.items.decide': 'For the user to decide (e.g. whether to re-test before scaling up)',
 				'answers.items.unanswered': 'If it could not be answered, why (conclusion may then be omitted)',
 				note: 'Conclusion note',
 				lessons: 'Lessons (optional, checked only on achieved): what this run found that changes how to work next time in a similar setting, not a restatement of this run\'s conclusion. The evaluator checks each against the record; supported ones are written to clear/knowledge/lessons/, and later sessions see them when framing and planning',
-				'lessons.items.text': 'One sentence on what to do next time ("check this rig\'s temperature against the reference reading first")',
+				'lessons.items.text': 'One sentence on what to do next time ("check this kind of rig\'s key readings against an independent source first")',
 				'lessons.items.kind': 'trap = a pitfall; check = a reading or assumption to check first; shortcut = a convenient method that misleads; prior = a prior about this kind of system (e.g. "two factors are often coupled; scan diagonally first")',
 				'lessons.items.about': 'The equipment, quantities or concepts involved (short names, used to match next time)',
 				'lessons.items.evidence': 'Where in this run\'s record it showed (step, file)',
