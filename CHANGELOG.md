@@ -4,6 +4,12 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-08
+
+这一版是 0.5 升级的阶段一与阶段二:预期与未解释项、评估者查数据可信、不可逆命令拦在执行前、三档等级、经验与本体分类,宿主下界提到 DSH 0.2。
+
+**开发集上的初步结果**(盲评,不当作有效性证据,见 [docs/optimization/sim-runs/](docs/optimization/sim-runs/)):反应器题漂移纠正 ClearAI 3/4、裸模型 1/4;同一现场 3 题序列里第 3 题全部用上了前两题的经验,第 3 题均分 1.5 对 1.17,差距来自漂移这一项;配方与探索深度两边持平。正式验证和探索深度([设计草稿](docs/optimization/0.5-plan/exploration-depth.zh-CN.md))留到之后的版本。
+
 ### Added
 
 - **预期与未解释项(反常)**:步骤可以带预期 `expect`(预计看到什么、从哪条关系或经验来),动手前也能用 `RevisePlan(action="expect")` 补写。结果和预期或本体对不上的地方,交付时写进 `AdvancePlan.anomalies`,或随时用新工具 `Anomaly` 登记;它们挂在卡上,只有三个去处:被解释、写明理由排除、交给人。不阻塞结案。`STATE_VERSION` 17(投影多了 `anomalies`)。
