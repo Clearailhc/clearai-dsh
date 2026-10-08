@@ -526,9 +526,17 @@ function cardLines(state, derived, options, view) {
 			const named = (entry) => (entry.label === entry.id ? entry.id : `${entry.label}(${entry.id})`)
 			if (preflight.terms.length > 0) {
 				push(tr(`- 这些判断用到的概念(释义就是口径,算法变了先改它)${more(preflight.termsTruncated)}:`, `- Concepts these judgments use (the gloss is the definition; if how it is computed changes, update it first)${more(preflight.termsTruncated)}:`), 1)
-				for (const term of preflight.terms.slice(0, 4)) push(`  · ${named(term)}:${clamp(term.gloss, 100) || tr('(没写释义)', '(no gloss)')}`, 1)
+				for (const term of preflight.terms.slice(0, 4)) push(`  · ${named(term)}:${clamp(term.gloss, 100) || tr('(没写释义)', '(no gloss)')}${term.unit ? tr(`(单位 ${term.unit})`, ` (unit ${term.unit})`) : ''}`, 1)
 			}
-			if (preflight.predicates.length > 0) push(tr(`- 用到的关系:${preflight.predicates.slice(0, 6).map(named).join('、')}${more(preflight.predicatesTruncated)}`, `- Relations in use: ${preflight.predicates.slice(0, 6).map(named).join(', ')}${more(preflight.predicatesTruncated)}`), 2)
+			/** 带形状或核对办法的关系逐条给(预期从这里来);其余只给名字。 */
+			const SHAPE_WORD = { increasing: tr('单调升', 'increasing'), decreasing: tr('单调降', 'decreasing'), peak: tr('有峰', 'has a peak'), threshold: tr('有阈值', 'has a threshold'), coupled: tr('与别的量耦合', 'coupled with another quantity') }
+			const telling = preflight.predicates.filter((predicate) => predicate.shape || predicate.check)
+			const plain = preflight.predicates.filter((predicate) => !(predicate.shape || predicate.check))
+			if (telling.length > 0) {
+				push(tr('- 用到的关系(预期从这里来):', '- Relations in use (expectations come from these):'), 1)
+				for (const predicate of telling.slice(0, 4)) push(`  · ${named(predicate)}${predicate.shape ? tr(`:${SHAPE_WORD[predicate.shape] ?? predicate.shape}`, `: ${SHAPE_WORD[predicate.shape] ?? predicate.shape}`) : ''}${predicate.gloss ? tr(`(${clamp(predicate.gloss, 80)})`, ` (${clamp(predicate.gloss, 80)})`) : ''}${predicate.check ? tr(` · 读数这样核:${clamp(predicate.check, 80)}`, ` · check readings by: ${clamp(predicate.check, 80)}`) : ''}`, 1)
+			}
+			if (plain.length > 0) push(tr(`- 用到的关系:${plain.slice(0, 6).map(named).join('、')}${more(preflight.predicatesTruncated)}`, `- Relations in use: ${plain.slice(0, 6).map(named).join(', ')}${more(preflight.predicatesTruncated)}`), 2)
 			if (preflight.facts.length > 0) {
 				push(tr(`- 和这些判断有关的已知${more(preflight.factsTruncated)}(引用前看边界;要复检就在判断上写 retests):`, `- Known facts related to these judgments${more(preflight.factsTruncated)} (check the boundary before citing; to re-test, put retests on a judgment):`), 1)
 				for (const fact of preflight.facts.slice(0, 3)) push(factLine(fact), 1)

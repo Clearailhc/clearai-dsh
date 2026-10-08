@@ -10,6 +10,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - **评估者查还有什么没解释**:任务书列出未解释项,纪律要求查原始数据里没登记的异常(参考读数、重复点漂移、装置之间的差)和排除理由站不站得住;裁决多一个 `anomalies` 字段,折成「评估者发现」的未解释项退回给模型。
 - **不可逆动作拦在命令上**:`Frame` 的 `irreversible` 声明动作和命令特征,匹配的 bash 命令执行前当场问人;不放行或没人能答就拒。
 - **经验(跨任务的「下次怎么做」)**:`Conclude(outcome="achieved")` 多一个可选的 `lessons`(每条一句,分坑 / 先核 / 会骗人的捷径 / 先验四类,带涉及的装置或量、凭据、不适用的条件)。结案评估者对照记录逐条判(裁决多一个 `lessons` 字段),支持的由系统写进 `clear/knowledge/lessons/<id>.json`(做的人写不了),其余在回执里列出。别的会话经工作区同步读到它们;卡上在立题、定计划、写预期前摆出最多 6 条,和眼下目标、下一步提到同一装置或量的排前面。人把文件里的 `status` 改成 `retracted` 就撤回。`STATE_VERSION` 18(投影多了 `lessons`,派生多了 `lessonRows`)。
+- **本体只留能产出预期的东西**:概念分类别 / 度量 / 现象(`kind`),度量必须写 `unit`;关系分影响 / 定义 / 测量 / 表现为(`kind`),影响关系可写大致形状 `shape`(单调升、单调降、有峰、阈值、耦合),测量关系写读数怎么核(`check`);实体可带带日期的 `history`。卡上「用到的关系」把形状和核法递出来;词面命中也看下一步要做什么和它的预期。都是可选格,旧文件照旧有效,指纹不变。
 - 0.5 的设计与升级计划:[meta 设计](docs/optimization/0.5-plan/meta-design.zh-CN.md)、[升级计划](docs/optimization/0.5-plan/upgrade-plan.zh-CN.md)。
 
 ### Changed

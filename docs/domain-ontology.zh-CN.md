@@ -122,6 +122,10 @@ clear/ontology/
 - `X.json` 描述 X，X 的孩子放在同级的 `X/` 目录里。身份是 id（等于文件名），位置是目录，引用只用 id。
 - 概念与谓词共用一个 id 空间。谓词的 range 是概念 id，或 `{form, unit?}`。
 - 实体带 `relations:[{predicate, object|value, unit?, evidence:{kind, ref}}]`，每条关系必须有出处。
+- 概念分三类（`kind`）：类别 `category`、度量 `measure`、现象 `phenomenon`。度量必须写 `unit`（无量纲写 `"1"`），释义就是口径；单位或口径一改，用到它的事实标「定义已变」。
+- 关系分四类（`kind`）：影响 `affects`、定义 `defines`、测量 `measures`、表现为 `manifests_as`。影响关系可写大致形状 `shape`（`increasing` / `decreasing` / `peak` / `threshold` / `coupled`），预期从这里来；测量关系写读数怎么核（`check`，如参考探头、标样、重复点）。卡上「用到的关系」会把形状与核法递出来。
+- 实体可带 `history:[{at:"YYYY-MM-DD", what, evidence?}]`：校准、更换、发现的毛病。
+- 这几格都可选；没写的旧文件照旧有效，指纹也不变。
 - 字段不在 `SCHEMA.json` 里的一律拒收。
 
 **事实只由系统写**：升格时每条事实写成 `clear/knowledge/facts/<id>.json`（含它所用定义的指纹），`INDEX.md` 从全部事实文件渲染。事实文件跨会话累积：新会话一开始就能读到旧会话写下的事实与本体。

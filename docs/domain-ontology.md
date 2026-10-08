@@ -122,6 +122,10 @@ clear/ontology/
 - `X.json` describes X; X's children go in the sibling `X/` directory. Identity is the id (the file name), location is the directory, and references use ids only.
 - Concepts and predicates share one id space. A predicate's range is a concept id or `{form, unit?}`.
 - An entity carries `relations:[{predicate, object|value, unit?, evidence:{kind, ref}}]`; every relation needs provenance.
+- Concepts have three kinds (`kind`): `category`, `measure`, `phenomenon`. A measure must give a `unit` (`"1"` if dimensionless), and its gloss is its definition; when the unit or definition changes, facts that use it are flagged "definition changed".
+- Relations have four kinds (`kind`): `affects`, `defines`, `measures`, `manifests_as`. An affects relation may give its rough `shape` (`increasing` / `decreasing` / `peak` / `threshold` / `coupled`), which is where expectations come from; a measures relation says how to check the reading (`check`, such as a reference probe, a standard or a repeat point). The card's "relations in use" line carries the shape and the check.
+- An entity may carry `history:[{at:"YYYY-MM-DD", what, evidence?}]`: calibrations, replacements, faults found.
+- All of these are optional; older files without them stay valid and keep their fingerprints.
 - Fields not in `SCHEMA.json` are rejected.
 
 **Facts are written by the system only**: at promotion each fact becomes `clear/knowledge/facts/<id>.json` (with fingerprints of the definitions it uses), and `INDEX.md` is rendered from all fact files. Fact files accumulate across sessions: a new session can read the facts and ontology earlier sessions wrote.

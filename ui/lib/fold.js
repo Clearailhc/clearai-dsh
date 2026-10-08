@@ -1146,7 +1146,9 @@ export function knowledgePreflight(state, derived) {
 	const factRows = Array.isArray(derived?.factRows) ? derived.factRows : []
 	const conflicts = Array.isArray(derived?.conflicts) ? derived.conflicts : []
 	/** 命题的文本面:目标主张 + 每条命题的主张(去空白后做包含判断)。 */
-	const claimText = [state?.goal?.claim, ...hypotheses.map((item) => item.claim)].filter((text) => typeof text === 'string' && text !== '').map((text) => String(text).replace(/\s+/g, ''))
+	/** 加上下一步要做什么与它的预期:预期引用的关系也要递到眼前。 */
+	const nextStep = (derived?.activePlan?.steps ?? []).find((step) => step?.status === 'open') ?? null
+	const claimText = [state?.goal?.claim, ...hypotheses.map((item) => item.claim), nextStep?.do, nextStep?.expect].filter((text) => typeof text === 'string' && text !== '').map((text) => String(text).replace(/\s+/g, ''))
 	/** 命题已经引用的谓词(断言在假设上时就该算「在用」)。 */
 	const usedPredicates = new Set(hypotheses.flatMap((item) => (Array.isArray(item.assertions) ? item.assertions : [])).map((assertion) => String(assertion?.predicate ?? '')))
 	const hits = (entry) => {
@@ -1173,9 +1175,9 @@ export function knowledgePreflight(state, derived) {
 	return {
 		mode: 'knowledge',
 		/** 词面命中的词汇:模型接下来要写的结论大概率会用到它们。 */
-		terms: matchedTerms.slice(0, LIMIT).map((term) => ({ id: term.id, label: term.label, gloss: term.gloss, parent: term.parent ?? null, status: term.status, uses: term.uses ?? 0, basis: term.basis ?? null })),
+		terms: matchedTerms.slice(0, LIMIT).map((term) => ({ id: term.id, label: term.label, gloss: term.gloss, kind: term.kind ?? null, unit: term.unit ?? null, parent: term.parent ?? null, status: term.status, uses: term.uses ?? 0, basis: term.basis ?? null })),
 		termsTruncated: Math.max(0, matchedTerms.length - LIMIT),
-		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
+		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, gloss: predicate.gloss ?? '', kind: predicate.kind ?? null, shape: predicate.shape ?? null, check: predicate.check ?? null, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
 		predicatesTruncated: Math.max(0, matchedPredicates.length - LIMIT),
 		/** 命中的既有事实(可复用的「已知」)。 */
 		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: fact.scope ?? null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null, foreign: fact.foreign === true })),

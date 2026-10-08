@@ -38,6 +38,9 @@ const {
 	describeDomainShelf,
 	formatAssertion,
 	formatObject,
+	checkOntologyFile,
+	materializeOntology,
+	definitionFingerprint,
 } = await import(join(PORT, 'ui', 'lib', 'domain-language.js'))
 const { knowledgeView, GLOSSARY } = await import(join(PORT, 'ui', 'lib', 'knowledge-view.js'))
 const fold = await import(join(PORT, 'ui', 'lib', 'fold.js'))
@@ -828,6 +831,31 @@ console.log('\n【单一叙述源:knowledgeView 的形状与卡上限】')
 		data: { source: { kind: 'plugin:clearai', sections: [{ name: 'clearai/mutations', text: JSON.stringify({ mutations: [{ t: 'goal/set', id: 'g1', claim: 'c', done_criteria: 'd', promote_at_level: 'L3', revision: 1, hypotheses: [] }] }) }] } },
 	})
 	check('插件消息里的变更也盖上时间(同一条规矩,两个入口)', viaPlugin.goal.openedAt === 333, String(viaPlugin.goal.openedAt))
+}
+
+console.log('\n【本体只留能产出预期的东西:概念三类、度量带单位、关系带形状、测量写核法】')
+{
+	const C = 'clear/ontology/concepts/'
+	const R = 'clear/ontology/relations/'
+	check('度量不写单位 → 拒', checkOntologyFile(`${C}yield_pct.json`, { id: 'yield_pct', label: '收率', gloss: '产物摩尔数 / 进料摩尔数', kind: 'measure' }).some((item) => item.includes('unit')))
+	check('度量写了单位 → 过', checkOntologyFile(`${C}yield_pct.json`, { id: 'yield_pct', label: '收率', gloss: '产物摩尔数 / 进料摩尔数', kind: 'measure', unit: '%' }).length === 0)
+	check('概念 kind 写错 → 拒', checkOntologyFile(`${C}drift.json`, { id: 'drift', label: '漂移', gloss: '读数慢慢偏离', kind: 'thing' }).length > 0)
+	check('影响关系带形状 → 过', checkOntologyFile(`${R}raises_impurity.json`, { id: 'raises_impurity', label: '温度升杂质升', range: { form: 'quantity' }, kind: 'affects', shape: 'increasing' }).length === 0)
+	check('形状写错 → 拒', checkOntologyFile(`${R}raises_impurity.json`, { id: 'raises_impurity', label: 'x', range: { form: 'quantity' }, kind: 'affects', shape: 'wavy' }).length > 0)
+	check('形状只给影响关系', checkOntologyFile(`${R}reads_temp.json`, { id: 'reads_temp', label: 'x', range: { form: 'quantity' }, kind: 'measures', shape: 'peak' }).some((item) => item.includes('affects')))
+	check('实体历史要带日期', checkOntologyFile('clear/ontology/entities/tc1.json', { id: 'tc1', label: '热电偶', type: 'sensor', basis: 'lab', provenance: { kind: 'named', ref: 'lab/log.json' }, history: [{ what: '漂移' }] }).length > 0)
+	check('经验目录不是本体位置', checkOntologyFile('clear/knowledge/lessons/l-1.json', { id: 'l-1' }).length > 0)
+	const files = {
+		[`${C}yield_pct.json`]: { data: { id: 'yield_pct', label: '收率', gloss: '产物 / 进料', kind: 'measure', unit: '%' } },
+		[`${R}temp_on_impurity.json`]: { data: { id: 'temp_on_impurity', label: '温度对杂质', gloss: '温度越高杂质越多', range: { form: 'quantity' }, kind: 'affects', shape: 'increasing' } },
+	}
+	const built = materializeOntology(files)
+	const term = built.lexicon.terms.find((item) => item.id === 'yield_pct')
+	const predicate = built.lexicon.predicates.find((item) => item.id === 'temp_on_impurity')
+	check('折出的词条带着类别、单位与形状', term?.kind === 'measure' && term?.unit === '%' && predicate?.shape === 'increasing' && predicate?.kind === 'affects', JSON.stringify([term, predicate]))
+	const old = { id: 'yield_pct', gloss: '产物 / 进料', parent: null }
+	check('没写单位的旧词条指纹不变(旧事实不会被误标「定义已变」)', definitionFingerprint(old) === definitionFingerprint({ ...old, kind: 'measure' }))
+	check('单位改了 ⇒ 指纹变', definitionFingerprint({ ...old, unit: '%' }) !== definitionFingerprint({ ...old, unit: 'mol/mol' }))
 }
 
 console.log('\n【测试面:这一份测试进了 run.sh(否则它只是本地脚本)】')
