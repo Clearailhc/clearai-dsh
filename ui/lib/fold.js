@@ -398,6 +398,7 @@ export function applyMutation(state, mutation) {
 					if (isScope(hypothesis.scope)) known.scope = clone(hypothesis.scope)
 					if (isAbout(hypothesis.about)) known.about = hypothesis.about.map(String)
 					if (Array.isArray(hypothesis.uses)) known.uses = clone(hypothesis.uses)
+					if (typeof hypothesis.use === 'string' && hypothesis.use !== '') known.use = hypothesis.use
 					continue
 				}
 				next.hypotheses.push({
@@ -426,6 +427,7 @@ export function applyMutation(state, mutation) {
 					...(isAbout(hypothesis.about) ? { about: hypothesis.about.map(String) } : {}),
 					/** 用到的已有条目与立题那一刻的适用性判定:`[{id, kind, verdict}]`。 */
 					...(Array.isArray(hypothesis.uses) ? { uses: clone(hypothesis.uses) } : {}),
+					...(typeof hypothesis.use === 'string' && hypothesis.use !== '' ? { use: hypothesis.use } : {}),
 					at,
 				})
 			}
@@ -726,6 +728,8 @@ export function applyMutation(state, mutation) {
 				assertions: Array.isArray(mutation.assertions) ? clone(mutation.assertions) : null,
 				/** 升格那一刻,断言用到的词条各自的含义指纹:之后定义改了,这条事实要复核。 */
 				definitions: mutation.definitions !== null && typeof mutation.definitions === 'object' && !Array.isArray(mutation.definitions) ? clone(mutation.definitions) : null,
+				/** 支撑它的可重跑核算(`clear/models/<id>.json`);没有就是 null。 */
+				use: typeof mutation.use === 'string' && mutation.use !== '' ? mutation.use : null,
 				at,
 			})
 			break

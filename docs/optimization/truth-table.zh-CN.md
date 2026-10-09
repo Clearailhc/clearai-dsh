@@ -8,9 +8,9 @@
 
 ## 计数
 
-- 机制条目：**59**
-- 按状态：已实现 57 · 部分实现 1 · 设计目标 1
-- 按强度：硬边界 46 · 建议 9 · 原生 4
+- 机制条目：**60**
+- 按状态：已实现 58 · 部分实现 1 · 设计目标 1
+- 按强度：硬边界 47 · 建议 9 · 原生 4
 - 按归宿：变成机制 1 · 保持设计目标 1
 - 真正阻断执行的：**21**
 - 存在已知不符（文档 / 注释与代码不一致）的：**2**
@@ -64,6 +64,7 @@
 | `fact-scope` | 事实的适用范围与推翻条件分开;范围外的反证不撤回事实 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/scope.js` |
 | `negative-writeback` | 负向条目随发生随写:已排除、未解、缺陷 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/knowledge-items.js negativeItems` |
 | `knowledge-cite` | 取用:立题时定位已有条目,引用时判定是否适用,反驳回到被引用的条目 | 认识论 | 部分实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict` |
+| `model-rerun` | 可重跑的核算:引用时输入变了先重跑,超出容差判待核验并登记未解释项 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/models.js checkModelSpec、needsRerun、compareOutputs` |
 | `anomaly-questions-fact` | 未解释项使已确立的事实回到待核验 | 认识论 | 已实现 | 原生 | 权威 | system | 否 | `ui/lib/fold.js questionedBy` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/plugins/prompts.js loop` |
@@ -834,6 +835,19 @@
 - **测试**：test/kernel.test.mjs(0.5.2:取用) · **配置**：—
 - **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
 - **已知不符**：同一物理量有多个口径(设定、回读、探头)时要求指明口径的检查尚未做;口径变化只通过事实升格时记下的定义指纹判定
+
+### `model-rerun` · 可重跑的核算:引用时输入变了先重跑,超出容差判待核验并登记未解释项
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：Frame:判断的 uses 引用了带 use 的事实
+- **输入**：clear/models/<id>.json(command、inputs、output、tolerance、可选 baseline);输入文件的修改时间;clear/evidence/models/<id>.json 的上次运行
+- **输出**：输入没变不跑;变了用宿主 shell 在工作区里跑一次,与上次(第一次与 baseline)比对,写运行记录;超出容差 ⇒ 引用判定为待核验并登记 by=system 的未解释项(touches 指向该事实);不能执行、登记不合格、命令失败都如实说明,不当成偏差。判断的 use 指向未登记或不合格的核算 ⇒ 拒
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：反常不依赖模型自己留意:结论背后的计算在新数据上结果变了,下一次引用时由系统发现。只在引用时重跑,不另设调度。
+- **代码**：preset/plugins/models.js checkModelSpec、needsRerun、compareOutputs; preset/plugins/clearai-kernel.js rerunModel、Frame(use、uses 引用前重跑)、runText; ui/lib/fold.js 事实与判断的 use
+- **测试**：test/kernel.test.mjs(0.5.2:可重跑的核算) · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
 
 ### `anomaly-questions-fact` · 未解释项使已确立的事实回到待核验
 

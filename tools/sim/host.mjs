@@ -180,6 +180,14 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 
 	const sessionShell = (id) => ({ id, header: { cwd: workspace }, ownEvents: () => (String(id) === sessionId ? events : []), append: () => {} })
 
+	const simShell = {
+		resolve: (request) => ({ ...request, cwd: request.cwd ?? workspace, timeoutMs: request.timeoutMs ?? 60000 }),
+		async execute(spec) {
+			const run = spawnSync('bash', ['-c', spec.command], { cwd: spec.cwd, encoding: 'utf8', timeout: spec.timeoutMs, maxBuffer: 16 * 1024 * 1024 })
+			const result = { exitCode: run.status, signal: run.signal ?? null, timedOut: run.error?.code === 'ETIMEDOUT', stdout: { text: run.stdout ?? '' }, stderr: { text: run.stderr ?? '' } }
+			return { result: async () => result }
+		},
+	}
 	const ctx = {
 		logger: {
 			info() {},
@@ -193,6 +201,8 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 			if (name === 'subagents') return subagents
 			if (name === 'sessions') return { get: (id) => sessionShell(id), list: () => [sessionShell(sessionId)] }
 			if (name === 'tools') return { get: (toolName) => ({ name: toolName }) }
+			/** 宿主的 shell(与生产同形的最小子集):核算重跑用它在工作区里跑命令。 */
+			if (name === 'shell') return simShell
 			return undefined
 		},
 		on(event, handler) {

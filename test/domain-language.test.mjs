@@ -298,7 +298,7 @@ console.log('\n【折法:事实带上假设 id 与断言,并按 id 关联】')
 	 * 「旧账本逐字段不变」这句话只有在这种对照下才可核对。
 	 */
 	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'anomalies', 'lessons', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'workspace', 'ontologyProblems', 'language', 'inFlight', 'written']
-	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'about', 'scope', 'scope_spec', 'refute_when', 'boundaries', 'level', 'evidence', 'path', 'assertions', 'definitions', 'at']
+	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'about', 'scope', 'scope_spec', 'refute_when', 'boundaries', 'level', 'evidence', 'path', 'assertions', 'definitions', 'use', 'at']
 	check('状态键集合与清单逐字一致(加字段要改这一行)', JSON.stringify(Object.keys(fold.emptyState()).sort()) === JSON.stringify([...STATE_KEYS].sort()), Object.keys(fold.emptyState()).filter((key) => !STATE_KEYS.includes(key)).join(','))
 	check('事实键集合与清单逐字一致', JSON.stringify(Object.keys(legacy.facts[0]).sort()) === JSON.stringify([...FACT_KEYS].sort()), Object.keys(legacy.facts[0]).filter((key) => !FACT_KEYS.includes(key)).join(','))
 }

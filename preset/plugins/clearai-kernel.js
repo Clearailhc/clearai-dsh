@@ -29,6 +29,7 @@ import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
 import { citeVerdict, mergeAbout, negativeItems, relatedKnowledge, resolveAbout } from './knowledge-items.js'
+import { MODEL_ID, appendRun, checkModelSpec, compareOutputs, deviationText, needsRerun, numericOutputs } from './models.js'
 
 export const name = 'clearai-kernel'
 /** 宿主注册表 + `clearai` 读面(宿主包提供;缺了会在工具里明确报错,而不是静默不工作)。 */
@@ -2548,6 +2549,7 @@ export function apply(ctx, config = {}) {
 			case 'definition_changed':
 				return tr(`口径已变(${verdict.reasons.map((item) => item.key).join('、')} 的定义改过):先按新口径复核`, `definition changed (${verdict.reasons.map((item) => item.key).join(', ')}): re-check it under the new definition first`)
 			case 'pending':
+				if (verdict.drift !== undefined) return tr(`待核验:它的核算 ${verdict.drift.model} 用新数据重跑,结果超出容差(${deviationText(verdict.drift.deviations, 'zh')}),已登记未解释项;先复检(retests)再用`, `pending re-check: its computation ${verdict.drift.model} re-ran on new data outside tolerance (${deviationText(verdict.drift.deviations, 'en')}); an unexplained item was recorded; re-test it (retests) before relying on it`)
 				return tr('待核验(有推翻证据或开着的疑问):先复检(retests)再用', 'pending re-check (refuting evidence or an open question): re-test it (retests) before relying on it')
 			case 'out_of_scope':
 			case 'out_of_range':
@@ -2556,6 +2558,26 @@ export function apply(ctx, config = {}) {
 				return tr(`${scopeVerdictText(verdict, 'zh')}:在立题的 conditions 或判断的 scope 里写明这些维度`, `${scopeVerdictText(verdict, 'en')}: state these in the framing conditions or the judgment's scope`)
 			default:
 				return tr(scopeVerdictText(verdict, 'zh'), scopeVerdictText(verdict, 'en'))
+		}
+	}
+
+	/** 核算重跑的结果(没偏差、或没能跑)附在判定后面;没跑(输入没变)不说。 */
+	function runText(run, lang) {
+		if (run === undefined || run === null) return ''
+		const zh = lang === 'zh'
+		switch (run.status) {
+			case 'rerun':
+				return run.against === 'none' ? (zh ? `;核算 ${run.model} 已用新数据重跑,结果记为之后比对的基准` : `; computation ${run.model} re-ran on new data and the result is kept as the reference`) : zh ? `;核算 ${run.model} 已用新数据重跑,结果在容差内` : `; computation ${run.model} re-ran on new data within tolerance`
+			case 'failed':
+				return zh ? `;核算 ${run.model} 重跑失败(${run.detail}),按条目原状判定` : `; computation ${run.model} failed to re-run (${run.detail}); judged on the item as it stands`
+			case 'unavailable':
+				return zh ? `;这个宿主不能执行命令,核算 ${run.model} 没有重跑` : `; this host cannot run commands, so computation ${run.model} was not re-run`
+			case 'invalid':
+				return zh ? `;核算登记 clear/models/${run.model}.json 不合格(${run.detail}),没有重跑` : `; the registration clear/models/${run.model}.json is not usable (${run.detail}); not re-run`
+			case 'missing':
+				return zh ? `;条目挂的核算 ${run.model} 找不到登记文件,没有重跑` : `; the computation ${run.model} named by the item has no registration file; not re-run`
+			default:
+				return ''
 		}
 	}
 
@@ -2594,7 +2616,7 @@ export function apply(ctx, config = {}) {
 			if (item.match !== null && item.match !== item.name) lines.push(tr(`about 中「${item.name}」已认作实体 ${item.match}(名称或别名相同)。`, `"${item.name}" in about was taken as entity ${item.match} (same name or alias).`))
 			else if (item.match === null && item.similar.length > 0) lines.push(tr(`about 中「${item.name}」可能与已有的 ${item.similar.join('、')} 相同:是同一个就改用它的 id 并把这个叫法加进它的 aliases,不是就另建。`, `"${item.name}" in about may be the same as existing ${item.similar.join(', ')}: if so, use its id and add this name to its aliases; if not, create a new one.`))
 		}
-		for (const cite of cites) lines.push(tr(`「${cite.handle}」引用 ${cite.id}:${cite.lead}${citeText(cite.verdict)}。`, `"${cite.handle}" uses ${cite.id}: ${cite.lead}${citeText(cite.verdict)}.`))
+		for (const cite of cites) lines.push(tr(`「${cite.handle}」引用 ${cite.id}:${cite.lead}${citeText(cite.verdict)}${runText(cite.verdict.run, 'zh')}。`, `"${cite.handle}" uses ${cite.id}: ${cite.lead}${citeText(cite.verdict)}${runText(cite.verdict.run, 'en')}.`))
 		return lines.length === 0 ? '' : `\n${lines.join('\n')}`
 	}
 
@@ -2688,6 +2710,7 @@ export function apply(ctx, config = {}) {
 							refute_when: { type: 'string' },
 							about: { type: 'array', items: { type: 'string' }, description: '可选:涉及的实体或量 id;缺省取立题的 about' },
 							uses: { type: 'array', items: { type: 'string' }, description: '可选:用到的已有条目 id(clear/knowledge/ 下的文件名);系统当场判定是否适用' },
+							use: { type: 'string', description: '可选:支撑它的可重跑核算 id,先写 clear/models/<id>.json(command、inputs、output、tolerance,可选 baseline);输入变了,引用时系统重跑比对' },
 							scope: {
 								type: 'object',
 								description: '可选:在哪里成立。conditions 写条件,ranges 写取值范围(如 {"温度": [150, 175]}),note 补一句;缺省取立题的 conditions',
@@ -2786,6 +2809,20 @@ export function apply(ctx, config = {}) {
 				const unknownUses = (Array.isArray(hypothesis?.uses) ? hypothesis.uses : []).map((id) => String(id ?? '').trim()).filter((id) => id !== '' && !knownRows.some((row) => row.id === id))
 				if (unknownUses.length > 0) {
 					return fail('uses_unknown', tr(`uses 里的 ${unknownUses.join('、')} 不在 clear/knowledge/ 的 facts、lessons、negatives 里:写条目文件名里的 id(如 f-ab12cd),或者去掉。`, `${unknownUses.join(', ')} in uses is not among clear/knowledge/ facts, lessons or negatives: use the id from the item's file name (such as f-ab12cd), or drop it.`))
+				}
+				/** `use`:可重跑核算的 id;登记文件要在、要合格,升格时才带得上。 */
+				if (typeof hypothesis?.use === 'string' && hypothesis.use.trim() !== '') {
+					const modelId = hypothesis.use.trim()
+					const cwd = sessionCwd(sessionId)
+					let spec = null
+					try {
+						spec = cwd === null || !MODEL_ID.test(modelId) ? null : JSON.parse(readFileSync(join(cwd, 'clear', 'models', `${modelId}.json`), 'utf8'))
+					} catch {
+						spec = null
+					}
+					if (spec === null) return fail('use_unknown', tr(`use 指向的核算 ${modelId} 没有登记:先写 clear/models/${modelId}.json(command、inputs、output、tolerance)。`, `The computation ${modelId} named in use is not registered: write clear/models/${modelId}.json first (command, inputs, output, tolerance).`))
+					const problems = checkModelSpec(spec, modelId)
+					if (problems.length > 0) return fail('use_invalid', tr(`clear/models/${modelId}.json 不合格:${problems.join(';')}`, `clear/models/${modelId}.json is not usable: ${problems.join('; ')}`))
 				}
 				/**
 				 * **宽松+校验**:不写断言放行(断言是加法),写了就在**落账之前**严校——
@@ -2945,10 +2982,32 @@ export function apply(ctx, config = {}) {
 			 * (对这条判断的范围,缺的维度取这次的条件)判一次;判定随判断落账,也随结果说给模型。
 			 */
 			const cites = []
+			/**
+			 * **引用前先重跑核算**:被引用的事实挂着 `use`(可重跑的核算)且输入变了,先跑一次再判定;
+			 * 结果超出容差,这条事实判为待核验,同时登记一条未解释项(反常不依赖模型自己留意)。
+			 */
+			const modelRuns = new Map()
+			for (const hypothesis of hypotheses) {
+				for (const id of mergeAbout(hypothesis?.uses)) {
+					const row = knownRows.find((item) => item.id === id) ?? null
+					if (typeof row?.use === 'string' && row.use !== '' && !modelRuns.has(row.use)) modelRuns.set(row.use, await rerunModel(sessionId, row.use))
+				}
+			}
+			const driftOpened = new Set()
+			for (const run of modelRuns.values()) {
+				if (run.status !== 'rerun' || run.deviations.length === 0) continue
+				for (const row of knownRows.filter((item) => item.use === run.model)) {
+					if (driftOpened.has(row.id)) continue
+					driftOpened.add(row.id)
+					mutations.push({ t: 'anomaly/opened', id: uniqueId('a'), what: tr(`核算 ${run.model} 重跑结果超出容差:${deviationText(run.deviations, 'zh')}`, `Computation ${run.model} re-ran outside tolerance: ${deviationText(run.deviations, 'en')}`), anchor: `clear/evidence/models/${run.model}.json`, touches: [row.id], by: 'system' })
+				}
+			}
 			const usesOf = (hypothesis) =>
 				mergeAbout(hypothesis?.uses).map((id) => {
 					const row = knownRows.find((item) => item.id === id) ?? null
-					const verdict = citeVerdict(row, mergeScope(hypothesis.scope, { conditions: conditionsNow }))
+					const run = typeof row?.use === 'string' ? (modelRuns.get(row.use) ?? null) : null
+					const drifted = run?.status === 'rerun' && run.deviations.length > 0
+					const verdict = drifted ? { verdict: 'pending', reasons: [], drift: run } : { ...citeVerdict(row, mergeScope(hypothesis.scope, { conditions: conditionsNow })), ...(run !== null && run.status !== 'current' ? { run } : {}) }
 					if (!cites.some((cite) => cite.id === id && cite.claim === hypothesis.claim)) cites.push({ id, claim: hypothesis.claim, handle: handleOf({ name: hypothesis.name, claim: hypothesis.claim }), lead: negativeLead(row), verdict })
 					return { id, kind: row?.kind ?? null, verdict: verdict.verdict }
 				})
@@ -2966,6 +3025,8 @@ export function apply(ctx, config = {}) {
 					refute_when: hypothesis.refute_when.trim(),
 					/** 复检哪条已有事实(跨会话的身份是事实 id;判断 id 只活在本目标里)。 */
 					...(typeof hypothesis.retests === 'string' && hypothesis.retests.trim() !== '' ? { retests: hypothesis.retests.trim() } : {}),
+					/** 可重跑的核算(`clear/models/<id>.json`):升格时随事实写进文件,之后引用时据它重跑。 */
+					...(typeof hypothesis.use === 'string' && hypothesis.use.trim() !== '' ? { use: hypothesis.use.trim() } : {}),
 					/** 断言随假设落账;没写就是 null(加法,不是门槛)。 */
 					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
 					...(typeof hypothesis.question === 'string' && hypothesis.question.trim() !== '' ? { question: hypothesis.question.trim() } : {}),
@@ -3488,7 +3549,7 @@ export function apply(ctx, config = {}) {
 				const scope = scopeSpec === null ? null : tr(scopeText(scopeSpec, 'zh'), scopeText(scopeSpec, 'en'))
 				/** 涉及的实体或量:判断自己写的加上立题的,文件查找按它们取到这条事实。 */
 				const about = mergeAbout(hypothesis.about, goal.about)
-				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, about, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions }
+				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, about, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions, ...(typeof hypothesis.use === 'string' ? { use: hypothesis.use } : {}) }
 				const path = persistFact(sessionId, record)
 				/**
 				 * 事实带上**适用范围**(`scope` 是给人读的一行,`scope_spec` 是可比较的形状)与**推翻条件**:
@@ -3513,6 +3574,7 @@ export function apply(ctx, config = {}) {
 					evidence,
 					assertions,
 					definitions,
+					...(typeof hypothesis.use === 'string' ? { use: hypothesis.use } : {}),
 					path,
 				})
 				promoted.push({ id: factId, claim: hypothesis.claim })
@@ -3596,6 +3658,72 @@ export function apply(ctx, config = {}) {
 			ctx.logger?.warn?.(`clearai kernel: 经验落盘失败 ${String(error?.message ?? error)}`)
 			return null
 		}
+	}
+
+	/**
+	 * **可重跑的核算**(`clear/models/<id>.json`,见 `models.js`):引用一条带 `use` 的事实时调用。
+	 * 输入文件自上次运行后没变就不跑;变了就在工作区里用宿主的 `shell` 跑一次,读输出、与上次
+	 * (第一次则与登记的 `baseline`)比对,写运行记录(`clear/evidence/models/<id>.json`)。
+	 * 拿不到 shell、登记不对、命令失败,都如实返回状态,不当成偏差。
+	 */
+	const MODEL_TIMEOUT_MS = 60000
+	async function rerunModel(sessionId, modelId) {
+		const cwd = sessionCwd(sessionId)
+		if (cwd === null || typeof modelId !== 'string' || !MODEL_ID.test(modelId)) return { status: 'missing', model: modelId }
+		let spec
+		try {
+			spec = JSON.parse(readFileSync(join(cwd, 'clear', 'models', `${modelId}.json`), 'utf8'))
+		} catch {
+			return { status: 'missing', model: modelId }
+		}
+		const problems = checkModelSpec(spec, modelId)
+		if (problems.length > 0) return { status: 'invalid', model: modelId, detail: problems.join(';') }
+		const recordFile = join(cwd, 'clear', 'evidence', 'models', `${modelId}.json`)
+		let record = null
+		try {
+			record = JSON.parse(readFileSync(recordFile, 'utf8'))
+		} catch {
+			record = null
+		}
+		const lastRun = Array.isArray(record?.runs) && record.runs.length > 0 ? record.runs[record.runs.length - 1] : null
+		const stamp = {}
+		for (const input of spec.inputs) {
+			try {
+				stamp[input] = statSync(join(cwd, input)).mtimeMs
+			} catch {
+				stamp[input] = null
+			}
+		}
+		if (!needsRerun(lastRun, stamp)) return { status: 'current', model: modelId }
+		const shell = ctx.get('shell')
+		if (shell === undefined || shell === null || typeof shell.execute !== 'function') return { status: 'unavailable', model: modelId }
+		let result
+		try {
+			const request = { command: spec.command, cwd, timeoutMs: MODEL_TIMEOUT_MS }
+			const execution = await shell.execute(typeof shell.resolve === 'function' ? shell.resolve(request) : request)
+			result = await execution.result()
+		} catch (error) {
+			return { status: 'failed', model: modelId, detail: String(error?.message ?? error).slice(0, 200) }
+		}
+		if (result?.timedOut === true || (typeof result?.exitCode === 'number' && result.exitCode !== 0)) {
+			const tail = String(result?.stderr?.text ?? '').trim().slice(-200)
+			return { status: 'failed', model: modelId, detail: result?.timedOut === true ? tr('超时', 'timed out') : `exit ${result.exitCode}${tail === '' ? '' : `:${tail}`}` }
+		}
+		let outputs
+		try {
+			outputs = numericOutputs(JSON.parse(readFileSync(join(cwd, spec.output), 'utf8')))
+		} catch (error) {
+			return { status: 'failed', model: modelId, detail: tr(`读不到输出 ${spec.output}`, `cannot read the output ${spec.output}`) }
+		}
+		const reference = lastRun?.outputs ?? (spec.baseline ?? null)
+		const deviations = compareOutputs(reference, outputs, spec.tolerance)
+		const at = Date.now()
+		try {
+			writeTextFile(recordFile, `${JSON.stringify({ id: modelId, ...appendRun(record, { at, inputs: stamp, outputs, deviations }) }, null, 2)}\n`)
+		} catch {
+			/* 记录写不下去不影响这次的判定 */
+		}
+		return { status: 'rerun', model: modelId, deviations, against: lastRun !== null ? 'last' : reference === null ? 'none' : 'baseline' }
 	}
 
 	/**
@@ -4972,6 +5100,7 @@ export function apply(ctx, config = {}) {
 				'hypotheses.items.question': 'Optional: question or area id',
 				'hypotheses.items.about': 'Optional: entity or quantity ids; defaults to the framing about',
 				'hypotheses.items.uses': 'Optional: ids of existing items it relies on (file names under clear/knowledge/); the system checks on the spot whether they apply',
+				'hypotheses.items.use': 'Optional: id of the re-runnable computation behind it, registered at clear/models/<id>.json (command, inputs, output, tolerance, optional baseline); when its inputs change, the system re-runs it and compares when the item is cited',
 				'hypotheses.items.scope': 'Optional: where it holds. conditions gives conditions, ranges value ranges (e.g. {"temperature": [150, 175]}), note one sentence; defaults to the framing conditions',
 				'hypotheses.items.retests': 'Optional: which existing fact it re-tests (fact id). Copy the original claim; if refuted, the system asks a person to retract or keep the fact',
 				'hypotheses.items.assertions': 'Optional: subject–predicate–object assertions (ontology ids), strictly checked when given',

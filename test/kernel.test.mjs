@@ -223,6 +223,7 @@ function makeHost() {
 			 */
 			if (name === 'userQuestions') return host.userQuestions ?? undefined
 			if (name === 'approval') return host.approval ?? undefined
+			if (name === 'shell') return host.shell ?? undefined
 			if (name === 'skills') {
 				return host.skillsAvailable === false
 					? undefined
@@ -3202,6 +3203,81 @@ console.log('\n【0.5.2:取用——立题定位已有条目,引用时判定适�
 	const bare = await callOn(fourth, D, 'Frame', { claim: '无条件', headline: '无条件', done_criteria: '存在 lab/d.txt', promote_at_level: 'L2', hypotheses: [{ name: '无条件', claim: 'x', refute_when: 'y', uses: [`x-${noneId}`] }] })
 	check('本次没声明条件 → 条件未声明(不当作适用);负向条目先说它是什么', /「无条件」引用 x-[^:]+:初步排除.*条件未声明/.test(bare.message), bare.message.slice(-400))
 	check('没写 about 时提示写上才能定位', /立题写上 about/.test(bare.message), bare.message.slice(-400))
+}
+
+console.log('\n【0.5.2:可重跑的核算——引用时输入变了先重跑,超出容差判待核验并登记未解释项】')
+{
+	const { checkModelSpec, compareOutputs, needsRerun, numericOutputs } = await import('../preset/plugins/models.js')
+	check('登记缺字段 → 列出问题', checkModelSpec({ command: 'x' }, 'm').length >= 3)
+	check('合格的登记 → 没有问题', checkModelSpec({ command: 'node m.js', inputs: ['lab/d.csv'], output: 'out/m.json', tolerance: 0.5 }, 'm').length === 0)
+	check('没跑过 → 要跑;输入没变 → 不跑;输入变了 → 要跑', needsRerun(null, { a: 1 }) && !needsRerun({ inputs: { a: 1 } }, { a: 1 }) && needsRerun({ inputs: { a: 1 } }, { a: 2 }))
+	check('比对:超出容差与缺字段都算偏差', JSON.stringify(compareOutputs({ k: 1, j: 2, q: 3 }, { k: 1.2, j: 5 }, { k: 0.5, j: 1 }).map((item) => item.key)) === JSON.stringify(['j', 'q']))
+	check('输出只取顶层数值', JSON.stringify(numericOutputs({ a: 1, b: 'x', c: { d: 2 } })) === JSON.stringify({ a: 1 }))
+
+	const ws = tempDir('clearai-model-')
+	writeText(join(ws, 'lab', 'd.csv'), '1\n2\n3\n')
+	writeText(join(ws, 'calc', 'mean.js'), "const fs=require('fs');const xs=fs.readFileSync('lab/d.csv','utf8').trim().split('\\n').map(Number);fs.mkdirSync('out',{recursive:true});fs.writeFileSync('out/mean.json',JSON.stringify({mean:xs.reduce((a,b)=>a+b,0)/xs.length}))\n")
+	writeText(join(ws, 'clear', 'models', 'mean.json'), JSON.stringify({ id: 'mean', command: 'node calc/mean.js', inputs: ['lab/d.csv'], output: 'out/mean.json', tolerance: 0.5, baseline: { mean: 2 } }))
+	const shellCalls = []
+	const shell = {
+		resolve: (request) => request,
+		async execute(spec) {
+			shellCalls.push(spec.command)
+			const { spawnSync } = await import('node:child_process')
+			const run = spawnSync('bash', ['-c', spec.command], { cwd: spec.cwd, encoding: 'utf8' })
+			return { result: async () => ({ exitCode: run.status, timedOut: false, stdout: { text: run.stdout }, stderr: { text: run.stderr } }) }
+		},
+	}
+	const first = makeHost()
+	first.cwd = ws
+	first.shell = shell
+	apply(first.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const A = 'session-model-a'
+	const missing = await callOn(first, A, 'Frame', { claim: 'x', headline: 'x', done_criteria: '存在 lab/x.txt', promote_at_level: 'L2', hypotheses: [{ claim: 'x', refute_when: 'y', use: 'nope' }] })
+	check('use 指向没登记的核算 → 拒,说清登记文件怎么写', missing.ok === false && missing.code === 'use_unknown' && /clear\/models\/nope\.json/.test(missing.message), JSON.stringify(missing).slice(0, 200))
+	await callOn(first, A, 'Frame', { claim: '均值约为 2', headline: '均值约为 2', done_criteria: '存在 lab/r.txt', promote_at_level: 'L2', about: ['line_a'], hypotheses: [{ name: '均值', claim: '读数均值约为 2', refute_when: '均值偏离 2 超过 0.5', use: 'mean' }] })
+	const [meanId] = first.service.state(A).hypotheses.map((item) => item.id)
+	await callOn(first, A, 'CreatePlan', { steps: [{ id: 'm1', do: '算均值', artifacts: ['lab/r.txt'], done_criteria: 'lab/r.txt 存在', tests: { hypotheses: [meanId], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'r.txt'), 'mean=2\n')
+	await callOn(first, A, 'AdvancePlan', { step_id: 'm1', basis: 'lab/r.txt', results: [{ hypothesis: meanId, verdict: 'support' }] })
+	await callOn(first, A, 'ClosePlan', {})
+	first.nextVerdict = { holds: 'yes', basis: '在', shortfalls: [], results: [] }
+	await callOn(first, A, 'Conclude', { outcome: 'achieved' })
+	const fact = first.service.state(A).facts.find((item) => item.hypothesis === meanId)
+	const factFile = JSON.parse(readFileSync(join(ws, 'clear/knowledge/facts', `${fact.id}.json`), 'utf8'))
+	check('升格时事实带上 use(账上与文件上)', fact.use === 'mean' && factFile.use === 'mean', JSON.stringify({ ledger: fact.use, file: factFile.use }))
+
+	const frameWith = async (host, session) =>
+		await callOn(host, session, 'Frame', { claim: '沿用均值', headline: '沿用均值', done_criteria: '存在 lab/z.txt', promote_at_level: 'L2', hypotheses: [{ name: '沿用', claim: '这批仍按均值 2 处理', refute_when: '均值偏离', uses: [fact.id] }] })
+	const second = makeHost()
+	second.cwd = ws
+	second.shell = shell
+	apply(second.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const steady = await frameWith(second, 'session-model-b')
+	check('第一次引用:与 baseline 比,在容差内 → 照常判定,并说明已重跑', shellCalls.length === 1 && /已用新数据重跑,结果在容差内/.test(steady.message) && second.service.state('session-model-b').anomalies.length === 0, steady.message.slice(-300))
+	const third = makeHost()
+	third.cwd = ws
+	third.shell = shell
+	apply(third.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	await frameWith(third, 'session-model-c')
+	check('输入没变 → 不重跑', shellCalls.length === 1, JSON.stringify(shellCalls))
+	writeText(join(ws, 'lab', 'd.csv'), '5\n6\n7\n')
+	const fourth = makeHost()
+	fourth.cwd = ws
+	fourth.shell = shell
+	apply(fourth.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const drifted = await frameWith(fourth, 'session-model-d')
+	const D = fourth.service.state('session-model-d')
+	check('输入变了、结果超出容差 → 判待核验,说清偏差', shellCalls.length === 2 && /待核验:它的核算 mean 用新数据重跑,结果超出容差\(mean 2 → 6/.test(drifted.message) && D.hypotheses[0].uses[0].verdict === 'pending', drifted.message.slice(-400))
+	check('同时登记一条未解释项,指向这条事实', D.anomalies.length === 1 && D.anomalies[0].touches[0] === fact.id && D.anomalies[0].by === 'system' && D.anomalies[0].status === 'open', JSON.stringify(D.anomalies))
+	const record = JSON.parse(readFileSync(join(ws, 'clear/evidence/models/mean.json'), 'utf8'))
+	check('运行记录归系统,每次一条', record.runs.length === 2 && record.runs[1].outputs.mean === 6, JSON.stringify(record).slice(0, 200))
+	const noShell = makeHost()
+	noShell.cwd = ws
+	apply(noShell.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	writeText(join(ws, 'lab', 'd.csv'), '1\n2\n3\n4\n')
+	const blind = await frameWith(noShell, 'session-model-e')
+	check('宿主不能执行命令 → 如实说没有重跑,不当成偏差', /这个宿主不能执行命令,核算 mean 没有重跑/.test(blind.message) && noShell.service.state('session-model-e').anomalies.length === 0, blind.message.slice(-300))
 }
 
 console.log('\n【0.5.2:卡只发变化,隔一段补一张整的】')

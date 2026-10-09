@@ -1587,6 +1587,30 @@
       "destination": "become-mechanism"
     },
     {
+      "id": "model-rerun",
+      "name": "可重跑的核算:引用时输入变了先重跑,超出容差判待核验并登记未解释项",
+      "name_en": "Re-runnable computations: when a cited item's inputs changed, re-run first; outside tolerance it becomes pending and an unexplained item is recorded",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "preset/plugins/models.js checkModelSpec、needsRerun、compareOutputs; preset/plugins/clearai-kernel.js rerunModel、Frame(use、uses 引用前重跑)、runText; ui/lib/fold.js 事实与判断的 use",
+        "tests": "test/kernel.test.mjs(0.5.2:可重跑的核算)",
+        "config": null,
+        "prompt": "preset/plugins/prompts.js clearai/loop",
+        "docs": "docs/optimization/0.5.2-plan/loop-design.zh-CN.md"
+      },
+      "trigger": "Frame:判断的 uses 引用了带 use 的事实",
+      "input": "clear/models/<id>.json(command、inputs、output、tolerance、可选 baseline);输入文件的修改时间;clear/evidence/models/<id>.json 的上次运行",
+      "output": "输入没变不跑;变了用宿主 shell 在工作区里跑一次,与上次(第一次与 baseline)比对,写运行记录;超出容差 ⇒ 引用判定为待核验并登记 by=system 的未解释项(touches 指向该事实);不能执行、登记不合格、命令失败都如实说明,不当成偏差。判断的 use 指向未登记或不合格的核算 ⇒ 拒",
+      "blocks_execution": false,
+      "native_dsh_alternative": null,
+      "rationale": "反常不依赖模型自己留意:结论背后的计算在新数据上结果变了,下一次引用时由系统发现。只在引用时重跑,不另设调度。",
+      "known_mismatch": null
+    },
+    {
       "id": "anomaly-questions-fact",
       "name": "未解释项使已确立的事实回到待核验",
       "name_en": "An unexplained item sends an established fact back to awaiting check",
