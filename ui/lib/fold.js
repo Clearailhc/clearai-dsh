@@ -397,6 +397,7 @@ export function applyMutation(state, mutation) {
 					if (typeof hypothesis.from === 'string' && hypothesis.from !== '') known.from = hypothesis.from
 					if (isScope(hypothesis.scope)) known.scope = clone(hypothesis.scope)
 					if (isAbout(hypothesis.about)) known.about = hypothesis.about.map(String)
+					if (Array.isArray(hypothesis.uses)) known.uses = clone(hypothesis.uses)
 					continue
 				}
 				next.hypotheses.push({
@@ -423,6 +424,8 @@ export function applyMutation(state, mutation) {
 					...(isScope(hypothesis.scope) ? { scope: clone(hypothesis.scope) } : {}),
 					/** 涉及的实体或量(id);没写就用立题的 about。 */
 					...(isAbout(hypothesis.about) ? { about: hypothesis.about.map(String) } : {}),
+					/** 用到的已有条目与立题那一刻的适用性判定:`[{id, kind, verdict}]`。 */
+					...(Array.isArray(hypothesis.uses) ? { uses: clone(hypothesis.uses) } : {}),
 					at,
 				})
 			}
@@ -784,6 +787,18 @@ export function applyMutation(state, mutation) {
 			if (fact === undefined) break
 			if (!Array.isArray(fact.boundaries)) fact.boundaries = []
 			fact.boundaries.push({ verdict: mutation.verdict ?? 'out_of_scope', reasons: Array.isArray(mutation.reasons) ? clone(mutation.reasons) : [], hypothesis: mutation.hypothesis ?? null, basis: mutation.basis ?? null, at })
+			break
+		}
+		case 'fact/questioned': {
+			/**
+			 * **引用过它的判断被推翻**,而推翻落在它的适用范围之内(或范围说不清):事实回到「待核验」,
+			 * 不撤回、不问人——判断被推翻不等于它引用的事实错了,但它不能再照旧当已知用。
+			 * 人复核过(`fact/reviewed`)或别的会话的文件上记了复核,疑问就算处理了。
+			 */
+			const fact = next.facts.find((item) => item.id === mutation.fact)
+			if (fact === undefined) break
+			if (!Array.isArray(fact.challenges)) fact.challenges = []
+			fact.challenges.push({ hypothesis: mutation.hypothesis ?? null, verdict: mutation.verdict ?? null, basis: mutation.basis ?? null, at })
 			break
 		}
 		case 'ontology/term_added':
@@ -1913,7 +1928,9 @@ export function derive(state) {
 	 */
 	const openAnomalies = (state.anomalies ?? []).filter((item) => item?.status === 'open')
 	const questionedBy = (id) => openAnomalies.filter((item) => (item.touches ?? []).includes(id)).map((item) => item.id)
-	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions), questioned: questionedBy(fact.id) }))
+	/** 引用过它的判断被推翻留下的疑问(`fact/questioned` 或文件上的 `challenges`),人复核之后的不再算。 */
+	const challengedBy = (fact) => (Array.isArray(fact.challenges) ? fact.challenges : []).filter((item) => fact.review === null || fact.review === undefined || (fact.review.at ?? 0) < (item.at ?? 0)).map((item) => `challenge:${item.hypothesis ?? '?'}`)
+	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions), questioned: [...questionedBy(fact.id), ...challengedBy(fact)] }))
 
 	/**
 	 * **领域词汇的派生读数**(两条,都不新存东西):

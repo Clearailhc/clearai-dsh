@@ -8,12 +8,12 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **58**
-- By status: Implemented 57 · Design only 1
-- By strength: Hard boundary 45 · Advisory 9 · Native 4
-- By destination: stays design-only 1
+- Mechanisms: **59**
+- By status: Implemented 57 · Partial 1 · Design only 1
+- By strength: Hard boundary 46 · Advisory 9 · Native 4
+- By destination: becomes a mechanism 1 · stays design-only 1
 - Actually blocking execution: **21**
-- Carrying a known mismatch between docs/comments and code: **1**
+- Carrying a known mismatch between docs/comments and code: **2**
 
 ## Code constant snapshot
 
@@ -63,6 +63,7 @@ This section is exported from code, not written by hand:
 | `answers-stop-check` | Stop check: an achieved close needs everything that could change the answer written into it | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
 | `fact-scope` | A fact's scope is kept apart from its refutation condition; counter-evidence outside the scope does not retract it | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/scope.js` |
 | `negative-writeback` | Negative items are written as they happen: excluded, unresolved, defect | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/knowledge-items.js negativeItems` |
+| `knowledge-cite` | Retrieval: framing locates existing items, citing checks whether they apply, refutation returns to the cited items | Epistemic | Partial | Hard boundary | Authoritative | system | no | `preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict` |
 | `anomaly-questions-fact` | An unexplained item sends an established fact back to awaiting check | Epistemic | Implemented | Native | Authoritative | system | no | `ui/lib/fold.js questionedBy` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | `preset/plugins/prompts.js loop` |
@@ -818,6 +819,21 @@ This section is exported from code, not written by hand:
 - **Code**: preset/plugins/knowledge-items.js negativeItems; preset/plugins/clearai-kernel.js writeBack、afterTool、preStep; ui/lib/domain-language.js negativeFromFile; ui/lib/fold.js derive.negativeRows
 - **Tests**: test/kernel.test.mjs(0.5.2:负向条目随发生随写) · **Config**: —
 - **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `knowledge-cite` · Retrieval: framing locates existing items, citing checks whether they apply, refutation returns to the cited items
+
+- **Layer**: Epistemic · **Status**: Partial · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: Frame(立题或修订);判断被推翻
+- **Input**: Frame 的 about、conditions 与判断的 uses;工作区的事实、经验、负向条目;本体里实体与概念的名称和别名
+- **Output**: Frame 返回与 about 相关的已有条目计数与位置(不给内容);about 中与已有实体名称或别名相同的认作该实体,相似的提示可能相同;uses 里每条按状态与适用范围判定(适用 / 超出范围 / 超出取值范围 / 条件未声明 / 范围未声明 / 口径已变 / 待核验 / 已撤回),判定随判断落账并随结果返回,id 不存在则拒;引用过某事实的判断被推翻时,范围外 ⇒ fact/bounded,范围内或说不清 ⇒ fact/questioned(待核验,不问人)
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 不另设检索机制:条目都是文件,模型用原生文件查找取用;系统只给定位与引用时的判定。新会话不知道有旧知识、范围外的知识被当成适用、反驳不回到旧条目,是闭环断开的三处。
+- **Destination**: becomes a mechanism
+- **Code**: preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict; preset/plugins/clearai-kernel.js Frame(about、uses)、frameKnowledgeNote、reviewRefutedFacts、markFactQuestioned; ui/lib/fold.js case 'fact/questioned'
+- **Tests**: test/kernel.test.mjs(0.5.2:取用) · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+- **Known mismatch**: 同一物理量有多个口径(设定、回读、探头)时要求指明口径的检查尚未做;口径变化只通过事实升格时记下的定义指纹判定
 
 ### `anomaly-questions-fact` · An unexplained item sends an established fact back to awaiting check
 

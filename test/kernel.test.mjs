@@ -18,7 +18,7 @@ import { join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
-import { exclusionStrength, negativeItems } from '../preset/plugins/knowledge-items.js'
+import { citeVerdict, exclusionStrength, negativeItems, relatedKnowledge, resolveAbout } from '../preset/plugins/knowledge-items.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
 import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS as BILINGUAL_SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
@@ -3107,6 +3107,100 @@ console.log('\n【0.5.2:负向条目随发生随写,中断的会话也留下】'
 	await callOn(first, A, 'Conclude', { outcome: 'achieved' })
 	const fact = first.service.state(A).facts.find((item) => item.hypothesis === coupled)
 	check('升格的事实带 about(判断自己的加上立题的)', JSON.stringify(fact?.about) === JSON.stringify(['R-2', 'T', 'cat', 'yield']), JSON.stringify(fact?.about))
+}
+
+console.log('\n【0.5.2:取用——立题定位已有条目,引用时判定适用,反驳回到被引用的条目】')
+{
+	const entries = [{ id: 'R-2', label: '2号反应釜', aliases: ['反应器'] }, { id: 'yield', label: '收率' }]
+	const resolved = resolveAbout(['反应器', 'R2反应釜', '新装置'], entries)
+	check('名称或别名相同 → 认作已有实体', resolved[0].match === 'R-2', JSON.stringify(resolved[0]))
+	check('相似的名字 → 提示可能相同,不自动合并', resolved[1].match === null && resolved[1].similar.includes('R-2'), JSON.stringify(resolved[1]))
+	check('新名字 → 既不认作也不提示', resolved[2].match === null && resolved[2].similar.length === 0, JSON.stringify(resolved[2]))
+	const related = relatedKnowledge([{ kind: 'fact', status: 'established', about: ['R-2'], path: 'clear/knowledge/facts/f-1.json' }, { kind: 'negative', status: 'unresolved', about: ['r-2'], path: 'clear/knowledge/negatives/n-1.json' }, { kind: 'fact', status: 'established', about: ['L1'], path: 'clear/knowledge/facts/f-2.json' }], ['R-2'])
+	check('相关条目只数与 about 相交的,给目录不给内容', related.total === 2 && related.dirs.length === 2 && related.counts['fact:established'] === 1, JSON.stringify(related))
+	check('被人撤回的事实 → 已撤回', citeVerdict({ kind: 'fact', review: { decision: 'retracted' } }, {}).verdict === 'retracted')
+	check('定义改过的事实 → 口径已变', citeVerdict({ kind: 'fact', review: null, definitionsChanged: ['yield'] }, {}).verdict === 'definition_changed')
+	check('有开着疑问的事实 → 待核验', citeVerdict({ kind: 'fact', review: null, definitionsChanged: [], questioned: ['u-1'] }, {}).verdict === 'pending')
+
+	const ws = tempDir('clearai-cite-')
+	writeText(join(ws, 'clear/ontology/concepts/reactor.json'), JSON.stringify({ id: 'reactor', label: '反应釜', gloss: '反应设备', kind: 'category' }))
+	writeText(join(ws, 'clear/ontology/entities/R-2.json'), JSON.stringify({ id: 'R-2', label: '2号反应釜', type: 'reactor', basis: '现场台账', provenance: { kind: 'named', ref: '台账' }, aliases: ['反应器'] }))
+	const first = makeHost()
+	first.cwd = ws
+	apply(first.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const A = 'session-cite-a'
+	const framed = await callOn(first, A, 'Frame', {
+		claim: '反应器的最佳温度窗口',
+		headline: '反应器的最佳温度窗口',
+		done_criteria: '存在 lab/a.txt',
+		promote_at_level: 'L2',
+		about: ['反应器'],
+		conditions: { 产线: 'A' },
+		hypotheses: [
+			{ name: '窗口', claim: '收率在 150–175 °C 内随温度单调升', refute_when: '窗口内出现下降', scope: { ranges: { 温度: [150, 175] } } },
+			{ name: '无关', claim: '温度与收率无关', refute_when: '收率随温度变化' },
+		],
+	})
+	check('about 里的别名认作实体 id 落账', JSON.stringify(first.service.state(A).goal?.about) === JSON.stringify(['R-2']), JSON.stringify(first.service.state(A).goal?.about))
+	check('立题结果说明了认作哪个实体', /已认作实体 R-2/.test(framed.message), framed.message.slice(-300))
+	const [windowId, noneId] = first.service.state(A).hypotheses.map((item) => item.id)
+	await callOn(first, A, 'CreatePlan', { steps: [{ id: 'a1', do: '扫温度', artifacts: ['lab/a.txt'], done_criteria: 'lab/a.txt 存在', tests: { hypotheses: [windowId, noneId], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'a.txt'), '150:80 160:84 170:88 175:90\n')
+	await callOn(first, A, 'AdvancePlan', { step_id: 'a1', basis: 'lab/a.txt', results: [{ hypothesis: windowId, verdict: 'support' }, { hypothesis: noneId, verdict: 'refute', basis: '收率随温度升' }] })
+	await callOn(first, A, 'ClosePlan', {})
+	first.nextVerdict = { holds: 'yes', basis: '在', shortfalls: [], results: [] }
+	await callOn(first, A, 'Conclude', { outcome: 'achieved' })
+	const fact = first.service.state(A).facts.find((item) => item.hypothesis === windowId)
+
+	const second = makeHost()
+	second.cwd = ws
+	second.userQuestions = { asked: [], async ask(request) { this.asked.push(request); return { answers: [] } } }
+	apply(second.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const B = 'session-cite-b'
+	const unknown = await callOn(second, B, 'Frame', { claim: 'x', headline: 'x', done_criteria: '存在 lab/x.txt', promote_at_level: 'L2', hypotheses: [{ claim: 'x', refute_when: 'y', uses: ['f-nope'] }] })
+	check('uses 里写了不存在的条目 → 拒,说清去哪找 id', unknown.ok === false && unknown.code === 'uses_unknown', JSON.stringify(unknown).slice(0, 200))
+	const located = await callOn(second, B, 'Frame', {
+		claim: 'R-2 新批次的温度',
+		headline: 'R-2 新批次的温度',
+		done_criteria: '存在 lab/b.txt',
+		promote_at_level: 'L2',
+		about: ['R-2', 'R2反应釜'],
+		conditions: { 产线: 'A' },
+		hypotheses: [
+			{ name: '沿用窗口', claim: '新批次在 160–170 °C 仍随温度升', refute_when: '160–170 °C 内收率下降', scope: { ranges: { 温度: [160, 170] } }, uses: [fact.id] },
+			{ name: '外推', claim: '185 °C 收率更高', refute_when: '185 °C 收率不高于 175 °C', scope: { ranges: { 温度: [180, 190] } }, uses: [fact.id] },
+		],
+	})
+	check('立题返回相关条目的计数与位置(事实与已排除都数到,不给内容)', /相关的已有条目 2 条/.test(located.message) && /clear\/knowledge\/facts\//.test(located.message) && /clear\/knowledge\/negatives\//.test(located.message) && !located.message.includes('收率在 150–175'), located.message.slice(-600))
+	check('相似的名字提示可能是同一实体', /「R2反应釜」可能与已有的 R-2/.test(located.message), located.message.slice(-600))
+	check('范围内的引用 → 适用', /「沿用窗口」引用 [^:]+:适用/.test(located.message), located.message.slice(-600))
+	check('取值超出 → 超出取值范围,先检验再用', /「外推」引用 [^:]+:超出取值范围.*先检验再用/.test(located.message), located.message.slice(-600))
+	const reuse = second.service.state(B).hypotheses.find((item) => item.name === '沿用窗口')
+	check('引用判定随判断落账', reuse?.uses?.[0]?.id === fact.id && reuse.uses[0].verdict === 'applies' && reuse.uses[0].kind === 'fact', JSON.stringify(reuse?.uses))
+
+	await callOn(second, B, 'CreatePlan', { steps: [{ id: 'b1', do: '新批次扫温度', artifacts: ['lab/b.txt'], done_criteria: 'lab/b.txt 存在', tests: { hypotheses: [reuse.id], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'b.txt'), '160:88 165:85 170:83\n')
+	const refuted = await callOn(second, B, 'AdvancePlan', { step_id: 'b1', basis: 'lab/b.txt', results: [{ hypothesis: reuse.id, verdict: 'refute', basis: '新批次 160–170 °C 收率下降' }] })
+	const questioned = second.journal.find((mutation) => mutation.t === 'fact/questioned')
+	check('引用它的判断在范围内被推翻 → 事实回到待核验(fact/questioned)', questioned?.fact === fact.id && questioned.hypothesis === reuse.id, JSON.stringify(questioned))
+	check('不问人撤回(判断错了不等于引用的事实错了)', second.userQuestions.asked.length === 0, JSON.stringify(second.userQuestions.asked))
+	check('工具结果说清它回到待核验', /回到待核验/.test(refuted.message), refuted.message.slice(-300))
+	const onDisk = JSON.parse(readFileSync(join(ws, 'clear/knowledge/facts', `${fact.id}.json`), 'utf8'))
+	check('事实文件记下这条疑问,状态不变', onDisk.status === 'established' && (onDisk.challenges ?? []).length === 1, JSON.stringify({ status: onDisk.status, challenges: onDisk.challenges }))
+
+	const third = makeHost()
+	third.cwd = ws
+	apply(third.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const C = 'session-cite-c'
+	const later = await callOn(third, C, 'Frame', { claim: '再用', headline: '再用', done_criteria: '存在 lab/c.txt', promote_at_level: 'L2', about: ['R-2'], hypotheses: [{ name: '再用', claim: '沿用窗口', refute_when: '不成立', uses: [fact.id] }] })
+	check('有开着的疑问 → 下一个会话引用时判为待核验', /「再用」引用 [^:]+:待核验/.test(later.message), later.message.slice(-400))
+	const fourth = makeHost()
+	fourth.cwd = ws
+	apply(fourth.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const D = 'session-cite-d'
+	const bare = await callOn(fourth, D, 'Frame', { claim: '无条件', headline: '无条件', done_criteria: '存在 lab/d.txt', promote_at_level: 'L2', hypotheses: [{ name: '无条件', claim: 'x', refute_when: 'y', uses: [`x-${noneId}`] }] })
+	check('本次没声明条件 → 条件未声明(不当作适用);负向条目先说它是什么', /「无条件」引用 x-[^:]+:初步排除.*条件未声明/.test(bare.message), bare.message.slice(-400))
+	check('没写 about 时提示写上才能定位', /立题写上 about/.test(bare.message), bare.message.slice(-400))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

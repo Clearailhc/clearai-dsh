@@ -1155,6 +1155,7 @@ export function factFromFile(data, path) {
 		scope_spec: isPlainObject(data.scope_spec) ? clone(data.scope_spec) : null,
 		refute_when: typeof data.refute_when === 'string' ? data.refute_when : null,
 		boundaries: Array.isArray(data.boundaries) ? clone(data.boundaries) : [],
+		challenges: Array.isArray(data.challenges) ? clone(data.challenges) : [],
 		level: data.level ?? null,
 		evidence: Array.isArray(data.evidence) ? data.evidence : [],
 		assertions: Array.isArray(data.assertions) ? clone(data.assertions) : null,

@@ -8,12 +8,12 @@
 
 ## 计数
 
-- 机制条目：**58**
-- 按状态：已实现 57 · 设计目标 1
-- 按强度：硬边界 45 · 建议 9 · 原生 4
-- 按归宿：保持设计目标 1
+- 机制条目：**59**
+- 按状态：已实现 57 · 部分实现 1 · 设计目标 1
+- 按强度：硬边界 46 · 建议 9 · 原生 4
+- 按归宿：变成机制 1 · 保持设计目标 1
 - 真正阻断执行的：**21**
-- 存在已知不符（文档 / 注释与代码不一致）的：**1**
+- 存在已知不符（文档 / 注释与代码不一致）的：**2**
 
 ## 代码常量快照
 
@@ -63,6 +63,7 @@
 | `answers-stop-check` | 停止检查:会改变答案的事项都写进结论才能达成结案 | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js Conclude` |
 | `fact-scope` | 事实的适用范围与推翻条件分开;范围外的反证不撤回事实 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/scope.js` |
 | `negative-writeback` | 负向条目随发生随写:已排除、未解、缺陷 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/knowledge-items.js negativeItems` |
+| `knowledge-cite` | 取用:立题时定位已有条目,引用时判定是否适用,反驳回到被引用的条目 | 认识论 | 部分实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict` |
 | `anomaly-questions-fact` | 未解释项使已确立的事实回到待核验 | 认识论 | 已实现 | 原生 | 权威 | system | 否 | `ui/lib/fold.js questionedBy` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/plugins/prompts.js loop` |
@@ -818,6 +819,21 @@
 - **代码**：preset/plugins/knowledge-items.js negativeItems; preset/plugins/clearai-kernel.js writeBack、afterTool、preStep; ui/lib/domain-language.js negativeFromFile; ui/lib/fold.js derive.negativeRows
 - **测试**：test/kernel.test.mjs(0.5.2:负向条目随发生随写) · **配置**：—
 - **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `knowledge-cite` · 取用:立题时定位已有条目,引用时判定是否适用,反驳回到被引用的条目
+
+- **层**：认识论 · **状态**：部分实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：Frame(立题或修订);判断被推翻
+- **输入**：Frame 的 about、conditions 与判断的 uses;工作区的事实、经验、负向条目;本体里实体与概念的名称和别名
+- **输出**：Frame 返回与 about 相关的已有条目计数与位置(不给内容);about 中与已有实体名称或别名相同的认作该实体,相似的提示可能相同;uses 里每条按状态与适用范围判定(适用 / 超出范围 / 超出取值范围 / 条件未声明 / 范围未声明 / 口径已变 / 待核验 / 已撤回),判定随判断落账并随结果返回,id 不存在则拒;引用过某事实的判断被推翻时,范围外 ⇒ fact/bounded,范围内或说不清 ⇒ fact/questioned(待核验,不问人)
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：不另设检索机制:条目都是文件,模型用原生文件查找取用;系统只给定位与引用时的判定。新会话不知道有旧知识、范围外的知识被当成适用、反驳不回到旧条目,是闭环断开的三处。
+- **归宿**：变成机制
+- **代码**：preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict; preset/plugins/clearai-kernel.js Frame(about、uses)、frameKnowledgeNote、reviewRefutedFacts、markFactQuestioned; ui/lib/fold.js case 'fact/questioned'
+- **测试**：test/kernel.test.mjs(0.5.2:取用) · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+- **已知不符**：同一物理量有多个口径(设定、回读、探头)时要求指明口径的检查尚未做;口径变化只通过事实升格时记下的定义指纹判定
 
 ### `anomaly-questions-fact` · 未解释项使已确立的事实回到待核验
 

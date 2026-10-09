@@ -341,6 +341,7 @@ ledger facts), so it appears in no state machine:
 | `human/released` | §3 Step (L4 release) | yes |
 | `fact/reviewed` | §8 Fact (human review: retract / keep) | yes |
 | `fact/bounded` | §8 Fact (a test outside its scope: boundary recorded, the fact stays) | yes |
+| `fact/questioned` | §8 Fact (a judgment that cited it was refuted within its scope: back to pending re-check, not retracted) | yes |
 | `ontology/term_added` | §10 Domain lexicon | yes |
 | `ontology/predicate_added` | §10 Domain lexicon | yes |
 | `ontology/term_revised` | §10 Domain lexicon | yes |

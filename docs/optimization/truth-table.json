@@ -97,6 +97,10 @@
       "by": "fact-scope"
     },
     {
+      "t": "fact/questioned",
+      "by": "knowledge-cite"
+    },
+    {
       "t": "goal/closed",
       "by": "goal-close"
     },
@@ -1556,6 +1560,31 @@
       "native_dsh_alternative": null,
       "rationale": "只在成功结案时回灌,中断、放弃的会话就什么都不留,而失败里最有价值的往往是负向信息;已排除的不再重验,缺陷先核,未解的优先追。",
       "known_mismatch": null
+    },
+    {
+      "id": "knowledge-cite",
+      "name": "取用:立题时定位已有条目,引用时判定是否适用,反驳回到被引用的条目",
+      "name_en": "Retrieval: framing locates existing items, citing checks whether they apply, refutation returns to the cited items",
+      "layer": "epistemic",
+      "status": "partial",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict; preset/plugins/clearai-kernel.js Frame(about、uses)、frameKnowledgeNote、reviewRefutedFacts、markFactQuestioned; ui/lib/fold.js case 'fact/questioned'",
+        "tests": "test/kernel.test.mjs(0.5.2:取用)",
+        "config": null,
+        "prompt": "preset/plugins/prompts.js clearai/loop",
+        "docs": "docs/optimization/0.5.2-plan/loop-design.zh-CN.md"
+      },
+      "trigger": "Frame(立题或修订);判断被推翻",
+      "input": "Frame 的 about、conditions 与判断的 uses;工作区的事实、经验、负向条目;本体里实体与概念的名称和别名",
+      "output": "Frame 返回与 about 相关的已有条目计数与位置(不给内容);about 中与已有实体名称或别名相同的认作该实体,相似的提示可能相同;uses 里每条按状态与适用范围判定(适用 / 超出范围 / 超出取值范围 / 条件未声明 / 范围未声明 / 口径已变 / 待核验 / 已撤回),判定随判断落账并随结果返回,id 不存在则拒;引用过某事实的判断被推翻时,范围外 ⇒ fact/bounded,范围内或说不清 ⇒ fact/questioned(待核验,不问人)",
+      "blocks_execution": false,
+      "native_dsh_alternative": null,
+      "rationale": "不另设检索机制:条目都是文件,模型用原生文件查找取用;系统只给定位与引用时的判定。新会话不知道有旧知识、范围外的知识被当成适用、反驳不回到旧条目,是闭环断开的三处。",
+      "known_mismatch": "同一物理量有多个口径(设定、回读、探头)时要求指明口径的检查尚未做;口径变化只通过事实升格时记下的定义指纹判定",
+      "destination": "become-mechanism"
     },
     {
       "id": "anomaly-questions-fact",

@@ -28,7 +28,7 @@ import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'nod
 import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
-import { itemFileId, mergeAbout, negativeItems } from './knowledge-items.js'
+import { citeVerdict, mergeAbout, negativeItems, relatedKnowledge, resolveAbout } from './knowledge-items.js'
 
 export const name = 'clearai-kernel'
 /** 宿主注册表 + `clearai` 读面(宿主包提供;缺了会在工具里明确报错,而不是静默不工作)。 */
@@ -828,7 +828,7 @@ export function apply(ctx, config = {}) {
 			'  · **交付成立吗**(`holds`):yes = 判据逐条满足、观测真实;no = 有判据不满足,或观测与记录对不上;unclear = 凭现有材料判不了。',
 			'  · **每条判断的结果**(`results`,这一步检验几条就给几格):对照它的推翻条件读——support = 没碰到推翻条件,refute = 碰到了,inconclusive = 这次观测区分不了。',
 			'- 交付成立与判断被推翻可以同时为真:推翻是有价值的结果,它不让交付失败。不要为了让步骤通过而写 support。',
-			'- 你还要查**还有什么没解释**(`anomalies`):原始数据里有没有做的人没登记的异常——参考读数对不上、重复点漂移、不同装置或不同批次之间的差、和常识或本体不符的量级?数字复跑对得上不等于数据可信。每条做的人已排除的未解释项,理由站不站得住?站不住的也写进来。没有就给空数组。',
+			'- 你还要查**还有什么没解释**(`anomalies`):原始数据里有没有做的人没登记的异常——参考读数对不上、重复点漂移、不同装置或不同批次之间的差、和常识或本体不符的量级?数字复跑对得上不等于数据可信。每条做的人已排除的未解释项,理由站不站得住?站不住的也写进来。结论用到了 clear/knowledge/ 下的已有条目、却没在判断的 uses 里引用的,也写进来(它绕过了适用性判定)。没有就给空数组。',
 			'',
 			'**回包的形状就是你的动作空间(字段长度由 schema 校验,超了会被拒):**',
 			'- `basis` 是**一句话结论**,≤1200 字。**不要在这里写论证**——论证放 `refs`:逐条 `{path, line}` 指到你实际读过的文件与行,让第三方照着就能复核。',
@@ -851,7 +851,7 @@ export function apply(ctx, config = {}) {
 			'  · **Does the delivery hold** (`holds`): yes = every criterion met and the observations are real; no = some criterion unmet, or observations do not match the record; unclear = cannot be decided from the material.',
 			'  · **The result for each judgment** (`results`, one entry per judgment this step tests): read it against its refutation condition; support = the condition was not hit, refute = it was hit, inconclusive = this observation cannot tell.',
 			'- A delivery can hold while a judgment is refuted: refutation is a valuable result and does not fail the delivery. Do not write support to let a step pass.',
-			'- You also check **what is still unexplained** (`anomalies`): does the raw data hold anomalies the worker did not record (a reference reading that disagrees, drift between repeated points, a gap between devices or batches, a magnitude that contradicts common knowledge or the ontology)? Re-run numbers matching does not mean the data can be trusted. For each unexplained item the worker ruled out, does the reason hold? If not, list it here too. If there are none, give an empty array.',
+			'- You also check **what is still unexplained** (`anomalies`): does the raw data hold anomalies the worker did not record (a reference reading that disagrees, drift between repeated points, a gap between devices or batches, a magnitude that contradicts common knowledge or the ontology)? Re-run numbers matching does not mean the data can be trusted. For each unexplained item the worker ruled out, does the reason hold? If not, list it here too. If the conclusion relies on existing items under clear/knowledge/ that no judgment cites in uses, list that too (it bypassed the applicability check). If there are none, give an empty array.',
 			'',
 			'**The shape of your reply is your action space (field lengths are checked by the schema; overruns are rejected):**',
 			'- `basis` is a **one-sentence conclusion**, ≤1200 characters. **Do not argue here**; arguments go in `refs`: one `{path, line}` per file and line you actually read, so a third party can check.',
@@ -2001,8 +2001,33 @@ export function apply(ctx, config = {}) {
 			if (fact !== null) pending.push(fact)
 		}
 		const open = pending.filter((fact) => fact.review === undefined || fact.review === null)
-		if (open.length === 0) return ''
 		const notes = []
+		/**
+		 * **反驳回到被引用的条目**:被推翻的判断在 `uses` 里引用过的事实(不是它复检的那条)。
+		 * 判断错了不等于它引用的事实错了,所以不问人撤回;但按范围比一次:检验落在事实范围之外 ⇒
+		 * 记一处边界(`fact/bounded`);范围之内或说不清 ⇒ 事实回到「待核验」(`fact/questioned`)。
+		 */
+		const handled = new Set(pending.map((fact) => fact.id))
+		for (const refuter of state.hypotheses.filter((item) => refutedHypotheses.includes(item.id) && Array.isArray(item.uses))) {
+			for (const use of refuter.uses) {
+				if (use?.kind !== 'fact' || handled.has(use.id)) continue
+				handled.add(use.id)
+				const fact = findFact(sessionId, state, use.id)
+				if (fact === null || fact.review?.decision === 'retracted') continue
+				const fit = compareScope(fact.scope_spec ?? null, mergeScope(refuter.scope, { conditions: state.goal?.conditions ?? {} }))
+				const where = tr(scopeVerdictText(fit, 'zh'), scopeVerdictText(fit, 'en'))
+				if (fit.verdict === 'out_of_scope' || fit.verdict === 'out_of_range') {
+					mutations.push({ t: 'fact/bounded', fact: fact.id, verdict: fit.verdict, reasons: fit.reasons, hypothesis: refuter.id, basis: clip(basis, 300) })
+					markFactBounded(sessionCwd(sessionId), fact, { verdict: fit.verdict, reasons: fit.reasons, basis: clip(basis, 300) })
+					notes.push(tr(`${fact.id}(被引用):推翻落在它的范围之外(${where}),事实保持成立,这处边界已记下`, `${fact.id} (cited): the refutation fell outside its scope (${where}); the fact still holds, and this boundary is recorded`))
+					continue
+				}
+				mutations.push({ t: 'fact/questioned', fact: fact.id, hypothesis: refuter.id, verdict: fit.verdict, basis: clip(basis, 300) })
+				markFactQuestioned(sessionCwd(sessionId), fact, { hypothesis: refuter.id, verdict: fit.verdict, basis: clip(basis, 300) })
+				notes.push(tr(`${fact.id}(被引用):引用它的判断被推翻(${where}),它回到待核验;要继续用它,先复检(retests)`, `${fact.id} (cited): a judgment that relied on it was refuted (${where}); it is back to pending re-check. Re-test it (retests) before relying on it again`))
+			}
+		}
+		if (open.length === 0) return notes.length === 0 ? '' : tr(`\n复核:${notes.join(';')}`, `\nReview: ${notes.join('; ')}`)
 		for (const fact of open) {
 			/**
 			 * **先比范围,再谈撤回**:推翻它的那条判断是在什么条件下检验的(判断自己的范围,缺的维度取立题的
@@ -2489,6 +2514,90 @@ export function apply(ctx, config = {}) {
 		return { ...value, mutations: merged }
 	}
 
+	// ── 取用:立题时定位已有条目,引用时判定是否适用 ─────────────────────────
+
+	/** 工作区里的已有条目(事实、经验、负向条目)摊成一张表:`{id, kind, status, about, scope_spec, path, …}`。 */
+	function knowledgeRows(derived) {
+		const facts = (derived?.factRows ?? []).map((row) => ({ ...row, kind: 'fact', status: row.review?.decision === 'retracted' ? 'retracted' : row.refuted === true && row.review === null ? 'pending' : (row.questioned ?? []).length > 0 ? 'pending' : 'established', path: row.path ?? `clear/knowledge/facts/${row.id}.json` }))
+		const lessons = (derived?.lessonRows ?? []).map((row) => ({ ...row, kind: 'lesson', status: 'active', path: row.path ?? `clear/knowledge/lessons/${row.id}.json` }))
+		const negatives = (derived?.negativeRows ?? []).map((row) => ({ ...row, kind: 'negative' }))
+		return [...facts, ...lessons, ...negatives]
+	}
+
+	const ROW_STATUS_TEXT = {
+		'fact:established': ['成立', 'holding'],
+		'fact:pending': ['待核验', 'pending re-check'],
+		'fact:retracted': ['已撤回', 'retracted'],
+		'lesson:active': ['经验', 'lessons'],
+		'negative:excluded': ['已排除', 'excluded'],
+		'negative:preliminary_excluded': ['初步排除', 'preliminarily excluded'],
+		'negative:unresolved': ['未解', 'unresolved'],
+		'negative:defect': ['缺陷', 'defects'],
+		'negative:explained': ['已解释的反常', 'explained anomalies'],
+		'negative:ruled_out': ['排除的反常', 'ruled-out anomalies'],
+		'negative:escalated': ['交给人的反常', 'escalated anomalies'],
+	}
+
+	/** 引用判定 → 一句话(含该怎么办)。 */
+	function citeText(verdict) {
+		switch (verdict.verdict) {
+			case 'unknown':
+				return tr('未找到', 'not found')
+			case 'retracted':
+				return tr('已撤回,不能作为已知引用', 'retracted; do not cite it as known')
+			case 'definition_changed':
+				return tr(`口径已变(${verdict.reasons.map((item) => item.key).join('、')} 的定义改过):先按新口径复核`, `definition changed (${verdict.reasons.map((item) => item.key).join(', ')}): re-check it under the new definition first`)
+			case 'pending':
+				return tr('待核验(有推翻证据或开着的疑问):先复检(retests)再用', 'pending re-check (refuting evidence or an open question): re-test it (retests) before relying on it')
+			case 'out_of_scope':
+			case 'out_of_range':
+				return tr(`${scopeVerdictText(verdict, 'zh')}:先检验再用`, `${scopeVerdictText(verdict, 'en')}: test it before relying on it`)
+			case 'undeclared':
+				return tr(`${scopeVerdictText(verdict, 'zh')}:在立题的 conditions 或判断的 scope 里写明这些维度`, `${scopeVerdictText(verdict, 'en')}: state these in the framing conditions or the judgment's scope`)
+			default:
+				return tr(scopeVerdictText(verdict, 'zh'), scopeVerdictText(verdict, 'en'))
+		}
+	}
+
+	/** 负向条目被引用时,先说它是什么。 */
+	function negativeLead(row) {
+		if (row?.kind !== 'negative') return ''
+		const word = ROW_STATUS_TEXT[`negative:${row.status}`]
+		const strength = row.status === 'preliminary_excluded' ? tr('(依据较弱,可以重验)', ' (weak grounds; may be re-tested)') : ''
+		return word === undefined ? '' : tr(`${word[0]}${strength};`, `${word[1]}${strength}; `)
+	}
+
+	/**
+	 * 立题时关于已有知识的那几句:相关条目的计数与位置(不给内容)、`about` 里可能指同一实体的名字、
+	 * 每条判断 `uses` 的适用性判定。都是读数,不拦立题。
+	 */
+	function frameKnowledgeNote({ about, resolved, related, cites, rows }) {
+		const lines = []
+		if (about.length > 0) {
+			if (related.total === 0) lines.push(tr(`工作区里没有与 about(${about.join('、')})相关的已有条目。`, `No existing items in the workspace concern the about ids (${about.join(', ')}).`))
+			else {
+				const parts = Object.entries(related.counts).map(([bucket, count]) => {
+					const word = ROW_STATUS_TEXT[bucket] ?? [bucket, bucket]
+					return tr(`${word[0]} ${count}`, `${count} ${word[1]}`)
+				})
+				lines.push(
+					tr(
+						`工作区里与 about(${about.join('、')})相关的已有条目 ${related.total} 条(${parts.join('、')}),位于 ${related.dirs.join('、')}。先查找读过再定判断;用到的写进判断的 uses,系统会判定它是否适用。`,
+						`${related.total} existing item(s) in the workspace concern the about ids (${about.join(', ')}): ${parts.join(', ')}, under ${related.dirs.join(', ')}. Look them up before settling the judgments; list those you rely on in the judgment's uses, and the system checks whether they apply.`,
+					),
+				)
+			}
+		} else if (rows.length > 0) {
+			lines.push(tr(`工作区里有 ${rows.length} 条已有条目;立题写上 about(涉及的实体或量),才能定位相关的。`, `The workspace holds ${rows.length} existing item(s); give about (the entities or quantities involved) to locate the relevant ones.`))
+		}
+		for (const item of resolved) {
+			if (item.match !== null && item.match !== item.name) lines.push(tr(`about 中「${item.name}」已认作实体 ${item.match}(名称或别名相同)。`, `"${item.name}" in about was taken as entity ${item.match} (same name or alias).`))
+			else if (item.match === null && item.similar.length > 0) lines.push(tr(`about 中「${item.name}」可能与已有的 ${item.similar.join('、')} 相同:是同一个就改用它的 id 并把这个叫法加进它的 aliases,不是就另建。`, `"${item.name}" in about may be the same as existing ${item.similar.join(', ')}: if so, use its id and add this name to its aliases; if not, create a new one.`))
+		}
+		for (const cite of cites) lines.push(tr(`「${cite.handle}」引用 ${cite.id}:${cite.lead}${citeText(cite.verdict)}。`, `"${cite.handle}" uses ${cite.id}: ${cite.lead}${citeText(cite.verdict)}.`))
+		return lines.length === 0 ? '' : `\n${lines.join('\n')}`
+	}
+
 	// ── Frame ────────────────────────────────────────────────────────────
 
 	defineTool({
@@ -2579,6 +2688,7 @@ export function apply(ctx, config = {}) {
 							from: { type: 'string', description: '可选:由本体里哪条关系提出(关系 id,如有形状的 affects 关系);说不出来源就写「直觉」' },
 							refute_when: { type: 'string' },
 							about: { type: 'array', items: { type: 'string' }, description: '可选:这条判断涉及的实体或量(id);不写就用立题的 about' },
+							uses: { type: 'array', items: { type: 'string' }, description: '可选:这条判断用到的已有条目 id(clear/knowledge/ 下 facts、lessons、negatives 的文件名)。系统当场判定每条是否适用于本次的条件,随结果返回' },
 							scope: {
 								type: 'object',
 								description: '可选:适用范围(它在哪里成立),与推翻条件分开写。conditions 写条件(如 {"月份": "2026-08"}),ranges 写变量取值范围(如 {"温度": [150, 175]}),note 补一句。不写就用立题的 conditions',
@@ -2650,8 +2760,25 @@ export function apply(ctx, config = {}) {
 				: carried
 					? state.hypotheses
 							.filter((item) => item.goal === state.goal.id && item.status !== 'superseded')
-							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}), ...(item.question ? { question: item.question } : {}), ...(item.from ? { from: item.from } : {}), ...(item.scope ? { scope: item.scope } : {}) }))
+							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}), ...(item.question ? { question: item.question } : {}), ...(item.from ? { from: item.from } : {}), ...(item.scope ? { scope: item.scope } : {}), ...(Array.isArray(item.about) ? { about: item.about } : {}), ...(Array.isArray(item.uses) ? { uses: item.uses.map((use) => use.id) } : {}) }))
 					: []
+			/**
+			 * **取用的上下文**:工作区里的已有条目、本体里的实体与概念(按名称与别名对 `about`)、
+			 * 这次的条件(引用判定按它比范围)。只读,不拦立题。
+			 */
+			let knownRows = []
+			try {
+				knownRows = knowledgeRows(call.derived ?? hostService.derive(sessionId))
+			} catch {
+				knownRows = []
+			}
+			const ontologyEntries = [...(Array.isArray(state.entities) ? state.entities : []), ...(Array.isArray(state.lexicon?.terms) ? state.lexicon.terms : [])]
+			const openGoal = state.goal !== null && state.goal.status === 'open' ? state.goal : null
+			const conditionsNow = normalizeScope({ conditions: args.conditions })?.conditions ?? openGoal?.conditions ?? {}
+			/** 名称或别名完全相同的,直接认作那个实体或概念的 id;相似的只提示。 */
+			const canonicalAbout = (names) => mergeAbout(resolveAbout(names, ontologyEntries).map((item) => item.match ?? item.name))
+			const aboutGiven = Array.isArray(args.about) ? mergeAbout(args.about) : []
+			const goalAbout = Array.isArray(args.about) ? canonicalAbout(args.about) : (openGoal?.about ?? [])
 			const names = hypotheses.map((hypothesis) => (typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : '')).filter((name) => name !== '')
 			if (new Set(names).size !== names.length) return fail('hypothesis_name_duplicate', tr('两条判断用了同一个短名:短名是用来区分判断的,换一个。', 'Two judgments share a short name; short names tell judgments apart, so pick another.'))
 			for (const hypothesis of hypotheses) {
@@ -2660,6 +2787,10 @@ export function apply(ctx, config = {}) {
 				if (hypothesis?.name !== undefined && (typeof hypothesis.name !== 'string' || textWidth(hypothesis.name.trim()) > (HANDLE_LIMIT + 4) * 2)) return fail('hypothesis_name_too_long', tr(`判断的短名要短:${HANDLE_LIMIT} 个汉字(或约 ${HANDLE_LIMIT * 2} 个字母)以内,能让人一眼认出是哪条就够。`, `Keep the short name short: within ${HANDLE_LIMIT} CJK characters (about ${HANDLE_LIMIT * 2} letters), just enough to recognize the judgment at a glance.`))
 				if (hypothesis?.retests !== undefined && hypothesis.retests !== null && findFact(sessionId, state, hypothesis.retests) === null) {
 					return fail('retests_unknown', tr(`retests 指向的事实「${String(hypothesis.retests).slice(0, 40)}」不在 clear/knowledge/facts/ 里:写那条事实文件名里的 id(如 f-ab12cd),或者去掉 retests。`, `The fact retests points to ("${String(hypothesis.retests).slice(0, 40)}") is not in clear/knowledge/facts/: use the id from that fact's file name (such as f-ab12cd), or drop retests.`))
+				}
+				const unknownUses = (Array.isArray(hypothesis?.uses) ? hypothesis.uses : []).map((id) => String(id ?? '').trim()).filter((id) => id !== '' && !knownRows.some((row) => row.id === id))
+				if (unknownUses.length > 0) {
+					return fail('uses_unknown', tr(`uses 里的 ${unknownUses.join('、')} 不在 clear/knowledge/ 的 facts、lessons、negatives 里:写条目文件名里的 id(如 f-ab12cd),或者去掉。`, `${unknownUses.join(', ')} in uses is not among clear/knowledge/ facts, lessons or negatives: use the id from the item's file name (such as f-ab12cd), or drop it.`))
 				}
 				/**
 				 * **宽松+校验**:不写断言放行(断言是加法),写了就在**落账之前**严校——
@@ -2814,6 +2945,18 @@ export function apply(ctx, config = {}) {
 			const claimKey = (text) => String(text ?? '').trim().replace(/\s+/g, ' ')
 			const idByClaim = new Map(existing.map((item) => [claimKey(item.claim), item.id]))
 			const reused = new Set()
+			/**
+			 * **引用时判定是否适用**:判断 `uses` 里的每条已有条目,按条目自己的状态与适用范围
+			 * (对这条判断的范围,缺的维度取这次的条件)判一次;判定随判断落账,也随结果说给模型。
+			 */
+			const cites = []
+			const usesOf = (hypothesis) =>
+				mergeAbout(hypothesis?.uses).map((id) => {
+					const row = knownRows.find((item) => item.id === id) ?? null
+					const verdict = citeVerdict(row, mergeScope(hypothesis.scope, { conditions: conditionsNow }))
+					if (!cites.some((cite) => cite.id === id && cite.claim === hypothesis.claim)) cites.push({ id, claim: hypothesis.claim, handle: handleOf({ name: hypothesis.name, claim: hypothesis.claim }), lead: negativeLead(row), verdict })
+					return { id, kind: row?.kind ?? null, verdict: verdict.verdict }
+				})
 			const nextHypotheses = hypotheses.map((hypothesis, index) => {
 				const claim = hypothesis.claim.trim()
 				const carried = idByClaim.get(claimKey(claim))
@@ -2834,7 +2977,8 @@ export function apply(ctx, config = {}) {
 					...(typeof hypothesis.from === 'string' && hypothesis.from.trim() !== '' ? { from: hypothesis.from.trim().slice(0, 80) } : {}),
 					/** 适用范围(在哪里成立),与推翻条件分开;没写就在升格时取立题的 conditions。 */
 					...(normalizeScope(hypothesis.scope) !== null ? { scope: normalizeScope(hypothesis.scope) } : {}),
-					...(mergeAbout(hypothesis.about).length > 0 ? { about: mergeAbout(hypothesis.about) } : {}),
+					...(canonicalAbout(hypothesis.about).length > 0 ? { about: canonicalAbout(hypothesis.about) } : {}),
+					...(usesOf(hypothesis).length > 0 ? { uses: usesOf(hypothesis) } : {}),
 					version: index + 1,
 				}
 			})
@@ -2856,7 +3000,7 @@ export function apply(ctx, config = {}) {
 				...(questions !== null ? { questions } : {}),
 				...(areas !== null ? { areas } : {}),
 				...(normalizeScope({ conditions: args.conditions }) !== null ? { conditions: normalizeScope({ conditions: args.conditions }).conditions } : {}),
-				...(Array.isArray(args.about) ? { about: mergeAbout(args.about) } : {}),
+				...(Array.isArray(args.about) ? { about: goalAbout } : {}),
 			})
 			for (const dropped of existing) {
 				if (reused.has(dropped.id)) continue
@@ -2869,6 +3013,7 @@ export function apply(ctx, config = {}) {
 				code: isRevision ? 'goal_revised' : 'goal_set',
 				message:
 					tr(`${isRevision ? `目标已修订(第 ${revision} 版)` : '目标已立'},${carried ? '判断沿用上一版,' : ''}登记了 ${hypotheses.length} 条判断${nextHypotheses.length === 0 ? '' : `:${nextHypotheses.map((item) => `「${handleOf(item)}」`).join('、')}`}。${ontologyFiles.length > 0 ? `写入本体条目 ${ontologyFiles.length} 个。` : ''}`, `${isRevision ? `Goal revised (version ${revision})` : 'Goal set'}; ${carried ? 'judgments carried over from the last version; ' : ''}${hypotheses.length} judgment(s) registered${nextHypotheses.length === 0 ? '' : `: ${nextHypotheses.map((item) => `"${handleOf(item)}"`).join(', ')}`}.${ontologyFiles.length > 0 ? ` ${ontologyFiles.length} ontology entr${ontologyFiles.length === 1 ? 'y' : 'ies'} written.` : ''}`) +
+					frameKnowledgeNote({ about: goalAbout, resolved: resolveAbout(aboutGiven, ontologyEntries), related: relatedKnowledge(knownRows, goalAbout), cites, rows: knownRows }) +
 					// 原生 goal 上那一句给人看:用目标的一句话,不写 id。
 					attachNativeGoal(exec.agent, clip(headline === '' ? String(args.claim ?? '') : headline, 120)),
 			})
@@ -4222,6 +4367,24 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
+	/** 事实文件上记一条疑问(引用它的判断被推翻):事实回到待核验,人复核后解除。 */
+	function markFactQuestioned(cwd, fact, challenge) {
+		if (cwd === null || cwd === undefined || !/^[A-Za-z0-9_-]+$/.test(String(fact?.id ?? ''))) return null
+		const file = join(cwd, 'clear', 'knowledge', 'facts', `${fact.id}.json`)
+		try {
+			if (!existsSync(file)) return null
+			const data = JSON.parse(readFileSync(file, 'utf8'))
+			const at = Date.now()
+			data.challenges = [...(Array.isArray(data.challenges) ? data.challenges : []), { hypothesis: challenge.hypothesis ?? null, verdict: challenge.verdict ?? null, basis: challenge.basis ?? null, at }]
+			data.history = [...(Array.isArray(data.history) ? data.history : []), { event: 'questioned', at, reason: challenge.basis ?? null }]
+			writeTextFile(file, `${JSON.stringify(data, null, 2)}\n`)
+			return file
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 事实疑问记录落盘失败 ${String(error?.message ?? error).slice(0, 160)}`)
+			return null
+		}
+	}
+
 	/** 事实文件上记一处边界(在哪里不成立),事实本身保持成立。 */
 	function markFactBounded(cwd, fact, bound) {
 		if (cwd === null || cwd === undefined || !/^[A-Za-z0-9_-]+$/.test(String(fact?.id ?? ''))) return null
@@ -4788,6 +4951,7 @@ export function apply(ctx, config = {}) {
 				conditions: 'Optional: the conditions this problem sits in, e.g. {"line": "L2", "month": "2026-09"}. It is the default scope for judgments that omit one, and the basis for judging whether existing knowledge applies. Omitted on revision = unchanged',
 				about: 'Optional: the entities or quantities this problem concerns (entity file names or concept ids, e.g. "R-2", "yield"). Knowledge items left by this session attach to them, so the next session finds them by these ids. Omitted on revision = unchanged',
 				'hypotheses.items.about': 'Optional: the entities or quantities this judgment concerns (ids); defaults to the framing about',
+				'hypotheses.items.uses': 'Optional: the ids of existing items this judgment relies on (file names of facts, lessons and negatives under clear/knowledge/). The system checks on the spot whether each applies to this run\'s conditions and reports it in the result',
 				'hypotheses.items.scope': 'Optional: where it holds, written separately from the refutation condition. conditions gives the conditions (e.g. {"month": "2026-08"}), ranges the value ranges of variables (e.g. {"temperature": [150, 175]}), note one extra sentence. If omitted, the framing conditions are used',
 				ontology: 'Ontology entries, checked by the system and written to clear/ontology/ (same shape as the files; fields in clear/ontology/SCHEMA.json). When framing, first state the quantities involved: each measure (kind=measure, gloss = its definition, unit) and how it is measured and how a reading is checked (a kind=measures relation: domain = the instrument or source, range = the measure, check = how to confirm the reading); and how the quantities affect each other (kind=affects relations, shape = rough shape). A file with the same id is replaced',
 				'ontology.concepts': 'Concepts: {id, label, gloss, kind: category|measure|phenomenon, unit?}',
