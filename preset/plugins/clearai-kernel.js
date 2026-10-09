@@ -1658,7 +1658,8 @@ export function apply(ctx, config = {}) {
 
 	/** 评估卡落盘(系统的面)。写不进 → 返回 null,调用方 fail-closed。 */
 	function writeAuditCard(sessionId, stepId, card) {
-		const file = sessionFile(sessionId, 'clear', 'evidence', 'audits', String(stepId), `${String(card.auditor_run_id)}.json`)
+		const safeStepId = String(stepId).includes(':') ? `step-${createHash('sha256').update(String(stepId)).digest('hex').slice(0, 16)}` : String(stepId)
+		const file = sessionFile(sessionId, 'clear', 'evidence', 'audits', safeStepId, `${String(card.auditor_run_id)}.json`)
 		if (file === null) return null
 		try {
 			writeTextFile(file, `${JSON.stringify(card, null, 2)}\n`)
