@@ -646,8 +646,8 @@ export function apply(ctx, config = {}) {
 	function cardTail(sessionId, preview) {
 		const card = preview?.card ?? null
 		if (card === null || lastCard.get(sessionId) === card) return ''
-		lastCard.set(sessionId, card)
-		return `\n\n${card}`
+		const shown = cardText(sessionId, card)
+		return shown === '' ? '' : `\n\n${shown}`
 	}
 
 	/** 一次工具调用的收尾:预演变更 → 卡片 → 返回值。 */
@@ -659,13 +659,13 @@ export function apply(ctx, config = {}) {
 			 * **卡没变就不附**(第六阶段):回合开头与工具返回共用「上次发过的那张」。
 			 * 同一张卡在一轮里重发几遍,只是把同样的话塞给模型几遍——它读得越多,照抄得越多。
 			 */
-			const fresh = card !== null && lastCard.get(sessionId) !== card
-			if (fresh) lastCard.set(sessionId, card)
+			const shown = card !== null && lastCard.get(sessionId) !== card ? cardText(sessionId, card) : ''
+			const fresh = shown !== ''
 			const result = {
 				...value,
 				mutations,
 				card,
-				message: fresh ? `${value.message ?? value.code ?? 'ok'}\n\n${card}` : `${value.message ?? value.code ?? 'ok'}${card === null ? '' : tr('\n(状态卡与上次相同,不再重发。)', '\n(The status card is unchanged and is not repeated.)')}`,
+				message: fresh ? `${value.message ?? value.code ?? 'ok'}\n\n${shown}` : `${value.message ?? value.code ?? 'ok'}${card === null ? '' : tr('\n(状态卡与上次相同,不再重发。)', '\n(The status card is unchanged and is not repeated.)')}`,
 			}
 			// 输出**越界就裁掉并告警**:宿主会拿 output.schema 校验工具结果,多一个未声明的字段
 			// 会让整个工具调用失败(CreatePlan 曾因此全军覆没)。
@@ -2603,49 +2603,49 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Frame',
 		description:
-			'立约或修订:往当前原生 goal 上挂一份「怎样算回答了」的判据(done_criteria)与候选判断(每条一句话主张 + 一句「什么结果会推翻它」)。没有原生 goal 时会建一个,目标那一句话(headline)就是它的说法;续跑、暂停由原生 goal 管。修订必须带 reason,版本 +1,旧值全部留痕;改判据文本要带一份独立裁决。不可逆的动作写进 irreversible(匹配的命令执行前须经人工批准)。同一时间只开一个目标;它跨计划存在,一张 Plan 只承载它的一个阶段。',
+			'立题或修订目标:判据(done_criteria)与候选判断(一句主张 + 推翻条件)。修订须带 reason,旧值留痕;改判据文本须带独立裁决(criteria_verdict)。同一时间只开一个目标。',
 		parameters: {
 			type: 'object',
 			properties: {
-				headline: { type: 'string', maxLength: 120, description: '一句话目标(≤120 字):卡上 / 面板 / 续跑文案反复出现的那一句。首次立约必填' },
-				claim: { type: 'string', description: '目标:项目要回答的问题(可以长;身份与判据的落点)' },
-				done_criteria: { type: 'string', description: '怎样算回答了——必须是可核对的判据,至少含一处能清点的形态(数字 / 条数 / "存在一份文件")' },
-				legacy: { type: 'boolean', description: '旧会话迁移:一次性放行长文本与缺 headline(新目标不要用)' },
+				headline: { type: 'string', maxLength: 120, description: '一句话目标(≤120 字),首次立题必填' },
+				claim: { type: 'string', description: '目标要回答的问题' },
+				done_criteria: { type: 'string', description: '怎样算回答了:可核对,至少一处能清点(数字、条数、存在某文件)' },
+				legacy: { type: 'boolean', description: '仅旧会话迁移用' },
 				criteria: {
 					type: 'array',
 					items: { type: 'string' },
-					description: '判据逐条写(每条一句话,含可清点数或"存在一份文件"这类能核的形态)。给了它就按条记,不给则用 done_criteria 的全文',
+					description: '可选:判据逐条写;不给就用 done_criteria 全文',
 				},
-				criteria_note: { type: 'string', description: '判据的背景说明(不参与判定,只解释为什么这么定)' },
+				criteria_note: { type: 'string', description: '判据的背景说明,不参与判定' },
 				criteria_verdict: {
 					type: 'string',
-					description: '改判据文本时要带的独立裁决 auditKey:改「怎样算完成」不能被顺手做掉',
+					description: '改判据文本时的独立裁决 auditKey',
 				},
 				promote_at_level: { type: 'string', enum: MODEL_LEVELS, description: '升格门槛(默认 L3)' },
 				irreversible: {
 					type: 'array',
-					description: '不可逆的动作:做了就收不回、或结果不可重复的那几件(跑中试、下单、发出去的消息……)。每件写一句说明和它的命令特征(命令里一定会出现的一段原文)。匹配的命令执行前须经人工批准。修订目标时不传 = 不变',
+					description: '不可撤销或不可重复的动作;匹配的命令执行前须人批准。修订时不传 = 不变',
 					items: {
 						type: 'object',
 						properties: {
-							action: { type: 'string', description: '一句话:这是什么动作' },
-							command: { type: 'string', description: '命令特征:这类命令里一定出现的一段原文(如 "reactor.mjs state.json pilot")' },
+							action: { type: 'string', description: '这是什么动作' },
+							command: { type: 'string', description: '命令里一定出现的一段原文' },
 						},
 						required: ['action', 'command'],
 						additionalProperties: false,
 					},
 				},
-				mode: { type: 'string', enum: FRAME_MODES, description: '工作方式:survey = 广度调研(先铺调研板块,摸清后再看值得深入的问题);solve = 定向求解(问题下列出候选假设,用能区分它们的检验逐个排除);survey_then_solve = 先调研后求解。修订时不传 = 不变' },
+				mode: { type: 'string', enum: FRAME_MODES, description: 'survey 广度调研;solve 定向求解;survey_then_solve 先调研后求解' },
 				questions: {
 					type: 'array',
-					description: '要回答的问题(可选;一个目标可以有几个,不写就把整个目标当一个问题)。调研中新发现的问题写成 status="emergent" 并挂到板块(area)下;人决定深入就改成 open,决定暂缓就改成 parked。修订时不传 = 不变,传了就是完整清单',
+					description: '可选:要回答的问题。调研中新发现的写 status="emergent",人决定后改 open 或 parked。修订时传了就是完整清单',
 					items: {
 						type: 'object',
 						properties: {
-							id: { type: 'string', description: '短 id(如 q1),判断的 question 与步骤的 serves 用它' },
+							id: { type: 'string', description: '短 id(如 q1)' },
 							text: { type: 'string', description: '一句话问题' },
-							status: { type: 'string', enum: QUESTION_STATUS, description: 'open = 在回答;emergent = 新发现、待决定;parked = 暂缓(结案时列入尚未确定的事项)' },
-							area: { type: 'string', description: '可选:属于哪个调研板块(板块 id)' },
+							status: { type: 'string', enum: QUESTION_STATUS, description: 'open 在回答;emergent 待决定;parked 暂缓' },
+							area: { type: 'string', description: '可选:所属调研板块 id' },
 						},
 						required: ['id', 'text'],
 						additionalProperties: false,
@@ -2654,59 +2654,54 @@ export function apply(ctx, config = {}) {
 				about: {
 					type: 'array',
 					items: { type: 'string' },
-					description: '可选:这次问题涉及的实体或量(实体文件名或概念 id,如 "R-2"、"yield")。这次留下的知识条目挂在它们上面,下一次按这些 id 就能查到。修订时不传 = 不变',
+					description: '涉及的实体或量的 id(如 "R-2"、"yield"):据此定位已有条目,留下的条目也挂在这里',
 				},
 				conditions: {
 					type: 'object',
 					additionalProperties: { type: 'string' },
-					description: '可选:这次问题所处的条件,如 {"产线": "L2", "月份": "2026-09"}。判断没写适用范围时以它为默认;引用已有知识时据此判断是否适用。修订时不传 = 不变',
+					description: '本次所处的条件,如 {"产线": "L2", "月份": "2026-09"};判断范围的缺省,也是引用判定的依据',
 				},
 				areas: {
 					type: 'array',
-					description: '调研板块(广度调研用;如技术路线、主要企业、成本结构)。修订时不传 = 不变,传了就是完整清单',
+					description: '调研板块(广度调研用)',
 					items: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } }, required: ['id', 'name'], additionalProperties: false },
 				},
 				ontology: {
 					type: 'object',
-					description: '本体条目,由系统校验后写进 clear/ontology/(内容与文件同形,字段见 clear/ontology/SCHEMA.json)。立题时先写清相关的量:度量(kind=measure,gloss 写口径,unit 写单位)由什么测量、读数如何核对(kind=measures 的关系,domain 是仪表或来源,range 是被测的度量,check 写核对办法);量之间如何相互影响(kind=affects 的关系,shape 写大致形状)。同 id 的文件会被替换',
+					description: '可选:本体条目,校验后写进 clear/ontology/(字段见 SCHEMA.json);同 id 替换',
 					properties: {
-						concepts: { type: 'array', items: { type: 'object' }, description: '概念:{id, label, gloss, kind: category|measure|phenomenon, unit?}' },
-						relations: { type: 'array', items: { type: 'object' }, description: '关系:{id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape?(affects), check?(measures)}' },
+						concepts: { type: 'array', items: { type: 'object' }, description: '{id, label, gloss, kind: category|measure|phenomenon, unit?}' },
+						relations: { type: 'array', items: { type: 'object' }, description: '{id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape?, check?}' },
 					},
 					additionalProperties: false,
 				},
 				hypotheses: {
 					type: 'array',
 					description:
-						'候选假设:每条一句话主张 + 一句推翻条件,一条只说一件事(「A,且 B」拆成两条);可带**类型化断言**(可选,提供即严校:谓词与概念必须已登记、宾语形态要合值域、同一事实里不许自相矛盾)。不写断言照旧成立——断言是加法,不是门槛。修订目标时不传这一项 = 判断不变;传了就是这一版的完整清单,没列出的会记成「已替换」。',
+						'候选判断,一条只说一件事。修订时不传 = 不变;传了就是完整清单,没列出的记成已替换',
 					items: {
 						type: 'object',
 						properties: {
-							name: { type: 'string', description: '短名,十二个汉字或二十来个字母以内,你自己起(如「python3 能跑」)。之后说起这条判断、在别的工具里引用它,都用这个名字' },
+							name: { type: 'string', description: '短名(≤12 字),之后用它引用这条判断' },
 							claim: { type: 'string' },
-							question: { type: 'string', description: '可选:属于哪个问题或调研板块(id);不写就归第一个问题' },
-							from: { type: 'string', description: '可选:由本体里哪条关系提出(关系 id,如有形状的 affects 关系);说不出来源就写「直觉」' },
+							question: { type: 'string', description: '可选:所属问题或板块 id' },
 							refute_when: { type: 'string' },
-							about: { type: 'array', items: { type: 'string' }, description: '可选:这条判断涉及的实体或量(id);不写就用立题的 about' },
-							uses: { type: 'array', items: { type: 'string' }, description: '可选:这条判断用到的已有条目 id(clear/knowledge/ 下 facts、lessons、negatives 的文件名)。系统当场判定每条是否适用于本次的条件,随结果返回' },
+							about: { type: 'array', items: { type: 'string' }, description: '可选:涉及的实体或量 id;缺省取立题的 about' },
+							uses: { type: 'array', items: { type: 'string' }, description: '可选:用到的已有条目 id(clear/knowledge/ 下的文件名);系统当场判定是否适用' },
 							scope: {
 								type: 'object',
-								description: '可选:适用范围(它在哪里成立),与推翻条件分开写。conditions 写条件(如 {"月份": "2026-08"}),ranges 写变量取值范围(如 {"温度": [150, 175]}),note 补一句。不写就用立题的 conditions',
-								properties: {
-									conditions: { type: 'object', additionalProperties: { type: 'string' } },
-									ranges: { type: 'object', additionalProperties: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 } },
-									note: { type: 'string' },
-								},
+								description: '可选:在哪里成立。conditions 写条件,ranges 写取值范围(如 {"温度": [150, 175]}),note 补一句;缺省取立题的 conditions',
+								properties: { conditions: { type: 'object' }, ranges: { type: 'object' }, note: { type: 'string' } },
 								additionalProperties: false,
 							},
 							retests: {
 								type: 'string',
 								description:
-									'这条判断在复检哪条已写进长期知识的事实:写那条事实的 id(clear/knowledge/facts/<id>.json 的文件名)。claim 照抄那条事实原来的说法、拿新数据再验一遍,不要写成「它被推翻了」:这条判断被推翻,系统才会当场问人撤回还是维持那条事实——别的会话留下的事实也一样',
+									'可选:复检哪条已有事实(事实 id)。claim 照抄原说法;被推翻时系统会问人撤回还是维持',
 							},
 							assertions: {
 								type: 'array',
-								description: '断言:主词–谓词–宾语(引用领域词汇里的 id)',
+								description: '可选:主词–谓词–宾语断言(引用本体 id),提供即严校',
 								items: {
 									type: 'object',
 									properties: {
@@ -2729,7 +2724,7 @@ export function apply(ctx, config = {}) {
 						additionalProperties: false,
 					},
 				},
-				reason: { type: 'string', description: '修订目标时必须写一句原因(首次立目标不需要)' },
+				reason: { type: 'string', description: '修订时必填:改了什么、为什么' },
 			},
 			required: ['claim', 'done_criteria'],
 			additionalProperties: false,
@@ -2760,7 +2755,7 @@ export function apply(ctx, config = {}) {
 				: carried
 					? state.hypotheses
 							.filter((item) => item.goal === state.goal.id && item.status !== 'superseded')
-							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}), ...(item.question ? { question: item.question } : {}), ...(item.from ? { from: item.from } : {}), ...(item.scope ? { scope: item.scope } : {}), ...(Array.isArray(item.about) ? { about: item.about } : {}), ...(Array.isArray(item.uses) ? { uses: item.uses.map((use) => use.id) } : {}) }))
+							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}), ...(item.question ? { question: item.question } : {}), ...(item.scope ? { scope: item.scope } : {}), ...(Array.isArray(item.about) ? { about: item.about } : {}), ...(Array.isArray(item.uses) ? { uses: item.uses.map((use) => use.id) } : {}) }))
 					: []
 			/**
 			 * **取用的上下文**:工作区里的已有条目、本体里的实体与概念(按名称与别名对 `about`)、
@@ -2974,7 +2969,6 @@ export function apply(ctx, config = {}) {
 					/** 断言随假设落账;没写就是 null(加法,不是门槛)。 */
 					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
 					...(typeof hypothesis.question === 'string' && hypothesis.question.trim() !== '' ? { question: hypothesis.question.trim() } : {}),
-					...(typeof hypothesis.from === 'string' && hypothesis.from.trim() !== '' ? { from: hypothesis.from.trim().slice(0, 80) } : {}),
 					/** 适用范围(在哪里成立),与推翻条件分开;没写就在升格时取立题的 conditions。 */
 					...(normalizeScope(hypothesis.scope) !== null ? { scope: normalizeScope(hypothesis.scope) } : {}),
 					...(canonicalAbout(hypothesis.about).length > 0 ? { about: canonicalAbout(hypothesis.about) } : {}),
@@ -3128,28 +3122,28 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Conclude',
 		description:
-			'结案:交目标验收——这是完成目标的唯一路径(原生「完成目标」会被拒)。系统**无条件**派独立评估者,拿目标判据与转写忠实度逐条核对;判据达成才结案为 achieved:原生 goal 置为完成;评估者同时逐条判尚在考察中的判断,判为支持的(或中途已达门槛的)升格为事实;各步收下的产物声明为交付卡片;随结案提议的经验(`lessons`)由评估者逐条核,支持的写进 clear/knowledge/lessons/。否则目标保持开放并回注缺口。**顺序**:achieved 之前必须先把计划收尾(`ClosePlan`)。放弃(`abandoned`)不受此限:原生 goal 置为阻塞,写明原因,由人决定结束。',
+			'结案,完成目标的唯一路径。独立评估者逐条核判据:达成才结案为 achieved,它支持的判断升格为事实、支持的经验写入;否则返回缺口。achieved 之前先 ClosePlan;abandoned 写明阻塞,由人决定结束。',
 		parameters: {
 			type: 'object',
 			properties: {
-				outcome: { type: 'string', enum: ['achieved', 'abandoned'], description: 'achieved=判据已达成;abandoned=如实说清阻塞后放弃' },
+				outcome: { type: 'string', enum: ['achieved', 'abandoned'], description: 'achieved 判据已达成;abandoned 说清阻塞后放弃' },
 				note: { type: 'string', description: '结案说明' },
 				answers: {
 					type: 'array',
-					description: '结论(achieved 时按问题各写一条;目标没列问题就写一条):结论 / 依据 / 尚未确定的事项 / 待您决策。中间判断与过程不写进来。还在考察中、未得到支持的候选假设,还开着的未解释项,都要写进「尚未确定的事项」并说明若它成立答案会如何改变',
+					description: 'achieved 时按问题各写一条。还在考察的候选与开着的未解释项写进 open 并说明影响',
 					items: {
 						type: 'object',
 						properties: {
-							question: { type: 'string', description: '哪个问题(id);目标没列问题时可省略' },
-							conclusion: { type: 'string', description: '结论:一两句话,带数值与适用条件' },
-							basis: { type: 'array', items: { type: 'string' }, description: '依据:每个已采纳、已排除的候选假设或已核验的读数各一行,注明对应的实验或来源' },
+							question: { type: 'string', description: '问题 id;目标没列问题时省略' },
+							conclusion: { type: 'string', description: '一两句结论,带数值与适用条件' },
+							basis: { type: 'array', items: { type: 'string' }, description: '每个采纳、排除的候选或核验的读数一行,注明来源' },
 							open: {
 								type: 'array',
-								description: '尚未确定的事项:每项写涉及什么(about:候选假设短名、未解释项 id 或问题 id)与对结论的影响(effect:若它成立,结论如何改变)',
+								description: '尚未确定的事项:about 写候选短名、未解释项或问题 id,effect 写若它成立结论如何变',
 								items: { type: 'object', properties: { about: { type: 'array', items: { type: 'string' } }, effect: { type: 'string' } }, required: ['effect'], additionalProperties: false },
 							},
-							decide: { type: 'array', items: { type: 'string' }, description: '待您决策:需要人决定的事项(例如是否先复测再放大)' },
-							unanswered: { type: 'string', description: '未能回答时写明原因(此时 conclusion 可省略)' },
+							decide: { type: 'array', items: { type: 'string' }, description: '待人决策的事项' },
+							unanswered: { type: 'string', description: '未能回答的原因(此时可省 conclusion)' },
 						},
 						additionalProperties: false,
 					},
@@ -3157,15 +3151,15 @@ export function apply(ctx, config = {}) {
 				lessons: {
 					type: 'array',
 					maxItems: 5,
-					description: '经验(可选,只在 achieved 时核):这次摸出的、下次在同类现场改变做法的东西,不是这次结论的复述。评估者逐条对照记录核,判为支持的写进 clear/knowledge/lessons/,之后的会话在立题和定计划时会看到',
+					description: '可选:下次在同类现场会改变做法的经验,评估者核过才写入',
 					items: {
 						type: 'object',
 						properties: {
-							text: { type: 'string', description: '一句话,下次怎么做(「这类装置的关键读数先用独立来源核一次」)' },
-							kind: { type: 'string', enum: LESSON_KINDS, description: 'trap=会踩的坑;check=要先核的读数或假设;shortcut=省事但会骗人的做法;prior=对这类体系的先验(例如「两个因素常常耦合,先做斜向扫描」)' },
-							about: { type: 'array', items: { type: 'string' }, description: '涉及的装置、量或概念(短名,用来下次匹配)' },
-							evidence: { type: 'string', description: '这次记录里哪处表明了它(步骤、文件)' },
-							boundary: { type: 'string', description: '在什么条件下不适用' },
+							text: { type: 'string', description: '一句话,下次怎么做' },
+							kind: { type: 'string', enum: LESSON_KINDS, description: 'trap 坑;check 要先核的;shortcut 会骗人的捷径;prior 先验' },
+							about: { type: 'array', items: { type: 'string' }, description: '涉及的装置、量或概念 id' },
+							evidence: { type: 'string', description: '记录里哪处表明了它' },
+							boundary: { type: 'string', description: '什么条件下不适用' },
 						},
 						required: ['text', 'kind'],
 						additionalProperties: false,
@@ -3652,10 +3646,10 @@ export function apply(ctx, config = {}) {
 	const STEP_SCHEMA = {
 		type: 'object',
 		properties: {
-			id: { type: 'string', description: '稳定 id(字母/数字/下划线/短横)' },
-			do: { type: 'string', description: '这一步做什么' },
-			artifacts: { type: 'array', items: { type: 'string' }, description: '以何物为证:相对 workspace 的具体产物文件路径(目录不是物证)' },
-			done_criteria: { type: 'string', description: '判定标准:在结果出现之前写下,必须可核对' },
+			id: { type: 'string', description: '稳定 id' },
+			do: { type: 'string', description: '做什么' },
+			artifacts: { type: 'array', items: { type: 'string' }, description: '作为物证的产物文件路径(相对工作区,不是目录)' },
+			done_criteria: { type: 'string', description: '判据:结果出现前写下,可核对' },
 			tests: {
 				type: 'object',
 				properties: {
@@ -3663,22 +3657,22 @@ export function apply(ctx, config = {}) {
 						type: 'array',
 						minItems: 1,
 						items: { type: 'string' },
-						description: '这一步检验哪几条判断:填判断的短名(也认主张原文)。一次观测同时判几条竞争的判断时(比较那一步),把它们都列上',
+						description: '检验哪几条判断(短名);比较竞争判断的一步全列上',
 					},
-					level: { type: 'string', enum: MODEL_LEVELS, description: 'L2 = 自判(你写结果与依据);L3 = 独立评估(系统派评估者判);L4 = 人工批准(不可重复或来自外部的证据,须先经人工批准)' },
+					level: { type: 'string', enum: MODEL_LEVELS, description: 'L2 自判;L3 独立评估;L4 人工批准(不可重复或外部证据)' },
 				},
 				required: ['hypotheses', 'level'],
 				additionalProperties: false,
 			},
 			expect: {
 				type: 'string',
-				description: '可选,执行前填写:这一步预计观察到什么(尽量给出数值或方向),以及预测的来源(本体中的哪条关系 / 哪条经验 / 哪条判断,或注明为直觉)。事先写下,预测落空时才能被发现',
+				description: '可选,执行前写:预计看到什么(数值或方向)',
 			},
-			serves: { type: 'string', description: '可选:这一步服务哪个问题或调研板块(id);不写即归当前问题' },
+			serves: { type: 'string', description: '可选:服务哪个问题或板块 id' },
 			predictions: {
 				type: 'array',
-				description: '可选,动手前写:按候选假设分别写预测(若「X」成立,预计看到什么)。各候选预测相同的一步区分不了它们,应改选能区分的检验',
-				items: { type: 'object', properties: { hypothesis: { type: 'string', description: '判断的短名(也认 id)' }, expect: { type: 'string', description: '若它成立,预计看到什么(尽量给数或方向)' } }, required: ['hypothesis', 'expect'], additionalProperties: false },
+				description: '可选,执行前写:各候选成立时预计看到什么;都一样就换检验',
+				items: { type: 'object', properties: { hypothesis: { type: 'string', description: '判断短名' }, expect: { type: 'string', description: '预计看到什么' } }, required: ['hypothesis', 'expect'], additionalProperties: false },
 			},
 		},
 		required: ['id', 'do', 'done_criteria'],
@@ -3689,7 +3683,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'CreatePlan',
 		description:
-			'立约:把复杂任务立成一份计划。每步一句话说清做什么(do)、以何物为证(artifacts)、以及判定标准(done_criteria,在结果出现之前写下);可带预测(expect:预计观察到什么,以及预测的来源)。检验判断的步骤用 tests:{hypotheses, level} 声明验哪几条、什么等级(比较竞争路线的那一步,把竞争的几条都列上)。最多 25 步。约立起便锁定:局部挫折改当前步,不要推倒重来。',
+			'立计划:每步写做什么、以哪个文件为证、判据(结果出现前写下);检验判断的步用 tests。最多 25 步;局部挫折改当前步,不推倒重来。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3750,17 +3744,17 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'RevisePlan',
 		description:
-			'改当前计划,不动进度(返回 progress_changed=false),四种动作:`action="expect"` 为尚未执行的步骤写下预测(给 `step_id` 与 `expect`,或按候选假设给 `predictions`;须在执行前写,预测落空时才能被发现);`action="add"` 补一步(漏了活就补上,给 `step`);`action="refine"` 精化一步的判定标准(给 `step_id` 与新的 `done_criteria`,旧判据留在日志里);`action="void"` 带因作废一步(给 `step_id` 与 `reason`:发现某步本不该存在就作废并说明缘由——作废留痕光明正大,为凑完成而造证是大忌;已交付的步不能作废)。',
+			'改计划,不动进度。expect:给未执行的步写预测(step_id + expect 或 predictions);add:补一步(step);refine:改一步的判据(step_id + done_criteria);void:带因作废一步(step_id + reason,已交付的不能作废)。',
 		parameters: {
 			type: 'object',
 			properties: {
-				action: { type: 'string', enum: ['expect', 'add', 'refine', 'void'], description: 'expect=写预测;add=补一步;refine=改判据;void=带因作废' },
-				step: { ...STEP_SCHEMA, description: 'action=add:新步' },
-				step_id: { type: 'string', description: 'action=expect / refine / void:哪一步' },
-				expect: { type: 'string', description: 'action=expect:预计观察到什么,以及预测的来源(关系 / 经验 / 判断,或直觉)' },
-				predictions: { ...STEP_SCHEMA.properties.predictions, description: 'action=expect,可选:按候选假设分别写预测;与 expect 二者至少给一个' },
-				done_criteria: { type: 'string', description: 'action=refine:新的判定标准' },
-				reason: { type: 'string', description: '为什么改(action=void 必填)' },
+				action: { type: 'string', enum: ['expect', 'add', 'refine', 'void'], description: 'expect / add / refine / void' },
+				step: { type: 'object', description: 'action=add:新步,字段同 CreatePlan 的步骤' },
+				step_id: { type: 'string', description: '哪一步' },
+				expect: { type: 'string', description: 'action=expect:预计看到什么' },
+				predictions: { ...STEP_SCHEMA.properties.predictions, description: 'action=expect:各候选的预测' },
+				done_criteria: { type: 'string', description: 'action=refine:新判据' },
+				reason: { type: 'string', description: '为什么改(void 必填)' },
 			},
 			required: ['action'],
 			additionalProperties: false,
@@ -3821,8 +3815,8 @@ export function apply(ctx, config = {}) {
 
 	defineTool({
 		name: 'ClosePlan',
-		description: '收束当前阶段:把这一张计划归档。目标若未达成,系统会叫醒你开下一阶段。',
-		parameters: { type: 'object', properties: { summary: { type: 'string', description: '收束之辞:这一阶段拿到了什么' } }, additionalProperties: false },
+		description: '收束当前计划并归档;目标未达成时开下一阶段。',
+		parameters: { type: 'object', properties: { summary: { type: 'string', description: '这一阶段拿到了什么' } }, additionalProperties: false },
 		output: CARD_OUTPUT,
 		async execute(args, exec) {
 			const call = open(exec)
@@ -3868,31 +3862,31 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'AdvancePlan',
 		description:
-			'交付一步(唯一完成动词):把观测交上来。系统先做观测准入——声明的产物存在、非空、结构合法;准入只看收不收,不做裁决。交付成立这一步就完成——它检验的判断被支持、被推翻还是说不清,**都算完成**,结果单独记成证据。结果与预测不符之处写进 anomalies。L2(自判)由你给 basis(交付成立的依据,必须能被复查)与 results(这一步检验的每条判断各一格);L3 以上两项都由系统派独立评估者判,你写 results 会被拒绝。没有物证,就还没有完成——没有手动标记这回事。',
+			'交付一步,唯一的完成动作。声明的产物须存在、非空、结构合法。交付成立即完成,判断的结果另记为证据。L2 由你给 basis 与 results;L3 以上由独立评估者判。',
 		parameters: {
 			type: 'object',
 			properties: {
-				step_id: { type: 'string', description: '交付哪一步(只能落在第一个未落定的步,这里是防手滑的确认,不是选择器)' },
+				step_id: { type: 'string', description: '交付哪一步(须是第一个未完成的步)' },
 				observations: {
 					type: 'array',
-					description: '观测:这一步拿到的原始结果(相对 workspace 的路径 + 一句说明)',
+					description: '原始结果:路径 + 一句说明',
 					items: { type: 'object', properties: { ref: { type: 'string' }, note: { type: 'string' } }, required: ['ref'], additionalProperties: false },
 				},
 				anomalies: {
 					type: 'array',
-					description: '未解释:这一步结果中与预测或本体不符之处、无法解释的读数(每条一句,写明何处不符)。它们挂在卡上,直到被解释、写明理由排除、或交给人(用 Anomaly 工具)。不要强行解释',
-					items: { type: 'object', properties: { what: { type: 'string', description: '何处不符:预测为何、实际为何' }, anchor: { type: 'string', description: '可选:在哪个实体或装置上(实体 id 或名字)' }, touches: { type: 'array', items: { type: 'string' }, description: '可选:涉及的量(概念 id)、候选假设(判断 id)或已确立的事实(事实 id)。点名事实的,该事实回到「待核验」;结案时,涉及答案的未解释项须在「尚未确定的事项」中写明影响' } }, required: ['what'], additionalProperties: false },
+					description: '与预测或本体不符、说不通的读数,每条一句;不要强行解释',
+					items: { type: 'object', properties: { what: { type: 'string', description: '预测为何、实际为何' }, anchor: { type: 'string', description: '可选:在哪个实体或装置上' }, touches: { type: 'array', items: { type: 'string' }, description: '可选:涉及的量、判断或事实 id;点名的事实回到待核验' } }, required: ['what'], additionalProperties: false },
 				},
-				basis: { type: 'string', description: '交付成立的依据:引用了哪个产物里的哪个事实(必须可复查)。仅自判(L2)由你写' },
+				basis: { type: 'string', description: '仅 L2:交付成立的依据,引到产物里的具体事实' },
 				results: {
 					type: 'array',
-					description: '仅自判(L2):这一步检验的每条判断各一格,对照它的推翻条件读结果:没碰到推翻条件是「支持」,碰到了是「推翻」,这次观测区分不了是「不确定」。推翻和不确定都不妨碍这一步完成',
+					description: '仅 L2:每条受检判断一格:支持(没碰到推翻条件)/ 推翻 / 不确定',
 					items: {
 						type: 'object',
 						properties: {
-							hypothesis: { type: 'string', description: '判断的短名(也认主张原文)' },
+							hypothesis: { type: 'string', description: '判断短名' },
 							verdict: { type: 'string', enum: ['支持', '推翻', '不确定', 'support', 'refute', 'inconclusive'] },
-							basis: { type: 'string', description: '一句话:这次观测对照推翻条件读出了什么(不写就用上面那句 basis)' },
+							basis: { type: 'string', description: '对照推翻条件读出了什么' },
 						},
 						required: ['hypothesis', 'verdict'],
 						additionalProperties: false,
@@ -4237,19 +4231,19 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Anomaly',
 		description:
-			'未解释项(反常):与预测或本体不符的观测、无法解释的读数。`action="open"` 登记一条(给 `what`,可选 `anchor`);`action="resolve"` 给它一个去处(给 `id`、`outcome` 与 `reason`):explained = 被一条判断、关系或新查到的原因解释了(`by` 写是哪条);ruled_out = 写明理由排除(比如证实是录入错误);escalated = 交给人。不要为了让卡干净而排除:评估者会核排除的理由。',
+			'未解释项(反常)。open:登记一条;resolve:给去处(explained 被解释,ruled_out 写明理由排除,escalated 交给人)。评估者会核排除的理由。',
 		parameters: {
 			type: 'object',
 			properties: {
 				action: { type: 'string', enum: ['open', 'resolve'] },
-				what: { type: 'string', description: 'action=open:何处不符——预测为何、实际为何' },
-				anchor: { type: 'string', description: 'action=open,可选:在哪个实体或装置上' },
-				touches: { type: 'array', items: { type: 'string' }, description: 'action=open,可选:涉及的量(概念 id)、候选假设(判断 id)或已确立的事实(事实 id)。点名事实的,该事实回到「待核验」' },
-				id: { type: 'string', description: 'action=resolve:哪一条(u-… 的 id)' },
-				outcome: { type: 'string', enum: ANOMALY_OUTCOMES, description: 'explained=已解释;ruled_out=排除;escalated=交给人' },
-				reason: { type: 'string', description: 'action=resolve:依据(解释是什么 / 为何可以排除 / 需要人决定什么)' },
-				by: { type: 'string', description: 'action=resolve,可选:解释它的那条判断、关系或事实' },
-				defect: { type: 'boolean', description: 'action=resolve 且 outcome=explained,可选:解释是测量或方法的缺陷(如探头漂移、快测外推偏高)。它会记成该实体的「缺陷」条目,以后先核' },
+				what: { type: 'string', description: '预测为何、实际为何' },
+				anchor: { type: 'string', description: '可选:在哪个实体或装置上' },
+				touches: { type: 'array', items: { type: 'string' }, description: '可选:涉及的量、判断或事实 id;点名的事实回到待核验' },
+				id: { type: 'string', description: '哪一条(u-…)' },
+				outcome: { type: 'string', enum: ANOMALY_OUTCOMES, description: 'explained / ruled_out / escalated' },
+				reason: { type: 'string', description: '依据' },
+				by: { type: 'string', description: '可选:解释它的判断、关系或事实' },
+				defect: { type: 'boolean', description: '可选:解释是测量或方法缺陷(如探头漂移),记成该实体的缺陷条目' },
 			},
 			required: ['action'],
 			additionalProperties: false,
@@ -4262,7 +4256,7 @@ export function apply(ctx, config = {}) {
 			const done = finish(hostService, sessionId, mutations)
 			if (args.action === 'open') {
 				const opened = openAnomalies(sessionId, [{ what: args.what, anchor: args.anchor, touches: args.touches }], { step: firstOpenStep(activePlanOf(state))?.id ?? null, by: 'model' })
-				if (opened.length === 0) return fail('what_required', tr('要写何处不符:预测为何、实际为何。', 'Say what does not fit: what was expected and what was seen.'))
+				if (opened.length === 0) return fail('what_required', tr('要写预测为何、实际为何。', 'Say what does not fit: what was expected and what was seen.'))
 				mutations.push(...opened)
 				return done({ ok: true, code: 'anomaly_opened', message: tr(`已登记未解释 ${opened[0].id}。它挂在卡上,直到被解释、排除或交给人。`, `Unexplained item ${opened[0].id} recorded. It stays on the card until explained, ruled out or handed to a person.`) })
 			}
@@ -4664,6 +4658,29 @@ export function apply(ctx, config = {}) {
 
 	const lastCard = new Map()
 	/**
+	 * **卡只发变化**:卡变了,只发与上次不同的行(上次的卡还在上下文里);
+	 * 第一次、变化超过一半、或连续发了 `CARD_FULL_EVERY` 次差异之后,发整张——
+	 * 长会话里早先的整张卡可能已被压缩掉,隔一段补一张整的。
+	 */
+	const CARD_FULL_EVERY = 6
+	const cardDeltas = new Map()
+	function cardText(sessionId, card, { full = false } = {}) {
+		const previous = lastCard.get(sessionId)
+		lastCard.set(sessionId, card)
+		const lines = card.split('\n')
+		const before = new Set(typeof previous === 'string' ? previous.split('\n') : [])
+		const changed = lines.filter((line) => line.trim() !== '' && !before.has(line))
+		const sent = cardDeltas.get(sessionId) ?? 0
+		if (full || typeof previous !== 'string' || sent >= CARD_FULL_EVERY || changed.length * 2 > lines.length) {
+			cardDeltas.set(sessionId, 0)
+			return card
+		}
+		/** 只少了几行(例如一次性的判据全文):上次的卡已经说过,不必再发。 */
+		if (changed.length === 0) return ''
+		cardDeltas.set(sessionId, sent + 1)
+		return `${tr('【状态卡变化】只列与上次不同的行,其余不变:', '[Status card changes] only lines that differ from last time; the rest is unchanged:')}\n${changed.join('\n')}`
+	}
+	/**
 	 * **判据全文只在修订后注入一次**(每个会话记最后一次发过的修订号)。
 	 *
 	 * 卡里给的是压缩版 + `clear/goals/{goalId}.md` 指针;但刚改完判据的那一拍,
@@ -4850,7 +4867,11 @@ export function apply(ctx, config = {}) {
 			if (extraSections.length === 0 && ontologyPayload === null && factMutations.length === 0) return decision
 			return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, noticeNote, factMutations, ontologyPayload)] }
 		}
-		lastCard.set(sessionId, card)
+		const shown = cardText(sessionId, card, { full: autoRound !== null })
+		if (shown === '') {
+			if (extraSections.length === 0 && ontologyPayload === null && factMutations.length === 0) return decision
+			return { kind: 'enter', messages: [...decision.messages, pluginNotice(payload, noticeNote, factMutations, ontologyPayload)] }
+		}
 		return {
 			kind: 'enter',
 			messages: [
@@ -4858,7 +4879,7 @@ export function apply(ctx, config = {}) {
 				{
 					id: `clearai-card-${payload.turn}-${payload.step}-${Date.now().toString(36)}`,
 					role: 'user',
-					content: text(card),
+					content: text(shown),
 					source: {
 						kind: MESSAGE_SOURCE_KIND,
 						form: 'snapshot',
@@ -4905,137 +4926,135 @@ export function apply(ctx, config = {}) {
 	 * 把这几件工具的说明换成下面这份。键是参数的路径(`items` 表示数组元素)。
 	 */
 	const STEP_TEXT_EN = {
-		id: 'Stable id (letters, digits, underscore, hyphen)',
-		do: 'What this step does',
-		artifacts: 'What counts as proof: concrete output file paths relative to the workspace (a directory is not proof)',
-		done_criteria: 'Criterion: written before the result exists, and checkable',
-		'tests.hypotheses': 'Which judgments this step tests: their short names (claim text also works). When one observation decides several competing judgments (a comparison step), list them all',
-		'tests.level': 'L2 = self-judged (you write the results and basis); L3 = independent evaluation (the system dispatches an evaluator); L4 = released by a person (unrepeatable or external evidence, a person first)',
-		expect: 'Optional, written before acting: what you expect this step to show (a number or a direction if you can), and where the expectation comes from (which ontology relation, lesson or judgment, or plainly intuition). Written down, a miss becomes visible',
-		serves: 'Optional: which question or survey area this step serves (id); defaults to the current question',
-		predictions: 'Optional, written before acting: a prediction per candidate hypothesis (if "X" holds, what this step should show). A step where all candidates predict the same cannot tell them apart; choose a test that can',
-		'predictions.items.hypothesis': 'Short name of the judgment (id also works)',
-		'predictions.items.expect': 'If it holds, what you expect to see (a number or a direction if you can)',
+		id: 'Stable id',
+		do: 'What it does',
+		artifacts: 'Output file paths that serve as proof (relative to the workspace; not a directory)',
+		done_criteria: 'Criterion: written before the result exists, checkable',
+		'tests.hypotheses': 'Which judgments it tests (short names); list all competing judgments in a comparison step',
+		'tests.level': 'L2 self-judged; L3 independent evaluation; L4 released by a person (unrepeatable or external evidence)',
+		expect: 'Optional, before acting: what you expect to see (a number or a direction)',
+		serves: 'Optional: which question or area id it serves',
+		predictions: 'Optional, before acting: what each candidate predicts; if all predict the same, choose another test',
+		'predictions.items.hypothesis': 'Short name of the judgment',
+		'predictions.items.expect': 'What you expect to see',
 	}
 	const prefixed = (prefix, table) => Object.fromEntries(Object.entries(table).map(([key, value]) => [`${prefix}${key}`, value]))
 	const TOOL_TEXT_EN = {
 		Frame: {
 			description:
-				'Set or revise the contract: attach to the current native goal the criteria for "what counts as answered" (done_criteria) and candidate judgments (each a one-sentence claim plus "what result would refute it"). If there is no native goal, one is created, named by the goal headline; continuing and pausing are handled by the native goal. A revision needs a reason; the version goes up by one and every old value stays in the log; changing the criteria text needs an independent verdict. Irreversible actions go in irreversible (a matching command needs release by a person before it runs). Only one goal is open at a time; it spans plans, and each plan carries one phase of it.',
+				'Frame or revise the goal: criteria (done_criteria) and candidate judgments (a one-sentence claim plus a refutation condition). Creates a native goal if there is none. A revision needs a reason, bumps the version and keeps the old values; changing the criteria text needs an independent verdict (criteria_verdict). One goal at a time; it spans plans.',
 			params: {
-				headline: 'One-sentence goal (≤120 CJK characters or about 240 letters): the line repeated on the card, the panel and continuation notes. Required the first time',
-				claim: 'Goal: the question the project answers (may be long; where identity and criteria attach)',
-				done_criteria: 'What counts as answered: checkable criteria with at least one countable form (a number, a count, "a file exists")',
-				legacy: 'Migrating an old session: lets long text and a missing headline through once (do not use for new goals)',
-				criteria: 'Criteria, one per line (each a sentence with a countable or checkable form such as "a file exists"). If given, they are recorded item by item; otherwise the full done_criteria text is used',
-				criteria_note: 'Background for the criteria (not part of the verdict; only explains why)',
-				criteria_verdict: 'Independent verdict auditKey required when changing the criteria text: "what counts as done" cannot be changed in passing',
+				headline: 'The goal in one sentence (≤120 characters); required the first time',
+				claim: 'The question the goal answers',
+				done_criteria: 'What counts as answered: checkable, with at least one countable form (a number, a count, a file that exists)',
+				legacy: 'Migration of old sessions only',
+				criteria: 'Optional: the criteria one by one; otherwise the full done_criteria text is used',
+				criteria_note: 'Background for the criteria; not part of the verdict',
+				criteria_verdict: 'The independent verdict auditKey for changing the criteria text',
 				promote_at_level: 'Promotion threshold (default L3)',
-				irreversible: 'Irreversible actions: the ones that cannot be taken back or whose results cannot be repeated (a pilot run, an order, a message sent out). For each, one line and its command signature (text that always appears in such a command). A matching command needs release by a person before it runs. Omitting this when revising keeps the previous list',
-				'irreversible.items.action': 'One line: what this action is',
-				'irreversible.items.command': 'Command signature: text that always appears in such a command (e.g. "reactor.mjs state.json pilot")',
-				hypotheses:
-					'Candidate judgments: each a one-sentence claim plus a refutation condition, one thing per judgment (split "A, and B" into two); may carry **typed assertions** (optional, strictly checked when given: predicates and concepts must exist, object forms must fit the range, no contradiction within one fact). Leaving out assertions is fine; they add, they do not gate. When revising the goal, omitting this keeps the judgments; passing it gives this version\'s full list, and any judgment not listed is recorded as replaced.',
-				'hypotheses.items.name': 'Short name, within about 12 CJK characters or 20-odd letters, chosen by you (e.g. "python3 runs"). Use this name whenever you mention or reference the judgment in other tools',
-				'hypotheses.items.retests': 'Which fact already in long-term knowledge this judgment re-tests: the fact id (the file name in clear/knowledge/facts/<id>.json). Copy that fact\'s original statement as the claim and test it again on new data; do not write "it is refuted" as the claim. When this judgment is refuted, the system asks a person on the spot whether to retract or keep that fact, including facts left by other sessions',
-				'hypotheses.items.assertions': 'Assertions: subject, predicate, object (ids from the domain vocabulary)',
-				'hypotheses.items.question': 'Optional: which question or survey area it belongs to (id); defaults to the first question',
-				'hypotheses.items.from': 'Optional: which ontology relation proposed it (relation id, e.g. an affects relation with a shape); if there is no such source, write "intuition"',
-				mode: 'Way of working: survey = broad survey (lay out survey areas, then pick the questions worth pursuing); solve = targeted solving (list candidate hypotheses under a question and eliminate them with tests that tell them apart); survey_then_solve = survey first, then solve. Omitted on revision = unchanged',
-				questions: 'Questions to answer (optional; a goal may have several; if none, the whole goal is one question). A question found during a survey is written with status="emergent" under its area; when a person decides to pursue it, it becomes open, and parked when deferred. Omitted on revision = unchanged; given = the full list',
-				'questions.items.id': 'Short id (e.g. q1), used by a judgment\'s question and a step\'s serves',
-				'questions.items.text': 'The question, in one sentence',
-				'questions.items.status': 'open = being answered; emergent = newly found, awaiting a decision; parked = deferred (listed as an open point at conclusion)',
-				'questions.items.area': 'Optional: which survey area it belongs to (area id)',
-				areas: 'Survey areas (for a broad survey; e.g. technology routes, main companies, cost structure). Omitted on revision = unchanged; given = the full list',
-				conditions: 'Optional: the conditions this problem sits in, e.g. {"line": "L2", "month": "2026-09"}. It is the default scope for judgments that omit one, and the basis for judging whether existing knowledge applies. Omitted on revision = unchanged',
-				about: 'Optional: the entities or quantities this problem concerns (entity file names or concept ids, e.g. "R-2", "yield"). Knowledge items left by this session attach to them, so the next session finds them by these ids. Omitted on revision = unchanged',
-				'hypotheses.items.about': 'Optional: the entities or quantities this judgment concerns (ids); defaults to the framing about',
-				'hypotheses.items.uses': 'Optional: the ids of existing items this judgment relies on (file names of facts, lessons and negatives under clear/knowledge/). The system checks on the spot whether each applies to this run\'s conditions and reports it in the result',
-				'hypotheses.items.scope': 'Optional: where it holds, written separately from the refutation condition. conditions gives the conditions (e.g. {"month": "2026-08"}), ranges the value ranges of variables (e.g. {"temperature": [150, 175]}), note one extra sentence. If omitted, the framing conditions are used',
-				ontology: 'Ontology entries, checked by the system and written to clear/ontology/ (same shape as the files; fields in clear/ontology/SCHEMA.json). When framing, first state the quantities involved: each measure (kind=measure, gloss = its definition, unit) and how it is measured and how a reading is checked (a kind=measures relation: domain = the instrument or source, range = the measure, check = how to confirm the reading); and how the quantities affect each other (kind=affects relations, shape = rough shape). A file with the same id is replaced',
-				'ontology.concepts': 'Concepts: {id, label, gloss, kind: category|measure|phenomenon, unit?}',
-				'ontology.relations': 'Relations: {id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape? (affects), check? (measures)}',
-				reason: 'Required when revising the goal: one sentence on why (not needed the first time)',
+				irreversible: 'Actions that cannot be undone or repeated; a matching command needs a person\'s release before it runs. Omitted on revision = unchanged',
+				'irreversible.items.action': 'What the action is',
+				'irreversible.items.command': 'Text that always appears in such a command',
+				mode: 'survey = broad survey; solve = targeted solving; survey_then_solve = survey, then solve',
+				questions: 'Optional: questions to answer. Questions found while surveying get status="emergent"; a person moves them to open or parked. On revision, a given list is the full list',
+				'questions.items.id': 'Short id (e.g. q1)',
+				'questions.items.text': 'The question in one sentence',
+				'questions.items.status': 'open = being answered; emergent = awaiting a decision; parked = deferred',
+				'questions.items.area': 'Optional: survey area id',
+				areas: 'Survey areas (for a broad survey)',
+				about: 'Ids of the entities or quantities involved (e.g. "R-2", "yield"): used to locate existing items, and items left by this run attach to them',
+				conditions: 'This run\'s conditions, e.g. {"line": "L2", "month": "2026-09"}; the default scope of judgments and the basis of the applicability check',
+				ontology: 'Optional: ontology entries, checked and written to clear/ontology/ (fields in SCHEMA.json); the same id replaces',
+				'ontology.concepts': '{id, label, gloss, kind: category|measure|phenomenon, unit?}',
+				'ontology.relations': '{id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape?, check?}',
+				hypotheses: 'Candidate judgments, one thing each. Omitted on revision = unchanged; given = the full list, and any not listed is recorded as replaced',
+				'hypotheses.items.name': 'Short name (≤ about 20 letters); use it to refer to the judgment later',
+				'hypotheses.items.question': 'Optional: question or area id',
+				'hypotheses.items.about': 'Optional: entity or quantity ids; defaults to the framing about',
+				'hypotheses.items.uses': 'Optional: ids of existing items it relies on (file names under clear/knowledge/); the system checks on the spot whether they apply',
+				'hypotheses.items.scope': 'Optional: where it holds. conditions gives conditions, ranges value ranges (e.g. {"temperature": [150, 175]}), note one sentence; defaults to the framing conditions',
+				'hypotheses.items.retests': 'Optional: which existing fact it re-tests (fact id). Copy the original claim; if refuted, the system asks a person to retract or keep the fact',
+				'hypotheses.items.assertions': 'Optional: subject–predicate–object assertions (ontology ids), strictly checked when given',
+				reason: 'Required on revision: what changed and why',
 			},
 		},
 		Conclude: {
 			description:
-				'Conclude: hand the goal in for acceptance. This is the only way to complete a goal (the native "complete goal" is refused). The system **always** dispatches an independent evaluator to check the goal criteria and transcription fidelity item by item; only when the criteria are met does the goal conclude as achieved: the native goal is marked complete; the evaluator also judges each live judgment, and those it supports (or that already reached the threshold) are promoted to facts; and the outputs accepted by each step are declared as a deliverables card; lessons proposed with the conclusion (`lessons`) are checked one by one, and supported ones are written to clear/knowledge/lessons/. Otherwise the goal stays open and the gaps come back. **Order**: before achieved, close the plan first (`ClosePlan`). Abandoning (`abandoned`) is not limited by this: the native goal is marked blocked with the reason, and a person decides whether to end it.',
+				'Conclude: the only way to complete the goal (the native "complete goal" is refused). The system dispatches an independent evaluator to check the criteria one by one: only if they are met does the goal conclude as achieved; judgments the evaluator supports are promoted to facts, and supported lessons are written to clear/knowledge/lessons/. Otherwise the goal stays open and the gaps come back. ClosePlan before achieved. On abandoned, state the blocker; a person decides whether to end it.',
 			params: {
-				outcome: 'achieved = criteria met; abandoned = give up after stating the blocker honestly',
-				answers: 'Conclusions (on achieved, one per question; one in total if the goal lists no questions): conclusion / basis / open points / decisions for the user. Intermediate judgments and process stay out. Candidate hypotheses still being examined without support, and open unexplained items, must go in the open points with how the conclusion would change if they hold',
-				'answers.items.question': 'Which question (id); may be omitted when the goal lists no questions',
-				'answers.items.conclusion': 'Conclusion: one or two sentences with values and the conditions under which they hold',
-				'answers.items.basis': 'Basis: one line per adopted or excluded candidate hypothesis or verified reading, naming the experiment or source',
-				'answers.items.open': 'Open points: what each concerns (about: candidate short names, unexplained item ids or question ids) and its effect on the conclusion (effect: if it holds, how the conclusion changes)',
-				'answers.items.decide': 'For the user to decide (e.g. whether to re-test before scaling up)',
-				'answers.items.unanswered': 'If it could not be answered, why (conclusion may then be omitted)',
+				outcome: 'achieved = criteria met; abandoned = give up after stating the blocker',
+				answers: 'On achieved, one per question. Candidates still being examined and open unexplained items go in open with their effect',
+				'answers.items.question': 'Question id; omit when the goal lists no questions',
+				'answers.items.conclusion': 'One or two sentences with values and the conditions where they hold',
+				'answers.items.basis': 'One line per adopted or excluded candidate or checked reading, naming the source',
+				'answers.items.open': 'Open points: about = candidate short names, unexplained item ids or question ids; effect = how the conclusion changes if it holds',
+				'answers.items.decide': 'Decisions for the person',
+				'answers.items.unanswered': 'Why it could not be answered (conclusion may then be omitted)',
 				note: 'Conclusion note',
-				lessons: 'Lessons (optional, checked only on achieved): what this run found that changes how to work next time in a similar setting, not a restatement of this run\'s conclusion. The evaluator checks each against the record; supported ones are written to clear/knowledge/lessons/, and later sessions see them when framing and planning',
-				'lessons.items.text': 'One sentence on what to do next time ("check this kind of rig\'s key readings against an independent source first")',
-				'lessons.items.kind': 'trap = a pitfall; check = a reading or assumption to check first; shortcut = a convenient method that misleads; prior = a prior about this kind of system (e.g. "two factors are often coupled; scan diagonally first")',
-				'lessons.items.about': 'The equipment, quantities or concepts involved (short names, used to match next time)',
-				'lessons.items.evidence': 'Where in this run\'s record it showed (step, file)',
+				lessons: 'Optional: lessons that change how to work next time in a similar setting; written only after the evaluator checks them',
+				'lessons.items.text': 'One sentence on what to do next time',
+				'lessons.items.kind': 'trap = pitfall; check = check first; shortcut = misleading shortcut; prior = prior',
+				'lessons.items.about': 'Ids of the equipment, quantities or concepts involved',
+				'lessons.items.evidence': 'Where the record shows it',
 				'lessons.items.boundary': 'When it does not apply',
 			},
 		},
 		CreatePlan: {
 			description:
-				'Make a plan for a complex task. Each step says in one sentence what it does (do), what counts as proof (artifacts), and its criterion (done_criteria, written before the result exists); it may carry an expectation (expect: what you expect to see and where that comes from). Steps that test judgments declare tests: {hypotheses, level}: which judgments, at what level (for a step that compares competing routes, list all the competing judgments). At most 25 steps. Once made, the plan is locked: on a local setback change the current step, do not start over.',
+				'Make a plan: each step gives what it does (do), which file is its proof (artifacts) and its criterion (done_criteria, written before the result exists). Steps that test judgments use tests:{hypotheses, level}. At most 25 steps; after a local setback change the current step, do not start over.',
 			params: {
-				brief: `Plan description for people (Markdown, suggested ≥${MIN_BRIEF_CHARS} characters, at least two ## sections)`,
+				brief: `Plan description for people (Markdown, ≥${MIN_BRIEF_CHARS} characters, at least two ## sections)`,
 				...prefixed('steps.items.', STEP_TEXT_EN),
 			},
 		},
 		RevisePlan: {
 			description:
-				'Change the current plan without moving progress (returns progress_changed=false). Four actions: `action="expect"` writes the expectation for a step not yet done (give `step_id` and `expect`: write it before acting, so a miss is visible); `action="add"` adds a step (add missing work; give `step`); `action="refine"` refines a step\'s criterion (give `step_id` and the new `done_criteria`; the old one stays in the log); `action="void"` voids a step with a reason (give `step_id` and `reason`: if a step should not exist, void it and say why. Voiding on the record is honest; fabricating evidence to finish is not. A delivered step cannot be voided).',
+				'Change the plan without moving progress. expect: write predictions for a step not yet run (step_id + expect or predictions); add: add a step (step); refine: change a step\'s criterion (step_id + done_criteria); void: void a step with a reason (step_id + reason; a delivered step cannot be voided).',
 			params: {
-				action: 'expect = write the expectation; add = add a step; refine = change the criterion; void = void with a reason',
-				expect: 'action=expect: what you expect to see, and where it comes from (relation / lesson / judgment, or intuition)',
-				predictions: 'action=expect, optional: a prediction per candidate hypothesis; give expect, predictions, or both',
-				step: 'action=add: the new step',
-				...prefixed('step.', STEP_TEXT_EN),
-				step_id: 'action=expect / refine / void: which step',
+				action: 'expect / add / refine / void',
+				expect: 'action=expect: what you expect to see',
+				predictions: 'action=expect: per-candidate predictions',
+				'predictions.items.hypothesis': 'Short name of the judgment',
+				'predictions.items.expect': 'What you expect to see',
+				step: 'action=add: the new step, same fields as a CreatePlan step',
+				step_id: 'Which step',
 				done_criteria: 'action=refine: the new criterion',
-				reason: 'Why (required for action=void)',
+				reason: 'Why (required for void)',
 			},
 		},
 		ClosePlan: {
-			description: 'Close the current phase: archive this plan. If the goal is not achieved yet, the system wakes you to start the next phase.',
-			params: { summary: 'Closing words: what this phase achieved' },
+			description: 'Close and archive the current plan; if the goal is not achieved, start the next phase.',
+			params: { summary: 'What this phase achieved' },
 		},
 		AdvancePlan: {
 			description:
-				'Deliver a step (the only completion verb): hand in the observations. The system first runs intake: declared outputs exist, are non-empty and well-formed; intake only accepts or rejects, it does not judge. If the delivery holds, the step is complete, whether the judgments it tests were supported, refuted or left unclear; **all count as complete**, and the results are recorded separately as evidence. Whatever does not match the expectation goes in anomalies. At L2 (self-judged) you give the basis (why the delivery holds, checkable) and results (one entry per judgment the step tests); at L3 and above both are judged by an independent evaluator the system dispatches, and results you write are refused. Without proof it is not complete; there is no manual marking.',
+				'Deliver a step: the only completion action. The system first checks that declared outputs exist, are non-empty and well-formed. If the delivery holds, the step is complete, whether the judgments were supported, refuted or left unclear; results are recorded separately as evidence. At L2 you give basis and results; from L3 an independent evaluator judges, and results you write are refused.',
 			params: {
-				step_id: 'Which step to deliver (only the first unsettled step; this confirms against slips, it does not select)',
-				observations: 'Observations: the raw results of this step (path relative to the workspace plus one sentence)',
-				anomalies: 'Unexplained: where this step\'s result does not fit the expectation or the ontology, or a reading that makes no sense (one sentence each, saying what does not fit). They stay on the card until explained, ruled out with a reason, or handed to a person (with the Anomaly tool). Do not explain them away',
-				'anomalies.items.what': 'What does not fit: what was expected, what was seen',
-				'anomalies.items.anchor': 'Optional: on which entity or device (entity id or name)',
-				'anomalies.items.touches': 'Optional: the quantities (concept ids), candidate hypotheses (judgment ids) or established facts (fact ids) it concerns. A named fact goes back to "pending re-check"; at conclusion, open items touching the answer must be written into its open points with their effect',
-				basis: 'Why the delivery holds: which fact in which output (must be checkable). Written by you only at L2 (self-judged)',
-				results:
-					'L2 (self-judged) only: one entry per judgment this step tests, read against its refutation condition: not met is support, met is refute, and if this observation cannot tell, inconclusive. Refute and inconclusive do not stop the step from completing',
-				'results.items.hypothesis': 'Short name of the judgment (claim text also works)',
-				'results.items.basis': 'One sentence: what this observation shows against the refutation condition (defaults to the basis above)',
+				step_id: 'Which step (must be the first unfinished one)',
+				observations: 'Raw results: path plus one sentence',
+				anomalies: 'Readings that contradict the prediction or the ontology or make no sense, one sentence each; do not explain them away',
+				'anomalies.items.what': 'What was expected, what was seen',
+				'anomalies.items.anchor': 'Optional: on which entity or device',
+				'anomalies.items.touches': 'Optional: quantity, judgment or fact ids; a named fact goes back to pending re-check',
+				basis: 'L2 only: why the delivery holds, citing a specific fact in an output',
+				results: 'L2 only: one entry per tested judgment: support (refutation condition not met) / refute / inconclusive',
+				'results.items.hypothesis': 'Short name of the judgment',
+				'results.items.basis': 'What the observation shows against the refutation condition',
 			},
 		},
 	}
 	TOOL_TEXT_EN.Anomaly = {
 		description:
-			'Unexplained items (anomalies): observations that do not fit the expectation or the ontology, readings that make no sense. `action="open"` records one (give `what`, optionally `anchor`); `action="resolve"` gives it a destination (give `id`, `outcome` and `reason`): explained = a judgment, relation or newly found cause explains it (say which in `by`); ruled_out = ruled out with a stated reason (for example, shown to be a transcription error); escalated = handed to a person. Do not rule things out to keep the card tidy: the evaluator checks the reasons.',
+			'Unexplained items (anomalies). open: record one (what; optionally anchor, touches); resolve: give it a destination (id, outcome, reason): explained (by = which one; add defect for a measurement or method defect), ruled_out with a stated reason, or escalated to a person. The evaluator checks the reasons for ruling out.',
 		params: {
-			what: 'action=open: what does not fit: what was expected, what was seen',
-			anchor: 'action=open, optional: on which entity or device',
-			touches: 'action=open, optional: the quantities (concept ids), candidate hypotheses (judgment ids) or established facts (fact ids) it concerns. A named fact goes back to "pending re-check"',
-			id: 'action=resolve: which one (the u-… id)',
-			outcome: 'explained / ruled_out / escalated (to a person)',
-			reason: 'action=resolve: on what grounds (the explanation, why it can be ruled out, what a person must decide)',
-			by: 'action=resolve, optional: the judgment, relation or fact that explains it',
-			defect: 'action=resolve with outcome=explained, optional: the explanation is a measurement or method defect (e.g. a drifting probe, an accelerated test that overestimates life). It is recorded as a "defect" item on that entity, to be checked first next time',
+			what: 'What was expected, what was seen',
+			anchor: 'Optional: on which entity or device',
+			touches: 'Optional: quantity, judgment or fact ids; a named fact goes back to pending re-check',
+			id: 'Which one (u-…)',
+			outcome: 'explained / ruled_out / escalated',
+			reason: 'Grounds',
+			by: 'Optional: the judgment, relation or fact that explains it',
+			defect: 'Optional: the explanation is a measurement or method defect (e.g. a drifting probe); recorded as a defect item on that entity',
 		},
 	}
 	/** 按路径把英文说明写进一份参数 schema 的副本。 */

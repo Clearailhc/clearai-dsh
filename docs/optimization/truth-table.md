@@ -124,9 +124,9 @@ This section is exported from code, not written by hand:
 - **Output**: 派生 supportedLevel / refutation 计数（不落第二本账）
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 假设状态由证据算出来，模型不能打分。首次立目标至少登记 2 条候选（preset 强制，0 条一样拦）：只有一个猜想，检验容易退化成找证据支持自己。
+- **Rationale**: 假设状态由证据算出来，模型不能打分。0.5.1 的「首次立目标至少两条候选」催生了凑数的候选，0.5.2 起不再要求条数；判断用到的已有条目写在 uses 里。
 - **Code**: preset/plugins/clearai-kernel.js Frame hypotheses; ui/lib/fold.js case 'hypothesis/superseded'
-- **Tests**: test/kernel.test.mjs · **Config**: minHypotheses（内核默认 0 = 机制中立；preset 立 2 = 产品立场，与 blockedThreshold 同一模式）
+- **Tests**: test/kernel.test.mjs · **Config**: minHypotheses（内核默认 0 = 机制中立；0.5.2 起 preset 不再打开）
 - **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `criteria-required` · Criteria-before-work enforcement
@@ -453,11 +453,11 @@ This section is exported from code, not written by hand:
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: system
 - **Trigger**: 状态变化时随回合注入
 - **Input**: 派生状态
-- **Output**: 一段状态卡文本
+- **Output**: 一段状态卡文本:第一次、变化过半或连续 6 次只发差异之后发整张,其余只发与上次不同的行;没有新行就不发
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。
-- **Code**: ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice
+- **Rationale**: 让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。 0.5.2 起只发变化:整张卡在长会话里反复出现是输入成本的主要来源之一,而上次的卡还在上下文里;隔一段补一张整的,防止早先的卡被压缩掉。
+- **Code**: ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice、cardText
 - **Tests**: test/kernel.test.mjs, test/host.test.mjs · **Config**: runtimeCard=true
 - **Prompt**: clearai/identity · **Docs**: docs/loop-philosophy.zh-CN.md
 

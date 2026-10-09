@@ -155,15 +155,12 @@ for (const orphan of ['clearai-kernel.js', 'kernel.test.mjs']) {
 	check(!existsSync(join(PORT, orphan)), `⑪ 仓库根没有孤儿副本 ${orphan}`)
 }
 
-// ── ⑫ 假设数量下限: preset 立了 2,内核有那道门 ──────────────────────────────
-// 「假设 ≥2」曾经是纯文案(minHypotheses 默认 0,提示词里甚至没写)。不缩水原则把它落成了
-// 硬边界:产品立场写在 preset(与 blockedThreshold 同一模式),门在 Frame。
-check(/minHypotheses:\s*2\b/.test(PRESET), '⑫ preset 把假设数量下限立为 2(产品立场)')
-check(/hypotheses_too_few/.test(KERNEL), '⑫ 内核有 hypotheses_too_few 这道门(Frame 入口)')
-check(
-	/(假设|判断)至少两条/.test(PROMPTS),
-	'⑫ 循环段写明了假设纪律(模型得先知道规则,门才不会天天误伤)',
-)
+// ── ⑫ 假设数量下限:0.5.2 起 preset 不再设下限 ─────────────────────────────────
+// 「至少两条候选」在 0.5.1 里催生了凑数的候选。门仍在内核(机制中立,缺省 0),preset 不打开它,
+// 提示词也不再要求条数。
+check(!/minHypotheses:\s*[1-9]/.test(PRESET), '⑫ preset 不设假设数量下限')
+check(/hypotheses_too_few/.test(KERNEL), '⑫ 内核仍有 hypotheses_too_few 这道门(配置打开时生效)')
+check(!/(假设|判断)至少两条/.test(PROMPTS), '⑫ 循环段不再要求候选条数')
 
 // ── ⑬ source.code 必须**可被证伪**:文件在、符号在、没有行号 ─────────────────
 /**

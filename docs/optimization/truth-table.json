@@ -250,7 +250,7 @@
       "source": {
         "code": "preset/plugins/clearai-kernel.js Frame hypotheses; ui/lib/fold.js case 'hypothesis/superseded'",
         "tests": "test/kernel.test.mjs",
-        "config": "minHypotheses（内核默认 0 = 机制中立；preset 立 2 = 产品立场，与 blockedThreshold 同一模式）",
+        "config": "minHypotheses（内核默认 0 = 机制中立；0.5.2 起 preset 不再打开）",
         "prompt": "clearai/loop",
         "docs": "docs/epistemic-loop.zh-CN.md"
       },
@@ -259,7 +259,7 @@
       "output": "派生 supportedLevel / refutation 计数（不落第二本账）",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "假设状态由证据算出来，模型不能打分。首次立目标至少登记 2 条候选（preset 强制，0 条一样拦）：只有一个猜想，检验容易退化成找证据支持自己。",
+      "rationale": "假设状态由证据算出来，模型不能打分。0.5.1 的「首次立目标至少两条候选」催生了凑数的候选，0.5.2 起不再要求条数；判断用到的已有条目写在 uses 里。",
       "known_mismatch": null
     },
     {
@@ -872,7 +872,7 @@
       "authority": "none",
       "actor": "system",
       "source": {
-        "code": "ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice",
+        "code": "ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice、cardText",
         "tests": "test/kernel.test.mjs, test/host.test.mjs",
         "config": "runtimeCard=true",
         "prompt": "clearai/identity",
@@ -880,10 +880,10 @@
       },
       "trigger": "状态变化时随回合注入",
       "input": "派生状态",
-      "output": "一段状态卡文本",
+      "output": "一段状态卡文本:第一次、变化过半或连续 6 次只发差异之后发整张,其余只发与上次不同的行;没有新行就不发",
       "blocks_execution": false,
       "native_dsh_alternative": null,
-      "rationale": "让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。",
+      "rationale": "让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。 0.5.2 起只发变化:整张卡在长会话里反复出现是输入成本的主要来源之一,而上次的卡还在上下文里;隔一段补一张整的,防止早先的卡被压缩掉。",
       "known_mismatch": null
     },
     {

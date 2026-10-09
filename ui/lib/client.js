@@ -1090,7 +1090,8 @@ window.__ModuleLoader__.load({
 			const push = (label, value) => {
 				if (value !== null && value !== undefined && value !== '') rows.push([label, value])
 			}
-			push(t('提出依据'), candidate.from === null ? t('未注明(直觉)') : candidate.from === '直觉' || candidate.from === 'intuition' ? t('直觉') : `${t('本体关系「')}${relationLabel(data, candidate.from)}${t('」')}`)
+			/** 旧会话的判断可能注明了由哪条关系提出;0.5.2 起不再写(由 `uses` 引用具体条目取代),没有就不显示。 */
+			push(t('提出依据'), candidate.from === null || candidate.from === undefined ? null : candidate.from === '直觉' || candidate.from === 'intuition' ? t('直觉') : `${t('本体关系「')}${relationLabel(data, candidate.from)}${t('」')}`)
 			push(t('主张'), candidate.claim !== candidate.name ? candidate.claim : null)
 			push(t('推翻条件'), candidate.refuteWhen)
 			push(t('预测'), prediction)

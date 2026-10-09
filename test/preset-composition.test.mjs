@@ -55,7 +55,7 @@ console.log('\n【① 挂载表:工作方式回来了,第二本账没有】')
 	 */
 	check('实体门在本部署里是开的(内核缺省关,立场写在 preset)', /requireLandedEntities: true/.test(PRESET))
 	check('删掉的两道门不在 preset 里', !/requireTypedPromotion/.test(PRESET) && !/requireLevelReasons/.test(PRESET))
-	check('假设数量下限 2 仍在(开工要有候选对比,与实体门是两条立场)', /minHypotheses: 2/.test(PRESET))
+	check('不再设假设数量下限(0.5.2:至少两条候选催生了凑数的候选)', !/minHypotheses/.test(PRESET))
 }
 
 console.log('\n【② 交还宿主的那几件真的不在了】')

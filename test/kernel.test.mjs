@@ -1204,7 +1204,7 @@ console.log('\n【失联的评估者:重启之后不再被一条等不到的裁�
 		const decision = await preStep(host, S, 74)
 		check('子会话还在跑 ⇒ 不落失联(不误伤)', host.journal.filter((mutation) => mutation.t === 'audit/settled').length === 0)
 		// 判据是**卡里的那句话**:还在跑 ⇒ 卡上照旧写「在等裁决」。
-		check('还在跑 ⇒ 卡上照旧写「在等裁决」', /在等裁决/.test(JSON.stringify(decision.messages ?? [])), JSON.stringify(decision.messages ?? []).slice(0, 220))
+		check('还在跑 ⇒ 卡上照旧写「在等裁决」', /在等裁决/.test(host.service.renderCard(S)) && !/裁决已收口/.test(JSON.stringify(decision.messages ?? [])), host.service.renderCard(S).slice(0, 220))
 	}
 
 	// ③ 拿不到目录(服务不在)⇒ 不猜:保持原样,不动那条裁决
@@ -2595,7 +2595,8 @@ console.log('\n【卡瘦身:判据全文只发一次,平时给压缩版与指针
 	const second = await preStep(host, S, 2)
 	const secondText = (second?.messages ?? []).map(textOf).join('\n')
 	check('同一修订的第二拍不再重发判据全文', !secondText.includes(long), `卡长 ${secondText.length}`)
-	check('但压缩版与指针仍在(卡瘦了不等于判据丢了)', secondText.includes('clear/goals/') || secondText.includes('判据'), secondText.slice(0, 200))
+	const standing = host.service.renderCard(S)
+	check('但压缩版与指针仍在卡上(卡瘦了不等于判据丢了;卡没有新行时这一拍不重发)', standing.includes('clear/goals/') || standing.includes('判据'), standing.slice(0, 200))
 
 	/** 目标文档真的落在盘上:指针指得到东西,否则"全文在哪"是一句空话。 */
 	const goalId = host.service.state(S).goal?.id ?? null
@@ -2795,7 +2796,7 @@ console.log('\n【两种语言:系统写的话跟着人说话的语言走】')
 	const forEn = await assemble({ tools: [...schemas, native] }, { agent: { id: EN } }, async () => ({ tools: [...schemas, native] }))
 	const forZh = await assemble({ tools: schemas }, { agent: { id: ZH } }, async () => ({ tools: schemas }))
 	const descriptions = (tool) => JSON.stringify([tool.description, tool.parameters])
-	check('英文会话:六件工具的说明与参数说明都换成英文', forEn.tools.filter((tool) => tool.name !== 'read').every((tool) => !/[一-鿿]/.test(descriptions(tool).replace(/"enum":\[[^\]]*\]/g, ''))), forEn.tools.find((tool) => tool.name !== 'read' && /[一-鿿]/.test(descriptions(tool).replace(/"enum":\[[^\]]*\]/g, '')))?.name ?? '')
+	check('英文会话:六件工具的说明与参数说明都换成英文', forEn.tools.filter((tool) => tool.name !== 'read').every((tool) => !/[一-鿿]/.test(descriptions(tool).replace(/"enum":\[[^\]]*\]/g, ''))), JSON.stringify(forEn.tools.filter((tool) => tool.name !== 'read').map((tool) => [tool.name, (descriptions(tool).replace(/"enum":\[[^\]]*\]/g, '').match(/[^"]*[一-鿿][^"]*/) ?? [''])[0]]).filter(([, hit]) => hit !== '')))
 	check('英文会话:别的插件的工具原样不动', forEn.tools.find((tool) => tool.name === 'read')?.description === '读文件')
 	check('中文会话:工具说明保持中文', forZh.tools.every((tool) => /[一-鿿]/.test(tool.description)))
 	const shape = (value) => (Array.isArray(value) ? value.map(shape) : value !== null && typeof value === 'object' ? Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'description').map(([key, item]) => [key, shape(item)])) : value)
@@ -2837,7 +2838,7 @@ console.log('\n【本体随立题写入(0.5.2 起不再有测量门槛)】')
 	check('工作区同步落账(本体立刻进词表)', (host.service.derive(S).lexicon?.predicates ?? []).some((predicate) => predicate.id === 'temp_affects_yield'), JSON.stringify((host.service.derive(S).lexicon?.predicates ?? []).map((p) => p.id)))
 	const goal = host.service.state(S).goal
 	check('问题落进目标', (goal?.questions ?? []).length === 1 && goal.questions[0].id === 'q1', JSON.stringify(goal?.questions))
-	check('判断带上所属问题与出处', goal !== null && host.service.state(S).hypotheses.some((item) => item.question === 'q1' && item.from === 'temp_affects_yield'))
+	check('判断带上所属问题;不再记由哪条关系提出(0.5.2 由 uses 取代)', goal !== null && host.service.state(S).hypotheses.some((item) => item.question === 'q1' && item.from === undefined))
 	const stray = await callOn(host, S, 'Frame', { ...base, reason: '补一条', hypotheses: [...base.hypotheses, { claim: '压力有关', refute_when: '压力无关', question: 'q9' }] })
 	check('判断指向不存在的问题 → 拒(question_unknown)', stray.ok === false && stray.code === 'question_unknown', String(stray.code))
 	const revision = await callOn(host, S, 'Frame', { ...base, reason: '只改措辞', hypotheses: undefined })
@@ -3201,6 +3202,22 @@ console.log('\n【0.5.2:取用——立题定位已有条目,引用时判定适�
 	const bare = await callOn(fourth, D, 'Frame', { claim: '无条件', headline: '无条件', done_criteria: '存在 lab/d.txt', promote_at_level: 'L2', hypotheses: [{ name: '无条件', claim: 'x', refute_when: 'y', uses: [`x-${noneId}`] }] })
 	check('本次没声明条件 → 条件未声明(不当作适用);负向条目先说它是什么', /「无条件」引用 x-[^:]+:初步排除.*条件未声明/.test(bare.message), bare.message.slice(-400))
 	check('没写 about 时提示写上才能定位', /立题写上 about/.test(bare.message), bare.message.slice(-400))
+}
+
+console.log('\n【0.5.2:卡只发变化,隔一段补一张整的】')
+{
+	const host = makeHost()
+	apply(host.ctx, { minHypotheses: 0 })
+	const S = 'session-card-delta'
+	const framed = await callOn(host, S, 'Frame', { claim: '卡只发变化', headline: '卡只发变化', done_criteria: '存在 lab/x.txt', hypotheses: [{ name: '甲', claim: '甲成立', refute_when: '甲不成立' }] })
+	check('第一次发整张卡', /【现在的状态】/.test(framed.message) && !/【状态卡变化】/.test(framed.message), framed.message.slice(-200))
+	const messages = []
+	for (let index = 0; index < 8; index += 1) {
+		const opened = await callOn(host, S, 'Anomaly', { action: 'open', what: `第 ${index + 1} 处读数对不上` })
+		messages.push(opened.message)
+	}
+	check('之后只发与上次不同的行', /【状态卡变化】/.test(messages[0]) && !/【现在的状态】/.test(messages[0]), messages[0].slice(-300))
+	check('连续发了几次差异之后补一张整的', messages.some((message) => /【现在的状态】/.test(message)), messages.map((message) => (/【现在的状态】/.test(message) ? '整' : '差')).join(''))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

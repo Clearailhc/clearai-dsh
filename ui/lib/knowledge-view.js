@@ -444,12 +444,6 @@ function cardLines(state, derived, options, view) {
 				push(`  ${question.id === exploration.current ? '▸' : '·'} ${question.id}「${clamp(question.text, 60)}」${status}`, question.id === exploration.current ? 0 : 1)
 			}
 		}
-		/** 本体里带形状、还没有候选由它提出的影响关系:只列出,不强制(不为竞争而竞争)。 */
-		const untapped = Array.isArray(exploration.untapped) ? exploration.untapped : []
-		if (untapped.length > 0) {
-			const SHAPE = { increasing: tr('单调升', 'increasing'), decreasing: tr('单调降', 'decreasing'), peak: tr('有峰', 'has a peak'), threshold: tr('有阈值', 'has a threshold'), coupled: tr('耦合', 'coupled') }
-			push(tr(`- 本体中尚无候选假设引用的影响关系:${untapped.slice(0, 5).map((item) => `${item.label}(${SHAPE[item.shape] ?? item.shape})`).join('、')}——若它们可能改变结论,可据此提出候选(\`from\` 写关系 id)`, `- Affects relations in the ontology no candidate cites yet: ${untapped.slice(0, 5).map((item) => `${item.label} (${SHAPE[item.shape] ?? item.shape})`).join(', ')}; if they could change the conclusion, propose candidates from them (\`from\` = the relation id)`), 1)
-		}
 	}
 	if (plan === null) {
 		if (goal !== null && String(goal.status) === 'open') push(tr('- 计划:还没有(用 CreatePlan 把检验拆成步骤)', '- Plan: none yet (use CreatePlan to split the tests into steps)'), 1)

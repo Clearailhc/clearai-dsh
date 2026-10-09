@@ -2037,7 +2037,6 @@ const CANDIDATE_STATE = { credible: 'adopted', refuted: 'excluded', replaced: 's
  * 没写问题的目标就是一个问题(旧会话照样读得通);没指明归属的判断归第一个问题。
  * 候选的状态只从证据来(可信度分组的另一种读法),界面与卡读同一份。
  *
- * `untapped`:本体里带形状的「影响」关系,还没有任何候选由它提出——只列出,不强制。
  * `next.indistinct`:下一步给每个候选都写了预测,但预测全一样:这一步区分不了它们。
  */
 export function deriveExploration(state, hypotheses, lexicon, activePlan) {
@@ -2089,8 +2088,6 @@ export function deriveExploration(state, hypotheses, lexicon, activePlan) {
 		return { id: area.id, name: area.name, state, judgments: linked.length, verified: linked.filter((row) => row.state === 'adopted').length, openAnomalies: touched, questions: questionRows.filter((question) => question.area === area.id).map((question) => question.id) }
 	})
 	const current = questionRows.find((question) => question.status === 'open' && question.counts.examining > 0) ?? questionRows.find((question) => question.status === 'open') ?? null
-	const cited = new Set(mine.map((hypothesis) => hypothesis.from).filter((from) => typeof from === 'string'))
-	const untapped = (lexicon?.predicates ?? []).filter((predicate) => predicate.kind === 'affects' && typeof predicate.shape === 'string' && predicate.status !== 'deprecated' && !cited.has(predicate.id)).map((predicate) => ({ id: predicate.id, label: predicate.label || predicate.id, shape: predicate.shape }))
 	const first = steps.find((step) => step.status === 'open') ?? null
 	let next = null
 	if (first !== null) {
@@ -2103,7 +2100,7 @@ export function deriveExploration(state, hypotheses, lexicon, activePlan) {
 		const distinct = new Set(predictions.map((item) => item.expect.replace(/\s+/g, '')))
 		next = { step: first.id, ordinal: first.ordinal, do: first.do, serves: first.serves ?? null, expect: first.expect ?? null, predictions, indistinct: predictions.length >= 2 && distinct.size === 1 }
 	}
-	return { mode: goal.mode ?? null, questions: questionRows, areas: areaRows, current: current?.id ?? null, untapped, next, answers }
+	return { mode: goal.mode ?? null, questions: questionRows, areas: areaRows, current: current?.id ?? null, next, answers }
 }
 
 /**
