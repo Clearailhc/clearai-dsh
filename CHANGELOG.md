@@ -14,7 +14,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [0.5.1] — 2026-10-08
 
-这一版让本体与认识论在每一次决策中起作用：立题时写本体，本体给出候选假设与预测，未解释项影响结论，会改变答案的事项都处理了才能结案。界面新增「探索」一格，「本体」一格只放结果。设计与计划见 [docs/optimization/0.5.1-plan/](docs/optimization/0.5.1-plan/upgrade-plan.zh-CN.md)；起因见[真宿主第一对复盘](docs/optimization/0.5.1-plan/pair1-review.zh-CN.md)。开发集长测尚未完成，见[已知缺口](docs/known-gaps.zh-CN.md)。
+这一版让本体与认识论在每一次决策中起作用：立题时写本体，本体给出候选假设与预测，未解释项影响结论，会改变答案的事项都处理了才能结案。界面新增「探索」一格，「本体」一格只放结果。设计与计划见 [docs/optimization/0.5.1-plan/](docs/optimization/0.5.1-plan/upgrade-plan.zh-CN.md)；起因见[真宿主第一对复盘](docs/optimization/0.5.1-plan/pair1-review.zh-CN.md)。开发集长测没有通过止损线：测量门与停止检查从未触发，漂移纠正 2/4、耦合结构 1/8，成本为裸模型的 4.8–7.2 倍，见[记录](docs/optimization/sim-runs/2026-10-08-0.5.1-dev/README.md)与[已知缺口](docs/known-gaps.zh-CN.md)。
 
 ### Added
 
