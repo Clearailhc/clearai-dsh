@@ -2279,7 +2279,7 @@ function entityKnowledge(state, graph, items) {
  * 探索货架的两节与结论卡的摘要:
  *   · `cited`——本次判断通过 `uses` 引用的条目与系统判定(不是「适用」的排前面);
  *   · `settling`——本目标已写下的负向条目,加上结案时待独立核验的判断;
- *   · `settled`——本目标已沉淀的条数(已确立 / 已排除 / 未解释 / 经验)。
+ *   · `settled`——本目标已沉淀的条数(已确立 / 已排除 / 未解释 / 测量或方法缺陷 / 经验)。
  */
 function knowledgeFlow(state, derived, items, promotedIds) {
 	const goalId = state.goal?.id ?? null
@@ -2305,7 +2305,8 @@ function knowledgeFlow(state, derived, items, promotedIds) {
 				: {
 						established: count((item) => item.kind === 'fact' && item.status === 'established'),
 						excluded: count((item) => item.kind === 'negative' && (item.status === 'excluded' || item.status === 'preliminary_excluded')),
-						unresolved: count((item) => item.kind === 'negative' && (item.status === 'unresolved' || item.status === 'escalated' || item.status === 'defect')),
+						unresolved: count((item) => item.kind === 'negative' && (item.status === 'unresolved' || item.status === 'escalated')),
+						defects: count((item) => item.kind === 'negative' && item.status === 'defect'),
 						lessons: count((item) => item.kind === 'lesson'),
 					},
 	}

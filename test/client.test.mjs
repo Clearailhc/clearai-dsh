@@ -770,16 +770,27 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const node = real.lexicon.graph.nodes.find((item) => item.ref === 'kiln_3')
 			check('投影:实体按 id 与别名挂上条目,计数分格', node !== undefined && JSON.stringify(real.entityKnowledge[node.id]?.counts) === JSON.stringify({ established: 1, excluded: 1, bounded: 1, pending: 0, unresolved: 1 }), JSON.stringify(real.entityKnowledge))
 			check('投影:引用的已有知识里不适用的排在前面', real.knowledgeFlow.cited.map((item) => item.verdict).join(',') === 'out_of_scope,applies', JSON.stringify(real.knowledgeFlow.cited))
-			check('投影:本次沉淀按本目标计数', JSON.stringify(real.knowledgeFlow.settled) === JSON.stringify({ established: 0, excluded: 1, unresolved: 1, lessons: 0 }), JSON.stringify(real.knowledgeFlow.settled))
+			check('投影:本次沉淀按本目标计数', JSON.stringify(real.knowledgeFlow.settled) === JSON.stringify({ established: 0, excluded: 1, unresolved: 1, defects: 0, lessons: 0 }), JSON.stringify(real.knowledgeFlow.settled))
 			const asked = []
 			const sentKeys = []
 			const card = components.EntityCard({ node, data: real, send: (text) => (asked.push(text), true), sent: {}, onSent: (key, kind) => sentKeys.push([key, kind]) })
 			const cardText = react.render(card).replace(/\s+/g, ' ')
+			check('实体卡:条目上的请求按钮默认收起(点条目才出现)', findButtons(card).length === 0 && !cardText.includes('请求复检'), cardText)
+			/** 展开态:把组件里的 `useState(false)` 换成 true(与上面「过程记录」展开同一个办法)。 */
+			const openCard = (() => {
+				const realState = react.useState
+				react.useState = (initial) => [initial === false ? true : initial, () => {}]
+				try {
+					return { text: react.render(card).replace(/\s+/g, ' '), buttons: findButtons(card) }
+				} finally {
+					react.useState = realState
+				}
+			})()
 			const sections = ['已确立的事实', '已排除', '适用边界', '未解释的现象'].map((word) => cardText.indexOf(word))
 			check('实体卡按栏目依次列出,空栏不出现', sections.every((at) => at >= 0) && sections.every((at, index) => index === 0 || at > sections[index - 1]) && !cardText.includes('测量与口径') && !cardText.includes('经验('), cardText)
-			check('实体卡:初步排除单独标注,适用边界写明理由,范围可读', cardText.includes('初步排除') && cardText.includes('B 线不成立') && cardText.includes('line=A'), cardText)
+			check('实体卡:初步排除折叠在单独一行,适用边界写明理由,范围可读', cardText.includes('初步排除(1)') && cardText.includes('B 线不成立') && cardText.includes('line=A'), cardText)
 			check('实体卡不摆内部编号', !/f-old|x-h-9|n-a1/.test(cardText.replace(/clear\/knowledge\/\S+/g, '')), cardText)
-			findButtons(card).find((button) => String(button.children).includes('请求复检'))?.props.onClick()
+			openCard.buttons.find((button) => String(button.children).includes('请求复检'))?.props.onClick()
 			check('「请求复检」只发一句话(带条目原文与文件路径)', asked.length === 1 && asked[0].includes('3 号窑温度与产率正相关') && asked[0].includes('clear/knowledge/facts/f-old.json') && sentKeys[0]?.[1] === 'sent', JSON.stringify([asked, sentKeys]))
 			const flowText = react.render(components.KnowledgeFlowBox({ data: real })).replace(/\s+/g, ' ')
 			check('探索货架:引用的已有知识带判定与后续处理', flowText.includes('引用的已有知识(2)') && flowText.includes('超出适用范围') && flowText.includes('本次不能直接沿用,需重新检验') && flowText.includes('引用者:热电偶老化导致读数偏低'), flowText)
