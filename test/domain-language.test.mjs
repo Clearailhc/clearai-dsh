@@ -254,7 +254,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本是 v19(问题、候选与预测)', fold.STATE_VERSION === 19, String(fold.STATE_VERSION))
+	check('状态版本是 v20(适用范围与推翻条件分开)', fold.STATE_VERSION === 20, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -298,7 +298,7 @@ console.log('\n【折法:事实带上假设 id 与断言,并按 id 关联】')
 	 * 「旧账本逐字段不变」这句话只有在这种对照下才可核对。
 	 */
 	const STATE_KEYS = ['goal', 'hypotheses', 'plans', 'evidence', 'audits', 'materials', 'facts', 'blocks', 'releases', 'anomalies', 'lessons', 'ontology', 'lexicon', 'entities', 'entityAssertions', 'hostHealth', 'workspace', 'ontologyProblems', 'language', 'inFlight', 'written']
-	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'level', 'evidence', 'path', 'assertions', 'definitions', 'at']
+	const FACT_KEYS = ['id', 'goal', 'hypothesis', 'text', 'scope', 'scope_spec', 'refute_when', 'boundaries', 'level', 'evidence', 'path', 'assertions', 'definitions', 'at']
 	check('状态键集合与清单逐字一致(加字段要改这一行)', JSON.stringify(Object.keys(fold.emptyState()).sort()) === JSON.stringify([...STATE_KEYS].sort()), Object.keys(fold.emptyState()).filter((key) => !STATE_KEYS.includes(key)).join(','))
 	check('事实键集合与清单逐字一致', JSON.stringify(Object.keys(legacy.facts[0]).sort()) === JSON.stringify([...FACT_KEYS].sort()), Object.keys(legacy.facts[0]).filter((key) => !FACT_KEYS.includes(key)).join(','))
 }
@@ -477,7 +477,7 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 	const pfFacts = fold.knowledgePreflight(withFacts, fold.derive(withFacts))
 	check('定义里挂着命中概念的事实进预检(没有断言也算)', pfFacts.facts.some((fact) => fact.id === 'f-ox') && !pfFacts.facts.some((fact) => fact.id === 'f-other'), JSON.stringify(pfFacts.facts.map((fact) => fact.id)))
 	const factCard = fold.renderCard(withFacts)
-	check('卡上递出相关事实的原话与边界', factCard.includes('二号炉氧含量偏高') && factCard.includes('边界:换了氧探头后读数不变'), factCard.split('\n').filter((line) => line.includes('边界')).join(' | '))
+	check('卡上递出相关事实的原话与适用范围', factCard.includes('二号炉氧含量偏高') && factCard.includes('适用范围:换了氧探头后读数不变'), factCard.split('\n').filter((line) => line.includes('适用范围')).join(' | '))
 
 	// ④ 卡里真的说出来。
 	const card = fold.renderCard(seededState)

@@ -338,7 +338,7 @@ export function readingOf(hypothesis) {
 /** 步骤状态的人话。 */
 const STEP_WORD = bilingual({ open: ['待做', 'to do'], advanced: ['已交付', 'delivered'], void: ['已作废', 'voided'] })
 
-/** 一条事实在卡上的一行:原话、边界、等级;来自别的会话的标出来。 */
+/** 一条事实在卡上的一行:原话、适用范围、等级;来自别的会话的标出来。 */
 /** 有开着的未解释项点名这条事实:它回到「待核验」,直到那些未解释项有了去处。 */
 function questionedNote(fact, language) {
 	const ids = Array.isArray(fact?.questioned) ? fact.questioned : []
@@ -349,8 +349,8 @@ function questionedNote(fact, language) {
 function factLine(fact) {
 	const scope = oneLine(fact?.scope ?? '')
 	return tr(
-		`  · 「${clamp(fact?.text, 100)}」${scope === '' ? '' : ` — 边界:${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}${questionedNote(fact, 'zh')}`,
-		`  · "${clamp(fact?.text, 100)}"${scope === '' ? '' : ` — boundary: ${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}${questionedNote(fact, 'en')}`,
+		`  · 「${clamp(fact?.text, 100)}」 — 适用范围:${scope === '' ? '未声明' : clamp(scope, 80)}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}${questionedNote(fact, 'zh')}`,
+		`  · "${clamp(fact?.text, 100)}" — scope: ${scope === '' ? 'not declared' : clamp(scope, 80)}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}${questionedNote(fact, 'en')}`,
 	)
 }
 

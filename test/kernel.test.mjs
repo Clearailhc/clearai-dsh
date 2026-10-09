@@ -1444,7 +1444,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		check('自判只到 L1 的判断,经结案评估支持 ⇒ 升格', closed.ok === true && promoted.length === 1 && promoted[0].hypothesis === steady && promoted[0].evidence.includes(atClose[0].id), JSON.stringify(promoted))
 		check('被推翻的判断不升格', !promoted.some((mutation) => mutation.hypothesis === other))
 		const after = renderCard(host.service.state(S))
-		check('目标结了 ⇒ 卡上递出事实原话与边界(下一个目标立题前就看得到)', after.includes('以前留下的事实') && after.includes('R 比 T 更稳') && after.includes('边界:T 波动更小'), after.split('\n').filter((line) => line.includes('事实') || line.includes('边界')).join(' | '))
+		check('目标结了 ⇒ 卡上递出事实原话与适用范围(下一个目标立题前就看得到;没声明就如实写未声明)', after.includes('以前留下的事实') && after.includes('R 比 T 更稳') && after.includes('适用范围:未声明'), after.split('\n').filter((line) => line.includes('事实') || line.includes('边界')).join(' | '))
 	}
 
 	// ⑥ 预期与未解释:预期写在步骤上,落空记成未解释项挂在卡上,只有三个去处;评估者也能报;对手判断与弱检验提示已删
@@ -1726,7 +1726,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		const closed = await callOn(host, FS, 'Conclude', { outcome: 'achieved', note: '一个根' })
 		check('前置:目标结案成功', closed?.ok === true, `${closed?.code}:${String(closed?.message ?? '').slice(0, 80)}`)
 		const facts = host.service.state(FS).facts
-		check('事实升格时带上**边界与等级**(声明里的 scope/level 真的落到事实里)', facts.length === 1 && String(facts[0].scope ?? '').includes('两个根') && facts[0].level === 'L2', JSON.stringify(facts[0] ?? null).slice(0, 120))
+		check('事实升格时带上推翻条件与等级,适用范围另存(没声明就是 null,不拿推翻条件充数)', facts.length === 1 && String(facts[0].refute_when ?? '').includes('两个根') && facts[0].scope === null && facts[0].level === 'L2', JSON.stringify(facts[0] ?? null).slice(0, 160))
 		/**
 		 * §38 **目标结案前先把计划收尾**:计划还 active 时 Conclude(achieved) 必须被拒 ✓
 		 * —— 事实是在收尾那条路上沉淀的,先结目标就等于跳过沉淀(真长测里出现过:goal achieved 而 plan active、fact/promoted: 0 ✗)。
@@ -1750,7 +1750,7 @@ console.log('\n【子 run 的结局:中断/报错是 resolve 带 stopReason,不�
 		const index = join(host.cwd, 'clear', 'knowledge', 'facts', 'INDEX.md')
 		const body = existsSync(index) ? readFileSync(index, 'utf8') : ''
 		check('事实货架落盘(clear/knowledge/facts/INDEX.md)', body.includes('该方程在区间上恰有一个根'), body.slice(0, 80))
-		check('货架里写着边界与支持等级(引用前先看边界)', body.includes('边界:') && body.includes('支持到:'), body.slice(0, 200))
+		check('货架里写着适用范围、推翻条件与支持等级(引用前先看范围)', body.includes('适用范围:') && body.includes('推翻条件:') && body.includes('支持到:'), body.slice(0, 200))
 		const before = body
 		await preStep(host, FS, 92)
 		check('货架幂等(内容一样就不重写)', readFileSync(index, 'utf8') === before)
@@ -2805,19 +2805,16 @@ console.log('\n【两种语言:系统写的话跟着人说话的语言走】')
 	check('英文会话:写入闸门的拒绝理由是英文', denied?.kind === 'deny' && !/[一-鿿]/.test(String(denied.reason)), String(denied?.reason))
 }
 
-console.log('\n【0.5.1:本体随立题写入,测量门槛】')
+console.log('\n【本体随立题写入(0.5.2 起不再有测量门槛)】')
 {
 	const host = makeHost()
 	const ws = tempDir('clearai-measures-')
 	host.cwd = ws
-	apply(host.ctx, { requireMeasures: true, minHypotheses: 0 })
+	apply(host.ctx, { minHypotheses: 0 })
 	const S = 'session-measures'
 	const base = { claim: '找出釜温对收率的影响', headline: '找出釜温对收率的影响', done_criteria: '存在 lab/r.txt,含 3 个读数', hypotheses: [{ name: '温度有峰', claim: '收率随釜温先升后降', refute_when: '收率单调' }, { name: '温度无关', claim: '收率与釜温无关', refute_when: '收率随釜温变化超过 2 个点' }] }
-	const bare = await callOn(host, S, 'Frame', base)
-	check('首次立题不写度量 → 拒(measures_required)', bare.ok === false && bare.code === 'measures_required', String(bare.code))
-	check('拒绝说明指出要写 measures 关系与 check', /measures/.test(String(bare.message)) && /check/.test(String(bare.message)), String(bare.message).slice(0, 120))
-	const unchecked = await callOn(host, S, 'Frame', { ...base, ontology: { concepts: [{ id: 'reactor_temp', label: '釜温', gloss: '釜内物料的实际温度', kind: 'measure', unit: '°C' }] } })
-	check('有度量但没写测量方式 → 拒,并点名缺的度量', unchecked.ok === false && unchecked.code === 'measures_required' && /reactor_temp/.test(String(unchecked.message)), String(unchecked.message).slice(0, 120))
+	const bare = await callOn(host, 'session-measures-bare', 'Frame', base)
+	check('首次立题不写本体也能立(测量门槛已删除:它只查声明的类型,0.5.1 长测里拦截 0 次)', bare.ok === true, `${bare.code} ${String(bare.message).slice(0, 120)}`)
 	const badFile = await callOn(host, S, 'Frame', { ...base, ontology: { concepts: [{ id: 'reactor_temp', label: '釜温', kind: 'measure' }] } })
 	check('格式不对的本体条目 → 拒(ontology_rejected),什么都不写', badFile.ok === false && badFile.code === 'ontology_rejected' && !existsSync(join(ws, 'clear/ontology/concepts/reactor_temp.json')), String(badFile.code))
 	const ontology = {
@@ -2843,7 +2840,7 @@ console.log('\n【0.5.1:本体随立题写入,测量门槛】')
 	const stray = await callOn(host, S, 'Frame', { ...base, reason: '补一条', hypotheses: [...base.hypotheses, { claim: '压力有关', refute_when: '压力无关', question: 'q9' }] })
 	check('判断指向不存在的问题 → 拒(question_unknown)', stray.ok === false && stray.code === 'question_unknown', String(stray.code))
 	const revision = await callOn(host, S, 'Frame', { ...base, reason: '只改措辞', hypotheses: undefined })
-	check('修订不再要求测量(门槛只在首次立题)', revision.ok === true || revision.code !== 'measures_required', String(revision.code))
+	check('只改措辞的修订照常通过', revision.ok === true || revision.code !== 'measures_required', String(revision.code))
 }
 
 console.log('\n【0.5.1:按候选写预测、停止检查、未解释项让事实回到待核验】')
@@ -2906,6 +2903,121 @@ console.log('\n【0.5.1:按候选写预测、停止检查、未解释项让事�
 		check('点名事实的未解释项让它回到待核验(questioned)', (row?.questioned ?? []).length === 1, JSON.stringify(row?.questioned))
 		check('卡上那条事实标「待核验」', /待核验/.test(renderCard(host.service.state(S))))
 	}
+}
+
+console.log('\n【0.5.2:停止检查在审计之后再做一次】')
+{
+	const host = makeHost()
+	const ws = tempDir('clearai-postaudit-')
+	host.cwd = ws
+	apply(host.ctx, { requireAnswers: true, minHypotheses: 0, blockedThreshold: 3 })
+	const S = 'session-postaudit'
+	await callOn(host, S, 'Frame', { claim: '甲乙哪个好', headline: '甲乙哪个好', done_criteria: '存在 lab/d.txt', promote_at_level: 'L2', hypotheses: [{ name: '甲更好', claim: '甲的收率高于乙', refute_when: '甲不高于乙' }] })
+	const [better] = host.service.state(S).hypotheses.map((item) => item.id)
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'd1', do: '各跑一次', artifacts: ['lab/d.txt'], done_criteria: 'lab/d.txt 存在', tests: { hypotheses: [better], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'd.txt'), '甲 92 乙 88\n')
+	await callOn(host, S, 'AdvancePlan', { step_id: 'd1', basis: 'lab/d.txt 甲 92 乙 88', results: [{ hypothesis: better, verdict: 'support' }] })
+	await callOn(host, S, 'ClosePlan', {})
+	const answers = [{ conclusion: '甲比乙高 4 个点', basis: ['d1:甲 92、乙 88'] }]
+	host.nextVerdict = { holds: 'yes', basis: '读数与结论一致', shortfalls: [], results: [], anomalies: [{ what: 'lab/d.txt:1 乙的读数比历史低 5 个点', matters: 'yes' }, { what: '文件末尾多一个空行', matters: 'no' }] }
+	const dispatchedBefore = host.journal.filter((mutation) => mutation.t === 'audit/dispatched').length
+	const first = await callOn(host, S, 'Conclude', { outcome: 'achieved', answers })
+	check('评估者在审计中指出、结论没交代的问题 → 不结案(answers_incomplete)', first.ok === false && first.code === 'answers_incomplete' && /乙的读数/.test(String(first.message)), `${first.code} ${String(first.message).slice(0, 200)}`)
+	check('评估者说「不影响结论」的那一项不拦', !/空行/.test(String(first.message)))
+	check('目标保持开放', host.service.state(S).goal?.status === 'open')
+	const raised = host.service.state(S).anomalies.find((item) => item.by === 'evaluator' && /乙的读数/.test(item.what))
+	check('评估者指出的问题落成未解释项(挂在卡上)', raised !== undefined && raised.status === 'open', JSON.stringify(host.service.state(S).anomalies))
+	const second = await callOn(host, S, 'Conclude', { outcome: 'achieved', answers: [{ ...answers[0], open: [{ about: [raised?.id ?? ''], effect: '若乙的读数偏低,差距被夸大,结论只在本批次成立' }] }] })
+	check('写进「尚未确定的事项」后再结案 → 达成', second.ok === true, `${second.code} ${String(second.message).slice(0, 160)}`)
+	check('材料没变,复用了上一次裁决(没多花一次评估)', host.journal.filter((mutation) => mutation.t === 'audit/dispatched').length === dispatchedBefore + 1)
+}
+
+console.log('\n【0.5.2:一次评估超过硬上限就如实记为未知并放开】')
+{
+	const host = makeHost()
+	const ws = tempDir('clearai-hardtimeout-')
+	host.cwd = ws
+	apply(host.ctx, { minHypotheses: 0, auditTimeoutMs: 20, auditHardTimeoutMs: 60 })
+	const S = 'session-hardtimeout'
+	await callOn(host, S, 'Frame', { claim: 'Z', headline: 'Z', done_criteria: '存在 lab/z.txt', promote_at_level: 'L2' })
+	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'z1', do: '写一份', artifacts: ['lab/z.txt'], done_criteria: 'lab/z.txt 存在' }] })
+	writeText(join(ws, 'lab', 'z.txt'), 'z\n')
+	await callOn(host, S, 'AdvancePlan', { step_id: 'z1', basis: 'lab/z.txt 在' })
+	await callOn(host, S, 'ClosePlan', {})
+	host.auditNeverSettles = true
+	/** 评估者的等待计时器是 unref 的:用一个普通计时器撑住事件循环,否则测试进程会先退出。 */
+	const keepAlive = setInterval(() => {}, 10)
+	const pending = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+	check('前置:评估者还在跑 → audit_pending', pending.ok === false && pending.code === 'audit_pending', String(pending.code))
+	await new Promise((resolve) => setTimeout(resolve, 80))
+	const released = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+	clearInterval(keepAlive)
+	const settled = host.journal.find((mutation) => mutation.t === 'audit/settled' && (mutation.shortfalls ?? []).includes('audit_timeout'))
+	check('超过硬上限 → 结成「未知」(audit_timeout),不再挂着', settled !== undefined && settled.holds === 'unknown', JSON.stringify(settled))
+	check('目标没有被误判达成,如实保持开放', released.ok === false && host.service.state(S).goal?.status === 'open', `${released.code}`)
+	host.auditNeverSettles = false
+	host.nextVerdict = { holds: 'yes', basis: '在', shortfalls: [], results: [] }
+	const retried = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+	check('放开之后重新派评估,可以正常结案', retried.ok === true, `${retried.code} ${String(retried.message).slice(0, 160)}`)
+}
+
+console.log('\n【0.5.2:适用范围与推翻条件分开;范围外的反证不撤回事实】')
+{
+	const answering = (pick) => ({
+		asked: [],
+		async ask(request) {
+			this.asked.push(request)
+			return { answers: request.questions.map((question) => ({ id: question.id, selected: [pick(question).label] })) }
+		},
+	})
+	const ws = tempDir('clearai-scope-')
+	const first = makeHost()
+	first.cwd = ws
+	apply(first.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const A = 'session-scope-aug'
+	await callOn(first, A, 'Frame', { claim: '八月良率为何下滑', headline: '八月良率为何下滑', done_criteria: '存在 lab/aug.txt', promote_at_level: 'L2', conditions: { 月份: '2026-08', 产线: 'L2' }, hypotheses: [{ name: 'B0723', claim: 'B0723 批次在湿度高于 65% 时导致良率下滑', refute_when: '剔除 B0723 后良率仍下滑' }] })
+	check('立题的 conditions 落进目标', first.service.state(A).goal?.conditions?.['月份'] === '2026-08', JSON.stringify(first.service.state(A).goal?.conditions))
+	const [cause] = first.service.state(A).hypotheses.map((item) => item.id)
+	await callOn(first, A, 'CreatePlan', { steps: [{ id: 'a1', do: '按批次拆', artifacts: ['lab/aug.txt'], done_criteria: 'lab/aug.txt 存在', tests: { hypotheses: [cause], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'aug.txt'), 'B0723 高湿 不良 6.1%\n其余 1.2%\n')
+	await callOn(first, A, 'AdvancePlan', { step_id: 'a1', basis: 'lab/aug.txt', results: [{ hypothesis: cause, verdict: 'support' }] })
+	await callOn(first, A, 'ClosePlan', {})
+	first.nextVerdict = { holds: 'yes', basis: '在', shortfalls: [], results: [] }
+	await callOn(first, A, 'Conclude', { outcome: 'achieved' })
+	const fact = first.service.state(A).facts.find((item) => item.hypothesis === cause)
+	check('事实的适用范围取自立题的 conditions', fact?.scope_spec?.conditions?.['月份'] === '2026-08' && /2026-08/.test(String(fact?.scope)), JSON.stringify(fact && { scope: fact.scope, spec: fact.scope_spec }))
+	check('推翻条件另存,不再写进适用范围', fact?.refute_when === '剔除 B0723 后良率仍下滑' && !/剔除/.test(String(fact?.scope)), JSON.stringify(fact && { scope: fact.scope, refute_when: fact.refute_when }))
+	const onDisk = JSON.parse(readFileSync(join(ws, 'clear/knowledge/facts', `${fact.id}.json`), 'utf8'))
+	check('事实文件带 scope_spec 与 refute_when', onDisk.scope_spec?.conditions?.['产线'] === 'L2' && onDisk.refute_when === '剔除 B0723 后良率仍下滑', JSON.stringify(onDisk))
+
+	const second = makeHost()
+	second.cwd = ws
+	apply(second.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const B = 'session-scope-sep'
+	await callOn(second, B, 'Frame', { claim: '九月复检', headline: '九月复检', done_criteria: '存在 lab/sep.txt', promote_at_level: 'L2', conditions: { 月份: '2026-09', 产线: 'L2' }, hypotheses: [{ claim: 'B0723 批次在湿度高于 65% 时导致良率下滑', refute_when: '剔除 B0723 后良率仍下滑', retests: fact.id }] })
+	const [again] = second.service.state(B).hypotheses.map((item) => item.id)
+	await callOn(second, B, 'CreatePlan', { steps: [{ id: 's1', do: '九月数据按批次拆', artifacts: ['lab/sep.txt'], done_criteria: 'lab/sep.txt 存在', tests: { hypotheses: [again], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'sep.txt'), '九月没有 B0723,良率仍低\n')
+	second.userQuestions = answering((question) => ({ label: question.options[0].label }))
+	const refuting = await callOn(second, B, 'AdvancePlan', { step_id: 's1', basis: 'lab/sep.txt', results: [{ hypothesis: again, verdict: 'refute', basis: '九月没有 B0723 良率仍低' }] })
+	check('九月的反证落在八月事实的范围之外 → 不问人撤回', second.userQuestions.asked.length === 0, JSON.stringify(second.userQuestions.asked.map((request) => request.questions[0].question)))
+	const bounded = second.journal.find((mutation) => mutation.t === 'fact/bounded')
+	check('落一条 fact/bounded(超出范围,说清哪一维)', bounded?.fact === fact.id && bounded.verdict === 'out_of_scope' && bounded.reasons.some((item) => item.key === '月份'), JSON.stringify(bounded))
+	check('交付照常完成,告诉模型事实在原范围内保持成立', refuting.ok === true && /保持成立/.test(refuting.message), refuting.message.slice(0, 200))
+	const after = JSON.parse(readFileSync(join(ws, 'clear/knowledge/facts', `${fact.id}.json`), 'utf8'))
+	check('事实文件没有被撤回,记下了一处边界', after.status === 'established' && (after.boundaries ?? []).length === 1, JSON.stringify({ status: after.status, boundaries: after.boundaries }))
+
+	const third = makeHost()
+	third.cwd = ws
+	apply(third.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const C = 'session-scope-undeclared'
+	await callOn(third, C, 'Frame', { claim: '再复检', headline: '再复检', done_criteria: '存在 lab/x.txt', promote_at_level: 'L2', hypotheses: [{ claim: 'B0723 批次在湿度高于 65% 时导致良率下滑', refute_when: '剔除 B0723 后良率仍下滑', retests: fact.id }] })
+	const [third1] = third.service.state(C).hypotheses.map((item) => item.id)
+	await callOn(third, C, 'CreatePlan', { steps: [{ id: 'x1', do: '复检', artifacts: ['lab/x.txt'], done_criteria: 'lab/x.txt 存在', tests: { hypotheses: [third1], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'x.txt'), 'x\n')
+	third.userQuestions = answering((question) => ({ label: question.options[1].label }))
+	await callOn(third, C, 'AdvancePlan', { step_id: 'x1', basis: 'lab/x.txt', results: [{ hypothesis: third1, verdict: 'refute', basis: '不成立' }] })
+	check('本次没声明条件 → 照常问人,并在问题里说明「条件未声明」', third.userQuestions.asked.length === 1 && /条件未声明/.test(third.userQuestions.asked[0].questions[0].question), JSON.stringify(third.userQuestions.asked.map((request) => request.questions[0].question)))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

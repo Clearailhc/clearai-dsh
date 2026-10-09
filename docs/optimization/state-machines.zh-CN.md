@@ -317,6 +317,7 @@ stateDiagram-v2
 | `fact/promoted` | §8 事实 | 是 |
 | `human/released` | §3 步骤（L4 放行） | 是 |
 | `fact/reviewed` | §8 事实(人审查后撤回 / 维持) | 是 |
+| `fact/bounded` | §8 事实(检验落在适用范围之外:记下边界,事实保持成立) | 是 |
 | `ontology/term_added` | §10 领域词汇 | 是 |
 | `ontology/predicate_added` | §10 领域词汇 | 是 |
 | `ontology/term_revised` | §10 领域词汇 | 是 |

@@ -27,6 +27,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'node:path'
 import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
+import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
 
 export const name = 'clearai-kernel'
 /** 宿主注册表 + `clearai` 读面(宿主包提供;缺了会在工具里明确报错,而不是静默不工作)。 */
@@ -212,11 +213,11 @@ export const CONFIG_KEYS = [
 	'minHypotheses',
 	'requireCriteriaVerdict',
 	'requireLandedEntities',
-	'requireMeasures',
 	'requireAnswers',
 	'bashDenyRules',
 	'auditProvider',
 	'auditTimeoutMs',
+	'auditHardTimeoutMs',
 	'auditToolFilter',
 	'auditRerun',
 	'runtimeCard',
@@ -345,7 +346,6 @@ export function apply(ctx, config = {}) {
 		 * 「测量」关系写明由什么测量、读数如何核对(`check`)。真跑里唯一一条错误事实,正是把设定值回读
 		 * 当成了釜温;卡上提醒了几十次「先写本体」也没有用。
 		 */
-		requireMeasures: config.requireMeasures === true,
 		/**
 		 * **结论门**(结案;机制缺省关,preset 里开):`achieved` 要按问题给出结论四部分,而且每个还在考察、
 		 * 从没得到支持的候选与每条开着的未解释项,都写进「尚未确定的事项」并说明它若成立答案会怎样变。
@@ -355,6 +355,8 @@ export function apply(ctx, config = {}) {
 		bashDenyRules: config.bashDenyRules !== false,
 		auditProvider: config.auditProvider ?? 'spawn',
 		auditTimeoutMs: config.auditTimeoutMs ?? 240000,
+		/** 一次评估从派出起最多等多久:超过就如实结成「未知」并放开,不让一次评估拖住整个目标。 */
+		auditHardTimeoutMs: config.auditHardTimeoutMs ?? 1800000,
 		// 三张脸的**候选**工具名。真正的 face 还要过一道「这个部署里到底有没有这件工具」的过滤
 		// (见 resolveToolFace):`read_image` 只在挂了 `attachments` 的部署里存在,名单里写了它、
 		// 部署里没有,`tools.restrict` 会**直接抛**(未知工具名)→ 评估整条路 fail-closed。
@@ -1569,7 +1571,7 @@ export function apply(ctx, config = {}) {
 				return { holds: 'unknown', results: [], basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
 			mutations.push({ t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' })
-			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, rerunDir, settled: undefined }
+			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, rerunDir, settled: undefined, startedAt: Date.now() }
 			pendingAudits.set(key, entry)
 			entry.settled = dispatched.run.result.then(
 				(value) => ({ ok: true, value }),
@@ -1584,6 +1586,22 @@ export function apply(ctx, config = {}) {
 			}),
 		])
 		if (outcome === null) {
+			/**
+			 * **超过硬上限就放开**:一次挂住的评估会拖住整个目标(出现过挂数小时的情形)。
+			 * 超时如实结成「未知」(与评估者失败同一种结局),释放这次派遣;下一次结案或交付重新派。
+			 */
+			if (Date.now() - (entry.startedAt ?? Date.now()) >= CFG.auditHardTimeoutMs) {
+				pendingAudits.delete(key)
+				try {
+					await entry.run.dispose?.()
+				} catch {
+					// 收不掉也不影响结算:这次派遣在账上已经结了。
+				}
+				dropRerunCopy(entry.rerunDir ?? null)
+				const basis = tr(`评估者超过 ${Math.round(CFG.auditHardTimeoutMs / 60000)} 分钟没有给出裁决,如实记为未知`, `The evaluator gave no verdict within ${Math.round(CFG.auditHardTimeoutMs / 60000)} minutes; recorded honestly as unknown`)
+				mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', holds: 'unknown', basis, shortfalls: ['audit_timeout'], card_path: null, digest })
+				return { holds: 'unknown', results: [], basis, shortfalls: ['audit_timeout'], cardPath: null, digest, mutations }
+			}
 			// 仍在跑:条目留着,下一次交付继续等同一次派遣(不重复派遣)。派发事实已经在上面的 mutations 里。
 			return { holds: 'pending', results: [], basis: tr(`评估者仍在跑(${Math.round(CFG.auditTimeoutMs / 1000)}s 未回)`, `The evaluator is still running (no reply after ${Math.round(CFG.auditTimeoutMs / 1000)}s)`), shortfalls: ['audit_pending'], cardPath: null, mutations }
 		}
@@ -1985,10 +2003,31 @@ export function apply(ctx, config = {}) {
 		if (open.length === 0) return ''
 		const notes = []
 		for (const fact of open) {
+			/**
+			 * **先比范围,再谈撤回**:推翻它的那条判断是在什么条件下检验的(判断自己的范围,缺的维度取立题的
+			 * conditions)。检验落在这条事实的适用范围之外,说明「换了范围不成立」,不是「被推翻」:
+			 * 事实保持成立,只记下这处边界,不去问人撤回。0.5.1 里九月数据撤回八月事实就是缺了这一步。
+			 */
+			const refuter = state.hypotheses.find((item) => refutedHypotheses.includes(item.id) && (item.retests === fact.id || item.id === fact.hypothesis)) ?? null
+			const tested = mergeScope(refuter?.scope, { conditions: state.goal?.conditions ?? {} })
+			const fit = compareScope(fact.scope_spec ?? null, tested)
+			if (fit.verdict === 'out_of_scope' || fit.verdict === 'out_of_range') {
+				const where = tr(scopeVerdictText(fit, 'zh'), scopeVerdictText(fit, 'en'))
+				mutations.push({ t: 'fact/bounded', fact: fact.id, verdict: fit.verdict, reasons: fit.reasons, hypothesis: refuter?.id ?? null, basis: clip(basis, 300) })
+				markFactBounded(sessionCwd(sessionId), fact, { verdict: fit.verdict, reasons: fit.reasons, basis: clip(basis, 300) })
+				notes.push(tr(`${fact.id}:推翻它的检验${where},事实在原范围内保持成立,这处边界已记下`, `${fact.id}: the refuting test was ${where}; the fact still holds within its scope, and this boundary is recorded`))
+				continue
+			}
+			const scopeNote =
+				fit.verdict === 'undeclared'
+					? tr(`(注意:${scopeVerdictText(fit, 'zh')},无法确定本次证据是否落在它的适用范围内)`, ` (Note: ${scopeVerdictText(fit, 'en')}, so it is unclear whether this evidence falls within its scope.)`)
+					: fit.verdict === 'unscoped'
+						? tr('(这条事实没有声明适用范围)', ' (This fact has no declared scope.)')
+						: ''
 			const asked = await askHuman(exec, {
 				id: `fact-${fact.id}`,
 				header: tr('已确立的结论出现推翻证据', 'An established conclusion was refuted'),
-				question: tr(`「${clip(fact.text, 120)}」出现推翻证据:${clip(basis, 200)}。请选择撤回此事实,或判定本次证据不可靠并维持原事实。`, `Refuting evidence arrived for "${clip(fact.text, 120)}": ${clip(basis, 200)}. Retract it, or judge this evidence unreliable and keep the fact?`),
+				question: tr(`「${clip(fact.text, 120)}」出现推翻证据:${clip(basis, 200)}。${scopeNote}请选择撤回此事实,或判定本次证据不可靠并维持原事实。`, `Refuting evidence arrived for "${clip(fact.text, 120)}": ${clip(basis, 200)}.${scopeNote} Retract it, or judge this evidence unreliable and keep the fact?`),
 				options: [
 					{ label: choiceLabel('factRetract'), description: tr('它不再算已确立的结论(记录保留)。', 'It no longer counts as an established conclusion (the record stays).') },
 					{ label: choiceLabel('factKeep'), description: tr('这次证据不可靠,事实保留;推翻证据照样留在账上。', 'This evidence is unreliable and the fact stays; the refuting evidence stays on record too.') },
@@ -2057,25 +2096,27 @@ export function apply(ctx, config = {}) {
 			[
 				'# 本体内容(已确立条目,可作为「已知」引用;未结构化的旧条目照旧在架)',
 				'',
-				'> 每条都带**边界**(推翻条件)与**支持等级**:引用它之前先看边界还在不在。',
+				'> 每条都带**适用范围**、**推翻条件**与**支持等级**:引用之前先看这次的情形是否在它的适用范围内。',
 				'> 这一份由系统维护(做的人不能写 `clear/knowledge/facts`);新的在前。',
 				'',
 			],
 			[
 				'# Established knowledge (entries you can cite as known; older unstructured entries stay listed)',
 				'',
-				'> Each entry carries its **boundary** (refutation condition) and **support level**: check the boundary still holds before citing it.',
+				'> Each entry carries its **scope**, **refutation condition** and **support level**: before citing it, check that this situation is within its scope.',
 				'> This file is maintained by the system (the worker cannot write `clear/knowledge/facts`); newest first.',
 				'',
 			],
 		)
 		for (const fact of [...facts].reverse()) {
-			const scope = fact.scope === null || fact.scope === undefined || String(fact.scope).trim() === '' ? tr('(未写——引用前请谨慎)', '(not written; cite with care)') : String(fact.scope)
+			const scope = fact.scope === null || fact.scope === undefined || String(fact.scope).trim() === '' ? tr('范围未声明(引用前请谨慎)', 'scope not declared (cite with care)') : String(fact.scope)
 			const evidence = listOf(fact.evidence ?? []) || tr('(无)', '(none)')
 			const at = fact.at === undefined || fact.at === null ? '—' : new Date(fact.at).toISOString()
 			lines.push(`## ${fact.id} · ${fact.text}`)
 			lines.push('')
-			lines.push(tr(`- 边界:${scope}`, `- Boundary: ${scope}`))
+			lines.push(tr(`- 适用范围:${scope}`, `- Scope: ${scope}`))
+			if (typeof fact.refute_when === 'string' && fact.refute_when !== '') lines.push(tr(`- 推翻条件:${fact.refute_when}`, `- Refuted if: ${fact.refute_when}`))
+			for (const bound of Array.isArray(fact.boundaries) ? fact.boundaries : []) lines.push(tr(`- 已知不适用:${scopeVerdictText(bound, 'zh')}`, `- Known not to apply: ${scopeVerdictText(bound, 'en')}`))
 			lines.push(tr(`- 支持到:${fact.level ?? '(未记等级)'} · 证据:${evidence}`, `- Supported to: ${fact.level ?? '(no level recorded)'} · evidence: ${evidence}`))
 			lines.push(tr(`- 来源目标:${fact.goal ?? '—'} · 升格时间:${at}`, `- From goal: ${fact.goal ?? '—'} · promoted at: ${at}`))
 			/**
@@ -2114,41 +2155,6 @@ export function apply(ctx, config = {}) {
 	/** 问题的三种状态(与 `fold.js` 同值):在回答 / 新发现待决定 / 暂缓。 */
 	const QUESTION_STATUS = ['open', 'emergent', 'parked']
 
-	/**
-	 * **测量门槛**(`CFG.requireMeasures`):首次立题时,本体里(已有文件 + 这次随立题写的)
-	 * 至少要有一个度量概念,且每个度量概念都是某条 `measures` 关系的 range、这条关系写了 `check`。
-	 *
-	 * 为什么要求:真跑里唯一一条错误事实,来自"控制器回读值被当成釜温"——缺的正是"哪个仪表测哪个量、
-	 * 怎么核对"这一条。只要求把测量说清,不要求编造对手假设。返回缺什么的说明;齐了返回 null。
-	 */
-	function unmeasured(state, ontologyFiles) {
-		const entries = { concepts: new Map(), relations: new Map() }
-		for (const [path, file] of Object.entries(state?.workspace?.files ?? {})) {
-			const hit = /^clear\/ontology\/(concepts|relations)\/(?:.+\/)?([^/]+)\.json$/.exec(path)
-			if (hit === null || file?.data === null || typeof file?.data !== 'object') continue
-			entries[hit[1]].set(String(file.data.id ?? hit[2]), file.data)
-		}
-		for (const file of ontologyFiles) entries[file.branch].set(file.id, { ...file.data, id: file.id })
-		const measures = [...entries.concepts.values()].filter((concept) => concept.kind === 'measure').map((concept) => String(concept.id))
-		if (measures.length === 0) {
-			return tr(
-				'首次立题要在 `ontology` 里写出答案涉及的量:至少一个度量概念(`kind: "measure"`),并为每个度量写一条 `measures` 关系(domain 是仪表或方法,range 是这个量,`check` 写怎样核对读数确实是这个量)。\n本体不是收尾时补的:候选假设与预测要从它出发。',
-				'The first Frame must write the quantities the answer involves in `ontology`: at least one measure concept (`kind: "measure"`), and for each measure a `measures` relation (domain = instrument or method, range = the quantity, `check` = how to confirm the reading really is that quantity).\nThe ontology is not an afterthought: candidates and predictions start from it.',
-			)
-		}
-		const rangeOf = (relation) => (typeof relation.range === 'string' ? relation.range : String(relation.range?.term ?? relation.range?.id ?? ''))
-		const covered = new Set(
-			[...entries.relations.values()]
-				.filter((relation) => relation.kind === 'measures' && String(relation.check ?? '').trim() !== '')
-				.map(rangeOf),
-		)
-		const missing = measures.filter((id) => !covered.has(id))
-		if (missing.length === 0) return null
-		return tr(
-			`这些度量还没有写测量方式:${missing.join('、')}。\n每个度量要有一条 \`measures\` 关系(domain 是仪表或方法,range 是这个量,\`check\` 写怎样核对读数确实是这个量,例如「与参考探头比对」)。读数是不是那个量,是事实能否成立的前提。`,
-			`These measures have no measurement method yet: ${missing.join(', ')}.\nEach measure needs a \`measures\` relation (domain = instrument or method, range = the quantity, \`check\` = how to confirm the reading really is that quantity, e.g. "compare against the reference probe"). Whether a reading is that quantity is a precondition for any fact built on it.`,
-		)
-	}
 	const ONTOLOGY_REL = ['clear', 'ontology']
 	const ONTOLOGY_BRANCH_DIRS = ['concepts', 'relations', 'entities']
 	/** 读面有界(与 `domain-language.js` 的 `WORKSPACE_LIMITS` 同值):超出的如实报成读不成,不静默截断。 */
@@ -2513,6 +2519,11 @@ export function apply(ctx, config = {}) {
 						additionalProperties: false,
 					},
 				},
+				conditions: {
+					type: 'object',
+					additionalProperties: { type: 'string' },
+					description: '可选:这次问题所处的条件,如 {"产线": "L2", "月份": "2026-09"}。判断没写适用范围时以它为默认;引用已有知识时据此判断是否适用。修订时不传 = 不变',
+				},
 				areas: {
 					type: 'array',
 					description: '调研板块(广度调研用;如技术路线、主要企业、成本结构)。修订时不传 = 不变,传了就是完整清单',
@@ -2539,6 +2550,16 @@ export function apply(ctx, config = {}) {
 							question: { type: 'string', description: '可选:属于哪个问题或调研板块(id);不写就归第一个问题' },
 							from: { type: 'string', description: '可选:由本体里哪条关系提出(关系 id,如有形状的 affects 关系);说不出来源就写「直觉」' },
 							refute_when: { type: 'string' },
+							scope: {
+								type: 'object',
+								description: '可选:适用范围(它在哪里成立),与推翻条件分开写。conditions 写条件(如 {"月份": "2026-08"}),ranges 写变量取值范围(如 {"温度": [150, 175]}),note 补一句。不写就用立题的 conditions',
+								properties: {
+									conditions: { type: 'object', additionalProperties: { type: 'string' } },
+									ranges: { type: 'object', additionalProperties: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 } },
+									note: { type: 'string' },
+								},
+								additionalProperties: false,
+							},
 							retests: {
 								type: 'string',
 								description:
@@ -2600,7 +2621,7 @@ export function apply(ctx, config = {}) {
 				: carried
 					? state.hypotheses
 							.filter((item) => item.goal === state.goal.id && item.status !== 'superseded')
-							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}), ...(item.question ? { question: item.question } : {}), ...(item.from ? { from: item.from } : {}) }))
+							.map((item) => ({ claim: item.claim, refute_when: item.refute_when, ...(item.name ? { name: item.name } : {}), ...(item.retests ? { retests: item.retests } : {}), ...(Array.isArray(item.assertions) ? { assertions: item.assertions } : {}), ...(item.question ? { question: item.question } : {}), ...(item.from ? { from: item.from } : {}), ...(item.scope ? { scope: item.scope } : {}) }))
 					: []
 			const names = hypotheses.map((hypothesis) => (typeof hypothesis?.name === 'string' ? hypothesis.name.trim() : '')).filter((name) => name !== '')
 			if (new Set(names).size !== names.length) return fail('hypothesis_name_duplicate', tr('两条判断用了同一个短名:短名是用来区分判断的,换一个。', 'Two judgments share a short name; short names tell judgments apart, so pick another.'))
@@ -2739,10 +2760,6 @@ export function apply(ctx, config = {}) {
 					ontologyFiles.push({ branch, id, rel, data: item })
 				}
 			}
-			if (CFG.requireMeasures && !isRevision && !legacy) {
-				const missing = unmeasured(state, ontologyFiles)
-				if (missing !== null) return fail('measures_required', missing)
-			}
 			for (const file of ontologyFiles) {
 				const target = sessionFile(sessionId, 'clear', 'ontology', file.branch, `${file.id}.json`)
 				if (target === null) return fail('workspace_unavailable', tr('这一刻拿不到会话的工作目录,本体条目没有写入。', 'The session workspace is unavailable right now; the ontology entries were not written.'))
@@ -2786,6 +2803,8 @@ export function apply(ctx, config = {}) {
 					assertions: Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null,
 					...(typeof hypothesis.question === 'string' && hypothesis.question.trim() !== '' ? { question: hypothesis.question.trim() } : {}),
 					...(typeof hypothesis.from === 'string' && hypothesis.from.trim() !== '' ? { from: hypothesis.from.trim().slice(0, 80) } : {}),
+					/** 适用范围(在哪里成立),与推翻条件分开;没写就在升格时取立题的 conditions。 */
+					...(normalizeScope(hypothesis.scope) !== null ? { scope: normalizeScope(hypothesis.scope) } : {}),
 					version: index + 1,
 				}
 			})
@@ -2806,6 +2825,7 @@ export function apply(ctx, config = {}) {
 				...(FRAME_MODES.includes(args.mode) ? { mode: args.mode } : {}),
 				...(questions !== null ? { questions } : {}),
 				...(areas !== null ? { areas } : {}),
+				...(normalizeScope({ conditions: args.conditions }) !== null ? { conditions: normalizeScope({ conditions: args.conditions }).conditions } : {}),
 			})
 			for (const dropped of existing) {
 				if (reused.has(dropped.id)) continue
@@ -2891,7 +2911,7 @@ export function apply(ctx, config = {}) {
 				missing.push(tr(`候选假设「${candidate.name}」仍在考察中、未得到支持:写进「尚未确定的事项」(about 写「${candidate.name}」),说明若它成立答案会如何改变;或先检验它。`, `Candidate hypothesis "${candidate.name}" is still being examined and has no support: put it in the open points (about: "${candidate.name}") and say how the answer would change if it holds; or test it first.`))
 			}
 		}
-		for (const anomaly of (state.anomalies ?? []).filter((item) => item?.status === 'open')) {
+		for (const anomaly of (state.anomalies ?? []).filter((item) => item?.status === 'open' && !(item.by === 'evaluator' && item.matters === 'no'))) {
 			if (about.has(anomaly.id)) continue
 			missing.push(tr(`未解释项 ${anomaly.id}「${clip(anomaly.what, 60)}」还开着:写进「尚未确定的事项」(about 写 ${anomaly.id}),说明它对答案的影响,或答案已据此改写;也可以先用 Anomaly 给它一个去处。`, `Unexplained item ${anomaly.id} "${clip(anomaly.what, 60)}" is still open: put it in the open points (about: ${anomaly.id}) and say how it affects the answer, or that the answer was rewritten for it; or resolve it first with Anomaly.`))
 		}
@@ -3155,6 +3175,29 @@ export function apply(ctx, config = {}) {
 				)
 			}
 			/**
+			 * **停止检查在审计之后再做一次**:评估者这次审计里新报的未解释项(做的人没登记、或排除理由站不住),
+			 * 只要它没说「不影响结论」,也要在结论里有交代。审计结算已经落账,这些项会挂在卡上;
+			 * 补写 `answers` 后再结案,材料没变,裁决复用,不再花一次评估。
+			 * 只在审计之前看的话,评估者指出的问题从不经过停止检查。
+			 */
+			if (CFG.requireAnswers && audit.reused !== true) {
+				const settled = audit.mutations.find((mutation) => mutation.t === 'audit/settled') ?? null
+				const covered = new Set(answers.flatMap((answer) => answer.open.flatMap((entry) => entry.about)))
+				const raised = (Array.isArray(settled?.anomalies) ? settled.anomalies : [])
+					.map((item, index) => ({ id: `${settled.id}#u${index + 1}`, what: String(item?.what ?? ''), matters: item?.matters ?? 'unclear' }))
+					.filter((item) => item.matters !== 'no' && !covered.has(item.id))
+				if (raised.length > 0) {
+					return fail(
+						'answers_incomplete',
+						tr(
+							`独立评估者在审计中指出 ${raised.length} 项未解释的现象,结论里还没有交代,暂不结案:\n${raised.map((item) => `- ${item.id}「${clip(item.what, 100)}」`).join('\n')}\n逐项处理:检验掉、用 Anomaly 写明理由排除,或写进「尚未确定的事项」(about 写它的 id)并说明对结论的影响。材料不变时再次结案会复用这次裁决。`,
+							`The independent evaluator raised ${raised.length} unexplained observation(s) during the audit that the conclusion does not address yet, so the goal stays open:\n${raised.map((item) => `- ${item.id} "${clip(item.what, 100)}"`).join('\n')}\nHandle each: test it away, rule it out with a reason via Anomaly, or put it in the open points (about: its id) with its effect on the conclusion. If the material is unchanged, concluding again reuses this verdict.`,
+						),
+						{ mutations },
+					)
+				}
+			}
+			/**
 			 * **没被任何证据触及的假设**,结案时如实记一笔。
 			 *
 			 * 两种「没结论」要分得开:证据说「无法判定」= 现有信息不足以定论(已经在账上);
@@ -3267,11 +3310,17 @@ export function apply(ctx, config = {}) {
 				} catch {
 					definitions = null
 				}
-				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions }
+				/**
+				 * **适用范围与推翻条件分开存**:范围取判断自己写的,缺的维度用立题的 conditions 补;
+				 * 都没有就如实是 null(「范围未声明」)。推翻条件另存在 `refute_when`。
+				 */
+				const scopeSpec = mergeScope(hypothesis.scope, { conditions: goal.conditions ?? {} })
+				const scope = scopeSpec === null ? null : tr(scopeText(scopeSpec, 'zh'), scopeText(scopeSpec, 'en'))
+				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions }
 				const path = persistFact(sessionId, record)
 				/**
-				 * 事实带上**边界**(`scope` = 这条假设的推翻条件):没有边界的事实,下一轮没人敢用;
-				 * 有边界才算「已知」而不是「口号」。它与出处(证据 id)、等级一起进事实库与货架。
+				 * 事实带上**适用范围**(`scope` 是给人读的一行,`scope_spec` 是可比较的形状)与**推翻条件**:
+				 * 没有范围的事实,下一轮无从判断是否适用。它们与出处(证据 id)、等级一起进事实库与货架。
 				 */
 				mutations.push({
 					t: 'fact/promoted',
@@ -3284,7 +3333,9 @@ export function apply(ctx, config = {}) {
 					 */
 					hypothesis: hypothesis.id,
 					text: hypothesis.claim,
-					scope: hypothesis.refute_when ?? null,
+					scope,
+					scope_spec: scopeSpec,
+					refute_when: hypothesis.refute_when ?? null,
 					level: factLevel ?? null,
 					evidence,
 					assertions,
@@ -4084,8 +4135,26 @@ export function apply(ctx, config = {}) {
 		try {
 			const data = JSON.parse(readFileSync(join(cwd, 'clear', 'knowledge', 'facts', `${key}.json`), 'utf8'))
 			if (String(data?.id ?? '') !== key || typeof data?.text !== 'string') return null
-			return { id: key, text: data.text, hypothesis: data.hypothesis ?? null, review: data.review ?? null, foreign: true }
+			return { id: key, text: data.text, hypothesis: data.hypothesis ?? null, review: data.review ?? null, scope: data.scope ?? null, scope_spec: normalizeScope(data.scope_spec), foreign: true }
 		} catch {
+			return null
+		}
+	}
+
+	/** 事实文件上记一处边界(在哪里不成立),事实本身保持成立。 */
+	function markFactBounded(cwd, fact, bound) {
+		if (cwd === null || cwd === undefined || !/^[A-Za-z0-9_-]+$/.test(String(fact?.id ?? ''))) return null
+		const file = join(cwd, 'clear', 'knowledge', 'facts', `${fact.id}.json`)
+		try {
+			if (!existsSync(file)) return null
+			const data = JSON.parse(readFileSync(file, 'utf8'))
+			const at = Date.now()
+			data.boundaries = [...(Array.isArray(data.boundaries) ? data.boundaries : []), { verdict: bound.verdict, reasons: bound.reasons, basis: bound.basis ?? null, at }]
+			data.history = [...(Array.isArray(data.history) ? data.history : []), { event: bound.verdict, at, reason: bound.basis ?? null }]
+			writeTextFile(file, `${JSON.stringify(data, null, 2)}\n`)
+			return file
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 事实边界记录落盘失败 ${String(error?.message ?? error).slice(0, 160)}`)
 			return null
 		}
 	}
@@ -4628,6 +4697,8 @@ export function apply(ctx, config = {}) {
 				'questions.items.status': 'open = being answered; emergent = newly found, awaiting a decision; parked = deferred (listed as an open point at conclusion)',
 				'questions.items.area': 'Optional: which survey area it belongs to (area id)',
 				areas: 'Survey areas (for a broad survey; e.g. technology routes, main companies, cost structure). Omitted on revision = unchanged; given = the full list',
+				conditions: 'Optional: the conditions this problem sits in, e.g. {"line": "L2", "month": "2026-09"}. It is the default scope for judgments that omit one, and the basis for judging whether existing knowledge applies. Omitted on revision = unchanged',
+				'hypotheses.items.scope': 'Optional: where it holds, written separately from the refutation condition. conditions gives the conditions (e.g. {"month": "2026-08"}), ranges the value ranges of variables (e.g. {"temperature": [150, 175]}), note one extra sentence. If omitted, the framing conditions are used',
 				ontology: 'Ontology entries, checked by the system and written to clear/ontology/ (same shape as the files; fields in clear/ontology/SCHEMA.json). When framing, first state the quantities involved: each measure (kind=measure, gloss = its definition, unit) and how it is measured and how a reading is checked (a kind=measures relation: domain = the instrument or source, range = the measure, check = how to confirm the reading); and how the quantities affect each other (kind=affects relations, shape = rough shape). A file with the same id is replaced',
 				'ontology.concepts': 'Concepts: {id, label, gloss, kind: category|measure|phenomenon, unit?}',
 				'ontology.relations': 'Relations: {id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape? (affects), check? (measures)}',

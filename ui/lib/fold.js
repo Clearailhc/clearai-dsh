@@ -70,9 +70,12 @@ export const MUTATION_KIND = 'clearai'
  *           与结案时的 `answers`(按问题的结论四部分);判断带 `question`(属于哪个问题或板块)与 `from`
  *           (由本体里哪条关系提出);步骤带 `serves` 与按候选分别写的 `predictions`;未解释项带 `touches`
  *           (涉及的量、判断或事实)。全部可选:旧日志折出来就是整个目标一个问题。
+ *   v19 → v20:**适用范围与推翻条件分开**:目标带 `conditions`(本次所处的条件);判断带 `scope`
+ *           (`{conditions, ranges, note}`);事实带 `scope_spec`、`refute_when` 与 `boundaries`
+ *           (`fact/bounded`:检验落在适用范围之外时记下的边界,事实保持成立)。旧账的 `scope` 写的是推翻条件。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 19
+export const STATE_VERSION = 20
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -214,6 +217,16 @@ export function normalizeTests(tests) {
 }
 
 /** 预测清单的唯一形状:`[{hypothesis, expect}]`,空的去掉。 */
+/** 适用范围的形状:`{conditions?, ranges?, note?}`(内核已规整过,这里只认形状)。 */
+function isScope(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) && (typeof value.conditions === 'object' || typeof value.ranges === 'object' || typeof value.note === 'string')
+}
+
+/** 立题的条件:`{维度: 值}`。 */
+function isConditions(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) && Object.values(value).every((item) => typeof item === 'string')
+}
+
 export function normalizePredictions(raw) {
 	if (!Array.isArray(raw)) return []
 	return raw
@@ -303,6 +316,7 @@ export function applyMutation(state, mutation) {
 				if (questions !== null) previous.questions = questions
 				const areas = normalizeAreas(mutation.areas)
 				if (areas !== null) previous.areas = areas
+				if (isConditions(mutation.conditions)) previous.conditions = clone(mutation.conditions)
 				previous.reasons.push(mutation.reason ?? null)
 			} else {
 				if (previous !== null && previous.status === 'open') previous.status = 'superseded'
@@ -339,6 +353,8 @@ export function applyMutation(state, mutation) {
 					/** 问题与调研板块(可选)。没有问题时,整个目标就是唯一的问题。 */
 					questions: normalizeQuestions(mutation.questions) ?? [],
 					areas: normalizeAreas(mutation.areas) ?? [],
+					/** 这次问题所处的条件(如产线、月份):判断没写适用范围时的默认,引用已有知识时据此判是否适用。 */
+					conditions: isConditions(mutation.conditions) ? clone(mutation.conditions) : {},
 					/** 结案时按问题写的结论四部分(`Conclude.answers`)。 */
 					answers: [],
 				}
@@ -366,6 +382,7 @@ export function applyMutation(state, mutation) {
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
 					if (typeof hypothesis.question === 'string' && hypothesis.question !== '') known.question = hypothesis.question
 					if (typeof hypothesis.from === 'string' && hypothesis.from !== '') known.from = hypothesis.from
+					if (isScope(hypothesis.scope)) known.scope = clone(hypothesis.scope)
 					continue
 				}
 				next.hypotheses.push({
@@ -388,6 +405,8 @@ export function applyMutation(state, mutation) {
 					...(typeof hypothesis.question === 'string' && hypothesis.question !== '' ? { question: hypothesis.question } : {}),
 					/** 由本体里哪条关系提出(关系 id);没写或写「直觉」都如实显示。 */
 					...(typeof hypothesis.from === 'string' && hypothesis.from !== '' ? { from: hypothesis.from } : {}),
+					/** 适用范围(在哪里成立),与推翻条件分开:`{conditions, ranges, note}`。 */
+					...(isScope(hypothesis.scope) ? { scope: clone(hypothesis.scope) } : {}),
 					at,
 				})
 			}
@@ -673,6 +692,11 @@ export function applyMutation(state, mutation) {
 				hypothesis: mutation.hypothesis ?? null,
 				text: mutation.text,
 				scope: mutation.scope ?? null,
+				/** 可比较的适用范围(`{conditions, ranges, note}`);旧账没有这一格,那时 `scope` 写的是推翻条件。 */
+				scope_spec: isScope(mutation.scope_spec) ? clone(mutation.scope_spec) : null,
+				refute_when: typeof mutation.refute_when === 'string' ? mutation.refute_when : null,
+				/** 已知不适用之处:检验落在适用范围之外时记下的边界(`fact/bounded`),事实本身保持成立。 */
+				boundaries: [],
 				level: mutation.level ?? null,
 				evidence: mutation.evidence ?? [],
 				path: mutation.path ?? null,
@@ -729,6 +753,17 @@ export function applyMutation(state, mutation) {
 			const fact = next.facts.find((item) => item.id === mutation.fact)
 			if (fact === undefined) break
 			fact.review = { decision: mutation.decision === 'retracted' ? 'retracted' : 'kept', reason: mutation.reason ?? null, at, by: mutation.by ?? 'user' }
+			break
+		}
+		case 'fact/bounded': {
+			/**
+			 * **检验落在事实的适用范围之外**:不是推翻,是记下一处边界(在哪里不成立)。
+			 * 事实保持成立,不问人撤回;0.5.1 里九月数据撤回八月事实,就是把这两件事混成了一件。
+			 */
+			const fact = next.facts.find((item) => item.id === mutation.fact)
+			if (fact === undefined) break
+			if (!Array.isArray(fact.boundaries)) fact.boundaries = []
+			fact.boundaries.push({ verdict: mutation.verdict ?? 'out_of_scope', reasons: Array.isArray(mutation.reasons) ? clone(mutation.reasons) : [], hypothesis: mutation.hypothesis ?? null, basis: mutation.basis ?? null, at })
 			break
 		}
 		case 'ontology/term_added':
@@ -1419,6 +1454,9 @@ function factHistory(fact, evidence) {
 			summary: fact.review.decision === 'retracted' ? tr('人审查后**撤回**(记录保留)', 'A person reviewed it and **retracted** it (the record is kept)') : tr('人审查后**维持**(判证据不可靠)', 'A person reviewed it and **kept** it (the evidence was judged unreliable)'),
 			reason: fact.review.reason ?? null,
 		})
+	}
+	for (const bound of Array.isArray(fact?.boundaries) ? fact.boundaries : []) {
+		events.push({ kind: 'fact/bounded', at: bound.at ?? null, summary: tr('检验落在适用范围之外:记下边界,事实保持成立', 'A test fell outside its scope: the boundary is recorded and the fact stays'), reason: bound.basis ?? null })
 	}
 	for (const item of evidence) events.push({ kind: 'evidence/recorded', at: item.at ?? null, summary: `${item.verdict}(${item.evaluator} · ${item.level})`, reason: item.basis ?? null })
 	return events.filter((event) => event.at !== null).sort((left, right) => left.at - right.at)
