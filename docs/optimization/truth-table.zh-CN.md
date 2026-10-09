@@ -8,9 +8,9 @@
 
 ## 计数
 
-- 机制条目：**57**
-- 按状态：已实现 56 · 设计目标 1
-- 按强度：硬边界 44 · 建议 9 · 原生 4
+- 机制条目：**58**
+- 按状态：已实现 57 · 设计目标 1
+- 按强度：硬边界 45 · 建议 9 · 原生 4
 - 按归宿：保持设计目标 1
 - 真正阻断执行的：**21**
 - 存在已知不符（文档 / 注释与代码不一致）的：**1**
@@ -62,6 +62,7 @@
 | `artifact-path-exclusive` | 产物路径不重叠(同一计划里两步不许声明同一个产物) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js validateSteps` |
 | `answers-stop-check` | 停止检查:会改变答案的事项都写进结论才能达成结案 | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js Conclude` |
 | `fact-scope` | 事实的适用范围与推翻条件分开;范围外的反证不撤回事实 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/scope.js` |
+| `negative-writeback` | 负向条目随发生随写:已排除、未解、缺陷 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/knowledge-items.js negativeItems` |
 | `anomaly-questions-fact` | 未解释项使已确立的事实回到待核验 | 认识论 | 已实现 | 原生 | 权威 | system | 否 | `ui/lib/fold.js questionedBy` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/plugins/prompts.js loop` |
@@ -803,6 +804,19 @@
 - **理由**：0.5.1 把推翻条件写进 scope,九月数据撤回了八月范围内成立的事实:系统分不清「换了范围」与「被推翻」。
 - **代码**：preset/plugins/scope.js; preset/plugins/clearai-kernel.js Conclude(升格)、reviewRefutedFacts、markFactBounded; ui/lib/fold.js case 'fact/bounded'
 - **测试**：test/kernel.test.mjs(0.5.2:适用范围与推翻条件分开) · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `negative-writeback` · 负向条目随发生随写:已排除、未解、缺陷
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：每个工具结果之后;每一拍的 pre-step(兜底)
+- **输入**：折好的状态:被推翻的判断及其推翻证据、登记的未解释项及其去处、立题的 about 与 conditions
+- **输出**：clear/knowledge/negatives/<id>.json:被推翻的判断 ⇒ 已排除(一次自行检验为初步排除,独立核验或两次以上为已排除);未解释项 ⇒ 未解,去处变了随之更新,解释为测量或方法缺陷 ⇒ 缺陷;条目带 about 与适用范围;只有内容变了才写,别的会话的文件不动;模型不能直接写这个目录
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：只在成功结案时回灌,中断、放弃的会话就什么都不留,而失败里最有价值的往往是负向信息;已排除的不再重验,缺陷先核,未解的优先追。
+- **代码**：preset/plugins/knowledge-items.js negativeItems; preset/plugins/clearai-kernel.js writeBack、afterTool、preStep; ui/lib/domain-language.js negativeFromFile; ui/lib/fold.js derive.negativeRows
+- **测试**：test/kernel.test.mjs(0.5.2:负向条目随发生随写) · **配置**：—
 - **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
 
 ### `anomaly-questions-fact` · 未解释项使已确立的事实回到待核验

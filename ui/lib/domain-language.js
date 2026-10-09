@@ -1027,6 +1027,7 @@ export function describeDomainGraph(lexicon) {
 // 会话账本只活在一次会话里,而研究要跨会话攒下来。所以「攒下来的东西」住在工作区的文件里:
 //   · `clear/knowledge/facts/<id>.json`:升格的事实,一条一个文件,只有系统写;
 //   · `clear/knowledge/lessons/<id>.json`:结案时经独立评估核过的经验,一条一个文件,只有系统写;
+//   · `clear/knowledge/negatives/<id>.json`:负向条目(已排除、未解、缺陷),系统随发生随写;
 //   · `clear/ontology/{concepts,relations,entities}/**.json`:本体,模型用原生文件工具直接写。
 // 内核每一拍把这两处的变化折成一条 `workspace/synced` 变更,投影从文件内容派生词汇、实体与
 // 事实——折法仍然只吃账本,文件是账本之外唯一的输入,而且进账本时就是一条可重放的事实。
@@ -1035,6 +1036,8 @@ export function describeDomainGraph(lexicon) {
 export const FACTS_DIR = 'clear/knowledge/facts'
 /** 经验文件所在的目录(相对工作区)。 */
 export const LESSONS_DIR = 'clear/knowledge/lessons'
+/** 负向条目(已排除、未解、缺陷):内核随发生随写,一条一个文件。 */
+export const NEGATIVES_DIR = 'clear/knowledge/negatives'
 /** 经验的四类:坑、要核的读数、会骗人的捷径、先验。 */
 export const LESSON_KINDS = ['trap', 'check', 'shortcut', 'prior']
 /** 本体文件树的根(相对工作区)。 */
@@ -1125,6 +1128,8 @@ export function classifyWorkspacePath(path) {
 	if (parts.length === facts.length + 1 && facts.every((part, index) => parts[index] === part)) return { kind: 'fact', id, dirs: [] }
 	const lessons = LESSONS_DIR.split('/')
 	if (parts.length === lessons.length + 1 && lessons.every((part, index) => parts[index] === part)) return { kind: 'lesson', id, dirs: [] }
+	const negatives = NEGATIVES_DIR.split('/')
+	if (parts.length === negatives.length + 1 && negatives.every((part, index) => parts[index] === part)) return { kind: 'negative', id, dirs: [] }
 	const root = ONTOLOGY_DIR.split('/')
 	if (parts.length >= root.length + 2 && root.every((part, index) => parts[index] === part)) {
 		const kind = ONTOLOGY_BRANCHES[parts[root.length]]
@@ -1145,7 +1150,11 @@ export function factFromFile(data, path) {
 		goal: data.goal ?? null,
 		hypothesis: data.hypothesis ?? null,
 		text: String(data.text),
+		about: stringList(data.about),
 		scope: data.scope ?? null,
+		scope_spec: isPlainObject(data.scope_spec) ? clone(data.scope_spec) : null,
+		refute_when: typeof data.refute_when === 'string' ? data.refute_when : null,
+		boundaries: Array.isArray(data.boundaries) ? clone(data.boundaries) : [],
 		level: data.level ?? null,
 		evidence: Array.isArray(data.evidence) ? data.evidence : [],
 		assertions: Array.isArray(data.assertions) ? clone(data.assertions) : null,
@@ -1167,13 +1176,44 @@ export function lessonFromFile(data, path) {
 		goal: data.goal ?? null,
 		text: String(data.text),
 		kind: LESSON_KINDS.includes(data.kind) ? data.kind : 'trap',
-		about: Array.isArray(data.about) ? data.about.map(String).filter((item) => item.trim() !== '').slice(0, 6) : [],
+		about: stringList(data.about),
+		scope_spec: isPlainObject(data.scope_spec) ? clone(data.scope_spec) : null,
 		evidence: typeof data.evidence === 'string' ? data.evidence : null,
 		boundary: typeof data.boundary === 'string' ? data.boundary : null,
 		status: data.status === 'retracted' ? 'retracted' : 'active',
 		path: path ?? null,
 		at: typeof data.at === 'number' ? data.at : null,
 	}
+}
+
+/** 负向条目的种类与状态(与内核 `knowledge-items.js` 同值)。 */
+export const NEGATIVE_KINDS = ['excluded', 'unresolved', 'defect']
+export const NEGATIVE_STATUS = ['excluded', 'preliminary_excluded', 'unresolved', 'explained', 'ruled_out', 'escalated', 'defect']
+
+/**
+ * 负向条目文件 → 条目行。人可以在文件上写 `review`(如 `{"decision": "retracted"}`)撤回一条,撤回的不再列出。
+ */
+export function negativeFromFile(data, path) {
+	if (!isPlainObject(data) || text(data.id) === '' || text(data.statement) === '') return null
+	const kind = NEGATIVE_KINDS.includes(data.kind) ? data.kind : 'unresolved'
+	return {
+		id: text(data.id),
+		kind,
+		status: NEGATIVE_STATUS.includes(data.status) ? data.status : kind,
+		statement: String(data.statement),
+		about: stringList(data.about),
+		scope_spec: isPlainObject(data.scope) ? clone(data.scope) : null,
+		strength: isPlainObject(data.strength) ? clone(data.strength) : null,
+		resolution: isPlainObject(data.resolution) ? clone(data.resolution) : null,
+		source: isPlainObject(data.source) ? clone(data.source) : null,
+		review: isPlainObject(data.review) ? clone(data.review) : null,
+		path: path ?? null,
+		at: typeof data.at === 'number' ? data.at : null,
+	}
+}
+
+function stringList(raw) {
+	return Array.isArray(raw) ? raw.map(String).filter((item) => item.trim() !== '').slice(0, 12) : []
 }
 
 // ═══ 本体文件树:字段、单文件校验、从文件折出词汇与实体 ═════════════════════════
@@ -1315,7 +1355,7 @@ function evidenceShape(value, at) {
  */
 export function checkOntologyFile(path, content) {
 	const place = classifyWorkspacePath(path)
-	if (place === null || place.kind === 'fact' || place.kind === 'lesson') return [tr(`不是本体文件的位置:本体文件要放在 ${ONTOLOGY_DIR}/{concepts,relations,entities}/ 下,扩展名 .json`, `Not an ontology file location: ontology files go under ${ONTOLOGY_DIR}/{concepts,relations,entities}/ with a .json extension`)]
+	if (place === null || place.kind === 'fact' || place.kind === 'lesson' || place.kind === 'negative') return [tr(`不是本体文件的位置:本体文件要放在 ${ONTOLOGY_DIR}/{concepts,relations,entities}/ 下,扩展名 .json`, `Not an ontology file location: ontology files go under ${ONTOLOGY_DIR}/{concepts,relations,entities}/ with a .json extension`)]
 	let data = content
 	if (typeof content === 'string') {
 		try {
@@ -1423,7 +1463,7 @@ export function materializeOntology(files) {
 	const flag = (path, id, code, detail, severity = 'warning') => problems.push({ path, id, code, detail, severity })
 	const entries = Object.entries(isPlainObject(files) ? files : {})
 		.map(([path, file]) => ({ path, file, place: classifyWorkspacePath(path) }))
-		.filter((item) => item.place !== null && item.place.kind !== 'fact' && item.place.kind !== 'lesson')
+		.filter((item) => item.place !== null && item.place.kind !== 'fact' && item.place.kind !== 'lesson' && item.place.kind !== 'negative')
 		.sort((a, b) => (a.path < b.path ? -1 : 1))
 	const terms = []
 	const predicates = []

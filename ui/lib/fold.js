@@ -16,7 +16,7 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
+import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, negativeFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 import { bilingual, detectLanguage, messageText, tr, withLanguage } from './lang.js'
 
@@ -73,6 +73,8 @@ export const MUTATION_KIND = 'clearai'
  *   v19 → v20:**适用范围与推翻条件分开**:目标带 `conditions`(本次所处的条件);判断带 `scope`
  *           (`{conditions, ranges, note}`);事实带 `scope_spec`、`refute_when` 与 `boundaries`
  *           (`fact/bounded`:检验落在适用范围之外时记下的边界,事实保持成立)。旧账的 `scope` 写的是推翻条件。
+ *           同一版里目标、判断与事实还带 `about`(涉及的实体或量),未解释项带 `defect`(解释为测量或方法缺陷);
+ *           派生多一份 `negativeRows`(`clear/knowledge/negatives/` 的负向条目)。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
 export const STATE_VERSION = 20
@@ -222,6 +224,14 @@ function isScope(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value) && (typeof value.conditions === 'object' || typeof value.ranges === 'object' || typeof value.note === 'string')
 }
 
+/** 涉及的实体或量:字符串数组。 */
+function isAbout(value) {
+	return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+
+/** 归知识库管、不进本体的工作区文件种类:事实、经验、负向条目。 */
+const KNOWLEDGE_FILE_KINDS = ['fact', 'lesson', 'negative']
+
 /** 立题的条件:`{维度: 值}`。 */
 function isConditions(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value) && Object.values(value).every((item) => typeof item === 'string')
@@ -317,6 +327,7 @@ export function applyMutation(state, mutation) {
 				const areas = normalizeAreas(mutation.areas)
 				if (areas !== null) previous.areas = areas
 				if (isConditions(mutation.conditions)) previous.conditions = clone(mutation.conditions)
+				if (isAbout(mutation.about)) previous.about = mutation.about.map(String)
 				previous.reasons.push(mutation.reason ?? null)
 			} else {
 				if (previous !== null && previous.status === 'open') previous.status = 'superseded'
@@ -355,6 +366,8 @@ export function applyMutation(state, mutation) {
 					areas: normalizeAreas(mutation.areas) ?? [],
 					/** 这次问题所处的条件(如产线、月份):判断没写适用范围时的默认,引用已有知识时据此判是否适用。 */
 					conditions: isConditions(mutation.conditions) ? clone(mutation.conditions) : {},
+					/** 这次问题涉及的实体或量(id):留下的知识条目挂在它们上面。 */
+					about: isAbout(mutation.about) ? mutation.about.map(String) : [],
 					/** 结案时按问题写的结论四部分(`Conclude.answers`)。 */
 					answers: [],
 				}
@@ -383,6 +396,7 @@ export function applyMutation(state, mutation) {
 					if (typeof hypothesis.question === 'string' && hypothesis.question !== '') known.question = hypothesis.question
 					if (typeof hypothesis.from === 'string' && hypothesis.from !== '') known.from = hypothesis.from
 					if (isScope(hypothesis.scope)) known.scope = clone(hypothesis.scope)
+					if (isAbout(hypothesis.about)) known.about = hypothesis.about.map(String)
 					continue
 				}
 				next.hypotheses.push({
@@ -407,6 +421,8 @@ export function applyMutation(state, mutation) {
 					...(typeof hypothesis.from === 'string' && hypothesis.from !== '' ? { from: hypothesis.from } : {}),
 					/** 适用范围(在哪里成立),与推翻条件分开:`{conditions, ranges, note}`。 */
 					...(isScope(hypothesis.scope) ? { scope: clone(hypothesis.scope) } : {}),
+					/** 涉及的实体或量(id);没写就用立题的 about。 */
+					...(isAbout(hypothesis.about) ? { about: hypothesis.about.map(String) } : {}),
 					at,
 				})
 			}
@@ -508,6 +524,8 @@ export function applyMutation(state, mutation) {
 			item.status = mutation.outcome
 			item.reason = mutation.reason ?? null
 			item.explainedBy = mutation.by ?? null
+			/** 解释为测量或方法的缺陷:回灌成实体上的「缺陷」条目。 */
+			if (mutation.outcome === 'explained' && mutation.defect === true) item.defect = true
 			item.resolvedAt = at
 			break
 		}
@@ -691,6 +709,8 @@ export function applyMutation(state, mutation) {
 				goal: mutation.goal,
 				hypothesis: mutation.hypothesis ?? null,
 				text: mutation.text,
+				/** 涉及的实体或量(id):文件查找按它们取到这条事实。 */
+				about: isAbout(mutation.about) ? mutation.about.map(String) : [],
 				scope: mutation.scope ?? null,
 				/** 可比较的适用范围(`{conditions, ranges, note}`);旧账没有这一格,那时 `scope` 写的是推翻条件。 */
 				scope_spec: isScope(mutation.scope_spec) ? clone(mutation.scope_spec) : null,
@@ -731,9 +751,9 @@ export function applyMutation(state, mutation) {
 			 */
 			const touchedOntology = (mutation.changes ?? []).some((change) => {
 				const kind = classifyWorkspacePath(change?.path)?.kind
-				return kind !== undefined && kind !== 'fact' && kind !== 'lesson'
+				return kind !== undefined && !KNOWLEDGE_FILE_KINDS.includes(kind)
 			})
-			if (touchedOntology || Object.keys(files).some((path) => !['fact', 'lesson'].includes(classifyWorkspacePath(path)?.kind))) {
+			if (touchedOntology || Object.keys(files).some((path) => !KNOWLEDGE_FILE_KINDS.includes(classifyWorkspacePath(path)?.kind))) {
 				const ontology = materializeOntology(files)
 				next.lexicon = ontology.lexicon
 				next.entities = ontology.entities
@@ -1916,6 +1936,17 @@ export function derive(state) {
 		if (row !== null) lessonById.set(row.id, { ...lessonById.get(row.id), ...row, at: row.at ?? lessonById.get(row.id)?.at ?? null })
 	}
 	const lessonRows = [...lessonById.values()].filter((item) => item.status !== 'retracted').sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
+	/**
+	 * **负向条目行**(已排除、未解、缺陷):只从 `clear/knowledge/negatives/` 读——内核随发生随写,
+	 * 本会话的条目同步进来以后与别的会话的同样读法。人在文件上写 `review.decision: "retracted"` 的不再列出。新的在前。
+	 */
+	const negativeRows = []
+	for (const [path, file] of Object.entries(state.workspace?.files ?? {})) {
+		if (classifyWorkspacePath(path)?.kind !== 'negative' || file?.data === undefined) continue
+		const row = negativeFromFile(file.data, path)
+		if (row !== null && row.review?.decision !== 'retracted') negativeRows.push(row)
+	}
+	negativeRows.sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
@@ -1964,6 +1995,7 @@ export function derive(state) {
 		pendingAudit,
 		factRows,
 		lessonRows,
+		negativeRows,
 		settlement,
 		stepOf,
 		needYou,

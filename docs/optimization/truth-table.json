@@ -1534,6 +1534,30 @@
       "known_mismatch": null
     },
     {
+      "id": "negative-writeback",
+      "name": "负向条目随发生随写:已排除、未解、缺陷",
+      "name_en": "Negative items are written as they happen: excluded, unresolved, defect",
+      "layer": "epistemic",
+      "status": "implemented",
+      "hardness": "hard",
+      "authority": "authoritative",
+      "actor": "system",
+      "source": {
+        "code": "preset/plugins/knowledge-items.js negativeItems; preset/plugins/clearai-kernel.js writeBack、afterTool、preStep; ui/lib/domain-language.js negativeFromFile; ui/lib/fold.js derive.negativeRows",
+        "tests": "test/kernel.test.mjs(0.5.2:负向条目随发生随写)",
+        "config": null,
+        "prompt": "preset/plugins/prompts.js clearai/loop",
+        "docs": "docs/optimization/0.5.2-plan/loop-design.zh-CN.md"
+      },
+      "trigger": "每个工具结果之后;每一拍的 pre-step(兜底)",
+      "input": "折好的状态:被推翻的判断及其推翻证据、登记的未解释项及其去处、立题的 about 与 conditions",
+      "output": "clear/knowledge/negatives/<id>.json:被推翻的判断 ⇒ 已排除(一次自行检验为初步排除,独立核验或两次以上为已排除);未解释项 ⇒ 未解,去处变了随之更新,解释为测量或方法缺陷 ⇒ 缺陷;条目带 about 与适用范围;只有内容变了才写,别的会话的文件不动;模型不能直接写这个目录",
+      "blocks_execution": false,
+      "native_dsh_alternative": null,
+      "rationale": "只在成功结案时回灌,中断、放弃的会话就什么都不留,而失败里最有价值的往往是负向信息;已排除的不再重验,缺陷先核,未解的优先追。",
+      "known_mismatch": null
+    },
+    {
       "id": "anomaly-questions-fact",
       "name": "未解释项使已确立的事实回到待核验",
       "name_en": "An unexplained item sends an established fact back to awaiting check",

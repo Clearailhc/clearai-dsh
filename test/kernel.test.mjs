@@ -18,6 +18,7 @@ import { join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
+import { exclusionStrength, negativeItems } from '../preset/plugins/knowledge-items.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
 import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
 import { SECTIONS as BILINGUAL_SECTIONS, SECTION_TABLE } from '../preset/plugins/prompts.js'
@@ -3018,6 +3019,94 @@ console.log('\n【0.5.2:适用范围与推翻条件分开;范围外的反证不�
 	third.userQuestions = answering((question) => ({ label: question.options[1].label }))
 	await callOn(third, C, 'AdvancePlan', { step_id: 'x1', basis: 'lab/x.txt', results: [{ hypothesis: third1, verdict: 'refute', basis: '不成立' }] })
 	check('本次没声明条件 → 照常问人,并在问题里说明「条件未声明」', third.userQuestions.asked.length === 1 && /条件未声明/.test(third.userQuestions.asked[0].questions[0].question), JSON.stringify(third.userQuestions.asked.map((request) => request.questions[0].question)))
+}
+
+console.log('\n【0.5.2:负向条目随发生随写,中断的会话也留下】')
+{
+	check('一次自行检验推翻 → 初步排除', exclusionStrength([{ evaluator: 'self' }]).preliminary === true)
+	check('两次自行检验推翻 → 已排除', exclusionStrength([{ evaluator: 'self' }, { evaluator: 'self' }]).preliminary === false)
+	check('一次独立核验推翻 → 已排除', exclusionStrength([{ evaluator: 'independent' }]).preliminary === false)
+	const pure = negativeItems({
+		goal: { id: 'g1', about: ['R-2'], conditions: { 产线: 'A' } },
+		hypotheses: [
+			{ id: 'h1', goal: 'g1', claim: '温度单独决定收率' },
+			{ id: 'h2', goal: 'g1', claim: '复检旧事实', retests: 'f-old' },
+		],
+		evidence: [
+			{ id: 'e1', hypothesis: 'h1', verdict: 'refute', evaluator: 'self', level: 'L1' },
+			{ id: 'e2', hypothesis: 'h2', verdict: 'refute', evaluator: 'self', level: 'L1' },
+		],
+		anomalies: [
+			{ id: 'a-1#u1', what: '评估者觉得无关紧要', by: 'evaluator', matters: 'no', status: 'open' },
+			{ id: 'a-1#u2', what: '同设定收率 91.07 → 86.99', by: 'evaluator', matters: 'yes', status: 'open' },
+		],
+	})
+	check('复检旧事实的判断被推翻不记成已排除(走事实自己的撤回或维持)', !pure.some((item) => item.source?.hypothesis === 'h2'), JSON.stringify(pure.map((item) => item.id)))
+	check('评估者判为不影响结论的反常不回灌', pure.length === 2 && !pure.some((item) => /无关紧要/.test(item.statement)), JSON.stringify(pure.map((item) => item.statement)))
+	check('文件 id 只留安全字符', pure.every((item) => /^[A-Za-z0-9_-]+$/.test(item.id)), JSON.stringify(pure.map((item) => item.id)))
+
+	const ws = tempDir('clearai-negatives-')
+	const first = makeHost()
+	first.cwd = ws
+	apply(first.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const A = 'session-negatives-a'
+	await callOn(first, A, 'Frame', {
+		claim: 'R-2 收率为何偏低',
+		headline: 'R-2 收率为何偏低',
+		done_criteria: '存在 lab/r2.txt',
+		promote_at_level: 'L2',
+		about: ['R-2', 'yield'],
+		conditions: { 产线: 'A' },
+		hypotheses: [
+			{ name: '温度单独', claim: '温度单独决定收率', refute_when: '固定温度时收率仍随催化剂变化', scope: { ranges: { 温度: [150, 175] } } },
+			{ name: '耦合', claim: '温度与催化剂耦合', refute_when: '交互项不显著', about: ['R-2', 'T', 'cat'] },
+		],
+	})
+	const goal = first.service.state(A).goal
+	check('立题的 about 落进目标', JSON.stringify(goal?.about) === JSON.stringify(['R-2', 'yield']), JSON.stringify(goal?.about))
+	const [alone, coupled] = first.service.state(A).hypotheses.map((item) => item.id)
+	check('判断带自己的 about', JSON.stringify(first.service.state(A).hypotheses[1].about) === JSON.stringify(['R-2', 'T', 'cat']))
+	await callOn(first, A, 'CreatePlan', { steps: [{ id: 'r1', do: '对角扫描', artifacts: ['lab/r2.txt'], done_criteria: 'lab/r2.txt 存在', tests: { hypotheses: [alone, coupled], level: 'L2' } }] })
+	writeText(join(ws, 'lab', 'r2.txt'), '固定温度,收率仍随 cat 变化\n')
+	await callOn(first, A, 'AdvancePlan', { step_id: 'r1', basis: 'lab/r2.txt', results: [{ hypothesis: alone, verdict: 'refute', basis: '固定温度时收率仍随 cat 变化' }, { hypothesis: coupled, verdict: 'support' }] })
+	const dir = join(ws, 'clear', 'knowledge', 'negatives')
+	const excludedFile = join(dir, `x-${alone}.json`)
+	check('判断被推翻的那一拍就写成已排除条目(不等结案)', existsSync(excludedFile), readdirSync(dir, { withFileTypes: false }).join(','))
+	const excluded = existsSync(excludedFile) ? JSON.parse(readFileSync(excludedFile, 'utf8')) : null
+	check('一次自行检验 → 初步排除,带强度', excluded?.kind === 'excluded' && excluded?.status === 'preliminary_excluded' && excluded?.strength?.count === 1, JSON.stringify(excluded?.strength))
+	check('已排除条目挂在立题的 about 上,范围合并了判断的取值与立题的条件', JSON.stringify(excluded?.about) === JSON.stringify(['R-2', 'yield']) && excluded?.scope?.ranges?.['温度']?.[1] === 175 && excluded?.scope?.conditions?.['产线'] === 'A', JSON.stringify(excluded && { about: excluded.about, scope: excluded.scope }))
+
+	await callOn(first, A, 'Anomaly', { action: 'open', what: '同设定收率 91.07 → 86.99', anchor: 'R-2' })
+	await callOn(first, A, 'Anomaly', { action: 'open', what: 'TC-1 读数比参考低 8 °C', anchor: 'TC-1', touches: ['T'] })
+	const [gap, probe] = first.service.state(A).anomalies.map((item) => item.id)
+	check('登记的反常当场写成未解条目', JSON.parse(readFileSync(join(dir, `n-${gap}.json`), 'utf8')).status === 'unresolved')
+	await callOn(first, A, 'Anomaly', { action: 'resolve', id: probe, outcome: 'explained', reason: '探头第 25 次后漂移 8 °C', defect: true })
+	const defect = JSON.parse(readFileSync(join(dir, `n-${probe}.json`), 'utf8'))
+	check('解释为测量缺陷 → 缺陷条目,挂在仪表上', defect.kind === 'defect' && defect.about.includes('TC-1') && /漂移/.test(defect.resolution?.reason ?? ''), JSON.stringify(defect))
+	const forged = await first.listeners.get('tools/pre-execute')(
+		{ name: 'write', arguments: { file_path: join(dir, 'x-fake.json'), content: '{}' }, agent: { id: A }, callId: 'c-neg-forge' },
+		async () => ({ kind: 'allow' }),
+	)
+	check('系统所有:模型不能直接写负向条目目录', forged?.kind === 'deny' && /由系统所有/.test(String(forged.reason)), JSON.stringify(forged))
+
+	// 会话就此中断(不结案):新会话打开同一个工作区,负向条目都在。
+	const second = makeHost()
+	second.cwd = ws
+	apply(second.ctx, { minHypotheses: 0, blockedThreshold: 3 })
+	const B = 'session-negatives-b'
+	await callOn(second, B, 'Frame', { claim: '再看 R-2', headline: '再看 R-2', done_criteria: '存在 lab/again.txt', promote_at_level: 'L2', about: ['R-2'], hypotheses: [] })
+	const rows = second.service.derive(B).negativeRows ?? []
+	check('中断的会话留下的负向条目,下一个会话读得到(已排除、未解、缺陷)', ['excluded', 'unresolved', 'defect'].every((kind) => rows.some((row) => row.kind === kind)), JSON.stringify(rows.map((row) => [row.kind, row.status])))
+	check('别的会话的负向条目不被改写', JSON.parse(readFileSync(excludedFile, 'utf8')).source?.session === A)
+
+	// 回到第一个会话:排除未解项、结案;事实带 about,经验带适用范围。
+	await callOn(first, A, 'Anomaly', { action: 'resolve', id: gap, outcome: 'ruled_out', reason: '录入时把 86.99 抄错了,原始记录是 90.99' })
+	check('未解条目随去处更新状态', JSON.parse(readFileSync(join(dir, `n-${gap}.json`), 'utf8')).status === 'ruled_out')
+	await callOn(first, A, 'ClosePlan', {})
+	first.nextVerdict = { holds: 'yes', basis: '在', shortfalls: [], results: [] }
+	await callOn(first, A, 'Conclude', { outcome: 'achieved' })
+	const fact = first.service.state(A).facts.find((item) => item.hypothesis === coupled)
+	check('升格的事实带 about(判断自己的加上立题的)', JSON.stringify(fact?.about) === JSON.stringify(['R-2', 'T', 'cat', 'yield']), JSON.stringify(fact?.about))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

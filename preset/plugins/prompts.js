@@ -56,7 +56,7 @@ The model handles judgment; the system holds the boundary of fact. You understan
 - **未解释**:与预测或本体不符的结果、说不通的读数,写进 \`anomalies\` 或用 \`Anomaly\` 登记,\`touches\` 写涉及的量、候选或事实(涉及的事实回到「待核验」)。去处只有三个:被解释、写明理由排除、交给人。
 - **等级只决定谁来判**:L2 由你给可复查的依据与结果;L3(新产生、可重跑)与 L4(不可重复或外部来源)由独立评估者判,L4 还须经人工批准。独立评估代价高,L3 只用于答案所依赖的证据;升格与结案总会经过独立评估。
 - **结案**:先 \`ClosePlan\`,再 \`Conclude\`。\`answers\` 按问题写:结论 / 依据 / 尚未确定的事项 / 待您决策。还在考察中的候选、开着的未解释项,要么检验掉,要么写进「尚未确定的事项」并说明它对结论的影响。评估者判为支持的判断升格为事实,没被证据碰过的记成没看过(\`unjudged\`)。会改变下次做法的写进 \`lessons\`。做不下去就 \`abandoned\`。
-- **攒下来的东西**:\`clear/knowledge/facts/\` 是以前升格的事实,引用前看边界;\`clear/knowledge/lessons/\` 是核过的经验。标「定义已变」或「待核验」的事实要重看;复检用 \`retests\`。实体(\`clear/ontology/entities/\`)只在结论要指认它时才建。
+- **攒下来的东西**:\`clear/knowledge/facts/\` 是以前升格的事实,引用前看边界;\`clear/knowledge/lessons/\` 是核过的经验;\`clear/knowledge/negatives/\` 是已排除的判断、未解的反常与测量缺陷(初步排除的依据较弱,可以重验)。标「定义已变」或「待核验」的事实要重看;复检用 \`retests\`。实体(\`clear/ontology/entities/\`)只在结论要指认它时才建。
 - **什么都不删**:被推翻的判断、作废的步骤、改过的判据都留着。需要人的时候系统会当场问人。`,
 			en: `# The loop
 
@@ -70,7 +70,7 @@ Question → ontology (which quantities the answer involves, what measures each,
 - **Unexplained**: a result that contradicts a prediction or the ontology, or a reading that makes no sense, goes in \`anomalies\` or is recorded with \`Anomaly\`, with \`touches\` naming the quantities, candidates or facts involved (a named fact goes back to "pending re-check"). It has three destinations only: explained, ruled out with a stated reason, or handed to a person.
 - **The level only decides who judges**: at L2 you give a checkable basis and results; L3 (newly produced, re-runnable) and L4 (unrepeatable or external) are judged by an independent evaluator, and L4 also needs a person's release. Independent evaluation is costly: use L3 only for evidence the answer depends on; promotion and conclusion are always independently evaluated.
 - **Conclude**: \`ClosePlan\` first, then \`Conclude\`. \`answers\` gives, per question: conclusion / basis / open points / decisions for the user. Candidates still being examined and open unexplained items are either tested away or written into the open points with their effect on the conclusion. Judgments the evaluator supports are promoted to facts; those no evidence touched are recorded as not looked at (\`unjudged\`). Put what would change next time's approach in \`lessons\`. If you cannot go on, use \`abandoned\`.
-- **What has been gathered**: \`clear/knowledge/facts/\` holds facts promoted earlier; check a fact's boundary before citing it. \`clear/knowledge/lessons/\` holds checked lessons. Re-examine facts marked "definition changed" or "pending re-check"; re-test with \`retests\`. Create entities (\`clear/ontology/entities/\`) only when a conclusion must point at one.
+- **What has been gathered**: \`clear/knowledge/facts/\` holds facts promoted earlier; check a fact's boundary before citing it. \`clear/knowledge/lessons/\` holds checked lessons; \`clear/knowledge/negatives/\` holds excluded judgments, unresolved anomalies and measurement defects (a preliminary exclusion rests on weak grounds and may be re-tested). Re-examine facts marked "definition changed" or "pending re-check"; re-test with \`retests\`. Create entities (\`clear/ontology/entities/\`) only when a conclusion must point at one.
 - **Nothing is deleted**: refuted judgments, voided steps and revised criteria all stay. When a person is needed, the system asks right then.`,
 		},
 	},

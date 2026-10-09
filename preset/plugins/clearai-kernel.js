@@ -28,6 +28,7 @@ import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'nod
 import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
+import { itemFileId, mergeAbout, negativeItems } from './knowledge-items.js'
 
 export const name = 'clearai-kernel'
 /** 宿主注册表 + `clearai` 读面(宿主包提供;缺了会在工具里明确报错,而不是静默不工作)。 */
@@ -2148,6 +2149,8 @@ export function apply(ctx, config = {}) {
 
 	const FACTS_REL = ['clear', 'knowledge', 'facts']
 	const LESSONS_REL = ['clear', 'knowledge', 'lessons']
+	/** 负向条目(已排除、未解、缺陷):系统随发生随写,见 `writeBack`。 */
+	const NEGATIVES_REL = ['clear', 'knowledge', 'negatives']
 	/** 经验的四类(与 `domain-language.js` 的 `LESSON_KINDS` 同值):坑、要先核的、会骗人的捷径、先验。 */
 	const LESSON_KINDS = ['trap', 'check', 'shortcut', 'prior']
 	/** 工作方式(与 `fold.js` 读的同值):广度调研 / 定向求解 / 先调研后求解。 */
@@ -2183,6 +2186,7 @@ export function apply(ctx, config = {}) {
 		}
 		walk(FACTS_REL, false)
 		walk(LESSONS_REL, false)
+		walk(NEGATIVES_REL, false)
 		for (const branch of ONTOLOGY_BRANCH_DIRS) walk([...ONTOLOGY_REL, branch], true)
 		return out
 	}
@@ -2443,6 +2447,25 @@ export function apply(ctx, config = {}) {
 	 * 而工具自己的 `mutations` 是这一拍的结算。两者同形、同一个折法,
 	 * 所以并起来交给宿主不会多一条通道,只是让"事实比工具结果活得更久"。
 	 */
+	/**
+	 * 工具结果出去之前,把这一拍的变更折一遍、写负向条目:这一拍之后会话若就此中断,条目也已在盘上。
+	 * 写不出来不影响工具结果。
+	 */
+	function afterTool(exec, value) {
+		const mutations = Array.isArray(value?.mutations) ? value.mutations : []
+		if (mutations.length === 0) return value
+		try {
+			const sessionId = String(exec?.agent?.id ?? 'unknown')
+			const hostService = host()
+			if (hostService === undefined) return value
+			const preview = previewOf(hostService, sessionId, mutations)
+			if (preview !== null) writeBack(sessionId, preview.state, preview.derived ?? null)
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai kernel: 负向条目回写失败 ${String(error?.message ?? error).slice(0, 160)}`)
+		}
+		return value
+	}
+
 	function withPendingFacts(exec, value) {
 		const sessionId = String(exec?.agent?.id ?? 'unknown')
 		const pending = drainPendingFacts(sessionId)
@@ -2519,6 +2542,11 @@ export function apply(ctx, config = {}) {
 						additionalProperties: false,
 					},
 				},
+				about: {
+					type: 'array',
+					items: { type: 'string' },
+					description: '可选:这次问题涉及的实体或量(实体文件名或概念 id,如 "R-2"、"yield")。这次留下的知识条目挂在它们上面,下一次按这些 id 就能查到。修订时不传 = 不变',
+				},
 				conditions: {
 					type: 'object',
 					additionalProperties: { type: 'string' },
@@ -2550,6 +2578,7 @@ export function apply(ctx, config = {}) {
 							question: { type: 'string', description: '可选:属于哪个问题或调研板块(id);不写就归第一个问题' },
 							from: { type: 'string', description: '可选:由本体里哪条关系提出(关系 id,如有形状的 affects 关系);说不出来源就写「直觉」' },
 							refute_when: { type: 'string' },
+							about: { type: 'array', items: { type: 'string' }, description: '可选:这条判断涉及的实体或量(id);不写就用立题的 about' },
 							scope: {
 								type: 'object',
 								description: '可选:适用范围(它在哪里成立),与推翻条件分开写。conditions 写条件(如 {"月份": "2026-08"}),ranges 写变量取值范围(如 {"温度": [150, 175]}),note 补一句。不写就用立题的 conditions',
@@ -2805,6 +2834,7 @@ export function apply(ctx, config = {}) {
 					...(typeof hypothesis.from === 'string' && hypothesis.from.trim() !== '' ? { from: hypothesis.from.trim().slice(0, 80) } : {}),
 					/** 适用范围(在哪里成立),与推翻条件分开;没写就在升格时取立题的 conditions。 */
 					...(normalizeScope(hypothesis.scope) !== null ? { scope: normalizeScope(hypothesis.scope) } : {}),
+					...(mergeAbout(hypothesis.about).length > 0 ? { about: mergeAbout(hypothesis.about) } : {}),
 					version: index + 1,
 				}
 			})
@@ -2826,6 +2856,7 @@ export function apply(ctx, config = {}) {
 				...(questions !== null ? { questions } : {}),
 				...(areas !== null ? { areas } : {}),
 				...(normalizeScope({ conditions: args.conditions }) !== null ? { conditions: normalizeScope({ conditions: args.conditions }).conditions } : {}),
+				...(Array.isArray(args.about) ? { about: mergeAbout(args.about) } : {}),
 			})
 			for (const dropped of existing) {
 				if (reused.has(dropped.id)) continue
@@ -3316,7 +3347,9 @@ export function apply(ctx, config = {}) {
 				 */
 				const scopeSpec = mergeScope(hypothesis.scope, { conditions: goal.conditions ?? {} })
 				const scope = scopeSpec === null ? null : tr(scopeText(scopeSpec, 'zh'), scopeText(scopeSpec, 'en'))
-				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions }
+				/** 涉及的实体或量:判断自己写的加上立题的,文件查找按它们取到这条事实。 */
+				const about = mergeAbout(hypothesis.about, goal.about)
+				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, about, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions }
 				const path = persistFact(sessionId, record)
 				/**
 				 * 事实带上**适用范围**(`scope` 是给人读的一行,`scope_spec` 是可比较的形状)与**推翻条件**:
@@ -3333,6 +3366,7 @@ export function apply(ctx, config = {}) {
 					 */
 					hypothesis: hypothesis.id,
 					text: hypothesis.claim,
+					about,
 					scope,
 					scope_spec: scopeSpec,
 					refute_when: hypothesis.refute_when ?? null,
@@ -3354,9 +3388,11 @@ export function apply(ctx, config = {}) {
 					droppedLessons.push(`${quote(lesson.text)}${tr(':', ': ')}${verdict === null ? tr('评估者没判', 'the evaluator gave no verdict') : `${verdict.verdict === 'refute' ? tr('被推翻', 'refuted') : tr('说不清', 'inconclusive')}${verdict.basis ? `(${verdict.basis})` : ''}`}`)
 					return
 				}
-				const record = { id: `l-${Math.random().toString(36).slice(2, 8)}`, goal: goal.id, ...lesson, basis: verdict.basis }
+				/** 经验也带适用范围(立题的 conditions)与涉及对象(经验自己写的加上立题的),与事实同形。 */
+				const lessonScope = mergeScope({ conditions: goal.conditions ?? {} }, null)
+				const record = { id: `l-${Math.random().toString(36).slice(2, 8)}`, goal: goal.id, ...lesson, about: mergeAbout(lesson.about, goal.about), ...(lessonScope === null ? {} : { scope_spec: lessonScope }), basis: verdict.basis }
 				const path = persistLesson(sessionId, record)
-				mutations.push({ t: 'lesson/recorded', id: record.id, goal: goal.id, text: lesson.text, kind: lesson.kind, about: lesson.about, evidence: lesson.evidence, boundary: lesson.boundary, basis: verdict.basis, path })
+				mutations.push({ t: 'lesson/recorded', id: record.id, goal: goal.id, text: lesson.text, kind: lesson.kind, about: record.about, evidence: lesson.evidence, boundary: lesson.boundary, basis: verdict.basis, path })
 				keptLessons.push(record)
 			})
 			return done({
@@ -3421,6 +3457,49 @@ export function apply(ctx, config = {}) {
 			ctx.logger?.warn?.(`clearai kernel: 经验落盘失败 ${String(error?.message ?? error)}`)
 			return null
 		}
+	}
+
+	/**
+	 * **负向条目随发生随写**(`clear/knowledge/negatives/<id>.json`,只有系统写)。
+	 *
+	 * 判断被推翻、反常被登记或被解释为缺陷,都在那一刻落盘,不等结案:会话因预算或 token 限制中断、
+	 * 以放弃结束时,这些信息照样留下。条目从当前状态整份算出(`negativeItems`),所以重写是幂等的;
+	 * 只有内容变了才写。别的会话写的同名文件不动;人加在文件上的 `review` 保留。
+	 * 两个调用点:每个工具结果之后(这一拍的变更先折一遍)与每一拍的 pre-step(兜底)。
+	 */
+	const negativeWrites = new Map()
+	function writeBack(sessionId, state, derived) {
+		if (isSpawnedChild(sessionId)) return []
+		if (state === null || state === undefined) return []
+		const written = []
+		for (const item of negativeItems(state, derived, { session: sessionId })) {
+			const file = sessionFile(sessionId, ...NEGATIVES_REL, `${item.id}.json`)
+			if (file === null) return written
+			const body = JSON.stringify(item)
+			if (negativeWrites.get(file) === body) continue
+			try {
+				let existing = null
+				if (existsSync(file)) {
+					try {
+						existing = JSON.parse(readFileSync(file, 'utf8'))
+					} catch {
+						existing = null
+					}
+				}
+				if (existing !== null && typeof existing.source?.session === 'string' && existing.source.session !== sessionId) {
+					negativeWrites.set(file, body)
+					continue
+				}
+				const at = typeof existing?.at === 'number' ? existing.at : Date.now()
+				const record = { ...item, source: existing?.source ?? item.source, review: existing?.review ?? null, at, updated: Date.now() }
+				writeTextFile(file, `${JSON.stringify(record, null, 2)}\n`)
+				negativeWrites.set(file, body)
+				written.push(item.id)
+			} catch (error) {
+				ctx.logger?.warn?.(`clearai kernel: 负向条目落盘失败 ${String(error?.message ?? error).slice(0, 160)}`)
+			}
+		}
+		return written
 	}
 
 	// ── 计划六件 ───────────────────────────────────────────────────────────
@@ -4025,6 +4104,7 @@ export function apply(ctx, config = {}) {
 				outcome: { type: 'string', enum: ANOMALY_OUTCOMES, description: 'explained=已解释;ruled_out=排除;escalated=交给人' },
 				reason: { type: 'string', description: 'action=resolve:依据(解释是什么 / 为何可以排除 / 需要人决定什么)' },
 				by: { type: 'string', description: 'action=resolve,可选:解释它的那条判断、关系或事实' },
+				defect: { type: 'boolean', description: 'action=resolve 且 outcome=explained,可选:解释是测量或方法的缺陷(如探头漂移、快测外推偏高)。它会记成该实体的「缺陷」条目,以后先核' },
 			},
 			required: ['action'],
 			additionalProperties: false,
@@ -4050,7 +4130,8 @@ export function apply(ctx, config = {}) {
 			const reason = String(args.reason ?? '').trim()
 			if (reason.length < 4) return fail('reason_required', tr('须写明依据:解释是什么、为何可以排除,或需要人决定什么。', 'Say on what grounds: the explanation, why it can be ruled out, or what a person must decide.'))
 			const by = String(args.by ?? '').trim()
-			mutations.push({ t: 'anomaly/resolved', id: target.id, outcome: args.outcome, reason: reason.slice(0, 600), ...(by === '' ? {} : { by: by.slice(0, 120) }) })
+			const defect = args.outcome === 'explained' && args.defect === true
+			mutations.push({ t: 'anomaly/resolved', id: target.id, outcome: args.outcome, reason: reason.slice(0, 600), ...(by === '' ? {} : { by: by.slice(0, 120) }), ...(defect ? { defect: true } : {}) })
 			const word = { explained: tr('已解释', 'explained'), ruled_out: tr('已排除', 'ruled out'), escalated: tr('交给人', 'handed to a person') }[args.outcome]
 			return done({
 				ok: true,
@@ -4221,7 +4302,7 @@ export function apply(ctx, config = {}) {
 	 * `ontology` 里**模型可写**的是三支本体目录(`concepts` / `relations` / `entities`);
 	 * 字段定义 `SCHEMA.json` 与过程本体那份货架仍归系统。
 	 */
-	const PROTECTED_REL = [['clear', 'evidence'], ['clear', 'knowledge', 'facts'], ['clear', 'knowledge', 'lessons'], ['clear', 'goals'], ['clear', 'ontology']]
+	const PROTECTED_REL = [['clear', 'evidence'], ['clear', 'knowledge', 'facts'], ['clear', 'knowledge', 'lessons'], ['clear', 'knowledge', 'negatives'], ['clear', 'goals'], ['clear', 'ontology']]
 	const OPEN_REL = ONTOLOGY_BRANCH_DIRS.map((branch) => ['clear', 'ontology', branch])
 
 	/** 工作区内的相对路径(正斜杠);在工作区外或取不到工作区返回 null。 */
@@ -4393,7 +4474,7 @@ export function apply(ctx, config = {}) {
 				if (suspect !== null) {
 					return {
 						kind: 'deny',
-						reason: tr(`${suspect} 由系统所有,做的人不能写(clear/evidence、clear/knowledge/facts、clear/knowledge/lessons、clear/goals、clear/ontology 的 SCHEMA.json 与货架)。事实与经验只由独立评估之后的结案写;本体请写在 clear/ontology/concepts、relations、entities 下。`, `${suspect} is owned by the system and the worker cannot write it (clear/evidence, clear/knowledge/facts, clear/knowledge/lessons, clear/goals, and SCHEMA.json and the shelf in clear/ontology). Facts and lessons are written only when a goal concludes after independent evaluation; write the ontology under clear/ontology/concepts, relations and entities.`),
+						reason: tr(`${suspect} 由系统所有,做的人不能写(clear/evidence、clear/knowledge/facts、clear/knowledge/lessons、clear/knowledge/negatives、clear/goals、clear/ontology 的 SCHEMA.json 与货架)。事实与经验只由独立评估之后的结案写,负向条目由系统从账本生成;本体请写在 clear/ontology/concepts、relations、entities 下。`, `${suspect} is owned by the system and the worker cannot write it (clear/evidence, clear/knowledge/facts, clear/knowledge/lessons, clear/knowledge/negatives, clear/goals, and SCHEMA.json and the shelf in clear/ontology). Facts and lessons are written only when a goal concludes after independent evaluation, and negative items are generated by the system from the ledger; write the ontology under clear/ontology/concepts, relations and entities.`),
 					}
 				}
 				if (writing && hostService !== undefined) {
@@ -4545,6 +4626,13 @@ export function apply(ctx, config = {}) {
 			if (shelf !== null) factsNote = tr(`\n- 事实库多了一条(或边界改了):${shelf}——引用前先看它的边界(推翻条件)。`, `\n- The fact library gained an entry (or a boundary changed): ${shelf}. Check its boundary (refutation condition) before citing it.`)
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 事实货架重写失败 ${String(error?.message ?? error).slice(0, 160)}`)
+		}
+		/** 负向条目的兜底:上一拍工具结果之后没写成的(读面掉线、工具抛错),这一拍补写。 */
+		try {
+			const preview = factMutations.length > 0 ? previewOf(hostService, sessionId, factMutations) : null
+			writeBack(sessionId, preview?.state ?? hostService.state(sessionId), preview?.derived ?? hostService.derive(sessionId))
+		} catch (error) {
+			ctx.logger?.warn?.(`clearai: 负向条目回写失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
 
 		/**
@@ -4698,6 +4786,8 @@ export function apply(ctx, config = {}) {
 				'questions.items.area': 'Optional: which survey area it belongs to (area id)',
 				areas: 'Survey areas (for a broad survey; e.g. technology routes, main companies, cost structure). Omitted on revision = unchanged; given = the full list',
 				conditions: 'Optional: the conditions this problem sits in, e.g. {"line": "L2", "month": "2026-09"}. It is the default scope for judgments that omit one, and the basis for judging whether existing knowledge applies. Omitted on revision = unchanged',
+				about: 'Optional: the entities or quantities this problem concerns (entity file names or concept ids, e.g. "R-2", "yield"). Knowledge items left by this session attach to them, so the next session finds them by these ids. Omitted on revision = unchanged',
+				'hypotheses.items.about': 'Optional: the entities or quantities this judgment concerns (ids); defaults to the framing about',
 				'hypotheses.items.scope': 'Optional: where it holds, written separately from the refutation condition. conditions gives the conditions (e.g. {"month": "2026-08"}), ranges the value ranges of variables (e.g. {"temperature": [150, 175]}), note one extra sentence. If omitted, the framing conditions are used',
 				ontology: 'Ontology entries, checked by the system and written to clear/ontology/ (same shape as the files; fields in clear/ontology/SCHEMA.json). When framing, first state the quantities involved: each measure (kind=measure, gloss = its definition, unit) and how it is measured and how a reading is checked (a kind=measures relation: domain = the instrument or source, range = the measure, check = how to confirm the reading); and how the quantities affect each other (kind=affects relations, shape = rough shape). A file with the same id is replaced',
 				'ontology.concepts': 'Concepts: {id, label, gloss, kind: category|measure|phenomenon, unit?}',
@@ -4781,6 +4871,7 @@ export function apply(ctx, config = {}) {
 			outcome: 'explained / ruled_out / escalated (to a person)',
 			reason: 'action=resolve: on what grounds (the explanation, why it can be ruled out, what a person must decide)',
 			by: 'action=resolve, optional: the judgment, relation or fact that explains it',
+			defect: 'action=resolve with outcome=explained, optional: the explanation is a measurement or method defect (e.g. a drifting probe, an accelerated test that overestimates life). It is recorded as a "defect" item on that entity, to be checked first next time',
 		},
 	}
 	/** 按路径把英文说明写进一份参数 schema 的副本。 */
@@ -4811,7 +4902,7 @@ export function apply(ctx, config = {}) {
 	for (const toolName of CONTRIB.tools) {
 		const definition = TOOL_DEFS.get(toolName)
 		// 每一个工具的输出都过一遍统一出口:独立落账通道里的事实不会因为工具抛错/被 abort 而丢。
-		ctx.tools.register({ ...definition, execute: (args, exec) => inLanguage(languageOf(String(exec?.agent?.id)), async () => withPendingFacts(exec, await definition.execute(args, exec))) })
+		ctx.tools.register({ ...definition, execute: (args, exec) => inLanguage(languageOf(String(exec?.agent?.id)), async () => afterTool(exec, withPendingFacts(exec, await definition.execute(args, exec)))) })
 	}
 
 	// 提示词段由当前 ClearAI DSH 预设提供，围绕认识论循环与事实边界组织。

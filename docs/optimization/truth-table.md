@@ -8,9 +8,9 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **57**
-- By status: Implemented 56 · Design only 1
-- By strength: Hard boundary 44 · Advisory 9 · Native 4
+- Mechanisms: **58**
+- By status: Implemented 57 · Design only 1
+- By strength: Hard boundary 45 · Advisory 9 · Native 4
 - By destination: stays design-only 1
 - Actually blocking execution: **21**
 - Carrying a known mismatch between docs/comments and code: **1**
@@ -62,6 +62,7 @@ This section is exported from code, not written by hand:
 | `artifact-path-exclusive` | Exclusive artifact paths (no two steps in a plan declare the same artefact) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js validateSteps` |
 | `answers-stop-check` | Stop check: an achieved close needs everything that could change the answer written into it | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
 | `fact-scope` | A fact's scope is kept apart from its refutation condition; counter-evidence outside the scope does not retract it | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/scope.js` |
+| `negative-writeback` | Negative items are written as they happen: excluded, unresolved, defect | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/knowledge-items.js negativeItems` |
 | `anomaly-questions-fact` | An unexplained item sends an established fact back to awaiting check | Epistemic | Implemented | Native | Authoritative | system | no | `ui/lib/fold.js questionedBy` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | `preset/plugins/prompts.js loop` |
@@ -803,6 +804,19 @@ This section is exported from code, not written by hand:
 - **Rationale**: 0.5.1 把推翻条件写进 scope,九月数据撤回了八月范围内成立的事实:系统分不清「换了范围」与「被推翻」。
 - **Code**: preset/plugins/scope.js; preset/plugins/clearai-kernel.js Conclude(升格)、reviewRefutedFacts、markFactBounded; ui/lib/fold.js case 'fact/bounded'
 - **Tests**: test/kernel.test.mjs(0.5.2:适用范围与推翻条件分开) · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `negative-writeback` · Negative items are written as they happen: excluded, unresolved, defect
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 每个工具结果之后;每一拍的 pre-step(兜底)
+- **Input**: 折好的状态:被推翻的判断及其推翻证据、登记的未解释项及其去处、立题的 about 与 conditions
+- **Output**: clear/knowledge/negatives/<id>.json:被推翻的判断 ⇒ 已排除(一次自行检验为初步排除,独立核验或两次以上为已排除);未解释项 ⇒ 未解,去处变了随之更新,解释为测量或方法缺陷 ⇒ 缺陷;条目带 about 与适用范围;只有内容变了才写,别的会话的文件不动;模型不能直接写这个目录
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 只在成功结案时回灌,中断、放弃的会话就什么都不留,而失败里最有价值的往往是负向信息;已排除的不再重验,缺陷先核,未解的优先追。
+- **Code**: preset/plugins/knowledge-items.js negativeItems; preset/plugins/clearai-kernel.js writeBack、afterTool、preStep; ui/lib/domain-language.js negativeFromFile; ui/lib/fold.js derive.negativeRows
+- **Tests**: test/kernel.test.mjs(0.5.2:负向条目随发生随写) · **Config**: —
 - **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
 
 ### `anomaly-questions-fact` · An unexplained item sends an established fact back to awaiting check
