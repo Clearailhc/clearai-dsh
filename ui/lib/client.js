@@ -105,8 +105,8 @@ window.__ModuleLoader__.load({
 
 		/** 语言命名空间。表按**源文**索引:键就是中文原文,所以漏翻译一条只会退回中文,不会把 key 显示给人。 */
 		const LOCALE_NS = 'clearai'
-		const LOCALE_ZH = {"待执行":"待执行","已交付":"已交付","已作废":"已作废","支持":"支持","推翻":"推翻","不确定":"不确定","第 n 步":"第 n 步","判据:":"判据:","判据":"判据"," · 已修订 ":" · 已修订 "," 次":" 次"," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:","打开目标文档(原生预览)":"打开目标文档(原生预览)","全文在 ":"全文在 ","背景(不参与判定):":"背景(不参与判定):","目标":"目标","命题":"命题","计划":"计划","验证":"验证","观测":"观测","评估":"评估","证据":"证据","事实":"事实","批准":"批准","未解释":"未解释","评估卡":"评估卡","查看评估者":"查看评估者","审批记录":"审批记录","产物":"产物","已验证":"已验证","待核验":"待核验","验证中":"验证中","已推翻":"已推翻","已替换":"已替换","自行检验":"自行检验","独立核验":"独立核验","人工批准":"人工批准","判断":"判断","检验":"检验","纳入本体":"纳入本体","下一步:安排步骤对其进行检验":"下一步:安排步骤对其进行检验","下一步:通过独立核验后标记为已验证":"下一步:通过独立核验后标记为已验证","下一步:改用其他方法重新检验":"下一步:改用其他方法重新检验","下一步:结案时写入长期知识":"下一步:结案时写入长期知识","陈述":"陈述","数值":"数值","公式":"公式","代码":"代码","引用":"引用","概念":"概念","取值形态":"取值形态","实例":"实例","取值":"取值","关系":"关系","在检验阶段被推翻,不再推进。":"在检验阶段被推翻,不再推进。","已被替换,不再推进。":"已被替换,不再推进。","提出":"提出","单步检验":"单步检验",":":":","写入长期知识":"写入长期知识","人工撤回":"人工撤回","进度":"进度","可信度变化":"可信度变化","补充说明":"补充说明","依据":"依据","查看核验":"查看核验","查看记录":"查看记录","范围":"范围","推翻条件":"推翻条件","相关":"相关","在图中定位":"在图中定位","来源":"来源","收起":"收起","点击查看进度与来源":"点击查看进度与来源","暂无结论。模型提出判断后,将在此逐条列出。":"暂无结论。模型提出判断后,将在此逐条列出。","尚未设立目标":"尚未设立目标","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"暂无内容。发送第一条消息后,此处将显示本体图与结论。","仅显示与「":"仅显示与「","」相关的内容":"」相关的内容","清除":"清除","已确立的事实":"已确立的事实","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。","经验(":"经验(",")":")","广度调研":"广度调研","定向求解":"定向求解","先调研后求解":"先调研后求解","考察中":"考察中","已排除":"已排除","已采纳":"已采纳","暂不考察":"暂不考察","未开始":"未开始","调研中":"调研中","已厘清":"已厘清","常见误区":"常见误区","前置核查":"前置核查","不可取的捷径":"不可取的捷径","先验知识":"先验知识","提出依据":"提出依据","未注明(直觉)":"未注明(直觉)","直觉":"直觉","本体关系「":"本体关系「","」":"」","主张":"主张","预测":"预测","排除依据":"排除依据","采纳依据":"采纳依据","关联记录":"关联记录","支持 ":"支持 "," 条 · 推翻 ":" 条 · 推翻 "," 条 · 无法判定 ":" 条 · 无法判定 "," 条":" 条","在本体货架中展开此结论":"在本体货架中展开此结论","已得出结论 · 查看结论":"已得出结论 · 查看结论","已暂缓":"已暂缓","新发现,待您决定":"新发现,待您决定","尚无候选假设":"尚无候选假设","候选假设 ":"候选假设 "," 个:":" 个:","问题 ":"问题 ","候选假设":"候选假设","展开":"展开","已请求立为问题,待模型修订立题后生效。":"已请求立为问题,待模型修订立题后生效。","已请求暂缓,结案时列入「尚未确定的事项」。":"已请求暂缓,结案时列入「尚未确定的事项」。","无法自动发送,请在对话中说明。":"无法自动发送,请在对话中说明。","新发现的问题":"新发现的问题","请将新发现的问题「":"请将新发现的问题「","」立为问题深入研究(问题 ":"」立为问题深入研究(问题 ",")。":")。","立为问题":"立为问题","请暂缓问题「":"请暂缓问题「","」(问题 ":"」(问题 ","),结案时列入「尚未确定的事项」。":"),结案时列入「尚未确定的事项」。","暂缓":"暂缓","调研板块":"调研板块","判断 ":"判断 "," 条 · 已采纳 ":" 条 · 已采纳 ","未解释的现象 ":"未解释的现象 "," 项":" 项","下一步":"下一步","预测:":"预测:","若「":"若「","」成立,预测":"」成立,预测","各候选假设的预测相同,此步骤无法区分它们。":"各候选假设的预测相同,此步骤无法区分它们。","如需调整计划,请在对话中说明。":"如需调整计划,请在对话中说明。","未解释的现象(":"未解释的现象(","结案前须解释、排除或写入「尚未确定的事项」":"结案前须解释、排除或写入「尚未确定的事项」","独立评估发现":"独立评估发现","涉及:":"涉及:","、":"、","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。","阶段 · ":"阶段 · ","调研板块 ":"调研板块 "," 个 · 已厘清 ":" 个 · 已厘清 "," 个":" 个","当前问题 ":"当前问题 "," / 共 ":" / 共 ","计划 已完成 ":"计划 已完成 "," / ":" / "," 步":" 步","独立评估 ":"独立评估 ","计划共 ":"计划共 ","(":"(","进行中)":"进行中)","课题":"课题","待您处理(":"待您处理(","过程记录":"过程记录","结论":"结论","未能回答:":"未能回答:","查看探索记录":"查看探索记录","尚未确定的事项":"尚未确定的事项","待您决策":"待您决策","不适用:":"不适用:","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"暂无计划。建立计划后,此处将显示计划的步骤与闸门。","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)","计划 ":"计划 ","已完成 · 可查看存档":"已完成 · 可查看存档","步 ":"步 ","打开计划文档(原生预览)":"打开计划文档(原生预览)","计划文档":"计划文档","点击查看详情":"点击查看详情","查看步骤详情":"查看步骤详情"," 轮":" 轮","已派出评估者 ":"已派出评估者 ","收起详情":"收起详情","任务内容":"任务内容","状态":"状态","未声明":"未声明","磁盘上未找到该文件":"磁盘上未找到该文件","(缺失)":"(缺失)","在原生预览中打开":"在原生预览中打开","在原生预览中打开(计划声明的产物)":"在原生预览中打开(计划声明的产物)","查看此步骤的证据":"查看此步骤的证据","检验结果:":"检验结果:","独立核验:":"独立核验:","正在裁决":"正在裁决"," 查看核验过程":" 查看核验过程"," 查看核验记录":" 查看核验记录","待处理":"待处理","板块 ":"板块 "," · ":" · "," 个问题待您决定":" 个问题待您决定"," · 待检验假设 ":" · 待检验假设 ","计划受阻,待人工处理":"计划受阻,待人工处理","计划已收尾(":"计划已收尾("," 步)":" 步)","计划已交付 ":"计划已交付 ","待处理 ":"待处理 ","(点击打开探索货架)":"(点击打开探索货架)","仅显示相关项":"仅显示相关项","关闭":"关闭","正在加载…":"正在加载…","无法获取":"无法获取","该项已不在当前词表中(可能已被废止)。":"该项已不在当前词表中(可能已被废止)。","释义":"释义","上位":"上位","下位":"下位","主体":"主体","类型":"类型","该术语已废止,既有结论中的用法仍可查看。":"该术语已废止,既有结论中的用法仍可查看。","引用此项的结论":"引用此项的结论","有矛盾":"有矛盾","范围:":"范围:","展开下一层":"展开下一层","收起下一层":"收起下一层","共 ":"共 "," 条断言的主体尚未建立实体文件。":" 条断言的主体尚未建立实体文件。","实体图暂无内容。":"实体图暂无内容。","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。","本体图":"本体图","实体图":"实体图","矛盾":"矛盾","适配":"适配","退出全屏":"退出全屏","全屏":"全屏","图组件不可用":"图组件不可用","结论仍可正常查看。":"结论仍可正常查看。","本体文件有 ":"本体文件有 "," 项问题(不纳入图中)":" 项问题(不纳入图中)","已提出":"已提出","探索":"探索","本体":"本体","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出"}
-		const LOCALE_EN = {"待执行":"to do","已交付":"delivered","已作废":"voided","支持":"Support","推翻":"Refute","不确定":"Uncertain","第 n 步":"Step n","判据:":"Criterion: ","判据":"Criterion"," · 已修订 ":" · revised "," 次":" times"," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: ","打开目标文档(原生预览)":"Open the goal document (native preview)","全文在 ":"Full text at ","背景(不参与判定):":"Background (not part of the verdict): ","目标":"Goal","命题":"Propositions","计划":"Plan","验证":"Verification","观测":"Observation","评估":"Evaluation","证据":"Evidence","事实":"Facts","批准":"approval","未解释":"Unexplained","评估卡":"evaluation card","查看评估者":"view evaluator","审批记录":"approval record","产物":"Deliverables","已验证":"Verified","待核验":"Awaiting check","验证中":"Testing","已推翻":"Refuted","已替换":"Replaced","自行检验":"Self-tested","独立核验":"Independent check","人工批准":"Approved by a person","判断":"Judgment","检验":"Test","纳入本体":"In ontology","下一步:安排步骤对其进行检验":"Next: schedule a step to test it","下一步:通过独立核验后标记为已验证":"Next: marked Verified after an independent check","下一步:改用其他方法重新检验":"Next: test it again by another method","下一步:结案时写入长期知识":"Next: written to long-term knowledge at close","陈述":"Statement","数值":"Quantity","公式":"Formula","代码":"Code","引用":"Reference","概念":"concepts","取值形态":"Value form","实例":"Instances","取值":"Value","关系":"Relation","在检验阶段被推翻,不再推进。":"Refuted at the test stage; it goes no further.","已被替换,不再推进。":"Replaced; it goes no further.","提出":"Proposed","单步检验":"A single test",":":": ","写入长期知识":"Written to long-term knowledge","人工撤回":"Withdrawn by a person","进度":"Progress","可信度变化":"Trust history","补充说明":"Details","依据":"Basis","查看核验":"View check","查看记录":"View record","范围":"Scope","推翻条件":"Refuted if","相关":"Related","在图中定位":"Locate on the graph","来源":"Source","收起":"Collapse","点击查看进度与来源":"Click to view progress and source","暂无结论。模型提出判断后,将在此逐条列出。":"No judgments yet. Each judgment the model proposes is listed here.","尚未设立目标":"No goal set yet","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"Nothing yet. After the first message, the ontology graph and conclusions appear here.","仅显示与「":"Showing only items related to \"","」相关的内容":"\"","清除":"Clear","已确立的事实":"ESTABLISHED FACTS","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"No established facts yet. Judgments appear here once tested and independently checked; the testing process is in the Explore shelf.","经验(":"LESSONS (",")":")","广度调研":"Broad survey","定向求解":"Targeted solving","先调研后求解":"Survey, then solve","考察中":"Being examined","已排除":"Excluded","已采纳":"Adopted","暂不考察":"Set aside","未开始":"Not started","调研中":"In progress","已厘清":"Clarified","常见误区":"Common pitfall","前置核查":"Check first","不可取的捷径":"Misleading shortcut","先验知识":"Prior knowledge","提出依据":"Proposed from","未注明(直觉)":"Not stated (intuition)","直觉":"Intuition","本体关系「":"Ontology relation \"","」":"\"","主张":"Claim","预测":"Prediction","排除依据":"Grounds for exclusion","采纳依据":"Grounds for adoption","关联记录":"Related records","支持 ":"Support "," 条 · 推翻 ":" · refute "," 条 · 无法判定 ":" · inconclusive "," 条":"","在本体货架中展开此结论":"Expand this conclusion in the Ontology shelf","已得出结论 · 查看结论":"Concluded · view the conclusion","已暂缓":"Parked","新发现,待您决定":"Newly found, awaiting your decision","尚无候选假设":"No candidate hypotheses yet","候选假设 ":"Candidate hypotheses: "," 个:":" — ","问题 ":"Question ","候选假设":"Candidate hypotheses","展开":"Expand","已请求立为问题,待模型修订立题后生效。":"Requested as a question; it takes effect once the model revises the framing.","已请求暂缓,结案时列入「尚未确定的事项」。":"Requested to park; it will be listed under open points at conclusion.","无法自动发送,请在对话中说明。":"Could not send automatically; please say it in the conversation.","新发现的问题":"Newly found question","请将新发现的问题「":"Please make the newly found question \"","」立为问题深入研究(问题 ":"\" a question to pursue (question ",")。":").","立为问题":"Make it a question","请暂缓问题「":"Please park the question \"","」(问题 ":"\" (question ","),结案时列入「尚未确定的事项」。":") and list it under open points at conclusion.","暂缓":"Park","调研板块":"Survey areas","判断 ":"Judgments: "," 条 · 已采纳 ":" · adopted ","未解释的现象 ":"Unexplained observations: "," 项":"","下一步":"Next step","预测:":"Prediction: ","若「":"If \"","」成立,预测":"\" holds, the prediction is","各候选假设的预测相同,此步骤无法区分它们。":"All candidate hypotheses predict the same result, so this step cannot tell them apart.","如需调整计划,请在对话中说明。":"To change the plan, say so in the conversation.","未解释的现象(":"Unexplained observations (","结案前须解释、排除或写入「尚未确定的事项」":"Before concluding, each must be explained, ruled out, or written into the open points","独立评估发现":"Found by the independent evaluator","涉及:":"Concerns: ","、":", ","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"Nothing yet. After the first message, questions, candidate hypotheses and the next step appear here.","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"No goal set yet. Once the model frames the goal, questions, candidate hypotheses and the next step appear here.","阶段 · ":"Mode · ","调研板块 ":"Survey areas: "," 个 · 已厘清 ":" · clarified "," 个":"","当前问题 ":"Current question "," / 共 ":" of ","计划 已完成 ":"Plan: completed "," / ":" / "," 步":" steps","独立评估 ":"Independent evaluations: ","计划共 ":"Plan: ","(":" (","进行中)":" in progress)","课题":"Topic","待您处理(":"Awaiting you (","过程记录":"Process record","结论":"Conclusion","未能回答:":"Could not be answered: ","查看探索记录":"View the exploration record","尚未确定的事项":"Open points","待您决策":"For you to decide","不适用:":"Does not apply: ","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"No plan yet. Once a plan is created, its steps and gates appear here.","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"Switch to an earlier plan (all plans are kept; documents are archived under clear/goals/plans/)","计划 ":"Plan ","已完成 · 可查看存档":"closed · archive available","步 ":"step ","打开计划文档(原生预览)":"Open the plan document (native preview)","计划文档":"Plan document","点击查看详情":"click for details","查看步骤详情":"view step details"," 轮":" rounds","已派出评估者 ":"Evaluators dispatched: ","收起详情":"Collapse details","任务内容":"Task","状态":"Status","未声明":"not declared","磁盘上未找到该文件":"this file was not found on disk","(缺失)":" (missing)","在原生预览中打开":"Open in the native preview","在原生预览中打开(计划声明的产物)":"Open in the native preview (an artifact declared by the plan)","查看此步骤的证据":"see the evidence for this step","检验结果:":"Result: ","独立核验:":"Independent check: ","正在裁决":"Deciding"," 查看核验过程":" View the review"," 查看核验记录":" View the review record","待处理":"To handle","板块 ":"Areas "," · ":" · "," 个问题待您决定":" question(s) awaiting your decision"," · 待检验假设 ":" · hypotheses to test: ","计划受阻,待人工处理":"plan blocked, awaiting a person","计划已收尾(":"Plan closed ("," 步)":" steps)","计划已交付 ":"Plan delivered ","待处理 ":"to handle ","(点击打开探索货架)":" (click to open the Explore shelf)","仅显示相关项":"Related only","关闭":"Close","正在加载…":"Loading…","无法获取":"Unavailable","该项已不在当前词表中(可能已被废止)。":"This item is no longer in the vocabulary (it may have been deprecated).","释义":"Gloss","上位":"Broader","下位":"Narrower","主体":"Subject","类型":"Type","该术语已废止,既有结论中的用法仍可查看。":"This term is deprecated; its use in existing conclusions remains readable.","引用此项的结论":"Conclusions citing it","有矛盾":"Conflicting","范围:":"Scope: ","展开下一层":"Expand the next level","收起下一层":"Collapse the next level","共 ":""," 条断言的主体尚未建立实体文件。":" assertion subjects have no entity file yet. ","实体图暂无内容。":"The entity graph is empty. ","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"Entity files under clear/ontology/entities/ and assertions in long-term knowledge appear here.","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"The ontology graph is empty. Concepts and relations appear once the model creates files under clear/ontology/concepts/ and relations/.","本体图":"Ontology graph","实体图":"Entity graph","矛盾":"Conflicts","适配":"Fit","退出全屏":"Exit full screen","全屏":"Full screen","图组件不可用":"The graph component is unavailable","结论仍可正常查看。":"conclusions remain readable.","本体文件有 ":"Ontology files have "," 项问题(不纳入图中)":" problems (kept off the graph)","已提出":"proposed","探索":"Explore","本体":"Ontology","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset"}
+		const LOCALE_ZH = {"待执行":"待执行","已交付":"已交付","已作废":"已作废","支持":"支持","推翻":"推翻","不确定":"不确定","第 n 步":"第 n 步","判据:":"判据:","判据":"判据"," · 已修订 ":" · 已修订 "," 次":" 次"," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:","打开目标文档(原生预览)":"打开目标文档(原生预览)","全文在 ":"全文在 ","背景(不参与判定):":"背景(不参与判定):","目标":"目标","命题":"命题","计划":"计划","验证":"验证","观测":"观测","评估":"评估","证据":"证据","事实":"事实","批准":"批准","未解释":"未解释","评估卡":"评估卡","查看评估者":"查看评估者","审批记录":"审批记录","产物":"产物","已验证":"已验证","待核验":"待核验","验证中":"验证中","已推翻":"已推翻","已替换":"已替换","自行检验":"自行检验","独立核验":"独立核验","人工批准":"人工批准","判断":"判断","检验":"检验","纳入本体":"纳入本体","下一步:安排步骤对其进行检验":"下一步:安排步骤对其进行检验","下一步:通过独立核验后标记为已验证":"下一步:通过独立核验后标记为已验证","下一步:改用其他方法重新检验":"下一步:改用其他方法重新检验","下一步:结案时写入长期知识":"下一步:结案时写入长期知识","陈述":"陈述","数值":"数值","公式":"公式","代码":"代码","引用":"引用","概念":"概念","取值形态":"取值形态","实例":"实例","取值":"取值","关系":"关系","在检验阶段被推翻,不再推进。":"在检验阶段被推翻,不再推进。","已被替换,不再推进。":"已被替换,不再推进。","提出":"提出","单步检验":"单步检验",":":":","写入长期知识":"写入长期知识","人工撤回":"人工撤回","进度":"进度","可信度变化":"可信度变化","补充说明":"补充说明","依据":"依据","查看核验":"查看核验","查看记录":"查看记录","范围":"范围","推翻条件":"推翻条件","相关":"相关","在图中定位":"在图中定位","来源":"来源","收起":"收起","点击查看进度与来源":"点击查看进度与来源","暂无结论。模型提出判断后,将在此逐条列出。":"暂无结论。模型提出判断后,将在此逐条列出。","尚未设立目标":"尚未设立目标","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"暂无内容。发送第一条消息后,此处将显示本体图与结论。","仅显示与「":"仅显示与「","」相关的内容":"」相关的内容","清除":"清除","已确立的事实":"已确立的事实","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。","经验(":"经验(",")":")","广度调研":"广度调研","定向求解":"定向求解","先调研后求解":"先调研后求解","考察中":"考察中","已排除":"已排除","已采纳":"已采纳","暂不考察":"暂不考察","未开始":"未开始","调研中":"调研中","已厘清":"已厘清","常见误区":"常见误区","前置核查":"前置核查","不可取的捷径":"不可取的捷径","先验知识":"先验知识","提出依据":"提出依据","未注明(直觉)":"未注明(直觉)","直觉":"直觉","本体关系「":"本体关系「","」":"」","主张":"主张","预测":"预测","排除依据":"排除依据","采纳依据":"采纳依据","关联记录":"关联记录","支持 ":"支持 "," 条 · 推翻 ":" 条 · 推翻 "," 条 · 无法判定 ":" 条 · 无法判定 "," 条":" 条","在本体货架中展开此结论":"在本体货架中展开此结论","已得出结论 · 查看结论":"已得出结论 · 查看结论","已暂缓":"已暂缓","新发现,待您决定":"新发现,待您决定","尚无候选假设":"尚无候选假设","候选假设 ":"候选假设 "," 个:":" 个:","问题 ":"问题 ","候选假设":"候选假设","展开":"展开","已请求立为问题,待模型修订立题后生效。":"已请求立为问题,待模型修订立题后生效。","已请求暂缓,结案时列入「尚未确定的事项」。":"已请求暂缓,结案时列入「尚未确定的事项」。","无法自动发送,请在对话中说明。":"无法自动发送,请在对话中说明。","新发现的问题":"新发现的问题","请将新发现的问题「":"请将新发现的问题「","」立为问题深入研究(问题 ":"」立为问题深入研究(问题 ",")。":")。","立为问题":"立为问题","请暂缓问题「":"请暂缓问题「","」(问题 ":"」(问题 ","),结案时列入「尚未确定的事项」。":"),结案时列入「尚未确定的事项」。","暂缓":"暂缓","调研板块":"调研板块","判断 ":"判断 "," 条 · 已采纳 ":" 条 · 已采纳 ","未解释的现象 ":"未解释的现象 "," 项":" 项","下一步":"下一步","预测:":"预测:","若「":"若「","」成立,预测":"」成立,预测","各候选假设的预测相同,此步骤无法区分它们。":"各候选假设的预测相同,此步骤无法区分它们。","如需调整计划,请在对话中说明。":"如需调整计划,请在对话中说明。","未解释的现象(":"未解释的现象(","结案前须解释、排除或写入「尚未确定的事项」":"结案前须解释、排除或写入「尚未确定的事项」","独立评估发现":"独立评估发现","涉及:":"涉及:","、":"、","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。","阶段 · ":"阶段 · ","调研板块 ":"调研板块 "," 个 · 已厘清 ":" 个 · 已厘清 "," 个":" 个","当前问题 ":"当前问题 "," / 共 ":" / 共 ","计划 已完成 ":"计划 已完成 "," / ":" / "," 步":" 步","独立评估 ":"独立评估 ","计划共 ":"计划共 ","(":"(","进行中)":"进行中)","课题":"课题","待您处理(":"待您处理(","过程记录":"过程记录","结论":"结论","未能回答:":"未能回答:","查看探索记录":"查看探索记录","尚未确定的事项":"尚未确定的事项","待您决策":"待您决策","不适用:":"不适用:","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"暂无计划。建立计划后,此处将显示计划的步骤与闸门。","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)","计划 ":"计划 ","已完成 · 可查看存档":"已完成 · 可查看存档","步 ":"步 ","打开计划文档(原生预览)":"打开计划文档(原生预览)","计划文档":"计划文档","点击查看详情":"点击查看详情","查看步骤详情":"查看步骤详情"," 轮":" 轮","已派出评估者 ":"已派出评估者 ","收起详情":"收起详情","任务内容":"任务内容","状态":"状态","未声明":"未声明","磁盘上未找到该文件":"磁盘上未找到该文件","(缺失)":"(缺失)","在原生预览中打开":"在原生预览中打开","在原生预览中打开(计划声明的产物)":"在原生预览中打开(计划声明的产物)","查看此步骤的证据":"查看此步骤的证据","检验结果:":"检验结果:","独立核验:":"独立核验:","正在裁决":"正在裁决"," 查看核验过程":" 查看核验过程"," 查看核验记录":" 查看核验记录","待处理":"待处理","板块 ":"板块 "," · ":" · "," 个问题待您决定":" 个问题待您决定"," · 待检验假设 ":" · 待检验假设 ","计划受阻,待人工处理":"计划受阻,待人工处理","计划已收尾(":"计划已收尾("," 步)":" 步)","计划已交付 ":"计划已交付 ","待处理 ":"待处理 ","(点击打开探索货架)":"(点击打开探索货架)","仅显示相关项":"仅显示相关项","关闭":"关闭","正在加载…":"正在加载…","无法获取":"无法获取","该项已不在当前词表中(可能已被废止)。":"该项已不在当前词表中(可能已被废止)。","释义":"释义","上位":"上位","下位":"下位","主体":"主体","类型":"类型","该术语已废止,既有结论中的用法仍可查看。":"该术语已废止,既有结论中的用法仍可查看。","引用此项的结论":"引用此项的结论","有矛盾":"有矛盾","范围:":"范围:","展开下一层":"展开下一层","收起下一层":"收起下一层","共 ":"共 "," 条断言的主体尚未建立实体文件。":" 条断言的主体尚未建立实体文件。","实体图暂无内容。":"实体图暂无内容。","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。","本体图":"本体图","实体图":"实体图","矛盾":"矛盾","适配":"适配","退出全屏":"退出全屏","全屏":"全屏","图组件不可用":"图组件不可用","结论仍可正常查看。":"结论仍可正常查看。","本体文件有 ":"本体文件有 "," 项问题(不纳入图中)":" 项问题(不纳入图中)","已提出":"已提出","探索":"探索","本体":"本体","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","适用":"适用","超出适用范围":"超出适用范围","超出取值范围":"超出取值范围","本次条件未声明":"本次条件未声明","条目未声明适用范围":"条目未声明适用范围","口径已变更":"口径已变更","已撤回":"已撤回","本次不能直接沿用,需重新检验":"本次不能直接沿用,需重新检验","补充本次条件后重新判定":"补充本次条件后重新判定","沿用时需自行确认":"沿用时需自行确认","按新口径换算或重新检验":"按新口径换算或重新检验","先复检再沿用":"先复检再沿用","不得沿用":"不得沿用","已确立":"已确立","初步排除":"初步排除","测量或方法缺陷":"测量或方法缺陷","已解释":"已解释","已判定无关":"已判定无关","已提交您处理":"已提交您处理","请求复检":"请求复检","请复检条目「":"请复检条目「","」(":"」(","请求撤回":"请求撤回","请撤回条目「":"请撤回条目「","),并说明对已有结论的影响。":"),并说明对已有结论的影响。","请求修改适用范围":"请求修改适用范围","请与我确认条目「":"请与我确认条目「",")的适用范围应如何修改。":")的适用范围应如何修改。","推翻证据 ":"推翻证据 "," · 独立核验 ":" · 独立核验 ","受质疑":"受质疑","已发送请求,由模型处理后更新。":"已发送请求,由模型处理后更新。","适用边界":"适用边界","测量与口径":"测量与口径","校准关系":"校准关系","未解释的现象":"未解释的现象","经验":"经验","该实体暂无沉淀的知识。":"该实体暂无沉淀的知识。","引用的已有知识(":"引用的已有知识(","引用的已有知识":"引用的已有知识","引用者:":"引用者:","将沉淀的内容":"将沉淀的内容","已写入的排除与未解释项;结案时待独立核验的结论":"已写入的排除与未解释项;结案时待独立核验的结论","待独立核验":"待独立核验","已确立 ":"已确立 ","已排除 ":"已排除 ","未解释 ":"未解释 ","经验 ":"经验 ","本次沉淀":"本次沉淀"}
+		const LOCALE_EN = {"待执行":"to do","已交付":"delivered","已作废":"voided","支持":"Support","推翻":"Refute","不确定":"Uncertain","第 n 步":"Step n","判据:":"Criterion: ","判据":"Criterion"," · 已修订 ":" · revised "," 次":" times"," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: ","打开目标文档(原生预览)":"Open the goal document (native preview)","全文在 ":"Full text at ","背景(不参与判定):":"Background (not part of the verdict): ","目标":"Goal","命题":"Propositions","计划":"Plan","验证":"Verification","观测":"Observation","评估":"Evaluation","证据":"Evidence","事实":"Facts","批准":"approval","未解释":"Unexplained","评估卡":"evaluation card","查看评估者":"view evaluator","审批记录":"approval record","产物":"Deliverables","已验证":"Verified","待核验":"Awaiting check","验证中":"Testing","已推翻":"Refuted","已替换":"Replaced","自行检验":"Self-tested","独立核验":"Independent check","人工批准":"Approved by a person","判断":"Judgment","检验":"Test","纳入本体":"In ontology","下一步:安排步骤对其进行检验":"Next: schedule a step to test it","下一步:通过独立核验后标记为已验证":"Next: marked Verified after an independent check","下一步:改用其他方法重新检验":"Next: test it again by another method","下一步:结案时写入长期知识":"Next: written to long-term knowledge at close","陈述":"Statement","数值":"Quantity","公式":"Formula","代码":"Code","引用":"Reference","概念":"concepts","取值形态":"Value form","实例":"Instances","取值":"Value","关系":"Relation","在检验阶段被推翻,不再推进。":"Refuted at the test stage; it goes no further.","已被替换,不再推进。":"Replaced; it goes no further.","提出":"Proposed","单步检验":"A single test",":":": ","写入长期知识":"Written to long-term knowledge","人工撤回":"Withdrawn by a person","进度":"Progress","可信度变化":"Trust history","补充说明":"Details","依据":"Basis","查看核验":"View check","查看记录":"View record","范围":"Scope","推翻条件":"Refuted if","相关":"Related","在图中定位":"Locate on the graph","来源":"Source","收起":"Collapse","点击查看进度与来源":"Click to view progress and source","暂无结论。模型提出判断后,将在此逐条列出。":"No judgments yet. Each judgment the model proposes is listed here.","尚未设立目标":"No goal set yet","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"Nothing yet. After the first message, the ontology graph and conclusions appear here.","仅显示与「":"Showing only items related to \"","」相关的内容":"\"","清除":"Clear","已确立的事实":"ESTABLISHED FACTS","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"No established facts yet. Judgments appear here once tested and independently checked; the testing process is in the Explore shelf.","经验(":"LESSONS (",")":")","广度调研":"Broad survey","定向求解":"Targeted solving","先调研后求解":"Survey, then solve","考察中":"Being examined","已排除":"Excluded","已采纳":"Adopted","暂不考察":"Set aside","未开始":"Not started","调研中":"In progress","已厘清":"Clarified","常见误区":"Common pitfall","前置核查":"Check first","不可取的捷径":"Misleading shortcut","先验知识":"Prior knowledge","提出依据":"Proposed from","未注明(直觉)":"Not stated (intuition)","直觉":"Intuition","本体关系「":"Ontology relation \"","」":"\"","主张":"Claim","预测":"Prediction","排除依据":"Grounds for exclusion","采纳依据":"Grounds for adoption","关联记录":"Related records","支持 ":"Support "," 条 · 推翻 ":" · refute "," 条 · 无法判定 ":" · inconclusive "," 条":"","在本体货架中展开此结论":"Expand this conclusion in the Ontology shelf","已得出结论 · 查看结论":"Concluded · view the conclusion","已暂缓":"Parked","新发现,待您决定":"Newly found, awaiting your decision","尚无候选假设":"No candidate hypotheses yet","候选假设 ":"Candidate hypotheses: "," 个:":" — ","问题 ":"Question ","候选假设":"Candidate hypotheses","展开":"Expand","已请求立为问题,待模型修订立题后生效。":"Requested as a question; it takes effect once the model revises the framing.","已请求暂缓,结案时列入「尚未确定的事项」。":"Requested to park; it will be listed under open points at conclusion.","无法自动发送,请在对话中说明。":"Could not send automatically; please say it in the conversation.","新发现的问题":"Newly found question","请将新发现的问题「":"Please make the newly found question \"","」立为问题深入研究(问题 ":"\" a question to pursue (question ",")。":").","立为问题":"Make it a question","请暂缓问题「":"Please park the question \"","」(问题 ":"\" (question ","),结案时列入「尚未确定的事项」。":") and list it under open points at conclusion.","暂缓":"Park","调研板块":"Survey areas","判断 ":"Judgments: "," 条 · 已采纳 ":" · adopted ","未解释的现象 ":"Unexplained observations: "," 项":"","下一步":"Next step","预测:":"Prediction: ","若「":"If \"","」成立,预测":"\" holds, the prediction is","各候选假设的预测相同,此步骤无法区分它们。":"All candidate hypotheses predict the same result, so this step cannot tell them apart.","如需调整计划,请在对话中说明。":"To change the plan, say so in the conversation.","未解释的现象(":"Unexplained observations (","结案前须解释、排除或写入「尚未确定的事项」":"Before concluding, each must be explained, ruled out, or written into the open points","独立评估发现":"Found by the independent evaluator","涉及:":"Concerns: ","、":", ","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"Nothing yet. After the first message, questions, candidate hypotheses and the next step appear here.","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"No goal set yet. Once the model frames the goal, questions, candidate hypotheses and the next step appear here.","阶段 · ":"Mode · ","调研板块 ":"Survey areas: "," 个 · 已厘清 ":" · clarified "," 个":"","当前问题 ":"Current question "," / 共 ":" of ","计划 已完成 ":"Plan: completed "," / ":" / "," 步":" steps","独立评估 ":"Independent evaluations: ","计划共 ":"Plan: ","(":" (","进行中)":" in progress)","课题":"Topic","待您处理(":"Awaiting you (","过程记录":"Process record","结论":"Conclusion","未能回答:":"Could not be answered: ","查看探索记录":"View the exploration record","尚未确定的事项":"Open points","待您决策":"For you to decide","不适用:":"Does not apply: ","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"No plan yet. Once a plan is created, its steps and gates appear here.","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"Switch to an earlier plan (all plans are kept; documents are archived under clear/goals/plans/)","计划 ":"Plan ","已完成 · 可查看存档":"closed · archive available","步 ":"step ","打开计划文档(原生预览)":"Open the plan document (native preview)","计划文档":"Plan document","点击查看详情":"click for details","查看步骤详情":"view step details"," 轮":" rounds","已派出评估者 ":"Evaluators dispatched: ","收起详情":"Collapse details","任务内容":"Task","状态":"Status","未声明":"not declared","磁盘上未找到该文件":"this file was not found on disk","(缺失)":" (missing)","在原生预览中打开":"Open in the native preview","在原生预览中打开(计划声明的产物)":"Open in the native preview (an artifact declared by the plan)","查看此步骤的证据":"see the evidence for this step","检验结果:":"Result: ","独立核验:":"Independent check: ","正在裁决":"Deciding"," 查看核验过程":" View the review"," 查看核验记录":" View the review record","待处理":"To handle","板块 ":"Areas "," · ":" · "," 个问题待您决定":" question(s) awaiting your decision"," · 待检验假设 ":" · hypotheses to test: ","计划受阻,待人工处理":"plan blocked, awaiting a person","计划已收尾(":"Plan closed ("," 步)":" steps)","计划已交付 ":"Plan delivered ","待处理 ":"to handle ","(点击打开探索货架)":" (click to open the Explore shelf)","仅显示相关项":"Related only","关闭":"Close","正在加载…":"Loading…","无法获取":"Unavailable","该项已不在当前词表中(可能已被废止)。":"This item is no longer in the vocabulary (it may have been deprecated).","释义":"Gloss","上位":"Broader","下位":"Narrower","主体":"Subject","类型":"Type","该术语已废止,既有结论中的用法仍可查看。":"This term is deprecated; its use in existing conclusions remains readable.","引用此项的结论":"Conclusions citing it","有矛盾":"Conflicting","范围:":"Scope: ","展开下一层":"Expand the next level","收起下一层":"Collapse the next level","共 ":""," 条断言的主体尚未建立实体文件。":" assertion subjects have no entity file yet. ","实体图暂无内容。":"The entity graph is empty. ","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"Entity files under clear/ontology/entities/ and assertions in long-term knowledge appear here.","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"The ontology graph is empty. Concepts and relations appear once the model creates files under clear/ontology/concepts/ and relations/.","本体图":"Ontology graph","实体图":"Entity graph","矛盾":"Conflicts","适配":"Fit","退出全屏":"Exit full screen","全屏":"Full screen","图组件不可用":"The graph component is unavailable","结论仍可正常查看。":"conclusions remain readable.","本体文件有 ":"Ontology files have "," 项问题(不纳入图中)":" problems (kept off the graph)","已提出":"proposed","探索":"Explore","本体":"Ontology","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","适用":"Applies","超出适用范围":"Outside its scope","超出取值范围":"Outside its value range","本次条件未声明":"Conditions of this run not declared","条目未声明适用范围":"Item declares no scope","口径已变更":"Definition changed","已撤回":"Retracted","本次不能直接沿用,需重新检验":"Cannot be reused as is here; test it again","补充本次条件后重新判定":"Declare this run's conditions, then judge again","沿用时需自行确认":"Confirm it applies before reusing it","按新口径换算或重新检验":"Convert to the new definition or test it again","先复检再沿用":"Re-check it before reusing it","不得沿用":"Must not be reused","已确立":"Established","初步排除":"Preliminarily excluded","测量或方法缺陷":"Measurement or method defect","已解释":"Explained","已判定无关":"Ruled irrelevant","已提交您处理":"Handed to you","请求复检":"Request a re-check","请复检条目「":"Please re-check the item \"","」(":"\" (","请求撤回":"Request retraction","请撤回条目「":"Please retract the item \"","),并说明对已有结论的影响。":") and state the effect on existing conclusions.","请求修改适用范围":"Request a scope change","请与我确认条目「":"Please confirm with me how the scope of the item \"",")的适用范围应如何修改。":") should be changed.","推翻证据 ":"Refuting evidence: "," · 独立核验 ":" · independently checked: ","受质疑":"Challenged","已发送请求,由模型处理后更新。":"Request sent; it updates once the model handles it.","适用边界":"Limits of applicability","测量与口径":"Measurement and definitions","校准关系":"Calibration","未解释的现象":"Unexplained observations","经验":"Lessons","该实体暂无沉淀的知识。":"No knowledge has been recorded for this entity yet.","引用的已有知识(":"Existing knowledge cited (","引用的已有知识":"Existing knowledge cited","引用者:":"Cited by: ","将沉淀的内容":"To be recorded","已写入的排除与未解释项;结案时待独立核验的结论":"Exclusions and unexplained items already written; conclusions awaiting an independent check at close","待独立核验":"Awaiting independent check","已确立 ":"Established: ","已排除 ":"Excluded: ","未解释 ":"Unexplained: ","经验 ":"Lessons: ","本次沉淀":"Recorded this time"}
 
 		/**
 		 * 翻译函数:**由原生 locale 座位绑定**(`ctx.locale.bind`),不是我们自建的一套 i18n。
@@ -381,6 +381,28 @@ window.__ModuleLoader__.load({
 .clearai-lesson{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:12.5px}
 .clearai-lesson-kind{font-size:11px;padding:0 7px;border-radius:6px;border:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary)}
 .clearai-lesson-meta{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+/* 沉淀与取用:条目、实体卡、图上的计数 */
+.clearai-kitem{display:flex;flex-direction:column;gap:3px;padding:7px 14px;border-top:.5px solid var(--dsw-alias-border-l1);font-size:12.5px}
+.clearai-kitem-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.clearai-kitem-meta{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+.clearai-kitem-asks{display:flex;flex-wrap:wrap;gap:6px}
+.clearai-btn[data-small="1"]{min-height:24px;padding:0 9px;font-size:11.5px}
+.clearai-state[data-s="preliminary_excluded"]{border-style:dashed;border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
+.clearai-state[data-s="established"],.clearai-state[data-s="applies"]{border-color:var(--dsw-alias-label-secondary);color:var(--dsw-alias-label-primary)}
+.clearai-state[data-s="pending"],.clearai-state[data-s="undeclared"],.clearai-state[data-s="unscoped"]{border-style:dashed}
+.clearai-state[data-s="bounded"],.clearai-state[data-s="out_of_scope"],.clearai-state[data-s="out_of_range"],.clearai-state[data-s="definition_changed"],.clearai-state[data-s="defect"]{border-color:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-state-warn-primary)}
+.clearai-state[data-s="retracted"]{border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
+.clearai-state[data-s="unresolved"],.clearai-state[data-s="escalated"]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
+.clearai-ecard{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;padding:10px 0 4px}
+.clearai-ecard-title{display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;font-weight:600}
+.clearai-ecard-head{padding:4px 14px 2px;font-size:11.5px;font-weight:600;color:var(--dsw-alias-label-tertiary)}
+.clearai-kcount{display:inline-flex;gap:2px;font-family:ui-sans-serif,system-ui,sans-serif}
+.clearai-kcount>em{font-style:normal;font-size:10px;line-height:13px;padding:0 4px;border-radius:4px;border:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary)}
+.clearai-kcount>em[data-b="excluded"]{border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
+.clearai-kcount>em[data-b="bounded"]{border-color:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-state-warn-primary)}
+.clearai-kcount>em[data-b="pending"]{border-style:dashed}
+.clearai-kcount>em[data-b="unresolved"]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
+.clearai-settled{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:2px 2px 0;font-size:12.5px}
 `
 		/** 把上面那段 CSS 挂进页面(带 data-plugin 标记,宿主按包名记账,卸载时收掉)。 */
 		function installStyles() {
@@ -1022,6 +1044,8 @@ window.__ModuleLoader__.load({
 				h(AnswerCards, { data, openExplore: props.openExplore }),
 				h(GraphBand, {
 					lexicon,
+					data,
+					send: props.send,
 					layer,
 					unlanded: typeof unlandedRow?.count === 'number' ? unlandedRow.count : null,
 					onLayer: setLayer,
@@ -1075,8 +1099,6 @@ window.__ModuleLoader__.load({
 		const AREA_WORD = lazyTable(() => ({ not_started: t('未开始'), in_progress: t('调研中'), clear: t('已厘清') }))
 		const LESSON_WORD = lazyTable(() => ({ trap: t('常见误区'), check: t('前置核查'), shortcut: t('不可取的捷径'), prior: t('先验知识') }))
 
-		/** 关系 id → 名字(本体里登记的 label);找不到就如实给 id。 */
-		const relationLabel = (data, id) => String((data?.lexicon?.predicates ?? []).find((item) => item.id === id)?.label ?? id)
 
 		/** 一条候选最近一条某种结论的依据(排除依据 / 采纳依据都从证据里来)。 */
 		const latestBasis = (data, hypothesis, verdict) => {
@@ -1084,14 +1106,17 @@ window.__ModuleLoader__.load({
 			return rows.length === 0 ? null : String(rows[rows.length - 1].basis ?? '') || null
 		}
 
-		/** 候选假设展开后的几行(标签按界面用语规范:提出依据 / 推翻条件 / 预测 / 排除依据 / 采纳依据 / 关联记录)。 */
+		/** 候选假设展开后的几行(标签按界面用语规范:引用的已有知识 / 主张 / 推翻条件 / 预测 / 排除依据 / 采纳依据 / 关联记录)。 */
 		function candidateDetail(data, candidate, prediction) {
 			const rows = []
 			const push = (label, value) => {
 				if (value !== null && value !== undefined && value !== '') rows.push([label, value])
 			}
-			/** 旧会话的判断可能注明了由哪条关系提出;0.5.2 起不再写(由 `uses` 引用具体条目取代),没有就不显示。 */
-			push(t('提出依据'), candidate.from === null || candidate.from === undefined ? null : candidate.from === '直觉' || candidate.from === 'intuition' ? t('直觉') : `${t('本体关系「')}${relationLabel(data, candidate.from)}${t('」')}`)
+			/** 引用的已有条目与系统的判定(取代原来的「提出依据」):判断写了 `uses` 才有。 */
+			const hypothesis = (Array.isArray(data?.goal?.hypotheses) ? data.goal.hypotheses : []).find((item) => item.id === candidate.id)
+			const uses = Array.isArray(hypothesis?.uses) ? hypothesis.uses : []
+			const byKey = itemsByKey(data)
+			push(t('引用的已有知识'), uses.length === 0 ? null : uses.map((use) => `${byKey.get(`${use.kind}:${use.id}`)?.text ? brief(byKey.get(`${use.kind}:${use.id}`).text, 40) : use.id}(${VERDICT_WORD[use.verdict] ?? use.verdict})`).join(t('、')))
 			push(t('主张'), candidate.claim !== candidate.name ? candidate.claim : null)
 			push(t('推翻条件'), candidate.refuteWhen)
 			push(t('预测'), prediction)
@@ -1346,6 +1371,7 @@ window.__ModuleLoader__.load({
 				...questionList.map((question) => h(QuestionBox, { key: question.id, data, question, index: declared.indexOf(question), current: question.id === exploration?.current, next: exploration?.next ?? null, open, onToggle: setOpen, openFacts, send: props.send, sent, onSent })),
 				h(NextBox, { next: exploration?.next ?? null }),
 				h(AnomalyBox, { data }),
+				h(KnowledgeFlowBox, { data, openPreview: props.openPreview }),
 				h(
 					'section',
 					{ className: 'clearai-process' },
@@ -1379,6 +1405,152 @@ window.__ModuleLoader__.load({
 						: null,
 				),
 			)
+		}
+
+		/**
+		 * **沉淀与取用**(0.5.2):条目、它在这次情形下是否适用、这次会留下什么。
+		 * 读的是投影算好的 `knowledgeItems` / `entityKnowledge` / `knowledgeFlow`;界面不判定适用性,
+		 * 条目上的按钮只替人向模型发一句话,由模型复检、撤回或修改后落账。
+		 */
+		const VERDICT_WORD = lazyTable(() => ({ applies: t('适用'), out_of_scope: t('超出适用范围'), out_of_range: t('超出取值范围'), undeclared: t('本次条件未声明'), unscoped: t('条目未声明适用范围'), definition_changed: t('口径已变更'), pending: t('待核验'), retracted: t('已撤回') }))
+		const VERDICT_NEXT = lazyTable(() => ({ out_of_scope: t('本次不能直接沿用,需重新检验'), out_of_range: t('本次不能直接沿用,需重新检验'), undeclared: t('补充本次条件后重新判定'), unscoped: t('沿用时需自行确认'), definition_changed: t('按新口径换算或重新检验'), pending: t('先复检再沿用'), retracted: t('不得沿用') }))
+		const ITEM_WORD = lazyTable(() => ({ established: t('已确立'), pending: t('待核验'), excluded: t('已排除'), preliminary_excluded: t('初步排除'), unresolved: t('未解释'), defect: t('测量或方法缺陷'), explained: t('已解释'), ruled_out: t('已判定无关'), escalated: t('已提交您处理') }))
+		const COUNT_WORD = lazyTable(() => ({ established: t('已确立'), excluded: t('已排除'), bounded: t('超出适用范围'), pending: t('待核验'), unresolved: t('未解释') }))
+		const COUNT_ORDER = ['established', 'excluded', 'bounded', 'pending', 'unresolved']
+
+		/** 条目键(`kind:id`)→ 条目。 */
+		const itemsByKey = (data) => new Map((Array.isArray(data?.knowledgeItems) ? data.knowledgeItems : []).map((item) => [`${item.kind}:${item.id}`, item]))
+
+		/** 一条条目的出处:文件路径,没有就是 id。发给模型的话里用它,模型据此找到文件。 */
+		const itemRef = (item) => String(item.path ?? item.id)
+
+		/** 条目上的三个请求:只发一句话,不写任何状态。 */
+		const ITEM_ASKS = () => [
+			['retest', t('请求复检'), (item) => `${t('请复检条目「')}${item.text}${t('」(')}${itemRef(item)}${t(')。')}`],
+			['retract', t('请求撤回'), (item) => `${t('请撤回条目「')}${item.text}${t('」(')}${itemRef(item)}${t('),并说明对已有结论的影响。')}`],
+			['rescope', t('请求修改适用范围'), (item) => `${t('请与我确认条目「')}${item.text}${t('」(')}${itemRef(item)}${t(')的适用范围应如何修改。')}`],
+		]
+
+		function KnowledgeItemRow(props) {
+			const { item } = props
+			const meta = []
+			if (item.scope) meta.push(`${t('范围:')}${item.scope}`)
+			if (item.kind === 'negative' && item.strength && typeof item.strength.count === 'number') meta.push(`${t('推翻证据 ')}${item.strength.count}${t(' 条')}${item.strength.independent > 0 ? `${t(' · 独立核验 ')}${item.strength.independent}${t(' 条')}` : ''}`)
+			if (item.basis) meta.push(`${t('依据')}${t(':')}${brief(item.basis, 80)}`)
+			if (item.challenged === true) meta.push(t('受质疑'))
+			const sent = props.sent ?? {}
+			const asks = props.asks === true && typeof props.send === 'function' ? ITEM_ASKS() : []
+			const done = asks.find(([key]) => sent[`${item.kind}:${item.id}:${key}`] !== undefined)
+			return h(
+				'div',
+				{ className: 'clearai-kitem' },
+				h('div', { className: 'clearai-kitem-head' }, h(StateTag, { state: item.status }, item.kind === 'lesson' ? (LESSON_WORD[item.status] ?? item.status) : (ITEM_WORD[item.status] ?? item.status)), h('span', null, item.text), item.path ? h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(item.path), title: item.path }, t('查看记录')) : null),
+				meta.length === 0 ? null : h('div', { className: 'clearai-kitem-meta' }, meta.join(' · ')),
+				asks.length === 0
+					? null
+					: done !== undefined
+						? h('div', { className: 'clearai-kitem-meta' }, sent[`${item.kind}:${item.id}:${done[0]}`] === 'failed' ? t('无法自动发送,请在对话中说明。') : t('已发送请求,由模型处理后更新。'))
+						: h('div', { className: 'clearai-kitem-asks' }, ...asks.map(([key, label, say]) => h('button', { key, type: 'button', className: 'clearai-btn', 'data-small': '1', onClick: () => props.onSent?.(`${item.kind}:${item.id}:${key}`, props.send(say(item)) === true ? 'sent' : 'failed') }, label))),
+			)
+		}
+
+		/** 图上实体旁的条目计数(只列非零的格)。 */
+		function CountMarks(props) {
+			const counts = props.counts ?? {}
+			const shown = COUNT_ORDER.filter((key) => (counts[key] ?? 0) > 0)
+			if (shown.length === 0) return null
+			return h('span', { className: 'clearai-kcount', title: shown.map((key) => `${COUNT_WORD[key]} ${counts[key]}`).join(' · ') }, ...shown.map((key) => h('em', { key, 'data-b': key }, String(counts[key]))))
+		}
+
+		/**
+		 * **实体卡**:点实体图上的实例打开。六栏:已确立的事实 / 已排除 / 适用边界 / 测量与口径 / 未解释的现象 / 经验。
+		 * 空栏不出现;全空就如实说还没有沉淀。
+		 */
+		function EntityCard(props) {
+			const { node, data } = props
+			const byKey = itemsByKey(data)
+			const items = (data?.entityKnowledge?.[node.id]?.items ?? []).map((key) => byKey.get(key)).filter((item) => item !== undefined)
+			const facts = items.filter((item) => item.kind === 'fact')
+			const excluded = items.filter((item) => item.kind === 'negative' && (item.status === 'excluded' || item.status === 'preliminary_excluded'))
+			const bounds = facts.flatMap((item) => item.boundaries.map((bound, index) => ({ key: `${item.id}#${index}`, text: item.text, bound })))
+			const defects = items.filter((item) => item.kind === 'negative' && item.status === 'defect')
+			const measures = (Array.isArray(data?.lexicon?.predicates) ? data.lexicon.predicates : []).filter((predicate) => predicate.kind === 'measures' && node.type !== null && (predicate.domain === node.type || predicate.range?.term === node.type))
+			const unresolved = items.filter((item) => item.kind === 'negative' && (item.status === 'unresolved' || item.status === 'escalated'))
+			const lessons = items.filter((item) => item.kind === 'lesson')
+			const row = (item) => h(KnowledgeItemRow, { key: `${item.kind}:${item.id}`, item, asks: item.kind !== 'lesson', send: props.send, sent: props.sent, onSent: props.onSent, openPreview: data?.openPreview })
+			const section = (title, children) => (children.length === 0 ? null : h('div', { className: 'clearai-ecard-sec' }, h('div', { className: 'clearai-ecard-head' }, `${title}(${children.length})`), ...children))
+			const sections = [
+				section(t('已确立的事实'), facts.map(row)),
+				section(t('已排除'), excluded.map(row)),
+				section(
+					t('适用边界'),
+					bounds.map(({ key, text, bound }) => h('div', { key, className: 'clearai-kitem' }, h('div', { className: 'clearai-kitem-head' }, h(StateTag, { state: 'bounded' }, VERDICT_WORD[bound.verdict] ?? bound.verdict), h('span', null, text)), bound.basis ? h('div', { className: 'clearai-kitem-meta' }, brief(bound.basis, 120)) : null)),
+				),
+				section(t('测量与口径'), [
+					...measures.map((predicate) => h('div', { key: `m-${predicate.id}`, className: 'clearai-kitem' }, h('div', { className: 'clearai-kitem-head' }, h('span', null, String(predicate.label ?? predicate.id))), predicate.check ? h('div', { className: 'clearai-kitem-meta' }, `${t('校准关系')}${t(':')}${predicate.check}`) : null)),
+					...defects.map(row),
+				]),
+				section(t('未解释的现象'), unresolved.map(row)),
+				section(t('经验'), lessons.map(row)),
+			].filter((item) => item !== null)
+			return h(
+				'div',
+				{ className: 'clearai-ecard' },
+				h('div', { className: 'clearai-ecard-title' }, String(node.label ?? node.ref ?? node.id), h(CountMarks, { counts: data?.entityKnowledge?.[node.id]?.counts })),
+				sections.length === 0 ? h('div', { className: 'clearai-quiet' }, t('该实体暂无沉淀的知识。')) : null,
+				...sections,
+			)
+		}
+
+		/** 探索货架:引用的已有知识(系统判定)与将沉淀的内容。两节都空就不出现。 */
+		function KnowledgeFlowBox(props) {
+			const flow = props.data?.knowledgeFlow ?? null
+			if (flow === null) return null
+			const cited = Array.isArray(flow.cited) ? flow.cited : []
+			const negatives = Array.isArray(flow.settling?.negatives) ? flow.settling.negatives : []
+			const awaiting = Array.isArray(flow.settling?.awaiting) ? flow.settling.awaiting : []
+			return h(
+				React.Fragment,
+				null,
+				cited.length === 0
+					? null
+					: h(
+							'section',
+							{ className: 'clearai-box' },
+							h('div', { className: 'clearai-box-head' }, h('span', { className: 'clearai-box-title' }, `${t('引用的已有知识(')}${cited.length}${t(')')}`)),
+							...cited.map((item) =>
+								h(
+									'div',
+									{ key: `${item.id}|${item.verdict}`, className: 'clearai-kitem' },
+									h('div', { className: 'clearai-kitem-head' }, h(StateTag, { state: item.verdict }, VERDICT_WORD[item.verdict] ?? item.verdict), h('span', null, item.text ?? item.id), item.path ? h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(item.path), title: item.path }, t('查看记录')) : null),
+									h('div', { className: 'clearai-kitem-meta' }, [`${t('引用者:')}${item.by.join(t('、'))}`, VERDICT_NEXT[item.verdict] ?? null].filter((line) => line !== null).join(' · ')),
+								),
+							),
+						),
+				negatives.length === 0 && awaiting.length === 0
+					? null
+					: h(
+							'section',
+							{ className: 'clearai-box' },
+							h('div', { className: 'clearai-box-head' }, h('span', { className: 'clearai-box-title' }, t('将沉淀的内容')), h('span', { className: 'clearai-box-note' }, t('已写入的排除与未解释项;结案时待独立核验的结论'))),
+							...negatives.map((item) => h(KnowledgeItemRow, { key: item.id, item, openPreview: props.openPreview })),
+							...awaiting.map((item) => h('div', { key: item.id, className: 'clearai-kitem' }, h('div', { className: 'clearai-kitem-head' }, h(StateTag, { state: 'examining' }, t('待独立核验')), h('span', null, item.name), item.claim !== item.name ? h('span', { className: 'clearai-kitem-meta' }, brief(item.claim, 80)) : null))),
+						),
+			)
+		}
+
+		/** 结论卡底部:本目标已沉淀的条数。 */
+		function SettledLine(props) {
+			const settled = props.data?.knowledgeFlow?.settled ?? null
+			if (settled === null) return null
+			const parts = [
+				settled.established > 0 ? `${t('已确立 ')}${settled.established}${t(' 条')}` : null,
+				settled.excluded > 0 ? `${t('已排除 ')}${settled.excluded}${t(' 条')}` : null,
+				settled.unresolved > 0 ? `${t('未解释 ')}${settled.unresolved}${t(' 项')}` : null,
+				settled.lessons > 0 ? `${t('经验 ')}${settled.lessons}${t(' 条')}` : null,
+			].filter((item) => item !== null)
+			if (parts.length === 0) return null
+			return h('div', { className: 'clearai-settled' }, h('span', { className: 'clearai-answer-label' }, t('本次沉淀')), h('span', null, parts.join(' · ')))
 		}
 
 		/** 本体货架的结论卡:按问题切换,四部分(结论 / 依据 / 尚未确定的事项 / 待您决策)。 */
@@ -1417,6 +1589,7 @@ window.__ModuleLoader__.load({
 					open.length === 0 ? null : part(t('尚未确定的事项'), h('div', { className: 'clearai-answer-lines' }, ...open.map((entry, index) => h('div', { key: `o-${index}` }, entry.effect)))),
 					decide.length === 0 ? null : part(t('待您决策'), h('div', { className: 'clearai-answer-lines' }, ...decide.map((line, index) => h('div', { key: `d-${index}` }, line))), true),
 				),
+				h(SettledLine, { data: props.data }),
 			)
 		}
 
@@ -2277,8 +2450,9 @@ window.__ModuleLoader__.load({
 		 *   · **点击语义**:点节点 / 边 = 打开小卡;「只看相关」是卡上的显式动作。
 		 *   · **全屏**:position: fixed 的真 overlay,打开时自动适配。
 		 */
-		const GraphBand = ({ lexicon, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, unlanded, focus }) => {
+		const GraphBand = ({ lexicon, data, send, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, unlanded, focus }) => {
 			const [picked, setPicked] = React.useState(null)
+			const [asked, setAsked] = React.useState({})
 			const graph = lexicon?.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
 			const conflicts = Array.isArray(lexicon?.conflicts) ? lexicon.conflicts : []
 			const conflicted = new Set(conflicts.flatMap((item) => item.sides.map((side) => side.fact)).filter((id) => typeof id === 'string'))
@@ -2431,6 +2605,7 @@ window.__ModuleLoader__.load({
 							{ className: 'clearai-star', 'data-kind': node.kind, 'data-state': nodeState(node), 'data-sel': node.id === selectedId ? '1' : '0' },
 							h('i', null),
 							h('span', null, trimLabel(node.kind === 'value_type' ? (FORM_WORD[node.ref] ?? node.label ?? node.ref) : (node.label ?? node.ref ?? node.id), 16)),
+							node.layer === 'entity' ? h(CountMarks, { counts: data?.entityKnowledge?.[node.id]?.counts }) : null,
 							(childCount.get(node.id) ?? 0) > 0
 								? h(
 										'b',
@@ -2579,6 +2754,7 @@ window.__ModuleLoader__.load({
 						: h(
 								'div',
 								{ className: 'clearai-graph-side' },
+								picked.kind === 'node' && picked.node.layer === 'entity' && picked.node.kind === 'instance' ? h(EntityCard, { node: picked.node, data, send, sent: asked, onSent: (key, kind) => setAsked({ ...asked, [key]: kind }) }) : null,
 								h(GraphInspector, { selection: inspection, sessionId, names: entityNames, onFilter: () => onFilter(filterTarget), onClose: () => setPicked(null) }),
 							),
 				),
@@ -2787,7 +2963,7 @@ window.__ModuleLoader__.load({
 			occupy('conversation.view', () => ({ id: 'clearai-explore', order: 19, label: t('探索') }), (props) =>
 				h(LocalizedExplore, { ...props, openSpectator, openPreview: openPreviewFor(props), send: sendFor(props), openFacts: () => openPanel(props, 'clearai-facts') }),
 			)
-			occupy('conversation.view', () => ({ id: 'clearai-facts', order: 20, label: t('本体') }), (props) => h(LocalizedFacts, { ...props, openSpectator, openPreview: openPreviewFor(props), openExplore: () => openPanel(props, 'clearai-explore') }))
+			occupy('conversation.view', () => ({ id: 'clearai-facts', order: 20, label: t('本体') }), (props) => h(LocalizedFacts, { ...props, openSpectator, openPreview: openPreviewFor(props), send: sendFor(props), openExplore: () => openPanel(props, 'clearai-explore') }))
 			/**
 			 * **计划面坐在原生 plan 那个座位上**。
 			 *
@@ -2829,7 +3005,7 @@ window.__ModuleLoader__.load({
 		 * 真的跑一遍渲染路径(捕 undefined 字段访问这类只有渲染时才炸的错)。
 		 * 仍然不是给别的包用的接口。
 		 */
-		exports.__components = { PlanChip, WorldTree, ExploreView, AnswerCards, QuestionBox, NextBox, EmergentActions, GraphBand, GraphInspector, NeedYou, TreeDetail, Atlas, AtlasHeader, ConclusionList, ConclusionRow, ConclusionDetail, StationBar, TrustTimeline, ClearAIMark, LOOP_LABEL }
+		exports.__components = { PlanChip, WorldTree, ExploreView, AnswerCards, QuestionBox, NextBox, EmergentActions, GraphBand, GraphInspector, NeedYou, TreeDetail, Atlas, AtlasHeader, ConclusionList, ConclusionRow, ConclusionDetail, StationBar, TrustTimeline, ClearAIMark, LOOP_LABEL, EntityCard, KnowledgeFlowBox, KnowledgeItemRow, SettledLine, CountMarks }
 		/**
 		 * 测试缝之三:命题那一列的**派生**是纯函数(分组、处境、来路、证据链),
 		 * 渲染本身没法在没浏览器的地方细究——把它导出去,让测试直接断言派生结果。

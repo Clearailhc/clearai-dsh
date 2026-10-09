@@ -2185,9 +2185,137 @@ function historyRows(state, hypothesis) {
 }
 
 /** 面板契约。浏览器读的就是这个,一字不改。 */
+/** 名称比对用的规整(与内核取用时同一条规则):去空白、短横、下划线,小写。 */
+const nameKey = (raw) =>
+	String(raw ?? '')
+		.replace(/[\s_-]+/g, '')
+		.toLowerCase()
+
+/** 适用范围的一行读法:条件、取值范围、补充说明。 */
+function scopeLine(spec) {
+	if (!isPlainObject(spec)) return null
+	const parts = []
+	for (const [key, value] of Object.entries(isPlainObject(spec.conditions) ? spec.conditions : {})) parts.push(`${key}=${Array.isArray(value) ? value.join('/') : String(value)}`)
+	for (const [key, range] of Object.entries(isPlainObject(spec.ranges) ? spec.ranges : {})) {
+		if (!isPlainObject(range)) continue
+		const low = range.min ?? range.low ?? null
+		const high = range.max ?? range.high ?? null
+		parts.push(`${key} ${low ?? '…'}–${high ?? '…'}${range.unit ? ` ${range.unit}` : ''}`)
+	}
+	if (typeof spec.note === 'string' && spec.note.trim() !== '') parts.push(spec.note.trim())
+	return parts.length === 0 ? null : parts.join(';')
+}
+
+/**
+ * **沉淀下来的知识,按条目列一份**(本体货架的实体卡、图上的计数、探索货架的两节与结论卡的摘要读它)。
+ *
+ * 事实:已撤回的不列;有推翻证据、开着的疑问或口径已变的是「待核验」,其余「已确立」;收窄过范围的带 `boundaries`。
+ * 负向条目照文件上的状态;经验照种类。每条带 `about`,界面按实体的 id、名称与别名把条目挂到实体上。
+ */
+function knowledgeItems(state, derived) {
+	const items = []
+	for (const fact of derived.factRows ?? []) {
+		if (fact?.review?.decision === 'retracted') continue
+		const pending = (fact.refuted === true && (fact.review === null || fact.review === undefined)) || (fact.questioned ?? []).length > 0 || (fact.definitionsChanged ?? []).length > 0
+		items.push({
+			id: fact.id,
+			kind: 'fact',
+			status: pending ? 'pending' : 'established',
+			text: fact.text ?? '',
+			about: Array.isArray(fact.about) ? fact.about : [],
+			scope: scopeLine(fact.scope_spec),
+			boundaries: (Array.isArray(fact.boundaries) ? fact.boundaries : []).map((bound) => ({ verdict: bound.verdict ?? null, basis: bound.basis ?? null })),
+			challenged: (fact.questioned ?? []).some((id) => String(id).startsWith('challenge:')),
+			level: fact.level ?? null,
+			goal: fact.goal ?? null,
+			path: fact.path ?? null,
+		})
+	}
+	for (const row of derived.negativeRows ?? []) {
+		items.push({
+			id: row.id,
+			kind: 'negative',
+			status: row.status,
+			text: row.statement,
+			about: row.about ?? [],
+			scope: scopeLine(row.scope_spec),
+			strength: row.strength ?? null,
+			basis: row.resolution?.reason ?? null,
+			goal: row.source?.goal ?? null,
+			path: row.path ?? null,
+		})
+	}
+	for (const lesson of derived.lessonRows ?? []) {
+		items.push({ id: lesson.id, kind: 'lesson', status: lesson.kind ?? 'trap', text: lesson.text ?? '', about: Array.isArray(lesson.about) ? lesson.about : [], scope: lesson.boundary ?? scopeLine(lesson.scope_spec), goal: lesson.goal ?? null, path: lesson.path ?? null })
+	}
+	return items
+}
+
+/** 一条条目在实体上算哪一格计数(图上的小数字与实体卡的栏目同一套)。 */
+const COUNT_BUCKET = { established: 'established', pending: 'pending', excluded: 'excluded', preliminary_excluded: 'excluded', unresolved: 'unresolved', escalated: 'unresolved' }
+
+/** 实体图节点 → 挂在它上面的条目(按 id、名称、别名对 `about`)与各格计数。 */
+function entityKnowledge(state, graph, items) {
+	const aliasesOf = new Map((Array.isArray(state.entities) ? state.entities : []).map((entity) => [String(entity?.id ?? ''), Array.isArray(entity?.aliases) ? entity.aliases : []]))
+	const out = {}
+	for (const node of graph.nodes) {
+		if (node.layer !== 'entity' || node.kind !== 'instance') continue
+		const keys = new Set([node.ref, node.label, ...(aliasesOf.get(String(node.ref ?? '')) ?? [])].map(nameKey).filter((key) => key.length >= 2))
+		const ids = []
+		const counts = { established: 0, excluded: 0, bounded: 0, pending: 0, unresolved: 0 }
+		for (const item of items) {
+			if (!item.about.some((name) => keys.has(nameKey(name)))) continue
+			ids.push(`${item.kind}:${item.id}`)
+			const bucket = item.kind === 'lesson' ? null : COUNT_BUCKET[item.status]
+			if (bucket !== undefined && bucket !== null) counts[bucket] += 1
+			if (item.kind === 'fact' && item.boundaries.length > 0) counts.bounded += 1
+		}
+		if (ids.length > 0) out[node.id] = { items: ids, counts }
+	}
+	return out
+}
+
+/**
+ * 探索货架的两节与结论卡的摘要:
+ *   · `cited`——本次判断通过 `uses` 引用的条目与系统判定(不是「适用」的排前面);
+ *   · `settling`——本目标已写下的负向条目,加上结案时待独立核验的判断;
+ *   · `settled`——本目标已沉淀的条数(已确立 / 已排除 / 未解释 / 经验)。
+ */
+function knowledgeFlow(state, derived, items, promotedIds) {
+	const goalId = state.goal?.id ?? null
+	const byKey = new Map(items.map((item) => [item.id, item]))
+	const cited = new Map()
+	for (const hypothesis of derived.hypotheses ?? []) {
+		for (const use of Array.isArray(hypothesis.uses) ? hypothesis.uses : []) {
+			const key = `${use.id}|${use.verdict}`
+			if (!cited.has(key)) cited.set(key, { id: use.id, kind: use.kind ?? byKey.get(use.id)?.kind ?? null, verdict: use.verdict ?? 'unknown', text: byKey.get(use.id)?.text ?? null, path: byKey.get(use.id)?.path ?? null, by: [] })
+			cited.get(key).by.push(handleOf(hypothesis))
+		}
+	}
+	const citedRows = [...cited.values()].sort((left, right) => (left.verdict === 'applies' ? 1 : 0) - (right.verdict === 'applies' ? 1 : 0))
+	const mine = goalId === null ? [] : items.filter((item) => item.goal === goalId)
+	const awaiting = (derived.hypotheses ?? []).filter((hypothesis) => !promotedIds.has(hypothesis.id) && ['credible', 'pending'].includes(trustOf(hypothesis, false))).map((hypothesis) => ({ id: hypothesis.id, name: handleOf(hypothesis), claim: hypothesis.claim ?? '' }))
+	const count = (predicate) => mine.filter(predicate).length
+	return {
+		cited: citedRows,
+		settling: { negatives: mine.filter((item) => item.kind === 'negative'), awaiting },
+		settled:
+			goalId === null
+				? null
+				: {
+						established: count((item) => item.kind === 'fact' && item.status === 'established'),
+						excluded: count((item) => item.kind === 'negative' && (item.status === 'excluded' || item.status === 'preliminary_excluded')),
+						unresolved: count((item) => item.kind === 'negative' && (item.status === 'unresolved' || item.status === 'escalated' || item.status === 'defect')),
+						lessons: count((item) => item.kind === 'lesson'),
+					},
+	}
+}
+
 export function view(state, sessionId) {
 	const derived = derive(state)
 	const promotedIds = new Set((state.facts ?? []).map((fact) => fact?.hypothesis).filter((id) => typeof id === 'string'))
+	const items = knowledgeItems(state, derived)
+	const graph = graphProjection(state)
 	const plan = derived.activePlan ?? derived.closedPlans[derived.closedPlans.length - 1] ?? null
 	const sid = sessionId === undefined || sessionId === null ? (state.sessionId ?? null) : String(sessionId)
 	return {
@@ -2224,7 +2352,7 @@ export function view(state, sessionId) {
 			predicates: derived.lexicon.predicates,
 			conflicts: derived.conflicts,
 			health: derived.lexiconIssues,
-			graph: graphProjection(state),
+			graph,
 			/** 本体文件里的实体(带所在目录的容器)与跨文件问题:本体页的问题列表读它。 */
 			entities: Array.isArray(state.entities) ? state.entities : [],
 			problems: Array.isArray(state.ontologyProblems) ? state.ontologyProblems : [],
@@ -2234,6 +2362,14 @@ export function view(state, sessionId) {
 		 * 与卡片读的是同一份派生(判据只有一处:`deriveKnowledge`)。
 		 */
 		knowledge: derived.knowledge,
+		/**
+		 * **沉淀下来的知识**(事实、负向条目、经验,一条一行)与它们在实体上的挂法:
+		 * 实体卡与图上的计数读 `entityKnowledge`,探索货架的「引用的已有知识」「将沉淀的内容」
+		 * 与结论卡的「本次沉淀」读 `knowledgeFlow`。
+		 */
+		knowledgeItems: items,
+		entityKnowledge: entityKnowledge(state, graph, items),
+		knowledgeFlow: knowledgeFlow(state, derived, items, promotedIds),
 		/**
 		 * **单一叙述源**(`knowledge-view.js` 的 `knowledgeView`)。
 		 *
@@ -2278,6 +2414,8 @@ export function view(state, sessionId) {
 							refuteWhen: hypothesis.refute_when,
 							question: hypothesis.question ?? null,
 							from: hypothesis.from ?? null,
+							/** 引用的已有条目与系统当场的判定(`[{id, kind, verdict}]`)。 */
+							uses: Array.isArray(hypothesis.uses) ? hypothesis.uses : [],
 							status: hypothesis.status,
 							supportedLevel: hypothesis.supportedLevel,
 							refutations: hypothesis.refutations,
