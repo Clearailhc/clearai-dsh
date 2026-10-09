@@ -254,7 +254,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本是 v18(多了经验)', fold.STATE_VERSION === 18, String(fold.STATE_VERSION))
+	check('状态版本是 v19(问题、候选与预测)', fold.STATE_VERSION === 19, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -400,7 +400,8 @@ console.log('\n【知识模式:结构判据 + 缺口是读数,不是拦截】')
 
 	check('缺口是读数:一条也不拦,也不进「待处理」', fold.derive(goalOnly).needYou.length === 0)
 	check('读面带出知识模式(与卡片同一份派生)', fold.view(goalOnly, 's').knowledge.mode === 'knowledge')
-	check('卡片把缺口逐条说出来(人话,不带 code)', fold.renderCard(goalOnly).includes('还欠的') && !/prose_only_claims|untouched_claims|entities_unlanded/.test(fold.renderCard(goalOnly)))
+	check('卡片不提「只有散文」那条缺口(0.5.1 删了重复提醒),也不带 code', !fold.renderCard(goalOnly).includes(fold.GLOSSARY?.prose_only_claims?.plain?.[0] ?? '命题只有散文主张') && !/prose_only_claims|untouched_claims|entities_unlanded/.test(fold.renderCard(goalOnly)))
+	check('卡片把其余缺口逐条说出来(人话)', fold.renderCard(worked).includes('还欠的'), fold.renderCard(worked).split('\n').filter((line) => line.includes('还欠')).join('|'))
 	check('结构完整时如实说不欠,而不是沉默', fold.renderCard(promoted).includes('结构完整') || fold.renderCard(promoted).includes('还欠的'), fold.renderCard(promoted).split('\n').filter((line) => line.includes('结构') || line.includes('还欠')).join('|'))
 }
 
@@ -486,7 +487,7 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 	const noVocab = fold.applyMutations(fold.emptyState(), [{ t: 'goal/set', id: 'g1', claim: '全新领域', done_criteria: 'D', promote_at_level: 'L3', revision: 1, hypotheses: [{ id: 'h1', claim: '全新主张', refute_when: 'rw' }] }])
 	const pf3 = fold.knowledgePreflight(noVocab, fold.derive(noVocab))
 	check('没有命中时 terms/predicates 为空数组(不是 null,不是 undefined)', Array.isArray(pf3.terms) && pf3.terms.length === 0 && Array.isArray(pf3.predicates) && pf3.predicates.length === 0)
-	check('卡里如实说「没命中」并指出动作', fold.renderCard(noVocab).includes('没有命中') && fold.renderCard(noVocab).includes('clear/ontology/'))
+	check('没命中时卡上不再重复提醒写本体(本体随立题写,由 Frame 的测量门槛承担)', !fold.renderCard(noVocab).includes('没有命中'))
 
 	// ⑥ 废止的词条不进预检。
 	const deprecated = fold.applyMutations(seededState, [{ t: 'ontology/term_deprecated', id: 'furnace_batch', reason: '不再用' }])

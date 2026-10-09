@@ -2,11 +2,11 @@
  * clearai-dsh —— 浏览器半(ClearAI 的面板)。
  *
  * 它注册三个座位:
- *   中栏 `conversation.view`    本体(页眉 + 本体图 / 实体图 + 按可信度分组的结论)
- *   右栏 `sidebarRightTabs`     世界树(计划的步骤,一行一步)
- *   输入框 `conversation.input`  计划芯片(步数 + 「待处理 N」)
+ *   中栏 `conversation.view`    探索(问题 → 候选假设 → 下一步;过程记录里有判断列表与计划的世界树)
+ *   中栏 `conversation.view`    本体(结论四部分 + 本体图 / 实体图 + 已确立的事实 + 经验)
+ *   输入框 `conversation.input`  计划芯片(「问题 1/2 · 待检验假设 N 个」+ 「待处理 N」,点击打开探索货架)
  * 交付与文件改动走 DSH 原生的卡片,技能走原生技能目录,这里都不另做一份。
- * 面板**只读**:没有写入口。要人拍板的事由开门的那次工具调用当场问人,要改词汇就在对话里说。
+ * 面板**只读**:没有写入口。要人拍板的事由开门的那次工具调用当场问人;「立为问题 / 暂缓」只替人往对话里发一句话。
  *
  * 面板自己不取数、不重算:宿主半注册的**会话投影单元** `clearai`(见 `lib/index.js`)把算好的
  * 视图推下来,`useProjection('clearai')` 读它。投影为空(`undefined`)时渲染平静的空态,
@@ -105,8 +105,8 @@ window.__ModuleLoader__.load({
 
 		/** 语言命名空间。表按**源文**索引:键就是中文原文,所以漏翻译一条只会退回中文,不会把 key 显示给人。 */
 		const LOCALE_NS = 'clearai'
-		const LOCALE_ZH = {":":":"," · 改过 ":" · 改过 "," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:"," 次":" 次"," 次评估者":" 次评估者"," 步":" 步"," 步)":" 步)"," 看核验记录":" 看核验记录"," 看核验过程":" 看核验过程"," 轮":" 轮","(点一下开右栏「世界树」)":"(点一下开右栏「世界树」)","(点一下开右栏「世界树」看拓扑)":"(点一下开右栏「世界树」看拓扑)","(缺)":"(缺)","clearai 面板:右栏页签类型注册失败 ":"clearai 面板:右栏页签类型注册失败 ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","」相关的":"」相关的","一句话":"一句话","一步检验":"一步检验","上位":"上位","下一步:找一步去检验它":"下一步:找一步去检验它","下一步:换个办法再检验":"下一步:换个办法再检验","下一步:独立核验通过 → 已验证":"下一步:独立核验通过 → 已验证","下一步:结案时写进长期知识":"下一步:结案时写进长期知识","下位":"下位","不确定":"不确定","世界树":"世界树","主语":"主语","事实":"事实","产物":"产物","人撤回":"人撤回","人放行":"人放行","代码":"代码","依据":"依据","值的形态":"值的形态","做什么":"做什么","入本体":"入本体","全屏":"全屏","全文在 ":"全文在 ","公式":"公式","关系":"关系","关闭":"关闭","写进长期知识":"写进长期知识","出自":"出自","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)","判据":"判据","判据:":"判据:","判断":"判断","原生预览打开它":"原生预览打开它","原生预览打开它(计划声明的产物)":"原生预览打开它(计划声明的产物)","取不到":"取不到","取值":"取值","只看与「":"只看与「","只看相关":"只看相关","可信度怎么变的":"可信度怎么变的","可复算":"可复算","命题":"命题","图组件不可用":"图组件不可用","在图上找它":"在图上找它","在检验这一站被推翻,不再往下走。":"在检验这一站被推翻,不再往下走。","实体图":"实体图","实体图还空着。":"实体图还空着。","实例":"实例","审批记录":"审批记录","已交付":"已交付","已作废":"已作废","已推翻":"已推翻","已提出":"已提出","已收尾 · 存档可看":"已收尾 · 存档可看","已替换":"已替换","已被替换,不再往下走。":"已被替换,不再往下走。","已验证":"已验证","引用":"引用","引用已有材料":"引用已有材料","待推进":"待推进","待核验":"待核验","打开「本体」那一格并展开这条结论":"打开「本体」那一格并展开这条结论","打开目标文档(原生预览)":"打开目标文档(原生预览)","打开计划文档(原生预览)":"打开计划文档(原生预览)","推翻":"推翻","提出":"提出","支持":"支持","收起":"收起","收起详情":"收起详情","放行":"放行","未解释":"未解释","数值":"数值","暂无计划。建立后此处显示计划的步骤与闸门。":"暂无计划。建立后此处显示计划的步骤与闸门。","有 ":"有 ","有矛盾":"有矛盾","未声明":"未声明","本体":"本体","本体图":"本体图","查看此步骤的证据":"查看此步骤的证据","查看步骤详情":"查看步骤详情","查看评估者":"查看评估者","检验":"检验","检验结果:":"检验结果:","概念":"概念","正在取…":"正在取…","正在裁决":"正在裁决","步 ":"步 ","清除":"清除","点击查看详情":"点击查看详情","点开看进度和来历":"点开看进度和来历","状态":"状态","独立核验":"独立核验","独立核验:":"独立核验:","用到它的结论":"用到它的结论","盘上没有这个文件":"盘上没有这个文件","目标":"目标","相关":"相关","看核验":"看核验","看记录":"看记录","矛盾":"矛盾","第 n 步":"第 n 步","算错":"算错","类型":"类型","结论":"结论","结论照常可读。":"结论照常可读。","背景(不参与判定):":"背景(不参与判定):","自己推了一遍":"自己推了一遍","自己检验":"自己检验","范围":"范围","范围:":"范围:","补充":"补充","观测":"观测","计划":"计划","计划 ":"计划 ","计划受阻,等人处置":"计划受阻,等人处置","计划已交付 ":"计划已交付 ","计划已收尾(":"计划已收尾(","计划文档":"计划文档","计划的步骤与闸门":"计划的步骤与闸门","证据":"证据","评 ":"评 ","评估":"评估","评估卡":"评估卡","起过 ":"起过 ","还没有内容。发第一条消息后,这里显示本体图和结论。":"还没有内容。发第一条消息后,这里显示本体图和结论。","还没有立目标":"还没有立目标","还没有结论。模型立下判断之后,这里一行一条。":"还没有结论。模型立下判断之后,这里一行一条。","这一项已经不在当前的词里了(可能刚被废止)。":"这一项已经不在当前的词里了(可能刚被废止)。","这个词已废止,旧结论里的用法照样可读。":"这个词已废止,旧结论里的用法照样可读。","进度":"进度","退出全屏":"退出全屏","适配":"适配","释义":"释义","待处理":"待处理","待处理 ":"待处理 ","验证":"验证","验证中":"验证中","展开下一层":"展开下一层","收起下一层":"收起下一层","本体文件有 ":"本体文件有 "," 处问题(这些不进图)":" 处问题(这些不进图)"," 个断言的主语还没写成实体文件。":" 个断言的主语还没写成实体文件。","clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。":"clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。","本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。":"本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。"}
-		const LOCALE_EN = {":":": "," · 改过 ":" · changed "," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: "," 次":" times"," 次评估者":" evaluators"," 步":" steps"," 步)":" steps)"," 看核验记录":" Review record"," 看核验过程":" Watch the review"," 轮":" rounds","(点一下开右栏「世界树」)":" (click to open the World Tree)","(点一下开右栏「世界树」看拓扑)":" (click to see the steps in the World Tree)","(缺)":" (missing)","clearai 面板:右栏页签类型注册失败 ":"clearai panel: failed to register the right-sidebar tab type ","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","」相关的":"\"","一句话":"Statement","一步检验":"A test","上位":"Broader","下一步:找一步去检验它":"Next: test it in a step","下一步:换个办法再检验":"Next: test it another way","下一步:独立核验通过 → 已验证":"Next: independent check passes → Verified","下一步:结案时写进长期知识":"Next: written to long-term knowledge at close","下位":"Narrower","不确定":"Uncertain","世界树":"World Tree","主语":"Subject","事实":"Facts","产物":"Deliverables","人撤回":"Withdrawn by a person","人放行":"Released by a person","代码":"Code","依据":"Basis","值的形态":"Value form","做什么":"What it does","入本体":"In ontology","全屏":"Full screen","全文在 ":"Full text at ","公式":"Formula","关系":"Relation","关闭":"Close","写进长期知识":"Written to long-term knowledge","出自":"From","切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)":"Switch back to an earlier World Tree (the plans are all still here, and their documents are archived under clear/goals/plans/)","判据":"Criterion","判据:":"Criterion: ","判断":"Judgment","原生预览打开它":"Open it in the native preview","原生预览打开它(计划声明的产物)":"Open it in the native preview (an artifact declared by the plan)","取不到":"Unavailable","取值":"Value","只看与「":"Only related to \"","只看相关":"Only related","可信度怎么变的":"How trust changed","可复算":"Reproducible","命题":"Propositions","图组件不可用":"The graph component is unavailable","在图上找它":"Find it on the graph","在检验这一站被推翻,不再往下走。":"Refuted at the test stage; it goes no further.","实体图":"Entity graph","实体图还空着。":"The entity graph is empty. ","实例":"Instances","审批记录":"approval record","已交付":"delivered","已作废":"voided","已推翻":"Refuted","已提出":"proposed","已收尾 · 存档可看":"closed · archived and readable","已替换":"Replaced","已被替换,不再往下走。":"Replaced; it goes no further.","已验证":"Verified","引用":"Reference","引用已有材料":"Cites existing material","待推进":"to advance","待核验":"Awaiting check","打开「本体」那一格并展开这条结论":"Open the Ontology pane and expand this conclusion","打开目标文档(原生预览)":"Open the goal document (native preview)","打开计划文档(原生预览)":"Open the plan document (native preview)","推翻":"Refute","提出":"Proposed","支持":"Support","收起":"Collapse","收起详情":"Collapse details","放行":"release","未解释":"Unexplained","数值":"Quantity","暂无计划。建立后此处显示计划的步骤与闸门。":"No plan yet. Once created, its steps show here.","有 ":"","有矛盾":"Conflicting","未声明":"not declared","本体":"Ontology","本体图":"Ontology graph","查看此步骤的证据":"see the evidence for this step","查看步骤详情":"view step details","查看评估者":"view evaluator","检验":"Test","检验结果:":"Result: ","概念":"concepts","正在取…":"Loading…","正在裁决":"Deciding","步 ":"step ","清除":"Clear","点击查看详情":"click for details","点开看进度和来历":"Open to see progress and history","状态":"Status","独立核验":"Independent check","独立核验:":"Independent check: ","用到它的结论":"Conclusions using it","盘上没有这个文件":"this file is not on disk","目标":"Goal","相关":"Related","看核验":"See check","看记录":"See record","矛盾":"Conflicts","第 n 步":"Step n","算错":"Wrong if","类型":"Type","结论":"CONCLUSIONS","结论照常可读。":"conclusions are still readable.","背景(不参与判定):":"Background (not part of the verdict): ","自己推了一遍":"Reasoned through alone","自己检验":"Self-tested","范围":"Scope","范围:":"Scope: ","补充":"More","观测":"Observation","计划":"Plan","计划 ":"Plan ","计划受阻,等人处置":"plan blocked, waiting for a person","计划已交付 ":"Plan delivered ","计划已收尾(":"Plan closed (","计划文档":"Plan document","计划的步骤与闸门":"Plan steps","证据":"Evidence","评 ":"E","评估":"Evaluation","评估卡":"evaluation card","起过 ":"ran ","还没有内容。发第一条消息后,这里显示本体图和结论。":"Nothing yet. After the first message, the graph and conclusions show here.","还没有立目标":"No goal yet","还没有结论。模型立下判断之后,这里一行一条。":"No conclusions yet. Each judgment gets one line here.","这一项已经不在当前的词里了(可能刚被废止)。":"This item is no longer in the vocabulary (it may have just been deprecated).","这个词已废止,旧结论里的用法照样可读。":"This term is deprecated; older conclusions still read fine.","进度":"Progress","退出全屏":"Exit full screen","适配":"Fit","释义":"Gloss","待处理":"To handle","待处理 ":"to handle ","验证":"Verification","验证中":"Testing","展开下一层":"Expand the next level","收起下一层":"Collapse the next level","本体文件有 ":"Ontology files have "," 处问题(这些不进图)":" problems (these stay off the graph)"," 个断言的主语还没写成实体文件。":" assertion subjects have no entity file yet. ","clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。":"Entity files under clear/ontology/entities/ and assertions in long-term knowledge appear here.","本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。":"The ontology graph is empty. Concepts and relations appear once the model writes files under clear/ontology/concepts/ and relations/."}
+		const LOCALE_ZH = {"待执行":"待执行","已交付":"已交付","已作废":"已作废","支持":"支持","推翻":"推翻","不确定":"不确定","第 n 步":"第 n 步","判据:":"判据:","判据":"判据"," · 已修订 ":" · 已修订 "," 次":" 次"," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:","打开目标文档(原生预览)":"打开目标文档(原生预览)","全文在 ":"全文在 ","背景(不参与判定):":"背景(不参与判定):","目标":"目标","命题":"命题","计划":"计划","验证":"验证","观测":"观测","评估":"评估","证据":"证据","事实":"事实","批准":"批准","未解释":"未解释","评估卡":"评估卡","查看评估者":"查看评估者","审批记录":"审批记录","产物":"产物","已验证":"已验证","待核验":"待核验","验证中":"验证中","已推翻":"已推翻","已替换":"已替换","自行检验":"自行检验","独立核验":"独立核验","人工批准":"人工批准","判断":"判断","检验":"检验","纳入本体":"纳入本体","下一步:安排步骤对其进行检验":"下一步:安排步骤对其进行检验","下一步:通过独立核验后标记为已验证":"下一步:通过独立核验后标记为已验证","下一步:改用其他方法重新检验":"下一步:改用其他方法重新检验","下一步:结案时写入长期知识":"下一步:结案时写入长期知识","陈述":"陈述","数值":"数值","公式":"公式","代码":"代码","引用":"引用","概念":"概念","取值形态":"取值形态","实例":"实例","取值":"取值","关系":"关系","在检验阶段被推翻,不再推进。":"在检验阶段被推翻,不再推进。","已被替换,不再推进。":"已被替换,不再推进。","提出":"提出","单步检验":"单步检验",":":":","写入长期知识":"写入长期知识","人工撤回":"人工撤回","进度":"进度","可信度变化":"可信度变化","补充说明":"补充说明","依据":"依据","查看核验":"查看核验","查看记录":"查看记录","范围":"范围","推翻条件":"推翻条件","相关":"相关","在图中定位":"在图中定位","来源":"来源","收起":"收起","点击查看进度与来源":"点击查看进度与来源","暂无结论。模型提出判断后,将在此逐条列出。":"暂无结论。模型提出判断后,将在此逐条列出。","尚未设立目标":"尚未设立目标","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"暂无内容。发送第一条消息后,此处将显示本体图与结论。","仅显示与「":"仅显示与「","」相关的内容":"」相关的内容","清除":"清除","已确立的事实":"已确立的事实","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。","经验(":"经验(",")":")","广度调研":"广度调研","定向求解":"定向求解","先调研后求解":"先调研后求解","考察中":"考察中","已排除":"已排除","已采纳":"已采纳","暂不考察":"暂不考察","未开始":"未开始","调研中":"调研中","已厘清":"已厘清","常见误区":"常见误区","前置核查":"前置核查","不可取的捷径":"不可取的捷径","先验知识":"先验知识","提出依据":"提出依据","未注明(直觉)":"未注明(直觉)","直觉":"直觉","本体关系「":"本体关系「","」":"」","主张":"主张","预测":"预测","排除依据":"排除依据","采纳依据":"采纳依据","关联记录":"关联记录","支持 ":"支持 "," 条 · 推翻 ":" 条 · 推翻 "," 条 · 无法判定 ":" 条 · 无法判定 "," 条":" 条","在本体货架中展开此结论":"在本体货架中展开此结论","已得出结论 · 查看结论":"已得出结论 · 查看结论","已暂缓":"已暂缓","新发现,待您决定":"新发现,待您决定","尚无候选假设":"尚无候选假设","候选假设 ":"候选假设 "," 个:":" 个:","问题 ":"问题 ","候选假设":"候选假设","展开":"展开","已请求立为问题,待模型修订立题后生效。":"已请求立为问题,待模型修订立题后生效。","已请求暂缓,结案时列入「尚未确定的事项」。":"已请求暂缓,结案时列入「尚未确定的事项」。","无法自动发送,请在对话中说明。":"无法自动发送,请在对话中说明。","新发现的问题":"新发现的问题","请将新发现的问题「":"请将新发现的问题「","」立为问题深入研究(问题 ":"」立为问题深入研究(问题 ",")。":")。","立为问题":"立为问题","请暂缓问题「":"请暂缓问题「","」(问题 ":"」(问题 ","),结案时列入「尚未确定的事项」。":"),结案时列入「尚未确定的事项」。","暂缓":"暂缓","调研板块":"调研板块","判断 ":"判断 "," 条 · 已采纳 ":" 条 · 已采纳 ","未解释的现象 ":"未解释的现象 "," 项":" 项","下一步":"下一步","预测:":"预测:","若「":"若「","」成立,预测":"」成立,预测","各候选假设的预测相同,此步骤无法区分它们。":"各候选假设的预测相同,此步骤无法区分它们。","如需调整计划,请在对话中说明。":"如需调整计划,请在对话中说明。","未解释的现象(":"未解释的现象(","结案前须解释、排除或写入「尚未确定的事项」":"结案前须解释、排除或写入「尚未确定的事项」","独立评估发现":"独立评估发现","涉及:":"涉及:","、":"、","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。","阶段 · ":"阶段 · ","调研板块 ":"调研板块 "," 个 · 已厘清 ":" 个 · 已厘清 "," 个":" 个","当前问题 ":"当前问题 "," / 共 ":" / 共 ","计划 已完成 ":"计划 已完成 "," / ":" / "," 步":" 步","独立评估 ":"独立评估 ","计划共 ":"计划共 ","(":"(","进行中)":"进行中)","课题":"课题","待您处理(":"待您处理(","过程记录":"过程记录","结论":"结论","未能回答:":"未能回答:","查看探索记录":"查看探索记录","尚未确定的事项":"尚未确定的事项","待您决策":"待您决策","不适用:":"不适用:","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"暂无计划。建立计划后,此处将显示计划的步骤与闸门。","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)","计划 ":"计划 ","已完成 · 可查看存档":"已完成 · 可查看存档","步 ":"步 ","打开计划文档(原生预览)":"打开计划文档(原生预览)","计划文档":"计划文档","点击查看详情":"点击查看详情","查看步骤详情":"查看步骤详情"," 轮":" 轮","已派出评估者 ":"已派出评估者 ","收起详情":"收起详情","任务内容":"任务内容","状态":"状态","未声明":"未声明","磁盘上未找到该文件":"磁盘上未找到该文件","(缺失)":"(缺失)","在原生预览中打开":"在原生预览中打开","在原生预览中打开(计划声明的产物)":"在原生预览中打开(计划声明的产物)","查看此步骤的证据":"查看此步骤的证据","检验结果:":"检验结果:","独立核验:":"独立核验:","正在裁决":"正在裁决"," 查看核验过程":" 查看核验过程"," 查看核验记录":" 查看核验记录","待处理":"待处理","板块 ":"板块 "," · ":" · "," 个问题待您决定":" 个问题待您决定"," · 待检验假设 ":" · 待检验假设 ","计划受阻,待人工处理":"计划受阻,待人工处理","计划已收尾(":"计划已收尾("," 步)":" 步)","计划已交付 ":"计划已交付 ","待处理 ":"待处理 ","(点击打开探索货架)":"(点击打开探索货架)","仅显示相关项":"仅显示相关项","关闭":"关闭","正在加载…":"正在加载…","无法获取":"无法获取","该项已不在当前词表中(可能已被废止)。":"该项已不在当前词表中(可能已被废止)。","释义":"释义","上位":"上位","下位":"下位","主体":"主体","类型":"类型","该术语已废止,既有结论中的用法仍可查看。":"该术语已废止,既有结论中的用法仍可查看。","引用此项的结论":"引用此项的结论","有矛盾":"有矛盾","范围:":"范围:","展开下一层":"展开下一层","收起下一层":"收起下一层","共 ":"共 "," 条断言的主体尚未建立实体文件。":" 条断言的主体尚未建立实体文件。","实体图暂无内容。":"实体图暂无内容。","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。","本体图":"本体图","实体图":"实体图","矛盾":"矛盾","适配":"适配","退出全屏":"退出全屏","全屏":"全屏","图组件不可用":"图组件不可用","结论仍可正常查看。":"结论仍可正常查看。","本体文件有 ":"本体文件有 "," 项问题(不纳入图中)":" 项问题(不纳入图中)","已提出":"已提出","探索":"探索","本体":"本体","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出"}
+		const LOCALE_EN = {"待执行":"to do","已交付":"delivered","已作废":"voided","支持":"Support","推翻":"Refute","不确定":"Uncertain","第 n 步":"Step n","判据:":"Criterion: ","判据":"Criterion"," · 已修订 ":" · revised "," 次":" times"," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: ","打开目标文档(原生预览)":"Open the goal document (native preview)","全文在 ":"Full text at ","背景(不参与判定):":"Background (not part of the verdict): ","目标":"Goal","命题":"Propositions","计划":"Plan","验证":"Verification","观测":"Observation","评估":"Evaluation","证据":"Evidence","事实":"Facts","批准":"approval","未解释":"Unexplained","评估卡":"evaluation card","查看评估者":"view evaluator","审批记录":"approval record","产物":"Deliverables","已验证":"Verified","待核验":"Awaiting check","验证中":"Testing","已推翻":"Refuted","已替换":"Replaced","自行检验":"Self-tested","独立核验":"Independent check","人工批准":"Approved by a person","判断":"Judgment","检验":"Test","纳入本体":"In ontology","下一步:安排步骤对其进行检验":"Next: schedule a step to test it","下一步:通过独立核验后标记为已验证":"Next: marked Verified after an independent check","下一步:改用其他方法重新检验":"Next: test it again by another method","下一步:结案时写入长期知识":"Next: written to long-term knowledge at close","陈述":"Statement","数值":"Quantity","公式":"Formula","代码":"Code","引用":"Reference","概念":"concepts","取值形态":"Value form","实例":"Instances","取值":"Value","关系":"Relation","在检验阶段被推翻,不再推进。":"Refuted at the test stage; it goes no further.","已被替换,不再推进。":"Replaced; it goes no further.","提出":"Proposed","单步检验":"A single test",":":": ","写入长期知识":"Written to long-term knowledge","人工撤回":"Withdrawn by a person","进度":"Progress","可信度变化":"Trust history","补充说明":"Details","依据":"Basis","查看核验":"View check","查看记录":"View record","范围":"Scope","推翻条件":"Refuted if","相关":"Related","在图中定位":"Locate on the graph","来源":"Source","收起":"Collapse","点击查看进度与来源":"Click to view progress and source","暂无结论。模型提出判断后,将在此逐条列出。":"No judgments yet. Each judgment the model proposes is listed here.","尚未设立目标":"No goal set yet","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"Nothing yet. After the first message, the ontology graph and conclusions appear here.","仅显示与「":"Showing only items related to \"","」相关的内容":"\"","清除":"Clear","已确立的事实":"ESTABLISHED FACTS","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"No established facts yet. Judgments appear here once tested and independently checked; the testing process is in the Explore shelf.","经验(":"LESSONS (",")":")","广度调研":"Broad survey","定向求解":"Targeted solving","先调研后求解":"Survey, then solve","考察中":"Being examined","已排除":"Excluded","已采纳":"Adopted","暂不考察":"Set aside","未开始":"Not started","调研中":"In progress","已厘清":"Clarified","常见误区":"Common pitfall","前置核查":"Check first","不可取的捷径":"Misleading shortcut","先验知识":"Prior knowledge","提出依据":"Proposed from","未注明(直觉)":"Not stated (intuition)","直觉":"Intuition","本体关系「":"Ontology relation \"","」":"\"","主张":"Claim","预测":"Prediction","排除依据":"Grounds for exclusion","采纳依据":"Grounds for adoption","关联记录":"Related records","支持 ":"Support "," 条 · 推翻 ":" · refute "," 条 · 无法判定 ":" · inconclusive "," 条":"","在本体货架中展开此结论":"Expand this conclusion in the Ontology shelf","已得出结论 · 查看结论":"Concluded · view the conclusion","已暂缓":"Parked","新发现,待您决定":"Newly found, awaiting your decision","尚无候选假设":"No candidate hypotheses yet","候选假设 ":"Candidate hypotheses: "," 个:":" — ","问题 ":"Question ","候选假设":"Candidate hypotheses","展开":"Expand","已请求立为问题,待模型修订立题后生效。":"Requested as a question; it takes effect once the model revises the framing.","已请求暂缓,结案时列入「尚未确定的事项」。":"Requested to park; it will be listed under open points at conclusion.","无法自动发送,请在对话中说明。":"Could not send automatically; please say it in the conversation.","新发现的问题":"Newly found question","请将新发现的问题「":"Please make the newly found question \"","」立为问题深入研究(问题 ":"\" a question to pursue (question ",")。":").","立为问题":"Make it a question","请暂缓问题「":"Please park the question \"","」(问题 ":"\" (question ","),结案时列入「尚未确定的事项」。":") and list it under open points at conclusion.","暂缓":"Park","调研板块":"Survey areas","判断 ":"Judgments: "," 条 · 已采纳 ":" · adopted ","未解释的现象 ":"Unexplained observations: "," 项":"","下一步":"Next step","预测:":"Prediction: ","若「":"If \"","」成立,预测":"\" holds, the prediction is","各候选假设的预测相同,此步骤无法区分它们。":"All candidate hypotheses predict the same result, so this step cannot tell them apart.","如需调整计划,请在对话中说明。":"To change the plan, say so in the conversation.","未解释的现象(":"Unexplained observations (","结案前须解释、排除或写入「尚未确定的事项」":"Before concluding, each must be explained, ruled out, or written into the open points","独立评估发现":"Found by the independent evaluator","涉及:":"Concerns: ","、":", ","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"Nothing yet. After the first message, questions, candidate hypotheses and the next step appear here.","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"No goal set yet. Once the model frames the goal, questions, candidate hypotheses and the next step appear here.","阶段 · ":"Mode · ","调研板块 ":"Survey areas: "," 个 · 已厘清 ":" · clarified "," 个":"","当前问题 ":"Current question "," / 共 ":" of ","计划 已完成 ":"Plan: completed "," / ":" / "," 步":" steps","独立评估 ":"Independent evaluations: ","计划共 ":"Plan: ","(":" (","进行中)":" in progress)","课题":"Topic","待您处理(":"Awaiting you (","过程记录":"Process record","结论":"Conclusion","未能回答:":"Could not be answered: ","查看探索记录":"View the exploration record","尚未确定的事项":"Open points","待您决策":"For you to decide","不适用:":"Does not apply: ","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"No plan yet. Once a plan is created, its steps and gates appear here.","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"Switch to an earlier plan (all plans are kept; documents are archived under clear/goals/plans/)","计划 ":"Plan ","已完成 · 可查看存档":"closed · archive available","步 ":"step ","打开计划文档(原生预览)":"Open the plan document (native preview)","计划文档":"Plan document","点击查看详情":"click for details","查看步骤详情":"view step details"," 轮":" rounds","已派出评估者 ":"Evaluators dispatched: ","收起详情":"Collapse details","任务内容":"Task","状态":"Status","未声明":"not declared","磁盘上未找到该文件":"this file was not found on disk","(缺失)":" (missing)","在原生预览中打开":"Open in the native preview","在原生预览中打开(计划声明的产物)":"Open in the native preview (an artifact declared by the plan)","查看此步骤的证据":"see the evidence for this step","检验结果:":"Result: ","独立核验:":"Independent check: ","正在裁决":"Deciding"," 查看核验过程":" View the review"," 查看核验记录":" View the review record","待处理":"To handle","板块 ":"Areas "," · ":" · "," 个问题待您决定":" question(s) awaiting your decision"," · 待检验假设 ":" · hypotheses to test: ","计划受阻,待人工处理":"plan blocked, awaiting a person","计划已收尾(":"Plan closed ("," 步)":" steps)","计划已交付 ":"Plan delivered ","待处理 ":"to handle ","(点击打开探索货架)":" (click to open the Explore shelf)","仅显示相关项":"Related only","关闭":"Close","正在加载…":"Loading…","无法获取":"Unavailable","该项已不在当前词表中(可能已被废止)。":"This item is no longer in the vocabulary (it may have been deprecated).","释义":"Gloss","上位":"Broader","下位":"Narrower","主体":"Subject","类型":"Type","该术语已废止,既有结论中的用法仍可查看。":"This term is deprecated; its use in existing conclusions remains readable.","引用此项的结论":"Conclusions citing it","有矛盾":"Conflicting","范围:":"Scope: ","展开下一层":"Expand the next level","收起下一层":"Collapse the next level","共 ":""," 条断言的主体尚未建立实体文件。":" assertion subjects have no entity file yet. ","实体图暂无内容。":"The entity graph is empty. ","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"Entity files under clear/ontology/entities/ and assertions in long-term knowledge appear here.","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"The ontology graph is empty. Concepts and relations appear once the model creates files under clear/ontology/concepts/ and relations/.","本体图":"Ontology graph","实体图":"Entity graph","矛盾":"Conflicts","适配":"Fit","退出全屏":"Exit full screen","全屏":"Full screen","图组件不可用":"The graph component is unavailable","结论仍可正常查看。":"conclusions remain readable.","本体文件有 ":"Ontology files have "," 项问题(不纳入图中)":" problems (kept off the graph)","已提出":"proposed","探索":"Explore","本体":"Ontology","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset"}
 
 		/**
 		 * 翻译函数:**由原生 locale 座位绑定**(`ctx.locale.bind`),不是我们自建的一套 i18n。
@@ -140,7 +140,7 @@ window.__ModuleLoader__.load({
 		 * 依赖的客户端服务,**必须全部声明在这里**。
 		 *
 		 * 这不是洁癖,是行为约束:客户端模块在 `slots` 一出现就被激活
-		 * (`slots` 是平台 seed,启动时就有),而 `sessions` / `sidebarRightTabs` 是**后来**
+		 * (`slots` 是平台 seed,启动时就有),而 `sessions` / `sidebarRight` 是**后来**
 		 * 才由各自的插件 `provide` 的。只声明 `slots` 的话,我们的 `apply()` 会在它们之前跑,
 		 * 读不到会话服务 → 早退 → **一个插座都不注册**,而且不报错:右栏只剩宿主自带的「文件」,
 		 * 中栏没有「产物」。宿主那侧一切正常(模块图里有我们、bundle 正常送达),
@@ -149,9 +149,9 @@ window.__ModuleLoader__.load({
 		 * 声明之后 Cordis 会把插件**挂起**到这些服务就位再激活(原生插件同样是这么写的,
 		 * 例如 `dsh-client-ui-sidebar-files` 声明 slots + sidebarRightTabs + remote + locale)。
 		 */
-		const inject = ['slots', 'sessions', 'sidebarRightTabs', 'sidebarRight']
+		const inject = ['slots', 'sessions', 'sidebarRight']
 
-		const STEP = lazyTable(() => ({ open: t('待推进'), advanced: t('已交付'), void: t('已作废') }))
+		const STEP = lazyTable(() => ({ open: t('待执行'), advanced: t('已交付'), void: t('已作废') }))
 		const VERDICT = lazyTable(() => ({ support: t('支持'), refute: t('推翻'), inconclusive: t('不确定') }))
 		
 		/** 「第 n 步」:整句做一个词条,英文才排得成 Step n。 */
@@ -312,6 +312,75 @@ window.__ModuleLoader__.load({
 .clearai-kv>span:nth-child(odd){color:var(--dsw-alias-label-tertiary)}
 .clearai-chips{display:inline-flex;gap:6px;flex-wrap:wrap}
 .clearai-quiet{color:var(--dsw-alias-label-secondary);font-size:12.5px;padding:6px 0}
+/* ── 探索货架:问题 → 候选假设 → 下一步;过程记录默认折叠。颜色只用主题令牌。 ── */
+.clearai-head-kind{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+.clearai-pills{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+.clearai-pill{padding:1px 10px;border-radius:999px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}
+.clearai-waiting{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:8px 12px;margin-bottom:14px;border-radius:8px;border:.5px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-1);font-size:12.5px}
+.clearai-waiting b{color:var(--dsw-alias-state-warn-primary);font-weight:600}
+.clearai-box{display:flex;flex-direction:column;margin-bottom:14px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden}
+.clearai-box-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:10px 14px;background:var(--dsw-alias-bg-layer-1)}
+.clearai-box[data-compact="1"] .clearai-box-head{background:transparent}
+.clearai-box-kind{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+.clearai-box-title{flex:1 1 220px;font-size:14px;font-weight:600}
+.clearai-box-note{font-size:12px;color:var(--dsw-alias-label-secondary)}
+.clearai-box-foot{display:flex;flex-direction:column;gap:4px;padding:8px 14px;font-size:12px;color:var(--dsw-alias-label-tertiary);border-top:.5px solid var(--dsw-alias-border-l1)}
+.clearai-parked{display:inline-flex;gap:8px;align-items:baseline}
+.clearai-cand{border-top:.5px solid var(--dsw-alias-border-l1)}
+.clearai-cand-head{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:9px 14px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.clearai-cand-head[data-static="1"]{cursor:default}
+.clearai-cand-head:not([data-static="1"]):hover{background:var(--dsw-alias-interactive-bg-hover)}
+.clearai-cand-name{font-weight:500}
+.clearai-cand[data-s="excluded"] .clearai-cand-name{text-decoration:line-through;color:var(--dsw-alias-label-tertiary)}
+.clearai-cand-note{flex:1 1 220px;min-width:0;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.clearai-cand-chevron{margin-left:auto;font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+.clearai-cand-detail{display:flex;flex-direction:column;gap:3px;padding:0 14px 12px}
+.clearai-kvrow{display:grid;grid-template-columns:64px 1fr;gap:10px;font-size:12.5px}
+.clearai-kvrow>span:first-child{color:var(--dsw-alias-label-tertiary)}
+.clearai-state{flex:0 0 auto;display:inline-block;font-size:11px;line-height:16px;padding:0 7px;border-radius:6px;border:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary);white-space:nowrap}
+.clearai-state[data-s="examining"],.clearai-state[data-s="in_progress"]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
+.clearai-state[data-s="excluded"]{border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
+.clearai-state[data-s="adopted"],.clearai-state[data-s="clear"]{background:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary-inverted)}
+.clearai-state[data-s="set_aside"]{border-style:dashed}
+.clearai-emergent{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 14px 10px;padding:8px 10px;border-radius:8px;border:.5px solid var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-1)}
+.clearai-emergent-kind{font-size:11.5px;font-weight:600;color:var(--dsw-alias-brand-primary)}
+.clearai-emergent-text{flex:1 1 200px;font-weight:500}
+.clearai-emergent-actions{display:inline-flex;gap:8px}
+.clearai-emergent-done{margin:0 14px 10px;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.clearai-btn{min-height:30px;padding:0 12px;border-radius:8px;border:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12.5px;cursor:pointer}
+.clearai-btn[data-primary="1"]{background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary);color:#fff}
+.clearai-next{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:12px 14px;border-radius:10px;border:.5px solid var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-1)}
+.clearai-next-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.clearai-next-kind{font-size:11.5px;font-weight:600;color:var(--dsw-alias-brand-primary)}
+.clearai-next-title{font-size:14px;font-weight:600}
+.clearai-preds{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.clearai-pred{padding:8px 10px;border-radius:8px;border:.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base)}
+.clearai-pred-if{font-size:11.5px;color:var(--dsw-alias-label-secondary)}
+.clearai-pred-value{font-size:13.5px;font-weight:600}
+.clearai-next-note{font-size:12px;color:var(--dsw-alias-label-secondary)}
+.clearai-next-warn{font-size:12px;color:var(--dsw-alias-state-warn-primary);font-weight:600}
+.clearai-anomaly{display:flex;flex-wrap:wrap;gap:4px 12px;padding:7px 14px;border-top:.5px solid var(--dsw-alias-border-l1);font-size:12.5px}
+.clearai-anomaly-meta{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
+.clearai-process{border-top:.5px solid var(--dsw-alias-border-l2);padding-top:4px}
+.clearai-process-head{width:100%;min-height:38px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:0;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.clearai-process-head span{font-size:12px;color:var(--dsw-alias-label-secondary)}
+.clearai-process-body{display:flex;flex-direction:column;gap:14px;padding:6px 0}
+.clearai-judgments-head{display:flex;flex-direction:column;gap:4px}
+/* 本体货架的结论卡:四部分 */
+.clearai-answers{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.clearai-qtab{min-height:28px;padding:0 12px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}
+.clearai-qtab[aria-pressed="true"]{background:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary-inverted)}
+.clearai-answer{display:flex;flex-direction:column;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden}
+.clearai-answer-part{display:flex;flex-direction:column;gap:4px;padding:10px 14px;border-top:.5px solid var(--dsw-alias-border-l1)}
+.clearai-answer-part:first-child{border-top:0}
+.clearai-answer-part[data-warm="1"]{background:var(--dsw-alias-bg-layer-1)}
+.clearai-answer-label{font-size:11.5px;font-weight:600;color:var(--dsw-alias-label-tertiary)}
+.clearai-answer-part[data-warm="1"] .clearai-answer-label{color:var(--dsw-alias-state-warn-primary)}
+.clearai-answer-main{font-size:15px;font-weight:600}
+.clearai-answer-lines{display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.clearai-lesson{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:12.5px}
+.clearai-lesson-kind{font-size:11px;padding:0 7px;border-radius:6px;border:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary)}
+.clearai-lesson-meta{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
 `
 		/** 把上面那段 CSS 挂进页面(带 data-plugin 标记,宿主按包名记账,卸载时收掉)。 */
 		function installStyles() {
@@ -503,7 +572,7 @@ window.__ModuleLoader__.load({
 							h(
 								'div',
 								{ style: S.head },
-								`${t('判据')} · ${criteriaLines.length}${history.length === 0 ? '' : `${t(' · 改过 ')}${history.length}${t(' 次')}${lastAudit === null || lastAudit === undefined ? '' : `${t(' · 最近一次修订的独立裁决:')}${String(lastAudit)}`}`}`,
+								`${t('判据')} · ${criteriaLines.length}${history.length === 0 ? '' : `${t(' · 已修订 ')}${history.length}${t(' 次')}${lastAudit === null || lastAudit === undefined ? '' : `${t(' · 最近一次修订的独立裁决:')}${String(lastAudit)}`}`}`,
 							),
 							...criteriaLines.map((line, index) => h('div', { key: `criteria-${index}`, style: S.criteriaRow }, `${index + 1}. ${line}`)),
 							// 全文的家与卡上那句指针是同一个路径(不各自拼一遍);沿用计划文档那条既有做法
@@ -526,7 +595,7 @@ window.__ModuleLoader__.load({
 			evaluation: t('评估'),
 			evidence: t('证据'),
 			fact: t('事实'),
-			release: t('放行'),
+			release: t('批准'),
 			anomaly: t('未解释'),
 		}))
 
@@ -668,22 +737,22 @@ window.__ModuleLoader__.load({
 		 */
 		const TRUST_ORDER = ['credible', 'pending', 'testing', 'unclear', 'refuted', 'replaced']
 		const TRUST_WORD = lazyTable(() => ({ credible: t('已验证'), pending: t('待核验'), testing: t('验证中'), unclear: t('不确定'), refuted: t('已推翻'), replaced: t('已替换') }))
-		const LEVEL_WORD = lazyTable(() => ({ L0: t('自己检验'), L1: t('自己检验'), L2: t('自己检验'), L3: t('独立核验'), L4: t('人放行') }))
+		const LEVEL_WORD = lazyTable(() => ({ L0: t('自行检验'), L1: t('自行检验'), L2: t('自行检验'), L3: t('独立核验'), L4: t('人工批准') }))
 		/** 进度轨的四站。顺序即一条结论要走的路。 */
-		const STATIONS = () => [t('判断'), t('检验'), t('已验证'), t('入本体')]
+		const STATIONS = () => [t('判断'), t('检验'), t('已验证'), t('纳入本体')]
 		/** 还没走完时,下一步是什么(时间线末尾那条虚点)。 */
 		const NEXT_STEP = lazyTable(() => ({
-			testing: t('下一步:找一步去检验它'),
-			pending: t('下一步:独立核验通过 → 已验证'),
-			unclear: t('下一步:换个办法再检验'),
-			credible: t('下一步:结案时写进长期知识'),
+			testing: t('下一步:安排步骤对其进行检验'),
+			pending: t('下一步:通过独立核验后标记为已验证'),
+			unclear: t('下一步:改用其他方法重新检验'),
+			credible: t('下一步:结案时写入长期知识'),
 		}))
 		/** 值的形态(本体图上的小方块):内部词换成人话。 */
-		const FORM_WORD = lazyTable(() => ({ statement: t('一句话'), quantity: t('数值'), formula: t('公式'), code: t('代码'), reference: t('引用') }))
-		const KIND_WORD = lazyTable(() => ({ concept: t('概念'), value_type: t('值的形态'), instance: t('实例'), literal: t('取值'), edge: t('关系') }))
+		const FORM_WORD = lazyTable(() => ({ statement: t('陈述'), quantity: t('数值'), formula: t('公式'), code: t('代码'), reference: t('引用') }))
+		const KIND_WORD = lazyTable(() => ({ concept: t('概念'), value_type: t('取值形态'), instance: t('实例'), literal: t('取值'), edge: t('关系') }))
 
 		/** 一步检验是怎么做的:独立核验直接说;自己做的,说到了哪一级(可复算 / 引用材料 / 推了一遍)。 */
-		const howOf = (row) => (row.evaluator === 'independent' ? t('独立核验') : (LEVEL_WORD[row.level] ?? t('自己检验')))
+		const howOf = (row) => (row.evaluator === 'independent' ? t('独立核验') : (LEVEL_WORD[row.level] ?? t('自行检验')))
 
 		/**
 		 * **结论行的模型**(纯函数,导出给测试)。
@@ -776,7 +845,7 @@ window.__ModuleLoader__.load({
 					...names.map((_, index) => h('span', { key: `seg-${index}`, 'data-state': index < reached ? (stopped && index === reached - 1 ? 'broken' : 'done') : index === reached && !stopped ? 'next' : 'todo' })),
 				),
 				h('div', { className: 'clearai-stations-names' }, ...names.map((name, index) => h('span', { key: `name-${index}`, 'data-now': index === reached - 1 ? '1' : '0' }, name))),
-				stopped ? h('div', { className: 'clearai-stations-note' }, props.trust === 'refuted' ? t('在检验这一站被推翻,不再往下走。') : t('已被替换,不再往下走。')) : null,
+				stopped ? h('div', { className: 'clearai-stations-note' }, props.trust === 'refuted' ? t('在检验阶段被推翻,不再推进。') : t('已被替换,不再推进。')) : null,
 			)
 		}
 
@@ -786,9 +855,9 @@ window.__ModuleLoader__.load({
 			const lines = rows.map((row, index) => {
 				let text = ''
 				if (row.kind === 'proposed') text = t('提出')
-				else if (row.kind === 'evidence') text = `${row.ordinal === null || row.ordinal === undefined ? t('一步检验') : `${nth(row.ordinal)}`}${t(':')}${VERDICT[row.verdict] ?? row.verdict} · ${howOf(row)}`
-				else if (row.kind === 'promoted') text = t('写进长期知识')
-				else if (row.kind === 'retracted') text = `${t('人撤回')}${row.reason ? `:${brief(row.reason, 40)}` : ''}`
+				else if (row.kind === 'evidence') text = `${row.ordinal === null || row.ordinal === undefined ? t('单步检验') : `${nth(row.ordinal)}`}${t(':')}${VERDICT[row.verdict] ?? row.verdict} · ${howOf(row)}`
+				else if (row.kind === 'promoted') text = t('写入长期知识')
+				else if (row.kind === 'retracted') text = `${t('人工撤回')}${row.reason ? `:${brief(row.reason, 40)}` : ''}`
 				const moved = row.from !== undefined && row.from !== row.to
 				return h(
 					'div',
@@ -815,10 +884,10 @@ window.__ModuleLoader__.load({
 				'div',
 				{ className: 'clearai-detail' },
 				part(1, t('进度'), h(StationBar, { station: row.station, trust: row.trust })),
-				part(2, t('可信度怎么变的'), h(TrustTimeline, { history: row.history, station: row.station, trust: row.trust })),
+				part(2, t('可信度变化'), h(TrustTimeline, { history: row.history, station: row.station, trust: row.trust })),
 				part(
 					3,
-					t('补充'),
+					t('补充说明'),
 					h(
 						'div',
 						{ className: 'clearai-kv' },
@@ -843,20 +912,20 @@ window.__ModuleLoader__.load({
 														onClick: () => (origin.session !== null && origin.kind === 'evaluator-session' ? data.openSpectator?.(origin.session) : data.openPreview?.(origin.path)),
 														title: origin.path ?? '',
 													},
-													origin.kind === 'audit-card' || origin.kind === 'evaluator-session' ? t('看核验') : t('看记录'),
+													origin.kind === 'audit-card' || origin.kind === 'evaluator-session' ? t('查看核验') : t('查看记录'),
 												),
 											),
 									),
 						),
 						...kv(t('范围'), row.scope === row.refuteWhen ? null : row.scope),
-						...kv(t('算错'), row.refuteWhen),
+						...kv(t('推翻条件'), row.refuteWhen),
 						...kv(
 							t('相关'),
 							subjects.length === 0
 								? null
-								: h('span', { className: 'clearai-chips' }, ...subjects.map((id) => h('span', { key: id, className: 'clearai-chip', onClick: () => props.onFocus?.(id), title: t('在图上找它') }, labelOfEntity(data, id)))),
+								: h('span', { className: 'clearai-chips' }, ...subjects.map((id) => h('span', { key: id, className: 'clearai-chip', onClick: () => props.onFocus?.(id), title: t('在图中定位') }, labelOfEntity(data, id)))),
 						),
-						...kv(t('出自'), row.step === null ? null : `${nth(row.step)}`),
+						...kv(t('来源'), row.step === null ? null : `${nth(row.step)}`),
 					),
 				),
 			)
@@ -874,7 +943,7 @@ window.__ModuleLoader__.load({
 				{ className: 'clearai-row', 'data-open': open ? '1' : '0', 'data-trust': row.trust },
 				h(
 					'div',
-					{ className: 'clearai-row-head', onClick: () => props.onToggle(row.key), title: open ? t('收起') : t('点开看进度和来历') },
+					{ className: 'clearai-row-head', onClick: () => props.onToggle(row.key), title: open ? t('收起') : t('点击查看进度与来源') },
 					h(TrustTag, { trust: row.trust }),
 					h('span', { className: 'clearai-row-title' }, title),
 					sub === null ? null : h('span', { className: 'clearai-row-sub' }, sub),
@@ -887,7 +956,7 @@ window.__ModuleLoader__.load({
 		/** 结论列表:按可信度分组,空组不出现。 */
 		function ConclusionList(props) {
 			const rows = props.rows
-			if (rows.length === 0) return h('div', { className: 'clearai-quiet' }, t('还没有结论。模型立下判断之后,这里一行一条。'))
+			if (rows.length === 0) return h('div', { className: 'clearai-quiet' }, props.empty ?? t('暂无结论。模型提出判断后,将在此逐条列出。'))
 			return h(
 				'div',
 				{ className: 'clearai-list' },
@@ -904,31 +973,13 @@ window.__ModuleLoader__.load({
 			)
 		}
 
-		/** 页眉:在回答什么 · 一行计数 · 待处理 · 迷你进度轨。 */
+		/** 页眉:在回答什么(计数、待处理与进度轨归探索货架)。 */
 		function AtlasHeader(props) {
-			const { data, rows } = props
-			const live = rows.filter((row) => row.trust !== 'replaced')
-			const counts = TRUST_ORDER.filter((trust) => trust !== 'replaced')
-				.map((trust) => [trust, rows.filter((row) => row.trust === trust).length])
-				.filter(([, count]) => count > 0)
-			const stations = STATIONS().map((name, index) => [name, live.filter((row) => row.station >= index + 1).length])
-			const needYou = Array.isArray(data?.needYou) ? data.needYou : []
+			const { data } = props
 			return h(
 				'div',
 				{ className: 'clearai-head' },
-				h('div', { className: 'clearai-question', title: String(data?.goal?.claim ?? '') }, data?.goal ? String(data.knowledgeView?.goal?.headline ?? data.goal.claim ?? '') : t('还没有立目标')),
-				counts.length === 0 ? null : h('div', { className: 'clearai-counts' }, counts.map(([trust, count]) => `${TRUST_WORD[trust]} ${count}`).join(' · ')),
-				...needYou.map((item, index) => h('div', { key: `need-${index}`, className: 'clearai-need' }, h('b', null, t('待处理')), String(item?.text ?? ''))),
-				live.length === 0
-					? null
-					: h(
-							'div',
-							{ className: 'clearai-track' },
-							...stations.flatMap(([name, count], index) => [
-								index === 0 ? null : h('span', { key: `line-${index}`, className: 'clearai-track-line', 'data-on': count > 0 ? '1' : '0' }),
-								h('span', { key: `st-${index}`, className: 'clearai-track-stop', 'data-on': count > 0 ? '1' : '0' }, h('i', null), `${name} ${count}`),
-							]),
-						),
+				h('div', { className: 'clearai-question', title: String(data?.goal?.claim ?? '') }, data?.goal ? String(data.knowledgeView?.goal?.headline ?? data.goal.claim ?? '') : t('尚未设立目标')),
 			)
 		}
 
@@ -951,10 +1002,11 @@ window.__ModuleLoader__.load({
 				installStyles()
 			}, [])
 			if (projected === undefined || projected === null) {
-				return h('div', { className: 'clearai-atlas' }, h(Empty, null, t('还没有内容。发第一条消息后,这里显示本体图和结论。')))
+				return h('div', { className: 'clearai-atlas' }, h(Empty, null, t('暂无内容。发送第一条消息后,此处将显示本体图与结论。')))
 			}
-			const data = { ...projected, openPreview: props.openPreview, openRail: props.openRail, openSpectator: props.openSpectator }
-			const rows = conclusionsOf(data)
+			const data = { ...projected, openPreview: props.openPreview, openSpectator: props.openSpectator }
+			/** 本体货架只放结果:已确立的事实(判断的全部过程在探索货架的「过程记录」里)。 */
+			const rows = conclusionsOf(data).filter((row) => row.trust === 'credible')
 			const lexicon = data.lexicon ?? null
 			/** 世界树那边点进来的聚焦优先;手动点行仍然有效。 */
 			const focused = incoming === null || incoming === undefined ? null : propositionForStep(data, incoming.step)
@@ -966,7 +1018,8 @@ window.__ModuleLoader__.load({
 			return h(
 				'div',
 				{ className: 'clearai-atlas' },
-				h(AtlasHeader, { data, rows }),
+				h(AtlasHeader, { data }),
+				h(AnswerCards, { data, openExplore: props.openExplore }),
 				h(GraphBand, {
 					lexicon,
 					layer,
@@ -983,12 +1036,13 @@ window.__ModuleLoader__.load({
 					: h(
 							'div',
 							{ className: 'clearai-filter' },
-							`${t('只看与「')}${String(filterTerm.label ?? filterTerm.id)}${t('」相关的')}${t(':')}${shown.length}/${rows.length}`,
+							`${t('仅显示与「')}${String(filterTerm.label ?? filterTerm.id)}${t('」相关的内容')}${t(':')}${shown.length}/${rows.length}`,
 							h('span', { className: 'clearai-link', onClick: () => setFilter(null) }, t('清除')),
 						),
-				h('div', { className: 'clearai-section-head' }, t('结论')),
+				h('div', { className: 'clearai-section-head' }, t('已确立的事实')),
 				h(ConclusionList, {
 					rows: shown,
+					empty: t('暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。'),
 					open,
 					data,
 					onToggle: (key) => {
@@ -1003,6 +1057,378 @@ window.__ModuleLoader__.load({
 						}
 					},
 				}),
+				(data.lessons ?? []).length === 0 ? null : h('div', { className: 'clearai-section-head' }, `${t('经验(')}${data.lessons.length}${t(')')}`),
+				h(LessonList, { data }),
+			)
+		}
+
+		/**
+		 * **探索货架**(中栏视图,紧挨「本体」):过程在这里,结果在本体货架。
+		 *
+		 * 主轴是 问题 → 候选假设(定向求解)或 调研板块 → 新发现的问题(广度调研),
+		 * 读的是宿主算好的 `exploration`(与运行态卡上「当前位置」同一份派生)。
+		 * 候选的状态只从证据来;界面不写任何状态。「立为问题 / 暂缓」两个按钮只是**替人发一句话**
+		 * 给模型,由模型用 Frame 修订落账——与「要改什么就在对话里说」是同一条路。
+		 */
+		const MODE_WORD = lazyTable(() => ({ survey: t('广度调研'), solve: t('定向求解'), survey_then_solve: t('先调研后求解') }))
+		const CANDIDATE_WORD = lazyTable(() => ({ examining: t('考察中'), excluded: t('已排除'), adopted: t('已采纳'), set_aside: t('暂不考察') }))
+		const AREA_WORD = lazyTable(() => ({ not_started: t('未开始'), in_progress: t('调研中'), clear: t('已厘清') }))
+		const LESSON_WORD = lazyTable(() => ({ trap: t('常见误区'), check: t('前置核查'), shortcut: t('不可取的捷径'), prior: t('先验知识') }))
+
+		/** 关系 id → 名字(本体里登记的 label);找不到就如实给 id。 */
+		const relationLabel = (data, id) => String((data?.lexicon?.predicates ?? []).find((item) => item.id === id)?.label ?? id)
+
+		/** 一条候选最近一条某种结论的依据(排除依据 / 采纳依据都从证据里来)。 */
+		const latestBasis = (data, hypothesis, verdict) => {
+			const rows = (Array.isArray(data?.evidence) ? data.evidence : []).filter((item) => item.hypothesis === hypothesis && item.verdict === verdict)
+			return rows.length === 0 ? null : String(rows[rows.length - 1].basis ?? '') || null
+		}
+
+		/** 候选假设展开后的几行(标签按界面用语规范:提出依据 / 推翻条件 / 预测 / 排除依据 / 采纳依据 / 关联记录)。 */
+		function candidateDetail(data, candidate, prediction) {
+			const rows = []
+			const push = (label, value) => {
+				if (value !== null && value !== undefined && value !== '') rows.push([label, value])
+			}
+			push(t('提出依据'), candidate.from === null ? t('未注明(直觉)') : candidate.from === '直觉' || candidate.from === 'intuition' ? t('直觉') : `${t('本体关系「')}${relationLabel(data, candidate.from)}${t('」')}`)
+			push(t('主张'), candidate.claim !== candidate.name ? candidate.claim : null)
+			push(t('推翻条件'), candidate.refuteWhen)
+			push(t('预测'), prediction)
+			if (candidate.state === 'excluded') push(t('排除依据'), latestBasis(data, candidate.id, 'refute'))
+			if (candidate.state === 'adopted') push(t('采纳依据'), latestBasis(data, candidate.id, 'support'))
+			const support = (Array.isArray(data?.evidence) ? data.evidence : []).filter((item) => item.hypothesis === candidate.id && item.verdict === 'support').length
+			push(t('关联记录'), `${t('支持 ')}${support}${t(' 条 · 推翻 ')}${candidate.refutations}${t(' 条 · 无法判定 ')}${candidate.inconclusive}${t(' 条')}`)
+			return rows
+		}
+
+		/** 状态小签:候选与板块各用自己的一套词,颜色按状态族走(进行中 / 否定 / 肯定 / 搁置)。 */
+		function StateTag(props) {
+			return h('span', { className: 'clearai-state', 'data-s': props.state }, props.children)
+		}
+
+		/** 一个问题:标题、计数、候选列表(可展开)、暂不考察的放在页脚。 */
+		function QuestionBox(props) {
+			const { data, question, index, next, open, onToggle } = props
+			const shown = question.candidates.filter((candidate) => candidate.state !== 'set_aside')
+			const parked = question.candidates.filter((candidate) => candidate.state === 'set_aside')
+			const counts = ['examining', 'excluded', 'adopted'].filter((key) => (question.counts?.[key] ?? 0) > 0).map((key) => `${CANDIDATE_WORD[key]} ${question.counts[key]}`)
+			const predictionOf = (id) => (next?.predictions ?? []).find((item) => item.hypothesis === id)?.expect ?? null
+			const status =
+				question.status === 'answered'
+					? h('span', { className: 'clearai-link', onClick: () => props.openFacts?.(), title: t('在本体货架中展开此结论') }, t('已得出结论 · 查看结论'))
+					: question.status === 'parked'
+						? h('span', null, t('已暂缓'))
+						: question.status === 'emergent'
+							? h('span', null, t('新发现,待您决定'))
+							: h('span', null, shown.length === 0 ? t('尚无候选假设') : `${t('候选假设 ')}${question.candidates.length}${t(' 个:')}${counts.join(' · ')}`)
+			const compact = shown.length === 0 && question.status !== 'emergent'
+			return h(
+				'section',
+				{ className: 'clearai-box', 'data-compact': compact ? '1' : '0', 'data-current': props.current ? '1' : '0' },
+				h(
+					'div',
+					{ className: 'clearai-box-head' },
+					question.implicit ? null : h('span', { className: 'clearai-box-kind' }, `${t('问题 ')}${index + 1}`),
+					h('span', { className: 'clearai-box-title' }, question.implicit ? t('候选假设') : question.text),
+					h('span', { className: 'clearai-box-note' }, status),
+				),
+				question.status === 'emergent' ? h(EmergentActions, { question, send: props.send, sent: props.sent, onSent: props.onSent }) : null,
+				...shown.map((candidate) => {
+					const isOpen = open === candidate.id
+					return h(
+						'div',
+						{ key: candidate.id, className: 'clearai-cand', 'data-open': isOpen ? '1' : '0', 'data-s': candidate.state },
+						h(
+							'button',
+							{ type: 'button', className: 'clearai-cand-head', 'aria-expanded': isOpen ? 'true' : 'false', onClick: () => onToggle(isOpen ? null : candidate.id) },
+							h(StateTag, { state: candidate.state }, CANDIDATE_WORD[candidate.state] ?? candidate.state),
+							h('span', { className: 'clearai-cand-name' }, candidate.name),
+							candidate.claim !== candidate.name ? h('span', { className: 'clearai-cand-note' }, brief(candidate.claim, 80)) : null,
+							h('span', { className: 'clearai-cand-chevron', 'aria-hidden': 'true' }, isOpen ? t('收起') : t('展开')),
+						),
+						isOpen
+							? h(
+									'div',
+									{ className: 'clearai-cand-detail' },
+									...candidateDetail(data, candidate, predictionOf(candidate.id)).map(([label, value]) => h('div', { key: label, className: 'clearai-kvrow' }, h('span', null, label), h('span', null, value))),
+								)
+							: null,
+					)
+				}),
+				parked.length === 0
+					? null
+					: h(
+							'div',
+							{ className: 'clearai-box-foot' },
+							...parked.map((candidate) => h('span', { key: candidate.id, className: 'clearai-parked' }, h(StateTag, { state: 'set_aside' }, CANDIDATE_WORD.set_aside), h('s', null, candidate.name))),
+						),
+			)
+		}
+
+		/**
+		 * 「立为问题 / 暂缓」:替人发一句话给模型(模型用 Frame 修订落账),界面自己不写状态。
+		 * 发不出去(拿不到会话的对话服务)就如实说请在对话中说明,不假装发了。
+		 */
+		function EmergentActions(props) {
+			const { question } = props
+			const sent = props.sent?.[question.id] ?? null
+			if (sent === 'pursue') return h('div', { className: 'clearai-emergent-done' }, t('已请求立为问题,待模型修订立题后生效。'))
+			if (sent === 'park') return h('div', { className: 'clearai-emergent-done' }, t('已请求暂缓,结案时列入「尚未确定的事项」。'))
+			if (sent === 'failed') return h('div', { className: 'clearai-emergent-done' }, t('无法自动发送,请在对话中说明。'))
+			const ask = (kind, text) => props.onSent?.(question.id, typeof props.send === 'function' && props.send(text) === true ? kind : 'failed')
+			return h(
+				'div',
+				{ className: 'clearai-emergent' },
+				h('span', { className: 'clearai-emergent-kind' }, t('新发现的问题')),
+				h('span', { className: 'clearai-emergent-text' }, question.text),
+				h(
+					'span',
+					{ className: 'clearai-emergent-actions' },
+					h('button', { type: 'button', className: 'clearai-btn', 'data-primary': '1', onClick: () => ask('pursue', `${t('请将新发现的问题「')}${question.text}${t('」立为问题深入研究(问题 ')}${question.id}${t(')。')}`) }, t('立为问题')),
+					h('button', { type: 'button', className: 'clearai-btn', onClick: () => ask('park', `${t('请暂缓问题「')}${question.text}${t('」(问题 ')}${question.id}${t('),结案时列入「尚未确定的事项」。')}`) }, t('暂缓')),
+				),
+			)
+		}
+
+		/** 广度调研:调研板块一行一个,板块下挂新发现的问题。 */
+		function AreaBox(props) {
+			const { exploration } = props
+			const areas = exploration.areas ?? []
+			const counts = ['clear', 'in_progress', 'not_started'].map((key) => [key, areas.filter((area) => area.state === key).length]).filter(([, count]) => count > 0)
+			return h(
+				'section',
+				{ className: 'clearai-box' },
+				h('div', { className: 'clearai-box-head' }, h('span', { className: 'clearai-box-title' }, t('调研板块')), h('span', { className: 'clearai-box-note' }, counts.map(([key, count]) => `${AREA_WORD[key]} ${count}`).join(' · '))),
+				...areas.map((area) => {
+					const emergent = (exploration.questions ?? []).filter((question) => question.area === area.id && question.status === 'emergent')
+					const note = [`${t('判断 ')}${area.judgments}${t(' 条 · 已采纳 ')}${area.verified}${t(' 条')}`, area.openAnomalies > 0 ? `${t('未解释的现象 ')}${area.openAnomalies}${t(' 项')}` : null].filter((item) => item !== null).join(' · ')
+					return h(
+						'div',
+						{ key: area.id, className: 'clearai-cand', 'data-s': area.state },
+						h('div', { className: 'clearai-cand-head', 'data-static': '1' }, h(StateTag, { state: area.state }, AREA_WORD[area.state] ?? area.state), h('span', { className: 'clearai-cand-name' }, area.name), h('span', { className: 'clearai-cand-note' }, note)),
+						...emergent.map((question) => h(EmergentActions, { key: question.id, question, send: props.send, sent: props.sent, onSent: props.onSent })),
+					)
+				}),
+			)
+		}
+
+		/** 下一步:做什么,以及各候选的预测;预测相同就如实说这一步区分不了。 */
+		function NextBox(props) {
+			const next = props.next
+			if (next === null || next === undefined) return null
+			const predictions = Array.isArray(next.predictions) ? next.predictions : []
+			return h(
+				'section',
+				{ className: 'clearai-next' },
+				h('div', { className: 'clearai-next-head' }, h('span', { className: 'clearai-next-kind' }, t('下一步')), h('span', { className: 'clearai-next-title' }, `${nth(next.ordinal)}${t(':')}${next.do}`)),
+				predictions.length === 0
+					? next.expect
+						? h('div', { className: 'clearai-next-note' }, `${t('预测:')}${next.expect}`)
+						: null
+					: h(
+							'div',
+							{ className: 'clearai-preds' },
+							...predictions.map((item, index) => h('div', { key: `p-${index}`, className: 'clearai-pred' }, h('div', { className: 'clearai-pred-if' }, `${t('若「')}${item.name}${t('」成立,预测')}`), h('div', { className: 'clearai-pred-value' }, item.expect))),
+						),
+				next.indistinct === true
+					? h('div', { className: 'clearai-next-warn' }, t('各候选假设的预测相同,此步骤无法区分它们。'))
+					: h('div', { className: 'clearai-next-note' }, t('如需调整计划,请在对话中说明。')),
+			)
+		}
+
+		/** 未解释的现象:开着的逐条列出(结案时必须写进「尚未确定的事项」或先有去处)。 */
+		function AnomalyBox(props) {
+			const open = (Array.isArray(props.data?.anomalies) ? props.data.anomalies : []).filter((item) => item.status === 'open')
+			if (open.length === 0) return null
+			return h(
+				'section',
+				{ className: 'clearai-box' },
+				h('div', { className: 'clearai-box-head' }, h('span', { className: 'clearai-box-title' }, `${t('未解释的现象(')}${open.length}${t(')')}`), h('span', { className: 'clearai-box-note' }, t('结案前须解释、排除或写入「尚未确定的事项」'))),
+				...open.map((item) =>
+					h(
+						'div',
+						{ key: item.id, className: 'clearai-anomaly' },
+						h('span', null, item.what),
+						item.by === 'evaluator' ? h('span', { className: 'clearai-anomaly-meta' }, t('独立评估发现')) : null,
+						(item.touches ?? []).length > 0 ? h('span', { className: 'clearai-anomaly-meta' }, `${t('涉及:')}${item.touches.join(t('、'))}`) : null,
+					),
+				),
+			)
+		}
+
+		/** 判断的计数与四站进度轨(原在本体货架页眉;过程信息归探索货架)。 */
+		function JudgmentSummary(props) {
+			const rows = props.rows
+			const live = rows.filter((row) => row.trust !== 'replaced')
+			const counts = TRUST_ORDER.filter((trust) => trust !== 'replaced')
+				.map((trust) => [trust, rows.filter((row) => row.trust === trust).length])
+				.filter(([, count]) => count > 0)
+			const stations = STATIONS().map((name, index) => [name, live.filter((row) => row.station >= index + 1).length])
+			return h(
+				'div',
+				{ className: 'clearai-judgments-head' },
+				counts.length === 0 ? null : h('div', { className: 'clearai-counts' }, counts.map(([trust, count]) => `${TRUST_WORD[trust]} ${count}`).join(' · ')),
+				live.length === 0
+					? null
+					: h(
+							'div',
+							{ className: 'clearai-track' },
+							...stations.flatMap(([name, count], index) => [
+								index === 0 ? null : h('span', { key: `line-${index}`, className: 'clearai-track-line', 'data-on': count > 0 ? '1' : '0' }),
+								h('span', { key: `st-${index}`, className: 'clearai-track-stop', 'data-on': count > 0 ? '1' : '0' }, h('i', null), `${name} ${count}`),
+							]),
+						),
+			)
+		}
+
+		function ExploreView(props) {
+			const projected = typeof props.useProjection === 'function' ? props.useProjection('clearai') : undefined
+			const [open, setOpen] = React.useState(null)
+			const [processOpen, setProcessOpen] = React.useState(false)
+			const [manual, setManual] = React.useState(null)
+			const [sent, setSent] = React.useState({})
+			const incoming = useFocus(factsFocus)
+			React.useEffect(() => {
+				installStyles()
+			}, [])
+			if (projected === undefined || projected === null) return h('div', { className: 'clearai-atlas' }, h(Empty, null, t('暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。')))
+			const data = { ...projected, openPreview: props.openPreview, openSpectator: props.openSpectator }
+			const exploration = data.exploration ?? null
+			const goal = data.goal ?? null
+			const rows = conclusionsOf(data)
+			const openFacts = () => props.openFacts?.()
+			const onSent = (id, kind) => setSent({ ...sent, [id]: kind })
+			const focused = incoming === null || incoming === undefined ? null : propositionForStep(data, incoming.step)
+			const opened = focused ?? manual
+			const showProcess = processOpen || focused !== null
+			if (goal === null) {
+				return h('div', { className: 'clearai-atlas' }, h(Empty, null, t('尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。')))
+			}
+			const questions = Array.isArray(exploration?.questions) ? exploration.questions : []
+			const declared = questions.filter((question) => !question.implicit)
+			const areas = Array.isArray(exploration?.areas) ? exploration.areas : []
+			const currentIndex = declared.findIndex((question) => question.id === exploration?.current)
+			const plan = data.plan ?? null
+			const steps = plan === null ? [] : (plan.steps ?? []).filter((step) => step.status !== 'void')
+			const doneSteps = steps.filter((step) => step.status === 'advanced').length
+			const chips = [
+				exploration?.mode ? `${t('阶段 · ')}${MODE_WORD[exploration.mode] ?? exploration.mode}` : null,
+				areas.length > 0 ? `${t('调研板块 ')}${areas.length}${t(' 个 · 已厘清 ')}${areas.filter((area) => area.state === 'clear').length}${t(' 个')}` : null,
+				declared.length > 0 && currentIndex >= 0 ? `${t('当前问题 ')}${currentIndex + 1}${t(' / 共 ')}${declared.length}` : null,
+				steps.length > 0 ? `${t('计划 已完成 ')}${doneSteps}${t(' / ')}${steps.length}${t(' 步')}` : null,
+			].filter((item) => item !== null)
+			const needYou = Array.isArray(data.needYou) ? data.needYou : []
+			const audits = (Array.isArray(data.audits) ? data.audits : []).length
+			const openAnomalies = (Array.isArray(data.anomalies) ? data.anomalies : []).filter((item) => item.status === 'open').length
+			const running = steps.find((step) => step.status === 'open') ?? null
+			const summary = [`${t('判断 ')}${rows.length}${t(' 条')}`, `${t('独立评估 ')}${audits}${t(' 次')}`, `${t('未解释的现象 ')}${openAnomalies}${t(' 项')}`, steps.length > 0 ? `${t('计划共 ')}${steps.length}${t(' 步')}${running === null ? '' : `${t('(')}${nth(running.ordinal)}${t('进行中)')}`}` : null].filter((item) => item !== null).join(' · ')
+			const questionList = questions.filter((question) => question.implicit || question.area === null || question.area === undefined || question.status !== 'emergent')
+			return h(
+				'div',
+				{ className: 'clearai-atlas' },
+				h(
+					'div',
+					{ className: 'clearai-head' },
+					h('div', { className: 'clearai-head-kind' }, t('课题')),
+					h('div', { className: 'clearai-question', title: String(goal.claim ?? '') }, String(goal.headline ?? data.knowledgeView?.goal?.headline ?? goal.claim ?? '')),
+					chips.length === 0 ? null : h('div', { className: 'clearai-pills' }, ...chips.map((chip, index) => h('span', { key: `c-${index}`, className: 'clearai-pill' }, chip))),
+				),
+				needYou.length === 0
+					? null
+					: h(
+							'section',
+							{ className: 'clearai-waiting' },
+							h('b', null, `${t('待您处理(')}${needYou.length}${t(')')}`),
+							...needYou.map((item, index) => h('span', { key: `need-${index}` }, String(item?.text ?? ''))),
+						),
+				areas.length > 0 ? h(AreaBox, { exploration, send: props.send, sent, onSent }) : null,
+				...questionList.map((question) => h(QuestionBox, { key: question.id, data, question, index: declared.indexOf(question), current: question.id === exploration?.current, next: exploration?.next ?? null, open, onToggle: setOpen, openFacts, send: props.send, sent, onSent })),
+				h(NextBox, { next: exploration?.next ?? null }),
+				h(AnomalyBox, { data }),
+				h(
+					'section',
+					{ className: 'clearai-process' },
+					h(
+						'button',
+						{ type: 'button', className: 'clearai-process-head', 'aria-expanded': showProcess ? 'true' : 'false', onClick: () => {
+							factsFocus.set(null)
+							setProcessOpen(!showProcess)
+						} },
+						h('b', null, t('过程记录')),
+						h('span', null, summary),
+						h('span', { className: 'clearai-cand-chevron', 'aria-hidden': 'true' }, showProcess ? t('收起') : t('展开')),
+					),
+					showProcess
+						? h(
+								'div',
+								{ className: 'clearai-process-body' },
+								h(JudgmentSummary, { rows }),
+								h(ConclusionList, {
+									rows,
+									open: opened,
+									data,
+									onToggle: (key) => {
+										factsFocus.set(null)
+										setManual(opened === key ? null : key)
+									},
+									onFocus: () => openFacts(),
+								}),
+								h(WorldTree, { data, openPreview: props.openPreview, openSpectator: props.openSpectator, openFacts: (stepId) => factsFocus.set({ step: stepId }) }),
+							)
+						: null,
+				),
+			)
+		}
+
+		/** 本体货架的结论卡:按问题切换,四部分(结论 / 依据 / 尚未确定的事项 / 待您决策)。 */
+		function AnswerCards(props) {
+			const answers = Array.isArray(props.data?.goal?.answers) ? props.data.goal.answers : []
+			const [picked, setPicked] = React.useState(null)
+			if (answers.length === 0) return null
+			const questions = Array.isArray(props.data?.exploration?.questions) ? props.data.exploration.questions : []
+			const textOf = (id) => questions.find((question) => question.id === id && !question.implicit)?.text ?? null
+			const chosen = answers.find((answer) => answer.question === picked) ?? answers[0]
+			const part = (label, body, warm = false) => h('div', { className: 'clearai-answer-part', 'data-warm': warm ? '1' : '0' }, h('span', { className: 'clearai-answer-label' }, label), body)
+			const open = Array.isArray(chosen.open) ? chosen.open : []
+			const decide = Array.isArray(chosen.decide) ? chosen.decide : []
+			const basis = Array.isArray(chosen.basis) ? chosen.basis : []
+			return h(
+				'div',
+				{ className: 'clearai-answers' },
+				answers.length < 2
+					? null
+					: h(
+							'div',
+							{ className: 'clearai-pills' },
+							...answers.map((answer, index) =>
+								h(
+									'button',
+									{ key: `q-${index}`, type: 'button', className: 'clearai-qtab', 'aria-pressed': answer === chosen ? 'true' : 'false', onClick: () => setPicked(answer.question) },
+									`${t('问题 ')}${index + 1}${textOf(answer.question) ? ` · ${brief(textOf(answer.question), 16)}` : ''}`,
+								),
+							),
+						),
+				h(
+					'section',
+					{ className: 'clearai-answer' },
+					part(t('结论'), h('span', { className: 'clearai-answer-main' }, chosen.conclusion || `${t('未能回答:')}${chosen.unanswered ?? ''}`)),
+					basis.length === 0 ? null : part(t('依据'), h('div', { className: 'clearai-answer-lines' }, ...basis.map((line, index) => h('div', { key: `b-${index}` }, h('span', null, line), ' ', h('span', { className: 'clearai-link', onClick: () => props.openExplore?.() }, t('查看探索记录')))))),
+					open.length === 0 ? null : part(t('尚未确定的事项'), h('div', { className: 'clearai-answer-lines' }, ...open.map((entry, index) => h('div', { key: `o-${index}` }, entry.effect)))),
+					decide.length === 0 ? null : part(t('待您决策'), h('div', { className: 'clearai-answer-lines' }, ...decide.map((line, index) => h('div', { key: `d-${index}` }, line))), true),
+				),
+			)
+		}
+
+		/** 经验:以前结案时核过的「下次怎么做」(含别的会话留下的)。 */
+		function LessonList(props) {
+			const lessons = Array.isArray(props.data?.lessons) ? props.data.lessons : []
+			if (lessons.length === 0) return null
+			return h(
+				'div',
+				{ className: 'clearai-list' },
+				...lessons.map((lesson) =>
+					h('div', { key: lesson.id, className: 'clearai-lesson' }, h('span', { className: 'clearai-lesson-kind' }, LESSON_WORD[lesson.kind] ?? lesson.kind), h('span', null, lesson.text), lesson.boundary ? h('span', { className: 'clearai-lesson-meta' }, `${t('不适用:')}${lesson.boundary}`) : null),
+				),
 			)
 		}
 
@@ -1213,10 +1639,13 @@ window.__ModuleLoader__.load({
 		function WorldTree(props) {
 			const sessions = props.useSessions
 			const sessionId = props.sessionId
+			/** 探索货架里直接把投影交下来(`data`);旧的独立挂法仍按会话快照取。 */
 			const data =
-				typeof sessions === 'function' && typeof sessionId === 'string'
-					? sessions((snapshot) => snapshot?.byId?.[sessionId]?.projectionValues?.clearai)
-					: undefined
+				props.data !== undefined
+					? props.data
+					: typeof sessions === 'function' && typeof sessionId === 'string'
+						? sessions((snapshot) => snapshot?.byId?.[sessionId]?.projectionValues?.clearai)
+						: undefined
 			const [manual, setManual] = React.useState(null)
 			const [picked, setPicked] = React.useState(null)
 			const focus = useFocus(treeFocus)
@@ -1230,7 +1659,7 @@ window.__ModuleLoader__.load({
 			const chosen = wanted === null ? null : plans.find((item) => item.id === wanted) ?? null
 			const plan = chosen ?? (data === null || data === undefined ? null : data.plan)
 			if (plan === null || plan === undefined) {
-				return h('div', { style: S.wrap }, h('div', { style: S.bar }, h('span', { style: S.title }, t('世界树'))), h(Empty, null, t('暂无计划。建立后此处显示计划的步骤与闸门。')))
+				return h('div', { style: S.wrap }, h('div', { style: S.bar }, h('span', { style: S.title }, t('计划'))), h(Empty, null, t('暂无计划。建立计划后,此处将显示计划的步骤与闸门。')))
 			}
 			const rows = treeRows(plan)
 			/** 页眉那一句:计划的首个非空行,过长再截(整篇在 tooltip 与「计划文档」里)。 */
@@ -1303,7 +1732,7 @@ window.__ModuleLoader__.load({
 				h(
 					'div',
 					{ style: S.bar },
-					h('span', { style: S.title }, t('世界树')),
+					h('span', { style: S.title }, t('计划')),
 					/**
 					 * 页眉只放**一句话**:`brief` 常常是整篇 markdown 计划(真数据里这一行渲染出 1794 字 ✗),
 					 * 全文进 tooltip,要读整篇点「打开计划」(原生预览 `clear/goals/plans/<id>.md`)——
@@ -1325,7 +1754,7 @@ window.__ModuleLoader__.load({
 										setPicked(event.target.value)
 										setManual(null)
 									},
-									title: t('切回历史的世界树(计划都还在,文档也归档在 clear/goals/plans/)'),
+									title: t('切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)'),
 									style: { font: 'inherit', fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', background: 'transparent', border: '.5px solid var(--dsw-alias-border-l2)', borderRadius: 6, padding: '1px 4px' },
 								},
 								...plans.map((item, index) =>
@@ -1334,7 +1763,7 @@ window.__ModuleLoader__.load({
 							),
 					chosen === null
 						? null
-						: h('span', { style: { ...S.faint, opacity: 0.8 } }, t('已收尾 · 存档可看')),
+						: h('span', { style: { ...S.faint, opacity: 0.8 } }, t('已完成 · 可查看存档')),
 					h(
 						'span',
 						{ style: S.faint },
@@ -1403,7 +1832,7 @@ window.__ModuleLoader__.load({
 									stat.marks.loops.rounds > 1
 										? h('span', { title: `${stat.marks.loops.rounds}${t(' 轮')}${stat.marks.loops.fails > 0 ? ` · 其中 ${stat.marks.loops.fails} 次被驳回` : ''}` }, `${stat.marks.loops.rounds}${t(' 轮')}`)
 										: null,
-									stat.judges > 0 ? h('span', { title: `${t('起过 ')}${stat.judges}${t(' 次评估者')}` }, t('独立核验')) : null,
+									stat.judges > 0 ? h('span', { title: `${t('已派出评估者 ')}${stat.judges}${t(' 次')}` }, t('独立核验')) : null,
 								),
 							)
 						}),
@@ -1434,7 +1863,7 @@ window.__ModuleLoader__.load({
 					: h(
 							'div',
 							{ style: S.kv },
-							h('span', { style: S.faint }, t('做什么')), h('span', null, step.do),
+							h('span', { style: S.faint }, t('任务内容')), h('span', null, step.do),
 							h('span', { style: S.faint }, t('判据')), h('span', null, `${step.doneCriteria}${step.voidReason === null || step.voidReason === undefined ? '' : `(作废:${step.voidReason})`}`),
 							h('span', { style: S.faint }, t('状态')), h('span', null, `${gloss(STEP, step.status)}${step.level === null || step.level === undefined ? '' : ` · ${step.level}`}`),
 							h(
@@ -1460,8 +1889,8 @@ window.__ModuleLoader__.load({
 												'span',
 												{ key: `${path}-${index}`, style: { marginRight: 8 } },
 												exists === false
-													? h('span', { style: { ...S.mono, opacity: 0.6 }, title: t('盘上没有这个文件') }, `${path}${t('(缺)')}`)
-													: h(Link, { onClick: () => props.openPreview?.(path), title: exists === true ? t('原生预览打开它') : t('原生预览打开它(计划声明的产物)') }, h('span', { style: S.mono }, path)),
+													? h('span', { style: { ...S.mono, opacity: 0.6 }, title: t('磁盘上未找到该文件') }, `${path}${t('(缺失)')}`)
+													: h(Link, { onClick: () => props.openPreview?.(path), title: exists === true ? t('在原生预览中打开') : t('在原生预览中打开(计划声明的产物)') }, h('span', { style: S.mono }, path)),
 											)
 										}),
 							),
@@ -1482,7 +1911,7 @@ window.__ModuleLoader__.load({
 											Link,
 											{
 												onClick: () => props.openFacts(step.id),
-												title: t('打开「本体」那一格并展开这条结论'),
+												title: t('在本体货架中展开此结论'),
 											},
 											t('查看此步骤的证据'),
 										),
@@ -1499,8 +1928,8 @@ window.__ModuleLoader__.load({
 									'div',
 									{ key: item.id, style: S.faint },
 									`${t('独立核验:')}${item.verdict === null || item.verdict === undefined ? t('正在裁决') : (VERDICT[item.verdict] ?? item.verdict)}`,
-									item.evaluatorSession === null || item.evaluatorSession === undefined ? null : h(Link, { onClick: () => props.openSpectator?.(item.evaluatorSession) }, h('span', null, t(' 看核验过程'))),
-									item.cardPath === null || item.cardPath === undefined ? null : h(Link, { onClick: () => props.openPreview?.(item.cardPath) }, h('span', null, t(' 看核验记录'))),
+									item.evaluatorSession === null || item.evaluatorSession === undefined ? null : h(Link, { onClick: () => props.openSpectator?.(item.evaluatorSession) }, h('span', null, t(' 查看核验过程'))),
+									item.cardPath === null || item.cardPath === undefined ? null : h(Link, { onClick: () => props.openPreview?.(item.cardPath) }, h('span', null, t(' 查看核验记录'))),
 								),
 							),
 						),
@@ -1573,9 +2002,24 @@ window.__ModuleLoader__.load({
 			 * 「待处理 N」就在这一格(`waiting`):门开着是**事实面**上最要紧的一句,
 			 * 而它可点——点一下开世界树,那里才看得到要裁什么。
 			 */
-			const symbol = `${done}/${total}`
+			/**
+			 * 符号说**探索到了哪**:调研时是「板块 已厘清/总数」,求解时是「问题 当前/总数 · 待检验假设 N 个」;
+			 * 没列问题也没列板块的目标(旧会话、单问题)退回步数 `N/M`。
+			 */
+			const exploration = data?.exploration ?? null
+			const areas = Array.isArray(exploration?.areas) ? exploration.areas : []
+			const declared = (Array.isArray(exploration?.questions) ? exploration.questions : []).filter((question) => !question.implicit)
+			const current = (Array.isArray(exploration?.questions) ? exploration.questions : []).find((question) => question.id === exploration?.current) ?? null
+			const emergent = declared.filter((question) => question.status === 'emergent').length
+			const examining = current === null ? 0 : (current.counts?.examining ?? 0)
+			const symbol =
+				areas.length > 0
+					? `${t('板块 ')}${areas.filter((area) => area.state === 'clear').length}/${areas.length}${emergent > 0 ? `${t(' · ')}${emergent}${t(' 个问题待您决定')}` : ''}`
+					: declared.length > 0 && current !== null
+						? `${t('问题 ')}${declared.indexOf(current) + 1}/${declared.length}${t(' · 待检验假设 ')}${examining}${t(' 个')}`
+						: `${done}/${total}`
 			const brief = typeof plan.brief === 'string' && plan.brief.trim() !== '' ? plan.brief.trim() : null
-			const meaning = blocked ? t('计划受阻,等人处置') : plan.status === 'closed' ? `${t('计划已收尾(')}${done}/${total}${t(' 步)')}` : `${t('计划已交付 ')}${done}/${total}${t(' 步')}`
+			const meaning = blocked ? t('计划受阻,待人工处理') : plan.status === 'closed' ? `${t('计划已收尾(')}${done}/${total}${t(' 步)')}` : `${t('计划已交付 ')}${done}/${total}${t(' 步')}`
 			/**
 			 * 等人时**只说一句**:先「待处理 N」(人门计数),没有门才说续跑停着的原因。
 			 * 两者是同一根轴(为什么在等人)⇒ 一格只放一个,不并列。
@@ -1588,11 +2032,11 @@ window.__ModuleLoader__.load({
 					type: 'button',
 					className: 'clearai-toolctl',
 					disabled: props.locked === true,
-					title: `${meaning}${waiting === null ? '' : ` · ${waiting}`} · ${plan.id}${brief === null ? '' : ` · ${brief}`}${t('(点一下开右栏「世界树」看拓扑)')}`,
-					'aria-label': `${meaning}${waiting === null ? '' : ` · ${waiting}`}${t('(点一下开右栏「世界树」)')}`,
+					title: `${meaning}${waiting === null ? '' : ` · ${waiting}`} · ${plan.id}${brief === null ? '' : ` · ${brief}`}${t('(点击打开探索货架)')}`,
+					'aria-label': `${meaning}${waiting === null ? '' : ` · ${waiting}`}${t('(点击打开探索货架)')}`,
 					// 「要人注意」用与世界树同一族的琥珀(同一套主题令牌,不新造颜色)。
 					style: attentionNow ? { color: 'rgb(var(--dsw-color-warning, 245 158 11))', fontWeight: 600 } : undefined,
-					onClick: () => props.openRail?.('clearai-worldtree'),
+					onClick: () => props.openExplore?.(),
 				},
 				h(PlanGlyph, null),
 				h('span', { style: { minWidth: 14, textAlign: 'center' } }, symbol),
@@ -1780,12 +2224,12 @@ window.__ModuleLoader__.load({
 					h('span', { className: 'clearai-card-kind' }, KIND_WORD[selection.kind] ?? t('关系')),
 					h('span', { className: 'clearai-card-title' }, title),
 					h('span', { style: { flex: '1 1 auto' } }),
-					h('span', { className: 'clearai-link', onClick: onFilter }, t('只看相关')),
+					h('span', { className: 'clearai-link', onClick: onFilter }, t('仅显示相关项')),
 					h('span', { className: 'clearai-link', onClick: onClose }, t('关闭')),
 				),
-				busy === true ? h('div', { className: 'clearai-quiet' }, t('正在取…')) : null,
-				failure !== null ? h('div', { className: 'clearai-quiet' }, `${t('取不到')}${t(':')}${failure}`) : null,
-				busy === false && failure === null && data === null ? h('div', { className: 'clearai-quiet' }, t('这一项已经不在当前的词里了(可能刚被废止)。')) : null,
+				busy === true ? h('div', { className: 'clearai-quiet' }, t('正在加载…')) : null,
+				failure !== null ? h('div', { className: 'clearai-quiet' }, `${t('无法获取')}${t(':')}${failure}`) : null,
+				busy === false && failure === null && data === null ? h('div', { className: 'clearai-quiet' }, t('该项已不在当前词表中(可能已被废止)。')) : null,
 				data === null
 					? null
 					: h(
@@ -1794,20 +2238,20 @@ window.__ModuleLoader__.load({
 							...kv(t('释义'), definition.gloss),
 							...kv(t('上位'), definition.parentLabel ?? definition.parent),
 							...kv(t('下位'), (relations.children ?? []).map((item) => item.label).join('、')),
-							...kv(t('主语'), definition.domainLabel ?? definition.domain),
+							...kv(t('主体'), definition.domainLabel ?? definition.domain),
 							...kv(t('类型'), definition.typeLabel ?? definition.type),
 							...kv(t('取值'), value),
 							...kv(t('依据'), definition.basis),
 							...kv(t('关系'), (relations.edges ?? []).slice(0, 6).map((edge) => named(edge.chip)).join('、')),
 							...kv(t('实例'), (relations.instances ?? []).slice(0, 6).map((item) => item.label).join('、')),
-							definition.status === 'deprecated' ? h('span', { key: 'dep', style: { gridColumn: '1 / -1' }, className: 'clearai-quiet' }, t('这个词已废止,旧结论里的用法照样可读。')) : null,
+							definition.status === 'deprecated' ? h('span', { key: 'dep', style: { gridColumn: '1 / -1' }, className: 'clearai-quiet' }, t('该术语已废止,既有结论中的用法仍可查看。')) : null,
 						),
 				facts.length === 0
 					? null
 					: h(
 							'div',
 							{ className: 'clearai-card-facts' },
-							h('div', { className: 'clearai-group-head' }, t('用到它的结论'), h('span', null, `${facts.length}${data.factsTruncated > 0 ? '+' : ''}`)),
+							h('div', { className: 'clearai-group-head' }, t('引用此项的结论'), h('span', null, `${facts.length}${data.factsTruncated > 0 ? '+' : ''}`)),
 							...facts.slice(0, 4).map((fact, index) =>
 								h(
 									'div',
@@ -2066,8 +2510,8 @@ window.__ModuleLoader__.load({
 			const sideBySide = fullscreen === true
 			const empty =
 				layer === 'entity'
-					? `${typeof unlanded === 'number' && unlanded > 0 ? `${t('有 ')}${unlanded}${t(' 个断言的主语还没写成实体文件。')}` : t('实体图还空着。')}${t('clear/ontology/entities/ 下的实体文件、写进长期知识的断言会出现在这里。')}`
-					: t('本体图还空着。模型在 clear/ontology/concepts/ 和 relations/ 下写概念与关系文件之后,它们会长在这里。')
+					? `${typeof unlanded === 'number' && unlanded > 0 ? `${t('共 ')}${unlanded}${t(' 条断言的主体尚未建立实体文件。')}` : t('实体图暂无内容。')}${t('clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。')}`
+					: t('本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。')
 			return h(
 				'div',
 				{ className: 'clearai-graph', 'data-full': fullscreen === true ? '1' : '0' },
@@ -2095,7 +2539,7 @@ window.__ModuleLoader__.load({
 					'div',
 					{ className: 'clearai-graph-body', 'data-side': sideBySide ? '1' : '0' },
 					XYFlow === null || XYFlow.ReactFlow === undefined || XYFlow.ReactFlow === null
-						? h('div', { className: 'clearai-graph-empty' }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('结论照常可读。')}`)
+						? h('div', { className: 'clearai-graph-empty' }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('结论仍可正常查看。')}`)
 						: allNodes.length === 0
 							? h('div', { className: 'clearai-graph-empty' }, empty)
 							: h(
@@ -2143,7 +2587,7 @@ window.__ModuleLoader__.load({
 					: h(
 							'details',
 							{ className: 'clearai-graph-problems' },
-							h('summary', null, `${t('本体文件有 ')}${problems.length}${t(' 处问题(这些不进图)')}`),
+							h('summary', null, `${t('本体文件有 ')}${problems.length}${t(' 项问题(不纳入图中)')}`),
 							...problems.slice(0, 12).map((item, index) =>
 								h('div', { key: `${item.path ?? ''}#${index}`, 'data-sev': item.severity === 'error' ? 'error' : item.severity === 'info' ? 'info' : 'warning' }, h('code', null, String(item.path ?? '')), ` ${String(item.detail ?? item.code ?? '')}`),
 							),
@@ -2153,7 +2597,7 @@ window.__ModuleLoader__.load({
 		}
 
 		const LocalizedFacts = withLocale(Atlas)
-		const LocalizedWorldTree = withLocale(WorldTree)
+		const LocalizedExplore = withLocale(ExploreView)
 
 		/** 会话预设的 id:面板只在这个模式的会话里出现。 */
 		const PRESET_ID = 'clearai'
@@ -2161,7 +2605,7 @@ window.__ModuleLoader__.load({
 		function apply(ctx) {
 			// 这四个服务都声明在 `inject` 里,所以这里直接用属性读(Cordis 保证就位);
 			// 用 `ctx.get()` 也读得到,但属性形式同时受 inject 的「服务重载后重新激活」保护。
-			const { slots, sessions, sidebarRightTabs, sidebarRight } = ctx
+			const { slots, sessions, sidebarRight } = ctx
 			/**
 			 * 语言:接 DSH 原生的 locale 座位(可选 —— 老宿主或测试桩里没有它,面板退化成中文)。
 			 * 词典以**源文**为键注册进那个座位,于是 `t('已提出')` 走的是宿主那条查找链:
@@ -2264,113 +2708,43 @@ window.__ModuleLoader__.load({
 			}
 
 			/**
-			 * 右栏三张页签(定案)。
+			 * **右栏不再注册页签**:世界树(计划的步骤与闸门)并入探索货架的「过程记录」。
+			 * 过程与结果各占中栏一格(探索 / 本体),人不必在右栏与中栏之间来回找。
 			 *
-			 * 为什么在右栏而不是中栏:`conversation.view` 是「一次看一个」的视图——看树时看不到对话;
-			 * 而右栏能与对话并排,还能拖出成浮窗、能全屏(树的车道是横向铺开的)。
-			 *
-			 * 注册契约(照抄 `dsh-client-ui-sidebar-files` 的写法):
-			 *   · `sidebarRightTabs.register({id, kind, title, guide})` 注册**页签类型**;
-			 *   · 体与标题各自注册在 `sidebar.right.pane.tab` / `sidebar.right.pane.tab.title`(keyed,钥匙是类型 id);
-			 *   · `sidebarRight.openTab(kind)` 程序化打开(跨面跳转靠它)。
+			 * 切中栏视图走原生正门 `layout.selectPanel`;座位自己的 props 里有 `openView` 时优先用它。
+			 * `selectPanel` 对未注册的 key 会抛 ⇒ 包起来,点不动也不把面板带下水。
 			 */
-			/**
-			 * 图标挑法(原生那 75 个里选,语义要对得上):
-			 *   · 世界树 = `IconBranchOutline16`(计划拓扑与分叉,原生就用它画分支)
-			 *   · 技能 · 记忆 = `IconSkillOutline16`(原生专门有一枚技能图标)
-			 * 拿不到就留空 ⇒ 原生默认字形。
-			 */
-			/**
-			 * 右栏只剩两格:**世界树**(计划的一切:脊柱、车道、闸门、要你拍板的那一下)
-			 * 与 **技能 · 记忆**(外脑)。
-			 *
-			 * 「进展」撤了:它原先装的四段各有归宿——计划与世界线的行归世界树,
-			 * 假设/观测/证据/事实归中栏「事实」,目标与判据归世界树的页眉,
-			 * 而"当下什么状态"由工具行那颗**计划芯片**回答(它一直在,不用切页签)。
-			 * 页签越少,越不需要向人解释每个页签该在什么时候看。
-			 */
-			/**
-			 * 标签与说明必须是**函数**:页签类型只在预设生效时注册一次,而语言座位是**随后**才切到
-			 * 用户偏好的——写成 `label: t('世界树')` 就把注册那一刻的语言固化了(界面中文、
-			 * 右栏页签却是 Worldlines)。惰性取值让原生每次渲染现问一次,切换语言立刻跟上。
-			 */
-			const rightRail = [
-				{ id: 'clearai-worldtree', kind: 'clearai-worldtree', label: () => t('世界树'), order: 15, description: () => t('计划的步骤与闸门'), icon: NATIVE_ICONS.IconBranchOutline16 },
-			]
-			const shown = new Set()
-			const syncRail = () => {
-				const wanted = isCurrentPreset()
-				if (!wanted) {
-					for (const id of [...shown]) {
-						const entry = railDisposers.get(id)
-						if (entry !== undefined) entry()
-						railDisposers.delete(id)
-						shown.delete(id)
-					}
-					return
-				}
-				for (const tab of rightRail) {
-					if (shown.has(tab.id)) continue
-					shown.add(tab.id)
-					const own = []
+			const openPanel = (props, id) => {
+				if (typeof props?.openView === 'function') {
 					try {
-						own.push(ctx.effect(() => sidebarRightTabs.register({
-							id: tab.id,
-							kind: tab.kind,
-							title: tab.label,
-							guide: [{ order: tab.order, title: tab.label, description: tab.description, icon: tab.icon }],
-						}), `clearai: rail type ${tab.id}`))
-					} catch (error) {
-						// 类型已注册(同名同 layer)不是致命:如实记一笔,继续。
-						console.warn?.(`${t('clearai 面板:右栏页签类型注册失败 ')}${String(error?.message ?? error)}`)
+						props.openView(id)
+						return true
+					} catch {
+						/* 退到 layout 那一路 */
 					}
-					const body =
-						tab.body ??
-						((props) =>
-									h(LocalizedWorldTree, {
-										...props,
-										openPreview: openPreviewFor(props),
-										openSpectator,
-										/**
-										 * 反向跳:记住要展开哪条命题,再用**原生正门**切中栏视图。
-										 * `layout` 走可选读法(契约里就给了 `ctx.get('layout')` 这一路);
-										 * `selectPanel` 对未注册的 key 会抛 ⇒ 包起来,别把整棵树带下水。
-										 */
-										openFacts: (stepId) => {
-											factsFocus.set({ step: stepId })
-											const layout = ctx.get('layout')
-											if (layout === undefined || typeof layout.selectPanel !== 'function') return false
-											try {
-												layout.selectPanel('clearai-facts')
-												return true
-											} catch {
-												return false
-											}
-										},
-									}))
-					own.push(ctx.effect(() => slots.inject('sidebar.right.pane.tab', () => slots.register({ name: 'sidebar.right.pane.tab', key: tab.id }, body)), `clearai: rail body ${tab.id}`))
-					own.push(ctx.effect(() => slots.inject('sidebar.right.pane.tab.title', () => slots.register({ name: 'sidebar.right.pane.tab.title', key: tab.id }, () => tab.label)), `clearai: rail title ${tab.id}`))
-					railDisposers.set(tab.id, () => {
-						for (const dispose of own) {
-							try {
-								dispose()
-							} catch {
-								/* 已经放过的不重复处理 */
-							}
-						}
-					})
+				}
+				const layout = ctx.get('layout')
+				if (layout === undefined || typeof layout.selectPanel !== 'function') return false
+				try {
+					layout.selectPanel(id)
+					return true
+				} catch {
+					return false
 				}
 			}
-			const railDisposers = new Map()
-
 			/**
-			 * 打开右栏的某张页签(跨面跳转:点「待处理 N」→ 进展)。
-			 * 不再有我们自己的「预览」页签了:预览走**原生**的文档预览(`openNativePreview`)——
-			 * 那一条既有 markdown/图片/pdf/html 的渲染,也有它自己的分页读盘。
+			 * 「立为问题 / 暂缓」:替人往这个会话里发一句话(与人在输入框里打字同一条路)。
+			 * 对话服务按会话作用域取(`sessions.scope(id)` 上的 `conversation`);拿不到就返回 false,
+			 * 界面如实说「请在对话中说明」。这里不写任何账:状态由模型的 Frame 修订落下。
 			 */
-			const openRail = (kind) => {
+			const sendFor = (props) => (text) => {
+				const id = sessionIdFor(props)
+				if (typeof id !== 'string' || typeof sessions.scope !== 'function') return false
 				try {
-					sidebarRight?.openTab?.(kind)
+					const scoped = sessions.scope(id)
+					const conversation = typeof scoped?.get === 'function' ? scoped.get('conversation') : scoped?.conversation
+					if (conversation === undefined || conversation === null || typeof conversation.send !== 'function') return false
+					Promise.resolve(conversation.send(text)).catch(() => {})
 					return true
 				} catch {
 					return false
@@ -2403,19 +2777,16 @@ window.__ModuleLoader__.load({
 			const openPreviewFor = (props) => (path) => openNativePreview(sidebarRight, sessionIdFor(props), path)
 
 			/**
-			 * 中栏视图:**事实**——整条闭环一屏看完(假设是起点,事实是沉淀)。
-			 * 这一格与模型读的 `clear/knowledge/facts/INDEX.md` 是**同一张表**。
-			 */
-			/**
-			 * 注册时必须把**打开器**交下去:这一格的证据出处、事实原件、跳世界树
-			 * 全靠这两个回调。漏了它们,界面看着能点、点了什么也不会发生——
-			 * 漏了它,「点击证据没反应」。
-			 */
-			/**
-			 * 注册时必须把**打开器**都交下去:证据的四类出处、事实原件、跳世界树全靠它们。
+			 * 中栏两格:**探索**(过程:问题、候选假设、下一步、过程记录)与**本体**(结果:结论、本体图、
+			 * 已确立的事实、经验)。本体货架与模型读的 `clear/knowledge/facts/INDEX.md` 是**同一张表**。
+			 *
+			 * 注册时必须把**打开器**都交下去:证据的出处、事实原件、两格之间的跳转全靠它们。
 			 * 漏了它们,界面看着能点、点了什么也不会发生。
 			 */
-			occupy('conversation.view', () => ({ id: 'clearai-facts', order: 20, label: t('本体') }), (props) => h(LocalizedFacts, { ...props, openRail, openSpectator, openPreview: openPreviewFor(props) }))
+			occupy('conversation.view', () => ({ id: 'clearai-explore', order: 19, label: t('探索') }), (props) =>
+				h(LocalizedExplore, { ...props, openSpectator, openPreview: openPreviewFor(props), send: sendFor(props), openFacts: () => openPanel(props, 'clearai-facts') }),
+			)
+			occupy('conversation.view', () => ({ id: 'clearai-facts', order: 20, label: t('本体') }), (props) => h(LocalizedFacts, { ...props, openSpectator, openPreview: openPreviewFor(props), openExplore: () => openPanel(props, 'clearai-explore') }))
 			/**
 			 * **计划面坐在原生 plan 那个座位上**。
 			 *
@@ -2432,18 +2803,16 @@ window.__ModuleLoader__.load({
 			 *   · 遮蔽的代价是零——原生那个 occupant 在本模式下本来 `return null`。
 			 * 而我们只在**当前会话是本预设**时占座(`occupy`),会话切走就还给它。
 			 */
-			occupy('conversation.input.plan', { priority: -1 }, (props) => h(PlanChip, { ...props, openRail }))
+			occupy('conversation.input.plan', { priority: -1 }, (props) => h(PlanChip, { ...props, openExplore: () => openPanel(props, 'clearai-explore') }))
 			// 输入框下方的常驻派生条(运行态卡在人这一侧的对应物)
 			/**
 			 * **输入框下那一条不再注册**:它说的话(阶段 / 完成度 / 当前步)与原生目标提示、
 			 * 与工具行那颗计划 chip 重复 ✗,却**独占一行把输入框顶上去** ✗。
-			 * 唯一可点、且只有我们知道的那件事(「待处理 N」)已经并进计划 chip(同一行,一点直达世界树)。
+			 * 唯一可点、且只有我们知道的那件事(「待处理 N」)已经并进计划 chip(同一行,一点直达探索货架)。
 			 */
 			ctx.effect(() => sessions.list.subscribe(() => {
 				for (const sync of seats) sync()
-				syncRail()
 			}), t('clearai-loop: 席位跟着会话预设进出'))
-			syncRail()
 		}
 
 		exports.apply = apply
@@ -2459,7 +2828,7 @@ window.__ModuleLoader__.load({
 		 * 真的跑一遍渲染路径(捕 undefined 字段访问这类只有渲染时才炸的错)。
 		 * 仍然不是给别的包用的接口。
 		 */
-		exports.__components = { PlanChip, WorldTree, GraphBand, GraphInspector, NeedYou, TreeDetail, Atlas, AtlasHeader, ConclusionList, ConclusionRow, ConclusionDetail, StationBar, TrustTimeline, ClearAIMark, LOOP_LABEL }
+		exports.__components = { PlanChip, WorldTree, ExploreView, AnswerCards, QuestionBox, NextBox, EmergentActions, GraphBand, GraphInspector, NeedYou, TreeDetail, Atlas, AtlasHeader, ConclusionList, ConclusionRow, ConclusionDetail, StationBar, TrustTimeline, ClearAIMark, LOOP_LABEL }
 		/**
 		 * 测试缝之三:命题那一列的**派生**是纯函数(分组、处境、来路、证据链),
 		 * 渲染本身没法在没浏览器的地方细究——把它导出去,让测试直接断言派生结果。

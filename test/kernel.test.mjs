@@ -1458,14 +1458,14 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const planned = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'u1', do: '测磁盘延迟', artifacts: ['lab/u.txt'], done_criteria: 'lab/u.txt 有延迟', tests: { hypotheses: [disk], level: 'L1' }, expect: '磁盘慢的话延迟 > 20 ms(来自判断「磁盘」)' }, { id: 'u2', do: '测锁等待', artifacts: ['lab/u2.txt'], done_criteria: 'lab/u2.txt 有锁等待' }] })
 		check('步骤带预期落账', host.service.state(S).plans[0].steps[0].expect?.includes('20 ms') === true)
 		check('旧等级 L1 收成自判(L2)', host.service.state(S).plans[0].steps[0].tests.level === 'L2', host.service.state(S).plans[0].steps[0].tests.level)
-		check('卡上:下一步给出它的预期', /预期:磁盘慢的话延迟 > 20 ms/.test(String(planned.card ?? '')), String(planned.card ?? '').split('\n').filter((line) => line.includes('预期')).join(' | '))
+		check('卡上:下一步给出它的预测', /预测:磁盘慢的话延迟 > 20 ms/.test(String(planned.card ?? '')), String(planned.card ?? '').split('\n').filter((line) => line.includes('预测')).join(' | '))
 		write('lab/u.txt', 'disk_ms=3\nref_ms=9\n')
 		const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'u1', basis: 'lab/u.txt disk_ms=3', verdict: 'refute', anomalies: [{ what: '参考盘 ref_ms=9 比被测盘还慢,说不通', anchor: 'disk-0' }] })
 		const opened = host.service.state(S).anomalies ?? []
 		check('交付时登记的未解释项落账(开着)', delivered.ok === true && opened.length === 1 && opened[0].status === 'open' && opened[0].anchor === 'disk-0', JSON.stringify(opened))
 		const card = renderCard(host.service.state(S))
 		check('卡上:未解释项逐条挂着', /未解释\(1 条开着/.test(card) && /ref_ms=9/.test(card), card.split('\n').filter((line) => line.includes('未解释') || line.includes('ref_ms')).join(' | '))
-		check('卡上:没写预期的下一步提醒先写预期', /动手前写下预期/.test(card))
+		check('卡上:没写预期的下一步提醒先写预测', /动手前写下预测/.test(card))
 		check('卡上不再有弱检验提示与对手那一格', !/检验可能太弱/.test(card) && !/对手:/.test(card))
 		const noReason = await callOn(host, S, 'Anomaly', { action: 'resolve', id: opened[0].id, outcome: 'ruled_out' })
 		check('排除要写理由', noReason.ok === false && noReason.code === 'reason_required', noReason.code)
@@ -1519,7 +1519,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		check('不匹配的命令照常放行(不打扰)', lab?.kind === 'allow', JSON.stringify(lab))
 		host.userQuestions = answering((question) => question.options[1])
 		const refused = await guard({ name: 'bash', arguments: { command: 'cd lab && node reactor.mjs state.json pilot \'{"T":160}\'' }, agent: { id: S }, callId: 'c-pilot-1' }, allow)
-		check('匹配的命令:人不放行 ⇒ 拒,说明不要绕', refused?.kind === 'deny' && /跑中试/.test(refused.reason) && /不要换个写法绕过去/.test(refused.reason), JSON.stringify(refused))
+		check('匹配的命令:人不放行 ⇒ 拒,说明不要绕', refused?.kind === 'deny' && /跑中试/.test(refused.reason) && /不要改写命令以绕过此限制/.test(refused.reason), JSON.stringify(refused))
 		check('问题由内核写:说清是哪件不可逆动作', /跑中试/.test(host.userQuestions.asked[0]?.questions[0]?.question ?? '') && /^release/.test(host.userQuestions.asked[0]?.questions[0]?.id ?? ''))
 		host.userQuestions = answering((question) => question.options[0])
 		const released = await guard({ name: 'bash', arguments: { command: 'node reactor.mjs state.json pilot \'{"T":160}\'' }, agent: { id: S }, callId: 'c-pilot-2' }, allow)
@@ -2803,6 +2803,109 @@ console.log('\n【两种语言:系统写的话跟着人说话的语言走】')
 	const guard = host.listeners.get('tools/pre-execute')
 	const denied = await guard({ name: 'bash', arguments: { command: 'sudo rm -rf /' }, agent: { id: EN } }, async () => ({ kind: 'allow' }))
 	check('英文会话:写入闸门的拒绝理由是英文', denied?.kind === 'deny' && !/[一-鿿]/.test(String(denied.reason)), String(denied?.reason))
+}
+
+console.log('\n【0.5.1:本体随立题写入,测量门槛】')
+{
+	const host = makeHost()
+	const ws = tempDir('clearai-measures-')
+	host.cwd = ws
+	apply(host.ctx, { requireMeasures: true, minHypotheses: 0 })
+	const S = 'session-measures'
+	const base = { claim: '找出釜温对收率的影响', headline: '找出釜温对收率的影响', done_criteria: '存在 lab/r.txt,含 3 个读数', hypotheses: [{ name: '温度有峰', claim: '收率随釜温先升后降', refute_when: '收率单调' }, { name: '温度无关', claim: '收率与釜温无关', refute_when: '收率随釜温变化超过 2 个点' }] }
+	const bare = await callOn(host, S, 'Frame', base)
+	check('首次立题不写度量 → 拒(measures_required)', bare.ok === false && bare.code === 'measures_required', String(bare.code))
+	check('拒绝说明指出要写 measures 关系与 check', /measures/.test(String(bare.message)) && /check/.test(String(bare.message)), String(bare.message).slice(0, 120))
+	const unchecked = await callOn(host, S, 'Frame', { ...base, ontology: { concepts: [{ id: 'reactor_temp', label: '釜温', gloss: '釜内物料的实际温度', kind: 'measure', unit: '°C' }] } })
+	check('有度量但没写测量方式 → 拒,并点名缺的度量', unchecked.ok === false && unchecked.code === 'measures_required' && /reactor_temp/.test(String(unchecked.message)), String(unchecked.message).slice(0, 120))
+	const badFile = await callOn(host, S, 'Frame', { ...base, ontology: { concepts: [{ id: 'reactor_temp', label: '釜温', kind: 'measure' }] } })
+	check('格式不对的本体条目 → 拒(ontology_rejected),什么都不写', badFile.ok === false && badFile.code === 'ontology_rejected' && !existsSync(join(ws, 'clear/ontology/concepts/reactor_temp.json')), String(badFile.code))
+	const ontology = {
+		concepts: [
+			{ id: 'reactor_temp', label: '釜温', gloss: '釜内物料的实际温度', kind: 'measure', unit: '°C' },
+			{ id: 'yield_pct', label: '收率', gloss: '产物摩尔数 / 理论摩尔数', kind: 'measure', unit: '%' },
+			{ id: 'probe', label: '参考探头', gloss: '插入釜内的独立热电偶', kind: 'category' },
+		],
+		relations: [
+			{ id: 'probe_measures_temp', label: '参考探头测釜温', kind: 'measures', domain: 'probe', range: 'reactor_temp', check: '与控制器回读值比对,偏差超过 2 °C 时以探头为准' },
+			{ id: 'hplc_measures_yield', label: '色谱测收率', kind: 'measures', range: 'yield_pct', check: '用标准品校准' },
+			{ id: 'temp_affects_yield', label: '釜温影响收率', kind: 'affects', domain: 'reactor_temp', range: 'yield_pct', shape: 'peak' },
+		],
+	}
+	const set = await callOn(host, S, 'Frame', { ...base, questions: [{ id: 'q1', text: '收率最高的釜温是多少' }], hypotheses: base.hypotheses.map((item, index) => ({ ...item, question: 'q1', ...(index === 0 ? { from: 'temp_affects_yield' } : {}) })), ontology })
+	check('度量都写了测量方式 → 立题成功', set.ok === true, `${set.code} ${String(set.message).slice(0, 120)}`)
+	check('本体条目由内核写进 clear/ontology/', existsSync(join(ws, 'clear/ontology/concepts/reactor_temp.json')) && existsSync(join(ws, 'clear/ontology/relations/probe_measures_temp.json')))
+	check('写入的文件带上 id(身份就是文件名)', JSON.parse(readFileSync(join(ws, 'clear/ontology/concepts/yield_pct.json'), 'utf8')).id === 'yield_pct')
+	check('工作区同步落账(本体立刻进词表)', (host.service.derive(S).lexicon?.predicates ?? []).some((predicate) => predicate.id === 'temp_affects_yield'), JSON.stringify((host.service.derive(S).lexicon?.predicates ?? []).map((p) => p.id)))
+	const goal = host.service.state(S).goal
+	check('问题落进目标', (goal?.questions ?? []).length === 1 && goal.questions[0].id === 'q1', JSON.stringify(goal?.questions))
+	check('判断带上所属问题与出处', goal !== null && host.service.state(S).hypotheses.some((item) => item.question === 'q1' && item.from === 'temp_affects_yield'))
+	const stray = await callOn(host, S, 'Frame', { ...base, reason: '补一条', hypotheses: [...base.hypotheses, { claim: '压力有关', refute_when: '压力无关', question: 'q9' }] })
+	check('判断指向不存在的问题 → 拒(question_unknown)', stray.ok === false && stray.code === 'question_unknown', String(stray.code))
+	const revision = await callOn(host, S, 'Frame', { ...base, reason: '只改措辞', hypotheses: undefined })
+	check('修订不再要求测量(门槛只在首次立题)', revision.ok === true || revision.code !== 'measures_required', String(revision.code))
+}
+
+console.log('\n【0.5.1:按候选写预测、停止检查、未解释项让事实回到待核验】')
+{
+	const host = makeHost()
+	const ws = tempDir('clearai-answers-')
+	execFileSync('git', ['init', '-q'], { cwd: ws })
+	execFileSync('git', ['-c', 'user.email=t@local', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base'], { cwd: ws })
+	host.cwd = ws
+	apply(host.ctx, { requireAnswers: true, minHypotheses: 0, blockedThreshold: 3 })
+	const S = 'session-answers'
+	await callOn(host, S, 'Frame', {
+		claim: '甲乙两种催化剂哪个好',
+		headline: '甲乙两种催化剂哪个好',
+		done_criteria: '存在 lab/c.txt,含两组读数',
+		promote_at_level: 'L2',
+		questions: [{ id: 'q1', text: '哪种催化剂收率更高' }, { id: 'q2', text: '杂质是否达标', status: 'parked' }],
+		hypotheses: [{ name: '甲更好', claim: '甲的收率高于乙', refute_when: '甲不高于乙', question: 'q1' }, { name: '一样', claim: '甲乙收率相差不超过 1 个点', refute_when: '相差超过 1 个点', question: 'q1' }, { name: '温度耦合', claim: '收率差异取决于温度', refute_when: '不同温度下差异相同', question: 'q1' }],
+	})
+	const ids = Object.fromEntries(host.service.state(S).hypotheses.map((item) => [item.name, item.id]))
+	const badServes = await callOn(host, S, 'CreatePlan', { steps: [{ id: 'c1', do: '各跑一次', artifacts: ['lab/c.txt'], done_criteria: 'lab/c.txt 存在', serves: 'q7' }] })
+	check('serves 指向不存在的问题 → 拒', badServes.ok === false && badServes.code === 'question_unknown', String(badServes.code))
+	const plan = await callOn(host, S, 'CreatePlan', {
+		steps: [{ id: 'c1', do: '甲乙各跑一次', artifacts: ['lab/c.txt'], done_criteria: 'lab/c.txt 存在', serves: 'q1', tests: { hypotheses: ['甲更好', '一样'], level: 'L2' }, predictions: [{ hypothesis: '甲更好', expect: '甲比乙高 3 个点以上' }, { hypothesis: '一样', expect: '甲比乙高 3 个点以上' }] }],
+	})
+	check('步骤带 serves 与按候选的预测', plan.ok === true, String(plan.code))
+	const step = host.service.state(S).plans[0].steps[0]
+	check('预测里的短名换成判断 id', step.serves === 'q1' && step.predictions.length === 2 && step.predictions[0].hypothesis === ids['甲更好'], JSON.stringify(step.predictions))
+	const exploration = host.service.derive(S).exploration
+	check('探索派生:当前问题是 q1,三条候选都在考察中', exploration?.current === 'q1' && exploration.questions[0].counts.examining === 3, JSON.stringify(exploration?.questions?.[0]?.counts))
+	check('探索派生:两条预测相同 ⇒ 这一步区分不了(indistinct)', exploration?.next?.indistinct === true, JSON.stringify(exploration?.next))
+	const card = renderCard(host.service.state(S))
+	check('卡上写出各候选的预测,并提醒这一步区分不了', /若「甲更好」成立/.test(card) && /区分不了/.test(card), card.split('\n').filter((line) => /预测|区分/.test(line)).join(' | '))
+	check('卡上给出当前位置(问题与候选计数)', /当前位置/.test(card) && /q1「哪种催化剂收率更高」/.test(card))
+	const expect = await callOn(host, S, 'RevisePlan', { action: 'expect', step_id: 'c1', predictions: [{ hypothesis: '甲更好', expect: '甲比乙高 3 个点以上' }, { hypothesis: '一样', expect: '两者相差不到 1 个点' }] })
+	check('RevisePlan expect 可以只写按候选的预测', expect.ok === true && host.service.derive(S).exploration.next.indistinct === false, String(expect.code))
+	writeText(join(ws, 'lab', 'c.txt'), '甲 92.1\n乙 88.0\n')
+	await callOn(host, S, 'AdvancePlan', { step_id: 'c1', basis: 'lab/c.txt 甲 92.1 乙 88.0', results: [{ hypothesis: ids['甲更好'], verdict: 'support' }, { hypothesis: ids['一样'], verdict: 'refute', basis: '相差 4.1 个点' }], anomalies: [{ what: '乙的读数比上周低 5 个点', touches: ['yield_pct'] }] })
+	await callOn(host, S, 'ClosePlan', { summary: '比完了' })
+	const anomalyId = host.service.state(S).anomalies[0]?.id
+	check('未解释项记下 touches', (host.service.state(S).anomalies[0]?.touches ?? []).includes('yield_pct'), JSON.stringify(host.service.state(S).anomalies[0]))
+	const before = host.journal.filter((mutation) => mutation.t === 'audit/dispatched').length
+	const bare = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
+	check('不写 answers 就结案 → 拒(answers_incomplete)', bare.ok === false && bare.code === 'answers_incomplete', String(bare.code))
+	check('缺项清单点名:没作答的问题、考察中的候选、开着的未解释项、暂缓的问题', /q1/.test(String(bare.message)) && /温度耦合/.test(String(bare.message)) && String(bare.message).includes(anomalyId) && /q2/.test(String(bare.message)), String(bare.message).slice(0, 300))
+	check('入账检查在派评估者之前(没花钱)', host.journal.filter((mutation) => mutation.t === 'audit/dispatched').length === before)
+	const partial = await callOn(host, S, 'Conclude', { outcome: 'achieved', answers: [{ question: 'q1', conclusion: '甲的收率比乙高约 4 个点', basis: ['c1:甲 92.1、乙 88.0'] }] })
+	check('作答了但没交代考察中的候选与未解释项 → 仍拒', partial.ok === false && partial.code === 'answers_incomplete' && !/问题 q1/.test(String(partial.message)), String(partial.message).slice(0, 200))
+	host.nextVerdict = { verdict: 'support', basis: '判据满足,读数与结论一致', reading: '2', validity: 'usable' }
+	const answers = [{ question: 'q1', conclusion: '甲的收率比乙高约 4 个点', basis: ['c1:甲 92.1、乙 88.0'], open: [{ about: ['温度耦合'], effect: '若差异取决于温度,结论只在本次温度下成立' }, { about: [anomalyId, 'q2'], effect: '乙的读数偏低可能夸大差距;杂质尚未检验' }], decide: ['是否在另一温度下复测'] }]
+	const closed = await callOn(host, S, 'Conclude', { outcome: 'achieved', answers })
+	check('交代齐了 → 结案成功', closed.ok === true, `${closed.code} ${String(closed.message).slice(0, 160)}`)
+	check('结论四部分存进目标(answers)', (host.service.state(S).goal?.answers ?? []).length === 1 && host.service.state(S).goal.answers[0].decide.length === 1, JSON.stringify(host.service.state(S).goal?.answers))
+	const fact = (host.service.state(S).facts ?? [])[0]
+	check('前置:有一条升格的事实', fact !== undefined, JSON.stringify(host.service.state(S).facts))
+	if (fact !== undefined) {
+		const opened = await callOn(host, S, 'Anomaly', { action: 'open', what: '复测时甲只有 89', touches: [fact.id] })
+		check('Anomaly 可以写 touches', opened.ok === true, String(opened.code))
+		const row = host.service.derive(S).factRows.find((item) => item.id === fact.id)
+		check('点名事实的未解释项让它回到待核验(questioned)', (row?.questioned ?? []).length === 1, JSON.stringify(row?.questioned))
+		check('卡上那条事实标「待核验」', /待核验/.test(renderCard(host.service.state(S))))
+	}
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

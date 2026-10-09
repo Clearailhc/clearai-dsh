@@ -99,7 +99,7 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 	// 假设留痕的纪律:不强求证实/证伪,但「没看过」不能留白(结案时会被如实记进账里)。
 	check('循环段写明没被证据碰过的判断记成没看过(unjudged)', /没看过/.test(loop.text) && /unjudged/.test(loop.text))
 
-	check('对人说话段给出汇报顺序:结论 / 凭什么 / 适用范围 / 被推翻的 / 还没定的', /结论 \/ 凭什么 \/ 适用范围 \/ 被推翻的 \/ 还没定的/.test(speaking.text))
+	check('对人说话段给出汇报顺序:结论 / 依据 / 尚未确定的事项 / 待您决策', /结论 \/ 依据 \/ 尚未确定的事项 \/ 待您决策/.test(speaking.text))
 	check('对人说话段写明过程只在人问起或要人决定时说', /过程只在人问起或需要人决定时说/.test(speaking.text))
 
 	// 内核的 OUTPUT_SCHEMA 是 additionalProperties:false——多写一个不存在的字段,宿主会让整次调用失败。

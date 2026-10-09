@@ -22,7 +22,7 @@ node tools/sim/judge.mjs <运行目录> <剧本名>
 node tools/sim/call.mjs <运行目录> --stop
 ```
 
-剧本在 `tools/e2e-scenarios.mjs`。系统当场问人时缺省选第一个选项;要换答案,给 server 传 `--answers '{"blocked":"none","release":"先不放行"}'`(键是问题 id 或它的前缀 `release` / `blocked` / `fact`;`none` 模拟没人能答)。
+剧本在 `tools/e2e-scenarios.mjs`。系统当场问人时缺省选第一个选项;要换答案,给 server 传 `--answers '{"blocked":"none","release":"暂不批准"}'`(键是问题 id 或它的前缀 `release` / `blocked` / `fact`;`none` 模拟没人能答)。
 评估等待缺省 15 分钟(`--audit-timeout` 可改),因为评估者要等编排者派人去判。
 
 ## 测得到什么,测不到什么

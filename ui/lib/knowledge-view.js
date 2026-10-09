@@ -67,7 +67,7 @@ export const GLOSSARY = bilingual({
 		nextAction: ['派一次独立评估,把评估卡作为出处', 'Get one independent evaluation and cite its evaluation card'],
 	},
 	L4: {
-		plain: ['人放行:交付前有人看过并批准', 'Released by a person: someone looked at it and approved before delivery'],
+		plain: ['人工批准:交付前已有人审阅并批准', 'Released by a person: someone looked at it and approved before delivery'],
 		where: ['docs/verification-loop.md 的等级表', 'the level table in docs/verification-loop.md'],
 		nextAction: ['等一次人的放行记录;没有人就不要声称到过这一级', 'Wait for a person to release it; without one, do not claim this level'],
 	},
@@ -144,8 +144,8 @@ export const GLOSSARY = bilingual({
 		plain: ['命题只有散文主张:两条结论是不是在说同一件事只能靠重读判断', 'Prose-only claims: whether two conclusions say the same thing can only be judged by rereading'],
 		where: ['运行态卡 · 缺口', 'runtime card · gaps'],
 		nextAction: [
-			'先在 clear/ontology/ 下写概念、关系与主体的实体文件,再用 Frame 修订把主张写成断言(主词–谓词–宾语)',
-			'First write concept, relation and subject entity files under clear/ontology/, then revise with Frame to turn the claim into assertions (subject–predicate–object)',
+			'可选:用 Frame 修订在 ontology 里补上概念与关系,再把主张写成断言(主词–谓词–宾语)',
+			'Optional: revise with Frame to add the concepts and relations in ontology, then write the claim as assertions (subject–predicate–object)',
 		],
 	},
 	untouched_claims: {
@@ -192,8 +192,8 @@ export const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
  * **说人话的三张小表**(第六阶段)。内部名不改;卡、工具结果与面板上一律写右边那一列。
  * 模型读到什么就会照着说什么——所以卡先说人话,答复才说得出人话。
  */
-/** 等级只说三档:L0–L2 合并成「自己检验」(旧账里的 L0 / L1 也这么读),L3 独立评估,L4 人放行。 */
-export const LEVEL_WORD = bilingual({ L0: ['自己检验', 'self-tested'], L1: ['自己检验', 'self-tested'], L2: ['自己检验', 'self-tested'], L3: ['独立核验', 'independent check'], L4: ['人放行', 'released by a person'] })
+/** 等级只说三档:L0–L2 合并成「自行检验」(旧账里的 L0 / L1 也这么读),L3 独立评估,L4 人工批准。 */
+export const LEVEL_WORD = bilingual({ L0: ['自行检验', 'self-tested'], L1: ['自行检验', 'self-tested'], L2: ['自行检验', 'self-tested'], L3: ['独立核验', 'independent check'], L4: ['人工批准', 'approved by a person'] })
 export const VERDICT_WORD = bilingual({ support: ['支持', 'support'], refute: ['推翻', 'refute'], inconclusive: ['不确定', 'inconclusive'] })
 /** 判断短名的上限(汉字);没起名时取主张开头这么宽。与内核同一个数。 */
 export const HANDLE_LIMIT = 12
@@ -339,11 +339,18 @@ export function readingOf(hypothesis) {
 const STEP_WORD = bilingual({ open: ['待做', 'to do'], advanced: ['已交付', 'delivered'], void: ['已作废', 'voided'] })
 
 /** 一条事实在卡上的一行:原话、边界、等级;来自别的会话的标出来。 */
+/** 有开着的未解释项点名这条事实:它回到「待核验」,直到那些未解释项有了去处。 */
+function questionedNote(fact, language) {
+	const ids = Array.isArray(fact?.questioned) ? fact.questioned : []
+	if (ids.length === 0) return ''
+	return language === 'en' ? ` · pending re-check (unexplained ${ids.join(', ')})` : ` · 待核验(未解释项 ${ids.join('、')})`
+}
+
 function factLine(fact) {
 	const scope = oneLine(fact?.scope ?? '')
 	return tr(
-		`  · 「${clamp(fact?.text, 100)}」${scope === '' ? '' : ` — 边界:${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}`,
-		`  · "${clamp(fact?.text, 100)}"${scope === '' ? '' : ` — boundary: ${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}`,
+		`  · 「${clamp(fact?.text, 100)}」${scope === '' ? '' : ` — 边界:${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}${questionedNote(fact, 'zh')}`,
+		`  · "${clamp(fact?.text, 100)}"${scope === '' ? '' : ` — boundary: ${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}${questionedNote(fact, 'en')}`,
 	)
 }
 
@@ -413,11 +420,36 @@ function cardLines(state, derived, options, view) {
 				const terminal = group.key === 'refuted' || group.key === 'replaced'
 				const named = typeof hypothesis.name === 'string' && hypothesis.name.trim() !== ''
 				const head = tr(named ? `「${hypothesis.name.trim()}」${clamp(hypothesis.claim, 120)}` : `「${clamp(hypothesis.claim, 120)}」`, named ? `"${hypothesis.name.trim()}" ${clamp(hypothesis.claim, 120)}` : `"${clamp(hypothesis.claim, 120)}"`)
-				const refute = terminal ? '' : tr(` — 算错的条件:${clamp(hypothesis.refute_when, 100)}`, ` — wrong if: ${clamp(hypothesis.refute_when, 100)}`)
+				const refute = terminal ? '' : tr(` — 推翻条件:${clamp(hypothesis.refute_when, 100)}`, ` — wrong if: ${clamp(hypothesis.refute_when, 100)}`)
 				push(`    · ${head}${refute} · ${readingOf(hypothesis)}`, terminal ? 1 : 0)
 			}
 		}
-		if (hypotheses.length > 10) push(tr(`  · 还有 ${hypotheses.length - 10} 条判断没展开(面板「本体」里有全部)`, `  · ${hypotheses.length - 10} more judgments not shown (all are in the Ontology pane)`), 2)
+		if (hypotheses.length > 10) push(tr(`  · 还有 ${hypotheses.length - 10} 条判断没展开(「探索」货架里有全部)`, `  · ${hypotheses.length - 10} more judgments not shown (all are in the Explore shelf)`), 2)
+	}
+	/**
+	 * **当前位置**:问题 → 候选假设(或调研板块)的计数,与探索货架同一份派生(`derived.exploration`)。
+	 * 只在目标开着时给;没列问题的目标就是一个问题,这一行省掉(上面的判断列表已经说清)。
+	 */
+	const exploration = isPlainObject(derived?.exploration) ? derived.exploration : null
+	if (exploration !== null && goal !== null && String(goal.status) === 'open') {
+		const STATE_WORD = { examining: tr('考察中', 'being examined'), excluded: tr('已排除', 'excluded'), adopted: tr('已采纳', 'adopted'), set_aside: tr('暂不考察', 'set aside') }
+		const AREA_WORD = { not_started: tr('未开始', 'not started'), in_progress: tr('调研中', 'in progress'), clear: tr('已厘清', 'clear') }
+		const declared = (exploration.questions ?? []).filter((question) => !question.implicit)
+		if (declared.length > 0 || (exploration.areas ?? []).length > 0) {
+			push(tr('- 当前位置:', '- Where things stand:'))
+			for (const area of (exploration.areas ?? []).slice(0, 8)) push(tr(`  板块「${clamp(area.name, 30)}」${AREA_WORD[area.state] ?? area.state} · 判断 ${area.judgments} 条,已采纳 ${area.verified} 条${area.openAnomalies > 0 ? ` · 未解释 ${area.openAnomalies} 条` : ''}`, `  Area "${clamp(area.name, 30)}" ${AREA_WORD[area.state] ?? area.state} · ${area.judgments} judgments, ${area.verified} adopted${area.openAnomalies > 0 ? ` · ${area.openAnomalies} unexplained` : ''}`), 1)
+			for (const question of declared.slice(0, 8)) {
+				const counts = Object.entries({ examining: question.counts?.examining, excluded: question.counts?.excluded, adopted: question.counts?.adopted }).filter(([, value]) => value > 0).map(([key, value]) => tr(`${STATE_WORD[key]} ${value}`, `${STATE_WORD[key]} ${value}`))
+				const status = question.status === 'answered' ? tr('已作答', 'answered') : question.status === 'emergent' ? tr('新发现,待人决定是否立为问题', 'newly found, awaiting a decision') : question.status === 'parked' ? tr('暂缓', 'parked') : counts.length > 0 ? tr(`候选假设 ${counts.join(' / ')}`, `candidates ${counts.join(' / ')}`) : tr('还没有候选假设', 'no candidates yet')
+				push(`  ${question.id === exploration.current ? '▸' : '·'} ${question.id}「${clamp(question.text, 60)}」${status}`, question.id === exploration.current ? 0 : 1)
+			}
+		}
+		/** 本体里带形状、还没有候选由它提出的影响关系:只列出,不强制(不为竞争而竞争)。 */
+		const untapped = Array.isArray(exploration.untapped) ? exploration.untapped : []
+		if (untapped.length > 0) {
+			const SHAPE = { increasing: tr('单调升', 'increasing'), decreasing: tr('单调降', 'decreasing'), peak: tr('有峰', 'has a peak'), threshold: tr('有阈值', 'has a threshold'), coupled: tr('耦合', 'coupled') }
+			push(tr(`- 本体中尚无候选假设引用的影响关系:${untapped.slice(0, 5).map((item) => `${item.label}(${SHAPE[item.shape] ?? item.shape})`).join('、')}——若它们可能改变结论,可据此提出候选(\`from\` 写关系 id)`, `- Affects relations in the ontology no candidate cites yet: ${untapped.slice(0, 5).map((item) => `${item.label} (${SHAPE[item.shape] ?? item.shape})`).join(', ')}; if they could change the conclusion, propose candidates from them (\`from\` = the relation id)`), 1)
+		}
 	}
 	if (plan === null) {
 		if (goal !== null && String(goal.status) === 'open') push(tr('- 计划:还没有(用 CreatePlan 把检验拆成步骤)', '- Plan: none yet (use CreatePlan to split the tests into steps)'), 1)
@@ -429,15 +461,23 @@ function cardLines(state, derived, options, view) {
 			const tests = tested.length === 0 ? '' : tr(` · 检验 ${tested.map(nameOf).join('、')}(${level})`, ` · tests ${tested.map(nameOf).join(', ')} (${level})`)
 			push(tr(`  第 ${step.ordinal} 步(${step.id})${clamp(step.do, 60)} · ${STEP_WORD[step.status] ?? step.status}${tests}`, `  Step ${step.ordinal} (${step.id}) ${clamp(step.do, 60)} · ${STEP_WORD[step.status] ?? step.status}${tests}`), 2)
 		}
-		if (plan.steps.length > 12) push(tr(`  · 还有 ${plan.steps.length - 12} 步没展开(右栏「世界树」里有全部)`, `  · ${plan.steps.length - 12} more steps not shown (all are in the World Tree on the right)`), 2)
+		if (plan.steps.length > 12) push(tr(`  · 还有 ${plan.steps.length - 12} 步没展开(「探索」货架里有全部)`, `  · ${plan.steps.length - 12} more steps not shown (all are in the Explore shelf)`), 2)
 		const first = plan.steps.find((step) => step.status === 'open')
 		if (first !== undefined) {
 			push(tr(`- 下一步:交付第 ${first.ordinal} 步(${first.id})——只能交付第一个没做完的步`, `- Next: deliver step ${first.ordinal} (${first.id}); only the first unfinished step can be delivered`))
 			/** 预期可选,但卡上提醒:没写下来的预期,落空了也看不见。 */
-			if (typeof first.expect === 'string' && first.expect !== '') push(tr(`  预期:${clamp(first.expect, 160)}——结果对不上的地方写进 anomalies,不要解释过去`, `  Expected: ${clamp(first.expect, 160)}; whatever does not match goes in anomalies, do not explain it away`))
-			else push(tr('  动手前写下预期(RevisePlan action="expect":预计看到什么、从哪条关系或经验来),落空才看得见', '  Before acting, write the expectation (RevisePlan action="expect": what you expect and from which relation or lesson), so a miss is visible'), 1)
+			const next = exploration?.next ?? null
+			const predictions = next !== null && next.step === first.id && Array.isArray(next.predictions) ? next.predictions : []
+			if (predictions.length > 0) {
+				push(tr('  各候选的预测:', '  Predictions per candidate:'))
+				for (const item of predictions.slice(0, 5)) push(tr(`    · 若「${item.name}」成立:${clamp(item.expect, 120)}`, `    · If "${item.name}" holds: ${clamp(item.expect, 120)}`))
+				if (next.indistinct === true) push(tr('  注意:各候选的预测相同,这一步区分不了它们;应改用能区分的检验(RevisePlan)', '  Warning: every candidate predicts the same, so this step cannot tell them apart; switch to a test that can (RevisePlan)'))
+				else push(tr('  结果与预测不符的地方写进 anomalies,不要解释过去', '  Whatever contradicts the predictions goes in anomalies; do not explain it away'), 1)
+			}
+			if (typeof first.expect === 'string' && first.expect !== '') push(tr(`  预测:${clamp(first.expect, 160)}。结果与预测不符之处写入 anomalies,不要强行解释`, `  Expected: ${clamp(first.expect, 160)}; whatever does not match goes in anomalies, do not explain it away`))
+			else if (predictions.length === 0) push(tr('  动手前写下预测(RevisePlan action="expect":按候选分别写 predictions,或写 expect 并注明来自哪条关系或经验),落空才看得见', '  Before acting, write predictions (RevisePlan action="expect": predictions per candidate, or expect with the relation or lesson it comes from), so a miss is visible'), 1)
 		}
-		else if (goal !== null && String(goal.status) === 'open') push(tr('- 下一步:计划的步都做完了,ClosePlan 收尾,然后 Conclude 结案或开下一阶段', '- Next: every step is done; ClosePlan, then Conclude or start the next stage'))
+		else if (goal !== null && String(goal.status) === 'open') push(tr('- 下一步:计划的步都做完了,ClosePlan 收尾,然后 Conclude 结案(answers 按问题写结论、依据、尚未确定的事项、待您决策)或开下一阶段', '- Next: every step is done; ClosePlan, then Conclude (answers per question: conclusion, basis, open points, decisions for the user) or start the next stage'))
 		if (plan.blocked !== undefined && plan.blocked !== null) push(tr(`- 计划停下等人:${plan.blocked.reason}(连续 ${plan.blocked.attempts} 次没过,已经问人怎么办;没人答就等着)`, `- Plan stopped, waiting for a person: ${plan.blocked.reason} (failed ${plan.blocked.attempts}× in a row; a person has been asked; wait if nobody answers)`))
 	}
 	/**
@@ -448,7 +488,7 @@ function cardLines(state, derived, options, view) {
 	const openAnomalies = anomalies.filter((item) => item?.status === 'open')
 	if (openAnomalies.length > 0) {
 		push(tr(`- 未解释(${openAnomalies.length} 条开着;用 Anomaly 解释、排除或交给人,不要解释过去):`, `- Unexplained (${openAnomalies.length} open; explain, rule out or hand to a person with Anomaly; do not explain them away):`))
-		for (const item of openAnomalies.slice(0, 8)) push(tr(`  · ${item.id}${item.by === 'evaluator' ? '(评估者发现)' : ''}:${clamp(item.what, 140)}${item.anchor ? ` · 在 ${clamp(item.anchor, 30)}` : ''}`, `  · ${item.id}${item.by === 'evaluator' ? ' (found by the evaluator)' : ''}: ${clamp(item.what, 140)}${item.anchor ? ` · on ${clamp(item.anchor, 30)}` : ''}`))
+		for (const item of openAnomalies.slice(0, 8)) push(tr(`  · ${item.id}${item.by === 'evaluator' ? '(评估者发现)' : ''}:${clamp(item.what, 140)}${item.anchor ? ` · 在 ${clamp(item.anchor, 30)}` : ''}${(item.touches ?? []).length > 0 ? ` · 涉及 ${item.touches.slice(0, 4).join('、')}` : ''}`, `  · ${item.id}${item.by === 'evaluator' ? ' (found by the evaluator)' : ''}: ${clamp(item.what, 140)}${item.anchor ? ` · on ${clamp(item.anchor, 30)}` : ''}${(item.touches ?? []).length > 0 ? ` · touches ${item.touches.slice(0, 4).join(', ')}` : ''}`))
 		if (openAnomalies.length > 8) push(tr(`  · 还有 ${openAnomalies.length - 8} 条`, `  · ${openAnomalies.length - 8} more`), 1)
 	}
 	const settledAnomalies = anomalies.length - openAnomalies.length
@@ -473,8 +513,8 @@ function cardLines(state, derived, options, view) {
 		const context = `${goal?.claim ?? ''}\n${nextStep?.do ?? ''}`.toLowerCase()
 		const score = (lesson) => (lesson.about ?? []).filter((item) => item !== '' && context.includes(String(item).toLowerCase())).length
 		const ranked = lessonRows.map((lesson, index) => ({ lesson, index, score: score(lesson) })).sort((a, b) => b.score - a.score || a.index - b.index)
-		const kindWord = { trap: tr('坑', 'trap'), check: tr('先核', 'check'), shortcut: tr('别走的捷径', 'misleading shortcut'), prior: tr('先验', 'prior') }
-		push(tr(`- 以前留下的经验(${lessonRows.length} 条;定计划、写预期前先看,用上了就在预期里写明来自哪条):`, `- Lessons left earlier (${lessonRows.length}; read before planning or writing an expectation, and name the one you use in the expectation):`), 1)
+		const kindWord = { trap: tr('常见误区', 'common pitfall'), check: tr('前置核查', 'check first'), shortcut: tr('不可取的捷径', 'misleading shortcut'), prior: tr('先验知识', 'prior') }
+		push(tr(`- 以前留下的经验(${lessonRows.length} 条;制定计划、写预测前先阅读,引用时在预测中注明来自哪条):`, `- Lessons left earlier (${lessonRows.length}; read before planning or writing an expectation, and name the one you use in the expectation):`), 1)
 		for (const { lesson } of ranked.slice(0, 6)) push(`  · ${lesson.id} · ${kindWord[lesson.kind] ?? lesson.kind} · ${clamp(lesson.text, 160)}${lesson.boundary ? tr(`(不适用:${clamp(lesson.boundary, 80)})`, ` (does not apply: ${clamp(lesson.boundary, 80)})`) : ''}`, 1)
 		if (lessonRows.length > 6) push(tr(`  · 还有 ${lessonRows.length - 6} 条(clear/knowledge/lessons/)`, `  · ${lessonRows.length - 6} more (clear/knowledge/lessons/)`), 2)
 	}
@@ -533,7 +573,7 @@ function cardLines(state, derived, options, view) {
 			const telling = preflight.predicates.filter((predicate) => predicate.shape || predicate.check)
 			const plain = preflight.predicates.filter((predicate) => !(predicate.shape || predicate.check))
 			if (telling.length > 0) {
-				push(tr('- 用到的关系(预期从这里来):', '- Relations in use (expectations come from these):'), 1)
+				push(tr('- 用到的关系(预测的来源):', '- Relations in use (expectations come from these):'), 1)
 				for (const predicate of telling.slice(0, 4)) push(`  · ${named(predicate)}${predicate.shape ? tr(`:${SHAPE_WORD[predicate.shape] ?? predicate.shape}`, `: ${SHAPE_WORD[predicate.shape] ?? predicate.shape}`) : ''}${predicate.gloss ? tr(`(${clamp(predicate.gloss, 80)})`, ` (${clamp(predicate.gloss, 80)})`) : ''}${predicate.check ? tr(` · 读数这样核:${clamp(predicate.check, 80)}`, ` · check readings by: ${clamp(predicate.check, 80)}`) : ''}`, 1)
 			}
 			if (plain.length > 0) push(tr(`- 用到的关系:${plain.slice(0, 6).map(named).join('、')}${more(preflight.predicatesTruncated)}`, `- Relations in use: ${plain.slice(0, 6).map(named).join(', ')}${more(preflight.predicatesTruncated)}`), 2)
@@ -541,17 +581,11 @@ function cardLines(state, derived, options, view) {
 				push(tr(`- 和这些判断有关的已知${more(preflight.factsTruncated)}(引用前看边界;要复检就在判断上写 retests):`, `- Known facts related to these judgments${more(preflight.factsTruncated)} (check the boundary before citing; to re-test, put retests on a judgment):`), 1)
 				for (const fact of preflight.facts.slice(0, 3)) push(factLine(fact), 1)
 			}
-		} else
-			push(
-				tr(
-					'- 已有的词里没有命中这些判断的:要写「主体 · 关系 · 对象」就先在 clear/ontology/ 下写概念与关系文件(字段见 SCHEMA.json);查不到不等于不存在',
-					'- No existing term matches these judgments: to write "subject · relation · object", first write concept and relation files under clear/ontology/ (fields in SCHEMA.json); not found does not mean it does not exist',
-				),
-				1,
-			)
+		}
 		if (gaps.length === 0) push(tr('- 结构完整:判断都写成了断言、都检验过、主体都在实体图上', '- Structure complete: every judgment has assertions, has been tested, and its subjects are on the entity graph'))
 		/** 缺口只给模型(人看不到):说清欠什么、下一步做什么,不写 code。 */
-		for (const gap of gaps) push(tr(`- 还欠的:${gap.detail} → ${gap.nextAction}`, `- Still owed: ${gap.detail} → ${gap.nextAction}`))
+		/** 只有散文的判断不上卡(它是可选的加法,重复提醒从没改变过下一步);面板照旧列出。 */
+		for (const gap of gaps.filter((item) => item.code !== 'prose_only_claims')) push(tr(`- 还欠的:${gap.detail} → ${gap.nextAction}`, `- Still owed: ${gap.detail} → ${gap.nextAction}`))
 	}
 	for (const conflict of conflicts.slice(0, 3)) {
 		push(

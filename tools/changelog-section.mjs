@@ -13,6 +13,10 @@
  * `clearai-dsh 0.1.2 — the gate opens, and the goal reads as a sentence`)。
  * 段首不是黑体就没有短语,标题就是朴素的一句 `clearai-dsh <版本>`。
  * 短语**原样取用**,不做任何加工(不加、不删、不改标点)。
+ *
+ * **相对链接**:CHANGELOG 里的 `](docs/…)` 在仓库里点得开,放进 Release 页面就点不开
+ * (Release 页面不是仓库里的一个文件)。正文里的相对链接改写成指向本版 tag 的绝对地址,
+ * 文字不动;`http(s)://`、`#锚点` 与 `mailto:` 原样保留。
  */
 
 import { readFileSync } from 'node:fs'
@@ -43,11 +47,13 @@ for (let index = start + 1; index < lines.length; index += 1) {
 	}
 }
 const body = lines.slice(start + 1, end).join('\n').trim()
+const repoBlob = `https://github.com/Clearailhc/clearai-dsh/blob/v${version}/`
+const absolute = body.replace(/\]\((?!https?:\/\/|#|mailto:)([^)\s]+)\)/g, (_, path) => `](${repoBlob}${path.replace(/^\.\//, '')})`)
 
 if (wantTitle) {
 	/** 段首那段黑体就是短语;后面接着写正文也算(0.1.4 就是这样:`**短语。** 正文…`)。 */
 	const bold = /^\*\*(.+?)\*\*/.exec(body)
 	process.stdout.write(bold === null ? `clearai-dsh ${version}\n` : `clearai-dsh ${version} — ${bold[1]}\n`)
 } else {
-	process.stdout.write(`${body}\n`)
+	process.stdout.write(`${absolute}\n`)
 }
