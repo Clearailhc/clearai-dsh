@@ -1,0 +1,126 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "fault": "cancel-after-child-request",
+      "passed": true,
+      "first": {
+        "reason": "user_cancelled",
+        "usage": {
+          "input": 15732,
+          "output": 4612,
+          "cacheRead": 85760,
+          "cacheWrite": 0,
+          "calls": 8,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 106104,
+          "status": "verified",
+          "processed": 106104
+        },
+        "installation": {
+          "version": "0.5.4-rc.1",
+          "packageDigest": "fa9f5f894ab0ba2967a8d09e965e12b39a1c0367c27a55df9c68a7f7e2ca8074",
+          "model": {
+            "provider": "abhome",
+            "model": "deepseek-flash",
+            "reasoningEffort": "medium"
+          },
+          "runtime": {
+            "node": "v24.18.1",
+            "cli": "0.2.0-rc.2",
+            "agent": "0.2.0-rc.2"
+          },
+          "runtimeDigest": "18d5036bbb58eaff41d351ede99314b8d06505aec06fb2e164c49874ada30f9e"
+        }
+      }
+    },
+    {
+      "fault": "disconnect",
+      "passed": true,
+      "first": {
+        "reason": "blocked",
+        "usage": {
+          "input": 14544,
+          "output": 7790,
+          "cacheRead": 228096,
+          "cacheWrite": 0,
+          "calls": 15,
+          "injectedBeforeProvider": 2,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 250430,
+          "status": "verified",
+          "processed": 250430
+        },
+        "installation": {
+          "version": "0.5.4-rc.1",
+          "packageDigest": "fa9f5f894ab0ba2967a8d09e965e12b39a1c0367c27a55df9c68a7f7e2ca8074",
+          "model": {
+            "provider": "abhome",
+            "model": "deepseek-flash",
+            "reasoningEffort": "medium"
+          },
+          "runtime": {
+            "node": "v24.18.1",
+            "cli": "0.2.0-rc.2",
+            "agent": "0.2.0-rc.2"
+          },
+          "runtimeDigest": "18d5036bbb58eaff41d351ede99314b8d06505aec06fb2e164c49874ada30f9e"
+        }
+      }
+    },
+    {
+      "fault": "crash-after-child-verdict",
+      "passed": true,
+      "first": {
+        "reason": "infrastructure_error",
+        "usage": {
+          "input": 25505,
+          "output": 14307,
+          "cacheRead": 223232,
+          "cacheWrite": 0,
+          "calls": 18,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 263044,
+          "status": "verified",
+          "processed": 263044
+        }
+      },
+      "recovered": {
+        "reason": "completed",
+        "usage": {
+          "input": 35647,
+          "output": 40896,
+          "cacheRead": 1266432,
+          "cacheWrite": 0,
+          "calls": 36,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 1342975,
+          "status": "verified",
+          "processed": 1342975
+        },
+        "installation": {
+          "version": "0.5.4-rc.1",
+          "packageDigest": "fa9f5f894ab0ba2967a8d09e965e12b39a1c0367c27a55df9c68a7f7e2ca8074",
+          "model": {
+            "provider": "abhome",
+            "model": "deepseek-flash",
+            "reasoningEffort": "medium"
+          },
+          "runtime": {
+            "node": "v24.18.1",
+            "cli": "0.2.0-rc.2",
+            "agent": "0.2.0-rc.2"
+          },
+          "runtimeDigest": "18d5036bbb58eaff41d351ede99314b8d06505aec06fb2e164c49874ada30f9e"
+        }
+      }
+    }
+  ]
+}

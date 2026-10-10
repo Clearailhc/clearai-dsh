@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "root": "/private/tmp/v054-rc1-lifecycle-52-53",
+  "checks": [
+    {
+      "check": "replay",
+      "version": "0.5.2",
+      "oldStateVersion": 21,
+      "newStateVersion": 22,
+      "ledgerDigest": "39ef2749c5b1228a67d5b650f50853713adcf99b1d14480dc8a4dadc7d26ffa1",
+      "passed": true
+    },
+    {
+      "check": "replay",
+      "version": "0.5.3",
+      "oldStateVersion": 21,
+      "newStateVersion": 22,
+      "ledgerDigest": "39ef2749c5b1228a67d5b650f50853713adcf99b1d14480dc8a4dadc7d26ffa1",
+      "passed": true
+    },
+    {
+      "check": "native-install-upgrade",
+      "version": "0.5.2",
+      "packageDigest": "75fbf130174646a2bb58e46e7ef6c2bbf13a684cfde210d21c50c880d7a94546",
+      "passed": true
+    },
+    {
+      "check": "native-install-upgrade",
+      "version": "0.5.3",
+      "packageDigest": "c1bf453c759b6a14ae560e213ece1e584e293e201b5cf9c2aa4f4c90b718650d",
+      "passed": true
+    },
+    {
+      "check": "native-install-upgrade",
+      "version": "0.5.4-rc.1",
+      "packageDigest": "fa9f5f894ab0ba2967a8d09e965e12b39a1c0367c27a55df9c68a7f7e2ca8074",
+      "passed": true
+    },
+    {
+      "check": "native-uninstall",
+      "passed": true
+    },
+    {
+      "check": "native-reinstall",
+      "passed": true
+    }
+  ]
+}

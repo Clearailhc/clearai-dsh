@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "delaySeconds": 0,
+  "nativeJobReads": 0,
+  "parentRequestsWhileWaiting": 0,
+  "audits": 1,
+  "elapsedMs": 63742,
+  "usage": {
+    "input": 26569,
+    "output": 11999,
+    "cacheRead": 251392,
+    "cacheWrite": 0,
+    "calls": 20,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 289960,
+    "status": "verified",
+    "processed": 289960
+  },
+  "installation": {
+    "version": "0.5.4-rc.1",
+    "packageDigest": "fa9f5f894ab0ba2967a8d09e965e12b39a1c0367c27a55df9c68a7f7e2ca8074",
+    "model": {
+      "provider": "abhome",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.18.1",
+      "cli": "0.2.0-rc.2",
+      "agent": "0.2.0-rc.2"
+    },
+    "runtimeDigest": "18d5036bbb58eaff41d351ede99314b8d06505aec06fb2e164c49874ada30f9e"
+  },
+  "limitation": "Synthetic engineering check. Fixed delay is not performance evidence."
+}

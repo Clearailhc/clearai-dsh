@@ -14,7 +14,9 @@ mkdirSync(home,{recursive:true});const checks=[]
 const sha=buffer=>createHash('sha256').update(buffer).digest('hex')
 function cli(args){const r=spawnSync(app,[join(repo,'tools/native-headless/installed-cli.cjs'),...args],{env,encoding:'utf8',timeout:900000});if(r.status!==0)throw new Error('Native CLI failed: '+r.stderr.slice(-600));return r.stdout}
 const built=[]
-for(const version of ['0.5.0','0.5.1']){
+const historicalVersions=(process.argv.find(arg=>arg.startsWith('--versions='))?.slice('--versions='.length)??'0.5.0,0.5.1').split(',')
+assert.ok(historicalVersions.every(version=>/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?$/.test(version)))
+for(const version of historicalVersions){
  const source=join(root,'source-'+version);mkdirSync(source,{recursive:true})
  execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','v'+version],{cwd:repo,maxBuffer:128*1024*1024})})
  symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir')
