@@ -21,7 +21,7 @@
 
 - 机制：2 个（goal / plan）
 - 意图工具：7 件（Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Anomaly）
-- 配置键：16 个
+- 配置键：20 个
 - 提示词段：定义 3 段，同一时刻在场 3 段
 
 ## 总表

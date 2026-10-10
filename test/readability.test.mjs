@@ -199,14 +199,14 @@ console.log('\n【③ 卡/文档层:裁决要指认判据条目,且没有相反�
 	/**
 	 * 卡层要能承接「每条 shortfall 指认判据条目」:卡里存的必须是**归一后**的三格
 	 * (`criterion` / `what` / `missing`),而不是评估者回的那串原始散文。
-	 * 内核有两处写裁决卡(当场结算 / 从子会话日志回收),两处必须同形。
+	 * 当场结算与日志回收共用同一个写卡入口。
 	 */
 	const cardWindows = [...KERNEL_SOURCE.matchAll(/schema_version: 'clearai\.audit\.v2'/g)].map((match) => KERNEL_SOURCE.slice(match.index, match.index + 420))
 	// 裁决 schema 是一个按会话语言出说明的函数(`verdictSchema = () => ({...})`);取它返回的那个字面量,`tr` 取中文。
 	const verdictSchemaAt = KERNEL_SOURCE.indexOf('const verdictSchema = () => ({')
 	const verdictSchema = verdictSchemaAt < 0 ? null : extractLiteral(KERNEL_SOURCE, KERNEL_SOURCE.indexOf('{', verdictSchemaAt), { tr: (zh) => zh })
-	check('内核写裁决卡的两处都取得到(当场 + 回收)', cardWindows.length >= 2, String(cardWindows.length))
-	check('裁决卡存的是归一后的 shortfalls(不是原始散文)', cardWindows.length > 0 && cardWindows.every((window) => /shortfalls:\s*[\w.]*verdict\.shortfalls/.test(window)), cardWindows.map((window) => (window.match(/shortfalls:\s*[^,]*/) ?? ['(缺)'])[0]).join(' | '))
+	check('当场与回收共用唯一写卡入口', cardWindows.length === 1, String(cardWindows.length))
+	check('裁决卡存的是归一后的 shortfalls(不是原始散文)', cardWindows.length > 0 && cardWindows.every((window) => /\.\.\.verdict/.test(window)), cardWindows.map((window) => (window.match(/shortfalls:\s*[^,]*/) ?? ['(缺)'])[0]).join(' | '))
 	check('裁决卡的 card 字段就是被归一/截断过的 basis(短裁决进卡)', cardWindows.length > 0 && cardWindows.every((window) => /card:\s*[\w.]*verdict\.basis/.test(window)), cardWindows.map((window) => (window.match(/card:\s*[^,]*/) ?? ['(缺)'])[0]).join(' | '))
 	check('归一后的三格都非空才能在卡里指认判据(卡与协议同形)', (() => {
 		const fields = verdictSchema?.properties?.shortfalls?.items?.required ?? []

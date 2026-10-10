@@ -314,6 +314,7 @@ stateDiagram-v2
 | `observation/recorded` | §5 观测 | 是 |
 | `audit/dispatched` | §6 评估 | 是 |
 | `audit/settled` | §6 评估 | 是 |
+| `audit/notified` | §6 评估：原调用消失后的一次原生结果通知 | 是 |
 | `evidence/recorded` | §7 证据 | 是 |
 | `fact/promoted` | §8 事实 | 是 |
 | `human/released` | §3 步骤（L4 放行） | 是 |

@@ -369,8 +369,6 @@ export function apply(ctx, config = {}) {
 		bashDenyRules: config.bashDenyRules !== false,
 		auditProvider: config.auditProvider ?? 'spawn',
 		auditTimeoutMs: config.auditTimeoutMs ?? 240000,
-		/** 一次评估从派出起最多等多久:超过就如实结成「未知」并放开,不让一次评估拖住整个目标。 */
-		auditHardTimeoutMs: config.auditHardTimeoutMs ?? 240000,
 		// 三张脸的**候选**工具名。真正的 face 还要过一道「这个部署里到底有没有这件工具」的过滤
 		// (见 resolveToolFace):`read_image` 只在挂了 `attachments` 的部署里存在,名单里写了它、
 		// 部署里没有,`tools.restrict` 会**直接抛**(未知工具名)→ 评估整条路 fail-closed。
@@ -380,6 +378,7 @@ export function apply(ctx, config = {}) {
 		/** 贡献表。缺省 = 全开;要裁剪就从这里裁,而不是去改装配代码。 */
 		contributions: config.contributions ?? {},
 	}
+	if (config.auditHardTimeoutMs !== undefined) ctx.logger?.warn?.('clearai: auditHardTimeoutMs is deprecated and ignored; auditTimeoutMs is diagnostic only. Cancellation and run budgets belong to the host.')
 
 	/** 贡献表:先校验(装配期炸),后登记(见文件末尾的装配段)。 */
 	const CONTRIB = resolveContributions(CFG.contributions)
@@ -393,8 +392,8 @@ export function apply(ctx, config = {}) {
 	 *
 	 * **要解决的问题**:`audit/dispatched` 原来只写在**工具结果的 `mutations` 数组**里。
 	 * 子代理是异步的:工具进入 `await` 之后,进程可能被 abort、宿主服务可能瞬态不可得。
-	 * 一旦这条路出问题,整批变更随栈帧一起消失——`turnDemand` 的「有裁决在飞 ⇒ hold」不触发,
-	 * `sweepEndedAudits` 也看不见,而模型只会原样重试。代价是一次已经算完的评审
+	 * 一旦这条路出问题,整批变更随栈帧一起消失,
+	 * `sweepEndedAudits` 看不见,而模型只会原样重试。代价是一次已经算完的评审
 	 * (耗时以分钟计)从账本上不存在。
 	 *
 	 * **修法的第一性原理**:事实不能寄存在"工具调用成功返回"这个易失载体上。
@@ -1068,7 +1067,7 @@ export function apply(ctx, config = {}) {
 					'准入只核验了「坐标存在且非空」——齐备不等于这一步做完了;判据里的断言(数值、口径、一致性)必须由你逐条核对。',
 					rerunDir === null
 						? '你不得修改任何文件,不得执行写入命令,不得重做方案。'
-						: `原工作区只读:不要在里面写文件或运行命令。要核对数字就复跑:工作区副本在 ${rerunDir}(不含 clear/),cd 进去运行产物自带的脚本,对照它打印的结果。复跑的读数是硬信号;不要重做方案。`,
+						: `原工作区只读:不要在里面写文件或运行命令。要核对数字就复跑:工作区副本在 ${rerunDir}(不含 clear/),cd 进去运行产物自带的脚本,对照它打印的结果。命令转为后台 job 时,用 job_output({job_id,wait:true,timeout_ms:600000}) 等待并收取同一任务的结果;不要用 sleep 轮询、重跑相同命令或读取宿主私有日志找结果。不再需要的任务用 job_kill 取消。复跑的读数是硬信号;不要重做方案。`,
 				],
 				[
 					`Working directory: ${sessionCwdLabel(sessionId)}`,
@@ -1077,7 +1076,7 @@ export function apply(ctx, config = {}) {
 					'Admission only checked that the outputs exist and are non-empty; that is not the same as the step being done. You must check the claims in the criteria (numbers, definitions, consistency) one by one.',
 					rerunDir === null
 						? 'You may not modify any file, run write commands or redo the work.'
-						: `The original workspace is read-only: do not write files or run commands in it. To check numbers, re-run: a copy of the workspace is at ${rerunDir} (without clear/); cd into it and run the scripts the outputs came from, and compare what they print. Re-run readings are hard signals; do not redo the work.`,
+						: `The original workspace is read-only: do not write files or run commands in it. To check numbers, re-run: a copy of the workspace is at ${rerunDir} (without clear/); cd into it and run the scripts the outputs came from, and compare what they print. When a command becomes a background job, collect that same job with job_output({job_id,wait:true,timeout_ms:600000}); do not sleep-poll, repeat the command, or search private host logs for its output. Cancel unnecessary jobs with job_kill. Re-run readings are hard signals; do not redo the work.`,
 				],
 			),
 		].join('\n')
@@ -1219,6 +1218,73 @@ export function apply(ctx, config = {}) {
 	}
 
 	const pendingAudits = new Map()
+	const settlingAudits = new Map()
+	const evaluatorCalls = new Map()
+	const auditNotifications = new Set()
+
+	/** Native completion can outlive the tool invocation after a preset reload. */
+	ctx.on('subagent/end', async ({ id } = {}) => {
+		if (!id || [...pendingAudits.values()].some((entry) => String(entry.run.id) === String(id))) return
+		for (const session of ctx.get('sessions')?.list?.() ?? []) {
+			const sessionId = String(session.id)
+			const audit = stateOf(sessionId).audits?.find((item) => item.child === String(id) && item.verdict === null)
+			if (!audit) continue
+			const recovered = await recoverVerdictFromChildSession(id)
+			if (!recovered) continue // pre-step recovery retries once the native log is available
+			const result = recovered.ok && (!String(audit.capability).includes('outputSchema') || recovered.structured)
+				? { verdict: recovered.verdict }
+				: { basis: `Evaluator ended (${recovered.stopReason ?? 'missing structured output'})`, shortfalls: ['audit_incomplete'] }
+			await settleAudit(sessionId, audit, result)
+			const agent = ctx.get('agents')?.get?.(sessionId)
+			const goal = agent && nativeGoal(agent)
+			const key = `${sessionId}:${audit.id}`
+			if (!goal || goal.phase !== 'active' || goal.activation !== 'armed' || goal.id !== audit.goal_id || goal.revision !== audit.goal_revision || evaluatorCalls.has(`${sessionId}:${audit.kind}:${audit.step}`) || auditNotifications.has(key)) continue
+			const messageId = `clearai-audit-ready-${audit.id}`
+			const events = session.snapshotEvents?.() ?? session.ownEvents?.() ?? []
+			if (events.some((event) => event.type === 'user/message' && event.data?.message?.id === messageId) || [...(agent.inbox?.nextStep ?? []), ...(agent.inbox?.nextTurn ?? [])].some((message) => message.id === messageId)) continue
+			auditNotifications.add(key)
+			try {
+				agent.followup({ id: messageId, role: 'user', content: text('独立评估已收回。读取当前裁决、材料与未决项,继续原目标;不要重复派发同一评估。'), source: { kind: MESSAGE_SOURCE_KIND, form: 'snapshot', sections: [] } })
+				landFact(sessionId, { t: 'audit/notified', id: audit.id, message_id: messageId })
+				await flushFacts(sessionId)
+			} catch (error) { auditNotifications.delete(key); ctx.logger?.warn?.(`clearai: audit notification failed: ${String(error.message)}`) }
+		}
+	})
+
+	/** All completion paths save the same card and durable settlement before returning. */
+	async function settleAudit(sessionId, audit, result) {
+		const key = `${sessionId}:${audit.id}`
+		if (settlingAudits.has(key)) return settlingAudits.get(key)
+		const operation = (async () => {
+			const saved = stateOf(sessionId).audits?.find((item) => item.id === audit.id && item.verdict !== null)
+			if (saved) return { holds: auditHolds(saved), basis: saved.basis, results: saved.results ?? [], shortfalls: saved.shortfalls ?? [], cardPath: saved.card_path, digest: saved.digest, mutations: [] }
+			let verdict = result.verdict
+			let cardPath = null
+			if (verdict) {
+				cardPath = writeAuditCard(sessionId, audit.step, { schema_version: 'clearai.audit.v2', kind: audit.kind, step_id: audit.step, auditor_run_id: String(audit.child), ...verdict, card: verdict.basis, created_at: Date.now() })
+				if (cardPath === null) verdict = null
+			}
+			const settled = verdict ?? { holds: 'unknown', results: [], basis: result.verdict ? 'Could not save the evaluation card' : result.basis, shortfalls: result.verdict ? ['card_persist_failed'] : result.shortfalls }
+			const mutation = landFact(sessionId, { t: 'audit/settled', id: audit.id, step: audit.step, verdict: settled.holds, ...settled, card_path: cardPath, digest: audit.digest, settled_at: Date.now() })
+			await flushFacts(sessionId)
+			pendingFacts.set(sessionId, (pendingFacts.get(sessionId) ?? []).filter((item) => item !== mutation))
+			return { ...settled, cardPath, digest: audit.digest, mutations: [mutation] }
+		})()
+		settlingAudits.set(key, operation)
+		try { return await operation } catch (error) { settlingAudits.delete(key); throw error }
+	}
+
+	/** Waiting is not a model turn or a failed audit. Abort only detaches this caller. */
+	async function waitForAudit(entry, signal) {
+		signal?.throwIfAborted()
+		let abort
+		try {
+			return await Promise.race([entry.settled, new Promise((_, reject) => {
+				abort = () => reject(signal.reason ?? new Error('Audit caller cancelled'))
+				signal?.addEventListener('abort', abort, { once: true })
+			})])
+		} finally { if (abort) signal?.removeEventListener('abort', abort) }
+	}
 
 	/**
 	 * 把「候选工具名」解析成**这个部署里真的有**的那一张脸。
@@ -1361,10 +1427,7 @@ export function apply(ctx, config = {}) {
 	 * **已结束的评估者**。
 	 *
 	 * `pendingAudits` 是**进程内**的:重启之后它空了,而投影里那条 `audit/dispatched` 还在
-	 * (`verdict === null`)。后果有两条,后一条更狠:
-	 *   ① 卡片与面板永远写「正在裁决」——一句等不到下文的承诺;
-	 *   ② `turnDemand` 见到未落定的裁决就 `hold`(**「机器等待,不推」**)——
-	 *      一条永远不会回来的裁决,把整个目标按死在挂起上。
+	 * (`verdict === null`)。恢复必须查询宿主目录与子会话日志,不能凭内存猜测仍在运行。
 	 *
 	 * 判据不看内存,看**宿主的目录**:`subagents.listChildren(sessionId)` 给每个子会话一个
 	 * `activity: 'running' | 'inactive'`(还在跑 / 只剩日志)——**宿主是"还在不在跑"的唯一权威**。
@@ -1400,7 +1463,7 @@ export function apply(ctx, config = {}) {
 			if (!audit.child) {
 				const child = children.find((child) => String(child.label ?? child.name ?? '').includes(audit.id))
 				if (child) { audit.child = String(child.id); mutations.push({ t: 'audit/dispatched', id: audit.id, step: audit.step, evaluator_session: audit.child, status: 'recovered', digest: audit.digest }) }
-				else if (Date.now() - (audit.at ?? 0) < CFG.auditHardTimeoutMs) continue
+				else if ([...pendingAudits.values()].some((entry) => entry.auditKey === audit.id)) continue
 			}
 			if (running.has(String(audit.child))) continue
 			/**
@@ -1408,20 +1471,13 @@ export function apply(ctx, config = {}) {
 			 * 跳过它就把「结束」误报成「死亡」,还会诱导重新交付 ⇒ 同一次评估被重做。
 			 */
 			const recovered = await recoverVerdictFromChildSession(audit.child)
-			if (recovered !== null && recovered.ok === true && (!String(audit.capability).includes('outputSchema') || recovered.structured === true)) {
-				const card = { schema_version: 'clearai.audit.v2', kind: audit.kind ?? 'evidence_audit', step_id: audit.step, auditor_run_id: String(audit.child), holds: recovered.verdict.holds, rechecks: recovered.verdict.rechecks, reuse: recovered.verdict.reuse, results: recovered.verdict.results, anomalies: recovered.verdict.anomalies, lessons: recovered.verdict.lessons, shortfalls: recovered.verdict.shortfalls, card: recovered.verdict.basis, created_at: Date.now() }
-				const cardPath = writeAuditCard(sessionId, audit.step, card)
-				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: cardPath === null ? 'unknown' : recovered.verdict.holds, holds: cardPath === null ? 'unknown' : recovered.verdict.holds, rechecks: recovered.verdict.rechecks, reuse: recovered.verdict.reuse, results: recovered.verdict.results, anomalies: recovered.verdict.anomalies, basis: recovered.verdict.basis, shortfalls: cardPath === null ? ['card_persist_failed'] : recovered.verdict.shortfalls, card_path: cardPath, digest: audit.digest ?? null })
-				lines.push(tr(`${audit.step}:裁决从子会话日志取回(交付成立:${recovered.verdict.holds})`, `${audit.step}: verdict recovered from the child session log (holds: ${recovered.verdict.holds})`))
-					continue
-			}
-			if (recovered !== null && recovered.ok !== true) {
-				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: tr(`评估者已结束,但未正常完成(${recovered.stopReason})。`, `The evaluator ended but did not complete normally (${recovered.stopReason}).`), shortfalls: ['audit_incomplete'], card_path: null, digest: audit.digest ?? null })
-				lines.push(tr(`${audit.step}:评估者已结束、未正常完成(记为 unknown)`, `${audit.step}: the evaluator ended without completing (recorded as unknown)`))
-					continue
-			}
-			mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: tr('评估者已结束(宿主目录报告),但其结论未能从子会话日志取回。', 'The evaluator ended (per the host catalog), but its conclusion could not be recovered from the child session log.'), shortfalls: ['auditor_ended_uncollected'], card_path: null, digest: audit.digest ?? null })
-			lines.push(tr(`${audit.step}:评估者已结束、结论未取回(记为 unknown)`, `${audit.step}: the evaluator ended and its conclusion was not recovered (recorded as unknown)`))
+			let result
+			if (recovered?.ok && (!String(audit.capability).includes('outputSchema') || recovered.structured)) result = { verdict: recovered.verdict }
+			else if (recovered && !recovered.ok) result = { basis: tr(`评估者已结束,但未正常完成(${recovered.stopReason})。`, `The evaluator ended without completing (${recovered.stopReason})`), shortfalls: ['audit_incomplete'] }
+			else result = { basis: tr('评估者已结束,但其结论未能从子会话日志取回。', 'The evaluator ended but no valid verdict was recovered'), shortfalls: ['auditor_ended_uncollected'] }
+			const settled = await settleAudit(sessionId, audit, result)
+			mutations.push(...settled.mutations)
+			lines.push(`${audit.step}: ${settled.holds}`)
 		}
 		return { mutations, settled: mutations.length, lines }
 	}
@@ -1485,6 +1541,20 @@ export function apply(ctx, config = {}) {
 	}
 
 	async function runEvaluator(sessionId, agent, plan, step, gate, kind, signal) {
+		const key = `${sessionId}:${kind}:${step.id}`
+		const previous = evaluatorCalls.get(key)
+		const operation = (async () => {
+			if (previous) await previous.catch(() => {})
+			signal?.throwIfAborted()
+			return runEvaluatorOnce(sessionId, agent, plan, step, gate, kind, signal)
+		})()
+		evaluatorCalls.set(key, operation)
+		try { return await operation } finally { if (evaluatorCalls.get(key) === operation) evaluatorCalls.delete(key) }
+	}
+
+	async function runEvaluatorOnce(sessionId, agent, plan, step, gate, kind, signal) {
+		const nativeBefore = nativeGoal(agent)
+		await flushFacts(sessionId)
 		const mutations = []
 		const auditKey = `a-${step.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 		const key = `${sessionId}:${kind}:${step.id}`
@@ -1510,10 +1580,22 @@ export function apply(ctx, config = {}) {
 		if (entry === undefined) {
 			const durable = (stateOf(sessionId).audits ?? []).find((audit) => audit.step === step.id && audit.verdict === null)
 			if (durable) {
-				const swept = await sweepEndedAudits(sessionId, stateOf(sessionId))
-				mutations.push(...swept.mutations)
-				const recoveredState = previewOf(host(), sessionId, mutations)?.state ?? stateOf(sessionId)
-				if ((recoveredState.audits ?? []).some((audit) => audit.id === durable.id && audit.verdict === null)) return { holds: 'pending', results: [], basis: '已有持久派发,等待关联评估者恢复', shortfalls: ['audit_pending'], cardPath: null, mutations }
+				let recoveredState
+				do {
+					signal?.throwIfAborted()
+					const swept = await sweepEndedAudits(sessionId, stateOf(sessionId))
+					mutations.push(...swept.mutations)
+					recoveredState = previewOf(host(), sessionId, mutations)?.state ?? stateOf(sessionId)
+					if (!(recoveredState.audits ?? []).some((audit) => audit.id === durable.id && audit.verdict === null)) break
+					// Observe the host catalog without returning another polling turn to the model.
+					await waitForAudit({ settled: new Promise(resolve => setTimeout(resolve, 1000)) }, signal)
+				} while (true)
+				const synced = syncWorkspace(sessionId, stateOf(sessionId))
+				if (synced) mutations.push(synced)
+				recoveredState = previewOf(host(), sessionId, [...mutations, ...(gate.materialMutations ?? [])])?.state ?? stateOf(sessionId)
+				if (auditDigest(kind, step, plan, recoveredState, gate, sessionId) !== digest) return { holds: 'unknown', results: [], basis: '恢复评估期间材料已变化,旧裁决不能推进', shortfalls: ['audit_material_changed'], cardPath: null, digest, mutations }
+				const currentGoal = nativeGoal(agent)
+				if (nativeBefore && (!currentGoal || currentGoal.id !== nativeBefore.id || currentGoal.revision !== nativeBefore.revision || currentGoal.phase !== nativeBefore.phase)) return { holds: 'pending', results: [], basis: '原生目标已变化,仅保存裁决', shortfalls: ['audit_goal_changed'], cardPath: null, digest, mutations }
 				const recovered = reuseAudit(recoveredState, step.id, digest)
 				if (recovered) return { holds: auditHolds(recovered), results: recovered.results ?? [], basis: recovered.basis ?? '', shortfalls: recovered.shortfalls ?? [], cardPath: recovered.card_path, reuse: recovered.reuse ?? [], reused: true, digest, mutations }
 			}
@@ -1564,7 +1646,7 @@ export function apply(ctx, config = {}) {
 			 * 每次派发使用独立尝试 id;补齐子会话时按同 id 更新。已落定的有效裁决按材料 digest 复用。
 			 */
 			const pendingId = `audit:pending:${auditPathComponent(`${sessionId}:${kind}:${step.id}:${digest}:${auditKey}`).slice(0, 32)}`
-			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, capability: null, evaluator_session: null, status: 'dispatching' })
+			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, capability: null, evaluator_session: null, status: 'dispatching', goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision })
 			try { await flushFacts(sessionId) } catch (error) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: String(error.message), shortfalls: ['audit_dispatch_not_durable'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: '派发记录未持久保存,未派发评估者', shortfalls: ['audit_dispatch_not_durable'], cardPath: null, digest, mutations }
@@ -1575,7 +1657,7 @@ export function apply(ctx, config = {}) {
 				persona: evaluatorDiscipline(),
 				prompt: evaluatorPrompt(initialState, step, gate, sessionId, rerunDir),
 				outputSchema: verdictSchema(),
-				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, process.platform === 'win32' ? 'pwsh' : 'bash']) },
+				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, process.platform === 'win32' ? 'pwsh' : 'bash', 'job_output', 'job_list', 'job_kill']) },
 				parent: agent,
 				signal,
 			})
@@ -1598,75 +1680,33 @@ export function apply(ctx, config = {}) {
 			}
 			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, rerunDir, settled: undefined, startedAt: Date.now() }
 			pendingAudits.set(key, entry)
+			const diagnostic = setTimeout(() => ctx.logger?.warn?.(`clearai: evaluator ${entry.run.id} is still running; continuing to wait without restarting it`), CFG.auditTimeoutMs)
+			diagnostic.unref?.()
 			entry.settled = dispatched.run.result.then(
-				(value) => ({ ok: true, value }),
-				(error) => ({ ok: false, error }),
-			)
-		}
-		const outcome = await Promise.race([
-			entry.settled,
-			new Promise((resolve) => {
-				const timer = setTimeout(() => resolve(null), CFG.auditTimeoutMs)
-				if (typeof timer?.unref === 'function') timer.unref()
-			}),
-		])
-		if (outcome === null) {
-			/**
-			 * **超过硬上限就放开**:一次挂住的评估会拖住整个目标(出现过挂数小时的情形)。
-			 * 超时如实结成「未知」(与评估者失败同一种结局),释放这次派遣;下一次结案或交付重新派。
-			 */
-			if (Date.now() - (entry.startedAt ?? Date.now()) >= CFG.auditHardTimeoutMs) {
+				(value) => {
+					const stopReason = String(value?.stopReason ?? 'completed')
+					if (stopReason !== 'completed') return { basis: `Evaluator did not complete (${stopReason})`, shortfalls: ['audit_incomplete'] }
+					if (value?.structured === undefined && entry.capability.includes('outputSchema')) return { basis: 'Native structured audit result missing', shortfalls: ['audit_structured_missing'] }
+					return { verdict: normalizeVerdict(value?.structured ?? parseLooseJson(value?.output)) }
+				},
+				(error) => ({ basis: `Evaluator failed: ${String(error?.message ?? error)}`, shortfalls: [signal?.aborted ? 'audit_cancelled' : 'audit_failed'] }),
+			).then((result) => settleAudit(sessionId, { id: entry.auditKey, step: entry.step, kind: entry.kind, child: entry.run.id, digest }, result)).finally(async () => {
+				clearTimeout(diagnostic)
 				pendingAudits.delete(key)
-				try {
-					await entry.run.dispose?.()
-				} catch {
-					// 收不掉也不影响结算:这次派遣在账上已经结了。
-				}
-				dropRerunCopy(entry.rerunDir ?? null)
-				const basis = tr(`评估者超过 ${Math.round(CFG.auditHardTimeoutMs / 60000)} 分钟没有给出裁决,如实记为未知`, `The evaluator gave no verdict within ${Math.round(CFG.auditHardTimeoutMs / 60000)} minutes; recorded honestly as unknown`)
-				mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', holds: 'unknown', basis, shortfalls: ['audit_timeout'], card_path: null, digest })
-				return { holds: 'unknown', results: [], basis, shortfalls: ['audit_timeout'], cardPath: null, digest, mutations }
-			}
-			// 仍在跑:条目留着,下一次交付继续等同一次派遣(不重复派遣)。派发事实已经在上面的 mutations 里。
-			return { holds: 'pending', results: [], basis: tr(`评估者仍在跑(${Math.round(CFG.auditTimeoutMs / 1000)}s 未回)`, `The evaluator is still running (no reply after ${Math.round(CFG.auditTimeoutMs / 1000)}s)`), shortfalls: ['audit_pending'], cardPath: null, mutations }
+				dropRerunCopy(entry.rerunDir)
+				try { await entry.run.dispose?.() } catch { /* The completed result is already durable. */ }
+			})
+			// A cancelled caller may no longer await settlement; keep failures observable.
+			entry.settled.catch((error) => ctx.logger?.warn?.(`clearai: audit settlement failed: ${String(error?.message ?? error)}`))
 		}
-		// 已落定:这次派遣的生命周期到此为止。下一次交付是**新的一次评估**(新证据),必须重新派遣。
-		pendingAudits.delete(key)
-		dropRerunCopy(entry.rerunDir ?? null)
-		const settleUnknown = (basis, shortfalls) => {
-			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', holds: 'unknown', basis, shortfalls, card_path: null, digest })
-			return { holds: 'unknown', results: [], basis, shortfalls, cardPath: null, digest, mutations }
-		}
-		if (outcome.ok !== true) {
-			return settleUnknown(tr(`评估者失败:${String(outcome.error?.message ?? outcome.error)}`, `The evaluator failed: ${String(outcome.error?.message ?? outcome.error)}`), ['audit_failed'])
-		}
-		/**
-		 * **裁决一旦结束,就要落一条结算事实**——不管结局是什么。
-		 *
-		 * 三条路原来直接 `return unknown`(评估者失败 / 没正常结束 / 评估卡落盘失败),
-		 * 账上只剩 `audit/dispatched`:看上去像"它还在跑",而它**已经结束了**。
-		 * 结局不好也是结局,如实落下来——不然那条派发事实会在账上挂到天荒地老,
-		 * 而"评估者没有悬空"这条不变量也只能红着,连解释都拿不出证据。
-		 */
+		const verdict = await waitForAudit(entry, signal)
+		signal?.throwIfAborted()
+		mutations.push(...verdict.mutations)
+		const cardPath = verdict.cardPath
+		const nativeAfter = nativeGoal(agent)
+		if (nativeBefore && (!nativeAfter || nativeAfter.id !== nativeBefore.id || nativeAfter.revision !== nativeBefore.revision || nativeAfter.phase !== nativeBefore.phase)) return { ...verdict, holds: 'pending', basis: '裁决已保存;原生目标已暂停、结束或修订,本次不再推进', shortfalls: ['audit_goal_changed'], mutations }
+		if (verdict.holds === 'unknown') return { ...verdict, mutations }
 
-		const settled = outcome.value
-		const stopReason = String(settled?.stopReason ?? 'completed')
-		if (stopReason !== 'completed' && settled?.structured === undefined) {
-			return settleUnknown(tr(`评估者未正常结束(${stopReason})`, `The evaluator did not end normally (${stopReason})`), ['audit_incomplete'])
-		}
-		if (settled?.structured === undefined && entry.capability.includes('outputSchema')) return settleUnknown('原生结构化审计结果缺失,文本不作为新裁决', ['audit_structured_missing'])
-		const verdict = settled?.structured !== undefined ? normalizeVerdict(settled.structured) : normalizeVerdict(parseLooseJson(settled?.output))
-		try {
-			await entry.run.dispose?.()
-		} catch {
-			/* dispose 失败不影响裁决事实 */
-		}
-		const card = { schema_version: 'clearai.audit.v2', kind, step_id: step.id, auditor_run_id: String(entry.run.id), holds: verdict.holds, rechecks: verdict.rechecks, reuse: verdict.reuse, results: verdict.results, anomalies: verdict.anomalies, ...(verdict.lessons.length > 0 ? { lessons: verdict.lessons } : {}), shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
-		const cardPath = writeAuditCard(sessionId, step.id, card)
-		if (cardPath === null) {
-			return settleUnknown(tr('评估卡落盘失败:裁决降级', 'Could not save the evaluation card: verdict downgraded'), ['card_persist_failed'])
-		}
-		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.holds, holds: verdict.holds, rechecks: verdict.rechecks, reuse: verdict.reuse, results: verdict.results, anomalies: verdict.anomalies, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
 		const synced = syncWorkspace(sessionId, stateOf(sessionId))
 		if (synced !== null) mutations.push(synced)
 		const fresh = previewOf(host(), sessionId, [...mutations, ...(gate.materialMutations ?? [])])?.state
@@ -3416,7 +3456,8 @@ export function apply(ctx, config = {}) {
 			mutations.push(...audit.mutations)
 			if (audit.holds === 'pending') return fail('audit_pending', tr(`目标评估者仍在跑:${plainIds(sessionId, audit.basis)}。先观察当前事实,再谈重试。`, `The goal evaluator is still running: ${plainIds(sessionId, audit.basis)}. Look at the current facts before retrying.`), { mutations: audit.mutations })
 			if (audit.holds !== 'yes') {
-				const failureStep = `goal:${goal.id}:${audit.digest ?? 'unknown'}`
+				// Changing an answer cannot reset a repeatedly unavailable audit service.
+				const failureStep = `goal:${goal.id}:${audit.holds === 'unknown' && !audit.shortfalls?.includes('audit_material_changed') ? 'infrastructure' : audit.digest ?? 'unknown'}`
 				const failures = (state.blocks[`goal:${failureStep}`] ?? 0) + 1
 				mutations.push({ t: 'block/counted', plan: 'goal', step: failureStep, count: failures, reason: `goal_audit:${audit.holds}` })
 				if (failures >= CFG.blockedThreshold) blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, `目标审查连续失败 ${failures} 次,保持开放并停止续跑`)
@@ -5110,7 +5151,7 @@ export function apply(ctx, config = {}) {
 			// 写不出来不影响这一拍:卡里的指针会指向一个还不存在的文件,下拍再试。
 		}
 		/**
-		 * **独立落账通道的兜底**:上一步在 `await` 之前落下的派发/派遣事实,如果没赶上
+		 * **独立落账通道的兜底**:上一步在 `await` 之前落下的派发/裁决事实,如果没赶上
 		 * 那一次工具结果(工具抛错、被 abort、或结果丢失),在这里补折一次。
 		 * 放在 `factMutations` 初始化之后、别的事实之前——它是**已经发生**的事,
 		 * 语义上早于这一拍新收上来的结论。
@@ -5128,7 +5169,7 @@ export function apply(ctx, config = {}) {
 		}
 		/**
 		 * 失联的评估者:重启之后 `pendingAudits` 空了,而投影里那条裁决还停在「在跑」——
-		 * 它会把目标按在 hold 上。这里问一次宿主的子代理目录,把「它已经不在跑」如实落成一条事实。
+		 * 这里问一次宿主的子代理目录,把「它已经不在跑」如实落成一条事实。
 		 */
 		try {
 			const audits = await sweepEndedAudits(sessionId, hostService.state(sessionId))
