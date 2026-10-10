@@ -1,22 +1,34 @@
-## 0.5.2-rc.15 (PR #23 continuation, unreleased)
-
-- Expose registered knowledge uses, their applicability verdicts and recheck targets in goal documents and evaluator briefs, keeping declarations distinct from confirmed final reuse.
-- Reject circular goal-completion criteria in both free text and criterion lists; explain pre-verdict persistence ordering to auditors and stamp their independent identity on stored cards.
-- Propagate reason-by-reason independent reconfirmation back to linked negative entries in the same scope, retaining original observations and preventing stale sessions from reopening them.
-- Clarify that irreversible declarations describe planned destructive operations, not prohibitions or read-only checks; require distinctive command signatures.
-- Render structured fact scopes consistently in knowledge indexes, cards and preflight summaries.
-- Bind the initial audit to the current delivery's observations, deduplicate identical observation content, and recheck the latest plan. Generated observation IDs and timestamps no longer trigger repeat paid audits; changed content still does (fingerprint v5).
-- Persist audit dispatch and child associations through native log-only hooks carrying signed notices so DSH rc.2 can reopen session logs.
-- Hash audit card path components; bind verdict reuse to answer, references, definitions, inputs, methods and artifact contents; recheck after evaluation.
-- Persist calculation recheck reasons across sessions and retain immutable accepted references. Final answers declare actual knowledge use.
-- Add isolated native test carrier, usage accounting, read-isolation probes, fault tests and new sequence preregistration assets. Product acceptance remains pending.
-- Rebuild state version 21 from the original ledger. Old fingerprints cannot close goals under the new rules. Do not migrate experimental RC.6 unknown-event logs into native profiles.
-
 # Changelog
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.5.2] — 2026-10-10
+
+**知识的适用范围、跨会话复检与可靠审计闭环。**
+
+知识继续以本体和实体图组织：事实、经验、已排除项、缺陷与未解项随发生回灌，取用时检查适用范围。假设来源开放，本体按需建立，简单任务可选择默认模式。
+
+### Fixed
+
+- Windows 评估卡目录和文件名采用固定长度 SHA-256，保留原始逻辑 id，兼容历史 card_path。写卡失败保持未知，不能缓存为通过。
+- 审计指纹绑定答案、引用、定义、输入、方法与产物内容；相同材料复用裁决，实质修订重审。审计后重新同步材料与异常，阻止旧裁决关闭已变化的目标。
+- 通过原生日志持久保存派发与子会话关联，进程恢复后复用已完成评估；去掉审计自身记录造成的重复派发，拒绝以“目标已完成”为前置条件的循环判据。
+- 核算复核原因跨会话保留，接受基准不会被重跑观测自动覆盖。仅按独立复检确认的原因恢复；关联负向条目在完整匹配范围内同步为已解释，保留原证据。
+- 范围外变化不撤回原范围的历史事实；缺条件、范围未知及不可比较单位不自动判定适用。结构化范围在索引、预检与实体卡中一致展示。
+
+### Added
+
+- 最终答案可用 uses 声明直接依据，立题引用与确认的实际复用分开记录。目标文档与评估者任务书展示已登记引用、适用性和复检对象。
+- 真实 DSH 隔离 headless 驱动、模型和 preset 校验、主/子会话用量核对、读隔离探针、故障恢复测试、冻结的配对序列与盲评流程。
+
+### Migration and validation
+
+- STATE_VERSION 21 从原账本重建投影，不改写历史账本。旧审计指纹不能直接用于新规则结案；不导入实验 RC.6 的不兼容事件日志。
+- RC.15 已通过完整本机工程套件（含真实宿主/客户端、无跳过）、Windows Node24 审计回归、历史安装升级与卸载重装、真实界面、四会话持久复检，以及取消/断连/240秒审计超时/进程恢复检查。
+- 本次按用户决定先发布工程修复。500万处理token上限的对照长测继续使用已冻结 RC.15；序列质量收益、实验节省及成本验收尚未完成，本版不宣称这些产品收益达标。历史失败记录保留，正式验证计划见 [预注册](docs/optimization/0.5.2-plan/pr23-preregistration.zh-CN.md)。
+
 
 ### Added
 
