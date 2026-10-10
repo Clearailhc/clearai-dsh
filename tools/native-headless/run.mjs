@@ -1,7 +1,7 @@
 /** Run an installed native profile; never flatten presets or modify the app. */
 import {spawn} from 'node:child_process'
 import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs'
-import {resolve,join} from 'node:path'
+import {resolve,join,relative,isAbsolute} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {createHash} from 'node:crypto'
 const repo=resolve(fileURLToPath(new URL('../..',import.meta.url)))
@@ -20,6 +20,8 @@ export async function runNative({home,profile='native52',workspace,spec}) {
  if(!['A','C','C-no-applicability','C-no-negative'].includes(spec.group))throw new Error('Unknown group')
  if(!spec.tokenBudget||!spec.timeoutMs||!spec.output||!spec.task)throw new Error('Incomplete run spec')
  const output=resolve(spec.output)
+ const outputRelative=relative(workspace,output)
+ if(spec.isolation&&(!outputRelative||(!isAbsolute(outputRelative)&&outputRelative!=='..'&&!outputRelative.startsWith('../'))))throw new Error('Controller logs and run specs must stay outside the agent workspace')
  if(existsSync(join(output,'result.json')))throw new Error('Refusing to overwrite a prior run')
  mkdirSync(output,{recursive:true});mkdirSync(workspace,{recursive:true})
  const specPath=join(output,'spec.json');writeFileSync(specPath,JSON.stringify({...spec,output},null,2)+'\n')

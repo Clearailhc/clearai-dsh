@@ -1,4 +1,4 @@
-## 0.5.2-rc.10 (PR #23 continuation, unreleased)
+## 0.5.2-rc.11 (PR #23 continuation, unreleased)
 
 - Bind the initial audit to the current delivery's observations, deduplicate identical observation content, and recheck the latest plan. Generated observation IDs and timestamps no longer trigger repeat paid audits; changed content still does (fingerprint v5).
 - Persist audit dispatch and child associations through native log-only hooks carrying signed notices so DSH rc.2 can reopen session logs.

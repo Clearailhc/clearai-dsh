@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { randomUUID, createHash } from 'node:crypto'
 import { usageSummary, redact, onceAsync, infrastructureErrorCode } from './accounting.mjs'
 import { installReadIsolation, probeReadIsolation } from './isolation.mjs'
+import { knowledgeRecords, mechanismReceipt } from './mechanisms.mjs'
 
 const resources = process.env.CLEARAI_DSH_RESOURCES || '/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh'
 const native = (pkg) => import(pathToFileURL(join(resources, 'node_modules/@deepseek-ai', pkg, 'lib/index.js')).href)
@@ -27,6 +28,8 @@ export function apply(ctx, config) {
 	let crashFault=false
 	let infrastructureCode
 	let isolationPassed=!spec.isolation
+	let mechanismCheckedAt=0, mechanismViolations={}
+	const initialKnowledge=knowledgeRecords(process.cwd())
 	const clearMode = spec.mode !== 'default' && spec.group.startsWith('C')
 	let promptMounted = false, toolsMounted = false, projection = null, answer = ''
 	const atomic = (file, value) => writeFileSync(join(out, file), `${JSON.stringify(redact(value), null, 2)}\n`)
@@ -45,7 +48,7 @@ export function apply(ctx, config) {
 	const checkpoint = () => {
 		try { for (const session of ctx.get('sessions')?.list() ?? []) capture(session) } catch {}
 		try { projection = main ? ctx.get('clearai')?.state(main.id) ?? projection : projection } catch {}
-		const result = { session: main?.id, group: spec.group, mode: clearMode ? 'clearai' : 'default', reason, failure, infrastructureCode, elapsedMs: Date.now() - started, model, usage: usageSummary(calls), mount: { prompt: promptMounted, tools: toolsMounted }, requests, approvals, answer, clearai: projection, violations:{isolation_failed:reason!=='running'&&!isolationPassed}, driverDigest, logs: [...saved].map(([session, value]) => ({ session, ...value })) }
+		const result = { session: main?.id, group: spec.group, mode: clearMode ? 'clearai' : 'default', reason, failure, infrastructureCode, elapsedMs: Date.now() - started, model, usage: usageSummary(calls), mount: { prompt: promptMounted, tools: toolsMounted }, requests, approvals, answer, clearai: projection, violations:{...mechanismViolations,isolation_failed:reason!=='running'&&!isolationPassed}, driverDigest, logs: [...saved].map(([session, value]) => ({ session, ...value })) }
 		atomic('checkpoint.json', result)
 		return result
 	}
@@ -163,6 +166,12 @@ export function apply(ctx, config) {
 		main.followup(createUserMessage({ content: [{ type: 'text', text: spec.task }], source: { kind: 'user' } }))
 		while (!stopping) {
 			const record = checkpoint(), agents = ctx.get('agents').list()
+			if(clearMode&&Date.now()-mechanismCheckedAt>=2000) {
+				mechanismCheckedAt=Date.now()
+				mechanismViolations=mechanismReceipt(record,knowledgeRecords(process.cwd()),initialKnowledge).violations
+				const critical=Object.entries(mechanismViolations).filter(([,failed])=>failed).map(([name])=>name)
+				if(critical.length)return finish('blocked','Critical mechanism stop: '+critical.join(', '))
+			}
 			if (cancelFault) return finish('user_cancelled', 'Registered cancellation after child request')
 			if(spec.fault==='cancel-after-frame'&&projection?.goal)return finish('user_cancelled','Synthetic UI fixture: retain open goal and loaded knowledge for replay inspection')
 			if(spec.fault==='cancel-after-anomaly'&&projection?.anomalies?.length)return finish('user_cancelled','Synthetic ablation probe: preserve recorded anomaly')

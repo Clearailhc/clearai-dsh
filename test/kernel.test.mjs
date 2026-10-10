@@ -3443,6 +3443,16 @@ console.log('\n【重复观测交付:记录变化不等于材料变化】')
  await callOn(host,S,'AdvancePlan',{...args,observations:[{ref:'lab/raw.json',note:'mean=3; instrument calibration pending'}]})
  check('文件未变但观测解释实质修订必须重审',host.audits.length===3,String(host.audits.length))
 }
+console.log('\n【结构化范围:索引与模型摘要一致】')
+{
+ const ws=tempDir('clearai-scope-display-'),host=makeHost();host.cwd=ws;apply(host.ctx,{minHypotheses:0})
+ writeText(join(ws,'clear/knowledge/facts/f-structured.json'),JSON.stringify({id:'f-structured',text:'synthetic mean=2',scope_spec:{conditions:{instrument:'synthetic-A'}},status:'established',level:'L3'}))
+ const framed=await callOn(host,'scope-display','Frame',{claim:'reuse',headline:'reuse',done_criteria:'check lab/current.json',conditions:{instrument:'synthetic-A'},hypotheses:[{claim:'mean=2',refute_when:'mean differs',uses:['f-structured'],retests:'f-structured'}]})
+ await preStep(host,'scope-display',1)
+ const index=readFileSync(join(ws,'clear/knowledge/facts/INDEX.md'),'utf8')
+ check('没有旧文字scope也从scope_spec显示真实范围',index.includes('instrument=synthetic-A')&&!index.includes('范围未声明'),index)
+ check('模型当前知识摘要与索引采用同一结构化范围',framed.message.includes('适用范围:条件 instrument=synthetic-A'),framed.message)
+}
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failed > 0) {
 	console.log('失败项:')

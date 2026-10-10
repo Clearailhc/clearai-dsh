@@ -19,7 +19,7 @@
 import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, negativeFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 import { bilingual, detectLanguage, messageText, tr, withLanguage } from './lang.js'
-import { compareScope } from './scope.js'
+import { compareScope, scopeText } from './scope.js'
 
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
 const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
@@ -1319,7 +1319,7 @@ export function knowledgePreflight(state, derived) {
 		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, gloss: predicate.gloss ?? '', kind: predicate.kind ?? null, shape: predicate.shape ?? null, check: predicate.check ?? null, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
 		predicatesTruncated: Math.max(0, matchedPredicates.length - LIMIT),
 		/** 命中的既有事实(可复用的「已知」)。 */
-		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: fact.scope ?? null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null, foreign: fact.foreign === true })),
+		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: tr(scopeText(fact.scope_spec, 'zh'), scopeText(fact.scope_spec, 'en')) || fact.scope || null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null, foreign: fact.foreign === true })),
 		factsTruncated: Math.max(0, matchedFacts.length - LIMIT),
 		/** 冲突:有就带上(它们约束「哪些结论还不能随便写)。 */
 		conflicts: conflicts.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject })),

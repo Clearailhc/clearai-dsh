@@ -2159,7 +2159,7 @@ export function apply(ctx, config = {}) {
 			],
 		)
 		for (const fact of [...facts].reverse()) {
-			const scope = fact.scope === null || fact.scope === undefined || String(fact.scope).trim() === '' ? tr('范围未声明(引用前请谨慎)', 'scope not declared (cite with care)') : String(fact.scope)
+			const scope = tr(scopeText(fact.scope_spec, 'zh'), scopeText(fact.scope_spec, 'en')) || String(fact.scope ?? '').trim() || tr('范围未声明(引用前请谨慎)', 'scope not declared (cite with care)')
 			const evidence = listOf(fact.evidence ?? []) || tr('(无)', '(none)')
 			const at = fact.at === undefined || fact.at === null ? '—' : new Date(fact.at).toISOString()
 			lines.push(`## ${fact.id} · ${fact.text}`)

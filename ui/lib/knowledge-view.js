@@ -20,6 +20,7 @@
  */
 import { graphProjection } from './domain-language.js'
 import { bilingual, tr } from './lang.js'
+import { scopeText } from './scope.js'
 
 /** 卡文本上限。模型每一步只读这一张卡,而卡是**每回合**重算的:它必须小到能进预算。 */
 const CARD_LIMIT = 3000
@@ -347,7 +348,7 @@ function questionedNote(fact, language) {
 }
 
 function factLine(fact) {
-	const scope = oneLine(fact?.scope ?? '')
+	const scope = oneLine(tr(scopeText(fact?.scope_spec, 'zh'), scopeText(fact?.scope_spec, 'en')) || fact?.scope || '')
 	return tr(
 		`  · 「${clamp(fact?.text, 100)}」 — 适用范围:${scope === '' ? '未声明' : clamp(scope, 80)}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}${questionedNote(fact, 'zh')}`,
 		`  · "${clamp(fact?.text, 100)}" — scope: ${scope === '' ? 'not declared' : clamp(scope, 80)}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}${questionedNote(fact, 'en')}`,
