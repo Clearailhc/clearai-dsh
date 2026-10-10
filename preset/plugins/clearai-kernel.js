@@ -1470,7 +1470,7 @@ export function apply(ctx, config = {}) {
 		const matched = (state?.audits ?? []).filter((audit) => String(audit?.step ?? '') === String(stepId) && String(audit?.digest ?? '') === digest)
 		for (let index = matched.length - 1; index >= 0; index -= 1) {
 			const audit = matched[index]
-			if (!digest.startsWith('v4:') || !audit.card_path || !existsSync(audit.card_path) || !['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
+			if (!digest.startsWith('v5:') || !audit.card_path || !existsSync(audit.card_path) || !['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
 			return audit
 		}
 		return null
@@ -1482,7 +1482,7 @@ export function apply(ctx, config = {}) {
 		const key = `${sessionId}:${kind}:${step.id}`
 		const initialSync = syncWorkspace(sessionId, stateOf(sessionId))
 		if (initialSync !== null) mutations.push(initialSync)
-		const initialState = previewOf(host(), sessionId, mutations)?.state ?? stateOf(sessionId)
+		const initialState = previewOf(host(), sessionId, [...mutations, ...(gate.materialMutations ?? [])])?.state ?? stateOf(sessionId)
 		const digest = auditDigest(kind, step, plan, initialState, gate, sessionId)
 		let entry = pendingAudits.get(key)
 		/**
@@ -1565,7 +1565,7 @@ export function apply(ctx, config = {}) {
 			const dispatched = await dispatchSubRun({
 				label: `${kind === 'goal_audit' ? tr('目标评估者', 'Goal evaluator') : tr('评估者', 'Evaluator')} · ${step.id} · ${pendingId}`,
 				persona: evaluatorDiscipline(),
-				prompt: evaluatorPrompt(stateOf(sessionId), step, gate, sessionId, rerunDir),
+				prompt: evaluatorPrompt(initialState, step, gate, sessionId, rerunDir),
 				outputSchema: verdictSchema(),
 				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, process.platform === 'win32' ? 'pwsh' : 'bash']) },
 				parent: agent,
@@ -1661,7 +1661,7 @@ export function apply(ctx, config = {}) {
 		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.holds, holds: verdict.holds, rechecks: verdict.rechecks, reuse: verdict.reuse, results: verdict.results, anomalies: verdict.anomalies, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
 		const synced = syncWorkspace(sessionId, stateOf(sessionId))
 		if (synced !== null) mutations.push(synced)
-		const fresh = previewOf(host(), sessionId, mutations)?.state
+		const fresh = previewOf(host(), sessionId, [...mutations, ...(gate.materialMutations ?? [])])?.state
 		if (fresh === undefined || auditDigest(kind, step, plan, fresh, gate, sessionId) !== digest) {
 			return { ...verdict, holds: 'unknown', shortfalls: [...verdict.shortfalls, 'audit_material_changed'], cardPath, digest, mutations }
 		}
@@ -4180,6 +4180,7 @@ export function apply(ctx, config = {}) {
 
 			// ② 准入
 			const gate = admission(cwd, step)
+			gate.materialMutations = mutations.filter((row) => row.t === 'observation/recorded')
 			gate.anomalies = opened
 			mutations.push({
 				t: 'admission/checked',

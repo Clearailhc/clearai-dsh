@@ -56,6 +56,21 @@ test('fingerprint binds full answers, lessons, actual file content and meaning, 
 	assert.equal(fileDigest(cwd, '../secrets'), 'outside-workspace')
 })
 
+test('fingerprint ignores duplicate observation metadata but binds content and the current plan', () => {
+ const cwd=tempDir('clearai-audit-observation-')
+ const plan={id:'p',steps:[{id:'s',done_criteria:'mean equals 2',artifacts:[]}]}
+ const input={cwd,kind:'step_audit',step:plan.steps[0],plan,state:{plans:[plan],materials:[{id:'first',at:1,ref:'raw.json',note:'mean=2'}]},gate:{}}
+ const original=auditMaterialDigest(input)
+ assert.match(original,/^v5:/)
+ input.state.materials.push({id:'second',at:2,ref:'raw.json',note:'mean=2'})
+ assert.equal(auditMaterialDigest(input),original)
+ input.state.materials[1].note='calibration pending'
+ assert.notEqual(auditMaterialDigest(input),original)
+ input.state.materials.pop()
+ input.state.plans=[{...plan,steps:[{...plan.steps[0],done_criteria:'mean equals 3'}]}]
+ assert.notEqual(auditMaterialDigest(input),original)
+})
+
 test('method digest notices script content changes even with equal size and mtime', () => {
 	const cwd = tempDir('clearai-method-'); writeFileSync(join(cwd, 'spec.json'), '{}'); writeFileSync(join(cwd, 'calc.py'), 'print(2)')
 	const spec = { command: 'python calc.py', scripts: ['calc.py'] }; const digest = methodSnapshot(cwd, spec, 'spec.json')

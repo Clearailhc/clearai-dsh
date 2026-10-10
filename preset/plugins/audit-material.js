@@ -32,6 +32,7 @@ export function methodSnapshot(cwd, spec, registration) {
 }
 
 export function auditMaterialDigest({ kind, step, plan, state, gate, cwd }) {
+	const currentPlan = (state.plans ?? []).find((row) => row.id === plan?.id) ?? plan
 	const modelIds = new Set((state.hypotheses ?? []).map((row) => row.use).filter(Boolean))
 	const refs = new Set((state.hypotheses ?? []).flatMap((row) => (row.uses ?? []).map((use) => typeof use === 'string' ? use : use.id)))
 	for (const answer of gate.answers ?? []) for (const id of answer.uses ?? []) refs.add(id)
@@ -40,7 +41,7 @@ export function auditMaterialDigest({ kind, step, plan, state, gate, cwd }) {
 		if (file?.data?.use) modelIds.add(file.data.use)
 		return [path, fileDigest(cwd, path)]
 	})
-	const paths = new Set((plan?.steps ?? []).flatMap((row) => row.artifacts ?? []))
+	const paths = new Set((currentPlan?.steps ?? []).flatMap((row) => row.artifacts ?? []))
 	for (const row of gate.confirmed ?? []) if (!/^(?:evidence|hypothesis):/.test(row.ref)) paths.add(row.ref)
 	for (const row of state.materials ?? []) for (const path of [row.path, row.ref, ...(row.refs ?? [])]) if (typeof path === 'string' && !path.includes(':')) paths.add(path)
 	const methods = [...modelIds].sort().map((id) => {
@@ -53,5 +54,6 @@ export function auditMaterialDigest({ kind, step, plan, state, gate, cwd }) {
 	const lexicon = state.lexicon ?? {}
 	const definitions = ['terms', 'predicates', 'entities'].flatMap((key) => (lexicon[key] ?? []).map(semantic))
 	const anomalies = [...(state.anomalies ?? []), ...(gate.anomalies ?? [])].filter((row) => row.by !== 'evaluator' || row.status !== 'open').map((row) => ({ id: row.id, what: row.what, status: row.status, reason: row.reason, explainedBy: row.explainedBy }))
-	return `v4:${contentDigest({ kind, step: step.id, criteria: step.done_criteria, goal: state.goal, steps: plan?.steps, answers: gate.answers, lessons: gate.lessons, extra: gate.extra, hypotheses: (state.hypotheses ?? []).map(({ supportedLevel, refutations, inconclusive, ...row }) => row), facts: state.facts, evidence: (state.evidence ?? []).filter((row) => row.anchor !== 'auditor'), materials: state.materials, anomalies, definitions, knowledge, methods, artifacts: [...paths].sort().map((path) => [path, fileDigest(cwd, path)]) })}`
+	const materials = [...new Set((state.materials ?? []).map(({ id, at, ...row }) => JSON.stringify(canonical(row))))].sort().map((row) => JSON.parse(row))
+	return `v5:${contentDigest({ kind, step: step.id, criteria: step.done_criteria, goal: state.goal, steps: currentPlan?.steps, answers: gate.answers, lessons: gate.lessons, extra: gate.extra, hypotheses: (state.hypotheses ?? []).map(({ supportedLevel, refutations, inconclusive, ...row }) => row), facts: state.facts, evidence: (state.evidence ?? []).filter((row) => row.anchor !== 'auditor'), materials, anomalies, definitions, knowledge, methods, artifacts: [...paths].sort().map((path) => [path, fileDigest(cwd, path)]) })}`
 }

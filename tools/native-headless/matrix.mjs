@@ -23,6 +23,7 @@ export function stopReasons(result) {
 	const reasons = []
 	if (result.usage?.status !== 'verified') reasons.push('unverifiable_usage')
 	if (Object.keys(MODEL).some((key) => result.installation?.model?.[key] !== MODEL[key])) reasons.push('model_mismatch')
+	if (Object.keys(MODEL).some((key) => result.model?.[key] !== MODEL[key]) || (result.requests ?? []).some(request => Object.keys(MODEL).some(key => request[key] !== MODEL[key]))) reasons.push('actual_model_mismatch')
 	for (const [key, flag] of Object.entries(result.violations ?? {})) if (flag) reasons.push(key)
 	return reasons
 }

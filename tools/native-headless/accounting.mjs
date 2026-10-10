@@ -19,3 +19,10 @@ export function onceAsync(operation) {
 	let result
 	return (...args) => result ??= Promise.resolve().then(() => operation(...args))
 }
+
+export function infrastructureErrorCode(error) {
+	const code=error?.code??error?.cause?.code
+	if(['ECONNRESET','ETIMEDOUT','EAI_AGAIN'].includes(code))return code
+	const status=error?.status??error?.statusCode
+	return [502,503,504].includes(status)?'HTTP_'+status:undefined
+}

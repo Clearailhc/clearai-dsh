@@ -1,6 +1,6 @@
 import { pairedAnalysis, sequenceCosts } from './analyze.mjs'
 const mean=rows=>rows.reduce((a,b)=>a+b,0)/rows.length
-export function stageAcceptance({stage,runs,scores}) {
+export function stageAcceptance({stage,runs,scores,formal}) {
  if(stage==='smoke') {
   const completed=runs.length===6&&runs.every(row=>row.result.reason==='completed'&&row.result.usage.status==='verified')
   const direct=scores.filter(row=>row.row.task==='direct'),optimization=scores.filter(row=>row.row.task!=='direct')
@@ -22,7 +22,7 @@ export function stageAcceptance({stage,runs,scores}) {
   }
   const paired=pairedAnalysis(pairs),cRuns=runs.filter(row=>row.row.group==='C'),cScores=scores.filter(row=>row.row.group==='C')
   const required=cRuns.reduce((sum,row)=>sum+(row.mechanism?.required??0),0),covered=cRuns.reduce((sum,row)=>sum+(row.mechanism?.covered??0),0)
-  const later=cRuns.filter(row=>row.row.task!=='t1'),actual=later.filter(row=>row.result.reason==='completed'&&row.mechanism?.actualConfirmed>0&&cScores.find(score=>score.row.world===row.row.world&&score.row.task===row.row.task)?.blind.grade.correctReuse===true).length
+  const later=cRuns.filter(row=>['t2','t4'].includes(row.row.task)),actual=later.filter(row=>row.result.reason==='completed'&&row.mechanism?.actualConfirmed>0&&cScores.find(score=>score.row.world===row.row.world&&score.row.task===row.row.task)?.blind.grade.correctReuse===true).length
   const usageVerified=runs.length===expected*8&&runs.every(row=>row.result.usage?.status==='verified'&&Number.isFinite(row.result.usage.processed))
   const tokens=group=>runs.filter(row=>row.row.group===group).reduce((sum,row)=>sum+(Number.isFinite(row.result.usage?.processed)?row.result.usage.processed:0),0)
   const overconfident=group=>scores.filter(row=>row.row.group===group).reduce((sum,row)=>sum+row.blind.grade.overconfident,0)
@@ -45,6 +45,22 @@ export function stageAcceptance({stage,runs,scores}) {
   return {stage,passed:Object.values(differences).every(value=>value>=-5)&&historyRetractions===0,differences,historyRetractions,verdicts:{singleTaskNoninferiority:Object.values(differences).every(value=>value>=-5)?'达到':'未达到'}}
  }
  // Ablations describe mechanisms; they are not a replacement for full-C acceptance.
- if(stage==='ablation')return {stage,passed:scores.length===48,status:'descriptive',scores: scores.length}
+ if(stage==='ablation') {
+  if(scores.length!==48||!formal?.passed||formal.stage!=='formal')throw new Error('Complete formal-C baseline and all ablations required')
+  const comparisons={}
+  for(const group of ['C-no-applicability','C-no-negative']) {
+   const pairs=[]
+   for(const world of [...new Set(scores.filter(row=>row.row.group===group).map(row=>row.row.world))]) {
+    const full=formal.scores.filter(row=>row.row.group==='C'&&row.row.world===world),variant=scores.filter(row=>row.row.group===group&&row.row.world===world)
+    if(full.length!==4||variant.length!==4)throw new Error('Unpaired ablation world')
+    const summary=rows=>({quality:mean(rows.filter(row=>row.row.task!=='t1').map(row=>row.quality)),costs:sequenceCosts(rows.map(row=>({...row.machine,correctDiagnosis:row.blind.grade.correctDiagnosis})))})
+    const a=summary(variant),c=summary(full)
+    pairs.push({world,aQuality:a.quality,cQuality:c.quality,aExperiments:mean(Object.values(a.costs)),cExperiments:mean(Object.values(c.costs))})
+   }
+   if(pairs.length!==6)throw new Error('Missing ablation worlds')
+   comparisons[group]={interpretation:'positive effects favor full C',analysis:pairedAnalysis(pairs)}
+  }
+  return {stage,passed:true,status:'descriptive',comparisons}
+ }
  throw new Error('Unknown acceptance stage')
 }

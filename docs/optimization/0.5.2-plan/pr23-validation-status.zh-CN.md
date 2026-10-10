@@ -1,22 +1,26 @@
 # 验证状态（2026-10-10，工程进行中）
 
-分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.9` 尚未冻结，产品矩阵未启动。
+分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.10` 尚未冻结，产品矩阵未启动。已通过原生 CLI 安装到隔离 profile；包 SHA-256 为 `7d6310700fcbcdd8b39d8d92f210bec059e406167407842e1781fb2c5efa2187`。
 
 | 检查 | 证据 | 状态 |
 |---|---|---|
-| 内核回归 | `/private/tmp/v052-native-hook-kernel.log`，599通过0失败 | 通过 |
-| 原生事件契约 | `/private/tmp/clearai-native-contract-rc9/result.json`，安装运行时Node24.18.1 | 原生写入、冷回放、模型消息不变、署名投影通过 |
-| 全部套件含安装宿主/客户端 | `/private/tmp/v052-strict-rc7.log`，宿主38、客户端181及其他套件全绿，无跳过 | 历史通过，RC.9需重跑 |
-| 包检查 | `/private/tmp/v052-package-rc7.log`，46通过 | RC.9需重跑 |
-| macOS原生升级/卸载/重装 | `/private/tmp/clearai-pr23-lifecycle-rc7/result.json`，0.5.0/0.5.1/RC.7 | 历史通过，RC.9需重跑 |
+| 内核回归 | `/private/tmp/v052-v5-kernel.log`，602通过0失败 | RC.10通过 |
+| 原生事件契约 | `/private/tmp/clearai-native-contract-rc10/result.json`，安装运行时Node24.18.1 | RC.10原生写入、冷回放、模型消息不变、署名投影通过 |
+| 全部套件含安装宿主/客户端 | `/private/tmp/v052-strict-rc10.log`，宿主38、客户端181及其他套件全绿，无跳过 | RC.10通过 |
+| 包检查 | `/private/tmp/v052-package-rc10.log`，46通过 | RC.10通过 |
+| macOS原生升级/卸载/重装 | `/private/tmp/clearai-pr23-lifecycle-rc9/result.json`，0.5.0/0.5.1/RC.9 | RC.9通过，RC.10需复验 |
 | 真实读隔离 | `/private/tmp/clearai-pr23-isolation/run6/`，实际read/shell/符号链接/扫描拒绝，工作区读写正例正常 | 历史通过，模型固定、33332处理token |
-| 评分资产 | `/private/tmp/v052-acceptance-tests.log`，10通过 | 通过，不等于真实模型评分 |
-| Windows Node24 | 审计CI任务已加入 | 尚未执行 |
-| 真实UI | RC.6冷读取拒绝未知事件 | 未通过，新候选需复验 |
-| 取消/断连/240秒超时/恢复 | RC.6部分故障完成，RC.7/RC.8失败现场保留 | 新候选需复验 |
+| 审计与测试资产单元回归 | `/private/tmp/v052-v5-tools.log`，22通过 | 通过，不等于真实模型评分 |
+| Windows Node24 | [CI 38024853858](https://github.com/Clearailhc/clearai-dsh/actions/runs/38024853858)，Linux/Windows全绿 | RC.9源通过，RC.10需复验 |
+| 真实UI | `/private/tmp/clearai-pr23-ui-fixture-rc9/entity-evidence.png`，实体事实/经验/负向记录/待核验原因和证据文件展开 | RC.9部分通过，评估卡打开及RC.10复验待完成 |
+| 取消/断连/240秒超时/恢复 | `/private/tmp/clearai-pr23-faults-rc9-driverfixed/results.json`，四项passed=true | RC.9通过，RC.10需复验；旧失败现场保留 |
 | 冒烟6 / 开发24 / 正式48 / 补充36 / 消融48 | 没有冻结产品样本 | 未启动 |
 
 原生回放暴露了本轮引入的自定义 `clearai/facts` 事件：DSH rc.2冷读取拒绝未知且未标为可忽略的事件。RC.7改为原生消息但缺少surfaceOp；RC.8补标记后暴露工具调用与返回被消息分隔，接口400拒绝。RC.9使用原生的log-only hook事件承载ClearAI内部事实钩子的结果，保留插件来源标记和同一投影折法，避免进入模型消息序列。旧实验日志不改写，不能算新候选通过证据。故障驱动同时改正了已结束评估者日志句柄的flush竞态。
+
+RC.10修复重复观测交付造成重复付费审计：当前交付观测在初次指纹中缺失，重复记录又带不同id/时间。新v5指纹在派发前纳入当前观测，按内容去重，并在返回后检查最新计划。行为回归同时验证同材料只审一次、文件数值修改重审、观测解释修改重审。此前红测试与各候选日志保留；RC.9的真实会话通过不能代替v5规则的真实会话验收。
+
+长测驱动仍需接通每题不可变快照、机制停止检查、阶段汇总验收、良率补充组及一次基础设施重跑规则；现有campaign明确返回待汇总状态，不能作为完成验收使用。跨会话核算复检和两个消融预设仍需原生工程探针。完成这些项目及RC.10门禁后，才能冻结并开始6场冒烟，再依次运行24/48/36/48场产品矩阵。
 
 RC.6工程探针曾运行时完成，979540处理token、55请求、4次实质不同审计；其冷回放失败，因此不能算恢复或界面门禁通过，也不是产品收益样本。
 

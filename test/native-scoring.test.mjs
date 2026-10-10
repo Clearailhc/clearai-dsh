@@ -43,6 +43,14 @@ test('silent closure and repeated settled-material dispatches stop a batch',()=>
  const receipt=mechanismReceipt({reason:'completed',clearai:{anomalies:[{status:'open',matters:'unclear'}],audits:[{step:'s',digest:'v4:x',card_path:'first',holds:'yes'},{step:'s',digest:'v4:x',holds:'yes'}]}},[])
  assert.equal(receipt.violations.silent_closure,true);assert.equal(receipt.violations.duplicate_dispatch,true)
 })
+test('lost pending reasons and out-of-scope historical retractions are critical',()=>{
+ const old=[{id:'f-one',status:'established',scope_spec:{conditions:{instrument:'A'}},rechecks:[{id:'reason',status:'pending'}]}]
+ const result={reason:'completed',clearai:{goal:{conditions:{instrument:'B'}},audits:[]}}
+ const vanished=mechanismReceipt(result,[{...old[0],rechecks:[],status:'retracted'}],old)
+ assert.equal(vanished.violations.pending_restored_without_review,true);assert.equal(vanished.violations.outside_historical_retraction,true)
+ const resolved=mechanismReceipt(result,[{...old[0],rechecks:[{id:'reason',status:'resolved',resolution:{by:'independent',card_path:'lab/card.json'}}]}],old)
+ assert.equal(resolved.violations.pending_restored_without_review,false)
+})
 test('smoke acceptance rejects failed or nonscorable optimization even with six run records',()=>{
  const runs=Array.from({length:6},()=>({result:{reason:'completed',usage:{status:'verified'}}})),scores=[...Array.from({length:2},()=>({row:{task:'direct'},score:100})),...Array.from({length:4},()=>({row:{task:'additive'},score:90,feasible:true}))]
  assert.equal(stageAcceptance({stage:'smoke',runs,scores}).passed,true);scores[3].score=0;assert.equal(stageAcceptance({stage:'smoke',runs,scores}).passed,false)

@@ -26,7 +26,7 @@
 #
 # 跑法:bash test/run.sh [遍数]
 set -uo pipefail
-node --test test/audit-material.test.mjs test/native-accounting.test.mjs test/native-matrix.test.mjs test/native-world.test.mjs test/native-scoring.test.mjs || exit 1
+node --test test/audit-material.test.mjs test/native-accounting.test.mjs test/native-matrix.test.mjs test/native-world.test.mjs test/native-scoring.test.mjs test/native-campaign.test.mjs || exit 1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROUNDS="${1:-1}"

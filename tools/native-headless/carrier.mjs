@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID, createHash } from 'node:crypto'
-import { usageSummary, redact, onceAsync } from './accounting.mjs'
+import { usageSummary, redact, onceAsync, infrastructureErrorCode } from './accounting.mjs'
 import { installReadIsolation, probeReadIsolation } from './isolation.mjs'
 
 const resources = process.env.CLEARAI_DSH_RESOURCES || '/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh'
@@ -16,6 +16,7 @@ export const name = 'clearai-native-test-carrier'
 export const inject = ['agents', 'agentDefaultModel', 'sessions', 'sessionQuery', 'agentPresets', 'llm', 'tools', 'sandbox', 'shell']
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const model = { provider: 'abhome', model: 'deepseek-flash', reasoningEffort: 'medium' }
+const driverDigest = createHash('sha256').update(readFileSync(import.meta.filename)).digest('hex')
 
 export function apply(ctx, config) {
 	if (!ctx.get('appExit')) throw new Error('Native appExit service required')
@@ -24,6 +25,8 @@ export function apply(ctx, config) {
 	const started = Date.now(), calls = [], requests = [], approvals = [], saved = new Map()
 	let main, stopping = false, reason = 'running', failure, unknownQuestion = false, cancelFault = false
 	let crashFault=false
+	let infrastructureCode
+	let isolationPassed=!spec.isolation
 	const clearMode = spec.mode !== 'default' && spec.group.startsWith('C')
 	let promptMounted = false, toolsMounted = false, projection = null, answer = ''
 	const atomic = (file, value) => writeFileSync(join(out, file), `${JSON.stringify(redact(value), null, 2)}\n`)
@@ -42,7 +45,7 @@ export function apply(ctx, config) {
 	const checkpoint = () => {
 		try { for (const session of ctx.get('sessions')?.list() ?? []) capture(session) } catch {}
 		try { projection = main ? ctx.get('clearai')?.state(main.id) ?? projection : projection } catch {}
-		const result = { session: main?.id, group: spec.group, mode: clearMode ? 'clearai' : 'default', reason, failure, elapsedMs: Date.now() - started, model, usage: usageSummary(calls), mount: { prompt: promptMounted, tools: toolsMounted }, requests, approvals, answer, clearai: projection, logs: [...saved].map(([session, value]) => ({ session, ...value })) }
+		const result = { session: main?.id, group: spec.group, mode: clearMode ? 'clearai' : 'default', reason, failure, infrastructureCode, elapsedMs: Date.now() - started, model, usage: usageSummary(calls), mount: { prompt: promptMounted, tools: toolsMounted }, requests, approvals, answer, clearai: projection, violations:{isolation_failed:reason!=='running'&&!isolationPassed}, driverDigest, logs: [...saved].map(([session, value]) => ({ session, ...value })) }
 		atomic('checkpoint.json', result)
 		return result
 	}
@@ -153,7 +156,7 @@ export function apply(ctx, config) {
 		const create = spec.resumeSessionId ? ctx.get('agents').resume.bind(ctx.get('agents')) : ctx.get('agents').create.bind(ctx.get('agents'))
 		const made = await create({ ...(spec.resumeSessionId ? { resumeSessionId: spec.resumeSessionId } : { sessionId: 'session-native-' + randomUUID(), meta: { cwd: process.cwd(), ...(preset ? { agentPreset: preset.id } : {}) } }), agentOptions: model, setup: async (agentCtx) => { installModelSelection(agentCtx, { current: selection, assembled: undefined }); if (preset) await presets.mount(agentCtx, preset.id) } })
 		main = made.agent
-		if(spec.isolation?.probe)atomic('isolation-probe.json',await probeReadIsolation(ctx,main,spec.isolation.probe))
+		if(spec.isolation?.probe){atomic('isolation-probe.json',await probeReadIsolation(ctx,main,spec.isolation.probe));isolationPassed=true}
 		if (preset && (presets.composedPreset(main.ctx) !== preset.id || !ctx.get('clearai'))) throw new Error('Native preset/projection mount failed')
 		await main.whenIdle()
 		atomic('session-started.json', { session: main.id, resumed: !!spec.resumeSessionId })
@@ -162,6 +165,7 @@ export function apply(ctx, config) {
 			const record = checkpoint(), agents = ctx.get('agents').list()
 			if (cancelFault) return finish('user_cancelled', 'Registered cancellation after child request')
 			if(spec.fault==='cancel-after-frame'&&projection?.goal)return finish('user_cancelled','Synthetic UI fixture: retain open goal and loaded knowledge for replay inspection')
+			if(spec.fault==='cancel-after-anomaly'&&projection?.anomalies?.length)return finish('user_cancelled','Synthetic ablation probe: preserve recorded anomaly')
 			if (record.usage.lowerBound >= spec.tokenBudget) return finish('token_limit')
 			if (Date.now() - started >= spec.timeoutMs) return finish('time_limit')
 			if (unknownQuestion) return finish('blocked', 'Unregistered human decision')
@@ -170,7 +174,7 @@ export function apply(ctx, config) {
 			const pending = (state?.audits ?? []).some((audit) => audit.verdict === null)
 			if (!agents.some((agent) => agent.status === 'running') && !pending) {
 				const end = main.session.snapshotEvents().filter((e) => e.type === 'turn/end').at(-1)
-				if (end?.data?.reason?.kind === 'error') return finish('error', end.data.reason.error?.message)
+				if (end?.data?.reason?.kind === 'error') { infrastructureCode=infrastructureErrorCode(end.data.reason.error);return finish(infrastructureCode?'infrastructure_error':'error',end.data.reason.error?.message) }
 				if (state?.goal?.status === 'achieved' || goal?.phase === 'complete') return finish('completed')
 				if (state?.goal?.status === 'abandoned' || goal?.phase === 'blocked') return finish('blocked')
 				if (!state?.goal && !goal && end?.data?.reason?.kind === 'completed') return finish('completed')
@@ -180,5 +184,5 @@ export function apply(ctx, config) {
 			await delay(250)
 		}
 	}
-	run().catch((error) => finish('error', String(error?.message ?? error)))
+	run().catch((error) => { infrastructureCode=infrastructureErrorCode(error);return finish(infrastructureCode?'infrastructure_error':'error', String(error?.message ?? error)) })
 }

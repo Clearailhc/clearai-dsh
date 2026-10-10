@@ -10,7 +10,8 @@ test('matrix has all 162 fixed sessions and simple tasks select default mode', (
 })
 test('missing engineering gates and usage cannot pass', () => {
 	assert.throws(() => assertGates({ suites: { passed: true, evidence: 'log' } }), /windows-node24-audit/)
-	assert.deepEqual(stopReasons({ installation: { model: MODEL }, usage: { status: 'unknown' } }), ['unverifiable_usage'])
+	assert.deepEqual(stopReasons({ model: MODEL, installation: { model: MODEL }, usage: { status: 'unknown' } }), ['unverifiable_usage'])
+	assert.deepEqual(stopReasons({ model: MODEL, installation: { model: MODEL }, usage: { status: 'verified' }, requests: [{ ...MODEL, model: 'another-model' }] }), ['actual_model_mismatch'])
 })
 test('task failures consume the fixed experiment penalties', () => {
 	assert.deepEqual(sequenceCosts([{ task: 't2', completed: false, firstQualifyingExperiment: 1 }, { task: 't4', completed: false, totalExperiments: 0 }]), { t2: 31, t4: 13 })

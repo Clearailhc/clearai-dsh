@@ -3424,6 +3424,25 @@ console.log('\n【持久复核:普通异常、逐原因恢复、范围边界和�
  check('普通hook和未署名hook不能写入ClearAI状态',applyEvent(emptyState(),unsigned).audits.length===0&&applyEvent(emptyState(),{...persisted[0],data:{...persisted[0].data,point:'Other'}}).audits.length===0)
 }
 
+console.log('\n【重复观测交付:记录变化不等于材料变化】')
+{
+ const ws=tempDir('clearai-repeat-observation-'),host=makeHost(),S='repeat-observation'
+ host.cwd=ws;apply(host.ctx,{minHypotheses:0,blockedThreshold:10})
+ await callOn(host,S,'Frame',{claim:'mean',headline:'mean',done_criteria:'lab/raw.json confirms mean',hypotheses:[{claim:'mean=2',refute_when:'independent mean differs'}]})
+ const hypothesis=host.service.state(S).hypotheses[0].id
+ await callOn(host,S,'CreatePlan',{steps:[{id:'same',do:'check raw mean',done_criteria:'independent provenance supplied',artifacts:['lab/raw.json'],tests:{hypotheses:[hypothesis],level:'L3'}}]})
+ writeText(join(ws,'lab/raw.json'),'{"mean":2}')
+ host.nextVerdict={holds:'no',basis:'independent provenance missing',results:[],shortfalls:['missing_source']}
+ const args={step_id:'same',observations:[{ref:'lab/raw.json',note:'mean=2'}]}
+ await callOn(host,S,'AdvancePlan',args)
+ await callOn(host,S,'AdvancePlan',args)
+ check('同文件同观测重复交付仅派一次独立评估',host.audits.length===1,String(host.audits.length))
+ writeText(join(ws,'lab/raw.json'),'{"mean":3}')
+ await callOn(host,S,'AdvancePlan',args)
+ check('观测描述未变但文件数值改变必须重审',host.audits.length===2,String(host.audits.length))
+ await callOn(host,S,'AdvancePlan',{...args,observations:[{ref:'lab/raw.json',note:'mean=3; instrument calibration pending'}]})
+ check('文件未变但观测解释实质修订必须重审',host.audits.length===3,String(host.audits.length))
+}
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failed > 0) {
 	console.log('失败项:')
