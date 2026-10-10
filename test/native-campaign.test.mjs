@@ -34,6 +34,17 @@ test('only classified infrastructure errors with verifiable use and unchanged mo
  assert.equal(infrastructureErrorCode(new Error('ECONNRESET')),undefined)
  assert.equal(infrastructureErrorCode({cause:{code:'ECONNRESET'}}),'ECONNRESET')
 })
+test('registered method evidence captures declared inputs and scripts through the same read fence',()=>{
+ const root=tempDir('synthetic-model-');initializeCampaignRoot(root)
+ const workspace=join(root,'workspaces/C/dev-1');mkdirSync(join(workspace,'clear/models'),{recursive:true});mkdirSync(join(workspace,'lab'))
+ writeFileSync(join(workspace,'clear/models/mean.json'),JSON.stringify({inputs:['lab/input.json','../../../private.txt'],scripts:['lab/calc.py'],output:'lab/output.json'}))
+ writeFileSync(join(workspace,'lab/input.json'),'[2,2,2]');writeFileSync(join(workspace,'lab/calc.py'),'print(2)');writeFileSync(join(workspace,'lab/output.json'),'{"mean":2}')
+ writeFileSync(join(root,'private.txt'),'controller secret')
+ const material=captureMaterials({root,workspace,task:'t1',result:{},records:[{use:'mean'}]})
+ assert.deepEqual(material.artifacts.map(row=>row.path).sort(),['clear/models/mean.json','lab/calc.py','lab/input.json','lab/output.json'])
+ assert.equal(JSON.stringify(material).includes('controller secret'),false)
+ assert.ok(material.missing.some(row=>row.status==='excluded'))
+})
 test('feedback coverage includes positive facts and lessons as well as exclusions',()=>{
  const result={reason:'completed',clearai:{hypotheses:[{id:'h1'}],audits:[{results:[{hypothesis:'h1',verdict:'support'}]}],lessons:[{id:'l1'}]}}
  const empty=mechanismReceipt(result,[]);assert.equal(empty.required,2);assert.equal(empty.covered,0)

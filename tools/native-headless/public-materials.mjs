@@ -43,6 +43,14 @@ export function captureMaterials({root,workspace,task,submission,result,records}
   bytes+=raw.length
   if(raw.length>2*1024*1024||bytes>8*1024*1024)throw new Error('Declared grading materials exceed capture limit; preserve run and review instead of truncating')
   files.push({path:name,sha256:hash(raw),content:raw.toString('utf8')})
+  // Registered methods contribute only their explicit workspace inputs, scripts and output.
+  // Set iteration visits these new references through the same containment and size checks.
+  if(/^clear\/models\/[^/]+\.json$/.test(name)) {
+   let model
+   try{model=JSON.parse(raw)}catch{missing.push({ref,status:'invalid-model-registration'});continue}
+   for(const key of ['inputs','scripts'])if(Array.isArray(model[key]))for(const path of model[key])add(path)
+   add(model.output)
+  }
  }
  const report=files.find(file=>file.path==='report/'+task+'.md')?.content??''
  return redact({schema:'clearai.public-task-materials.v1',task,submission,answer:result.answer,report,knowledge:records,actualReferences,artifacts:files,missing})

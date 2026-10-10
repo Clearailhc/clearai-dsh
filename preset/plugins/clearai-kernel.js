@@ -2669,12 +2669,12 @@ export function apply(ctx, config = {}) {
 				promote_at_level: { type: 'string', enum: MODEL_LEVELS, description: '升格门槛(默认 L3)' },
 				irreversible: {
 					type: 'array',
-					description: '不可撤销或不可重复的动作;匹配的命令执行前须人批准。修订时不传 = 不变',
+					description: '计划实际执行的不可撤销或不可重复动作;匹配的命令执行前须人批准。禁止事项、判据与只读检查不填这里;没有这类动作写 []。修订时不传 = 不变',
 					items: {
 						type: 'object',
 						properties: {
 							action: { type: 'string', description: '这是什么动作' },
-							command: { type: 'string', description: '命令里一定出现的一段原文' },
+							command: { type: 'string', description: '能区分该动作的命令原文(含操作及参数);不要仅用目录路径或通用解释器名,以免误拦只读检查' },
 						},
 						required: ['action', 'command'],
 						additionalProperties: false,
@@ -5183,9 +5183,9 @@ export function apply(ctx, config = {}) {
 				criteria_note: 'Background for the criteria; not part of the verdict',
 				criteria_verdict: 'The independent verdict auditKey for changing the criteria text',
 				promote_at_level: 'Promotion threshold (default L3)',
-				irreversible: 'Actions that cannot be undone or repeated; a matching command needs a person\'s release before it runs. Omitted on revision = unchanged',
+				irreversible: 'Irreversible or unrepeatable actions you actually plan to execute; matching commands need human approval. Do not put prohibitions, criteria, or read-only checks here; use [] when there are no such actions. Omitted on revision = unchanged',
 				'irreversible.items.action': 'What the action is',
-				'irreversible.items.command': 'Text that always appears in such a command',
+				'irreversible.items.command': 'Distinctive command text including the operation and arguments; not a bare directory path or generic interpreter name, which would also match read-only checks',
 				mode: 'survey = broad survey; solve = targeted solving; survey_then_solve = survey, then solve',
 				questions: 'Optional: questions to answer. Questions found while surveying get status="emergent"; a person moves them to open or parked. On revision, a given list is the full list',
 				'questions.items.id': 'Short id (e.g. q1)',

@@ -1,5 +1,7 @@
-## 0.5.2-rc.11 (PR #23 continuation, unreleased)
+## 0.5.2-rc.12 (PR #23 continuation, unreleased)
 
+- Clarify that irreversible declarations describe planned destructive operations, not prohibitions or read-only checks; require distinctive command signatures.
+- Render structured fact scopes consistently in knowledge indexes, cards and preflight summaries.
 - Bind the initial audit to the current delivery's observations, deduplicate identical observation content, and recheck the latest plan. Generated observation IDs and timestamps no longer trigger repeat paid audits; changed content still does (fingerprint v5).
 - Persist audit dispatch and child associations through native log-only hooks carrying signed notices so DSH rc.2 can reopen session logs.
 - Hash audit card path components; bind verdict reuse to answer, references, definitions, inputs, methods and artifact contents; recheck after evaluation.
