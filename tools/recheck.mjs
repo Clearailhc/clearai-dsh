@@ -34,7 +34,6 @@ const SKIP_SUITES = argv.includes('--skip-suites')
 /** 每一块面的**字数预算**(拿真数据渲染出来的可见文字数)。 */
 const BUDGETS = [
 	// 0.5.1:中栏两格「探索」(过程)与「本体」(结果);右栏不再有 ClearAI 页签;工具行只剩计划芯片
-	{ surface: '计划面(工具行)', limit: 40, pick: (C, props) => C.PlanChip(props) },
 	{ surface: '探索格(默认,过程记录收起)', limit: 1500, pick: (C, props) => C.ExploreView(props) },
 	{ surface: '本体格页眉(在回答什么)', limit: 300, pick: (C, props, data, P) => C.AtlasHeader({ data, rows: P.conclusionsOf(data) }) },
 	{ surface: '结论卡(当前问题)', limit: 1200, pick: (C, props, data) => C.AnswerCards({ data }) },

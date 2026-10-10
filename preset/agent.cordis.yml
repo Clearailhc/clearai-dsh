@@ -183,6 +183,8 @@
     requireCriteriaVerdict: true
     # 停止检查:achieved 结案要按问题写结论;仍在考察中的候选与开着的未解释项须写进「尚未确定的事项」。
     requireAnswers: true
+    ontologyFeedback: true
+    nativeTodoProgress: true
     # deny_rules 十条里可移植的九条(路径越狱那条不搬:宿主沙箱已经拥有它,ClearAI 自己也说「不重复」)
     bashDenyRules: true
     # 独立评估者:spawn = fresh context(fork 会继承历史,做的人与判的人就分不开了)

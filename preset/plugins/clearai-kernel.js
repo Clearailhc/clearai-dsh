@@ -19,6 +19,7 @@
  *   P5 什么都不删         → 状态是可重放的投影;refine/void/superseded 的旧值都在
  */
 
+import { createTodoMirror } from './native-todos.js'
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 
@@ -228,6 +229,8 @@ export const CONFIG_KEYS = [
 	'contributions',
 	'applicabilityFeedback',
 	'negativeWriteback',
+	'ontologyFeedback',
+	'nativeTodoProgress',
 ]
 
 /**
@@ -331,6 +334,8 @@ export function apply(ctx, config = {}) {
 		// Native experimental variants; published ClearAI keeps both enabled.
 		applicabilityFeedback: config.applicabilityFeedback !== false,
 		negativeWriteback: config.negativeWriteback !== false,
+		ontologyFeedback: config.ontologyFeedback === true,
+		nativeTodoProgress: config.nativeTodoProgress === true,
 		/**
 		 * 连拦阈值:同一件事连续冲闸这么多次没过,计划置 blocked、停下等人。
 		 * **它不是预算**:它管的是证据质量,
@@ -739,7 +744,7 @@ export function apply(ctx, config = {}) {
 			 */
 			if (typeof cwd !== 'string' || cwd === '') {
 				result.missing.push(artifact)
-				continue
+					continue
 			}
 			const absolute = isAbsolute(artifact) ? artifact : resolvePath(cwd, artifact)
 			let stat = null
@@ -750,7 +755,7 @@ export function apply(ctx, config = {}) {
 			}
 			if (stat === null) {
 				result.missing.push(artifact)
-				continue
+					continue
 			}
 			if (stat.isDirectory()) {
 				let files = 0
@@ -771,11 +776,11 @@ export function apply(ctx, config = {}) {
 					// 目录在读数期间变化时，仍如实说明它不能作为物证。
 				}
 				result.directories.push(tr(`${artifact}(目录不是物证,含 ${files} 个文件、${bytes} 字节)`, `${artifact} (a directory is not evidence; it holds ${files} files, ${bytes} bytes)`))
-				continue
+					continue
 			}
 			if (stat.size === 0) {
 				result.empty.push(tr(`${artifact}(空文件)`, `${artifact} (empty file)`))
-				continue
+					continue
 			}
 			const lower = artifact.toLowerCase()
 			if (lower.endsWith('.json')) {
@@ -1108,7 +1113,7 @@ export function apply(ctx, config = {}) {
 				const plain = item.trim()
 				// 旧形状:一整段散文。**不丢**,但把它按"还没有结构"如实标注,而不是硬塞成三格。
 				if (plain !== '') shortfalls.push({ criterion: tr('未结构化(旧式裁决)', 'unstructured (legacy verdict)'), what: plain.slice(0, 400), missing: '' })
-				continue
+					continue
 			}
 			if (item === null || typeof item !== 'object') continue
 			const criterion = String(item.criterion ?? '').trim()
@@ -1408,12 +1413,12 @@ export function apply(ctx, config = {}) {
 				const cardPath = writeAuditCard(sessionId, audit.step, card)
 				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: cardPath === null ? 'unknown' : recovered.verdict.holds, holds: cardPath === null ? 'unknown' : recovered.verdict.holds, rechecks: recovered.verdict.rechecks, reuse: recovered.verdict.reuse, results: recovered.verdict.results, anomalies: recovered.verdict.anomalies, basis: recovered.verdict.basis, shortfalls: cardPath === null ? ['card_persist_failed'] : recovered.verdict.shortfalls, card_path: cardPath, digest: audit.digest ?? null })
 				lines.push(tr(`${audit.step}:裁决从子会话日志取回(交付成立:${recovered.verdict.holds})`, `${audit.step}: verdict recovered from the child session log (holds: ${recovered.verdict.holds})`))
-				continue
+					continue
 			}
 			if (recovered !== null && recovered.ok !== true) {
 				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: tr(`评估者已结束,但未正常完成(${recovered.stopReason})。`, `The evaluator ended but did not complete normally (${recovered.stopReason}).`), shortfalls: ['audit_incomplete'], card_path: null, digest: audit.digest ?? null })
 				lines.push(tr(`${audit.step}:评估者已结束、未正常完成(记为 unknown)`, `${audit.step}: the evaluator ended without completing (recorded as unknown)`))
-				continue
+					continue
 			}
 			mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: 'unknown', basis: tr('评估者已结束(宿主目录报告),但其结论未能从子会话日志取回。', 'The evaluator ended (per the host catalog), but its conclusion could not be recovered from the child session log.'), shortfalls: ['auditor_ended_uncollected'], card_path: null, digest: audit.digest ?? null })
 			lines.push(tr(`${audit.step}:评估者已结束、结论未取回(记为 unknown)`, `${audit.step}: the evaluator ended and its conclusion was not recovered (recorded as unknown)`))
@@ -2069,7 +2074,7 @@ export function apply(ctx, config = {}) {
 				mutations.push({ t: 'fact/bounded', fact: fact.id, verdict: fit.verdict, reasons: fit.reasons, hypothesis: refuter?.id ?? null, basis: clip(basis, 300) })
 				markFactBounded(sessionCwd(sessionId), fact, { verdict: fit.verdict, reasons: fit.reasons, basis: clip(basis, 300) })
 				notes.push(tr(`${fact.id}:推翻它的检验${where},事实在原范围内保持成立,这处边界已记下`, `${fact.id}: the refuting test was ${where}; the fact still holds within its scope, and this boundary is recorded`))
-				continue
+					continue
 			}
 			const scopeNote =
 				fit.verdict === 'undeclared'
@@ -2089,7 +2094,7 @@ export function apply(ctx, config = {}) {
 			if (asked.ok !== true || (!chose(asked, 'factRetract') && !chose(asked, 'factKeep'))) {
 				const why = asked.ok === true ? tr('没选', 'no choice made') : unanswered(asked)
 				notes.push(tr(`${fact.id} 待人复核(${why})`, `${fact.id} awaits review by a person (${why})`) + blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, tr(`事实 ${fact.id} 出现了推翻证据,等人决定撤回还是维持。`, `Fact ${fact.id} met refuting evidence; waiting for a person to retract or keep it.`)))
-				continue
+					continue
 			}
 			const review = { decision: chose(asked, 'factRetract') ? 'retracted' : 'kept', reason: asked.note }
 			mutations.push({ t: 'fact/reviewed', fact: fact.id, decision: review.decision, reason: review.reason, by: 'user' })
@@ -2506,6 +2511,8 @@ export function apply(ctx, config = {}) {
 	 * 工具结果出去之前,把这一拍的变更折一遍、写负向条目:这一拍之后会话若就此中断,条目也已在盘上。
 	 * 写不出来不影响工具结果。
 	 */
+	const syncNativeTodos = createTodoMirror({ session: id => ctx.get('sessions')?.get?.(id), isChild: isSpawnedChild, warn: message => ctx.logger?.warn?.(message) })
+
 	function afterTool(exec, value) {
 		const mutations = Array.isArray(value?.mutations) ? value.mutations : []
 		if (mutations.length === 0) return value
@@ -2514,7 +2521,10 @@ export function apply(ctx, config = {}) {
 			const hostService = host()
 			if (hostService === undefined) return value
 			const preview = previewOf(hostService, sessionId, mutations)
-			if (preview !== null) writeBack(sessionId, preview.state, preview.derived ?? null)
+			if (preview !== null) {
+				writeBack(sessionId, preview.state, preview.derived ?? null)
+				if (CFG.nativeTodoProgress) syncNativeTodos(sessionId, preview.state)
+			}
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai kernel: 负向条目回写失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}
@@ -2723,6 +2733,7 @@ export function apply(ctx, config = {}) {
 					properties: {
 						concepts: { type: 'array', items: { type: 'object' }, description: '{id, label, gloss, kind: category|measure|phenomenon, unit?}' },
 						relations: { type: 'array', items: { type: 'object' }, description: '{id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape?, check?}' },
+						entities: { type: 'array', items: { type: 'object' }, description: '{id, type, label, basis, provenance: {kind: named, ref}}; definitions and assertions may be submitted together' },
 					},
 					additionalProperties: false,
 				},
@@ -2801,6 +2812,18 @@ export function apply(ctx, config = {}) {
 			 * 只改判据的修订若把缺省读成空清单,已被支持的判断会一起落成「已替换」,
 			 * 而替换是终态,按原文补登也回不来。要撤掉判断就显式列出留下的那几条。
 			 */
+			const ontologyFiles = []
+			for (const [branch, list] of [['concepts', args.ontology?.concepts], ['relations', args.ontology?.relations], ['entities', args.ontology?.entities]]) {
+				for (const item of Array.isArray(list) ? list : []) {
+					const id = String(item?.id ?? '').trim()
+					const rel = `clear/ontology/${branch}/${id}.json`
+					const problems = id === '' ? [tr('要有 id(就是文件名)', 'needs an id (the file name)')] : typeof hostService.domain?.checkFile === 'function' ? hostService.domain.checkFile(rel, item) : []
+					if (problems.length > 0) return fail('ontology_rejected', tr(`本体条目 ${rel} 不能写入:\n${problems.map((line) => `- ${line}`).join('\n')}`, `Ontology entry ${rel} cannot be written:\n${problems.map((line) => `- ${line}`).join('\n')}`))
+					ontologyFiles.push({ branch, id, rel, data: item })
+				}
+			}
+			const ontologyDraft = ontologyFiles.length ? { t: 'workspace/synced', changes: ontologyFiles.map(file => ({ path: file.rel, data: file.data, digest: contentDigest(JSON.stringify(file.data)) })) } : null
+			const assertionMutations = [...mutations, ...(ontologyDraft ? [ontologyDraft] : [])]
 			const carried = args.hypotheses === undefined && state.goal !== null && state.goal.status === 'open'
 			const hypotheses = Array.isArray(args.hypotheses)
 				? args.hypotheses
@@ -2819,7 +2842,8 @@ export function apply(ctx, config = {}) {
 			} catch {
 				knownRows = []
 			}
-			const ontologyEntries = [...(Array.isArray(state.entities) ? state.entities : []), ...(Array.isArray(state.lexicon?.terms) ? state.lexicon.terms : [])]
+			const ontologyState = previewOf(hostService, sessionId, assertionMutations)?.state ?? state
+			const ontologyEntries = [...(ontologyState.entities ?? []), ...(ontologyState.lexicon?.terms ?? []), ...(ontologyState.lexicon?.predicates ?? [])]
 			const openGoal = state.goal !== null && state.goal.status === 'open' ? state.goal : null
 			const conditionsNow = normalizeScope({ conditions: args.conditions })?.conditions ?? openGoal?.conditions ?? {}
 			/** 名称或别名完全相同的,直接认作那个实体或概念的 id;相似的只提示。 */
@@ -2863,7 +2887,7 @@ export function apply(ctx, config = {}) {
 					if (judge === null) return fail('domain_unavailable', tr('这一层的宿主没有提供领域判据(domain facade):无法校验断言。请检查宿主半与预设是否同版本。', 'The host did not provide the domain facade, so assertions cannot be checked. Check that the host half and the preset are the same version.'))
 					// `legacy`:迁移期一次性放行「主体还没登记」这条(`Frame` 的 `legacy:true`)——
 					// 旧会话的断言主体在登记实例这条路存在之前就写下了,不该因为补上了机制而追溯失败。
-					const problems = judge.validateAssertions(sessionId, hypothesis.assertions, { legacy, mutations })
+					const problems = judge.validateAssertions(sessionId, hypothesis.assertions, { legacy, mutations: assertionMutations })
 					if (problems.length > 0) {
 						return fail('assertions_rejected', tr(`这条假设的断言不能成立(先在 clear/ontology/ 下写好用到的概念、关系与主体实体文件,或改断言):\n${problems.map((item) => `- ${item}`).join('\n')}`, `This judgment's assertions do not hold (first write the concepts, relations and subject entity files they use under clear/ontology/, or change the assertions):\n${problems.map((item) => `- ${item}`).join('\n')}`))
 					}
@@ -2971,16 +2995,7 @@ export function apply(ctx, config = {}) {
 			 * **本体随立题写入**(`ontology`):逐个文件用宿主半的 `domain.checkFile` 校验,全部过了才写盘。
 			 * 为什么放进 Frame:模型要另写文件时,本体总被排到最后、最后没写;立题时写,预测和候选才有出处。
 			 */
-			const ontologyFiles = []
-			for (const [branch, list] of [['concepts', args.ontology?.concepts], ['relations', args.ontology?.relations]]) {
-				for (const item of Array.isArray(list) ? list : []) {
-					const id = String(item?.id ?? '').trim()
-					const rel = `clear/ontology/${branch}/${id}.json`
-					const problems = id === '' ? [tr('要有 id(就是文件名)', 'needs an id (the file name)')] : typeof hostService.domain?.checkFile === 'function' ? hostService.domain.checkFile(rel, item) : []
-					if (problems.length > 0) return fail('ontology_rejected', tr(`本体条目 ${rel} 不能写入:\n${problems.map((line) => `- ${line}`).join('\n')}`, `Ontology entry ${rel} cannot be written:\n${problems.map((line) => `- ${line}`).join('\n')}`))
-					ontologyFiles.push({ branch, id, rel, data: item })
-				}
-			}
+
 			for (const file of ontologyFiles) {
 				const target = sessionFile(sessionId, 'clear', 'ontology', file.branch, `${file.id}.json`)
 				if (target === null) return fail('workspace_unavailable', tr('这一刻拿不到会话的工作目录,本体条目没有写入。', 'The session workspace is unavailable right now; the ontology entries were not written.'))
@@ -3045,6 +3060,7 @@ export function apply(ctx, config = {}) {
 				const claim = hypothesis.claim.trim()
 				const carried = idByClaim.get(claimKey(claim))
 				if (carried !== undefined) reused.add(carried)
+				const hAbout = canonicalAbout(mergeAbout(hypothesis.about, CFG.ontologyFeedback ? (hypothesis.assertions ?? []).flatMap(a => [a.subject?.id, a.subject?.type, a.predicate, ...(a.object?.kind === 'instance' ? [a.object.value] : [])]).filter(Boolean) : []))
 				const given = typeof hypothesis.name === 'string' ? hypothesis.name.trim() : ''
 				const kept = carried === undefined ? '' : String(existing.find((item) => item.id === carried)?.name ?? '')
 				return {
@@ -3062,7 +3078,7 @@ export function apply(ctx, config = {}) {
 					...(typeof hypothesis.question === 'string' && hypothesis.question.trim() !== '' ? { question: hypothesis.question.trim() } : {}),
 					/** 适用范围(在哪里成立),与推翻条件分开;没写就在升格时取立题的 conditions。 */
 					...(normalizeScope(hypothesis.scope) !== null ? { scope: normalizeScope(hypothesis.scope) } : {}),
-					...(canonicalAbout(hypothesis.about).length > 0 ? { about: canonicalAbout(hypothesis.about) } : {}),
+					...(hAbout.length > 0 ? { about: hAbout } : {}),
 					...(usesOf(hypothesis).length > 0 ? { uses: usesOf(hypothesis) } : {}),
 					version: index + 1,
 				}
@@ -3536,99 +3552,7 @@ export function apply(ctx, config = {}) {
 					}
 				}
 			}
-			const threshold = levelIndexOf(goal.promote_at_level)
-			const promoted = []
-			/** 升格时第三道校验没过的判断:不升格,回执里写清卡在哪。 */
-			const held = []
-			for (const hypothesis of derived.hypotheses) {
-				/**
-				 * 只升格**这个目标**的判断,且每条只升格一次:上一个目标的判断状态仍是 alive,
-				 * 不挡的话下一次结案会把它再写一遍(同一条结论两个事实文件)。
-				 */
-				if (typeof hypothesis.goal === 'string' && hypothesis.goal !== goal.id) continue
-				if ((state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id)) continue
-				if (hypothesis.status !== 'alive' && hypothesis.status !== 'proposed') continue
-				if (hypothesis.refutations > 0) continue
-				const atClose = judged.get(hypothesis.id)
-				if (atClose?.verdict === 'refute') continue
-				const reached = levelIndexOf(hypothesis.supportedLevel) >= threshold
-				if (!reached && atClose?.verdict !== 'support') continue
-				const factLevel = reached ? hypothesis.supportedLevel : goal.promote_at_level
-				const assertions = Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null
-				/**
-				 * **第三道校验(升格时)**:断言涉及的谓词、类型、主体此刻都要在本体文件里成立。
-				 * 平时跨文件的问题只提示(模型改一组文件时中间态必然不一致);写进长期知识这一刻不行。
-				 */
-				if (assertions !== null && assertions.length > 0) {
-					let problems = []
-					try {
-						problems = hostService.domain?.validateAssertions?.(sessionId, assertions, { mutations }) ?? []
-					} catch (error) {
-						problems = [tr(`校验这一刻做不了:${String(error?.message ?? error).slice(0, 160)}`, `Could not check right now: ${String(error?.message ?? error).slice(0, 160)}`)]
-					}
-					if (problems.length > 0) {
-						held.push(`${quote(handleOf(hypothesis))}${tr(':', ': ')}${problems.map(String).join(tr(';', '; '))}`)
-						continue
-					}
-				}
-				const factId = `f-${Math.random().toString(36).slice(2, 8)}`
-				const evidence = evidenceFor(state, hypothesis.id)
-					.filter((item) => item.verdict === 'support')
-					.map((item) => item.id)
-				if (atClose?.verdict === 'support') evidence.push(atClose.evidence)
-				/**
-				 * 升格这一刻它用到的词条的含义指纹:之后谁改了定义,这条事实就知道要复核。
-				 * 「用到」= 断言引用的,加上主张与边界原文里按词面提到的(模型很少写断言,见 fingerprintDefinitions)。
-				 */
-				let definitions = null
-				try {
-					const aboutIds = mergeAbout(hypothesis.about, goal.about)
-					const entityTypes = (state.entities ?? []).filter((entity) => aboutIds.includes(entity.id)).map((entity) => entity.type)
-					const said = `${hypothesis.claim ?? ''}\n${hypothesis.refute_when ?? ''}\n${[...aboutIds, ...entityTypes].join(' ')}`
-					const found = hostService.domain?.definitions?.(sessionId, assertions ?? [], mutations, said) ?? null
-					definitions = found !== null && Object.keys(found).length > 0 ? found : null
-				} catch {
-					definitions = null
-				}
-				/**
-				 * **适用范围与推翻条件分开存**:范围取判断自己写的,缺的维度用立题的 conditions 补;
-				 * 都没有就如实是 null(「范围未声明」)。推翻条件另存在 `refute_when`。
-				 */
-				const scopeSpec = mergeScope(hypothesis.scope, { conditions: goal.conditions ?? {} })
-				const scope = scopeSpec === null ? null : tr(scopeText(scopeSpec, 'zh'), scopeText(scopeSpec, 'en'))
-				/** 涉及的实体或量:判断自己写的加上立题的,文件查找按它们取到这条事实。 */
-				const about = mergeAbout(hypothesis.about, goal.about)
-				const evidenceRecords = [...state.evidence, ...mutations.filter((item) => item.t === 'evidence/recorded')].filter((item) => evidence.includes(item.id))
-				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, about, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, evidence_records: evidenceRecords, assertions, definitions, ...(typeof hypothesis.use === 'string' ? { use: hypothesis.use, calculation: calculationSnapshot(sessionId, hypothesis.use) } : {}) }
-				const path = persistFact(sessionId, record)
-				/**
-				 * 事实带上**适用范围**(`scope` 是给人读的一行,`scope_spec` 是可比较的形状)与**推翻条件**:
-				 * 没有范围的事实,下一轮无从判断是否适用。它们与出处(证据 id)、等级一起进事实库与货架。
-				 */
-				mutations.push({
-					t: 'fact/promoted',
-					id: factId,
-					goal: goal.id,
-					/**
-					 * **身份与内容一起定型**:`hypothesis` 是产出它的那条假设(按 id 关联,
-					 * 措辞改了也认得出),`assertions` 是这条事实的类型化内容(没写就是 null)。
-					 * 断言只在**升格这一刻**落地——旧事实不会被回溯改写。
-					 */
-					hypothesis: hypothesis.id,
-					text: hypothesis.claim,
-					about,
-					scope,
-					scope_spec: scopeSpec,
-					refute_when: hypothesis.refute_when ?? null,
-					level: factLevel ?? null,
-					evidence,
-					assertions,
-					definitions,
-					...(typeof hypothesis.use === 'string' ? { use: hypothesis.use } : {}),
-					path,
-				})
-				promoted.push({ id: factId, claim: hypothesis.claim })
-			}
+			const { promoted, held } = promoteFacts(hostService, sessionId, state, derived, goal, judged, mutations)
 			/** 评估者判为支持的经验写成文件;别的如实说出来,不写。 */
 			const lessonVerdicts = new Map((audit.lessons ?? []).map((item) => [item.lesson, item]))
 			const keptLessons = []
@@ -3678,6 +3602,106 @@ export function apply(ctx, config = {}) {
 	 * 每个会话每一拍把这个目录同步进自己的账(`workspace/synced`),于是别的会话升格的事实
 	 * 在这里也是「已知」,复核结论(撤回 / 维持)也写在同一个文件上。
 	 */
+	function promoteFacts(hostService, sessionId, state, derived, goal, judged, mutations, { partial = false, eligible = new Set() } = {}) {
+		const threshold = levelIndexOf(goal.promote_at_level)
+		const promoted = []
+		/** 升格时第三道校验没过的判断:不升格,回执里写清卡在哪。 */
+		const held = []
+		for (const hypothesis of derived.hypotheses) {
+			/**
+			 * 只升格**这个目标**的判断,且每条只升格一次:上一个目标的判断状态仍是 alive,
+			 * 不挡的话下一次结案会把它再写一遍(同一条结论两个事实文件)。
+			 */
+			if (typeof hypothesis.goal === 'string' && hypothesis.goal !== goal.id) continue
+			if ((state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id)) continue
+			if (hypothesis.status !== 'alive' && hypothesis.status !== 'proposed') continue
+			if (hypothesis.refutations > 0) continue
+			const atClose = judged.get(hypothesis.id)
+			if (partial && ((hypothesis.unlanded?.length ?? 0) > 0 || !eligible.has(hypothesis.id) || !(hypothesis.assertions?.length) ||
+				!evidenceFor(state, hypothesis.id).some(e => e.verdict === 'support' && e.evaluator === 'independent' && levelIndexOf(e.level) >= Math.max(3, threshold)))) continue
+			if (atClose?.verdict === 'refute') continue
+			const reached = levelIndexOf(hypothesis.supportedLevel) >= threshold
+			if (!reached && atClose?.verdict !== 'support') continue
+			const factLevel = reached ? hypothesis.supportedLevel : goal.promote_at_level
+			const assertions = Array.isArray(hypothesis.assertions) ? hypothesis.assertions : null
+			/**
+			 * **第三道校验(升格时)**:断言涉及的谓词、类型、主体此刻都要在本体文件里成立。
+			 * 平时跨文件的问题只提示(模型改一组文件时中间态必然不一致);写进长期知识这一刻不行。
+			 */
+			if (assertions !== null && assertions.length > 0) {
+				let problems = []
+				try {
+				problems = hostService.domain?.validateAssertions?.(sessionId, assertions, { mutations }) ?? ['domain unavailable']
+				} catch (error) {
+					problems = [tr(`校验这一刻做不了:${String(error?.message ?? error).slice(0, 160)}`, `Could not check right now: ${String(error?.message ?? error).slice(0, 160)}`)]
+				}
+				if (problems.length > 0) {
+					held.push(`${quote(handleOf(hypothesis))}${tr(':', ': ')}${problems.map(String).join(tr(';', '; '))}`)
+					continue
+				}
+			}
+			const factId = `f-${Math.random().toString(36).slice(2, 8)}`
+			const evidence = evidenceFor(state, hypothesis.id)
+				.filter((item) => item.verdict === 'support')
+				.map((item) => item.id)
+			if (atClose?.verdict === 'support') evidence.push(atClose.evidence)
+			/**
+			 * 升格这一刻它用到的词条的含义指纹:之后谁改了定义,这条事实就知道要复核。
+			 * 「用到」= 断言引用的,加上主张与边界原文里按词面提到的(模型很少写断言,见 fingerprintDefinitions)。
+			 */
+			let definitions = null
+			try {
+				const aboutIds = mergeAbout(hypothesis.about, goal.about)
+				const entityTypes = (state.entities ?? []).filter((entity) => aboutIds.includes(entity.id)).map((entity) => entity.type)
+				const said = `${hypothesis.claim ?? ''}\n${hypothesis.refute_when ?? ''}\n${[...aboutIds, ...entityTypes].join(' ')}`
+				const found = hostService.domain?.definitions?.(sessionId, assertions ?? [], mutations, said) ?? null
+				definitions = found !== null && Object.keys(found).length > 0 ? found : null
+			} catch {
+				definitions = null
+			}
+			/**
+			 * **适用范围与推翻条件分开存**:范围取判断自己写的,缺的维度用立题的 conditions 补;
+			 * 都没有就如实是 null(「范围未声明」)。推翻条件另存在 `refute_when`。
+			 */
+			const scopeSpec = mergeScope(hypothesis.scope, { conditions: goal.conditions ?? {} })
+			const scope = scopeSpec === null ? null : tr(scopeText(scopeSpec, 'zh'), scopeText(scopeSpec, 'en'))
+			/** 涉及的实体或量:判断自己写的加上立题的,文件查找按它们取到这条事实。 */
+			const about = mergeAbout(hypothesis.about, goal.about)
+			const evidenceRecords = [...state.evidence, ...mutations.filter((item) => item.t === 'evidence/recorded')].filter((item) => evidence.includes(item.id))
+			const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, about, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, evidence_records: evidenceRecords, assertions, definitions, ...(typeof hypothesis.use === 'string' ? { use: hypothesis.use, calculation: calculationSnapshot(sessionId, hypothesis.use) } : {}) }
+			const path = persistFact(sessionId, record)
+			if (path === null) { held.push(`${handleOf(hypothesis)}: fact persistence failed`); continue }
+			/**
+			 * 事实带上**适用范围**(`scope` 是给人读的一行,`scope_spec` 是可比较的形状)与**推翻条件**:
+			 * 没有范围的事实,下一轮无从判断是否适用。它们与出处(证据 id)、等级一起进事实库与货架。
+			 */
+			mutations.push({
+				t: 'fact/promoted',
+				id: factId,
+				goal: goal.id,
+				/**
+				 * **身份与内容一起定型**:`hypothesis` 是产出它的那条假设(按 id 关联,
+				 * 措辞改了也认得出),`assertions` 是这条事实的类型化内容(没写就是 null)。
+				 * 断言只在**升格这一刻**落地——旧事实不会被回溯改写。
+				 */
+				hypothesis: hypothesis.id,
+				text: hypothesis.claim,
+				about,
+				scope,
+				scope_spec: scopeSpec,
+				refute_when: hypothesis.refute_when ?? null,
+				level: factLevel ?? null,
+				evidence,
+				assertions,
+				definitions,
+				...(typeof hypothesis.use === 'string' ? { use: hypothesis.use } : {}),
+				path,
+			})
+			promoted.push({ id: factId, claim: hypothesis.claim })
+		}
+		return { promoted, held }
+	}
+
 	function persistFact(sessionId, record) {
 		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${record.id}.json`)
 		if (file === null) return null
@@ -3863,6 +3887,17 @@ export function apply(ctx, config = {}) {
 	function writeBack(sessionId, state, derived) {
 		if (isSpawnedChild(sessionId) || !CFG.negativeWriteback) return []
 		if (state === null || state === undefined) return []
+		if (CFG.ontologyFeedback) for (const hypothesis of derived?.hypotheses ?? []) {
+			if (!hypothesis.refutations) continue
+			for (const saved of state.facts ?? []) {
+				if (saved.hypothesis !== hypothesis.id) continue
+				const fact = findFact(sessionId, state, saved.id)
+				const scope = mergeScope(hypothesis.scope, { conditions: state.goal?.conditions ?? {} })
+				if (!fact || ['out_of_scope', 'out_of_range'].includes(compareScope(fact.scope_spec, scope).verdict)) continue
+				const evidence = evidenceFor(state, hypothesis.id).filter(e => e.verdict === 'refute').at(-1)
+				persistRechecks(sessionId, fact, [{ kind: 'hypothesis_refuted', source: evidence?.id ?? hypothesis.id, detail: hypothesis.claim, evidence: evidence?.refs?.[0] ?? null }])
+			}
+		}
 		const written = []
 		for (const item of negativeItems(state, derived, { session: sessionId })) {
 			if (['unresolved', 'defect', 'escalated'].includes(item.status)) for (const id of item.touches ?? []) {
@@ -3945,6 +3980,22 @@ export function apply(ctx, config = {}) {
 	}
 
 
+	function groundingProblem(state, tested = [], hostService, sessionId, mutations) {
+		if (!CFG.ontologyFeedback || tested.length === 0) return null
+		const known = new Set([...(state.entities ?? []), ...(state.lexicon?.terms ?? []), ...(state.lexicon?.predicates ?? [])].map(row => row.id))
+		const hypotheses = (state.hypotheses ?? []).filter(row => tested.includes(row.id))
+		const missing = mergeAbout(state.goal?.about, ...hypotheses.map(row => row.about)).filter(id => !known.has(id))
+		const untyped = hypotheses.filter(row => !row.assertions?.length).map(handleOf)
+		for (const hypothesis of hypotheses.filter(row => row.assertions?.length)) {
+			const problems = hostService.domain?.validateAssertions?.(sessionId, hypothesis.assertions, { mutations }) ?? ['domain unavailable']
+			if (problems.length) untyped.push(`${handleOf(hypothesis)}: ${problems.join('; ')}`)
+		}
+		if (!missing.length && !untyped.length) return null
+		return fail('ontology_grounding_required', tr(
+			`检验前补齐本次实际使用的图引用。未登记 id:${missing.join(', ') || '无'};缺少 assertions 的判断:${untyped.join(', ') || '无'}。用一次 Frame 修订提交 ontology.concepts / relations / entities 和假设 assertions,也可先写 clear/ontology/ 下的文件。只定义当前对象、单位和检验谓词;候选关系仍是假设,不写成已证实的实体关系。无需额外假设或完整领域图。`,
+			`Ground the graph references used by this test. Unknown ids: ${missing.join(', ') || 'none'}; judgments missing assertions: ${untyped.join(', ') || 'none'}. Submit ontology.concepts / relations / entities and hypothesis assertions together in one Frame revision, or write clear/ontology/ files first. Define only the current objects, units and test predicates; candidate relations remain hypotheses, not established entity relations. No extra hypotheses or full domain graph required.`))
+	}
+
 	defineTool({
 		name: 'CreatePlan',
 		description:
@@ -3960,7 +4011,7 @@ export function apply(ctx, config = {}) {
 		},
 		output: CARD_OUTPUT,
 		async execute(args, exec) {
-			const call = open(exec)
+			const call = open(exec, { sync: true })
 			if (call.ok !== true) return call.response
 			const { hostService, sessionId, state, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
@@ -3973,6 +4024,8 @@ export function apply(ctx, config = {}) {
 				if (resolved.ok !== true) return fail('unknown_hypothesis', tr(`步骤 ${step.id} 声明的判断「${resolved.wanted}」对不上任何一条已登记的判断。`, `Step ${step.id} names the judgment "${resolved.wanted}", which matches no registered judgment. `) + hypothesisMenu(state.hypotheses))
 				resolvedTests.set(step.id, resolved.tests)
 			}
+			const grounding = groundingProblem(state, [...resolvedTests.values()].flatMap(tests => tests?.hypotheses ?? []), hostService, sessionId, mutations)
+			if (grounding) return grounding
 			const resolvedExtras = new Map()
 			for (const step of args.steps) {
 				const resolved = resolveStepExtras(state, step)
@@ -4026,7 +4079,7 @@ export function apply(ctx, config = {}) {
 		},
 		output: CARD_OUTPUT,
 		async execute(args, exec) {
-			const call = open(exec)
+			const call = open(exec, { sync: true })
 			if (call.ok !== true) return call.response
 			const { hostService, sessionId, state, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
@@ -4040,6 +4093,8 @@ export function apply(ctx, config = {}) {
 				if (plan.steps.some((step) => step.id === args.step.id)) return fail('duplicate_step', tr(`步骤 id 已存在:${args.step.id}`, `Step id already exists: ${args.step.id}`))
 				const resolved = resolveTests(state.hypotheses, args.step.tests)
 				if (resolved.ok !== true) return fail('unknown_hypothesis', tr(`步骤 ${args.step.id} 声明的判断「${resolved.wanted}」对不上任何一条已登记的判断。`, `Step ${args.step.id} names the judgment "${resolved.wanted}", which matches no registered judgment. `) + hypothesisMenu(state.hypotheses))
+				const grounding = groundingProblem(state, resolved.tests?.hypotheses ?? [], hostService, sessionId, mutations)
+				if (grounding) return grounding
 				const extras = resolveStepExtras(state, args.step)
 				if (extras.ok !== true) return fail(extras.code, extras.message)
 				const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: resolved.tests, ...(typeof args.step.expect === 'string' && args.step.expect.trim() !== '' ? { expect: args.step.expect.trim() } : {}), ...extras.extra }
@@ -4163,7 +4218,7 @@ export function apply(ctx, config = {}) {
 		},
 		output: CARD_OUTPUT,
 		async execute(args, exec) {
-			const call = open(exec)
+			const call = open(exec, { sync: true })
 			if (call.ok !== true) return call.response
 			const { hostService, sessionId, state, mutations } = call
 			const done = finish(hostService, sessionId, mutations)
@@ -4187,6 +4242,8 @@ export function apply(ctx, config = {}) {
 					mutations.length > 0 ? { mutations } : {},
 				)
 			}
+			const grounding = groundingProblem(state, step.tests?.hypotheses ?? [], hostService, sessionId, mutations)
+			if (grounding) return grounding
 			const level = step.tests?.level ?? null
 			const levelIndex = levelIndexOf(level)
 
@@ -4463,6 +4520,16 @@ export function apply(ctx, config = {}) {
 			}
 			mutations.push({ t: 'step/advanced', plan: plan.id, step: step.id, evidence: evidenceIds, evaluator, basis, refs: originInfo.paths, origins: originInfo.origins })
 			mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
+			let partialNote = ''
+			if (CFG.ontologyFeedback && evaluator === 'independent' && auditCardPath && !isSpawnedChild(sessionId)) {
+				const preview = previewOf(hostService, sessionId, mutations)
+				const current = preview?.state
+				if (current?.goal?.status === 'open' && !(current.anomalies ?? []).some(a => ['open', 'escalated'].includes(a.status) && a.matters !== 'no')) {
+					const saved = promoteFacts(hostService, sessionId, current, preview.derived, current.goal, new Map(), mutations, { partial: true, eligible: new Set(results.filter(r => r.verdict === 'support').map(r => r.hypothesis)) })
+					if (saved.promoted.length) partialNote = tr(`\n阶段事实已保存到实体图与 clear/knowledge/facts/:${saved.promoted.map(f => f.id).join(', ')};目标仍开放。`, `\nPartial facts saved in the entity graph and clear/knowledge/facts/: ${saved.promoted.map(f => f.id).join(', ')}; the goal remains open.`)
+					if (saved.held.length) partialNote += `\n${saved.held.join('; ')}`
+				}
+			}
 			const outcome = results.length === 0 ? '' : `\n${tr('结果:', 'Results: ')}${results.map((item) => `${quote(handleById(state, item.hypothesis))}${tr('', ' ')}${verdictWord(item.verdict)}`).join(tr(';', '; '))}${tr('。', '.')}`
 			const refuted = results.some((item) => item.verdict === 'refute')
 			const factReview = refuted
@@ -4483,7 +4550,7 @@ export function apply(ctx, config = {}) {
 				blocked: false,
 				message:
 					tr(`第 ${step.ordinal} 步(${step.id})已交付(${evaluator === 'independent' ? '独立评估者判的' : '你自己判的,依据已记下'})。收下的观测:${gate.confirmed.map((item) => item.ref).join(', ') || '(无)'}。`, `Step ${step.ordinal} (${step.id}) delivered (${evaluator === 'independent' ? 'judged by the independent evaluator' : 'judged by you; the basis is recorded'}). Observations accepted: ${gate.confirmed.map((item) => item.ref).join(', ') || '(none)'}.`) +
-					outcome +
+					outcome + partialNote +
 					expectationNote(step, opened, foundByEvaluator) +
 					(refuted ? tr('\n推翻也是有价值的结果:它和支持一样记进证据,判断的状态由证据算。', '\nA refutation is a valuable result too: it is recorded as evidence just like support, and the judgment status is computed from the evidence.') : '') +
 					factReview +
@@ -4874,6 +4941,7 @@ export function apply(ctx, config = {}) {
 			const hostService = host()
 			const state = hostService === undefined ? null : hostService.state(sessionId)
 			const owned = state !== null && hasState(state)
+			if (CFG.nativeTodoProgress && exec.name === 'todo_write' && state !== null && activePlanOf(state) !== null && !isSpawnedChild(sessionId)) return { kind: 'deny', reason: tr('当前计划的 todo 进度由系统自动同步。用 AdvancePlan 交付、RevisePlan 修改步骤;核验通过后才显示完成。', 'The current plan is mirrored to native todos automatically. Deliver with AdvancePlan or edit with RevisePlan; completion is displayed only after acceptance.') }
 			const rawArgs = exec.arguments ?? {}
 			let args = rawArgs
 			if (typeof rawArgs === 'string') {
@@ -4906,7 +4974,7 @@ export function apply(ctx, config = {}) {
 				if (suspect !== null) {
 					return {
 						kind: 'deny',
-						reason: tr(`${suspect} 由系统所有,做的人不能写(clear/evidence、clear/knowledge/facts、clear/knowledge/lessons、clear/knowledge/negatives、clear/goals、clear/ontology 的 SCHEMA.json 与货架)。事实与经验只由独立评估之后的结案写,负向条目由系统从账本生成;本体请写在 clear/ontology/concepts、relations、entities 下。`, `${suspect} is owned by the system and the worker cannot write it (clear/evidence, clear/knowledge/facts, clear/knowledge/lessons, clear/knowledge/negatives, clear/goals, and SCHEMA.json and the shelf in clear/ontology). Facts and lessons are written only when a goal concludes after independent evaluation, and negative items are generated by the system from the ledger; write the ontology under clear/ontology/concepts, relations and entities.`),
+						reason: tr(`${suspect} 由系统所有,做的人不能写(clear/evidence、clear/knowledge/facts、clear/knowledge/lessons、clear/knowledge/negatives、clear/goals、clear/ontology 的 SCHEMA.json 与货架)。事实由系统在独立核验达级后写入(阶段交付或结案),经验在结案审查后写入,负向条目由系统从账本生成;本体请写在 clear/ontology/concepts、relations、entities 下。`, `${suspect} is owned by the system and the worker cannot write it (clear/evidence, clear/knowledge/facts, clear/knowledge/lessons, clear/knowledge/negatives, clear/goals, and SCHEMA.json and the shelf in clear/ontology). Facts are written by the system after qualifying independent evaluation (at step delivery or goal conclusion); lessons are written after conclusion review, and negative items are generated by the system from the ledger; write the ontology under clear/ontology/concepts, relations and entities.`),
 					}
 				}
 				if (writing && hostService !== undefined) {
@@ -5086,6 +5154,7 @@ export function apply(ctx, config = {}) {
 		try {
 			const preview = factMutations.length > 0 ? previewOf(hostService, sessionId, factMutations) : null
 			writeBack(sessionId, preview?.state ?? hostService.state(sessionId), preview?.derived ?? hostService.derive(sessionId))
+			if (CFG.nativeTodoProgress) syncNativeTodos(sessionId, preview?.state ?? hostService.state(sessionId))
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai: 负向条目回写失败 ${String(error?.message ?? error).slice(0, 160)}`)
 		}

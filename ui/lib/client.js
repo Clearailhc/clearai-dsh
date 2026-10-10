@@ -181,8 +181,6 @@ window.__ModuleLoader__.load({
 .clearai-btn[data-tone="warn"]{border-color:var(--dsw-alias-state-warn-primary)}
 /* 工具行里的控制(控制归工具行):照原生那一行的形状——无边框、次级文字色、悬浮才出底。
    刻意不做成我们自己那种药丸:它坐在原生「完全权限」旁边,长得像原生才不突兀。 */
-.clearai-toolctl{box-sizing:border-box;display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;cursor:pointer}
-.clearai-toolctl:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .clearai-chip{box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid var(--dsw-alias-border-l4);border-radius:999px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px;cursor:pointer}
 .clearai-chip:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-tag{display:inline-block;padding:0 6px;border:.5px solid var(--dsw-alias-border-l3);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px;white-space:nowrap}
@@ -2150,94 +2148,6 @@ window.__ModuleLoader__.load({
 		 * 为什么要有它:工具行是要抢地盘的地方(两个字面项能占掉整行近三成,
 		 * 窄窗口下会把发送键挤到第二行)。图标能省一半宽度,而它指向的正是「世界树」那一页。
 		 */
-		function PlanGlyph() {
-			return h(
-				'svg',
-				{ width: 12, height: 12, viewBox: '0 0 12 12', 'aria-hidden': 'true', style: { flex: '0 0 auto', display: 'block' } },
-				h('path', { d: 'M3 2.2 V10.2', stroke: 'currentColor', strokeWidth: 1.2, fill: 'none', strokeLinecap: 'round' }),
-				h('path', { d: 'M3 5.2 H8.4', stroke: 'currentColor', strokeWidth: 1.2, fill: 'none', strokeLinecap: 'round' }),
-				h('circle', { cx: 3, cy: 2.2, r: 1.5, fill: 'currentColor' }),
-				h('circle', { cx: 3, cy: 9.4, r: 1.4, fill: 'none', stroke: 'currentColor', strokeWidth: 1.1 }),
-				h('circle', { cx: 9.2, cy: 5.2, r: 1.4, fill: 'none', stroke: 'currentColor', strokeWidth: 1.1 }),
-			)
-		}
-
-		/**
-		 * 计划芯片:坐在原生 plan 座位上的那一格。
-		 *
-		 * 只说**计划**这一件事(进度、受阻、待确认),不重复状态条已经说过的话——
-		 * 一个事实只在一块面上说,是这个面板与原生 dock 之间的分工。
-		 * 没有计划时渲染 `null`:座位保持空着,而不是显一个「什么都没有」的假控件。
-		 * 它也不造第二个动词:推进的唯一动词是 `AdvancePlan`,那属于模型,不属于界面;
-		 * 这一格能做的只有一件——把右栏的「世界树」打开。
-		 */
-		function PlanChip(props) {
-			const data = typeof props.useProjection === 'function' ? props.useProjection('clearai') : undefined
-			const plan = data === null || data === undefined ? null : data.plan
-			if (plan === null || plan === undefined) return null
-			const total = plan.totalCount ?? 0
-			const done = plan.advancedCount ?? 0
-			/**
-			 * 说人话:内部 id(`p-xxxx`)不进这一格——它对人没有信息量,只让芯片变长;
-			 * 状态优先于数字(等人确认 / 受阻 / 已收尾都是**要人注意**的那一类)。
-			 */
-			/**
-			 * 一格只放**一个符号**:进度。要人注意的事不换符号,只换颜色。
-			 *
-			 * 这条工具行上的格子只承担**可点、且只有我们知道**的两句:
-			 *   待处理 N(人门计数,点了开世界树)· 续跑停着(为什么停,人是可以处置的)。
-			 * 「已达成 · 100%」那一类与原生目标提示说的是同一件事,不在这里重复。
-			 */
-			const inboxCount = Array.isArray(data?.needYou) ? data.needYou.length : 0
-			const blocked = plan.blocked !== null && plan.blocked !== undefined
-			const attention = blocked
-			/**
-			 * 符号**恒定是进度**(形状稳定才学得会):要人注意不在符号上换字,
-			 * 而是换颜色(与世界树同一条规矩:形状说状态,别让人去猜一个 '?')。
-			 * 「待处理 N」就在这一格(`waiting`):门开着是**事实面**上最要紧的一句,
-			 * 而它可点——点一下开世界树,那里才看得到要裁什么。
-			 */
-			/**
-			 * 符号说**探索到了哪**:调研时是「板块 已厘清/总数」,求解时是「问题 当前/总数 · 待检验假设 N 个」;
-			 * 没列问题也没列板块的目标(旧会话、单问题)退回步数 `N/M`。
-			 */
-			const exploration = data?.exploration ?? null
-			const areas = Array.isArray(exploration?.areas) ? exploration.areas : []
-			const declared = (Array.isArray(exploration?.questions) ? exploration.questions : []).filter((question) => !question.implicit)
-			const current = (Array.isArray(exploration?.questions) ? exploration.questions : []).find((question) => question.id === exploration?.current) ?? null
-			const emergent = declared.filter((question) => question.status === 'emergent').length
-			const examining = current === null ? 0 : (current.counts?.examining ?? 0)
-			const symbol =
-				areas.length > 0
-					? `${t('板块 ')}${areas.filter((area) => area.state === 'clear').length}/${areas.length}${emergent > 0 ? `${t(' · ')}${emergent}${t(' 个问题待您决定')}` : ''}`
-					: declared.length > 0 && current !== null
-						? `${t('问题 ')}${declared.indexOf(current) + 1}/${declared.length}${t(' · 待检验假设 ')}${examining}${t(' 个')}`
-						: `${done}/${total}`
-			const brief = typeof plan.brief === 'string' && plan.brief.trim() !== '' ? plan.brief.trim() : null
-			const meaning = blocked ? t('计划受阻,待人工处理') : plan.status === 'closed' ? `${t('计划已收尾(')}${done}/${total}${t(' 步)')}` : `${t('计划已交付 ')}${done}/${total}${t(' 步')}`
-			/**
-			 * 等人时**只说一句**:先「待处理 N」(人门计数),没有门才说续跑停着的原因。
-			 * 两者是同一根轴(为什么在等人)⇒ 一格只放一个,不并列。
-			 */
-			const waiting = inboxCount > 0 ? `${t('待处理 ')}${inboxCount}` : null
-			const attentionNow = attention || waiting !== null
-			return h(
-				'button',
-				{
-					type: 'button',
-					className: 'clearai-toolctl',
-					disabled: props.locked === true,
-					title: `${meaning}${waiting === null ? '' : ` · ${waiting}`} · ${plan.id}${brief === null ? '' : ` · ${brief}`}${t('(点击打开探索货架)')}`,
-					'aria-label': `${meaning}${waiting === null ? '' : ` · ${waiting}`}${t('(点击打开探索货架)')}`,
-					// 「要人注意」用与世界树同一族的琥珀(同一套主题令牌,不新造颜色)。
-					style: attentionNow ? { color: 'rgb(var(--dsw-color-warning, 245 158 11))', fontWeight: 600 } : undefined,
-					onClick: () => props.openExplore?.(),
-				},
-				h(PlanGlyph, null),
-				h('span', { style: { minWidth: 14, textAlign: 'center' } }, symbol),
-				waiting === null ? null : h('span', { style: { marginLeft: 6, fontSize: 11.5 } }, waiting),
-			)
-		}
 
 		/**
 		 * 一步的**人话**名字:`do` 是模型写的那句「做什么」,截短了放进一行。
@@ -2986,29 +2896,8 @@ window.__ModuleLoader__.load({
 				h(LocalizedExplore, { ...props, openSpectator, openPreview: openPreviewFor(props), send: sendFor(props), openFacts: () => openPanel(props, 'clearai-facts') }),
 			)
 			occupy('conversation.view', () => ({ id: 'clearai-facts', order: 20, label: t('本体') }), (props) => h(LocalizedFacts, { ...props, openSpectator, openPreview: openPreviewFor(props), send: sendFor(props), openExplore: () => openPanel(props, 'clearai-explore') }))
-			/**
-			 * **计划面坐在原生 plan 那个座位上**。
-			 *
-			 * 为什么是这个座位:DSH 把「计划」这件事的控件固定在 composer 工具行的
-			 * `conversation.input.plan` 上(`dsh-client-ui-plan` 的「Plan ×」),而它只在
-			 * `plan/mode` 投影存在时才渲染——我们的预设不挂 `plan-mode`(计划是我们自己的事实,
-			 * 不是每回合的策略),所以那个座位在本模式下**一直空着**:位置在,没人说话。
-			 * 把自己的计划面放进去,就是「同一个位置、两种预设各自的计划面」,而不是另起一块浮层。
-			 *
-			 * 两条实现约束(读原生实现量出来的,不是猜的):
-			 *   · 这个座位是 `single`:同 priority 再注册会**直接抛错**(核心的报错原文是
-			 *     「register at a different priority to shadow it (lowest renders)」),
-			 *     所以必须给一个更低的 priority 才遮蔽得住;
-			 *   · 遮蔽的代价是零——原生那个 occupant 在本模式下本来 `return null`。
-			 * 而我们只在**当前会话是本预设**时占座(`occupy`),会话切走就还给它。
-			 */
-			occupy('conversation.input.plan', { priority: -1 }, (props) => h(PlanChip, { ...props, openExplore: () => openPanel(props, 'clearai-explore') }))
-			// 输入框下方的常驻派生条(运行态卡在人这一侧的对应物)
-			/**
-			 * **输入框下那一条不再注册**:它说的话(阶段 / 完成度 / 当前步)与原生目标提示、
-			 * 与工具行那颗计划 chip 重复 ✗,却**独占一行把输入框顶上去** ✗。
-			 * 唯一可点、且只有我们知道的那件事(「待处理 N」)已经并进计划 chip(同一行,一点直达探索货架)。
-			 */
+			// Plan progress uses DSH's native todo dock; no composer chip or shadow plan slot.
+
 			ctx.effect(() => sessions.list.subscribe(() => {
 				for (const sync of seats) sync()
 			}), t('clearai-loop: 席位跟着会话预设进出'))
@@ -3027,7 +2916,7 @@ window.__ModuleLoader__.load({
 		 * 真的跑一遍渲染路径(捕 undefined 字段访问这类只有渲染时才炸的错)。
 		 * 仍然不是给别的包用的接口。
 		 */
-		exports.__components = { PlanChip, WorldTree, ExploreView, AnswerCards, QuestionBox, NextBox, EmergentActions, GraphBand, GraphInspector, NeedYou, TreeDetail, Atlas, AtlasHeader, ConclusionList, ConclusionRow, ConclusionDetail, StationBar, TrustTimeline, ClearAIMark, LOOP_LABEL, EntityCard, KnowledgeFlowBox, KnowledgeItemRow, SettledLine, CountMarks }
+		exports.__components = { WorldTree, ExploreView, AnswerCards, QuestionBox, NextBox, EmergentActions, GraphBand, GraphInspector, NeedYou, TreeDetail, Atlas, AtlasHeader, ConclusionList, ConclusionRow, ConclusionDetail, StationBar, TrustTimeline, ClearAIMark, LOOP_LABEL, EntityCard, KnowledgeFlowBox, KnowledgeItemRow, SettledLine, CountMarks }
 		/**
 		 * 测试缝之三:命题那一列的**派生**是纯函数(分组、处境、来路、证据链),
 		 * 渲染本身没法在没浏览器的地方细究——把它导出去,让测试直接断言派生结果。
