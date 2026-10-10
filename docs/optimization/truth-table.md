@@ -8,12 +8,12 @@ This table answers one question: **what the current code actually guarantees**. 
 
 ## Counts
 
-- Mechanisms: **57**
-- By status: Implemented 56 · Design only 1
-- By strength: Hard boundary 44 · Advisory 9 · Native 4
-- By destination: stays design-only 1
-- Actually blocking execution: **22**
-- Carrying a known mismatch between docs/comments and code: **1**
+- Mechanisms: **60**
+- By status: Implemented 58 · Partial 1 · Design only 1
+- By strength: Hard boundary 47 · Advisory 9 · Native 4
+- By destination: becomes a mechanism 1 · stays design-only 1
+- Actually blocking execution: **21**
+- Carrying a known mismatch between docs/comments and code: **2**
 
 ## Code constant snapshot
 
@@ -60,8 +60,11 @@ This section is exported from code, not written by hand:
 | `audit-digest-reuse` | Verdicts are reused by material digest (same state, no re-dispatch) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js auditDigest` |
 | `workspace-files-sync` | Workspace file sync (accumulated facts and ontology live in files) | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile` |
 | `artifact-path-exclusive` | Exclusive artifact paths (no two steps in a plan declare the same artefact) | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js validateSteps` |
-| `measures-gate` | Measurement requirement: the ontology written at framing says how each measure is measured | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Frame` |
 | `answers-stop-check` | Stop check: an achieved close needs everything that could change the answer written into it | Epistemic | Implemented | Hard boundary | Authoritative | system | yes | `preset/plugins/clearai-kernel.js Conclude` |
+| `fact-scope` | A fact's scope is kept apart from its refutation condition; counter-evidence outside the scope does not retract it | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/scope.js` |
+| `negative-writeback` | Negative items are written as they happen: excluded, unresolved, defect | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/knowledge-items.js negativeItems` |
+| `knowledge-cite` | Retrieval: framing locates existing items, citing checks whether they apply, refutation returns to the cited items | Epistemic | Partial | Hard boundary | Authoritative | system | no | `preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict` |
+| `model-rerun` | Re-runnable computations: when a cited item's inputs changed, re-run first; outside tolerance it becomes pending and an unexplained item is recorded | Epistemic | Implemented | Hard boundary | Authoritative | system | no | `preset/plugins/models.js checkModelSpec、needsRerun、compareOutputs` |
 | `anomaly-questions-fact` | An unexplained item sends an established fact back to awaiting check | Epistemic | Implemented | Native | Authoritative | system | no | `ui/lib/fold.js questionedBy` |
 | `single-loop` | Single-loop persona, no free multi-agent orchestration | Harness | Implemented | Advisory | None | model | no | `preset/agent.cordis.yml persona` |
 | `four-beats` | Four-beat rhythm | Harness | Implemented | Advisory | None | model | no | `preset/plugins/prompts.js loop` |
@@ -122,9 +125,9 @@ This section is exported from code, not written by hand:
 - **Output**: 派生 supportedLevel / refutation 计数（不落第二本账）
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 假设状态由证据算出来，模型不能打分。首次立目标至少登记 2 条候选（preset 强制，0 条一样拦）：只有一个猜想，检验容易退化成找证据支持自己。
+- **Rationale**: 假设状态由证据算出来，模型不能打分。0.5.1 的「首次立目标至少两条候选」催生了凑数的候选，0.5.2 起不再要求条数；判断用到的已有条目写在 uses 里。
 - **Code**: preset/plugins/clearai-kernel.js Frame hypotheses; ui/lib/fold.js case 'hypothesis/superseded'
-- **Tests**: test/kernel.test.mjs · **Config**: minHypotheses（内核默认 0 = 机制中立；preset 立 2 = 产品立场，与 blockedThreshold 同一模式）
+- **Tests**: test/kernel.test.mjs · **Config**: minHypotheses（内核默认 0 = 机制中立；0.5.2 起 preset 不再打开）
 - **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
 ### `criteria-required` · Criteria-before-work enforcement
@@ -451,11 +454,11 @@ This section is exported from code, not written by hand:
 - **Layer**: Harness · **Status**: Implemented · **Strength**: Advisory · **Authority**: None · **Actor**: system
 - **Trigger**: 状态变化时随回合注入
 - **Input**: 派生状态
-- **Output**: 一段状态卡文本
+- **Output**: 一段状态卡文本:第一次、变化过半或连续 6 次只发差异之后发整张,其余只发与上次不同的行;没有新行就不发
 - **Blocks execution**: no
 - **Native alternative**: none
-- **Rationale**: 让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。
-- **Code**: ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice
+- **Rationale**: 让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。 0.5.2 起只发变化:整张卡在长会话里反复出现是输入成本的主要来源之一,而上次的卡还在上下文里;隔一段补一张整的,防止早先的卡被压缩掉。
+- **Code**: ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice、cardText
 - **Tests**: test/kernel.test.mjs, test/host.test.mjs · **Config**: runtimeCard=true
 - **Prompt**: clearai/identity · **Docs**: docs/loop-philosophy.zh-CN.md
 
@@ -779,31 +782,72 @@ This section is exported from code, not written by hand:
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
 
-### `measures-gate` · Measurement requirement: the ontology written at framing says how each measure is measured
-
-- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: 第一次 Frame(立新目标),requireMeasures 打开(ClearAI 预设)
-- **Input**: Frame.ontology 与工作区里已有的 clear/ontology/ 文件
-- **Output**: 本体里没有度量,或某个度量不是任何带非空 check 的测量关系的值域 ⇒ 拒(measures_required),列出缺项;否则内核校验并写入本体文件
-- **Blocks execution**: yes
-- **Native alternative**: none
-- **Rationale**: 真宿主复盘里唯一的错误事实,来自把设定值回读当成釜温:缺的正是一条「测量」关系。只要求说清测量,不要求编造对手假设;内核默认关,只在 ClearAI 预设打开。
-- **Code**: preset/plugins/clearai-kernel.js Frame; unmeasured
-- **Tests**: test/kernel.test.mjs(0.5.1:本体随立题写入,测量门槛) · **Config**: requireMeasures
-- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
-
 ### `answers-stop-check` · Stop check: an achieved close needs everything that could change the answer written into it
 
 - **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
-- **Trigger**: Conclude(achieved),requireAnswers 打开(ClearAI 预设),在派评估者之前
-- **Input**: Conclude.answers 与折出的 exploration(问题、候选、未解释项)
-- **Output**: 有问题既无结论也无未回答原因、或仍在考察中的候选 / 开着的未解释项 / 新发现或暂缓的问题没出现在任何 open[].about 里 ⇒ 拒(answers_incomplete),列出缺项;可改以 partial 结案
+- **Trigger**: Conclude(achieved),requireAnswers 打开(ClearAI 预设):派评估者之前查一次,审计之后再查一次
+- **Input**: Conclude.answers、折出的 exploration(问题、候选、未解释项)与这次审计里评估者报的未解释项
+- **Output**: 审计前:有问题既无结论也无未回答原因、或仍在考察中的候选 / 开着的未解释项 / 新发现或暂缓的问题没出现在任何 open[].about 里 ⇒ 拒(answers_incomplete),列出缺项。审计后:评估者新报、且没说「不影响结论」的未解释项没写进 open[].about ⇒ 同样拒,这些项落成未解释项;补写后再结案复用这次裁决
 - **Blocks execution**: yes
 - **Native alternative**: none
-- **Rationale**: 「探索到决策不再改变为止」落到可检查的形式:只查写没写,不判写得对不对(判断归独立评估者)。覆盖了复盘中「看见漂移、配方仍按设定温度交付」的情形。
+- **Rationale**: 「探索到决策不再改变为止」落到可检查的形式:只查写没写,不判写得对不对(判断归独立评估者)。覆盖了复盘中「看见漂移、配方仍按设定温度交付」的情形。0.5.1 长测里它拦截 0 次:评估者在审计中指出的问题从未经过它,于是加了审计之后的一次。
 - **Code**: preset/plugins/clearai-kernel.js Conclude; unsettledForAnswers
-- **Tests**: test/kernel.test.mjs(0.5.1:按候选写预测、停止检查) · **Config**: requireAnswers
+- **Tests**: test/kernel.test.mjs(0.5.1:按候选写预测、停止检查;0.5.2:停止检查在审计之后再做一次) · **Config**: requireAnswers
 - **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/epistemic-loop.zh-CN.md
+
+### `fact-scope` · A fact's scope is kept apart from its refutation condition; counter-evidence outside the scope does not retract it
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 升格事实;推翻证据碰到已确立的事实
+- **Input**: 判断的 scope、立题的 conditions、事实的 scope_spec
+- **Output**: 升格时 scope_spec = 判断的范围(缺的维度用立题 conditions 补),推翻条件另存 refute_when;复检时检验条件落在事实范围之外 ⇒ 落 fact/bounded,事实保持成立、不问人;条件未声明 ⇒ 照常问人并说明;范围内 ⇒ 问人撤回或维持
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 0.5.1 把推翻条件写进 scope,九月数据撤回了八月范围内成立的事实:系统分不清「换了范围」与「被推翻」。
+- **Code**: preset/plugins/scope.js; preset/plugins/clearai-kernel.js Conclude(升格)、reviewRefutedFacts、markFactBounded; ui/lib/fold.js case 'fact/bounded'
+- **Tests**: test/kernel.test.mjs(0.5.2:适用范围与推翻条件分开) · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `negative-writeback` · Negative items are written as they happen: excluded, unresolved, defect
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: 每个工具结果之后;每一拍的 pre-step(兜底)
+- **Input**: 折好的状态:被推翻的判断及其推翻证据、登记的未解释项及其去处、立题的 about 与 conditions
+- **Output**: clear/knowledge/negatives/<id>.json:被推翻的判断 ⇒ 已排除(一次自行检验为初步排除,独立核验或两次以上为已排除);未解释项 ⇒ 未解,去处变了随之更新,解释为测量或方法缺陷 ⇒ 缺陷;条目带 about 与适用范围;只有内容变了才写,别的会话的文件不动;模型不能直接写这个目录
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 只在成功结案时回灌,中断、放弃的会话就什么都不留,而失败里最有价值的往往是负向信息;已排除的不再重验,缺陷先核,未解的优先追。
+- **Code**: preset/plugins/knowledge-items.js negativeItems; preset/plugins/clearai-kernel.js writeBack、afterTool、preStep; ui/lib/domain-language.js negativeFromFile; ui/lib/fold.js derive.negativeRows
+- **Tests**: test/kernel.test.mjs(0.5.2:负向条目随发生随写) · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `knowledge-cite` · Retrieval: framing locates existing items, citing checks whether they apply, refutation returns to the cited items
+
+- **Layer**: Epistemic · **Status**: Partial · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: Frame(立题或修订);判断被推翻
+- **Input**: Frame 的 about、conditions 与判断的 uses;工作区的事实、经验、负向条目;本体里实体与概念的名称和别名
+- **Output**: Frame 返回与 about 相关的已有条目计数与位置(不给内容);about 中与已有实体名称或别名相同的认作该实体,相似的提示可能相同;uses 里每条按状态与适用范围判定(适用 / 超出范围 / 超出取值范围 / 条件未声明 / 范围未声明 / 口径已变 / 待核验 / 已撤回),判定随判断落账并随结果返回,id 不存在则拒;引用过某事实的判断被推翻时,范围外 ⇒ fact/bounded,范围内或说不清 ⇒ fact/questioned(待核验,不问人)
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 不另设检索机制:条目都是文件,模型用原生文件查找取用;系统只给定位与引用时的判定。新会话不知道有旧知识、范围外的知识被当成适用、反驳不回到旧条目,是闭环断开的三处。
+- **Destination**: becomes a mechanism
+- **Code**: preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict; preset/plugins/clearai-kernel.js Frame(about、uses)、frameKnowledgeNote、reviewRefutedFacts、markFactQuestioned; ui/lib/fold.js case 'fact/questioned'
+- **Tests**: test/kernel.test.mjs(0.5.2:取用) · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+- **Known mismatch**: 同一物理量有多个口径(设定、回读、探头)时要求指明口径的检查尚未做;口径变化只通过事实升格时记下的定义指纹判定
+
+### `model-rerun` · Re-runnable computations: when a cited item's inputs changed, re-run first; outside tolerance it becomes pending and an unexplained item is recorded
+
+- **Layer**: Epistemic · **Status**: Implemented · **Strength**: Hard boundary · **Authority**: Authoritative · **Actor**: system
+- **Trigger**: Frame:判断的 uses 引用了带 use 的事实
+- **Input**: clear/models/<id>.json(command、inputs、output、tolerance、可选 baseline);输入文件的修改时间;clear/evidence/models/<id>.json 的上次运行
+- **Output**: 输入没变不跑;变了用宿主 shell 在工作区里跑一次,与上次(第一次与 baseline)比对,写运行记录;超出容差 ⇒ 引用判定为待核验并登记 by=system 的未解释项(touches 指向该事实);不能执行、登记不合格、命令失败都如实说明,不当成偏差。判断的 use 指向未登记或不合格的核算 ⇒ 拒
+- **Blocks execution**: no
+- **Native alternative**: none
+- **Rationale**: 反常不依赖模型自己留意:结论背后的计算在新数据上结果变了,下一次引用时由系统发现。只在引用时重跑,不另设调度。
+- **Code**: preset/plugins/models.js checkModelSpec、needsRerun、compareOutputs; preset/plugins/clearai-kernel.js rerunModel、Frame(use、uses 引用前重跑)、runText; ui/lib/fold.js 事实与判断的 use
+- **Tests**: test/kernel.test.mjs(0.5.2:可重跑的核算) · **Config**: —
+- **Prompt**: preset/plugins/prompts.js clearai/loop · **Docs**: docs/optimization/0.5.2-plan/loop-design.zh-CN.md
 
 ### `anomaly-questions-fact` · An unexplained item sends an established fact back to awaiting check
 

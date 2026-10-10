@@ -8,12 +8,12 @@
 
 ## 计数
 
-- 机制条目：**57**
-- 按状态：已实现 56 · 设计目标 1
-- 按强度：硬边界 44 · 建议 9 · 原生 4
-- 按归宿：保持设计目标 1
-- 真正阻断执行的：**22**
-- 存在已知不符（文档 / 注释与代码不一致）的：**1**
+- 机制条目：**60**
+- 按状态：已实现 58 · 部分实现 1 · 设计目标 1
+- 按强度：硬边界 47 · 建议 9 · 原生 4
+- 按归宿：变成机制 1 · 保持设计目标 1
+- 真正阻断执行的：**21**
+- 存在已知不符（文档 / 注释与代码不一致）的：**2**
 
 ## 代码常量快照
 
@@ -60,8 +60,11 @@
 | `audit-digest-reuse` | 裁决按材料 digest 复用（同态不重派） | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js auditDigest` |
 | `workspace-files-sync` | 工作区文件同步(攒下来的事实与本体住在文件里) | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/clearai-kernel.js syncWorkspace listWorkspaceFiles readWorkspaceFile` |
 | `artifact-path-exclusive` | 产物路径不重叠(同一计划里两步不许声明同一个产物) | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js validateSteps` |
-| `measures-gate` | 测量门槛:立题时本体须写明度量如何测量 | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js Frame` |
 | `answers-stop-check` | 停止检查:会改变答案的事项都写进结论才能达成结案 | 认识论 | 已实现 | 硬边界 | 权威 | system | 是 | `preset/plugins/clearai-kernel.js Conclude` |
+| `fact-scope` | 事实的适用范围与推翻条件分开;范围外的反证不撤回事实 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/scope.js` |
+| `negative-writeback` | 负向条目随发生随写:已排除、未解、缺陷 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/knowledge-items.js negativeItems` |
+| `knowledge-cite` | 取用:立题时定位已有条目,引用时判定是否适用,反驳回到被引用的条目 | 认识论 | 部分实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict` |
+| `model-rerun` | 可重跑的核算:引用时输入变了先重跑,超出容差判待核验并登记未解释项 | 认识论 | 已实现 | 硬边界 | 权威 | system | 否 | `preset/plugins/models.js checkModelSpec、needsRerun、compareOutputs` |
 | `anomaly-questions-fact` | 未解释项使已确立的事实回到待核验 | 认识论 | 已实现 | 原生 | 权威 | system | 否 | `ui/lib/fold.js questionedBy` |
 | `single-loop` | 单循环人格（不做多 Agent 编排） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/agent.cordis.yml persona` |
 | `four-beats` | 四拍节奏（计划→执行→观察→反思） | Harness | 已实现 | 建议 | 无 | model | 否 | `preset/plugins/prompts.js loop` |
@@ -122,9 +125,9 @@
 - **输出**：派生 supportedLevel / refutation 计数（不落第二本账）
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：假设状态由证据算出来，模型不能打分。首次立目标至少登记 2 条候选（preset 强制，0 条一样拦）：只有一个猜想，检验容易退化成找证据支持自己。
+- **理由**：假设状态由证据算出来，模型不能打分。0.5.1 的「首次立目标至少两条候选」催生了凑数的候选，0.5.2 起不再要求条数；判断用到的已有条目写在 uses 里。
 - **代码**：preset/plugins/clearai-kernel.js Frame hypotheses; ui/lib/fold.js case 'hypothesis/superseded'
-- **测试**：test/kernel.test.mjs · **配置**：minHypotheses（内核默认 0 = 机制中立；preset 立 2 = 产品立场，与 blockedThreshold 同一模式）
+- **测试**：test/kernel.test.mjs · **配置**：minHypotheses（内核默认 0 = 机制中立；0.5.2 起 preset 不再打开）
 - **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
 ### `criteria-required` · 判据先写（done_criteria 强制）
@@ -451,11 +454,11 @@
 - **层**：Harness · **状态**：已实现 · **强度**：建议 · **权威**：无 · **责任方**：system
 - **触发**：状态变化时随回合注入
 - **输入**：派生状态
-- **输出**：一段状态卡文本
+- **输出**：一段状态卡文本:第一次、变化过半或连续 6 次只发差异之后发整张,其余只发与上次不同的行;没有新行就不发
 - **阻断执行**：否
 - **原生替代**：无
-- **理由**：让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。
-- **代码**：ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice
+- **理由**：让模型每回合看到当前真实状态,而不是依赖记忆;仅在状态变化时注入以保持前缀稳定。卡里用的是人话,不出现账本字段名(`plan_confirmation_pending` / `confirmed_at`)或宿主 id。 0.5.2 起只发变化:整张卡在长会话里反复出现是输入成本的主要来源之一,而上次的卡还在上下文里;隔一段补一张整的,防止早先的卡被压缩掉。
+- **代码**：ui/lib/fold.js renderCard; preset/plugins/clearai-kernel.js pluginNotice、cardText
 - **测试**：test/kernel.test.mjs, test/host.test.mjs · **配置**：runtimeCard=true
 - **提示词**：clearai/identity · **文档**：docs/loop-philosophy.zh-CN.md
 
@@ -779,31 +782,72 @@
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
 
-### `measures-gate` · 测量门槛:立题时本体须写明度量如何测量
-
-- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：第一次 Frame(立新目标),requireMeasures 打开(ClearAI 预设)
-- **输入**：Frame.ontology 与工作区里已有的 clear/ontology/ 文件
-- **输出**：本体里没有度量,或某个度量不是任何带非空 check 的测量关系的值域 ⇒ 拒(measures_required),列出缺项;否则内核校验并写入本体文件
-- **阻断执行**：是
-- **原生替代**：无
-- **理由**：真宿主复盘里唯一的错误事实,来自把设定值回读当成釜温:缺的正是一条「测量」关系。只要求说清测量,不要求编造对手假设;内核默认关,只在 ClearAI 预设打开。
-- **代码**：preset/plugins/clearai-kernel.js Frame; unmeasured
-- **测试**：test/kernel.test.mjs(0.5.1:本体随立题写入,测量门槛) · **配置**：requireMeasures
-- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
-
 ### `answers-stop-check` · 停止检查:会改变答案的事项都写进结论才能达成结案
 
 - **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
-- **触发**：Conclude(achieved),requireAnswers 打开(ClearAI 预设),在派评估者之前
-- **输入**：Conclude.answers 与折出的 exploration(问题、候选、未解释项)
-- **输出**：有问题既无结论也无未回答原因、或仍在考察中的候选 / 开着的未解释项 / 新发现或暂缓的问题没出现在任何 open[].about 里 ⇒ 拒(answers_incomplete),列出缺项;可改以 partial 结案
+- **触发**：Conclude(achieved),requireAnswers 打开(ClearAI 预设):派评估者之前查一次,审计之后再查一次
+- **输入**：Conclude.answers、折出的 exploration(问题、候选、未解释项)与这次审计里评估者报的未解释项
+- **输出**：审计前:有问题既无结论也无未回答原因、或仍在考察中的候选 / 开着的未解释项 / 新发现或暂缓的问题没出现在任何 open[].about 里 ⇒ 拒(answers_incomplete),列出缺项。审计后:评估者新报、且没说「不影响结论」的未解释项没写进 open[].about ⇒ 同样拒,这些项落成未解释项;补写后再结案复用这次裁决
 - **阻断执行**：是
 - **原生替代**：无
-- **理由**：「探索到决策不再改变为止」落到可检查的形式:只查写没写,不判写得对不对(判断归独立评估者)。覆盖了复盘中「看见漂移、配方仍按设定温度交付」的情形。
+- **理由**：「探索到决策不再改变为止」落到可检查的形式:只查写没写,不判写得对不对(判断归独立评估者)。覆盖了复盘中「看见漂移、配方仍按设定温度交付」的情形。0.5.1 长测里它拦截 0 次:评估者在审计中指出的问题从未经过它,于是加了审计之后的一次。
 - **代码**：preset/plugins/clearai-kernel.js Conclude; unsettledForAnswers
-- **测试**：test/kernel.test.mjs(0.5.1:按候选写预测、停止检查) · **配置**：requireAnswers
+- **测试**：test/kernel.test.mjs(0.5.1:按候选写预测、停止检查;0.5.2:停止检查在审计之后再做一次) · **配置**：requireAnswers
 - **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/epistemic-loop.zh-CN.md
+
+### `fact-scope` · 事实的适用范围与推翻条件分开;范围外的反证不撤回事实
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：升格事实;推翻证据碰到已确立的事实
+- **输入**：判断的 scope、立题的 conditions、事实的 scope_spec
+- **输出**：升格时 scope_spec = 判断的范围(缺的维度用立题 conditions 补),推翻条件另存 refute_when;复检时检验条件落在事实范围之外 ⇒ 落 fact/bounded,事实保持成立、不问人;条件未声明 ⇒ 照常问人并说明;范围内 ⇒ 问人撤回或维持
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：0.5.1 把推翻条件写进 scope,九月数据撤回了八月范围内成立的事实:系统分不清「换了范围」与「被推翻」。
+- **代码**：preset/plugins/scope.js; preset/plugins/clearai-kernel.js Conclude(升格)、reviewRefutedFacts、markFactBounded; ui/lib/fold.js case 'fact/bounded'
+- **测试**：test/kernel.test.mjs(0.5.2:适用范围与推翻条件分开) · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `negative-writeback` · 负向条目随发生随写:已排除、未解、缺陷
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：每个工具结果之后;每一拍的 pre-step(兜底)
+- **输入**：折好的状态:被推翻的判断及其推翻证据、登记的未解释项及其去处、立题的 about 与 conditions
+- **输出**：clear/knowledge/negatives/<id>.json:被推翻的判断 ⇒ 已排除(一次自行检验为初步排除,独立核验或两次以上为已排除);未解释项 ⇒ 未解,去处变了随之更新,解释为测量或方法缺陷 ⇒ 缺陷;条目带 about 与适用范围;只有内容变了才写,别的会话的文件不动;模型不能直接写这个目录
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：只在成功结案时回灌,中断、放弃的会话就什么都不留,而失败里最有价值的往往是负向信息;已排除的不再重验,缺陷先核,未解的优先追。
+- **代码**：preset/plugins/knowledge-items.js negativeItems; preset/plugins/clearai-kernel.js writeBack、afterTool、preStep; ui/lib/domain-language.js negativeFromFile; ui/lib/fold.js derive.negativeRows
+- **测试**：test/kernel.test.mjs(0.5.2:负向条目随发生随写) · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+
+### `knowledge-cite` · 取用:立题时定位已有条目,引用时判定是否适用,反驳回到被引用的条目
+
+- **层**：认识论 · **状态**：部分实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：Frame(立题或修订);判断被推翻
+- **输入**：Frame 的 about、conditions 与判断的 uses;工作区的事实、经验、负向条目;本体里实体与概念的名称和别名
+- **输出**：Frame 返回与 about 相关的已有条目计数与位置(不给内容);about 中与已有实体名称或别名相同的认作该实体,相似的提示可能相同;uses 里每条按状态与适用范围判定(适用 / 超出范围 / 超出取值范围 / 条件未声明 / 范围未声明 / 口径已变 / 待核验 / 已撤回),判定随判断落账并随结果返回,id 不存在则拒;引用过某事实的判断被推翻时,范围外 ⇒ fact/bounded,范围内或说不清 ⇒ fact/questioned(待核验,不问人)
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：不另设检索机制:条目都是文件,模型用原生文件查找取用;系统只给定位与引用时的判定。新会话不知道有旧知识、范围外的知识被当成适用、反驳不回到旧条目,是闭环断开的三处。
+- **归宿**：变成机制
+- **代码**：preset/plugins/knowledge-items.js resolveAbout、relatedKnowledge、citeVerdict; preset/plugins/clearai-kernel.js Frame(about、uses)、frameKnowledgeNote、reviewRefutedFacts、markFactQuestioned; ui/lib/fold.js case 'fact/questioned'
+- **测试**：test/kernel.test.mjs(0.5.2:取用) · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
+- **已知不符**：同一物理量有多个口径(设定、回读、探头)时要求指明口径的检查尚未做;口径变化只通过事实升格时记下的定义指纹判定
+
+### `model-rerun` · 可重跑的核算:引用时输入变了先重跑,超出容差判待核验并登记未解释项
+
+- **层**：认识论 · **状态**：已实现 · **强度**：硬边界 · **权威**：权威 · **责任方**：system
+- **触发**：Frame:判断的 uses 引用了带 use 的事实
+- **输入**：clear/models/<id>.json(command、inputs、output、tolerance、可选 baseline);输入文件的修改时间;clear/evidence/models/<id>.json 的上次运行
+- **输出**：输入没变不跑;变了用宿主 shell 在工作区里跑一次,与上次(第一次与 baseline)比对,写运行记录;超出容差 ⇒ 引用判定为待核验并登记 by=system 的未解释项(touches 指向该事实);不能执行、登记不合格、命令失败都如实说明,不当成偏差。判断的 use 指向未登记或不合格的核算 ⇒ 拒
+- **阻断执行**：否
+- **原生替代**：无
+- **理由**：反常不依赖模型自己留意:结论背后的计算在新数据上结果变了,下一次引用时由系统发现。只在引用时重跑,不另设调度。
+- **代码**：preset/plugins/models.js checkModelSpec、needsRerun、compareOutputs; preset/plugins/clearai-kernel.js rerunModel、Frame(use、uses 引用前重跑)、runText; ui/lib/fold.js 事实与判断的 use
+- **测试**：test/kernel.test.mjs(0.5.2:可重跑的核算) · **配置**：—
+- **提示词**：preset/plugins/prompts.js clearai/loop · **文档**：docs/optimization/0.5.2-plan/loop-design.zh-CN.md
 
 ### `anomaly-questions-fact` · 未解释项使已确立的事实回到待核验
 

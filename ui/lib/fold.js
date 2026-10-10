@@ -16,9 +16,10 @@
  * 与预设内核的契约:`meta = { kind: 'clearai', v: 1, mutation: { t, ... } }`。
  * 词汇表由本文件的 `applyMutation` 定义;预设侧只负责产出,不负责解释。
  */
-import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
+import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, negativeFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 import { bilingual, detectLanguage, messageText, tr, withLanguage } from './lang.js'
+import { compareScope, scopeText } from './scope.js'
 
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
 const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
@@ -70,9 +71,15 @@ export const MUTATION_KIND = 'clearai'
  *           与结案时的 `answers`(按问题的结论四部分);判断带 `question`(属于哪个问题或板块)与 `from`
  *           (由本体里哪条关系提出);步骤带 `serves` 与按候选分别写的 `predictions`;未解释项带 `touches`
  *           (涉及的量、判断或事实)。全部可选:旧日志折出来就是整个目标一个问题。
+ *   v19 → v20:**适用范围与推翻条件分开**:目标带 `conditions`(本次所处的条件);判断带 `scope`
+ *           (`{conditions, ranges, note}`);事实带 `scope_spec`、`refute_when` 与 `boundaries`
+ *           (`fact/bounded`:检验落在适用范围之外时记下的边界,事实保持成立)。旧账的 `scope` 写的是推翻条件。
+ *           同一版里目标、判断与事实还带 `about`(涉及的实体或量),未解释项带 `defect`(解释为测量或方法缺陷);
+ *           派生多一份 `negativeRows`(`clear/knowledge/negatives/` 的负向条目)。
+ *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 19
+export const STATE_VERSION = 21
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -214,6 +221,24 @@ export function normalizeTests(tests) {
 }
 
 /** 预测清单的唯一形状:`[{hypothesis, expect}]`,空的去掉。 */
+/** 适用范围的形状:`{conditions?, ranges?, note?}`(内核已规整过,这里只认形状)。 */
+function isScope(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) && (typeof value.conditions === 'object' || typeof value.ranges === 'object' || typeof value.note === 'string')
+}
+
+/** 涉及的实体或量:字符串数组。 */
+function isAbout(value) {
+	return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+
+/** 归知识库管、不进本体的工作区文件种类:事实、经验、负向条目。 */
+const KNOWLEDGE_FILE_KINDS = ['fact', 'lesson', 'negative']
+
+/** 立题的条件:`{维度: 值}`。 */
+function isConditions(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) && Object.values(value).every((item) => typeof item === 'string')
+}
+
 export function normalizePredictions(raw) {
 	if (!Array.isArray(raw)) return []
 	return raw
@@ -303,6 +328,8 @@ export function applyMutation(state, mutation) {
 				if (questions !== null) previous.questions = questions
 				const areas = normalizeAreas(mutation.areas)
 				if (areas !== null) previous.areas = areas
+				if (isConditions(mutation.conditions)) previous.conditions = clone(mutation.conditions)
+				if (isAbout(mutation.about)) previous.about = mutation.about.map(String)
 				previous.reasons.push(mutation.reason ?? null)
 			} else {
 				if (previous !== null && previous.status === 'open') previous.status = 'superseded'
@@ -339,6 +366,10 @@ export function applyMutation(state, mutation) {
 					/** 问题与调研板块(可选)。没有问题时,整个目标就是唯一的问题。 */
 					questions: normalizeQuestions(mutation.questions) ?? [],
 					areas: normalizeAreas(mutation.areas) ?? [],
+					/** 这次问题所处的条件(如产线、月份):判断没写适用范围时的默认,引用已有知识时据此判是否适用。 */
+					conditions: isConditions(mutation.conditions) ? clone(mutation.conditions) : {},
+					/** 这次问题涉及的实体或量(id):留下的知识条目挂在它们上面。 */
+					about: isAbout(mutation.about) ? mutation.about.map(String) : [],
 					/** 结案时按问题写的结论四部分(`Conclude.answers`)。 */
 					answers: [],
 				}
@@ -366,6 +397,10 @@ export function applyMutation(state, mutation) {
 					if (Array.isArray(hypothesis.assertions)) known.assertions = clone(hypothesis.assertions)
 					if (typeof hypothesis.question === 'string' && hypothesis.question !== '') known.question = hypothesis.question
 					if (typeof hypothesis.from === 'string' && hypothesis.from !== '') known.from = hypothesis.from
+					if (isScope(hypothesis.scope)) known.scope = clone(hypothesis.scope)
+					if (isAbout(hypothesis.about)) known.about = hypothesis.about.map(String)
+					if (Array.isArray(hypothesis.uses)) known.uses = clone(hypothesis.uses)
+					if (typeof hypothesis.use === 'string' && hypothesis.use !== '') known.use = hypothesis.use
 					continue
 				}
 				next.hypotheses.push({
@@ -388,6 +423,13 @@ export function applyMutation(state, mutation) {
 					...(typeof hypothesis.question === 'string' && hypothesis.question !== '' ? { question: hypothesis.question } : {}),
 					/** 由本体里哪条关系提出(关系 id);没写或写「直觉」都如实显示。 */
 					...(typeof hypothesis.from === 'string' && hypothesis.from !== '' ? { from: hypothesis.from } : {}),
+					/** 适用范围(在哪里成立),与推翻条件分开:`{conditions, ranges, note}`。 */
+					...(isScope(hypothesis.scope) ? { scope: clone(hypothesis.scope) } : {}),
+					/** 涉及的实体或量(id);没写就用立题的 about。 */
+					...(isAbout(hypothesis.about) ? { about: hypothesis.about.map(String) } : {}),
+					/** 用到的已有条目与立题那一刻的适用性判定:`[{id, kind, verdict}]`。 */
+					...(Array.isArray(hypothesis.uses) ? { uses: clone(hypothesis.uses) } : {}),
+					...(typeof hypothesis.use === 'string' && hypothesis.use !== '' ? { use: hypothesis.use } : {}),
 					at,
 				})
 			}
@@ -489,6 +531,8 @@ export function applyMutation(state, mutation) {
 			item.status = mutation.outcome
 			item.reason = mutation.reason ?? null
 			item.explainedBy = mutation.by ?? null
+			/** 解释为测量或方法的缺陷:回灌成实体上的「缺陷」条目。 */
+			if (mutation.outcome === 'explained' && mutation.defect === true) item.defect = true
 			item.resolvedAt = at
 			break
 		}
@@ -539,6 +583,12 @@ export function applyMutation(state, mutation) {
 			break
 		}
 		case 'audit/dispatched': {
+			const previous = next.audits.find((item) => item.id === mutation.id)
+			if (previous !== undefined) {
+				if (mutation.evaluator_session) previous.child = mutation.evaluator_session
+				if (mutation.capability) previous.capability = mutation.capability
+				break
+			}
 			next.audits.push({
 				id: mutation.id,
 				step: mutation.step,
@@ -592,6 +642,7 @@ export function applyMutation(state, mutation) {
 				audit.verdict = mutation.verdict
 				/** 两项裁决:交付成立吗 + 每条判断的结果。旧账没有这两格,`verdict` 那时说的就是交付成立吗。 */
 				audit.holds = mutation.holds ?? null
+				audit.reuse = Array.isArray(mutation.reuse) ? clone(mutation.reuse) : []
 				audit.results = Array.isArray(mutation.results) ? mutation.results : []
 				audit.shortfalls = mutation.shortfalls ?? []
 				audit.basis = mutation.basis ?? null
@@ -602,7 +653,7 @@ export function applyMutation(state, mutation) {
 			const found = Array.isArray(mutation.anomalies) ? mutation.anomalies : []
 			for (const [index, item] of found.entries()) {
 				const id = `${mutation.id}#u${index + 1}`
-				if (next.anomalies.some((entry) => entry.id === id)) continue
+				if (next.anomalies.some((entry) => entry.id === id || (entry.by === 'evaluator' && entry.step === mutation.step && entry.what === String(item?.what ?? '')))) continue
 				next.anomalies.push({ id, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
 			}
 			break
@@ -672,13 +723,22 @@ export function applyMutation(state, mutation) {
 				goal: mutation.goal,
 				hypothesis: mutation.hypothesis ?? null,
 				text: mutation.text,
-				scope: mutation.scope ?? null,
+				/** 涉及的实体或量(id):文件查找按它们取到这条事实。 */
+				about: isAbout(mutation.about) ? mutation.about.map(String) : [],
+				scope: mutation.scope_spec === undefined && mutation.refute_when === undefined ? null : mutation.scope ?? null,
+				/** 可比较的适用范围(`{conditions, ranges, note}`);旧账没有这一格,那时 `scope` 写的是推翻条件。 */
+				scope_spec: isScope(mutation.scope_spec) ? clone(mutation.scope_spec) : null,
+				refute_when: typeof mutation.refute_when === 'string' ? mutation.refute_when : mutation.scope_spec === undefined && typeof mutation.scope === 'string' ? mutation.scope : null,
+				/** 已知不适用之处:检验落在适用范围之外时记下的边界(`fact/bounded`),事实本身保持成立。 */
+				boundaries: [],
 				level: mutation.level ?? null,
 				evidence: mutation.evidence ?? [],
 				path: mutation.path ?? null,
 				assertions: Array.isArray(mutation.assertions) ? clone(mutation.assertions) : null,
 				/** 升格那一刻,断言用到的词条各自的含义指纹:之后定义改了,这条事实要复核。 */
 				definitions: mutation.definitions !== null && typeof mutation.definitions === 'object' && !Array.isArray(mutation.definitions) ? clone(mutation.definitions) : null,
+				/** 支撑它的可重跑核算(`clear/models/<id>.json`);没有就是 null。 */
+				use: typeof mutation.use === 'string' && mutation.use !== '' ? mutation.use : null,
 				at,
 			})
 			break
@@ -707,9 +767,9 @@ export function applyMutation(state, mutation) {
 			 */
 			const touchedOntology = (mutation.changes ?? []).some((change) => {
 				const kind = classifyWorkspacePath(change?.path)?.kind
-				return kind !== undefined && kind !== 'fact' && kind !== 'lesson'
+				return kind !== undefined && !KNOWLEDGE_FILE_KINDS.includes(kind)
 			})
-			if (touchedOntology || Object.keys(files).some((path) => !['fact', 'lesson'].includes(classifyWorkspacePath(path)?.kind))) {
+			if (touchedOntology || Object.keys(files).some((path) => !KNOWLEDGE_FILE_KINDS.includes(classifyWorkspacePath(path)?.kind))) {
 				const ontology = materializeOntology(files)
 				next.lexicon = ontology.lexicon
 				next.entities = ontology.entities
@@ -729,6 +789,29 @@ export function applyMutation(state, mutation) {
 			const fact = next.facts.find((item) => item.id === mutation.fact)
 			if (fact === undefined) break
 			fact.review = { decision: mutation.decision === 'retracted' ? 'retracted' : 'kept', reason: mutation.reason ?? null, at, by: mutation.by ?? 'user' }
+			break
+		}
+		case 'fact/bounded': {
+			/**
+			 * **检验落在事实的适用范围之外**:不是推翻,是记下一处边界(在哪里不成立)。
+			 * 事实保持成立,不问人撤回;0.5.1 里九月数据撤回八月事实,就是把这两件事混成了一件。
+			 */
+			const fact = next.facts.find((item) => item.id === mutation.fact)
+			if (fact === undefined) break
+			if (!Array.isArray(fact.boundaries)) fact.boundaries = []
+			fact.boundaries.push({ verdict: mutation.verdict ?? 'out_of_scope', reasons: Array.isArray(mutation.reasons) ? clone(mutation.reasons) : [], hypothesis: mutation.hypothesis ?? null, basis: mutation.basis ?? null, at })
+			break
+		}
+		case 'fact/questioned': {
+			/**
+			 * **引用过它的判断被推翻**,而推翻落在它的适用范围之内(或范围说不清):事实回到「待核验」,
+			 * 不撤回、不问人——判断被推翻不等于它引用的事实错了,但它不能再照旧当已知用。
+			 * 人复核过(`fact/reviewed`)或别的会话的文件上记了复核,疑问就算处理了。
+			 */
+			const fact = next.facts.find((item) => item.id === mutation.fact)
+			if (fact === undefined) break
+			if (!Array.isArray(fact.challenges)) fact.challenges = []
+			fact.challenges.push({ hypothesis: mutation.hypothesis ?? null, verdict: mutation.verdict ?? null, basis: mutation.basis ?? null, at })
 			break
 		}
 		case 'ontology/term_added':
@@ -909,6 +992,8 @@ export function applyEvent(state, event) {
 }
 
 function foldEvent(state, event) {
+	if (event.type === 'hook/result' && event.data?.point === 'ClearAIFact' && event.data?.handlerId?.startsWith('clearai-fact-') && isClearaiSource(event.data?.notice?.source)) return foldEvent(state, { ...event, type: 'user/message', data: event.data.notice })
+	if (event.type === 'clearai/facts') return foldEvent(state, { ...event, type: 'user/message' })
 	if (event.type === 'user/message') {
 		// 内核观察到的事实(候选技能、采纳记录、合并目录)走**插件消息的结构化 section**——
 		// 记在会话日志里,所以状态仍然可以从日志重放出来,而不是靠一句散文。
@@ -1234,7 +1319,7 @@ export function knowledgePreflight(state, derived) {
 		predicates: matchedPredicates.slice(0, LIMIT).map((predicate) => ({ id: predicate.id, label: predicate.label, gloss: predicate.gloss ?? '', kind: predicate.kind ?? null, shape: predicate.shape ?? null, check: predicate.check ?? null, domain: predicate.domain, range: predicate.range, functional: predicate.functional === true, status: predicate.status, uses: predicate.uses ?? 0, basis: predicate.basis ?? null })),
 		predicatesTruncated: Math.max(0, matchedPredicates.length - LIMIT),
 		/** 命中的既有事实(可复用的「已知」)。 */
-		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: fact.scope ?? null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null, foreign: fact.foreign === true })),
+		facts: matchedFacts.slice(0, LIMIT).map((fact) => ({ id: fact.id, text: fact.text, level: fact.level ?? null, scope: tr(scopeText(fact.scope_spec, 'zh'), scopeText(fact.scope_spec, 'en')) || fact.scope || null, hypothesis: fact.hypothesis ?? null, review: fact.review?.decision ?? null, foreign: fact.foreign === true })),
 		factsTruncated: Math.max(0, matchedFacts.length - LIMIT),
 		/** 冲突:有就带上(它们约束「哪些结论还不能随便写)。 */
 		conflicts: conflicts.map((conflict) => ({ predicate: conflict.predicate, subject: conflict.subject })),
@@ -1419,6 +1504,9 @@ function factHistory(fact, evidence) {
 			summary: fact.review.decision === 'retracted' ? tr('人审查后**撤回**(记录保留)', 'A person reviewed it and **retracted** it (the record is kept)') : tr('人审查后**维持**(判证据不可靠)', 'A person reviewed it and **kept** it (the evidence was judged unreliable)'),
 			reason: fact.review.reason ?? null,
 		})
+	}
+	for (const bound of Array.isArray(fact?.boundaries) ? fact.boundaries : []) {
+		events.push({ kind: 'fact/bounded', at: bound.at ?? null, summary: tr('检验落在适用范围之外:记下边界,事实保持成立', 'A test fell outside its scope: the boundary is recorded and the fact stays'), reason: bound.basis ?? null })
 	}
 	for (const item of evidence) events.push({ kind: 'evidence/recorded', at: item.at ?? null, summary: `${item.verdict}(${item.evaluator} · ${item.level})`, reason: item.basis ?? null })
 	return events.filter((event) => event.at !== null).sort((left, right) => left.at - right.at)
@@ -1840,6 +1928,10 @@ export function derive(state) {
 		if (ownIds.has(row.id)) {
 			const own = ownFacts.find((fact) => fact.id === row.id)
 			if (own.review === null && row.review !== null) own.review = row.review
+			own.calculation = row.calculation
+			own.rechecks = row.rechecks
+			own.evidence_records = row.evidence_records
+			own.challenges = row.challenges
 			continue
 		}
 		foreignFacts.push({ ...row, refuted: retestRefuted.has(row.id), foreign: true })
@@ -1854,8 +1946,20 @@ export function derive(state) {
 	 * 有它,这条事实就回到「待核验」:写进长期知识的东西遇到说不通的读数,不能照旧当已知用。
 	 */
 	const openAnomalies = (state.anomalies ?? []).filter((item) => item?.status === 'open')
-	const questionedBy = (id) => openAnomalies.filter((item) => (item.touches ?? []).includes(id)).map((item) => item.id)
-	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions), questioned: questionedBy(fact.id) }))
+	const durableAnomalies = Object.entries(state.workspace?.files ?? {}).filter(([path]) => classifyWorkspacePath(path)?.kind === 'negative').map(([path, file]) => negativeFromFile(file?.data, path)).filter((row) => row && row.review?.decision !== 'retracted' && ['unresolved', 'defect', 'escalated'].includes(row.status))
+	const questionedBy = (fact) => [
+		...openAnomalies.filter((item) => (item.touches ?? []).includes(fact.id)).map((item) => item.id),
+		...durableAnomalies.filter((row) => {
+			if (!(row.touches.length ? row.touches : row.source?.anomaly ? row.about : []).includes(fact.id)) return false
+			if (['out_of_scope', 'out_of_range'].includes(compareScope(fact.scope_spec, row.scope_spec).verdict)) return false
+			if (fact.review?.decision === 'kept' && (fact.review.at ?? 0) >= (row.at ?? 0)) return false
+			if ((fact.rechecks ?? []).some((reason) => reason.source === row.id && reason.status === 'resolved')) return false
+			return true
+		}).map((row) => row.id),
+	]
+	/** 引用过它的判断被推翻留下的疑问(`fact/questioned` 或文件上的 `challenges`),人复核之后的不再算。 */
+	const challengedBy = (fact) => (Array.isArray(fact.challenges) ? fact.challenges : []).filter((item) => fact.review === null || fact.review === undefined || (fact.review.at ?? 0) < (item.at ?? 0)).map((item) => `challenge:${item.hypothesis ?? '?'}`)
+	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions), questioned: [...questionedBy(fact), ...challengedBy(fact), ...(fact.rechecks ?? []).filter((reason) => reason.status === 'pending').map((reason) => `recheck:${reason.id}`)] }))
 
 	/**
 	 * **领域词汇的派生读数**(两条,都不新存东西):
@@ -1878,6 +1982,17 @@ export function derive(state) {
 		if (row !== null) lessonById.set(row.id, { ...lessonById.get(row.id), ...row, at: row.at ?? lessonById.get(row.id)?.at ?? null })
 	}
 	const lessonRows = [...lessonById.values()].filter((item) => item.status !== 'retracted').sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
+	/**
+	 * **负向条目行**(已排除、未解、缺陷):只从 `clear/knowledge/negatives/` 读——内核随发生随写,
+	 * 本会话的条目同步进来以后与别的会话的同样读法。人在文件上写 `review.decision: "retracted"` 的不再列出。新的在前。
+	 */
+	const negativeRows = []
+	for (const [path, file] of Object.entries(state.workspace?.files ?? {})) {
+		if (classifyWorkspacePath(path)?.kind !== 'negative' || file?.data === undefined) continue
+		const row = negativeFromFile(file.data, path)
+		if (row !== null && row.review?.decision !== 'retracted') negativeRows.push(row)
+	}
+	negativeRows.sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
 	const conflicts = deriveConflicts(factRows, lexicon)
 	const lexiconIssues = lexiconHealth(lexicon, factRows)
 	/**
@@ -1926,6 +2041,7 @@ export function derive(state) {
 		pendingAudit,
 		factRows,
 		lessonRows,
+		negativeRows,
 		settlement,
 		stepOf,
 		needYou,
@@ -1950,7 +2066,6 @@ const CANDIDATE_STATE = { credible: 'adopted', refuted: 'excluded', replaced: 's
  * 没写问题的目标就是一个问题(旧会话照样读得通);没指明归属的判断归第一个问题。
  * 候选的状态只从证据来(可信度分组的另一种读法),界面与卡读同一份。
  *
- * `untapped`:本体里带形状的「影响」关系,还没有任何候选由它提出——只列出,不强制。
  * `next.indistinct`:下一步给每个候选都写了预测,但预测全一样:这一步区分不了它们。
  */
 export function deriveExploration(state, hypotheses, lexicon, activePlan) {
@@ -2002,8 +2117,6 @@ export function deriveExploration(state, hypotheses, lexicon, activePlan) {
 		return { id: area.id, name: area.name, state, judgments: linked.length, verified: linked.filter((row) => row.state === 'adopted').length, openAnomalies: touched, questions: questionRows.filter((question) => question.area === area.id).map((question) => question.id) }
 	})
 	const current = questionRows.find((question) => question.status === 'open' && question.counts.examining > 0) ?? questionRows.find((question) => question.status === 'open') ?? null
-	const cited = new Set(mine.map((hypothesis) => hypothesis.from).filter((from) => typeof from === 'string'))
-	const untapped = (lexicon?.predicates ?? []).filter((predicate) => predicate.kind === 'affects' && typeof predicate.shape === 'string' && predicate.status !== 'deprecated' && !cited.has(predicate.id)).map((predicate) => ({ id: predicate.id, label: predicate.label || predicate.id, shape: predicate.shape }))
 	const first = steps.find((step) => step.status === 'open') ?? null
 	let next = null
 	if (first !== null) {
@@ -2016,7 +2129,7 @@ export function deriveExploration(state, hypotheses, lexicon, activePlan) {
 		const distinct = new Set(predictions.map((item) => item.expect.replace(/\s+/g, '')))
 		next = { step: first.id, ordinal: first.ordinal, do: first.do, serves: first.serves ?? null, expect: first.expect ?? null, predictions, indistinct: predictions.length >= 2 && distinct.size === 1 }
 	}
-	return { mode: goal.mode ?? null, questions: questionRows, areas: areaRows, current: current?.id ?? null, untapped, next, answers }
+	return { mode: goal.mode ?? null, questions: questionRows, areas: areaRows, current: current?.id ?? null, next, answers }
 }
 
 /**
@@ -2101,9 +2214,146 @@ function historyRows(state, hypothesis) {
 }
 
 /** 面板契约。浏览器读的就是这个,一字不改。 */
+/** 名称比对用的规整(与内核取用时同一条规则):去空白、短横、下划线,小写。 */
+const nameKey = (raw) =>
+	String(raw ?? '')
+		.replace(/[\s_-]+/g, '')
+		.toLowerCase()
+
+/** 适用范围的一行读法:条件、取值范围、补充说明。 */
+function scopeLine(spec) {
+	if (!isPlainObject(spec)) return null
+	const parts = []
+	for (const [key, value] of Object.entries(isPlainObject(spec.conditions) ? spec.conditions : {})) parts.push(`${key}=${Array.isArray(value) ? value.join('/') : String(value)}`)
+	for (const [key, range] of Object.entries(isPlainObject(spec.ranges) ? spec.ranges : {})) {
+		if (Array.isArray(range)) { parts.push(`${key} ${range[0]}–${range[1]}${spec.units?.[key] ? ` ${spec.units[key]}` : ''}`); continue }
+		if (!isPlainObject(range)) continue
+		const low = range.min ?? range.low ?? null
+		const high = range.max ?? range.high ?? null
+		parts.push(`${key} ${low ?? '…'}–${high ?? '…'}${range.unit ? ` ${range.unit}` : ''}`)
+	}
+	if (typeof spec.note === 'string' && spec.note.trim() !== '') parts.push(spec.note.trim())
+	return parts.length === 0 ? null : parts.join(';')
+}
+
+/**
+ * **沉淀下来的知识,按条目列一份**(本体货架的实体卡、图上的计数、探索货架的两节与结论卡的摘要读它)。
+ *
+ * 事实:已撤回的不列;有推翻证据、开着的疑问或口径已变的是「待核验」,其余「已确立」;收窄过范围的带 `boundaries`。
+ * 负向条目照文件上的状态;经验照种类。每条带 `about`,界面按实体的 id、名称与别名把条目挂到实体上。
+ */
+function knowledgeItems(state, derived) {
+	const items = []
+	const evidencePaths = (rows) => [...new Set(rows.flatMap((row) => typeof row === 'string' ? [] : [row.ref, ...(row.refs ?? []), ...(row.origins ?? []).map((origin) => origin.path)]).filter((path) => typeof path === 'string' && /[/.]/.test(path)))]
+	for (const fact of derived.factRows ?? []) {
+		if (fact?.review?.decision === 'retracted') continue
+		const pending = (fact.refuted === true && (fact.review === null || fact.review === undefined)) || (fact.questioned ?? []).length > 0 || (fact.definitionsChanged ?? []).length > 0
+		items.push({
+			id: fact.id,
+			kind: 'fact',
+			status: pending ? 'pending' : 'established',
+			text: fact.text ?? '',
+			about: Array.isArray(fact.about) ? fact.about : [],
+			scope: scopeLine(fact.scope_spec),
+			rechecks: (fact.rechecks ?? []).filter((row) => row.status === 'pending'),
+			evidence: fact.evidence ?? [],
+			evidencePaths: evidencePaths(fact.evidence_records ?? []),
+			definitionsChanged: fact.definitionsChanged ?? [],
+			recovery: '匹配范围的独立复检(retests)或人工明确裁决;其他未解决原因继续保留',
+			boundaries: (Array.isArray(fact.boundaries) ? fact.boundaries : []).map((bound) => ({ verdict: bound.verdict ?? null, basis: bound.basis ?? null })),
+			challenged: (fact.questioned ?? []).some((id) => String(id).startsWith('challenge:')),
+			level: fact.level ?? null,
+			goal: fact.goal ?? null,
+			path: fact.path ?? null,
+		})
+	}
+	for (const row of derived.negativeRows ?? []) {
+		items.push({
+			id: row.id,
+			kind: 'negative',
+			status: row.status,
+			text: row.statement,
+			about: row.about ?? [],
+			scope: scopeLine(row.scope_spec),
+			strength: row.strength ?? null,
+			basis: row.resolution?.reason ?? null,
+			evidencePaths: evidencePaths(row.evidence ?? []),
+			goal: row.source?.goal ?? null,
+			path: row.path ?? null,
+		})
+	}
+	for (const lesson of derived.lessonRows ?? []) {
+		items.push({ id: lesson.id, kind: 'lesson', status: lesson.kind ?? 'trap', text: lesson.text ?? '', about: Array.isArray(lesson.about) ? lesson.about : [], scope: lesson.boundary ?? scopeLine(lesson.scope_spec), evidencePaths: typeof lesson.evidence === 'string' && /[/.]/.test(lesson.evidence) ? [lesson.evidence] : [], goal: lesson.goal ?? null, path: lesson.path ?? null })
+	}
+	return items
+}
+
+/** 一条条目在实体上算哪一格计数(图上的小数字与实体卡的栏目同一套)。 */
+const COUNT_BUCKET = { established: 'established', pending: 'pending', excluded: 'excluded', preliminary_excluded: 'excluded', unresolved: 'unresolved', escalated: 'unresolved' }
+
+/** 实体图节点 → 挂在它上面的条目(按 id、名称、别名对 `about`)与各格计数。 */
+function entityKnowledge(state, graph, items) {
+	const aliasesOf = new Map((Array.isArray(state.entities) ? state.entities : []).map((entity) => [String(entity?.id ?? ''), Array.isArray(entity?.aliases) ? entity.aliases : []]))
+	const out = {}
+	for (const node of graph.nodes) {
+		if (node.layer !== 'entity' || node.kind !== 'instance') continue
+		const keys = new Set([node.ref, node.label, ...(aliasesOf.get(String(node.ref ?? '')) ?? [])].map(nameKey).filter((key) => key.length >= 2))
+		const ids = []
+		const counts = { established: 0, excluded: 0, bounded: 0, pending: 0, unresolved: 0 }
+		for (const item of items) {
+			if (!item.about.some((name) => keys.has(nameKey(name)))) continue
+			ids.push(`${item.kind}:${item.id}`)
+			const bucket = item.kind === 'lesson' ? null : COUNT_BUCKET[item.status]
+			if (bucket !== undefined && bucket !== null) counts[bucket] += 1
+			if (item.kind === 'fact' && item.boundaries.length > 0) counts.bounded += 1
+		}
+		if (ids.length > 0) out[node.id] = { items: ids, counts }
+	}
+	return out
+}
+
+/**
+ * 探索货架的两节与结论卡的摘要:
+ *   · `cited`——本次判断通过 `uses` 引用的条目与系统判定(不是「适用」的排前面);
+ *   · `settling`——本目标已写下的负向条目,加上结案时待独立核验的判断;
+ *   · `settled`——本目标已沉淀的条数(已确立 / 已排除 / 未解释 / 测量或方法缺陷 / 经验)。
+ */
+function knowledgeFlow(state, derived, items, promotedIds) {
+	const goalId = state.goal?.id ?? null
+	const byKey = new Map(items.map((item) => [item.id, item]))
+	const cited = new Map()
+	for (const hypothesis of derived.hypotheses ?? []) {
+		for (const use of Array.isArray(hypothesis.uses) ? hypothesis.uses : []) {
+			const key = `${use.id}|${use.verdict}`
+			if (!cited.has(key)) cited.set(key, { id: use.id, kind: use.kind ?? byKey.get(use.id)?.kind ?? null, verdict: use.verdict ?? 'unknown', text: byKey.get(use.id)?.text ?? null, path: byKey.get(use.id)?.path ?? null, by: [] })
+			cited.get(key).by.push(handleOf(hypothesis))
+		}
+	}
+	const citedRows = [...cited.values()].sort((left, right) => (left.verdict === 'applies' ? 1 : 0) - (right.verdict === 'applies' ? 1 : 0))
+	const mine = goalId === null ? [] : items.filter((item) => item.goal === goalId)
+	const awaiting = (derived.hypotheses ?? []).filter((hypothesis) => !promotedIds.has(hypothesis.id) && ['credible', 'pending'].includes(trustOf(hypothesis, false))).map((hypothesis) => ({ id: hypothesis.id, name: handleOf(hypothesis), claim: hypothesis.claim ?? '' }))
+	const count = (predicate) => mine.filter(predicate).length
+	return {
+		cited: citedRows,
+		settling: { negatives: mine.filter((item) => item.kind === 'negative'), awaiting },
+		settled:
+			goalId === null
+				? null
+				: {
+						established: count((item) => item.kind === 'fact' && item.status === 'established'),
+						excluded: count((item) => item.kind === 'negative' && (item.status === 'excluded' || item.status === 'preliminary_excluded')),
+						unresolved: count((item) => item.kind === 'negative' && (item.status === 'unresolved' || item.status === 'escalated')),
+						defects: count((item) => item.kind === 'negative' && item.status === 'defect'),
+						lessons: count((item) => item.kind === 'lesson'),
+					},
+	}
+}
+
 export function view(state, sessionId) {
 	const derived = derive(state)
 	const promotedIds = new Set((state.facts ?? []).map((fact) => fact?.hypothesis).filter((id) => typeof id === 'string'))
+	const items = knowledgeItems(state, derived)
+	const graph = graphProjection(state)
 	const plan = derived.activePlan ?? derived.closedPlans[derived.closedPlans.length - 1] ?? null
 	const sid = sessionId === undefined || sessionId === null ? (state.sessionId ?? null) : String(sessionId)
 	return {
@@ -2140,7 +2390,7 @@ export function view(state, sessionId) {
 			predicates: derived.lexicon.predicates,
 			conflicts: derived.conflicts,
 			health: derived.lexiconIssues,
-			graph: graphProjection(state),
+			graph,
 			/** 本体文件里的实体(带所在目录的容器)与跨文件问题:本体页的问题列表读它。 */
 			entities: Array.isArray(state.entities) ? state.entities : [],
 			problems: Array.isArray(state.ontologyProblems) ? state.ontologyProblems : [],
@@ -2150,6 +2400,14 @@ export function view(state, sessionId) {
 		 * 与卡片读的是同一份派生(判据只有一处:`deriveKnowledge`)。
 		 */
 		knowledge: derived.knowledge,
+		/**
+		 * **沉淀下来的知识**(事实、负向条目、经验,一条一行)与它们在实体上的挂法:
+		 * 实体卡与图上的计数读 `entityKnowledge`,探索货架的「引用的已有知识」「将沉淀的内容」
+		 * 与结论卡的「本次沉淀」读 `knowledgeFlow`。
+		 */
+		knowledgeItems: items,
+		entityKnowledge: entityKnowledge(state, graph, items),
+		knowledgeFlow: knowledgeFlow(state, derived, items, promotedIds),
 		/**
 		 * **单一叙述源**(`knowledge-view.js` 的 `knowledgeView`)。
 		 *
@@ -2194,6 +2452,8 @@ export function view(state, sessionId) {
 							refuteWhen: hypothesis.refute_when,
 							question: hypothesis.question ?? null,
 							from: hypothesis.from ?? null,
+							/** 引用的已有条目与系统当场的判定(`[{id, kind, verdict}]`)。 */
+							uses: Array.isArray(hypothesis.uses) ? hypothesis.uses : [],
 							status: hypothesis.status,
 							supportedLevel: hypothesis.supportedLevel,
 							refutations: hypothesis.refutations,

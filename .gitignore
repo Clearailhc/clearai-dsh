@@ -47,3 +47,5 @@ ui/vendor/
 .tmp-*/
 __pycache__/
 *.pyc
+
+/node_modules

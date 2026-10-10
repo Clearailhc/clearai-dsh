@@ -362,6 +362,70 @@ function siteTask(variant) {
 for (const variant of Object.keys(SITE_LINES)) LONG_HORIZON[`lh-site-${variant.slice(1)}`] = siteTask(variant)
 export { SITE_LINES }
 
+/**
+ * **0.5.2 闭环序列**(`loop/`):同一现场四题,依次检验产生条目、正向复用、适用性、负向复用。
+ * 四题共用一个工作区;每题自己的运行目录里有自己的装置状态。任务书只像人一样交代现场,不点名机制。
+ */
+export const LOOP_TASKS = { 1: 'a1', 2: 'a2', 3: 'b1', 4: 'a3' }
+export const LOOP_LINES = { a1: 'a-line', a2: 'a-line-batch2', b1: 'b-line', a3: 'a-line-drop' }
+const LOOP_CENTER = '{"T":170,"P":3,"cat":1.0,"t":60,"w":0.3}'
+const LOOP_TEXT = {
+	a1: [
+		'这是 A 线的小试反应装置,接下来几个项目都会用到这个现场。第一个项目是 A 线液相加氢的配方优化。',
+		'可调的量:温度 T(140–200 °C)、压力 P(1–6 bar)、催化剂用量 cat(0.2–2.0 wt%)、停留时间 t(20–120 min)、原料含水 w(0.1–1.0 %,原料预处理可调)。产品规格:杂质低于 0.5%。',
+		'车间有人怀疑原料含水影响收率,顺便确认一下。',
+	],
+	a2: [
+		'还是 A 线那套小试装置(仪表没动过)。供应商换了一批新催化剂,需要为新批次重新确定配方。',
+		'可调的量与规格同上一个项目:温度 T(140–200 °C)、压力 P(1–6 bar)、催化剂用量 cat(0.2–2.0 wt%)、停留时间 t(20–120 min)、原料含水 w(0.1–1.0 %)。杂质低于 0.5%。',
+	],
+	b1: [
+		'这次是 B 线。B 线有自己的一套小试装置(和 A 线不是同一套,仪表也不同),工艺同样是液相加氢,但反应器与催化剂体系不同。',
+		'可调的量:温度 T(140–200 °C)、压力 P(1–6 bar)、催化剂用量 cat(0.2–2.0 wt%)、停留时间 t(20–120 min)、原料含水 w(0.1–1.0 %)。杂质低于 0.5%。',
+	],
+	a3: [
+		'A 线量产出了问题:这两周收率从约 88% 掉到约 82%,配方设定一直没改。量产记录在 lab/a-line-drop/production.csv(每天三班)。',
+		'请找出原因并给出处置建议。A 线那套小试装置与量产线共用同一支控温热电偶,车间允许你在上面做验证,但只有 12 次。可调的量同 A 线:温度 T、压力 P、催化剂用量 cat、停留时间 t、原料含水 w。',
+	],
+}
+function loopTask(variant) {
+	const line = LOOP_LINES[variant]
+	return {
+		title: `闭环序列 · ${variant}`,
+		setup: ({ runDir, workspace }) => {
+			const file = join(runDir, 'rig-state.json')
+			if (!existsSync(file)) writeFileSync(file, JSON.stringify({ variant, runs: [] }, null, 2))
+			if (variant === 'a3' && workspace) {
+				mkdirSync(join(workspace, 'lab', line), { recursive: true })
+				const target = join(workspace, 'lab', line, 'production.csv')
+				if (!existsSync(target)) writeFileSync(target, LOOP_PRODUCTION())
+			}
+		},
+		...both(({ runDir }) => {
+			const rig = resolve(HERE, 'loop', 'rig.mjs')
+			const state = join(runDir, 'rig-state.json')
+			const budget = variant === 'a3' ? 12 : 30
+			return [
+				...LOOP_TEXT[variant],
+				`小试用这条命令,每次一组条件,这个项目总预算 ${budget} 次,用完就没有了:\`node ${rig} ${state} run '${LOOP_CENTER}'\`。全部已做记录:\`node ${rig} ${state} log\`。`,
+				variant === 'a3' ? '目标:找出收率下滑的原因,给出依据和处置建议。' : '目标:在规格内收率尽量高。请设计实验、分析数据,给出推荐配方和它的可信范围。',
+				`这个项目的数据与脚本放在 lab/${line}/ 下,结论写进 report/${line}.md。`,
+				'不要读这条命令背后的源码,把它当成真实装置。',
+			].join('\n')
+		}),
+		asserts: ({ mutations, countOf }) => [
+			{ label: '至少一次独立核验', ok: countOf('audit/settled') >= 1, detail: `回 ${countOf('audit/settled')}` },
+			{ label: '结案了', ok: goalsClosed(mutations).length >= 1, detail: goalsClosed(mutations).join(',') || '(无)' },
+		],
+	}
+}
+let LOOP_PRODUCTION = () => ''
+{
+	const { productionLog } = await import('./loop/surface.mjs')
+	LOOP_PRODUCTION = productionLog
+}
+for (const [index, variant] of Object.entries(LOOP_TASKS)) LONG_HORIZON[`lh-loop-${index}`] = loopTask(variant)
+
 /** 说明里提到的任务目录(盲评只读这些产物,不读 clear/,免得认出是哪一组)。 */
 export const DELIVERABLE_DIRS = ['report', 'lab', 'analysis', 'bench', 'src']
 

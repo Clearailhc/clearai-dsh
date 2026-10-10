@@ -292,6 +292,7 @@ Notes:
 - A step may carry an expectation (`expect`, landed with `plan/created` / `plan/amended`, or written before acting with `step/expected`). Where it misses, an unexplained item is recorded.
 - Unexplained items do not block concluding; at close (and at every independent evaluation) they go to the evaluator with the delivery, and the evaluator checks the reasons for ruling any out.
 - Each has one destination: a handled item cannot be handled again.
+- `explained` may carry `defect: true` (the explanation is a measurement or method defect). Every item, open or handled, is also written as a negative item in `clear/knowledge/negatives/` as it happens (unresolved / explained / ruled out / escalated / defect), together with judgments refuted by evidence (excluded, or preliminarily excluded after a single self-test); items the evaluator judged irrelevant (`matters=no`) are not written.
 
 ## 12c. Lessons (lesson) · implemented
 
@@ -339,6 +340,8 @@ ledger facts), so it appears in no state machine:
 | `fact/promoted` | §8 Fact | yes |
 | `human/released` | §3 Step (L4 release) | yes |
 | `fact/reviewed` | §8 Fact (human review: retract / keep) | yes |
+| `fact/bounded` | §8 Fact (a test outside its scope: boundary recorded, the fact stays) | yes |
+| `fact/questioned` | §8 Fact (a judgment that cited it was refuted within its scope: back to pending re-check, not retracted) | yes |
 | `ontology/term_added` | §10 Domain lexicon | yes |
 | `ontology/predicate_added` | §10 Domain lexicon | yes |
 | `ontology/term_revised` | §10 Domain lexicon | yes |

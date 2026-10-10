@@ -21,7 +21,7 @@ import { pathToFileURL } from 'node:url'
  * 部署落后于源就直接红,而不是让你以为测过了。
  */
 const SOURCE_DIR = join(import.meta.dirname, '..', 'ui', 'lib')
-const DEPLOYED_DIR = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib')
+const DEPLOYED_DIR = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', process.env.DSH_PROFILE ?? 'web', 'node_modules', 'clearai-dsh', 'lib')
 // 源名 → 包里名:打包时 `ui/lib/index.js` 成了 `lib/host.js`(见 tools/build-package.mjs)
 /**
  * 源名 → 包里名,以及在包里它还该带上什么。

@@ -203,7 +203,7 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 	const { apply } = await import(join(PORT, 'preset', 'plugins', 'clearai-kernel.js'))
 
 	const config = readKernelConfig(join(PORT, 'preset', 'agent.cordis.yml'))
-	check('配置读取:与预设同一份(连拦阈值、假设下限、机制贡献)', config.blockedThreshold === 2 && config.minHypotheses === 2 && config.contributions?.mechanisms?.goal === true && Array.isArray(config.auditToolFilter), JSON.stringify(config).slice(0, 160))
+	check('配置读取:与预设同一份(连拦阈值、假设下限、机制贡献)', config.blockedThreshold === 2 && config.minHypotheses === undefined && config.contributions?.mechanisms?.goal === true && Array.isArray(config.auditToolFilter), JSON.stringify(config).slice(0, 160))
 
 	const root = mkdtempSync(join(tmpdir(), 'clearai-sim-'))
 	const workspace = join(root, 'ws')

@@ -190,7 +190,7 @@ console.log('\n【⑤ 事实那一格:声明里的字段与名字,界面与内�
 	const fact = VERIFICATION_LOOP.objects.find((object) => object.name === 'fact')
 	check('fact 声明了边界(scope)与最近验证时间', fact.fields.some((field) => field.name === 'scope') && fact.fields.some((field) => field.name === 'last_verified'), fact.fields.map((field) => field.name).join(','))
 	// 声明里的字段必须在**落账那条路**上真出现:fact/promoted 带 scope
-	check('升格那一刻真的带上边界(内核 fact/promoted 里有 scope)', /t: 'fact\/promoted'[\s\S]{0,400}?scope:/.test(kernelSource))
+	check('升格那一刻真的带上适用范围(内核 fact/promoted 里有 scope)', /t: 'fact\/promoted'[\s\S]{0,400}?\bscope[,:]/.test(kernelSource))
 	const clientSource = readFileSync(join(PORT, 'ui', 'lib', 'client.js'), 'utf8')
 	const labelStart = clientSource.indexOf('const LOOP_LABEL = lazyTable(() => ({')
 	const labelBlock = clientSource.slice(labelStart, clientSource.indexOf('}))', labelStart))

@@ -26,6 +26,7 @@
 #
 # 跑法:bash test/run.sh [遍数]
 set -uo pipefail
+node --test test/audit-material.test.mjs test/native-accounting.test.mjs test/native-matrix.test.mjs test/native-world.test.mjs test/native-scoring.test.mjs test/native-campaign.test.mjs || exit 1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROUNDS="${1:-1}"
@@ -78,6 +79,9 @@ for round in $(seq 1 "$ROUNDS"); do
 	if [ -n "$host_line" ] && ! printf '%s\n' "$host_line" | grep -qa ',0 失败'; then
 		FAILED=1
 		printf '\n--- 宿主 ---\n%s\n' "$host"
+	elif [ -z "$host_line" ] && [ "${CLEARAI_REQUIRE_INSTALLED_TESTS:-0}" = 1 ]; then
+		FAILED=1
+		printf '%s\n' "$host"
 	elif [ -z "$host_line" ] && ! printf '%s\n' "$host" | grep -qa '跳过'; then
 		FAILED=1
 		printf '\n--- 宿主 ---\n%s\n' "$host"
@@ -85,6 +89,9 @@ for round in $(seq 1 "$ROUNDS"); do
 	if [ -n "$client_line" ] && ! printf '%s\n' "$client_line" | grep -qa ',0 失败'; then
 		FAILED=1
 		printf '\n--- 客户端 ---\n%s\n' "$client"
+	elif [ -z "$client_line" ] && [ "${CLEARAI_REQUIRE_INSTALLED_TESTS:-0}" = 1 ]; then
+		FAILED=1
+		printf '%s\n' "$client"
 	elif [ -z "$client_line" ] && ! printf '%s\n' "$client" | grep -qa '跳过'; then
 		FAILED=1
 		printf '\n--- 客户端 ---\n%s\n' "$client"

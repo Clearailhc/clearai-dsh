@@ -32,7 +32,7 @@ const check = (label, condition, detail = '') => {
 const SOURCE = join(import.meta.dirname, '..', 'ui', 'lib', 'client.js')
 const VENDOR = join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js')
 const VENDOR_FORCE = join(import.meta.dirname, '..', 'ui', 'vendor', 'force.js')
-const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib', 'client.js')
+const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', process.env.DSH_PROFILE ?? 'web', 'node_modules', 'clearai-dsh', 'lib', 'client.js')
 /**
  * **发出去的那一份 = vendor 行 + 主文件**(见 tools/build-package.mjs)。
  * 这里比的就是那个组合——不是「源里有一个文件」而已:xvflow 那一行如果没跟上,
@@ -746,6 +746,59 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		check('多个问题时按问题切换', answersText.includes('问题 1') && answersText.includes('问题 2'), answersText.slice(0, 120))
 		const atlasWithAnswers = react.render(components.Atlas({ useProjection: (key) => (key === 'clearai' ? exploring : undefined), sessionId: 's1', openPreview: () => {} })).replace(/\s+/g, ' ')
 		check('本体货架带出结论卡', atlasWithAnswers.includes('待您决策') && atlasWithAnswers.includes('选 A'), atlasWithAnswers.slice(0, 300))
+
+		/**
+		 * 0.5.2 沉淀与取用:用真的折法算投影(不手写),再渲染。
+		 * 实体卡按 id、名称与别名挂条目;探索货架列引用的已有知识(不适用的在前)与将沉淀的内容;
+		 * 结论卡底部一行本次沉淀;条目上的按钮只发一句话。
+		 */
+		{
+			const fold = await import('../ui/lib/fold.js')
+			let state = fold.emptyState()
+			state = fold.applyMutations(state, [
+				{ t: 'goal/set', id: 'g1', revision: 1, claim: '窑温漂移的原因', done_criteria: '找出原因', about: ['kiln_3'], hypotheses: [{ id: 'h-1', claim: '热电偶老化导致读数偏低', refute_when: '换新探头后偏差仍在', uses: [{ id: 'f-old', kind: 'fact', verdict: 'out_of_scope' }, { id: 'f-ok', kind: 'fact', verdict: 'applies' }] }] },
+				{ t: 'workspace/synced', changes: [
+					{ path: 'clear/ontology/concepts/kiln.json', data: { id: 'kiln', label: '窑', gloss: '烧成设备', kind: 'category', basis: 'lab' } },
+					{ path: 'clear/ontology/entities/kiln_3.json', data: { id: 'kiln_3', label: '3 号窑', type: 'kiln', basis: 'lab', provenance: { kind: 'named', ref: 'lab/log.json' }, aliases: ['三号窑'] } },
+					{ path: 'clear/knowledge/facts/f-old.json', data: { id: 'f-old', text: '3 号窑温度与产率正相关', about: ['kiln_3'], level: 'L3', scope_spec: { conditions: { line: 'A' } }, boundaries: [{ verdict: 'out_of_scope', basis: 'B 线不成立' }] } },
+					{ path: 'clear/knowledge/facts/f-ok.json', data: { id: 'f-ok', text: '窑压稳定在 1 atm', about: ['other'], level: 'L3' } },
+					{ path: 'clear/knowledge/negatives/x-h-9.json', data: { id: 'x-h-9', kind: 'excluded', status: 'preliminary_excluded', statement: '原料湿度导致漂移', about: ['三号窑'], strength: { count: 1, independent: 0, preliminary: true }, source: { goal: 'g1' } } },
+					{ path: 'clear/knowledge/negatives/n-a1.json', data: { id: 'n-a1', kind: 'unresolved', status: 'unresolved', statement: '夜班读数跳变', about: ['kiln_3'], source: { goal: 'g1' } } },
+				] },
+			])
+			const real = fold.view(state, 's1')
+			const node = real.lexicon.graph.nodes.find((item) => item.ref === 'kiln_3')
+			check('投影:实体按 id 与别名挂上条目,计数分格', node !== undefined && JSON.stringify(real.entityKnowledge[node.id]?.counts) === JSON.stringify({ established: 1, excluded: 1, bounded: 1, pending: 0, unresolved: 1 }), JSON.stringify(real.entityKnowledge))
+			check('投影:引用的已有知识里不适用的排在前面', real.knowledgeFlow.cited.map((item) => item.verdict).join(',') === 'out_of_scope,applies', JSON.stringify(real.knowledgeFlow.cited))
+			check('投影:本次沉淀按本目标计数', JSON.stringify(real.knowledgeFlow.settled) === JSON.stringify({ established: 0, excluded: 1, unresolved: 1, defects: 0, lessons: 0 }), JSON.stringify(real.knowledgeFlow.settled))
+			const asked = []
+			const sentKeys = []
+			const card = components.EntityCard({ node, data: real, send: (text) => (asked.push(text), true), sent: {}, onSent: (key, kind) => sentKeys.push([key, kind]) })
+			const cardText = react.render(card).replace(/\s+/g, ' ')
+			check('实体卡:条目上的请求按钮默认收起(点条目才出现)', findButtons(card).length === 0 && !cardText.includes('请求复检'), cardText)
+			/** 展开态:把组件里的 `useState(false)` 换成 true(与上面「过程记录」展开同一个办法)。 */
+			const openCard = (() => {
+				const realState = react.useState
+				react.useState = (initial) => [initial === false ? true : initial, () => {}]
+				try {
+					return { text: react.render(card).replace(/\s+/g, ' '), buttons: findButtons(card) }
+				} finally {
+					react.useState = realState
+				}
+			})()
+			const sections = ['已确立的事实', '已排除', '适用边界', '未解释的现象'].map((word) => cardText.indexOf(word))
+			check('实体卡按栏目依次列出,空栏不出现', sections.every((at) => at >= 0) && sections.every((at, index) => index === 0 || at > sections[index - 1]) && !cardText.includes('测量与口径') && !cardText.includes('经验('), cardText)
+			check('实体卡:初步排除折叠在单独一行,适用边界写明理由,范围可读', cardText.includes('初步排除(1)') && cardText.includes('B 线不成立') && cardText.includes('line=A'), cardText)
+			check('实体卡不摆内部编号', !/f-old|x-h-9|n-a1/.test(cardText.replace(/clear\/knowledge\/\S+/g, '')), cardText)
+			openCard.buttons.find((button) => String(button.children).includes('请求复检'))?.props.onClick()
+			check('「请求复检」只发一句话(带条目原文与文件路径)', asked.length === 1 && asked[0].includes('3 号窑温度与产率正相关') && asked[0].includes('clear/knowledge/facts/f-old.json') && sentKeys[0]?.[1] === 'sent', JSON.stringify([asked, sentKeys]))
+			const flowText = react.render(components.KnowledgeFlowBox({ data: real })).replace(/\s+/g, ' ')
+			check('探索货架:引用的已有知识带判定与后续处理', flowText.includes('引用的已有知识(2)') && flowText.includes('超出适用范围') && flowText.includes('本次不能直接沿用,需重新检验') && flowText.includes('引用者:热电偶老化导致读数偏低'), flowText)
+			check('探索货架:将沉淀的内容列出已写入的负向条目', flowText.includes('将沉淀的内容') && flowText.includes('原料湿度导致漂移') && flowText.includes('夜班读数跳变'), flowText)
+			const settledText = react.render(components.SettledLine({ data: real })).replace(/\s+/g, ' ')
+			check('结论卡底部:本次沉淀', settledText.includes('本次沉淀') && settledText.includes('已排除 1 条') && settledText.includes('未解释 1 项') && !settledText.includes('已确立 0'), settledText)
+			check('图上实体旁的计数只列非零格', react.render(components.CountMarks({ counts: real.entityKnowledge[node.id].counts })).replace(/\D/g, '') === '1111')
+		}
 		const chipText = (projection) => react.render(components.PlanChip({ useProjection: () => projection })).replace(/\s+/g, ' ')
 		check('计划芯片:求解时写「问题 i/n · 待检验假设 k 个」', chipText(exploring).includes('问题 1/2 · 待检验假设 2 个'), chipText(exploring))
 		const surveying = { ...exploring, exploration: { ...exploring.exploration, mode: 'survey', areas: [{ id: 'a1', name: '工艺', state: 'clear', judgments: 2, verified: 1, openAnomalies: 0 }, { id: 'a2', name: '原料', state: 'in_progress', judgments: 1, verified: 0, openAnomalies: 1 }] } }

@@ -20,6 +20,7 @@
  */
 import { graphProjection } from './domain-language.js'
 import { bilingual, tr } from './lang.js'
+import { scopeText } from './scope.js'
 
 /** 卡文本上限。模型每一步只读这一张卡,而卡是**每回合**重算的:它必须小到能进预算。 */
 const CARD_LIMIT = 3000
@@ -338,7 +339,7 @@ export function readingOf(hypothesis) {
 /** 步骤状态的人话。 */
 const STEP_WORD = bilingual({ open: ['待做', 'to do'], advanced: ['已交付', 'delivered'], void: ['已作废', 'voided'] })
 
-/** 一条事实在卡上的一行:原话、边界、等级;来自别的会话的标出来。 */
+/** 一条事实在卡上的一行:原话、适用范围、等级;来自别的会话的标出来。 */
 /** 有开着的未解释项点名这条事实:它回到「待核验」,直到那些未解释项有了去处。 */
 function questionedNote(fact, language) {
 	const ids = Array.isArray(fact?.questioned) ? fact.questioned : []
@@ -347,10 +348,10 @@ function questionedNote(fact, language) {
 }
 
 function factLine(fact) {
-	const scope = oneLine(fact?.scope ?? '')
+	const scope = oneLine(tr(scopeText(fact?.scope_spec, 'zh'), scopeText(fact?.scope_spec, 'en')) || fact?.scope || '')
 	return tr(
-		`  · 「${clamp(fact?.text, 100)}」${scope === '' ? '' : ` — 边界:${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}${questionedNote(fact, 'zh')}`,
-		`  · "${clamp(fact?.text, 100)}"${scope === '' ? '' : ` — boundary: ${clamp(scope, 80)}`}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}${questionedNote(fact, 'en')}`,
+		`  · 「${clamp(fact?.text, 100)}」 — 适用范围:${scope === '' ? '未声明' : clamp(scope, 80)}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · 以前的会话' : ''}${questionedNote(fact, 'zh')}`,
+		`  · "${clamp(fact?.text, 100)}" — scope: ${scope === '' ? 'not declared' : clamp(scope, 80)}${fact?.level ? ` · ${fact.level}` : ''}${fact?.foreign === true ? ' · earlier session' : ''}${questionedNote(fact, 'en')}`,
 	)
 }
 
@@ -443,12 +444,6 @@ function cardLines(state, derived, options, view) {
 				const status = question.status === 'answered' ? tr('已作答', 'answered') : question.status === 'emergent' ? tr('新发现,待人决定是否立为问题', 'newly found, awaiting a decision') : question.status === 'parked' ? tr('暂缓', 'parked') : counts.length > 0 ? tr(`候选假设 ${counts.join(' / ')}`, `candidates ${counts.join(' / ')}`) : tr('还没有候选假设', 'no candidates yet')
 				push(`  ${question.id === exploration.current ? '▸' : '·'} ${question.id}「${clamp(question.text, 60)}」${status}`, question.id === exploration.current ? 0 : 1)
 			}
-		}
-		/** 本体里带形状、还没有候选由它提出的影响关系:只列出,不强制(不为竞争而竞争)。 */
-		const untapped = Array.isArray(exploration.untapped) ? exploration.untapped : []
-		if (untapped.length > 0) {
-			const SHAPE = { increasing: tr('单调升', 'increasing'), decreasing: tr('单调降', 'decreasing'), peak: tr('有峰', 'has a peak'), threshold: tr('有阈值', 'has a threshold'), coupled: tr('耦合', 'coupled') }
-			push(tr(`- 本体中尚无候选假设引用的影响关系:${untapped.slice(0, 5).map((item) => `${item.label}(${SHAPE[item.shape] ?? item.shape})`).join('、')}——若它们可能改变结论,可据此提出候选(\`from\` 写关系 id)`, `- Affects relations in the ontology no candidate cites yet: ${untapped.slice(0, 5).map((item) => `${item.label} (${SHAPE[item.shape] ?? item.shape})`).join(', ')}; if they could change the conclusion, propose candidates from them (\`from\` = the relation id)`), 1)
 		}
 	}
 	if (plan === null) {

@@ -271,6 +271,7 @@ stateDiagram-v2
 - 步骤可以带预期（`expect`，`plan/created` / `plan/amended` 一起落，或动手前用 `step/expected` 补写）。预期落空的地方记成未解释项。
 - 未解释项不阻塞结案；结案（以及每次独立评估）时随交付交给评估者，排除的理由由评估者核。
 - 去处只有一个：处理过的不能再处理。
+- `explained` 可以带 `defect: true`（解释是测量或方法缺陷）。每一条（开着的或已处理的）同时随发生写成 `clear/knowledge/negatives/` 下的负向条目（未解 / 已解释 / 写明理由排除 / 交给人 / 缺陷），被证据推翻的判断也写成已排除条目（只有一次自行检验的为初步排除）；评估者判为不影响结论（`matters=no`）的不写。
 
 ## 12c. 经验（lesson）· 已实现
 
@@ -317,6 +318,8 @@ stateDiagram-v2
 | `fact/promoted` | §8 事实 | 是 |
 | `human/released` | §3 步骤（L4 放行） | 是 |
 | `fact/reviewed` | §8 事实(人审查后撤回 / 维持) | 是 |
+| `fact/bounded` | §8 事实(检验落在适用范围之外:记下边界,事实保持成立) | 是 |
+| `fact/questioned` | §8 事实(引用它的判断在其范围内被推翻:回到待核验,不撤回) | 是 |
 | `ontology/term_added` | §10 领域词汇 | 是 |
 | `ontology/predicate_added` | §10 领域词汇 | 是 |
 | `ontology/term_revised` | §10 领域词汇 | 是 |
