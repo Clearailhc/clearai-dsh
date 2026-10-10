@@ -48,7 +48,7 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 | Component | Criterion | Check | Passing line |
 |---|---|---|---|
-| Plan chip | Shows exploration progress ("Question i/n · hypotheses to test: k" or "Areas x/y", falling back to step counts when there are no questions or areas); changes colour and carries "to handle N" when something needs a person; one click opens Explore | client suite + text budget | green · ≤ 40 chars |
+| Native todo | Mirrors actual ClearAI plan progress through native `todo/write`; no obsolete plan chip; void steps excluded; restores after turn start | native-todos suite + real UI | green |
 | Continuation | Driven by the native goal; ClearAI has no continuation window and no autonomy toggle; when a person is needed the native goal is set to blocked with the reason | kernel suite (native goal guard, blocking) | green |
 
 ## 5 · Human gates and jumps

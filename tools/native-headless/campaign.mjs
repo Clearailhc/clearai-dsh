@@ -3,6 +3,7 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync, copyFileSync, cpSyn
 import { join, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 import { runNative } from './run.mjs'
+import { DIAGNOSTIC_SCHEMA, diagnosticSessions, diagnosticRun, EXPERIMENT_AUTHORIZATION } from './diagnostic-protocol.mjs'
 import { sessions, BUDGETS, assertGates, stopReasons } from './matrix.mjs'
 import { sequenceWorld, sequenceService, sequenceTask } from './sequence.mjs'
 import { makeWorld, experimentService, score } from './world.mjs'
@@ -21,7 +22,7 @@ export function prepareSubmission(workspace,task) {
 export function verifyFrozen(manifest,home) {
  const installation=JSON.parse(readFileSync(join(home,'installation.json')))
  if(manifest.candidate.sha256!==installation.packageDigest||sha(manifest.candidate.path)!==manifest.candidate.sha256)throw new Error('Frozen candidate is not installed or tarball changed')
- if(JSON.stringify(manifest.sessions)!==JSON.stringify(sessions()))throw new Error('Registered matrix changed')
+ if(JSON.stringify(manifest.sessions)!==JSON.stringify(manifest.schema===DIAGNOSTIC_SCHEMA?diagnosticSessions():sessions()))throw new Error('Registered matrix changed')
  for(const asset of manifest.assets)if(sha(resolve(assets,'../..',asset.path))!==asset.sha256)throw new Error('Frozen asset changed: '+asset.path)
  return installation
 }
@@ -32,9 +33,11 @@ export function infrastructureRetryEligible(result) {
 export async function runStage({home,profile,root,manifest,gates,stage,previous}) {
  root=resolve(root);home=resolve(home);mkdirSync(root,{recursive:true})
  const installation=verifyFrozen(manifest,home)
- if(stage!=='smoke')assertGates(gates)
+ const diagnostic=diagnosticRun(manifest,stage)
+ if(diagnostic) { /* User explicitly requested a separate diagnostic run without smoke acceptance. */ }
+ else if(stage!=='smoke')assertGates(gates)
  else for(const gate of ['suites','package','windows-node24-audit','native-lifecycle','native-ui','preset-and-model','isolation-probes'])if(gates[gate]?.passed!==true||!gates[gate].evidence)throw new Error('Smoke gate missing: '+gate)
- if(!['smoke','development','formal','supplemental','ablation'].includes(stage))throw new Error('Unknown stage')
+ if(!['smoke','development','formal','supplemental','ablation','diagnostic'].includes(stage))throw new Error('Unknown stage')
  const predecessor={formal:'development',supplemental:'formal',ablation:'supplemental'}[stage]
  if(predecessor&&(previous?.passed!==true||previous.stage!==predecessor||previous.candidateDigest!==installation.packageDigest))throw new Error('Previous stage must pass for the same candidate')
  if(existsSync(join(root,stage+'-results.json'))||existsSync(join(root,stage+'-stopped.json')))throw new Error('Preserve prior stage evidence')
@@ -61,7 +64,7 @@ export async function runStage({home,profile,root,manifest,gates,stage,previous}
   for(let attempt=0;attempt<2;attempt++) {
   let world,service,task,submission
   if(/^t[1-4]$/.test(row.task)) {
-   world=sequenceWorld(key,row.world);service=await sequenceService(world,row.task);task=sequenceTask(row.task)
+   world=sequenceWorld(key,row.world);service=await sequenceService(world,row.task);task=sequenceTask(row.task)+(diagnostic?'\n'+EXPERIMENT_AUTHORIZATION+'\n本题原始读数请写入 lab/'+row.task+'/，本题是连续现场任务的 '+row.task+'。':'')
    if(row.task==='t4')writeFileSync(join(workspace,'production.json'),JSON.stringify(world.production(),null,2))
   } else if(row.task==='direct') {
    task='根据给定材料:甲17件,每件23元。计算总金额，写 submission.json 为 {"amount":数值,"unit":"元"}，简短回复。使用默认模式。'
@@ -112,7 +115,9 @@ export async function runStage({home,profile,root,manifest,gates,stage,previous}
  }
  const formal=stage==='ablation'?JSON.parse(readFileSync(join(root,'formal-results.json'))):undefined
  if(formal&&formal.candidateDigest!==installation.packageDigest)throw new Error('Ablation baseline candidate mismatch')
- const acceptance=stageAcceptance({stage,runs,scores,formal}),blindRuns=scores.flatMap(row=>row.blind?.judges??[])
+ const assessment=stageAcceptance({stage:diagnostic?'development':stage,runs,scores,formal})
+ const acceptance=diagnostic?{stage,status:'completed',passed:runs.every(row=>row.result.reason==='completed'),productAcceptance:false,criteriaAssessment:assessment}:assessment
+ const blindRuns=scores.flatMap(row=>row.blind?.judges??[])
  const costs={mainProcessed:runs.reduce((n,row)=>n+(row.result.usage.processed??0),0),infrastructureRetryProcessed:extraRuns.reduce((n,row)=>n+(row.result.usage.processed??0),0),blindProcessed:blindRuns.reduce((n,row)=>n+row.result.usage.processed,0),blindSessions:blindRuns.length}
  const output={candidateDigest:installation.packageDigest,stage,runs,scores,extraRuns,costs,...acceptance}
  atomic(join(root,stage+'-results.json'),output)

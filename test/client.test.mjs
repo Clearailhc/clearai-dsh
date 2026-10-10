@@ -250,7 +250,7 @@ console.log('\n【客户端接线:注册在哪个插座、钥匙是什么】')
 	check('右栏不再注册页签(世界树并入探索货架)', host.tabDefinitions.length === 0 && seat('sidebar.right.pane.tab').length === 0, JSON.stringify(host.tabDefinitions.map((definition) => definition.kind)))
 	const views = seat('conversation.view').map((entry) => entry.options)
 	check('中栏两格:探索在本体之前', views.length === 2 && views[0].id === 'clearai-explore' && views[1].id === 'clearai-facts' && views[0].order < views[1].order, JSON.stringify(views.map((view) => [view.id, view.order])))
-	check('注册前先 inject 了插座(不硬塞)', host.injections.includes('conversation.view') && host.injections.includes('conversation.input.plan'), host.injections.join(','))
+	check('注册前先 inject 了插座(不硬塞)', host.injections.includes('conversation.view') && !host.injections.includes('conversation.input.plan'), host.injections.join(','))
 	{
 		// 我们自己的标记仍然在(留给面板自己的位置用):画面要对 —— 开口的 c + 一颗事实点。
 		const mark = bundle.exports.__components?.ClearAIMark
@@ -799,10 +799,6 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('结论卡底部:本次沉淀', settledText.includes('本次沉淀') && settledText.includes('已排除 1 条') && settledText.includes('未解释 1 项') && !settledText.includes('已确立 0'), settledText)
 			check('图上实体旁的计数只列非零格', react.render(components.CountMarks({ counts: real.entityKnowledge[node.id].counts })).replace(/\D/g, '') === '1111')
 		}
-		const chipText = (projection) => react.render(components.PlanChip({ useProjection: () => projection })).replace(/\s+/g, ' ')
-		check('计划芯片:求解时写「问题 i/n · 待检验假设 k 个」', chipText(exploring).includes('问题 1/2 · 待检验假设 2 个'), chipText(exploring))
-		const surveying = { ...exploring, exploration: { ...exploring.exploration, mode: 'survey', areas: [{ id: 'a1', name: '工艺', state: 'clear', judgments: 2, verified: 1, openAnomalies: 0 }, { id: 'a2', name: '原料', state: 'in_progress', judgments: 1, verified: 0, openAnomalies: 1 }] } }
-		check('计划芯片:调研时写「板块 已厘清/总数」与待您决定的问题数', chipText(surveying).includes('板块 1/2 · 1 个问题待您决定'), chipText(surveying))
 
 		const props = bundle.exports.__propositions
 		const rows = props.conclusionsOf(atlasView)
@@ -1003,59 +999,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	 * §35:输入框下那条删了 ⇒ 唯一可点的那件事(「待处理 N」)现在在**工具行的计划 chip** 上,
 	 * 而且**只多说一句**(人门优先,没有门才说续跑停着的理由)。
 	 */
-	const chipWithGate = text(components.PlanChip)
-	check('计划 chip 上写着「待处理 N」(人门计数,一点直达世界树)', /待处理 1/.test(chipWithGate) && /\d+\/\d+/.test(chipWithGate), chipWithGate.slice(0, 90))
-
-	/**
-	 * §17.3 计划面坐在原生 plan 座位上,而状态条只说**平台说不出的那句话**。
-	 * 这条分工是设计的一部分,不是排版偏好:同一个事实说两遍,人就得自己判断哪一份是真的。
-	 * 分工——芯片:计划的进度与它自己的状态;dock:窗口的相位与轮数;状态条:门、运行态、**为什么停**。
-	 */
-	const chip = text(components.PlanChip)
-	/**
-	 * §18.3 空间账:工具行是要抢地盘的地方(实测我们那两格占了整行 533px 里的 150px),
-	 * 所以计划这一格压成 **一个图形 + 一个符号**,内部 id 与那句话退到 tooltip。
-	 */
-	check(
-		'计划芯片:一格只放一个符号(进度);等人时**最多**再放一句「为什么在等人」',
-		/^\d+\/\d+(待处理 \d+)?$/.test(String(chip).trim()),
-		String(chip).trim().slice(0, 60),
-	)
-	check('计划芯片:进度只在芯片上说(§35 之后没有第二条状态行可重复它)', !/步骤 \d+\/\d+/.test(chipWithGate), chipWithGate.slice(0, 140))
-	/**
-	 * §35 之后没有"输入框下那条"了 ⇒「当前第几步」由**世界树**(行高亮与详情)与
-	 * 计划 chip 的 `N/M` 说;这里钉住的是:那两处都不许把内部步 id(`s2`)摆到界面上。
-	 */
-	check(
-		'内部步 id 不上界面(树行与 chip 都只用序号)',
-		!/\bs2\b/.test(chipWithGate) && !/\bs2\b/.test(text(components.WorldTree)),
-		chipWithGate.slice(0, 80),
-	)
-	check('计划芯片:没有计划时渲染空(座位保持空着,而不是一个「什么都没有」的假控件)', render(components.PlanChip, { useProjection: () => ({ ...view, plan: null }) }) === '')
-	/**
-	 * 符号**恒定是进度**(形状稳定才学得会):要人注意不在符号上换字,而是换颜色。
-	 * 「待处理 N」由输入框下那条说——那才是事实面该管的事。
-	 */
-	check(
-		'计划芯片:符号恒定是进度,要人注意时用琥珀色(与世界树同一族令牌)',
-		text(components.PlanChip, { useProjection: () => ({ ...view, plan: { ...view.plan, confirmationPending: true } }) }).replace(/待处理\s*\d+/, '') === '1/3' &&
-			/color-warning/.test(String(components.PlanChip({ useProjection: () => ({ ...view, plan: { ...view.plan, confirmationPending: true } }) }).props.style?.color ?? '')) &&
-			/color-warning/.test(String(components.PlanChip({ useProjection: () => ({ ...view, plan: { ...view.plan, blocked: { reason: 'x' } } }) }).props.style?.color ?? '')) &&
-			// 有「待处理」时**也该**是琥珀 ⇒ 这条要用"门都关着"的 fixture 才是未染色的情形
-			components.PlanChip({ useProjection: () => ({ ...view, needYou: [] }), useSessions, sessionId: 's1' }).props.style === undefined &&
-			/color-warning/.test(String(components.PlanChip({ useProjection, useSessions, sessionId: 's1' }).props.style?.color ?? '')),
-	)
-	check(
-		'计划芯片:内部 id 与计划自己那句话退到 tooltip(鼠标停上去看得到)',
-		String(components.PlanChip({ useProjection, useSessions, sessionId: 's1', openRail: () => {} }).props.title).includes('p-1'),
-	)
-	const rails = []
-	// 计划那一格是工具行形态的按钮(无边框、次级文字色),点一下开世界树。
-	const chipButton = components.PlanChip({ useProjection, useSessions, sessionId: 's1', openExplore: () => rails.push('clearai-explore') })
-	check('计划芯片是工具行形态的按钮(不是自造药丸)', chipButton.type === 'button' && chipButton.props.className === 'clearai-toolctl', String(chipButton.props.className))
-	chipButton.props.onClick()
-	check('计划芯片点一下打开探索货架(界面不造第二个动词)', rails.includes('clearai-explore'), rails.join(','))
-	check('计划芯片在输入被锁时按不动(不抢原生 composer 的锁语义)', components.PlanChip({ useProjection, useSessions, sessionId: 's1', locked: true, openRail: () => {} }).props.disabled === true)
+	check('删除失效的计划芯片组件,进度交还原生todo', components.PlanChip === undefined)
 
 	/**
 	 * 续跑窗口的那句话:平台 dock 会说「已暂停」但说不出**为什么**;
@@ -1080,9 +1024,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	 * 而"要不要人"由门表达(计划待确认 / 等裁决 / 有人在等)。
 	 */
 	{
-		const tierView = { ...view, autonomy: { value: 'attended', preset: 'attended', source: 'preset', override: null } }
-		const chipText = react.render(components.PlanChip({ useProjection: () => tierView, useSessions, sessionId: 's1', openRail: () => {} })).replace(/\s+/g, ' ')
-		check('§35:输入框下那一条已删 ⇒ 计划 chip 上不出现档位词', !/多问我|自己拿主意|档:/.test(chipText), chipText.slice(0, 120))
+
 		check(
 			'组件面里没有档位开关了(删掉的能力不许在缝上留名字)',
 			components.TierControl === undefined,
@@ -1163,7 +1105,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	// TreeDetail / NeedYou 要一份选中行与门数据才渲染(它们在树里由选中驱动),不属于顶层空态。
 	check(
 		'空视图下这些组件都不炸',
-		['PlanChip', 'WorldTree', 'Atlas'].every((name) => typeof emptyText(components[name]) === 'string'),
+		['WorldTree', 'Atlas'].every((name) => typeof emptyText(components[name]) === 'string'),
 	)
 	// 预览走原生:断言接线用的就是这个契约(拿不到服务就如实说不打不开,不假装打开)
 	{
@@ -1438,8 +1380,8 @@ console.log('\n【预设定界:不是 ClearAI 的会话里一个都不注册】'
 	 */
 	const planSeat = host.registrations.find((entry) => entry.options.name === 'conversation.input.plan')
 	check(
-		'计划面坐在原生 plan 座位上,且用更低的 priority 才遮蔽得住(single 座位同 priority 会抛错)',
-		planSeat !== undefined && typeof planSeat.options.priority === 'number' && planSeat.options.priority < 0,
+		'不再遮蔽原生plan座位或注册失效跳转',
+		planSeat === undefined,
 		JSON.stringify(planSeat?.options ?? null),
 	)
 	host.flipPreset('standard')

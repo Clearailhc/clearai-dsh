@@ -309,14 +309,7 @@ export const INVARIANTS = [
 		},
 	},
 	{
-		/**
-		 * **升格与证据等级自洽**。升格只在 `Conclude` 发生,条件是「支持等级 ≥ promote_at_level
-		 * 且没有被推翻」。所以「没升格」有两种成因:门槛没到(对)与门槛到了却没升(错)——
-		 * 这一条把两者分开:没到级就必须一条都不升,到了级就必须至少升一条。
-		 *
-		 * 已知边界:若达级的那条支持证据所对应的假设**同时**有推翻记录,内核不会升格,
-		 * 而这里会误报。剧本目前不构造这种组合;真撞上再细化判据,而不是放宽它。
-		 */
+
 		label: '升格与证据等级自洽(没到级不升格,到了级必须升格)',
 		run: ({ mutations }) => {
 			const RANK = { L0: 0, L1: 1, L2: 2, L3: 3, L4: 4 }
@@ -330,14 +323,15 @@ export const INVARIANTS = [
 			const reached = best >= RANK[threshold]
 			const bestLabel = Object.keys(RANK).find((key) => RANK[key] === best) ?? '无'
 			const detail = `promote_at_level=${threshold} 最高支持证据=${bestLabel} 升格=${promoted}${reached ? '(到级了)' : '(没到级)'}${closed ? '' : ' · 目标未结案'}`
-			/**
-			 * **升格发生在 `Conclude` 那一刻**。所以目标还开着时,「到级了却没升格」是**正常的**
-			 * (还没到升格那一步),不能判违规——只判反方向:没到级就绝不该有升格。
-			 */
-			if (!closed) return { ok: promoted === 0, detail }
-			/** 如实放弃的目标不走验收,也就不升格:到没到级都必须一条不升。 */
-			const abandoned = mutations.some((m) => m.t === 'goal/closed' && m.status === 'abandoned')
-			if (abandoned) return { ok: promoted === 0, detail: `${detail} · 目标放弃` }
+			// Open or abandoned goals may retain independently verified partial facts.
+			const validPartial = mutations.filter(m => m.t === 'fact/promoted').every(fact => {
+				const before = mutations.slice(0, mutations.indexOf(fact))
+				return fact.assertions?.length > 0 && before.some(e => e.t === 'evidence/recorded' && e.hypothesis === fact.hypothesis && e.verdict === 'support' && e.evaluator === 'independent' && (RANK[e.level] ?? -1) >= Math.max(3, RANK[threshold]) && fact.evidence?.includes(e.id))
+			})
+			if (!closed) return { ok: validPartial, detail }
+			const abandoned = mutations.some(m => m.t === 'goal/closed' && m.status === 'abandoned')
+			if (abandoned) return { ok: validPartial, detail: `${detail} · 目标放弃` }
+
 			return { ok: reached ? promoted >= 1 : promoted === 0, detail }
 		},
 	},

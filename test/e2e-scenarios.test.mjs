@@ -151,13 +151,18 @@ console.log('\n【③b 升格与证据等级自洽:两边都要抓】')
 	const amendedSingle = [...HEALTHY, { t: 'plan/amended', step: { id: 'verify-inventory-v2', artifacts: [] } }, { t: 'evidence/recorded', step: 'verify-inventory-v2', verdict: 'support' }]
 	check('证据挂在 RevisePlan(add)补的步上 ⇒ 放过', evidenceOnAmendedStep.run(contextOf(amendedSingle)).ok === true, JSON.stringify(evidenceOnAmendedStep.run(contextOf(amendedSingle)).detail))
 
-	// 目标未结案时,「到级了没升格」不该判违规(升格只发生在 Conclude 那一刻)。
+	// 目标未结案时允许保留独立核验的阶段事实,也允许因未决异常暂缓升格。
 	const openGoal = contextOf([
 		...HEALTHY.filter((m) => m.t !== 'goal/closed'),
 		{ t: 'goal/set', id: 'g1', promote_at_level: 'L2' },
 		{ t: 'evidence/recorded', step: 's1', level: 'L2', verdict: 'support' },
 	])
 	check('目标未结案 ⇒ 不要求升格(只判「没到级不许升格」)', promotion.run(openGoal).ok === true, JSON.stringify(promotion.run(openGoal).detail))
+ const partial = [...openGoal.mutations,{t:'evidence/recorded',id:'e-part',hypothesis:'h1',level:'L3',verdict:'support',evaluator:'independent'},{t:'fact/promoted',hypothesis:'h1',evidence:['e-part'],assertions:[{predicate:'reading'}]}]
+ check('目标开放时允许独立证据支持的阶段事实',promotion.run(contextOf(partial)).ok===true)
+ check('阶段事实不能借用另一条假设的证据',promotion.run(contextOf(partial.map(m=>m.t==='fact/promoted'?{...m,hypothesis:'h2'}:m))).ok===false)
+ check('放弃目标仍保留之前核验的阶段事实',promotion.run(contextOf([...partial,{t:'goal/closed',status:'abandoned'}])).ok===true)
+
 }
 
 console.log('\n【④ 剧本断言:用坏上下文必须红】')
@@ -215,10 +220,11 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 
 	/** 预设开着测量门槛:立题时写出读数这个量,以及它由什么测、怎样核对。 */
 	const SIM_ONTOLOGY = {
-		concepts: [{ id: 'reading', label: '读数', gloss: 'lab/run.txt 里记下的 value', kind: 'measure', unit: '1' }],
-		relations: [{ id: 'run_measures_reading', label: '运行记录给出读数', kind: 'measures', range: 'reading', check: '读 lab/run.txt 的 value 行' }],
+		concepts: [{id:'sample',label:'样本',gloss:'本次测试记录'}, { id: 'reading', label: '读数', gloss: 'lab/run.txt 里记下的 value', kind: 'measure', unit: '1' }],
+		relations: [{ id: 'run_measures_reading', label: '运行记录给出读数', kind: 'measures', domain:'sample', range: {form:'quantity',unit:'1'}, check: '读 lab/run.txt 的 value 行' }],
 	}
-	const goal = await host.call('Frame', { headline: '判定 A', claim: '判定 A 是否成立', done_criteria: '存在一份文件 lab/v.md', hypotheses: [{ claim: 'A 成立', refute_when: '读数不是 2' }, { claim: 'A 不成立', refute_when: '读数是 2' }], ontology: SIM_ONTOLOGY })
+	SIM_ONTOLOGY.entities=[{id:'run1',type:'sample',label:'运行1',basis:'合成夹具',provenance:{kind:'named',ref:'合成夹具'}}]
+	const goal = await host.call('Frame', { headline: '判定 A', claim: '判定 A 是否成立', done_criteria: '存在一份文件 lab/v.md', hypotheses: [{ claim: 'A 成立', refute_when: '读数不是 2', assertions:[{predicate:'run_measures_reading',subject:{id:'run1',type:'sample'},object:{kind:'quantity',value:2,unit:'1'}}] }, { claim: 'A 不成立', refute_when: '读数是 2' }], ontology: SIM_ONTOLOGY })
 	check('工具结果给模型的是内核的原话,不是一句 ok', goal.ok === true && /现在的状态/.test(goal.text), goal.text.slice(0, 120))
 	const hypothesis = host.mutations().find((mutation) => mutation.t === 'goal/set')?.hypotheses?.[0]?.id
 	await host.call('CreatePlan', { brief: `## 做法\n${'跑一次,记读数。'.repeat(30)}\n\n## 判据\n读数为 2。`, steps: [{ id: 'run', do: '跑一次', artifacts: ['lab/run.txt'], done_criteria: 'lab/run.txt 存在,含读数', tests: { hypotheses: [hypothesis], level: 'L3' } }] })

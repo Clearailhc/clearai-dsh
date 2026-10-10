@@ -3473,6 +3473,92 @@ console.log('\n【结构化范围:索引与模型摘要一致】')
  const goalDoc=readFileSync(join(ws,'clear/goals',host.service.state('scope-display').goal.id+'.md'),'utf8')
  check('评估者可从目标文档核对立题引用、系统判定、复检对象和范围',goalDoc.includes('uses (framing declarations)')&&goalDoc.includes('"id":"f-structured"')&&goalDoc.includes('"verdict":"applies"')&&goalDoc.includes('retests: f-structured')&&goalDoc.includes('"instrument":"synthetic-A"'),goalDoc)
 }
+
+console.log('\n【实际取用落图与独立阶段成果回灌】')
+{
+ const fixture = async (suffix, options={}) => {
+  const host=makeHost(), ws=tempDir('clearai-grounded-');host.cwd=ws
+  apply(host.ctx,{ontologyFeedback:true,minHypotheses:0,...options});const S='grounded-'+suffix
+  const ontology={concepts:[{id:'kiln',label:'窑',gloss:'烧结设备'}],relations:[{id:'peak_temp',label:'峰温',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'1号窑',basis:'lab/input.txt',provenance:{kind:'named',ref:'lab/input.txt'}}]}
+  const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+  const base={claim:'检查K1的峰温',done_criteria:'lab/result.txt 给出本批峰温和计算依据',conditions:{batch:'one'},about:['K1'],hypotheses:[{name:'峰温',claim:'本批K1峰温900C',refute_when:'参考峰温不是900C',about:['K1','peak_temp'],assertions}]}
+  writeText(join(ws,'lab/input.txt'),'本批设备K1,参考温度900 C\n')
+  return {host,ws,S,ontology,assertions,base}
+ }
+ const {host,ws,S,ontology,base}=await fixture('happy')
+ const bare=await callOn(host,S,'Frame',{...base,hypotheses:base.hypotheses.map(({assertions,...h})=>h)})
+ check('首次立题允许暂不建图、单假设',bare.ok===true,String(bare.code))
+ const steps=[{id:'check',do:'检查本批峰温',artifacts:['lab/result.txt'],done_criteria:'参考峰温与结果一致',tests:{hypotheses:['峰温'],level:'L3'}}]
+ const blocked=await callOn(host,S,'CreatePlan',{steps})
+ check('实际检验前拦截悬空about与缺失断言,不派审计',blocked.code==='ontology_grounding_required'&&host.audits.length===0,String(blocked.code))
+ const repair=await callOn(host,S,'Frame',{...base,ontology,reason:'为即将检验的对象一次补齐最小定义和断言'})
+ check('概念、关系、实体和断言可在一次Frame补齐',repair.ok===true,String(repair.message))
+ check('Frame保存真实领域节点且未提前制造事实边',host.service.state(S).entities.length===1&&host.service.state(S).facts.length===0)
+ check('断言中的主体、类型和谓词自动成为图关联', ['K1','kiln','peak_temp'].every(id=>host.service.state(S).hypotheses[0].about.includes(id)))
+ check('修复后计划立即可用', (await callOn(host,S,'CreatePlan',{steps})).ok===true)
+ writeText(join(ws,'lab/result.txt'),'本批K1峰温900 C。数据来自lab/input.txt,参考读数900,计算为直接取值。\n')
+ host.nextVerdict={verdict:'support',basis:'独立读取lab/input.txt与lab/result.txt,参考读数900 C,判据满足'}
+ const delivered=await callOn(host,S,'AdvancePlan',{observations:[{ref:'lab/result.txt'}]})
+ check('独立核验步骤可交付',delivered.ok===true,String(delivered.message))
+ const state=host.service.state(S), fact=state.facts[0]
+ check('整个目标仍开放时,已保存有范围和独立证据的事实',state.goal.status==='open'&&fact?.scope_spec?.conditions?.batch==='one'&&fact.evidence?.length>0,JSON.stringify(fact))
+ check('阶段事实挂到实体图,没有另造实体因果关系',graphProjection(state).edges.some(e=>e.source==='promoted'&&e.from==='kiln|K1'&&e.predicate==='peak_temp')&&state.entityAssertions.length===0)
+ check('中断后重放账本仍有事实与断言',applyMutations(emptyState(),host.journal).facts.some(f=>f.id===fact?.id&&f.assertions?.length))
+ const restarted=makeHost();restarted.cwd=ws;apply(restarted.ctx,{ontologyFeedback:true,minHypotheses:0})
+ await callOn(restarted,'fresh','Frame',{claim:'新会话检查已有图',done_criteria:'读到本批设备及独立事实'})
+ check('新会话从文件恢复阶段事实与实体',restarted.service.derive('fresh').factRows.some(f=>f.id===fact?.id)&&restarted.service.state('fresh').entities.some(e=>e.id==='K1'))
+ await callOn(host,S,'ClosePlan',{})
+ await callOn(host,S,'CreatePlan',{steps:[{...steps[0],id:'recheck'}]})
+ host.nextVerdict={verdict:'support',basis:'再次独立核对,原始数据没有变化'}
+ await callOn(host,S,'AdvancePlan',{observations:[{ref:'lab/result.txt'}]})
+ check('重复支持不生成第二份阶段事实',host.service.state(S).facts.length===1)
+ await callOn(host,S,'ClosePlan',{})
+ await callOn(host,S,'CreatePlan',{steps:[{...steps[0],id:'counterexample'}]})
+ host.nextVerdict={holds:'yes',basis:'新参考观测推翻该值',results:[{hypothesis:state.hypotheses[0].id,verdict:'refute',basis:'本批参考峰温850 C'}]}
+ writeText(join(ws,'lab/result.txt'),'本批独立复测为850 C,原900 C判断被反驳。\n')
+ await callOn(host,S,'AdvancePlan',{observations:[{ref:'lab/result.txt'}]})
+ const updated=JSON.parse(readFileSync(join(ws,'clear/knowledge/facts',fact.id+'.json')))
+ check('后续反驳持久标记复核,保留原事实和范围',updated.rechecks?.some(r=>r.kind==='hypothesis_refuted'&&r.status==='pending')&&updated.status==='established')
+ check('反驳不会生成普遍逆命题事实',host.service.state(S).facts.length===1)
+ for(const [name,level,verdict,anomalies] of [
+  ['self','L2',null,[]],['unclear','L3',{holds:'unclear',basis:'证据无法判定',results:[]},[]],
+  ['anomaly','L3',{verdict:'support',basis:'文件相符,但需要复查参考仪表',anomalies:[{what:'参考仪表校准失效',matters:'yes'}]},[]],
+ ]) {
+  const f=await fixture(name);await callOn(f.host,f.S,'Frame',{...f.base,ontology:f.ontology})
+  await callOn(f.host,f.S,'CreatePlan',{steps:[{...steps[0],tests:{hypotheses:['峰温'],level}}]})
+  writeText(join(f.ws,'lab/result.txt'),'本批参考读数900 C,见lab/input.txt。\n')
+  f.host.nextVerdict=verdict
+  await callOn(f.host,f.S,'AdvancePlan',{observations:[{ref:'lab/result.txt'}],basis:'依据lab/input.txt的本批参考读数',results:[{hypothesis:'峰温',verdict:'support'}],anomalies})
+  check(`${name}:自判、未知裁决或关键异常不自动升格`,f.host.service.state(f.S).facts.length===0)
+ }
+ const bad=await fixture('invalid')
+ const rejected=await callOn(bad.host,bad.S,'Frame',{...bad.base,ontology:bad.ontology,hypotheses:[{...bad.base.hypotheses[0],assertions:[{...bad.assertions[0],predicate:'missing'}]}]})
+ check('同次断言无效则不写入任何本体文件',rejected.code==='assertions_rejected'&&!existsSync(join(bad.ws,'clear/ontology/entities/K1.json')))
+ const empty=await fixture('empty')
+ await callOn(empty.host,empty.S,'Frame',{claim:'读取文件核对目录',done_criteria:'目录中文件已经清点',hypotheses:[]})
+ check('无假设的资料阅读计划不被强迫建图', (await callOn(empty.host,empty.S,'CreatePlan',{steps:[{id:'read',do:'读取文件',done_criteria:'已清点现有文件'}]})).ok===true)
+}
+
+
+console.log('\n【原生 todo 与核验进度同源】')
+{
+ const host=makeHost();host.cwd=tempDir('clearai-todo-kernel-');apply(host.ctx,{nativeTodoProgress:true,minHypotheses:0});const S='native-todo'
+ writeText(join(host.cwd,'lab/list.txt'),'本次材料清单:一个文件,已经逐项核对。\n')
+ await callOn(host,S,'Frame',{claim:'清点材料',done_criteria:'文件清单已复核',hypotheses:[]})
+ await callOn(host,S,'CreatePlan',{steps:[{id:'a',do:'清点材料',artifacts:['lab/list.txt'],done_criteria:'文件清单已写明'},{id:'b',do:'核对清单',done_criteria:'数量与原文件一致'}]})
+ const todo=()=>host.appended?.filter(e=>e.type==='todo/write').at(-1)?.data.todos
+ check('CreatePlan自动写原生todo事件',todo()?.[0].status==='in_progress'&&todo()?.[1].status==='pending')
+ await callOn(host,S,'AdvancePlan',{})
+ check('交付缺依据不提前勾选todo',todo()?.[0].status==='in_progress')
+ const advanced=await callOn(host,S,'AdvancePlan',{basis:'lab/list.txt的清点记录已逐项核对'})
+ check('交付成功才完成对应todo并指向下一步',todo()?.[0].status==='completed'&&todo()?.[1].status==='in_progress',JSON.stringify(advanced))
+ const guard=host.listeners.get('tools/pre-execute')
+ const overwrite=await guard({name:'todo_write',arguments:{todos:[]},agent:{id:S}},async()=>({kind:'allow'}))
+ check('模型不能用原生todo伪造ClearAI计划完成',overwrite.kind==='deny')
+ await callOn(host,S,'RevisePlan',{action:'void',step_id:'b',reason:'清点已经覆盖复核,本步重复'})
+ check('作废项从原生todo移除而不是冒充已完成',todo()?.length===1&&host.service.state(S).plans[0].steps[1].status==='void')
+}
+
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failed > 0) {
 	console.log('失败项:')

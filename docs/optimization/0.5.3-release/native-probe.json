@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "candidate": {
+    "version": "0.5.3",
+    "packageDigest": "c1bf453c759b6a14ae560e213ece1e584e293e201b5cf9c2aa4f4c90b718650d",
+    "model": {
+      "provider": "abhome",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.18.1",
+      "cli": "0.2.0-rc.2",
+      "agent": "0.2.0-rc.2"
+    },
+    "runtimeDigest": "18d5036bbb58eaff41d351ede99314b8d06505aec06fb2e164c49874ada30f9e"
+  },
+  "first": {
+    "reason": "user_cancelled",
+    "usage": {
+      "input": 35399,
+      "output": 20424,
+      "cacheRead": 393216,
+      "cacheWrite": 0,
+      "calls": 23,
+      "injectedBeforeProvider": 0,
+      "missing": 0,
+      "pending": 0,
+      "lowerBound": 449039,
+      "status": "verified",
+      "processed": 449039
+    },
+    "elapsedMs": 98435,
+    "concepts": 5,
+    "relations": 4,
+    "entities": 2,
+    "facts": 1
+  },
+  "second": {
+    "reason": "user_cancelled",
+    "usage": {
+      "input": 10446,
+      "output": 4289,
+      "cacheRead": 129152,
+      "cacheWrite": 0,
+      "calls": 9,
+      "injectedBeforeProvider": 0,
+      "missing": 0,
+      "pending": 0,
+      "lowerBound": 143887,
+      "status": "verified",
+      "processed": 143887
+    },
+    "elapsedMs": 21617
+  },
+  "limitations": "Engineering mechanism probe with synthetic public data; not evidence of comparative quality or token savings."
+}

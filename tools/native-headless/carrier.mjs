@@ -177,6 +177,7 @@ export function apply(ctx, config) {
 				if(critical.length)return finish('blocked','Critical mechanism stop: '+critical.join(', '))
 			}
 			if (cancelFault) return finish('user_cancelled', 'Registered cancellation after child request')
+			if(spec.fault==='cancel-after-partial-fact'&&projection?.goal?.status==='open'&&projection.facts?.length)return finish('user_cancelled','Registered interruption after independently verified partial fact; goal stays open')
 			if(spec.fault==='cancel-after-frame'&&projection?.goal)return finish('user_cancelled','Synthetic UI fixture: retain open goal and loaded knowledge for replay inspection')
 			if(spec.fault==='cancel-after-anomaly'&&projection?.anomalies?.length)return finish('user_cancelled','Synthetic ablation probe: preserve recorded anomaly')
 			if (record.usage.lowerBound >= spec.tokenBudget) return finish('token_limit')

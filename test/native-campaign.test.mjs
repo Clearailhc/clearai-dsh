@@ -50,3 +50,16 @@ test('feedback coverage includes positive facts and lessons as well as exclusion
  const empty=mechanismReceipt(result,[]);assert.equal(empty.required,2);assert.equal(empty.covered,0)
  assert.equal(mechanismReceipt(result,[{storageCategory:'facts',hypothesis:'h1'},{storageCategory:'lessons',id:'l1'}]).covered,2)
 })
+
+// Diagnostic permission cannot become a formal-stage gate bypass.
+import {DIAGNOSTIC_SCHEMA,DIAGNOSTIC_AUTHORIZATION,diagnosticSessions,diagnosticRun} from '../tools/native-headless/diagnostic-protocol.mjs'
+test('direct long-task diagnostics stay separate from formal acceptance and pair independent workspaces',()=>{
+ const manifest={schema:DIAGNOSTIC_SCHEMA,authorization:DIAGNOSTIC_AUTHORIZATION,productAcceptance:false}
+ assert.equal(diagnosticRun(manifest,'diagnostic'),true)
+ for(const stage of ['smoke','development','formal','supplemental','ablation'])assert.throws(()=>diagnosticRun(manifest,stage))
+ assert.throws(()=>diagnosticRun({schema:'clearai.pr23.validation.v1'},'diagnostic'))
+ assert.throws(()=>diagnosticRun({...manifest,productAcceptance:true},'diagnostic'))
+ const rows=diagnosticSessions();assert.equal(rows.length,24)
+ assert.deepEqual(rows.slice(0,4).map(r=>[r.group,r.task]),[['A','t1'],['C','t1'],['A','t2'],['C','t2']])
+ for(const group of ['A','C'])for(const world of ['long-1','long-2','long-3'])assert.deepEqual(rows.filter(r=>r.group===group&&r.world===world).map(r=>r.task),['t1','t2','t3','t4'])
+})
