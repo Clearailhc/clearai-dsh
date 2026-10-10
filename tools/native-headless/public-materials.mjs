@@ -29,6 +29,7 @@ export function captureMaterials({root,workspace,task,submission,result,records}
  for(const row of actualReferences){for(const path of row.basis??[])add(path);for(const review of row.uses_review??[])add(review.card_path)}
  for(const record of records) {
   add(record.path)
+  for(const evidence of record.evidence??[])if(evidence && typeof evidence==='object')add(evidence.ref)
   for(const evidence of record.evidence_records??[])for(const path of evidence.refs??[])add(path)
   for(const reason of record.rechecks??[]){add(reason.evidence);add(reason.resolution?.card_path)}
   if(record.use)add('clear/models/'+record.use+'.json')

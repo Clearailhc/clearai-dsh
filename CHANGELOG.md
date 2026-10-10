@@ -1,5 +1,6 @@
-## 0.5.2-rc.12 (PR #23 continuation, unreleased)
+## 0.5.2-rc.13 (PR #23 continuation, unreleased)
 
+- Propagate reason-by-reason independent reconfirmation back to linked negative entries in the same scope, retaining original observations and preventing stale sessions from reopening them.
 - Clarify that irreversible declarations describe planned destructive operations, not prohibitions or read-only checks; require distinctive command signatures.
 - Render structured fact scopes consistently in knowledge indexes, cards and preflight summaries.
 - Bind the initial audit to the current delivery's observations, deduplicate identical observation content, and recheck the latest plan. Generated observation IDs and timestamps no longer trigger repeat paid audits; changed content still does (fingerprint v5).

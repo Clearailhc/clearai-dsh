@@ -1,12 +1,12 @@
 # 验证状态（2026-10-10，工程门禁复验中）
 
-分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.12`，尚未冻结产品矩阵。最终包 SHA-256 为 `298d0adf2957272651d710fbfa828580663e13f23e8ee60194388491fa521d5d`，原生安装于 `/private/tmp/clearai-pr23-home-rc12-final`，没有覆盖日常 profile。
+分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.13`，尚未冻结产品矩阵。最终包 SHA-256 为 `6ddf69e4f7decf33fed0875da688dbfdc1bee754d898fd08efdcd28df321ba99`，原生安装于 `/private/tmp/clearai-pr23-home-rc13`，没有覆盖日常 profile。
 
 | 检查 | 证据 | 状态 |
 |---|---|---|
-| 全部套件含已安装宿主/客户端 | `/private/tmp/v052-strict-rc12-final.log` | 已运行，内核604、宿主38、客户端181等全绿，无跳过 |
-| 包一致性 | `/private/tmp/v052-package-rc12-final.log` | 46通过 |
-| macOS历史升级、卸载、重装及回放 | `/private/tmp/clearai-pr23-lifecycle-rc12/result.json` | 0.5.0/0.5.1/RC.12通过 |
+| 全部套件含已安装宿主/客户端 | `/private/tmp/v052-strict-rc13.log` | 已运行，内核607、宿主38、客户端181等全绿，无跳过 |
+| 包一致性 | `/private/tmp/v052-package-rc13-final.log` | 46通过 |
+| macOS历史升级、卸载、重装及回放 | `/private/tmp/clearai-pr23-lifecycle-rc13/result.json` | 0.5.0/0.5.1/RC.13通过 |
 | Windows Node24 | [RC.11 CI](https://github.com/Clearailhc/clearai-dsh/actions/runs/38030145987) | RC.11 Linux/Windows通过，RC.12待结果 |
 | 原生日志契约 | `/private/tmp/clearai-native-contract-rc11/result.json` | RC.11通过，RC.12待复验 |
 | 取消/断连/240秒超时/恢复 | `/private/tmp/clearai-pr23-faults-rc11/results.json` | RC.11四项通过；RC.12复验运行中 |
@@ -28,3 +28,9 @@ RC.10的核算探针两次耗尽预算。第一轮暴露夹具缺少变更来源
 长测驱动已接通逐题不可变快照、机制停止检查、阶段验收、良率补充、消融配对及仅一次明确基础设施重跑。主代理与评估者模型固定，缺usage停止，取消不计零成本。正式冻结须源码干净、候选摘要与门禁证据一致；各阶段只有通过后才扩大。
 
 序列质量、实验节省、变化处理、成本与单题不劣尚无产品验收结论，当前不能发布。
+
+## RC.13：事实与负向图同步
+
+RC.12四会话复检的第三题耗尽1,626,089处理token，保留于`/private/tmp/clearai-pr23-recheck-rc12`。不可逆动作误填不再出现；独立评估仍发现事实复核已resolved而同源负向条目仍unresolved。RC.13只在原负向条目的完整范围被覆盖、全部关联对象的同源原因均已有独立确认时，把负向条目标为explained，保留原始观测、范围、逐原因评估卡。部分覆盖、未知对象、其他未决原因不自动清除；原会话重新写回不能覆盖跨会话确认。采用已有resolution扩展字段，不改写旧账本、不补造历史确认，STATE_VERSION仍21。
+
+RC.13完整复检、故障、双盲评、消融预设探针、真实界面及Windows CI正在复验；门禁未齐前仍不启动产品矩阵。RC.12通过的门禁不冒充RC.13通过。

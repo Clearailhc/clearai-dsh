@@ -3399,15 +3399,26 @@ console.log('\n【持久复核:普通异常、逐原因恢复、范围边界和�
  check('范围外异常不添加原范围内待核验',JSON.parse(readFileSync(path)).rechecks.length===disk.rechecks.length)
  // Independent re-test can resolve only the explicitly reviewed cause. A second reason remains.
  disk.rechecks.push({id:'second-cause',kind:'anomaly',status:'pending',detail:'unrelated issue'})
+ const originalNegative=JSON.parse(readFileSync(join(ws,'clear/knowledge/negatives',disk.rechecks[0].source+'.json')))
+ for(const [id,scope,touches] of [['n-partial',{conditions:{line:'A',batch:'B'}},['f-known']],['n-multiple',{conditions:{line:'A'}},['f-known','f-unreviewed']]]) {
+  writeText(join(ws,'clear/knowledge/negatives',id+'.json'),JSON.stringify({...originalNegative,id,scope,touches}))
+  disk.rechecks.push({id,source:id,kind:'anomaly',status:'pending'})
+ }
  writeText(path,JSON.stringify(disk));const retest=fresh(),R='retest-reasons'
  await callOn(retest,R,'Frame',{claim:'retest',headline:'retest',done_criteria:'lab/retest.txt exists',conditions:{line:'A'},hypotheses:[{claim:'old claim',refute_when:'new counterexample',retests:'f-known'}]})
  const hid=retest.service.state(R).hypotheses[0].id
  await callOn(retest,R,'CreatePlan',{steps:[{id:'r',do:'independent recheck',done_criteria:'lab/retest.txt exists',artifacts:['lab/retest.txt'],tests:{hypotheses:[hid],level:'L3'}}]})
  writeText(join(ws,'lab/retest.txt'),'reference agrees after correction')
- retest.nextVerdict={holds:'yes',basis:'lab/retest.txt',shortfalls:[],results:[{hypothesis:hid,verdict:'support'}],rechecks:[{fact:'f-known',id:disk.rechecks[0].id,basis:'corrected independent reference agrees'}]}
+ retest.nextVerdict={holds:'yes',basis:'lab/retest.txt',shortfalls:[],results:[{hypothesis:hid,verdict:'support'}],rechecks:[disk.rechecks[0].id,'n-partial','n-multiple'].map(id=>({fact:'f-known',id,basis:'corrected independent reference agrees'}))}
  const delivered=await callOn(retest,R,'AdvancePlan',{step_id:'r'})
  const reviewed=JSON.parse(readFileSync(path))
  check('匹配范围的独立复检可逐原因解除,保留其他未决原因',delivered.ok&&reviewed.rechecks[0].status==='resolved'&&reviewed.rechecks[1].status==='pending',JSON.stringify({delivered,rechecks:reviewed.rechecks}).slice(0,600))
+ const negativePath=join(ws,'clear/knowledge/negatives',disk.rechecks[0].source+'.json')
+ const negative=JSON.parse(readFileSync(negativePath))
+ check('独立复检回灌同源负向条目,保留原始观测、范围和逐原因评估卡',negative.status==='explained'&&negative.statement==='reference disagrees'&&negative.scope.conditions.line==='A'&&negative.resolution.confirmations[0].reasons[0].card_path&&negative.evidence[0].ref==='lab/raw.csv')
+ check('复检范围未覆盖或还有未复核对象时负向条目保持未解',['n-partial','n-multiple'].every(id=>JSON.parse(readFileSync(join(ws,'clear/knowledge/negatives',id+'.json'))).status==='unresolved'))
+ await callOn(owner,S,'Frame',{claim:'investigate',headline:'investigate',done_criteria:'lab/a.txt exists',conditions:{line:'A'},reason:'refresh original session'})
+ check('旧会话恢复不覆盖跨会话独立复核结果',JSON.parse(readFileSync(negativePath)).status==='explained'&&JSON.parse(readFileSync(path)).rechecks[0].status==='resolved')
  const recovered=fresh();await callOn(recovered,'after-retest','Frame',{claim:'reuse',headline:'reuse',done_criteria:'lab/a.txt exists',conditions:{line:'A'},hypotheses:[{claim:'old claim',refute_when:'new counterexample',uses:['f-known']}]})
  check('独立复检不能笼统清除多个原因',recovered.service.state('after-retest').hypotheses[0].uses[0].verdict==='pending')
  const fail=fresh(),F='durability-failure'

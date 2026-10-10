@@ -3809,7 +3809,40 @@ export function apply(ctx, config = {}) {
 				return { ...reason, status: 'resolved', resolution: { by: 'independent', card_path: audit.cardPath, hypothesis: hypothesis.id, at: Date.now() } }
 			})
 			writeTextFile(file, `${JSON.stringify(data, null, 2)}\n`)
+			confirmLinkedNegatives(sessionId, data, hypothesis, state)
 		} catch (error) { ctx.logger?.warn?.(`clearai: confirmation incomplete: ${error.message}`) }
+	}
+
+	/** Keep the original anomaly and evidence; close only its independently rechecked, matching scope. */
+	function confirmLinkedNegatives(sessionId, fact, hypothesis, state) {
+		const scope = mergeScope(hypothesis.scope, { conditions: state.goal?.conditions ?? {} })
+		for (const source of new Set((fact.rechecks ?? []).filter(reason => reason.kind === 'anomaly' && reason.status === 'resolved').map(reason => reason.source).filter(Boolean))) {
+			if (!/^[A-Za-z0-9_-]+$/.test(source)) continue
+			const file = sessionFile(sessionId, ...NEGATIVES_REL, `${source}.json`)
+			if (!file || !existsSync(file)) continue
+			const item = JSON.parse(readFileSync(file, 'utf8'))
+			if (!['unresolved', 'escalated'].includes(item.status) || item.review || !item.touches?.length) continue
+			if (compareScope(item.scope, scope).verdict !== 'applies' || compareScope(scope, item.scope).verdict !== 'applies') continue
+			const confirmations = []
+			for (const id of item.touches) {
+				if (!/^[A-Za-z0-9_-]+$/.test(id)) break
+				const path = sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${id}.json`)
+				if (!path || !existsSync(path)) break
+				const linked = JSON.parse(readFileSync(path, 'utf8'))
+				const reasons = (linked.rechecks ?? []).filter(reason => reason.source === source)
+				if (!reasons.length || reasons.some(reason => reason.status !== 'resolved' || reason.resolution?.by !== 'independent' || !reason.resolution.card_path)) break
+				confirmations.push({ fact: id, reasons: reasons.map(reason => ({ id: reason.id, ...reason.resolution })) })
+			}
+			if (confirmations.length !== item.touches.length) continue
+			item.status = 'explained'
+			item.resolution = { outcome: 'explained', by: 'independent', scope, confirmations, reason: tr('同范围内涉及事实的这条复核原因已逐条独立确认;保留原始异常观测,不外推到其他范围。', 'The linked cause was independently rechecked for every affected fact in this scope. Original anomalous observations remain; no claim is made outside this scope.'), at: Date.now() }
+			item.evidence = [...(item.evidence ?? [])]
+			for (const confirmation of confirmations) for (const reason of confirmation.reasons) {
+				const ref = relative(sessionCwd(sessionId), reason.card_path).split('\\').join('/')
+				if (!item.evidence.some(row => row.ref === ref)) item.evidence.push({ ref })
+			}
+			writeTextFile(file, `${JSON.stringify(item, null, 2)}\n`)
+		}
 	}
 
 	/**
@@ -3852,6 +3885,11 @@ export function apply(ctx, config = {}) {
 				}
 				const at = typeof existing?.at === 'number' ? existing.at : Date.now()
 				const record = { ...item, source: existing?.source ?? item.source, review: existing?.review ?? null, at, updated: Date.now() }
+				if (existing?.resolution?.by === 'independent' && existing.resolution.confirmations?.length && ['unresolved', 'escalated'].includes(item.status)) {
+					record.status = existing.status
+					record.resolution = existing.resolution
+					record.evidence = existing.evidence
+				}
 				writeTextFile(file, `${JSON.stringify(record, null, 2)}\n`)
 				negativeWrites.set(file, body)
 				written.push(item.id)
