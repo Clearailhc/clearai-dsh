@@ -22,13 +22,15 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'node:path'
 import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
 import { citeVerdict, mergeAbout, negativeItems, relatedKnowledge, resolveAbout } from './knowledge-items.js'
+import { auditMaterialDigest, auditPathComponent, contentDigest, fileDigest, methodSnapshot } from './audit-material.js'
+import { nativeAuditSchema, recoveredStructuredOutput } from './audit-schema.js'
 import { MODEL_ID, appendRun, checkModelSpec, compareOutputs, deviationText, needsRerun, numericOutputs } from './models.js'
 
 export const name = 'clearai-kernel'
@@ -224,6 +226,8 @@ export const CONFIG_KEYS = [
 	'auditRerun',
 	'runtimeCard',
 	'contributions',
+	'applicabilityFeedback',
+	'negativeWriteback',
 ]
 
 /**
@@ -324,6 +328,9 @@ export function apply(ctx, config = {}) {
 		throw new Error('invalid_config:clearai-kernel:blockedThreshold')
 	}
 	const CFG = {
+		// Native experimental variants; published ClearAI keeps both enabled.
+		applicabilityFeedback: config.applicabilityFeedback !== false,
+		negativeWriteback: config.negativeWriteback !== false,
 		/**
 		 * 连拦阈值:同一件事连续冲闸这么多次没过,计划置 blocked、停下等人。
 		 * **它不是预算**:它管的是证据质量,
@@ -358,7 +365,7 @@ export function apply(ctx, config = {}) {
 		auditProvider: config.auditProvider ?? 'spawn',
 		auditTimeoutMs: config.auditTimeoutMs ?? 240000,
 		/** 一次评估从派出起最多等多久:超过就如实结成「未知」并放开,不让一次评估拖住整个目标。 */
-		auditHardTimeoutMs: config.auditHardTimeoutMs ?? 1800000,
+		auditHardTimeoutMs: config.auditHardTimeoutMs ?? 240000,
 		// 三张脸的**候选**工具名。真正的 face 还要过一道「这个部署里到底有没有这件工具」的过滤
 		// (见 resolveToolFace):`read_image` 只在挂了 `attachments` 的部署里存在,名单里写了它、
 		// 部署里没有,`tools.restrict` 会**直接抛**(未知工具名)→ 评估整条路 fail-closed。
@@ -395,16 +402,42 @@ export function apply(ctx, config = {}) {
 	 */
 	const pendingFacts = new Map()
 	const pendingFactIds = new Set()
+	const failedFactAppends = new Map()
+	function appendFact(sessionId, mutation) {
+		const session = ctx.get('sessions')?.get?.(sessionId)
+		if (typeof session?.append !== 'function') throw new Error('native session append unavailable')
+		const events = session.snapshotEvents?.() ?? session.ownEvents?.() ?? []
+		const turn = events.findLast?.((event) => event.type === 'turn/start')?.data?.turn ?? 0
+		const handlerId = `clearai-fact-${randomUUID()}`
+		// This plugin's internal fact hook is log-only. A user/message here
+		// would split an assistant tool-call from its result at the provider.
+		session.append('hook/invoked', { turn, point: 'ClearAIFact', dialect: 'clearai', handlerId })
+		session.append('hook/result', { turn, point: 'ClearAIFact', handlerId, decision: 'pass', durationMs: 0, notice: pluginNotice({ turn, step: 0 }, '', [mutation]) })
+	}
 	/** 把一条事实推进独立落账通道(返回它自己,方便调用方同时塞进工具结果的 mutations)。 */
 	function landFact(sessionId, mutation) {
 		if (mutation === null || typeof mutation !== 'object') return mutation
-		const key = `${sessionId}:${String(mutation.t)}:${String(mutation.id ?? mutation.step ?? '')}`
+		const key = `${sessionId}:${String(mutation.t)}:${String(mutation.id ?? mutation.step ?? '')}:${String(mutation.status ?? '')}`
 		if (pendingFactIds.has(key)) return mutation
 		pendingFactIds.add(key)
 		const list = pendingFacts.get(sessionId) ?? []
 		list.push(mutation)
 		pendingFacts.set(sessionId, list)
+		try {
+			appendFact(sessionId, mutation)
+		} catch (error) {
+			const failures = failedFactAppends.get(sessionId) ?? []
+			failures.push(mutation); failedFactAppends.set(sessionId, failures)
+			ctx.logger?.warn?.(`clearai: fact append failed: ${String(error?.message ?? error)}`)
+		}
 		return mutation
+	}
+	async function flushFacts(sessionId) {
+		const sessions = ctx.get('sessions')
+		const failures = failedFactAppends.get(sessionId) ?? []
+		for (const mutation of failures) appendFact(sessionId, mutation)
+		if (typeof sessions?.flush === 'function' && await sessions.flush(sessions.get(sessionId)) === false) throw new Error('session durability listener unavailable')
+		failedFactAppends.delete(sessionId)
 	}
 	/** 取出并清空这一拍的兜底事实(只有 pre-step 调;重复取到空数组是正常的)。 */
 	function drainPendingFacts(sessionId) {
@@ -916,6 +949,8 @@ export function apply(ctx, config = {}) {
 					additionalProperties: false,
 				},
 			},
+			rechecks: { type: 'array', description: '复检事实时逐条列出已独立解决的待核验原因;引用事实文件的 rechecks.id,说明当前证据怎样解决;未解决的不要列出', items: { type: 'object', properties: { fact: { type: 'string' }, id: { type: 'string' }, basis: { type: 'string' } }, required: ['fact', 'id', 'basis'], additionalProperties: false } },
+			reuse: { type: 'array', description: '逐条核验最终 uses:确实直接采用、依据可检查、范围适用才 support;否则 refute 或 inconclusive', items: { type: 'object', properties: { id: { type: 'string' }, verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] }, basis: { type: 'string' } }, required: ['id', 'verdict', 'basis'], additionalProperties: false } },
 			lessons: {
 				type: 'array',
 				description: tr('任务书列了待核的经验(L1、L2……)时,每条各一格;没列就给空数组。', 'When the brief lists lessons to check (L1, L2, ...), one entry each; otherwise an empty array.'),
@@ -1014,6 +1049,7 @@ export function apply(ctx, config = {}) {
 				],
 			),
 			...anomalyBrief(state, gate),
+			...tested.filter((item) => item.retests).map((item) => `Re-test ${item.retests}: independently inspect each pending reason in clear/knowledge/facts/${item.retests}.json and report only resolved reason IDs in rechecks. A supporting result alone does not resolve all reasons.`),
 			...(Array.isArray(gate.extra) && gate.extra.length > 0 ? ['', ...gate.extra] : []),
 			'',
 			...tr(
@@ -1103,6 +1139,8 @@ export function apply(ctx, config = {}) {
 		}
 		const basis = typeof value?.basis === 'string' && value.basis.trim() !== '' ? value.basis.trim() : tr('评估者未给出依据', 'the evaluator gave no basis')
 		return {
+			rechecks: (Array.isArray(value?.rechecks) ? value.rechecks : []).filter((row) => typeof row.fact === 'string' && typeof row.id === 'string').map((row) => ({ fact: row.fact, id: row.id, basis: String(row.basis ?? '') })),
+			reuse: (Array.isArray(value?.reuse) ? value.reuse : []).filter((row) => typeof row.id === 'string' && ['support', 'refute', 'inconclusive'].includes(row.verdict)).map((row) => ({ id: row.id, verdict: row.verdict, basis: String(row.basis ?? '') })),
 			holds,
 			results,
 			anomalies,
@@ -1226,16 +1264,11 @@ export function apply(ctx, config = {}) {
 		if (subagents === undefined) return { ok: false, reason: tr('subagents 服务不可用', 'the subagents service is unavailable'), failures: [] }
 		const base = { label: options.label, parent: options.parent, signal: options.signal, prompt: text(options.prompt) }
 		const persona = options.persona
-		const schema = options.outputSchema ?? undefined
+		const schema = options.outputSchema ? nativeAuditSchema(options.outputSchema) : undefined
 		const toolFilter = options.toolFilter ?? null
 		const failures = []
-		const attempts = []
-		if (toolFilter !== null) attempts.push({ variant: { persona, outputSchema: schema, toolFilter }, capability: 'persona+outputSchema+toolFilter' })
-		attempts.push({ variant: { persona, outputSchema: schema }, capability: 'persona+outputSchema' })
-		if (toolFilter !== null) attempts.push({ variant: { persona, toolFilter }, capability: 'persona+toolFilter' })
-		attempts.push({ variant: { persona }, capability: 'persona' })
-		if (schema !== undefined) attempts.push({ variant: { outputSchema: schema }, capability: 'outputSchema' })
-		attempts.push({ variant: {}, capability: 'prompt-only' })
+		// These are required audit capabilities. An infrastructure rejection must not silently weaken the verdict channel.
+		const attempts = [{ variant: { persona, outputSchema: schema, ...(toolFilter ? { toolFilter } : {}) }, capability: 'persona+outputSchema+toolFilter' }]
 		for (const attempt of attempts) {
 			try {
 				const run = await subagents.start(CFG.auditProvider, { ...base, ...attempt.variant })
@@ -1261,7 +1294,7 @@ export function apply(ctx, config = {}) {
 	 * 平台边界:宿主的 `sessions` 服务只认**活在当前进程里**的会话(`get(id)`)。
 	 * 会话不在了就返回 null,由调用方如实记为 unknown——这一层我们不假装能读。
 	 */
-	function recoverFromChildSession(childId) {
+	async function recoverFromChildSession(childId) {
 		const sessions = ctx.get('sessions')
 		if (sessions === undefined || typeof sessions.get !== 'function') return null
 		let session = null
@@ -1278,10 +1311,15 @@ export function apply(ctx, config = {}) {
 				session = null
 			}
 		}
-		if (session === null) return null
 		let events = []
 		try {
-			events = typeof session.ownEvents === 'function' ? session.ownEvents() : typeof session.snapshotEvents === 'function' ? session.snapshotEvents() : []
+			if (session !== null) events = typeof session.ownEvents === 'function' ? session.ownEvents() : typeof session.snapshotEvents === 'function' ? session.snapshotEvents() : []
+			else {
+				const query = ctx.get('sessionQuery')
+				if (typeof query?.observeSession !== 'function') return null
+				const observation = await query.observeSession(childId, { projectionMode: 'none' })
+				try { events = [...observation.events] } finally { observation[Symbol.dispose]?.() }
+			}
 		} catch {
 			return null
 		}
@@ -1307,7 +1345,7 @@ export function apply(ctx, config = {}) {
 		 * 半截文本被当成「回灌过的结论」是这里最危险的假话。两条路形状一致,
 		 * 「这句话是从哪条路来的」就不再影响账本的可读性。
 		 */
-		return { ok, stopReason: reason, conclusion: ok ? conclusion : tr(`子任务未正常结束(${reason}):${conclusion.slice(0, 1200)}`, `The child task did not end normally (${reason}): ${conclusion.slice(0, 1200)}`) }
+		return { ok, structured: recoveredStructuredOutput(events.slice(0, events.indexOf(end))), stopReason: reason, conclusion: ok ? conclusion : tr(`子任务未正常结束(${reason}):${conclusion.slice(0, 1200)}`, `The child task did not end normally (${reason}): ${conclusion.slice(0, 1200)}`) }
 	}
 
 
@@ -1331,7 +1369,7 @@ export function apply(ctx, config = {}) {
 	 * 拿不到目录(服务不在 / 查询失败)时**什么都不做**:不猜、不误伤正在跑的裁决。
 	 */
 	async function sweepEndedAudits(sessionId, state) {
-		const pending = (state?.audits ?? []).filter((audit) => audit.verdict === null && typeof audit.child === 'string' && audit.child !== '')
+		const pending = (state?.audits ?? []).filter((audit) => audit.verdict === null)
 		if (pending.length === 0) return { mutations: [], lost: 0, lines: [] }
 		// 这个进程里正攥着的那几次派遣:它们是活的,不问目录。
 		const known = new Set([...pendingAudits.values()].map((entry) => String(entry.run?.id ?? '')))
@@ -1349,17 +1387,23 @@ export function apply(ctx, config = {}) {
 		const running = new Set((Array.isArray(children) ? children : []).filter((item) => item?.kind === 'child' && item.activity === 'running').map((item) => String(item.id)))
 		const mutations = []
 		const lines = []
-		for (const audit of unresolved) {
+		for (const pendingAudit of unresolved) {
+			const audit = { ...pendingAudit }
+			if (!audit.child) {
+				const child = children.find((child) => String(child.label ?? child.name ?? '').includes(audit.id))
+				if (child) { audit.child = String(child.id); mutations.push({ t: 'audit/dispatched', id: audit.id, step: audit.step, evaluator_session: audit.child, status: 'recovered', digest: audit.digest }) }
+				else if (Date.now() - (audit.at ?? 0) < CFG.auditHardTimeoutMs) continue
+			}
 			if (running.has(String(audit.child))) continue
 			/**
 			 * 宿主说已结束 ⇒ **先把它的结论取回来**(读它自己的会话日志)。
 			 * 跳过它就把「结束」误报成「死亡」,还会诱导重新交付 ⇒ 同一次评估被重做。
 			 */
-			const recovered = recoverVerdictFromChildSession(audit.child)
-			if (recovered !== null && recovered.ok === true) {
-				const card = { schema_version: 'clearai.audit.v2', kind: audit.kind ?? 'evidence_audit', step_id: audit.step, auditor_run_id: String(audit.child), holds: recovered.verdict.holds, results: recovered.verdict.results, shortfalls: recovered.verdict.shortfalls, card: recovered.verdict.basis, created_at: Date.now() }
+			const recovered = await recoverVerdictFromChildSession(audit.child)
+			if (recovered !== null && recovered.ok === true && (!String(audit.capability).includes('outputSchema') || recovered.structured === true)) {
+				const card = { schema_version: 'clearai.audit.v2', kind: audit.kind ?? 'evidence_audit', step_id: audit.step, auditor_run_id: String(audit.child), holds: recovered.verdict.holds, rechecks: recovered.verdict.rechecks, reuse: recovered.verdict.reuse, results: recovered.verdict.results, anomalies: recovered.verdict.anomalies, lessons: recovered.verdict.lessons, shortfalls: recovered.verdict.shortfalls, card: recovered.verdict.basis, created_at: Date.now() }
 				const cardPath = writeAuditCard(sessionId, audit.step, card)
-				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: recovered.verdict.holds, holds: recovered.verdict.holds, results: recovered.verdict.results, anomalies: recovered.verdict.anomalies, basis: recovered.verdict.basis, shortfalls: recovered.verdict.shortfalls, card_path: cardPath, digest: audit.digest ?? null })
+				mutations.push({ t: 'audit/settled', id: audit.id, step: audit.step, verdict: cardPath === null ? 'unknown' : recovered.verdict.holds, holds: cardPath === null ? 'unknown' : recovered.verdict.holds, rechecks: recovered.verdict.rechecks, reuse: recovered.verdict.reuse, results: recovered.verdict.results, anomalies: recovered.verdict.anomalies, basis: recovered.verdict.basis, shortfalls: cardPath === null ? ['card_persist_failed'] : recovered.verdict.shortfalls, card_path: cardPath, digest: audit.digest ?? null })
 				lines.push(tr(`${audit.step}:裁决从子会话日志取回(交付成立:${recovered.verdict.holds})`, `${audit.step}: verdict recovered from the child session log (holds: ${recovered.verdict.holds})`))
 				continue
 			}
@@ -1380,12 +1424,12 @@ export function apply(ctx, config = {}) {
 	 * 返回三档:`{ok:true, verdict}` 取回了;`{ok:false, stopReason}` 它结束了但未正常完成;
 	 * `null` 连它的日志都读不到。三档都只是**读数**,判断留给调用方如实分档。
 	 */
-	function recoverVerdictFromChildSession(childId) {
-		const settled = recoverFromChildSession(childId)
+	async function recoverVerdictFromChildSession(childId) {
+		const settled = await recoverFromChildSession(childId)
 		if (settled === null) return null
 		if (settled.ok !== true) return { ok: false, stopReason: settled.stopReason }
-		const verdict = normalizeVerdict(parseLooseJson([{ type: 'text', text: settled.conclusion }]))
-		return { ok: true, verdict }
+		const verdict = normalizeVerdict(settled.structured ?? parseLooseJson([{ type: 'text', text: settled.conclusion }]))
+		return { ok: true, verdict, structured: settled.structured !== undefined }
 	}
 
 	/**
@@ -1403,61 +1447,8 @@ export function apply(ctx, config = {}) {
 	 * 只有**落定过的裁决**才可复用(`verdict` 非 null 且不是 unknown):
 	 * `unknown` 不是裁决,它只说明"那一次没成",那正是应该重派的理由。
 	 */
-	function auditDigest(kind, step, plan, state, gate) {
-		/**
-		 * **digest 只盖「材料」,不盖「上一次裁决留下的东西」。**
-		 *
-		 * 为什么这一条是这套复用能不能用的分水岭:一次不确定的结案自己会落一条
-		 * `evidence/recorded`(`anchor:'auditor'`)。原来 digest 把证据集合整个算进去,
-		 * 于是**每重试一次 digest 就变一次**,复用永远命中不了——模型每喊一次结案就再烧两三分钟,
-		 * 而两次之间它什么都没改。这不是"新证据",是同一条评审自己的回声。
-		 *
-		 * 所以这里只取**可能改变结论的材料**:
-		 *   · 目标修订号(判据/假设换了内容才会变);
-		 *   · 计划的步与产物(交付了什么);
-		 *   · 观测(state.materials);
-		 *   · 原始假设(claim / status / 断言)——**刻意不用派生读数**:
-		 *     `supportedLevel` / `refutations` / `inconclusive` 都是证据算出来的,
-		 *     而审计留下的那条证据会把它们改掉,用它就等于把回声又算进来一次;
-		 *   · 已升格事实;
-		 *   · **非审计来源**的证据(自判的 L0–L2 是真材料,保留)。
-		 *
-		 * 于是语义变成:材料变了 ⇒ 必然重审;材料没变 ⇒ 复用上次裁决,并把这件事说明白。
-		 */
-		const material = (Array.isArray(state?.evidence) ? state.evidence : [])
-			.filter((item) => String(item?.anchor ?? '') !== 'auditor')
-			.map((item) => `${String(item?.id ?? '')}:${String(item?.verdict ?? '')}:${String(item?.level ?? '')}`)
-		const hypotheses = (Array.isArray(state?.hypotheses) ? state.hypotheses : []).map((item) =>
-			[String(item?.id ?? ''), String(item?.status ?? ''), String(item?.claim ?? '').replace(/\s+/g, ' '), JSON.stringify(item?.assertions ?? null)].join(':'),
-		)
-		const materials = (Array.isArray(state?.materials) ? state.materials : []).map((item) => `${String(item?.id ?? '')}:${String(item?.digest ?? '')}`)
-		/** 做的人登记与消解的未解释项是材料;评估者自己报的是回声,不算。 */
-		const anomalies = [...(Array.isArray(state?.anomalies) ? state.anomalies : []), ...(Array.isArray(gate?.anomalies) ? gate.anomalies : [])].filter((item) => item?.by !== 'evaluator').map((item) => `${String(item?.id ?? '')}:${String(item?.status ?? 'open')}`)
-		const facts = (Array.isArray(state?.facts) ? state.facts : []).map((item) => `${String(item?.id ?? '')}:${String(item?.level ?? '')}:${JSON.stringify(item?.assertions ?? null)}`)
-		/**
-		 * 步的**判据**与产物一起算材料:判据一变,"这一步算不算做完"就是另一个问题
-		 * (`evaluatorPrompt` 会把判据逐字交给评估者)——不把它算进来会出现
-		 * "改了判据却复用旧裁决"这种明显错的复用。
-		 */
-		const steps = (Array.isArray(plan?.steps) ? plan.steps : []).map((item) => `${String(item?.id ?? '')}:${String(item?.status ?? '')}:${String(item?.done_criteria ?? '')}:${(Array.isArray(item?.artifacts) ? item.artifacts : []).join('|')}`)
-		const goal = `${String(state?.goal?.id ?? '')}:${Number(state?.goal?.revision ?? 0)}`
-		/**
-		 * **准入坐标里只有"产物"算材料**。
-		 *
-		 * `gate.confirmed` 在两条路上形状不同:证据审计那一侧是**产物路径 + 字节数 + 内容摘要**
-		 * (文件内容一变,digest 就变——这是"交付的东西真的改了吗"的唯一硬信号);
-		 * 目标审计那一侧是 `evidence:` / `hypothesis:` 两类引用(证据集合与派生读数)——
-		 * 把它们算进来,就等于又把上一次评审的回声算进来一次。
-		 * 所以:留下产物,去掉回声。
-		 */
-		const artifacts = (Array.isArray(gate?.confirmed) ? gate.confirmed : [])
-			.filter((item) => {
-				const ref = String(item?.ref ?? '')
-				return !ref.startsWith('evidence:') && !ref.startsWith('hypothesis:')
-			})
-			.map((item) => `${String(item?.ref ?? '')}:${String(item?.bytes ?? '')}:${String(item?.digest ?? '')}`)
-		const root = createHash('sha256').update(JSON.stringify([kind, step.id, goal, steps, materials, hypotheses, facts, material, artifacts, ...(anomalies.length > 0 ? [anomalies] : [])])).digest('hex')
-		return root.slice(0, 16)
+	function auditDigest(kind, step, plan, state, gate, sessionId) {
+		return auditMaterialDigest({ kind, step, plan, state, gate, cwd: sessionCwd(sessionId) })
 	}
 
 	/**
@@ -1479,7 +1470,7 @@ export function apply(ctx, config = {}) {
 		const matched = (state?.audits ?? []).filter((audit) => String(audit?.step ?? '') === String(stepId) && String(audit?.digest ?? '') === digest)
 		for (let index = matched.length - 1; index >= 0; index -= 1) {
 			const audit = matched[index]
-			if (!['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
+			if (!digest.startsWith('v4:') || !audit.card_path || !existsSync(audit.card_path) || !['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
 			return audit
 		}
 		return null
@@ -1489,7 +1480,10 @@ export function apply(ctx, config = {}) {
 		const mutations = []
 		const auditKey = `a-${step.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 		const key = `${sessionId}:${kind}:${step.id}`
-		const digest = auditDigest(kind, step, plan, stateOf(sessionId), gate)
+		const initialSync = syncWorkspace(sessionId, stateOf(sessionId))
+		if (initialSync !== null) mutations.push(initialSync)
+		const initialState = previewOf(host(), sessionId, mutations)?.state ?? stateOf(sessionId)
+		const digest = auditDigest(kind, step, plan, initialState, gate, sessionId)
 		let entry = pendingAudits.get(key)
 		/**
 		 * **同态复用**:先看在飞的(pendingAudits),再看**已经落定的**(投影里 digest 相同且给出了裁决的那一条)。
@@ -1505,6 +1499,17 @@ export function apply(ctx, config = {}) {
 		 * 材料没变就重来 ⇒ 计数 +1,达阈值把计划置 blocked 停下等人。
 		 * 于是"每次交付都被记下来"与"不重复花钱"两件事同时成立。
 		 */
+		if (entry === undefined) {
+			const durable = (stateOf(sessionId).audits ?? []).find((audit) => audit.step === step.id && audit.verdict === null)
+			if (durable) {
+				const swept = await sweepEndedAudits(sessionId, stateOf(sessionId))
+				mutations.push(...swept.mutations)
+				const recoveredState = previewOf(host(), sessionId, mutations)?.state ?? stateOf(sessionId)
+				if ((recoveredState.audits ?? []).some((audit) => audit.id === durable.id && audit.verdict === null)) return { holds: 'pending', results: [], basis: '已有持久派发,等待关联评估者恢复', shortfalls: ['audit_pending'], cardPath: null, mutations }
+				const recovered = reuseAudit(recoveredState, step.id, digest)
+				if (recovered) return { holds: auditHolds(recovered), results: recovered.results ?? [], basis: recovered.basis ?? '', shortfalls: recovered.shortfalls ?? [], cardPath: recovered.card_path, reuse: recovered.reuse ?? [], reused: true, digest, mutations }
+			}
+		}
 		if (entry === undefined) {
 			const reused = reuseAudit(stateOf(sessionId), step.id, digest)
 			if (reused !== null) {
@@ -1525,6 +1530,7 @@ export function apply(ctx, config = {}) {
 					holds: auditHolds(reused),
 					results: Array.isArray(reused.results) ? reused.results : [],
 					basis: String(reused.basis ?? ''),
+					reuse: reused.reuse ?? [],
 					shortfalls: Array.isArray(reused.shortfalls) ? reused.shortfalls : [],
 					cardPath: reused.card_path ?? null,
 					/**
@@ -1547,18 +1553,21 @@ export function apply(ctx, config = {}) {
 			 * 而"我派过一个评估者"是**已经发生的事实**。把它写在 await 之后,等于把事实寄存在
 			 * 一个会被撤销的栈帧里:`hold` 不触发、`sweepEndedAudits` 看不见,模型只会原样重试。
 			 *
-			 * `id` 取一个与裁决 digest 绑定的**稳定键**:同一个状态反复结案得到同一个键,
-			 * 于是下面那次"带上子会话 id 的完整事实"按 id 覆盖它,而不是在账上留两条。
+			 * 每次派发使用独立尝试 id;补齐子会话时按同 id 更新。已落定的有效裁决按材料 digest 复用。
 			 */
-			const pendingId = `audit:pending:${kind}:${step.id}:${digest}`
+			const pendingId = `audit:pending:${auditPathComponent(`${sessionId}:${kind}:${step.id}:${digest}:${auditKey}`).slice(0, 32)}`
 			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, capability: null, evaluator_session: null, status: 'dispatching' })
+			try { await flushFacts(sessionId) } catch (error) {
+				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: String(error.message), shortfalls: ['audit_dispatch_not_durable'], card_path: null, digest })
+				return { holds: 'unknown', results: [], basis: '派发记录未持久保存,未派发评估者', shortfalls: ['audit_dispatch_not_durable'], cardPath: null, digest, mutations }
+			}
 			const rerunDir = CFG.auditRerun ? rerunCopy(sessionId, auditKey) : null
 			const dispatched = await dispatchSubRun({
-				label: `${kind === 'goal_audit' ? tr('目标评估者', 'Goal evaluator') : tr('评估者', 'Evaluator')} · ${step.id}`,
+				label: `${kind === 'goal_audit' ? tr('目标评估者', 'Goal evaluator') : tr('评估者', 'Evaluator')} · ${step.id} · ${pendingId}`,
 				persona: evaluatorDiscipline(),
 				prompt: evaluatorPrompt(stateOf(sessionId), step, gate, sessionId, rerunDir),
 				outputSchema: verdictSchema(),
-				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, 'bash']) },
+				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, process.platform === 'win32' ? 'pwsh' : 'bash']) },
 				parent: agent,
 				signal,
 			})
@@ -1572,7 +1581,13 @@ export function apply(ctx, config = {}) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
-			mutations.push({ t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' })
+			mutations.push(landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' }))
+			try { await flushFacts(sessionId) } catch (error) {
+				try { await dispatched.run.dispose?.() } catch {}
+				dropRerunCopy(rerunDir)
+				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: String(error.message), shortfalls: ['audit_child_not_durable'], card_path: null, digest })
+				return { holds: 'unknown', results: [], basis: '子会话关联未持久保存,已停止评估', shortfalls: ['audit_child_not_durable'], cardPath: null, digest, mutations }
+			}
 			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, rerunDir, settled: undefined, startedAt: Date.now() }
 			pendingAudits.set(key, entry)
 			entry.settled = dispatched.run.result.then(
@@ -1610,6 +1625,10 @@ export function apply(ctx, config = {}) {
 		// 已落定:这次派遣的生命周期到此为止。下一次交付是**新的一次评估**(新证据),必须重新派遣。
 		pendingAudits.delete(key)
 		dropRerunCopy(entry.rerunDir ?? null)
+		const settleUnknown = (basis, shortfalls) => {
+			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', holds: 'unknown', basis, shortfalls, card_path: null, digest })
+			return { holds: 'unknown', results: [], basis, shortfalls, cardPath: null, digest, mutations }
+		}
 		if (outcome.ok !== true) {
 			return settleUnknown(tr(`评估者失败:${String(outcome.error?.message ?? outcome.error)}`, `The evaluator failed: ${String(outcome.error?.message ?? outcome.error)}`), ['audit_failed'])
 		}
@@ -1621,27 +1640,31 @@ export function apply(ctx, config = {}) {
 		 * 结局不好也是结局,如实落下来——不然那条派发事实会在账上挂到天荒地老,
 		 * 而"评估者没有悬空"这条不变量也只能红着,连解释都拿不出证据。
 		 */
-		const settleUnknown = (basis, shortfalls) => {
-			mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: 'unknown', holds: 'unknown', basis, shortfalls, card_path: null, digest })
-			return { holds: 'unknown', results: [], basis, shortfalls, cardPath: null, digest, mutations }
-		}
+
 		const settled = outcome.value
 		const stopReason = String(settled?.stopReason ?? 'completed')
 		if (stopReason !== 'completed' && settled?.structured === undefined) {
 			return settleUnknown(tr(`评估者未正常结束(${stopReason})`, `The evaluator did not end normally (${stopReason})`), ['audit_incomplete'])
 		}
+		if (settled?.structured === undefined && entry.capability.includes('outputSchema')) return settleUnknown('原生结构化审计结果缺失,文本不作为新裁决', ['audit_structured_missing'])
 		const verdict = settled?.structured !== undefined ? normalizeVerdict(settled.structured) : normalizeVerdict(parseLooseJson(settled?.output))
 		try {
 			await entry.run.dispose?.()
 		} catch {
 			/* dispose 失败不影响裁决事实 */
 		}
-		const card = { schema_version: 'clearai.audit.v2', kind, step_id: step.id, auditor_run_id: String(entry.run.id), holds: verdict.holds, results: verdict.results, anomalies: verdict.anomalies, ...(verdict.lessons.length > 0 ? { lessons: verdict.lessons } : {}), shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
+		const card = { schema_version: 'clearai.audit.v2', kind, step_id: step.id, auditor_run_id: String(entry.run.id), holds: verdict.holds, rechecks: verdict.rechecks, reuse: verdict.reuse, results: verdict.results, anomalies: verdict.anomalies, ...(verdict.lessons.length > 0 ? { lessons: verdict.lessons } : {}), shortfalls: verdict.shortfalls, card: verdict.basis, created_at: Date.now() }
 		const cardPath = writeAuditCard(sessionId, step.id, card)
 		if (cardPath === null) {
 			return settleUnknown(tr('评估卡落盘失败:裁决降级', 'Could not save the evaluation card: verdict downgraded'), ['card_persist_failed'])
 		}
-		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.holds, holds: verdict.holds, results: verdict.results, anomalies: verdict.anomalies, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
+		mutations.push({ t: 'audit/settled', id: entry.auditKey, step: step.id, verdict: verdict.holds, holds: verdict.holds, rechecks: verdict.rechecks, reuse: verdict.reuse, results: verdict.results, anomalies: verdict.anomalies, basis: verdict.basis, shortfalls: verdict.shortfalls, card_path: cardPath, digest })
+		const synced = syncWorkspace(sessionId, stateOf(sessionId))
+		if (synced !== null) mutations.push(synced)
+		const fresh = previewOf(host(), sessionId, mutations)?.state
+		if (fresh === undefined || auditDigest(kind, step, plan, fresh, gate, sessionId) !== digest) {
+			return { ...verdict, holds: 'unknown', shortfalls: [...verdict.shortfalls, 'audit_material_changed'], cardPath, digest, mutations }
+		}
 		return { ...verdict, cardPath, digest, mutations }
 	}
 
@@ -1655,7 +1678,7 @@ export function apply(ctx, config = {}) {
 	function rerunCopy(sessionId, auditKey) {
 		const cwd = sessionCwd(sessionId)
 		if (cwd === null) return null
-		const target = join(tmpdir(), `clearai-rerun-${auditKey}`)
+		const target = join(tmpdir(), `clearai-rerun-${auditPathComponent(auditKey)}`)
 		const skip = new Set([join(cwd, 'clear'), join(cwd, '.git'), join(cwd, 'node_modules')])
 		try {
 			cpSync(cwd, target, { recursive: true, filter: (source) => !skip.has(source) })
@@ -1678,7 +1701,7 @@ export function apply(ctx, config = {}) {
 
 	/** 评估卡落盘(系统的面)。写不进 → 返回 null,调用方 fail-closed。 */
 	function writeAuditCard(sessionId, stepId, card) {
-		const file = sessionFile(sessionId, 'clear', 'evidence', 'audits', String(stepId), `${String(card.auditor_run_id)}.json`)
+		const file = sessionFile(sessionId, 'clear', 'evidence', 'audits', auditPathComponent(stepId), `${auditPathComponent(card.auditor_run_id)}.json`)
 		if (file === null) return null
 		try {
 			writeTextFile(file, `${JSON.stringify(card, null, 2)}\n`)
@@ -2227,12 +2250,12 @@ export function apply(ctx, config = {}) {
 			return null
 		}
 		const cached = workspaceReads.get(file)
-		if (cached !== undefined && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) return cached.change
-		let change
+				let change
 		if (stat.size > WORKSPACE_MAX_BYTES) change = { path, digest: `size:${stat.size}:${stat.mtimeMs}`, error: tr(`文件太大(${stat.size} 字节,上限 ${WORKSPACE_MAX_BYTES})`, `File too large (${stat.size} bytes, limit ${WORKSPACE_MAX_BYTES})`) }
 		else {
 			const raw = readFileSync(file, 'utf8')
-			const digest = createHash('sha1').update(raw).digest('hex').slice(0, 16)
+			const digest = contentDigest(raw)
+			if (cached?.change?.digest === digest) return cached.change
 			try {
 				change = { path, digest, data: JSON.parse(raw) }
 			} catch (error) {
@@ -2569,7 +2592,7 @@ export function apply(ctx, config = {}) {
 			case 'rerun':
 				return run.against === 'none' ? (zh ? `;核算 ${run.model} 已用新数据重跑,结果记为之后比对的基准` : `; computation ${run.model} re-ran on new data and the result is kept as the reference`) : zh ? `;核算 ${run.model} 已用新数据重跑,结果在容差内` : `; computation ${run.model} re-ran on new data within tolerance`
 			case 'failed':
-				return zh ? `;核算 ${run.model} 重跑失败(${run.detail}),按条目原状判定` : `; computation ${run.model} failed to re-run (${run.detail}); judged on the item as it stands`
+				return zh ? `;核算 ${run.model} 复检未完成(${run.detail}),保持待核验` : `; computation ${run.model} re-check incomplete (${run.detail}); remains pending`
 			case 'unavailable':
 				return zh ? `;这个宿主不能执行命令,核算 ${run.model} 没有重跑` : `; this host cannot run commands, so computation ${run.model} was not re-run`
 			case 'invalid':
@@ -2710,11 +2733,11 @@ export function apply(ctx, config = {}) {
 							refute_when: { type: 'string' },
 							about: { type: 'array', items: { type: 'string' }, description: '可选:涉及的实体或量 id;缺省取立题的 about' },
 							uses: { type: 'array', items: { type: 'string' }, description: '可选:用到的已有条目 id(clear/knowledge/ 下的文件名);系统当场判定是否适用' },
-							use: { type: 'string', description: '可选:支撑它的可重跑核算 id,先写 clear/models/<id>.json(command、inputs、output、tolerance,可选 baseline);输入变了,引用时系统重跑比对' },
+							use: { type: 'string', description: '可选:支撑它的可重跑核算 id,先写 clear/models/<id>.json(command、inputs、output、tolerance,可选 baseline);输入或方法变了,引用时系统重跑;偏差与失败保持待核验' },
 							scope: {
 								type: 'object',
-								description: '可选:在哪里成立。conditions 写条件,ranges 写取值范围(如 {"温度": [150, 175]}),note 补一句;缺省取立题的 conditions',
-								properties: { conditions: { type: 'object' }, ranges: { type: 'object' }, note: { type: 'string' } },
+								description: '可选:在哪里成立。conditions 写条件,ranges 写取值范围(如 {"温度": [150, 175]}),units 写单位(如 {"温度":"°C"}),note 补一句;缺省取立题的 conditions',
+								properties: { conditions: { type: 'object' }, ranges: { type: 'object' }, units: { type: 'object' }, note: { type: 'string' } },
 								additionalProperties: false,
 							},
 							retests: {
@@ -2987,16 +3010,17 @@ export function apply(ctx, config = {}) {
 			 * 结果超出容差,这条事实判为待核验,同时登记一条未解释项(反常不依赖模型自己留意)。
 			 */
 			const modelRuns = new Map()
-			for (const hypothesis of hypotheses) {
+			for (const hypothesis of CFG.applicabilityFeedback ? hypotheses : []) {
 				for (const id of mergeAbout(hypothesis?.uses)) {
 					const row = knownRows.find((item) => item.id === id) ?? null
-					if (typeof row?.use === 'string' && row.use !== '' && !modelRuns.has(row.use)) modelRuns.set(row.use, await rerunModel(sessionId, row.use))
+					if (['out_of_scope', 'out_of_range'].includes(compareScope(row?.scope_spec, mergeScope(hypothesis.scope, { conditions: conditionsNow })).verdict)) continue
+					if (typeof row?.use === 'string' && row.use !== '' && !modelRuns.has(row.id)) modelRuns.set(row.id, await rerunModel(sessionId, row.use, row, exec))
 				}
 			}
 			const driftOpened = new Set()
-			for (const run of modelRuns.values()) {
+			for (const [factId, run] of modelRuns) {
 				if (run.status !== 'rerun' || run.deviations.length === 0) continue
-				for (const row of knownRows.filter((item) => item.use === run.model)) {
+				for (const row of knownRows.filter((item) => item.id === factId)) {
 					if (driftOpened.has(row.id)) continue
 					driftOpened.add(row.id)
 					mutations.push({ t: 'anomaly/opened', id: uniqueId('a'), what: tr(`核算 ${run.model} 重跑结果超出容差:${deviationText(run.deviations, 'zh')}`, `Computation ${run.model} re-ran outside tolerance: ${deviationText(run.deviations, 'en')}`), anchor: `clear/evidence/models/${run.model}.json`, touches: [row.id], by: 'system' })
@@ -3005,9 +3029,9 @@ export function apply(ctx, config = {}) {
 			const usesOf = (hypothesis) =>
 				mergeAbout(hypothesis?.uses).map((id) => {
 					const row = knownRows.find((item) => item.id === id) ?? null
-					const run = typeof row?.use === 'string' ? (modelRuns.get(row.use) ?? null) : null
-					const drifted = run?.status === 'rerun' && run.deviations.length > 0
-					const verdict = drifted ? { verdict: 'pending', reasons: [], drift: run } : { ...citeVerdict(row, mergeScope(hypothesis.scope, { conditions: conditionsNow })), ...(run !== null && run.status !== 'current' ? { run } : {}) }
+					const run = typeof row?.use === 'string' ? (modelRuns.get(row.id) ?? null) : null
+					const drifted = run?.pending === true
+					const verdict = !CFG.applicabilityFeedback ? { verdict: 'unchecked', reasons: [] } : drifted ? { verdict: 'pending', reasons: [], ...(run?.deviations?.length ? { drift: run } : { run }) } : { ...citeVerdict(row, mergeScope(hypothesis.scope, { conditions: conditionsNow })), ...(run !== null && run.status !== 'current' ? { run } : {}) }
 					if (!cites.some((cite) => cite.id === id && cite.claim === hypothesis.claim)) cites.push({ id, claim: hypothesis.claim, handle: handleOf({ name: hypothesis.name, claim: hypothesis.claim }), lead: negativeLead(row), verdict })
 					return { id, kind: row?.kind ?? null, verdict: verdict.verdict }
 				})
@@ -3068,7 +3092,7 @@ export function apply(ctx, config = {}) {
 				code: isRevision ? 'goal_revised' : 'goal_set',
 				message:
 					tr(`${isRevision ? `目标已修订(第 ${revision} 版)` : '目标已立'},${carried ? '判断沿用上一版,' : ''}登记了 ${hypotheses.length} 条判断${nextHypotheses.length === 0 ? '' : `:${nextHypotheses.map((item) => `「${handleOf(item)}」`).join('、')}`}。${ontologyFiles.length > 0 ? `写入本体条目 ${ontologyFiles.length} 个。` : ''}`, `${isRevision ? `Goal revised (version ${revision})` : 'Goal set'}; ${carried ? 'judgments carried over from the last version; ' : ''}${hypotheses.length} judgment(s) registered${nextHypotheses.length === 0 ? '' : `: ${nextHypotheses.map((item) => `"${handleOf(item)}"`).join(', ')}`}.${ontologyFiles.length > 0 ? ` ${ontologyFiles.length} ontology entr${ontologyFiles.length === 1 ? 'y' : 'ies'} written.` : ''}`) +
-					frameKnowledgeNote({ about: goalAbout, resolved: resolveAbout(aboutGiven, ontologyEntries), related: relatedKnowledge(knownRows, goalAbout), cites, rows: knownRows }) +
+					frameKnowledgeNote({ about: goalAbout, resolved: resolveAbout(aboutGiven, ontologyEntries), related: relatedKnowledge(knownRows, goalAbout), cites: CFG.applicabilityFeedback ? cites : [], rows: knownRows }) +
 					// 原生 goal 上那一句给人看:用目标的一句话,不写 id。
 					attachNativeGoal(exec.agent, clip(headline === '' ? String(args.claim ?? '') : headline, 120)),
 			})
@@ -3098,11 +3122,13 @@ export function apply(ctx, config = {}) {
 	/** 结论四部分的唯一形状:结论 / 依据 / 尚未确定的事项(各写涉及什么、对答案的影响)/ 待您决策。 */
 	function normalizeAnswers(raw) {
 		if (!Array.isArray(raw)) return []
-		const lines = (list, width) => (Array.isArray(list) ? list : []).map((item) => String(item ?? '').trim().slice(0, width)).filter((item) => item !== '')
+		const lines = (list, width) => (Array.isArray(list) ? list : []).map((item) => String(item ?? '').trim()).filter((item) => item !== '')
 		return raw
 			.map((item) => ({
 				question: String(item?.question ?? '').trim(),
-				conclusion: String(item?.conclusion ?? '').trim().slice(0, 600),
+				uses: mergeAbout(item?.uses),
+				scope: normalizeScope(item?.scope),
+				conclusion: String(item?.conclusion ?? '').trim(),
 				basis: lines(item?.basis, 300).slice(0, 12),
 				open: (Array.isArray(item?.open) ? item.open : [])
 					.map((entry) => ({ about: lines(entry?.about, 80).slice(0, 8), effect: String(entry?.effect ?? '').trim().slice(0, 300) }))
@@ -3160,6 +3186,7 @@ export function apply(ctx, config = {}) {
 			tr('# 结论(做的人按问题写的四部分;请核它与记录是否一致,依据是否真在记录里)', '# Conclusions (written by the worker per question; check they match the record and that the basis is really in it)'),
 			...answers.flatMap((answer) => [
 				`## ${answer.question || tr('目标', 'goal')}:${answer.conclusion || tr(`未回答(${answer.unanswered})`, `unanswered (${answer.unanswered})`)}`,
+				...(answer.uses.length ? [`- 实际采用 / actual uses: ${answer.uses.join(', ')}; scope: ${JSON.stringify(answer.scope)}`] : []),
 				...answer.basis.map((line) => tr(`- 依据:${line}`, `- basis: ${line}`)),
 				...answer.open.map((entry) => tr(`- 尚未确定(${entry.about.join('、') || '—'}):${entry.effect}`, `- open (${entry.about.join(', ') || '—'}): ${entry.effect}`)),
 				...answer.decide.map((line) => tr(`- 待您决策:${line}`, `- for the user to decide: ${line}`)),
@@ -3197,6 +3224,8 @@ export function apply(ctx, config = {}) {
 						properties: {
 							question: { type: 'string', description: '问题 id;目标没列问题时省略' },
 							conclusion: { type: 'string', description: '一两句结论,带数值与适用条件' },
+							uses: { type: 'array', items: { type: 'string' }, description: '最终答案直接使用的知识条目 id,不自动继承立题引用' },
+							scope: { type: 'object', description: '此答案的适用范围,数值范围须带 units' },
 							basis: { type: 'array', items: { type: 'string' }, description: '每个采纳、排除的候选或核验的读数一行,注明来源' },
 							open: {
 								type: 'array',
@@ -3338,18 +3367,37 @@ export function apply(ctx, config = {}) {
 				artifacts: [],
 				tests: candidates.length === 0 ? null : { hypotheses: candidates.map((hypothesis) => hypothesis.id), level: goal.promote_at_level },
 			}
+			let finalRows = knowledgeRows(derived)
+			for (const id of new Set(answers.flatMap((answer) => answer.uses))) {
+				const fact = finalRows.find((row) => row.id === id)
+				if (fact?.use && CFG.applicabilityFeedback) {
+					const run = await rerunModel(sessionId, fact.use, fact, exec)
+					if (run.pending && run.persisted === false) return fail('recheck_persist_failed', '引用复核状态未能保存,保持开放', { mutations })
+				}
+			}
+			const finalSync = syncWorkspace(sessionId, state)
+			if (finalSync !== null) mutations.push(finalSync)
+			const finalView = previewOf(hostService, sessionId, mutations)
+			if (finalView !== null) finalRows = knowledgeRows(finalView.derived)
+			const invalidUses = answers.flatMap((answer) => answer.uses.map((id) => ({ id, ...citeVerdict(finalRows.find((row) => row.id === id), mergeScope(answer.scope, { conditions: goal.conditions ?? {} })) }))).filter((cite) => ['unknown', 'retracted', 'definition_changed', 'pending', 'out_of_scope', 'out_of_range'].includes(cite.verdict))
+			if (CFG.applicabilityFeedback && invalidUses.length) return fail('answer_uses_invalid', `最终引用尚不可使用: ${invalidUses.map((cite) => `${cite.id}: ${cite.verdict}`).join('; ')}。复检后再引用;如采用独立新证据,直接列出它,不要声明旧知识已恢复。`, { mutations })
 			const proposedLessons = proposedLessonsOf(args.lessons)
 			const gate = {
 				confirmed: [
 					...state.evidence.map((item) => ({ ref: `evidence:${item.id}`, bytes: 0, digest: `verdict=${item.verdict}` })),
 					...derived.hypotheses.map((item) => ({ ref: `hypothesis:${item.id}`, bytes: 0, digest: `${item.status}/支持到${item.supportedLevel ?? '—'}` })),
 				],
+				answers, lessons: proposedLessons,
 				extra: [...answersBrief(answers), ...lessonBrief(proposedLessons)],
 			}
 			const audit = await runEvaluator(sessionId, exec.agent, plan, syntheticStep, gate, 'goal_audit', exec.signal)
 			mutations.push(...audit.mutations)
 			if (audit.holds === 'pending') return fail('audit_pending', tr(`目标评估者仍在跑:${plainIds(sessionId, audit.basis)}。先观察当前事实,再谈重试。`, `The goal evaluator is still running: ${plainIds(sessionId, audit.basis)}. Look at the current facts before retrying.`), { mutations: audit.mutations })
 			if (audit.holds !== 'yes') {
+				const failureStep = `goal:${goal.id}:${audit.digest ?? 'unknown'}`
+				const failures = (state.blocks[`goal:${failureStep}`] ?? 0) + 1
+				mutations.push({ t: 'block/counted', plan: 'goal', step: failureStep, count: failures, reason: `goal_audit:${audit.holds}` })
+				if (failures >= CFG.blockedThreshold) blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, `目标审查连续失败 ${failures} 次,保持开放并停止续跑`)
 				/**
 				 * **复用来的裁决不落第二条证据**。
 				 *
@@ -3411,23 +3459,16 @@ export function apply(ctx, config = {}) {
 			 * 补写 `answers` 后再结案,材料没变,裁决复用,不再花一次评估。
 			 * 只在审计之前看的话,评估者指出的问题从不经过停止检查。
 			 */
-			if (CFG.requireAnswers && audit.reused !== true) {
-				const settled = audit.mutations.find((mutation) => mutation.t === 'audit/settled') ?? null
-				const covered = new Set(answers.flatMap((answer) => answer.open.flatMap((entry) => entry.about)))
-				const raised = (Array.isArray(settled?.anomalies) ? settled.anomalies : [])
-					.map((item, index) => ({ id: `${settled.id}#u${index + 1}`, what: String(item?.what ?? ''), matters: item?.matters ?? 'unclear' }))
-					.filter((item) => item.matters !== 'no' && !covered.has(item.id))
-				if (raised.length > 0) {
-					return fail(
-						'answers_incomplete',
-						tr(
-							`独立评估者在审计中指出 ${raised.length} 项未解释的现象,结论里还没有交代,暂不结案:\n${raised.map((item) => `- ${item.id}「${clip(item.what, 100)}」`).join('\n')}\n逐项处理:检验掉、用 Anomaly 写明理由排除,或写进「尚未确定的事项」(about 写它的 id)并说明对结论的影响。材料不变时再次结案会复用这次裁决。`,
-							`The independent evaluator raised ${raised.length} unexplained observation(s) during the audit that the conclusion does not address yet, so the goal stays open:\n${raised.map((item) => `- ${item.id} "${clip(item.what, 100)}"`).join('\n')}\nHandle each: test it away, rule it out with a reason via Anomaly, or put it in the open points (about: its id) with its effect on the conclusion. If the material is unchanged, concluding again reuses this verdict.`,
-						),
-						{ mutations },
-					)
-				}
+			const afterAudit = previewOf(hostService, sessionId, mutations)
+			if (afterAudit === null) return fail('host_unavailable', '审计后无法重新核对材料,保持开放', { mutations })
+			if (CFG.requireAnswers) {
+				const missing = unsettledForAnswers(afterAudit.state, afterAudit.derived, answers)
+				if (missing.length) return fail('answers_incomplete', `审计后仍有未处理事项:\n${missing.join('\n')}`, { mutations })
 			}
+			const afterUses = answers.flatMap((answer) => answer.uses.map((id) => ({ id, ...citeVerdict(knowledgeRows(afterAudit.derived).find((row) => row.id === id), mergeScope(answer.scope, { conditions: goal.conditions ?? {} })) }))).filter((cite) => ['unknown', 'retracted', 'definition_changed', 'pending', 'out_of_scope', 'out_of_range'].includes(cite.verdict))
+			if (CFG.applicabilityFeedback && afterUses.length) return fail('answer_uses_invalid', '审计期间引用状态发生变化,保持开放', { mutations })
+			for (const answer of answers) answer.uses_review = answer.uses.map((id) => ({ id, confirmed: answer.basis.length > 0 && (audit.reuse ?? []).some((row) => row.id === id && row.verdict === 'support' && row.basis !== ''), card_path: audit.cardPath, digest: audit.digest }))
+
 			/**
 			 * **没被任何证据触及的假设**,结案时如实记一笔。
 			 *
@@ -3535,7 +3576,9 @@ export function apply(ctx, config = {}) {
 				 */
 				let definitions = null
 				try {
-					const said = `${hypothesis.claim ?? ''}\n${hypothesis.refute_when ?? ''}`
+					const aboutIds = mergeAbout(hypothesis.about, goal.about)
+					const entityTypes = (state.entities ?? []).filter((entity) => aboutIds.includes(entity.id)).map((entity) => entity.type)
+					const said = `${hypothesis.claim ?? ''}\n${hypothesis.refute_when ?? ''}\n${[...aboutIds, ...entityTypes].join(' ')}`
 					const found = hostService.domain?.definitions?.(sessionId, assertions ?? [], mutations, said) ?? null
 					definitions = found !== null && Object.keys(found).length > 0 ? found : null
 				} catch {
@@ -3549,7 +3592,8 @@ export function apply(ctx, config = {}) {
 				const scope = scopeSpec === null ? null : tr(scopeText(scopeSpec, 'zh'), scopeText(scopeSpec, 'en'))
 				/** 涉及的实体或量:判断自己写的加上立题的,文件查找按它们取到这条事实。 */
 				const about = mergeAbout(hypothesis.about, goal.about)
-				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, about, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, assertions, definitions, ...(typeof hypothesis.use === 'string' ? { use: hypothesis.use } : {}) }
+				const evidenceRecords = [...state.evidence, ...mutations.filter((item) => item.t === 'evidence/recorded')].filter((item) => evidence.includes(item.id))
+				const record = { id: factId, goal: goal.id, hypothesis: hypothesis.id, text: hypothesis.claim, about, scope, scope_spec: scopeSpec, refute_when: hypothesis.refute_when ?? null, level: factLevel ?? null, evidence, evidence_records: evidenceRecords, assertions, definitions, ...(typeof hypothesis.use === 'string' ? { use: hypothesis.use, calculation: calculationSnapshot(sessionId, hypothesis.use) } : {}) }
 				const path = persistFact(sessionId, record)
 				/**
 				 * 事实带上**适用范围**(`scope` 是给人读的一行,`scope_spec` 是可比较的形状)与**推翻条件**:
@@ -3593,7 +3637,7 @@ export function apply(ctx, config = {}) {
 				const lessonScope = mergeScope({ conditions: goal.conditions ?? {} }, null)
 				const record = { id: `l-${Math.random().toString(36).slice(2, 8)}`, goal: goal.id, ...lesson, about: mergeAbout(lesson.about, goal.about), ...(lessonScope === null ? {} : { scope_spec: lessonScope }), basis: verdict.basis }
 				const path = persistLesson(sessionId, record)
-				mutations.push({ t: 'lesson/recorded', id: record.id, goal: goal.id, text: lesson.text, kind: lesson.kind, about: record.about, evidence: lesson.evidence, boundary: lesson.boundary, basis: verdict.basis, path })
+				mutations.push({ t: 'lesson/recorded', id: record.id, goal: goal.id, text: lesson.text, kind: lesson.kind, about: record.about, scope_spec: record.scope_spec, evidence: lesson.evidence, boundary: lesson.boundary, basis: verdict.basis, path })
 				keptLessons.push(record)
 			})
 			return done({
@@ -3662,68 +3706,110 @@ export function apply(ctx, config = {}) {
 
 	/**
 	 * **可重跑的核算**(`clear/models/<id>.json`,见 `models.js`):引用一条带 `use` 的事实时调用。
-	 * 输入文件自上次运行后没变就不跑;变了就在工作区里用宿主的 `shell` 跑一次,读输出、与上次
+	 * 输入与方法的内容摘要没变就不跑;变了就在工作区里用宿主的 `shell` 跑一次,读输出、与上次
 	 * (第一次则与登记的 `baseline`)比对,写运行记录(`clear/evidence/models/<id>.json`)。
 	 * 拿不到 shell、登记不对、命令失败,都如实返回状态,不当成偏差。
 	 */
 	const MODEL_TIMEOUT_MS = 60000
-	async function rerunModel(sessionId, modelId) {
+	function calculationSnapshot(sessionId, modelId) {
 		const cwd = sessionCwd(sessionId)
-		if (cwd === null || typeof modelId !== 'string' || !MODEL_ID.test(modelId)) return { status: 'missing', model: modelId }
-		let spec
+		if (!cwd || !MODEL_ID.test(String(modelId))) return null
 		try {
-			spec = JSON.parse(readFileSync(join(cwd, 'clear', 'models', `${modelId}.json`), 'utf8'))
-		} catch {
-			return { status: 'missing', model: modelId }
-		}
-		const problems = checkModelSpec(spec, modelId)
-		if (problems.length > 0) return { status: 'invalid', model: modelId, detail: problems.join(';') }
-		const recordFile = join(cwd, 'clear', 'evidence', 'models', `${modelId}.json`)
-		let record = null
+			const path = `clear/models/${modelId}.json`
+			const spec = JSON.parse(readFileSync(join(cwd, path), 'utf8'))
+			let reference = numericOutputs(spec.baseline)
+			try { reference = numericOutputs(JSON.parse(readFileSync(join(cwd, spec.output), 'utf8'))) } catch {}
+			return { model: modelId, reference: Object.keys(reference).length ? reference : null, inputs: Object.fromEntries(spec.inputs.map((path) => [path, fileDigest(cwd, path)])), method: methodSnapshot(cwd, spec, path), at: Date.now() }
+		} catch { return null }
+	}
+
+	function persistRechecks(sessionId, fact, reasons) {
+		if (!fact || !/^[A-Za-z0-9_-]+$/.test(fact.id)) return false
+		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${fact.id}.json`)
+		if (!file) return false
 		try {
-			record = JSON.parse(readFileSync(recordFile, 'utf8'))
-		} catch {
-			record = null
-		}
-		const lastRun = Array.isArray(record?.runs) && record.runs.length > 0 ? record.runs[record.runs.length - 1] : null
-		const stamp = {}
-		for (const input of spec.inputs) {
-			try {
-				stamp[input] = statSync(join(cwd, input)).mtimeMs
-			} catch {
-				stamp[input] = null
+			const data = JSON.parse(readFileSync(file, 'utf8'))
+			const rechecks = [...(data.rechecks ?? [])]
+			for (const reason of reasons) {
+				const id = contentDigest({ kind: reason.kind, model: reason.model, inputs: reason.inputs, method: reason.method, source: reason.source }).slice(0, 32)
+				if (!rechecks.some((row) => row.id === id)) rechecks.push({ ...reason, id, status: 'pending', scope_spec: data.scope_spec ?? null, at: Date.now() })
 			}
+			data.rechecks = rechecks
+			writeTextFile(file, `${JSON.stringify(data, null, 2)}\n`)
+			fact.rechecks = rechecks
+			return true
+		} catch (error) { ctx.logger?.warn?.(`clearai: recheck persistence failed: ${error.message}`); return false }
+	}
+
+	async function rerunModel(sessionId, modelId, fact, exec) {
+		const cwd = sessionCwd(sessionId)
+		const resultFile = `clear/evidence/models/${modelId}.json`
+		const incomplete = (status, detail, snapshot = {}) => {
+			const reason = { kind: 'recheck_incomplete', model: modelId, evidence: resultFile, detail, ...snapshot }
+			const persisted = persistRechecks(sessionId, fact, [reason])
+			return { status, model: modelId, detail, pending: true, persisted, deviations: [] }
 		}
-		if (!needsRerun(lastRun, stamp)) return { status: 'current', model: modelId }
-		const shell = ctx.get('shell')
-		if (shell === undefined || shell === null || typeof shell.execute !== 'function') return { status: 'unavailable', model: modelId }
-		let result
+		if (!cwd || !MODEL_ID.test(String(modelId))) return incomplete('missing', 'workspace or model id unavailable')
+		let spec
+		try { spec = JSON.parse(readFileSync(join(cwd, 'clear', 'models', `${modelId}.json`), 'utf8')) } catch { return incomplete('missing', 'registration missing') }
+		const problems = checkModelSpec(spec, modelId)
+		if (problems.length) return incomplete('invalid', problems.join(';'))
+		const method = methodSnapshot(cwd, spec, `clear/models/${modelId}.json`)
+		const stamp = Object.fromEntries(spec.inputs.map((path) => [path, fileDigest(cwd, path)]))
+		const snapshot = { inputs: stamp, method }
+		const reference = fact?.calculation?.reference ?? null
+		const reasons = []
+		if (fact?.calculation?.method && fact.calculation.method !== method) reasons.push({ kind: 'method_changed', model: modelId, ...snapshot, evidence: resultFile })
+		if (!reference || !Object.keys(numericOutputs(reference)).length) reasons.push({ kind: 'reference_missing', model: modelId, ...snapshot, evidence: resultFile })
+		let record = null
+		try { record = JSON.parse(readFileSync(join(cwd, resultFile), 'utf8')) } catch {}
+		const lastRun = record?.runs?.at(-1) ?? null
+		let outputs = lastRun?.outputs
+		let status = 'current'
+		if (lastRun && fileDigest(cwd, spec.output) === 'missing-or-unreadable') return incomplete('failed', 'output missing', snapshot)
+		if (needsRerun(lastRun, stamp) || lastRun?.method !== method) {
+			if (Object.values(stamp).some((value) => value === 'missing-or-unreadable')) return incomplete('failed', 'input missing', snapshot)
+			if (typeof ctx.tools?.execute !== 'function' || !ctx.get('shell')) return incomplete('unavailable', 'native tool registry or shell unavailable', snapshot)
+			let execution
+			try {
+				execution = await ctx.tools.execute({ name: process.platform === 'win32' ? 'pwsh' : 'bash', arguments: { command: spec.command, description: 'Recheck registered calculation against accepted evidence', workdir: cwd, timeoutMs: MODEL_TIMEOUT_MS, run_in_background: false }, agent: exec.agent, signal: exec.signal, callId: `${exec.callId}:model:${modelId}`, parent: exec })
+			} catch (error) { return incomplete('failed', String(error?.message ?? error).slice(0, 200), snapshot) }
+			const result = execution?.value
+			if (execution?.isError || result?.timedOut || result?.aborted || result?.exitCode !== 0) return incomplete('failed', String(execution?.error?.message ?? result?.stderr?.text ?? 'execution incomplete').slice(-200), snapshot)
+			try { outputs = numericOutputs(JSON.parse(readFileSync(join(cwd, spec.output), 'utf8'))) } catch { return incomplete('failed', `cannot read ${spec.output}`, snapshot) }
+			status = 'rerun'
+		}
+		const deviations = compareOutputs(reference, outputs ?? {}, spec.tolerance)
+		if (deviations.length) reasons.push({ kind: 'output_deviation', model: modelId, ...snapshot, evidence: resultFile, reference, outputs, deviations })
+		if (status === 'rerun') {
+			try { writeTextFile(join(cwd, resultFile), `${JSON.stringify({ id: modelId, ...appendRun(record, { at: Date.now(), inputs: stamp, method, outputs, deviations }) }, null, 2)}\n`) }
+			catch { return incomplete('failed', 'observation persistence failed', snapshot) }
+		}
+		if (reasons.length && !persistRechecks(sessionId, fact, reasons)) return incomplete('failed', 'pending reasons could not be persisted', snapshot)
+		return { status, model: modelId, deviations, pending: (fact?.rechecks ?? []).some((row) => row.status === 'pending'), against: 'baseline' }
+	}
+
+	function confirmRechecks(sessionId, factId, hypothesis, audit, state) {
+		if (audit.reused || audit.holds !== 'yes') return
+		const row = knowledgeRows(host().derive(sessionId)).find((row) => row.id === factId)
+		if (!row || compareScope(row.scope_spec, mergeScope(hypothesis.scope, { conditions: state.goal?.conditions ?? {} })).verdict !== 'applies') return
+		const file = sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${factId}.json`)
 		try {
-			const request = { command: spec.command, cwd, timeoutMs: MODEL_TIMEOUT_MS }
-			const execution = await shell.execute(typeof shell.resolve === 'function' ? shell.resolve(request) : request)
-			result = await execution.result()
-		} catch (error) {
-			return { status: 'failed', model: modelId, detail: String(error?.message ?? error).slice(0, 200) }
-		}
-		if (result?.timedOut === true || (typeof result?.exitCode === 'number' && result.exitCode !== 0)) {
-			const tail = String(result?.stderr?.text ?? '').trim().slice(-200)
-			return { status: 'failed', model: modelId, detail: result?.timedOut === true ? tr('超时', 'timed out') : `exit ${result.exitCode}${tail === '' ? '' : `:${tail}`}` }
-		}
-		let outputs
-		try {
-			outputs = numericOutputs(JSON.parse(readFileSync(join(cwd, spec.output), 'utf8')))
-		} catch (error) {
-			return { status: 'failed', model: modelId, detail: tr(`读不到输出 ${spec.output}`, `cannot read the output ${spec.output}`) }
-		}
-		const reference = lastRun?.outputs ?? (spec.baseline ?? null)
-		const deviations = compareOutputs(reference, outputs, spec.tolerance)
-		const at = Date.now()
-		try {
-			writeTextFile(recordFile, `${JSON.stringify({ id: modelId, ...appendRun(record, { at, inputs: stamp, outputs, deviations }) }, null, 2)}\n`)
-		} catch {
-			/* 记录写不下去不影响这次的判定 */
-		}
-		return { status: 'rerun', model: modelId, deviations, against: lastRun !== null ? 'last' : reference === null ? 'none' : 'baseline' }
+			const data = JSON.parse(readFileSync(file, 'utf8'))
+			const approved = new Set((audit.rechecks ?? []).filter((item) => item.fact === factId && item.basis.trim() !== '').map((item) => item.id))
+			let observed = null, spec = null
+			if (data.use) {
+				observed = JSON.parse(readFileSync(sessionFile(sessionId, 'clear', 'evidence', 'models', `${data.use}.json`), 'utf8')).runs.at(-1)
+				spec = JSON.parse(readFileSync(sessionFile(sessionId, 'clear', 'models', `${data.use}.json`), 'utf8'))
+				if (!observed || observed.method !== methodSnapshot(sessionCwd(sessionId), spec, `clear/models/${data.use}.json`) || spec.inputs.some((path) => observed.inputs[path] !== fileDigest(sessionCwd(sessionId), path))) return
+			}
+			data.rechecks = (data.rechecks ?? []).map((reason) => {
+				if (reason.status !== 'pending' || !approved.has(reason.id)) return reason
+				if (reason.model && (!observed || !data.calculation?.reference || compareOutputs(data.calculation.reference, observed.outputs, spec.tolerance).length)) return reason
+				return { ...reason, status: 'resolved', resolution: { by: 'independent', card_path: audit.cardPath, hypothesis: hypothesis.id, at: Date.now() } }
+			})
+			writeTextFile(file, `${JSON.stringify(data, null, 2)}\n`)
+		} catch (error) { ctx.logger?.warn?.(`clearai: confirmation incomplete: ${error.message}`) }
 	}
 
 	/**
@@ -3736,10 +3822,17 @@ export function apply(ctx, config = {}) {
 	 */
 	const negativeWrites = new Map()
 	function writeBack(sessionId, state, derived) {
-		if (isSpawnedChild(sessionId)) return []
+		if (isSpawnedChild(sessionId) || !CFG.negativeWriteback) return []
 		if (state === null || state === undefined) return []
 		const written = []
 		for (const item of negativeItems(state, derived, { session: sessionId })) {
+			if (['unresolved', 'defect', 'escalated'].includes(item.status)) for (const id of item.touches ?? []) {
+				const fact = findFact(sessionId, state, id)
+				if (!fact) continue
+				const fit = compareScope(fact.scope_spec, item.scope)
+				if (['out_of_scope', 'out_of_range'].includes(fit.verdict)) continue
+				persistRechecks(sessionId, fact, [{ kind: 'anomaly', source: item.id, detail: item.statement, evidence: item.about?.find((ref) => ref.includes('/')) ?? null }])
+			}
 			const file = sessionFile(sessionId, ...NEGATIVES_REL, `${item.id}.json`)
 			if (file === null) return written
 			const body = JSON.stringify(item)
@@ -4168,6 +4261,7 @@ export function apply(ctx, config = {}) {
 			let results = []
 			/** 独立裁决的两件凭据(自判路径下保持 null):评估卡文件与写它的**评估者子会话**。 */
 			let auditCardPath = null
+			let deliveredAudit = null
 			let auditSessionId = null
 			/** 复用说明(模型与人都看得到的那一句);不复用时为空串。 */
 			let reuseNote = ''
@@ -4182,6 +4276,7 @@ export function apply(ctx, config = {}) {
 				const beforeAudit = CFG.auditRerun ? digestsOf() : ''
 				const audit = await runEvaluator(sessionId, exec.agent, plan, step, gate, 'evidence_audit', exec.signal)
 				mutations.push(...audit.mutations)
+				deliveredAudit = audit
 				foundByEvaluator = audit.reused === true ? [] : Array.isArray(audit.anomalies) ? audit.anomalies : []
 				if (CFG.auditRerun && audit.reused !== true && ['yes', 'no', 'unclear'].includes(audit.holds) && digestsOf() !== beforeAudit) {
 					return fail('evaluator_touched_outputs', tr('评估期间,收下的产物被改动过(评估者应当只在副本里复跑):这份裁决不认。重新交付会再派一次评估。', 'The accepted outputs changed during evaluation (the evaluator should re-run only in the copy), so this verdict is not accepted. Delivering again dispatches a new evaluation.'), { mutations })
@@ -4317,6 +4412,10 @@ export function apply(ctx, config = {}) {
 			 * **交付成立 ⇒ 这一步完成**,不论结果是支持、推翻还是说不清。
 			 * 交付本身(谁判的、凭什么、出处)记在推进这条事实上;判断的状态由证据算。
 			 */
+			if (deliveredAudit && evaluator === 'independent') for (const result of results) {
+				const hypothesis = state.hypotheses.find((row) => row.id === result.hypothesis)
+				if (result.verdict === 'support' && hypothesis?.retests) confirmRechecks(sessionId, hypothesis.retests, hypothesis, deliveredAudit, state)
+			}
 			mutations.push({ t: 'step/advanced', plan: plan.id, step: step.id, evidence: evidenceIds, evaluator, basis, refs: originInfo.paths, origins: originInfo.origins })
 			mutations.push({ t: 'block/cleared', plan: plan.id, step: step.id })
 			const outcome = results.length === 0 ? '' : `\n${tr('结果:', 'Results: ')}${results.map((item) => `${quote(handleById(state, item.hypothesis))}${tr('', ' ')}${verdictWord(item.verdict)}`).join(tr(';', '; '))}${tr('。', '.')}`
@@ -4456,7 +4555,7 @@ export function apply(ctx, config = {}) {
 		 */
 		if (factMutations.length > 0) sections.push({ name: 'clearai/mutations', text: JSON.stringify({ mutations: factMutations }) })
 		return {
-			id: `clearai-notice-${payload.turn}-${payload.step}-${Date.now().toString(36)}`,
+			id: `clearai-notice-${payload.turn}-${payload.step}-${randomUUID()}`,
 			role: 'user',
 			content: text(note),
 			source: { kind: MESSAGE_SOURCE_KIND, form: 'snapshot', sections },
@@ -4477,13 +4576,15 @@ export function apply(ctx, config = {}) {
 		const key = String(id ?? '').trim()
 		if (!/^[A-Za-z0-9_-]+$/.test(key)) return null
 		const own = (state.facts ?? []).find((fact) => fact.id === key)
-		if (own !== undefined) return own
+		if (own !== undefined) {
+			try { return { ...own, ...JSON.parse(readFileSync(sessionFile(sessionId, 'clear', 'knowledge', 'facts', `${key}.json`), 'utf8')) } } catch { return own }
+		}
 		const cwd = sessionCwd(sessionId)
 		if (cwd === null) return null
 		try {
 			const data = JSON.parse(readFileSync(join(cwd, 'clear', 'knowledge', 'facts', `${key}.json`), 'utf8'))
 			if (String(data?.id ?? '') !== key || typeof data?.text !== 'string') return null
-			return { id: key, text: data.text, hypothesis: data.hypothesis ?? null, review: data.review ?? null, scope: data.scope ?? null, scope_spec: normalizeScope(data.scope_spec), foreign: true }
+			return { ...data, id: key, text: data.text, hypothesis: data.hypothesis ?? null, review: data.review ?? null, scope: data.scope ?? null, scope_spec: normalizeScope(data.scope_spec), foreign: true }
 		} catch {
 			return null
 		}
@@ -4536,6 +4637,7 @@ export function apply(ctx, config = {}) {
 			const decision = review.retracted ? 'retracted' : 'kept'
 			data.status = review.retracted ? 'retracted' : 'established'
 			data.review = { decision, reason, at, by: 'user' }
+			if (!review.retracted) data.rechecks = (data.rechecks ?? []).map((item) => item.status === 'pending' && (fact.rechecks ?? []).some((known) => known.id === item.id) ? { ...item, status: 'resolved', resolution: { by: 'user', reason, at } } : item)
 			data.history = [...(Array.isArray(data.history) ? data.history : []), { event: decision, at, reason }]
 			writeTextFile(file, `${JSON.stringify(data, null, 2)}\n`)
 			return file
@@ -5115,6 +5217,8 @@ export function apply(ctx, config = {}) {
 				answers: 'On achieved, one per question. Candidates still being examined and open unexplained items go in open with their effect',
 				'answers.items.question': 'Question id; omit when the goal lists no questions',
 				'answers.items.conclusion': 'One or two sentences with values and the conditions where they hold',
+				'answers.items.uses': 'Knowledge entry IDs directly used by this final answer; framing references are not inherited',
+				'answers.items.scope': 'Applicable scope of this answer; numeric ranges need units',
 				'answers.items.basis': 'One line per adopted or excluded candidate or checked reading, naming the source',
 				'answers.items.open': 'Open points: about = candidate short names, unexplained item ids or question ids; effect = how the conclusion changes if it holds',
 				'answers.items.decide': 'Decisions for the person',

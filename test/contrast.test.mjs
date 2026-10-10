@@ -185,7 +185,7 @@ check('两条事实成对(dispatched 与 settled 同源)', goalAuditKinds.filter
 const evaluatorBody = functionBody(KERNEL_SOURCE, 'async function runEvaluator(')
 check('runEvaluator 取得出来', typeof evaluatorBody === 'string' && evaluatorBody.length > 400, String(evaluatorBody?.length ?? 0))
 {
-	const firstAwait = maskCommentsAndStrings(evaluatorBody).indexOf('await')
+	const firstAwait = maskCommentsAndStrings(evaluatorBody).indexOf('await dispatchSubRun')
 	const beforeAwait = firstAwait < 0 ? evaluatorBody : evaluatorBody.slice(0, firstAwait)
 	/**
 	 * 「独立落账」的判据:在内核第一次 `await` **之前**,就有一个把事实推进**独立通道**的调用,
@@ -193,7 +193,7 @@ check('runEvaluator 取得出来', typeof evaluatorBody === 'string' && evaluato
 	 * 因为它已经不在那个可被撤销的栈帧里了。
 	 */
 	const landing = /(landFact|recordFact|pendingFacts\s*[.(])/.test(beforeAwait) && /audit/.test(beforeAwait)
-	check('新机制:runEvaluator 在 await 之前就有独立落账调用(落的是这次审计)', landing, `await 位置=${firstAwait}; 之前 ${beforeAwait.length} 字`)
+	check('新机制:runEvaluator 在派发 await 之前就有独立落账调用(落的是这次审计)', landing, `await 位置=${firstAwait}; 之前 ${beforeAwait.length} 字`)
 	check('独立通道存在(不是只把变更塞进工具结果)', /pendingFacts/.test(KERNEL_SOURCE) && /function landFact\(/.test(KERNEL_SOURCE))
 	check('工具结果的出口会把独立通道的事实并进去(两条通道同源)', /withPendingFacts\(/.test(KERNEL_SOURCE) && /drainPendingFacts\(/.test(KERNEL_SOURCE))
 	// 这套检查是活的:故意把 landing 判据喂给一段「先 await 再落账」的代码,它必须判否。

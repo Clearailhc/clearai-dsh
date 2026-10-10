@@ -24,16 +24,19 @@ export function normalizeScope(raw) {
 		if (name !== '' && text !== '') conditions[name] = text
 	}
 	const ranges = {}
+	const units = {}
 	for (const [key, value] of Object.entries(raw.ranges ?? {}).slice(0, MAX_ENTRIES)) {
 		const name = String(key ?? '').trim().slice(0, WIDTH.key)
 		if (name === '' || !Array.isArray(value) || value.length !== 2) continue
-		const [low, high] = value.map(Number)
+		const [low, high] = value
+		if (typeof low !== 'number' || typeof high !== 'number') continue
 		if (!Number.isFinite(low) || !Number.isFinite(high)) continue
 		ranges[name] = low <= high ? [low, high] : [high, low]
+		if (typeof raw.units?.[key] === 'string' && raw.units[key].trim()) units[name] = raw.units[key].trim()
 	}
 	const note = typeof raw.note === 'string' ? raw.note.trim().slice(0, WIDTH.note) : ''
 	if (Object.keys(conditions).length === 0 && Object.keys(ranges).length === 0 && note === '') return null
-	return { conditions, ranges, ...(note === '' ? {} : { note }) }
+	return { conditions, ranges, ...(Object.keys(units).length ? { units } : {}), ...(note === '' ? {} : { note }) }
 }
 
 /** 合并:`primary` 的条目覆盖 `fallback` 的同名条目(判断自己写的优先于目标的默认条件)。 */
@@ -45,6 +48,7 @@ export function mergeScope(primary, fallback) {
 	return normalizeScope({
 		conditions: { ...second.conditions, ...first.conditions },
 		ranges: { ...second.ranges, ...first.ranges },
+		units: { ...second.units, ...first.units },
 		note: first.note ?? second.note,
 	})
 }
@@ -57,7 +61,7 @@ export function scopeText(raw, language = 'zh') {
 	const parts = []
 	const conditions = Object.entries(scope.conditions).map(([key, value]) => `${key}=${value}`)
 	if (conditions.length > 0) parts.push(en ? `conditions ${conditions.join(', ')}` : `条件 ${conditions.join('、')}`)
-	const ranges = Object.entries(scope.ranges).map(([key, [low, high]]) => `${key} ${low}–${high}`)
+	const ranges = Object.entries(scope.ranges).map(([key, [low, high]]) => `${key} ${low}–${high}${scope.units?.[key] ? ` ${scope.units[key]}` : ""}`)
 	if (ranges.length > 0) parts.push(en ? `ranges ${ranges.join(', ')}` : `取值 ${ranges.join('、')}`)
 	if (scope.note !== undefined) parts.push(scope.note)
 	return parts.join(en ? '; ' : ';')
@@ -82,16 +86,17 @@ export function compareScope(item, current) {
 	const here = normalizeScope(current) ?? { conditions: {}, ranges: {} }
 	const outside = []
 	const beyond = []
-	const missing = []
+	const missing = scope.note ? ["文字边界 / text boundary"] : []
 	for (const [key, value] of Object.entries(scope.conditions)) {
 		if (!(key in here.conditions)) missing.push(key)
 		else if (!same(here.conditions[key], value)) outside.push({ key, expected: value, actual: here.conditions[key] })
 	}
 	for (const [key, [low, high]] of Object.entries(scope.ranges)) {
-		if (!(key in here.ranges)) missing.push(key)
+		if (!(key in here.ranges) || !scope.units?.[key] || !here.units?.[key] || scope.units[key] !== here.units[key]) missing.push(key)
 		else {
 			const [from, to] = here.ranges[key]
-			if (from < low || to > high) beyond.push({ key, expected: [low, high], actual: [from, to] })
+			if (to < low || from > high) beyond.push({ key, expected: [low, high], actual: [from, to] })
+			else if (from < low || to > high) missing.push(key)
 		}
 	}
 	if (outside.length > 0) return { verdict: 'out_of_scope', reasons: outside }

@@ -98,6 +98,8 @@ export function negativeItems(state, derived = null, { session = null } = {}) {
 			kind: defect ? 'defect' : 'unresolved',
 			status: defect ? 'defect' : (ANOMALY_STATUS[anomaly.status] ?? 'unresolved'),
 			statement: what.slice(0, WIDTH.statement),
+			touches: mergeAbout(anomaly.touches),
+			evidence: typeof anomaly.anchor === 'string' && /[/.]/.test(anomaly.anchor) ? [{ ref: anomaly.anchor }] : [],
 			about: mergeAbout(anomaly.anchor, anomaly.touches, goalAbout),
 			scope: mergeScope({ conditions }, null),
 			...(anomaly.status !== 'open' ? { resolution: { outcome: anomaly.status, reason: String(anomaly.reason ?? '').slice(0, WIDTH.reason), by: anomaly.explainedBy ?? null } } : {}),
@@ -164,6 +166,10 @@ export function relatedKnowledge(rows, aboutIds) {
 export function citeVerdict(row, current) {
 	if (row === null || row === undefined) return { verdict: 'unknown', reasons: [] }
 	if (row.kind === 'fact') {
+		const scope = compareScope(row.scope_spec ?? null, current)
+		if (['out_of_scope', 'out_of_range'].includes(scope.verdict)) return scope
+		const pending = (row.rechecks ?? []).filter((reason) => reason.status === 'pending')
+		if (pending.length) return { verdict: 'pending', reasons: pending }
 		if (row.review?.decision === 'retracted') return { verdict: 'retracted', reasons: [] }
 		if (Array.isArray(row.definitionsChanged) && row.definitionsChanged.length > 0) return { verdict: 'definition_changed', reasons: row.definitionsChanged.map((key) => ({ key })) }
 		if ((row.refuted === true && row.review === null) || (Array.isArray(row.questioned) && row.questioned.length > 0)) return { verdict: 'pending', reasons: [] }

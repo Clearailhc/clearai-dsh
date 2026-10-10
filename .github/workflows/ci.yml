@@ -64,3 +64,16 @@ jobs:
         # 以及随包那个 `install` 动词。它以前**哪都不自动跑**,于是一道永远打不开的比对在里面
         # 烂了很久(2026-09-15 一并修掉)。放进 CI:每次 push 都真的走一遍。
         run: node tools/verify-lifecycle.mjs
+
+  windows-audit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Native Windows audit card and replay regressions
+        shell: bash
+        run: |
+          node --test test/audit-material.test.mjs
+          node test/kernel.test.mjs

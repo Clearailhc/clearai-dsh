@@ -1,3 +1,11 @@
+## 0.5.2-rc.9 (PR #23 continuation, unreleased)
+
+- Persist audit dispatch and child associations through native log-only hooks carrying signed notices so DSH rc.2 can reopen session logs.
+- Hash audit card path components; bind verdict reuse to answer, references, definitions, inputs, methods and artifact contents; recheck after evaluation.
+- Persist calculation recheck reasons across sessions and retain immutable accepted references. Final answers declare actual knowledge use.
+- Add isolated native test carrier, usage accounting, read-isolation probes, fault tests and new sequence preregistration assets. Product acceptance remains pending.
+- Rebuild state version 21 from the original ledger. Old fingerprints cannot close goals under the new rules. Do not migrate experimental RC.6 unknown-event logs into native profiles.
+
 # Changelog
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

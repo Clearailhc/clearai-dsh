@@ -24,7 +24,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } 
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, extname, join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = resolve(HERE, '..')
@@ -51,6 +51,10 @@ if (!existsSync(DIST)) {
 }
 
 const manifest = JSON.parse(readFileSync(join(DIST, 'package.json'), 'utf8'))
+try {
+	const fold = await import(pathToFileURL(join(DIST, 'lib', 'fold.js')).href)
+	check('包内投影及全部传递模块可真实导入', typeof fold.emptyState === 'function' && typeof fold.derive === 'function')
+} catch (error) { check('包内投影及全部传递模块可真实导入', false, error.message) }
 const inventory = existsSync(join(DIST, 'INVENTORY.txt'))
 	? readFileSync(join(DIST, 'INVENTORY.txt'), 'utf8').split('\n').filter((line) => line !== '')
 	: []

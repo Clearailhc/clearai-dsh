@@ -1067,7 +1067,7 @@ export function definitionFingerprint(entry) {
 	/** 单位与形状只在写了时进指纹:没写这两格的旧词条,指纹与从前逐字相同。 */
 	const meaning =
 		'range' in entry || 'domain' in entry
-			? { domain: text(entry.domain), range: isPlainObject(entry.range) ? { term: text(entry.range.term), form: text(entry.range.form), unit: text(entry.range.unit) } : null, functional: entry.functional === true, ...(text(entry.shape) === '' ? {} : { shape: text(entry.shape) }) }
+			? { domain: text(entry.domain), range: isPlainObject(entry.range) ? { term: text(entry.range.term), form: text(entry.range.form), unit: text(entry.range.unit) } : null, functional: entry.functional === true, gloss: text(entry.gloss), check: text(entry.check), ...(text(entry.shape) === '' ? {} : { shape: text(entry.shape) }) }
 			: { gloss: text(entry.gloss), parent: text(entry.parent), ...(text(entry.unit) === '' ? {} : { unit: text(entry.unit) }) }
 	return `fnv:${hashText(JSON.stringify(meaning))}`
 }
@@ -1151,12 +1151,15 @@ export function factFromFile(data, path) {
 		hypothesis: data.hypothesis ?? null,
 		text: String(data.text),
 		about: stringList(data.about),
-		scope: data.scope ?? null,
+		scope: data.scope_spec === undefined && data.refute_when === undefined ? null : data.scope ?? null,
 		scope_spec: isPlainObject(data.scope_spec) ? clone(data.scope_spec) : null,
 		use: typeof data.use === 'string' && data.use !== '' ? data.use : null,
-		refute_when: typeof data.refute_when === 'string' ? data.refute_when : null,
+		refute_when: typeof data.refute_when === 'string' ? data.refute_when : data.scope_spec === undefined && typeof data.scope === 'string' ? data.scope : null,
 		boundaries: Array.isArray(data.boundaries) ? clone(data.boundaries) : [],
 		challenges: Array.isArray(data.challenges) ? clone(data.challenges) : [],
+		calculation: isPlainObject(data.calculation) ? clone(data.calculation) : null,
+		rechecks: Array.isArray(data.rechecks) ? clone(data.rechecks) : [],
+		evidence_records: Array.isArray(data.evidence_records) ? clone(data.evidence_records) : [],
 		level: data.level ?? null,
 		evidence: Array.isArray(data.evidence) ? data.evidence : [],
 		assertions: Array.isArray(data.assertions) ? clone(data.assertions) : null,
@@ -1203,6 +1206,8 @@ export function negativeFromFile(data, path) {
 		kind,
 		status: NEGATIVE_STATUS.includes(data.status) ? data.status : kind,
 		statement: String(data.statement),
+		touches: stringList(data.touches),
+		evidence: Array.isArray(data.evidence) ? clone(data.evidence) : [],
 		about: stringList(data.about),
 		scope_spec: isPlainObject(data.scope) ? clone(data.scope) : null,
 		strength: isPlainObject(data.strength) ? clone(data.strength) : null,

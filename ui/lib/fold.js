@@ -19,6 +19,7 @@
 import { applyLexiconMutation, changedDefinitions, materializeOntology, classifyWorkspacePath, deriveConflicts, emptyLexicon, factFromFile, formatAssertion, lessonFromFile, negativeFromFile, graphProjection, lexiconHealth, normalizeLexicon, objectKey, termUsage, VALUE_FORMS } from './domain-language.js'
 import { handleOf, knowledgeView, trustOf } from './knowledge-view.js'
 import { bilingual, detectLanguage, messageText, tr, withLanguage } from './lang.js'
+import { compareScope } from './scope.js'
 
 /** 五个等级,由低到高。等级是「这条证据有多大程度只能靠信任做的人」的刻度(见 docs/verification-loop.md 的等级表)。 */
 const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4']
@@ -75,9 +76,10 @@ export const MUTATION_KIND = 'clearai'
  *           (`fact/bounded`:检验落在适用范围之外时记下的边界,事实保持成立)。旧账的 `scope` 写的是推翻条件。
  *           同一版里目标、判断与事实还带 `about`(涉及的实体或量),未解释项带 `defect`(解释为测量或方法缺陷);
  *           派生多一份 `negativeRows`(`clear/knowledge/negatives/` 的负向条目)。
+ *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 20
+export const STATE_VERSION = 21
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -581,6 +583,12 @@ export function applyMutation(state, mutation) {
 			break
 		}
 		case 'audit/dispatched': {
+			const previous = next.audits.find((item) => item.id === mutation.id)
+			if (previous !== undefined) {
+				if (mutation.evaluator_session) previous.child = mutation.evaluator_session
+				if (mutation.capability) previous.capability = mutation.capability
+				break
+			}
 			next.audits.push({
 				id: mutation.id,
 				step: mutation.step,
@@ -634,6 +642,7 @@ export function applyMutation(state, mutation) {
 				audit.verdict = mutation.verdict
 				/** 两项裁决:交付成立吗 + 每条判断的结果。旧账没有这两格,`verdict` 那时说的就是交付成立吗。 */
 				audit.holds = mutation.holds ?? null
+				audit.reuse = Array.isArray(mutation.reuse) ? clone(mutation.reuse) : []
 				audit.results = Array.isArray(mutation.results) ? mutation.results : []
 				audit.shortfalls = mutation.shortfalls ?? []
 				audit.basis = mutation.basis ?? null
@@ -644,7 +653,7 @@ export function applyMutation(state, mutation) {
 			const found = Array.isArray(mutation.anomalies) ? mutation.anomalies : []
 			for (const [index, item] of found.entries()) {
 				const id = `${mutation.id}#u${index + 1}`
-				if (next.anomalies.some((entry) => entry.id === id)) continue
+				if (next.anomalies.some((entry) => entry.id === id || (entry.by === 'evaluator' && entry.step === mutation.step && entry.what === String(item?.what ?? '')))) continue
 				next.anomalies.push({ id, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
 			}
 			break
@@ -716,10 +725,10 @@ export function applyMutation(state, mutation) {
 				text: mutation.text,
 				/** 涉及的实体或量(id):文件查找按它们取到这条事实。 */
 				about: isAbout(mutation.about) ? mutation.about.map(String) : [],
-				scope: mutation.scope ?? null,
+				scope: mutation.scope_spec === undefined && mutation.refute_when === undefined ? null : mutation.scope ?? null,
 				/** 可比较的适用范围(`{conditions, ranges, note}`);旧账没有这一格,那时 `scope` 写的是推翻条件。 */
 				scope_spec: isScope(mutation.scope_spec) ? clone(mutation.scope_spec) : null,
-				refute_when: typeof mutation.refute_when === 'string' ? mutation.refute_when : null,
+				refute_when: typeof mutation.refute_when === 'string' ? mutation.refute_when : mutation.scope_spec === undefined && typeof mutation.scope === 'string' ? mutation.scope : null,
 				/** 已知不适用之处:检验落在适用范围之外时记下的边界(`fact/bounded`),事实本身保持成立。 */
 				boundaries: [],
 				level: mutation.level ?? null,
@@ -983,6 +992,8 @@ export function applyEvent(state, event) {
 }
 
 function foldEvent(state, event) {
+	if (event.type === 'hook/result' && event.data?.point === 'ClearAIFact' && event.data?.handlerId?.startsWith('clearai-fact-') && isClearaiSource(event.data?.notice?.source)) return foldEvent(state, { ...event, type: 'user/message', data: event.data.notice })
+	if (event.type === 'clearai/facts') return foldEvent(state, { ...event, type: 'user/message' })
 	if (event.type === 'user/message') {
 		// 内核观察到的事实(候选技能、采纳记录、合并目录)走**插件消息的结构化 section**——
 		// 记在会话日志里,所以状态仍然可以从日志重放出来,而不是靠一句散文。
@@ -1917,6 +1928,10 @@ export function derive(state) {
 		if (ownIds.has(row.id)) {
 			const own = ownFacts.find((fact) => fact.id === row.id)
 			if (own.review === null && row.review !== null) own.review = row.review
+			own.calculation = row.calculation
+			own.rechecks = row.rechecks
+			own.evidence_records = row.evidence_records
+			own.challenges = row.challenges
 			continue
 		}
 		foreignFacts.push({ ...row, refuted: retestRefuted.has(row.id), foreign: true })
@@ -1931,10 +1946,20 @@ export function derive(state) {
 	 * 有它,这条事实就回到「待核验」:写进长期知识的东西遇到说不通的读数,不能照旧当已知用。
 	 */
 	const openAnomalies = (state.anomalies ?? []).filter((item) => item?.status === 'open')
-	const questionedBy = (id) => openAnomalies.filter((item) => (item.touches ?? []).includes(id)).map((item) => item.id)
+	const durableAnomalies = Object.entries(state.workspace?.files ?? {}).filter(([path]) => classifyWorkspacePath(path)?.kind === 'negative').map(([path, file]) => negativeFromFile(file?.data, path)).filter((row) => row && row.review?.decision !== 'retracted' && ['unresolved', 'defect', 'escalated'].includes(row.status))
+	const questionedBy = (fact) => [
+		...openAnomalies.filter((item) => (item.touches ?? []).includes(fact.id)).map((item) => item.id),
+		...durableAnomalies.filter((row) => {
+			if (!(row.touches.length ? row.touches : row.source?.anomaly ? row.about : []).includes(fact.id)) return false
+			if (['out_of_scope', 'out_of_range'].includes(compareScope(fact.scope_spec, row.scope_spec).verdict)) return false
+			if (fact.review?.decision === 'kept' && (fact.review.at ?? 0) >= (row.at ?? 0)) return false
+			if ((fact.rechecks ?? []).some((reason) => reason.source === row.id && reason.status === 'resolved')) return false
+			return true
+		}).map((row) => row.id),
+	]
 	/** 引用过它的判断被推翻留下的疑问(`fact/questioned` 或文件上的 `challenges`),人复核之后的不再算。 */
 	const challengedBy = (fact) => (Array.isArray(fact.challenges) ? fact.challenges : []).filter((item) => fact.review === null || fact.review === undefined || (fact.review.at ?? 0) < (item.at ?? 0)).map((item) => `challenge:${item.hypothesis ?? '?'}`)
-	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions), questioned: [...questionedBy(fact.id), ...challengedBy(fact)] }))
+	const factRows = [...foreignFacts, ...ownFacts].map((fact) => ({ ...fact, definitionsChanged: changedDefinitions(lexicon, fact.definitions), questioned: [...questionedBy(fact), ...challengedBy(fact), ...(fact.rechecks ?? []).filter((reason) => reason.status === 'pending').map((reason) => `recheck:${reason.id}`)] }))
 
 	/**
 	 * **领域词汇的派生读数**(两条,都不新存东西):
@@ -2201,6 +2226,7 @@ function scopeLine(spec) {
 	const parts = []
 	for (const [key, value] of Object.entries(isPlainObject(spec.conditions) ? spec.conditions : {})) parts.push(`${key}=${Array.isArray(value) ? value.join('/') : String(value)}`)
 	for (const [key, range] of Object.entries(isPlainObject(spec.ranges) ? spec.ranges : {})) {
+		if (Array.isArray(range)) { parts.push(`${key} ${range[0]}–${range[1]}${spec.units?.[key] ? ` ${spec.units[key]}` : ''}`); continue }
 		if (!isPlainObject(range)) continue
 		const low = range.min ?? range.low ?? null
 		const high = range.max ?? range.high ?? null
@@ -2218,6 +2244,7 @@ function scopeLine(spec) {
  */
 function knowledgeItems(state, derived) {
 	const items = []
+	const evidencePaths = (rows) => [...new Set(rows.flatMap((row) => typeof row === 'string' ? [] : [row.ref, ...(row.refs ?? []), ...(row.origins ?? []).map((origin) => origin.path)]).filter((path) => typeof path === 'string' && /[/.]/.test(path)))]
 	for (const fact of derived.factRows ?? []) {
 		if (fact?.review?.decision === 'retracted') continue
 		const pending = (fact.refuted === true && (fact.review === null || fact.review === undefined)) || (fact.questioned ?? []).length > 0 || (fact.definitionsChanged ?? []).length > 0
@@ -2228,6 +2255,11 @@ function knowledgeItems(state, derived) {
 			text: fact.text ?? '',
 			about: Array.isArray(fact.about) ? fact.about : [],
 			scope: scopeLine(fact.scope_spec),
+			rechecks: (fact.rechecks ?? []).filter((row) => row.status === 'pending'),
+			evidence: fact.evidence ?? [],
+			evidencePaths: evidencePaths(fact.evidence_records ?? []),
+			definitionsChanged: fact.definitionsChanged ?? [],
+			recovery: '匹配范围的独立复检(retests)或人工明确裁决;其他未解决原因继续保留',
 			boundaries: (Array.isArray(fact.boundaries) ? fact.boundaries : []).map((bound) => ({ verdict: bound.verdict ?? null, basis: bound.basis ?? null })),
 			challenged: (fact.questioned ?? []).some((id) => String(id).startsWith('challenge:')),
 			level: fact.level ?? null,
@@ -2245,12 +2277,13 @@ function knowledgeItems(state, derived) {
 			scope: scopeLine(row.scope_spec),
 			strength: row.strength ?? null,
 			basis: row.resolution?.reason ?? null,
+			evidencePaths: evidencePaths(row.evidence ?? []),
 			goal: row.source?.goal ?? null,
 			path: row.path ?? null,
 		})
 	}
 	for (const lesson of derived.lessonRows ?? []) {
-		items.push({ id: lesson.id, kind: 'lesson', status: lesson.kind ?? 'trap', text: lesson.text ?? '', about: Array.isArray(lesson.about) ? lesson.about : [], scope: lesson.boundary ?? scopeLine(lesson.scope_spec), goal: lesson.goal ?? null, path: lesson.path ?? null })
+		items.push({ id: lesson.id, kind: 'lesson', status: lesson.kind ?? 'trap', text: lesson.text ?? '', about: Array.isArray(lesson.about) ? lesson.about : [], scope: lesson.boundary ?? scopeLine(lesson.scope_spec), evidencePaths: typeof lesson.evidence === 'string' && /[/.]/.test(lesson.evidence) ? [lesson.evidence] : [], goal: lesson.goal ?? null, path: lesson.path ?? null })
 	}
 	return items
 }

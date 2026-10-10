@@ -32,7 +32,7 @@ const check = (label, condition, detail = '') => {
 const SOURCE = join(import.meta.dirname, '..', 'ui', 'lib', 'client.js')
 const VENDOR = join(import.meta.dirname, '..', 'ui', 'vendor', 'xyflow.js')
 const VENDOR_FORCE = join(import.meta.dirname, '..', 'ui', 'vendor', 'force.js')
-const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'web', 'node_modules', 'clearai-dsh', 'lib', 'client.js')
+const DEPLOYED = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', process.env.DSH_PROFILE ?? 'web', 'node_modules', 'clearai-dsh', 'lib', 'client.js')
 /**
  * **发出去的那一份 = vendor 行 + 主文件**(见 tools/build-package.mjs)。
  * 这里比的就是那个组合——不是「源里有一个文件」而已:xvflow 那一行如果没跟上,

@@ -3,10 +3,10 @@
  *
  * 模型把可复用的计算登记成 `clear/models/<id>.json`(这一格归模型,内核只读):
  *   `command`  在工作区里跑的命令;
- *   `inputs`   它读的数据文件(相对路径);任一文件比上次运行时新,引用时就重跑;
+ *   `inputs`   它读的数据文件(相对路径);任一内容摘要改变,引用时就重跑;
  *   `output`   它写出的 JSON(顶层的数值字段参与比对);
  *   `tolerance` 允许的偏差:一个数(所有字段共用)或按字段给;
- *   `baseline` 可选:建立结论那一刻的输出,第一次重跑时与它比。
+ *   `baseline` 可选:建立结论时输出;接受时固化到事实的 calculation,观测不覆盖它。
  * 判断用 `use` 指向它,升格时随事实写进文件。下一次有判断引用这条事实、而输入变了,
  * 系统先重跑:偏差超出容差,事实就判为待核验并登记一条未解释项——反常不依赖模型自己留意。
  *
@@ -29,6 +29,7 @@ export function checkModelSpec(data, id) {
 	const tolerance = data.tolerance
 	if (!(finite(tolerance) && tolerance >= 0) && !(isPlainObject(tolerance) && Object.values(tolerance).every((value) => finite(value) && value >= 0))) problems.push('要有 tolerance(非负数,或按字段给的非负数)')
 	if (data.baseline !== undefined && !isPlainObject(data.baseline)) problems.push('baseline 只能是对象(字段 → 数值)')
+	if (data.scripts !== undefined && (!Array.isArray(data.scripts) || data.scripts.some((path) => typeof path !== 'string' || !path.trim()))) problems.push('scripts 要是脚本路径数组')
 	if (data.id !== undefined && data.id !== id) problems.push(`id 要与文件名相同(${id})`)
 	return problems
 }
@@ -41,10 +42,11 @@ export function numericOutputs(data) {
 	return out
 }
 
-/** 要不要重跑:从没跑过,或任一输入文件的修改时间与上次运行时不同。 */
+/** 要不要重跑:从没跑过,或任一输入文件的内容摘要与上次运行时不同。 */
 export function needsRerun(lastRun, stamp) {
 	if (!isPlainObject(lastRun) || !isPlainObject(lastRun.inputs)) return true
-	return Object.entries(stamp).some(([path, mtime]) => lastRun.inputs[path] !== mtime)
+	if (Object.keys(lastRun.inputs).length !== Object.keys(stamp).length) return true
+	return Object.entries(stamp).some(([path, digest]) => lastRun.inputs[path] !== digest)
 }
 
 /** 前后两次输出的偏差:超出容差的字段,以及上次有、这次没有的字段。 */

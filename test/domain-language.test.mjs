@@ -254,7 +254,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本是 v20(适用范围与推翻条件分开)', fold.STATE_VERSION === 20, String(fold.STATE_VERSION))
+	check('状态版本是 v21(持久复核与实际引用)', fold.STATE_VERSION === 21, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
@@ -477,7 +477,7 @@ console.log('\n【知识预检:相关已知自动到面前,普通任务零成本
 	const pfFacts = fold.knowledgePreflight(withFacts, fold.derive(withFacts))
 	check('定义里挂着命中概念的事实进预检(没有断言也算)', pfFacts.facts.some((fact) => fact.id === 'f-ox') && !pfFacts.facts.some((fact) => fact.id === 'f-other'), JSON.stringify(pfFacts.facts.map((fact) => fact.id)))
 	const factCard = fold.renderCard(withFacts)
-	check('卡上递出相关事实的原话与适用范围', factCard.includes('二号炉氧含量偏高') && factCard.includes('适用范围:换了氧探头后读数不变'), factCard.split('\n').filter((line) => line.includes('适用范围')).join(' | '))
+	check('旧 scope 推翻条件不冒充适用范围', factCard.includes('二号炉氧含量偏高') && factCard.includes('适用范围:未声明') && withFacts.facts[0].refute_when === '换了氧探头后读数不变', factCard.split('\n').filter((line) => line.includes('适用范围')).join(' | '))
 
 	// ④ 卡里真的说出来。
 	const card = fold.renderCard(seededState)
@@ -566,7 +566,7 @@ console.log('\n【知识 Inspector:一个选择 → 定义 / 关系 / 断言 / �
 	// ⑥ 断言边:**完整链**——这一步是阶段 5 的核心主张。
 	const edge = inspect({ kind: 'edge', id: 'assertion:f1:oxygen_ppm:furnace_batch|T2' })
 	const chain = edge.facts[0]
-	check('边:链到事实(带边界与等级)', chain.id === 'f1' && chain.level === 'L3' && chain.scope === '复测不是 10ppm')
+	check('边:链到事实(带边界与等级)', chain.id === 'f1' && chain.level === 'L3' && chain.scope === null && chain.hypothesis.refuteWhen === '复测不是 10ppm')
 	check('边:事实指得回命题(按 id,不是按文本)', chain.hypothesis.id === 'h1' && chain.hypothesis.claim === 'T2 炉次氧含量是 10ppm')
 	check('边:命题带着推翻条件与已支持等级', chain.hypothesis.refuteWhen === '复测不是 10ppm' && chain.hypothesis.supportedLevel === 'L3')
 	check('边:链到证据(裁决 / 等级 / 判者)', chain.evidence.length === 1 && chain.evidence[0].verdict === 'support' && chain.evidence[0].evaluator === 'independent')

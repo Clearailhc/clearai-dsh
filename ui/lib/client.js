@@ -1447,6 +1447,8 @@ window.__ModuleLoader__.load({
 			if (item.kind === 'negative' && item.strength && typeof item.strength.count === 'number') meta.push(`${t('推翻证据 ')}${item.strength.count}${t(' 条')}${item.strength.independent > 0 ? `${t(' · 独立核验 ')}${item.strength.independent}${t(' 条')}` : ''}`)
 			if (item.basis) meta.push(`${t('依据')}${t(':')}${brief(item.basis, 80)}`)
 			if (item.challenged === true) meta.push(t('受质疑'))
+			for (const reason of item.rechecks ?? []) meta.push(`${reason.kind}: ${reason.detail ?? reason.model ?? ''}`)
+			if ((item.rechecks ?? []).length) meta.push(item.recovery)
 			const sent = props.sent ?? {}
 			const [open, setOpen] = React.useState(false)
 			const asks = props.asks === true && typeof props.send === 'function' && (open || props.open === true) ? ITEM_ASKS() : []
@@ -1457,6 +1459,8 @@ window.__ModuleLoader__.load({
 				{ className: 'clearai-kitem', 'data-open': open ? '1' : '0' },
 				h('div', { className: 'clearai-kitem-head', 'data-click': canAsk ? '1' : '0', title: canAsk ? (open ? t('收起') : t('点击查看可发出的请求')) : undefined, onClick: canAsk ? () => setOpen(!open) : undefined }, h(StateTag, { state: item.status }, item.kind === 'lesson' ? (LESSON_WORD[item.status] ?? item.status) : (ITEM_WORD[item.status] ?? item.status)), h('span', null, item.text), item.path ? h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(item.path), title: item.path }, t('查看记录')) : null),
 				meta.length === 0 ? null : h('div', { className: 'clearai-kitem-meta' }, meta.join(' · ')),
+				...(item.rechecks ?? []).filter((reason) => reason.evidence).map((reason) => h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(reason.evidence), title: reason.evidence }, t('查看核验'))),
+				...(item.evidencePaths ?? []).map((path) => h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(path), title: path }, t('查看核验'))),
 				asks.length === 0
 					? null
 					: done !== undefined
