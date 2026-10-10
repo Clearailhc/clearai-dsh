@@ -3470,6 +3470,8 @@ console.log('\n【结构化范围:索引与模型摘要一致】')
  const index=readFileSync(join(ws,'clear/knowledge/facts/INDEX.md'),'utf8')
  check('没有旧文字scope也从scope_spec显示真实范围',index.includes('instrument=synthetic-A')&&!index.includes('范围未声明'),index)
  check('模型当前知识摘要与索引采用同一结构化范围',framed.message.includes('适用范围:条件 instrument=synthetic-A'),framed.message)
+ const goalDoc=readFileSync(join(ws,'clear/goals',host.service.state('scope-display').goal.id+'.md'),'utf8')
+ check('评估者可从目标文档核对立题引用、系统判定、复检对象和范围',goalDoc.includes('uses (framing declarations)')&&goalDoc.includes('"id":"f-structured"')&&goalDoc.includes('"verdict":"applies"')&&goalDoc.includes('retests: f-structured')&&goalDoc.includes('"instrument":"synthetic-A"'),goalDoc)
 }
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failed > 0) {

@@ -1,19 +1,20 @@
-# 验证状态（2026-10-10，工程门禁复验中）
+# 验证状态（2026-10-10，RC.15工程门禁收尾）
 
-分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.14`，尚未冻结产品矩阵。最终包 SHA-256 为 `4dbc3e924a87da1d3761dc29373a06d9e58141e766224c0cf317df595eb5f66f`，原生安装于 `/private/tmp/clearai-pr23-home-rc14`，没有覆盖日常 profile。
+分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.15`，包 SHA-256 为 `e66df81e91b3936378893adf3fdea52b27424f9826e122e4c649cc628282c318`，原生安装于 `/private/tmp/clearai-pr23-home-rc15`，没有覆盖日常 profile。用户已将复杂题主/子代理合计上限改为5,000,000处理token；90分钟墙钟、实验预算与成本验收比值不变。
 
 | 检查 | 证据 | 状态 |
 |---|---|---|
-| 全部套件含已安装宿主/客户端 | `/private/tmp/v052-strict-rc14.log` | 已运行，内核614、宿主38、客户端181等全绿，无跳过 |
-| 包一致性 | `/private/tmp/v052-package-rc14.log` | 46通过 |
-| macOS历史升级、卸载、重装及回放 | `/private/tmp/clearai-pr23-lifecycle-rc14/result.json` | 0.5.0/0.5.1/RC.14通过 |
-| Windows Node24 | [RC.11 CI](https://github.com/Clearailhc/clearai-dsh/actions/runs/38030145987) | RC.11 Linux/Windows通过，RC.12待结果 |
-| 原生日志契约 | `/private/tmp/clearai-native-contract-rc11/result.json` | RC.11通过，RC.12待复验 |
-| 取消/断连/240秒超时/恢复 | `/private/tmp/clearai-pr23-faults-rc11/results.json` | RC.11四项通过；RC.12复验运行中 |
-| 实体图与评估卡真实UI | `/private/tmp/clearai-pr23-ui-evidence-rc11/` | RC.11事实/经验/负向项/复核原因、证据和评估卡均打开；RC.12待复验 |
-| 独立盲评 | `/private/tmp/clearai-pr23-grading-rc11/result.json` | RC.11双盲评及分歧第三裁决通过；RC.12复验运行中 |
-| 跨会话漂移与复检 | `/private/tmp/clearai-pr23-recheck-rc11/`、`/private/tmp/clearai-pr23-recheck-rc12/` | 完整闭环尚待最终候选通过 |
-| 6/24/48/36/48产品矩阵 | 没有冻结产品样本 | 未启动 |
+| 全部套件含已安装宿主/客户端 | `/private/tmp/v052-strict-rc15.log` | 内核615、宿主38、客户端181等全绿，无跳过 |
+| 包一致性 | `/private/tmp/v052-package-rc15.log` | 46通过 |
+| macOS历史升级、卸载、重装及回放 | `/private/tmp/clearai-pr23-lifecycle-rc15/result.json` | 0.5.0/0.5.1/RC.15通过 |
+| Windows Node24 | RC.14 CI 38032403991已通过 | RC.15提交后验证 |
+| 原生日志契约 | `/private/tmp/clearai-native-contract-rc15/result.json` | 通过 |
+| 取消/断连/240秒超时/恢复 | `/private/tmp/clearai-pr23-faults-rc15/results.json` | 取消、断连已通过，剩余运行中 |
+| 实体图与评估卡真实UI | `/private/tmp/clearai-pr23-ui-evidence-rc15/` | 隔离候选冷回放历史合成会话，检查中 |
+| 独立盲评 | `/private/tmp/clearai-pr23-grading-rc15/result.json` | 通过 |
+| 消融预设探针 | `/private/tmp/clearai-pr23-ablation-rc15/result.json` | 通过 |
+| 跨会话漂移与复检 | `/private/tmp/clearai-pr23-recheck-rc15/` | 独立复检完成，942,637处理token；最后新会话引用检查中 |
+| 6/24/48/36/48产品矩阵 | 工程门禁完成后冻结新轮次 | 尚未启动；下方历史诊断不计产品样本 |
 
 ## 已修问题与保留的失败证据
 
@@ -42,3 +43,9 @@ RC.13完整四会话复检已通过(`/private/tmp/clearai-pr23-recheck-rc13/resu
 早期故障探针对“尚未发往模型的模拟断连/超时”记了usage未知，因此原先的passed只证明行为、不证明费用门禁。现在驱动记录providerInvoked与injectedBeforeProvider，只有明确未调用模型的人工注入单列；真实请求无usage仍未知。故障总门禁新增实际请求usage完整要求。SIGKILL探针在评估者结束后暂停新的模型派发，保留持久子会话再冷恢复，不把一次idle当完成。
 
 RC.14最终门禁正在复验。没有冻结或启动产品矩阵，没有产品收益结论。复现方式见同目录`pr23-native-testing.zh-CN.md`。
+
+## RC.15：引用可见性与预算修订
+
+目标文档和评估者上下文补充已登记假设的scope、uses及retests，明确立题声明不等于最终实际复用，避免评估者看不到引用判定而反复寻找。新增行为回归验证实际生成文档。复检夹具聚焦原始数据、方法、接受基准与逐原因证据，不要求冗长的测试设施治理审查。
+
+RC.14的独立复检已经achieved且完成两次通过审计，但在最后响应时触及旧1.6m上限，总1,610,068，原轮仍记token_limit，不改记通过。RC.14故障四项及usage核对通过。所有历史失败保留，不能混入新预算下产品收益。RC.15使用用户明确授权的5m上限推进；候选门禁全部通过后冻结资产，先6场冒烟，再按阶段验收扩大。

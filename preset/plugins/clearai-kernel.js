@@ -1051,6 +1051,7 @@ export function apply(ctx, config = {}) {
 				],
 			),
 			...anomalyBrief(state, gate),
+			...tested.map(item => `Registered hypothesis ${item.id}: uses=${JSON.stringify(item.uses ?? [])}; scope=${JSON.stringify(mergeScope(item.scope, { conditions: goal?.conditions ?? {} }))}. These are framing declarations, not confirmation of final reuse.`),
 			...tested.filter((item) => item.retests).map((item) => `Re-test ${item.retests}: independently inspect each pending reason in clear/knowledge/facts/${item.retests}.json and report only resolved reason IDs in rechecks. A supporting result alone does not resolve all reasons.`),
 			...(Array.isArray(gate.extra) && gate.extra.length > 0 ? ['', ...gate.extra] : []),
 			'',
@@ -2357,6 +2358,9 @@ export function apply(ctx, config = {}) {
 			for (const hypothesis of hypotheses) {
 				lines.push(`- \`${hypothesis.id}\` [${hypothesis.status}] ${hypothesis.claim}`)
 				lines.push(tr(`  - 推翻条件:${hypothesis.refute_when}`, `  - Refuted if: ${hypothesis.refute_when}`))
+				lines.push(`  - scope: ${JSON.stringify(mergeScope(hypothesis.scope, { conditions: goal.conditions ?? {} }))}`)
+				lines.push(`  - uses (framing declarations): ${JSON.stringify(hypothesis.uses ?? [])}`)
+				if (hypothesis.retests) lines.push(`  - retests: ${hypothesis.retests}`)
 				if (Array.isArray(hypothesis.assertions) && hypothesis.assertions.length > 0) lines.push(tr(`  - 断言:${hypothesis.assertions.length} 条`, `  - Assertions: ${hypothesis.assertions.length}`))
 			}
 			if (history.length > 0) {

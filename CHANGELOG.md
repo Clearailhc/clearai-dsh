@@ -1,5 +1,6 @@
-## 0.5.2-rc.14 (PR #23 continuation, unreleased)
+## 0.5.2-rc.15 (PR #23 continuation, unreleased)
 
+- Expose registered knowledge uses, their applicability verdicts and recheck targets in goal documents and evaluator briefs, keeping declarations distinct from confirmed final reuse.
 - Reject circular goal-completion criteria in both free text and criterion lists; explain pre-verdict persistence ordering to auditors and stamp their independent identity on stored cards.
 - Propagate reason-by-reason independent reconfirmation back to linked negative entries in the same scope, retaining original observations and preventing stale sessions from reopening them.
 - Clarify that irreversible declarations describe planned destructive operations, not prohibitions or read-only checks; require distinctive command signatures.

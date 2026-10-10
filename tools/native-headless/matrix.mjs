@@ -1,6 +1,6 @@
 /** New preregistration; historical Sonnet and RC.4 results are never inputs. */
 export const MODEL = Object.freeze({ provider: 'abhome', model: 'deepseek-flash', reasoningEffort: 'medium' })
-export const BUDGETS = Object.freeze({ complex: { tokenBudget: 1600000, timeoutMs: 5400000 }, direct: { tokenBudget: 240000, timeoutMs: 1200000 }, experiments: [30, 30, 30, 12], auditTimeoutMs: 240000 })
+export const BUDGETS = Object.freeze({ complex: { tokenBudget: 5000000, timeoutMs: 5400000 }, direct: { tokenBudget: 240000, timeoutMs: 1200000 }, experiments: [30, 30, 30, 12], auditTimeoutMs: 240000 })
 export const REQUIRED_GATES = Object.freeze(['suites', 'package', 'windows-node24-audit', 'native-lifecycle', 'native-ui', 'preset-and-model', 'isolation-probes', 'cancel', 'disconnect', 'audit-timeout', 'process-recovery', 'smoke-six'])
 export function sessions() {
 	const rows = []
