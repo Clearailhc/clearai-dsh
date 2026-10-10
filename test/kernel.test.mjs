@@ -14,7 +14,7 @@
  */
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
@@ -1562,7 +1562,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const ok = await callOn(host, S, 'AdvancePlan', { step_id: 'z1' })
 		const request = host.audits.at(-1)?.request
 		check('任务书给出副本路径,副本里有产物、没有 clear/', copied, String(copy))
-		check('评估者的工具面多了 bash', (request?.toolFilter?.allow ?? []).includes('bash'), JSON.stringify(request?.toolFilter))
+		check('评估者的工具面多了本机原生shell', (request?.toolFilter?.allow ?? []).includes(process.platform === 'win32' ? 'pwsh' : 'bash'), JSON.stringify(request?.toolFilter))
 		check('评估结束后副本删掉', ok.ok === true && copy !== null && !existsSync(copy), String(copy))
 
 		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'z2', do: '再算一次', artifacts: ['lab/z2.txt'], done_criteria: 'lab/z2.txt 有均值', tests: { hypotheses: [above], level: 'L3' } } })
@@ -1828,7 +1828,7 @@ console.log('\n【评估者已结束 ⇒ 先取回它的裁决,取不回才如�
 		await preStep(host, S, 82)
 		const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
 		check('子会话日志里有裁决 ⇒ **取回**(不是失联):旧式 verdict=support 读成交付成立', settled.length === 1 && settled[0].holds === 'yes' && /均值差 6\.2/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 160))
-		check('取回的裁决落了评估卡(凭据与在进程里拿到的那条同构)', typeof settled[0]?.card_path === 'string' && settled[0].card_path.includes('clear/'), String(settled[0]?.card_path))
+		check('取回的裁决落了评估卡(凭据与在进程里拿到的那条同构)', typeof settled[0]?.card_path === 'string' && existsSync(settled[0].card_path) && JSON.parse(readFileSync(settled[0].card_path)).holds === settled[0].holds, String(settled[0]?.card_path))
 	}
 
 	// Cold child logs are queried without making an Agent live or dispatching again.
@@ -2009,7 +2009,7 @@ console.log('\n【升格:达门槛且无推翻的假设 → 事实(由系统写�
 	const closed = await call('Conclude', { outcome: 'achieved' })
 	check('无推翻且达门槛 → 升格为事实', closed.ok === true && /写进长期知识/.test(closed.message), String(closed.code))
 	const promotedId = eventsOf('fact/promoted')[0]?.id
-	const promotedFile = factFiles().find((file) => file.endsWith(`/${promotedId}.json`))
+	const promotedFile = factFiles().find((file) => basename(file) === `${promotedId}.json`)
 	const promotedData = promotedFile === undefined ? null : JSON.parse(readFileSync(promotedFile, 'utf8'))
 	check('事实由系统写进 clear/knowledge/facts/<事实 id>.json', promotedData?.id === promotedId && promotedData?.status === 'established' && promotedData?.history?.[0]?.event === 'promoted', promotedFile ?? '(没有文件)')
 	check('结案消息指向那个事实文件', closed.message.includes(`clear/knowledge/facts/${promotedId}.json`), closed.message)

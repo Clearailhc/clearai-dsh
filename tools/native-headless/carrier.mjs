@@ -151,7 +151,7 @@ export function apply(ctx, config) {
 		const preset = clearMode ? await presets.resolve(presetId) : null
 		if (clearMode && !preset?.id) throw new Error('Native preset resolution failed')
 		const create = spec.resumeSessionId ? ctx.get('agents').resume.bind(ctx.get('agents')) : ctx.get('agents').create.bind(ctx.get('agents'))
-		const made = await create({ sessionId: spec.resumeSessionId ?? 'session-native-' + randomUUID(), agentOptions: model, meta: { cwd: process.cwd(), ...(preset ? { agentPreset: preset.id } : {}) }, setup: async (agentCtx) => { installModelSelection(agentCtx, { current: selection, assembled: undefined }); if (preset) await presets.mount(agentCtx, preset.id) } })
+		const made = await create({ ...(spec.resumeSessionId ? { resumeSessionId: spec.resumeSessionId } : { sessionId: 'session-native-' + randomUUID(), meta: { cwd: process.cwd(), ...(preset ? { agentPreset: preset.id } : {}) } }), agentOptions: model, setup: async (agentCtx) => { installModelSelection(agentCtx, { current: selection, assembled: undefined }); if (preset) await presets.mount(agentCtx, preset.id) } })
 		main = made.agent
 		if(spec.isolation?.probe)atomic('isolation-probe.json',await probeReadIsolation(ctx,main,spec.isolation.probe))
 		if (preset && (presets.composedPreset(main.ctx) !== preset.id || !ctx.get('clearai'))) throw new Error('Native preset/projection mount failed')
@@ -161,6 +161,7 @@ export function apply(ctx, config) {
 		while (!stopping) {
 			const record = checkpoint(), agents = ctx.get('agents').list()
 			if (cancelFault) return finish('user_cancelled', 'Registered cancellation after child request')
+			if(spec.fault==='cancel-after-frame'&&projection?.goal)return finish('user_cancelled','Synthetic UI fixture: retain open goal and loaded knowledge for replay inspection')
 			if (record.usage.lowerBound >= spec.tokenBudget) return finish('token_limit')
 			if (Date.now() - started >= spec.timeoutMs) return finish('time_limit')
 			if (unknownQuestion) return finish('blocked', 'Unregistered human decision')
