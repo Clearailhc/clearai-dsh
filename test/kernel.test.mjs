@@ -214,6 +214,7 @@ function makeHost() {
 			},
 			get(name) {
 				if (name === 'clearai') return service
+				if (name === 'agents') return { get: id => host.liveAgents?.[String(id)] }
 				if (name === 'goals') return host.goalsAvailable ? goals : undefined
 			/**
 			 * 原生两条正门(§19):计划审阅(`userQuestions.ask`)与人放行(`approval.request`)。
@@ -328,7 +329,7 @@ function makeHost() {
 								id: `child-${audits.length}`,
 								localAgent: undefined,
 								result: evaluatorResult,
-								dispose: async () => {},
+								dispose: async () => { host.auditDisposals = (host.auditDisposals ?? 0) + 1 },
 							}
 						},
 					}
@@ -411,7 +412,7 @@ const contractBreaches = []
 const trimmedOutputs = []
 
 /** 一次调用 = 执行 → 取变更记录 → 折进投影。与生产同形(生产由 registry + 投影框架做这两步)。 */
-async function callOn(host, session, name, args) {
+async function callOn(host, session, name, args, options = {}) {
 	const tool = host.tools.get(name)
 	/**
 	 * 用例里的交付大多还写成一个 `verdict`:套用到**这一步检验的每条判断**上(不检验判断的步骤丢掉它)。
@@ -424,7 +425,7 @@ async function callOn(host, session, name, args) {
 		const tested = step?.tests?.hypotheses ?? []
 		args = tested.length === 0 ? rest : { ...rest, results: tested.map((hypothesis) => ({ hypothesis, verdict })) }
 	}
-	const value = await tool.execute(args, { callId: 'call-1', agent: { id: session }, signal: undefined })
+	const value = await tool.execute(args, { callId: 'call-1', agent: { id: session }, signal: options.signal })
 	// 生产同形:宿主按 output.schema 校验工具结果,越界即整次调用失败。
 	if (value !== null && typeof value === 'object' && tool.output?.schema !== undefined) {
 		const breach = schemaViolation(tool.output.schema, value)
@@ -1569,6 +1570,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const request = host.audits.at(-1)?.request
 		check('任务书给出副本路径,副本里有产物、没有 clear/', copied, String(copy))
 		check('评估者的工具面多了本机原生shell', (request?.toolFilter?.allow ?? []).includes(process.platform === 'win32' ? 'pwsh' : 'bash'), JSON.stringify(request?.toolFilter))
+		check('复跑允许收取和取消本人后台任务', ['job_output', 'job_list', 'job_kill'].every(name => request.toolFilter.allow.includes(name)), JSON.stringify(request?.toolFilter))
 		check('评估结束后副本删掉', ok.ok === true && copy !== null && !existsSync(copy), String(copy))
 
 		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'z2', do: '再算一次', artifacts: ['lab/z2.txt'], done_criteria: 'lab/z2.txt 有均值', tests: { hypotheses: [above], level: 'L3' } } })
@@ -2962,33 +2964,85 @@ console.log('\n【0.5.2:停止检查在审计之后再做一次】')
 	check('实质修订都经过新的裁决', host.journal.filter((mutation) => mutation.t === 'audit/dispatched').length === dispatchedBefore + 3)
 }
 
-console.log('\n【0.5.2:一次评估超过硬上限就如实记为未知并放开】')
+console.log('\n【0.5.4:等待不是失败,同一次评估可以超过旧硬上限】')
 {
 	const host = makeHost()
-	const ws = tempDir('clearai-hardtimeout-')
+	const ws = tempDir('clearai-slow-audit-')
 	host.cwd = ws
-	apply(host.ctx, { minHypotheses: 0, auditTimeoutMs: 20, auditHardTimeoutMs: 60 })
-	const S = 'session-hardtimeout'
+	apply(host.ctx, { minHypotheses: 0, auditTimeoutMs: 10, auditHardTimeoutMs: 20 })
+	const S = 'session-slow-audit'
 	await callOn(host, S, 'Frame', { claim: 'Z', headline: 'Z', done_criteria: '存在 lab/z.txt', promote_at_level: 'L2' })
 	await callOn(host, S, 'CreatePlan', { steps: [{ id: 'z1', do: '写一份', artifacts: ['lab/z.txt'], done_criteria: 'lab/z.txt 存在' }] })
 	writeText(join(ws, 'lab', 'z.txt'), 'z\n')
 	await callOn(host, S, 'AdvancePlan', { step_id: 'z1', basis: 'lab/z.txt 在' })
 	await callOn(host, S, 'ClosePlan', {})
-	host.auditNeverSettles = true
-	/** 评估者的等待计时器是 unref 的:用一个普通计时器撑住事件循环,否则测试进程会先退出。 */
-	const keepAlive = setInterval(() => {}, 10)
-	const pending = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-	check('前置:评估者还在跑 → audit_pending', pending.ok === false && pending.code === 'audit_pending', String(pending.code))
-	await new Promise((resolve) => setTimeout(resolve, 80))
-	const released = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-	clearInterval(keepAlive)
-	const settled = host.journal.find((mutation) => mutation.t === 'audit/settled' && (mutation.shortfalls ?? []).includes('audit_timeout'))
-	check('超过硬上限 → 结成「未知」(audit_timeout),不再挂着', settled !== undefined && settled.holds === 'unknown', JSON.stringify(settled))
-	check('目标没有被误判达成,如实保持开放', released.ok === false && host.service.state(S).goal?.status === 'open', `${released.code}`)
-	host.auditNeverSettles = false
+	host.auditDelayMs = 100
 	host.nextVerdict = { holds: 'yes', basis: '在', shortfalls: [], results: [] }
-	const retried = await callOn(host, S, 'Conclude', { outcome: 'achieved' })
-	check('放开之后重新派评估,可以正常结案', retried.ok === true, `${retried.code} ${String(retried.message).slice(0, 160)}`)
+	let returned = false
+	const running = callOn(host, S, 'Conclude', { outcome: 'achieved' }).then(value => { returned = true; return value })
+	await new Promise(resolve => setTimeout(resolve, 45))
+	check('超过旧硬上限仍等待同一调用,没有 dispose', !returned && !host.auditDisposals && host.audits.length === 1)
+	const completed = await running
+	check('慢评估直接完成,无需再次结案', completed.ok === true, `${completed.code} ${completed.message}`)
+	check('没有超时失败或第二次派遣', host.audits.length === 1 && !host.journal.some(m => m.shortfalls?.includes('audit_timeout')))
+	check('诊断只提醒一次,旧硬上限明确废弃', host.warnings.filter(x => x.includes('still running')).length === 1 && host.warnings.some(x => x.includes('deprecated')))
+	check('裁决在工具返回前独立持久化', host.appended.some(row => row.data?.notice?.source?.mutations?.some?.(m => m.t === 'audit/settled')) || host.appended.some(row => JSON.stringify(row.data).includes('audit/settled')))
+	check('新投影保存结算时间', host.service.state(S).audits.some(a => Number.isFinite(a.settledAt)))
+}
+
+console.log('\n【0.5.4:取消和暂停不被迟到的裁决撤销】')
+for (const action of ['cancel', 'pause', 'revise']) {
+	const host = makeHost(); host.cwd = tempDir('clearai-audit-interrupt-')
+	apply(host.ctx, { minHypotheses: 0, auditTimeoutMs: 5 })
+	const S = `audit-${action}`
+	await callOn(host, S, 'Frame', { claim: 'verify', done_criteria: 'read lab/a.txt' })
+	host.auditDelayMs = 80
+	host.nextVerdict = { holds: 'yes', basis: 'verified', results: [], shortfalls: [] }
+	const controller = new AbortController()
+	const running = callOn(host, S, 'Conclude', { outcome: 'achieved' }, { signal: controller.signal }).catch(error => ({ cancelled: error.message }))
+	await new Promise(resolve => setTimeout(resolve, 20))
+	if (action === 'cancel') controller.abort(new Error('user cancellation'))
+	if (action === 'pause') host.goals.pause()
+	if (action === 'revise') host.goals.edit(null, null, { objective: 'a different goal' })
+	const result = await running
+	await new Promise(resolve => setTimeout(resolve, 100))
+	check(`${action}: 迟到裁决不完成或恢复目标`, host.hostGoal.phase !== 'complete' && !host.goalCalls.some(call => call[0] === 'resume') && result.ok !== true)
+	check(`${action}: 已完成的裁决仍有持久证据且只派发一次`, host.audits.length === 1 && host.appended.some(row => JSON.stringify(row.data).includes('audit/settled')))
+}
+
+console.log('\n【0.5.4:失去原调用后,原生结束事件收尾且只通知一次】')
+for (const paused of [false, true]) {
+	const host = makeHost(); host.cwd = tempDir('clearai-orphan-')
+	apply(host.ctx, { minHypotheses: 0 })
+	const S = `orphan-${paused}`
+	await callOn(host, S, 'Frame', { claim: 'verify', done_criteria: 'check evidence' })
+	const originalGoal = { ...host.hostGoal }
+	host.states.set(S, applyMutations(host.service.state(S), [{ t: 'audit/dispatched', id: 'orphan-audit', step: 'old-step', kind: 'evidence_audit', evaluator_session: 'orphan-child', capability: 'outputSchema', digest: 'v5:fixture', goal_id: originalGoal.id, goal_revision: originalGoal.revision }]))
+	const messages = []
+	host.liveAgents = { [S]: { id: S, followup: message => messages.push(message), inbox: { nextTurn: messages, nextStep: [] } } }
+	host.childSessions = {
+		[S]: { id: S, header: { cwd: host.cwd }, ownEvents: () => [], append: (type, data) => { if (type === 'hook/result') host.states.set(S, applyEvent(host.service.state(S), { type, data })) } },
+		'orphan-child': { id: 'orphan-child', header: { cwd: host.cwd }, ownEvents: () => [
+			{ type: 'tool/call', data: { callId: 'v', name: 'structured_output', arguments: JSON.stringify({ holds: 'yes', basis: 'checked', results: [] }) } },
+			{ type: 'tool/result', data: { message: { toolCallId: 'v', isError: false } } },
+			{ type: 'turn/end', data: { reason: { kind: 'completed' } } },
+		] },
+	}
+	if (paused) host.goals.pause()
+	const end = host.listeners.get('subagent/end')
+	await Promise.all([end({ id: 'orphan-child' }), end({ id: 'orphan-child' })])
+	check(`恢复结束事件 paused=${paused}: 裁决持久保存`, host.service.state(S).audits[0].holds === 'yes')
+	check(`恢复结束事件 paused=${paused}: 不重复通知或撤销暂停`, messages.length === (paused ? 0 : 1) && host.audits.length === 0)
+}
+
+console.log('\n【0.5.4:基础设施失败不因改写答案而重置连拦】')
+{
+ const host=makeHost(); host.cwd=tempDir('clearai-repeated-infra-')
+ apply(host.ctx,{minHypotheses:0,blockedThreshold:3})
+ const S='repeated-infra';await callOn(host,S,'Frame',{claim:'check',done_criteria:'read source'})
+ host.auditFails=true
+ for(let n=0;n<3;n++)await callOn(host,S,'Conclude',{outcome:'achieved',answers:[{conclusion:`draft ${n}`,basis:[],open:[],decide:[]}]})
+ check('三次基础设施失败、三份不同答案,仍按同一目标阻塞',host.hostGoal.phase==='blocked',JSON.stringify(host.hostGoal))
 }
 
 console.log('\n【0.5.2:适用范围与推翻条件分开;范围外的反证不撤回事实】')

@@ -182,7 +182,7 @@ check('旧读数:5 次结案里只有 1 次留下了 audit 事实', attemptsWith
 check('两条事实成对(dispatched 与 settled 同源)', goalAuditKinds.filter((kind) => kind === 'audit/dispatched').length === 1 && goalAuditKinds.filter((kind) => kind === 'audit/settled').length === 1, goalAuditKinds.join(','))
 
 // ── 新机制的结构判据 ─────────────────────────────────────────────────────
-const evaluatorBody = functionBody(KERNEL_SOURCE, 'async function runEvaluator(')
+const evaluatorBody = functionBody(KERNEL_SOURCE, 'async function runEvaluatorOnce(')
 check('runEvaluator 取得出来', typeof evaluatorBody === 'string' && evaluatorBody.length > 400, String(evaluatorBody?.length ?? 0))
 {
 	const firstAwait = maskCommentsAndStrings(evaluatorBody).indexOf('await dispatchSubRun')

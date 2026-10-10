@@ -336,6 +336,7 @@ ledger facts), so it appears in no state machine:
 | `observation/recorded` | §5 Observation | yes |
 | `audit/dispatched` | §6 Evaluation | yes |
 | `audit/settled` | §6 Evaluation | yes |
+| `audit/notified` | §6 Audit: native result notification after caller detachment | Yes |
 | `evidence/recorded` | §7 Evidence | yes |
 | `fact/promoted` | §8 Fact | yes |
 | `human/released` | §3 Step (L4 release) | yes |

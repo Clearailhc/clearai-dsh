@@ -79,7 +79,7 @@ export const MUTATION_KIND = 'clearai'
  *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 21
+export const STATE_VERSION = 22
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -598,6 +598,8 @@ export function applyMutation(state, mutation) {
 				evaluator: 'independent',
 				child: mutation.evaluator_session ?? null,
 				capability: mutation.capability ?? null,
+				goal_id: mutation.goal_id ?? null,
+				goal_revision: mutation.goal_revision ?? null,
 				/**
 				 * **同态判据**:被裁决的那份产物/问题的摘要指纹。内核据此判断
 				 * 「这一次与上一次是同一件东西」并复用旧裁决——于是「这次没花钱」在账上看得见。
@@ -636,12 +638,20 @@ export function applyMutation(state, mutation) {
 			})
 			break
 		}
+		case 'audit/notified': {
+			const audit = next.audits.find((item) => item.id === mutation.id)
+			if (audit) { audit.notifiedAt = at; audit.notificationId = mutation.message_id }
+			break
+		}
 		case 'audit/settled': {
 			const audit = next.audits.find((item) => item.id === mutation.id)
 			if (audit !== undefined) {
 				audit.verdict = mutation.verdict
 				/** 两项裁决:交付成立吗 + 每条判断的结果。旧账没有这两格,`verdict` 那时说的就是交付成立吗。 */
 				audit.holds = mutation.holds ?? null
+				audit.settledAt = mutation.settled_at ?? null
+				audit.rechecks = Array.isArray(mutation.rechecks) ? clone(mutation.rechecks) : []
+				audit.lessons = Array.isArray(mutation.lessons) ? clone(mutation.lessons) : []
 				audit.reuse = Array.isArray(mutation.reuse) ? clone(mutation.reuse) : []
 				audit.results = Array.isArray(mutation.results) ? mutation.results : []
 				audit.shortfalls = mutation.shortfalls ?? []

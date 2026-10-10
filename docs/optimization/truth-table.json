@@ -61,6 +61,10 @@
       "by": "independent-evaluator"
     },
     {
+      "t": "audit/notified",
+      "by": "independent-evaluator"
+    },
+    {
       "t": "block/cleared",
       "by": "verification-lifecycle"
     },

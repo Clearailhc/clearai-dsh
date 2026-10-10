@@ -116,6 +116,8 @@ jobs:
         # 这里把两件事都摆到台面上:环境在不在(不打印值),以及失败时 npm 的 debug 日志尾巴。
         run: |
           version="$(node -p "require('./package.json').version")"
+          channel=latest
+          case "$version" in *-*) channel=next ;; esac
           if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
             echo "OIDC 环境:在(GitHub 已注入 id-token 请求参数)"
           else
@@ -125,7 +127,7 @@ jobs:
             echo "::notice::clearai-dsh@$version 已经在 registry 上 —— 本次没有发布任何东西(首发是手工完成的,幂等跳过)"
           else
             echo "registry 上还没有 $version → 发布 dist/clearai-dsh"
-            if ! npm publish ./dist/clearai-dsh --access public --provenance; then
+            if ! npm publish ./dist/clearai-dsh --access public --provenance --tag "$channel"; then
               echo "::group::npm debug 日志尾巴(OIDC 交换失败的原因在这里)"
               latest="$(ls -t "$HOME/.npm/_logs/"*debug-0.log 2>/dev/null | head -1)"
               if [ -n "$latest" ]; then tail -70 "$latest"; else echo "(没有 debug 日志)"; fi
@@ -176,12 +178,14 @@ jobs:
           node tools/changelog-section.mjs "$version" > "$RUNNER_TEMP/release-notes.md"
           # 标题里那句短语也来自同一段:段首那段黑体(没有就只写版本号)。
           title="$(node tools/changelog-section.mjs "$version" --title)"
+          flags=()
+          case "$version" in *-*) flags+=(--prerelease --latest=false) ;; esac
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             # 已存在就**只改说明,不动标题** —— 标题可能是人写过的(手工那三个就带一句短语),
             # 重跑同一个 tag 不该把它抹平。
             echo "已存在 → 改写说明:$GITHUB_REF_NAME"
-            gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md" "${flags[@]}"
           else
             echo "新建 Release:$GITHUB_REF_NAME → $title"
-            gh release create "$GITHUB_REF_NAME" --title "$title" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release create "$GITHUB_REF_NAME" --title "$title" --notes-file "$RUNNER_TEMP/release-notes.md" "${flags[@]}"
           fi

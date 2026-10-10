@@ -21,7 +21,7 @@ This section is exported from code, not written by hand:
 
 - Mechanisms: 2 (goal / plan)
 - Intent tools: 7 (Frame Conclude CreatePlan AdvancePlan RevisePlan ClosePlan Anomaly)
-- Config keys: 16
+- Config keys: 20
 - Prompt sections: 3 defined, 3 mounted at any moment
 
 ## Summary
