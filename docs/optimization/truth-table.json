@@ -191,6 +191,10 @@
     {
       "t": "workspace/synced",
       "by": "workspace-files-sync"
+    },
+    {
+      "t": "team/observed",
+      "by": "formal-plan"
     }
   ],
   "mechanisms": [

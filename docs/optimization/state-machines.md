@@ -373,3 +373,8 @@ machine, among other things). The difference matters when reading:
 | Answers "what is actually guaranteed now" | Answers "what this design intends to become" |
 
 Confirmed differences are tracked in [`../known-gaps.md`](../known-gaps.md).
+
+
+### Native Team execution observations
+
+`team/observed` records a bound task revision and execution status without accepting the ClearAI step. Reopening a delivered task opens an evidence recheck; historical facts retain their scope. Native `completed` never emits `step/advanced`. Projection version 23 reconstructs bindings only when the ledger actually recorded them.

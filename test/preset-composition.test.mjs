@@ -34,7 +34,7 @@ const PRESET = readFileSync(join(PORT, 'preset', 'agent.cordis.yml'), 'utf8')
 console.log('\n【① 挂载表:工作方式回来了,第二本账没有】')
 {
 	check('tool-todo 挂载且允许并行 in_progress', /@deepseek-ai\/dsh-tool-todo/.test(PRESET) && /allowParallelInProgress: true/.test(PRESET))
-	check('tool-subagent 挂载且带模型选择设置', /@deepseek-ai\/dsh-tool-subagent'/.test(PRESET) && /modelSelectionSettings: true/.test(PRESET))
+	check('原生委派适配器挂载,不在预设重复注册团队工具', /plugins\/native-delegation.js/.test(PRESET) && !/^    - id: tool-subagent/m.test(PRESET))
 	check('tool-workflow 挂载', /@deepseek-ai\/dsh-tool-workflow/.test(PRESET))
 	check('tool-ralph 挂载', /@deepseek-ai\/dsh-tool-ralph/.test(PRESET))
 	/**

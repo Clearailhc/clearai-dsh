@@ -61,7 +61,7 @@ test('fingerprint ignores duplicate observation metadata but binds content and t
  const plan={id:'p',steps:[{id:'s',done_criteria:'mean equals 2',artifacts:[]}]}
  const input={cwd,kind:'step_audit',step:plan.steps[0],plan,state:{plans:[plan],materials:[{id:'first',at:1,ref:'raw.json',note:'mean=2'}]},gate:{}}
  const original=auditMaterialDigest(input)
- assert.match(original,/^v5:/)
+ assert.match(original,/^v6:/)
  input.state.materials.push({id:'second',at:2,ref:'raw.json',note:'mean=2'})
  assert.equal(auditMaterialDigest(input),original)
  input.state.materials[1].note='calibration pending'

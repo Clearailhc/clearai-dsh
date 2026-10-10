@@ -37,6 +37,11 @@ const desktop=yaml.parse(readFileSync(join(homedir(),'.dsh/profiles/desktop/cord
 const llm=desktop.find(x=>x.id==='llm-pi-ai')?.config
 if(!llm?.providers?.abhome)throw new Error('Configured abhome provider not found')
 const patch=[{id:'agent-default-model',config:{provider:'abhome',model:'deepseek-flash',reasoningEffort:'medium'}},{id:'llm-pi-ai',config:{...llm,providers:{abhome:llm.providers.abhome}}},{id:'headless-runner',disabled:true},{insert:[{id:'agent-preset-registry',name:'@deepseek-ai/dsh-agent-preset-registry',config:{default:'clearai'}},{id:'subagent-model-selection-settings',name:'@deepseek-ai/dsh-tool-subagent/model-selection-settings',config:{enabled:true,allowedModels:[{provider:'abhome',model:'deepseek-flash'}]}},{id:'native-test-carrier',name:join(repo,'tools/native-headless/carrier.mjs'),config:{profile,spec:process.env.CLEARAI_NATIVE_SPEC || join(home,'spec.json')}}]}]
+if (process.argv.includes('--teams')) {
+ const read=spawnSync(app,['-e',"process.stdout.write(require('fs').readFileSync('/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-experimental-agent-team-profile/cordis.patch.yml','utf8'))"],{env,encoding:'utf8',timeout:30000})
+ if(read.status!==0)throw new Error('Installed native Team profile is unavailable')
+ patch.unshift(...yaml.parse(read.stdout))
+}
 const p=join(home,'profiles',profile,'cordis.patch.yml');writeFileSync(p,yaml.stringify(patch));chmodSync(p,0o600)
 const installed=join(home,'profiles',profile,'node_modules','clearai-dsh'), packageFiles=[]
 function verifyFiles(dir,rel='') {
@@ -55,5 +60,5 @@ const versions=spawnSync(app,['-e',"const fs=require('fs');const root='/Applicat
 if(versions.status!==0)throw new Error('Installed runtime version query failed')
 const runtime=JSON.parse(versions.stdout)
 if(runtime.cli!=='0.2.0-rc.2')throw new Error('This preregistration requires installed DSH 0.2.0-rc.2')
-writeFileSync(join(home,'installation.json'),JSON.stringify({home,profile,app,tarball,packageDigest,runtimeDigest,runtime,packageFiles,model:{provider:'abhome',model:'deepseek-flash',reasoningEffort:'medium'},version:JSON.parse(readFileSync(join(dist,'package.json'))).version},null,2))
+writeFileSync(join(home,'installation.json'),JSON.stringify({home,profile,teams:process.argv.includes('--teams'),app,tarball,packageDigest,runtimeDigest,runtime,packageFiles,model:{provider:'abhome',model:'deepseek-flash',reasoningEffort:'medium'},version:JSON.parse(readFileSync(join(dist,'package.json'))).version},null,2))
 console.log(JSON.stringify({home,profile,tarball,version:JSON.parse(readFileSync(join(dist,'package.json'))).version}))

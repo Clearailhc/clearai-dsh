@@ -77,9 +77,10 @@ export const MUTATION_KIND = 'clearai'
  *           同一版里目标、判断与事实还带 `about`(涉及的实体或量),未解释项带 `defect`(解释为测量或方法缺陷);
  *           派生多一份 `negativeRows`(`clear/knowledge/negatives/` 的负向条目)。
  *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
+ *   v22 → v23:记录原生团队任务绑定与执行观测,不补造旧关联。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 22
+export const STATE_VERSION = 23
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -271,6 +272,7 @@ function appendSteps(plan, rawSteps) {
 			ordinal: plan.steps.length + 1,
 			do: raw.do,
 			artifacts: raw.artifacts ?? [],
+			...(raw.team_task_id ? { team_task_id: raw.team_task_id, team_id: raw.team_id, team_task: raw.team_task } : {}),
 			done_criteria: raw.done_criteria,
 			tests: normalizeTests(raw.tests),
 			/** 动手前写下的预期(可选);落空的地方记成未解释项。 */
@@ -486,6 +488,11 @@ export function applyMutation(state, mutation) {
 			const plan = planOf(mutation.plan)
 			if (plan === undefined || plan.status !== 'active') break
 			appendSteps(plan, [mutation.step])
+			break
+		}
+		case 'team/observed': {
+			const step = stepOf(mutation.plan, mutation.step)
+			if (step && typeof step.team_id === 'string' && step.team_id === mutation.team_id && step.team_task_id === mutation.task?.id) step.team_task = mutation.task
 			break
 		}
 		case 'plan/refined': {
@@ -2496,6 +2503,7 @@ export function view(state, sessionId) {
 				do: step.do,
 				artifacts: (step.artifacts ?? []).map((artifact) => (typeof artifact === 'string' ? { path: artifact, exists: null } : artifact)),
 				doneCriteria: step.done_criteria,
+				team_task_id: step.team_task_id ?? null, team_id: step.team_id ?? null, team_task: step.team_task ?? null,
 				tests: step.tests,
 				expect: step.expect ?? null,
 				serves: step.serves ?? null,
@@ -2528,6 +2536,7 @@ export function view(state, sessionId) {
 							 */
 							artifacts: (step.artifacts ?? []).map((artifact) => (typeof artifact === 'string' ? { path: artifact, exists: null } : artifact)),
 							doneCriteria: step.done_criteria,
+				team_task_id: step.team_task_id ?? null, team_id: step.team_id ?? null, team_task: step.team_task ?? null,
 							tests: step.tests,
 							expect: step.expect ?? null,
 							serves: step.serves ?? null,

@@ -19,6 +19,7 @@
  *   P5 什么都不删         → 状态是可重放的投影;refine/void/superseded 的旧值都在
  */
 
+import { teamBinding, teamObservations } from './native-team.js'
 import { createTodoMirror } from './native-todos.js'
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -1512,7 +1513,7 @@ export function apply(ctx, config = {}) {
 	 * `unknown` 不是裁决,它只说明"那一次没成",那正是应该重派的理由。
 	 */
 	function auditDigest(kind, step, plan, state, gate, sessionId) {
-		return auditMaterialDigest({ kind, step, plan, state, gate, cwd: sessionCwd(sessionId) })
+		return auditMaterialDigest({ kind, step, plan, state, gate, teamTasks: teamObservations(ctx.get('agentTeams'), ctx.get('agents')?.get(sessionId), state), cwd: sessionCwd(sessionId) })
 	}
 
 	/**
@@ -1534,7 +1535,7 @@ export function apply(ctx, config = {}) {
 		const matched = (state?.audits ?? []).filter((audit) => String(audit?.step ?? '') === String(stepId) && String(audit?.digest ?? '') === digest)
 		for (let index = matched.length - 1; index >= 0; index -= 1) {
 			const audit = matched[index]
-			if (!digest.startsWith('v5:') || !audit.card_path || !existsSync(audit.card_path) || !['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
+			if (!digest.startsWith('v6:') || !audit.card_path || !existsSync(audit.card_path) || !['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
 			return audit
 		}
 		return null
@@ -1831,7 +1832,24 @@ export function apply(ctx, config = {}) {
 		return plan?.steps.find((step) => step.status === 'open') ?? null
 	}
 
-	/** 开一次调用的上下文:拿宿主读面、取状态、备一个变更列表。 */
+	/** Record native execution changes without changing historical acceptance. */
+	function observeTeamTasks(hostService, sessionId, agent) {
+		const teamState = hostService.state(sessionId)
+		for (const observation of teamObservations(ctx.get('agentTeams'), agent, teamState)) {
+			const step = teamState.plans.find(plan => plan.id === observation.plan)?.steps.find(step => step.id === observation.step)
+			if (JSON.stringify(step?.team_task) === JSON.stringify(observation.task)) continue
+			landFact(sessionId, { t: 'team/observed', id: contentDigest(observation), ...observation })
+			if (step?.team_task?.status === 'completed' && observation.task.status !== 'completed') openAnomalies(sessionId, [{ what: `Native Team task ${step.team_task_id} was reopened or became unavailable; recheck the affected evidence. Historical facts keep their original scope.`, touches: step.tests?.hypotheses ?? [] }], { step: step.id, by: 'system' })
+		}
+	}
+	ctx.on('session/event', (session, event) => {
+		if (event.type !== 'team/task') return
+		const hostService = host(), agent = ctx.get('agents')?.get(String(session.id))
+		if (!hostService || !agent) return
+		observeTeamTasks(hostService, String(session.id), agent)
+		if (CFG.nativeTodoProgress) syncNativeTodos(String(session.id), hostService.state(String(session.id)))
+	})
+
 	function open(exec, options = {}) {
 		const hostService = host()
 		if (hostService === undefined) {
@@ -1871,6 +1889,7 @@ export function apply(ctx, config = {}) {
 		 * 实体或概念文件就立约 / 结案,等下一拍的 pre-step 才同步就晚了。这里先把变化落成一条
 		 * `workspace/synced` 放进这次调用的变更里,并按「同步之后」的样子交出状态与派生。
 		 */
+		observeTeamTasks(hostService, sessionId, exec.agent)
 		if (options.sync === true) {
 			const base = hostService.state(sessionId)
 			let synced = null
@@ -3988,6 +4007,7 @@ export function apply(ctx, config = {}) {
 		type: 'object',
 		properties: {
 			id: { type: 'string', description: '稳定 id' },
+			team_task_id: { type: 'string', description: '可选:当前原生团队的任务 id;completed 只表示已交付,AdvancePlan 核验后才验收' },
 			do: { type: 'string', description: '做什么' },
 			artifacts: { type: 'array', items: { type: 'string' }, description: '作为物证的产物文件路径(相对工作区,不是目录)' },
 			done_criteria: { type: 'string', description: '判据:结果出现前写下,可核对' },
@@ -4059,6 +4079,9 @@ export function apply(ctx, config = {}) {
 			if (activePlanOf(state) !== null) return fail('active_plan_exists', tr('已经有一份活动计划。改它用 RevisePlan,收它用 ClosePlan。', 'There is already an active plan. Change it with RevisePlan; close it with ClosePlan.'))
 			const problem = validateSteps(args.steps)
 			if (problem !== null) return fail('invalid_steps', problem)
+			let bindings
+			try { bindings = teamBinding(ctx.get('agentTeams'), exec.agent, args.steps, state.plans.filter(plan => plan.status === 'active').flatMap(plan => plan.steps)) }
+			catch (error) { return fail('invalid_team_binding', error.message) }
 			const resolvedTests = new Map()
 			for (const step of args.steps) {
 				const resolved = resolveTests(state.hypotheses, step.tests)
@@ -4084,7 +4107,7 @@ export function apply(ctx, config = {}) {
 				goal: goal?.id ?? null,
 				phase_id: goal?.id ?? null,
 				brief,
-				steps: args.steps.map((step) => ({ id: step.id, do: step.do, artifacts: step.artifacts ?? [], done_criteria: step.done_criteria, tests: resolvedTests.get(step.id) ?? null, ...(typeof step.expect === 'string' && step.expect.trim() !== '' ? { expect: step.expect.trim() } : {}), ...resolvedExtras.get(step.id) })),
+				steps: args.steps.map((step) => ({ id: step.id, do: step.do, artifacts: step.artifacts ?? [], done_criteria: step.done_criteria, tests: resolvedTests.get(step.id) ?? null, ...(typeof step.expect === 'string' && step.expect.trim() !== '' ? { expect: step.expect.trim() } : {}), ...resolvedExtras.get(step.id), ...bindings.get(step.id) })),
 			})
 			return done({
 				ok: true,
@@ -4138,7 +4161,10 @@ export function apply(ctx, config = {}) {
 				if (grounding) return grounding
 				const extras = resolveStepExtras(state, args.step)
 				if (extras.ok !== true) return fail(extras.code, extras.message)
-				const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: resolved.tests, ...(typeof args.step.expect === 'string' && args.step.expect.trim() !== '' ? { expect: args.step.expect.trim() } : {}), ...extras.extra }
+				let binding
+				try { binding = teamBinding(ctx.get('agentTeams'), exec.agent, [args.step], plan.steps).get(args.step.id) }
+				catch (error) { return fail('invalid_team_binding', error.message) }
+				const amended = { id: args.step.id, do: args.step.do, artifacts: args.step.artifacts ?? [], done_criteria: args.step.done_criteria, tests: resolved.tests, ...(typeof args.step.expect === 'string' && args.step.expect.trim() !== '' ? { expect: args.step.expect.trim() } : {}), ...extras.extra, ...binding }
 				mutations.push({ t: 'plan/amended', plan: plan.id, step: amended })
 				if (plan.blocked !== undefined) mutations.push({ t: 'block/cleared', plan: plan.id, step: plan.blocked.step })
 				return done({ ok: true, code: 'plan_amended', progress_changed: false, message: tr(`已补一步 ${args.step.id}(进度不变)。`, `Added step ${args.step.id} (progress unchanged).`) })
@@ -5311,6 +5337,7 @@ export function apply(ctx, config = {}) {
 	 * 把这几件工具的说明换成下面这份。键是参数的路径(`items` 表示数组元素)。
 	 */
 	const STEP_TEXT_EN = {
+		team_task_id: 'Optional current native Team task id; completed means delivered, not accepted. AdvancePlan verifies evidence.',
 		id: 'Stable id',
 		do: 'What it does',
 		artifacts: 'Output file paths that serve as proof (relative to the workspace; not a directory)',

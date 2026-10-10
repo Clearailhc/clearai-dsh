@@ -213,6 +213,7 @@ function makeHost() {
 				},
 			},
 			get(name) {
+				if (name === 'agentTeams') return host.agentTeams
 				if (name === 'clearai') return service
 				if (name === 'agents') return { get: id => host.liveAgents?.[String(id)] }
 				if (name === 'goals') return host.goalsAvailable ? goals : undefined
@@ -545,7 +546,7 @@ console.log('\n【提示词面:预设的提示词段】')
 	check('对人说话段在(怎么把结论交给人)', (byName('clearai/speaking')?.text ?? '').length > 100)
 	check('身份段刻意不含时间(时间由运行态卡承载)', !/\d{2}:\d{2}/.test(String(byName('clearai/identity')?.text ?? '')))
 	check('循环段写明先摸清现状再立计划', /摸清现状再立计划/.test(String(byName('clearai/loop')?.text ?? '')))
-	check('循环段写明并行交给 subagent、各条路线声明不同的产物路径', /subagent/.test(String(byName('clearai/loop')?.text ?? '')) && /不同的产物路径/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段写明并行交给原生委派、各条路线声明不同的产物路径', /原生委派/.test(String(byName('clearai/loop')?.text ?? '')) && /不同的产物路径/.test(String(byName('clearai/loop')?.text ?? '')))
 	check('提示词不承诺不存在的机制(不出现 background 自动回灌)', !/background/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
 	check('循环段在:唯一完成动作 + 等级只决定谁来判', /唯一的完成动作/.test(String(byName('clearai/loop')?.text ?? '')) && /等级只决定谁来判/.test(String(byName('clearai/loop')?.text ?? '')))
 }
@@ -3611,6 +3612,25 @@ console.log('\n【原生 todo 与核验进度同源】')
  check('模型不能用原生todo伪造ClearAI计划完成',overwrite.kind==='deny')
  await callOn(host,S,'RevisePlan',{action:'void',step_id:'b',reason:'清点已经覆盖复核,本步重复'})
  check('作废项从原生todo移除而不是冒充已完成',todo()?.length===1&&host.service.state(S).plans[0].steps[1].status==='void')
+}
+
+{
+ const host=makeHost(), S='session-team-binding';host.cwd=tempDir('clearai-team-binding-')
+ const nativeTask={id:'task-1',revision:1,status:'pending',subject:'collect',description:'collect synthetic data'}
+ host.agentTeams={tryMembership:a=>a?.id===S?{id:S}:undefined,getTask:(_a,id)=>{if(id!==nativeTask.id)throw Error('unknown task');return {...nativeTask}}}
+ host.liveAgents={[S]:{id:S}}
+ apply(host.ctx,{minHypotheses:0,nativeTodoProgress:true})
+ const made=await callOn(host,S,'CreatePlan',{steps:[{id:'s',do:'collect data',done_criteria:'three values recorded',team_task_id:'task-1'}]})
+ check('原生任务绑定保留团队身份并从open开始',made.ok===true&&host.service.state(S).plans[0].steps[0].team_id===S&&host.service.state(S).plans[0].steps[0].status==='open')
+ const duplicate=await callOn(host,S,'RevisePlan',{action:'add',step:{id:'s2',do:'duplicate',done_criteria:'three values recorded',team_task_id:'task-1'}})
+ check('同一活动任务不能绑定两步',duplicate.code==='invalid_team_binding')
+ nativeTask.status='completed';nativeTask.revision=2
+ await callOn(host,S,'RevisePlan',{action:'expect',step_id:'s',expect:'three values will agree'})
+ check('原生completed不直接验收ClearAI步骤',host.service.state(S).plans[0].steps[0].status==='open'&&host.service.state(S).plans[0].steps[0].team_task.status==='completed')
+ nativeTask.status='pending';nativeTask.revision=3
+ await callOn(host,S,'RevisePlan',{action:'expect',step_id:'s',expect:'recheck the current values'})
+ check('任务重开持久记录待核验异常',host.service.state(S).anomalies.some(a=>a.status==='open'&&a.what.includes('reopened')))
+ check('同一步的后续任务变化不被持久去重吞掉',host.service.state(S).plans[0].steps[0].team_task.revision===3)
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

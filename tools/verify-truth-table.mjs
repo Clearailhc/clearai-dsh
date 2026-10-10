@@ -113,6 +113,8 @@ const mustBePresent = [
 	'@deepseek-ai/dsh-command-goal',
 	'@deepseek-ai/dsh-plan-mode',
 ]
+// Ordinary delegation is now loaded by the scoped native surface adapter.
+if (PRESET.includes('plugins/native-delegation.js') && readFileSync(join(PORT, 'preset/plugins/native-delegation.js'), 'utf8').includes("from '@deepseek-ai/dsh-tool-subagent'")) presetPluginNames.add('@deepseek-ai/dsh-tool-subagent')
 const missing = mustBePresent.filter((name) => !presetPluginNames.has(name))
 check(missing.length === 0, '⑥ 交还原生的那几行确实挂着(防手滑摘除)', `意外缺席:[${missing.join(' ')}]`)
 

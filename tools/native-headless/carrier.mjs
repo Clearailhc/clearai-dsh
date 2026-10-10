@@ -48,7 +48,9 @@ export function apply(ctx, config) {
 	const checkpoint = () => {
 		try { for (const session of ctx.get('sessions')?.list() ?? []) capture(session) } catch {}
 		try { projection = main ? ctx.get('clearai')?.state(main.id) ?? projection : projection } catch {}
-		const result = { session: main?.id, group: spec.group, mode: clearMode ? 'clearai' : 'default', reason, failure, infrastructureCode, elapsedMs: Date.now() - started, model, usage: usageSummary(calls), mount: { prompt: promptMounted, tools: toolsMounted }, requests, approvals, answer, clearai: projection, violations:{...mechanismViolations,isolation_failed:reason!=='running'&&!isolationPassed}, driverDigest, logs: [...saved].map(([session, value]) => ({ session, ...value })) }
+		let nativeTeam = null
+		try { const team = ctx.get('agentTeams'); if (main && team?.tryMembership(main)) nativeTeam = { members: team.listMembers(main).map(({id,name,role,status})=>({id,name,role,status})), tasks: team.listTasks(main) } } catch {}
+		const result = { nativeTeam, session: main?.id, group: spec.group, mode: clearMode ? 'clearai' : 'default', reason, failure, infrastructureCode, elapsedMs: Date.now() - started, model, usage: usageSummary(calls), mount: { prompt: promptMounted, tools: toolsMounted }, requests, approvals, answer, clearai: projection, violations:{...mechanismViolations,isolation_failed:reason!=='running'&&!isolationPassed}, driverDigest, logs: [...saved].map(([session, value]) => ({ session, ...value })) }
 		atomic('checkpoint.json', result)
 		return result
 	}
@@ -134,7 +136,7 @@ export function apply(ctx, config) {
 		try { const sessions = ctx.get('sessions'); for (const session of sessions.list()) { capture(session); await sessions.flush(session) } } catch (error) { failure = `${failure ?? ''}; native flush: ${error.message}` }
 		atomic('result.json', checkpoint())
 		process.stdout.write(JSON.stringify({ type: 'done', reason, output: out }) + '\n')
-		ctx.get('appExit')(terminal === 'completed' ? 0 : 1)
+		ctx.get('appExit')(['completed', 'mechanical_passed'].includes(terminal) ? 0 : 1)
 	})
 	const cancel = () => { void finish('user_cancelled', 'User or registered fault cancellation') }
 	process.once('SIGINT', cancel); process.once('SIGTERM', cancel)
@@ -165,6 +167,15 @@ export function apply(ctx, config) {
 		main = made.agent
 		if(spec.isolation?.probe){atomic('isolation-probe.json',await probeReadIsolation(ctx,main,spec.isolation.probe));isolationPassed=true}
 		if (preset && (presets.composedPreset(main.ctx) !== preset.id || !ctx.get('clearai'))) throw new Error('Native preset/projection mount failed')
+		if (spec.mountOnly) {
+			const names = ctx.tools.schemas(main).map(tool => tool.name)
+			const team = ctx.get('agentTeams')?.tryMembership(main)
+			if (!!team !== !!spec.teams) throw new Error('Native Team toggle does not match test spec')
+			for (const name of spec.teams ? ['spawn_teammate','team_task_get','team_task_update','list_agents','send_message'] : ['subagent','subagent_fork','list_agents','send_message']) if (!names.includes(name)) throw new Error('Missing native surface: '+name)
+			if (spec.teams && names.some(name => ['subagent','subagent_fork'].includes(name))) throw new Error('Ordinary delegation leaked into native Team surface')
+			atomic('mount-receipt.json', { passed: true, teams: !!team, names })
+			return finish('mechanical_passed')
+		}
 		await main.whenIdle()
 		atomic('session-started.json', { session: main.id, resumed: !!spec.resumeSessionId })
 		main.followup(createUserMessage({ content: [{ type: 'text', text: spec.task }], source: { kind: 'user' } }))

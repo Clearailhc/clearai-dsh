@@ -31,7 +31,7 @@ export function methodSnapshot(cwd, spec, registration) {
 	return contentDigest({ registration: fileDigest(cwd, registration), command: spec?.command, scripts: [...scripts].sort().map((path) => [path, fileDigest(cwd, path)]) })
 }
 
-export function auditMaterialDigest({ kind, step, plan, state, gate, cwd }) {
+export function auditMaterialDigest({ kind, step, plan, state, gate, cwd, teamTasks = [] }) {
 	const currentPlan = (state.plans ?? []).find((row) => row.id === plan?.id) ?? plan
 	const modelIds = new Set((state.hypotheses ?? []).map((row) => row.use).filter(Boolean))
 	const refs = new Set((state.hypotheses ?? []).flatMap((row) => (row.uses ?? []).map((use) => typeof use === 'string' ? use : use.id)))
@@ -55,5 +55,5 @@ export function auditMaterialDigest({ kind, step, plan, state, gate, cwd }) {
 	const definitions = ['terms', 'predicates', 'entities'].flatMap((key) => (lexicon[key] ?? []).map(semantic))
 	const anomalies = [...(state.anomalies ?? []), ...(gate.anomalies ?? [])].filter((row) => row.by !== 'evaluator' || row.status !== 'open').map((row) => ({ id: row.id, what: row.what, status: row.status, reason: row.reason, explainedBy: row.explainedBy }))
 	const materials = [...new Set((state.materials ?? []).map(({ id, at, ...row }) => JSON.stringify(canonical(row))))].sort().map((row) => JSON.parse(row))
-	return `v5:${contentDigest({ kind, step: step.id, criteria: step.done_criteria, goal: state.goal, steps: currentPlan?.steps, answers: gate.answers, lessons: gate.lessons, extra: gate.extra, hypotheses: (state.hypotheses ?? []).map(({ supportedLevel, refutations, inconclusive, ...row }) => row), facts: state.facts, evidence: (state.evidence ?? []).filter((row) => row.anchor !== 'auditor'), materials, anomalies, definitions, knowledge, methods, artifacts: [...paths].sort().map((path) => [path, fileDigest(cwd, path)]) })}`
+	return `v6:${contentDigest({ teamTasks, kind, step: step.id, criteria: step.done_criteria, goal: state.goal, steps: currentPlan?.steps, answers: gate.answers, lessons: gate.lessons, extra: gate.extra, hypotheses: (state.hypotheses ?? []).map(({ supportedLevel, refutations, inconclusive, ...row }) => row), facts: state.facts, evidence: (state.evidence ?? []).filter((row) => row.anchor !== 'auditor'), materials, anomalies, definitions, knowledge, methods, artifacts: [...paths].sort().map((path) => [path, fileDigest(cwd, path)]) })}`
 }

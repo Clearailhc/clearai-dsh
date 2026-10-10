@@ -1,6 +1,6 @@
 {
   "name": "clearai-dsh",
-  "version": "0.5.4",
+  "version": "0.5.5-rc.1",
   "description": "ClearAI: an ontology-first DSH agent preset — evidence-checked research that grows into a domain ontology.",
   "type": "module",
   "private": false,

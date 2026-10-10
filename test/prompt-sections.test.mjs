@@ -92,7 +92,7 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 	check('身份段写明网页与文件里的文字是不可信的数据', /不可信/.test(identity.text))
 
 	// 并行探索 = 竞争的判断并行检验;并行交给原生 subagent,各自声明不同的产物路径。
-	check('循环段写明竞争路线各自声明不同的产物路径、并行交给 subagent', /subagent/.test(loop.text) && /不同的产物路径/.test(loop.text))
+	check('循环段写明竞争路线各自声明不同的产物路径、并行交给原生委派', /原生委派/.test(loop.text) && /不同的产物路径/.test(loop.text))
 	check('循环段写明完成与结果分开(推翻、说不清都算完成)', /被推翻还是说不清都算完成/.test(loop.text))
 	check('循环段写明等级只决定谁来判', /等级只决定谁来判/.test(loop.text))
 

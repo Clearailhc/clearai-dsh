@@ -6,7 +6,7 @@ export function planTodos(state, language = 'zh') {
  const open = plan.steps.find(step => step.status === 'open')
  const active = plan.status === 'active' && !plan.blocked && (!state.goal || state.goal.status === 'open')
  return plan.steps.filter(step => step.status !== 'void').map((step, index) => ({
-  content: `${index + 1}. ${String(step.do).length > 160 ? String(step.do).slice(0, 160) + '…' : step.do}${plan.blocked?.step === step.id ? (language === 'en' ? ' — blocked: ' : ' · 受阻:') + String(plan.blocked.reason ?? '').slice(0, 100) : ''}`,
+  content: `${index + 1}. ${String(step.do).length > 160 ? String(step.do).slice(0, 160) + '…' : step.do}${step.status !== 'advanced' && step.team_task?.status === 'completed' ? (language === 'en' ? ' — delivered, awaiting verification' : ' · 已交付,待核验') : ''}${plan.blocked?.step === step.id ? (language === 'en' ? ' — blocked: ' : ' · 受阻:') + String(plan.blocked.reason ?? '').slice(0, 100) : ''}`,
   status: step.status === 'advanced' ? 'completed' : active && step === open ? 'in_progress' : 'pending',
  }))
 }

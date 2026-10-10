@@ -4,6 +4,18 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [Unreleased]
 
+## [0.5.5-rc.1] — 2026-10-10
+
+**原生团队执行与 ClearAI 证据验收协同。**
+
+### Changed
+
+- 跟随宿主的原生团队开关：开启时使用宿主团队工具、消息和任务看板；关闭时保留普通子代理。独立评估仍使用隔离的一次性子代理，不占永久团队成员名额。
+- CreatePlan 与 RevisePlan add 的步骤可选填 `team_task_id`；任务必须属于当前团队，不允许重复有效绑定。原生 completed 不完成 ClearAI 步骤，仍由 AdvancePlan 核验。
+- 任务重开留下待复核异常；任务内容与版本进入审计指纹。原生 todo 显示“已交付，待核验”，详情保留证据入口；不自动迁移或重派已存在的工作。
+- 投影版本 23，从旧账本重建；不补造历史绑定。旧审计指纹保留可读，新结案使用含团队材料的指纹。
+- 候选发布到 npm `next`；正式修复版本 0.5.4 保持 `latest`。验证报告见 [原生团队验收](docs/optimization/0.5.5-rc.1/README.md)。
+
 ## [0.5.4] — 2026-10-10
 
 **修复慢评估误杀与审计恢复，正式用户可直接更新。**

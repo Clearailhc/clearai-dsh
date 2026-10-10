@@ -253,28 +253,9 @@
             isolate:
               workflowEngine: true
             config:
-              - id: tool-subagent-control
-                name: '@deepseek-ai/dsh-tool-subagent-control'
-
-              - id: tool-subagent-list-agents
-                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
-
-              # 执行者自选模型:重活可以换模型跑(modelSelectionSettings 出面板设置)。
-              - id: tool-subagent
-                name: '@deepseek-ai/dsh-tool-subagent'
-                config:
-                  provider: spawn
-                  toolName: subagent
-                  modelSelectionSettings: true
-                  backgroundMode: continuable
-
-              # fork 不开模型选择:provider/model 与父保持一致,继承的历史才能继续吃 KV Cache。
-              - id: tool-subagent-fork
-                name: '@deepseek-ai/dsh-tool-subagent'
-                config:
-                  provider: fork
-                  toolName: subagent_fork
-                  backgroundMode: continuable
+              # Delegate only through the selected native surface; the host owns Team tools.
+              - id: native-delegation
+                name: 'clearai-dsh/presets/clearai/plugins/native-delegation.js'
 
               # 2026-09-28:workflow 引擎换代 —— 旧宿主是 `dsh-workflow-worker-thread`,
               # 宿主 ≥0.1.7-alpha.1 里换成 `dsh-workflow-ptc`(前者已下线,是另一支实现)。
