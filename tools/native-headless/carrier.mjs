@@ -55,15 +55,19 @@ export function apply(ctx, config) {
 	atomic('carrier-started.json', { pid: process.pid, group: spec.group, model })
 	ctx.on('llm/stream', (options, next) => {
 		if (options.provider !== model.provider || options.model !== model.model) throw new Error('Unexpected native LLM model route')
-		const call = { session: options.sessionId, purpose: options.purpose, provider: options.provider, model: options.model, reasoningEffort: options.reasoningEffort, started: Date.now(), ended: false }
+		const call = { session: options.sessionId, purpose: options.purpose, provider: options.provider, model: options.model, reasoningEffort: options.reasoningEffort, started: Date.now(), ended: false, providerInvoked: false }
 		calls.push(call); checkpoint()
 		return (async function* () {
 			try {
+				if(crashFault) {call.injectedBeforeProvider='crash-after-child-verdict';checkpoint();await new Promise(()=>{})}
 				if(main&&options.sessionId!==main.id&&spec.fault==='audit-timeout') {
+					call.injectedBeforeProvider='audit-timeout';checkpoint()
 					atomic('fault-injected.json',{fault:spec.fault,session:options.sessionId,at:Date.now()})
 					await new Promise((accept,reject)=>{options.signal?.addEventListener('abort',()=>reject(new Error('Registered audit timeout: transport cancelled')),{once:true});setTimeout(accept,300000)})
+					throw new Error('Registered audit timeout before provider dispatch')
 				}
-				if(main&&options.sessionId!==main.id&&spec.fault==='disconnect') {atomic('fault-injected.json',{fault:spec.fault,session:options.sessionId,at:Date.now()});throw new Error('Registered native transport disconnect')}
+				if(main&&options.sessionId!==main.id&&spec.fault==='disconnect') {call.injectedBeforeProvider='disconnect';atomic('fault-injected.json',{fault:spec.fault,session:options.sessionId,at:Date.now()});throw new Error('Registered native transport disconnect')}
+				call.providerInvoked=true
 				for await (const chunk of next()) { if (chunk.type === 'usage') { call.usage = chunk.usage; checkpoint() } yield chunk }
 			}
 			finally { call.ended = true; call.finished = Date.now(); appendFileSync(join(out, 'llm-calls.jsonl'), JSON.stringify(redact(call)) + '\n'); checkpoint() }

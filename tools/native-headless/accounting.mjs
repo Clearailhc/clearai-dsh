@@ -1,6 +1,7 @@
 export function usageSummary(calls) {
-	const out = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, calls: 0, missing: 0, pending: 0 }
+	const out = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, calls: 0, injectedBeforeProvider: 0, missing: 0, pending: 0 }
 	for (const call of calls) {
+		if (call.injectedBeforeProvider && call.providerInvoked === false) { out.injectedBeforeProvider++; continue }
 		if (!call.usage || !['inputTokens', 'outputTokens'].every((key) => Number.isFinite(call.usage[key]) && call.usage[key] >= 0) || ['cacheReadTokens', 'cacheWriteTokens'].some((key) => call.usage[key] !== undefined && (!Number.isFinite(call.usage[key]) || call.usage[key] < 0))) { if (call.ended) out.missing++; else out.pending++; continue }
 		const u = call.usage
 		for (const [key, field] of Object.entries({ input: 'inputTokens', output: 'outputTokens', cacheRead: 'cacheReadTokens', cacheWrite: 'cacheWriteTokens' })) out[key] += Number(u[field] ?? 0)

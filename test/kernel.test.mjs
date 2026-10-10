@@ -652,6 +652,12 @@ console.log('\n【判据先写后做:入口强制 + 自指检测】')
 
 	const r3 = await call('Frame', { claim: 'x', done_criteria: '结果记录在对话中' })
 	check('判据自指(记录在对话中)→ 拒绝', r3.ok === false && r3.code === 'criteria_self_reference')
+	for (const done_criteria of ['文件存在且目标结案为 achieved', '目标状态为 achieved', 'goal status is achieved']) {
+		const circular = await call('Frame', { claim: 'x', done_criteria })
+		check(`拒绝目标完成状态作为先决判据: ${done_criteria}`, circular.ok === false && circular.code === 'criteria_self_reference')
+	}
+	const circularList = await call('Frame', { claim: 'x', done_criteria: '存在 lab/result.json', criteria: ['目标结案为 achieved'] })
+	check('逐条判据也不能绕过完成状态自指检查', circularList.ok === false && circularList.code === 'criteria_self_reference')
 
 	const longName = (name) => call('Frame', { claim: 'x', done_criteria: '三次重复实验产率均值高于 B,数据落在 lab/yield.csv', hypotheses: [{ claim: 'A 的产率高于 B', refute_when: '均值不高于 B', name }, { claim: 'y', refute_when: 'z' }] })
 	const longEnglish = await longName('Catalyst A beats catalyst B on yield at sixty')
@@ -3345,6 +3351,7 @@ console.log('\n【审计安全:写卡失败未知、在评估期间变化拒绝�
 		const delivered = await callOn(host, S, 'AdvancePlan', { step_id: 'CON' })
 		const audit = host.journal.find((row) => row.t === 'audit/settled')
 		check(`${holds}:原始逻辑 id 保存在真实卡内`, !!audit?.card_path && JSON.parse(readFileSync(audit.card_path)).step_id === 'CON', JSON.stringify(delivered))
+		check(`${holds}:评估卡的独立判者身份由内核写入`, JSON.parse(readFileSync(audit.card_path)).evaluator === 'independent')
 		check(`${holds}:两个路径组件都为64位 SHA256`, !!audit?.card_path && /[a-f0-9]{64}[/\\][a-f0-9]{64}\.json$/.test(audit.card_path))
 	}
 	const host = makeHost(); const ws = tempDir('clearai-audit-fail-'); host.cwd = ws

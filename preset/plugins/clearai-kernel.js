@@ -126,7 +126,7 @@ const MESSAGE_SOURCE_KIND = 'plugin:clearai'
 const SELF_REFERENCE = [
 	[/ClosePlan\s*(?:成功|succeed|success)/i, ['判据不得引用「ClosePlan 成功」——那是系统的动作,不是可核对的产物', 'Criteria cannot cite "ClosePlan succeeds": that is a system action, not a checkable output']],
 	[/(?:计划状态|plan status)\s*(?:为|是|=|is)?\s*done/i, ['判据不得引用「计划状态 done」——状态由系统派生,不能作为判据', 'Criteria cannot cite "plan status done": status is derived by the system and cannot be a criterion']],
-	[/(?:目标|goal)\s*(?:已|状态|is|status)?\s*achieved/i, ['判据不得引用「目标 achieved」——那是评估者的裁决,不是本步的产物', 'Criteria cannot cite "goal achieved": that is the evaluator\'s verdict, not this step\'s output']],
+	[/(?:目标|goal)\s*(?:(?:已|状态|结案|完成|为|是|置为|标为|is|status|set\s+to|marked\s+as)\s*)*achieved/i, ['判据不得引用「目标 achieved」——那是评估者的裁决,不是本步的产物', 'Criteria cannot cite "goal achieved": that is the evaluator\'s verdict, not this step\'s output']],
 	[/(?:本步.{0,8}(?:标记|标为|置为)|mark(?:ed)?\s+(?:this\s+)?step(?:\s+as)?)\s*done/i, ['判据不得引用「本步标记 done」——没有手动标记这回事', 'Criteria cannot cite "mark this step done": there is no manual marking']],
 	[/记录在对话(?:中|里)|recorded in the (?:conversation|chat)/i, ['判据不得是「记录在对话中」——对话不是可复核的产物', 'Criteria cannot be "recorded in the conversation": the conversation is not a checkable output']],
 	[/见上文|see above/i, ['判据不得是「见上文」——评估者读不到你的上下文', 'Criteria cannot be "see above": the evaluator cannot read your context']],
@@ -858,6 +858,7 @@ export function apply(ctx, config = {}) {
 			'**纪律:**',
 			'- 只核对不发挥:你的职责是对照标准验收,不是重做方案、不是提改进建议。',
 			'- 你没有写入权限:任何需要产出文件的事都不是你的事。',
+			'- 本次裁决发生在系统收下交付/结案之前。本次评估卡、事实升格、目标完成标记都在裁决返回并复核后落盘,此刻尚未出现是正常时序,不是缺失证据。仍须核对已经声称存在的历史记录及实质产物。',
 			'- 你给**两项**裁决,不要混在一起:',
 			'  · **交付成立吗**(`holds`):yes = 判据逐条满足、观测真实;no = 有判据不满足,或观测与记录对不上;unclear = 凭现有材料判不了。',
 			'  · **每条判断的结果**(`results`,这一步检验几条就给几格):对照它的推翻条件读——support = 没碰到推翻条件,refute = 碰到了,inconclusive = 这次观测区分不了。',
@@ -881,6 +882,7 @@ export function apply(ctx, config = {}) {
 			'**Discipline:**',
 			'- Check, do not improvise: your job is to accept against the criteria, not to redo the work or suggest improvements.',
 			'- You cannot write: anything that needs a file produced is not your job.',
+			'- This evaluation precedes acceptance and closure. Its card, fact promotion and goal completion markers are persisted only after your verdict returns and is rechecked; their absence now is expected, not missing evidence. Still verify claimed historical records and substantive outputs.',
 			'- You give **two** verdicts; keep them apart:',
 			'  · **Does the delivery hold** (`holds`): yes = every criterion met and the observations are real; no = some criterion unmet, or observations do not match the record; unclear = cannot be decided from the material.',
 			'  · **The result for each judgment** (`results`, one entry per judgment this step tests): read it against its refutation condition; support = the condition was not hit, refute = it was hit, inconclusive = this observation cannot tell.',
@@ -1704,7 +1706,7 @@ export function apply(ctx, config = {}) {
 		const file = sessionFile(sessionId, 'clear', 'evidence', 'audits', auditPathComponent(stepId), `${auditPathComponent(card.auditor_run_id)}.json`)
 		if (file === null) return null
 		try {
-			writeTextFile(file, `${JSON.stringify(card, null, 2)}\n`)
+			writeTextFile(file, `${JSON.stringify({ ...card, evaluator: 'independent' }, null, 2)}\n`)
 			return file
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai kernel: 评估卡落盘失败 ${String(error?.message ?? error)}`)
@@ -2783,7 +2785,7 @@ export function apply(ctx, config = {}) {
 			const done = finish(hostService, sessionId, mutations)
 			const criteria = String(args.done_criteria ?? '').trim()
 			if (criteria.length < 4) return fail('done_criteria_required', tr('判据不能为空:目标是「项目要回答的问题」,判据是「怎样算回答了」。', 'Criteria cannot be empty: the goal is the question the project answers; the criteria say what counts as answered.'))
-			const selfRef = SELF_REFERENCE.find(([pattern]) => pattern.test(criteria))
+			const selfRef = SELF_REFERENCE.find(([pattern]) => [criteria, ...(Array.isArray(args.criteria) ? args.criteria : [])].some(value => pattern.test(String(value))))
 			if (selfRef !== undefined) return fail('criteria_self_reference', tr(...selfRef[1]))
 			if (typeof args.claim !== 'string' || args.claim.trim() === '') return fail('claim_required', tr('目标要有主张。', 'The goal needs a claim.'))
 			// 迁移开关要在假设校验**之前**就有值:下面那条「主体必须可指认」对它放行。

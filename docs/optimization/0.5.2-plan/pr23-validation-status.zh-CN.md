@@ -1,12 +1,12 @@
 # 验证状态（2026-10-10，工程门禁复验中）
 
-分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.13`，尚未冻结产品矩阵。最终包 SHA-256 为 `6ddf69e4f7decf33fed0875da688dbfdc1bee754d898fd08efdcd28df321ba99`，原生安装于 `/private/tmp/clearai-pr23-home-rc13`，没有覆盖日常 profile。
+分支 `codex/v052-pr23-loop`，PR #23 `4a866bc` 基线。当前候选 `0.5.2-rc.14`，尚未冻结产品矩阵。最终包 SHA-256 为 `4dbc3e924a87da1d3761dc29373a06d9e58141e766224c0cf317df595eb5f66f`，原生安装于 `/private/tmp/clearai-pr23-home-rc14`，没有覆盖日常 profile。
 
 | 检查 | 证据 | 状态 |
 |---|---|---|
-| 全部套件含已安装宿主/客户端 | `/private/tmp/v052-strict-rc13.log` | 已运行，内核607、宿主38、客户端181等全绿，无跳过 |
-| 包一致性 | `/private/tmp/v052-package-rc13-final.log` | 46通过 |
-| macOS历史升级、卸载、重装及回放 | `/private/tmp/clearai-pr23-lifecycle-rc13/result.json` | 0.5.0/0.5.1/RC.13通过 |
+| 全部套件含已安装宿主/客户端 | `/private/tmp/v052-strict-rc14.log` | 已运行，内核614、宿主38、客户端181等全绿，无跳过 |
+| 包一致性 | `/private/tmp/v052-package-rc14.log` | 46通过 |
+| macOS历史升级、卸载、重装及回放 | `/private/tmp/clearai-pr23-lifecycle-rc14/result.json` | 0.5.0/0.5.1/RC.14通过 |
 | Windows Node24 | [RC.11 CI](https://github.com/Clearailhc/clearai-dsh/actions/runs/38030145987) | RC.11 Linux/Windows通过，RC.12待结果 |
 | 原生日志契约 | `/private/tmp/clearai-native-contract-rc11/result.json` | RC.11通过，RC.12待复验 |
 | 取消/断连/240秒超时/恢复 | `/private/tmp/clearai-pr23-faults-rc11/results.json` | RC.11四项通过；RC.12复验运行中 |
@@ -34,3 +34,11 @@ RC.10的核算探针两次耗尽预算。第一轮暴露夹具缺少变更来源
 RC.12四会话复检的第三题耗尽1,626,089处理token，保留于`/private/tmp/clearai-pr23-recheck-rc12`。不可逆动作误填不再出现；独立评估仍发现事实复核已resolved而同源负向条目仍unresolved。RC.13只在原负向条目的完整范围被覆盖、全部关联对象的同源原因均已有独立确认时，把负向条目标为explained，保留原始观测、范围、逐原因评估卡。部分覆盖、未知对象、其他未决原因不自动清除；原会话重新写回不能覆盖跨会话确认。采用已有resolution扩展字段，不改写旧账本、不补造历史确认，STATE_VERSION仍21。
 
 RC.13完整复检、故障、双盲评、消融预设探针、真实界面及Windows CI正在复验；门禁未齐前仍不启动产品矩阵。RC.12通过的门禁不冒充RC.13通过。
+
+## RC.14：判据自指、审计时序与故障成本
+
+RC.13完整四会话复检已通过(`/private/tmp/clearai-pr23-recheck-rc13/result.json`)，独立复检题使用1,323,172处理token。RC.12恢复测试另发现“目标结案为 achieved”被当作结案前置判据，形成循环；原有自指正则只认更短写法。RC.14补齐该写法及criteria列表检查，评估卡由内核写evaluator=independent，并明确本次裁决先于本次卡片、升格和结案标记落盘。历史事实、已声称存在的证据仍须严格核对。
+
+早期故障探针对“尚未发往模型的模拟断连/超时”记了usage未知，因此原先的passed只证明行为、不证明费用门禁。现在驱动记录providerInvoked与injectedBeforeProvider，只有明确未调用模型的人工注入单列；真实请求无usage仍未知。故障总门禁新增实际请求usage完整要求。SIGKILL探针在评估者结束后暂停新的模型派发，保留持久子会话再冷恢复，不把一次idle当完成。
+
+RC.14最终门禁正在复验。没有冻结或启动产品矩阵，没有产品收益结论。复现方式见同目录`pr23-native-testing.zh-CN.md`。

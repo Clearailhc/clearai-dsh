@@ -16,3 +16,11 @@ test('missing or pending usage remains unknown with nonzero known lower bound', 
 test('only credential content is redacted', () => {
 	assert.deepEqual(redact({ apiKey: 'hidden', token: 'experiment', text: 'Bearer abc.123', inputTokens: 20 }), { apiKey: '[redacted]', token: '[redacted]', text: 'Bearer [redacted]', inputTokens: 20 })
 })
+test('faults demonstrably injected before provider dispatch are separate from unknown paid requests',()=>{
+ const injected={injectedBeforeProvider:'disconnect',providerInvoked:false,ended:true}
+ assert.equal(usageSummary([injected]).status,'verified')
+ assert.equal(usageSummary([injected]).injectedBeforeProvider,1)
+ assert.equal(usageSummary([injected]).calls,0)
+ assert.equal(usageSummary([{...injected,providerInvoked:true}]).status,'unknown')
+ assert.equal(usageSummary([{providerInvoked:false,ended:true}]).status,'unknown')
+})

@@ -22,6 +22,7 @@ export async function runFaultSuite({home,profile,root}) {
    const completedChild=JSON.parse(readFileSync(join(output,'fault-injected.json'))).child
    passed=second.reason==='completed'&&second.clearai?.audits.some(row=>row.child===completedChild&&['yes','no','unclear'].includes(row.holds??row.verdict))
   }
+  passed=passed&&first.usage.status==='verified'&&(!second||second.usage.status==='verified')
   results.push({fault,first,second,passed});writeFileSync(join(root,'results.json'),JSON.stringify({passed:results.length===4&&results.every(row=>row.passed),results},null,2)+'\n')
   if(!passed)throw new Error('Fault gate failed: '+fault+'; preserved in '+root)
  }
