@@ -190,7 +190,7 @@ Process objects, domain vocabulary and a single test each have their own lifecyc
 
 ## 9. UI: the Explore and Ontology panes
 
-Two panes in the middle: **Explore** holds the process, **Ontology** holds only results. The person's four questions split across them: what is being answered, which possibilities are still open, and what comes next (Explore); what the conclusion rests on and what needs my decision (the answer cards in Ontology). The plan chip next to the input box shows exploration progress; clicking it opens Explore.
+Two panes in the middle: **Explore** holds the process, **Ontology** holds only results. The person's four questions split across them: what is being answered, which possibilities are still open, and what comes next (Explore); what the conclusion rests on and what needs my decision (the answer cards in Ontology). Plan progress mirrors to DSH's native todo dock.
 
 **Explore**, top to bottom:
 

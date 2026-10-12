@@ -259,7 +259,6 @@ const CONTRIB_DEFAULTS = {
  * 清单校验:装配语义——清单里出现表外的名字当场抛错,
  * 而不是静默少装一件工具、等某一轮才发现。错法一律装配期抛错:
  *   unknown_mechanism / unknown_tool / tool_of_disabled_mechanism / unknown_policy_slot
- *   / unknown_budget / unknown_budget_tier / invalid_budget
  */
 function resolveContributions(contributions) {
 	const declared = contributions ?? {}

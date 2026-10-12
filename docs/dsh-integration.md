@@ -9,8 +9,8 @@ The published package is `clearai-dsh`. A single install places three things on 
 | Surface | What it carries | Where it comes from |
 |---|---|---|
 | Host composition (patch layer) | Row `clearai-host` → the host half: the session projection unit `clearai`, its read routes, and the browser module declaration | `pack/cordis.patch.yml`, `ui/lib/index.js` |
-| Agent preset (roster) | ClearAI's ten tools, three prompt sections and guards, plus the native DSH capabilities it composes | `preset/` |
-| Client module (browser) | The Explore and Ontology panes in the middle, the plan chip next to the input box | `ui/lib/client.js` |
+| Agent preset (roster) | ClearAI's seven intent tools, three prompt sections and guards, plus the native DSH capabilities it composes | `preset/` |
+| Client module (browser) | The Explore and Ontology panes in the middle; plan progress mirrors to DSH's native todo dock | `ui/lib/client.js` |
 
 The split is not cosmetic. Client modules are only discovered through rows of the **host** loader, so the browser half must sit in the patch layer. The projection unit is process-wide and registers once, so it cannot live in a preset that gets rebuilt. Conversely, the judgment side — tools, prompt sections, skills — is exactly what "one session's capabilities" means, so it belongs to the preset.
 
