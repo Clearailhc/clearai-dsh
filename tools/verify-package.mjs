@@ -236,7 +236,13 @@ try {
 console.log('\n⑦ 可打包:npm 实际会带走的文件')
 try {
 	const out = execFileSync('npm', ['pack', '--dry-run', '--json'], { cwd: DIST, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-	const files = JSON.parse(out)[0].files.map((item) => item.path)
+	const parsed = JSON.parse(out)
+	// npm ≥12 改了 --json 的顶层形状（由数组变为以包名为键的对象）；遵循表外形状当场抛错而不静默的纪律，防止空结果导致白名单断言假通过。
+	const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed ?? {})[0]
+	if (!entry || !Array.isArray(entry.files)) {
+		throw new Error(`npm pack --json 顶层形状未知: ${Array.isArray(parsed) ? 'array' : typeof parsed}`)
+	}
+	const files = entry.files.map((item) => item.path)
 	const outside = files.filter((rel) => !allowedRoots.some((root) => rel === root || rel.startsWith(`${root}/`)))
 	check(`npm 会带走 ${files.length} 个文件,全在白名单内`, outside.length === 0, outside.slice(0, 5).join(', '))
 	check('npm 会带走预设(不是只有 lib)', files.some((rel) => rel.endsWith('agent.cordis.yml')) && files.some((rel) => rel.endsWith('plugins/clearai-kernel.js')))
