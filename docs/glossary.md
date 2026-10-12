@@ -21,7 +21,7 @@ A judgement to test, stating what result would refute it. Its status is computed
 Written in advance: what counts as done, or wrong. Written before the work; revisions keep the old versions.
 
 ## Verification
-A step that tests one hypothesis, with a level and criteria. A step tests at most one hypothesis.
+A step that tests hypotheses, with a level and criteria. One step may test several (`tests.hypotheses`), and each gets its own result; a step that tests none is ordinary work and needs no result.
 
 ## Observation (what was delivered)
 The artefacts and execution record a step delivers. It reports what was found; on its own it establishes nothing.

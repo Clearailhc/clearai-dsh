@@ -156,7 +156,7 @@ node docs/diagrams/build-hero.mjs   # redraw the product hero (needs google-chro
 
 ## What it looks like
 
-Two panes in the middle: **Explore** and **Ontology**. Explore holds the process; Ontology holds only results. The plan chip next to the input box shows exploration progress ("Question 1/2 · hypotheses to test: 2" or "Areas 3/6 · 1 question(s) awaiting your decision"); click it to open Explore.
+Two panes in the middle: **Explore** and **Ontology**. Explore holds the process; Ontology holds only results. Plan progress mirrors to DSH's native todo dock.
 
 **Explore** — what is being answered, which possibilities are still open, and what comes next. The header gives the topic and mode (survey / solve), the current question and plan progress. Below come the items awaiting you, the survey areas (in survey mode), each question's candidate hypotheses (being examined / excluded / adopted / set aside; open one for its source, refutation condition, prediction and related records), the next step with each candidate's prediction (with a note when the predictions are identical and the step cannot tell them apart), and unexplained observations. A newly found question carries two buttons, "Make it a question" and "Park"; pressing one sends a sentence to the model on your behalf, and the model revises the framing. At the bottom, a collapsed **process record**: judgment counts and the progress rail, every judgment, and the plan's steps and gates.
 
