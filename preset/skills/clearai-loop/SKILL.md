@@ -38,7 +38,7 @@ description: Use when working inside the ClearAI preset and a delivery keeps get
 
 `holds=yes` 这一步就完成,不管 `results` 是支持、推翻还是说不清。推翻和说不清照样记成证据,判断的状态由证据算。评估卡写不进来时裁决降级为 `unknown`,这一步不推进,绝不静默放行。
 
-评估卡、证据、事实由系统落盘;`clear/evidence`、`clear/knowledge/facts`、`clear/knowledge/lessons`、`clear/goals` 你都写不了。重评产生新证据,旧证据不改不删。
+评估卡、证据、事实由系统落盘;`clear/evidence`、`clear/knowledge/facts`、`clear/knowledge/lessons`、`clear/knowledge/negatives`、`clear/goals` 你都写不了。重评产生新证据,旧证据不改不删。
 
 ## 本体文件被拒或被标出来
 
@@ -95,7 +95,7 @@ One card carries two verdicts, each answering its own question:
 
 With `holds=yes` the step is complete, whatever `results` says. Refute and inconclusive are recorded as evidence all the same, and the judgment's status is computed from the evidence. If the card cannot be written, the verdict degrades to `unknown` and the step does not advance; it is never silently let through.
 
-The system writes evaluator cards, evidence and facts; you cannot write `clear/evidence`, `clear/knowledge/facts`, `clear/knowledge/lessons` or `clear/goals`. A re-evaluation adds new evidence; old evidence is never changed or deleted.
+The system writes evaluator cards, evidence and facts; you cannot write `clear/evidence`, `clear/knowledge/facts`, `clear/knowledge/lessons`, `clear/knowledge/negatives` or `clear/goals`. A re-evaluation adds new evidence; old evidence is never changed or deleted.
 
 ## When an ontology file is refused or flagged
 
