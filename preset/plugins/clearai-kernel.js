@@ -4759,7 +4759,10 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
-	// ═══ 事实边界:保护「系统所有」的路径 + bash 危险闸门 + L4 人放行 ═══════
+	// ═══ 事实边界:保护「系统所有」的路径 + shell 危险闸门 + L4 人放行 ═══════
+	// 门对**所有 shell 工具**生效:bash 与 pwsh(preset 在 win32 上只挂 pwsh,
+	// 只认 bash 的门在 Windows 上会整体失效)。
+	const SHELL_TOOLS = new Set(['bash', 'pwsh'])
 
 	const DENY_REASONS = [
 		[
@@ -4794,6 +4797,26 @@ export function apply(ctx, config = {}) {
 			},
 		],
 		[['拉起宿主应用', 'launching the host app'], (command) => /\.app\/Contents\/MacOS\/|\bopen\s+-a\b/.test(command)],
+		// ── pwsh 形态:同类的危险写法,Windows 上 preset 只挂 pwsh,缺了这些门就空了。──
+		[
+			['递归删除系统路径(pwsh)', 'recursive delete of a system path (pwsh)'],
+			(command) => {
+				const match = /(^|[;&|]\s*)remove-item\s+([^;&|]*)/i.exec(command)
+				if (match === null) return false
+				const segment = match[2]
+				if (!(/(^|\s)-[a-z]*r/i.test(segment) || segment.includes('--recurse'))) return false
+				for (const token of segment.split(/\s+/)) {
+					if (token === '' || token.startsWith('-')) continue
+					const bare = token.replace(/^["']|["']$/g, '').replace(/^env:/i, '').toLowerCase()
+					if (bare === '/' || bare === '~' || bare.startsWith('~/') || /^\/[^/]+$/.test(bare) || /^[a-z]:\\?$/.test(bare) || bare === 'c:\\windows' || bare.startsWith('c:\\windows/') || bare.startsWith('%systemroot%')) return true
+				}
+				return false
+			},
+		],
+		[['远程脚本直灌 shell(pwsh)', 'remote script piped into a shell (pwsh)'], (command) => /(iwr|invoke-webrequest|invoke-restmethod|curl|wget)\b[^;&|]*\|\s*(iex|invoke-expression)\b/i.test(command)],
+		[['动态执行下载内容(pwsh)', 'dynamic execution of downloaded content (pwsh)'], (command) => /(iex|invoke-expression)\b[^;&|]*((iwr|invoke-webrequest|invoke-restmethod|curl|wget)\b|https?:\/\/)/i.test(command)],
+		[['卷格式化(pwsh)', 'volume formatting (pwsh)'], (command) => /(^|[;&|]\s*)format-volume\b|(^|[;&|]\s*)format\s+[a-z]:/i.test(command)],
+		[['提权(pwsh)', 'privilege escalation (pwsh)'], (command) => /(^|[;&|]\s*)(sudo|gsudo)\s/.test(command)],
 	]
 
 	/**
@@ -4827,7 +4850,7 @@ export function apply(ctx, config = {}) {
 		return root === undefined ? null : root.join('/')
 	}
 
-	/** bash 命令里**写**系统格子的迹象:命令里出现了那一格(相对或绝对写法)且带写操作。只读命令不拦。 */
+	/** shell 命令里**写**系统格子的迹象:命令里出现了那一格(相对或绝对写法)且带写操作。只读命令不拦。 */
 	const WRITE_HINT = /((?<![0-9&])>(?!&|\s*\/dev\/null)|\b(rm|mv|cp|tee|touch|mkdir|ln|chmod|truncate|install|rsync|dd)\b|\bsed\s+-i|\bperl\s+-[a-z]*i)/
 	function bashTouchesProtected(sessionId, command) {
 		if (typeof command !== 'string' || command === '' || !WRITE_HINT.test(command)) return null
@@ -4970,7 +4993,7 @@ export function apply(ctx, config = {}) {
 				 * 是模型自己的,写进去要过第一道校验。
 				 */
 				const writing = exec.name === 'write' || exec.name === 'edit'
-				const suspect = writing ? (protectedPath(sessionId, args.file_path) ?? protectedPath(sessionId, args.path)) : exec.name === 'bash' ? bashTouchesProtected(sessionId, args.command) : null
+				const suspect = writing ? (protectedPath(sessionId, args.file_path) ?? protectedPath(sessionId, args.path)) : SHELL_TOOLS.has(exec.name) ? bashTouchesProtected(sessionId, args.command) : null
 				if (suspect !== null) {
 					return {
 						kind: 'deny',
@@ -4984,12 +5007,12 @@ export function apply(ctx, config = {}) {
 					}
 				}
 			}
-			if (CFG.bashDenyRules && exec.name === 'bash' && typeof args.command === 'string') {
+			if (CFG.bashDenyRules && SHELL_TOOLS.has(exec.name) && typeof args.command === 'string') {
 				for (const [reason, test] of DENY_REASONS) {
-					if (test(args.command)) return { kind: 'deny', reason: tr(`危险的 bash 命令(${reason[0]}):改写命令避开这种写法(dangerous bash command)`, `dangerous bash command (${reason[1]}); rewrite the command to avoid this pattern`) }
+					if (test(args.command)) return { kind: 'deny', reason: tr(`危险的 shell 命令(${reason[0]}):改写命令避开这种写法(dangerous shell command)`, `dangerous shell command (${reason[1]}); rewrite the command to avoid this pattern`) }
 				}
 			}
-			if (owned && exec.name === 'bash' && typeof args.command === 'string') {
+			if (owned && SHELL_TOOLS.has(exec.name) && typeof args.command === 'string') {
 				const denied = await releaseIrreversible(exec, sessionId, state, args.command)
 				if (denied !== null) return denied
 			}
