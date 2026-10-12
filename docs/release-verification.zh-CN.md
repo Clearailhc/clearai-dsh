@@ -15,6 +15,27 @@ node tools/recheck.mjs --log ~/.dsh/sessions/<桶>/<会话>/session.v3.jsonl.zst
 `--log` 给一场**有内容的真会话**(有目标/计划/步骤/证据/事实那种;模拟宿主的 `events.jsonl` 也行)。没有就跳过字数预算那一节,
 它会如实说"没量"。
 
+### 回放归档的 run
+
+**归档到什么程度,就只能核到什么程度。** `docs/cases/runs/<case>/` 带的是会话日志与工作区,但有几条断言只能读**原现场**才核得了:
+内核账本(`clear/knowledge/facts/`)或模型写在工作区里的物证文件。仓库里两场案例都不完整——
+`navier-stokes` 的账本被 `.gitignore` 的 `clear/` 规则连归档一起吃掉了(现在 `docs/cases/runs/*/` 已放行),
+`jepa-world-model` 缺 `sources/`。这两场上,读盘断言的红表示**无法核验**,不等于当年跑错:
+各自的 `result.json` 都记着它当时是通过的。
+
+```bash
+node tools/e2e-replay.mjs --scenario navier-stokes \
+  --log docs/cases/runs/navier-stokes/events.jsonl \
+  --workspace docs/cases/runs/navier-stokes/ws --skip-disk-checks
+```
+
+`--skip-disk-checks` 把这些项**单列为「跳过」**,不计通过。加上它,两场都能复现各自的档案判定
+(navier-stokes 0 失败;jepa-research 恰好是它 `result.json` 里记的那 2 条失败)。
+
+`recheck.mjs` 的逐面字数预算是拿**今天的渲染器**量**历史日志**:那一栏「超预算」是说这一面今天渲染得比预算长,
+不是说当年那场跑错了。`navier-stokes` 的计划面 1240 字 / 预算 900(8 步计划)。要不要削面是产品决定,
+所以它如实报出来,而不是悄悄改预算。
+
 ---
 
 ## 一、数据面(所有界面的地基)

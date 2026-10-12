@@ -8,6 +8,13 @@ dist/
 
 # 运行产物:工作区骨架与账本证据(内核自己写,不是源码)
 clear/
+# 例外:**案例归档**要带上内核账本,否则发布出去的 run 无法自证。
+# `clear/` 是通配目录规则,连 `docs/cases/runs/<case>/(ws/)clear/` 一起吃掉——
+# navier-stokes 与 jepa-world-model 两场就是这样只归档了 ws/、丢了账本:
+# 它们自己的 result.json 记着「升格的事实都落成了文件」当时通过,而照文档回放必然红。
+# 放行只能写在**目录**这一层:git 不会进入一个被忽略的目录去找里面的文件。
+!docs/cases/runs/*/ws/clear/
+!docs/cases/runs/*/clear/
 # 参考
 refs/
 # 长测归档:判读证据入库(trajectory.txt / summary.json / meta.json / index.json),

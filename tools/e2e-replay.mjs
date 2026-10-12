@@ -30,8 +30,15 @@ const option = (flag) => {
 const scenarioName = option('--scenario')
 const logPath = option('--log')
 const workspace = option('--workspace')
+/**
+ * 有的断言只能读**原现场**才核得了:内核账本(`clear/`)或模型写在工作区里的物证文件。
+ * 归档的 run 未必带全它——仓库里这两场案例就一个丢了账本、一个缺了 `sources/`。
+ * 那时红叉表示「无法核验」,而不是「当年跑错了」,两者不能混着说。
+ * 这个旗标把它们**明示跳过并单列**:不计通过,也不假装测过。
+ */
+const SKIP_DISK = argv.includes('--skip-disk-checks')
 if (logPath === undefined) {
-	console.error('用法:node tools/e2e-replay.mjs --scenario <name> --log <session.v3.jsonl.zstd> [--workspace <dir>]')
+	console.error('用法:node tools/e2e-replay.mjs --scenario <name> --log <session.v3.jsonl.zstd> [--workspace <dir>] [--skip-disk-checks]')
 	process.exit(2)
 }
 
@@ -74,6 +81,8 @@ if (workspace === undefined) console.log('  (没给 --workspace:物证类断言�
 
 let passed = 0
 let failed = 0
+let skipped = 0
+let hintedDisk = false
 for (const [title, kind] of [
 	['跨机制不变量', 'invariant'],
 	[scenario === null ? '剧本断言(未指定剧本)' : `剧本断言:${scenario.title}`, 'scenario'],
@@ -82,10 +91,19 @@ for (const [title, kind] of [
 	if (items.length === 0) continue
 	console.log(`\n【${title}】`)
 	for (const item of items) {
+		if (typeof item.needsDisk === 'string' && SKIP_DISK) {
+			skipped += 1
+			console.log(`  · 跳过 ${item.label} — 需要${item.needsDisk},这一份没有;未核验,不计通过`)
+			continue
+		}
 		if (item.ok) passed += 1
 		else failed += 1
 		console.log(`  ${item.ok ? '✓' : '✗'} ${item.label}${item.detail === '' ? '' : ` — ${item.detail}`}`)
+		if (!item.ok && typeof item.needsDisk === 'string' && !hintedDisk) {
+			hintedDisk = true
+			console.log('      · 这一项要读原现场(内核账本或工作区物证文件),日志里没有它:红表示「无法核验」,不等于当年跑错。加 --skip-disk-checks 明示跳过;见 docs/release-verification.md')
+		}
 	}
 }
-console.log(`\n结果:${passed} 通过,${failed} 失败`)
+console.log(`\n结果:${passed} 通过,${failed} 失败${skipped === 0 ? '' : `,${skipped} 跳过(需要原现场,未核验)`}`)
 process.exit(failed === 0 ? 0 : 1)

@@ -16,6 +16,20 @@ bash tools/capture-ui.sh start                            # isolated home + web 
 
 `recheck.mjs` needs a session with real content (a goal, a plan, steps, evidence, facts; a sim host `events.jsonl` works too). Without one it says so and skips the text-budget section rather than inventing numbers.
 
+### Replaying an archived run
+
+**The archive is the limit of what can be re-checked.** `docs/cases/runs/<case>/` carries the session log and the workspace, but a few assertions can only be settled by reading the original site: the kernel ledger (`clear/knowledge/facts/`) or an artifact the model wrote there. Two shipped cases are incomplete — `navier-stokes` lost its ledger (`.gitignore`'s `clear/` rule swallowed the archived copy; `docs/cases/runs/*/` is now un-ignored) and `jepa-world-model` is missing `sources/`. On those, a red on a disk-reading assertion means **cannot verify**, not "the run was wrong": each case's own `result.json` records that assertion passing at the time.
+
+```bash
+node tools/e2e-replay.mjs --scenario navier-stokes \
+  --log docs/cases/runs/navier-stokes/events.jsonl \
+  --workspace docs/cases/runs/navier-stokes/ws --skip-disk-checks
+```
+
+`--skip-disk-checks` reports those items as **skipped and counted separately**, never as passed. With it, both cases reproduce their recorded verdict (navier-stokes 0 failures; jepa-research exactly the 2 failures recorded in its `result.json`).
+
+The per-surface text budgets in `recheck.mjs` are measured with **today's** renderer against a **historical** log: "over budget" there means this surface renders longer than its budget today, not that the recorded run was wrong. `navier-stokes`'s plan surface reads 1240 chars against a 900 budget (an 8-step plan). Whether to trim the surface is a product call, so it is reported rather than silently re-baselined.
+
 ## 1 · Data plane
 
 | Component | Criterion | Check | Passing line |

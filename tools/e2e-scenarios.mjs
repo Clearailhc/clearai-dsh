@@ -229,6 +229,13 @@ function researchAsserts({ mutations, countOf, evidenceVerdicts, events, state, 
 	const errors = problems.filter((item) => item.severity === 'error')
 	const nested = terms.filter((term) => typeof term.parent === 'string' && term.parent !== '')
 	const legacyVerbs = events.filter((event) => event.type === 'tool/call' && ['Define', 'Deprecate', 'RegisterInstance', 'Assert'].includes(event.data?.name))
+	/**
+	 * 下面这条断言读的是**盘上的内核账本**(`<workspace>/clear/knowledge/facts/`),
+	 * 不是日志里折出来的状态——所以它只对「原工作区还在」的 run 成立。
+	 * 归档的案例若没带上 `clear/`,它会红:那是**无法核验**,不等于当时跑错了
+	 * (案例自己的 result.json 记着它当时是通过的)。`needsDisk` 让回放工具
+	 * 能把这两种情形分开说,而不是让人对着一个红叉猜。
+	 */
 	let factFiles = 0
 	try {
 		factFiles = readdirSync(join(workspace, 'clear', 'knowledge', 'facts')).filter((name) => name.endsWith('.json')).length
@@ -252,7 +259,7 @@ function researchAsserts({ mutations, countOf, evidenceVerdicts, events, state, 
 		{ label: '至少一次独立核验', ok: countOf('audit/settled') >= 1, detail: `派 ${countOf('audit/dispatched')} · 回 ${countOf('audit/settled')}` },
 		{ label: '不只有支持(有推翻或说不清的结果)', ok: evidenceVerdicts.some((verdict) => verdict !== 'support'), detail: evidenceVerdicts.join(',') },
 		{ label: '结案达成,并有结论写进长期知识', ok: closed?.status === 'achieved' && countOf('fact/promoted') >= 1, detail: `结案=${closed?.status ?? '(无)'} 升格=${countOf('fact/promoted')}` },
-		{ label: '升格的事实都落成了文件(clear/knowledge/facts/*.json)', ok: factFiles >= countOf('fact/promoted') && factFiles >= 1, detail: `文件 ${factFiles} · 升格 ${countOf('fact/promoted')}` },
+		{ label: '升格的事实都落成了文件(clear/knowledge/facts/*.json)', ok: factFiles >= countOf('fact/promoted') && factFiles >= 1, detail: `文件 ${factFiles} · 升格 ${countOf('fact/promoted')}`, needsDisk: '内核账本(clear/knowledge/facts/)' },
 		{ label: '工具结果与卡里没有内部编号(第六阶段)', ok: leakedIds.length === 0, detail: leakedIds.join(',') || '无' },
 	]
 }
@@ -337,6 +344,8 @@ export const INVARIANTS = [
 	},
 	{
 		label: '声明的物证真的在盘上(主线步骤的 artifacts)',
+		/** 只能读**原工作区**的盘:归档若没带全现场(实测 jepa 那场缺 `sources/`),这条无法核验。 */
+		needsDisk: '工作区物证文件',
 		run: ({ mutations, exists }) => {
 			const declared = mutations.filter((m) => m.t === 'plan/created').flatMap((m) => (m.steps ?? []).flatMap((step) => step.artifacts ?? []))
 			// 只有**已推进**的步骤才该有物证;未推进的步骤声明了也正常。
@@ -434,11 +443,11 @@ export async function evaluateLog({ scenario, events, mutations, workspace, exis
 	}
 	const checks = INVARIANTS.map((invariant) => {
 		const outcome = invariant.run(context)
-		return { label: invariant.label, ok: outcome.ok === true, detail: outcome.detail ?? '', kind: 'invariant' }
+		return { label: invariant.label, ok: outcome.ok === true, detail: outcome.detail ?? '', kind: 'invariant', ...(invariant.needsDisk === undefined ? {} : { needsDisk: invariant.needsDisk }) }
 	})
 	if (scenario !== null && scenario !== undefined) {
 		for (const assertion of scenario.asserts(context)) {
-			checks.push({ label: assertion.label, ok: assertion.ok === true, detail: assertion.detail ?? '', kind: 'scenario' })
+			checks.push({ label: assertion.label, ok: assertion.ok === true, detail: assertion.detail ?? '', kind: 'scenario', ...(assertion.needsDisk === undefined ? {} : { needsDisk: assertion.needsDisk }) })
 		}
 	}
 	const goalStatus = projected.goal?.status ?? '(无目标)'
