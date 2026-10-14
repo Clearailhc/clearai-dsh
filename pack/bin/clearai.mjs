@@ -164,6 +164,25 @@ function findOnPath(name) {
 }
 
 /**
+ * 跑一个在 PATH 上找到的命令。
+ *
+ * **Windows 上 `.cmd`/`.bat` 不能直接 spawn** —— Node 只认 PE 可执行文件,裸 spawn 一个
+ * `dsh.cmd` 会失败(EINVAL/ENOENT),而 Windows 上的 CLI 正是 `.cmd` 包装脚本。
+ * 这类脚本要交给 `cmd.exe` 执行。
+ */
+function spawnOnPath(bin, args, options) {
+	if (process.platform === 'win32' && /\.(?:cmd|bat)$/i.test(bin)) {
+		// `/s` 会剥掉整串的**最外层**引号,所以按 cmd 的规范写成 `""bin" "arg"…"`:
+		// 每个参数各自加引号(路径里有空格是常态),整体再包一层。`windowsVerbatimArguments`
+		// 让 Node 原样透传 —— 否则 Node 自己那套转义在 cmd 眼里是错的。
+		const quote = (value) => `"${String(value).replaceAll('"', '""')}"`
+		const line = `"${[bin, ...args].map(quote).join(' ')}"`
+		return spawnSync(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', line], { ...options, windowsVerbatimArguments: true })
+	}
+	return spawnSync(bin, args, options)
+}
+
+/**
  * 问组合:宿主行到底有没有真的进组合。
  *
  * 优先用 PATH 上**真正的** `dsh`(以前一律走 `npx --no-install`,于是 PATH 上有 CLI 的机器
@@ -174,7 +193,7 @@ function composeQuery(profileName, env) {
 	const args = ['--profile', profileName, '--dump-config']
 	const run = onPath === null
 		? spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', ...args], { encoding: 'utf8', env, timeout: 120000, stdio: ['ignore', 'pipe', 'ignore'] })
-		: spawnSync(onPath, args, { encoding: 'utf8', env, timeout: 120000, stdio: ['ignore', 'pipe', 'ignore'] })
+		: spawnOnPath(onPath, args, { encoding: 'utf8', env, timeout: 120000, stdio: ['ignore', 'pipe', 'ignore'] })
 	return run.status === 0 ? String(run.stdout ?? '') : null
 }
 
@@ -238,7 +257,7 @@ function install() {
 	 * 子进程**继承 stdio**:安装进度、以及 CLI 那句 `initialized profile …` 都如实流到用户眼前;
 	 * 失败时他看到的也是真实报错,而不是我截出来的尾巴。
 	 */
-	const dsh = (args) => (dshPath === null ? spawnSync('npx', ['--yes', '@deepseek-ai/dsh', ...args], { env, stdio: 'inherit', timeout: 900000 }) : spawnSync(dshPath, args, { env, stdio: 'inherit', timeout: 900000 }))
+	const dsh = (args) => (dshPath === null ? spawnSync('npx', ['--yes', '@deepseek-ai/dsh', ...args], { env, stdio: 'inherit', timeout: 900000 }) : spawnOnPath(dshPath, args, { env, stdio: 'inherit', timeout: 900000 }))
 
 	console.log(t('installHeader', { name: manifest.name, version: manifest.version }))
 	console.log(`  ${t('installWhat')}${spec}(${source})`)

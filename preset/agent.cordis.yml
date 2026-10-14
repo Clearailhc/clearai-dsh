@@ -16,12 +16,20 @@
 
 # ── 身份 ────────────────────────────────────────────────────────────────────
 
-# 预设自己的 persona,覆盖部署默认。`{{model}}`/`{{cwd}}` 由 agent 自己的路由与工作区解析。
+# 预设自己的 persona,覆盖部署默认。
+#
+# **刻意不写 `{{cwd}}` / `{{model}}` 这类模板变量**:宿主在渲染提示词时按**变量表**严格解析,
+# 表里没有的名字会让整轮直接抛错(`unknown prompt variable "{{cwd}}" in section …`),
+# 而各宿主版本注册的变量并不一样 —— 社区 issue #34 就是某些宿主的表里只有 provider/model、
+# 没有 cwd,ClearAI 会话起不来。工作区的绝对路径本来由宿主的运行时上下文给出,
+# 这里只写产品含义(工作区 = 用户的文件夹),不依赖模板变量。
+#
+# 变量契约由 test/prompt-sections.test.mjs 钉住:预设里若再出现 `{{…}}`,必须是宿主注册过的名字。
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
     prefix: '你是 ClearAI 的主人格,运行在 DeepSeek Harness 上。怎么工作见下面三段:身份、循环、对人说话。'
-    suffix: 你的工作目录是 {{cwd}}。工作区就是用户的文件夹;`clear/` 下除本体(`clear/ontology/`)外是系统的目录,其余目录都是用户的。
+    suffix: 工作区就是用户的文件夹;`clear/` 下除本体(`clear/ontology/`)外是系统的目录,其余目录都是用户的。
 
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'

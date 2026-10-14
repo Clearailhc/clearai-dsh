@@ -220,7 +220,7 @@ window.__ModuleLoader__.load({
 /* 图 */
 .clearai-graph{margin-bottom:18px}
 .clearai-graph[data-full="1"]{position:fixed;inset:0;z-index:40;background:var(--dsw-alias-bg-base);padding:16px 20px;display:flex;flex-direction:column;margin:0}
-.clearai-graph-bar{display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:12px}
+.clearai-graph-bar{display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:12px;position:relative;z-index:2}
 .clearai-seg{display:inline-flex;border:.5px solid var(--dsw-alias-border-l3);border-radius:999px;padding:2px}
 .clearai-seg>span{padding:2px 12px;border-radius:999px;cursor:pointer;color:var(--dsw-alias-label-secondary);white-space:nowrap}
 .clearai-seg>span[data-on="1"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary-inverted)}
@@ -234,6 +234,14 @@ window.__ModuleLoader__.load({
 .clearai-graph-body[data-side="1"]{flex-direction:row}
 .clearai-graph-canvas{height:340px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-base)}
 .clearai-graph[data-full="1"] .clearai-graph-canvas{height:auto;flex:1 1 auto;min-width:0}
+/**
+ * 全屏是自画的覆盖层(fixed / inset:0 / z-index:40),画布与右下角抽屉都长在它里面。
+ * 「退出全屏」原来只是工具条里的一个文字链接(没有快捷键、也不保证不被画布盖住)——
+ * 一旦它被遮住或换行挤出视口,用户只能刷新页面(社区 issue #33)。
+ * 所以全屏时把退出入口做成浮层里的固定按钮:比覆盖层高一档(z-index 41),永远在右上角。
+ */
+.clearai-graph[data-full="1"] .clearai-link[data-exit="1"]{position:fixed;top:12px;right:20px;z-index:41;padding:3px 10px;border:.5px solid var(--dsw-alias-border-l3);border-radius:8px;background:var(--dsw-alias-bg-base);text-decoration:none}
+.clearai-graph[data-full="1"] .clearai-link[data-exit="1"]:hover{border-color:var(--dsw-alias-label-secondary)}
 .clearai-graph-side{flex:0 0 auto}
 .clearai-graph-body[data-side="1"] .clearai-graph-side{width:380px;overflow-y:auto}
 .clearai-graph-problems{margin-top:6px;font-size:11.5px;color:var(--dsw-alias-label-secondary)}.clearai-graph-problems summary{cursor:pointer;color:var(--dsw-alias-state-warn-primary)}.clearai-graph-problems>div{padding:2px 0 2px 12px;line-height:1.5}.clearai-graph-problems>div[data-sev=info]{opacity:.7}.clearai-graph-problems code{font-size:11px}
@@ -2613,6 +2621,21 @@ window.__ModuleLoader__.load({
 				return () => clearTimeout(timer)
 			}, [fullscreen, layer, picked !== null, allNodes.length])
 
+			/**
+			 * **Escape 退出全屏**(issue #33)。
+			 *
+			 * 全屏是自画的覆盖层,不是原生 Fullscreen API,所以浏览器不会自己给退出键;
+			 * 退出入口又只有一个文字链接。这里挂一个 window 级监听(焦点在画布任意位置都能退,
+			 * 退出全屏或卸载时摘掉),并在根节点上同时接 onKeyDown —— 事件在组件内冒泡时同样生效,
+			 * 且这条接线在测试里可以直接验。
+			 */
+			React.useEffect(() => {
+				if (fullscreen !== true || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return undefined
+				const onKey = (event) => { if (event?.key === 'Escape') onToggleFullscreen() }
+				window.addEventListener('keydown', onKey)
+				return () => window.removeEventListener('keydown', onKey)
+			}, [fullscreen, onToggleFullscreen])
+
 			/** 全屏时小卡走右侧抽屉:摆在画布下方会把画布压矮,刚点开的那个点直接掉出可视区。 */
 			const sideBySide = fullscreen === true
 			const empty =
@@ -2621,7 +2644,12 @@ window.__ModuleLoader__.load({
 					: t('本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。')
 			return h(
 				'div',
-				{ className: 'clearai-graph', 'data-full': fullscreen === true ? '1' : '0' },
+				{
+					className: 'clearai-graph',
+					'data-full': fullscreen === true ? '1' : '0',
+					/** 覆盖层内也认 Escape(见上面的 window 监听):两条一起,焦点在哪都能退。 */
+					onKeyDown: fullscreen === true ? (event) => { if (event?.key === 'Escape') onToggleFullscreen() } : undefined,
+				},
 				h(
 					'div',
 					{ className: 'clearai-graph-bar' },
@@ -2641,7 +2669,7 @@ window.__ModuleLoader__.load({
 					),
 					h('span', { style: { flex: '1 1 auto' } }),
 					allNodes.length === 0 ? null : h('span', { className: 'clearai-link', onClick: () => rfRef.current?.fitView?.({ padding: 0.18, duration: 200 }) }, t('适配')),
-					h('span', { className: 'clearai-link', onClick: onToggleFullscreen }, fullscreen === true ? t('退出全屏') : t('全屏')),
+					h('span', { className: 'clearai-link', 'data-exit': '1', onClick: onToggleFullscreen }, fullscreen === true ? `${t('退出全屏')} (Esc)` : t('全屏')),
 				),
 				h(
 					'div',

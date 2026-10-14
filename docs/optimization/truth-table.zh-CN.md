@@ -445,7 +445,7 @@
 - **阻断执行**：是
 - **原生替代**：无
 - **理由**：事实与评估卡只能由系统落盘。
-- **代码**：preset/plugins/clearai-kernel.js protectedPath; bashTouchesProtected; ontologyWriteProblems
+- **代码**：preset/plugins/clearai-kernel.js protectedPath; shellTouchesProtected; ontologyWriteProblems
 - **测试**：test/kernel.test.mjs · **配置**：—
 - **提示词**：clearai/identity · **文档**：docs/design-principles.zh-CN.md
 

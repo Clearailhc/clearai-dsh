@@ -37,23 +37,29 @@ const check = (label, condition, detail = '') => {
 	}
 }
 
+/**
+ * 路径统一成正斜杠再比:文档里的相对链接、`docs/` 归属判断都按 `/` 写,
+ * Windows 上 `walk()` 交出来的是反斜杠,不归一的话「扫到了 docs 下的文档」这类检查会假红。
+ */
+const posix = (path) => path.replaceAll('\\', '/')
+
 /** 递归收集要扫的文件。 */
 function walk(dir, out = []) {
 	for (const entry of readdirSync(dir)) {
 		const full = join(dir, entry)
 		if (statSync(full).isDirectory()) walk(full, out)
-		else out.push(full)
+		else out.push(posix(full))
 	}
 	return out
 }
 
-const OPTIMIZATION = join(PORT, 'docs', 'optimization')
+const OPTIMIZATION = posix(join(PORT, 'docs', 'optimization'))
 const files = [
 	...walk(join(PORT, 'docs')).filter((file) => file.endsWith('.md') && !file.startsWith(OPTIMIZATION)),
-	join(PORT, 'preset', 'agent.cordis.yml'),
+	posix(join(PORT, 'preset', 'agent.cordis.yml')),
 	...walk(join(PORT, 'preset', 'plugins')).filter((file) => file.endsWith('.js')),
-	join(PORT, 'README.md'),
-	join(PORT, 'README.zh-CN.md'),
+	posix(join(PORT, 'README.md')),
+	posix(join(PORT, 'README.zh-CN.md')),
 ]
 // CHANGELOG 的职责是记录当时发生了什么,豁免。
 const SCANNED = files.filter((file) => !file.endsWith('CHANGELOG.md'))

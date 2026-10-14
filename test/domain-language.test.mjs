@@ -13,7 +13,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
@@ -41,9 +41,9 @@ const {
 	checkOntologyFile,
 	materializeOntology,
 	definitionFingerprint,
-} = await import(join(PORT, 'ui', 'lib', 'domain-language.js'))
-const { knowledgeView, GLOSSARY } = await import(join(PORT, 'ui', 'lib', 'knowledge-view.js'))
-const fold = await import(join(PORT, 'ui', 'lib', 'fold.js'))
+} = await import(pathToFileURL(join(PORT, 'ui', 'lib', 'domain-language.js')).href)
+const { knowledgeView, GLOSSARY } = await import(pathToFileURL(join(PORT, 'ui', 'lib', 'knowledge-view.js')).href)
+const fold = await import(pathToFileURL(join(PORT, 'ui', 'lib', 'fold.js')).href)
 const foldSource = readFileSync(join(PORT, 'ui', 'lib', 'fold.js'), 'utf8')
 const suiteSource = readFileSync(join(PORT, 'test', 'run.sh'), 'utf8')
 

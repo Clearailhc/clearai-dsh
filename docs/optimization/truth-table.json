@@ -852,7 +852,7 @@
       "authority": "authoritative",
       "actor": "system",
       "source": {
-        "code": "preset/plugins/clearai-kernel.js protectedPath; bashTouchesProtected; ontologyWriteProblems",
+        "code": "preset/plugins/clearai-kernel.js protectedPath; shellTouchesProtected; ontologyWriteProblems",
         "tests": "test/kernel.test.mjs",
         "config": null,
         "prompt": "clearai/identity",

@@ -445,7 +445,7 @@ This section is exported from code, not written by hand:
 - **Blocks execution**: yes
 - **Native alternative**: none
 - **Rationale**: 事实与评估卡只能由系统落盘。
-- **Code**: preset/plugins/clearai-kernel.js protectedPath; bashTouchesProtected; ontologyWriteProblems
+- **Code**: preset/plugins/clearai-kernel.js protectedPath; shellTouchesProtected; ontologyWriteProblems
 - **Tests**: test/kernel.test.mjs · **Config**: —
 - **Prompt**: clearai/identity · **Docs**: docs/design-principles.zh-CN.md
 

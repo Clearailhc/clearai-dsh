@@ -73,14 +73,21 @@ const ymlText = readFileSync(join(PRESET, 'agent.cordis.yml'), 'utf8')
  * 而不是把某台机器上的绝对路径写死(那条旧路径在别的机器上就是「模块找不到」)。
  */
 function loadYaml() {
-	/** PATH 上的 `dsh`(全局装 / 前缀装)优先:顺着 bin 的真实路径找到 CLI 包,从那里解析 yaml。 */
+	/**
+	 * PATH 上的 `dsh`(全局装 / 前缀装)优先:顺着 bin 的真实路径找到 CLI 包,从那里解析 yaml。
+	 * Windows 上命令带后缀(`dsh.cmd`/`dsh.exe`),裸名字查不到——这里自己试后缀。
+	 */
+	const exts = process.platform === 'win32' ? ['', '.cmd', '.exe', '.bat'] : ['']
 	for (const dir of (process.env.PATH ?? '').split(delimiter)) {
-		const bin = join(dir, 'dsh')
-		if (dir === '' || !existsSync(bin)) continue
-		try {
-			return createRequire(realpathSync(bin))('yaml')
-		} catch {
-			/* 这一份解析不到,继续找 */
+		if (dir === '') continue
+		for (const ext of exts) {
+			const bin = join(dir, `dsh${ext}`)
+			if (!existsSync(bin)) continue
+			try {
+				return createRequire(realpathSync(bin))('yaml')
+			} catch {
+				/* 这一份解析不到,继续找 */
+			}
 		}
 	}
 	const roots = [join(process.env.HOME ?? homedir(), '.npm', '_npx')]
@@ -90,7 +97,11 @@ function loadYaml() {
 			if (existsSync(dshPkg)) return createRequire(dshPkg)('yaml')
 		}
 	}
-	throw new Error('找不到 DSH 宿主自带的 yaml 包(查过 PATH 上的 dsh 与 ~/.npm/_npx/*)。宿主装了它就在。')
+	/**
+	 * 桌面版 DSH 把 CLI 与 `yaml` 都打进 `app.asar`:普通 node 读不了 asar 里的目录,
+	 * 也没有 `~/.npm/_npx` 缓存。这时**如实说清是哪一种缺失**,而不是把它读成"组合文件写错了"。
+	 */
+	throw new Error(`找不到 DSH 宿主自带的 yaml 包(查过 PATH 上的 dsh${process.platform === 'win32' ? '/dsh.cmd' : ''} 与 ~/.npm/_npx/*)。${process.platform === 'win32' ? '若宿主是桌面版安装(CLI 与依赖都在 app.asar 内),普通 node 无法解析其中的 yaml:请在装了 npm 版 DSH 的机器上跑这条自检,或用 dsh --profile <非 desktop> --dump-config 让宿主自己装配一次。' : '宿主装了它就在。'}`)
 }
 let strictRows = null
 try {

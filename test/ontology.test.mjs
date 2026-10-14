@@ -13,12 +13,12 @@
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
 
-const { VERIFICATION_LOOP, describeOntology, validateOntology } = await import(join(PORT, 'preset', 'plugins', 'ontology.js'))
+const { VERIFICATION_LOOP, describeOntology, validateOntology } = await import(pathToFileURL(join(PORT, 'preset', 'plugins', 'ontology.js')).href)
 const foldSource = readFileSync(join(PORT, 'ui', 'lib', 'fold.js'), 'utf8')
 const kernelSource = readFileSync(join(PORT, 'preset', 'plugins', 'clearai-kernel.js'), 'utf8')
 

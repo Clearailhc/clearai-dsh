@@ -883,6 +883,30 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('没选之前不摆小卡', !flatNode(tree).includes('只看相关'))
 		}
 		{
+			/**
+			 * **全屏退得出**(社区 issue #33:进全屏后退不出来,只能刷新页面)。
+			 *
+			 * 覆盖层是自画的(position:fixed 的 div),不是原生 Fullscreen API —— 浏览器不会自己给退出键;
+			 * 而退出入口原先只是工具条里一个文字链接,被画布遮住或换行挤出视口就再也没有出口。
+			 * 这里钉住三件事:全屏态标在根上、退出入口在场且标出快捷键、Escape 与点击都能退出。
+			 */
+			let toggles = 0
+			const full = expandTree(components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: true, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => { toggles += 1 }, onFilter: () => {} }))
+			const root = walkNodes(full).find((item) => item.props?.['data-full'] === '1')
+			check('全屏态标在根节点上(data-full=1)', root !== undefined)
+			const exit = walkNodes(full).find((item) => item.props?.['data-exit'] === '1')
+			check('全屏时退出入口在场,并写出快捷键', exit !== undefined && String(flatNode(exit)).includes('退出全屏') && String(flatNode(exit)).includes('Esc'), String(flatNode(exit)))
+			exit?.props?.onClick?.()
+			check('点退出入口 → 交回切换回调', toggles === 1, String(toggles))
+			root?.props?.onKeyDown?.({ key: 'Escape' })
+			check('按 Escape → 同样退出(覆盖层内)', toggles === 2, String(toggles))
+			root?.props?.onKeyDown?.({ key: 'a' })
+			check('别的键不误触退出', toggles === 2, String(toggles))
+			const normal = expandTree(components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			const normalRoot = walkNodes(normal).find((item) => item.props?.['data-full'] === '0')
+			check('非全屏不接 Escape(不把普通面板当覆盖层)', normalRoot?.props?.onKeyDown === undefined)
+		}
+		{
 			const small = expandTree(components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
 			const flow = walkNodes(small).find((item) => item.type === 'react-flow')
 			const positions = (flow?.props?.nodes ?? []).map((node) => `${Math.round(node.position.x)},${Math.round(node.position.y)}`)

@@ -14,7 +14,10 @@ test('grading snapshots freeze each task and reject external evidence, secrets a
  const workspace=join(root,'workspaces/C/dev-1');mkdirSync(join(workspace,'report'),{recursive:true});mkdirSync(join(workspace,'lab'))
  writeFileSync(join(workspace,'report/t1.md'),'first conclusion')
  writeFileSync(join(workspace,'lab/raw.json'),'{"mean":2}')
- writeFileSync(join(root,'private.txt'),'never submit');symlinkSync(join(root,'private.txt'),join(workspace,'lab/link.txt'))
+ writeFileSync(join(root,'private.txt'),'never submit')
+ // 符号链接在 Windows 上需要开发者模式/提权(EPERM);拿不到就退回「用 ../.. 越界」那条路,
+ // 越界本身仍被断言覆盖,不把平台限制伪装成通过。
+ try{symlinkSync(join(root,'private.txt'),join(workspace,'lab/link.txt'))}catch{}
  writeFileSync(join(workspace,'experiment-endpoint.json'),'{"token":"private"}')
  const material=captureMaterials({root,workspace,task:'t1',submission:{evidence:['lab/raw.json','lab/link.txt','../../private.txt','experiment-endpoint.json']},result:{answer:'first'},records:[]})
  assert.equal(material.artifacts.length,2);assert.equal(JSON.stringify(material).includes('never submit'),false)

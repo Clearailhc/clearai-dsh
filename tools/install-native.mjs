@@ -71,6 +71,24 @@ function findOnPath(name) {
 }
 const DSH_ON_PATH = findOnPath('dsh')
 /**
+ * 跑 CLI。
+ *
+ * **Windows 上 `.cmd`/`.bat` 不能直接 spawn** —— Node 只认 PE 可执行文件,裸 spawn 一个
+ * `dsh.cmd` 会失败(EINVAL/ENOENT),而 Windows 上的 CLI 正是 `.cmd` 包装脚本。
+ * 这类脚本要交给 `cmd.exe` 执行。
+ */
+function spawnCli(bin, args, options) {
+	if (process.platform === 'win32' && /\.(?:cmd|bat)$/i.test(bin)) {
+		// `/s` 会剥掉整串的**最外层**引号,所以按 cmd 的规范写成 `""bin" "arg"…"`:
+		// 每个参数各自加引号(路径里有空格是常态),整体再包一层。`windowsVerbatimArguments`
+		// 让 Node 原样透传 —— 否则 Node 自己那套转义在 cmd 眼里是错的。
+		const quote = (value) => `"${String(value).replaceAll('"', '""')}"`
+		const line = `"${[bin, ...args].map(quote).join(' ')}"`
+		return spawnSync(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', line], { ...options, windowsVerbatimArguments: true })
+	}
+	return spawnSync(bin, args, options)
+}
+/**
  * 找 CLI:**优先 PATH 上真正的 `dsh`**(与随包 `bin/clearai.mjs install` 同一套判据),
  * 没有再退回 `npx --no-install`。
  *
@@ -81,7 +99,7 @@ const DSH_ON_PATH = findOnPath('dsh')
 const dsh = (args, extra = {}) =>
 	DSH_ON_PATH === null
 		? spawnSync('npx', ['--no-install', '@deepseek-ai/dsh', ...args], { encoding: 'utf8', env: ENV, timeout: 900000, ...extra })
-		: spawnSync(DSH_ON_PATH, args, { encoding: 'utf8', env: ENV, timeout: 900000, ...extra })
+		: spawnCli(DSH_ON_PATH, args, { encoding: 'utf8', env: ENV, timeout: 900000, ...extra })
 
 if (!existsSync(join(DIST, 'package.json'))) {
 	console.error(`✗ 没有包:${DIST}\n  先跑 node tools/build-package.mjs`)
@@ -127,11 +145,16 @@ if (!existsSync(PROFILE_PATCH)) {
 }
 say(`profile:${PROFILE_DIR}`)
 
-// ── ② 安装:pnpm 在就走原生,不在就手工对账(如实标注)──────────────────────
+// ── ② 安装:能走原生 CLI 就走,不能才手工对账(如实标注)────────────────────
 const spec = TARBALL === null ? `file:${DIST}` : resolve(TARBALL)
-const hasPnpm = spawnSync('bash', ['-lc', 'command -v pnpm'], { encoding: 'utf8' }).status === 0
+/**
+ * 判据**不再是「PATH 上有 pnpm」**:DSH 的 CLI 自带 pnpm(实测 desktop 版 CLI 用 pnpm 11.7.0
+ * 装包,而 PATH 上没有 pnpm),而 Windows 上 `bash -lc 'command -v pnpm'` 本来就问不出来——
+ * 那会让每次安装都悄悄退化成手工对账。所以:CLI 在就走 CLI(它自己有 pnpm),没有 CLI 才降级。
+ */
+const hasPnpm = findOnPath('pnpm') !== null || DSH_ON_PATH !== null
 if (hasPnpm) {
-	say(`pnpm 在 PATH 上 → 走原生 CLI:dsh plugin --profile ${PROFILE} add ${spec}`)
+	say(`可用的原生安装入口 → dsh plugin --profile ${PROFILE} add ${spec}`)
 	const added = dsh(['plugin', '--profile', PROFILE, 'add', spec])
 	if (added.status !== 0) {
 		console.error(`✗ dsh plugin add 失败:${String(added.stderr ?? '').slice(-400)}`)
@@ -223,6 +246,6 @@ say(`组合里的我们的行:${rows.filter((row) => row.startsWith('clearai')).
 say(`名册 root(补丁层算出来的):${(String(composed.stdout ?? '').match(/node_modules\/[^'"\s]*presets\//) ?? ['(没看到)'])[0]}`)
 const bin = join(PROFILE_DIR, 'node_modules', NAME, 'bin', 'clearai.mjs')
 if (existsSync(bin)) {
-	const doctor = spawnSync('node', [bin, 'doctor', '--profile', PROFILE], { encoding: 'utf8', env: ENV })
+	const doctor = spawnSync(process.execPath, [bin, 'doctor', '--profile', PROFILE], { encoding: 'utf8', env: ENV })
 	console.log(String(doctor.stdout ?? '').split('\n').map((line) => `    ${line}`).join('\n'))
 }

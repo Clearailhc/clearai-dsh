@@ -1,0 +1,23 @@
+﻿# 行尾统一成 LF。
+#
+# 为什么要有这份文件:Windows 上 git 默认 `core.autocrlf=true`,检出会把文本文件写成 CRLF。
+# 而本仓库有多处**按行解析**的工具(如 tools/sim/config.mjs 读预设 config)与**派生件逐字节比对**
+# (tools/build-package.mjs 从 preset/agent.cordis.yml 生成 pack/presets/clearai.patch.yml,
+# verify-package 现场重建再比对)——CRLF 会让它们当场失真,且失真的方式像"内容写错了"。
+# 声明 `eol=lf` 比依赖每个人本地的 git 配置可靠:它随仓库走。
+* text=auto eol=lf
+
+# 二进制:不做任何行尾转换(否则会被当成文本损坏)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tgz binary
+*.woff binary
+*.woff2 binary
+*.node binary
+*.asar binary

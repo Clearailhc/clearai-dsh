@@ -8,7 +8,7 @@
  * 跑法:node test/e2e-scenarios.test.mjs
  */
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PORT = join(HERE, '..')
@@ -27,7 +27,7 @@ const check = (label, condition, detail = '') => {
 	}
 }
 
-const { SCENARIOS, INVARIANTS, evaluateLog } = await import(join(PORT, 'tools', 'e2e-scenarios.mjs'))
+const { SCENARIOS, INVARIANTS, evaluateLog } = await import(pathToFileURL(join(PORT, 'tools', 'e2e-scenarios.mjs')).href)
 
 /** 把一串变更包成不变量要的上下文(与 e2e-run.mjs 里那份同形)。 */
 function contextOf(mutations, overrides = {}) {
@@ -203,9 +203,9 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 {
 	const { mkdtempSync, writeFileSync, mkdirSync, rmSync } = await import('node:fs')
 	const { tmpdir } = await import('node:os')
-	const { readKernelConfig } = await import(join(PORT, 'tools', 'sim', 'config.mjs'))
-	const { makeSimHost } = await import(join(PORT, 'tools', 'sim', 'host.mjs'))
-	const { apply } = await import(join(PORT, 'preset', 'plugins', 'clearai-kernel.js'))
+	const { readKernelConfig } = await import(pathToFileURL(join(PORT, 'tools', 'sim', 'config.mjs')).href)
+	const { makeSimHost } = await import(pathToFileURL(join(PORT, 'tools', 'sim', 'host.mjs')).href)
+	const { apply } = await import(pathToFileURL(join(PORT, 'preset', 'plugins', 'clearai-kernel.js')).href)
 
 	const config = readKernelConfig(join(PORT, 'preset', 'agent.cordis.yml'))
 	check('配置读取:与预设同一份(连拦阈值、假设下限、机制贡献)', config.blockedThreshold === 2 && config.minHypotheses === undefined && config.contributions?.mechanisms?.goal === true && Array.isArray(config.auditToolFilter), JSON.stringify(config).slice(0, 160))

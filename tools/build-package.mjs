@@ -40,21 +40,30 @@ const VERSION_OVERRIDE = process.argv.includes('--version') ? process.argv[proce
 /** 残渣不进模板。 */
 const TRANSIENT = new Set(['node_modules', 'dist', '.vite', 'coverage', '.pytest_cache', '__pycache__', '.git'])
 
+/**
+ * 相对路径一律写成正斜杠再进清单。
+ *
+ * 为什么:INVENTORY.txt 是发行物的一部分,消费它的人(verify-package 的白名单、技能目录检查)
+ * 都按 `/` 写。Windows 上 `relative()` 给的是反斜杠,清单里于是写满了 `bin\clearai.mjs`,
+ * 白名单当场判成"混进了不该带的文件"——而包里其实一个都不多。
+ */
+const posix = (value) => value.replaceAll('\\', '/')
+
 /** 清单里的版本可按参数覆盖(其余字段原样)。 */
 function writeManifest(from, to) {
 	const manifest = JSON.parse(readFileSync(from, 'utf8'))
 	if (VERSION_OVERRIDE !== null && VERSION_OVERRIDE !== '') manifest.version = VERSION_OVERRIDE
 	mkdirSync(dirname(to), { recursive: true })
 	writeFileSync(to, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
-	copied.push(relative(OUT, to))
+	copied.push(posix(relative(OUT, to)))
 }
 
 const copied = []
 function copy(from, to) {
 	if (!existsSync(from)) throw new Error(`源不存在:${from}`)
 	mkdirSync(dirname(to), { recursive: true })
-	cpSync(from, to, { recursive: true, filter: (src) => !TRANSIENT.has(src.split('/').pop()) })
-	copied.push(relative(OUT, to))
+	cpSync(from, to, { recursive: true, filter: (src) => !TRANSIENT.has(src.split(/[\\/]/).pop()) })
+	copied.push(posix(relative(OUT, to)))
 }
 
 console.log(`【打包】out=${OUT}`)
@@ -107,10 +116,19 @@ for (const name of readdirSync(join(PORT, 'preset'))) {
  * 依据与实测:CHANGELOG 的 [0.2.4] 一节;原设计稿 `lab/adapter/0.2.4-design.md` 已随工作区残留
  * 一起移出仓库,要看全文用 `git show 7b8a48d:lab/adapter/0.2.4-design.md`。
  */
+/**
+ * 读源文本并**归一成 LF**。
+ *
+ * 为什么不能直接 readFileSync:Windows 检出默认 CRLF,而这里读进来的行会被原样写进
+ * 派生件(`pack/presets/clearai.patch.yml`)。`\r` 跟着行尾走进生成物,提交的那一份是 LF,
+ * 于是「包 = 源的纯函数」这条在 Windows 上当场不成立(verify-package 重建比对会红)。
+ */
+const readSourceText = (file) => readFileSync(file, 'utf8').replaceAll('\r\n', '\n').replaceAll('\r', '\n')
+
 const readPresetMeta = (file) => {
 	// 不引 YAML 依赖:`preset.yml` 只有两个键,而 description 必须是块标量
 	// (里面有「冒号 + 空格」,写成普通标量会被读成嵌套映射,而名册对读失败是静默降级)。
-	const lines = readFileSync(file, 'utf8').split('\n')
+	const lines = readSourceText(file).split('\n')
 	let name = 'ClearAI'
 	const description = []
 	let inDescription = false
@@ -135,7 +153,7 @@ const readPresetMeta = (file) => {
 {
 	const PRESET_DIR = join(PORT, 'preset')
 	const meta = readPresetMeta(join(PRESET_DIR, 'preset.yml'))
-	const rows = readFileSync(join(PRESET_DIR, 'agent.cordis.yml'), 'utf8').replace(/\n+$/, '').split('\n')
+	const rows = readSourceText(join(PRESET_DIR, 'agent.cordis.yml')).replace(/\n+$/, '').split('\n')
 	// `plugins:` 在 8 格,其下的列表项在 10 格 —— 整份组合平移过来,注释一并留下。
 	const row = (line) => (line.trim() === '' ? '' : `          ${line}`)
 	// 生成物进仓库(与 ui/vendor/*.js 同一条纪律):源是 preset/agent.cordis.yml,
@@ -206,7 +224,7 @@ const walk = (dir) => {
 	for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
 		const full = join(dir, entry.name)
 		if (entry.isDirectory()) walk(full)
-		else inventory.push(relative(OUT, full))
+		else inventory.push(posix(relative(OUT, full)))
 	}
 }
 walk(OUT)

@@ -44,8 +44,15 @@ export function textOf(blocks) {
  *   某个选项的原文、`none`(没人能答 ⇒ 抛 NO_PROVIDER),或任意一句话(当作人补的话)。
  */
 const NATIVE_FILE_TOOLS = new Set(['write', 'edit'])
-/** 宿主原生的 bash:先过内核的 `tools/pre-execute`(危险命令、系统所有的路径、声明过的不可逆动作),放行了才在工作区里跑。 */
-const NATIVE_SHELL = 'bash'
+/**
+ * 宿主原生的 shell:先过内核的 `tools/pre-execute`(危险命令、系统所有的路径、声明过的不可逆动作),放行了才在工作区里跑。
+ *
+ * **按平台选**:预设自己就是按平台挂的(`tool-bash` 在 win32 禁用,`tool-pwsh` 只在 win32 挂上),
+ * 内核调核算复检时也按平台点 tool 名。这里写死 bash 会让 Windows 上的模拟宿主与生产不同形——
+ * 内核点 `pwsh` 而工具表里没有,复检当场"执行未完成"。
+ */
+const NATIVE_SHELL = process.platform === 'win32' ? 'pwsh' : 'bash'
+const shellArgs = (command) => (process.platform === 'win32' ? ['-NoProfile', '-NonInteractive', '-Command', command] : ['-c', command])
 
 export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {} }) {
 	mkdirSync(runDir, { recursive: true })
@@ -183,7 +190,7 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 	const simShell = {
 		resolve: (request) => ({ ...request, cwd: request.cwd ?? workspace, timeoutMs: request.timeoutMs ?? 60000 }),
 		async execute(spec) {
-			const run = spawnSync('bash', ['-c', spec.command], { cwd: spec.cwd, encoding: 'utf8', timeout: spec.timeoutMs, maxBuffer: 16 * 1024 * 1024 })
+			const run = spawnSync(NATIVE_SHELL, shellArgs(spec.command), { cwd: spec.cwd, encoding: 'utf8', timeout: spec.timeoutMs, maxBuffer: 16 * 1024 * 1024 })
 			const result = { exitCode: run.status, signal: run.signal ?? null, timedOut: run.error?.code === 'ETIMEDOUT', stdout: { text: run.stdout ?? '' }, stderr: { text: run.stderr ?? '' } }
 			return { result: async () => result }
 		},
@@ -324,11 +331,11 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 			return { text: injected === '' ? text : `${text}\n\n── 系统在你下一步之前注入 ──\n${injected}`, ok }
 		}
 		const command = String(args?.command ?? '')
-		if (command.trim() === '') return finish('失败:bash 要 command(字符串)', false)
+		if (command.trim() === '') return finish(`失败:${NATIVE_SHELL} 要 command(字符串)`, false)
 		const guard = listeners.get('tools/pre-execute')
 		const decision = guard === undefined ? { kind: 'allow' } : await guard({ name: NATIVE_SHELL, arguments: { command }, agent, callId }, async () => ({ kind: 'allow' }))
 		if (decision?.kind === 'deny' || decision?.kind === 'ask') return finish(`调用被拦下:${decision.reason}`, false)
-		const run = spawnSync('bash', ['-c', command], { cwd: workspace, encoding: 'utf8', timeout: Number(args?.timeout_ms ?? 300000), maxBuffer: 16 * 1024 * 1024 })
+		const run = spawnSync(NATIVE_SHELL, shellArgs(command), { cwd: workspace, encoding: 'utf8', timeout: Number(args?.timeout_ms ?? 300000), maxBuffer: 16 * 1024 * 1024 })
 		const out = `${run.stdout ?? ''}${run.stderr ? `\n[stderr]\n${run.stderr}` : ''}`.trim()
 		const code = run.status ?? (run.error ? String(run.error.message) : 'killed')
 		return finish(`${out.length > 30000 ? `${out.slice(0, 30000)}\n…(截断)` : out}\n[exit ${code}]`, run.status === 0)

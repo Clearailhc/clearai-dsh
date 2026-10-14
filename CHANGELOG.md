@@ -2,7 +2,28 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.5] — 2026-10-14
+
+**Windows 上的硬边界、证据落盘与自检全部补齐;另按社区 issue #33 / #34 做了能做的那部分加固。**
+
+这一版来自「在 Windows 上装最新发行版、按真实环境跑一遍」的结果：报告里的 issue #30（社区 PR #31，作者 YunzhouLi-hub）属实，且同一类平台假设在证据捕获与开发工具里还有几处。
+
+### Fixed
+
+- **全屏退得出**（issue #33）：本体图的全屏是自画的覆盖层（`position:fixed`），退出入口原先只是工具条里一个文字链接——没有快捷键、也不保证不被画布盖住，被遮住就只能刷新页面。现在：Escape 退出（window 级监听 + 覆盖层内 `onKeyDown` 两条一起，焦点在哪都能退）、退出入口在全屏时固定浮在右上角（`z-index:41`，高于覆盖层 `40`），并补了 6 条客户端检查（全屏态标记、入口在场且标出快捷键、点击/ Escape 都退出、别的键不误触、非全屏不接 Escape）。
+- **预设不再依赖宿主模板变量**（issue #34）：persona 里的 `{{cwd}}` 去掉了。宿主渲染提示词时按**变量表**严格解析，表里没有这个名字就整轮直接抛错（`unknown prompt variable "{{cwd}}" in section …`），而各宿主版本注册的变量并不一样——工作区的绝对路径本来就由宿主的运行时上下文给出，预设只留产品含义。同时加了一道门：预设里再出现 `{{…}}` 必须是宿主注册过的名字（`model` / `cwd`），并拿一条假变量自检这道门抓得到。
+- **shell 硬边界不再只认 bash**（issue #30）：危险命令闸、系统所有的路径写检测、L4 不可逆动作人放行三处从前写死 `exec.name === 'bash'`，而本预设按平台只挂一个 shell（win32 只挂 pwsh）——这三道门在 Windows 上**整体失效**。现在统一按 `SHELL_TOOLS = {bash, pwsh}` 判定。
+- 补齐 pwsh 形态的危险写法：递归删除系统路径（`Remove-Item -Recurse C:\`）、远程脚本直灌（`iwr … | iex`）、动态执行下载内容、卷格式化、提权；写动词同时认 bash 与 pwsh（`Remove-Item`/`Set-Content`/`Out-File`…），并认 Windows 的反斜杠相对路径（`clear\knowledge\facts\x.json`）——只认正斜杠的门在 Windows 上会被绕开。写本体三支目录（`clear/ontology/{concepts,relations,entities}`）在两种分隔符下都照旧放行。
+- 拒因文案由 `dangerous bash command` 改为 `dangerous shell command`（门不再只覆盖 bash，文案跟着如实）。
+- **证据捕获（native 验收）不再依赖路径分隔符**：Windows 上 `relative()` 给出反斜杠，于是 `.git`/`.env` 排除、工作区归属校验、注册方法的输入/脚本捕获、report 提取**全都静默失配**。现在统一归一到 `/`，`inside()` 也按归一后的路径判越界。
+- **按行解析不再被检出格式坑**：`tools/sim/config.mjs` 剥注释靠 `$` 收尾，CRLF 的 `\r` 会让注释整行留下、解析当场炸在"读不懂这一行"。同时新增 `.gitattributes`（`eol=lf`）从根上统一行尾，`tools/build-package.mjs` 读源时归一成 LF，保证 Windows 上重建的 `pack/presets/clearai.patch.yml` 与提交件仍逐字节一致。
+- 模拟宿主按平台选 shell（win32 用 pwsh）：写死 `bash` 会让内核按平台点的 `pwsh` 在工具表里不存在，核算复检当场「执行未完成」。
+- 测试套件可在 Windows 运行：动态 `import()` 用 `file://` URL（原样传 `C:\…` 会 `ERR_UNSUPPORTED_ESM_URL_SCHEME`）；文档扫描按归一后的路径判归属；没有符号链接权限时（Windows 需开发者模式）不再整条红。
+
+### Tests
+
+- `test/kernel.test.mjs` 新增 8 条 pwsh 侧检查（危险闸门、卷格式化、递归删除、只读放行、绝对路径与反斜杠相对路径伪造评估卡、本体目录放行），`test/truth-table.test.mjs`/`docs-consistency` 的真值表符号同步更新。
+- Windows 本机全量：内核 660/0、领域语言 251/0、本体 101/0、真值表 19/0、状态机 41/0、文档 15/0、注释 7/0、边界 19/0、组合 16/0、段 23/0、长测 41/0、不变量 27/0、对照 39/0、可读性 37/0、预算 28/0、native 七份全绿；宿主/客户端两份跑的是部署出去的那一份，装完本版即绿。
 
 ## [0.5.4] — 2026-10-10
 

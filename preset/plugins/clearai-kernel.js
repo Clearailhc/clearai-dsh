@@ -4799,7 +4799,17 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
-	// ═══ 事实边界:保护「系统所有」的路径 + bash 危险闸门 + L4 人放行 ═══════
+	// ═══ 事实边界:保护「系统所有」的路径 + shell 危险闸门 + L4 人放行 ═══════
+
+	/**
+	 * 门对**所有 shell 工具**生效:bash 与 pwsh。
+	 *
+	 * 从前三处硬边界都写死 `exec.name === 'bash'`,而本预设按平台只挂一个 shell
+	 * (`tool-bash` 在 win32 禁用,`tool-pwsh` 只在 win32 挂上,见 agent.cordis.yml)——
+	 * 于是 Windows 上危险命令闸、系统路径写检测、L4 人放行**整体失效**,
+	 * 而它们本该是平台无关的硬边界(社区 issue #30)。
+	 */
+	const SHELL_TOOLS = new Set(['bash', 'pwsh'])
 
 	const DENY_REASONS = [
 		[
@@ -4834,6 +4844,26 @@ export function apply(ctx, config = {}) {
 			},
 		],
 		[['拉起宿主应用', 'launching the host app'], (command) => /\.app\/Contents\/MacOS\/|\bopen\s+-a\b/.test(command)],
+		// ── pwsh 形态:Windows 上本预设只挂 pwsh,这几种写法缺了门就等于没有闸门。──
+		[
+			['递归删除系统路径(pwsh)', 'recursive delete of a system path (pwsh)'],
+			(command) => {
+				const match = /(^|[;&|]\s*)remove-item\s+([^;&|]*)/i.exec(command)
+				if (match === null) return false
+				const segment = match[2]
+				if (!(/(^|\s)-[a-z]*r/i.test(segment) || segment.includes('--recurse'))) return false
+				for (const token of segment.split(/\s+/)) {
+					if (token === '' || token.startsWith('-')) continue
+					const bare = token.replace(/^["']|["']$/g, '').replace(/^env:/i, '').toLowerCase()
+					if (bare === '/' || bare === '~' || bare.startsWith('~/') || bare === '%systemroot%' || bare.startsWith('%systemroot%\\') || bare.startsWith('%systemroot%/') || /^\/[^/]+$/.test(bare) || /^[a-z]:\\?$/.test(bare) || /^[a-z]:\\windows\\?$/.test(bare)) return true
+				}
+				return false
+			},
+		],
+		[['远程脚本直灌 shell(pwsh)', 'remote script piped into a shell (pwsh)'], (command) => /(iwr|invoke-webrequest|invoke-restmethod|curl|wget)\b[^;&|]*\|\s*(iex|invoke-expression)\b/i.test(command)],
+		[['动态执行下载内容(pwsh)', 'dynamic execution of downloaded content (pwsh)'], (command) => /(iex|invoke-expression)\b[^;&|]*((iwr|invoke-webrequest|invoke-restmethod|curl|wget)\b|https?:\/\/)/i.test(command)],
+		[['卷格式化(pwsh)', 'volume formatting (pwsh)'], (command) => /(^|[;&|]\s*)format-volume\b|(^|[;&|]\s*)format\s+[a-z]:/i.test(command)],
+		[['提权(pwsh)', 'privilege escalation (pwsh)'], (command) => /(^|[;&|]\s*)(sudo|gsudo)\s/.test(command)],
 	]
 
 	/**
@@ -4867,20 +4897,24 @@ export function apply(ctx, config = {}) {
 		return root === undefined ? null : root.join('/')
 	}
 
-	/** bash 命令里**写**系统格子的迹象:命令里出现了那一格(相对或绝对写法)且带写操作。只读命令不拦。 */
-	const WRITE_HINT = /((?<![0-9&])>(?!&|\s*\/dev\/null)|\b(rm|mv|cp|tee|touch|mkdir|ln|chmod|truncate|install|rsync|dd)\b|\bsed\s+-i|\bperl\s+-[a-z]*i)/
-	function bashTouchesProtected(sessionId, command) {
+	/**
+	 * shell 命令里**写**系统格子的迹象:命令里出现了那一格(相对或绝对写法)且带写操作。只读命令不拦。
+	 * 两族 shell 的写动词都要认:bash 的 `rm / tee / sed -i`,pwsh 的 `Remove-Item / Set-Content / Out-File`。
+	 */
+	const WRITE_HINT = /((?<![0-9&])>(?!&|\s*\/dev\/null)|\b(rm|mv|cp|tee|touch|mkdir|ln|chmod|truncate|install|rsync|dd|del|ri|ni|sc|si)\b|\b(Remove-Item|Move-Item|Copy-Item|Set-Content|Add-Content|Clear-Content|New-Item|Out-File|Rename-Item|Tee-Object|Set-Item|Set-ItemProperty|Remove-ItemProperty)\b|\bsed\s+-i|\bperl\s+-[a-z]*i)/i
+	function shellTouchesProtected(sessionId, command) {
 		if (typeof command !== 'string' || command === '' || !WRITE_HINT.test(command)) return null
 		const cwd = sessionCwd(sessionId)
 		for (const parts of PROTECTED_REL) {
 			const rel = parts.join('/')
-			const forms = cwd === null ? [rel] : [rel, join(cwd, ...parts)]
+			// Windows 上模型会用反斜杠写相对路径(`clear\knowledge\facts\x.json`):只认正斜杠的门会当场漏掉。
+			const forms = cwd === null ? [rel, rel.replaceAll('/', '\\')] : [rel, rel.replaceAll('/', '\\'), join(cwd, ...parts)]
 			for (const form of forms) {
 				let index = command.indexOf(form)
 				while (index !== -1) {
 					const rest = command.slice(index + form.length)
-					/** 写的是三支本体目录:放行(挪目录正是重新分层的方式)。 */
-					if (!(parts.at(-1) === 'ontology' && ONTOLOGY_BRANCH_DIRS.some((branch) => rest.startsWith(`/${branch}`)))) return rel
+					/** 写的是三支本体目录:放行(挪目录正是重新分层的方式)。反斜杠写法同样放行。 */
+					if (!(parts.at(-1) === 'ontology' && ONTOLOGY_BRANCH_DIRS.some((branch) => rest.startsWith(`/${branch}`) || rest.startsWith(`\\${branch}`)))) return rel
 					index = command.indexOf(form, index + form.length)
 				}
 			}
@@ -5010,7 +5044,7 @@ export function apply(ctx, config = {}) {
 				 * 是模型自己的,写进去要过第一道校验。
 				 */
 				const writing = exec.name === 'write' || exec.name === 'edit'
-				const suspect = writing ? (protectedPath(sessionId, args.file_path) ?? protectedPath(sessionId, args.path)) : exec.name === 'bash' ? bashTouchesProtected(sessionId, args.command) : null
+				const suspect = writing ? (protectedPath(sessionId, args.file_path) ?? protectedPath(sessionId, args.path)) : SHELL_TOOLS.has(exec.name) ? shellTouchesProtected(sessionId, args.command) : null
 				if (suspect !== null) {
 					return {
 						kind: 'deny',
@@ -5024,12 +5058,12 @@ export function apply(ctx, config = {}) {
 					}
 				}
 			}
-			if (CFG.bashDenyRules && exec.name === 'bash' && typeof args.command === 'string') {
+			if (CFG.bashDenyRules && SHELL_TOOLS.has(exec.name) && typeof args.command === 'string') {
 				for (const [reason, test] of DENY_REASONS) {
-					if (test(args.command)) return { kind: 'deny', reason: tr(`危险的 bash 命令(${reason[0]}):改写命令避开这种写法(dangerous bash command)`, `dangerous bash command (${reason[1]}); rewrite the command to avoid this pattern`) }
+					if (test(args.command)) return { kind: 'deny', reason: tr(`危险的 shell 命令(${reason[0]}):改写命令避开这种写法(dangerous shell command)`, `dangerous shell command (${reason[1]}); rewrite the command to avoid this pattern`) }
 				}
 			}
-			if (owned && exec.name === 'bash' && typeof args.command === 'string') {
+			if (owned && SHELL_TOOLS.has(exec.name) && typeof args.command === 'string') {
 				const denied = await releaseIrreversible(exec, sessionId, state, args.command)
 				if (denied !== null) return denied
 			}

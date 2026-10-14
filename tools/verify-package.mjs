@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
-import { dirname, extname, join, relative, resolve } from 'node:path'
+import { delimiter, dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -207,7 +207,7 @@ check(`内核落的 ${mutationTypes.length} 类事实,要么折进视图、要�
 console.log('\n⑥ 可重建:包 = 源的纯函数')
 const rebuildDir = mkdtempSync(join(tmpdir(), 'clearai-rebuild-'))
 try {
-	execFileSync('node', [join(PORT, 'tools', 'build-package.mjs'), '--out', rebuildDir], { stdio: 'pipe' })
+	execFileSync(process.execPath, [join(PORT, 'tools', 'build-package.mjs'), '--out', rebuildDir], { stdio: 'pipe' })
 	const hashOf = (root) => {
 		const out = {}
 		const walk = (dir) => {
@@ -234,20 +234,44 @@ try {
 
 // ── 工程判据二:可打包(npm 的文件清单 ⊆ 白名单) ───────────────────────────
 console.log('\n⑦ 可打包:npm 实际会带走的文件')
-try {
-	const out = execFileSync('npm', ['pack', '--dry-run', '--json'], { cwd: DIST, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-	const parsed = JSON.parse(out)
-	// npm ≥12 改了 --json 的顶层形状（由数组变为以包名为键的对象）；遵循表外形状当场抛错而不静默的纪律，防止空结果导致白名单断言假通过。
-	const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed ?? {})[0]
-	if (!entry || !Array.isArray(entry.files)) {
-		throw new Error(`npm pack --json 顶层形状未知: ${Array.isArray(parsed) ? 'array' : typeof parsed}`)
+/**
+ * 在 PATH 上找一个可执行文件。Windows 上命令是 `npm.cmd` / `dsh.cmd` 这类**带后缀**的文件,
+ * 直接 spawn 一个裸名字会 ENOENT(PATHEXT 只对 shell 生效),所以这里自己试后缀。
+ */
+function findOnPath(name) {
+	const exts = process.platform === 'win32' ? ['.cmd', '.exe', '.bat', ''] : ['']
+	for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+		if (dir === '') continue
+		for (const ext of exts) {
+			const candidate = join(dir, `${name}${ext}`)
+			if (existsSync(candidate)) return candidate
+		}
 	}
-	const files = entry.files.map((item) => item.path)
-	const outside = files.filter((rel) => !allowedRoots.some((root) => rel === root || rel.startsWith(`${root}/`)))
-	check(`npm 会带走 ${files.length} 个文件,全在白名单内`, outside.length === 0, outside.slice(0, 5).join(', '))
-	check('npm 会带走预设(不是只有 lib)', files.some((rel) => rel.endsWith('agent.cordis.yml')) && files.some((rel) => rel.endsWith('plugins/clearai-kernel.js')))
-} catch (error) {
-	check('npm pack 能跑通', false, String(error?.message ?? error).slice(0, 200))
+	return null
+}
+const npmBin = findOnPath('npm')
+if (npmBin === null) {
+	/**
+	 * 这台机器上没有 npm(DSH 的运行时只带 node,不带 npm)。**如实跳过、不计通过**:
+	 * 发布前必须在有 npm 的机器上跑一次——把"没跑"写成"通过"正是这道门要防的事。
+	 */
+	console.log('  · 跳过:npm 不在 PATH 上(这台机器没有 npm)。发布前请在装了 npm 的机器上跑一次。')
+} else {
+	try {
+		const out = execFileSync(npmBin, ['pack', '--dry-run', '--json'], { cwd: DIST, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+		const parsed = JSON.parse(out)
+		// npm ≥12 改了 --json 的顶层形状（由数组变为以包名为键的对象）；遵循表外形状当场抛错而不静默的纪律，防止空结果导致白名单断言假通过。
+		const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed ?? {})[0]
+		if (!entry || !Array.isArray(entry.files)) {
+			throw new Error(`npm pack --json 顶层形状未知: ${Array.isArray(parsed) ? 'array' : typeof parsed}`)
+		}
+		const files = entry.files.map((item) => String(item.path).replaceAll('\\', '/'))
+		const outside = files.filter((rel) => !allowedRoots.some((root) => rel === root || rel.startsWith(`${root}/`)))
+		check(`npm 会带走 ${files.length} 个文件,全在白名单内`, outside.length === 0, outside.slice(0, 5).join(', '))
+		check('npm 会带走预设(不是只有 lib)', files.some((rel) => rel.endsWith('agent.cordis.yml')) && files.some((rel) => rel.endsWith('plugins/clearai-kernel.js')))
+	} catch (error) {
+		check('npm pack 能跑通', false, String(error?.message ?? error).slice(0, 200))
+	}
 }
 
 // ── 工程判据三:可被发现(插件列表读的就是这些) ─────────────────────────────

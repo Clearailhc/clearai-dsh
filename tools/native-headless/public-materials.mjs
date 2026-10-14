@@ -4,7 +4,12 @@ import {resolve,relative,join,isAbsolute} from 'node:path'
 import {createHash,randomUUID} from 'node:crypto'
 import {redact} from './accounting.mjs'
 export const hash=value=>createHash('sha256').update(value).digest('hex')
-const inside=(path,root)=>{const rel=relative(root,path);return !isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('../')}
+/**
+ * 工作区相对引用一律写成正斜杠:**同一场实验在两个平台上必须得出同一份材料**
+ * (materials 会进冻结快照、进摘要、进验收比对,反斜杠会让 Windows 上的路径判定整体失灵)。
+ */
+const posix = (value) => String(value).replaceAll('\\', '/')
+const inside=(path,root)=>{const rel=posix(relative(root,path));return !isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('../')}
 export function initializeCampaignRoot(root) {
  root=resolve(root)
  if(existsSync(root)&&readdirSync(root).length)throw new Error('A synthetic campaign requires a new empty root')
@@ -22,7 +27,7 @@ export function assertSyntheticWorkspace(root,workspace) {
 export function captureMaterials({root,workspace,task,submission,result,records}) {
  ({root,workspace}=assertSyntheticWorkspace(root,workspace))
  const state=result.clearai??{}, paths=new Set(['report/'+task+'.md']),missing=[],files=[]
- const add=value=>{if(typeof value==='string'&&value.trim())paths.add(value)}
+ const add=value=>{if(typeof value==='string'&&value.trim())paths.add(posix(value.trim()))}
  for(const path of submission?.evidence??[])add(path)
  for(const plan of state.plans??[])for(const step of plan.steps??[])for(const path of step.artifacts??[])add(path)
  const actualReferences=(state.goal?.answers??[]).map(({conclusion,basis,uses,uses_review})=>({conclusion,basis,uses,uses_review}))
@@ -36,7 +41,7 @@ export function captureMaterials({root,workspace,task,submission,result,records}
  }
  let bytes=0
  for(const ref of paths) {
-  const file=resolve(workspace,ref),name=relative(workspace,file)
+  const file=resolve(workspace,ref),name=posix(relative(workspace,file))
   if(!inside(file,workspace)||!name||/(?:^|\/)(?:\.git|\.credentials|\.env)|experiment-endpoint|isolation-private-link/.test(name)){missing.push({ref,status:'excluded'});continue}
   if(!existsSync(file)){missing.push({ref,status:'missing'});continue}
   if(!inside(realpathSync(file),workspace)||!lstatSync(file).isFile()){missing.push({ref,status:'not-workspace-file'});continue}

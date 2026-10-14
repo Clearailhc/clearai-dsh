@@ -56,7 +56,10 @@ function parseBlock(lines, start, indent) {
 }
 
 export function readKernelConfig(presetPath) {
-	const source = readFileSync(presetPath, 'utf8').split('\n')
+	// `\r` 一并去掉:Windows 检出(core.autocrlf=true,或 .gitattributes 生效之前的旧克隆)
+	// 是 CRLF,而下面剥注释的正则靠 `$` 收尾——`\r` 会让注释行整行原样留下,解析随即炸在
+	// "读不懂这一行:# …" 上。行尾差异不该被读成配置错误。
+	const source = readFileSync(presetPath, 'utf8').replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n')
 	const rowStart = source.findIndex((line) => /^- id: clearai-kernel\s*$/.test(line))
 	if (rowStart === -1) throw new Error('预设里没有 clearai-kernel 那一行')
 	let rowEnd = source.findIndex((line, index) => index > rowStart && /^- /.test(line))

@@ -114,6 +114,26 @@ console.log('\n【④ 运行态卡只说人话(机制字段名不出现在卡片
 	check('卡片仍如实交代授权机理(未授权不自动续跑 + 按事实补写归属)', /授权:记号未落账/.test(cardBody) && /不会自动续跑/.test(cardBody) && /按事实补写归属/.test(cardBody))
 }
 
+console.log('\n【⑤ 预设里的提示词模板变量必须是宿主注册过的】')
+{
+	/**
+	 * **未知变量 = 整轮直接失败**(社区 issue #34)。
+	 *
+	 * 宿主渲染提示词时按变量表严格解析 section 与 persona 的文本:`{{name}}` 不在表里就抛
+	 * `unknown prompt variable "{{name}}" in section "…"`,会话起不来 —— 报错发生在组装期,
+	 * 与本仓库的代码无关,所以只能靠**预设别写宿主不认识的变量**来保证。
+	 * 宿主文档与 loop 实现共同给出的注册名是 `model` 与 `cwd`;再多一个都必须先确认宿主注册了它。
+	 */
+	const HOST_VARIABLES = new Set(['model', 'cwd'])
+	const unknownIn = (text) => [...String(text).matchAll(/\{\{([^{}]*)\}\}/g)].map((match) => match[1]).filter((name) => !HOST_VARIABLES.has(name))
+	/** 只看 YAML 内容:注释不渲染,里面拿 `{{…}}` 举例不该被判成变量引用。 */
+	const PRESET_DOC = readFileSync(join(PORT, 'preset', 'agent.cordis.yml'), 'utf8').split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
+	const unknown = unknownIn(PRESET_DOC)
+	check('预设里的 {{…}} 都在宿主变量表里(model / cwd)', unknown.length === 0, unknown.join(', '))
+	check('这条门抓得到未知变量(拿一条假的验它)', unknownIn('你的工作目录是 {{cwdX}}。').length === 1)
+	check('persona 不再依赖模板变量(旧宿主没注册 cwd 也能起会话)', !/suffix:[^\n]*\{\{/.test(PRESET_DOC))
+}
+
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failures.length > 0) {
 	console.log('失败项:')
