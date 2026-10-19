@@ -91,6 +91,12 @@ const canonicalVerdict = (value) => {
 /** 自判等级上限:L0–L2 可自判,L3 以上拒绝。 */
 const SELF_JUDGE_MAX_INDEX = 2
 /**
+ * 一次 L3+ 交付随交付带给评估者的未解释项上限(issue #36)。
+ * 评估者的任务书里,这次交付由做的人决定的那一份就是 `anomalies`(observations 的 note 与 basis 不进任务书);
+ * 0.5.4 起评估者不再被硬取消,材料体积是剩下的那道刹车。超限**拒绝而不截断**:截断会让做的人以为都送到了。
+ */
+const AUDIT_MATERIAL_LIMITS = { anomalies: 4, anomalyChars: 400 }
+/**
  * **给模型选的只有三档**:L2 自判、L3 独立评估、L4 人放行。L0 / L1 / L2 的细分从没改变过谁来判
  * (模型一律自标 L1/L2),所以合并成「自判」:旧账照旧读(界面一律说「自判」),新写的 L0 / L1 当 L2 收。
  */
@@ -225,6 +231,7 @@ export const CONFIG_KEYS = [
 	'auditHardTimeoutMs',
 	'auditToolFilter',
 	'auditPreset',
+	'auditMaterialLimits',
 	'auditRerun',
 	'runtimeCard',
 	'contributions',
@@ -330,6 +337,14 @@ export function apply(ctx, config = {}) {
 	if (config.blockedThreshold !== undefined && (!Number.isInteger(config.blockedThreshold) || config.blockedThreshold < 1)) {
 		throw new Error('invalid_config:clearai-kernel:blockedThreshold')
 	}
+	if (config.auditMaterialLimits !== undefined) {
+		const limits = config.auditMaterialLimits
+		if (limits === null || typeof limits !== 'object' || Array.isArray(limits)) throw new Error('invalid_config:clearai-kernel:auditMaterialLimits')
+		for (const [key, value] of Object.entries(limits)) {
+			if (!(key in AUDIT_MATERIAL_LIMITS)) throw new Error(`invalid_config:clearai-kernel:auditMaterialLimits.${key}`)
+			if (!Number.isInteger(value) || value < 1) throw new Error(`invalid_config:clearai-kernel:auditMaterialLimits.${key}`)
+		}
+	}
 	const CFG = {
 		// Native experimental variants; published ClearAI keeps both enabled.
 		applicabilityFeedback: config.applicabilityFeedback !== false,
@@ -379,6 +394,8 @@ export function apply(ctx, config = {}) {
 		 * (`preset/evaluator.cordis.yml`):文件只读、搜索、shell 与后台任务,不挂写工具也不挂 ClearAI 工具。
 		 */
 		auditPreset: config.auditPreset ?? 'clearai-evaluator',
+		/** 一次 L3+ 交付随交付带给评估者的未解释项:条数与每条长度的上限(issue #36,见 `auditMaterialProblem`)。 */
+		auditMaterialLimits: { ...AUDIT_MATERIAL_LIMITS, ...(config.auditMaterialLimits ?? {}) },
 		auditRerun: config.auditRerun === true,
 		runtimeCard: config.runtimeCard !== false,
 		/** 贡献表。缺省 = 全开;要裁剪就从这里裁,而不是去改装配代码。 */
@@ -1030,6 +1047,28 @@ export function apply(ctx, config = {}) {
 		]
 	}
 
+	/**
+	 * 任务书里「这是副本」的那几句(issue #35):记号文件在哪、项目声明的复跑变量、全局用户数据目录的提醒。
+	 * 不叫评估者关掉被检项目的采集 —— 它要核的数字可能正是采集出来的。
+	 */
+	function rerunNotice(rerunDir) {
+		if (rerunDir === null) return { zh: [], en: [] }
+		const environment = Object.entries(rerunEnvironments.get(rerunDir) ?? {})
+		const assignments = environment.map(([key, value]) => `${key}=${value}`).join(' ')
+		return {
+			zh: [
+				`副本根目录有 \`.clearai-rerun.json\`:这里是一次性副本,不是原作者的工作区。`,
+				...(environment.length === 0 ? [] : [`项目声明了复跑用的环境变量,复跑前先设上(例如命令前加 \`${assignments}\`):${environment.map(([key]) => key).join('、')}。`]),
+				'复跑可能写进被检程序的**全局用户数据目录**(很多引擎按项目名定位它,不随目录改变),从而混进原作者的取证集。若项目有改道约定(上面的变量、或项目文档写的开关),先按约定改道再跑;没有约定时,在裁决里写明复跑可能写到了哪里。不要擅自关闭项目的采集:你要核的数字可能正是它产出的。',
+			],
+			en: [
+				`The copy root contains \`.clearai-rerun.json\`: this is a disposable copy, not the author's workspace.`,
+				...(environment.length === 0 ? [] : [`The project declares environment variables for re-runs; set them first (for example prefix the command with \`${assignments}\`): ${environment.map(([key]) => key).join(', ')}.`]),
+				'A re-run may write into the program\'s **global user-data directory** (many engines locate it by project name, not by folder), mixing your outputs into the author\'s evidence. If the project has a redirect convention (the variables above, or a switch its docs describe), apply it before running; if it has none, say in the verdict where the re-run may have written. Do not switch off the project\'s data collection: the numbers you check may come from it.',
+			],
+		}
+	}
+
 	function evaluatorPrompt(state, step, gate, sessionId, rerunDir = null) {
 		const goal = state.goal
 		const tested = testedBy(step)
@@ -1084,6 +1123,7 @@ export function apply(ctx, config = {}) {
 					rerunDir === null
 						? '你不得修改任何文件,不得执行写入命令,不得重做方案。'
 						: `原工作区只读:不要在里面写文件或运行命令。要核对数字就复跑:工作区副本在 ${rerunDir}(不含 clear/),cd 进去运行产物自带的脚本,对照它打印的结果。命令转为后台 job 时,用 job_output({job_id,wait:true,timeout_ms:600000}) 等待并收取同一任务的结果;不要用 sleep 轮询、重跑相同命令或读取宿主私有日志找结果。不再需要的任务用 job_kill 取消。复跑的读数是硬信号;不要重做方案。`,
+					...rerunNotice(rerunDir).zh,
 				],
 				[
 					`Working directory: ${sessionCwdLabel(sessionId)}`,
@@ -1093,6 +1133,7 @@ export function apply(ctx, config = {}) {
 					rerunDir === null
 						? 'You may not modify any file, run write commands or redo the work.'
 						: `The original workspace is read-only: do not write files or run commands in it. To check numbers, re-run: a copy of the workspace is at ${rerunDir} (without clear/); cd into it and run the scripts the outputs came from, and compare what they print. When a command becomes a background job, collect that same job with job_output({job_id,wait:true,timeout_ms:600000}); do not sleep-poll, repeat the command, or search private host logs for its output. Cancel unnecessary jobs with job_kill. Re-run readings are hard signals; do not redo the work.`,
+					...rerunNotice(rerunDir).en,
 				],
 			),
 		].join('\n')
@@ -1376,6 +1417,25 @@ export function apply(ctx, config = {}) {
 			}
 		}
 		return { ok: false, reason: failures.join(' | '), failures }
+	}
+
+	/**
+	 * 一次 L3+ 交付随交付带给评估者的未解释项,超限就说清怎么压(issue #36)。
+	 * 只量 `anomalies`:这是这次交付里由做的人决定、又会进评估者任务书的那一份。
+	 * 拒的是这一次调用的形状,不是这份发现 —— 合并同类、把细节写进产物文件,换一种写法再交。
+	 */
+	function auditMaterialProblem(anomalies) {
+		const items = (Array.isArray(anomalies) ? anomalies : []).filter((item) => String(item?.what ?? '').trim() !== '')
+		const { anomalies: maxItems, anomalyChars } = CFG.auditMaterialLimits
+		const long = items.map((item, index) => ({ index, length: String(item.what).trim().length })).filter((item) => item.length > anomalyChars)
+		if (items.length <= maxItems && long.length === 0) return null
+		const parts = []
+		if (items.length > maxItems) parts.push(tr(`这次带了 ${items.length} 条未解释项,上限 ${maxItems} 条`, `this delivery carries ${items.length} unexplained items; the limit is ${maxItems}`))
+		if (long.length > 0) parts.push(tr(`第 ${long.map((item) => item.index + 1).join('、')} 条超过 ${anomalyChars} 字(${long.map((item) => item.length).join('、')} 字)`, `item(s) ${long.map((item) => item.index + 1).join(', ')} exceed ${anomalyChars} characters (${long.map((item) => item.length).join(', ')})`))
+		return tr(
+			`交给独立评估者的材料太重:${parts.join(';')}。评估者要逐条核对、还要复跑,材料越重越容易跑不完。没有截断、没有落账,请压一压再交:同一来源的合并成一条;每条只写「预测为何、实际为何」一句,读数与推导写进产物文件(放进这一步的 artifacts),由评估者去读。上限可在预设配置 auditMaterialLimits 里调。`,
+			`The material for the independent evaluator is too heavy: ${parts.join('; ')}. The evaluator checks each item and may re-run the work, so heavy material makes it more likely to not finish. Nothing was truncated or recorded; trim it and deliver again: merge items with the same source; give each one sentence (what was expected, what was seen) and put readings and derivations in an output file listed in this step's artifacts for the evaluator to read. The limits can be changed with auditMaterialLimits in the preset config.`,
+		)
 	}
 
 	/**
@@ -1804,6 +1864,8 @@ export function apply(ctx, config = {}) {
 		const skip = new Set([join(cwd, 'clear'), join(cwd, '.git'), join(cwd, 'node_modules')])
 		try {
 			cpSync(cwd, target, { recursive: true, filter: (source) => !skip.has(source) })
+			// 记号写不进不影响复跑本身:任务书照样说明这是副本。
+			try { markRerunCopy(cwd, target) } catch (error) { ctx.logger?.warn?.(`clearai kernel: 复跑副本记号没写成 ${String(error?.message ?? error).slice(0, 160)}`) }
 			return target
 		} catch (error) {
 			ctx.logger?.warn?.(`clearai kernel: 复跑副本没建成 ${String(error?.message ?? error).slice(0, 160)}`)
@@ -1812,8 +1874,43 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
+	/** 副本 → 项目声明的复跑环境变量(任务书要列给评估者)。副本删掉时一起丢。 */
+	const rerunEnvironments = new Map()
+
+	/**
+	 * **给副本做记号**(issue #35)。
+	 *
+	 * 副本只隔开了工作区:很多桌面引擎的用户数据目录按**项目名**定位(Godot 的 `user://`
+	 * = `%APPDATA%\Godot\app_userdata\<项目名>`),不随目录改变,于是评估者在副本里复跑,
+	 * 写的仍是原作者的全局目录,原作者的取证集里混进另一份代码态的产物。
+	 *
+	 * 内核替不了被检项目做决定(采集可能正是评估者要核的东西,所以**不关**),能做的是让「这是副本」可被看见:
+	 *   · 副本根放一份 `.clearai-rerun.json`(原工作区不写):被检项目可以据此把输出改道到副本内;
+	 *   · 项目若在工作区根声明了 `.clearai-rerun-env`(每行 `KEY=VALUE`,`{copy}` 换成副本路径),
+	 *     变量随标记写下,并由任务书列给评估者 —— 宿主不提供替子会话设环境变量的接口,只能告诉它复跑前先设。
+	 */
+	function markRerunCopy(cwd, target) {
+		const environment = {}
+		try {
+			const declared = readFileSync(join(cwd, '.clearai-rerun-env'), 'utf8')
+			for (const line of declared.split(/\r?\n/)) {
+				const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line)
+				if (match === null || line.trimStart().startsWith('#')) continue
+				environment[match[1]] = match[2].replaceAll('{copy}', target)
+			}
+		} catch {
+			/* 没有声明就没有变量:标记照写 */
+		}
+		writeTextFile(
+			join(target, '.clearai-rerun.json'),
+			`${JSON.stringify({ clearai_rerun_copy: true, purpose: 'independent evaluator re-run', original_workspace: cwd, copy: target, environment, note: 'This directory is a disposable copy. Write outputs inside it; do not write the original author\'s global user-data directories.' }, null, 2)}\n`,
+		)
+		if (Object.keys(environment).length > 0) rerunEnvironments.set(target, environment)
+	}
+
 	function dropRerunCopy(dir) {
 		if (dir === null) return
+		rerunEnvironments.delete(dir)
 		try {
 			rmSync(dir, { recursive: true, force: true })
 		} catch {
@@ -4361,6 +4458,11 @@ export function apply(ctx, config = {}) {
 			if (grounding) return grounding
 			const level = step.tests?.level ?? null
 			const levelIndex = levelIndexOf(level)
+			// ⓪ 交给评估者的材料先过体积闸门:在落账之前拒,被拒的这一批不留半截记录。
+			if (levelIndex > SELF_JUDGE_MAX_INDEX) {
+				const heavy = auditMaterialProblem(args.anomalies)
+				if (heavy !== null) return fail('audit_material_too_large', heavy)
+			}
 
 			// ① 登记观测(只追加)
 			const accepted = []

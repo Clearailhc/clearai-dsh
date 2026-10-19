@@ -4,7 +4,7 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ## [0.5.6] — 2026-10-19
 
-**适配 DSH 0.2.1:独立评估者在新宿主上重新派得出去,且仍然只读(issue #38);另补上递归删除闸门的几处绕过。**
+**适配 DSH 0.2.1:独立评估者在新宿主上重新派得出去,且仍然只读(issue #38);交给评估者的材料有了体积闸门(issue #36),复跑副本能被认出是副本(issue #35);另补上递归删除闸门的几处绕过。**
 
 DSH 0.2.1-alpha.2 把 `subagents.start(provider, request)` 换成了 `startActivation(spec)`,而 `engines.dsh` 拦不住新宿主:装得上、跑得起,直到第一次派评估者才以 `audit_dispatch_failed` 失败,结案与 L3+ 交付都过不去。桌面版 0.2.1-rc.2 正是这一代。
 
@@ -15,9 +15,14 @@ DSH 0.2.1-alpha.2 把 `subagents.start(provider, request)` 换成了 `startActiv
 - **递归删除闸门的绕过**:pwsh 与 bash 两条规则从前只查命令里**第一段**删除(`Remove-Item a; Remove-Item -Recurse C:\`、`rm a; rm -rf ~` 都能过);pwsh 一条还把 `-Force` 当成递归,认不出 `C:/`、`$env:SystemRoot` 与 `{ … }` 里的命令。现在逐段查,认 pwsh 别名(`ri / rm / rd / del / erase`)与 `-recurse` 的缩写;提权规则不区分大小写。
 - `.gitattributes` 开头的 BOM 让 git 把第一行注释读成无效属性(`is not a valid attribute name`)。
 
+### Added
+
+- **评估材料体积闸门**(issue #36,报告者 GameKingdomNatives):L3+ 交付随交付带给评估者的未解释项(`anomalies`)有了上限——每次至多 4 条、每条至多 400 字,可用预设配置 `auditMaterialLimits: { anomalies, anomalyChars }` 调整,写错在装配期就抛错。超限**拒绝而不截断**(从前单条超过 400 字是静默截断),在落账之前拒,被拒的这一批不留记录,也不算连拦;拒因写明超了多少、怎么压(同源合并,读数与推导写进产物文件)。只量 `anomalies`:observations 的 note 与 `basis` 并不进评估者的任务书(`basis` 只用于 L2 自判),限它们减不了评估者的负担。
+- **复跑副本做了记号**(issue #35,报告者 GameKingdomNatives):副本根目录写一份 `.clearai-rerun.json`(原工作区与副本路径、用途),原工作区不写;任务书告诉评估者这是一次性副本,并提醒复跑可能写进被检程序按项目名定位的全局用户数据目录、有改道约定先改道、没有就在裁决里写明可能写到了哪里。项目可在工作区根声明 `.clearai-rerun-env`(每行 `KEY=VALUE`,`{copy}` 换成副本路径),变量随记号写下并列进任务书,评估者复跑前先设上。内核**不**关闭被检项目的采集:评估者要核的数字可能正是采集出来的。
+
 ### Tests
 
-- 模拟宿主可扮演两代子代理入口;`test/run.sh` 把整套内核用例在 `startActivation` 上再跑一遍(两遍各 682/0)。新增评估者工具面插件、两代入口都不在、删除规则绕过与误伤的用例。
+- 模拟宿主可扮演两代子代理入口;`test/run.sh` 把整套内核用例在 `startActivation` 上再跑一遍(两遍各 700/0)。新增评估者工具面插件、两代入口都不在、删除规则绕过与误伤、评估材料闸门(超限拒绝不落账、刚好在限内放行、上限可调、配置写错抛错、L2 不受限)、复跑记号与项目声明变量的用例。
 - `verify-clean-install` 多一项:名册里 `clearai-evaluator` 在场且没有 broken。DSH 0.2.1-rc.2 与 0.2.0-rc.2 上干净安装均 23/0。
 - 桌面版 DSH 0.2.1-rc.2 上的真实评估(`tools/native-headless/audit-wait-probe.mjs`):评估者派出、裁决回到内核、目标 `achieved`;评估者子会话的工具面为 `read, read_image, glob, grep, bash, job_output, job_list, job_kill, structured_output`,主会话不受影响。
 - `tools/native-headless` 增加两个显式开关:`CLEARAI_NATIVE_RUNTIME`(在预注册的 0.2.0-rc.2 之外的宿主上跑兼容性检查,并记入安装记录)与 `CLEARAI_NATIVE_PASS_ENV`(按名转发模型密钥这类环境变量;缺省仍是白名单)。

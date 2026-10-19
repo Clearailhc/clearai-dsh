@@ -1633,10 +1633,14 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		write('lab/z.txt', 'mean=2\n')
 		let copy = null
 		let copied = false
+		let marker = null
+		let briefSaid = ''
 		host.onAudit = (request) => {
 			const said = typeof request.prompt === 'string' ? request.prompt : (request.prompt ?? []).map((block) => block?.text ?? '').join('\n')
+			briefSaid = said
 			copy = /副本在 ([^\s(（]+)/.exec(said)?.[1] ?? null
 			copied = copy !== null && existsSync(join(copy, 'lab', 'z.txt')) && !existsSync(join(copy, 'clear'))
+			try { marker = JSON.parse(readFileSync(join(copy, '.clearai-rerun.json'), 'utf8')) } catch { marker = null }
 		}
 		host.nextVerdict = { holds: 'yes', basis: '复跑 mean=2', shortfalls: [], results: [{ hypothesis: above, verdict: 'support' }] }
 		const ok = await callOn(host, S, 'AdvancePlan', { step_id: 'z1' })
@@ -1649,6 +1653,20 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 			check('复跑允许收取和取消本人后台任务', ['job_output', 'job_list', 'job_kill'].every(name => request.toolFilter.allow.includes(name)), JSON.stringify(request?.toolFilter))
 		}
 		check('评估结束后副本删掉', ok.ok === true && copy !== null && !existsSync(copy), String(copy))
+		// issue #35:副本要能被认出来是副本(被检项目据此改道),原工作区不留记号。
+		check('副本根有复跑记号,写明原工作区与副本', marker?.clearai_rerun_copy === true && marker.copy === copy && typeof marker.original_workspace === 'string', JSON.stringify(marker))
+		check('原工作区里没有复跑记号', !existsSync(join(WORKSPACE, '.clearai-rerun.json')))
+		check('任务书说明这是副本,并提醒全局用户数据目录', /\.clearai-rerun\.json/.test(briefSaid) && /全局用户数据目录/.test(briefSaid) && /不要擅自关闭/.test(briefSaid))
+		check('项目没声明复跑变量时,任务书不编造变量', !/项目声明了复跑用的环境变量/.test(briefSaid))
+
+		// 项目在工作区根声明了复跑变量:`{copy}` 换成副本路径,随记号写下,并列进任务书。
+		write('.clearai-rerun-env', '# 采集器改道\nGAME_CAPTURE_DIR={copy}/captures\nGAME_CAPTURE_OFF = 0\n')
+		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'z1b', do: '带改道变量再算', artifacts: ['lab/z1b.txt'], done_criteria: 'lab/z1b.txt 有均值', tests: { hypotheses: [above], level: 'L3' } } })
+		write('lab/z1b.txt', 'mean=2\n')
+		await callOn(host, S, 'AdvancePlan', { step_id: 'z1b' })
+		check('声明的复跑变量写进记号,{copy} 换成副本路径', marker?.environment?.GAME_CAPTURE_DIR === `${copy}/captures` && marker?.environment?.GAME_CAPTURE_OFF === '0', JSON.stringify(marker?.environment))
+		check('任务书列出声明的复跑变量', briefSaid.includes(`GAME_CAPTURE_DIR=${copy}/captures`) && /GAME_CAPTURE_OFF/.test(briefSaid), briefSaid.split('\n').find((line) => /GAME_CAPTURE/.test(line)) ?? '(无)')
+		rmSync(join(WORKSPACE, '.clearai-rerun-env'), { force: true })
 
 		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'z2', do: '再算一次', artifacts: ['lab/z2.txt'], done_criteria: 'lab/z2.txt 有均值', tests: { hypotheses: [above], level: 'L3' } } })
 		write('lab/z2.txt', 'mean=3\n')
@@ -1656,6 +1674,58 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const touched = await callOn(host, S, 'AdvancePlan', { step_id: 'z2' })
 		check('评估期间收下的产物被改 ⇒ 裁决不认,这一步不推进', touched.ok === false && ['evaluator_touched_outputs', 'evidence_audit_unavailable'].includes(touched.code) && host.service.state(S).plans[0].steps.find((step) => step.id === 'z2')?.status === 'open', touched.code)
 		host.onAudit = undefined
+	}
+
+	// ⑧ 交给评估者的材料体积闸门(issue #36):L3+ 才管;超限拒绝、不截断、不落账;上限可调
+	{
+		const host = makeHost()
+		apply(host.ctx, { blockedThreshold: 3 })
+		const S = 'session-material'
+		await callOn(host, S, 'Frame', { claim: 'V 的均值?', done_criteria: '存在 lab/v.txt', hypotheses: [{ name: '大于一', claim: '均值大于 1', refute_when: '均值不大于 1' }] })
+		const [above] = host.service.state(S).hypotheses.map((item) => item.id)
+		await callOn(host, S, 'CreatePlan', { steps: [{ id: 'v1', do: '算均值', artifacts: ['lab/v.txt'], done_criteria: 'lab/v.txt 有均值', tests: { hypotheses: [above], level: 'L3' } }] })
+		write('lab/v.txt', 'mean=2\n')
+		const before = { audits: host.audits.length, anomalies: (host.service.state(S).anomalies ?? []).length, observations: (host.service.state(S).materials ?? []).length }
+		const five = Array.from({ length: 5 }, (_, index) => ({ what: `第 ${index + 1} 处:预测 2,实际 ${index + 3}` }))
+		const crowded = await callOn(host, S, 'AdvancePlan', { step_id: 'v1', observations: [{ ref: 'lab/v.txt', note: '均值' }], anomalies: five })
+		check('L3 交付带 5 条未解释项(上限 4)→ 拒绝', crowded.ok === false && crowded.code === 'audit_material_too_large', String(crowded.code))
+		check('拒因说清超了多少、怎么压', /5 条未解释项,上限 4 条/.test(String(crowded.message)) && /合并成一条/.test(String(crowded.message)) && /auditMaterialLimits/.test(String(crowded.message)), String(crowded.message).slice(0, 120))
+		const afterCrowded = host.service.state(S)
+		check('被拒的这一批没落账、没派评估者', host.audits.length === before.audits && (afterCrowded.anomalies ?? []).length === before.anomalies && (afterCrowded.materials ?? []).length === before.observations)
+		check('体积超限不算连拦(计划不因此 blocked)', afterCrowded.plans[0].blocked === undefined)
+
+		const long = await callOn(host, S, 'AdvancePlan', { step_id: 'v1', anomalies: [{ what: '读数漂移'.repeat(120) }] })
+		check('单条未解释项超过 400 字 → 拒绝,不再静默截断', long.ok === false && long.code === 'audit_material_too_large' && /第 1 条超过 400 字/.test(String(long.message)), String(long.message).slice(0, 120))
+
+		host.nextVerdict = { holds: 'yes', basis: '均值 2', shortfalls: [], results: [{ hypothesis: above, verdict: 'support' }] }
+		const fits = await callOn(host, S, 'AdvancePlan', { step_id: 'v1', anomalies: five.slice(0, 4) })
+		check('4 条(刚好在上限内)→ 照常送评', fits.ok === true && host.audits.length === before.audits + 1, `${fits.code}`)
+
+		// 上限可调;配置写错在装配期就炸
+		const roomy = makeHost()
+		apply(roomy.ctx, { blockedThreshold: 3, auditMaterialLimits: { anomalies: 8 } })
+		const R = 'session-material-roomy'
+		await callOn(roomy, R, 'Frame', { claim: 'V 的均值?', done_criteria: '存在 lab/v.txt', hypotheses: [{ name: '大于一', claim: '均值大于 1', refute_when: '均值不大于 1' }] })
+		const [roomyAbove] = roomy.service.state(R).hypotheses.map((item) => item.id)
+		await callOn(roomy, R, 'CreatePlan', { steps: [{ id: 'v1', do: '算均值', artifacts: ['lab/v.txt'], done_criteria: 'lab/v.txt 有均值', tests: { hypotheses: [roomyAbove], level: 'L3' } }] })
+		roomy.nextVerdict = { holds: 'yes', basis: '均值 2', shortfalls: [], results: [{ hypothesis: roomyAbove, verdict: 'support' }] }
+		const roomyResult = await callOn(roomy, R, 'AdvancePlan', { step_id: 'v1', anomalies: five })
+		check('auditMaterialLimits.anomalies 调到 8 → 5 条照常送评', roomyResult.ok === true, String(roomyResult.code))
+		for (const bad of [{ anomalies: 0 }, { anomalyChars: 1.5 }, { observations: 6 }, []]) {
+			let threw = false
+			try { apply(makeHost().ctx, { auditMaterialLimits: bad }) } catch (error) { threw = /invalid_config:clearai-kernel:auditMaterialLimits/.test(String(error.message)) }
+			check(`auditMaterialLimits 写错(${JSON.stringify(bad)})→ 装配期抛错`, threw)
+		}
+
+		// L2 是做的人自己判,不派评估者:不归这道闸门管
+		const self = makeHost()
+		apply(self.ctx, { blockedThreshold: 3 })
+		const L = 'session-material-l2'
+		await callOn(self, L, 'Frame', { claim: 'V 的均值?', done_criteria: '存在 lab/v.txt', hypotheses: [{ name: '大于一', claim: '均值大于 1', refute_when: '均值不大于 1' }] })
+		const [selfAbove] = self.service.state(L).hypotheses.map((item) => item.id)
+		await callOn(self, L, 'CreatePlan', { steps: [{ id: 'v1', do: '算均值', artifacts: ['lab/v.txt'], done_criteria: 'lab/v.txt 有均值', tests: { hypotheses: [selfAbove], level: 'L2' } }] })
+		const selfResult = await callOn(self, L, 'AdvancePlan', { step_id: 'v1', anomalies: five, basis: 'lab/v.txt 里 mean=2', results: [{ hypothesis: '大于一', verdict: '支持', basis: 'mean=2 > 1' }] })
+		check('L2 交付不受评估材料闸门限制', selfResult.code !== 'audit_material_too_large', String(selfResult.code))
 	}
 }
 
