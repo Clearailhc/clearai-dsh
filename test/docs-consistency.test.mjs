@@ -137,7 +137,8 @@ console.log('\n【计数类说法:文档里写的数必须与它数的那份东�
 	 * 从 `run.sh` 现场数,再拿它去核对文档里每一处 `N 份套件` / `N suites`。
 	 */
 	const runSh = readFileSync(join(PORT, 'test', 'run.sh'), 'utf8')
-	const suites = [...runSh.matchAll(/node "\$HERE\/[a-z0-9-]+\.test\.mjs"/g)].length
+	// 数**不同的**套件文件:同一套用例换一种宿主入口再跑一遍(内核在 startActivation 上的第二遍)不是新套件。
+	const suites = new Set([...runSh.matchAll(/node "\$HERE\/([a-z0-9-]+)\.test\.mjs"/g)].map((match) => match[1])).size
 	check('从 test/run.sh 数得出套件数', suites >= 10, String(suites))
 	const offenders = []
 	for (const file of SCANNED) {

@@ -254,7 +254,8 @@ if (spec === null) {
 			"const { ctx } = await runProfile({ environment, profile: 'web', patchFiles: [], args: ['--port', '0', '--no-open'] })",
 			'const list = await ctx.agentPresets.list()',
 			"const entry = list.find((item) => item.id === 'clearai')",
-			"process.stdout.write('ROSTER ' + JSON.stringify({ ids: list.map((i) => i.id), entry: entry === undefined ? null : entry }) + '\\n')",
+			"const evaluator = list.find((item) => item.id === 'clearai-evaluator')",
+			"process.stdout.write('ROSTER ' + JSON.stringify({ ids: list.map((i) => i.id), entry: entry === undefined ? null : entry, evaluator: evaluator === undefined ? null : evaluator }) + '\\n')",
 			'process.exit(entry !== undefined && entry.broken === undefined ? 0 : 3)',
 		].join('\n')
 		const roster = spawnSync(process.execPath, ['--input-type=module', '-e', rosterScript], {
@@ -265,10 +266,12 @@ if (spec === null) {
 		const reported = (roster.stdout ?? '').split('\n').find((line) => line.startsWith('ROSTER '))
 		let ids = []
 		let entry = null
+		let evaluator = null
 		try {
 			const parsed = JSON.parse(reported.slice('ROSTER '.length))
 			ids = parsed.ids ?? []
 			entry = parsed.entry
+			evaluator = parsed.evaluator ?? null
 		} catch {
 			console.log(`  · 名册读不到(退出码 ${roster.status})——stderr 尾部:${String(roster.stderr ?? '').split('\n').filter((line) => line.trim() !== '').slice(-2).join(' | ').slice(0, 200)}`)
 		}
@@ -278,6 +281,12 @@ if (spec === null) {
 			'④‴ 名册运行态:clearai 没有 broken(子插件真的起来了)',
 			entry !== null && entry.broken === undefined,
 			entry === null ? '(没有 clearai 条目)' : String(entry.broken ?? '').replace(/\s+/g, ' ').slice(0, 220),
+		)
+		// 宿主 ≥0.2.1-alpha.2 的独立评估者靠这一份预设派出(issue #38):它坏了,结案与 L3+ 交付都会 fail-closed。
+		check(
+			'④⁗ 名册运行态:评估者预设 clearai-evaluator 在列表里且没有 broken',
+			evaluator !== null && evaluator.broken === undefined,
+			evaluator === null ? '(没有 clearai-evaluator 条目)' : String(evaluator.broken ?? '').replace(/\s+/g, ' ').slice(0, 220),
 		)
 	}
 

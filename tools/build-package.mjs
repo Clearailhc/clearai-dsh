@@ -154,6 +154,8 @@ const readPresetMeta = (file) => {
 	const PRESET_DIR = join(PORT, 'preset')
 	const meta = readPresetMeta(join(PRESET_DIR, 'preset.yml'))
 	const rows = readSourceText(join(PRESET_DIR, 'agent.cordis.yml')).replace(/\n+$/, '').split('\n')
+	// 独立评估者的组合(宿主 ≥0.2.1-alpha.2 用 `agentPreset` 选它,见 preset/evaluator.cordis.yml)。
+	const evaluatorRows = readSourceText(join(PRESET_DIR, 'evaluator.cordis.yml')).replace(/\n+$/, '').split('\n')
 	// `plugins:` 在 8 格,其下的列表项在 10 格 —— 整份组合平移过来,注释一并留下。
 	const row = (line) => (line.trim() === '' ? '' : `          ${line}`)
 	// 生成物进仓库(与 ui/vendor/*.js 同一条纪律):源是 preset/agent.cordis.yml,
@@ -182,11 +184,22 @@ const readPresetMeta = (file) => {
 			'        plugins:',
 			...rows.map(row),
 			'',
+			'    - id: preset-clearai-evaluator',
+			"      name: '@deepseek-ai/dsh-agent-preset'",
+			'      config:',
+			'        id: clearai-evaluator',
+			'        name: ClearAI 评估者 · Evaluator',
+			'        description: |-',
+			'          由 ClearAI 内核派出的只读独立评估者,不用于直接对话。Read-only evaluator dispatched by ClearAI; not for direct chat.',
+			'        order: 90',
+			'        plugins:',
+			...evaluatorRows.map(row),
+			'',
 		].join('\n'),
 		'utf8',
 	)
 	copy(packPath, join(OUT, 'presets', 'clearai', 'clearai.patch.yml'))
-	console.log(`  预设声明行:preset-clearai(${rows.filter((line) => /^- id:/.test(line)).length} 个顶层行)`)
+	console.log(`  预设声明行:preset-clearai(${rows.filter((line) => /^- id:/.test(line)).length} 个顶层行)、preset-clearai-evaluator(${evaluatorRows.filter((line) => /^- id:/.test(line)).length} 个顶层行)`)
 }
 
 // ── ④ 宿主半 / 浏览器半:同一份源,两个出口 ─────────────────────────────────

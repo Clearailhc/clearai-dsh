@@ -224,6 +224,7 @@ export const CONFIG_KEYS = [
 	'auditTimeoutMs',
 	'auditHardTimeoutMs',
 	'auditToolFilter',
+	'auditPreset',
 	'auditRerun',
 	'runtimeCard',
 	'contributions',
@@ -372,12 +373,28 @@ export function apply(ctx, config = {}) {
 		// (见 resolveToolFace):`read_image` 只在挂了 `attachments` 的部署里存在,名单里写了它、
 		// 部署里没有,`tools.restrict` 会**直接抛**(未知工具名)→ 评估整条路 fail-closed。
 		auditToolFilter: config.auditToolFilter ?? ['read', 'glob', 'grep', 'read_image'],
+		/**
+		 * 宿主 ≥0.2.1-alpha.2 的评估者组合:`startActivation` 的请求里**没有** persona / toolFilter
+		 * (传了也被静默丢掉),子会话的人格与工具面只由所选预设决定。这一份预设随包声明
+		 * (`preset/evaluator.cordis.yml`):文件只读、搜索、shell 与后台任务,不挂写工具也不挂 ClearAI 工具。
+		 */
+		auditPreset: config.auditPreset ?? 'clearai-evaluator',
 		auditRerun: config.auditRerun === true,
 		runtimeCard: config.runtimeCard !== false,
 		/** 贡献表。缺省 = 全开;要裁剪就从这里裁,而不是去改装配代码。 */
 		contributions: config.contributions ?? {},
 	}
 	if (config.auditHardTimeoutMs !== undefined) ctx.logger?.warn?.('clearai: auditHardTimeoutMs is deprecated and ignored; auditTimeoutMs is diagnostic only. Cancellation and run budgets belong to the host.')
+	/**
+	 * 启动自检(issue #38):子代理入口两代都不认识,就在挂载时说出来,
+	 * 而不是等用户跑完长任务、在结案那一步才拿到 `audit_dispatch_failed`。
+	 * 服务暂时不在不报(它在宿主平面,可能晚到);派遣时还会再判一次并 fail-closed。
+	 */
+	{
+		let probe
+		try { probe = ctx.get('subagents') } catch { probe = undefined }
+		if (probe !== undefined && subagentApi(probe) === null) ctx.logger?.warn?.('clearai: the host subagents service exposes neither start() nor startActivation(); independent evaluation will fail closed on this host version')
+	}
 
 	/** 贡献表:先校验(装配期炸),后登记(见文件末尾的装配段)。 */
 	const CONTRIB = resolveContributions(CFG.contributions)
@@ -1335,6 +1352,9 @@ export function apply(ctx, config = {}) {
 	async function dispatchSubRun(options) {
 		const subagents = ctx.get('subagents')
 		if (subagents === undefined) return { ok: false, reason: tr('subagents 服务不可用', 'the subagents service is unavailable'), failures: [] }
+		const api = subagentApi(subagents)
+		if (api === null) return { ok: false, reason: tr('宿主的 subagents 服务既没有 start 也没有 startActivation:这个宿主版本不受支持', 'the host subagents service has neither start nor startActivation; this host version is unsupported'), failures: [] }
+		if (api === 'activation') return dispatchActivation(subagents, options)
 		const base = { label: options.label, parent: options.parent, signal: options.signal, prompt: text(options.prompt) }
 		const persona = options.persona
 		const schema = options.outputSchema ? nativeAuditSchema(options.outputSchema) : undefined
@@ -1356,6 +1376,61 @@ export function apply(ctx, config = {}) {
 			}
 		}
 		return { ok: false, reason: failures.join(' | '), failures }
+	}
+
+	/**
+	 * 宿主的子代理入口是哪一代(issue #38)。
+	 *
+	 * DSH 0.2.1-alpha.2 把 `subagents.start(provider, request)` 换成了 `startActivation(spec)`,
+	 * 而 `engines.dsh` 拦不住新宿主:装得上、跑得起,直到第一次派评估者才炸。
+	 * 按**方法在不在**判,不按版本号判 —— 方法在场就是能力本身,版本号只是它的间接证据。
+	 * 两个都在时走旧入口:那一代的 persona / toolFilter 是逐次请求给的,不依赖随包预设。
+	 */
+	function subagentApi(subagents) {
+		if (typeof subagents?.start === 'function') return 'start'
+		if (typeof subagents?.startActivation === 'function') return 'activation'
+		return null
+	}
+
+	/**
+	 * 新一代入口(宿主 ≥0.2.1-alpha.2)。
+	 *
+	 * 这一代的 `startActivation` 请求里**没有** `persona` / `toolFilter`:本地子会话的组合只取
+	 * `request.agentPreset`(宿主 `startLocal` 里是 `composition: { agentPreset }`),多传的字段被静默丢掉。
+	 * 若照旧把两项塞进请求、不选预设,评估者会加入父会话的 ClearAI 组合 —— 拿到写工具与 ClearAI 自己的工具,
+	 * 读到主人格的提示词,「独立、只读」就只剩一句话。所以评估者的工具面改由随包的评估者预设
+	 * (`CFG.auditPreset`)决定:平台按挂了哪些行给工具,不是靠我们事后拦。
+	 *
+	 * 评估纪律照旧写在任务书里(`evaluatorPrompt` 第一段就是它),预设的人格只说身份。
+	 * `delivery: 'caller'`:裁决只回到内核,不往父会话的模型面投递;子会话仍进父会话的目录,
+	 * 所以 `sweepEndedAudits` 的 `listChildren` 照样看得见它。
+	 *
+	 * 这一代 `signal` 只管「发布之前」;发布之后的取消归 `dispose`。与 0.5.4 起的语义一致:
+	 * 调用方中途放弃只是不再等,评估者不因此被掐断。
+	 */
+	async function dispatchActivation(subagents, options) {
+		const schema = options.outputSchema ? nativeAuditSchema(options.outputSchema) : undefined
+		const capability = `preset:${CFG.auditPreset}${schema === undefined ? '' : '+outputSchema'}`
+		try {
+			const activation = await subagents.startActivation({
+				provider: CFG.auditProvider,
+				label: options.label,
+				delivery: 'caller',
+				signal: options.signal ?? new AbortController().signal,
+				request: {
+					prompt: text(options.prompt),
+					parent: options.parent,
+					agentPreset: CFG.auditPreset,
+					...(schema === undefined ? {} : { outputSchema: schema }),
+				},
+			})
+			/** 回包归一成旧形状:这一代的身份叫 `childId`,下游(账本、目录对账、落定)只认 `id`。 */
+			const run = { id: String(activation.childId), result: activation.result, dispose: () => activation.dispose() }
+			return { ok: true, run, capability, native: false, degraded: null }
+		} catch (error) {
+			const failure = `${capability}:${String(error?.message ?? error).slice(0, 160)}`
+			return { ok: false, reason: failure, failures: [failure] }
+		}
 	}
 
 	/**
@@ -4815,14 +4890,15 @@ export function apply(ctx, config = {}) {
 		[
 			['递归删除系统路径', 'recursive delete of a system path'],
 			(command) => {
-				const match = /(^|[;&|]\s*)rm\s+([^;&|]*)/i.exec(command)
-				if (match === null) return false
-				const segment = match[2]
-				if (!(/(^|\s)-[A-Za-z]*r/i.test(segment) || segment.includes('--recursive'))) return false
-				for (const token of segment.split(/\s+/)) {
-					if (token === '' || token.startsWith('-')) continue
-					const bare = token.replace(/^["']|["']$/g, '')
-					if (bare === '/' || bare === '~' || bare.startsWith('~/') || /^\/[^/]+$/.test(bare)) return true
+				// 每个 `rm` 段都查:只看第一段时,`rm a; rm -rf ~` 会从第二段漏过去。
+				for (const match of command.matchAll(/(^|[;&|]\s*)rm\s+([^;&|]*)/gi)) {
+					const segment = match[2]
+					if (!(/(^|\s)-[A-Za-z]*r/i.test(segment) || segment.includes('--recursive'))) continue
+					for (const token of segment.split(/\s+/)) {
+						if (token === '' || token.startsWith('-')) continue
+						const bare = token.replace(/^["']|["']$/g, '')
+						if (bare === '/' || bare === '~' || bare.startsWith('~/') || /^\/[^/]+$/.test(bare)) return true
+					}
 				}
 				return false
 			},
@@ -4848,14 +4924,27 @@ export function apply(ctx, config = {}) {
 		[
 			['递归删除系统路径(pwsh)', 'recursive delete of a system path (pwsh)'],
 			(command) => {
-				const match = /(^|[;&|]\s*)remove-item\s+([^;&|]*)/i.exec(command)
-				if (match === null) return false
-				const segment = match[2]
-				if (!(/(^|\s)-[a-z]*r/i.test(segment) || segment.includes('--recurse'))) return false
-				for (const token of segment.split(/\s+/)) {
-					if (token === '' || token.startsWith('-')) continue
-					const bare = token.replace(/^["']|["']$/g, '').replace(/^env:/i, '').toLowerCase()
-					if (bare === '/' || bare === '~' || bare.startsWith('~/') || bare === '%systemroot%' || bare.startsWith('%systemroot%\\') || bare.startsWith('%systemroot%/') || /^\/[^/]+$/.test(bare) || /^[a-z]:\\?$/.test(bare) || /^[a-z]:\\windows\\?$/.test(bare)) return true
+				/**
+				 * 每一段都查,不只第一段:`Remove-Item a.txt; Remove-Item -Recurse C:\` 的危险在第二段。
+				 * 段边界除了 `; & |` 还有 `{ } ( )` 与换行(`% { Remove-Item -Recurse C:\ }`)。
+				 * 动词认 pwsh 的内置别名(`ri / rm / rmdir / rd / del / erase`)。
+				 */
+				const verbs = /(?:^|[;&|{}()\n]\s*)(?:remove-item|ri|rm|rmdir|rd|del|erase)\s+([^;&|{}()\n]*)/gi
+				for (const match of command.matchAll(verbs)) {
+					const tokens = match[1].split(/\s+/).filter((token) => token !== '')
+					/**
+					 * 递归开关:pwsh 参数可以缩写成 `-recurse` 的任意前缀(`-r` / `-rec` / `-Recurse:$true`),
+					 * bash 式短开关簇(`-rf` / `-fr`)也算。`-Force` 不是递归 —— 从前「破折号后任意处有 r」把它也算进去了。
+					 */
+					const recursive = tokens.some((token) => /^-(r|re|rec|recu|recur|recurs|recurse)(:\$?true)?$/i.test(token) || /^-[fdiv]*r[fdiv]*$/i.test(token) || token.toLowerCase() === '--recursive')
+					if (!recursive) continue
+					for (const token of tokens) {
+						if (token.startsWith('-')) continue
+						const bare = token.replace(/^["']|["']$/g, '').toLowerCase().replaceAll('\\', '/').replace(/\/+$/, '')
+						if (bare === '' || bare === '~' || bare.startsWith('~/') || bare === '$home' || bare.startsWith('$home/') || /^\/[^/]+$/.test(bare)) return true
+						if (/^[a-z]:$/.test(bare) || /^[a-z]:\/(windows|users|program files|program files \(x86\))$/.test(bare)) return true
+						if (/^(\$env:|env:)(systemroot|windir|systemdrive|userprofile|homedrive|programfiles)$/.test(bare) || /^%(systemroot|windir|systemdrive|userprofile)%$/.test(bare)) return true
+					}
 				}
 				return false
 			},
@@ -4863,7 +4952,7 @@ export function apply(ctx, config = {}) {
 		[['远程脚本直灌 shell(pwsh)', 'remote script piped into a shell (pwsh)'], (command) => /(iwr|invoke-webrequest|invoke-restmethod|curl|wget)\b[^;&|]*\|\s*(iex|invoke-expression)\b/i.test(command)],
 		[['动态执行下载内容(pwsh)', 'dynamic execution of downloaded content (pwsh)'], (command) => /(iex|invoke-expression)\b[^;&|]*((iwr|invoke-webrequest|invoke-restmethod|curl|wget)\b|https?:\/\/)/i.test(command)],
 		[['卷格式化(pwsh)', 'volume formatting (pwsh)'], (command) => /(^|[;&|]\s*)format-volume\b|(^|[;&|]\s*)format\s+[a-z]:/i.test(command)],
-		[['提权(pwsh)', 'privilege escalation (pwsh)'], (command) => /(^|[;&|]\s*)(sudo|gsudo)\s/.test(command)],
+		[['提权(pwsh)', 'privilege escalation (pwsh)'], (command) => /(^|[;&|]\s*)(sudo|gsudo)\s/i.test(command)],
 	]
 
 	/**

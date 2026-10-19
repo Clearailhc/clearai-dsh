@@ -7,7 +7,9 @@ import {createHash} from 'node:crypto'
 const repo=resolve(fileURLToPath(new URL('../..',import.meta.url)))
 export function nativeTestEnvironment(home,specPath,source=process.env) {
  const env={}
- for(const key of ['PATH','HOME','USER','LOGNAME','SHELL','TMPDIR','LANG','LC_ALL','LC_CTYPE','SSL_CERT_FILE','SSL_CERT_DIR'])if(source[key]!==undefined)env[key]=source[key]
+ // Explicit pass-through only (e.g. CLEARAI_NATIVE_PASS_ENV=ABHOME_API_KEY for a provider whose profile resolves apiKeyEnv); the default stays an allowlist.
+ const passed=String(source.CLEARAI_NATIVE_PASS_ENV??'').split(',').map(key=>key.trim()).filter(key=>/^[A-Z][A-Z0-9_]*$/.test(key))
+ for(const key of ['PATH','HOME','USER','LOGNAME','SHELL','TMPDIR','LANG','LC_ALL','LC_CTYPE','SSL_CERT_FILE','SSL_CERT_DIR',...passed])if(source[key]!==undefined)env[key]=source[key]
  return {...env,DSH_HOME:home,ELECTRON_RUN_AS_NODE:'1',CLEARAI_NATIVE_SPEC:specPath,DSH_TELEMETRY_DISABLED:'1'}
 }
 export async function runNative({home,profile='native52',workspace,spec}) {
@@ -15,7 +17,7 @@ export async function runNative({home,profile='native52',workspace,spec}) {
  if(!existsSync(join(home,'installation.json')))throw new Error('Run setup.mjs first; native candidate installation required')
  const installation=JSON.parse(readFileSync(join(home,'installation.json')))
  if(installation.profile!==profile)throw new Error('Installed profile mismatch')
- if(!installation.packageFiles?.length||installation.runtime?.cli!=='0.2.0-rc.2')throw new Error('Missing verified native artifact/runtime metadata; reconfigure isolated installation')
+ if(!installation.packageFiles?.length||installation.runtime?.cli!==(installation.expectedRuntime ?? '0.2.0-rc.2'))throw new Error('Missing verified native artifact/runtime metadata; reconfigure isolated installation')
  for(const file of installation.packageFiles)if(createHash('sha256').update(readFileSync(join(home,'profiles',profile,'node_modules','clearai-dsh',file.path))).digest('hex')!==file.sha256)throw new Error(`Installed candidate changed: ${file.path}`)
  if(!['A','C','C-no-applicability','C-no-negative'].includes(spec.group))throw new Error('Unknown group')
  if(!spec.tokenBudget||!spec.timeoutMs||!spec.output||!spec.task)throw new Error('Incomplete run spec')

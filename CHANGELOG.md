@@ -2,6 +2,26 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.6] — 2026-10-19
+
+**适配 DSH 0.2.1:独立评估者在新宿主上重新派得出去,且仍然只读(issue #38);另补上递归删除闸门的几处绕过。**
+
+DSH 0.2.1-alpha.2 把 `subagents.start(provider, request)` 换成了 `startActivation(spec)`,而 `engines.dsh` 拦不住新宿主:装得上、跑得起,直到第一次派评估者才以 `audit_dispatch_failed` 失败,结案与 L3+ 交付都过不去。桌面版 0.2.1-rc.2 正是这一代。
+
+### Fixed
+
+- **评估者在 0.2.1 上派得出去**(issue #38,报告者 devil233-ui):内核按方法是否存在选入口——有 `start` 走旧路径(逐次请求给 persona / toolFilter),只有 `startActivation` 时以 `agentPreset: 'clearai-evaluator'`、`delivery: 'caller'` 派遣;回包统一成 `{ id, result, dispose }`,账本、目录对账与落定照旧。两个入口都不在时,挂载那一刻就警告,派遣时 fail-closed 并点名原因。
+- **新宿主上评估者仍然只读**:0.2.1 的 `startActivation` 会**静默丢掉**请求里的 `persona` / `toolFilter`。照旧塞进请求而不选预设,评估者会加入主会话的 ClearAI 组合,拿到写工具与主人格(issue 里的临时补丁正是这样)。所以新增随包的评估者预设 `clearai-evaluator`:只读文件面(`tool-fs` 关掉 `write` / `edit`)、搜索、shell 与后台任务;再由 `clearai-evaluator-face` 把宿主全局层继承下来的工具(`write` / `edit` / `subagent` / `web_*` / goal 工具……)从工具清单里遮掉,并在执行处用 guard 拦住白名单外的调用。评估者的工具面与旧入口 `toolFilter` 给的是同一张表。
+- **递归删除闸门的绕过**:pwsh 与 bash 两条规则从前只查命令里**第一段**删除(`Remove-Item a; Remove-Item -Recurse C:\`、`rm a; rm -rf ~` 都能过);pwsh 一条还把 `-Force` 当成递归,认不出 `C:/`、`$env:SystemRoot` 与 `{ … }` 里的命令。现在逐段查,认 pwsh 别名(`ri / rm / rd / del / erase`)与 `-recurse` 的缩写;提权规则不区分大小写。
+- `.gitattributes` 开头的 BOM 让 git 把第一行注释读成无效属性(`is not a valid attribute name`)。
+
+### Tests
+
+- 模拟宿主可扮演两代子代理入口;`test/run.sh` 把整套内核用例在 `startActivation` 上再跑一遍(两遍各 682/0)。新增评估者工具面插件、两代入口都不在、删除规则绕过与误伤的用例。
+- `verify-clean-install` 多一项:名册里 `clearai-evaluator` 在场且没有 broken。DSH 0.2.1-rc.2 与 0.2.0-rc.2 上干净安装均 23/0。
+- 桌面版 DSH 0.2.1-rc.2 上的真实评估(`tools/native-headless/audit-wait-probe.mjs`):评估者派出、裁决回到内核、目标 `achieved`;评估者子会话的工具面为 `read, read_image, glob, grep, bash, job_output, job_list, job_kill, structured_output`,主会话不受影响。
+- `tools/native-headless` 增加两个显式开关:`CLEARAI_NATIVE_RUNTIME`(在预注册的 0.2.0-rc.2 之外的宿主上跑兼容性检查,并记入安装记录)与 `CLEARAI_NATIVE_PASS_ENV`(按名转发模型密钥这类环境变量;缺省仍是白名单)。
+
 ## [0.5.5] — 2026-10-14
 
 **Windows 上的硬边界、证据落盘与自检全部补齐;另按社区 issue #33 / #34 做了能做的那部分加固。**

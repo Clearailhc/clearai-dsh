@@ -1,0 +1,76 @@
+# The `clearai-evaluator` agent preset:ClearAI 内核派出的**独立评估者**用的组合。
+#
+# 为什么要有这一份(issue #38):宿主 ≥0.2.1-alpha.2 的 `subagents.startActivation` 不再接受
+# 逐次请求的 persona / toolFilter —— 本地子会话的人格与工具面**只由所选预设决定**。
+# 不选预设,评估者就加入父会话的 ClearAI 组合:拿到写工具和 ClearAI 自己的工具,读到主人格。
+# 所以评估者改用这一份组合:身份、只读的文件面由「挂了哪些行」决定;
+# 宿主全局层继承下来的工具由下面的 clearai-evaluator-face 遮掉并在执行处拦住。
+#
+# 旧宿主(仍有 `subagents.start`)上内核走逐次请求的 toolFilter,这一份预设不被用到。
+#
+# 名册没有「隐藏」开关,这一份会出现在预设选择器里;名字和介绍都写明它不用于直接对话。
+# 由 tools/build-package.mjs 装配成 `presets/clearai/clearai.patch.yml` 里的第二条声明行。
+
+# ── 身份 ────────────────────────────────────────────────────────────────────
+
+# 评估纪律在任务书里(内核 `evaluatorPrompt` 的第一段,跟着人说话的语言走);这里只说身份。
+# 同主预设一样,不写 `{{…}}` 模板变量(issue #34)。
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    prefix: '你是 ClearAI 派出的独立评估者:只核对,不做方案,不改原工作区。怎么判见任务书。You are the independent evaluator dispatched by ClearAI: verify only, do not redo the work, do not modify the original workspace. The brief says how to judge.'
+
+# ── 只读文件面 ──────────────────────────────────────────────────────────────
+
+# 只开读:`write` / `edit` 关掉,工具注册表里就没有它们(不是挂上再拦)。
+# `read_image` 照旧随 `attachments` 在场与否(看图也是读)。
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+  config:
+    write: false
+    edit: false
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+# ── 复跑 ────────────────────────────────────────────────────────────────────
+
+# 复跑在工作区副本里进行(内核 `rerunCopy`,不含 `clear/`);任务书写明原工作区只读,
+# 评估期间产物被改动过,内核按 `evaluator_touched_outputs` 不认这份裁决。
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# 命令转后台 job 时,评估者要能收取 / 取消自己的任务。
+- id: tool-jobs
+  name: '@deepseek-ai/dsh-tool-jobs'
+
+# ── 工具面 ──────────────────────────────────────────────────────────────────
+
+# 只换预设不够:宿主 profile 在全局层注册的工具(write / edit / subagent / web_* / goal……)
+# 每个 agent 都继承得到:不遮这一层,评估者照样拿得到 write 与 edit。
+# 这一行把继承来的全局工具按白名单遮掉,并在执行处再拦一道。白名单与旧入口的 toolFilter 同一张。
+- id: clearai-evaluator-face
+  name: 'clearai-dsh/presets/clearai/plugins/clearai-evaluator-face.js'
+  config:
+    allow:
+      - read
+      - read_image
+      - glob
+      - grep
+      - bash
+      - pwsh
+      - job_output
+      - job_list
+      - job_kill
+
+# ── 刻意不挂的行 ────────────────────────────────────────────────────────────
+#
+# · ClearAI 内核:评估者不立题、不推进、不结案;它的裁决经结构化回包回到父会话的内核。
+# · 子代理 / workflow / ralph / ask-user / web:判的人不再派人,也不找人问。

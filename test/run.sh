@@ -34,6 +34,8 @@ FAILED=0
 
 for round in $(seq 1 "$ROUNDS"); do
 	kernel="$(node "$HERE/kernel.test.mjs" 2>&1)"
+	# 同一套内核用例在宿主 ≥0.2.1-alpha.2 的子代理入口(startActivation)上再跑一遍(issue #38)。
+	kernel_activation="$(CLEARAI_TEST_SUBAGENT_API=activation node "$HERE/kernel.test.mjs" 2>&1)"
 	host="$(node "$HERE/host.test.mjs" 2>&1)"
 	client="$(node "$HERE/client.test.mjs" 2>&1)"
 	domain="$(node "$HERE/domain-language.test.mjs" 2>&1)"
@@ -51,6 +53,7 @@ for round in $(seq 1 "$ROUNDS"); do
 	readability="$(node "$HERE/readability.test.mjs" 2>&1)"
 	budget="$(node "$HERE/prompt-budget.test.mjs" 2>&1)"
 	kernel_line="$(printf '%s\n' "$kernel" | grep -a '通过,' | tail -1)"
+	kernel_activation_line="$(printf '%s\n' "$kernel_activation" | grep -a '通过,' | tail -1)"
 	host_line="$(printf '%s\n' "$host" | grep -a '通过,' | tail -1)"
 	client_line="$(printf '%s\n' "$client" | grep -a '通过,' | tail -1)"
 	domain_line="$(printf '%s\n' "$domain" | grep -a '通过,' | tail -1)"
@@ -70,10 +73,10 @@ for round in $(seq 1 "$ROUNDS"); do
 	# 没装插件 ⇒ 这两份自己会打印一行「· 跳过…」并以 0 退出;那不是失败,如实记成「跳过」。
 	host_display="${host_line:-$(printf '%s\n' "$host" | grep -a '跳过' | head -1 | sed 's/^· //')}"
 	client_display="${client_line:-$(printf '%s\n' "$client" | grep -a '跳过' | head -1 | sed 's/^· //')}"
-	printf '第 %s 遍 · 内核:%s · 宿主:%s · 客户端:%s · 领域语言:%s · 本体:%s · 真值表:%s · 状态机:%s · 文档:%s · 注释:%s · 边界:%s · 组合:%s · 段:%s · 长测:%s · 不变量:%s · 对照:%s · 可读性:%s · 预算:%s\n' "$round" "${kernel_line:-崩溃}" "${host_display:-崩溃}" "${client_display:-崩溃}" "${domain_line:-崩溃}" "${ontology_line:-崩溃}" "${truth_line:-崩溃}" "${statemachine_line:-崩溃}" "${docs_line:-崩溃}" "${comment_line:-崩溃}" "${authority_line:-崩溃}" "${composition_line:-崩溃}" "${sections_line:-崩溃}" "${scenarios_line:-崩溃}" "${invariant_line:-崩溃}" "${contrast_line:-崩溃}" "${readability_line:-崩溃}" "${budget_line:-崩溃}"
-	if ! printf '%s\n' "$kernel_line" | grep -qa ',0 失败' || ! printf '%s\n' "$domain_line" | grep -qa ',0 失败' || ! printf '%s\n' "$ontology_line" | grep -qa ',0 失败' || ! printf '%s\n' "$truth_line" | grep -qa ',0 失败' || ! printf '%s\n' "$statemachine_line" | grep -qa ',0 失败' || ! printf '%s\n' "$docs_line" | grep -qa ',0 失败' || ! printf '%s\n' "$comment_line" | grep -qa ',0 失败' || ! printf '%s\n' "$authority_line" | grep -qa ',0 失败' || ! printf '%s\n' "$composition_line" | grep -qa ',0 失败' || ! printf '%s\n' "$sections_line" | grep -qa ',0 失败' || ! printf '%s\n' "$scenarios_line" | grep -qa ',0 失败' || ! printf '%s\n' "$invariant_line" | grep -qa ',0 失败' || ! printf '%s\n' "$contrast_line" | grep -qa ',0 失败' || ! printf '%s\n' "$readability_line" | grep -qa ',0 失败' || ! printf '%s\n' "$budget_line" | grep -qa ',0 失败'; then
+	printf '第 %s 遍 · 内核:%s · 内核(新子代理入口):%s · 宿主:%s · 客户端:%s · 领域语言:%s · 本体:%s · 真值表:%s · 状态机:%s · 文档:%s · 注释:%s · 边界:%s · 组合:%s · 段:%s · 长测:%s · 不变量:%s · 对照:%s · 可读性:%s · 预算:%s\n' "$round" "${kernel_line:-崩溃}" "${kernel_activation_line:-崩溃}" "${host_display:-崩溃}" "${client_display:-崩溃}" "${domain_line:-崩溃}" "${ontology_line:-崩溃}" "${truth_line:-崩溃}" "${statemachine_line:-崩溃}" "${docs_line:-崩溃}" "${comment_line:-崩溃}" "${authority_line:-崩溃}" "${composition_line:-崩溃}" "${sections_line:-崩溃}" "${scenarios_line:-崩溃}" "${invariant_line:-崩溃}" "${contrast_line:-崩溃}" "${readability_line:-崩溃}" "${budget_line:-崩溃}"
+	if ! printf '%s\n' "$kernel_line" | grep -qa ',0 失败' || ! printf '%s\n' "$kernel_activation_line" | grep -qa ',0 失败' || ! printf '%s\n' "$domain_line" | grep -qa ',0 失败' || ! printf '%s\n' "$ontology_line" | grep -qa ',0 失败' || ! printf '%s\n' "$truth_line" | grep -qa ',0 失败' || ! printf '%s\n' "$statemachine_line" | grep -qa ',0 失败' || ! printf '%s\n' "$docs_line" | grep -qa ',0 失败' || ! printf '%s\n' "$comment_line" | grep -qa ',0 失败' || ! printf '%s\n' "$authority_line" | grep -qa ',0 失败' || ! printf '%s\n' "$composition_line" | grep -qa ',0 失败' || ! printf '%s\n' "$sections_line" | grep -qa ',0 失败' || ! printf '%s\n' "$scenarios_line" | grep -qa ',0 失败' || ! printf '%s\n' "$invariant_line" | grep -qa ',0 失败' || ! printf '%s\n' "$contrast_line" | grep -qa ',0 失败' || ! printf '%s\n' "$readability_line" | grep -qa ',0 失败' || ! printf '%s\n' "$budget_line" | grep -qa ',0 失败'; then
 		FAILED=1
-		printf '\n--- 内核 ---\n%s\n--- 领域语言 ---\n%s\n--- 本体 ---\n%s\n--- 真值表 ---\n%s\n--- 状态机 ---\n%s\n--- 文档 ---\n%s\n--- 注释 ---\n%s\n--- 边界 ---\n%s\n--- 组合 ---\n%s\n--- 段 ---\n%s\n--- 长测 ---\n%s\n--- 不变量 ---\n%s\n--- 对照 ---\n%s\n--- 可读性 ---\n%s\n--- 预算 ---\n%s\n' "$kernel" "$domain" "$ontology" "$truth" "$statemachine" "$docs" "$comment" "$authority" "$composition" "$sections" "$scenarios" "$invariant" "$contrast" "$readability" "$budget"
+		printf '\n--- 内核 ---\n%s\n--- 内核(新子代理入口) ---\n%s\n--- 领域语言 ---\n%s\n--- 本体 ---\n%s\n--- 真值表 ---\n%s\n--- 状态机 ---\n%s\n--- 文档 ---\n%s\n--- 注释 ---\n%s\n--- 边界 ---\n%s\n--- 组合 ---\n%s\n--- 段 ---\n%s\n--- 长测 ---\n%s\n--- 不变量 ---\n%s\n--- 对照 ---\n%s\n--- 可读性 ---\n%s\n--- 预算 ---\n%s\n' "$kernel" "$kernel_activation" "$domain" "$ontology" "$truth" "$statemachine" "$docs" "$comment" "$authority" "$composition" "$sections" "$scenarios" "$invariant" "$contrast" "$readability" "$budget"
 	fi
 	# 跳过不算失败,但**不能被当成通过**;有通过行就必须是 0 失败。
 	if [ -n "$host_line" ] && ! printf '%s\n' "$host_line" | grep -qa ',0 失败'; then

@@ -54,6 +54,8 @@ verifyFiles(dist,'lib');verifyFiles(dist,'presets')
 const versions=spawnSync(app,['-e',"const fs=require('fs');const root='/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/';console.log(JSON.stringify({node:process.version,cli:JSON.parse(fs.readFileSync(root+'dsh/package.json')).version,agent:JSON.parse(fs.readFileSync(root+'dsh-agent/package.json')).version}))"],{env,encoding:'utf8',timeout:30000})
 if(versions.status!==0)throw new Error('Installed runtime version query failed')
 const runtime=JSON.parse(versions.stdout)
-if(runtime.cli!=='0.2.0-rc.2')throw new Error('This preregistration requires installed DSH 0.2.0-rc.2')
-writeFileSync(join(home,'installation.json'),JSON.stringify({home,profile,app,tarball,packageDigest,runtimeDigest,runtime,packageFiles,model:{provider:'abhome',model:'deepseek-flash',reasoningEffort:'medium'},version:JSON.parse(readFileSync(join(dist,'package.json'))).version},null,2))
+// The preregistered runtime is 0.2.0-rc.2. A compatibility run on another installed host must name it explicitly and is recorded as such.
+const expectedRuntime=process.env.CLEARAI_NATIVE_RUNTIME || '0.2.0-rc.2'
+if(runtime.cli!==expectedRuntime)throw new Error(`This run requires installed DSH ${expectedRuntime} (set CLEARAI_NATIVE_RUNTIME for a compatibility run); found ${runtime.cli}`)
+writeFileSync(join(home,'installation.json'),JSON.stringify({home,profile,app,tarball,packageDigest,runtimeDigest,runtime,expectedRuntime,packageFiles,model:{provider:'abhome',model:'deepseek-flash',reasoningEffort:'medium'},version:JSON.parse(readFileSync(join(dist,'package.json'))).version},null,2))
 console.log(JSON.stringify({home,profile,tarball,version:JSON.parse(readFileSync(join(dist,'package.json'))).version}))

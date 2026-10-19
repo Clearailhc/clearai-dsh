@@ -32,6 +32,9 @@ process.env.DSH_HOME = tempDir('clearai-home-')
 
 const WORKSPACE = tempDir('clearai-ws-')
 const SESSION = 'session-test'
+/** 这一遍用哪一代子代理入口(见 makeHost 的 `subagentApi`)。新一代里评估者的工具面由随包预设决定。 */
+const SUBAGENT_API = process.env.CLEARAI_TEST_SUBAGENT_API ?? 'start'
+const EVALUATOR_PRESET = readFileSync(new URL('../preset/evaluator.cordis.yml', import.meta.url), 'utf8')
 
 // 工作区刻意是一个**用户自己的** git 仓库:账本与世界线都必须落在旁路账本里,
 // 用户的分支、历史、ref 一个都不许碰(0.3.2 起;之前会直接在用户当前分支上提交)。
@@ -193,6 +196,12 @@ function makeHost() {
 		/** 宿主 skills 服务的合并目录(默认空:大多数用例不关心技能面)。 */
 		skillSnapshot: { skills: [], complete: true },
 		skillSnapshots: [],
+		/**
+		 * 子代理入口是哪一代(issue #38):`start` = 宿主 ≤0.2.1-alpha.1 的 `start(provider, request)`;
+		 * `activation` = ≥0.2.1-alpha.2 的 `startActivation(spec)`;`none` = 两个都没有。
+		 * 缺省读 `CLEARAI_TEST_SUBAGENT_API`:test/run.sh 用它把整套内核用例在新入口上再跑一遍。
+		 */
+		subagentApi: process.env.CLEARAI_TEST_SUBAGENT_API ?? 'start',
 		get hostGoal() {
 			return hostGoal
 		},
@@ -283,7 +292,7 @@ function makeHost() {
 				if (name === 'subagents') {
 					// `host.subagentsAvailable === false`:整个服务不在(用来验「拿不到目录就不猜」)。
 					if (host.subagentsAvailable === false) return undefined
-					return {
+					const subagentService = {
 						/**
 						 * 子代理**目录**(§14-D):每项 `{kind:'child', id, activity:'running'|'inactive', mode}`。
 						 * 默认空数组 = 「一个活的子会话都没有」——用例要模拟「还在跑」就自己放一条进去
@@ -331,6 +340,24 @@ function makeHost() {
 								result: evaluatorResult,
 								dispose: async () => { host.auditDisposals = (host.auditDisposals ?? 0) + 1 },
 							}
+						},
+					}
+					if (host.subagentApi === 'start') return subagentService
+					const { start: launch, ...rest } = subagentService
+					if (host.subagentApi === 'none') return rest
+					return {
+						...rest,
+						/**
+						 * 宿主 ≥0.2.1-alpha.2 的形状:`{ provider, label, delivery, signal, request }`,
+						 * 回包是 `{ childId, result, dispose }`。真宿主把请求里的 persona / toolFilter **静默丢掉**,
+						 * 这里照样不认它们:记进 `audits` 的就是平台真正看得见的那一份。
+						 */
+						async startActivation(spec) {
+							if (typeof spec?.provider !== 'string' || typeof spec?.label !== 'string' || !(spec?.signal instanceof AbortSignal) || !['parent', 'caller'].includes(spec?.delivery)) throw new Error('invalid SubagentActivationSpec')
+							if (spec.request?.parent === undefined || !Array.isArray(spec.request?.prompt)) throw new Error('startActivation request requires parent and prompt blocks')
+							const { persona: _persona, toolFilter: _toolFilter, ...request } = spec.request
+							const run = await launch(spec.provider, { ...request, label: spec.label, signal: spec.signal, spec })
+							return { childId: run.id, result: run.result, dispose: run.dispose }
 						},
 					}
 				}
@@ -862,8 +889,15 @@ console.log('\n【观测准入:只查收不收,不做裁决】')
 	// 写死名单会让「补一个只读工具」变成「改三处测试」。
 	{
 		const READ_ONLY = ['read', 'glob', 'grep', 'read_image']
-		const allow = thisHost.audits[0].request.toolFilter?.allow ?? []
-		check('评估者被要求只读(read/glob/grep/read_image)', allow.length > 0 && allow.every((name) => READ_ONLY.includes(name)) && allow.includes('read_image'), JSON.stringify(allow))
+		const request = thisHost.audits[0].request
+		if (SUBAGENT_API === 'activation') {
+			// 新一代不认请求里的 toolFilter:只读由评估者预设保证,请求里不该再假装给了它。
+			check('评估者选的是随包评估者预设(新一代入口)', request.agentPreset === 'clearai-evaluator' && request.spec?.delivery === 'caller', JSON.stringify({ agentPreset: request.agentPreset, delivery: request.spec?.delivery }))
+			check('新一代请求里不夹带会被丢掉的 persona / toolFilter', !('persona' in request.spec.request) && !('toolFilter' in request.spec.request), Object.keys(request.spec.request).join(','))
+		} else {
+			const allow = request.toolFilter?.allow ?? []
+			check('评估者被要求只读(read/glob/grep/read_image)', allow.length > 0 && allow.every((name) => READ_ONLY.includes(name)) && allow.includes('read_image'), JSON.stringify(allow))
+		}
 	}
 	check('评估者拿到新上下文(spawn,不是 fork)', thisHost.audits[0].provider === 'spawn')
 	check('步骤推进只发生一次(唯一完成动词)', eventsOf('step/advanced').length === 1)
@@ -1549,6 +1583,45 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		check('没人能答 ⇒ 拒,原生 goal 停下等人', unanswered?.kind === 'deny' && nobody.hostGoal?.phase === 'blocked', `${unanswered?.kind} ${nobody.hostGoal?.phase}`)
 	}
 
+	// ⑥′ 子代理入口两代都不认识(issue #38):挂载时报一次,派遣时 fail-closed 且说清原因
+	{
+		const host = makeHost()
+		host.subagentApi = 'none'
+		apply(host.ctx, { blockedThreshold: 3 })
+		check('子代理入口都不在 → 挂载时就警告', host.warnings.some((line) => /neither start\(\) nor startActivation\(\)/.test(line)), host.warnings.join(' | ').slice(0, 200))
+		const S = 'session-no-subagent-api'
+		await callOn(host, S, 'Frame', { claim: 'W 的均值?', done_criteria: '存在 lab/w.txt', hypotheses: [{ name: '大于一', claim: '均值大于 1', refute_when: '均值不大于 1' }] })
+		const [above] = host.service.state(S).hypotheses.map((item) => item.id)
+		await callOn(host, S, 'CreatePlan', { steps: [{ id: 'w1', do: '算均值', artifacts: ['lab/w.txt'], done_criteria: 'lab/w.txt 有均值', tests: { hypotheses: [above], level: 'L3' } }] })
+		write('lab/w.txt', 'mean=2\n')
+		const result = await callOn(host, S, 'AdvancePlan', { step_id: 'w1' })
+		const settled = host.service.state(S).audits.find((audit) => audit.step === 'w1')
+		check('派不出评估者 → 不推进,缺口是 audit_dispatch_failed', result.ok !== true && (settled?.shortfalls ?? []).includes('audit_dispatch_failed'), JSON.stringify({ code: result.code, shortfalls: settled?.shortfalls }))
+		check('缺口原因点名两代入口都不在', /startActivation/.test(String(settled?.basis ?? '')), String(settled?.basis ?? '').slice(0, 160))
+	}
+
+	// ⑥″ 评估者预设的工具面(真宿主 0.2.1-rc.2 实测:只换预设,全局层的 write / edit 照样被继承)
+	{
+		const { apply: applyFace } = await import('../preset/plugins/clearai-evaluator-face.js')
+		const globals = ['read', 'write', 'edit', 'glob', 'grep', 'bash', 'subagent', 'web_fetch', 'job_output', 'update_goal']
+		const restrictions = []
+		const guards = []
+		applyFace({ tools: { view: () => ({ restrictableNames: new Set(globals) }), restrict: (filter) => restrictions.push(filter), guard: (fn) => guards.push(fn) }, get: () => undefined, logger: { warn() {} } }, { allow: ['read', 'read_image', 'glob', 'grep', 'bash', 'pwsh', 'job_output', 'job_list', 'job_kill'] })
+		const deny = restrictions[0]?.deny ?? []
+		check('评估者面:继承来的写工具与派人工具被遮掉', ['write', 'edit', 'subagent', 'web_fetch', 'update_goal'].every((name) => deny.includes(name)), JSON.stringify(deny))
+		check('评估者面:只读与复跑工具不在遮掉的名单里', !['read', 'glob', 'grep', 'bash', 'job_output'].some((name) => deny.includes(name)), JSON.stringify(deny))
+		const guard = guards[0]
+		check('评估者面:执行处硬拦写工具', typeof guard === 'function' && typeof guard({ name: 'write', agent: {} }) === 'string' && typeof guard({ name: 'edit', agent: {} }) === 'string')
+		check('评估者面:读、复跑与结构化回包照常执行', ['read', 'bash', 'job_output', 'structured_output'].every((name) => guard({ name, agent: {} }) === undefined))
+
+		// 宿主若把这一层当成全局(restrict 报「需要作用域」):只拦真的加入了评估者预设的 agent,主会话不受影响。
+		const unscopedGuards = []
+		const evaluatorCtx = {}
+		applyFace({ tools: { view: () => ({ restrictableNames: new Set(globals) }), restrict: () => { throw new Error('tools.restrict() requires a scoped context (agent.ctx)') }, guard: (fn) => unscopedGuards.push(fn) }, get: (name) => (name === 'agentPresets' ? { composedPreset: (ctx) => (ctx === evaluatorCtx ? 'clearai-evaluator' : 'clearai') } : undefined), logger: { warn() {} } }, { allow: ['read'] })
+		check('评估者面(无作用域):评估者的 write 照样被拦', typeof unscopedGuards[0]({ name: 'write', agent: { ctx: evaluatorCtx } }) === 'string')
+		check('评估者面(无作用域):主会话的 write 不受影响', unscopedGuards[0]({ name: 'write', agent: { ctx: {} } }) === undefined)
+	}
+
 	// ⑦ 评估者复跑:工作区副本(不含 clear/)+ bash;评估后副本删掉;评估期间产物被改 ⇒ 裁决不认
 	{
 		const host = makeHost()
@@ -1569,8 +1642,12 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const ok = await callOn(host, S, 'AdvancePlan', { step_id: 'z1' })
 		const request = host.audits.at(-1)?.request
 		check('任务书给出副本路径,副本里有产物、没有 clear/', copied, String(copy))
-		check('评估者的工具面多了本机原生shell', (request?.toolFilter?.allow ?? []).includes(process.platform === 'win32' ? 'pwsh' : 'bash'), JSON.stringify(request?.toolFilter))
-		check('复跑允许收取和取消本人后台任务', ['job_output', 'job_list', 'job_kill'].every(name => request.toolFilter.allow.includes(name)), JSON.stringify(request?.toolFilter))
+		if (SUBAGENT_API === 'activation') {
+			check('评估者预设挂了本机原生 shell 与后台任务工具(复跑要用)', request?.agentPreset === 'clearai-evaluator' && /dsh-tool-bash/.test(EVALUATOR_PRESET) && /dsh-tool-pwsh/.test(EVALUATOR_PRESET) && /dsh-tool-jobs/.test(EVALUATOR_PRESET), String(request?.agentPreset))
+		} else {
+			check('评估者的工具面多了本机原生shell', (request?.toolFilter?.allow ?? []).includes(process.platform === 'win32' ? 'pwsh' : 'bash'), JSON.stringify(request?.toolFilter))
+			check('复跑允许收取和取消本人后台任务', ['job_output', 'job_list', 'job_kill'].every(name => request.toolFilter.allow.includes(name)), JSON.stringify(request?.toolFilter))
+		}
 		check('评估结束后副本删掉', ok.ok === true && copy !== null && !existsSync(copy), String(copy))
 
 		await callOn(host, S, 'RevisePlan', { action: 'add', step: { id: 'z2', do: '再算一次', artifacts: ['lab/z2.txt'], done_criteria: 'lab/z2.txt 有均值', tests: { hypotheses: [above], level: 'L3' } } })
@@ -1964,6 +2041,33 @@ console.log('\n【事实边界:系统所有的路径,做的人写不进;危险�
 
 	const pwshClean = await preExecute({ name: 'pwsh', arguments: { command: 'Get-ChildItem lab' }, agent: { id: SESSION }, callId: 'c-ok-pwsh' }, async () => ({ kind: 'allow' }))
 	check('pwsh 只读命令 → 放行', pwshClean.kind === 'allow')
+
+	/**
+	 * 递归删除规则的绕过与误伤:从前只看**第一段** `Remove-Item`,
+	 * 把 `-Force` 也当递归,`C:/`、`$env:SystemRoot`、`{ … }` 里的命令都认不出。bash 的 `rm` 规则同一个病。
+	 */
+	{
+		const verdictOf = async (name, command, callId) => (await preExecute({ name, arguments: { command }, agent: { id: SESSION }, callId }, async () => ({ kind: 'allow' }))).kind
+		const denied = [
+			['pwsh', 'Remove-Item a.txt; Remove-Item -Recurse C:\\'],
+			['pwsh', 'Remove-Item -Recurse C:/'],
+			['pwsh', 'Remove-Item -Recurse $env:SystemRoot'],
+			['pwsh', 'Get-ChildItem | ForEach-Object { Remove-Item -Recurse C:\\ }'],
+			['pwsh', 'ri -r C:\\Windows'],
+			['pwsh', 'rm -Recurse:$true ~\\'],
+			['pwsh', 'Remove-Item -Rec -Force C:\\Users'],
+			['pwsh', 'SUDO Remove-Item x'],
+			['bash', 'rm a.txt; rm -rf ~'],
+		]
+		for (const [index, [name, command]] of denied.entries()) check(`${name} 危险删除写法 → 拒绝:${command}`, (await verdictOf(name, command, `c-rm-deny-${index}`)) === 'deny')
+		const allowed = [
+			['pwsh', 'Remove-Item -Force C:\\'],
+			['pwsh', 'Remove-Item -Recurse build\\out'],
+			['pwsh', 'Remove-Item -Recurse -Force .\\dist'],
+			['bash', 'rm -rf ./build'],
+		]
+		for (const [index, [name, command]] of allowed.entries()) check(`${name} 非递归或非系统路径 → 不归这条规则管:${command}`, (await verdictOf(name, command, `c-rm-allow-${index}`)) === 'allow')
+	}
 
 	const pwshForge = await preExecute({ name: 'pwsh', arguments: { command: `Set-Content -Path ${join(WORKSPACE, 'clear/evidence/audits/s1/forged.json')} -Value '{}'` }, agent: { id: SESSION }, callId: 'c-forge-pwsh' }, async () => ({ kind: 'allow' }))
 	check('用 pwsh 伪造评估卡(绝对路径)→ 拒绝', pwshForge.kind === 'deny', String(pwshForge.kind))
