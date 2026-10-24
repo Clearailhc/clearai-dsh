@@ -454,6 +454,65 @@ function loadClientWithStatefulReact() {
 }
 
 /**
+ * 带**记忆**的 React 桩:`useRef` / `useMemo` 跨渲染保留。
+ *
+ * 为什么需要:图带每次重渲染都新造 nodes/edges 的话,React Flow 会重新 adopt(measured 归零)、
+ * 边与边标签被卸载重挂,于是闪。这条桩按 Hook 调用顺序记住上一次的 deps 与 ref,
+ * 让「父级重渲染会不会重造图谱数据模型」可以在没有浏览器的地方被钉住。
+ */
+function makeStableReact() {
+	const states = []
+	const refs = []
+	const memos = []
+	let cursor = 0
+	const sameDeps = (left, right) => Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((value, index) => Object.is(value, right[index]))
+	return {
+		createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }),
+		useState: (initial) => {
+			const index = cursor
+			cursor += 1
+			if (!(index in states)) states[index] = initial
+			return [states[index], (next) => { states[index] = typeof next === 'function' ? next(states[index]) : next }]
+		},
+		useEffect: () => {},
+		useRef: (initial) => {
+			const index = cursor
+			cursor += 1
+			if (!(index in refs)) refs[index] = { current: initial }
+			return refs[index]
+		},
+		useMemo: (factory, deps) => {
+			const index = cursor
+			cursor += 1
+			const previous = memos[index]
+			if (previous !== undefined && sameDeps(previous.deps, deps)) return previous.value
+			const value = factory()
+			memos[index] = { deps, value }
+			return value
+		},
+		useCallback: (factory) => factory,
+		reset: () => {
+			cursor = 0
+		},
+	}
+}
+
+/** 用带记忆的桩载入 bundle;`render` 每次从头走一遍组件,状态与 memo 留着。 */
+function loadClientWithStableReact() {
+	let registration = null
+	globalThis.window = { __ModuleLoader__: { load: (value) => { registration = value } } }
+	const react = makeStableReact()
+	const require = (name) => {
+		if (name === 'react') return react
+		throw new Error(`client bundle 不该 require "${name}"`)
+	}
+	new Function('window', 'require', 'console', '__clearaiXyflow', '__clearaiForce', source)(globalThis.window, require, console, () => makeXyflowStub(react.createElement), makeForceStub())
+	delete globalThis.window
+	const exports = registration.factory(require)
+	return { exports, react, render: (component, props) => { react.reset(); return component(props) } }
+}
+
+/**
  * 载入 bundle,但**不给** vendor 函数(模拟 ui/vendor/xyflow.js 没打进来):
  * 用来钉「降级要如实、不要崩,而且要说出原因」——build 拼装掉了、或包不完整时会走到这条路。
  */
@@ -496,6 +555,17 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 	check('不再有自建预览组件(预览交给 DSH 原生文档预览)', components.PreviewTab === undefined)
 	/** 真 DSH 里实测:图组件的样式表也带 data-plugin="clearai-dsh",按包名判「已挂过」会让面板 CSS 整张不挂。 */
 	check('面板样式表按自己的标记查重(不被图组件那张挡住)', source.includes(`style[data-plugin="clearai-dsh"][data-clearai="panel"]`) && source.includes(`tag.dataset.clearai = 'panel'`))
+	/**
+	 * 暗色下的缩放/适配控件曾经是白底 + 近白图标(按钮颜色是 inherit):白底来自 React Flow 的浅色默认值,
+	 * 近白来自宿主的暗色文字色,叠起来对比度 1.04:1。修法是把库变量接到宿主令牌上,这里钉住那条接线。
+	 */
+	check(
+		'缩放控件接宿主主题令牌(暗色下不再白底白字)',
+		source.includes('.clearai-graph-canvas .react-flow{') &&
+			source.includes('--xy-controls-button-background-color:var(--dsw-alias-bg-layer-1)') &&
+			source.includes('--xy-controls-button-color:var(--dsw-alias-label-primary)') &&
+			source.includes('--xy-controls-button-border-color:var(--dsw-alias-border-l2)'),
+	)
 
 	const view = {
 		sessionId: 's1',
@@ -916,6 +986,42 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const broken = loadClientBundleWithoutXyflow()
 			const rendered = broken.react.render(broken.exports.__components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} })).replace(/\s+/g, ' ')
 			check('拿不到图组件时如实说原因,结论照常可读', /图组件不可用\(.+?\)/.test(rendered) && rendered.includes('结论仍可正常查看'), rendered.slice(0, 200))
+		}
+
+		/**
+		 * **父级重渲染不重造图的数据模型**。
+		 *
+		 * 会话在跑时中栏会跟着高频重渲染;每次重渲染都新造 nodes/edges 的话,React Flow 会重新 adopt、
+		 * 边被卸载重挂,边标签先画成 hidden 再 visible——看起来就是「字在闪」。
+		 * 这里用带记忆的 React 桩模拟「同一份投影、父级又画了一遍」,钉住两件事:
+		 * 对象身份不换;选中一个点只换那一个节点对象。
+		 */
+		{
+			const stableBundle = loadClientWithStableReact()
+			const stableComponents = stableBundle.exports.__components
+			const stableLexicon = {
+				conflicts: [],
+				graph: {
+					nodes: [
+						{ id: 'term:stable-a', kind: 'concept', layer: 'ontology', ref: 'stable-a', label: '稳定A', status: 'admitted', x: 0, y: 0 },
+						{ id: 'term:stable-b', kind: 'concept', layer: 'ontology', ref: 'stable-b', label: '稳定B', status: 'admitted', x: 220, y: 120 },
+					],
+					edges: [{ id: 'is_a:stable-b', kind: 'is_a', layer: 'ontology', predicate: null, label: 'is_a', from: 'term:stable-b', to: 'term:stable-a', status: 'admitted' }],
+					bounds: { width: 480, height: 320 },
+				},
+			}
+			const entityKnowledge = {}
+			const base = { lexicon: stableLexicon, data: { entityKnowledge }, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }
+			const flowOf = (props) => walkNodes(expandTree(stableBundle.render(stableComponents.GraphBand, props))).find((item) => item.type === 'react-flow')
+			const firstFlow = flowOf({ ...base })
+			const secondFlow = flowOf({ ...base, data: { entityKnowledge } })
+			check('父级重渲染:交给 React Flow 的节点还是同一组对象(不会被重新 adopt)', secondFlow?.props?.nodes === firstFlow?.props?.nodes)
+			check('父级重渲染:边还是同一组对象(边不重挂,边标签不闪)', secondFlow?.props?.edges === firstFlow?.props?.edges)
+			const focusedFlow = flowOf({ ...base, focus: 'term:stable-a' })
+			const oldNodes = new Map((firstFlow?.props?.nodes ?? []).map((node) => [node.id, node]))
+			const reused = (focusedFlow?.props?.nodes ?? []).filter((node) => node.id !== 'term:stable-a')
+			check('选中一个点:其余节点对象原样复用', reused.length > 0 && reused.every((node) => oldNodes.get(node.id) === node))
+			check('选中一个点:被选中的那个换新对象(选中样式要更新)', focusedFlow?.props?.nodes?.find((node) => node.id === 'term:stable-a') !== oldNodes.get('term:stable-a'))
 		}
 
 		// ── 点一个点 / 一条边:小卡 ──

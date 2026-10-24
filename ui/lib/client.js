@@ -233,6 +233,15 @@ window.__ModuleLoader__.load({
 .clearai-graph[data-full="1"] .clearai-graph-body{flex:1 1 auto}
 .clearai-graph-body[data-side="1"]{flex-direction:row}
 .clearai-graph-canvas{height:340px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-base)}
+/**
+ * **缩放/适配控件跟着宿主主题走**(暗色下原来白底白图标,对比度 1.04:1)。
+ *
+ * React Flow 的 Controls 默认是它自己的浅色主题:按钮底色 #fefefe,而按钮颜色是 inherit ——
+ * 暗色宿主把文字色设成近白,图标就继承成近白,于是白底上的白图标看不见。
+ * 这里不传 colorMode(那会把整张图切到库自带的暗色板,和宿主令牌未必同色),
+ * 只把控件用到的那几个库变量接到宿主令牌上:深浅色都跟着宿主走,不写死色值。
+ */
+.clearai-graph-canvas .react-flow{--xy-controls-button-background-color:var(--dsw-alias-bg-layer-1);--xy-controls-button-background-color-hover:var(--dsw-alias-interactive-bg-hover);--xy-controls-button-color:var(--dsw-alias-label-primary);--xy-controls-button-color-hover:var(--dsw-alias-label-primary);--xy-controls-button-border-color:var(--dsw-alias-border-l2)}
 .clearai-graph[data-full="1"] .clearai-graph-canvas{height:auto;flex:1 1 auto;min-width:0}
 /**
  * 全屏是自画的覆盖层(fixed / inset:0 / z-index:40),画布与右下角抽屉都长在它里面。
@@ -2389,16 +2398,24 @@ window.__ModuleLoader__.load({
 		 *   · **点击语义**:点节点 / 边 = 打开小卡;「只看相关」是卡上的显式动作。
 		 *   · **全屏**:position: fixed 的真 overlay,打开时自动适配。
 		 */
-		const GraphBand = ({ lexicon, data, send, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, unlanded, focus }) => {
-			const [picked, setPicked] = React.useState(null)
-			const [asked, setAsked] = React.useState({})
-			const graph = lexicon?.graph ?? { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
+		/** 空投影:常量,免得每次渲染造一个新对象。 */
+		const EMPTY_GRAPH = { nodes: [], edges: [], bounds: { width: 0, height: 0 } }
+
+		/**
+		 * 投影 → React Flow 的 nodes / edges(纯计算;GraphBand 用 useMemo 把它钉住)。
+		 *
+		 * 为什么必须稳定:会话在跑时中栏会跟着高频重渲染。每次重渲染都新造 node/edge 对象的话,
+		 * React Flow 会把它们当成新节点重新 adopt:`measured` 归零 → 边被卸载重挂 →
+		 * 边标签(要等 useEffect 里的 getBBox 才量出尺寸)先 hidden 再 visible,肉眼就是「字在闪」。
+		 * 同一份投影 + 同一个选中态 = 同一组对象;选中一个点也只换那一个节点对象(按签名缓存)。
+		 */
+		function graphViewOf({ lexicon, layer, toggled, dragged, selectedId, entityKnowledge, nodeCache, setToggled }) {
+			const graph = lexicon?.graph ?? EMPTY_GRAPH
 			const conflicts = Array.isArray(lexicon?.conflicts) ? lexicon.conflicts : []
 			const conflicted = new Set(conflicts.flatMap((item) => item.sides.map((side) => side.fact)).filter((id) => typeof id === 'string'))
 			const layerNodes = graph.nodes.filter((node) => node.layer === layer)
 			const layerEdges = graph.edges.filter((edge) => edge.layer === layer && typeof edge.from === 'string' && typeof edge.to === 'string')
 			const nodeById = new Map(layerNodes.map((node) => [node.id, node]))
-			const problems = Array.isArray(lexicon?.problems) ? lexicon.problems : []
 
 			/**
 			 * **目录嵌套就是子图**:概念的父是 `node.parent`(is_a),实体的父是 `node.container`(组成)。
@@ -2421,10 +2438,6 @@ window.__ModuleLoader__.load({
 				}
 				return depth
 			}
-			const [toggled, setToggled] = React.useState({})
-			React.useEffect(() => {
-				setToggled({})
-			}, [layer])
 			const crowded = layerNodes.length > 40
 			const isCollapsed = (id) => (childCount.get(id) ?? 0) > 0 && (toggled[id] ?? (crowded && depthOfNode(id) >= 1))
 			/** 往上找第一个没被收起的祖先挡住的点:自己可见就是自己。 */
@@ -2461,7 +2474,14 @@ window.__ModuleLoader__.load({
 				}
 				return out
 			})()
-			const toggle = (id) => setToggled((current) => ({ ...current, [id]: !isCollapsed(id) }))
+			/**
+			 * 收起/展开用**函数式更新**读当下的 `toggled`:节点对象会被缓存复用,
+			 * 闭包里存旧状态的话,复用节点的折叠按钮会按上一帧的状态去翻。
+			 */
+			const toggle = (id) => setToggled((current) => {
+				const collapsed = (childCount.get(id) ?? 0) > 0 && (current[id] ?? (crowded && depthOfNode(id) >= 1))
+				return { ...current, [id]: !collapsed }
+			})
 			const countOf = (name) => graph.nodes.filter((node) => node.layer === name).length
 			const entityNames = new Map(graph.nodes.filter((node) => node.kind === 'instance' && typeof node.ref === 'string' && node.ref !== '' && node.label !== node.ref).map((node) => [String(node.ref), String(node.label)]))
 
@@ -2470,28 +2490,6 @@ window.__ModuleLoader__.load({
 				const value = String(text ?? '')
 				return value.length <= limit ? value : `${value.slice(0, limit - 1)}…`
 			}
-
-			/**
-			 * **节点位置是受控的,所以必须自己接住拖动**:不给 `onNodesChange`,
-			 * React Flow 内部的拖动没有地方落地,节点根本拖不动。位置是界面状态,换层或图变了就清掉。
-			 */
-			const [dragged, setDragged] = React.useState({})
-			const graphKey = `${layer}|${layerNodes.length}|${layerEdges.length}`
-			React.useEffect(() => {
-				setDragged({})
-			}, [graphKey])
-			const onNodesChange = React.useCallback((changes) => {
-				setDragged((current) => {
-					let next = current
-					for (const change of changes) {
-						if (change?.type !== 'position' || change.position === undefined) continue
-						if (next === current) next = { ...current }
-						next[change.id] = change.position
-					}
-					return next
-				})
-			}, [])
-
 			/** 一个点的状态:矛盾 > 废止 > 待核验(只登记、没有写进长期知识的事实)> 平常。 */
 			const nodeState = (node) => {
 				if (Array.isArray(node.facts) && node.facts.some((id) => conflicted.has(id))) return 'conflict'
@@ -2499,12 +2497,7 @@ window.__ModuleLoader__.load({
 				if (node.kind !== 'concept' && node.kind !== 'value_type' && node.source === 'asserted' && (node.facts ?? []).length === 0) return 'pending'
 				return 'on'
 			}
-			const selectedId = picked?.kind === 'node' ? picked.node.id : (focus ?? null)
 
-			/**
-			 * 投影节点 → React Flow 节点。坐标 = 力导向松弛过的投影坐标(起点确定 ⇒ 同一份账本同一张图)。
-			 * 尺寸显式给:只写在 style 里的话,React Flow 要等测量完成才知道它多大。
-			 */
 			/**
 			 * 小图(十来个点)不跑力导向:几个点、几条边时它常常把点排成一条线。
 			 * 改成一圈:连得最多的那个点居中(它是这张图的主语),其余按投影顺序绕一圈——确定、好读。
@@ -2529,43 +2522,84 @@ window.__ModuleLoader__.load({
 				})
 				return out
 			})()
-			const layout = small ? (nodes) => nodes : forceLayout
-			const rfNodes = layout(
-				allNodes.map((node) => ({
+			const basePosition = (node) => dragged[node.id] ?? ring?.get(node.id) ?? { x: node.x ?? 0, y: node.y ?? 0 }
+			/**
+			 * 坐标 = 力导向松弛过的投影坐标(起点确定 ⇒ 同一份账本同一张图)。
+			 * 力导向会把它收到的节点整个换成新对象,所以**先算坐标、后建节点对象**;
+			 * 反过来的话缓存下来的节点身份会在布局那一步丢掉。
+			 */
+			const positions = small
+				? new Map(allNodes.map((node) => [node.id, basePosition(node)]))
+				: (() => {
+						const laidOut = forceLayout(
+							allNodes.map((node) => ({ id: node.id, position: basePosition(node) })),
+							allEdges.map((edge) => ({ source: edge.from, target: edge.to })),
+						)
+						const out = new Map(allNodes.map((node) => [node.id, basePosition(node)]))
+						for (const node of laidOut) {
+							const x = node?.position?.x
+							const y = node?.position?.y
+							if (Number.isFinite(x) && Number.isFinite(y)) out.set(node.id, { x, y })
+						}
+						return out
+					})()
+
+			/**
+			 * 投影节点 → React Flow 节点。坐标 = 上面算好的位置。
+			 * 尺寸显式给:只写在 style 里的话,React Flow 要等测量完成才知道它多大。
+			 * 对象身份按**签名**守:内容没变就复用上一次那个对象,内容真变了才重建。
+			 */
+			const cache = nodeCache.current ?? new Map()
+			const rfNodes = allNodes.map((node) => {
+				const position = positions.get(node.id) ?? { x: 0, y: 0 }
+				const state = nodeState(node)
+				const selected = node.id === selectedId
+				const labelText = trimLabel(node.kind === 'value_type' ? (FORM_WORD[node.ref] ?? node.label ?? node.ref) : (node.label ?? node.ref ?? node.id), 16)
+				const counts = node.layer === 'entity' ? entityKnowledge?.[node.id]?.counts : undefined
+				const children = childCount.get(node.id) ?? 0
+				const collapsed = children > 0 ? isCollapsed(node.id) : false
+				const foldText = children > 0 ? (collapsed ? `+${hiddenUnder.get(node.id) ?? 0}` : '−') : ''
+				const signature = [node.id, node.kind, node.ref ?? '', position.x, position.y, selected ? 1 : 0, state, labelText, foldText, counts === undefined ? '' : JSON.stringify(counts)].join('\u0001')
+				const cached = cache.get(node.id)
+				if (cached !== undefined && cached.signature === signature) return cached.node
+				const rfNode = {
 					id: node.id,
 					type: 'default',
-					position: dragged[node.id] ?? ring?.get(node.id) ?? { x: node.x ?? 0, y: node.y ?? 0 },
+					position,
 					initialWidth: 120,
 					initialHeight: 26,
-					selected: node.id === selectedId,
+					selected,
 					data: {
 						label: h(
 							'span',
-							{ className: 'clearai-star', 'data-kind': node.kind, 'data-state': nodeState(node), 'data-sel': node.id === selectedId ? '1' : '0' },
+							{ className: 'clearai-star', 'data-kind': node.kind, 'data-state': state, 'data-sel': selected ? '1' : '0' },
 							h('i', null),
-							h('span', null, trimLabel(node.kind === 'value_type' ? (FORM_WORD[node.ref] ?? node.label ?? node.ref) : (node.label ?? node.ref ?? node.id), 16)),
-							node.layer === 'entity' ? h(CountMarks, { counts: data?.entityKnowledge?.[node.id]?.counts }) : null,
-							(childCount.get(node.id) ?? 0) > 0
+							h('span', null, labelText),
+							node.layer === 'entity' ? h(CountMarks, { counts }) : null,
+							children > 0
 								? h(
 										'b',
 										{
 											className: 'clearai-fold',
-											title: isCollapsed(node.id) ? t('展开下一层') : t('收起下一层'),
+											title: collapsed ? t('展开下一层') : t('收起下一层'),
 											onClick: (event) => {
 												event.stopPropagation()
 												toggle(node.id)
 											},
 										},
-										isCollapsed(node.id) ? `+${hiddenUnder.get(node.id) ?? 0}` : '−',
+										foldText,
 									)
 								: null,
 						),
 					},
 					className: 'clearai-star-node',
 					style: { background: 'transparent', border: 0, padding: 0, width: 'auto', boxShadow: 'none' },
-				})),
-				allEdges.map((edge) => ({ source: edge.from, target: edge.to })),
-			)
+				}
+				cache.set(node.id, { signature, node: rfNode })
+				return rfNode
+			})
+			/** 塌掉/移除的分支不在图上了:缓存里只留当前层还认识的点。 */
+			for (const id of [...cache.keys()]) if (!nodeById.has(id)) cache.delete(id)
 
 			/** 投影边 → React Flow 边:实线已验证、虚线待核验、淡线上下位、告警色是矛盾。 */
 			const edgeTone = (edge) => {
@@ -2586,6 +2620,62 @@ window.__ModuleLoader__.load({
 				labelBgPadding: [3, 1],
 				style: edgeTone(edge),
 			}))
+
+			return {
+				rfNodes,
+				rfEdges,
+				allNodes,
+				allEdges,
+				nodeById,
+				entityNames,
+				countOf,
+				conflicts,
+				graphKey: `${layer}|${layerNodes.length}|${layerEdges.length}`,
+			}
+		}
+
+		const GraphBand = ({ lexicon, data, send, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, unlanded, focus }) => {
+			const [picked, setPicked] = React.useState(null)
+			const [asked, setAsked] = React.useState({})
+			const [toggled, setToggled] = React.useState({})
+			const [dragged, setDragged] = React.useState({})
+			/** 节点对象缓存:见 graphViewOf。父级重渲染一个都不换,选中只换选中那个。 */
+			const nodeCache = React.useRef(new Map())
+			const selectedId = picked?.kind === 'node' ? picked.node.id : (focus ?? null)
+			React.useEffect(() => {
+				setToggled({})
+			}, [layer])
+
+			/**
+			 * **同一份投影只产出一组 nodes/edges**。会话在跑时中栏会被高频重渲染;
+			 * 每次重造对象会让 React Flow 重新 adopt、边被卸载重挂,边标签因此闪。
+			 */
+			const view = React.useMemo(
+				() => graphViewOf({ lexicon, layer, toggled, dragged, selectedId, entityKnowledge: data?.entityKnowledge, nodeCache, setToggled }),
+				[lexicon, layer, toggled, dragged, selectedId, data?.entityKnowledge],
+			)
+			const { rfNodes, rfEdges, allNodes, allEdges, nodeById, entityNames, countOf, conflicts, graphKey } = view
+			/** 读时的跨文件检查只标不拦:有问题的那一份不进图,这里说清是哪个文件、哪里不对。 */
+			const problems = Array.isArray(lexicon?.problems) ? lexicon.problems : []
+
+			/**
+			 * **节点位置是受控的,所以必须自己接住拖动**:不给 `onNodesChange`,
+			 * React Flow 内部的拖动没有地方落地,节点根本拖不动。位置是界面状态,换层或图变了就清掉。
+			 */
+			React.useEffect(() => {
+				setDragged({})
+			}, [graphKey])
+			const onNodesChange = React.useCallback((changes) => {
+				setDragged((current) => {
+					let next = current
+					for (const change of changes) {
+						if (change?.type !== 'position' || change.position === undefined) continue
+						if (next === current) next = { ...current }
+						next[change.id] = change.position
+					}
+					return next
+				})
+			}, [])
 
 			const onNodeClick = (_event, node) => {
 				const original = nodeById.get(node.id)

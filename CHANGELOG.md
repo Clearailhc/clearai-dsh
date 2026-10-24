@@ -2,6 +2,20 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] — 2026-10-24
+
+**暗色模式下本体图的缩放控件看得清了;会话在跑时图上的关系文字不再闪。**
+
+### Fixed
+
+- **暗色下的缩放/适配控件看不清**:React Flow 的 Controls 默认走它自己的浅色主题——按钮底色 `#fefefe`,而按钮颜色是 `inherit`;暗色宿主把文字色设成近白,图标于是成了白底上的白图标(对比度 1.04:1),整块控件在暗色画布上还是一块刺眼的白框。现在把控件用到的那几个库变量(`--xy-controls-button-*`)接到宿主主题令牌上,深浅色都跟着宿主走,不写死色值。
+- **会话运行时本体图「字会闪」**:中栏会跟着会话更新高频重渲染,而图带每次渲染都新造 nodes / edges;React Flow 按对象身份判断节点是否变化,于是每次都重新 adopt(`measured` 归零)、边被卸载重挂,边标签(要等 `useEffect` 里的 `getBBox` 才量出尺寸)先画成 hidden 再变 visible——看起来就是关系文字在闪。现在用 `useMemo` 把「同一份投影 + 同一个选中态」钉成同一组 nodes / edges,并按签名缓存节点对象(选中一个点只换那一个);父级重渲染不再动图的数据模型。
+
+### Tests
+
+- 客户端套件新增:父级重渲染时 nodes / edges 对象身份不变;选中一个点只换它自己;缩放控件接到宿主主题令牌。
+- 另做了修前 / 修后对照:同一份投影重渲染 90 次,修前边被卸载重挂 2047 次、控件对比度 1.04:1;修后 0 次、15:1,且没有 hidden 的边标签。
+
 ## [0.5.6] — 2026-10-19
 
 **适配 DSH 0.2.1:独立评估者在新宿主上重新派得出去,且仍然只读(issue #38);交给评估者的材料有了体积闸门(issue #36),复跑副本能被认出是副本(issue #35);另补上递归删除闸门的几处绕过。**
