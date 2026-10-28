@@ -11,9 +11,14 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - **`clearai-ptc` 预设**：与 `clearai` 同一份 `preset/agent.cordis.yml` 派生，多一行 `tool-presentation`（`mode: ptc`）。宿主编译这段呈现时把整个工具注册表收成一段生成的 TypeScript SDK：模型只看见 `run_code`，多步操作写在同一个程序里，工具定义不再逐件进入提示词。`tool-workflow` 在这一档关掉（`run_code` 就是编排面，与内置 PTC 预设同一取舍），其余工具、提示词段、权威边界一行不少。
 - **dsh-ops 可选接入**：PTC 变体追加 `dsh-ops/ptc` 与 `dsh-ops/shell` 两个 legacy 组件行，各自带 `disabled: !!js` 检查（用 `createRequire(...).resolve()` 判断 profile 里能否解析到 dsh-ops）：装了就发布它的原生文件 API（常驻 3 个，其余经 `ops_load_sdk` 按需加载）与 `ops_bash`，没装就跳过、预设照常可用。用 legacy 组件而不是 dsh-ops 的 `mode-ptc` 模式行，因为 0.4.x 的模式行只认内置 preset id。
 
+### Fixed
+
+- **面板跟随 PTC 变体**：循环面板（本体 / 探索 / 产物）的挂载条件原来按会话预设 `=== 'clearai'` 精确匹配，选 `clearai-ptc` 的会话只有聊天区，标签页一个都不出现。现在按本包声明的对话预设集合判断（`clearai` 与 `clearai-ptc`；`clearai-evaluator` 是只读评估者，维持排除）。
+
 ### Tests
 
 - `preset-composition` 新增一组断言：三条声明行都在、PTC 变体只多三行且一行不少、`tool-workflow` 只在 PTC 档关掉、两条 dsh-ops 行都带可解析检查、检查基准是文件 URL、声明行里没有未知模板变量。
+- `client` 预设定界补两条：切到 `clearai-ptc` 面板席位照常注册；切到 `clearai-evaluator` 面板收回。
 
 ## [0.5.7] — 2026-10-24
 

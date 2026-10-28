@@ -2826,8 +2826,12 @@ window.__ModuleLoader__.load({
 		const LocalizedFacts = withLocale(Atlas)
 		const LocalizedExplore = withLocale(ExploreView)
 
-		/** 会话预设的 id:面板只在这个模式的会话里出现。 */
-		const PRESET_ID = 'clearai'
+		/**
+		 * 会话预设的 id 集合:面板只在这些模式的会话里出现。
+		 * `clearai-ptc` 与 `clearai` 挂同一份内核(PTC 只改工具的呈现方式),面板必须跟着走;
+		 * `clearai-evaluator` 是内核派出的只读评估者,不用于直接对话,不挂面板。
+		 */
+		const CHAT_PRESET_IDS = new Set(['clearai', 'clearai-ptc'])
 
 		function apply(ctx) {
 			// 这四个服务都声明在 `inject` 里,所以这里直接用属性读(Cordis 保证就位);
@@ -2890,7 +2894,7 @@ window.__ModuleLoader__.load({
 			const isCurrentPreset = () => {
 				try {
 					const preset = currentSessionRow()?.projectionValues?.agentPreset
-					return typeof preset === 'string' && preset === PRESET_ID
+					return typeof preset === 'string' && CHAT_PRESET_IDS.has(preset)
 				} catch {
 					return false
 				}
@@ -2991,7 +2995,7 @@ window.__ModuleLoader__.load({
 			 *
 			 * 取法:座位自己的 `props.sessionId` 优先(更精确);props 没有时兜底读当前会话
 			 * (`currentSessionRow`,见上)。兜底在这里成立,是因为面板**只在当前会话的预设是
-			 * clearai 时挂载**(`isCurrentPreset`,见上),会话切走时面板先注销 ——
+			 * 本包声明的对话预设时挂载**(`isCurrentPreset`,见上),会话切走时面板先注销 ——
 			 * 不存在「面板还挂着、行的会话已经换了」的窗口。
 			 */
 			const sessionIdFor = (props) => {
