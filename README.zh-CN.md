@@ -26,7 +26,7 @@ dsh plugin --profile web add clearai-dsh@0.5.7
 # 或在应用里：侧栏「插件」→ 添加插件 → clearai-dsh@0.5.7
 ```
 
-重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI** 即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
+重启 `dsh web`，在新建会话顶部的模式选择器里选 **ClearAI**（想省 token 就选 **ClearAI PTC**，见[使用步骤](#安装与使用)）即可。这就是全部步骤。[完整安装说明 ↓](#安装与使用)
 
 
 <picture>
@@ -133,6 +133,8 @@ Git 拉的是源码而不是构建产物，所以 pnpm ≥10 会拒绝运行 `pr
 2. 点顶部当前的模式名（默认是「标准模式」），展开预设列表；
 3. 选 **ClearAI**——卡片描述就一句:「利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.」；
 4. 像平常一样提问。普通问答照常走；一旦立了目标，系统自动进入知识模式：已知送上来，本体随立题写下，结论过证据才准入。过程在「探索」一格看，结论在「本体」一格看。只有你能做的决定才会来问你。
+
+预设列表里还有 **ClearAI PTC**：认识论循环与 ClearAI 相同，工具改成 PTC 模式呈现——模型写一段 TypeScript 程序组合多步调用，不再每件工具都占一次往返。profile 里装了 [dsh-ops](https://github.com/T-Auto/dsh-ops) 时，它会自动接入 dsh-ops 的原生文件 API（常驻 3 个，其余经 `ops_load_sdk` 按需加载）与 `ops_bash`；没装时照样是 PTC 呈现，只是少了这一层。想省 token 就用它，日常问答两种都可以。
 
 <picture>
   <img src="docs/shots/zh/jepa-ontology.png" alt="ClearAI 模式下的「本体」一格" width="820">

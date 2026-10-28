@@ -1514,6 +1514,19 @@ console.log('\n【预设定界:不是 ClearAI 的会话里一个都不注册】'
 		planSeat === undefined,
 		JSON.stringify(planSeat?.options ?? null),
 	)
+	host.flipPreset('clearai-ptc')
+	check(
+		'PTC 变体与 clearai 同一份内核:面板跟着走',
+		host.registrations.length > 0 && host.tabDefinitions.length === 0,
+		`${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`,
+	)
+	host.flipPreset('clearai-evaluator')
+	await new Promise((resolve) => setTimeout(resolve, 0)) // 注销走 effect 的收尾:让一拍
+	check(
+		'评估者预设不挂面板(只读评估,不用于直接对话)',
+		host.registrations.length === 0 && host.tabDefinitions.length === 0,
+		`${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`,
+	)
 	host.flipPreset('standard')
 	await new Promise((resolve) => setTimeout(resolve, 0)) // 注销走 effect 的收尾:让一拍
 	check(

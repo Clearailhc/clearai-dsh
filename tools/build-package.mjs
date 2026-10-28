@@ -150,12 +150,108 @@ const readPresetMeta = (file) => {
 	return { name, description }
 }
 
+/**
+ * PTC 变体:同一份 `preset/agent.cordis.yml`,构建期做三处固定变换,不手抄第二份组合。
+ *
+ * 为什么派生而不是第二份源:两份组合分头维护时,「改了一边忘了另一边」只能靠人眼发现,
+ * 而名册与 e2e 各读一份时两边都可能是绿的。派生让差异只剩下面这几行,测试可以逐行钉住。
+ *
+ * 三处变换:
+ *   ① `tool-workflow` 关掉 —— run_code 已经是 PTC 模式下模型自己的编排面,
+ *      再挂 workflow 等于给同一件事两个入口(与内置 PTC 预设同一取舍);
+ *   ② 末尾追加 `tool-presentation`(mode: ptc)—— 宿主按这一行把工具注册表呈现成 SDK;
+ *   ③ 末尾追加 dsh-ops 的 legacy PTC / shell 组件行,并用 `!!js` 检查 dsh-ops 是否可解析:
+ *      装了就挂,没装就跳过。检查与取舍见下方 PTC_EXTRA_ROWS 的注释。
+ */
+
+/**
+ * 组合里判断某个包是否可解析的 `!!js` 表达式。
+ *
+ * `!!js` 在 loader 的 `with (ctx) { return eval(expr) }` 里求值,所以 `baseUrl` 与 `process`
+ * 都在作用域里。基准写成**文件 URL**(`__installed__.js`)而不是目录 URL:createRequire
+ * 按基准的 dirname 向上找 node_modules;基准若是目录,Node 会去 `dirname/node_modules` 下找,
+ * 正好多走一层。表达式返回「不可解析」,供 `disabled` 直接使用。
+ * @param specifier - 要解析的包内 specifier,例如 `dsh-ops/ptc`。
+ * @returns 一个求值为 true(应当禁用该行)或 false 的表达式。
+ */
+const unresolvable = (specifier) =>
+	`!(() => { try { process.getBuiltinModule('node:module').createRequire(new URL('__installed__.js', baseUrl)).resolve('${specifier}'); return true } catch { return false } })()`
+
+/** PTC 变体在源组合末尾追加的行(源缩进;声明行生成时整体平移到 plugins 列表下)。 */
+const PTC_EXTRA_ROWS = Object.freeze([
+	'',
+	'# ── PTC 呈现 ─────────────────────────────────────────────────────────────────',
+	'#',
+	'# PTC 模式把工具注册表呈现成一段生成的 TypeScript SDK:模型只看见 run_code,',
+	'# 多步操作写在一个程序里。省 token 靠两件事:一次请求做几步、工具定义不再逐件进提示词。',
+	'# 工具本身一件不少,下面每件照旧注册,只是对模型呈现成 SDK 函数。',
+	'#',
+	'# `tool-workflow` 已在上面关掉:run_code 就是 PTC 模式下模型自己的编排面,',
+	'# 再挂 workflow 等于给同一件事两个入口(与内置 PTC 预设同一取舍)。',
+	'- id: tool-presentation',
+	"  name: '@deepseek-ai/dsh-agent-tool-presentation'",
+	'  config:',
+	'    mode: ptc',
+	'',
+	'# ── DSH-OPS(可选,装了才挂) ───────────────────────────────────────────────────',
+	'#',
+	'# 装了 dsh-ops 就多一套原生文件 API:常驻 3 个(读文件、结果引用、SDK 加载器),',
+	'# 其余经 ops_load_sdk 按需申请,下一次请求才进 SDK。',
+	'# 没装时下面两行在装配期被 disabled 跳过,PTC 呈现与 ClearAI 内核照常可用。',
+	'#',
+	'# 为什么挂 legacy 组件、而不是 dsh-ops 的 `mode-ptc` 模式行:0.4.x 的模式行只认内置',
+	'# preset id(standard / minimal / ptc / cordis),自定义预设不在那张表里;',
+	'# 这两个组件按「当前作用域的呈现是不是 PTC-only」发布,与自定义预设正好对上。',
+	'#',
+	'# 为什么要一个 isolate realm:`dsh-ops/shell` 在自己的 fiber 里 `provide("opsSettings")`。',
+	'# 宿主(0.2.1 起)拒绝「预设里发布服务而不带 realm」的组合,装配期直接抛',
+	'# `Preset services require isolate realms: opsSettings`。这一组把该服务圈进本预设的',
+	'# entry-local realm,不落到根 realm 上,也不与别的会话共享。',
+	'- id: dsh-ops',
+	'  name: cordis:group',
+	'  group: true',
+	'  isolate:',
+	'    opsSettings: true',
+	'  config:',
+	'    - id: dsh-ops-ptc',
+	"      name: 'dsh-ops/ptc'",
+	`      disabled: !!js "${unresolvable('dsh-ops/ptc')}"`,
+	'      config:',
+	'        required: false',
+	'',
+	"    # `ops_bash` 由 shell 组件发布:输出有上限、长结果走结果引用,比把整段输出塞进消息便宜。",
+	'    # Windows 上官方 pwsh 仍在 SDK 里,由 dsh-ops 的路由段建议优先 ops_bash。',
+	'    - id: dsh-ops-shell',
+	"      name: 'dsh-ops/shell'",
+	`      disabled: !!js "${unresolvable('dsh-ops/shell')}"`,
+	'      config:',
+	'        promptPolicy: true',
+	'        publishBashTool: true',
+])
+
+/**
+ * 由主预设的行派生 PTC 预设的行。
+ * @param rows - `preset/agent.cordis.yml` 的行。
+ * @returns PTC 变体的行:workflow 工具行多一个 disabled,其余原样,末尾接 PTC 行。
+ */
+const ptcRowsFrom = (rows) => {
+	const variant = []
+	for (const line of rows) {
+		variant.push(line)
+		// 只改 delegation group 里那一行(4 格缩进的组内行),注释里的同名文字不算。
+		if (/^ {4}- id: tool-workflow$/.test(line)) variant.push('      disabled: true')
+	}
+	return [...variant, ...PTC_EXTRA_ROWS]
+}
+
 {
 	const PRESET_DIR = join(PORT, 'preset')
 	const meta = readPresetMeta(join(PRESET_DIR, 'preset.yml'))
 	const rows = readSourceText(join(PRESET_DIR, 'agent.cordis.yml')).replace(/\n+$/, '').split('\n')
 	// 独立评估者的组合(宿主 ≥0.2.1-alpha.2 用 `agentPreset` 选它,见 preset/evaluator.cordis.yml)。
 	const evaluatorRows = readSourceText(join(PRESET_DIR, 'evaluator.cordis.yml')).replace(/\n+$/, '').split('\n')
+	// PTC 变体:主组合的三处固定变换,见 ptcRowsFrom 上方注释。
+	const ptcRows = ptcRowsFrom(rows)
 	// `plugins:` 在 8 格,其下的列表项在 10 格 —— 整份组合平移过来,注释一并留下。
 	const row = (line) => (line.trim() === '' ? '' : `          ${line}`)
 	// 生成物进仓库(与 ui/vendor/*.js 同一条纪律):源是 preset/agent.cordis.yml,
@@ -184,6 +280,17 @@ const readPresetMeta = (file) => {
 			'        plugins:',
 			...rows.map(row),
 			'',
+			'    - id: preset-clearai-ptc',
+			"      name: '@deepseek-ai/dsh-agent-preset'",
+			'      config:',
+			'        id: clearai-ptc',
+			'        name: ClearAI PTC',
+			'        description: |-',
+			'          认识论循环 + PTC 呈现:模型写一段程序组合多步工具调用。Epistemic loop with PTC presentation: one program composes multi-step tool calls.',
+			'        order: 11',
+			'        plugins:',
+			...ptcRows.map(row),
+			'',
 			'    - id: preset-clearai-evaluator',
 			"      name: '@deepseek-ai/dsh-agent-preset'",
 			'      config:',
@@ -199,7 +306,7 @@ const readPresetMeta = (file) => {
 		'utf8',
 	)
 	copy(packPath, join(OUT, 'presets', 'clearai', 'clearai.patch.yml'))
-	console.log(`  预设声明行:preset-clearai(${rows.filter((line) => /^- id:/.test(line)).length} 个顶层行)、preset-clearai-evaluator(${evaluatorRows.filter((line) => /^- id:/.test(line)).length} 个顶层行)`)
+	console.log(`  预设声明行:preset-clearai(${rows.filter((line) => /^- id:/.test(line)).length} 个顶层行)、preset-clearai-ptc(${ptcRows.filter((line) => /^- id:/.test(line)).length} 个顶层行)、preset-clearai-evaluator(${evaluatorRows.filter((line) => /^- id:/.test(line)).length} 个顶层行)`)
 }
 
 // ── ④ 宿主半 / 浏览器半:同一份源,两个出口 ─────────────────────────────────

@@ -26,7 +26,7 @@ dsh plugin --profile web add clearai-dsh@0.5.7
 # or in the app: Plugins → Add plugin → clearai-dsh@0.5.7
 ```
 
-Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
+Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session (or **ClearAI PTC** when token cost matters; see [Usage](#install-and-use)). That is the whole setup. [Full install notes ↓](#install-and-use)
 
 
 <picture>
@@ -132,6 +132,8 @@ Restart `dsh web` afterwards (`npx @deepseek-ai/dsh web`), then **create a sessi
 2. Click the current mode name at the top (default: **Standard mode**) to open the preset list;
 3. Pick **ClearAI** — its card reads "利用认识论循环构建可信本体。Build a trustworthy ontology through the epistemic loop.";
 4. Just ask your question. Ordinary Q&A runs as usual; once a goal is set, the system enters knowledge mode by itself: what is already known comes to you, the ontology is written with the framing, and conclusions earn their place through evidence. The process is in the Explore pane, the conclusions in the Ontology pane. Only decisions only you can make are put to you.
+
+The picker also offers **ClearAI PTC**: the same epistemic loop, with the tools presented in PTC mode — the model writes one TypeScript program that composes several steps, instead of spending a round trip per tool. When [dsh-ops](https://github.com/T-Auto/dsh-ops) is installed in the profile, it also joins dsh-ops's native file APIs (three resident, the rest loaded on demand through `ops_load_sdk`) and `ops_bash`; without it the preset is plain PTC presentation. Reach for it when token cost matters; either preset handles ordinary Q&A.
 
 <picture>
   <img src="docs/shots/en/jepa-ontology.png" alt="The Ontology pane in ClearAI mode" width="820">

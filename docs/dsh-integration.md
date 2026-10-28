@@ -69,6 +69,29 @@ That file — `presets/clearai/clearai.patch.yml` — is **derived from `preset/
 
 The host's preset registry neither scans directories nor accepts preset paths, so there is no "seed it into your own root" path any more. To edit the preset, copy the declaration line under a new id and install it as your own bundle patch.
 
+### Two presets, one source
+
+The roster carries three declaration lines: `clearai`, `clearai-ptc`, `clearai-evaluator`. The first two are variants of the same `preset/agent.cordis.yml`, derived at build time; they differ in three places:
+
+- One extra `tool-presentation` row (`mode: ptc`). With that row the host presents the whole tool registry as a generated TypeScript SDK: the model sees only `run_code`, composes several steps in one program, and the tool definitions stop taking a separate slot in every prompt.
+- `tool-workflow` is off. In PTC mode `run_code` is the composition surface, so a second orchestration entry would offer two doors to the same room (the host's built-in PTC preset makes the same call).
+- Two dsh-ops legacy component rows (`dsh-ops/ptc` and `dsh-ops/shell`), each guarded by a `disabled: !!js` check for whether dsh-ops resolves from the profile: mounted when present, skipped when absent. A deployment with dsh-ops therefore gets its native file APIs (three resident plus `ops_load_sdk` on demand) and `ops_bash`; one without it keeps plain PTC presentation.
+
+Legacy components rather than dsh-ops's own `mode-ptc` mode row because 0.4.x mode rows only recognise the built-in preset ids (`standard` / `minimal` / `ptc` / `cordis`), and a custom preset is not in that table. The two legacy components publish by "is this scope's presentation PTC-only", which lines up here. If dsh-ops later accepts custom preset ids, this can move back to the mode row.
+
+The group needs an `isolate` realm (`opsSettings: true`). `dsh-ops/shell` calls `provide("opsSettings")` in its own fiber, and the host (0.2.1 onward) rejects a preset that publishes a service without a realm — assembly fails with `Preset services require isolate realms: opsSettings`. Inside the realm the service is visible only to this preset's entry-local realm, never on the root realm and never shared with another session.
+
+### The PTC variant on a real host
+
+Mounted `clearai-ptc` through the roster in a DSH 0.2.1-rc.4 headless host, with a scripted model recording the tool surface of every provider request:
+
+| Scenario | Model-facing tools | SDK entries visible in the system prompt |
+| --- | --- | --- |
+| dsh-ops installed | only `run_code` | the seven kernel tools plus `ops_inspect_local_file` / `ops_load_sdk` / `ops_grep` |
+| dsh-ops absent | only `run_code` | the seven kernel tools, no `ops_*` (both rows skipped by `!!js`, preset not broken) |
+
+`clearai-ptc` reported `broken: null` in both cases. Actual values from inside `run_code`: `ops_inspect_local_file` returned `{"status":"completed",...,"items":[{"line":1,...,"text":"header"}]}`, and `ops_load_sdk({tools:["read_files"]})` returned `{"status":"completed","tools":["read_files"],"nextTurn":true}`. System-prompt size: 58,918 characters with dsh-ops, 38,610 without (same ClearAI composition; the standard preset is about 42k).
+
 ## Install
 
 In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.5.1` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
