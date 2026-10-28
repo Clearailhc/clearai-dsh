@@ -69,6 +69,16 @@ That file — `presets/clearai/clearai.patch.yml` — is **derived from `preset/
 
 The host's preset registry neither scans directories nor accepts preset paths, so there is no "seed it into your own root" path any more. To edit the preset, copy the declaration line under a new id and install it as your own bundle patch.
 
+### Two presets, one source
+
+The roster carries three declaration lines: `clearai`, `clearai-ptc`, `clearai-evaluator`. The first two are variants of the same `preset/agent.cordis.yml`, derived at build time; they differ in three places:
+
+- One extra `tool-presentation` row (`mode: ptc`). With that row the host presents the whole tool registry as a generated TypeScript SDK: the model sees only `run_code`, composes several steps in one program, and the tool definitions stop taking a separate slot in every prompt.
+- `tool-workflow` is off. In PTC mode `run_code` is the composition surface, so a second orchestration entry would offer two doors to the same room (the host's built-in PTC preset makes the same call).
+- Two dsh-ops legacy component rows (`dsh-ops/ptc` and `dsh-ops/shell`), each guarded by a `disabled: !!js` check for whether dsh-ops resolves from the profile: mounted when present, skipped when absent. A deployment with dsh-ops therefore gets its native file APIs (three resident plus `ops_load_sdk` on demand) and `ops_bash`; one without it keeps plain PTC presentation.
+
+Legacy components rather than dsh-ops's own `mode-ptc` mode row because 0.4.x mode rows only recognise the built-in preset ids (`standard` / `minimal` / `ptc` / `cordis`), and a custom preset is not in that table. The two legacy components publish by "is this scope's presentation PTC-only", which lines up here. If dsh-ops later accepts custom preset ids, this can move back to the mode row.
+
 ## Install
 
 In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.5.1` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:

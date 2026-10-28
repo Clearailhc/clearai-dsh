@@ -69,6 +69,16 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 宿主的预设名册不扫目录、也不收预设路径，所以「播种到自己的根」这条路已经没有了。想改预设，就把声明行复制一份、换一个 id，作为自己的 bundle patch 装上。
 
+### 两个预设，一份源
+
+名册里有三条声明行：`clearai`、`clearai-ptc`、`clearai-evaluator`。前两条是同一份 `preset/agent.cordis.yml` 的两个变体，构建期派生，差异只有三处：
+
+- 追加一行 `tool-presentation`（`mode: ptc`）。宿主按这一行把整个工具注册表呈现成一段生成的 TypeScript SDK：模型只看见 `run_code`，多步操作写在同一个程序里，工具定义也不再逐件进入提示词。
+- 关掉 `tool-workflow`。PTC 模式下 `run_code` 就是编排面，再挂 workflow 等于给同一件事两个入口（宿主内置的 PTC 预设是同一取舍）。
+- 追加 dsh-ops 的两个 legacy 组件行（`dsh-ops/ptc` 与 `dsh-ops/shell`），并用 `disabled: !!js` 检查 profile 里能否解析到 dsh-ops：装了才挂，没装就跳过。装了 dsh-ops 的部署因此直接得到它的原生文件 API（常驻 3 个加 `ops_load_sdk` 按需加载）与 `ops_bash`；没装的部署照常使用 PTC 呈现。
+
+为什么用 legacy 组件、而不是 dsh-ops 自己的 `mode-ptc` 模式行：dsh-ops 0.4.x 的模式行只认内置 preset id（`standard` / `minimal` / `ptc` / `cordis`），自定义预设不在那张表里；这两个 legacy 组件按「当前作用域的呈现是不是 PTC-only」发布，与这里正好对上。dsh-ops 以后若支持自定义预设 id，这里可以换回模式行。
+
 ## 安装
 
 在应用里：侧栏**「插件」→ 添加插件**填 `clearai-dsh@0.5.1`，走的是 DSH 自己的插件管理器——设置里的**插件列表**是**只读清单**，不是安装入口。开终端则是同一次安装：
