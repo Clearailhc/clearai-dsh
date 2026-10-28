@@ -79,6 +79,19 @@ ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面
 
 为什么用 legacy 组件、而不是 dsh-ops 自己的 `mode-ptc` 模式行：dsh-ops 0.4.x 的模式行只认内置 preset id（`standard` / `minimal` / `ptc` / `cordis`），自定义预设不在那张表里；这两个 legacy 组件按「当前作用域的呈现是不是 PTC-only」发布，与这里正好对上。dsh-ops 以后若支持自定义预设 id，这里可以换回模式行。
 
+这组行外面必须包一层 `isolate` realm（`opsSettings: true`）。`dsh-ops/shell` 在自己的 fiber 里 `provide("opsSettings")`，而宿主从 0.2.1 起拒绝「预设里发布服务却不带 realm」的组合，装配期直接抛 `Preset services require isolate realms: opsSettings`；包进 realm 之后该服务只在本预设的 entry-local realm 里可见，不落根 realm，也不与别的会话共享。
+
+### PTC 变体在真宿主上的实测
+
+在 DSH 0.2.1-rc.4 的 headless 宿主里按名册挂载 `clearai-ptc`（假模型记录每次供应商请求的工具面），结果：
+
+| 场景 | 模型面工具 | 系统提示里可见的 SDK 条目 |
+| --- | --- | --- |
+| 装 dsh-ops | 只有 `run_code` | 内核 7 件 + `ops_inspect_local_file` / `ops_load_sdk` / `ops_grep` |
+| 不装 dsh-ops | 只有 `run_code` | 内核 7 件，没有 `ops_*`（两行被 `!!js` 跳过，预设不 broken） |
+
+两种情形下名册里的 `clearai-ptc` 都是 `broken: null`。`run_code` 里的实际调用返回值：`ops_inspect_local_file` 返回 `{"status":"completed",...,"items":[{"line":1,...,"text":"header"}]}`，`ops_load_sdk({tools:["read_files"]})` 返回 `{"status":"completed","tools":["read_files"],"nextTurn":true}`。系统提示长度：装 dsh-ops 58918 字符，不装 38610 字符（同一份 ClearAI 组合，标准模式约 42k）。
+
 ## 安装
 
 在应用里：侧栏**「插件」→ 添加插件**填 `clearai-dsh@0.5.1`，走的是 DSH 自己的插件管理器——设置里的**插件列表**是**只读清单**，不是安装入口。开终端则是同一次安装：

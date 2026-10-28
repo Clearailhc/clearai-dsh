@@ -79,6 +79,19 @@ The roster carries three declaration lines: `clearai`, `clearai-ptc`, `clearai-e
 
 Legacy components rather than dsh-ops's own `mode-ptc` mode row because 0.4.x mode rows only recognise the built-in preset ids (`standard` / `minimal` / `ptc` / `cordis`), and a custom preset is not in that table. The two legacy components publish by "is this scope's presentation PTC-only", which lines up here. If dsh-ops later accepts custom preset ids, this can move back to the mode row.
 
+The group needs an `isolate` realm (`opsSettings: true`). `dsh-ops/shell` calls `provide("opsSettings")` in its own fiber, and the host (0.2.1 onward) rejects a preset that publishes a service without a realm — assembly fails with `Preset services require isolate realms: opsSettings`. Inside the realm the service is visible only to this preset's entry-local realm, never on the root realm and never shared with another session.
+
+### The PTC variant on a real host
+
+Mounted `clearai-ptc` through the roster in a DSH 0.2.1-rc.4 headless host, with a scripted model recording the tool surface of every provider request:
+
+| Scenario | Model-facing tools | SDK entries visible in the system prompt |
+| --- | --- | --- |
+| dsh-ops installed | only `run_code` | the seven kernel tools plus `ops_inspect_local_file` / `ops_load_sdk` / `ops_grep` |
+| dsh-ops absent | only `run_code` | the seven kernel tools, no `ops_*` (both rows skipped by `!!js`, preset not broken) |
+
+`clearai-ptc` reported `broken: null` in both cases. Actual values from inside `run_code`: `ops_inspect_local_file` returned `{"status":"completed",...,"items":[{"line":1,...,"text":"header"}]}`, and `ops_load_sdk({tools:["read_files"]})` returned `{"status":"completed","tools":["read_files"],"nextTurn":true}`. System-prompt size: 58,918 characters with dsh-ops, 38,610 without (same ClearAI composition; the standard preset is about 42k).
+
 ## Install
 
 In the app: the sidebar's **Plugins → Add plugin** takes `clearai-dsh@0.5.1` and installs it through DSH's own plugin manager — the Settings **Plugins** page is the read-only inventory, not the install surface. With a terminal, the same install:
