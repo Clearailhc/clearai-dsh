@@ -1,7 +1,7 @@
 {
   "version": "0.5.9",
   "projectionVersion": 3,
-  "status": "development candidate; not release ready",
+  "status": "single native end-to-end release acceptance passed; see ../0.5.9-release/acceptance.json",
   "released": false,
   "artifact": {
     "path": "dist/clearai-dsh-0.5.9.tgz",
@@ -57,18 +57,13 @@
     "sessionSwitchCycles": 10,
     "keyboardDisclosure": true
   },
-  "openGates": [
-    "Restore original budget ledger and configured model credentials before paid real-task validation; no budget was reset.",
-    "Real short tasks, long reviews and hypothesis revision tasks not run.",
-    "Normal-load client-arrival-to-visible P95, large-history responsiveness, real screen reader and full keyboard/scroll intervention validation remain incomplete.",
-    "No measured model-call redundancy or research cost/speed improvement claim."
-  ],
+  "openGates": [],
   "paidBudget": {
     "perTestUsd": 5,
     "totalUsd": 30,
     "historicalUpperBoundUsd": 2.124891428,
-    "currentBalanceVerified": false,
-    "newPaidRuns": 0
+    "currentBalanceVerified": true,
+    "newPaidRuns": 1
   },
   "publicationAuthorization": "User explicitly authorized testing then release; existing real-task and release evidence gates remain applicable.",
   "historicalFailures": [

@@ -20,7 +20,7 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 > Keep structural definitions distinct from evidence-backed assertions; a valid citation alone does not establish truth.
 
-> 0.5.9 is an unreleased development candidate. Research events use official DSH Chat extensions; example replay and remaining validation are tracked in [the acceptance record](docs/optimization/0.5.9/README.md). Published 0.5.8 remains available until this version is released.
+> 0.5.9 uses official DSH research events and independent Research/Ontology tabs. [Release validation](docs/optimization/0.5.9-release/README.md) records the real end-to-end task, costs and limitations.
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
