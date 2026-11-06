@@ -1,0 +1,28 @@
+{
+  "host": "0.2.2-rc.1",
+  "version": "0.5.9",
+  "eventCount": 8,
+  "productionRecords": 9,
+  "sessionSwitchCycles": 10,
+  "keyboardDisclosure": true,
+  "errors": [],
+  "errorStacks": [],
+  "consoleErrors": [],
+  "clickToVisibleMs": [
+    172,
+    208,
+    136,
+    156,
+    175,
+    116,
+    193
+  ],
+  "modelCalls": 0,
+  "example": true,
+  "objectNavigation": "not in scope; objects are static text and panes are independent",
+  "productionModuleSha256": {
+    "client.js": "fff61d03f86f88fd3a81a0a992c91c91efb4b6abd0473d707697552c777aa8a2",
+    "host.js": "efff08fb10c5261c52fa1bf9009ec215b889ece11cadc8ae3228e5e4e8eeee31",
+    "research-events.js": "dacf9dfc9a1bb9dd26cb69631889c579f203de97ab2e801c798f9c834b860f1c"
+  }
+}

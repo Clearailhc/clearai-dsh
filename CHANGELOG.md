@@ -2,6 +2,17 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.9] — Unreleased
+
+- Keep inline objects as historical text and the Research/Ontology panes as independent native tabs. Exclude unsupported cross-pane navigation rather than displaying fallback controls; render evidence actions only when the host provides them.
+- Refine the research timeline and both panels with shared typography, restrained status accents, compact object links, and quieter expandable provenance.
+- Defer view registration until the previous Session binding is released; confirm native message receipt before reporting a sent request, and reject stale-session actions.
+
+- Add a separate, versioned UI projection of committed research events and official DSH Chat node rendering. Hypotheses, structural definitions, entity assertions, validation, review handoffs and outcomes retain their source sequence and evidence entry points.
+- Deduplicate the kernel's tool-result and internal fact channels. Display records are absent from model prompts; replay runs without model calls. Native execution, controls, questions and subagent views remain host-owned.
+- Explain consequential findings in existing replies and distinguish received requests from committed scope changes. Preserve historical records when hypotheses change.
+- Add a deterministic example replay in an isolated real DSH profile, screenshots and video. This is example evidence, not a real research result or a completed release gate. See `docs/optimization/0.5.9/README.md` for remaining validation.
+
 ## [0.5.8] — 2026-11-06
 
 **DSH 0.2.2-rc.1 兼容性、可复核审计与完整性检测，以及研究 / 本体双面板和图谱升级。**

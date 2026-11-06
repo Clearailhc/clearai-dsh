@@ -21,6 +21,7 @@ import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDef
 import { knowledgeView as knowledgeViewOf } from './knowledge-view.js'
 import { install as installInvariants } from './invariant.js'
 import { detectLanguage, tr, withLanguage } from './lang.js'
+import { RESEARCH_EVENT_VERSION, applyResearchProjection, emptyResearchProjection, researchProjectionView } from './research-events.js'
 
 export const name = 'clearai-host'
 /** 投影注册表与会话存储:两个都是宿主服务,这里只消费。 */
@@ -56,6 +57,18 @@ const viewSchema = z.looseObject({
 })
 
 export function apply(ctx) {
+  ctx.effect(() => {
+    const projections = ctx.get('sessionProjections')
+    if (typeof projections?.register !== 'function') return () => {}
+    const handle = projections.register({
+      key: 'clearaiResearch', stateVersion: RESEARCH_EVENT_VERSION,
+      stateSchema: z.looseObject({ sessionId: z.string(), v: z.number(), seen: z.record(z.string(), z.unknown()), bySeq: z.record(z.string(), z.unknown()) }),
+      init: header => emptyResearchProjection(String(header.id)),
+      apply: applyResearchProjection,
+      wire: { summary: false, viewSchema: z.looseObject({ sessionId: z.string(), v: z.number(), bySeq: z.record(z.string(), z.unknown()) }), view: researchProjectionView },
+    })
+    return typeof handle === 'function' ? handle : () => handle?.dispose?.()
+  }, 'clearai: research event projection')
 	/**
 	 * **把自己的不变量交给宿主**(`@deepseek-ai/dsh-invariants`)——但只在它挂了的时候。
 	 *
