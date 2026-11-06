@@ -1,0 +1,10 @@
+{
+  "id": "optimum_location",
+  "label": "最优点的位置",
+  "kind": "defines",
+  "domain": "response_surface",
+  "range": {
+    "form": "statement"
+  },
+  "basis": "initial.json 的拟合结果（待 full 实测）"
+}

@@ -1,0 +1,10 @@
+{
+  "basis": "initial.json 中 instrument=original,lab/calibrate-1.json 也返回 instrument=original、offset=0",
+  "id": "instrument_original",
+  "label": "original 仪表",
+  "provenance": {
+    "kind": "named",
+    "ref": "initial.json"
+  },
+  "type": "instrument"
+}

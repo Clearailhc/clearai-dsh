@@ -1,0 +1,10 @@
+{
+  "basis": "initial.json 3x3 full 读数拟合",
+  "domain": "response_surface",
+  "id": "described_by_surface",
+  "kind": "defines",
+  "label": "由响应曲面描述",
+  "range": {
+    "form": "statement"
+  }
+}

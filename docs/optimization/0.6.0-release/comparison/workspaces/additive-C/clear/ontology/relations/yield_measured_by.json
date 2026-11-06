@@ -1,0 +1,9 @@
+{
+  "basis": "lab/calibrate-1.json 与 initial.json 的 instrument 字段",
+  "check": "校准记录给出 offset;同一坐标重复读数;更换仪表后重新校准",
+  "domain": "instrument",
+  "id": "yield_measured_by",
+  "kind": "measures",
+  "label": "收率由仪表测得",
+  "range": "yield"
+}

@@ -1,0 +1,241 @@
+{
+  "schema_version": "clearai.audit.v2",
+  "kind": "evidence_audit",
+  "step_id": "s4",
+  "auditor_run_id": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "full-optimum-1.json:8 mode=full、:6 instrument=original、:4 value 95.4060≥94.8、:5 impurity 0.083927≤0.115、:2-3 (0.508,0.452);副本复跑 response_surface.py 精确复现 model-initial,加性连续最优 (0.50775,0.45244) 预测 95.2208,网格推荐 (0.5,0.45) 预测 95.2191,差 0.00172<0.01;budget.json:37-43 记 seq4 full cost3/spent_after9,与 :14-16 一致。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-7kkgaq",
+      "verdict": "support",
+      "basis": "未触发任一推翻条件:可行 full 点最高为 full-optimum-1.json:4 的 95.4060(<95.7),:5 杂质 0.083927(<0.115),收率 95.4060 不低于 94.8;full-center-1.json:4 95.105、initial.json:62 可行点最高 95.184 也均<95.7。模型复算该点预测 95.2208、杂质 0.08554(≈0.086),预测杂质上界 0.1099<0.115,约束不紧;实测-预测差 +0.185(≈1.0σ/0.18),杂质差 -0.0016。故 support。"
+    }
+  ],
+  "anomalies": [
+    {
+      "what": "h-7kkgaq 与 f-rgtoho 的 scope 仍写 '预算单位 30(已花 3,余 27)'(clear/goals/g-mw4yfrsjmxa9.md:16、clear/knowledge/facts/f-rgtoho.json:15),而 lab/budget.json:46-47 已记 spent 9/remaining 21;s4 读数是在 spent 9 下取得,scope 未更新。",
+      "matters": "no"
+    },
+    {
+      "what": "model-initial.json 的 inputs 只列 initial.json(:119-122),s3 的 full-center-1.json 未并入模型;用 10 点重拟合连续最优移到 (0.50778,0.45224)、预测约 95.198(副本 lab/model-rerun-10.json:10,56),与 C1 的 (0.508,0.452)/95.2 仍同档,但模型工件未更新。",
+      "matters": "no"
+    }
+  ],
+  "lessons": [],
+  "basis": "C1 逐条满足:lab/full-optimum-1.json 记 x=0.508,y=0.452、mode=full、instrument=original、value 95.4060≥94.8、impurity 0.083927≤0.115;在副本用 method/response_surface.py 复跑 initial.json 精确复现 model-initial.json,加性曲面连续最优 (0.50775,0.45244) 预测 95.2208,网格推荐 (0.5,0.45) 预测 95.2191,差 0.00172<0.01;budget.json seq4 记 full cost3/spent_after9,与产物 cost/spent 一致。full 读数含噪声且端点计费,未重发计费测量(只读 GET /log 返回 404);真实性由产物字段、与模型预测的残差(收率 +0.185≈1.0σ、杂质 -0.0016)及台账一致性支撑。复跑仅写副本 lab/model-rerun.json 与 lab/model-rerun-10.json。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 2,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 3,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 4,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 5,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 6,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 8,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 14,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 15,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 16,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 37,
+      "digest": "4b8eb9d2a0c687e9f40ea012a0e1ae477e20c08b92a9033fa4fd440740a24bcc"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 39,
+      "digest": "4b8eb9d2a0c687e9f40ea012a0e1ae477e20c08b92a9033fa4fd440740a24bcc"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 40,
+      "digest": "4b8eb9d2a0c687e9f40ea012a0e1ae477e20c08b92a9033fa4fd440740a24bcc"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 42,
+      "digest": "4b8eb9d2a0c687e9f40ea012a0e1ae477e20c08b92a9033fa4fd440740a24bcc"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 43,
+      "digest": "4b8eb9d2a0c687e9f40ea012a0e1ae477e20c08b92a9033fa4fd440740a24bcc"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 46,
+      "digest": "4b8eb9d2a0c687e9f40ea012a0e1ae477e20c08b92a9033fa4fd440740a24bcc"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 47,
+      "digest": "4b8eb9d2a0c687e9f40ea012a0e1ae477e20c08b92a9033fa4fd440740a24bcc"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 10,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 11,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 12,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 13,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 14,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 56,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 61,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 35,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 60,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 65,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 70,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 96,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 4,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "clear/goals/g-mw4yfrsjmxa9.md",
+      "line": 14,
+      "digest": "2d8fb822b6612149ddd211a266465e6b1227c0563115e5d7273924c117f8a411"
+    },
+    {
+      "path": "clear/goals/g-mw4yfrsjmxa9.md",
+      "line": 15,
+      "digest": "2d8fb822b6612149ddd211a266465e6b1227c0563115e5d7273924c117f8a411"
+    },
+    {
+      "path": "clear/goals/g-mw4yfrsjmxa9.md",
+      "line": 16,
+      "digest": "2d8fb822b6612149ddd211a266465e6b1227c0563115e5d7273924c117f8a411"
+    },
+    {
+      "path": "clear/knowledge/facts/f-rgtoho.json",
+      "line": 15,
+      "digest": "129838bcaab69571253533ecbca962c13c14da8487911b6acc784bd9c4aa6e7a"
+    },
+    {
+      "path": ".clearai-reruns/6860f32a5cec092ed8719e515eb70792d0c990198d53db70c6cc4f43180f57e2/lab/model-rerun.json",
+      "line": 10,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": ".clearai-reruns/6860f32a5cec092ed8719e515eb70792d0c990198d53db70c6cc4f43180f57e2/lab/model-rerun.json",
+      "line": 56,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": ".clearai-reruns/6860f32a5cec092ed8719e515eb70792d0c990198d53db70c6cc4f43180f57e2/lab/model-rerun-10.json",
+      "line": 10,
+      "digest": "e3d5a7b7f0922b1b58cfb6f87fae3c0b1dd95d32ed3c240ae693c2c35ad93658"
+    },
+    {
+      "path": ".clearai-reruns/6860f32a5cec092ed8719e515eb70792d0c990198d53db70c6cc4f43180f57e2/lab/model-rerun-10.json",
+      "line": 56,
+      "digest": "e3d5a7b7f0922b1b58cfb6f87fae3c0b1dd95d32ed3c240ae693c2c35ad93658"
+    },
+    {
+      "path": "method/SKILL.md",
+      "line": 16,
+      "digest": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": ".clearai-reruns/6860f32a5cec092ed8719e515eb70792d0c990198d53db70c6cc4f43180f57e2/.clearai-rerun.json",
+      "line": 2,
+      "digest": "c2b20a8f7c1f7c137f4bb321da695c83bd34f86e5e7c07f22e983234df8b7f74"
+    }
+  ],
+  "card": "C1 逐条满足:lab/full-optimum-1.json 记 x=0.508,y=0.452、mode=full、instrument=original、value 95.4060≥94.8、impurity 0.083927≤0.115;在副本用 method/response_surface.py 复跑 initial.json 精确复现 model-initial.json,加性曲面连续最优 (0.50775,0.45244) 预测 95.2208,网格推荐 (0.5,0.45) 预测 95.2191,差 0.00172<0.01;budget.json seq4 记 full cost3/spent_after9,与产物 cost/spent 一致。full 读数含噪声且端点计费,未重发计费测量(只读 GET /log 返回 404);真实性由产物字段、与模型预测的残差(收率 +0.185≈1.0σ、杂质 -0.0016)及台账一致性支撑。复跑仅写副本 lab/model-rerun.json 与 lab/model-rerun-10.json。",
+  "created_at": 1793968859080,
+  "evaluator": "independent"
+}

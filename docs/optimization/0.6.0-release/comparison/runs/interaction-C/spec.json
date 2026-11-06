@@ -1,0 +1,16 @@
+{
+  "task": "依据 initial.json 优化 x,y∈[0,1] 的收率，杂质不得超过0.115。允许使用 method/ 通用脚本和说明。用 python3 experiment.py quick|full|calibrate --x X --y Y --output lab/N.json 做实验，成本1/3/2，总预算30单位。保留原始读数，验证后把最终 {\"x\":数值,\"y\":数值,\"evidence\":[\"路径\"]} 写 submission.json，报告参数、仪表口径和局限，完成任务。",
+  "group": "C",
+  "mode": "clearai",
+  "tokenBudget": 5000000,
+  "timeoutMs": 5400000,
+  "testId": "polish060:interaction-C",
+  "output": "/tmp/clearai060-comparison/runs/interaction-C",
+  "isolation": {
+    "roots": [
+      "/tmp/clearai060-comparison",
+      "/tmp/clearai060"
+    ],
+    "probe": "/tmp/clearai060-comparison/.controller/sentinel"
+  }
+}

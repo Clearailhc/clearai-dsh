@@ -1,0 +1,113 @@
+{
+  "passed": true,
+  "path": "/tmp/clearai060-comparison/.controller/sentinel",
+  "readDenied": true,
+  "shellDenied": true,
+  "workspaceWorks": true,
+  "symlinkDenied": true,
+  "parentDenied": true,
+  "read": {
+    "isError": true,
+    "error": {
+      "message": "test_read_isolation: another group, private profile or controller output is unavailable"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: test_read_isolation: another group, private profile or controller output is unavailable"
+      }
+    ]
+  },
+  "shell": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "[stderr]\ncat: /tmp/clearai060-comparison/.controller/sentinel: No such file or directory\n[sandbox: file access denied under workspace-write mode]\n[sandbox: escalation available — retry this exact command once with sandbox_permissions (the narrowest wider mode that suffices) + justification; the approval prompt asks the user]\n[exit code: 1]"
+      }
+    ],
+    "meta": {
+      "cwd": "/tmp/clearai060-comparison/workspaces/interaction-A"
+    },
+    "value": {
+      "kind": "foreground",
+      "cwd": "/tmp/clearai060-comparison/workspaces/interaction-A",
+      "exitCode": 1,
+      "signal": null,
+      "timedOut": false,
+      "aborted": false,
+      "timeoutMs": 10000,
+      "stdout": {
+        "text": "",
+        "truncated": false
+      },
+      "stderr": {
+        "text": "cat: /tmp/clearai060-comparison/.controller/sentinel: No such file or directory\n",
+        "truncated": false
+      },
+      "sandbox": {
+        "mode": "workspace-write",
+        "denied": true,
+        "enforcement": "full"
+      }
+    }
+  },
+  "positive": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "isolation-ok"
+      }
+    ],
+    "meta": {
+      "cwd": "/tmp/clearai060-comparison/workspaces/interaction-A"
+    },
+    "value": {
+      "kind": "foreground",
+      "cwd": "/tmp/clearai060-comparison/workspaces/interaction-A",
+      "exitCode": 0,
+      "signal": null,
+      "timedOut": false,
+      "aborted": false,
+      "timeoutMs": 10000,
+      "stdout": {
+        "text": "isolation-ok",
+        "truncated": false
+      },
+      "stderr": {
+        "text": "",
+        "truncated": false
+      },
+      "sandbox": {
+        "mode": "workspace-write",
+        "denied": false,
+        "enforcement": "full"
+      }
+    }
+  },
+  "symlink": {
+    "isError": true,
+    "error": {
+      "message": "test_read_isolation: another group, private profile or controller output is unavailable"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: test_read_isolation: another group, private profile or controller output is unavailable"
+      }
+    ]
+  },
+  "parentScan": {
+    "isError": true,
+    "error": {
+      "message": "test_read_isolation: another group, private profile or controller output is unavailable"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: test_read_isolation: another group, private profile or controller output is unavailable"
+      }
+    ]
+  }
+}

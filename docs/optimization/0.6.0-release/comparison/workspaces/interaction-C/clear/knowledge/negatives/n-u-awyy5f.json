@@ -1,0 +1,48 @@
+{
+  "id": "n-u-awyy5f",
+  "kind": "unresolved",
+  "status": "explained",
+  "statement": "计划预计 additive 面在 6 个离网格点偏 2–6 个百分点；实际 additive 偏差为 0.003–1.62（RMS 1.00），交互面 RMS 0.44。additive 确实更差且方向一致，但幅度小于预期。",
+  "touches": [
+    "交互二次面"
+  ],
+  "evidence": [
+    {
+      "ref": "lab/screen-fit.json"
+    }
+  ],
+  "about": [
+    "lab/screen-fit.json",
+    "交互二次面",
+    "setting_x",
+    "setting_y",
+    "yield_pct",
+    "impurity_frac",
+    "impurity_limit",
+    "assay_mode"
+  ],
+  "scope": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "budget_units": "30",
+      "costs": "quick=1, full=3, calibrate=2",
+      "initial_design": "3x3 grid at 0.1/0.5/0.9, full mode, noise_sd=0.18 %"
+    },
+    "ranges": {}
+  },
+  "resolution": {
+    "outcome": "explained",
+    "reason": "additive 的大 LOO 误差来自 3×3 网格角点：在 (0.1,0.1)/(0.9,0.9) 它低估约 4.2，在 (0.1,0.9)/(0.9,0.1) 它高估约 4.1；这 6 个离网格点位于 0.3–0.7 的中部，additive 偏差因此只有 0.0–1.6。交互面同处 RMS 0.44、additive 1.00，排序不变。",
+    "by": "交互二次面"
+  },
+  "source": {
+    "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+    "goal": "g-mw4zfrls4bb8",
+    "anomaly": "u-awyy5f",
+    "by": "model"
+  },
+  "review": null,
+  "at": 1793970401138,
+  "updated": 1793970406430
+}

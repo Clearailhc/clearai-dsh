@@ -1,0 +1,109 @@
+{
+  "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+  "group": "C",
+  "mode": "clearai",
+  "reason": "completed",
+  "elapsedMs": 7472,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 1121,
+    "output": 404,
+    "cacheRead": 48000,
+    "cacheWrite": 0,
+    "calls": 5,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 49525,
+    "status": "verified",
+    "processed": 49525
+  },
+  "mount": {
+    "prompt": true,
+    "tools": true
+  },
+  "requests": [
+    {
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968210631
+    },
+    {
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968212751
+    },
+    {
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968214628
+    },
+    {
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968216524
+    }
+  ],
+  "approvals": [],
+  "answer": "17 × 23 = **391 元**，已写入 `@submission.json`（`{\"amount\": 391, \"unit\": \"元\"}`）。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "submission.json"
+    ],
+    "sessionId": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a"
+  },
+  "violations": {
+    "silent_closure": false,
+    "unresolved_reference_completed": false,
+    "duplicate_dispatch": false,
+    "pending_restored_without_review": false,
+    "outside_historical_retraction": false,
+    "repeated_card_failure": false,
+    "isolation_failed": false
+  },
+  "driverDigest": "54b7718c0a7e2816e53b789890b67023c621e014a1957df79acd809b53f675a9",
+  "logs": [
+    {
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "cursor": 43,
+      "path": "cdd3170da0280bd65ed5b3d2c10ea74076c14603ccc8dc72cd81f65f4695d302.jsonl"
+    }
+  ]
+}

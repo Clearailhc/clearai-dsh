@@ -1,0 +1,11 @@
+{
+  "basis": "initial.json 与加性二次拟合",
+  "domain": "response_surface",
+  "id": "peak_at",
+  "kind": "affects",
+  "label": "峰值位于",
+  "range": {
+    "form": "statement"
+  },
+  "shape": "peak"
+}

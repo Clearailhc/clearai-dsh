@@ -1,0 +1,9 @@
+{
+  "backend": "native-write-policy+platform-read-fence",
+  "roots": [
+    "/tmp/clearai060-comparison",
+    "/tmp/clearai060",
+    "/home/agent"
+  ],
+  "workspace": "/tmp/clearai060-comparison/workspaces/additive-A"
+}

@@ -1,0 +1,48 @@
+{
+  "id": "n-u-fn0dpc",
+  "kind": "defect",
+  "status": "defect",
+  "statement": "计划中写的交互面预测值（(0.3,0.7)≈93.6、(0.7,0.3)≈93.6、(0.6,0.6)≈94.8 等）与同一批数据事后拟合出的预测（92.47、91.79、95.10 等）不一致；这是写计划时抄错/心算错，不是读数反常。实际对照以 lab/screen-fit.json 为准。",
+  "touches": [
+    "交互二次面"
+  ],
+  "evidence": [
+    {
+      "ref": "lab/screen-fit.json"
+    }
+  ],
+  "about": [
+    "lab/screen-fit.json",
+    "交互二次面",
+    "setting_x",
+    "setting_y",
+    "yield_pct",
+    "impurity_frac",
+    "impurity_limit",
+    "assay_mode"
+  ],
+  "scope": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "budget_units": "30",
+      "costs": "quick=1, full=3, calibrate=2",
+      "initial_design": "3x3 grid at 0.1/0.5/0.9, full mode, noise_sd=0.18 %"
+    },
+    "ranges": {}
+  },
+  "resolution": {
+    "outcome": "explained",
+    "reason": "计划里的预测值是我在写步骤时手算/抄录错误（例如把 (0.3,0.7) 写成 93.6，实际该拟合预测为 92.47）。原始读数与拟合均正常；以 lab/screen-fit.json 的预测值为准，属方法记录缺陷，不影响判断。",
+    "by": "lab/screen-fit.json 中按同一数据重算的交互面预测"
+  },
+  "source": {
+    "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+    "goal": "g-mw4zfrls4bb8",
+    "anomaly": "u-fn0dpc",
+    "by": "model"
+  },
+  "review": null,
+  "at": 1793970401047,
+  "updated": 1793970406405
+}

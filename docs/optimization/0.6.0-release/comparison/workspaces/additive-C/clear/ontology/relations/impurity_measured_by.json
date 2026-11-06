@@ -1,0 +1,9 @@
+{
+  "basis": "initial.json 的 impurity 字段",
+  "check": "同点重复读数的分散度",
+  "domain": "instrument",
+  "id": "impurity_measured_by",
+  "kind": "measures",
+  "label": "杂质由仪表测得",
+  "range": "impurity"
+}

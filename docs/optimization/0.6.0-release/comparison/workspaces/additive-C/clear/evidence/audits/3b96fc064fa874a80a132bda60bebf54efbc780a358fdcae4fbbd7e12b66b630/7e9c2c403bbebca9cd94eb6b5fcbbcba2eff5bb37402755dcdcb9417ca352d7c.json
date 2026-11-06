@@ -1,0 +1,167 @@
+{
+  "schema_version": "clearai.audit.v2",
+  "kind": "evidence_audit",
+  "step_id": "s5",
+  "auditor_run_id": "dd506544-b751-4589-a03d-bb191a9231b9",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "lab/full-optimum-2.json:2-9 存 mode=full、instrument=original、value 95.51659、impurity 0.084451;与 full-optimum-1.json:4-5 差 0.1105<0.54、均值 95.4613≥94.8、两 impurity 0.083927/0.084451 均≤0.115;budget.json:51 记 seq5 spent_after=12。副本复跑 response_surface.py 输出与 lab/model-final.json、lab/input-final.json 逐字节一致:选 additive(0.190 vs 0.260),连续最优 (0.50770,0.45277),网格推荐 (0.5,0.45),距候选 (0.508,0.452) 最大 0.008<0.02。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-7kkgaq",
+      "verdict": "support",
+      "basis": "未触发推翻条件:可行 full 实测最高 95.5166(full-optimum-2.json:4),比该点预测 95.3068/95.2 高 0.21/0.32,均<0.5(阈值 95.7);:5 杂质 0.08393/0.08445≤0.115;两次收率均≥94.8。复跑模型把连续峰放在 (0.5077,0.4528),预测杂质 0.08495、上界 0.1065<0.115,约束不紧。"
+    },
+    {
+      "hypothesis": "h-32z06e",
+      "verdict": "support",
+      "basis": "三条推翻条件均未触发:同点 (0.5,0.5) 的 full 重复差 |95.1054-95.1838|=0.0785<0.54(full-center-1.json:4 vs initial.json:62),本轮同点 full 重复差 0.1105<0.54;新读数 instrument 均为 original(full-optimum-2.json:6);calibrate offset=0(calibrate-1.json:4;本步未重校准)。"
+    }
+  ],
+  "anomalies": [],
+  "lessons": [],
+  "basis": "交付成立:C1 六项逐一核对通过——lab/full-optimum-2.json 存 (0.508,0.452) 的第二次 full(95.51659,impurity 0.084451),与 full-optimum-1.json 的 95.40605 差 0.1105<0.54、均值 95.4613≥94.8、两次 impurity 0.083927/0.084451 均≤0.115;budget.json 记 seq5 spent_after=12。副本用 method/response_surface.py 以 initial.json + 3 条 full 记录复跑,lab/model-final.json 与 lab/input-final.json 均逐字节复现:selected_model=additive(0.190 vs 0.260),连续最优 (0.50770,0.45277),网格推荐 (0.5,0.45),距候选 (0.508,0.452) 最大 0.008<0.02。故 h-7kkgaq、h-32z06e 均未触发推翻条件。submission.json/reports 缺席按登记属 s6 时序,C1 不含;复跑仅写副本内 lab/ 临时输出,未调实验端点。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "lab/full-optimum-2.json",
+      "line": 4,
+      "digest": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "lab/full-optimum-2.json",
+      "line": 5,
+      "digest": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "lab/full-optimum-2.json",
+      "line": 6,
+      "digest": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "lab/full-optimum-2.json",
+      "line": 8,
+      "digest": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 4,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 5,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 51,
+      "digest": "76309a60585306d44bd6e3d661ef88cb203e275d549654b2201a14a66b4ba406"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 55,
+      "digest": "76309a60585306d44bd6e3d661ef88cb203e275d549654b2201a14a66b4ba406"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 4,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 8,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 19,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 56,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 61,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 110,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 123,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 129,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/input-final.json",
+      "line": 149,
+      "digest": "83e5b664311431924f36ef6e484195a7104026763ba0a5bbc35f2fd3ef616bfa"
+    },
+    {
+      "path": "lab/input-final.json",
+      "line": 166,
+      "digest": "83e5b664311431924f36ef6e484195a7104026763ba0a5bbc35f2fd3ef616bfa"
+    },
+    {
+      "path": "lab/input-final.json",
+      "line": 193,
+      "digest": "83e5b664311431924f36ef6e484195a7104026763ba0a5bbc35f2fd3ef616bfa"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 4,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/calibrate-1.json",
+      "line": 4,
+      "digest": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "clear/goals/g-mw4yfrsjmxa9.md",
+      "line": 14,
+      "digest": "1f6a5e02f3c317a88af875ea6bdea682318ee22d039de54ee50817aca9fdddff"
+    },
+    {
+      "path": "clear/goals/g-mw4yfrsjmxa9.md",
+      "line": 15,
+      "digest": "1f6a5e02f3c317a88af875ea6bdea682318ee22d039de54ee50817aca9fdddff"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 64,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 96,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    }
+  ],
+  "card": "交付成立:C1 六项逐一核对通过——lab/full-optimum-2.json 存 (0.508,0.452) 的第二次 full(95.51659,impurity 0.084451),与 full-optimum-1.json 的 95.40605 差 0.1105<0.54、均值 95.4613≥94.8、两次 impurity 0.083927/0.084451 均≤0.115;budget.json 记 seq5 spent_after=12。副本用 method/response_surface.py 以 initial.json + 3 条 full 记录复跑,lab/model-final.json 与 lab/input-final.json 均逐字节复现:selected_model=additive(0.190 vs 0.260),连续最优 (0.50770,0.45277),网格推荐 (0.5,0.45),距候选 (0.508,0.452) 最大 0.008<0.02。故 h-7kkgaq、h-32z06e 均未触发推翻条件。submission.json/reports 缺席按登记属 s6 时序,C1 不含;复跑仅写副本内 lab/ 临时输出,未调实验端点。",
+  "created_at": 1793969180106,
+  "evaluator": "independent"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "assay_mode",
+  "label": "测量模式",
+  "gloss": "实验端提供的 quick/full/calibrate 三种读数模式，成本分别为 1/3/2 单位",
+  "kind": "category",
+  "basis": "任务说明与 experiment.py 的 choices"
+}

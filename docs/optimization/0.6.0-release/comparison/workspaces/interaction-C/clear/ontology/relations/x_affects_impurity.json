@@ -1,0 +1,9 @@
+{
+  "id": "x_affects_impurity",
+  "label": "x 影响杂质",
+  "kind": "affects",
+  "domain": "setting_x",
+  "range": "impurity_frac",
+  "shape": "increasing",
+  "basis": "initial.json 的 3x3 网格读数"
+}

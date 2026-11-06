@@ -1,6 +1,6 @@
 /** Verify paired observations, metering, mount/isolation and objective scores after all workers exit. */
 import assert from 'node:assert/strict'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 import { usageSummary } from './native-headless/accounting.mjs'
@@ -10,7 +10,10 @@ const json = path => JSON.parse(readFileSync(join(root,path)))
 const manifest = json('manifest.json'), comparison = json('comparison.json')
 assert.equal(comparison.complete,true)
 assert.equal(comparison.results.length,6)
-const key=readFileSync(join(root,'.controller/world-key'))
+const privateKey=join(root,'.controller/world-key')
+const disclosed=existsSync(privateKey)?null:json('grading-truth.json')
+if(disclosed){assert.equal(disclosed.releasedAfterAllRuns,true);assert.match(disclosed.worldKeyHex,/^[a-f0-9]{64}$/)}
+const key=existsSync(privateKey)?readFileSync(privateKey):Buffer.from(disclosed.worldKeyHex,'hex')
 assert.equal(createHash('sha256').update(key).digest('hex'),manifest.worldKeyCommitment)
 const rows=[]
 for(const row of comparison.results) {

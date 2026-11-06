@@ -1,0 +1,9 @@
+{
+  "basis": "initial.json:杂质随 y 增大而升高",
+  "domain": "factor_y",
+  "id": "y_affects_impurity",
+  "kind": "affects",
+  "label": "y 影响杂质",
+  "range": "impurity",
+  "shape": "increasing"
+}

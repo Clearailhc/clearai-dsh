@@ -1,0 +1,103 @@
+{
+  "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+  "group": "A",
+  "mode": "default",
+  "reason": "completed",
+  "elapsedMs": 6916,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 1175,
+    "output": 475,
+    "cacheRead": 21760,
+    "cacheWrite": 0,
+    "calls": 5,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 23410,
+    "status": "verified",
+    "processed": 23410
+  },
+  "mount": {
+    "prompt": false,
+    "tools": false
+  },
+  "requests": [
+    {
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968185302
+    },
+    {
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968187388
+    },
+    {
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968189161
+    },
+    {
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968190543
+    }
+  ],
+  "approvals": [],
+  "answer": "总金额：391元。已写入 `submission.json`。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "/tmp/clearai060-comparison/workspaces/direct-A/submission.json"
+    ],
+    "sessionId": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2"
+  },
+  "violations": {
+    "isolation_failed": false
+  },
+  "driverDigest": "54b7718c0a7e2816e53b789890b67023c621e014a1957df79acd809b53f675a9",
+  "logs": [
+    {
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "cursor": 38,
+      "path": "95c591035a51e583af758a0f7c059f957d2d5196c912c7aa1e2e2cedc6624a45.jsonl"
+    }
+  ]
+}

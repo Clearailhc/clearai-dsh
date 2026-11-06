@@ -1,0 +1,10 @@
+{
+  "id": "surface_c",
+  "label": "本次配方响应面",
+  "type": "response_surface",
+  "basis": "initial.json 的 9 点 full 读数与后续实验",
+  "provenance": {
+    "kind": "backref",
+    "ref": "initial.json"
+  }
+}
