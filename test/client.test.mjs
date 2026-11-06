@@ -220,7 +220,13 @@ function makeClientContext({ preset = 'clearai' } = {}) {
 		tabDefinitions,
 		opened,
 		flipPreset(next) {
-			snapshot.byId.s1.projectionValues.agentPreset = next
+			snapshot.byId[snapshot.ids[0]].projectionValues.agentPreset = next
+			for (const listener of listeners) listener()
+		},
+		switchOwner(id, goalId) {
+			const preset = snapshot.byId[snapshot.ids[0]].projectionValues.agentPreset
+			snapshot.ids = [id]
+			snapshot.byId = { [id]: { id, retainedBy: { mainView: 1 }, projectionValues: { agentPreset: preset, clearai: { goal: { id: goalId } } } } }
 			for (const listener of listeners) listener()
 		},
 	}
@@ -804,13 +810,13 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 		}
 		const outcomes = []
 		const emergentButtons = findButtons(components.EmergentActions({ question: exploring.exploration.questions[1], send: (text) => (sentTexts.push(text), true), sent: {}, onSent: (id, kind) => outcomes.push([id, kind]) }))
-		emergentButtons.find((button) => String(button.children).includes('立为问题'))?.props.onClick()
+		await emergentButtons.find((button) => String(button.children).includes('立为问题'))?.props.onClick()
 		check('「立为问题」只发一句话给模型(界面不改状态)', sentTexts.some((text) => text.includes('副产物从哪一步产生') && text.includes('立为问题')) && outcomes.some(([id, kind]) => id === 'q2' && kind === 'pursue'), JSON.stringify({ sentTexts, outcomes }))
 		const failedOutcomes = []
-		findButtons(components.EmergentActions({ question: exploring.exploration.questions[1], send: undefined, sent: {}, onSent: (id, kind) => failedOutcomes.push(kind) }))
+		await findButtons(components.EmergentActions({ question: exploring.exploration.questions[1], send: undefined, sent: {}, onSent: (id, kind) => failedOutcomes.push(kind) }))
 			.find((button) => String(button.children).includes('暂缓'))
 			?.props.onClick()
-		check('发不出去时如实记为失败(不假装发了)', failedOutcomes[0] === 'failed', JSON.stringify(failedOutcomes))
+		check('发不出去时如实记为失败(不假装发了)', failedOutcomes.at(-1) === 'failed', JSON.stringify(failedOutcomes))
 		const answersText = react.render(components.AnswerCards({ data: exploring, openExplore: () => {} })).replace(/\s+/g, ' ')
 		check('结论卡四部分:结论 / 依据 / 尚未确定的事项 / 待您决策', ['结论', '选 A', '依据', '三种方法同根', '尚未确定的事项', 'A 的优势可能缩小', '待您决策', '是否进入中试', '查看探索记录'].every((word) => answersText.includes(word)), answersText)
 		check('多个问题时按问题切换', answersText.includes('问题 1') && answersText.includes('问题 2'), answersText.slice(0, 120))
@@ -860,8 +866,8 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('实体卡按栏目依次列出,空栏不出现', sections.every((at) => at >= 0) && sections.every((at, index) => index === 0 || at > sections[index - 1]) && !cardText.includes('测量与口径') && !cardText.includes('经验('), cardText)
 			check('实体卡:初步排除折叠在单独一行,适用边界写明理由,范围可读', cardText.includes('初步排除(1)') && cardText.includes('B 线不成立') && cardText.includes('line=A'), cardText)
 			check('实体卡不摆内部编号', !/f-old|x-h-9|n-a1/.test(cardText.replace(/clear\/knowledge\/\S+/g, '')), cardText)
-			openCard.buttons.find((button) => String(button.children).includes('请求复检'))?.props.onClick()
-			check('「请求复检」只发一句话(带条目原文与文件路径)', asked.length === 1 && asked[0].includes('3 号窑温度与产率正相关') && asked[0].includes('clear/knowledge/facts/f-old.json') && sentKeys[0]?.[1] === 'sent', JSON.stringify([asked, sentKeys]))
+			await openCard.buttons.find((button) => String(button.children).includes('请求复检'))?.props.onClick()
+			check('「请求复检」只发一句话(带条目原文与文件路径)', asked.length === 1 && asked[0].includes('3 号窑温度与产率正相关') && asked[0].includes('clear/knowledge/facts/f-old.json') && sentKeys.at(-1)?.[1] === 'sent', JSON.stringify([asked, sentKeys]))
 			const flowText = react.render(components.KnowledgeFlowBox({ data: real })).replace(/\s+/g, ' ')
 			check('探索货架:引用的已有知识带判定与后续处理', flowText.includes('引用的已有知识(2)') && flowText.includes('超出适用范围') && flowText.includes('本次不能直接沿用,需重新检验') && flowText.includes('引用者:热电偶老化导致读数偏低'), flowText)
 			check('探索货架:将沉淀的内容列出已写入的负向条目', flowText.includes('将沉淀的内容') && flowText.includes('原料湿度导致漂移') && flowText.includes('夜班读数跳变'), flowText)
@@ -1499,7 +1505,19 @@ console.log('\n【预设定界:不是 ClearAI 的会话里一个都不注册】'
 	bundle.exports.apply(host.ctx)
 	check('非本预设:中栏与右栏都不注册', host.registrations.length === 0 && host.tabDefinitions.length === 0, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
 	host.flipPreset('clearai')
+	check('会话切换栈内不变更视图，等待旧绑定释放', host.registrations.length === 0)
+	await new Promise(resolve => setTimeout(resolve, 0))
 	check('切到本预设:席位长出来,不再有右栏页签(跟着会话走)', host.registrations.length > 0 && host.tabDefinitions.length === 0, `${host.registrations.length} 个席位 / ${host.tabDefinitions.length} 张页签`)
+	const focus = bundle.exports.__topology
+	focus.factsFocus.set({ graph: 'old-object' })
+	focus.treeFocus.set({ step: 'old-step' })
+	host.switchOwner('s2', 'g2')
+	check('切换会话后清除对象与步骤选择，避免跨任务串线', focus.factsFocus.value === null && focus.treeFocus.value === null)
+	focus.factsFocus.set({ graph: 'new-object' })
+	host.switchOwner('s2', 'g2')
+	check('同一任务的无关更新保留用户选择', focus.factsFocus.value?.graph === 'new-object')
+	host.switchOwner('s2', 'g3')
+	check('同一会话切换目标后清除旧对象选择', focus.factsFocus.value === null)
 	check(
 		'§34:工具行**不再**注册档位开关(clearai-tier 已随「多问我/自己跑」一起删掉)',
 		!host.registrations.some((entry) => entry.options.id === 'clearai-tier'),
@@ -1526,6 +1544,38 @@ console.log('\n【预设定界:不是 ClearAI 的会话里一个都不注册】'
 	)
 }
 
+{
+ const { __submitIntent: submit } = loadClientBundle().exports
+ const states = []
+ let resolveSend
+ const pending = submit(() => new Promise(resolve => { resolveSend = resolve }), 'adjust', value => states.push(value))
+ check('发送未确认时不显示已收到', states.join(',') === 'sending')
+ resolveSend(true)
+ await pending
+ check('宿主确认后才显示已发送', states.join(',') === 'sending,sent')
+ const rejected = []
+ await submit(() => Promise.reject(new Error('disconnected')), 'adjust', value => rejected.push(value))
+ check('异步发送拒绝明确显示失败', rejected.join(',') === 'sending,failed')
+}
+{
+ const bundle = loadClientBundle()
+ const host = makeClientContext()
+ const messages = []
+ host.ctx.sessions.scope = () => ({ conversation: { send: async text => { messages.push(text); throw new Error('offline') } } })
+ bundle.exports.apply(host.ctx)
+ const view = host.registrations.find(entry => entry.options.id === 'clearai-explore')
+ const props = view.component({ sessionId: 's1' }).props
+ check('原生发送异常返回失败，不吞掉错误后假报成功', await props.send('review') === false && messages.length === 1)
+ host.switchOwner('s2', 'g2')
+ check('过期会话操作不向旧会话发送消息', await props.send('stale') === false && messages.length === 1)
+ await new Promise(resolve => setTimeout(resolve, 0))
+}
+{
+ const row = MAIN_SOURCE.slice(MAIN_SOURCE.indexOf('function ResearchEventRow'), MAIN_SOURCE.indexOf('child.uiConversation.events.register'))
+ check('研究事件对象是文字，不提供跨页签按钮', row.includes("h('span', { key: `${item.kind}:${item.id}`, className: 'clearai-event-object'") && !row.includes('openObject') && !row.includes('openView'))
+ check('研究事件不订阅对象定位投影或写入选择状态', !row.includes("useProjection('clearai',") && !row.includes('factsFocus.set'))
+ check('证据文件入口仅在宿主提供回调时出现', row.includes("link.path && typeof props.openFile === 'function'"))
+}
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failures.length > 0) {
 	console.log('失败项:')

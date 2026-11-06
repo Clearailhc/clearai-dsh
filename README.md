@@ -20,10 +20,12 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 > Keep structural definitions distinct from evidence-backed assertions; a valid citation alone does not establish truth.
 
+> 0.5.9 uses official DSH research events and independent Research/Ontology tabs. [Release validation](docs/optimization/0.5.9-release/README.md) records the real end-to-end task, costs and limitations.
+
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.5.8
-# or in the app: Plugins → Add plugin → clearai-dsh@0.5.8
+dsh plugin --profile web add clearai-dsh@0.5.9
+# or in the app: Plugins → Add plugin → clearai-dsh@0.5.9
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
@@ -82,16 +84,16 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
-**Requirements:** DSH ≥ `0.2.2-rc.1`, the target host for 0.5.8. Evaluators use `startActivation` and the dedicated evaluator preset; older dispatch APIs are not supported.
+**Requirements:** DSH ≥ `0.2.2-rc.1`, the target host for 0.5.9. Evaluators use `startActivation` and the dedicated evaluator preset; older dispatch APIs are not supported.
 
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.8`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.9`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.5.8
+dsh plugin --profile web add clearai-dsh@0.5.9
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.

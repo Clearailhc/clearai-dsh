@@ -1,0 +1,2029 @@
+
+> clearai-dsh@0.5.9 test
+> node tools/build-vendor.mjs && bash test/run.sh
+
+【vendor】@xyflow/react@12.11.6 → ui/vendor/xyflow.js(JS+CSS,211 KB · 函数形式,react 外部化)
+【vendor】graphology + FA2@0.10.1 → ui/vendor/force.js(77 KB · 函数形式)
+✔ native audit schema preserves enforceable constraints without unsupported length keywords (3.755536ms)
+✔ restart recovers successful structured tool output, never a rejected call or narrative (0.865138ms)
+✔ Windows-safe bounded paths preserve every raw logical ID inside the card (204.180314ms)
+✔ fingerprint binds full answers, lessons, actual file content and meaning, excludes audit echoes (11.682268ms)
+✔ fingerprint ignores duplicate observation metadata but binds content and the current plan (11.582447ms)
+✔ method digest notices script content changes even with equal size and mtime (6.881116ms)
+✔ scope uncertainty never becomes applicability or historical retraction (1.297659ms)
+✔ registered entities and asserted values/edges show sources without inventing verified facts (10.607612ms)
+✔ a source declaration does not erase independently promoted evidence for the same value (5.161005ms)
+✔ structural edges and fact identifiers containing colons resolve without inventing validation (1.622003ms)
+✔ receipts survive restart, accept another kernel and detect equal-size edits without trusting metadata (16.104863ms)
+✔ real Node, Python and shell writes remain observable as unregistered evidence (294.315101ms)
+✔ canonical references bind absolute inputs and reject outside/symlink paths (9.444707ms)
+✔ positive audits require every criterion and usable citations; changed citations invalidate reuse (7.578364ms)
+✔ asynchronous snapshots exclude nested dependencies and refuse omitted required inputs (29.537179ms)
+✔ snapshot inside workspace is accessible without recursively copying itself or deleting an existing target (8.587699ms)
+✔ cancellation runs once even when signal and normal loop race (3.513402ms)
+✔ missing or pending usage remains unknown with nonzero known lower bound (0.788229ms)
+✔ only credential content is redacted (0.779123ms)
+✔ faults demonstrably injected before provider dispatch are separate from unknown paid requests (0.367781ms)
+✔ shutdown waits for host title usage after the main turn ends (38.826456ms)
+✔ all sessions and retries share the $5 test ceiling (15.180323ms)
+✔ pending requests across tests share the $30 campaign ceiling (35.474341ms)
+✔ verified usage releases conservative reservations; unknown usage stops every test (9.618336ms)
+✔ out-of-capacity usage leaves a durable stop, never frees reserved cost (9.785689ms)
+✔ invalid cache accounting cannot release a reservation (3.299694ms)
+✔ a specifically authorized unknown retains its full cost and does not approve future unknowns (11.585926ms)
+✔ cache-price reconciliation preserves old bounds, unknown reservations and hard caps (16.919668ms)
+✔ pricing reconciliation refuses pending requests without changing the ledger (5.659746ms)
+✔ grading snapshots freeze each task and reject external evidence, secrets and later edits (10.175138ms)
+✔ only classified infrastructure errors with verifiable use and unchanged model allow retry (0.427335ms)
+✔ registered method evidence captures declared inputs and scripts through the same read fence (4.299858ms)
+✔ feedback coverage includes positive facts and lessons as well as exclusions (2.011382ms)
+✔ direct long-task diagnostics stay separate from formal acceptance and pair independent workspaces (2.101132ms)
+✔ matrix has all 162 fixed sessions and simple tasks select default mode (13.587529ms)
+✔ missing engineering gates and usage cannot pass (1.409182ms)
+✔ task failures consume the fixed experiment penalties (0.662308ms)
+✔ quality and savings verdicts cannot compensate each other (133.449175ms)
+✔ uncompleted tasks score zero despite a locally optimal submission; t2 failure costs 31 (36.901973ms)
+✔ blind grades require complete evidence and safety judgments; disagreements trigger third judge (4.226723ms)
+✔ old submission survives in history but cannot be mistaken for the next task result (2.557912ms)
+✔ native child environment excludes arbitrary inherited provider credentials (0.552501ms)
+✔ persisted negative coverage and actual final confirmed references are different mechanisms (1.791917ms)
+✔ silent closure and repeated settled-material dispatches stop a batch (0.378868ms)
+✔ lost pending reasons and out-of-scope historical retractions are critical (1.111548ms)
+✔ smoke acceptance rejects failed or nonscorable optimization even with six run records (1.511032ms)
+✔ moisture-only cost never replaces total t4 diagnosis cost (0.613109ms)
+✔ factory pairing preserves raw accounting and world-specific changes (545.433543ms)
+✔ formal acceptance uses whole paired worlds, requires auditable usage and observed feedback opportunities (411.352698ms)
+✔ native todos reflect accepted progress, pending blocks and voided steps (6.339515ms)
+✔ native events update once, restore after new turn, and survive mirror restart (1.088033ms)
+✔ display failure retries and cannot change the authority or an unrelated list (0.812647ms)
+✔ paired worlds preserve sequence structure without sharing noise streams across tasks (5.312569ms)
+✔ experiment API exposes observations, never truth, and enforces experiment count (152.396883ms)
+✔ out-of-range or infeasible recipes receive zero, including completed prose claims (50.740623ms)
+✔ uncommitted JSON, user prose and other tool results do not create achievements (8.291277ms)
+✔ different hypotheses remain separate and revisions preserve their source (1.047534ms)
+✔ committed definition changes group per operation and never become verified facts (0.65966ms)
+✔ invalid and partial ontology files do not create structure achievements (1.96044ms)
+✔ validation failure and insufficient evidence remain distinguishable (0.637356ms)
+✔ tool and internal fact channels deduplicate, refresh replays the same history (1.842023ms)
+✔ high-frequency activity does not update the projection or trigger model work (0.613653ms)
+✔ malformed call retains exact bytes and usage for rejection, without provider retry (2.406974ms)
+✔ unknown tools, valid arguments with transport error, and cancellation remain failures (4.071476ms)
+✔ native adapter terminal failure chunks become rejection calls; other finishes stay intact (1.119825ms)
+ℹ tests 65
+ℹ suites 0
+ℹ pass 65
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2182.114315
+第 1 遍 · 内核:结果:704 通过,0 失败 · 宿主:结果:38 通过,0 失败 · 客户端:结果:180 通过,1 失败 · 领域语言:结果:251 通过,0 失败 · 本体:结果:101 通过,0 失败 · 真值表:结果:19 通过,0 失败 · 状态机:结果:41 通过,0 失败 · 文档:结果:15 通过,0 失败 · 注释:结果:7 通过,0 失败 · 边界:结果:19 通过,0 失败 · 组合:结果:16 通过,0 失败 · 段:结果:22 通过,1 失败 · 长测:结果:41 通过,0 失败 · 不变量:结果:27 通过,0 失败 · 对照:结果:39 通过,0 失败 · 可读性:结果:37 通过,0 失败 · 预算:结果:28 通过,0 失败
+
+--- 内核 ---
+
+【装配面】
+  ✓ 目标与计划六件意图工具全部注册
+  ✓ 工具 schema 里没有 status / progress / phase 这类可宣告状态的字段(P2 不可表示)
+  ✓ 注册了 tools/pre-execute 与 agent/pre-step 两个机制位
+  ✓ 非法工具 JSON 返回明确拒绝且不执行工具
+
+【提示词面:预设的提示词段】
+  ✓ 段数 = 段表(全部注册成功)
+  ✓ 段序严格递增(装配顺序即装配契约)
+  ✓ 每段都有名字、序与正文,且不携带旧出处记录
+  ✓ 提示词正文里没有旧应用的路径与工具名
+  ✓ 总字数在预算内(≤ 4000 字:第五阶段收成 3 段)
+  ✓ 稳定段里没有时间/随机字节(前缀缓存是硬约束,不是优化)
+  ✓ 身份段在:让模型负责智能判断,让系统负责事实边界(断言标点无关)
+  ✓ 语言跟着人走(不再把中文写死)
+  ✓ 世界线段不在了(并行探索交给原生子任务,不再自带一套)
+  ✓ 提示词里不再提已删除的工具
+  ✓ 网页是不可信数据(安全相关的那条)
+  ✓ 对人说话段在(怎么把结论交给人)
+  ✓ 身份段刻意不含时间(时间由运行态卡承载)
+  ✓ 循环段写明先摸清现状再立计划
+  ✓ 循环段写明并行交给 subagent、各条路线声明不同的产物路径
+  ✓ 提示词不承诺不存在的机制(不出现 background 自动回灌)
+  ✓ 循环段在:唯一完成动作 + 等级只决定谁来判
+
+【装配:贡献表驱动(阶段 3)】
+  ✓ 工具面恰好 7 件(实测,不是推断)
+  ✓ 注册的工具名 = 目录(机制 → 工具 的并集)
+  ✓ 未知工具名 → 装配期抛错
+  ✓ 未知段名 → 装配期抛错
+  ✓ 未知机制名 → 装配期抛错
+  ✓ 关掉机制却仍要装它的工具 → 装配期抛错
+  ✓ 已经删掉的 contributions.budgets 不再被接受(旧写法必须装配期炸,而不是静默失效)
+  ✓ 连拦阈值不是正整数 → 装配期抛错
+  ✓ 配置键名写错(拼错 autonomy)→ 装配期抛错
+  ✓ 已摘除的 collectRetryMs 不再被接受(它从来没有人读)
+  ✓ 已摘除的 executorTimeoutMs 不再被接受(它从来没有人读)
+  ✓ 已删除的机制 worldline 不再被接受
+  ✓ 已删除的机制 scout 不再被接受
+  ✓ 已删除的机制 brain 不再被接受
+  ✓ 已删除的机制 ledger 不再被接受
+  ✓ 已删除的机制 ontology 不再被接受
+  ✓ 已删除的配置键 templateDir 不再被接受
+  ✓ 已删除的配置键 gitWorldlines 不再被接受
+  ✓ 已删除的配置键 ledgerMaxFiles 不再被接受
+  ✓ 已删除的配置键 scoutToolFilter 不再被接受
+  ✓ 已删除的配置键 executorToolFilter 不再被接受
+  ✓ 已删除的配置键 precommitRecon 不再被接受
+  ✓ 已删除的配置键 forkArbitration 不再被接受
+  ✓ 已删除的配置键 autonomy 不再被接受
+  ✓ 已删除的配置键 maxAutoTurns 不再被接受
+  ✓ 已删除的配置键 requireTypedPromotion 不再被接受
+  ✓ 已删除的配置键 requireLevelReasons 不再被接受
+  ✓ 组合文件里 clearai-kernel 的配置键全部已知
+  ✓ 组合文件里有贡献表、没有运行档(运行档第三阶段删了)
+  ✓ 关掉计划机制 → 4 件计划工具真的没装(剩 2 件)
+  ✓ 显式裁剪工具面 → 只剩清单里那几件
+  ✓ 段表里的段全部装上(没有按档二选一的段)
+  ✓ 段名不重复
+  ✓ 只有一段讲怎么对人说话(没有按档二选一的段)
+  ✓ 对人说话段写明「一次一题」与结构化提问通道,不再提续跑窗口
+
+【判据先写后做:入口强制 + 自指检测】
+  ✓ 判据为空 → 拒绝
+  ✓ 判据自指(ClosePlan 成功)→ 拒绝
+  ✓ 判据自指(记录在对话中)→ 拒绝
+  ✓ 拒绝目标完成状态作为先决判据: 文件存在且目标结案为 achieved
+  ✓ 拒绝目标完成状态作为先决判据: 目标状态为 achieved
+  ✓ 拒绝目标完成状态作为先决判据: goal status is achieved
+  ✓ 逐条判据也不能绕过完成状态自指检查
+  ✓ 短名按显示宽度算:英文太长 → 拒绝
+  ✓ 短名按显示宽度算:中文超过十六字 → 拒绝
+  ✓ 合法目标 → 立起(二十来个字母的英文短名照收)
+  ✓ 日志里留下 goal/set(假设就写在同一条变更里)
+  ✓ 投影把两条假设折进了状态
+  ✓ 修订不带 reason → 拒绝
+  ✓ 带因修订 → 版本 +1
+  ✓ 修订留痕:goal/set 有两条(旧值不删)
+
+【假设数量下限:首次立约就要候选对比(preset 立 2,内核默认不限)】
+  ✓ 带下限时不登记假设(0 条)→ 拒绝
+  ✓ 只登记 1 条 → 同样拒绝(一个猜想的检验容易退化成找证据支持自己)
+  ✓ 登记 2 条 → 立起
+  ✓ 修订目标不带新假设 → 不受下限限制
+  ✓ 修订时不传 hypotheses = 判断不变(不是全部替换掉)
+  ✓ 不写配置时(minHypotheses=0)0 条假设可立
+
+【修订不许给同一句话发新身份(真跑里卡上出现 6~8 行读数的那条)】
+  ✓ 首次立约 → 立起
+  ✓ 两条假设各有身份
+  ✓ 修订 → 版本 +1
+  ✓ 主张原文没变 ⇒ 用回原 id(不是给同一句话发新身份)
+  ✓ 修订不新增重复行(卡上不再出现同一句话两遍)
+  ✓ 只留一条 → 立起
+  ✓ 没再列出来的那条落成 superseded(而不是永远挂在 proposed 上)
+  ✓ 留下的那条仍是 proposed(它没有被这一版放弃)
+  ✓ 落账上真有这条变更(hypothesis/superseded 过去在折法里有、在生产侧没有)
+  ✓ 换主张 ⇒ 发新 id(同一 id 不许在历史上换含义)
+
+【计划:判据强制 + 步骤 id 唯一 + 判据自指 + 约立起便锁定】
+  ✓ 步骤缺 done_criteria → 拒绝
+  ✓ 步骤判据自指 → 拒绝
+  ✓ 步骤 id 重复 → 拒绝
+  ✓ tests 引用不存在的假设 → 拒绝
+  ✓ tests 填 **id** → 认(最稳的写法)
+  ✓ tests 填假设**原文** → 也认(不再把模型逼进猜谜)
+  ✓ tests 填**唯一前缀** → 也认
+  ✓ 对不上时**列出全部有效短名**(让模型能照抄,而不是继续猜;内部 id 不进结果)
+  ✓ 合法计划 → 立起
+  ✓ 已有活动计划时再立约 → 拒绝(约立起便锁定)
+
+【观测准入:只查收不收,不做裁决】
+  ✓ 产物不存在 → l1 硬拦
+  ✓ 拒绝文案给出三条合法出路
+  ✓ 空文件 → 仍硬拦(空文件不是观测)
+  ✓ 产物齐备 + 判据非空 → 送评并推进
+  ✓ 裁决来自独立评估者,不是做的人
+  ✓ 评估卡由系统落盘(两项裁决都在卡上)
+  ✓ 评估者选的是随包评估者预设(新一代入口)
+  ✓ 新一代请求里不夹带会被丢掉的 persona / toolFilter
+  ✓ 评估者拿到新上下文(spawn,不是 fork)
+  ✓ 步骤推进只发生一次(唯一完成动词)
+  ✓ 派发与落定用同一个审计 id(否则阶段永远卡在 auditing)
+
+【做的人不判自己】
+  ✓ L3 步骤自带 verdict → 拒绝(verdict_not_accepted)
+  ✓ 被拒后步骤仍未推进
+  ✓ 去掉 verdict → 系统派评估者并推进
+  ✓ 不检验判断的步骤不要求给结果,但要写交付凭什么成立 → 没写就拒(basis_required)
+  ✓ 依据太短 → 拒绝(basis_required)
+  ✓ L0 自判 + 可复查依据 → 推进
+  ✓ 不检验判断的步骤不产生证据
+  ✓ 自判的交付记在推进那条事实上(依据可复查)
+
+【目录物证与 blocked 出口】
+  ✓ 目录物证 → 如实拒绝并报告文件数和字节数
+  ✓ blocked 守卫当场问人;没人能答 ⇒ 只列模型自己能动的解拦动作
+  ✓ RevisePlan(refine) → 清除 blocked 与连拦计数
+  ✓ VoidPlanStep 被拦步骤 → 清除 blocked 与连拦计数
+  ✓ AmendPlan → 清除 blocked 与连拦计数
+  ✓ 解拦后 AdvancePlan 按当前首个未落定步重验六份非空 md
+
+【序位不变量 + 唯一完成动词之外不动进度】
+  ✓ 无未落定步 → 可以收束
+  ✓ 归档落在 clear/goals/plans/(实现事实,不是提示词里写的 products/guides/)
+  ✓ 第一阶段收束后可开下一阶段
+  ✓ 越序交付 → 拒绝(out_of_order)
+  ✓ AmendPlan 不动进度
+  ✓ RefinePlan 不动进度且旧判据留痕
+  ✓ VoidPlanStep 带因作废且不动进度
+  ✓ 作废留痕,不删记录
+  ✓ 已作废之外仍可作废其它步
+  ✓ 作废后可以收束
+
+【完成度:终局优先,升格算数(2026-09-11 长测抓到的自相矛盾)】
+  ✓ 中途口径:计划推进时完成度按步算
+  ✓ 结案成功(独立评估者裁决)
+  ✓ 评估者依据里的判断 id 换成短名(工具结果不出现内部编号)
+  ✓ 终局优先:目标 achieved ⇒ 完成度 100%(不再回落到假设口径的 0%)
+
+【事实按词面挂上本体:没写断言的判断,升格时也记下它提到的概念的定义指纹】
+  ✓ 没写断言的判断照样升格
+  ✓ 事实记下了原文提到的概念(良率),没提到的(窑炉)不挂
+  ✓ 改了良率的释义 ⇒ 这条事实标「定义已变」
+
+【实体门:将要升格的结论,主体必须在图上(结案唯一的结构关口;机制缺省关,preset 里开)】
+  ✓ 前置:目标立起(断言带着还没落图的主体 T2)
+  ✓ 前置:将要升格的判断真的有一个主体不在图上
+  ✓ 主体没落图 ⇒ 拒(entities_unlanded)
+  ✓ 拒在**派评估者之前**(那一次子 run 没有白花)
+  ✓ 门点名是哪条判断、哪个主体
+  ✓ 门指的出口是给主体写实体文件,并说清不必再写同一句话
+  ✓ 只有散文、没被检验的那条判断不进门的名单
+  ✓ 目标保持开放
+  ✓ 卡上的缺口与门是同一份读数(entities_unlanded 点到 T2)
+  ✓ 写好 T2 的实体文件之后放行(结案当场同步,不必等下一拍)
+  ✓ 结案那次调用带着这次同步(T2 的文件进了账)
+  ✓ 升格的事实带着断言,并指得回它的判断
+  ✓ 边由升格落下:T2 的氧含量在实体图上
+  ✓ 没有为同一句话另写一条实体关系(没有重复劳动)
+  ✓ 前置:目标立起(断言带着还没落图的主体 T2)
+  ✓ 门关着 ⇒ 同一份状态直接结案
+  ✓ 前置:目标立起(断言没写)
+  ✓ 前置:只有散文的判断在卡上列成缺口
+  ✓ 只有散文的判断照样升格(第四阶段删了「没有形态」那道门)
+  ✓ 升格后的事实如实没有断言
+
+【货架所有权:派出去的子会话不许重铺主线的读面,也不同步工作区】
+  ✓ 子会话的 pre-step 不重写事实货架
+  ✓ 子会话的 pre-step 不铺本体字段定义
+  ✓ 子会话不同步工作区(它的账里没有本体文件)
+  ✓ 主线的 pre-step 铺出 SCHEMA.json(与宿主半的字段定义同一份)
+  ✓ 主线的 pre-step 把本体文件同步进账,词汇从文件折出来
+  ✓ 三支目录铺好了(模型知道往哪写)
+
+【失联的评估者:重启之后不再被一条等不到的裁决按死(2026-09-11,AUDIT §14-D)】
+  ✓ 目录里没有它 ⇒ 已结束、结论未取回,如实落账(verdict=unknown)
+  ✓ 卡片只报事实、不给建议(「重新交付会派一个新的评估者」那句删了)
+  ✓ 失联之后不再被「机器等待」按住(第二拍的卡片不再写「评估者还在裁决」)
+  ✓ 子会话还在跑 ⇒ 不落失联(不误伤)
+  ✓ 还在跑 ⇒ 卡上照旧写「在等裁决」
+  ✓ 拿不到子代理目录 ⇒ 什么都不做(不猜、不误伤)
+
+【目标挂在原生 goal 上:Frame 建、Conclude 才能完成、放弃置阻塞、守卫拦直接完成】
+  ✓ Frame:没有原生 goal 就建一枚,objective 就是那一句话
+  ✓ 建的时候不替原生写轮数(用宿主的缺省)
+  ✓ 修订 Frame:把那一句话同步到原生 goal(edit,不重建)
+  ✓ 立约后模型直接调原生「完成目标」⇒ 被拒,指向 Conclude
+  ✓ 参数是 JSON 字符串时同样拦(宿主两种形状都会给)
+  ✓ 别的原生 goal 动作不拦(暂停、改写归原生)
+  ✓ 没立过约的会话不拦(那时目标不是 ClearAI 的)
+  ✓ Conclude 过了独立评估 ⇒ 原生 goal 置为完成
+  ✓ 结案时把各步收下的产物一次声明为交付卡片
+  ✓ 交付卡片只在结案时出:过程中没有声明过
+  ✓ 如实放弃 ⇒ 原生 goal 置为阻塞(由人决定结束),不是完成
+  ✓ 阻塞原因写明了模型说的话
+  ✓ 这个形态没有原生 goal 服务 ⇒ 照样立约,并如实说不会自动续跑
+
+【人门由开门的那次调用当场问:L4 放行 / 连拦 / 事实被推翻】
+  ✓ L4 交付时问人;人不放行 ⇒ 不交付
+  ✓ 人不放行就不花那一次评估
+  ✓ 问题由内核写:说清是哪一步、为什么要放行
+  ✓ 人放行 ⇒ 交给独立评估者,交付通过
+  ✓ 放行事实来自那次询问(via=ask,绑在步骤上)
+  ✓ 没人能答(这个形态没有提问通道)⇒ 不替人放行,不交付
+  ✓ 并且原生 goal 停下等人,写明在等什么
+  ✓ 连拦到阈值 ⇒ 当场问人怎么办
+  ✓ 人选「作废这一步」⇒ 带人的缘由作废,解除阻塞
+  ✓ 人选「按缺口再改」⇒ 解除阻塞,人的话原样交给模型
+  ✓ 没人能答 ⇒ 计划保持 blocked,原生 goal 停下等人
+  ✓ 人回来之后再交付 ⇒ 再问一次(决定不丢,门的状态在账上)
+  ✓ 前置:那条判断升格成了事实
+  ✓ 推翻证据碰到已确立的事实 ⇒ 那次交付当场问人
+  ✓ 人选撤回 ⇒ 落 fact/reviewed(撤回 + 人的缘由),事实那一行跟着变
+  ✓ 交付照常完成,复核结果说给模型听
+  ✓ 前置:会话一升格了事实
+  ✓ retests 指向不存在的事实 ⇒ 当场拒,说清怎么写
+  ✓ 判断带着 retests 落账
+  ✓ 别的会话的事实被复检推翻 ⇒ 那次交付当场问人
+  ✓ 人选撤回 ⇒ 落 fact/reviewed,指向那条事实
+  ✓ 结论写回事实文件(下一个会话也看得到撤回)
+  ✓ 交付照常完成,复核结果说给模型听
+  ✓ 事实行:别的会话的事实标「被推翻」,并带着人的撤回
+  ✓ 本会话自己的事实也能用 retests 指(按事实 id 找到)
+  ✓ 结案评估任务书列出还活着的判断,被推翻的不列
+  ✓ 结案只派一次评估者(不为判断另派)
+  ✓ 结案评估的结果记成独立证据
+  ✓ 自判只到 L1 的判断,经结案评估支持 ⇒ 升格
+  ✓ 被推翻的判断不升格
+  ✓ 目标结了 ⇒ 卡上递出事实原话与适用范围(下一个目标立题前就看得到;没声明就如实写未声明)
+  ✓ 对手判断删了:rival 不再被读,也不落账
+  ✓ 步骤带预期落账
+  ✓ 旧等级 L1 收成自判(L2)
+  ✓ 卡上:下一步给出它的预测
+  ✓ 交付时登记的未解释项落账(开着)
+  ✓ 卡上:未解释项逐条挂着
+  ✓ 卡上:没写预期的下一步提醒先写预测
+  ✓ 卡上不再有弱检验提示与对手那一格
+  ✓ 排除要写理由
+  ✓ RevisePlan expect:动手前给还没做的一步补写预期
+  ✓ Anomaly open:随时登记一条
+  ✓ Anomaly resolve:给一个去处,理由与出处落账
+  ✓ 处理过的不能再处理(去处只有一个)
+  ✓ 评估任务书带这次登记的未解释项
+  ✓ 评估者纪律要求查数据可不可信
+  ✓ 评估者报的异常记成未解释项,工具结果说出来
+  ✓ 卡上标出评估者发现的那条
+  ✓ Frame 记下不可逆动作
+  ✓ 命令特征太短 ⇒ 拒
+  ✓ 不匹配的命令照常放行(不打扰)
+  ✓ 匹配的命令:人不放行 ⇒ 拒,说明不要绕
+  ✓ 问题由内核写:说清是哪件不可逆动作
+  ✓ 人放行 ⇒ 命令照常执行
+  ✓ 没人能答 ⇒ 拒,原生 goal 停下等人
+  ✓ 子代理入口都不在 → 挂载时就警告
+  ✓ 派不出评估者 → 不推进,缺口是 audit_dispatch_failed
+  ✓ 缺口原因点名两代入口都不在
+  ✓ 评估者面:继承来的写工具与派人工具被遮掉
+  ✓ 评估者面:只读与复跑工具不在遮掉的名单里
+  ✓ 评估者面:执行处硬拦写工具
+  ✓ 评估者面:读、复跑与结构化回包照常执行
+  ✓ 评估者面(无作用域):评估者的 write 照样被拦
+  ✓ 评估者面(无作用域):主会话的 write 不受影响
+  ✓ 任务书给出副本路径,副本里有产物、没有递归副本
+  ✓ 评估者预设挂了本机原生 shell 与后台任务工具(复跑要用)
+  ✓ 评估结束后副本删掉
+  ✓ 副本根有复跑记号,写明原工作区与副本
+  ✓ 原工作区里没有复跑记号
+  ✓ 任务书说明这是副本,并提醒全局用户数据目录
+  ✓ 项目没声明复跑变量时,任务书不编造变量
+  ✓ 声明的复跑变量写进记号,{copy} 换成副本路径
+  ✓ 任务书列出声明的复跑变量
+  ✓ 评估期间收下的产物被改 ⇒ 裁决不认,这一步不推进
+  ✓ 必要输入被排除时不派评估者
+  ✓ 副本失败诊断保留在投影中供 UI 呈现
+  ✓ L3 交付带 5 条未解释项(上限 4)→ 拒绝
+  ✓ 拒因说清超了多少、怎么压
+  ✓ 被拒的这一批没落账、没派评估者
+  ✓ 体积超限不算连拦(计划不因此 blocked)
+  ✓ 单条未解释项超过 400 字 → 拒绝,不再静默截断
+  ✓ 4 条(刚好在上限内)→ 照常送评
+  ✓ auditMaterialLimits.anomalies 调到 8 → 5 条照常送评
+  ✓ auditMaterialLimits 写错({"anomalies":0})→ 装配期抛错
+  ✓ auditMaterialLimits 写错({"anomalyChars":1.5})→ 装配期抛错
+  ✓ auditMaterialLimits 写错({"observations":6})→ 装配期抛错
+  ✓ auditMaterialLimits 写错([])→ 装配期抛错
+  ✓ L2 交付不受评估材料闸门限制
+
+【旧日志里的撤回 / 维持:面板不再发这两个动作,但历史照样折得出来】
+  ✓ 被推翻、还没审过的事实:那一行写着「被推翻」,但不进收件箱(这道门改由交付当场问)
+  ✓ 旧日志里的撤回照样折出来(否则重放时又变回待复核)
+  ✓ 旧日志里的维持照样折出来
+
+【外脑:把工作区投影成原生条目,自建只有写侧两件】
+  ✓ 宿主没有 skills 服务时,装配照常(降级不抛)
+
+【技能目录:面板与模型看同一张表(合并目录随投影下发)】
+  ✓ 没有 skills 服务时 pre-step 照常(目录这条静默缺席,不抛)
+
+【消息署名:生产者自有的 source kind(session 格式 v4 的接纳条件)】
+  ✓ 内核真的下发了消息(否则这一节什么都没验)
+  ✓ 署名是生产者自有的 kind(不是已退役的共享包装 plugin,也不是空)
+  ✓ 署名与旧日志的抬升值同一个(plugin:clearai)
+  ✓ 退役的 plugin 身份字段不再出现(宿主不许它再当署名)
+  ✓ 形态字段照旧(snapshot + sections):面板仍按 form 渲染
+
+【子 run 的结局:中断/报错是 resolve 带 stopReason,不是 reject(2026-09-11 用户实测的 bug)】
+  ✓ 前置:这一步交付成功(证据只碰到第一条假设)
+  ✓ 结案成功(判据达成了)
+  ✓ 结案把「没被任何证据触及的假设」如实落账
+  ✓ 结案消息如实说出来(未判不是「没问题」,是「没看过」)
+  ✓ 视图把留痕交出去(面板与卡片读同一份)
+  ✓ 前置:带原件的交付成功
+  ✓ refs 是**路径**而不是材料 id(界面按路径打开才点得开)
+  ✓ origins 落账:产物那条带 path(记账时解析,不靠界面猜)
+  ✓ 前置:L3 交付由独立评估者裁决(去掉 verdict)
+  ✓ 独立证据的出处里有**评估卡**(工作区相对路径 + 文件真在盘上)
+  ✓ 独立证据的出处里有**评估者会话**(论证过程可旁观)
+  ✓ 前置:计划立起来了
+  ✓ 前置:这一步交付成功(否则后面的事实无从谈起)
+  ✓ 前置:计划收尾
+  ✓ 前置:目标结案成功
+  ✓ 事实升格时带上推翻条件与等级,适用范围另存(没声明就是 null,不拿推翻条件充数)
+  ✓ 计划还开着 ⇒ 结案被拒(plan_open),并把"差一次 ClosePlan"说清
+  ✓ 被拒之后目标仍是开放(没有偷偷结掉)
+  ✓ 放弃(abandoned)不受此限:计划还开着也能如实结案
+  ✓ 事实货架落盘(clear/knowledge/facts/INDEX.md)
+  ✓ 货架里写着适用范围、推翻条件与支持等级(引用前先看范围)
+  ✓ 货架幂等(内容一样就不重写)
+
+【裁决一旦结束就要落结算事实:不许让派发事实独自留在账上】
+  ✓ 这一笔交付 fail-closed(没拿到裁决就不推进)
+  ✓ 派发事实落了(前置)
+  ✓ **结算事实也落了**:结局不好也是结局
+  ✓ 结算事实带着 id 与步(可回指那一次派遣)
+
+【评估者已结束 ⇒ 先取回它的裁决,取不回才如实落 unknown】
+  ✓ 旧裁决缺可复核引用时保存为 unknown,不得恢复推进
+  ✓ 取回的裁决落了评估卡(凭据与在进程里拿到的那条同构)
+  ✓ 真正冷会话经 sessionQuery 恢复原生结构化裁决,不派新评估
+  ✓ 结束了但未正常完成 ⇒ verdict=unknown,理由写清缘由(aborted)
+  ✓ 日志读不到 ⇒ 已结束、结论未取回(不说「不会有结果」)
+
+【连拦计数 → 计划 blocked,停下等人】
+  ✓ 第三次未过闸 → blocked=true 且文案要求停下等人
+  ✓ 台账记下 plan/blocked
+  ✓ 派生阶段变成 stalled(派生,不存),卡上说人话
+
+【fail-closed:没有独立评估者就没有 L3+ 的完成】
+  ✓ L3 计划立起
+  ✓ 评估者派不出去 → 不推进(fail-closed)
+  ✓ 此时没有写入任何 v1 的证据
+  ✓ 评估者判交付不成立 → 退回,步骤不推进
+  ✓ 交付不成立时不写证据(那不是对判断的结果)
+  ✓ 退回的话里逐条写出缺口
+  ✓ 交付成立、判断被推翻 → 步骤照常推进(推翻不让交付失败)
+  ✓ 推翻写进证据,针对的是那条判断
+  ✓ 推翻的证据来自独立评估者
+  ✓ 交付本身记在推进那条事实上(谁判的、凭什么)
+  ✓ 结果说给模型听:推翻是有价值的结果
+  ✓ 收敛后收束这份计划(同时只允许一份活动计划)
+
+【事实边界:系统所有的路径,做的人写不进;危险命令闸门】
+  ✓ 写 clear/knowledge/facts → 拒绝
+  ✓ 用 bash 伪造评估卡 → 拒绝
+  ✓ 危险命令闸门(authoritative before_tool)→ 拒绝
+  ✓ pwsh 危险命令闸门同样生效 → 拒绝
+  ✓ pwsh 卷格式化 → 拒绝
+  ✓ pwsh 递归删除系统路径 → 拒绝
+  ✓ pwsh 只读命令 → 放行
+  ✓ pwsh 危险删除写法 → 拒绝:Remove-Item a.txt; Remove-Item -Recurse C:\
+  ✓ pwsh 危险删除写法 → 拒绝:Remove-Item -Recurse C:/
+  ✓ pwsh 危险删除写法 → 拒绝:Remove-Item -Recurse $env:SystemRoot
+  ✓ pwsh 危险删除写法 → 拒绝:Get-ChildItem | ForEach-Object { Remove-Item -Recurse C:\ }
+  ✓ pwsh 危险删除写法 → 拒绝:ri -r C:\Windows
+  ✓ pwsh 危险删除写法 → 拒绝:rm -Recurse:$true ~\
+  ✓ pwsh 危险删除写法 → 拒绝:Remove-Item -Rec -Force C:\Users
+  ✓ pwsh 危险删除写法 → 拒绝:SUDO Remove-Item x
+  ✓ bash 危险删除写法 → 拒绝:rm a.txt; rm -rf ~
+  ✓ pwsh 非递归或非系统路径 → 不归这条规则管:Remove-Item -Force C:\
+  ✓ pwsh 非递归或非系统路径 → 不归这条规则管:Remove-Item -Recurse build\out
+  ✓ pwsh 非递归或非系统路径 → 不归这条规则管:Remove-Item -Recurse -Force .\dist
+  ✓ bash 非递归或非系统路径 → 不归这条规则管:rm -rf ./build
+  ✓ 用 pwsh 伪造评估卡(绝对路径)→ 拒绝
+  ✓ pwsh 反斜杠相对路径写系统格子 → 拒绝
+  ✓ pwsh 反斜杠写本体三支目录 → 放行(那是模型自己的)
+  ✓ 普通命令 → 放行
+
+【目标收尾:无条件派审计,只有评估者说达成才算达成】
+  ✓ 评估者说没达成 → 目标保持开放
+  ✓ 目标未结案(台账里没有 goal/closed)
+  ✓ 材料没变 → 复用上一条裁决,不重派评估者
+  ✓ 复用没有产生新的评估者派遣
+  ✓ 前置:目标修订成功(材料变了)
+  ✓ 评估者说达成 → 结案
+  ✓ 目标级审计无条件派发
+  ✓ 有推翻证据的假设不升格(达门槛也不能升)
+  ✓ 被推翻的假设仍在状态里可查
+
+【升格:达门槛且无推翻的假设 → 事实(由系统写进知识库)】
+  ✓ 结案后可铸新目标
+  ✓ L0 步骤自判通过
+  ✓ 无推翻且达门槛 → 升格为事实
+  ✓ 事实由系统写进 clear/knowledge/facts/<事实 id>.json
+  ✓ 结案消息指向那个事实文件
+  ✓ 升格也记在台账里
+
+【跨会话:别的会话升格的事实在这里也是已知;定义改了要复核】
+  ✓ 新会话第一拍就把事实文件同步进自己的账
+  ✓ 别的会话的事实出现在事实行里(foreign)
+  ✓ 文件没变就不再同步
+  ✓ 本会话自己的事实与它的文件只算一条(按 id 去重,以账为准)
+  ✓ 定义对不上的事实带着 definitionsChanged
+  ✓ 待处理里多一条「定义已变」
+  ✓ INDEX.md 汇总所有会话的事实,不只本会话
+  ✓ 文件删掉 ⇒ 同步成 removed,事实行里也没了
+  ✓ 已登记事实被删会显式记录完整性异常
+
+【经验:结案时提议,评估者逐条核,支持的写进 clear/knowledge/lessons/,下个会话的卡上看得到】
+  ✓ 前置:立题
+  ✓ 结案通过
+  ✓ 评估者任务书里列了待核的经验(L1、L2)
+  ✓ 只有被支持的那条记成经验
+  ✓ 经验由系统写成文件
+  ✓ 回执说清写下的与没写下的
+  ✓ 做的人写不了 clear/knowledge/lessons
+  ✓ 别的会话第一拍就读到这条经验
+  ✓ 立题前的卡上摆出以前的经验
+  ✓ 人在文件上撤回 ⇒ 不再推送
+
+【领域本体写成文件:写入时单文件校验 · 读取时从文件折图 · 断言链 · 冲突只暴露】
+  ✓ 概念缺释义 → 拒这次写入,原因原样回给模型
+  ✓ 文件名不能当 id → 拒
+  ✓ id 与文件名不一致 → 拒(身份就是文件名)
+  ✓ 不是合法 JSON → 拒
+  ✓ 不认识的字段 → 拒,并列出可用字段
+  ✓ 实体没有出处 → 拒
+  ✓ 引用的概念还不存在 → 写入放行(跨文件的事不在写入时查)
+  ✓ 合格的概念文件 → 放行
+  ✓ 本体目录里不是 .json 的文件 → 放行(读的时候也不认)
+  ✓ 字段定义 SCHEMA.json 由系统所有 → 拒
+  ✓ 相对路径写事实 → 拒(从前只比绝对路径,相对写法绕过去了)
+  ✓ 只读地看事实 → 放行(攒下来的东西就是要被读)
+  ✓ 原生 read 读事实 → 放行
+  ✓ 用 bash 在本体三支目录里挪文件 → 放行(挪目录就是重新分层)
+  ✓ 用 bash 往事实目录里写 → 拒
+  ✓ 局部编辑先在内存里套用再查:删掉必填的 type → 拒
+  ✓ 被拒的编辑没有碰盘上的文件
+  ✓ pre-step 把本体文件同步进账,词汇从文件折出来
+  ✓ 目录嵌套就是 is_a:narrow_batch 的父概念是 furnace_batch
+  ✓ 实体从文件进图
+  ✓ 引用不存在的关系 → 落账之前被拒
+  ✓ 主体类型不合主词域(也不是它的下位概念)→ 拒
+  ✓ 同一事实里同一主体两个值 → 当场拒(自相矛盾)
+  ✓ 带断言的假设 → 通过(断言是加法,不是门槛)
+  ✓ L0 步骤交付 → 通过
+  ✓ 第一条目标达成 → 升格
+  ✓ 成功结案提醒把可复用的做法写成原生技能
+  ✓ 升格带着产出它的假设 id 与类型化断言
+  ✓ 升格带着用到的定义指纹(谓词与主体类型)
+  ✓ 同一单值谓词、同一主体、两个取值 → 派生一对冲突
+  ✓ 冲突只在「待处理」里陈述一行,不带按钮、不拦
+  ✓ 运行态卡把矛盾说出来并说明不替你选
+  ✓ 运行态卡不带本体提纲与计数(只给被判断引用到的本体项)
+  ✓ 主体没有实体文件 → 拒(主词可指认是能被复核的前提)
+  ✓ legacy:true → 放行(迁移期出口真的通)
+  ✓ 只改名字 → 已升格的事实不标「定义已变」
+  ✓ 改了单值性 → 用到它的事实标「定义已变」(不拦,也不撤回)
+  ✓ 待处理里列出要复核的事实
+  ✓ 卡上说有几条事实需复核
+  ✓ 引用已废止概念的新断言 → 拒
+  ✓ 引用了不存在的关系 → 列成问题(relation_unknown),那条关系不进图
+  ✓ 卡上说本体文件有几处问题
+
+【跳级理由整套删除(第四阶段):等级只决定谁来判,不再有「未走过的等级」】
+  ✓ 只在 L3 上交过 ⇒ 派生里没有「未走过的等级」这一项
+  ✓ 运行态卡不再列「未走过」
+  ✓ 旧日志里的 level/skipped 安静跳过(折得出来,不留痕在假设上)
+
+【拿不到裁决要计数:同一件事反复失败必须升级给人,不许无声重试】
+  ✓ 拿不到裁决仍然 fail-closed(不推进)
+  ✓ 但它**计入连拦**(第 1 次)
+  ✓ 第 1 次的结果里说明还剩几次会置 blocked(不让人猜)
+  ✓ 连拦到阈值 ⇒ 计划置 blocked,并如实说已停下等人
+  ✓ 置 blocked 时当场问人;没人能答 ⇒ 原生 goal 置阻塞(升级给人的路是原生那条)
+
+【结果说不清也是完成;判不了交付成不成立才不推进】
+  ✓ 判不了交付成不成立 ⇒ 不推进,计一次连拦
+  ✓ 交付成立、结果说不清 ⇒ 这一步照常完成
+  ✓ 说不清如实记进证据,针对那条判断
+  ✓ 判断保持原状:没有支持等级,也没有被推翻
+
+【一步检验多条判断:关键实验同时判竞争的两条】
+  ✓ 立约时把主张原文解析成 id,一步挂两条判断
+  ✓ 不检验判断的那一步只要写交付凭什么成立
+  ✓ 检验两条只给了一条结果 ⇒ 拒,并点名缺哪条
+  ✓ 给了这一步没登记检验的判断 ⇒ 拒
+  ✓ 一份观测同时支持一条、推翻另一条:这一步照常完成
+  ✓ 两条判断各得一份证据:一条支持到 L2,一条被推翻
+  ✓ 每条证据写明它针对哪条判断
+  ✓ 结果说给模型听:谁支持、谁推翻
+  ✓ 输的那条路线不必作废,计划照常收尾
+
+【评估卡正文兜底:新写法 holds 也读得回来】
+  ✓ 原生结构化通道为空:正文 no 不冒充有效裁决
+
+【首回合的系统事实:本体声明与货架那句话必须真的发出去】
+  ✓ 空投影的第一次 pre-step 仍然 enter
+  ✓ 本体声明随首回合发出(不是被静默跳过)
+  ✓ 本体 section 是折法认得的形状(objects 数组)
+  ✓ 「本体已就位」那句话在注记里(它只说一次,丢了就永远没了)
+
+【实体写成文件:关系带出处,写下那一刻就进图(不等目标裁决)】
+  ✓ 实体从文件进账(带类型与出处)
+  ✓ 实体文件里的关系就是实体图的边(带出处,不等目标裁决)
+  ✓ 图上那条边标成 asserted(有出处、未经独立裁决)
+  ✓ 目录嵌套 = 属于:yangben_a 的容器是 chouxiang,并有一条 part_of 边
+  ✓ ExplainLevelSkip 不在工具面上
+  ✓ 目标一句话超 120 字 → 拒(headline 现算也一样拒)
+  ✓ 英文目标按宽度算:一百多个字母的一句话照收(120 是汉字数)
+
+【第三道校验:升格这一刻本体不成立 ⇒ 不写进长期知识,回执写明卡在哪】
+  ✓ 前置:立约时本体成立,断言通过
+  ✓ 目标照样达成(本体问题不挡结案)
+  ✓ 断言用到的关系已不在 ⇒ 这条判断不升格
+  ✓ 回执写明没写进长期知识、卡在哪
+
+【同态结案:状态没变就不重复花钱请裁决】
+  ✓ 前置:目标立起
+  ✓ 前置:第一次结案走完(评估者裁决没达成)
+  ✓ 第一次结案确实派过一次目标评估者
+  ✓ 第二次结案复用旧裁决(仍没达成)
+  ✓ 状态没变 ⇒ 不重复派遣(评估者仍然只有 1 个)
+  ✓ 账上如实留下「这次没花钱」这条事实
+
+【判据修订门:成功路径也要走通(不能只有"拒"的那一半)】
+  ✓ 前置:目标立起
+  ✓ 前置:L3 步交付(落下一条已落定的独立裁决)
+  ✓ 前置:账上有一条已落定的裁决
+  ✓ 不带 criteria_verdict 改判据 → 拒
+  ✓ 带一个账上没有的 auditKey → 拒
+  ✓ 带已落定 auditKey 改判据 → 成功
+  ✓ criteria/revised 真的落账
+  ✓ 修订留痕里带着那份裁决
+  ✓ 判据逐条落进目标(criteria[])
+  ✓ 背景说明与判据分开存(criteria_note 不参与判定)
+
+【卡瘦身:判据全文只发一次,平时给压缩版与指针】
+  ✓ 前置:目标立起(判据很长)
+  ✓ 修订后的第一张卡补了判据全文(逐字)
+  ✓ 同一修订的第二拍不再重发判据全文
+  ✓ 但压缩版与指针仍在卡上(卡瘦了不等于判据丢了;卡没有新行时这一拍不重发)
+  ✓ 目标文档已落盘(判据全文的家真的存在)
+  ✓ 目标文档里有判据全文
+
+【宿主降级进账本 + 交付侧同态复用】
+  ✓ 宿主降级被落成账本事实(不再只活在进程内存里)
+  ✓ 折法把它折进 hostHealth(面板与卡读得到)
+  ✓ 同一条降级反复观察到也只落一条(id 幂等)
+  ✓ 前置:第一次交付被独立评估者判为不成立(步骤保持未落定)
+  ✓ 前置:第一次确实派过评估者
+  ✓ 材料没变的第二次交付:复用旧裁决(不再烧一次子 run)
+  ✓ 复用也如实返回同一条裁决的语义
+  ✓ 账上留下「这次没花钱」这条事实
+  ✓ 复用记录指得回原来那一条裁决(出处不因复用而消失)
+
+【评审只写正文卡片时:裁决要能被读回来】
+  ✓ 新审计只有正文 support 不能结案
+  ✓ 结构化结果缺失如实保存 unknown
+  ✓ 缺失原生裁决标记为基础设施缺口
+  ✓ 正文写 refute ⇒ 目标保持开放(不猜成 support)
+  ✓ 正文 refute 也不能冒充新规则有效裁决
+
+【输出契约:工具返回值必须落在自己声明的 schema 里】
+  ✓ 全部调用都没有输出越界(宿主会因为越界让整次调用失败)
+  ✓ 没有工具的输出被裁剪过(裁剪会告警:字段该补进 OUTPUT_SCHEMA)
+  ✓ 契约守卫是活的(故意越界能被抓到)
+
+【产物路径不重叠:并行的路线不许互相覆盖产出】
+  ✓ 同一计划里两步声明同一个产物(写法不同也算同一个)→ 立计划被拒
+  ✓ 各自声明不同的产物 → 照常立起来
+  ✓ 补一步时撞上已有步骤的产物 → 也被拒
+  ✓ 作废的步不再占着它的产物路径
+
+【旧日志照样能读:交还宿主的机制留下的事件被安静跳过】
+  ✓ 带着旧事件的日志折得出来(不抛)
+  ✓ 其余部分照常折出来(目标还在)
+  ✓ 状态里不再有世界线 / 侦察 / 外脑这几格
+  ✓ 视图照常算得出来,也不再交出这几格
+  ✓ 旧日志里的世界线人门动作不再被认成动作
+
+【两种语言:系统写的话跟着人说话的语言走】
+  ✓ 注册了 agent/inbox/claimed(从人写的消息认语言)
+  ✓ 英文会话:拒绝的说明是英文
+  ✓ 英文会话:立约的回执是英文
+  ✓ 中文会话:同一个工具的回执照旧是中文
+  ✓ 英文会话:计划回执与提醒都是英文
+  ✓ 英文会话:运行态卡是英文
+  ✓ 英文会话拿英文的提示词段,中文会话拿中文的
+  ✓ 英文会话:六件工具的说明与参数说明都换成英文
+  ✓ 英文会话:别的插件的工具原样不动
+  ✓ 中文会话:工具说明保持中文
+  ✓ 换说明不碰 schema 的形状(只改 description)
+  ✓ 英文会话:写入闸门的拒绝理由是英文
+
+【本体随立题写入(0.5.2 起不再有测量门槛)】
+  ✓ 首次立题不写本体也能立(测量门槛已删除:它只查声明的类型,0.5.1 长测里拦截 0 次)
+  ✓ 格式不对的本体条目 → 拒(ontology_rejected),什么都不写
+  ✓ 度量都写了测量方式 → 立题成功
+  ✓ 本体条目由内核写进 clear/ontology/
+  ✓ 写入的文件带上 id(身份就是文件名)
+  ✓ 工作区同步落账(本体立刻进词表)
+  ✓ 问题落进目标
+  ✓ 判断带上所属问题;不再记由哪条关系提出(0.5.2 由 uses 取代)
+  ✓ 判断指向不存在的问题 → 拒(question_unknown)
+  ✓ 只改措辞的修订照常通过
+
+【0.5.1:按候选写预测、停止检查、未解释项让事实回到待核验】
+  ✓ serves 指向不存在的问题 → 拒
+  ✓ 步骤带 serves 与按候选的预测
+  ✓ 预测里的短名换成判断 id
+  ✓ 探索派生:当前问题是 q1,三条候选都在考察中
+  ✓ 探索派生:两条预测相同 ⇒ 这一步区分不了(indistinct)
+  ✓ 卡上写出各候选的预测,并提醒这一步区分不了
+  ✓ 卡上给出当前位置(问题与候选计数)
+  ✓ RevisePlan expect 可以只写按候选的预测
+  ✓ 未解释项记下 touches
+  ✓ 不写 answers 就结案 → 拒(answers_incomplete)
+  ✓ 缺项清单点名:没作答的问题、考察中的候选、开着的未解释项、暂缓的问题
+  ✓ 入账检查在派评估者之前(没花钱)
+  ✓ 作答了但没交代考察中的候选与未解释项 → 仍拒
+  ✓ 交代齐了 → 结案成功
+  ✓ 结论四部分存进目标(answers)
+  ✓ 前置:有一条升格的事实
+  ✓ Anomaly 可以写 touches
+  ✓ 点名事实的未解释项让它回到待核验(questioned)
+  ✓ 卡上那条事实标「待核验」
+
+【0.5.2:停止检查在审计之后再做一次】
+  ✓ 评估者在审计中指出、结论没交代的问题 → 不结案(answers_incomplete)
+  ✓ 评估者说「不影响结论」的那一项不拦
+  ✓ 目标保持开放
+  ✓ 评估者指出的问题落成未解释项(挂在卡上)
+  ✓ 答案反转必须重审,旧通过不能结案
+  ✓ 写进「尚未确定的事项」后再结案 → 达成
+  ✓ 实质修订都经过新的裁决
+
+【0.5.4:等待不是失败,同一次评估可以超过旧硬上限】
+  ✓ 超过旧硬上限仍等待同一调用,没有 dispose
+  ✓ 慢评估直接完成,无需再次结案
+  ✓ 没有超时失败或第二次派遣
+  ✓ 诊断只提醒一次,旧硬上限明确废弃
+  ✓ 裁决在工具返回前独立持久化
+  ✓ 新投影保存结算时间
+
+【0.5.4:取消和暂停不被迟到的裁决撤销】
+  ✓ cancel: 迟到裁决不完成或恢复目标
+  ✓ cancel: 已完成的裁决仍有持久证据且只派发一次
+  ✓ pause: 迟到裁决不完成或恢复目标
+  ✓ pause: 已完成的裁决仍有持久证据且只派发一次
+  ✓ revise: 迟到裁决不完成或恢复目标
+  ✓ revise: 已完成的裁决仍有持久证据且只派发一次
+
+【0.5.4:失去原调用后,原生结束事件收尾且只通知一次】
+  ✓ 恢复结束事件 paused=false: 裁决持久保存
+  ✓ 恢复结束事件 paused=false: 不重复通知或撤销暂停
+  ✓ 恢复结束事件 paused=true: 裁决持久保存
+  ✓ 恢复结束事件 paused=true: 不重复通知或撤销暂停
+
+【0.5.4:基础设施失败不因改写答案而重置连拦】
+  ✓ 三次基础设施失败、三份不同答案,仍按同一目标阻塞
+
+【0.5.2:适用范围与推翻条件分开;范围外的反证不撤回事实】
+  ✓ 立题的 conditions 落进目标
+  ✓ 事实的适用范围取自立题的 conditions
+  ✓ 推翻条件另存,不再写进适用范围
+  ✓ 事实文件带 scope_spec 与 refute_when
+  ✓ 九月的反证落在八月事实的范围之外 → 不问人撤回
+  ✓ 落一条 fact/bounded(超出范围,说清哪一维)
+  ✓ 交付照常完成,告诉模型事实在原范围内保持成立
+  ✓ 事实文件没有被撤回,记下了一处边界
+  ✓ 本次没声明条件 → 照常问人,并在问题里说明「条件未声明」
+
+【0.5.2:负向条目随发生随写,中断的会话也留下】
+  ✓ 一次自行检验推翻 → 初步排除
+  ✓ 两次自行检验推翻 → 已排除
+  ✓ 一次独立核验推翻 → 已排除
+  ✓ 复检旧事实的判断被推翻不记成已排除(走事实自己的撤回或维持)
+  ✓ 评估者判为不影响结论的反常不回灌
+  ✓ 文件 id 只留安全字符
+  ✓ 立题的 about 落进目标
+  ✓ 判断带自己的 about
+  ✓ 判断被推翻的那一拍就写成已排除条目(不等结案)
+  ✓ 一次自行检验 → 初步排除,带强度
+  ✓ 已排除条目挂在立题的 about 上,范围合并了判断的取值与立题的条件
+  ✓ 登记的反常当场写成未解条目
+  ✓ 解释为测量缺陷 → 缺陷条目,挂在仪表上
+  ✓ 系统所有:模型不能直接写负向条目目录
+  ✓ 中断的会话留下的负向条目,下一个会话读得到(已排除、未解、缺陷)
+  ✓ 别的会话的负向条目不被改写
+  ✓ 未解条目随去处更新状态
+  ✓ 升格的事实带 about(判断自己的加上立题的)
+
+【0.5.2:取用——立题定位已有条目,引用时判定适用,反驳回到被引用的条目】
+  ✓ 名称或别名相同 → 认作已有实体
+  ✓ 相似的名字 → 提示可能相同,不自动合并
+  ✓ 新名字 → 既不认作也不提示
+  ✓ 相关条目只数与 about 相交的,给目录不给内容
+  ✓ 被人撤回的事实 → 已撤回
+  ✓ 定义改过的事实 → 口径已变
+  ✓ 有开着疑问的事实 → 待核验
+  ✓ about 里的别名认作实体 id 落账
+  ✓ 立题结果说明了认作哪个实体
+  ✓ uses 里写了不存在的条目 → 拒,说清去哪找 id
+  ✓ 立题返回相关条目的计数与位置(事实与已排除都数到,不给内容)
+  ✓ 相似的名字提示可能是同一实体
+  ✓ 范围内的引用 → 适用
+  ✓ 取值超出 → 超出取值范围,先检验再用
+  ✓ 引用判定随判断落账
+  ✓ 引用它的判断在范围内被推翻 → 事实回到待核验(fact/questioned)
+  ✓ 不问人撤回(判断错了不等于引用的事实错了)
+  ✓ 工具结果说清它回到待核验
+  ✓ 事实文件记下这条疑问,状态不变
+  ✓ 有开着的疑问 → 下一个会话引用时判为待核验
+  ✓ 本次没声明条件 → 条件未声明(不当作适用);负向条目先说它是什么
+  ✓ 没写 about 时提示写上才能定位
+
+【0.5.2:可重跑的核算——引用时输入变了先重跑,超出容差判待核验并登记未解释项】
+  ✓ 登记缺字段 → 列出问题
+  ✓ 合格的登记 → 没有问题
+  ✓ 没跑过 → 要跑;输入没变 → 不跑;输入变了 → 要跑
+  ✓ 比对:超出容差与缺字段都算偏差
+  ✓ 输出只取顶层数值
+  ✓ use 指向没登记的核算 → 拒,说清登记文件怎么写
+  ✓ 升格时事实带上 use(账上与文件上)
+  ✓ 事实保存可跨会话打开的完整证据记录
+  ✓ 第一次引用:与 baseline 比,在容差内 → 照常判定,并说明已重跑
+  ✓ 输入没变 → 不重跑
+  ✓ 新会话实体知识保留证据路径
+  ✓ 输入变了、结果超出容差 → 判待核验,说清偏差
+  ✓ 同时登记一条未解释项,指向这条事实
+  ✓ 运行记录归系统,每次一条
+  ✓ 偏差待核验跨会话保留,不因输入相同恢复适用
+  ✓ 观测不能替代事实成立时基准
+  ✓ 脚本方法内容改变触发重跑并保留多个复核原因
+  ✓ 宿主不能执行命令 → 如实说没有重跑,不当成偏差
+
+【0.5.2:卡只发变化,隔一段补一张整的】
+  ✓ 第一次发整张卡
+  ✓ 之后只发与上次不同的行
+  ✓ 连续发了几次差异之后补一张整的
+
+【审计安全:写卡失败未知、在评估期间变化拒绝结案、原始 id 保留】
+  ✓ yes:原始逻辑 id 保存在真实卡内
+  ✓ yes:评估卡的独立判者身份由内核写入
+  ✓ yes:两个路径组件都为64位 SHA256
+  ✓ no:原始逻辑 id 保存在真实卡内
+  ✓ no:评估卡的独立判者身份由内核写入
+  ✓ no:两个路径组件都为64位 SHA256
+  ✓ unclear:原始逻辑 id 保存在真实卡内
+  ✓ unclear:评估卡的独立判者身份由内核写入
+  ✓ unclear:两个路径组件都为64位 SHA256
+  ✓ 写卡失败保持未知,不推进步骤
+
+【最终实际引用:不能从立题继承;失效引用不能静默完成】
+  ✓ 最终使用待核验事实 → 拒绝结案
+  ✓ 独立新证据可以结案,旧事实不自动恢复
+  ✓ 最终实际 uses 不继承立题引用
+  ✓ 最终实际复用有独立确认与评估卡
+
+【持久复核:普通异常、逐原因恢复、范围边界和派发落账失败】
+  ✓ 普通异常关联事实即持久保存复核原因
+  ✓ 普通异常中断后新会话引用仍待核验
+  ✓ 范围外异常不添加原范围内待核验
+  ✓ 匹配范围的独立复检可逐原因解除,保留其他未决原因
+  ✓ 独立复检回灌同源负向条目,保留原始观测、范围和逐原因评估卡
+  ✓ 复检范围未覆盖或还有未复核对象时负向条目保持未解
+  ✓ 旧会话恢复不覆盖跨会话独立复核结果
+  ✓ 独立复检不能笼统清除多个原因
+  ✓ 派发记录落账失败不能启动评估或借缓存通过
+  ✓ 独立派发使用原生日志hook,不分割工具调用与返回
+  ✓ 独立落账消息冷回放恢复原始步骤与关联子会话
+  ✓ 普通hook和未署名hook不能写入ClearAI状态
+
+【重复观测交付:记录变化不等于材料变化】
+  ✓ 同文件同观测重复交付仅派一次独立评估
+  ✓ 观测描述未变但文件数值改变必须重审
+  ✓ 文件未变但观测解释实质修订必须重审
+
+【结构化范围:索引与模型摘要一致】
+  ✓ 没有旧文字scope也从scope_spec显示真实范围
+  ✓ 模型当前知识摘要与索引采用同一结构化范围
+  ✓ 评估者可从目标文档核对立题引用、系统判定、复检对象和范围
+
+【实际取用落图与独立阶段成果回灌】
+  ✓ 首次立题允许暂不建图、单假设
+  ✓ 实际检验前拦截悬空about与缺失断言,不派审计
+  ✓ 概念、关系、实体和断言可在一次Frame补齐
+  ✓ Frame保存真实领域节点且未提前制造事实边
+  ✓ 断言中的主体、类型和谓词自动成为图关联
+  ✓ 修复后计划立即可用
+  ✓ 独立核验步骤可交付
+  ✓ 整个目标仍开放时,已保存有范围和独立证据的事实
+  ✓ 阶段事实挂到实体图,没有另造实体因果关系
+  ✓ 中断后重放账本仍有事实与断言
+  ✓ 新会话从文件恢复阶段事实与实体
+  ✓ 重复支持不生成第二份阶段事实
+  ✓ 后续反驳持久标记复核,保留原事实和范围
+  ✓ 反驳不会生成普遍逆命题事实
+  ✓ self:自判、未知裁决或关键异常不自动升格
+  ✓ unclear:自判、未知裁决或关键异常不自动升格
+  ✓ anomaly:自判、未知裁决或关键异常不自动升格
+  ✓ 同次断言无效则不写入任何本体文件
+  ✓ 无假设的资料阅读计划不被强迫建图
+
+【原生 todo 与核验进度同源】
+  ✓ CreatePlan自动写原生todo事件
+  ✓ 交付缺依据不提前勾选todo
+  ✓ 交付成功才完成对应todo并指向下一步
+  ✓ 模型不能用原生todo伪造ClearAI计划完成
+  ✓ 作废项从原生todo移除而不是冒充已完成
+
+结果:704 通过,0 失败
+
+临时工作区:/tmp/clearai-ws-gECpqf
+日志(本次会话落的变更记录):168 条
+--- 领域语言 ---
+
+【形状:值形态与对象形态是固定的枚举,不是自由字符串】
+  ✓ 值形态就是五种(statement/quantity/formula/code/reference)
+  ✓ 对象形态 = 值形态 + 关系宾语 instance
+  ✓ 宾语的可比形状把单位算进去(5 order 与 5 pct 不是同一个值)
+  ✓ 宾语人话把单位写出来
+  ✓ 主体的可比形状带类型(同名不同类不是同一主体)
+
+【增:带依据的注册——少一样就拒】
+  ✓ 空词汇可注册
+  ✓ id 形状不对要拒
+  ✓ 释义缺失要拒(不然引用它的人各读各的)
+  ✓ 依据缺失要拒(约定可以自愿,不能无来由)
+  ✓ id 已被占用要拒(概念与谓词共用一个命名空间)
+  ✓ 父概念不存在要拒
+  ✓ 父概念是谓词要拒(is_a 只能连概念)
+  ✓ 谓词必须登记值域
+  ✓ 值域二选一:同时给 term 与 form 要拒
+  ✓ 值形态不认识要拒
+  ✓ 主词域不存在要拒
+  ✓ functional 非布尔要拒
+
+【改:语义变化不许走修订】
+  ✓ 修订只改展示信息:值域原地不动(改语义要换 id)
+  ✓ 修订 +1 版本并留旧值
+  ✓ 概念的父链不因修订而改(层级是语义)
+
+【删:没有删除,只有黏性废止】
+  ✓ 废止保留条目本身(记录不删)
+  ✓ 废止是黏性终态:第二次不覆盖第一次(没有复活这条路)
+  ✓ 废止的条目不接受修订
+  ✓ 不认识的事件名不改变词汇
+  ✓ 事件名带不带命名空间都认(折法给的是带前缀的那一种)
+  ✓ 事件名与全仓词汇表同一条命名(下划线,不是连字符)
+
+【断言:宽松+校验——不提供放行,提供即严校】
+  ✓ 不提供断言 = 没有意见(旧账本照旧升格)
+  ✓ 合法量断言通过
+  ✓ 合法关系断言通过(宾语是另一个概念的实例)
+  ✓ statement 形态通过(非空即可)
+  ✓ formula 形态通过(存的是 LaTeX 源码)
+  ✓ code 形态通过(工作区里的相对路径)
+  ✓ reference 形态通过
+  ✓ 未登记的谓词要拒
+  ✓ 把概念当谓词用要拒
+  ✓ 主体类型不合主词域要拒
+  ✓ 主体类型是主词域的下位概念:通过
+  ✓ 宾语类型是值域的下位概念:通过
+  ✓ 宾语类型是值域的上位概念:照样拒(上位不等于下位)
+  ✓ 声明了主词域却漏写主体类型要拒
+  ✓ 主体类型没登记要拒
+  ✓ 宾语形态与值域不符要拒
+  ✓ 量缺单位要拒(没有单位的数不是量)
+  ✓ 量不是数值要拒
+  ✓ code 形态不许用绝对路径(换工作区就没了)
+  ✓ code 形态不许越出工作区
+  ✓ statement 超过上限要拒(长文该进证据,不该进断言)
+  ✓ 关系谓词的宾语给成字面值要拒
+  ✓ 同一事实里同一主体同一谓词两个值 = 自相矛盾,当场拒
+  ✓ 断言不是数组要拒
+
+【冲突:派生读数,不是裁决】
+  ✓ 单值谓词上两个不同值 = 一对冲突
+  ✓ 冲突两侧各给一条代表事实(面板要成对打开)
+  ✓ 同一个值不构成冲突
+  ✓ 撤回一侧,冲突消失(撤回是人的动作,冲突只是读数)
+  ✓ 不同主体不构成冲突
+  ✓ 非单值谓词上多值不算冲突(它不是约束)
+  ✓ 没有断言的事实不参与(旧账本零影响)
+  ✓ 结果排序确定(同一份输入两次调用逐字节相同)
+
+【健康度:悬空 / 成环 / 没人用 / 已废止仍在用】
+  ✓ 父链成环读得出来
+  ✓ 没人用的条目报 info(提示,不拦操作)
+  ✓ 引用了已废止谓词的事实要看得见(记录保留,不再新增)
+  ✓ 事实里用了没登记的谓词要报
+  ✓ 父概念不在词汇里要报
+
+【图投影:同一份账本 ⇒ 同一张图,坐标也确定】
+  ✓ 两次投影逐字节相同(布局是纯函数)
+  ✓ 本体层与实体层都画出来了
+  ✓ is_a 与谓词都在边上
+  ✓ 每条事实边带认识论读数(等级 + 事实 id)
+  ✓ 概念按 is_a 深度分层(子比父深一行)
+  ✓ 所有节点都有坐标(布局没有漏项)
+  ✓ 包围盒算得出来
+  ✓ 空词汇投影为空图而不是崩
+  ✓ 每个节点都说出自己在哪一层(客户端不再按 kind 猜)
+  ✓ 本体层节点是概念与值形态,实体层是实例与字面值
+  ✓ 每条边说得出自己在哪一层
+  ✓ 层次与边种一致(is_a/谓词在本体层,断言在实体层)
+  ✓ 投影只给纯语义(节点 / 边 / 包围盒),不替渲染层排名
+  ✓ 事实边带着命题身份(事实指得回产出它的那条命题)
+  ✓ 没有命题关联的旧事实如实给 null,不编一个
+  ✓ 有命题关联的事实把它带出来
+  ✓ 一条事实人话读得出来
+
+【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】
+  ✓ 状态版本是 v23(审计引用与完整性状态)
+  ✓ 空状态的词汇是空表(不是 undefined)
+  ✓ 六个事件折法都认识
+  ✓ 概念折进来了
+  ✓ 谓词折进来了
+  ✓ 修订与废止都落在折出来的词汇上
+  ✓ 词汇与过程本体是两个字段(权威不同,不能挤在一格)
+
+【折法:事实带上假设 id 与断言,并按 id 关联】
+  ✓ 升格带着产出它的假设 id
+  ✓ 升格带着类型化断言
+  ✓ 按 id 关联:措辞变了也认得出这条假设的出处(推翻标记落在它身上)
+  ✓ 按 id 关联:升格算进完成度
+  ✓ 按 id 撤回:措辞不同也能把假设读成 retracted(黏性终态)
+  ✓ 旧账本(无 hypothesis / 无断言)仍按主张文本关联
+  ✓ 旧账本的事实没有断言 = null(宽松+校验:不提供放行)
+  ✓ 状态键集合与清单逐字一致(加字段要改这一行)
+  ✓ 事实键集合与清单逐字一致
+
+【折法:冲突与健康度是派生读数,进读面不进闸门】
+  ✓ 冲突在派生里出现(不必等界面)
+  ✓ 冲突不拦任何动作,只在「待处理」里陈述一行(以哪个为准)
+  ✓ 冲突两侧的事实都没被改动(系统不替你选)
+  ✓ 读面带出词汇 / 冲突 / 健康度 / 图
+  ✓ 卡片把冲突说出来并说明「不替你选」
+  ✓ 撤回一侧之后冲突消失
+
+【知识模式:结构判据 + 缺口是读数,不是拦截】
+  ✓ 没有目标 ⇒ 普通任务(也没有缺口)
+  ✓ 普通任务的卡片里不出现「知识模式」
+  ✓ 目标开着且有登记命题 ⇒ 知识模式
+  ✓ 一个部署不要求假设(minHypotheses=0)时,光有目标不算知识模式
+  ✓ 目标结了 ⇒ 回到普通任务(报告期不再催结构)
+  ✓ 缺口只留三种:没有词汇不再单列一条(第四阶段删了 no_language)
+  ✓ 只有散文主张 ⇒ 报 prose_only_claims
+  ✓ 两条命题都带上断言 ⇒ prose_only_claims 消失
+  ✓ 升格没带断言 ⇒ 不再报 unstructured_facts(缺口只留三种)
+  ✓ 一步都还没走 ⇒ 不报 untouched_claims(那是起点,不是缺口)
+  ✓ 已经跑出证据、而有命题没被碰过 ⇒ 报 untouched_claims
+  ✓ 被碰过的命题不算在内(只剩没碰过的那条)
+  ✓ 缺口是读数:一条也不拦,也不进「待处理」
+  ✓ 读面带出知识模式(与卡片同一份派生)
+  ✓ 卡片不提「只有散文」那条缺口(0.5.1 删了重复提醒),也不带 code
+  ✓ 卡片把其余缺口逐条说出来(人话)
+  ✓ 结构完整时如实说不欠,而不是沉默
+
+【假设身份:一个 id 只对应一条主张(真跑里卡上出现 6~8 行读数的那条)】
+  ✓ 再一次 goal/set 同一 id + 同一主张 ⇒ 不新增行(id 是身份)
+  ✓ 补上的断言当真落进那条老命题(修订加断言是正当的更新)
+  ✓ 推翻条件也按新版更新
+  ✓ 同一个 id 换主张 ⇒ 拒(拿旧 id 说新话是对所有旧读数说假话)
+  ✓ hypothesis/superseded 折得出终态(这条变更过去没有生产者)
+  ✓ 终态黏住:被替代过的命题不会因为再被列出而复活
+
+【知识预检:相关已知自动到面前,普通任务零成本】
+  ✓ 普通任务 preflight = null(零成本契约)
+  ✓ 普通任务的卡里不出现「相关已知」
+  ✓ 知识模式给出预检
+  ✓ 主张文本命中的概念进预检(炉次)
+  ✓ 没命中的概念不进(无关概念不在清单里)
+  ✓ 命中的谓词进预检(氧含量)
+  ✓ 断言引用的谓词算「在用」(即使词面不命中)
+  ✓ 定义里挂着命中概念的事实进预检(没有断言也算)
+  ✓ 旧 scope 推翻条件不冒充适用范围
+  ✓ 卡里有「用到的概念 / 关系」,带可直接引用的 id
+  ✓ 没有命中时 terms/predicates 为空数组(不是 null,不是 undefined)
+  ✓ 没命中时卡上不再重复提醒写本体(本体随立题写,由 Frame 的测量门槛承担)
+  ✓ 废止的概念不进预检(新断言不许再引用它)
+  ✓ 预检带 truncated 读数(有界,不假装这就是全部)
+  ✓ view().preflight 与判据同源
+
+【知识 Inspector:一个选择 → 定义 / 关系 / 断言 / 证据链 / 历史】
+  ✓ 概念:给得出定义(名字 / 释义 / 依据)
+  ✓ 概念:说明它是**约定**,不带证据等级
+  ✓ 概念:连出用它的谓词(带域)
+  ✓ 概念:连出它下面的实例
+  ✓ 概念:相关事实带完整链
+  ✓ 概念:历史有登记事件
+  ✓ 谓词:域给得出标签(读的人不必回词汇表里找)
+  ✓ 谓词:值域与单值性都在
+  ✓ 谓词:说明单值谓词的冲突语义
+  ✓ 谓词:列出用到它的事实与主词
+  ✓ 实例:给得出类型与它的概念标签
+  ✓ 实例:出边指向谓词
+  ✓ 实例:边带事实读数(等级 / 状态)
+  ✓ 实例:如实说它由投影产生、没有版本史
+  ✓ 字面值:给得出形态 / 取值 / 单位
+  ✓ 字面值:指得出写它的事实
+  ✓ 值形态:说明是系统固定的内置形态
+  ✓ 值形态:如实说没有版本史
+  ✓ 边:链到事实(带边界与等级)
+  ✓ 边:事实指得回命题(按 id,不是按文本)
+  ✓ 边:命题带着推翻条件与已支持等级
+  ✓ 边:链到证据(裁决 / 等级 / 判者)
+  ✓ 边:证据带四类出处
+  ✓ 边:证据指得回产生它的步骤与判据
+  ✓ 边:历史按时间排出升格与证据
+  ✓ 边:断言带一行人话芯片(与货架同一句)
+  ✓ 旧事实没有 hypothesis 关联时如实给 null(不拿文本相等冒充身份)
+  ✓ 旧事实没有证据时如实给空数组
+  ✓ 不存在的概念 → null
+  ✓ 声明与 id 前缀矛盾 → null(说 A 给 B 一律拒)
+  ✓ 解析不出类型的 id → null
+  ✓ 空选择 → null
+  ✓ 列表带 truncated 读数(有界,不假装这就是全部)
+  ✓ Inspector 是只读的:问一遍状态不变
+  ✓ Inspector 不往状态里加东西(还是那一条事实)
+
+【新折法:实体账本 / 跳级理由 / 判据修订史 / 宿主健康】
+  ✓ 新目标带上速览与判据清单(读面字段;判定仍看判据原文)
+  ✓ 空状态的三块新账都是空表(旧日志折出来与从前同形)
+  ✓ 命题上不再有 skips(跳级理由第四阶段整套删了)
+  ✓ 实体登记折成一条记录(带类型 / 依据 / 出处 / 登记时刻)
+  ✓ 重复登记 = 后到者覆盖展示字段,首条登记时刻保留
+  ✓ 实体断言折成一条记录(主体 / 谓词 / 宾语 / 出处)
+  ✓ 同 id 的实体断言只落一条(两条落账通道不许落两遍)
+  ✓ 旧日志里的 level/skipped 安静跳过(不抛,也不留在命题上)
+  ✓ 判据修订折成 goal.criteriaHistory[](带独立裁决,不改判据原文)
+  ✓ 宿主读面降级落一条 hostHealth(只增)
+  ✓ hostHealth 是有界的读数(留最近若干条,不是档案)
+  ✓ 不认识的新变更不抛(旧折法上运行时静默忽略)
+  ✓ 裁决派发带 digest(同态复用的判据)
+  ✓ 裁决复用也进账(「这次没花钱」看得见,而且不算「等裁决」)
+
+【缺口:每条都有 code / count / detail / nextAction 四格】
+  ✓ 每一条缺口都有 code / count / detail / nextAction 四格
+  ✓ 断言主体没落图 ⇒ entities_unlanded(数的是去重的主体数)
+  ✓ 读数挂在判断上(与结案的实体门同一份)
+  ✓ 登记实例 ⇒ entities_unlanded 消失(出口就是缺口里写的那一个动作)
+  ✓ nextAction 指的正是给主体写实体文件
+  ✓ 带出处的 Assert 也把主体落成节点 ⇒ 缺口同样消失
+  ✓ 登记一个无关节点不会让缺口消失(逐个主体判)
+  ✓ 缺口只留三种:没人引用的概念不再单列(第四阶段删了 orphan_terms)
+  ✓ 走过 L3 而 L0–L2 没走 ⇒ 不再报 levels_skipped(等级只决定谁来判)
+
+【投影合并:登记 / 升格 / 实体断言三个来源,键去重】
+  ✓ 两个新来源都为空时,节点与边不带 source(旧账本的图逐字节不变)
+  ✓ 登记与升格同键 ⇒ 只留一条节点,登记那条是身份来源
+  ✓ 实体断言也产边(只登记节点不产边,图仍然长不出来)
+  ✓ 两条来源的边形状同形、都在实体层、靠 source 分得开
+  ✓ 登记的节点带着出处(凭什么在这里)
+  ✓ 实体断言每条都产一条边,实例节点只来自登记的那两个
+  ✓ 投影是纯函数:同一份账本两次调用逐字节相同
+
+【断言主体可指认:词汇三种条目,主体要么已登记要么同批引出】
+  ✓ LEXICON_KINDS 认第三种条目:实例
+  ✓ 实例不许有父概念(is_a 只连概念)
+  ✓ 没登记的断言主体要拒;旧调用点(只递词汇)照旧放行——迁移期一次
+  ✓ 这条问题两种读法都成立(文本 + code/subject 字段,内核把它当文本拼)
+  ✓ 登记过的断言主体放行
+  ✓ legacy:true 一次性放行
+  ✓ 同一批里以 instance 形态引出过 ⇒ 主体可指认
+
+【货架:概念 / 个体(实例)/ 谓词三节分开,零引用单独一节】
+  ✓ 三节都在,而且每节开头一句「这一节是什么」
+  ✓ 个体那一节把登记的实例与它的出处写出来
+  ✓ 零引用的概念单独一节(它还是约定,不是已知)
+  ✓ 旧的词汇入口照旧可用(缺实体面时如实说没有,不编)
+  ✓ 货架的「使用」一节读 knowledgeView 那一份(同一句速览 / 缺口带下一步)
+
+【单一叙述源:knowledgeView 的形状与卡上限】
+  ✓ 三行速览齐备(正在解决 / 怎样算完成 / 我做到哪了)
+  ✓ 契约字段都在
+  ✓ 术语表每一项都是三格(plain / where / nextAction)
+  ✓ 等级表能直接取(L0–L4)
+  ✓ 卡文本有硬上限(≤3000 字符)
+  ✓ 超上限时如实说省了几行,不静默截断
+  ✓ 卡里不带判据全文(压缩版 + 指针)
+  ✓ 判据改过 ⇒ 卡里写明改过几次、全文在哪(裁决编号不上卡)
+  ✓ view() 把同一份交给面板(宿主经它暴露)
+  ✓ 判据逐条进读面(条数 / 每条一行 / 注解 / 文档指针同一处)
+  ✓ 面板那一份每条也有上限(一条千字判据不占满一行)
+  ✓ 卡里判据逐条一行、带序号(不是压成一句)
+  ✓ 每行 80 字封顶(逐条 ≠ 重发整段)
+  ✓ 超出 6 条如实说还有几条 + 全文在哪
+  ✓ 逐条之后卡仍守住硬上限(≤3000)
+  ✓ 面板与卡读同一份(卡里的行就是读面里那一行)
+  ✓ 改过判据:逐条仍在,留痕写清第几次修订与独立裁决
+  ✓ 判据清单空数组 ⇒ 压缩版 + 指针(不写「0 条」小节)
+  ✓ 变更自己不带时间 ⇒ 用事件时间(不再是 1970)
+  ✓ 变更自己带了时间 ⇒ 以它为准(有些路径知道更准的时刻)
+  ✓ 事件也没时间(旧日志)⇒ 保持原样,不假装知道
+  ✓ 插件消息里的变更也盖上时间(同一条规矩,两个入口)
+
+【本体只留能产出预期的东西:概念三类、度量带单位、关系带形状、测量写核法】
+  ✓ 度量不写单位 → 拒
+  ✓ 度量写了单位 → 过
+  ✓ 概念 kind 写错 → 拒
+  ✓ 影响关系带形状 → 过
+  ✓ 形状写错 → 拒
+  ✓ 形状只给影响关系
+  ✓ 实体历史要带日期
+  ✓ 经验目录不是本体位置
+  ✓ 折出的词条带着类别、单位与形状
+  ✓ 没写单位的旧词条指纹不变(旧事实不会被误标「定义已变」)
+  ✓ 单位改了 ⇒ 指纹变
+
+【测试面:这一份测试进了 run.sh(否则它只是本地脚本)】
+  ✓ run.sh 里登记了领域语言这一套
+
+结果:251 通过,0 失败
+--- 本体 ---
+
+【形状:装配期不变式(与内核 apply 时跑的是同一个函数)】
+  ✓ 声明通过装配期校验(初始态/终态/可达性/等级前缀单调)
+  ✓ 识别得出坏声明(校验器是活的,不是摆设)
+  ✓ 一个进程一份本体:换装只能换那一行(声明里只有一个 id)
+
+【① 事件面:每一条边声明的 event,折法必须真认识】
+  ✓ 折法词汇表读得到(不是空集)
+  ✓ 台账专用变更也算认识(admission/checked 等)
+  ✓ 每条边都声明了 event(这一平面一条边一种变更类型)
+  ✓ goal:open→achieved → goal/closed 折法认识
+  ✓ goal:open→abandoned → goal/closed 折法认识
+  ✓ goal:open→superseded → goal/set 折法认识
+  ✓ hypothesis:proposed→alive → evidence/recorded 折法认识
+  ✓ hypothesis:proposed→confirmed → fact/promoted 折法认识
+  ✓ hypothesis:alive→confirmed → fact/promoted 折法认识
+  ✓ hypothesis:confirmed→refuted → evidence/recorded 折法认识
+  ✓ hypothesis:alive→refuted → evidence/recorded 折法认识
+  ✓ hypothesis:confirmed→retracted → fact/reviewed 折法认识
+  ✓ hypothesis:proposed→refuted → evidence/recorded 折法认识
+  ✓ hypothesis:proposed→superseded → hypothesis/superseded 折法认识
+  ✓ hypothesis:alive→superseded → hypothesis/superseded 折法认识
+  ✓ plan:active→closed → plan/closed 折法认识
+  ✓ plan:active→active → plan/blocked 折法认识
+  ✓ step:open→advanced → step/advanced 折法认识
+  ✓ step:open→void → plan/voided 折法认识
+  ✓ observation:received→accepted → observation/recorded 折法认识
+  ✓ observation:received→rejected → admission/checked 折法认识
+  ✓ anomaly:open→explained → anomaly/resolved 折法认识
+  ✓ anomaly:open→ruled_out → anomaly/resolved 折法认识
+  ✓ anomaly:open→escalated → anomaly/resolved 折法认识
+  ✓ goal:诞生事件 goal/set 折法认识
+  ✓ hypothesis:诞生事件 hypothesis/superseded 折法认识
+  ✓ plan:诞生事件 plan/created 折法认识
+  ✓ step:诞生事件 step/advanced 折法认识
+  ✓ observation:诞生事件 observation/recorded 折法认识
+  ✓ evaluation:诞生事件 audit/settled 折法认识
+  ✓ evidence:诞生事件 evidence/recorded 折法认识
+  ✓ fact:诞生事件 fact/promoted 折法认识
+  ✓ anomaly:诞生事件 anomaly/opened 折法认识
+  ✓ release:诞生事件 human/released 折法认识
+  ✓ 折法的关键变更 goal/set 在声明里有主
+  ✓ 折法的关键变更 goal/closed 在声明里有主
+  ✓ 折法的关键变更 plan/created 在声明里有主
+  ✓ 折法的关键变更 step/advanced 在声明里有主
+  ✓ 折法的关键变更 observation/recorded 在声明里有主
+  ✓ 折法的关键变更 audit/settled 在声明里有主
+  ✓ 折法的关键变更 evidence/recorded 在声明里有主
+  ✓ 折法的关键变更 fact/promoted 在声明里有主
+  ✓ 折法的关键变更 human/released 在声明里有主
+
+【⑤ 类型只许声明今天真能发生的取值:每个取值都要有生产者】
+  ✓ 折法/内核真的写过来源(不是空集)
+  ✓ 声明的来源取值与实际生产者逐一对齐(多一个就是类型里的假话)
+
+【①′ 验证状态表:每一行都要指得出今天的落点】
+  ✓ 状态表读得到全部九个名字(表被删或改名都会红)
+  ✓ 每一行都指得出今天的落点(事实 / 现算 / 刻意不可表示)
+  ✓ 表头写明它是落点记录,不是运行时保证
+
+【② 守卫:声明里每一个具名守卫,核心里真有那一处实现】
+  ✓ 守卫 independent_verdict_support:声明里有名字
+  ✓ 守卫 independent_verdict_support:核心里真有那一处(/independent_verdict|verdict…)
+  ✓ 守卫 independent_verdict_written:声明里有名字
+  ✓ 守卫 independent_verdict_written:核心里真有那一处(/Conclude|goal\/closed/…)
+  ✓ 守卫 human_retraction_decision:声明里有名字
+  ✓ 守卫 human_retraction_decision:核心里真有那一处(/markFactReviewed/…)
+  ✓ 守卫 block_threshold:声明里有名字
+  ✓ 守卫 block_threshold:核心里真有那一处(/CFG\.blockedThreshold/…)
+  ✓ 守卫 admission_passed:声明里有名字
+  ✓ 守卫 admission_passed:核心里真有那一处(/function admissionGate|admi…)
+  ✓ 守卫 level_judge_split:声明里有名字
+  ✓ 守卫 level_judge_split:核心里真有那一处(/SELF_JUDGE_MAX_INDEX/…)
+  ✓ 守卫 external_source_for_l4:声明里有名字
+  ✓ 守卫 external_source_for_l4:核心里真有那一处(/l4RejectSelfWritten/…)
+  ✓ 守卫 human_release_for_l4:声明里有名字
+  ✓ 守卫 human_release_for_l4:核心里真有那一处(/l4RequiresHumanRelease/…)
+  ✓ 声明里的守卫没有孤儿(每个名字都被某条边用着)
+
+【③ 等级:声明的判者/来源/门,与内核真跑的那三条门对应】
+  ✓ L4 要人放行:声明说 human_release,内核真有那道门
+  ✓ L4 只认外部来源:声明列了四种来源,内核真不认自写
+  ✓ L3 起独立判:声明说 independent,内核真把自判卡在 L2
+  ✓ L0–L2 可自判:声明与内核同一条线
+
+【④ 状态词汇:声明写的,必须与折法里真用的**同一套**】
+  ✓ goal:声明的状态里有折法真用的那几个(open/achieved/abandoned/superseded)
+  ✓ hypothesis:声明的状态里有折法真用的那几个(proposed/refuted/superseded/retracted)
+  ✓ plan:声明的状态里有折法真用的那几个(active/closed)
+  ✓ step:声明的状态里有折法真用的那几个(open/advanced/void)
+  ✓ observation:声明的状态里有折法真用的那几个(accepted/rejected)
+  ✓ 假设的 refuted 是黏性终态:声明零出边,折法真黏住(与 ClearAI 本体 P3 同一个修法)
+  ✓ 假设的 retracted 同样是黏性终态,而且优先于 refuted(人撤回的不因后来证据复活)
+  ✓ 「已被替代」不改写终态:折法里那两处前提在
+
+【⑤ 事实那一格:声明里的字段与名字,界面与内核都得真有】
+  ✓ fact 声明了边界(scope)与最近验证时间
+  ✓ 升格那一刻真的带上适用范围(内核 fact/promoted 里有 scope)
+  ✓ 界面有 goal 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 hypothesis 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 plan 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 step 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 observation 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 evaluation 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 evidence 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 fact 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 anomaly 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 界面有 release 的人话名字(声明里每个对象都要有,少一个就红)
+  ✓ 「本体」那一格注册在中栏视图里(与产物并列;视图 id 仍是 clearai-facts)
+  ✓ 本体货架只放结果、过程归探索货架(分工写进了注释而不是口头约定)
+  ✓ 事实货架(INDEX.md)由内核维护,且面板读的是同一张表
+
+【计数类说法:文件里写的对象数必须与声明对得上】
+  ✓ 正文里的对象数读得出来(至少一处)
+  ✓ 正文里写的对象数与声明长度一致
+
+【货架:本体落成 clear/ontology/<id>.md,而且是给模型读的】
+  ✓ 货架正文含全部对象与五级
+  ✓ 货架正文写出转移与守卫(模型据此对得上本体)
+  ✓ 内核确实会写它(货架函数与调用点都在)
+  ✓ 货架写入时自己建目录(不再依赖铺工作区那一步)
+
+结果:101 通过,0 失败
+--- 真值表 ---
+
+【形状:真值表自身是合法的】
+  ✓ schema 标识存在且是 clearai-truth-table 系列
+  ✓ 机制条目非空
+  ✓ id 不重复
+  ✓ 每条机制的枚举值都在表头声明的取值里
+  ✓ 每条机制都有 name / name_en / trigger / actor / rationale
+  ✓ 每条机制都显式声明了 known_mismatch 字段(值可以是 null,但不能缺)
+  ✓ 非 implemented 的条目都交代了归宿(变成机制 / 保持设计目标 / 已删除并记账)
+
+【生成物:两份 markdown 与 JSON 同步】
+  ✓ 中文版就是由 JSON 生成的
+  ✓ 英文版就是由 JSON 生成的
+  ✓ 每条机制都出现在中文版里
+  ✓ 每条机制都出现在英文版里
+  ✓ 两份的条目数一致
+
+【交叉校验:声明去问代码】
+  ✓ tools/verify-truth-table.mjs 通过
+  ✓ 校验器确实跑了多项检查(不是空跑)
+
+【重构基线:计划点名的不符必须在表里留痕】
+  ✓ 真值表收录了 criteria-required(正常入口已强制判据)
+  ✓ 真值表收录了 l4-human-release(只到步骤级)
+  ✓ 真值表收录了 commands-menu(菜单比 standard 预设薄)
+  ✓ 已知不符的条目都写清了差异(不是空串或占位符)
+  ✓ commands-menu 的不符字段已清空(命令交给原生,ClearAI 不再贡献自己的命令)
+
+结果:19 通过,0 失败
+--- 状态机 ---
+
+【词汇表:折法认识哪些变更】
+  ✓ 折法词汇表读得到(不是空集)
+  ✓ 台账专用清单读得到
+
+【① 图里的每条边,折法必须认识】
+  ✓ 状态机文档里出现的 event 都在折法词汇表里
+  ✓ 文档确实引用了 event(不是纯散文)
+
+【② 折法认识的类型,文档必须交代】
+  ✓ 折法认识的变更类型都在状态机文档里(或属于台账那一组)
+  ✓ 文档里的「只留台账」行与 LEDGER_ONLY_MUTATIONS 逐字一致
+
+【③ 中英两份文档的 event 集合一致】
+  ✓ 中文版没有英文版缺失的 event
+  ✓ 英文版没有中文版缺失的 event
+
+【④ 不变量必须写在文档里,而不只在代码里】
+  ✓ 秩(RANK)与「降级不可表示」写明
+  ✓ 序位不变量 out_of_order 写明
+  ✓ 计划没有授权记号,动手前看计划交给原生 /plan
+  ✓ 续跑交给原生 goal:写明 ClearAI 碰它的三个时机,不再有 turnDemand 与续跑额度
+  ✓ 完成与结果分开写明(交付成立即完成,结果各落一条证据)
+  ✓ 只写现行机制:没有世界线、侦察这些不存在的节
+  ✓ retracted 的生产者写明(人的 fact/reviewed,不再声称没有生产者)
+
+【⑤ 时序图:四条主路径与关键边界】
+  ✓ 中文时序图含轻量探索路径
+  ✓ 中文时序图含正式认识论路径
+  ✓ 中文时序图含失败恢复路径
+  ✓ 中文时序图含竞争路线路径
+  ✓ 中文时序图写明准入不裁决
+  ✓ 中文时序图写明 L3+ 拒绝自判 verdict
+  ✓ 中文时序图写明同一计划里产物路径互斥
+  ✓ 英文时序图含轻量探索路径
+  ✓ 英文时序图含正式认识论路径
+  ✓ 英文时序图含失败恢复路径
+  ✓ 英文时序图含竞争路线路径
+  ✓ 英文时序图写明准入不裁决
+  ✓ 英文时序图写明 L3+ 拒绝自判 verdict
+  ✓ 英文时序图写明同一计划里产物路径互斥
+
+【⑤b 时序图:固定角色表,不许退回模糊角色】
+  ✓ 中文时序图有固定角色表
+  ✓ 中文角色表覆盖八个角色
+  ✓ 中文没有 Agent 作为 mermaid 参与者(它已被拆成模型+宿主)
+  ✓ 中文事实账本写明「内容是我们的,载体是宿主的」
+  ✓ 中文保留了旧名词对照(老读者找得回来)
+  ✓ 英文时序图有固定角色表
+  ✓ 英文角色表覆盖八个角色
+  ✓ 英文没有 Agent 作为 mermaid 参与者(它已被拆成模型+宿主)
+  ✓ 英文事实账本写明「内容是我们的,载体是宿主的」
+  ✓ 英文保留了旧名词对照(老读者找得回来)
+
+【⑥ 状态机文档与真值表互相指认】
+  ✓ 状态机文档指向真值表
+  ✓ 真值表指向状态机文档或计划
+
+结果:41 通过,0 失败
+--- 文档 ---
+
+【扫描面:确实扫到了该扫的文件】
+  ✓ 扫到了 docs 下的文档
+  ✓ 扫到了 preset 组合与插件
+  ✓ docs/optimization 被排除(它是本次收敛的账本,本来就要引用旧说法)
+  ✓ CHANGELOG 被豁免(它记录当时发生了什么)
+
+【禁用短语:可以出现,但那一行必须标明是历史】
+  ✓ 没有"以现在时"出现的历史说法
+
+【文档只写现行设计:不讲改造史】
+  ✓ 文档里没有改造阶段的叙述
+  ✓ 扫描面本身非空(不是空跑)
+
+【计数类说法:文档里写的数必须与它数的那份东西对得上】
+  ✓ 从 test/run.sh 数得出套件数
+  ✓ 文档里写的套件数与 test/run.sh 一致
+
+【链接:文档里的相对链接必须指得到真文件】
+  ✓ 文档里的相对 .md 链接都指得到真文件
+  ✓ 链接检查不是空跑(真的扫到了链接)
+  ✓ 这条检查抓得到死链(拿一条假链接验它,免得它对谁都是绿的)
+
+【每份文档都指得出自己的状态】
+  ✓ 已知缺口指向真值表(读法有了唯一出口)
+  ✓ 循环哲学承认"文档与实现没有机械等价检查"
+  ✓ 循环哲学列出了它自己的张力条目(不是只写优点)
+
+结果:15 通过,0 失败
+--- 注释 ---
+
+【统计面:确实扫到了代码注释】
+  ✓ 扫到了 preset 插件与 ui 库
+  ✓ 注释解析不是空跑(扫到的注释行数以百计)
+  ✓ 判据文档存在且可引用
+
+【棘轮:配额只能降不能升】
+  ✓ 日期戳:0 ≤ 配额 0
+  ✓ 内部章节号 §:0 ≤ 配额 0
+  ✓ 事故叙事(长测/实测/现场):0 ≤ 配额 0
+
+【分布:欠账按文件列(应常年为空)】
+  ✓ 没有任何文件欠账(配额 0 之后,这就是全部断言)
+
+结果:7 通过,0 失败
+--- 边界 ---
+
+【① 只有内核生产权威变更】
+  ✓ 变更字面量只出现在 clearai-kernel.js
+  ✓ 本体/提示词插件一件变更都不产
+
+【② 投影侧只有两个变更入口,且都被标记把守】
+  ✓ applyMutations 恰好两个调用点(工具结果 + 插件消息)
+  ✓ 工具结果入口被 meta.kind === MUTATION_KIND 把守
+  ✓ 插件消息入口被 clearai/mutations 段名把守
+
+【③ 面板没有写入口(人门通道第六阶段整条拿掉)】
+  ✓ 宿主半不再注册 /api/clearai/gate
+  ✓ 投影侧不再导出人门动词白名单(只剩读旧日志的那份)
+  ✓ 内核侧也不再留那份镜像
+  ✓ 旧日志动词没有一个出现在工具目录里
+
+【④ 标记常量两侧同源】
+  ✓ 内核侧 MUTATION_KIND = clearai
+  ✓ 投影侧 MUTATION_KIND = clearai
+  ✓ 工具结果入口认的就是这个标记(没有第二条无标记通道)
+
+【⑤ 非权威写面与权威写面在文件层面就是分开的】
+  ✓ 受保护目录的 deny 规则存在(clear/ 不许被普通写入)
+  ✓ 投影只读账本:fold.js 里没有任何写文件调用
+
+【⑥ 工作区级读面:所有权判据住在写入口(子会话结构上写不进)】
+  ✓ 本体字段定义的写入口自带所有权判据(isSpawnedChild)
+  ✓ 工作区同步的入口自带所有权判据(子会话不同步)
+  ✓ 事实货架的写入口自带所有权判据(同一条规则,同一个位置)
+  ✓ 判据读的是宿主会话头(谁派出去了,由宿主说了算)
+
+【⑧ 平面互不依赖:预设不 import 宿主平面】
+  ✓ 预设插件没有任何 ../../ui/ 跨界 import
+
+结果:19 通过,0 失败
+--- 组合 ---
+
+【① 挂载表:工作方式回来了,第二本账没有】
+  ✓ tool-todo 挂载且允许并行 in_progress
+  ✓ tool-subagent 挂载且带模型选择设置
+  ✓ tool-workflow 挂载
+  ✓ tool-ralph 挂载
+  ✓ workflow 引擎与 delegation realm 在(workflows 服务要有自己的 realm)
+  ✓ tool-goal 挂上了(原生 goal 是续跑与展示,完成只经 Conclude)
+  ✓ command-goal 挂上了(人用原生 /goal 看目标)
+  ✓ plan-mode 挂上了(动手前给人看计划交给原生 /plan)
+  ✓ 自带的 / 命令插件已不挂(状态看界面,/goal /plan 由原生接管)
+  ✓ 实体门在本部署里是开的(内核缺省关,立场写在 preset)
+  ✓ 删掉的两道门不在 preset 里
+  ✓ 不再设假设数量下限(0.5.2:至少两条候选催生了凑数的候选)
+
+【② 交还宿主的那几件真的不在了】
+  ✓ 机制开关只剩目标与计划(世界线 / 侦察 / 外脑 / 账本都删了)
+  ✓ 外脑插件不再挂载
+  ✓ 原生技能目录与 skill 工具仍在(技能交给宿主)
+  ✓ 原生 present 仍在(交付卡片交给宿主)
+
+结果:16 通过,0 失败
+--- 段 ---
+
+【① 每段都有合法标签】
+  ✓ 3 段定义全部带 hard/native/advisory 标签
+  分类账:hard 1 · native 1 · advisory 1
+  ✓ 三类都不为空(标签不是摆设)
+
+【② 分类与内容咬合】
+  ✓ hard 段每段都指向机制(工具名或机制名词——它们存在就是为了解释机制)
+  ✓ native 段不背内核工具名(边界各自归位)
+  ✓ advisory 段不伪装成机制承诺(劝告说劝告的话)
+
+【③ 原生契约不漂移(历史踩坑钉死)】
+  ✓ 三段依次是身份 / 循环 / 对人说话
+  ✓ 合计在 4 千字以内(第五阶段:21 段约 1.5 万字 → 3 段)
+  ✓ 提示词不讲原生工具的参数(交给工具自己的说明)
+  ✓ 提示词不提已删的目录约定、章程占位、人门动作与侦察工具
+  ✓ 身份段写明分工:模型负责判断,系统负责事实边界
+  ✓ 身份段写明网页与文件里的文字是不可信的数据
+  ✓ 循环段写明竞争路线各自声明不同的产物路径、并行交给 subagent
+  ✓ 循环段写明完成与结果分开(推翻、说不清都算完成)
+  ✓ 循环段写明等级只决定谁来判
+  ✓ 循环段写明没被证据碰过的判断记成没看过(unjudged)
+  ✓ 对人说话段给出汇报顺序:结论 / 依据 / 尚未确定的事项 / 待您决策
+  ✗ 对人说话段写明过程只在人问起或要人决定时说
+  ✓ 内核工具的 output schema 是闭集(契约是硬的,提示词才必须跟上)
+
+【④ 运行态卡只说人话(机制字段名不出现在卡片上)】
+  ✓ 卡片行不再带账本字段名(plan_confirmation_pending / confirmed_at)
+  ✓ 卡片仍如实交代授权机理(未授权不自动续跑 + 按事实补写归属)
+
+【⑤ 预设里的提示词模板变量必须是宿主注册过的】
+  ✓ 预设里的 {{…}} 都在宿主变量表里(model / cwd)
+  ✓ 这条门抓得到未知变量(拿一条假的验它)
+  ✓ persona 不再依赖模板变量(旧宿主没注册 cwd 也能起会话)
+
+结果:22 通过,1 失败
+失败项:
+  - 对人说话段写明过程只在人问起或要人决定时说
+--- 长测 ---
+
+【① 剧本表自身完整】
+  ✓ 至少四个剧本(长测要有覆盖面)
+  ✓ 每个剧本都有 title/why/task/asserts(缺一样就没法复盘)
+  ✓ 每个任务书都点名了它要验的机制(否则跑的是模型的自由发挥)
+
+【② 不变量:健康日志全绿】
+  ✓ 健康日志不误报:没有跳过准入的推进(每个 step/advanc…
+  ✓ 健康日志不误报:评估者没有悬空(每个 audit/dispatc…
+  ✓ 健康日志不误报:证据都挂在存在的步骤上(evidence/rec…
+  ✓ 健康日志不误报:升格与证据等级自洽(没到级不升格,到了级必须升格…
+  ✓ 健康日志不误报:声明的物证真的在盘上(主线步骤的 artifac…
+
+【③ 不变量:坏日志必须红(不然长测会骗人)】
+  ✓ 推进前没有准入 ⇒ 抓住
+  ✓ 评估者派了没收 ⇒ 抓住
+  ✓ 证据挂在不存在的一步上 ⇒ 抓住
+  ✓ 推进了却没有物证文件 ⇒ 抓住
+
+【③b 升格与证据等级自洽:两边都要抓】
+  ✓ 没到级却升格了 ⇒ 抓住
+  ✓ 没到级也没升格 ⇒ 放过(机制的正确姿势)
+  ✓ 到了级却没升格 ⇒ 抓住
+  ✓ 到了级也升格了 ⇒ 放过
+  ✓ 证据挂在**修订后新增**的步上 ⇒ 放过
+  ✓ 证据先记、该步后作废 ⇒ 放过(不追溯)
+  ✓ 该步作废之后又记证据 ⇒ 抓住
+  ✓ 证据挂在目标级合成锚点上 ⇒ 放过(锚点所指目标存在)
+  ✓ 合成锚点指向不存在的目标 ⇒ 抓住
+  ✓ 证据挂在 RevisePlan(add)补的步上 ⇒ 放过
+  ✓ 目标未结案 ⇒ 不要求升格(只判「没到级不许升格」)
+  ✓ 目标开放时允许独立证据支持的阶段事实
+  ✓ 阶段事实不能借用另一条假设的证据
+  ✓ 放弃目标仍保留之前核验的阶段事实
+
+【④ 剧本断言:用坏上下文必须红】
+  ✓ 竞争路线剧本的活性断言在空日志上全红(断言真的在看日志)
+  ✓ 两步声明同一产物 ⇒ 抓住(并行路线会互相覆盖)
+  ✓ 两步各占一处产物 ⇒ 放过
+  ✓ 证伪剧本的**活性**断言在空日志上全红(安全性质那条按定义恒真,已排除)
+  ✓ 「被推翻的假设不许升格成事实」这条会抓人
+  ✓ 同一断言在干净日志上放过
+
+【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官】
+  ✓ 配置读取:与预设同一份(连拦阈值、假设下限、机制贡献)
+  ✓ 装上:7 件工具、3 段提示词
+  ✓ 工具结果给模型的是内核的原话,不是一句 ok
+  ✓ 立约时原生 goal 建好了(续跑交给它)
+  ✓ 建计划不再问人(审阅记号删了)
+  ✓ L3 交付把评估者挂起来,等外部交回裁决(提示词是正文,不是对象)
+  ✓ 交回裁决之后交付落定:派发、结算、推进都在账上
+  ✓ 结果针对那条判断落成证据
+  ✓ 同一个判官认得模拟宿主的日志(不变量全过)
+
+结果:41 通过,0 失败
+--- 不变量 ---
+
+【① 合法序列一律放行】
+  ✓ 目标 → 计划 → 准入 → 交付 → 证据 → 升格:一路放行
+  ✓ 状态真的是生产折法算的(不是"什么都不判"就算过)
+  ✓ 归属包名是 clearai-dsh(宿主据此过滤与归属)
+  ✓ 伴生件名与注入声明在
+
+【② 契约一:引用完整性】
+  ✓ 引用完整性:指向不存在的步骤 → 当场抛,且消息里点名契约
+  ✓ 引用完整性:observation 指向不存在的步骤 → 当场抛,且消息里点名契约
+  ✓ 状态里一个步骤都没有时不判(查不到 ≠ 不存在)
+  ✓ 带冒号的伪步骤(目标轴)不当计划步骤查 → 放行
+
+【③ 契约二:准入先于推进】
+  ✓ 没经准入就推进 → 抛
+  ✓ 补上准入之后再推进 → 放行(判的是顺序,不是不许推进)
+
+【④ 契约三:结算必有派遣】
+  ✓ audit/settled 没有对应派遣 → 抛
+  ✓ 有派遣的结算 → 放行
+
+【⑤ 契约四:升格有据】
+  ✓ 支持只到 L1、门槛是 L3 → 升格被拦
+  ✓ 一条支持都没有就升格 → 拦
+  ✓ 状态里没有目标时不判(宁可不判,也不冤枉)
+
+【⑥ 契约五:事实棘轮(生产折法静默忽略降级;这里是唯一检测点)】
+  ✓ 前置:折法里这一步已是 void(静默降级的受害者正是它)
+  ✓ 作废过的步骤又被推进 → 抛(折法自己不会报,这里是唯一报警的)
+
+【⑦ 事件的装载点与安装件】
+  ✓ 插件消息里的 clearai/mutations 段读得出来
+  ✓ 已发布 V3 的署名形状仍读得出变更(旧日志不因换代变瞎)
+  ✓ 工具结果 meta 里的变更读得出来
+  ✓ 不相干的事件读不出变更(不猜)
+  ✓ 坏 payload 不炸(由折法决定怎么办,这里不猜)
+  ✓ 安装件挂上三条听点:会话创建 / 落账前 / 落账后
+  ✓ 安装件要求注入 sessions(没有它这条不变量无从谈起)
+  ✓ 合法事件:落账前判过、落账后提交(没有异常)
+  ✓ **落账之前**就拦下:不合法的事实根本进不了日志
+  ✓ 判不过的那一条不会污染状态(候选改在副本上)
+
+结果:27 通过,0 失败
+--- 对照 ---
+
+【A 组 · 真会话:5 次结案的结局与账上的 audit 事实】
+  现场:随仓库夹具 test/fixtures/session-9dc1fe2b-closegoal.jsonl
+  ✓ 真会话里 CloseGoal 共 5 次(读数非空跑)
+  ✓ 结局分类:1 次 inconclusive + 4 次失败
+  ✓ 4 次失败里含 1 次平台错(inactive context)+ 3 次被打断
+  ✓ 旧读数:goal_audit 事实只有 2 条(1 dispatched + 1 settled)
+  ✓ 旧读数:5 次结案里只有 1 次留下了 audit 事实
+  ✓ 两条事实成对(dispatched 与 settled 同源)
+  ✓ runEvaluator 取得出来
+  ✓ 新机制:runEvaluator 在派发 await 之前就有独立落账调用(落的是这次审计)
+  ✓ 独立通道存在(不是只把变更塞进工具结果)
+  ✓ 工具结果的出口会把独立通道的事实并进去(两条通道同源)
+  ✓ 活检查:把旧顺序(先 await 后落账)喂给同一判据,它判否
+
+【A 组 · 宿主半:属性式服务访问必须清零】
+  ✓ 新读数:属性式访问为 0(`ctx.get(...)` 取不到就降级,绝不抛)
+  ✓ 不是空扫:同一份源码里确实有方法式取面
+  ✓ 活检查:同一扫描器抓得到故意注入的属性式访问
+
+【B 组 · 结案门:证伪那一场从拦四次到一次不拦】
+  ✓ 旧读数:同一场里 Conclude 被拦 4 次(第 5 次才结案)
+  ✓ 前提:折到第一次 Conclude 之前,计划已收尾、有 1 条判断到了门槛
+  ✓ 新读数:将升格的判断没有主体不在图上 ⇒ 实体门不拦
+  ✓ 新读数:缺口里没有被删的那几种(跳级 / 没有词汇 / 零引用 / 事实没带断言)
+  ✓ 只有散文的判断照旧在卡上列成缺口(看得见,但不拦)
+
+【B 组 · 真会话的四条 L3 命题:从前报 7 处跳级,现在不报】
+  ✓ 前提:4 条命题 supportedLevel 全是 L3(与真会话一致)
+  ✓ 状态进了知识模式(缺口才有载体)
+  ✓ 新读数:没有 levels_skipped 缺口(等级只决定谁来判)
+  ✓ 新读数:派生里没有 untouchedLevels(旧读数是 1+2+2+2=7 处)
+  ✓ 每个缺口四件套齐(code/count/detail/nextAction)
+
+【C 组 · 反事实复算:0 节点/0 边 → 6 节点/5 边】
+  ✓ 真会话里取得到 rev3 那 5 条 cheng_wei 断言(读数非空跑)
+  ✓ 断言形状确认为 `sucai|yangben_* · cheng_wei = chouxiang|chouxiang`
+  ✓ 真会话读数:facts 为空时实体图是 0 节点/0 边
+  ✓ 新机制:5 个实体登记产出 5 个节点
+  ✓ 实体登记单独不产边(所以必须有实体断言那一等入口)
+  ✓ 登记节点带 source='registered'
+  ✓ 新读数:6 节点 / 5 边(旧读数 0/0)
+  ✓ 5 个 sucai 主体节点都来自登记(source='registered')
+  ✓ chouxiang 客体节点按来源标 asserted
+  ✓ 5 条边都来自实体断言(source='asserted',带出处、未过独立裁决)
+  ✓ 活检查:同一套计数喂给空状态得到 0/0
+  ✓ 兼容:只有 facts 断言时仍是 6 节点 / 5 边
+  ✓ 兼容:两个新来源都为空时,投影序列化里没有 source 字段(与改造前逐字节一致)
+  ✓ 兼容:facts 与登记同键时以 registered 优先(同键去重,不双算)
+  ✓ 新读数:合并打开后,facts 来源的节点与边标 source='promoted'
+
+结果:39 通过,0 失败
+--- 可读性 ---
+
+【① 无「全文超限」:给模型看的目标字段有长度上限机制】
+  ✓ Frame 参数取得到(否则下面的断言是空的)
+  ✓ Frame 新增 headline 字段(一句话目标)
+  ✓ headline 声明了长度上限(maxLength 是数,≤120 字)
+  ✓ 省略 headline 时由 claim 现算、超长即拒(机制,不是 required 的字面)
+  ✓ 内核有 headline 的落账前校验(fail 出口)
+  ✓ prompts 段里写明 120 字预算(与 schema 同值)
+  ✓ prompts 里点的是 headline 这个字段名(模型知道该填哪一格)
+  ✓ 活检查:一段 500 字的主张确实超过上限(反例不是空跑)
+  ✓ 活检查:一句 30 字的目标在上限内
+
+【② 缺口必须带 nextAction(且去掉它会红)】
+  ✓ 前提:三种缺口都被真的构造出来了(否则下面每条都是空跑)
+  ✓ 缺口只有这三种(第四阶段删掉的四种不再出现)
+  ✓ 每个缺口都带非空 nextAction
+  ✓ 每个缺口都带人话 detail(不是术语)
+  ✓ 每个缺口都带可清点的 count
+  ✓ 反例:抹掉 nextAction 后,同一条判据判否(否则它对谁都是绿的)
+
+【③ 卡/文档层:裁决要指认判据条目,且没有相反承诺】
+  ✓ 卡与提示词层没有「长篇/自由发挥」的相反承诺
+  ✓ 活检查:同一扫描器抓得到故意注入的相反承诺
+  ✓ 当场与回收共用唯一写卡入口
+  ✓ 裁决卡存的是归一后的 shortfalls(不是原始散文)
+  ✓ 裁决卡的 card 字段就是被归一/截断过的 basis(短裁决进卡)
+  ✓ 归一后的三格都非空才能在卡里指认判据(卡与协议同形)
+
+【④ 术语体检:GLOSSARY 导出 + 人话字符串双语言登记】
+  ✓ client.js 里取得到 LOCALE_ZH / LOCALE_EN
+  ✓ knowledge-view.js 导出 knowledgeView 函数(单一叙述源)
+  ✓ ui/lib/knowledge-view.js 存在且导出 GLOSSARY
+  ✓ GLOSSARY 有实际条目(≥3 条内部词)
+  ✓ 每条 GLOSSARY 都写清 plain / where / nextAction
+  ✓ 卡上的状态词都导出了(TRUST / VERDICT_WORD / LEVEL_WORD)
+  ✓ 卡上的状态词都在 LOCALE_ZH 里登记(面板与卡同一套词)
+  ✓ 卡上的状态词都在 LOCALE_EN 里登记
+  ✓ en 值不得等于 zh 值(英文表不是复制粘贴出来的)
+  ✓ 活检查:未登记的内部词会被同一条判据抓出
+
+【⑤ 货架:零引用概念与实例各自成节】
+  ✓ 货架非空(下面不是空扫)
+  ✓ 零引用概念被单独标出成节(旧读数:只藏在「引用 0」一列里)
+  ✓ 概念 / 个体(实例) 分成两节
+  ✓ 实例那一节排在概念那一节之后(语言 → 具体物)
+  ✓ 零引用那一节点名的是那个零引用概念(有引用的不塞进去)
+  ✓ 活检查:没有零引用概念时那一节整节消失
+
+结果:37 通过,0 失败
+--- 预算 ---
+
+【① VERDICT_SCHEMA:短裁决 + 逐条 refs 是声明出来的】
+  ✓ VERDICT_SCHEMA 取得出来(不是靠猜)
+  ✓ basis 声明了长度上限(maxLength 是数)
+  ✓ basis 的上限 ≤ 1200(短裁决,不是散文)
+  ✓ shortfalls 是数组
+  ✓ shortfalls 的元素是对象(不再是一段散文)
+  ✓ shortfalls 元素形状含 criterion / what / missing
+  ✓ shortfalls 的三个字段都是必填
+  ✓ refs 是数组(逐条指到文件与行)
+  ✓ refs 元素含 path 与 line 两个字段
+  ✓ refs 元素至少要指认 path(必填)
+  ✓ refs 是声明出来的数组形状(给了就严校)
+  ✓ refs 在 required 里,支持性裁决必须可复核
+  ✓ schema 关掉额外字段(形状即契约)
+  ✓ 反例:超长 basis + 旧形状 shortfalls 被 schema 拒
+  ✓ 反例确实触发了「超长」与「形状」两类问题(不是撞上别的字段)
+  ✓ 活检查:合规样本过得了同一份 schema
+
+【② EVALUATOR_DISCIPLINE:短裁决 + 逐条 refs,不是长篇论证】
+  ✓ 评估者纪律有英文版,且同样点名 refs 与字数上限
+  ✓ EVALUATOR_DISCIPLINE 取得出来
+  ✓ 纪律里点名 refs(逐条指到文件与行)
+  ✓ 纪律里有字数上限(短裁决是写明的预算)
+  ✓ 纪律要求每条缺口指认判据条目(criterion / 判据)
+  ✓ 纪律里没有「长篇/详细论证」的相反承诺
+
+【③ 反例:越界裁决经真工具面落账时必须被截断/归一】
+  ✓ Conclude 已注册到工具面(反例走的是真工具)
+  ✓ schema 面:越界样本确实越界(否则这条反例是空跑)
+  ✓ 越界裁决仍然落了一条 audit/settled 事实(不因越界就丢)
+  ✓ 落账 basis 被截到 ≤ 1200 字
+  ✓ 旧形状 shortfalls 被归一成 {criterion, what, missing} 而不是原样落账
+  ✓ 归一后的 basis 里带得出「被裁过」的痕迹(读账的人看得见)
+
+结果:28 通过,0 失败
+
+--- 客户端 ---
+
+【客户端接线:注册在哪个插座、钥匙是什么】
+  ✓ 包 id 是 clearai-dsh
+  ✓ 导出 apply()
+  ✓ 输入框下不再挂我们的条(§35:整行让出来)
+  ✓ 右栏不再注册页签(世界树并入探索货架)
+  ✓ 中栏两格:探索在本体之前
+  ✓ 注册前先 inject 了插座(不硬塞)
+  ✓ 主标记组件在,画面是开口的 c + 一颗事实点(emerald)
+
+【渲染冒烟:组件真的跑一遍(捕渲染期错误)】
+  ✓ 对象的人话名字表也在缝上(交叉校验要用它:声明里每个对象都得有名字)
+  ✓ 不再有自建预览组件(预览交给 DSH 原生文档预览)
+  ✓ 面板样式表按自己的标记查重(不被图组件那张挡住)
+  ✓ 缩放控件接宿主主题令牌(暗色下不再白底白字)
+  ✓ 世界树页眉给出目标与判据(撤「进展」之后它们是这一格的起点)
+  ✓ 待处理的那一句在世界树里(只陈述)
+  ✓ 世界树不再重复闭环那一格的东西(假设/观测/事实不在这)
+  ✓ 目标那块把判据逐条列出来(带序号,不是压成一句)
+  ✓ 判据小节标出条数、修订几次与最近一次独立裁决
+  ✓ 判据小节给出全文指引(沿用目标文档那条既有做法)
+  ✓ criteria_note 单独标成不参与判定的背景
+  ✓ 拿不到逐条那一份:退回一句摘要 + 全文进 tooltip(旧投影不被新语义打空)
+  ✓ 判据清单是空数组:退回摘要,不出现「判据 · 0」小节
+  ✓ 本体货架页眉:说在回答什么(目标那句)
+  ✓ 本体货架只列已确立的事实(推翻的、在验的不在这里)
+  ✓ 探索货架:待您处理那一句只陈述(没有按钮)
+  ✓ 过程记录:一行计数用状态词
+  ✓ 过程记录:四站进度轨带每站人数
+  ✓ 图带:本体图 / 实体图二选一,带各层点数
+  ✓ 过程记录里判断按可信度分组,一行一条短名
+  ✓ 判断行带「第几步」,不摆内部编号
+  ✓ 过程记录默认折叠:只给一行摘要
+  ✓ 不出现机器词(support / refute / proposed / alive)
+  ✓ 不再出现旧用词(站住 / 已确认 / 在验 / 世界树)
+  ✓ 本体图上值的形态说人话(quantity → 数值)
+  ✓ 探索货架:问题与候选假设、当前问题标在页眉
+  ✓ 下一步按候选列出预测;预测相同如实说区分不了
+  ✓ 预测不同:不出警告,只说如何调整
+  ✓ 新发现的问题带「立为问题 / 暂缓」两个按钮
+  ✓ 「立为问题」只发一句话给模型(界面不改状态)
+  ✓ 发不出去时如实记为失败(不假装发了)
+  ✓ 结论卡四部分:结论 / 依据 / 尚未确定的事项 / 待您决策
+  ✓ 多个问题时按问题切换
+  ✓ 本体货架带出结论卡
+  ✓ 投影:实体按 id 与别名挂上条目,计数分格
+  ✓ 投影:引用的已有知识里不适用的排在前面
+  ✓ 投影:本次沉淀按本目标计数
+  ✓ 实体卡:条目上的请求按钮默认收起(点条目才出现)
+  ✓ 实体卡按栏目依次列出,空栏不出现
+  ✓ 实体卡:初步排除折叠在单独一行,适用边界写明理由,范围可读
+  ✓ 实体卡不摆内部编号
+  ✓ 「请求复检」只发一句话(带条目原文与文件路径)
+  ✓ 探索货架:引用的已有知识带判定与后续处理
+  ✓ 探索货架:将沉淀的内容列出已写入的负向条目
+  ✓ 结论卡底部:本次沉淀
+  ✓ 图上实体旁的计数只列非零格
+  ✓ 结论模型:每条判断一行,状态取自宿主算好的 trust
+  ✓ 站位:写进长期知识 = 4,推翻停在检验 = 2,只提出 = 1,检验过 = 2
+  ✓ 结论行带出处那一步与依据
+  ✓ 旧账本里没有判断关联的事实也各占一行(已验证、入本体)
+  ✓ 展开区三段依次是 进度 → 可信度变化 → 补充说明
+  ✓ 可信度的每一笔:第几步 · 支持 · 独立核验 · 之前 → 之后
+  ✓ 补充说明里有 依据 / 推翻条件 / 相关 / 来源(范围与推翻条件相同就不重复)
+  ✓ 相关里用实例在图上的名字,而不是 id
+  ✓ 依据带「查看核验」入口
+  ✓ 点「查看核验」⇒ 原生预览打开评估卡
+  ✓ 被推翻那条:进度条说清停在哪,不给下一步
+  ✓ 被推翻那一笔写「推翻」
+  ✓ 还没检验的:时间线末尾给下一步
+  ✓ 不确定那一笔写「不确定」,自己检验说到了哪一级
+  ✓ 实体图空态说人话(不点名内部工具)
+  ✓ 实体图空着但有断言没落地:说清有几个
+  ✓ 本体图空态与实体图可区分
+  ✓ 本体图空态指向本体文件
+  ✓ 点多(> 40)默认收到第一层:只剩根和四枝
+  ✓ 收起的枝标出藏了几个(+10)
+  ✓ 藏起来的叶子之间的边改连到枝上,同类边去重
+  ✓ 不留自环
+  ✓ 读时查出的文件问题列在图下,说清哪个文件
+  ✓ 图交给 React Flow 渲染
+  ✓ 组件形状是 forwardRef/memo 对象也要认
+  ✓ 适配层不截断:全部节点交出去(视口归库管)
+  ✓ 节点卡带可读名称和类型标识
+  ✓ 库的零件用上了(Controls / Background;小地图去掉了)
+  ✓ 本体工具条区分结构定义与事实核验,提供搜索、列表与概览
+  ✓ 点击回调交给了库(节点 / 边 / 空白)
+  ✓ 拖动 / 平移 / 缩放由库承担
+  ✓ 没选之前不摆小卡
+  ✓ 全屏态标在根节点上(data-full=1)
+  ✓ 全屏时退出入口在场,并写出快捷键
+  ✓ 点退出入口 → 交回切换回调
+  ✓ 按 Escape → 同样退出(覆盖层内)
+  ✓ 别的键不误触退出
+  ✓ 非全屏 Escape 不触发退出(保留边的键盘交互)
+  ✓ 小图排成一圈(不跑力导向,点不叠在一起)
+  ✓ 拿不到图组件时如实说原因,结论照常可读
+  ✓ 父级重渲染:交给 React Flow 的节点还是同一组对象(不会被重新 adopt)
+  ✓ 父级重渲染:边还是同一组对象(边不重挂,边标签不闪)
+  ✓ 无关词表状态更新不重新布局或重造节点与边
+  ✓ 选中一个点:其余节点对象原样复用
+  ✓ 选中一个点:被选中的那个换新对象(选中样式要更新)
+  ✓ 小卡:标题是名字,带释义 / 主语 / 依据
+  ✓ 小卡:关系串里的实例 id 换成图上的名字
+  ✓ 小卡:用到它的结论带状态签(已验证 / 有矛盾)
+  ✓ 小卡:范围与算错相同时不重复
+  ✓ 小卡:不摆内部编号
+  ✓ 小卡:「只看相关」与「关闭」两个显式动作
+  ✓ 行身份:按 step.id 找得到那一行
+  ✓ 找不到的步骤 ⇒ null(不瞎选一行)
+  ✓ 空目标 ⇒ null
+  ✓ 聚焦 store:订阅者收到目标、也收到清空(界面状态,不写任何事实)
+  ✓ 反向跳:按步骤找到它验的那条命题
+  ✓ 这一步没登记命题(自判的 L0 步骤常常如此)⇒ null:界面不乱展开任何一条
+  ✓ 这一步不属于任何命题 ⇒ null
+  ✓ 反向聚焦 store 与正向同一个形状(收得到目标)
+  ✓ 已确认事实:顺着它的证据找到那一步
+  ✓ 事实没有证据/证据不在 ⇒ null(不乱跳)
+  ✓ 同一文件被三步声明 ⇒ 只剩一行,且记下三个步骤
+  ✓ 中间过程(lab/)不进核心产物,盘上没有的也不进
+  ✓ 删除失效的计划芯片组件,进度交还原生todo
+  ✓ 组件面里没有档位开关了(删掉的能力不许在缝上留名字)
+  ✓ 世界树渲染出脊柱上的每一步
+  ✓ 世界树不再画车道与收敛(并行探索交给原生子任务)
+  ✓ 待处理:一条一行,说人话
+  ✓ 待处理:不渲染任何按钮(面板没有写入口)
+  ✓ 没有要你做的事 ⇒ 什么都不画
+  ✓ 树详情:字符串产物也读得出路径(不再 undefined)
+  ✓ 没查过盘 ⇒ 不说「缺」(折法不碰盘,凭什么说它不在)
+  ✓ 宿主查过且不在盘上 ⇒ 才写「(缺)」
+  ✓ 多份计划 ⇒ 页眉给**一个下拉**切换入口(计划 N/共 M · 状态)
+  ✓ 只有一份计划 ⇒ 不出现切换入口(不添噪声)
+  ✓ 投影为空时渲染平静空态(不抛、不显示堆栈)
+  ✓ 空视图下这些组件都不炸
+  ✓ 客户端注入列表里带 sidebarRight(原生打开资源要用它)
+  ✓ 本体座位带着一个打开器(props.openPreview)
+  ✓ 打开器把路径交出去时用的是**这个会话**的 id
+  ✓ 路径逐段编码(段内转义、`/` 仍是分段符)
+  ✓ 座位 props 没有 sessionId 时兜底用当前会话(与宿主同一个读法:retainedBy.mainView)
+  ✓ 连当前会话都拿不到时不打开(返回 false,零调用)
+
+【世界树拓扑:一条脊柱(纯函数,直接断言)】
+  ✓ 几何常量照抄 ClearAI PlanTree(行高 / 车道宽 / 半径)
+  ✓ 一步一行,全在脊柱上(竞争路线就是脊柱上的几步,不再有车道)
+  ✓ 没有计划时不炸
+  ✓ 相邻两步连一段脊柱(n 步 n-1 段)
+  ✓ 轨道从节点边缘出发(不从圆心画出来),同一车道是直线
+  ✓ 世界树的拓扑缝里不再有车道相关的入口
+  ✓ ① 填充:未落定 → 空心(settled=false)
+  ✓ ① 填充:已交付/已作废 → 实心(settled=true)
+  ✓ ② 颜色:交付=绿 / 待办=灰 / 作废=浅灰
+  ✓ ③ 光环:有评估者正在审这一步 → 虚线环(与「在跑」是两件事)
+  ✓ ④ 分段:驳回 3 次 → 3 轮(2 段驳回 + 1 段通过)
+  ✓ ④ 分段:一次就过 → 不画弧(节点保持干净圆点)
+  ✓ ④ 分段:封顶 3 段(更多轮次交给行右的 ∞N 徽标)
+  ✓ ④ 分段:段色说每轮结局(驳回红、通过取节点色)
+  ✓ 弧的 dash:单段不留缝,多段按格偏移
+  ✓ 已交付的步也划掉(做完了就退到背景里)
+  ✓ 渲染:有评估者正在审的步画出虚线呼吸环
+  ✓ 渲染:分段弧真的画在节点上
+  ✓ 渲染:未落定的节点是空心圈
+  ✓ 渲染:不再画收敛菱形
+  ✓ 详情:把这一步的判据/状态/产物都摊开
+  ✓ 详情:检验结果与独立核验的状态都在,说人话(还没回来的说「正在裁决」;不摆证据编号)
+  ✓ 详情:不再有采纳 / 放弃分叉的动作
+
+【服务的声明面:用到的每一个都必须在 inject 里(2026-09-11 实测换来的断言)】
+  ✓ 插件声明了 inject(数组,非空)
+  ✓ 属性读法用到的服务全都声明在 inject 里(漏一个 = 静默不注册)
+  ✓ 可选服务走 ctx.get(不硬塞进 inject):layout 就是这一路
+  ✓ 三个服务名与平台的真实服务一致(名字写错同样静默失效)
+  ✓ package.json 的 dsh.client.inject 声明了服务提供者模块
+  ✓ 照真实契约(属性形式)注册得下去
+
+【图谱渲染:React Flow 那一行真的在部署件里】
+  ✓ 部署件里带着 vendor 函数(build 的拼接没掉)
+  ✓ 部署件里带上了 React Flow 的样式(缺了布局会散)
+  ✓ vendor 的外部依赖只有平台种子字(react / react/jsx-runtime)
+  ✓ 主文件确实调用它(而不是只用桩)
+  ✓ 依赖面仍然只有平台种子字(不 require 任何 npm 包)
+
+【语言:接原生 locale 座位,表按源文索引】
+  ✓ 向原生 locale 座位注册了词典
+  ✓ 两种语言都注册了(缺一种宿主会拒)
+  ✗ 界面上用到的每句话都登记了两种语言 — 对象已删除或当前任务中不可用。 | 变更数量 | 研究事件详情 | 来源事件 | 原始记录
+  ✓ 两边的键完全一致(不然会漏翻译成 key)
+  ✓ 表按**源文**索引:中文那一侧的键值相同(漏译只会退回中文)
+  ✓ 订阅了语言变化(走宿主 locale/change 事件)
+
+【预设定界:不是 ClearAI 的会话里一个都不注册】
+  ✓ 非本预设:中栏与右栏都不注册
+  ✓ 切到本预设:席位长出来,不再有右栏页签(跟着会话走)
+  ✓ §34:工具行**不再**注册档位开关(clearai-tier 已随「多问我/自己跑」一起删掉)
+  ✓ 不再遮蔽原生plan座位或注册失效跳转
+  ✓ 切走:又收回去(不留空页)
+
+结果:180 通过,1 失败
+失败项:
+  - 界面上用到的每句话都登记了两种语言
+有失败。

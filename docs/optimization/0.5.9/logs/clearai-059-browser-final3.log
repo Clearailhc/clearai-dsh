@@ -1,0 +1,19 @@
+Loaded DSH
+Session list New Session
+Plugins
+Automation tasks
+More
+Workspaces
+ClearAI 0.5.9 · 示例回放 / Example replay
+New Session
+示例回放：比较客户流失差异
+now
+More
+Into the Unknown
+Preview
+ClearAI 0.5.9 · 示例回放 / Example replay
+Standard mode
+Describe what you want to build, / commands, @ files or sessions
+Workspace Write
+Select model
+{"errors":["uiConversation.binding: unknown session \"session-a50dc6a9-09f3-4dfc-9211-6865bdcf8f42\""],"text":"New Session\nPlugins\nAutomation tasks\nMore\nWorkspaces\nClearAI 0.5.9 · 示例回放 / Example replay\n示例回放：比较客户流失差异\nnow\nMore\n示例回放：比较客户流失差异\nClearAI\nChat\nTrajectory\nExplore\nOntology\n示例回放：比较客户流失差异（不调用模型）\n10:57\n示例 / Example · 无模型调用 / No model calls\n◇ Hypothesis proposed or revised · Awaiting check\n\n客户流失差异可能来自试用客户占比。 · 按订阅类型分组后差异仍存在\n\n试用客户占比\nResearch event details\n示例 / Example · 无模型调用 / No model calls\n◇ Knowledge structure changed · Definition\n客户订阅类型属于订阅类型 · Changes: 3\nResearch event details\n示例 / Example · 无模型调用 / No model calls\n◇ Entities and assertions changed · Awaiting check\n\n示例记录，未核验\n\n客户 C01 · Changes: 1\nResearch event details\n示例用户调整：只比较最近 90 天的客户。\n10:57\nCompleted\nCompleted in 28s\n示例 / Example · 无模型调用 / No model calls\n◇ Hypothesis proposed or revised · Replaced\n\n客户流失差异可能来自试用客户占比。 · rev2\n\nexample-h1\nResearch event details\n示例 / Example · 无模型调用 / No model calls\n◇ Hypothesis proposed or revised · Awaiting check\n\n最近 90 天的客户流失差异可能来自试用客户占比。 · 分组后差异仍存在 · 用户要求只比较最近 90 天客户\n\n最近 90 天的分组差异\nResearch event details\n示例 / Example · 无模型调用 / No model calls\n◇ Validation result · Insufficient evidence\n\n付费组样本不足；数据口径通过不代表假设成立。\n\nexample-h1r2example-e1\nResearch event details\n示例 / Example · 无模型调用 / No model calls\n◇ Independent review handoff · Handed off\n\n复核样本覆盖限制；仅为交接示例，未运行评估者\n\nexample-a1\nResearch event details\n示例回放 / Example replay · 无模型调用 · 8/8\n示例 / Example · 无模型调用 / No model calls\n◇ Independent assessment · Failed\n\n示例裁决：证据不足，不能推广到总体。 · 样本选择解释尚未排除\n\nexample-a1\nResearch event details\n示例 / Example · 无模型调用 / No model calls\n◇ Stage outcome · Abandoned\n\n样本内描述保留，总体推断未成立。 · 示例客户分组记录 · 需补充付费客户样本\n\nexample-goal\nResearch event details\n示例回放不调用模型。请使用事件下方的回放按钮。\nWorkspace Write\nSelect model\n1 turns 1 steps"}

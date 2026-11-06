@@ -1,5 +1,7 @@
 # DSH integration
 
+The unreleased 0.5.9 candidate uses a summary-excluded `clearaiResearch` projection and official `uiConversation.events` / `conversation.chat.node` registration. Inline objects are static text; Research and Ontology remain independent native tabs. See [interaction and limitations](research-experience.md).
+
 ClearAI is a native DSH plugin. It adds an epistemic layer on DSH's **composition surface** and leaves the DSH engine untouched. This document explains how the repository maps onto that surface, what installs where, and how to build and verify it.
 
 ## One package, three surfaces

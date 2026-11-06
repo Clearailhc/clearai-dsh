@@ -1,0 +1,80 @@
+{
+  "version": "0.5.9",
+  "projectionVersion": 3,
+  "status": "single native end-to-end release acceptance passed; see ../0.5.9-release/acceptance.json",
+  "released": false,
+  "artifact": {
+    "path": "dist/clearai-dsh-0.5.9.tgz",
+    "sha256": "bba59af1e6fc522f0ab1284f9823df2cacfafc10c7d98db06df716ddd33aaec8",
+    "productionModuleHashesMatchPreview": true
+  },
+  "engineering": {
+    "fullRegression": "passed",
+    "projectionCases": 11,
+    "packageChecks": 45,
+    "cleanInstallChecks": 22,
+    "lifecycleChecks": 26,
+    "clientChecks": 193,
+    "finalSourceLifecycleChecks": 26
+  },
+  "preview": {
+    "host": "0.2.2-rc.1",
+    "deterministic": true,
+    "realDshPage": true,
+    "committedResearchRecords": 9,
+    "refreshRestoredRecords": 9,
+    "widths": [
+      375,
+      768,
+      1440
+    ],
+    "locales": [
+      "en-US",
+      "zh-CN"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "modelCalls": 0,
+    "errors": [],
+    "directObjectNavigation": "out of scope; static text",
+    "clickToVisibleMs": [
+      172,
+      208,
+      136,
+      156,
+      175,
+      116,
+      193
+    ],
+    "productionModuleSha256": {
+      "client.js": "fff61d03f86f88fd3a81a0a992c91c91efb4b6abd0473d707697552c777aa8a2",
+      "host.js": "efff08fb10c5261c52fa1bf9009ec215b889ece11cadc8ae3228e5e4e8eeee31",
+      "research-events.js": "dacf9dfc9a1bb9dd26cb69631889c579f203de97ab2e801c798f9c834b860f1c"
+    },
+    "consoleErrors": [],
+    "sessionSwitchCycles": 10,
+    "keyboardDisclosure": true
+  },
+  "openGates": [],
+  "paidBudget": {
+    "perTestUsd": 5,
+    "totalUsd": 30,
+    "historicalUpperBoundUsd": 2.124891428,
+    "currentBalanceVerified": true,
+    "newPaidRuns": 1
+  },
+  "publicationAuthorization": "User explicitly authorized testing then release; existing real-task and release evidence gates remain applicable.",
+  "historicalFailures": [
+    "Original unknown-session exception: fixed by deferring plugin view registration beyond Session teardown; preserved in before-visual-upgrade/.",
+    "A rapid switch 100ms after New Session produced a native released-reference console error, with nine records subsequently restored. Ten switches waiting for Standard mode readiness have no page or console errors. Rapid overlapping native navigation remains an upstream limitation to investigate.",
+    "Preview startup and one themed page navigation timed out under concurrent checks; failures are retained. Final capture waits for page readiness and passes."
+  ],
+  "scopeAmendment": {
+    "authorizedByUser": true,
+    "scope": "Only supported official host integrations; remove inline object navigation and fallback instructions; independent native Research/Ontology tabs.",
+    "unsupportedEnhancements": "Excluded, not release blockers",
+    "hostSourceModified": false
+  }
+}

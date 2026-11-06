@@ -1,0 +1,9 @@
+{
+  "name": "clearai-research-preview",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "host.js",
+  "exports": { ".": "./host.js", "./client": "./client.js", "./package.json": "./package.json" },
+  "dsh": { "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-chat", "@deepseek-ai/dsh-client-ui-renderer"] } }
+}

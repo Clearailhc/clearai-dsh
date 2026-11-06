@@ -1,5 +1,7 @@
 # DSH 集成
 
+未发布的 0.5.9 候选使用排除于会话摘要之外的 `clearaiResearch` 投影及官方 `uiConversation.events` / `conversation.chat.node` 注册。行内对象仅作文字展示，研究与本体保留独立原生页签，见[交互与限制](research-experience.zh-CN.md)。
+
 ClearAI 是一个原生 DSH 插件。它把认识论层加在 DSH 的**组合面**上，DSH 引擎一行不改。本文说明这份仓库如何映射到那一层、什么东西装到哪里、以及怎么构建与验证。
 
 ## 一个包，三个面

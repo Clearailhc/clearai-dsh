@@ -1,0 +1,75 @@
+{
+  "version": "0.5.9",
+  "projectionVersion": 3,
+  "status": "development candidate; not release ready",
+  "released": false,
+  "artifact": {
+    "path": "dist/clearai-dsh-0.5.9.tgz",
+    "sha256": "9fd6f2984dd13855028150825ab66209d08bf20f4299c68c206da795d69e97e7",
+    "productionModuleHashesMatchPreview": true
+  },
+  "engineering": {
+    "fullRegression": "passed",
+    "projectionCases": 11,
+    "packageChecks": 45,
+    "cleanInstallChecks": 22,
+    "lifecycleChecks": 26,
+    "clientChecks": 184,
+    "finalSourceLifecycleChecks": 26
+  },
+  "preview": {
+    "host": "0.2.2-rc.1",
+    "deterministic": true,
+    "realDshPage": true,
+    "committedResearchRecords": 9,
+    "refreshRestoredRecords": 9,
+    "widths": [
+      375,
+      768,
+      1440
+    ],
+    "locales": [
+      "en-US",
+      "zh-CN"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "modelCalls": 0,
+    "errors": [
+      "uiConversation.binding: unknown session \"session-b861dd1c-46a2-489b-b242-e9d976c40217\""
+    ],
+    "directObjectNavigation": false,
+    "clickToVisibleMs": [
+      295,
+      165,
+      123,
+      126,
+      206,
+      200,
+      389
+    ],
+    "productionModuleSha256": {
+      "client.js": "1a0d83f01f61e9199310368d8351406bb85daf739734850f1de850e239f2ccbe",
+      "host.js": "efff08fb10c5261c52fa1bf9009ec215b889ece11cadc8ae3228e5e4e8eeee31",
+      "research-events.js": "dacf9dfc9a1bb9dd26cb69631889c579f203de97ab2e801c798f9c834b860f1c"
+    }
+  },
+  "openGates": [
+    "Host must expose openView or equivalent official navigation to Chat nodes for one-click panel navigation.",
+    "Initial blank-session switch reproduces uiConversation.binding unknown-session error; browser regression not green.",
+    "Restore original budget ledger and configured model credentials before paid real-task validation; no budget was reset.",
+    "Real short tasks, long reviews and hypothesis revision tasks not run.",
+    "Normal-load client-arrival-to-visible P95, large-history responsiveness, real screen reader and full keyboard/scroll intervention validation remain incomplete.",
+    "No measured model-call redundancy or research cost/speed improvement claim."
+  ],
+  "paidBudget": {
+    "perTestUsd": 5,
+    "totalUsd": 30,
+    "historicalUpperBoundUsd": 2.124891428,
+    "currentBalanceVerified": false,
+    "newPaidRuns": 0
+  },
+  "publicationAuthorization": "Requires an explicit new 0.5.9 release instruction after acceptance."
+}

@@ -100,7 +100,8 @@ console.log('\n【③ 原生契约不漂移(历史踩坑钉死)】')
 	check('循环段写明没被证据碰过的判断记成没看过(unjudged)', /没看过/.test(loop.text) && /unjudged/.test(loop.text))
 
 	check('对人说话段给出汇报顺序:结论 / 依据 / 尚未确定的事项 / 待您决策', /结论 \/ 依据 \/ 尚未确定的事项 \/ 待您决策/.test(speaking.text))
-	check('对人说话段写明过程只在人问起或要人决定时说', /过程只在人问起或需要人决定时说/.test(speaking.text))
+	check('对人说话段公开方向变化且有默认路径时继续，不展示内部思维', /影响研究方向的发现/.test(speaking.text) && /说明后继续/.test(speaking.text) && /不展示内部思维过程/.test(speaking.text))
+	check('用户要求只在实际提交修订后生效，目标变化沿用现有流程', /实际提交修订后才说已生效/.test(speaking.text) && /不能静默替换目标/.test(speaking.text))
 
 	// 内核的 OUTPUT_SCHEMA 是 additionalProperties:false——多写一个不存在的字段,宿主会让整次调用失败。
 	check('内核工具的 output schema 是闭集(契约是硬的,提示词才必须跟上)', /const OUTPUT_SCHEMA = \{[\s\S]*?additionalProperties: false/.test(KERNEL))

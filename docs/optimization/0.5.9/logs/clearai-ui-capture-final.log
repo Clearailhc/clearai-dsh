@@ -1,0 +1,8 @@
+file:///workspace/clearai-dsh/tools/research-preview/capture.mjs:19
+if (!url) throw new Error('Preview URL not available')
+                ^
+
+Error: Preview URL not available
+    at file:///workspace/clearai-dsh/tools/research-preview/capture.mjs:19:17
+
+Node.js v24.22.1
