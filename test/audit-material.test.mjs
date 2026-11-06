@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { nativeAuditSchema, recoveredStructuredOutput } from '../preset/plugins/audit-schema.js'
+import { nativeAuditSchema, recoveredStructuredOutput, bindAuditCriteria } from '../preset/plugins/audit-schema.js'
 
 test('native audit schema preserves enforceable constraints without unsupported length keywords', () => {
  const schema = nativeAuditSchema({ type: 'object', properties: { basis: {type:'string',maxLength:1200}, results: {type:'array',items:{type:'object',properties:{hypothesis:{type:'string',maxLength:80},verdict:{enum:['support','refute','inconclusive']}}}} }, required:['basis'], additionalProperties:false })
@@ -88,4 +88,15 @@ test('scope uncertainty never becomes applicability or historical retraction', (
 	assert.equal(compareScope(range, { ranges: { T: [18, 25] }, units: { T: '°C' } }).verdict, 'undeclared')
 	assert.equal(compareScope(range, { ranges: { T: [21, 25] }, units: { T: '°C' } }).verdict, 'out_of_range')
 	assert.equal(compareScope(range, { ranges: { T: [12, 15] }, units: { T: '°C' } }).verdict, 'applies')
+})
+
+test('audit criterion protocol rejects the observed invented C1 sub-identities before settlement', () => {
+ const generic = { type:'object', properties:{ criteria:{type:'array',items:{type:'object',properties:{criterion:{type:'string'},result:{enum:['pass','fail','not_applicable']}},required:['criterion','result']}}} }
+ const bound = nativeAuditSchema(bindAuditCriteria(generic,[{id:'C1',text:'original compound criterion'}]))
+ assert.deepEqual(bound.properties.criteria.items.properties.criterion.enum,['C1'])
+ for(const observed of ['C1(1) 原始值均值','C1(2) 独立复跑','C2','C1 original compound criterion']) assert.equal(bound.properties.criteria.items.properties.criterion.enum.includes(observed),false)
+ assert.deepEqual(bound.properties.criteria.items.properties.result.enum,['pass','fail','not_applicable'])
+ assert.equal(generic.properties.criteria.items.properties.criterion.enum,undefined)
+ assert.throws(()=>bindAuditCriteria(generic,[]))
+ assert.throws(()=>bindAuditCriteria(generic,[{id:'C1'},{id:'C1'}]))
 })

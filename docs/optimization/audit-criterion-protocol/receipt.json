@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "delaySeconds": 0,
+  "nativeJobReads": 0,
+  "parentRequestsWhileWaiting": 0,
+  "audits": 1,
+  "elapsedMs": 82922,
+  "usage": {
+    "input": 13240,
+    "output": 11921,
+    "cacheRead": 302848,
+    "cacheWrite": 0,
+    "calls": 22,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 328009,
+    "status": "verified",
+    "processed": 328009
+  },
+  "installation": {
+    "version": "0.5.9",
+    "packageDigest": "95895d8ad7c0c831796a3dfb5c9e7c79383a329b42f8a3a0078fe724bb9987b1",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "limitation": "Synthetic engineering check. Fixed delay is not performance evidence."
+}
