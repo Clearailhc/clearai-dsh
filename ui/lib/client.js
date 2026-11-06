@@ -2821,11 +2821,17 @@ window.__ModuleLoader__.load({
 			/** 节点对象缓存:见 graphViewOf。父级重渲染一个都不换,选中只换选中那个。 */
 			const nodeCache = React.useRef(new Map())
 			const selectedId = picked?.kind === 'node' ? picked.node.id : (focus ?? null)
+			const previousLayer = React.useRef(layer)
 			React.useEffect(() => {
+				// Initial state is already empty; resetting it would lay out the graph twice.
+				if (previousLayer.current === layer) return
+				previousLayer.current = layer
 				setToggled({})
 				setQuery('')
 				setNeighbors(false)
 				setJump(null)
+				setDragged({})
+				setPicked(null)
 			}, [layer])
 
 			/**
@@ -2834,7 +2840,7 @@ window.__ModuleLoader__.load({
 			 */
 			const view = React.useMemo(
 				() => graphViewOf({ lexicon, layer, toggled, dragged, selectedId, entityKnowledge: data?.entityKnowledge, nodeCache, setToggled }),
-				[lexicon, layer, toggled, dragged, selectedId, data?.entityKnowledge],
+				[lexicon?.graph, lexicon?.conflicts, layer, toggled, dragged, selectedId, data?.entityKnowledge],
 			)
 			const { rfNodes, rfEdges, allNodes, allEdges, nodeById, entityNames, countOf, conflicts, graphKey } = view
 			/** 读时的跨文件检查只标不拦:有问题的那一份不进图,这里说清是哪个文件、哪里不对。 */
@@ -2844,10 +2850,6 @@ window.__ModuleLoader__.load({
 			 * **节点位置是受控的,所以必须自己接住拖动**:不给 `onNodesChange`,
 			 * React Flow 内部的拖动没有地方落地,节点根本拖不动。位置是界面状态,换层或图变了就清掉。
 			 */
-			React.useEffect(() => {
-				setDragged({})
-				setPicked(null)
-			}, [layer])
 			const onNodesChange = React.useCallback((changes) => {
 				setDragged((current) => {
 					let next = current
