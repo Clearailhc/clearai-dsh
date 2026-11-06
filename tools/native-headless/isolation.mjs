@@ -11,7 +11,7 @@ const canonical = path => {
 const under = (path,root) => { const rel=relative(root,path); return rel===''||(!rel.startsWith('..')&&!rel.startsWith('/')) }
 const quote = value => JSON.stringify(value)
 export function installReadIsolation(ctx,{roots,workspace}) {
- if(process.platform!=='darwin')throw new Error('Read isolation must be validated on this test host; macOS Seatbelt is required')
+ if(!['darwin','linux'].includes(process.platform))throw new Error('Read isolation requires a validated native Seatbelt or bwrap backend')
  const deny=[...new Set([...roots,homedir()].map(canonical))],allowed=canonical(workspace)
  const sandbox=ctx.get('sandbox'),shell=ctx.get('shell')
  if(!sandbox?.confine||shell?.sandboxMode!=='workspace-write')throw new Error('Native confined shell/write policy required for read isolation')

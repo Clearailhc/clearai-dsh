@@ -5,7 +5,7 @@ export const REQUIRED_GATES = Object.freeze(['suites', 'package', 'windows-node2
 export function sessions() {
 	const rows = []
 	for (const group of ['A', 'C']) {
-		for (const task of ['additive', 'interaction', 'direct']) rows.push({ stage: 'smoke', group, world: 'smoke-1', task, mode: task === 'direct' ? 'default' : group === 'C' ? 'clearai' : 'default' })
+		for (const task of ['additive', 'interaction', 'direct']) rows.push({ stage: 'smoke', group, world: 'smoke-1', task, mode: group === 'C' ? 'clearai' : 'default' })
 		for (const [stage, count, prefix] of [['development', 3, 'dev'], ['formal', 6, 'formal']]) for (let world = 1; world <= count; world++) for (let task = 1; task <= 4; task++) rows.push({ stage, group, world: `${prefix}-${world}`, task: `t${task}`, mode: group === 'C' ? 'clearai' : 'default' })
 		for (let world = 1; world <= 3; world++) {
 			for (let task = 1; task <= 3; task++) rows.push({ stage: 'supplemental', group, world: `factory-${world}`, task: `factory-t${task}`, mode: group === 'C' ? 'clearai' : 'default' })

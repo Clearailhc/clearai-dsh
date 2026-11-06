@@ -15,3 +15,10 @@ test('malformed call retains exact bytes and usage for rejection, without provid
 test('unknown tools, valid arguments with transport error, and cancellation remain failures',async()=>{
  for(const [source,signal] of [[broken('bash'),undefined],[broken('Conclude','{}'),undefined],[broken(),{aborted:true}]]) await assert.rejects(Array.fromAsync(recoverToolArguments(source,new Set(['Conclude']),signal)),e=>e===error)
 })
+test('native adapter terminal failure chunks become rejection calls; other finishes stay intact',async()=>{
+ async function* native(code){yield {type:'tool-call-delta',index:2,id:'c2',name:'Conclude',argumentsDelta:'{"broken":'};yield {type:'finish',reason:{kind:'error',failure:{code}}}}
+ const recovered=await Array.fromAsync(recoverToolArguments(native('MALFORMED_RESPONSE'),new Set(['Conclude'])))
+ assert.equal(recovered[1].block.arguments,'{"broken":');assert.equal(recovered[2].reason.kind,'tool-calls')
+ const unchanged=await Array.fromAsync(recoverToolArguments(native('NETWORK'),new Set(['Conclude'])))
+ assert.equal(unchanged[1].reason.failure.code,'NETWORK')
+})

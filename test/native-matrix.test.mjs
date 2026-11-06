@@ -5,7 +5,7 @@ import { pairedAnalysis, sequenceCosts } from '../tools/native-headless/analyze.
 test('matrix has all 162 fixed sessions and simple tasks select default mode', () => {
 	const rows = sessions(), counts = Object.fromEntries(['smoke', 'development', 'formal', 'supplemental', 'ablation'].map((stage) => [stage, rows.filter((row) => row.stage === stage).length]))
 	assert.deepEqual(counts, { smoke: 6, development: 24, formal: 48, supplemental: 36, ablation: 48 }); assert.equal(rows.length, 162)
-	assert.ok(rows.filter((row) => row.task === 'direct').every((row) => row.mode === 'default'))
+	assert.ok(rows.filter((row) => row.stage === 'smoke').every((row) => row.mode === (row.group === 'C' ? 'clearai' : 'default')))
 	assert.equal(new Set(rows.filter((row) => row.stage === 'formal').map((row) => row.world)).size, 6)
 })
 test('missing engineering gates and usage cannot pass', () => {
