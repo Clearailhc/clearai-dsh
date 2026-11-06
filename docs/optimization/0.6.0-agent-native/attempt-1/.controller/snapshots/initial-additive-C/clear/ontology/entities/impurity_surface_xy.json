@@ -1,0 +1,10 @@
+{
+  "basis": "16 个 full 点拟合的二次杂质模型",
+  "id": "impurity_surface_xy",
+  "label": "x–y 杂质响应面",
+  "provenance": {
+    "kind": "named",
+    "ref": "reports/analysis.md"
+  },
+  "type": "impurity_surface"
+}

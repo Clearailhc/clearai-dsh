@@ -1,0 +1,9 @@
+{
+  "domain": "instrument",
+  "id": "has_noise_basis",
+  "kind": "defines",
+  "label": "噪声与零点口径",
+  "range": {
+    "form": "statement"
+  }
+}

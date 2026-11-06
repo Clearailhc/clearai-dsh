@@ -1,0 +1,6 @@
+{
+  "gloss": "(x,y)→收率 的映射，用二次面近似并给留一验证",
+  "id": "yield_surface",
+  "kind": "phenomenon",
+  "label": "收率响应面"
+}

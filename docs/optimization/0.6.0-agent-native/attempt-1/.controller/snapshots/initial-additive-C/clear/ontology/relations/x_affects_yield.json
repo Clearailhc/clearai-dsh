@@ -1,0 +1,8 @@
+{
+  "domain": "input_x",
+  "id": "x_affects_yield",
+  "kind": "affects",
+  "label": "x 影响收率",
+  "range": "yield",
+  "shape": "peak"
+}

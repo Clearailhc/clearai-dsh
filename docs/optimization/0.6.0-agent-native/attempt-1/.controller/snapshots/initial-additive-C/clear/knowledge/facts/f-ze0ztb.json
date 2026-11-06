@@ -1,0 +1,90 @@
+{
+  "id": "f-ze0ztb",
+  "goal": "g-mw52i41h09ow",
+  "hypothesis": "h-r2abbn",
+  "text": "quick 模式与 full 模式读数之间存在系统性偏差（或噪声更大），需校准后才能混用",
+  "about": [
+    "instrument_original",
+    "instrument",
+    "has_noise_basis",
+    "yield",
+    "impurity"
+  ],
+  "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+  "scope_spec": {
+    "conditions": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    },
+    "ranges": {}
+  },
+  "refute_when": "同一批点的 quick 与 full 读数差值在噪声 sd=0.18 以内且无系统方向",
+  "level": "L3",
+  "evidence": [
+    "e-wce3wh"
+  ],
+  "evidence_records": [
+    {
+      "t": "evidence/recorded",
+      "id": "e-wce3wh",
+      "step": "goal:g-mw52i41h09ow",
+      "plan": "goal",
+      "hypothesis": "h-r2abbn",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "5 个 quick 对 full 面残差 +0.49/+0.03/−0.71/+0.23/+0.24，sd 0.459（标称 0.45）远大于 full 的 0.18；唯一同点 (0.5,0.5) quick−full=+0.724，差值不在 0.18 内，推翻条件不成立；均值 +0.06 不支持系统偏移，支持来自「噪声更大」一支。",
+      "refs": [
+        "initial.json"
+      ],
+      "origins": [
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+        },
+        {
+          "kind": "artifact",
+          "path": "initial.json",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "同一 original 仪器、calibrate offset=0；full 标称 sd 0.18、quick 0.45；5 个 quick 点相对 full 拟合残差均值 +0.06、sd 0.46，无系统偏移，但 quick 噪声约为 full 的 2.5 倍，故未混入拟合"
+      },
+      "predicate": "has_noise_basis",
+      "subject": {
+        "id": "instrument_original",
+        "type": "instrument"
+      }
+    }
+  ],
+  "definitions": {
+    "has_noise_basis": "fnv:e3fa03e8",
+    "instrument": "fnv:8ae62f56",
+    "impurity": "fnv:d916b361",
+    "yield": "fnv:b5e997fa"
+  },
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "status": "established",
+  "review": null,
+  "at": 1793976433997,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793976433997,
+      "level": "L3"
+    }
+  ]
+}

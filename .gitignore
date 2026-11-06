@@ -15,6 +15,7 @@ clear/
 # 放行只能写在**目录**这一层:git 不会进入一个被忽略的目录去找里面的文件。
 !docs/cases/runs/*/ws/clear/
 !docs/cases/runs/*/clear/
+!docs/optimization/0.6.0-agent-native/attempt-*/.controller/snapshots/*/clear/
 # 参考
 refs/
 # 长测归档:判读证据入库(trajectory.txt / summary.json / meta.json / index.json),
