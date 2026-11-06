@@ -258,7 +258,9 @@ if (npmBin === null) {
 	console.log('  · 跳过:npm 不在 PATH 上(这台机器没有 npm)。发布前请在装了 npm 的机器上跑一次。')
 } else {
 	try {
-		const out = execFileSync(npmBin, ['pack', '--dry-run', '--json'], { cwd: DIST, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+		const npmArgs = ['pack', '--dry-run', '--json']
+		const command = process.platform === 'win32' ? [process.execPath, [join(dirname(npmBin), 'node_modules', 'npm', 'bin', 'npm-cli.js'), ...npmArgs]] : [npmBin, npmArgs]
+		const out = execFileSync(...command, { cwd: DIST, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 		const parsed = JSON.parse(out)
 		// npm ≥12 改了 --json 的顶层形状（由数组变为以包名为键的对象）；遵循表外形状当场抛错而不静默的纪律，防止空结果导致白名单断言假通过。
 		const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed ?? {})[0]
