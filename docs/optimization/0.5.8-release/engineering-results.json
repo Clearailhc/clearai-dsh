@@ -1,0 +1,287 @@
+{
+  "passed": true,
+  "commit": "ec2b3f03d78ccf532d48b5ba413a45b29ad6cdd5",
+  "ciUrl": "https://github.com/Clearailhc/clearai-dsh/actions/runs/42179120598",
+  "jobs": [
+    {
+      "name": "engineering / checks (ubuntu-latest, 22)",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Isolated runtime paths",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run corepack enable && pnpm --version",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/check-workspace-residue.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm install --no-save --prefix \"$CLEARAI_DSH_RESOURCES\" @deepseek-ai/dsh@0.2.2-rc.1",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/build-package.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/native-headless/setup.mjs \"$DSH_HOME\" \"$DSH_PROFILE\"",
+          "conclusion": "success"
+        },
+        {
+          "name": "Expose installed host dependency fallback to standalone test processes",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/verify-package.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/native-headless/native-contract.mjs \"/home/runner/work/_temp/native-contract\"",
+          "conclusion": "success"
+        },
+        {
+          "name": "Native install, upgrade, uninstall and reinstall",
+          "conclusion": "success"
+        },
+        {
+          "name": "User configuration preservation and lifecycle",
+          "conclusion": "success"
+        },
+        {
+          "name": "Production panel browser checks",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "engineering / checks (windows-latest, 24)",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Isolated runtime paths",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run corepack enable && pnpm --version",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/check-workspace-residue.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm install --no-save --prefix \"$CLEARAI_DSH_RESOURCES\" @deepseek-ai/dsh@0.2.2-rc.1",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/build-package.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/native-headless/setup.mjs \"$DSH_HOME\" \"$DSH_PROFILE\"",
+          "conclusion": "success"
+        },
+        {
+          "name": "Expose installed host dependency fallback to standalone test processes",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/verify-package.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/native-headless/native-contract.mjs \"D:\\a\\_temp/native-contract\"",
+          "conclusion": "success"
+        },
+        {
+          "name": "Native install, upgrade, uninstall and reinstall",
+          "conclusion": "success"
+        },
+        {
+          "name": "User configuration preservation and lifecycle",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Production panel browser checks",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "engineering / checks (ubuntu-latest, 24)",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Isolated runtime paths",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run corepack enable && pnpm --version",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/check-workspace-residue.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm install --no-save --prefix \"$CLEARAI_DSH_RESOURCES\" @deepseek-ai/dsh@0.2.2-rc.1",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/build-package.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/native-headless/setup.mjs \"$DSH_HOME\" \"$DSH_PROFILE\"",
+          "conclusion": "success"
+        },
+        {
+          "name": "Expose installed host dependency fallback to standalone test processes",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/verify-package.mjs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node tools/native-headless/native-contract.mjs \"/home/runner/work/_temp/native-contract\"",
+          "conclusion": "success"
+        },
+        {
+          "name": "Native install, upgrade, uninstall and reinstall",
+          "conclusion": "success"
+        },
+        {
+          "name": "User configuration preservation and lifecycle",
+          "conclusion": "success"
+        },
+        {
+          "name": "Production panel browser checks",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "localEvidence": [
+    {
+      "name": "strict-suite",
+      "sha256": "ba699f1c08e5af739ffbe1b776f46e8c823a2a051d0d9ff4127fcffc8e5cf619"
+    },
+    {
+      "name": "package",
+      "sha256": "5d5dc07538af03d8603e7eb9ee73230c53040e6d2f9bfc9f92ed9aab9351a965"
+    },
+    {
+      "name": "production-browser",
+      "sha256": "4c44f10bc0fd6b52b29d1c56ba11aacadcfc35ba2ad99f3219f7998f617f3523"
+    },
+    {
+      "name": "native-en",
+      "sha256": "d78dfa720567224c0dc19c4171c049bc80e602ed187c16b54cbacdffc0244301"
+    },
+    {
+      "name": "native-zh",
+      "sha256": "df0b8a2205b966e140d89d7249cf393cbf780e4ba103d7460af329c2fc4261d2"
+    }
+  ]
+}

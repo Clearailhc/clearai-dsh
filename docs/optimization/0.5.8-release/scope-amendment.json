@@ -1,0 +1,19 @@
+{
+  "reason": "User changed release acceptance to the first completed paired smoke case; remaining paired cases are deferred.",
+  "requestedAt": "2026-11-06T07:17:36.061390+00:00",
+  "minimumCompletedPair": "additive",
+  "originalMatrixPreserved": true,
+  "controllerNote": "The in-flight controller predates the stop marker; its frozen-driver guard will stop before the next session. The current case uses the already loaded, unchanged driver.",
+  "userRequest": "\u8dd1\u5b8c\u9996\u573a\u6ca1\u95ee\u9898\u5c31\u5347\u7ea7\u53d1\u5e03",
+  "continuation": {
+    "originalReason": "token_limit",
+    "originalProcessedTokens": 5035786,
+    "originalCostUpperBoundUsd": 1.6946049,
+    "additionalTokenCeiling": 8000000,
+    "perTestCumulativeUsd": 5,
+    "experimentBudget": 30,
+    "experimentSpentPreserved": 30,
+    "sameSessionAndGoalRequired": true,
+    "newSample": false
+  }
+}

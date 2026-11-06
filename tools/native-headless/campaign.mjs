@@ -52,6 +52,15 @@ export async function runStage({home,profile,root,manifest,gates,stage,previous}
  const selected=manifest.sessions.filter(row=>row.stage===stage),runs=[],scores=[],extraRuns=[]
  const checkpoint=()=>atomic(join(root,stage+'-progress.json'),{candidateDigest:installation.packageDigest,stage,runs,scores,extraRuns})
  for(const row of selected) {
+  // A scope change can stop the batch between sessions without aborting paid usage.
+  const stopPath=join(root,'stop-after-current.json')
+  if(existsSync(stopPath)) {
+   const stop=JSON.parse(readFileSync(stopPath))
+   if(typeof stop.reason!=='string'||!stop.reason.trim())throw new Error('A batch stop requires a recorded reason')
+   const paused={candidateDigest:installation.packageDigest,stage,status:'paused',passed:false,runs,scores,extraRuns,reason:stop.reason}
+   atomic(join(root,stage+'-paused.json'),paused)
+   return paused
+  }
   verifyFrozen(manifest,home)
   const id=`${row.group}-${row.world}-${row.task}`,dir=join(root,stage,id),workspace=join(root,'workspaces',row.group,row.world)
   if(existsSync(dir))throw new Error('Prior run exists; preserve it and use an explicitly registered retry')
