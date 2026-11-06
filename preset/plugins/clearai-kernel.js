@@ -4812,7 +4812,7 @@ export function apply(ctx, config = {}) {
 				/** 评估者漏给的判断如实记「说不清」,并写明是漏给的——不替它猜。 */
 				results = tested.map((id) => {
 					const found = (audit.results ?? []).find((item) => item.hypothesis === id) ?? null
-					return found === null ? { hypothesis: id, verdict: 'inconclusive', basis: tr('评估者没有给这条判断的结果', 'The evaluator gave no result for this judgment') } : { hypothesis: id, verdict: found.verdict, basis: found.basis ?? null }
+					return found === null ? { hypothesis: id, verdict: 'inconclusive', basis: tr('评估者没有给这条判断的结果', 'The evaluator gave no result for this judgment') } : { hypothesis: id, verdict: found.verdict, basis: found.basis ?? null, independent_of_open_issues: found.independent_of_open_issues === true }
 				})
 				/** 两件凭据从**这一次**的审计结果里取(卡文件 + 评估者子会话);复用也照样带出来。 */
 				auditCardPath = audit.cardPath ?? null
@@ -4913,8 +4913,9 @@ export function apply(ctx, config = {}) {
 			if (CFG.ontologyFeedback && evaluator === 'independent' && auditCardPath && !isSpawnedChild(sessionId)) {
 				const preview = previewOf(hostService, sessionId, mutations)
 				const current = preview?.state
-				if (current?.goal?.status === 'open' && !(current.anomalies ?? []).some(a => ['open', 'escalated'].includes(a.status) && a.matters !== 'no')) {
-					const saved = promoteFacts(hostService, sessionId, current, preview.derived, current.goal, new Map(), mutations, { partial: true, eligible: new Set(results.filter(r => r.verdict === 'support').map(r => r.hypothesis)) })
+				if (current?.goal?.status === 'open') {
+					const eligible = partialReviewClaims(results, current.anomalies, current.hypotheses.map(h => h.id))
+					const saved = promoteFacts(hostService, sessionId, current, preview.derived, current.goal, new Map(), mutations, { partial: true, eligible })
 					if (saved.promoted.length) partialNote = tr(`\n阶段事实已保存到实体图与 clear/knowledge/facts/:${saved.promoted.map(f => f.id).join(', ')};目标仍开放。`, `\nPartial facts saved in the entity graph and clear/knowledge/facts/: ${saved.promoted.map(f => f.id).join(', ')}; the goal remains open.`)
 					if (saved.held.length) partialNote += `\n${saved.held.join('; ')}`
 				}

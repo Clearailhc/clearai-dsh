@@ -3940,6 +3940,25 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  check('changed material handoff retains prior review with explicit delta and no automatic trust',prompt.includes('historical-requires-applicability-review')&&prompt.includes('lab/new-check.txt')&&prompt.includes('previous_answers'),prompt)
 }
 
+console.log('\n【步骤核验仅沉淀与未决问题独立的事实】')
+for (const scenario of ['bounded', 'unknown', 'affected', 'unconfirmed']) {
+ const host=makeHost(), ws=tempDir('clearai-partial-step-'), S='partial-step-'+scenario;host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true})
+ writeText(join(ws,'lab/probe.txt'),'K1 reference peak 900 C. Noise requires separate assessment.\n')
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/probe.txt',provenance:{kind:'named',ref:'lab/probe.txt'}}]}
+ const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+ await callOn(host,S,'Frame',{claim:'Check reference peak and noise limits',done_criteria:'Peak and limitations documented',ontology,hypotheses:[{name:'Peak',claim:'K1 peak is 900 C',refute_when:'Reference differs',assertions},{name:'Noise',claim:'Noise relationship is stable',refute_when:'Residuals contradict it'}]})
+ const [peak,noise]=host.service.state(S).hypotheses
+ const plan=await callOn(host,S,'CreatePlan',{steps:[{id:'peak',do:'Check reference peak',artifacts:['lab/probe.txt'],done_criteria:'Reference peak is independently confirmed',tests:{hypotheses:[peak.id],level:'L3'}}]})
+ check(`${scenario}: scoped step plan accepted`,plan.ok===true,JSON.stringify(plan))
+ const issue={what:'Noise relationship remains unresolved',matters:'yes',...(scenario==='unknown'?{}:{touches:[scenario==='affected'?peak.id:noise.id],impact_basis:'Explicit assessment of measurement dependency.'})}
+ host.nextVerdict={holds:'yes',basis:'Independent reference confirms peak',results:[{hypothesis:peak.id,verdict:'support',basis:'lab/probe.txt:1',independent_of_open_issues:scenario!=='unconfirmed'}],anomalies:[issue]}
+ await callOn(host,S,'AdvancePlan',{observations:[{ref:'lab/probe.txt'}]})
+ const state=host.service.state(S)
+ check(`${scenario}: step preserves only independently bounded facts`,state.goal.status==='open'&&state.facts.length===(scenario==='bounded'?1:0)&&!state.facts.some(f=>f.hypothesis===noise.id),JSON.stringify({facts:state.facts,anomalies:state.anomalies}))
+ if(scenario==='bounded') check('step partial fact survives journal replay',applyMutations(emptyState(),host.journal).facts.some(f=>f.hypothesis===peak.id&&f.assertions?.length))
+}
+
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failed > 0) {
 	console.log('失败项:')
