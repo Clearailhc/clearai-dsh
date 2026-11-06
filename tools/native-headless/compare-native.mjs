@@ -6,7 +6,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { runNative } from './run.mjs'
 import { makeWorld, experimentService, score } from './world.mjs'
 import { MODEL, BUDGETS, stopReasons } from './matrix.mjs'
-import { PRICE } from './budget.mjs'
+import { PRICE, REQUEST_RESERVE } from './budget.mjs'
 import { initializeCampaignRoot } from './public-materials.mjs'
 
 const [homeArg, profile, rootArg] = process.argv.slice(2)
@@ -17,7 +17,7 @@ const budgetFile = process.env.CLEARAI_TEST_BUDGET_FILE
 assert.ok(budgetFile && existsSync(budgetFile), 'Use the existing campaign ledger')
 const budget = JSON.parse(readFileSync(budgetFile))
 assert.equal(budget.limitUsd, 30); assert.equal(budget.testLimitUsd, 5)
-assert.ok(Object.values(budget.requests).every(row => ['verified','historical-carry-forward'].includes(row.status)), 'Settle every live request before starting comparison')
+assert.ok(Object.values(budget.requests).every(row => ['verified','historical-carry-forward'].includes(row.status) || (row.status === 'unknown' && !row.error && row.reservedUsd === REQUEST_RESERVE && row.reservationAcceptance?.authorization && row.reservationAcceptance.upperBoundUsd === REQUEST_RESERVE)), 'Settle live requests; unknown usage needs an authorized full reservation')
 initializeCampaignRoot(root)
 const privateRoot = join(root, '.controller'); mkdirSync(privateRoot)
 const key = randomBytes(32), probe = join(privateRoot, 'sentinel')
