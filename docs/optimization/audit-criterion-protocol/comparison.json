@@ -1,0 +1,17 @@
+{
+  "baseline": {
+    "audits": 2,
+    "calls": 35,
+    "elapsedMs": 222499,
+    "costUpperBoundUsd": 0.056577348
+  },
+  "candidate": {
+    "audits": 1,
+    "calls": 22,
+    "elapsedMs": 82922,
+    "costUpperBoundUsd": 0.020094287999999683
+  },
+  "cumulativeCostUpperBoundUsd": 2.2015630639999997,
+  "samplesPerVariant": 1,
+  "limitation": "Sequential synthetic task runs with real models; model variance is uncontrolled. Not a general savings estimate."
+}

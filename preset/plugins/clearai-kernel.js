@@ -36,7 +36,7 @@ import { auditCriteria, validateAuditEvidence, citationsUnchanged } from './audi
 import { workspacePath } from './workspace-path.js'
 import { integrityStore, protectedMaterial } from './integrity.js'
 import { createRerunCopy } from './rerun-copy.js'
-import { nativeAuditSchema, recoveredStructuredOutput } from './audit-schema.js'
+import { nativeAuditSchema, recoveredStructuredOutput, bindAuditCriteria } from './audit-schema.js'
 import { MODEL_ID, appendRun, checkModelSpec, compareOutputs, deviationText, needsRerun, numericOutputs } from './models.js'
 
 export const name = 'clearai-kernel'
@@ -1793,7 +1793,7 @@ export function apply(ctx, config = {}) {
 				label: `${kind === 'goal_audit' ? tr('目标评估者', 'Goal evaluator') : tr('评估者', 'Evaluator')} · ${step.id} · ${pendingId}`,
 				persona: evaluatorDiscipline(),
 				prompt: evaluatorPrompt(initialState, step, gate, sessionId, rerunDir),
-				outputSchema: verdictSchema(),
+				outputSchema: bindAuditCriteria(verdictSchema(), criteria),
 				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, process.platform === 'win32' ? 'pwsh' : 'bash', 'job_output', 'job_list', 'job_kill']) },
 				parent: agent,
 				signal,

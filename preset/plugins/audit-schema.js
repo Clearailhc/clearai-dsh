@@ -23,3 +23,13 @@ export function recoveredStructuredOutput(events) {
  }
  return value
 }
+
+/** Freeze protocol identities before handing the schema to the native tool. */
+export function bindAuditCriteria(schema, criteria) {
+ const ids = criteria.map(row => row.id)
+ if (!ids.length || new Set(ids).size !== ids.length || ids.some(id => typeof id !== 'string' || !id.trim())) throw new Error('Registered audit criterion IDs required')
+ const bound = structuredClone(schema)
+ bound.properties.criteria.description = 'Return exactly one finding per registered criterion ID: ' + ids.join(', ') + '. Copy IDs exactly. Never append text, split, rename, or invent criterion IDs. Put subchecks in basis.'
+ bound.properties.criteria.items.properties.criterion = { type: 'string', enum: ids, description: 'Exact registered criterion ID; explanations belong in basis.' }
+ return bound
+}
