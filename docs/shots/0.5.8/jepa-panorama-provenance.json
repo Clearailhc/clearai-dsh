@@ -1,0 +1,30 @@
+{
+  "kind": "historical-session-replay-in-native-DSH",
+  "host": "0.2.2-rc.1",
+  "viewport": {
+    "width": 2560,
+    "height": 1600
+  },
+  "modelCallsDisabled": true,
+  "expanded": true,
+  "graphs": [
+    {
+      "layer": "ontology",
+      "file": "jepa-panorama-ontology.png",
+      "nodes": 24,
+      "edges": 21,
+      "collapsed": 0
+    },
+    {
+      "layer": "entity",
+      "file": "jepa-panorama-entity.png",
+      "nodes": 72,
+      "edges": 106,
+      "collapsed": 0
+    }
+  ],
+  "clientSha256": "bc981a1e8224ddcae09aba76751368fd94c5ac36a260a81d20e9d9ba801952ef",
+  "foldSha256": "e5d919063581f00f2aa866b68ccfe201a10972f448ff8e119cc93526cd79f9ac",
+  "events": "docs/cases/runs/jepa-world-model/events.jsonl",
+  "eventsSha256": "6b6f51b3fd4f27eec0dbe7f21eb9918ce7c0613e35b4a41f4c44819268bf7e6a"
+}

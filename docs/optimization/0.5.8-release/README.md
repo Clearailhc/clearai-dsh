@@ -1,6 +1,6 @@
-# 0.5.8 acceptance — in progress
+# 0.5.8 acceptance — accepted with the user-authorized scope
 
-Release is blocked until every required gate has evidence for the final candidate. No tag has been created and no npm publication has been performed.
+The final candidate passed the user-authorized first-pair release gate, engineering, native UI, performance and recovery checks. The original six-session gate was explicitly reduced by the user; unrun C interaction/direct sessions remain deferred. Publication uses the guarded tag workflow. [Final bound receipt](acceptance.json).
 
 Target: DSH 0.2.2-rc.1, Node 22/24 Linux and Node 24 Windows. Real-model tests use official DeepSeek `deepseek-flash`, requested reasoning effort `medium` for both main agent and evaluator. The provider documents that `medium` maps to effective `high`: https://api-docs.deepseek.com/guides/thinking_mode/ .
 
@@ -71,3 +71,18 @@ The first continuation returned supporting verdicts for the interrupted steps bu
 Budget ledger v3 settles verified cache reads at USD 0.006/M, uncached input/cache writes at USD 0.30/M and output (including reasoning) at USD 1.20/M. Every new request still reserves USD 0.80; the one accepted unknown title request retains USD 0.80. Migration requires no pending requests, preserves all usage/status values and each previous uncached upper bound, and leaves the USD 5/test and USD 30/campaign ceilings unchanged. Regression checks cover cache settlement, preserved unknown reservations, cumulative caps and refusing migration with pending requests. These are verified token/rate upper bounds, not provider invoices.
 
 The original token-limit stop and subsequent conservative-budget stop remain failures in the numeric record. A second continuation uses the same session, goal, workspace, experimental spend and cumulative test ID. It cannot pass the release gate until the original goal and valid submission finish.
+
+
+## Final first-pair outcome
+
+The original C goal completed after two retained controller stops and continuations, with the same goal ID and experimental spend. Both submissions satisfy the impurity constraint. Scores: bare model 99.9767/100, ClearAI 99.9874/100. [Complete numeric record, including both stops](first-pair-results.json).
+
+| First additive case | Bare model | ClearAI, all continuations |
+|---|---:|---:|
+| Model/run time | 222.684 s | 2821.612 s |
+| Total processed tokens, all agents | 910,126 | 18,166,000 |
+| Peak-rate USD bound from verified usage | $0.055171152 | $0.806137716 |
+
+ClearAI consumed about 20× the tokens, 14.6× the modeled dollar cost and 12.7× the run time for a similarly high score. This case does not establish an efficiency advantage. It is one continued synthetic engineering case, not a statistical study or an unchanged six-session comparison. Interruption downtime is excluded from run time; all failed-run model usage is included. Prices are published peak rates applied to provider-reported usage, not invoices.
+
+The entire campaign has 676 ledger requests, no in-flight requests, and a USD 2.124891428 upper bound, including the user-accepted USD 0.80 unknown title reservation. Every test remains below USD 5 and the campaign below USD 30. [All model roles and token/cost totals](all-model-usage.json). The prior uncached-price bounds and cache-pricing reconciliation remain available. Main, evaluator and title calls all count.

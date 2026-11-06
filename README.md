@@ -196,6 +196,8 @@ What did not improve for either arm is exploration depth. Recipes landed just as
 
 ---
 
+Fully expanded native DSH views: [ontology panorama](docs/shots/0.5.8/jepa-panorama-ontology.png) · [entity panorama](docs/shots/0.5.8/jepa-panorama-entity.png). Historical replay: 24 ontology nodes and 72 entity/value nodes.
+
 ### 0.5.8 integrity and verification boundaries
 
 The host records content digests and authoritative write origins for facts, lessons, negative entries, audit cards and goals. Workspace synchronization, knowledge reuse, delivery, closure and audit recovery check these receipts. Unexpected changes stop affected trust and progress; original files are preserved. Historical unregistered knowledge is visible but requires fresh verification before trusted reuse. Restore registered content or re-verify the material in a clean workspace; editing a receipt is not verification.
@@ -206,7 +208,7 @@ Research puts questions and candidates in the main column, with next actions and
 
 0.5.8 release evidence and current gate status: [acceptance record](docs/optimization/0.5.8-release/README.md). Engineering checks and small model samples do not prove general correctness or greater efficiency.
 
-The later [0.5.1 development comparison](docs/optimization/sim-runs/2026-10-08-0.5.1-dev/README.md) did **not** pass its stop-loss gate: total processed tokens including evaluators were **4.8–7.2×** the bare model. The earlier 0.5.0 result above and this negative result describe different versions and samples. Main-model, evaluator and other model usage must all count; token totals are not dollar bills. 0.5.8 has no completed six-run paired result yet, so no current efficiency advantage is claimed.
+The later [0.5.1 development comparison](docs/optimization/sim-runs/2026-10-08-0.5.1-dev/README.md) did **not** pass its stop-loss gate: total processed tokens including evaluators were **4.8–7.2×** the bare model. The earlier 0.5.0 result above and this negative result describe different versions and samples. Main-model, evaluator and other model usage must all count; token totals are not dollar bills. For 0.5.8, the user reduced acceptance to the first paired case. The bare model scored 99.98/100 and ClearAI 99.99/100; ClearAI used 20× the processed tokens, 14.6× the estimated peak-rate cost and 12.7× the run time, including two retained stops and continuations. The other two ClearAI cases were deferred. This small result provides no efficiency advantage; see the [full record](docs/optimization/0.5.8-release/first-pair-results.json).
 
 ## Cases
 

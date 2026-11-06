@@ -9,24 +9,26 @@
   "budget": {
     "campaignLimitUsd": 30,
     "perTestLimitUsd": 5,
-    "costUpperBoundUsd": 6.1993941999999995,
-    "verifiedUsageCostUpperBoundUsd": 4.5993942,
+    "costUpperBoundUsd": 2.124891428,
+    "verifiedUsageCostUpperBoundUsd": 1.324891428,
     "perTestCostUpperBoundUsd": {
-      "audit-wait:0:none": 0.5671770000000002,
-      "audit-wait:305:none": 0.3121640999999999,
-      "audit-wait:0:cancel-after-child-request": 0.297306,
-      "audit-wait:0:disconnect": 0.29276340000000006,
-      "audit-wait:0:crash-after-child-verdict": 0.8810757,
+      "audit-wait:0:none": 0.10881924000000003,
+      "audit-wait:305:none": 0.05163776400000001,
+      "audit-wait:0:cancel-after-child-request": 0.03455937600000002,
+      "audit-wait:0:disconnect": 0.04074189600000001,
+      "audit-wait:0:crash-after-child-verdict": 0.15236965200000002,
       "isolation-probe": 0.8016362,
-      "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6": 0.7438011,
-      "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c": 0.0075465,
-      "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129": 2.2959242
+      "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6": 0.127991052,
+      "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c": 0.0009985320000000001,
+      "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129": 0.8061377159999997
     },
-    "requests": 526,
-    "verifiedRequests": 524,
-    "pendingRequests": 1,
+    "requests": 676,
+    "verifiedRequests": 675,
+    "pendingRequests": 0,
     "unknownRequests": 1,
     "unknownReservedUsd": 0.8,
+    "uncachedComparisonBoundUsd": 9.8044913,
+    "pricingBasis": "Verified cache reads at published peak cache prices; pending and unknown calls retain full capacity reserves",
     "acceptedUnknownReservations": 1
   },
   "runs": [
@@ -213,5 +215,7 @@
     "process-recovery",
     "six paired smoke"
   ],
-  "disclosure": "Numeric allowlisted summary only. All raw attempts remain in the local test environment. Fast-3 is excluded because the original verifier accepted a replacement copy; later malformed tool JSON is a functional failure. No release tag permitted."
+  "disclosure": "Numeric allowlisted summary only. All raw attempts remain in the local test environment. Fast-3 is excluded because the original verifier accepted a replacement copy; later malformed tool JSON is a functional failure. No release tag permitted.",
+  "scope": "historical-pre-repair-attempts",
+  "currentAcceptance": "acceptance.json"
 }

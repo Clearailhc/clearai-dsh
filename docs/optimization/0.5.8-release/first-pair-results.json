@@ -1,0 +1,352 @@
+{
+  "passed": true,
+  "scope": "first-paired-smoke",
+  "candidateDigest": "0a91ab84462dceb9eb83043e14e944e23ef755e722322d02c17a21b83d2325e0",
+  "manifestSha256": "651f5f82f9f2eac4c3331a0695683be1a3abaf91ab9c46a076d3dd9a1a06e0a1",
+  "budget": {
+    "campaignLimitUsd": 30,
+    "perTestLimitUsd": 5,
+    "costUpperBoundUsd": 2.124891428,
+    "verifiedUsageCostUpperBoundUsd": 1.324891428,
+    "perTestCostUpperBoundUsd": {
+      "audit-wait:0:none": 0.10881924000000003,
+      "audit-wait:305:none": 0.05163776400000001,
+      "audit-wait:0:cancel-after-child-request": 0.03455937600000002,
+      "audit-wait:0:disconnect": 0.04074189600000001,
+      "audit-wait:0:crash-after-child-verdict": 0.15236965200000002,
+      "isolation-probe": 0.8016362,
+      "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6": 0.127991052,
+      "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c": 0.0009985320000000001,
+      "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129": 0.8061377159999997
+    },
+    "requests": 676,
+    "verifiedRequests": 675,
+    "pendingRequests": 0,
+    "unknownRequests": 1,
+    "unknownReservedUsd": 0.8,
+    "uncachedComparisonBoundUsd": 9.8044913,
+    "pricingBasis": "Verified cache reads at published peak cache prices; pending and unknown calls retain full capacity reserves",
+    "acceptedUnknownReservations": 1
+  },
+  "originalRuns": [
+    {
+      "group": "A",
+      "task": "additive",
+      "reason": "completed",
+      "elapsedMs": 222684,
+      "usage": {
+        "input": 20564,
+        "output": 36570,
+        "cacheRead": 852992,
+        "cacheWrite": 0,
+        "calls": 30,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 910126,
+        "status": "verified",
+        "processed": 910126
+      },
+      "roles": {
+        "other": {
+          "requests": 1,
+          "inputTokens": 275,
+          "outputTokens": 16,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.0001017,
+          "estimatedPeakCostUsd": 0.0001017,
+          "elapsedMs": 1420
+        },
+        "main": {
+          "requests": 29,
+          "inputTokens": 20289,
+          "outputTokens": 36554,
+          "cacheReadTokens": 852992,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.055069451999999984,
+          "estimatedPeakCostUsd": 0.055069451999999984,
+          "elapsedMs": 217594
+        }
+      },
+      "sourceSha256": "7e76dc75df73d845a91ab965ef60a179ce25801f7903d468389d9d01bdf0d3d7",
+      "callsSha256": "252e3233d9ce67ed7552e03c22e4d54c490ea805d236ced3d8c5dcc49002517c",
+      "score": {
+        "score": 99.97665582398976,
+        "feasible": true,
+        "completed": true
+      }
+    },
+    {
+      "group": "A",
+      "task": "interaction",
+      "reason": "completed",
+      "elapsedMs": 268149,
+      "usage": {
+        "input": 36061,
+        "output": 45460,
+        "cacheRead": 1241600,
+        "cacheWrite": 0,
+        "calls": 29,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 1323121,
+        "status": "verified",
+        "processed": 1323121
+      },
+      "roles": {
+        "main": {
+          "requests": 28,
+          "inputTokens": 35914,
+          "outputTokens": 45295,
+          "cacheReadTokens": 1241472,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.072577032,
+          "estimatedPeakCostUsd": 0.072577032,
+          "elapsedMs": 263831
+        },
+        "other": {
+          "requests": 1,
+          "inputTokens": 147,
+          "outputTokens": 165,
+          "cacheReadTokens": 128,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.000242868,
+          "estimatedPeakCostUsd": 0.000242868,
+          "elapsedMs": 2510
+        }
+      },
+      "sourceSha256": "2b308a2ef0a0c404a0eb475bd8a94ecd2df111e8a071b412ab903261526ff5a8",
+      "callsSha256": "4e4975db34c3b18d9369926e3835c1da3720692f86387fcc434c7c1256155eb2",
+      "score": {
+        "score": 99.99756833899683,
+        "feasible": true,
+        "completed": true
+      }
+    },
+    {
+      "group": "A",
+      "task": "direct",
+      "reason": "completed",
+      "elapsedMs": 5710,
+      "usage": {
+        "input": 1299,
+        "output": 396,
+        "cacheRead": 22272,
+        "cacheWrite": 0,
+        "calls": 5,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 23967,
+        "status": "verified",
+        "processed": 23967
+      },
+      "roles": {
+        "other": {
+          "requests": 1,
+          "inputTokens": 198,
+          "outputTokens": 95,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.0001734,
+          "estimatedPeakCostUsd": 0.0001734,
+          "elapsedMs": 1384
+        },
+        "main": {
+          "requests": 4,
+          "inputTokens": 1101,
+          "outputTokens": 301,
+          "cacheReadTokens": 22272,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.0008251319999999999,
+          "estimatedPeakCostUsd": 0.0008251319999999999,
+          "elapsedMs": 5330
+        }
+      },
+      "sourceSha256": "fe13b8c9132c13d2e0a116ec8c4f4be59eaab3e912a6726d70523c924392a976",
+      "callsSha256": "c0fe0bf824105fdfea84e87bf67de6cad5ae5245ef685b3286737ec93f289170",
+      "score": {
+        "score": 100
+      }
+    },
+    {
+      "group": "C",
+      "task": "additive",
+      "reason": "token_limit",
+      "elapsedMs": 1155494,
+      "usage": {
+        "input": 99583,
+        "output": 204299,
+        "cacheRead": 4731904,
+        "cacheWrite": 0,
+        "calls": 95,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 5035786,
+        "status": "verified",
+        "processed": 5035786
+      },
+      "roles": {
+        "main": {
+          "requests": 54,
+          "inputTokens": 28596,
+          "outputTokens": 53543,
+          "cacheReadTokens": 2813440,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.08971103999999999,
+          "estimatedPeakCostUsd": 0.08971103999999999,
+          "elapsedMs": 321644
+        },
+        "other": {
+          "requests": 1,
+          "inputTokens": 147,
+          "outputTokens": 161,
+          "cacheReadTokens": 128,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.00023806799999999997,
+          "estimatedPeakCostUsd": 0.00023806799999999997,
+          "elapsedMs": 2084
+        },
+        "evaluator": {
+          "requests": 40,
+          "inputTokens": 70840,
+          "outputTokens": 150595,
+          "cacheReadTokens": 1918336,
+          "cacheWriteTokens": 0,
+          "missingUsage": 0,
+          "costUpperBoundUsd": 0.21347601600000005,
+          "estimatedPeakCostUsd": 0.21347601600000005,
+          "elapsedMs": 804253
+        }
+      },
+      "sourceSha256": "e9fbdc090b27daf720115d2cbed04e714486af81dc230c9a663ddda428eddd34",
+      "callsSha256": "c5b4d011d6ba7017405af8bc98316ef15e78fded16c9460f6aca6fc2b6c2737c",
+      "score": {
+        "score": 0,
+        "feasible": false,
+        "completed": false
+      }
+    }
+  ],
+  "continuation": {
+    "group": "C",
+    "task": "additive",
+    "reason": "completed",
+    "elapsedMs": 643107,
+    "usage": {
+      "input": 125284,
+      "output": 112478,
+      "cacheRead": 5087232,
+      "cacheWrite": 0,
+      "calls": 57,
+      "injectedBeforeProvider": 0,
+      "missing": 0,
+      "pending": 0,
+      "lowerBound": 5324994,
+      "status": "verified",
+      "processed": 5324994
+    },
+    "roles": {
+      "main": {
+        "requests": 19,
+        "inputTokens": 13543,
+        "outputTokens": 10909,
+        "cacheReadTokens": 2775552,
+        "cacheWriteTokens": 0,
+        "missingUsage": 0,
+        "costUpperBoundUsd": 0.033807012000000004,
+        "estimatedPeakCostUsd": 0.033807012000000004,
+        "elapsedMs": 84064
+      },
+      "evaluator": {
+        "requests": 38,
+        "inputTokens": 111741,
+        "outputTokens": 101569,
+        "cacheReadTokens": 2311680,
+        "cacheWriteTokens": 0,
+        "missingUsage": 0,
+        "costUpperBoundUsd": 0.16927518000000003,
+        "estimatedPeakCostUsd": 0.16927518000000003,
+        "elapsedMs": 548046
+      }
+    },
+    "sourceSha256": "658c3fc8467533e3e0fa17a5b118941d30e23c4922b168c9b1823f68b605347b",
+    "callsSha256": "1eff2f3e14c832f49823fc5b2ba4cdce3f2074af524d9b3db2856096cfc00434",
+    "passed": true,
+    "sameGoal": true,
+    "score": 99.9873614302365,
+    "feasible": true,
+    "experimentCost": 30,
+    "originalExperimentCost": 30,
+    "receiptSha256": "03e40730520e14e704661d548a162c1a7adfebf4ea6cfbe6a6e7142c40f8fdfc"
+  },
+  "priorContinuation": {
+    "group": "C",
+    "task": "additive",
+    "reason": "error",
+    "elapsedMs": 1023011,
+    "usage": {
+      "input": 110240,
+      "output": 184580,
+      "cacheRead": 7510400,
+      "cacheWrite": 0,
+      "calls": 88,
+      "injectedBeforeProvider": 0,
+      "missing": 1,
+      "pending": 0,
+      "lowerBound": 7805220,
+      "status": "unknown",
+      "processed": null
+    },
+    "roles": {
+      "main": {
+        "requests": 41,
+        "inputTokens": 21817,
+        "outputTokens": 26219,
+        "cacheReadTokens": 4522496,
+        "cacheWriteTokens": 0,
+        "missingUsage": 1,
+        "costUpperBoundUsd": 0.065142876,
+        "estimatedPeakCostUsd": 0.065142876,
+        "elapsedMs": 184695
+      },
+      "evaluator": {
+        "requests": 48,
+        "inputTokens": 88423,
+        "outputTokens": 158361,
+        "cacheReadTokens": 2987904,
+        "cacheWriteTokens": 0,
+        "missingUsage": 0,
+        "costUpperBoundUsd": 0.234487524,
+        "estimatedPeakCostUsd": 0.234487524,
+        "elapsedMs": 827846
+      }
+    },
+    "sourceSha256": "ae8c0ff490ef6df28514f8e5855fd6ccb12ab5f33135f767f0200a1cd07049c8",
+    "callsSha256": "6cfcd748555bfce92e6238e357ebde98636c6c1ace1f18795427b297deb60158",
+    "failureCategory": "conservative-budget-reservation",
+    "deniedBeforeProvider": 1,
+    "billingNote": "The missing usage row was denied before provider invocation and has no budget reservation; all actual provider requests were accounted for."
+  },
+  "deferred": [
+    "C interaction",
+    "C direct"
+  ],
+  "limitations": [
+    "The user reduced the release gate from six sessions to the first completed paired case.",
+    "The C first attempt stopped at the harness 5M-token ceiling; continuation retains the same goal, workspace, world, experimental spend and USD 5 cumulative cap. It is not a fresh successful sample.",
+    "Model costs are estimates from reported tokens and published peak rates, not provider invoices; verified cache reads use the published peak cache-read rate; pending and unknown calls retain their full reservation. The earlier uncached-price bound remains separately recorded.",
+    "This single paired case cannot establish general correctness or efficiency. All failures and other calls remain in the cumulative budget."
+  ]
+}

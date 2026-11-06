@@ -1,0 +1,420 @@
+{
+  "version": "0.5.8",
+  "passed": true,
+  "scope": {
+    "kind": "first-paired-smoke",
+    "authorizedByUser": true,
+    "request": "\u8dd1\u5b8c\u9996\u573a\u6ca1\u95ee\u9898\u5c31\u5347\u7ea7\u53d1\u5e03",
+    "deferred": [
+      "C interaction",
+      "C direct"
+    ],
+    "continuation": "Same first C session and goal after retained token-limit and conservative-budget stops; all costs cumulative and verified cache pricing reconciled."
+  },
+  "gates": {
+    "fast": {
+      "passed": true,
+      "evidence": "recovery-results.json",
+      "elapsedMs": 70247
+    },
+    "slow-over-300s": {
+      "passed": true,
+      "evidence": "recovery-results.json",
+      "delaySeconds": 305,
+      "parentRequestsWhileWaiting": 0,
+      "audits": 1
+    },
+    "cancel": {
+      "passed": true,
+      "evidence": "recovery-results.json"
+    },
+    "disconnect": {
+      "passed": true,
+      "evidence": "recovery-results.json"
+    },
+    "process-recovery": {
+      "passed": true,
+      "evidence": "recovery-results.json",
+      "sameGoalAndAudit": true,
+      "recoveryModelCalls": 0
+    },
+    "smoke-first-pair": {
+      "passed": true,
+      "evidence": "first-pair-results.json",
+      "runs": [
+        {
+          "group": "A",
+          "task": "additive",
+          "reason": "completed",
+          "usageStatus": "verified",
+          "feasible": true,
+          "score": 99.97665582398976
+        },
+        {
+          "group": "C",
+          "task": "additive",
+          "reason": "completed",
+          "usageStatus": "verified",
+          "feasible": true,
+          "score": 99.9873614302365,
+          "continued": true,
+          "sameGoal": true
+        }
+      ]
+    },
+    "production-ui": {
+      "passed": true,
+      "evidence": "browser-results-optimized.json"
+    },
+    "performance": {
+      "passed": true,
+      "evidence": "graph-performance-optimized.json",
+      "copyEvidence": "copy-performance.json"
+    }
+  },
+  "budget": {
+    "limitUsd": 30,
+    "perTestLimitUsd": 5,
+    "verified": true,
+    "costUpperBoundUsd": 2.124891428,
+    "perTestCostUpperBoundUsd": {
+      "audit-wait:0:none": 0.10881924000000003,
+      "audit-wait:305:none": 0.05163776400000001,
+      "audit-wait:0:cancel-after-child-request": 0.03455937600000002,
+      "audit-wait:0:disconnect": 0.04074189600000001,
+      "audit-wait:0:crash-after-child-verdict": 0.15236965200000002,
+      "isolation-probe": 0.8016362,
+      "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6": 0.127991052,
+      "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c": 0.0009985320000000001,
+      "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129": 0.8061377159999997
+    },
+    "pendingRequests": 0,
+    "unknownRequests": 1,
+    "acceptedUnknownReservations": 1,
+    "unknownReservedUsd": 0.8,
+    "verificationMeaning": "The spending bound and reservations are verified; one title request still has unknown usage and retains its user-approved full USD 0.80 reservation. Not a provider invoice."
+  },
+  "files": [
+    {
+      "path": "docs/optimization/0.5.8-release/all-model-usage.json",
+      "sha256": "020e28728d3f631985685cd238e699e6dbafc83b3d4d32f047015380d7f2b7c4"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/browser-results-optimized.json",
+      "sha256": "5e41ade6c2f25c91359e5519cf1bf6ac5f728b1f9f5dbffd4e2b518f0d4ee0c5"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/candidate-comparison.json",
+      "sha256": "beb98f776530eaae2b37971f46d0d206b0ba38dd433726bc079a2075aedea931"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/continuation-driver.mjs",
+      "sha256": "7ab190128be9ec0202f6b15062f883aad3ae043d06df137140b9d863b2eb82e7"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/copy-performance.json",
+      "sha256": "b54aa975e21bba57b8e6ba0c674f8426d8cf7985e05440c1bef56f480e80222f"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/engineering-results.json",
+      "sha256": "d15b47755920d7d5bf9952c3dbf1d8b91c2d5044374353b983953416eb6a3a72"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/first-pair-results.json",
+      "sha256": "b6e7eea066b5c667fe95097a1e826906dfd2b3da4a641bab41358cb98b410e93"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/graph-performance-optimized.json",
+      "sha256": "e8f97a3361527ebb139cd540f4f30ab43c36f21ee584b6d2b6871efa9b7e6581"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/performance-candidate-comparison.json",
+      "sha256": "fa8c204605eb13971171df27d9854aec68b9a97d313ebd3e0d28301a84ed53e4"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/pricing-reconciliation.json",
+      "sha256": "018fc833aa4d778fc42dc2299f7336b0015f1e63a38db163ce5ab467c1c10707"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/real-model-results.json",
+      "sha256": "b111941215996c6c30404f5ff2207f20de6bdb348b3a844a8ab3cf029f060e15"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/recovery-results.json",
+      "sha256": "7072dcb9ffc939247a4946510813842cb7d0a80da99782e92899763dd11a2f0c"
+    },
+    {
+      "path": "docs/optimization/0.5.8-release/scope-amendment.json",
+      "sha256": "3194cd970bc8d69f87ccca9809d1c40459b3b13271473ec2468913f030d941a9"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "c02b1bf9d9661820b733df7764252a5fb8dc910a9402ad72cb131f9e9043419b"
+    },
+    {
+      "path": "package.json",
+      "sha256": "536e364fc7b7f5afe1d27c8abc17c934405a00788729f696a7f42259dd8a3a9d"
+    },
+    {
+      "path": "preset/agent.cordis.yml",
+      "sha256": "247d6ce935ad14c222c28d7edfe28cfcd1865a7790e9b4e8b5388518000291ef"
+    },
+    {
+      "path": "preset/plugins/audit-evidence.js",
+      "sha256": "224646c971fba0860dec3afeec9d4069874fd3b94ac10d3a009787220a1d989b"
+    },
+    {
+      "path": "preset/plugins/audit-material.js",
+      "sha256": "1f25a77cd0a0bf4a070cd55e49bd82f601e363ef3839864c47171fb20c8a42d7"
+    },
+    {
+      "path": "preset/plugins/audit-schema.js",
+      "sha256": "232f607566de286a0fdc07551f5074a0d9b6526ab7758d4a74b5fdc6964b5172"
+    },
+    {
+      "path": "preset/plugins/clearai-evaluator-face.js",
+      "sha256": "9a13d4c27e97f46bca6054b26f23cf3bf254b7d90aea393b501b8b2eb769b0a3"
+    },
+    {
+      "path": "preset/plugins/clearai-kernel.js",
+      "sha256": "9ca70c61a6e364ada18393056f04860618e488d36ec71b2115333296e3df98cb"
+    },
+    {
+      "path": "preset/plugins/integrity.js",
+      "sha256": "b6490f3849f5eacf8b92b798957a67e1f24266961ed350823683158f431f2cfd"
+    },
+    {
+      "path": "preset/plugins/knowledge-items.js",
+      "sha256": "2c67e9d669ffd0b12063180c94d9e4b6bcb63e7294cfcffd7836b4f42ead7335"
+    },
+    {
+      "path": "preset/plugins/models.js",
+      "sha256": "f30146b8954a35e9ef1ed29cbba795bba40100107b794adc2c46d3216dc49166"
+    },
+    {
+      "path": "preset/plugins/native-todos.js",
+      "sha256": "9ef6eea391fc0c9e68f69b11026f5da8c7ca34f93207cdcd3795d2af8e454a58"
+    },
+    {
+      "path": "preset/plugins/ontology.js",
+      "sha256": "b7eaa25e0538105389de32671a3277c5e4967dc5b2499d9d7a7941302972aec9"
+    },
+    {
+      "path": "preset/plugins/prompts.js",
+      "sha256": "bad997467ddb670d1fdb9f16c40c559fb1e38818fdc32c4154d5e265910ab740"
+    },
+    {
+      "path": "preset/plugins/rerun-copy.js",
+      "sha256": "5d2de2244b59c86353ca72334b0227873d933dd2b69b4457b06d078a09cbe433"
+    },
+    {
+      "path": "preset/plugins/scope.js",
+      "sha256": "0ea0c2ad36d7d2193b7a2d93a00aaa2f1d9465531e8181c0a65014cb08edd565"
+    },
+    {
+      "path": "preset/plugins/tool-argument-stream.js",
+      "sha256": "b9655a28402803deee1f1e94b925e7960775e50a8f91da21551d7b4a7627804f"
+    },
+    {
+      "path": "preset/plugins/workspace-path.js",
+      "sha256": "2023c6d2fbf7fadec2d7e4f0f8aa25b4b34d4802822c624f2a8c25b02022842c"
+    },
+    {
+      "path": "test/client.test.mjs",
+      "sha256": "024cd71c597f1db5e675e265f2d9868f0158f09b33c5a8697413ab0f2d0ea6df"
+    },
+    {
+      "path": "test/native-budget.test.mjs",
+      "sha256": "4606a11e77b3b04e5f470457e3b7320ee0010f206dc690a8a9cd12368e03297b"
+    },
+    {
+      "path": "tools/benchmark-graph.mjs",
+      "sha256": "00dec1a6610570a4daed03061a5fc90bb13eec98088946c21d67872ed3c3439d"
+    },
+    {
+      "path": "tools/benchmark-rerun-copy.mjs",
+      "sha256": "2b2bc2efd869dbad8f5e6fd96ac9e26040b4785f89cf1e3353392719a272110a"
+    },
+    {
+      "path": "tools/native-headless/ablation-probe.mjs",
+      "sha256": "2d4106ef604b74bdca6e6277a5f5581ecafcf2d97761d21a92b809cefb4dffc8"
+    },
+    {
+      "path": "tools/native-headless/acceptance.mjs",
+      "sha256": "6ef50652e7f77af6249be7fe255a566dc358efef9e7bd12a1ab32066b7789540"
+    },
+    {
+      "path": "tools/native-headless/accounting.mjs",
+      "sha256": "a3871fbdbc0de475ab2990d250c4e42837b1a1eb7c22231a26400cbe1537006e"
+    },
+    {
+      "path": "tools/native-headless/all-stages.mjs",
+      "sha256": "d54c3132d528afb483e607550730c6c352537f419fc1a950e2349412d3450592"
+    },
+    {
+      "path": "tools/native-headless/analyze.mjs",
+      "sha256": "a9bcca15ba0f69e64341624abac80f54db3d00af99fe43710b709cb026a66650"
+    },
+    {
+      "path": "tools/native-headless/audit-fault-probe.mjs",
+      "sha256": "251b935835f113145666bd6cf72679b0ba5e49a79adfaa88ddb550c677120719"
+    },
+    {
+      "path": "tools/native-headless/audit-wait-probe.mjs",
+      "sha256": "cdd8495e13276ce159d1312453c023a652276a1243618d6435dca7a907f6f530"
+    },
+    {
+      "path": "tools/native-headless/budget.mjs",
+      "sha256": "2721f0c6af9c792e4ef436baa3805502f722dd72f57f23676beb90150fbffc7a"
+    },
+    {
+      "path": "tools/native-headless/campaign.mjs",
+      "sha256": "ccd38ef8febad3038be235ead107b05eb8d935222abb54a65a6ac1a854fa386c"
+    },
+    {
+      "path": "tools/native-headless/carrier.mjs",
+      "sha256": "54b7718c0a7e2816e53b789890b67023c621e014a1957df79acd809b53f675a9"
+    },
+    {
+      "path": "tools/native-headless/diagnostic-protocol.mjs",
+      "sha256": "267d954fef58c6e4a71d652c300912d56aedea01196768f6093a1fab0fc48906"
+    },
+    {
+      "path": "tools/native-headless/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "tools/native-headless/factory.mjs",
+      "sha256": "275c60d920982cf1d23aceee0ebfe84566579f400e001bfe321bed352ea0cce8"
+    },
+    {
+      "path": "tools/native-headless/faults.mjs",
+      "sha256": "5211d3978b22e4f73a29186cc5f13df18d2789d35d1c796db8d3891a6ee4d5f4"
+    },
+    {
+      "path": "tools/native-headless/freeze.mjs",
+      "sha256": "0e5511b1c58ee493436c410f57ef7a2c75b778a50f972125c735c65331574761"
+    },
+    {
+      "path": "tools/native-headless/grading-probe.mjs",
+      "sha256": "2bb370e950ada04c08686bea6f6dc4f5da0d4729da1dd320d5a1e3da6c633ba4"
+    },
+    {
+      "path": "tools/native-headless/installed-cli.cjs",
+      "sha256": "c9d20cd5d34006c84c05ac9d68e65b90e04a364236e81d5cc6e893f5b2d958cf"
+    },
+    {
+      "path": "tools/native-headless/isolation.mjs",
+      "sha256": "15d99a798481fab6fb0c18da084500e11984bba0439b93d04f8e21e5aee100f5"
+    },
+    {
+      "path": "tools/native-headless/lifecycle.mjs",
+      "sha256": "ac484a1af42b85097ecbe3a50880747eb428aad36f02793879f7cdd5fe402954"
+    },
+    {
+      "path": "tools/native-headless/matrix.mjs",
+      "sha256": "526a64cf113d6509bd860b731ffd3c1c97a9b65d5d6fb5532bd71614f8ec5221"
+    },
+    {
+      "path": "tools/native-headless/mechanisms.mjs",
+      "sha256": "3172739ebdd092e3c1fea396d4aae9e8b0cdac00083909493f6f17678bc1a2ac"
+    },
+    {
+      "path": "tools/native-headless/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "tools/native-headless/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "tools/native-headless/native-contract.mjs",
+      "sha256": "dcbd1b9765d333d996d474e0a5f779dbe6f6c7a7f8edc8e9c7e2f68a5ec8815d"
+    },
+    {
+      "path": "tools/native-headless/ontology-probe.mjs",
+      "sha256": "c3a0fec2b10476e04bd7cb5b9f217e04b15f9113949d4f405f07349790168295"
+    },
+    {
+      "path": "tools/native-headless/public-materials.mjs",
+      "sha256": "3f17f3ee3b6fad3422d88fd999de78d46203fff98a779920fd31a87e7738135e"
+    },
+    {
+      "path": "tools/native-headless/recheck-probe.mjs",
+      "sha256": "735808e075a53c22e6e61283a52aa146d198bd2d34ed972fd3fd3f0914a6762c"
+    },
+    {
+      "path": "tools/native-headless/run.mjs",
+      "sha256": "89cc5019337cf2f6fc90018a39f225d5bbcb24c3bbe4f12846e11a1031f557a1"
+    },
+    {
+      "path": "tools/native-headless/runtime.mjs",
+      "sha256": "f38c7478d3a976183828680f378fec729a81b9eb1e68c125e102b13acbec716a"
+    },
+    {
+      "path": "tools/native-headless/scoring.mjs",
+      "sha256": "9e00a7aedfaeb280cd6736a5037c219629ed287bdc73b4c81272944360b902c3"
+    },
+    {
+      "path": "tools/native-headless/sequence.mjs",
+      "sha256": "8e72e2851c94c1686114ad0ba06d2a779a84d4499f24583f04169b1674c77cb0"
+    },
+    {
+      "path": "tools/native-headless/setup.mjs",
+      "sha256": "91769a85f6a37d8044d9e5129e8f898632a4a993d3b4093bf77d5035e7730548"
+    },
+    {
+      "path": "tools/native-headless/ui-fixture.mjs",
+      "sha256": "4a663aa38dadd45aafa8f0f85846f36a4d2ed0c7828b1c933abbb761838adc62"
+    },
+    {
+      "path": "tools/native-headless/ui-setup.mjs",
+      "sha256": "2322f091a888d099c348364ad4c07f1c97f9fbb6752e9aaa0653591753e1300b"
+    },
+    {
+      "path": "tools/native-headless/world.mjs",
+      "sha256": "5b80622f6c3c28cce604882cdbca00bafd1cffa74790aa01b4806aea18a6fe34"
+    },
+    {
+      "path": "tools/verify-release-evidence.mjs",
+      "sha256": "196c0ef9b7244219330365c80398a9a880ba9e0244519fb741a7331396b26275"
+    },
+    {
+      "path": "ui/lib/client.js",
+      "sha256": "cf41bf8858a04f45d11b8f46548a787560763b0a15685b0cadc8245c213ac238"
+    },
+    {
+      "path": "ui/lib/domain-language.js",
+      "sha256": "95682cd683aae8278223c2169221884efa7e0e132da5e7fb8b59ecea9bae98af"
+    },
+    {
+      "path": "ui/lib/fold.js",
+      "sha256": "e5d919063581f00f2aa866b68ccfe201a10972f448ff8e119cc93526cd79f9ac"
+    },
+    {
+      "path": "ui/lib/index.js",
+      "sha256": "bc0645d3e7d299bdcb8d133a04a43bae34fbb33b308f2e814c6d9a108126e887"
+    },
+    {
+      "path": "ui/lib/invariant.js",
+      "sha256": "81ca16cc6b3feed707d0a1beb4efb08a8970a5d2ca730359cf1bdebe9207414b"
+    },
+    {
+      "path": "ui/lib/knowledge-view.js",
+      "sha256": "64046b5b2b059ef520ab412bb30e24fff66a5ffedb350dee2306a8bad890b8a1"
+    },
+    {
+      "path": "ui/lib/lang.js",
+      "sha256": "8b5b19847d25287812a20103faa68329912fa6a7c4fc795724f9c9e919141326"
+    },
+    {
+      "path": "ui/lib/scope.js",
+      "sha256": "b6b58dab8360e40d81c12386d3e05d49d4dfd5b5b27ce7c55158371c3cdda14d"
+    }
+  ],
+  "limitations": [
+    "One continued paired case is exploratory engineering evidence, not a six-session study or a general efficiency claim.",
+    "Live model cases predate the final graph-only performance repair; package comparisons and repeated native UI checks bind the affected client changes.",
+    "The malformed-argument terminal-error path is additionally covered by native-contract and successful same-goal recovery tests."
+  ]
+}

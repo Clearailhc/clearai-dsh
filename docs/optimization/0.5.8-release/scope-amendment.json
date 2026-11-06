@@ -17,6 +17,13 @@
     "newSample": false,
     "executedDriverSha256": "81e1ea4fdf8a5fdc76adbbaca8562afde5f1f8c96dd6e490f3107355380923e0",
     "archivedDriver": "continuation-driver.mjs",
-    "archiveDifference": "Only absolute import paths and fixed temporary directories are parameterized; experiment replay, same-goal check and cumulative test ID are unchanged."
+    "archiveDifference": "Only absolute import paths and fixed temporary directories are parameterized; experiment replay, same-goal check and cumulative test ID are unchanged.",
+    "executedDriverSha256s": [
+      "81e1ea4fdf8a5fdc76adbbaca8562afde5f1f8c96dd6e490f3107355380923e0",
+      "f04f8506c52d59df4b925a0171e654667c9dca9c3ea2f355660a54b26ea0d700"
+    ],
+    "completed": true,
+    "sameGoalVerified": true,
+    "pricingReconciliation": "pricing-reconciliation.json"
   }
 }

@@ -1,0 +1,50 @@
+{
+  "roles": {
+    "main": {
+      "requests": 441,
+      "inputTokens": 251901,
+      "outputTokens": 306537,
+      "cacheReadTokens": 17778560,
+      "cacheWriteTokens": 0,
+      "verified": 441,
+      "unknown": 0,
+      "pending": 0,
+      "costUpperBoundUsd": 0.5500860599999998,
+      "elapsedMsKnown": 2053894
+    },
+    "other": {
+      "requests": 20,
+      "inputTokens": 4541,
+      "outputTokens": 1234,
+      "cacheReadTokens": 3712,
+      "cacheWriteTokens": 0,
+      "verified": 19,
+      "unknown": 1,
+      "pending": 0,
+      "costUpperBoundUsd": 0.802865372,
+      "elapsedMsKnown": 33085
+    },
+    "evaluator": {
+      "requests": 215,
+      "inputTokens": 367605,
+      "outputTokens": 509688,
+      "cacheReadTokens": 8338816,
+      "cacheWriteTokens": 0,
+      "verified": 215,
+      "unknown": 0,
+      "pending": 0,
+      "costUpperBoundUsd": 0.771939996,
+      "elapsedMsKnown": 2781410
+    }
+  },
+  "requests": 676,
+  "pricingLedgerVersion": 3,
+  "limitUsd": 30,
+  "perTestLimitUsd": 5,
+  "notes": [
+    "All calls in the shared campaign ledger are counted, including failed runs, retries, titles and isolation probes.",
+    "Elapsed totals sum individual request durations and can overlap; they are not wall-clock campaign duration.",
+    "Unclassified means no matching session header was available; these calls remain charged to the total.",
+    "Cost upper bounds use verified peak-rate cache pricing; unknown and pending calls retain their full reservation. No provider invoice is available."
+  ]
+}

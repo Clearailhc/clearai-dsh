@@ -2,7 +2,7 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.8] — Unreleased
+## [0.5.8] — 2026-11-06
 
 **DSH 0.2.2-rc.1 兼容性、可复核审计与完整性检测，以及研究 / 本体双面板和图谱升级。**
 
@@ -18,7 +18,9 @@ All notable changes to this project are recorded here. The format follows [Keep 
 
 ### Validation
 
-- 发布前必须完成 [0.5.8 验收记录](docs/optimization/0.5.8-release/README.md) 的工程、浏览器和真实模型门槛。每测试 5 美元、全批次 30 美元；不因模型费用更高而声称效率提升。
+- Linux Node 22/24、Windows Node 24、安装生命周期、原生 DSH 中英文页面与图谱性能检查通过；首次挂载和无关投影更新不再重复布局。
+- 快速闭环、305 秒慢评估、取消、断连与原目标恢复通过。按用户授权，以首场配对验收替代六场发布门槛；两次提前停止、续跑和全部费用保留。首场结果接近，ClearAI 费用和耗时更高，不宣称效率优势。
+- 全批次费用上界 $2.124891428，包含未知标题调用的完整 $0.80 预留；每测试 $5、全批次 $30 上限不变。详见 [0.5.8 验收记录](docs/optimization/0.5.8-release/README.md)。
 
 ## [0.5.7] — 2026-10-24
 
