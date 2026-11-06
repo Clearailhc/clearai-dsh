@@ -119,3 +119,10 @@ test('pending dispatch has no handoff and successful dispatch retains its origin
  s=applyResearchProjection(s,result(5,[{t:'audit/settled',id:'a',verdict:'unknown',basis:'Dispatch failure'}]))
  assert.equal(s.bySeq[5][0].taskId,'g1')
 })
+
+
+test('structured audit shortfalls retain the criterion, finding and missing evidence', () => {
+ const [row]=researchEvents(result(1,[{t:'audit/settled',id:'a',verdict:'unknown',shortfalls:[null,{criterion:'C1',what:'Control absent',missing:'Independent control observation'},'Legacy limitation',{detail:'Older detail'}]}]))
+ assert.deepEqual(row.summary,['C1 · Control absent · Independent control observation','Legacy limitation','Older detail'])
+ assert.equal(row.status,'unknown')
+})

@@ -66,7 +66,7 @@ export function researchEvents(event, mutations = mutationsFromResearchEvent(eve
     } else if (m.t === 'audit/dispatched' && text(m.evaluator_session) && m.status !== 'dispatching') {
       add('handoff', m, index, [object('audit', m.id)], [text(m.reason), ...list(m.criteria).map(item => typeof item === 'string' ? item : text(item?.text))], 'dispatched', text(m.evaluator_session) ? [{ kind: 'evaluator-session', sessionId: m.evaluator_session }] : [])
     } else if (m.t === 'audit/settled') {
-      add('adjudication', m, index, [object('audit', m.id)], [text(m.basis), ...list(m.shortfalls).map(item => typeof item === 'string' ? item : text(item?.detail))], text(m.verdict) || 'unknown', text(m.card_path) ? [{ kind: 'audit-card', path: m.card_path }] : [])
+      add('adjudication', m, index, [object('audit', m.id)], [text(m.basis), ...list(m.shortfalls).map(item => typeof item === 'string' ? item : text(item?.detail) || [text(item?.criterion), text(item?.what), text(item?.missing)].filter(Boolean).join(' · '))], text(m.verdict) || 'unknown', text(m.card_path) ? [{ kind: 'audit-card', path: m.card_path }] : [])
     } else if (m.t === 'goal/closed') {
       add('outcome', m, index, [object('goal', m.id)], list(m.answers).flatMap(answer => [text(answer?.conclusion), ...list(answer?.basis).map(text), ...list(answer?.open).map(item => text(item?.effect) || text(item))]), text(m.status) || 'unknown')
     }

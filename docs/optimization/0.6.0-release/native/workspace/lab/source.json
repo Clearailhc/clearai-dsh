@@ -1,0 +1,13 @@
+{
+  "fixture": "audit-wait",
+  "source": "synthetic test controller",
+  "unit": "count",
+  "input": "lab/input.json",
+  "observations": [
+    2,
+    2,
+    2
+  ],
+  "delay_seconds": 0,
+  "delay_purpose": "Intentional test delay; zero is the fast control. Not physical measurement latency."
+}

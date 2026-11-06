@@ -11,8 +11,8 @@
   "after": {
     "historicalKeys": 10000,
     "duplicateEvents": 1000,
-    "totalMs": 26.534584000000052,
-    "p95Ms": 0.04171999999999798,
+    "totalMs": 18.96150499999979,
+    "p95Ms": 0.03523399999998844,
     "modelCalls": 0
   },
   "initialAfter": {
@@ -23,5 +23,12 @@
     "modelCalls": 0
   },
   "reproduce": "node tools/benchmark-research-events.mjs [path/to/research-events.js]",
-  "limitation": "Single-machine synthetic duplicate handling. No claim about model latency or whole-task speed."
+  "limitation": "Single-machine synthetic duplicate handling. No claim about model latency or whole-task speed.",
+  "beforeStructuredShortfallFix": {
+    "historicalKeys": 10000,
+    "duplicateEvents": 1000,
+    "totalMs": 26.534584000000052,
+    "p95Ms": 0.04171999999999798,
+    "modelCalls": 0
+  }
 }

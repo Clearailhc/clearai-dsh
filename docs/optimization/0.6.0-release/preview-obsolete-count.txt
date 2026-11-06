@@ -1,0 +1,36 @@
+Loaded DSH
+Session list New Session
+Plugins
+Automation tasks
+More
+Workspaces
+ClearAI · 示例回放 / Example replay
+New Session
+示例回放：比较客户流失差异
+now
+More
+Into the Unknown
+Preview
+ClearAI · 示例回放 / Example replay
+Standard mode
+Describe what you want to build, / commands, @ files or sessions
+Workspace Write
+Select model
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+8 !== 9
+
+    at file:///workspace/clearai-audit-opt/tools/research-preview/capture.mjs:68:8 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 8,
+  expected: 9,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.1

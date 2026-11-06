@@ -8,6 +8,30 @@ const version=JSON.parse(readFileSync(resolve(root,'package.json'))).version
 const receipt=JSON.parse(readFileSync(resolve(root,`docs/optimization/${version}-release/acceptance.json`)))
 assert.equal(receipt.version,version)
 assert.equal(receipt.passed,true)
+const polish=receipt.scope?.kind==='polish-paired-review'
+if(polish) {
+ assert.equal(version,'0.6.0')
+ assert.equal(receipt.scope.authorizedByUser,true)
+ const comparison=JSON.parse(readFileSync(resolve(root,`docs/optimization/${version}-release/comparison/comparison.json`)))
+ assert.equal(comparison.complete,true)
+ assert.equal(comparison.results.length,6)
+ assert.deepEqual(comparison.results.map(row=>row.id).sort(),['additive-A','additive-C','direct-A','direct-C','interaction-A','interaction-C'])
+ for(const row of comparison.results) {
+  assert.equal(row.reason,'completed');assert.equal(row.usage.status,'verified')
+  assert.deepEqual(row.violations,[])
+  assert.ok(Number.isFinite(row.quality.score)&&row.quality.score>=0&&row.quality.score<=100)
+  assert.equal(Object.values(row.roles).reduce((n,r)=>n+r.processed,0),row.usage.processed)
+  assert.ok(row.elapsedMs>0&&row.costUpperBoundUsd>=0)
+ }
+ for(const task of ['additive','interaction']) {
+  const pair=comparison.results.filter(row=>row.task===task)
+  assert.equal(pair[0].initialSha256,pair[1].initialSha256,'Both variants need identical initial observations')
+ }
+ assert.equal(JSON.parse(readFileSync(resolve(root,`docs/optimization/${version}-release/comparison/verification.json`))).passed,true)
+ const run=receipt.gates['single-native-e2e']
+ assert.equal(run?.reason,'completed');assert.equal(run?.usageStatus,'verified')
+ assert.ok(run?.independentAudits>0);assert.equal(run?.parentRequestsWhileWaiting,0)
+}
 const singleE2e=receipt.scope?.kind==='single-native-e2e'
 if(singleE2e) {
  assert.equal(version,'0.5.9')
@@ -26,7 +50,7 @@ if(reducedScope) {
  assert.deepEqual(pair.map(row=>row.group).sort(),['A','C'])
  assert.ok(pair.every(row=>row.task==='additive'&&row.reason==='completed'&&row.usageStatus==='verified'&&row.feasible===true&&row.score>0))
 }
-for(const gate of singleE2e?['single-native-e2e','engineering','package','lifecycle','production-ui']:['fast','slow-over-300s','cancel','disconnect','process-recovery',reducedScope?'smoke-first-pair':'smoke-six','production-ui','performance']) assert.equal(receipt.gates[gate]?.passed,true,`Missing gate: ${gate}`)
+for(const gate of polish?['single-native-e2e','paired-comparison','engineering','package','lifecycle','production-ui','performance']:singleE2e?['single-native-e2e','engineering','package','lifecycle','production-ui']:['fast','slow-over-300s','cancel','disconnect','process-recovery',reducedScope?'smoke-first-pair':'smoke-six','production-ui','performance']) assert.equal(receipt.gates[gate]?.passed,true,`Missing gate: ${gate}`)
 assert.equal(receipt.budget.limitUsd,30);assert.equal(receipt.budget.perTestLimitUsd,5)
 assert.ok(receipt.budget.verified && Number.isFinite(receipt.budget.costUpperBoundUsd) && receipt.budget.costUpperBoundUsd >= 0 && receipt.budget.costUpperBoundUsd <= 30)
 assert.equal(receipt.budget.pendingRequests,0,'In-flight usage must settle before release')
@@ -35,6 +59,7 @@ assert.ok(Object.keys(receipt.budget.perTestCostUpperBoundUsd ?? {}).length>0)
 for(const cost of Object.values(receipt.budget.perTestCostUpperBoundUsd)) assert.ok(Number.isFinite(cost)&&cost>=0&&cost<=5,'Per-test spending exceeds the approved limit')
 assert.ok(receipt.files.length>0)
 const required=['package.json','preset/agent.cordis.yml']
+if(polish) required.push('package-lock.json','tools/verify-release-evidence.mjs','tools/verify-polish-comparison.mjs','tools/benchmark-research-events.mjs',`docs/optimization/${version}/preview-checks.json`,...['comparison.json','manifest.json','verification.json'].map(name=>`docs/optimization/${version}-release/comparison/${name}`))
 function walk(directory){for(const entry of readdirSync(resolve(root,directory),{withFileTypes:true})){const path=join(directory,entry.name);if(entry.isDirectory())walk(path);else required.push(path.replaceAll('\\','/'))}}
 for(const directory of ['preset/plugins','ui/lib','tools/native-headless'])walk(directory)
 const recorded=new Set(receipt.files.map(row=>row.path))

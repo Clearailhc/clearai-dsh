@@ -9,7 +9,7 @@ Small fixes on 0.5.9; the research workflow and host integration remain unchange
 - Bind independent evaluator output to the registered criterion IDs. Reject invented subcriteria in the native structured output tool before settlement; keep evidence and completeness checks intact.
 - Avoid scanning the entire historical deduplication index for duplicate UI events. Ignore malformed mutation entries and empty evidence references during replay.
 - Show review handoff only after a child session exists. Keep pending audit ownership across goal changes so late results remain attached to the original task.
-- Label hypothesis refutation conditions, translate completed/reused statuses, and make the research layout respond to the pane width.
+- Label hypothesis refutation conditions, retain structured audit shortfalls, translate completed/reused statuses, and make the research layout respond to the pane width.
 - Clean up locale listeners when the plugin is disposed; coalesce seat updates without continually postponing them during event bursts.
 - See [0.6.0 review and acceptance](docs/optimization/0.6.0-release/README.md) for measured scope, retained failures and limitations. No additional model calls are used for display.
 

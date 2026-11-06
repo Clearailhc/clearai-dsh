@@ -1,0 +1,39 @@
+【生命周期验收】DSH_HOME=/tmp/clearai-life-hm7oTs(profile 用官方 **web** 模板:预设归属只在挂它的部署里存在,
+                       而 S4 要验的正是「预设归属在升级/卸载后还在不在」)
+  v1=/tmp/clearai-v1-1yKrwO
+  v2=/tmp/clearai-v2-UBRxwq
+
+① 升级(0.1.0 → 0.1.1 重装)
+  ✓ 0.1.0 装上了
+  ✓ 层栈里有 clearai-dsh(且只一次)
+  ✓ 组合里有 clearai-host 行
+  ✓ 预设归属在组合里(preset-clearai 声明行)
+  ✓ 0.1.1 覆盖装上
+  ✓ 层栈没有重复(升级后仍只有一次)
+  ✓ 组合里 clearai-host 行仍在
+  ✓ 升级后预设归属仍在(同一条判据)
+  ✓ 盘上那份就是这次构建的产物(逐字节相同 —— 版本变了但源没变,内核哈希本来就不该变)
+  ✓ 包内清单版本是新的
+
+② 卸载(行 / bundles / node_modules / 预设归属)
+  ✓ 卸载命令成功退出
+  ✓ bundles 里没有它了
+  ✓ dependencies 里也没有了
+  ✓ 组合里没有 clearai-host 行(不留悬空引用)
+  ✓ 包目录已删
+  ✓ 预设归属也随包一起没了(不留悬空引用)
+
+③ 随包的 install 动词(node bin/clearai.mjs install)
+  ✓ install 动词成功退出
+  ✓ 包进了 profile 的 node_modules
+  ✓ bundles 里有它(宿主自己对的账)
+  ✓ 它报出宿主行真的进了组合(读数,不是断言)
+  ✓ 它报出下一步(重启)
+  ✓ --lang zh 说中文(系统是 C 也一样)
+  ✓ --lang en 说英文(系统是中文也一样)
+  ✓ LC_ALL=zh_CN.UTF-8 ⇒ 自动中文
+  ✓ LC_ALL=C ⇒ 自动英文(没有语言信息)
+  ✓ doctor 报出预设声明行在组合里
+
+结果:26 通过,0 失败
+现场已收掉(要留着看就加 --keep)

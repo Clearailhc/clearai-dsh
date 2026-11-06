@@ -14,7 +14,7 @@ Trajectory
 Explore
 Ontology
 示例回放：比较客户流失差异（不调用模型）
-12:31
+13:02
 Hypothesis proposed or revised
 Awaiting check
 DEMO
@@ -41,9 +41,9 @@ DEMO
 Changes 1
 Research event details
 示例用户调整：只比较最近 90 天的客户。
-12:31
+13:02
 Completed
-Completed in 19s
+Completed in 23s
 Hypothesis proposed or revised
 Replaced
 DEMO
@@ -74,7 +74,7 @@ Independent assessment
 Failed
 DEMO
 
-示例裁决：证据不足，不能推广到总体。 · 样本选择解释尚未排除
+示例裁决：证据不足，不能推广到总体。 · 样本覆盖 · 样本选择解释尚未排除 · 需补充付费客户样本
 
 Independent review
 Research event details
