@@ -1,0 +1,49 @@
+{
+  "version": "0.5.8",
+  "passed": true,
+  "checkedAt": "2026-11-06T08:19:06.708586+00:00",
+  "sourceCommit": "f97e0c32672dbd36378523632785cdbd80855c93",
+  "tag": "v0.5.8",
+  "npmLatest": "0.5.8",
+  "release": "https://github.com/Clearailhc/clearai-dsh/releases/tag/v0.5.8",
+  "workflow": "https://github.com/Clearailhc/clearai-dsh/actions/runs/42185068181",
+  "registry": {
+    "passed": true,
+    "version": "0.5.8",
+    "registryFiles": 46,
+    "packageSha256": "6938c2cd357467c79bded01c5d7da6d554f94310918f6eb1f420d727370485a2",
+    "cleanInstall": "npm registry package spec through native DSH plugin manager",
+    "filesMatchFinalBuild": true,
+    "installedFilesMatch": true
+  },
+  "presets": {
+    "passed": true,
+    "mainRegistered": true,
+    "evaluatorRegistered": true,
+    "broken": false
+  },
+  "browser": {
+    "passed": true,
+    "checks": [
+      "Explore-375",
+      "Explore-768",
+      "Explore-1440",
+      "Ontology-375",
+      "Ontology-768",
+      "Ontology-1440",
+      "keyboard-search-details",
+      "neighborhood",
+      "entity-list-details",
+      "keyboard-edge-details",
+      "zoom",
+      "async-detail-race",
+      "node-drag",
+      "narrow-fullscreen-details",
+      "escape"
+    ],
+    "errors": [],
+    "data": "Archived public JEPA session replay",
+    "modelCallsDisabled": true
+  },
+  "startupNote": "The first credential-free browser attempt encountered the native host credential onboarding screen. Loading the existing environment credential allowed the complete interaction check to pass; no additional model calls were enabled."
+}

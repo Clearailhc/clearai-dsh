@@ -86,3 +86,10 @@ The original C goal completed after two retained controller stops and continuati
 ClearAI consumed about 20× the tokens, 14.6× the modeled dollar cost and 12.7× the run time for a similarly high score. This case does not establish an efficiency advantage. It is one continued synthetic engineering case, not a statistical study or an unchanged six-session comparison. Interruption downtime is excluded from run time; all failed-run model usage is included. Prices are published peak rates applied to provider-reported usage, not invoices.
 
 The entire campaign has 676 ledger requests, no in-flight requests, and a USD 2.124891428 upper bound, including the user-accepted USD 0.80 unknown title reservation. Every test remains below USD 5 and the campaign below USD 30. [All model roles and token/cost totals](all-model-usage.json). The prior uncached-price bounds and cache-pricing reconciliation remain available. Main, evaluator and title calls all count.
+
+
+## Published artifact verification
+
+`v0.5.8` and npm `latest` resolve to the accepted release source `f97e0c32672dbd36378523632785cdbd80855c93`. The [release workflow](https://github.com/Clearailhc/clearai-dsh/actions/runs/42185068181) succeeded. A separate registry download and clean native install matched all 46 package files against the final build. Both presets registered without broken entries, and the complete native English interaction check passed with model calls disabled. [Post-release verification](post-release-verification.json). The first credential-free browser attempt stopped at the host onboarding screen; after loading the existing environment credential, the check passed. No additional paid model calls were made.
+
+The release-asset upload endpoint returned HTTP 401, so this verification summary is archived here as a documentation-only follow-up to the immutable release tag.
