@@ -1,0 +1,92 @@
+New Session
+Plugins
+Automation tasks
+More
+Workspaces
+ClearAI · 示例回放 / Example replay
+示例回放：比较客户流失差异
+now
+More
+示例回放：比较客户流失差异
+ClearAI
+Chat
+Trajectory
+Explore
+Ontology
+示例回放：比较客户流失差异（不调用模型）
+12:31
+Hypothesis proposed or revised
+Awaiting check
+DEMO
+
+客户流失差异可能来自试用客户占比。 · Refutation condition: 按订阅类型分组后差异仍存在
+
+试用客户占比
+Research event details
+Knowledge structure changed
+Definition
+DEMO
+客户
+订阅类型
+属于订阅类型
+Changes 3
+Research event details
+Entities and assertions changed
+Awaiting check
+DEMO
+
+示例记录，未核验
+
+客户 C01
+Changes 1
+Research event details
+示例用户调整：只比较最近 90 天的客户。
+12:31
+Completed
+Completed in 19s
+Hypothesis proposed or revised
+Replaced
+DEMO
+
+客户流失差异可能来自试用客户占比。 · rev2
+
+Hypothesis
+Research event details
+Hypothesis proposed or revised
+Awaiting check
+DEMO
+
+最近 90 天的客户流失差异可能来自试用客户占比。 · 用户要求只比较最近 90 天客户 · Refutation condition: 分组后差异仍存在
+
+最近 90 天的分组差异
+Research event details
+Validation result
+Insufficient evidence
+DEMO
+
+付费组样本不足；数据口径通过不代表假设成立。
+
+Hypothesis
+Evidence
+Research event details
+示例回放 / Example replay · 无模型调用 · 8/8
+Independent assessment
+Failed
+DEMO
+
+示例裁决：证据不足，不能推广到总体。 · 样本选择解释尚未排除
+
+Independent review
+Research event details
+Stage outcome
+Abandoned
+DEMO
+
+样本内描述保留，总体推断未成立。 · 示例客户分组记录 · 需补充付费客户样本
+
+Goal
+Research event details
+Message or run a task, / commands, @ files or sessions
+Workspace Write
+Select model
+1 turns 1 steps

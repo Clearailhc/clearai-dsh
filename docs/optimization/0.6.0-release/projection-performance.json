@@ -1,0 +1,27 @@
+{
+  "baselineVersion": "0.5.9",
+  "candidateVersion": "0.6.0",
+  "before": {
+    "historicalKeys": 10000,
+    "duplicateEvents": 1000,
+    "totalMs": 2757.800183000002,
+    "p95Ms": 4.938568999999916,
+    "modelCalls": 0
+  },
+  "after": {
+    "historicalKeys": 10000,
+    "duplicateEvents": 1000,
+    "totalMs": 26.534584000000052,
+    "p95Ms": 0.04171999999999798,
+    "modelCalls": 0
+  },
+  "initialAfter": {
+    "historicalKeys": 10000,
+    "duplicateEvents": 1000,
+    "totalMs": 18.202583999999803,
+    "p95Ms": 0.05063599999999724,
+    "modelCalls": 0
+  },
+  "reproduce": "node tools/benchmark-research-events.mjs [path/to/research-events.js]",
+  "limitation": "Single-machine synthetic duplicate handling. No claim about model latency or whole-task speed."
+}

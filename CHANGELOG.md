@@ -2,6 +2,17 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-11-06
+
+Small fixes on 0.5.9; the research workflow and host integration remain unchanged.
+
+- Bind independent evaluator output to the registered criterion IDs. Reject invented subcriteria in the native structured output tool before settlement; keep evidence and completeness checks intact.
+- Avoid scanning the entire historical deduplication index for duplicate UI events. Ignore malformed mutation entries and empty evidence references during replay.
+- Show review handoff only after a child session exists. Keep pending audit ownership across goal changes so late results remain attached to the original task.
+- Label hypothesis refutation conditions, translate completed/reused statuses, and make the research layout respond to the pane width.
+- Clean up locale listeners when the plugin is disposed; coalesce seat updates without continually postponing them during event bursts.
+- See [0.6.0 review and acceptance](docs/optimization/0.6.0-release/README.md) for measured scope, retained failures and limitations. No additional model calls are used for display.
+
 ## [0.5.9] — 2026-11-06
 
 - Keep inline objects as historical text and the Research/Ontology panes as independent native tabs. Exclude unsupported cross-pane navigation rather than displaying fallback controls; render evidence actions only when the host provides them.

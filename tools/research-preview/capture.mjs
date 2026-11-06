@@ -3,17 +3,22 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 const root = new URL('../../', import.meta.url).pathname
-const output = new URL('../../docs/optimization/0.5.9/', import.meta.url).pathname
+const version = JSON.parse(readFileSync(root + 'package.json')).version
+const output = root + `docs/optimization/${version}/`
+const previewLog = process.env.CLEARAI_PREVIEW_LOG || '/tmp/clearai-preview.log'
+const log = readFileSync(previewLog, 'utf8')
+const previewHome = log.match(/Isolated example profile: (.+)/)?.[1]
+assert.ok(previewHome, 'Preview home must be recorded by the launcher')
 const hashes = {}
 for (const name of ['client.js', 'host.js', 'research-events.js']) {
   const source = readFileSync(root + 'dist/clearai-dsh/lib/' + name)
-  assert.deepEqual(source, readFileSync('/tmp/clearai-059-preview/profiles/web/node_modules/clearai-dsh/lib/' + name))
+  assert.deepEqual(source, readFileSync(previewHome + '/profiles/web/node_modules/clearai-dsh/lib/' + name))
   hashes[name] = createHash('sha256').update(source).digest('hex')
 }
 mkdirSync(output, { recursive: true })
 let url
 for (let attempt = 0; attempt < 50 && !url; attempt++) {
-  try { url = readFileSync('/tmp/clearai-059-preview.log', 'utf8').match(/http:\/\/127\.0\.0\.1:3091\/\?token=\S+/)?.[0] } catch {}
+  try { url = readFileSync(previewLog, 'utf8').match(/http:\/\/127\.0\.0\.1:3091\/\?token=\S+/)?.[0] } catch {}
   if (!url) await new Promise(resolve => setTimeout(resolve, 200))
 }
 if (!url) throw new Error('Preview URL not available')
@@ -60,7 +65,8 @@ for (const width of [768, 375]) {
 await page.setViewportSize({ width: 1440, height: 1000 })
 await page.reload()
 await page.getByText('示例回放 / Example replay · 无模型调用 · 8/8', { exact: true }).waitFor()
-assert.equal(await page.locator('.clearai-research-event').count(), 9)
+assert.equal(await page.locator('.clearai-research-event').count(), 8)
+assert.equal(await page.locator('.clearai-research-event[data-category=handoff]').count(), 0, 'No child exists in this example; handoff must not be claimed')
 assert.equal(await page.locator('.clearai-event-objects button, .clearai-event-objects a').count(), 0)
 assert.equal(await page.getByText('Object selected. Open the Ontology or Research tab to view it.', { exact: true }).count(), 0)
 await page.getByText('Ontology', { exact: true }).first().click()
@@ -77,7 +83,7 @@ for (let index = 0; index < 10; index++) {
   await page.getByText('Standard mode', { exact: true }).waitFor()
   await page.getByText(/^示例回放：比较客户流失差异$/).first().click()
   await page.locator('.clearai-research-event').first().waitFor()
-  assert.equal(await page.locator('.clearai-research-event').count(), 9)
+  assert.equal(await page.locator('.clearai-research-event').count(), 8)
 }
 const disclosure = page.locator('.clearai-research-event summary').last()
 await disclosure.focus()
@@ -104,6 +110,6 @@ for (const [locale, colorScheme, name] of [['en-US', 'dark', 'en-dark'], ['zh-CN
   await variantPage.screenshot({ path: output + `dsh-${name}-1440.png` })
   await variant.close()
 }
-writeFileSync(output + 'preview-checks.json', JSON.stringify({ host: '0.2.2-rc.1', version: '0.5.9', eventCount: 8, productionRecords: 9, sessionSwitchCycles: 10, keyboardDisclosure: true, errors, errorStacks, consoleErrors, clickToVisibleMs: timings, modelCalls: 0, example: true, objectNavigation: 'not in scope; objects are static text and panes are independent', productionModuleSha256: hashes }, null, 2))
+writeFileSync(output + 'preview-checks.json', JSON.stringify({ host: '0.2.2-rc.1', version, eventCount: 8, productionRecords: 8, sessionSwitchCycles: 10, keyboardDisclosure: true, errors, errorStacks, consoleErrors, clickToVisibleMs: timings, modelCalls: 0, example: true, objectNavigation: 'not in scope; objects are static text and panes are independent', productionModuleSha256: hashes }, null, 2))
 assert.deepEqual(errors, [], 'All preview contexts must be free of uncaught page errors')
 await browser.close()
