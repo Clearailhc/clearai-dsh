@@ -1,0 +1,169 @@
+
+> clearai-dsh@0.5.9 release
+> node tools/build-package.mjs && node tools/verify-package.mjs && node tools/verify-clean-install.mjs && npm pack ./dist/clearai-dsh --pack-destination dist
+
+【打包】out=/workspace/clearai-dsh/dist/clearai-dsh
+  预设声明行:preset-clearai(19 个顶层行)、preset-clearai-evaluator(7 个顶层行)
+【vendor】@xyflow/react@12.11.6 → ui/vendor/xyflow.js(JS+CSS,211 KB · 函数形式,react 外部化)
+【vendor】graphology + FA2@0.10.1 → ui/vendor/force.js(77 KB · 函数形式)
+  清单:clearai-dsh@0.5.9 · 48 个文件
+  关键出口:.→./lib/host.js ./client→./lib/client.js ./cordis.patch.yml→./cordis.patch.yml ./package.json→./package.json ./locale/*.json→./locale/*.json ./invariant→./lib/invariant.js ./presets/*→./presets/*
+  完成。下一步:node tools/verify-package.mjs(会现场重建一遍再逐字节比对)
+  ✓ 包内投影及全部传递模块可真实导入
+【发行物自检】clearai-dsh@0.5.9 · 48 个文件 · /workspace/clearai-dsh/dist/clearai-dsh
+
+① 平面三分:同一个包,三样东西各落到自己的平面
+  ✓ 清单声明了宿主 bundle(patch)
+  ✓ 声明的每个补丁文件都真的在包里
+  ✓ 清单声明了浏览器半(platform + inject)
+  ✓ 出口齐:宿主半 / 浏览器半 / 补丁 / 清单
+  ✓ 宿主半与浏览器半都真的在包里
+  ✓ 宿主不变量伴生件在包里,且清单里有它的出口
+  ✓ 补丁层文件在包里,且插的是**包名**行(不是路径)
+  ✓ 随包带上 README(中英)、LICENSE 与品牌位图(npm 页面靠它们)
+  ✓ README 的安装入口与 bin 的动词对得上(npx clearai-dsh install)
+  ✓ manifest 声明了 repository(provenance 校验要它)
+  ✓ bin 的值是 npm 规范化过的写法(不带 ./)
+
+② 发行物干净:只带该带的
+  ✓ 包内没有白名单之外的文件
+  ✓ 没有测试/工具/recon/会话日志/密钥类文件
+  ✓ 没有把 test/ 或 tools/ 带进来
+
+③ 内容归属:预设是**厂商内容**,随包走,且自洽
+  ✓ 预设组合文件在
+  ✓ 名册要的两份元数据在(agent.cordis.yml + preset.yml)
+  ✓ preset.yml 的 description 是块标量或引号(拿不到宿主的 yaml 包,退化成形态检查)
+  ✓ 内核随预设走(./plugins/clearai-kernel.js)
+  ✓ 提示词段随预设走(./plugins/prompts.js)
+  ✓ 预设自己的技能在(skills/ 走 baseUrl,所以必须同目录)
+  ✓ 不再带工作区模板(空文件夹不铺任何东西,技能走原生目录)
+
+④ 无仓库路径:发行物不假设自己长在哪个目录树里
+  ✓ 包内没有本仓库的绝对路径(/workspace/clearai-dsh)
+  ✓ 发行物不靠相对路径指回仓库找模板(模板随包走)
+  ✓ 除 bin(安装侧要算路径)外,代码里不写死绝对路径
+
+⑤ 只增不改:目录面与 fold 的既有词汇表对得上
+  ✓ 工具目录读得出来(7 件)
+  ✓ 预设里没有手写的 tools 清单(缺省 = 目录全量,不造第二本账)
+  ✓ fold 声明了「只留台账」的那几类事实(1 类)
+  ✓ 内核落的 33 类事实,要么折进视图、要么在台账清单里(没有第三态)
+
+⑥ 可重建:包 = 源的纯函数
+  ✓ 现场重建与 dist 逐字节相同(手改 dist 会被抓)
+
+⑦ 可打包:npm 实际会带走的文件
+  ✓ npm 会带走 48 个文件,全在白名单内
+  ✓ npm 会带走预设(不是只有 lib)
+
+⑧ 可被发现:插件列表的标题 / 介绍 / 图标
+  ✓ 清单声明了 icon,且是包内真实存在的相对路径
+  ✓ 图标是 SVG/PNG/JPEG/WebP,且 ≤256 KiB(宿主只收这四种)
+  ✓ 带了 locale/en.json(宿主从它开始认语言)
+  ✓ 带了 locale/zh.json(中文界面不必读英文)
+  ✓ 每种语言的标题与介绍都非空
+  ✓ 标题不是包名(那是「没写介绍」的回退值)
+  ✓ exports 放行 ./locale/*.json(不放行宿主解析不到)
+  ✓ files 带上 locale(不带就发不出去)
+  ✓ engines.dsh 声明了宿主下界(市场据此显示要求)
+  ✓ README.md:每个安装命令都钉到本版版本号(0.5.9)
+  ✓ README.md:给出了宿主自带的安装入口(Add plugin)
+  ✓ README.zh-CN.md:每个安装命令都钉到本版版本号(0.5.9)
+  ✓ README.zh-CN.md:给出了宿主自带的安装入口(添加插件)
+
+结果:45 通过,0 失败
+发行物:48 个文件 · 1659 KiB
+【干净安装验收】
+  pnpm 11.25.0
+  一次性 DSH_HOME:/tmp/dsh-clean-piTocw
+  ✓ 空 home + 官方模板能建出 web profile
+  ✓ profile 的补丁层是空的(我们还没动过它)
+  · 跳过模型凭据:这台机器上没有 ~/.dsh/.credentials.yaml —— 浏览器那半跑不了,机械那半照跑
+  ✓ 没有搬 settings.yaml(实测:搬了会把干净 profile 里没有的 provider 带进来)
+  ✓ 没有搬 .agent-presets(预设要由包提供)
+  ✓ 构建并打出了 tgz
+  ✓ dsh plugin add <tgz> 成功
+  装到的版本:clearai-dsh@0.5.9
+  ✓ ① 依赖里有 clearai-dsh
+  ✓ ② bundles 里有它,而且恰好一次
+  ✓ ②′ 发行版自己的三条 bundle 还在
+  ✓ ③ 组合里 clearai-host 恰好一行
+  ✓ ③′ 宿主行用的是包名(不是路径)
+  ✓ ④ 名册注册表行在(agent-preset-registry)
+  ✓ ④′ 预设声明行在,且 id/name/description/order/plugins 齐备
+  · 名册条目:standard, ptc, minimal, cordis, clearai, clearai-evaluator
+  ✓ ④″ 名册运行态:clearai 在列表里
+  ✓ ④‴ 名册运行态:clearai 没有 broken(子插件真的起来了)
+  ✓ ④⁗ 名册运行态:评估者预设 clearai-evaluator 在列表里且没有 broken
+  ✓ ⑤ 包内预设自洽(组合文件 + 元数据,不再带工作区模板)
+  ✓ ⑥ 包内没有本机路径(仓库根 / 这次装到哪儿)
+  ✓ ⑦ 宿主读显示元数据不报诊断
+  ✓ ⑦′ 标题是产品名,不是包名(不是回退值)
+  ✓ ⑦″ 介绍按语言各有一份(中文界面不必读英文)
+  ✓ ⑦‴ 图标被宿主收下(data URL,不是默认图)
+
+结果:22 通过,0 失败
+临时 home 已清掉(要留现场用 --keep)。
+npm notice
+npm notice 📦  clearai-dsh@0.5.9
+npm notice Tarball Contents
+npm notice 105.8kB CHANGELOG.md
+npm notice 11.4kB LICENSE
+npm notice 21.5kB README.md
+npm notice 19.2kB README.zh-CN.md
+npm notice 16.9kB bin/clearai.mjs
+npm notice 1.1kB brand/icon.svg
+npm notice 15.5kB brand/logo-512-dark.png
+npm notice 15.4kB brand/logo-512.png
+npm notice 21.2kB brand/logo-lockup-dark.png
+npm notice 21.3kB brand/logo-lockup.png
+npm notice 761B brand/logo-lockup.svg
+npm notice 535B brand/logo-wordmark.svg
+npm notice 1.2kB brand/logo.svg
+npm notice 3.2kB brand/README.md
+npm notice 2.0kB cordis.patch.yml
+npm notice 542.4kB lib/client.js
+npm notice 101.3kB lib/domain-language.js
+npm notice 154.1kB lib/fold.js
+npm notice 22.0kB lib/host.js
+npm notice 10.5kB lib/invariant.js
+npm notice 56.6kB lib/knowledge-view.js
+npm notice 3.2kB lib/lang.js
+npm notice 1.8kB lib/research-events.d.ts
+npm notice 8.9kB lib/research-events.js
+npm notice 6.7kB lib/scope.js
+npm notice 168B locale/en.json
+npm notice 159B locale/zh.json
+npm notice 2.7kB package.json
+npm notice 19.2kB presets/clearai/agent.cordis.yml
+npm notice 27.9kB presets/clearai/clearai.patch.yml
+npm notice 4.3kB presets/clearai/evaluator.cordis.yml
+npm notice 2.1kB presets/clearai/plugins/audit-evidence.js
+npm notice 5.4kB presets/clearai/plugins/audit-material.js
+npm notice 1.3kB presets/clearai/plugins/audit-schema.js
+npm notice 3.4kB presets/clearai/plugins/clearai-evaluator-face.js
+npm notice 381.9kB presets/clearai/plugins/clearai-kernel.js
+npm notice 3.9kB presets/clearai/plugins/integrity.js
+npm notice 9.1kB presets/clearai/plugins/knowledge-items.js
+npm notice 4.6kB presets/clearai/plugins/models.js
+npm notice 2.1kB presets/clearai/plugins/native-todos.js
+npm notice 27.7kB presets/clearai/plugins/ontology.js
+npm notice 13.7kB presets/clearai/plugins/prompts.js
+npm notice 2.0kB presets/clearai/plugins/rerun-copy.js
+npm notice 6.7kB presets/clearai/plugins/scope.js
+npm notice 1.3kB presets/clearai/plugins/tool-argument-stream.js
+npm notice 1.4kB presets/clearai/plugins/workspace-path.js
+npm notice 1.1kB presets/clearai/preset.yml
+npm notice 11.6kB presets/clearai/skills/clearai-loop/SKILL.md
+npm notice Tarball Details
+npm notice name: clearai-dsh
+npm notice version: 0.5.9
+npm notice filename: clearai-dsh-0.5.9.tgz
+npm notice package size: 614.3 kB
+npm notice unpacked size: 1.7 MB
+npm notice shasum: 557670bddbfcb4cde756dc22161250c7ef4eb257
+npm notice integrity: sha512-EXqbB2ZNrp2lK[...]ccK6oAext8VEg==
+npm notice total files: 48
+npm notice
+clearai-dsh-0.5.9.tgz

@@ -1,0 +1,62 @@
+npm notice
+npm notice 📦  clearai-dsh@0.5.9
+npm notice Tarball Contents
+npm notice 105.2kB CHANGELOG.md
+npm notice 11.4kB LICENSE
+npm notice 21.5kB README.md
+npm notice 19.2kB README.zh-CN.md
+npm notice 16.9kB bin/clearai.mjs
+npm notice 1.1kB brand/icon.svg
+npm notice 15.5kB brand/logo-512-dark.png
+npm notice 15.4kB brand/logo-512.png
+npm notice 21.2kB brand/logo-lockup-dark.png
+npm notice 21.3kB brand/logo-lockup.png
+npm notice 761B brand/logo-lockup.svg
+npm notice 535B brand/logo-wordmark.svg
+npm notice 1.2kB brand/logo.svg
+npm notice 3.2kB brand/README.md
+npm notice 2.0kB cordis.patch.yml
+npm notice 537.8kB lib/client.js
+npm notice 101.3kB lib/domain-language.js
+npm notice 154.1kB lib/fold.js
+npm notice 22.0kB lib/host.js
+npm notice 10.5kB lib/invariant.js
+npm notice 56.6kB lib/knowledge-view.js
+npm notice 3.2kB lib/lang.js
+npm notice 1.7kB lib/research-events.d.ts
+npm notice 8.3kB lib/research-events.js
+npm notice 6.7kB lib/scope.js
+npm notice 168B locale/en.json
+npm notice 159B locale/zh.json
+npm notice 2.7kB package.json
+npm notice 19.2kB presets/clearai/agent.cordis.yml
+npm notice 27.9kB presets/clearai/clearai.patch.yml
+npm notice 4.3kB presets/clearai/evaluator.cordis.yml
+npm notice 2.1kB presets/clearai/plugins/audit-evidence.js
+npm notice 5.4kB presets/clearai/plugins/audit-material.js
+npm notice 1.3kB presets/clearai/plugins/audit-schema.js
+npm notice 3.4kB presets/clearai/plugins/clearai-evaluator-face.js
+npm notice 381.9kB presets/clearai/plugins/clearai-kernel.js
+npm notice 3.9kB presets/clearai/plugins/integrity.js
+npm notice 9.1kB presets/clearai/plugins/knowledge-items.js
+npm notice 4.6kB presets/clearai/plugins/models.js
+npm notice 2.1kB presets/clearai/plugins/native-todos.js
+npm notice 27.7kB presets/clearai/plugins/ontology.js
+npm notice 13.7kB presets/clearai/plugins/prompts.js
+npm notice 2.0kB presets/clearai/plugins/rerun-copy.js
+npm notice 6.7kB presets/clearai/plugins/scope.js
+npm notice 1.3kB presets/clearai/plugins/tool-argument-stream.js
+npm notice 1.4kB presets/clearai/plugins/workspace-path.js
+npm notice 1.1kB presets/clearai/preset.yml
+npm notice 11.6kB presets/clearai/skills/clearai-loop/SKILL.md
+npm notice Tarball Details
+npm notice name: clearai-dsh
+npm notice version: 0.5.9
+npm notice filename: clearai-dsh-0.5.9.tgz
+npm notice package size: 613.3 kB
+npm notice unpacked size: 1.7 MB
+npm notice shasum: e3880a3eaef6ff32e1bec428bd86482e42ff72e0
+npm notice integrity: sha512-JR9vzLY7x/mXg[...]xgbZ20pBU0Ipg==
+npm notice total files: 48
+npm notice
+clearai-dsh-0.5.9.tgz

@@ -1,0 +1,37 @@
+Loaded DSH
+Session list New Session
+Plugins
+Automation tasks
+More
+Workspaces
+ClearAI 0.5.9 · 示例回放 / Example replay
+New Session
+示例回放：比较客户流失差异
+now
+More
+Into the Unknown
+Preview
+ClearAI 0.5.9 · 示例回放 / Example replay
+Standard mode
+Describe what you want to build, / commands, @ files or sessions
+Workspace Write
+Select model
+Browser error: Sidebar Session opening failed: Error: Session reference "session-93f3e9df-4421-428c-8e3c-bf4b0d9ad745" is released
+    at ClientSessionReference.release (http://127.0.0.1:3091/plugins/??@deepseek-ai/dsh-client-ui-settings-subagent/client.js,@deepseek-ai/dsh-client-ui-settings-web-search/client.js,@deepseek-ai/dsh-client-ui-plan/client.js,@deepseek-ai/dsh-client-ui-user-questions/client.js,@deepseek-ai/dsh-client-ui-trajectory/client.js,clearai-research-preview/client.js,@deepseek-ai/dsh-api-remote-access/client.js,@deepseek-ai/dsh-session-log-export/client.js,@deepseek-ai/dsh-client-file-uplo
+{"errors":[],"text":"New Session\nPlugins\nAutomation tasks\nMore\nWorkspaces\nClearAI 0.5.9 · 示例回放 / Example replay\n示例回放：比较客户流失差异\nnow\nMore\n示例回放：比较客户流失差异\nClearAI\nChat\nTrajectory\nExplore\nOntology\n示例回放：比较客户流失差异（不调用模型）\n11:35\nHypothesis proposed or revised\nAwaiting check\nDEMO\n\n客户流失差异可能来自试用客户占比。 · 按订阅类型分组后差异仍存在\n\n试用客户占比\nResearch event details\nKnowledge structure changed\nDefinition\nDEMO\n客户\n订阅类型\n属于订阅类型\nChanges 3\nResearch event details\nEntities and assertions changed\nAwaiting check\nDEMO\n\n示例记录，未核验\n\n客户 C01\nChanges 1\nResearch event details\n示例用户调整：只比较最近 90 天的客户。\n11:36\nCompleted\nCompleted in 58s\nHypothesis proposed or revised\nReplaced\nDEMO\n\n客户流失差异可能来自试用客户占比。 · rev2\n\n假设\nResearch event details\nHypothesis proposed or revised\nAwaiting check\nDEMO\n\n最近 90 天的客户流失差异可能来自试用客户占比。 · 分组后差异仍存在 · 用户要求只比较最近 90 天客户\n\n最近 90 天的分组差异\nResearch event details\nValidation result\nInsufficient evidence\nDEMO\n\n付费组样本不足；数据口径通过不代表假设成立。\n\n假设\nEvidence\nResearch event details\nIndependent review handoff\nHanded off\nDEMO\n\n复核样本覆盖限制；仅为交接示例，未运行评估者\n\nIndependent review\nResearch event details\n示例回放 / Example replay · 无模型调用 · 8/8\nIndependent assessment\nFailed\nDEMO\n\n示例裁决：证据不足，不能推广到总体。 · 样本选择解释尚未排除\n\nIndependent review\nResearch event details\nStage outcome\nAbandoned\nDEMO\n\n样本内描述保留，总体推断未成立。 · 示例客户分组记录 · 需补充付费客户样本\n\nGoal\nResearch event details\n示例回放不调用模型。请使用事件下方的回放按钮。\nWorkspace Write\nSelect model\n1 turns 1 steps"}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.goto: Timeout 10000ms exceeded.
+Call log:
+[2m  - navigating to "http://127.0.0.1:3091/?token=[REDACTED]", waiting until "load"[22m
+
+    at /workspace/clearai-dsh/tools/research-preview/capture.mjs:98:21 {
+  log: [
+    '  - navigating to "http://127.0.0.1:3091/?token=[REDACTED]", waiting until "load"'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.22.1

@@ -1,0 +1,35 @@
+
+> clearai-dsh@0.5.8 test
+> node tools/build-vendor.mjs && bash test/run.sh
+
+【vendor】@xyflow/react@12.11.6 → ui/vendor/xyflow.js(JS+CSS,211 KB · 函数形式,react 外部化)
+【vendor】graphology + FA2@0.10.1 → ui/vendor/force.js(77 KB · 函数形式)
+✔ test/audit-material.test.mjs (204.471817ms)
+✔ test/graph-inspector.test.mjs (219.224607ms)
+✖ test/integrity.test.mjs (305.257013ms)
+✔ test/native-accounting.test.mjs (115.367314ms)
+✔ test/native-budget.test.mjs (157.328298ms)
+✔ test/native-campaign.test.mjs (195.766464ms)
+✔ test/native-matrix.test.mjs (133.815906ms)
+✔ test/native-scoring.test.mjs (1036.503591ms)
+✔ test/native-todos.test.mjs (105.943448ms)
+✖ test/native-world.test.mjs (227.509603ms)
+✔ test/tool-argument-stream.test.mjs (150.187589ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 9
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1441.031231
+
+✖ failing tests:
+
+test at test/integrity.test.mjs:1:1
+✖ test/integrity.test.mjs (305.257013ms)
+  'test failed'
+
+test at test/native-world.test.mjs:1:1
+✖ test/native-world.test.mjs (227.509603ms)
+  'test failed'

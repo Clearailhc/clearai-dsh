@@ -1,0 +1,11 @@
+
+> clearai-dsh@0.5.9 build
+> node tools/build-package.mjs
+
+【打包】out=/workspace/clearai-dsh/dist/clearai-dsh
+  预设声明行:preset-clearai(19 个顶层行)、preset-clearai-evaluator(7 个顶层行)
+【vendor】@xyflow/react@12.11.6 → ui/vendor/xyflow.js(JS+CSS,211 KB · 函数形式,react 外部化)
+【vendor】graphology + FA2@0.10.1 → ui/vendor/force.js(77 KB · 函数形式)
+  清单:clearai-dsh@0.5.9 · 48 个文件
+  关键出口:.→./lib/host.js ./client→./lib/client.js ./cordis.patch.yml→./cordis.patch.yml ./package.json→./package.json ./locale/*.json→./locale/*.json ./invariant→./lib/invariant.js ./presets/*→./presets/*
+  完成。下一步:node tools/verify-package.mjs(会现场重建一遍再逐字节比对)

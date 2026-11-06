@@ -1,0 +1,15 @@
+✔ uncommitted JSON, user prose and other tool results do not create achievements (3.67529ms)
+✔ different hypotheses remain separate and revisions preserve their source (0.756369ms)
+✔ committed definition changes group per operation and never become verified facts (0.61847ms)
+✔ invalid and partial ontology files do not create structure achievements (1.03964ms)
+✔ validation failure and insufficient evidence remain distinguishable (0.337214ms)
+✔ tool and internal fact channels deduplicate, refresh replays the same history (1.116995ms)
+✔ high-frequency activity does not update the projection or trigger model work (0.235548ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14.954238
