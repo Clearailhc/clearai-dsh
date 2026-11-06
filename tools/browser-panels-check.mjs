@@ -55,6 +55,17 @@ window.renderPanel('Atlas');
  browser=await chromium.launch({executablePath:process.env.CHROME_PATH??'/usr/bin/chromium',headless:true,args:['--no-sandbox']})
  const page=await browser.newPage({viewport:{width:1440,height:1050}})
  const errors=[];page.on('pageerror',error=>errors.push(error.message))
+ const contrasts=[]
+ const measureContrast=async(theme)=>contrasts.push({theme,...await page.evaluate(()=>{
+  const rgb=s=>s.match(/[\d.]+/g)?.map(Number)??[0,0,0]
+  const luminance=c=>c.slice(0,3).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0)
+  const rows=[...document.querySelectorAll('.clearai-atlas button,.clearai-atlas p,.clearai-atlas h1,.clearai-atlas h2,.clearai-atlas input')].filter(e=>e.getClientRects().length && !e.disabled).map(e=>{
+   let bg=[255,255,255];for(let a=e;a;a=a.parentElement){const c=rgb(getComputedStyle(a).backgroundColor);if(c.length===3||c[3]===1){bg=c;break}}
+   const fg=rgb(getComputedStyle(e).color),a=luminance(fg),b=luminance(bg)
+   return {element:e.tagName,className:e.className,text:e.textContent.slice(0,30),fg,bg,role:e.getAttribute('aria-label'),ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}
+  });return {samples:rows.length,minimum:Math.min(...rows.map(r=>r.ratio)),below45:rows.filter(r=>r.ratio<4.5)}
+ })})
+
  await page.goto(`http://127.0.0.1:${server.address().port}`)
  const settle=async()=>{
   await page.waitForFunction(()=>document.querySelector('.react-flow__node')?.getBoundingClientRect().width>0)
@@ -62,6 +73,7 @@ window.renderPanel('Atlas');
   await page.waitForFunction(()=>{const value=document.querySelector('.react-flow__viewport')?.getAttribute('style');window.stableFrames=window.lastViewport===value?(window.stableFrames??0)+1:0;window.lastViewport=value;return window.stableFrames>=10},undefined,{polling:'raf'})
  }
  await settle()
+ await measureContrast('light')
  await page.screenshot({animations:'disabled',path:join(output,'ontology-desktop.png'),fullPage:true})
  await page.evaluate(()=>window.renderPanel('ExploreView'))
  await page.getByText('研究工作台',{exact:true}).waitFor()
@@ -105,6 +117,8 @@ window.renderPanel('Atlas');
  assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'),before,'Inspection must not reset viewport')
  await page.getByRole('button',{name:'关闭',exact:true}).click()
  await page.addStyleTag({content:':root{'+dark+'}'})
+ await page.waitForTimeout(200)
+ await measureContrast('dark')
  await page.screenshot({animations:'disabled',path:join(output,'ontology-dark.png'),fullPage:true})
  await page.addStyleTag({content:':root{'+light+'}'})
  await page.evaluate(()=>window.renderPanel('ExploreView'))
@@ -143,7 +157,8 @@ window.renderPanel('Atlas');
  });assert.equal(update.removed,0,'Repeated projection updates must not remount graph nodes or edges')
  await page.screenshot({animations:'disabled',path:join(output,'stress-200-en.png')})
  assert.deepEqual(errors,[],'No browser runtime errors')
- writeFileSync(join(output,'checks.json'),JSON.stringify({passed:true,fixture:true,narrowDetails:rects,stressInteractiveMs,projectionUpdates:update},null,2))
+ assert.ok(contrasts.length===2&&contrasts.every(row=>row.samples>0&&row.minimum>=4.5),'Sampled body/control text must meet 4.5:1 contrast in both themes')
+ writeFileSync(join(output,'checks.json'),JSON.stringify({passed:true,fixture:true,contrasts,narrowDetails:rects,stressInteractiveMs,projectionUpdates:update},null,2))
  console.log('PASS: panel render, research widths, graph search, keyboard selection, neighborhood, entity layer, list browsing, fullscreen, narrow details, Escape, dark theme, stable viewport, dense graph search. Screenshots: '+output)
 } finally {
  await browser?.close()
