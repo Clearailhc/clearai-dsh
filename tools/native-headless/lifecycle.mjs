@@ -34,8 +34,10 @@ for(const version of historicalVersions){
 }
 built.push({version:JSON.parse(readFileSync(join(repo,'dist/clearai-dsh/package.json'))).version,dist:join(repo,'dist/clearai-dsh')})
 cli(['--profile',profile,'--from-default-profile','headless','--dump-config'])
+const userPatch=join(home,'profiles',profile,'cordis.patch.yml'),userContent='# user customization must survive package lifecycle\n- id: headless-runner\n  disabled: true\n'
+writeFileSync(userPatch,userContent)
 function packageTarball(item){const r=spawnSync(...npmCommand(['pack',item.dist,'--pack-destination',root,'--json']),{env,encoding:'utf8',timeout:120000});assert.equal(r.status,0,r.stderr);const initial=join(root,JSON.parse(r.stdout)[0].filename),digest=sha(readFileSync(initial)),path=initial.replace(/\.tgz$/,`-${digest.slice(0,16)}.tgz`);copyFileSync(initial,path);return {path,digest}}
-for(const item of built){const packed=packageTarball(item);cli(['plugin','--profile',profile,'add',packed.path]);const installed=join(home,'profiles',profile,'node_modules/clearai-dsh'),manifest=JSON.parse(readFileSync(join(installed,'package.json'))),profileManifest=JSON.parse(readFileSync(join(home,'profiles',profile,'package.json')));assert.equal(manifest.version,item.version);assert.equal(profileManifest.dsh.profile.bundles.filter(x=>x==='clearai-dsh').length,1);const rows=cli(['--profile',profile,'--dump-config']);assert(rows.includes('preset-clearai'));assert(rows.includes('clearai-host'));for(const path of ['lib/fold.js','presets/clearai/plugins/clearai-kernel.js'])if(existsSync(join(item.dist,path)))assert.equal(sha(readFileSync(join(installed,path))),sha(readFileSync(join(item.dist,path))));checks.push({check:'native-install-upgrade',version:item.version,packageDigest:packed.digest,passed:true})}
+for(const item of built){const packed=packageTarball(item);cli(['plugin','--profile',profile,'add',packed.path]);const installed=join(home,'profiles',profile,'node_modules/clearai-dsh'),manifest=JSON.parse(readFileSync(join(installed,'package.json'))),profileManifest=JSON.parse(readFileSync(join(home,'profiles',profile,'package.json')));assert.equal(manifest.version,item.version);assert.equal(profileManifest.dsh.profile.bundles.filter(x=>x==='clearai-dsh').length,1);const rows=cli(['--profile',profile,'--dump-config']);assert(rows.includes('preset-clearai'));assert(rows.includes('clearai-host'));for(const path of ['lib/fold.js','presets/clearai/plugins/clearai-kernel.js'])if(existsSync(join(item.dist,path)))assert.equal(sha(readFileSync(join(installed,path))),sha(readFileSync(join(item.dist,path))));assert.equal(readFileSync(userPatch,'utf8'),userContent,'Upgrade must preserve user configuration');checks.push({check:'native-install-upgrade',version:item.version,packageDigest:packed.digest,passed:true})}
 const candidate=packageTarball(built.at(-1))
 cli(['plugin','--profile',profile,'remove','clearai-dsh'])
 assert(!existsSync(join(home,'profiles',profile,'node_modules/clearai-dsh')))
@@ -43,6 +45,7 @@ const removed=cli(['--profile',profile,'--dump-config']);assert(!removed.include
 checks.push({check:'native-uninstall',passed:true})
 cli(['plugin','--profile',profile,'add',candidate.path])
 assert(cli(['--profile',profile,'--dump-config']).includes('preset-clearai'))
-checks.push({check:'native-reinstall',passed:true})
+assert.equal(readFileSync(userPatch,'utf8'),userContent,'Uninstall/reinstall must preserve user configuration')
+checks.push({check:'native-reinstall',passed:true},{check:'user-configuration-preserved',passed:true})
 writeFileSync(join(root,'result.json'),JSON.stringify({passed:true,root,checks},null,2)+'\n')
 console.log(JSON.stringify({passed:true,root,checks}))

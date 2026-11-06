@@ -1,6 +1,7 @@
 /** Offline contract gate against the installed native session writer and reader. */
 import {nativeRuntime} from './runtime.mjs'
 import {tmpdir} from 'node:os'
+import {pathToFileURL} from 'node:url'
 import assert from 'node:assert/strict'
 import {createRequire} from 'node:module'
 import {join,resolve} from 'node:path'
@@ -15,8 +16,8 @@ if(!process.env.CLEARAI_CONTRACT_CHILD) {
  assert.equal(run.status,0,run.stderr);process.stdout.write(run.stdout)
 } else {
  const require=createRequire(join(nativeRuntime().resources,'package.json'))
- const {Session,KNOWN_SESSION_EVENT_TYPES}=await import(require.resolve('@deepseek-ai/dsh-session'))
- const {applyEvent,emptyState}=await import(join(repo,'ui/lib/fold.js'))
+ const {Session,KNOWN_SESSION_EVENT_TYPES}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-session')).href)
+ const {applyEvent,emptyState}=await import(pathToFileURL(join(repo,'ui/lib/fold.js')).href)
  const header={version:4,id:'synthetic-contract',createdAt:Date.now(),cwd:tmpdir(),isSeeded:false}
  const session=Session.create(header.id,[],header)
  session.append('turn/start',{turn:1})
