@@ -67,7 +67,7 @@ export async function runStage({home,profile,root,manifest,gates,stage,previous}
    world=sequenceWorld(key,row.world);service=await sequenceService(world,row.task);task=sequenceTask(row.task)+(diagnostic?'\n'+EXPERIMENT_AUTHORIZATION+'\n本题原始读数请写入 lab/'+row.task+'/，本题是连续现场任务的 '+row.task+'。':'')
    if(row.task==='t4')writeFileSync(join(workspace,'production.json'),JSON.stringify(world.production(),null,2))
   } else if(row.task==='direct') {
-   task='根据给定材料:甲17件,每件23元。计算总金额，写 submission.json 为 {"amount":数值,"unit":"元"}，简短回复。使用默认模式。'
+   task='根据给定材料:甲17件,每件23元。计算总金额，写 submission.json 为 {"amount":数值,"unit":"元"}，简短回复。'
   } else if(['additive','interaction','drift'].includes(row.task)) {
    world=makeWorld(key,row.world,row.task);service=await experimentService(world,{budget:30})
    writeFileSync(join(workspace,'initial.json'),JSON.stringify({observations:service.initial,bounds:[[0,1],[0,1]],noise_sd:world.noise,impurity_limit:.115,remaining_budget:30},null,2))
