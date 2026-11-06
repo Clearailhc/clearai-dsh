@@ -8,6 +8,15 @@ const version=JSON.parse(readFileSync(resolve(root,'package.json'))).version
 const receipt=JSON.parse(readFileSync(resolve(root,`docs/optimization/${version}-release/acceptance.json`)))
 assert.equal(receipt.version,version)
 assert.equal(receipt.passed,true)
+const singleE2e=receipt.scope?.kind==='single-native-e2e'
+if(singleE2e) {
+ assert.equal(version,'0.5.9')
+ assert.equal(receipt.scope.authorizedByUser,true)
+ assert.equal(receipt.scope.request,'跑一个端到端任务然后发布新版本。')
+ const run=receipt.gates['single-native-e2e']
+ assert.equal(run?.reason,'completed');assert.equal(run?.usageStatus,'verified')
+ assert.ok(run?.independentAudits>0);assert.equal(run?.parentRequestsWhileWaiting,0)
+}
 const reducedScope=receipt.scope?.kind==='first-paired-smoke'
 if(reducedScope) {
  assert.equal(receipt.scope.authorizedByUser,true)
@@ -17,7 +26,7 @@ if(reducedScope) {
  assert.deepEqual(pair.map(row=>row.group).sort(),['A','C'])
  assert.ok(pair.every(row=>row.task==='additive'&&row.reason==='completed'&&row.usageStatus==='verified'&&row.feasible===true&&row.score>0))
 }
-for(const gate of ['fast','slow-over-300s','cancel','disconnect','process-recovery',reducedScope?'smoke-first-pair':'smoke-six','production-ui','performance']) assert.equal(receipt.gates[gate]?.passed,true,`Missing gate: ${gate}`)
+for(const gate of singleE2e?['single-native-e2e','engineering','package','lifecycle','production-ui']:['fast','slow-over-300s','cancel','disconnect','process-recovery',reducedScope?'smoke-first-pair':'smoke-six','production-ui','performance']) assert.equal(receipt.gates[gate]?.passed,true,`Missing gate: ${gate}`)
 assert.equal(receipt.budget.limitUsd,30);assert.equal(receipt.budget.perTestLimitUsd,5)
 assert.ok(receipt.budget.verified && Number.isFinite(receipt.budget.costUpperBoundUsd) && receipt.budget.costUpperBoundUsd >= 0 && receipt.budget.costUpperBoundUsd <= 30)
 assert.equal(receipt.budget.pendingRequests,0,'In-flight usage must settle before release')
