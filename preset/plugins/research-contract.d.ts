@@ -18,3 +18,14 @@ export interface ReviewCoverage {
  trust: Record<string, unknown>
  scope: Record<string, unknown>
 }
+
+export interface ReviewImpact {
+ touches?: string[]
+ impact_basis?: string
+}
+export interface ClaimReviewResult {
+ hypothesis: string
+ verdict: 'support' | 'refute' | 'inconclusive'
+ independent_of_open_issues?: boolean
+ basis?: string
+}

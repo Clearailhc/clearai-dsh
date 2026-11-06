@@ -3918,6 +3918,28 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  check('material change during review cannot commit results',drift.ok===false&&drift.message.includes('audit_material_changed'),String(drift.message))
 }
 
+{
+ const host=makeHost(), ws=tempDir('clearai-partial-final-'), S='partial-final';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true,requireAnswers:true})
+ writeText(join(ws,'lab/probe.txt'),'K1 reference peak 900 C. Noise needs further assessment.\n')
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/probe.txt',provenance:{kind:'named',ref:'lab/probe.txt'}}]}
+ const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+ await callOn(host,S,'Frame',{claim:'Report K1 peak and measurement limits',done_criteria:'Reference peak and limitations are documented',ontology,hypotheses:[{name:'Peak',claim:'K1 peak is 900 C',refute_when:'Reference differs',assertions},{name:'Noise',claim:'Noise relationship is stable',refute_when:'Residuals contradict the relationship'}]})
+ const [peak,noise]=host.service.state(S).hypotheses
+ host.nextVerdict={holds:'yes',basis:'Reference confirms peak; noise interpretation remains unresolved',results:[{hypothesis:peak.id,verdict:'support',basis:'lab/probe.txt reference',independent_of_open_issues:true},{hypothesis:noise.id,verdict:'inconclusive'}],anomalies:[{what:'Noise relationship requires clarification',matters:'yes',touches:[noise.id],impact_basis:'Reference peak is independently observed; noise relationship does not enter its measurement.'}]}
+ const answers=[{conclusion:'Peak 900 C',claims:[peak.id,noise.id],basis:['lab/probe.txt:1']}]
+ const result=await callOn(host,S,'Conclude',{outcome:'achieved',answers})
+ const state=host.service.state(S)
+ check('unresolved final issue keeps goal open while preserving independent scoped ontology fact',result.code==='answers_incomplete'&&state.goal.status==='open'&&state.facts.length===1&&state.facts[0].hypothesis===peak.id,JSON.stringify({code:result.code,facts:state.facts}))
+ check('affected noise claim is not certified',!state.facts.some(f=>f.hypothesis===noise.id))
+ check('evaluator impact boundary survives replay',applyMutations(emptyState(),host.journal).anomalies.some(a=>a.touches?.includes(noise.id)&&a.impact_basis))
+ writeText(join(ws,'lab/new-check.txt'),'Additional residual check, not a general noise law.\n')
+ host.nextVerdict={holds:'yes',basis:'Revised answer preserves limitation',results:[{hypothesis:noise.id,verdict:'inconclusive'}]}
+ await callOn(host,S,'Conclude',{outcome:'achieved',answers:[{...answers[0],open:[{about:[state.anomalies[0].id],effect:'Noise relationship remains unverified and does not determine peak.'}]}]})
+ const prompt=host.audits.at(-1).request.prompt.map(b=>b.text??'').join('\n')
+ check('changed material handoff retains prior review with explicit delta and no automatic trust',prompt.includes('historical-requires-applicability-review')&&prompt.includes('lab/new-check.txt')&&prompt.includes('previous_answers'),prompt)
+}
+
 console.log(`\n结果:${passed} 通过,${failed} 失败`)
 if (failed > 0) {
 	console.log('失败项:')

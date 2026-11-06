@@ -51,6 +51,8 @@ At conclusion, `Conclude.answers.claims` selects the hypotheses that each answer
 
 The diagram below describes `steps-v1`, retained for historical goals without a workflow field. New goals may also opt into an explicit plan; once created, that plan must still be closed before conclusion. Native exploration does not require creating and advancing a step for every action.
 
+Follow-up review receives historical verdicts and source changes as leads, never as automatic current proof. Independently supported ontology facts can be retained while unrelated final-answer issues remain open, only when the independent reviewer establishes the impact boundary; unknown impact blocks partial certification.
+
 ```
 Human     Model                      System                      Independent evaluator
  │ ask ──▶ │ native goal + Frame: criteria, hypotheses (each with a refutation condition)

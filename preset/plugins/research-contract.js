@@ -6,6 +6,19 @@ import { RERUN_EXCLUDED } from './rerun-copy.js'
 export const AGENT_WORKFLOW = 'agent-v1'
 export const REVIEW_POLICY = 'clearai.review.v1'
 
+// Unknown impact blocks partial certification; author explanations cannot establish it.
+export function partialReviewClaims(results, anomalies, knownClaims) {
+ const known = new Set(knownClaims)
+ const open = (anomalies ?? []).filter(a => ['open', 'escalated'].includes(a.status) && a.matters !== 'no')
+ return new Set((results ?? []).filter(r => known.has(r.hypothesis) && r.verdict === 'support' && (!open.length || r.independent_of_open_issues === true) && open.every(a => a.by === 'evaluator' && Array.isArray(a.touches) && a.touches.length > 0 && a.touches.every(id => known.has(id)) && a.impact_basis?.trim() && !a.touches.includes(r.hypothesis))).map(r => r.hypothesis))
+}
+
+export function reviewDelta(before, after) {
+ if (!before?.files || !after?.files || before.unbounded?.length || after.unbounded?.length) return { complete: false, reason: 'unknown-dependencies' }
+ const old = new Map(before.files), current = new Map(after.files)
+ return { complete: true, added: [...current.keys()].filter(p => !old.has(p)), removed: [...old.keys()].filter(p => !current.has(p)), changed: [...current.keys()].filter(p => old.has(p) && old.get(p) !== current.get(p)), unchanged: [...current.keys()].filter(p => old.get(p) === current.get(p)).length, authority: 'file-diff-only; semantic applicability requires independent review' }
+}
+
 // Dependency completeness cannot be inferred from an author's declaration. Until
 // independently bounded dependencies exist, bind all ordinary workspace files.
 // System projections are separately represented by semantic state, never by UI files.
@@ -55,7 +68,7 @@ export function researchHandoff(state, step, receipts = []) {
   claims: (state.hypotheses ?? []).map(h => ({ id: h.id, version: h.version, claim: h.claim, refute_when: h.refute_when, scope: h.scope, status: h.status, selected: selected.has(h.id) })),
   observations: (state.materials ?? []).map(m => ({ ref: m.ref, note: m.note, source: m.source, digest: m.digest, step: m.step })),
   checks: (state.evidence ?? []).filter(e => e.evaluator !== 'independent').map(e => ({ hypothesis: e.hypothesis, verdict: e.verdict, basis: e.basis, refs: e.refs, authority: 'author-observation' })),
-  exclusions: (state.anomalies ?? []).map(a => ({ id: a.id, what: a.what, status: a.status, reason: a.reason, by: a.by, matters: a.matters })),
+  exclusions: (state.anomalies ?? []).map(a => ({ id: a.id, what: a.what, status: a.status, reason: a.reason, by: a.by, matters: a.matters, touches: a.touches, impact_basis: a.impact_basis })),
   receipts,
  }
 }

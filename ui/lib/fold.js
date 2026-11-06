@@ -79,7 +79,7 @@ export const MUTATION_KIND = 'clearai'
  *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 24
+export const STATE_VERSION = 25
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -668,7 +668,7 @@ export function applyMutation(state, mutation) {
 			for (const [index, item] of found.entries()) {
 				const id = `${mutation.id}#u${index + 1}`
 				if (next.anomalies.some((entry) => entry.id === id || (entry.by === 'evaluator' && entry.step === mutation.step && entry.what === String(item?.what ?? '')))) continue
-				next.anomalies.push({ id, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+				next.anomalies.push({ id, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, touches: Array.isArray(item?.touches) ? clone(item.touches) : null, impact_basis: item?.impact_basis ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
 			}
 			break
 		}

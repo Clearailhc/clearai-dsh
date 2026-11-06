@@ -101,7 +101,24 @@ test('audit criterion protocol rejects the observed invented C1 sub-identities b
  assert.throws(()=>bindAuditCriteria(generic,[{id:'C1'},{id:'C1'}]))
 })
 
-import { researchSnapshot, researchHandoff } from '../preset/plugins/research-contract.js'
+import { researchSnapshot, researchHandoff, partialReviewClaims, reviewDelta } from '../preset/plugins/research-contract.js'
+
+test('partial certification requires independent bounded impact and preserves ontology obligations', () => {
+ const results = [{hypothesis:'safe',verdict:'support',independent_of_open_issues:true},{hypothesis:'affected',verdict:'support',independent_of_open_issues:true}]
+ const issue = {status:'open',by:'evaluator',matters:'yes',touches:['affected'],impact_basis:'Original observations prove the recommendation independent of this noise explanation.'}
+ assert.deepEqual([...partialReviewClaims(results,[issue],['safe','affected'])],['safe'])
+ for(const change of [{touches:null},{touches:[]},{touches:['unknown']},{by:'model'},{impact_basis:''}]) assert.equal(partialReviewClaims(results,[{...issue,...change}],['safe','affected']).size,0)
+ assert.equal(partialReviewClaims([{...results[0],independent_of_open_issues:false}],[issue],['safe','affected']).size,0)
+ assert.equal(partialReviewClaims([{...results[0],verdict:'inconclusive'}],[],['safe']).size,0)
+})
+
+test('review differences expose added counterevidence, changed methods and removed sources without certifying applicability', () => {
+ const delta=reviewDelta({files:[['raw','1'],['method','2'],['removed','3']],unbounded:[]},{files:[['raw','1'],['method','4'],['counterexample','5']],unbounded:[]})
+ assert.deepEqual(delta.changed,['method']);assert.deepEqual(delta.added,['counterexample']);assert.deepEqual(delta.removed,['removed']);assert.equal(delta.unchanged,1)
+ assert.match(delta.authority,/requires independent review/)
+ assert.equal(reviewDelta(null,{files:[]}).complete,false)
+ assert.equal(reviewDelta({files:[],unbounded:['venv']},{files:[]}).complete,false)
+})
 import { readEvidence } from '../preset/plugins/read-evidence.js'
 
 test('native fingerprints ignore unrelated hypotheses and UI echoes but bind evidence, scope, criteria and trust', () => {

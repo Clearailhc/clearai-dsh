@@ -31,7 +31,7 @@ import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
 import { citeVerdict, mergeAbout, negativeItems, relatedKnowledge, resolveAbout } from './knowledge-items.js'
-import { researchHandoff, researchSnapshot, REVIEW_POLICY } from './research-contract.js'
+import { researchHandoff, researchSnapshot, reviewDelta, partialReviewClaims, REVIEW_POLICY } from './research-contract.js'
 import { auditMaterialDigest, auditRerunInputs, auditPathComponent, contentDigest, fileDigest, methodSnapshot } from './audit-material.js'
 import { auditCriteria, validateAuditEvidence, citationsUnchanged } from './audit-evidence.js'
 import { workspacePath } from './workspace-path.js'
@@ -977,6 +977,7 @@ export function apply(ctx, config = {}) {
 				items: {
 					type: 'object',
 					properties: {
+						independent_of_open_issues: { type: 'boolean', description: 'True only after checking that every unresolved issue is independent of this claim, its evidence, method, scope and ontology assertions. Unknown dependencies mean false.' },
 						hypothesis: { type: 'string', maxLength: 80, description: tr('判断的 id', 'the judgment id') },
 						verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
 						basis: { type: 'string', maxLength: 600, description: tr('一句话:这次观测对照推翻条件读出了什么', 'One sentence: what this observation shows against the refutation condition') },
@@ -1006,6 +1007,8 @@ export function apply(ctx, config = {}) {
 					type: 'object',
 					properties: {
 						what: { type: 'string', maxLength: 400, description: tr('哪里不符(带 path:line)', 'what does not fit (with path:line)') },
+						touches: { type: 'array', items: { type: 'string' }, description: 'All affected hypothesis IDs, including downstream effects. Omit when the impact boundary is unknown.' },
+						impact_basis: { type: 'string', maxLength: 600, description: 'Evidence for the impact boundary; distinguish measured samples from general noise or ontology claims.' },
 						matters: { type: 'string', enum: ['yes', 'no', 'unclear'], description: tr('它会不会动摇这次的结论', 'whether it could shake this conclusion') },
 					},
 					required: ['what'],
@@ -1097,9 +1100,11 @@ export function apply(ctx, config = {}) {
 			receipts.push({ id: audit.id, claims: audit.results, path: audit.card_path, digest: audit.digest, authority: 'independent-current' })
 		}
 		const handoff = researchHandoff(state, step, receipts)
+		handoff.previous_reviews = (state.audits ?? []).filter(a => a.request?.goal === state.goal?.id && a.card_path && a.verdict !== null).slice(-4).map(a => ({ id: a.id, path: a.card_path, claims: a.results, criteria: a.criteriaResults, basis: a.basis, authority: 'historical-requires-applicability-review', changes: reviewDelta(a.request.snapshot, researchSnapshot(sessionCwd(sessionId))), previous_scope: a.request.scope, previous_trust: a.request.gate?.trust ?? null, previous_criteria: a.criteria ?? [], previous_claims: a.request.claims, previous_answers: a.request.gate?.answers ?? [] }))
 		const files = researchSnapshot(sessionCwd(sessionId)).files.map(([path]) => path)
 		return ['# Public research handoff',
 			'Author and exploration findings are leads, not independent proof. Reuse current independent receipts only within their checked scope; inspect remaining obligations and final-answer consistency. Do not repeat already covered experiments without a concrete gap or contradiction. Do not re-solve the optimization problem.',
+			'Start follow-up review with previous_reviews, changed sources, unresolved issues and revised answers. Historical verdicts are not current proof. Independently establish which prior findings still apply; inspect changed methods, scope, ontology definitions and downstream effects. Expand review wherever dependencies are unknown. Preserve valid independent work without repeating it. Never infer a general noise law from a small sample residual alone.',
 			'Check exclusions and contrary observations. Fail the goal audit if a missing claim, hidden dependency or unresolved contradiction undermines the answer, even when the author omitted it from claims. Unrelated pending hypotheses need not be verified. Registration does not prove a prediction preceded its experiment.',
 			JSON.stringify(handoff),
 			'Workspace source index (all files, including author outputs; inspect originals as needed): ' + JSON.stringify(files),
@@ -1200,7 +1205,7 @@ export function apply(ctx, config = {}) {
 			const hypothesis = String(item.hypothesis ?? '').trim()
 			const verdict = String(item.verdict ?? '').toLowerCase()
 			if (hypothesis === '' || !['support', 'refute', 'inconclusive'].includes(verdict)) continue
-			results.push({ hypothesis: hypothesis.slice(0, 80), verdict, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim().slice(0, 600) : null })
+			results.push({ hypothesis: hypothesis.slice(0, 80), verdict, independent_of_open_issues: item.independent_of_open_issues === true, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim().slice(0, 600) : null })
 		}
 		const shortfalls = []
 		for (const item of Array.isArray(value?.shortfalls) ? value.shortfalls : []) {
@@ -1230,7 +1235,7 @@ export function apply(ctx, config = {}) {
 			const what = typeof item === 'string' ? item.trim() : String(item?.what ?? '').trim()
 			if (what === '') continue
 			const matters = ['yes', 'no', 'unclear'].includes(item?.matters) ? item.matters : 'unclear'
-			anomalies.push({ what: what.slice(0, 400), matters })
+			anomalies.push({ what: what.slice(0, 400), matters, touches: Array.isArray(item?.touches) ? [...new Set(item.touches.filter(id => typeof id === 'string'))] : null, impact_basis: String(item?.impact_basis ?? '').slice(0, 600) })
 		}
 		const lessons = []
 		for (const item of Array.isArray(value?.lessons) ? value.lessons : []) {
@@ -1702,10 +1707,10 @@ export function apply(ctx, config = {}) {
 		try { return await operation } finally { if (evaluatorCalls.get(key) === operation) evaluatorCalls.delete(key) }
 	}
 
-	function reviewRequest(kind, step, gate, state) {
+	function reviewRequest(kind, step, gate, state, sessionId) {
 		const { materialMutations, ...inputs } = gate
 		return JSON.parse(JSON.stringify({
-			kind, step, gate: inputs, scope: state.goal?.conditions ?? {},
+			kind, step, gate: inputs, goal: state.goal?.id ?? null, snapshot: state.goal?.workflow === 'agent-v1' ? researchSnapshot(sessionCwd(sessionId)) : null, scope: state.goal?.conditions ?? {},
 			claims: (step.tests?.hypotheses ?? []).map(id => {
 				const claim = state.hypotheses.find(row => row.id === id)
 				return { id, version: claim?.version ?? null, scope: claim?.scope ?? null, refute_when: claim?.refute_when ?? null }
@@ -1820,7 +1825,7 @@ export function apply(ctx, config = {}) {
 			 */
 			const criteria = auditCriteria(step.done_criteria)
    const pendingId = `audit:pending:${auditPathComponent(`${sessionId}:${kind}:${step.id}:${digest}:${auditKey}`).slice(0, 32)}`
-			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, criteria, request: reviewRequest(kind, step, gate, initialState), capability: null, evaluator_session: null, status: 'dispatching', goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision })
+			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, criteria, request: reviewRequest(kind, step, gate, initialState, sessionId), capability: null, evaluator_session: null, status: 'dispatching', goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision })
 			try { await flushFacts(sessionId) } catch (error) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: String(error.message), shortfalls: ['audit_dispatch_not_durable'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: '派发记录未持久保存,未派发评估者', shortfalls: ['audit_dispatch_not_durable'], cardPath: null, digest, mutations }
@@ -1855,7 +1860,7 @@ export function apply(ctx, config = {}) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
-			mutations.push(landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, criteria, request: reviewRequest(kind, step, gate, initialState), goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' }))
+			mutations.push(landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, criteria, request: reviewRequest(kind, step, gate, initialState, sessionId), goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' }))
 			try { await flushFacts(sessionId) } catch (error) {
 				try { await dispatched.run.dispose?.() } catch {}
 				await dropRerunCopy(sessionId, pendingId, rerunDir)
@@ -3449,7 +3454,8 @@ export function apply(ctx, config = {}) {
 			const current = previewOf(hostService, sessionId, mutations)
 			if (!current) return fail('host_unavailable', 'Cannot commit knowledge without current state.', { mutations })
 			let saved = { promoted: [], held: [] }
-			if (!(current.state.anomalies ?? []).some(a => ['open', 'escalated'].includes(a.status) && a.matters !== 'no')) saved = promoteFacts(hostService, sessionId, current.state, current.derived, current.state.goal, new Map(), mutations, { partial: true, eligible: new Set(audit.results.filter(r => r.verdict === 'support').map(r => r.hypothesis)) })
+			const eligible = partialReviewClaims(audit.results, current.state.anomalies, current.state.hypotheses.map(h => h.id))
+			saved = promoteFacts(hostService, sessionId, current.state, current.derived, current.state.goal, new Map(), mutations, { partial: true, eligible })
 			return done({ ok: true, code: 'claims_reviewed', message: `${audit.results.map(r => `${r.hypothesis}: ${r.verdict}`).join('; ')}\n${audit.basis}\nSaved knowledge: ${saved.promoted.map(f => f.id).join(', ') || 'none'}. Goal remains open. ${saved.held.join('; ')}` })
 		},
 	})
@@ -3846,6 +3852,18 @@ export function apply(ctx, config = {}) {
 			 */
 			const afterAudit = previewOf(hostService, sessionId, mutations)
 			if (afterAudit === null) return fail('host_unavailable', '审计后无法重新核对材料,保持开放', { mutations })
+			if (goal.workflow === 'agent-v1' && !audit.reused && CFG.requireAnswers && unsettledForAnswers(afterAudit.state, afterAudit.derived, answers).length) {
+                const eligible = partialReviewClaims(audit.results, afterAudit.state.anomalies, candidates.map(h => h.id))
+                const origin = buildEvidenceOrigins({ cwd: sessionCwd(sessionId), accepted: [], confirmed: [], cardPath: audit.cardPath, evaluatorSession: null, basis: audit.basis })
+                for (const result of audit.results ?? []) {
+                    if (!eligible.has(result.hypothesis)) continue
+                    const id = `e-${contentDigest({ audit: audit.digest, claim: result.hypothesis }).slice(0, 24)}`
+                    if (afterAudit.state.evidence.some(e => e.id === id)) continue
+                    mutations.push({ t: 'evidence/recorded', id, step: syntheticStep.id, plan: 'goal', hypothesis: result.hypothesis, verdict: 'support', level: goal.promote_at_level, evaluator: 'independent', basis: result.basis ?? audit.basis, refs: origin.paths, origins: origin.origins, anchor: 'auditor', basis_reviewable: true })
+                }
+                const partial = previewOf(hostService, sessionId, mutations)
+                if (partial && eligible.size) promoteFacts(hostService, sessionId, partial.state, partial.derived, goal, new Map(), mutations, { partial: true, eligible })
+            }
 			if (CFG.requireAnswers) {
 				const missing = unsettledForAnswers(afterAudit.state, afterAudit.derived, answers)
 				if (missing.length) return fail('answers_incomplete', `审计后仍有未处理事项:\n${missing.join('\n')}`, { mutations })

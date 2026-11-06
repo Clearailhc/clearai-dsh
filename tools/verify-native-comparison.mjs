@@ -17,7 +17,7 @@ const rows=[],stopReasons=[]
 for(const [index,row] of comparison.results.entries()) {
  const expectedRow=manifest.rows[index]
  for(const field of ['phase','task','group','mode'])assert.equal(row[field],expectedRow[field])
- if(row.reason==='not_run') {assert.ok(row.blockedByInitial===true || row.stop?.reason==='candidate_implementation_error');stopReasons.push(`${row.id}: ${row.stop?.reason ?? 'prerequisite failed'}`);continue}
+ if(row.reason==='not_run') {assert.ok(row.blockedByInitial===true || ['candidate_implementation_error','superseded_candidate'].includes(row.stop?.reason));stopReasons.push(`${row.id}: ${row.stop?.reason ?? 'prerequisite failed'}`);continue}
  const result=json(`runs/${row.id}/launcher-result.json`)
  assert.equal(result.reason,row.reason);assert.equal(result.usage.status,'verified')
  assert.equal(result.installation.packageDigest,manifest.candidateDigest);assert.deepEqual(result.model,manifest.model)
