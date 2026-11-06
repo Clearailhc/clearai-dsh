@@ -1,0 +1,98 @@
+{
+  "fixture": "400 equal 64KiB files; identical bytes, no excluded directories",
+  "node": "v24.22.1",
+  "platform": "linux",
+  "rows": [
+    {
+      "kind": "sync-baseline",
+      "repeat": 0,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 64.34479100000001,
+      "eventLoopMaxMs": 65.732607
+    },
+    {
+      "kind": "sync-baseline",
+      "repeat": 1,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 68.78642900000003,
+      "eventLoopMaxMs": 70.123519
+    },
+    {
+      "kind": "sync-baseline",
+      "repeat": 2,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 42.77364299999999,
+      "eventLoopMaxMs": 44.072959
+    },
+    {
+      "kind": "sync-baseline",
+      "repeat": 3,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 55.021788999999956,
+      "eventLoopMaxMs": 56.229887
+    },
+    {
+      "kind": "sync-baseline",
+      "repeat": 4,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 57.597983,
+      "eventLoopMaxMs": 57.901055
+    },
+    {
+      "kind": "async-candidate",
+      "repeat": 0,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 269.51171899999997,
+      "eventLoopMaxMs": 1.804287
+    },
+    {
+      "kind": "async-candidate",
+      "repeat": 1,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 255.63950899999998,
+      "eventLoopMaxMs": 2.398207
+    },
+    {
+      "kind": "async-candidate",
+      "repeat": 2,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 227.10873300000003,
+      "eventLoopMaxMs": 3.938303
+    },
+    {
+      "kind": "async-candidate",
+      "repeat": 3,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 252.60557300000005,
+      "eventLoopMaxMs": 2.779135
+    },
+    {
+      "kind": "async-candidate",
+      "repeat": 4,
+      "files": 400,
+      "bytes": 26214400,
+      "elapsedMs": 234.53473800000006,
+      "eventLoopMaxMs": 2.131967
+    }
+  ],
+  "summary": {
+    "sync-baseline": {
+      "medianMs": 57.597983,
+      "medianEventLoopMaxMs": 57.901055
+    },
+    "async-candidate": {
+      "medianMs": 252.60557300000005,
+      "medianEventLoopMaxMs": 2.398207
+    }
+  },
+  "limitation": "Copy throughput and event-loop blocking only, not end-to-end model efficiency"
+}

@@ -1,5 +1,8 @@
 # Case: Was Navier–Stokes solved?
 
+> UI 0.5.8: research now uses a main question column and an action sidebar; ontology shows the map before conclusions and established knowledge. [Current JEPA session replay](../shots/0.5.8/jepa-ontology.png) · [Research](../shots/0.5.8/jepa-explore.png). The older screenshots below document the original session version.
+
+
 [中文](navier-stokes.zh-CN.md)
 
 A real model was told that the Navier–Stokes problem had reportedly been solved, and asked to find out what exactly was solved, how, how it relates to earlier work, to explore something checkable, and to keep verified, refuted and unclear apart. It worked through to a concluded goal without asking anything.

@@ -373,3 +373,6 @@ machine, among other things). The difference matters when reading:
 | Answers "what is actually guaranteed now" | Answers "what this design intends to become" |
 
 Confirmed differences are tracked in [`../known-gaps.md`](../known-gaps.md).
+
+| `audit/copy` | Evaluation snapshot diagnostics | yes |
+| `integrity/recorded` | Host receipt for a kernel file write | yes |

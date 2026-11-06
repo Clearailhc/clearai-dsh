@@ -13,6 +13,7 @@
  *   node tools/panel-shots.mjs --list
  *   依赖:playwright-core(devDependency)+ 系统 Chrome;日志在 $DSH_HOME/sessions 下。
  */
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -122,7 +123,7 @@ const prefix = option('--prefix') ?? 'panel'
 mkdirSync(outDir, { recursive: true })
 
 /** 默认两面:**本体格 / 世界树**。 */
-const PANELS = (option('--panels') ?? 'ontology,worldlines').split(',').map((item) => item.trim()).filter((item) => item !== '')
+const PANELS = (option('--panels') ?? 'ontology,explore').split(',').map((item) => item.trim()).filter((item) => item !== '')
 const stage = mkdtempSync(join(tmpdir(), 'clearai-panel-shots-'))
 try {
 	const entry = join(stage, 'runtime-entry.js')
@@ -146,7 +147,9 @@ try {
 		throw new Error('require 解析不到:' + name)
 	}
 	const exports = registration.factory(require)
-	const React = window.__SEEDS__.react
+	const dictionaries={};const locale={register:(ns,rows)=>{dictionaries[ns]=rows;return ()=>{}},bind:ns=>key=>dictionaries[ns]?.[${JSON.stringify(option('--lang') ?? 'zh')} ]?.[key]??key};
+ exports.apply({get:name=>name==='locale'?locale:undefined,effect:fn=>fn(),on:()=>()=>{},slots:{inject:()=>()=>{}},sessions:{list:{getSnapshot:()=>({byId:{}}),subscribe:()=>()=>{}}},sidebarRight:{}});
+ const React = window.__SEEDS__.react
 	const C = exports.__components
 	const projection = window.__PROJECTION__
 	const sessionId = window.__SID__
@@ -154,10 +157,11 @@ try {
 	/** 面板在真宿主里从插座拿会话投影;这里给同一形状的最小桩。 */
 	const useSessions = (selector) => selector({ byId: { [sessionId]: { projectionValues: { clearai: projection } } } })
 	const props = {
-		ontology: { useProjection: () => projection, openPreview: () => true, openRail: noop, openSpectator: noop },
+		explore: { useProjection:()=>projection, sessionId, send:()=>true },
+		ontology: { sessionId, useProjection: () => projection, openPreview: () => true, openRail: noop, openSpectator: noop },
 		worldlines: { useSessions, sessionId, openPreview: () => true, openSpectator: noop },
 	}
-	const component = { ontology: C.Atlas, worldlines: C.WorldTree }
+	const component = { ontology: C.Atlas, explore:C.ExploreView, worldlines: C.WorldTree }
 	window.__MOUNT__ = (name) => {
 		try {
 			window.__ROOT__ = window.__ROOT__ ?? window.__CREATE_ROOT__(document.getElementById('root'))
@@ -248,6 +252,10 @@ try {
 		await page.waitForFunction(() => window.__READY__ === true, { timeout: 15000 })
 		await page.evaluate((panel) => window.__MOUNT__(panel), name)
 		await page.waitForTimeout(1400)
+  if (option('--theme')==='dark') await page.addStyleTag({content:':root{color-scheme:dark;--dsw-alias-bg-base:#17191b;--dsw-alias-bg-layer-1:#202326;--dsw-alias-bg-layer-2:#292d30;--dsw-alias-label-primary:#f0f2f3;--dsw-alias-label-secondary:#bec5c8;--dsw-alias-label-tertiary:#9aa3a7;--dsw-alias-border-l1:#3c4347;--dsw-alias-border-l2:#4a5358;--dsw-alias-border-l3:#5f6a70}html,body{background:var(--dsw-alias-bg-base)}'})
+  if(name==='ontology'&&argv.includes('--entity')) {await page.getByRole('button',{name:/实体图|Entity graph/}).click();await page.waitForTimeout(600)}
+  if(name==='ontology'&&argv.includes('--detail')) {await page.getByRole('button',{name:/^列表$|^List$/}).click();await page.locator('.clearai-directory-row').first().click();await page.waitForTimeout(500)}
+
 		/** `--click 文本`(可多次):挂好之后依次点一下,拍展开后的样子。 */
 		for (let index = 0; index < argv.length; index += 1) {
 			if (argv[index] !== '--click' || name !== PANELS[0]) continue
@@ -262,13 +270,14 @@ try {
 			console.log(`  ! ${name} 画不出来:`, JSON.stringify(diag))
 			for (const line of noise.slice(0, 6)) console.log(`      ${line}`)
 		}
-		await page.screenshot({ path: join(outDir, `${prefix}-${name}.png`), fullPage: false })
+		await page.screenshot({ animations:'disabled', path: join(outDir, `${prefix}-${name}.png`), fullPage: argv.includes('--full-page') })
 		console.log(`  · ${join(option('--out') ?? join('docs', 'marketing', 'zhihu', 'images'), `${prefix}-${name}.png`)}`)
 	}
 
 	console.log(`\n【面板素材】会话 ${sessionId.slice(0, 16)} · 工作区 ${cwd ?? '(日志里没有 cwd)'} · 本体 ${(projection.lexicon?.terms ?? []).length} 概念 / ${(projection.lexicon?.predicates ?? []).length} 谓词 · 计划 ${(projection.plans ?? []).length} · 事实 ${(projection.facts ?? []).length}`)
 	for (const panel of PANELS) await shot(panel)
 
+	writeFileSync(join(outDir,`${prefix}-provenance.json`),JSON.stringify({kind:'historical-session-replay',events:eventsFile??match.sid,eventsSha256:createHash('sha256').update(readFileSync(match.file)).digest('hex'),clientSha256:createHash('sha256').update(readFileSync(CLIENT)).digest('hex'),language:option('--lang')??'zh',theme:option('--theme')??'light',panels:PANELS},null,2))
 	await browser.close()
 	server.close()
 } finally {

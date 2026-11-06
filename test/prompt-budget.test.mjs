@@ -159,7 +159,7 @@ check('VERDICT_SCHEMA 取得出来(不是靠猜)', verdict !== null && typeof ve
 	 * 真缺 refs 时由内核的正文兜底把裁决从 markdown 卡片里读回来(见 kernel 的 `parseLooseJson`)。
 	 */
 	check('refs 是声明出来的数组形状(给了就严校)', refs.type === 'array', JSON.stringify(refs))
-	check('refs **不**在 required 里(缺它不许把一份裁决整份丢掉)', !(verdict?.required ?? []).includes('refs'), JSON.stringify(verdict?.required))
+	check('refs 在 required 里,支持性裁决必须可复核', (verdict?.required ?? []).includes('refs'), JSON.stringify(verdict?.required))
 
 	check('schema 关掉额外字段(形状即契约)', verdict?.additionalProperties === false && shortfalls.items?.additionalProperties === false, `${String(verdict?.additionalProperties)} / ${String(shortfalls.items?.additionalProperties)}`)
 
@@ -174,6 +174,7 @@ check('VERDICT_SCHEMA 取得出来(不是靠猜)', verdict !== null && typeof ve
 
 	// 这套检查是活的:合规样本必须过。
 	const goodSample = {
+  criteria: [],
 		holds: 'no',
 		basis: '判据③不满足:31 条反例里 v17 无具名文献。',
 		results: [{ hypothesis: 'h-abc123', verdict: 'inconclusive', basis: '交付不成立,读不出结果' }],
@@ -243,10 +244,10 @@ console.log('\n【③ 反例:越界裁决经真工具面落账时必须被截断
 					async listChildren() {
 						return []
 					},
-					async start(provider, request) {
+					async startActivation({provider, request}) {
 						audits.push({ provider, request })
 						return {
-							id: 'child-budget-1',
+							childId: 'child-budget-1',
 							localAgent: undefined,
 							result: Promise.resolve({ output: [], structured: LEGACY_VERDICT, stopReason: 'completed' }),
 							dispose: async () => {},

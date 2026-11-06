@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { isAbsolute, relative, resolve } from 'node:path'
+import { resolve } from 'node:path'
+import { workspacePath } from './workspace-path.js'
 
 // Both logical identifiers are opaque. No characters from either reach a path.
 export const auditPathComponent = (id) => createHash('sha256').update(String(id)).digest('hex')
@@ -12,26 +13,29 @@ export function canonical(value) {
 }
 export const contentDigest = (value) => createHash('sha256').update(typeof value === 'string' || Buffer.isBuffer(value) ? value : JSON.stringify(canonical(value))).digest('hex')
 
-// Missing/unreadable inputs are material too. Only workspace-relative references
-// are inspected; hashing must not create a new privilege or disclose file bytes.
+// Error values are diagnostic only; auditMaterialDigest never caches them.
 export function fileDigest(cwd, path) {
-	if (!cwd || typeof path !== 'string' || isAbsolute(path)) return 'unavailable'
-	const file = resolve(cwd, path)
-	const rel = relative(cwd, file)
-	if (rel === '..' || rel.startsWith('../') || rel.startsWith('..\\')) return 'outside-workspace'
-	try { return contentDigest(readFileSync(file)) } catch { return 'missing-or-unreadable' }
+ try { return contentDigest(readFileSync(workspacePath(cwd, path, { mustExist: true }).absolute)) }
+ catch (error) { return error.code === 'outside-workspace' ? 'outside-workspace' : 'missing-or-unreadable' }
 }
 
-export function methodSnapshot(cwd, spec, registration) {
+export function methodSnapshot(cwd, spec, registration, digest = fileDigest) {
 	const scripts = new Set(spec?.scripts ?? [])
 	// Declared scripts are preferred; ordinary command file operands also count.
 	for (const word of String(spec?.command ?? '').match(/[^\s"'`;|&<>]+/g) ?? []) {
 		if (/\.(?:[cm]?js|py|sh|r|R)$/.test(word)) scripts.add(word)
 	}
-	return contentDigest({ registration: fileDigest(cwd, registration), command: spec?.command, scripts: [...scripts].sort().map((path) => [path, fileDigest(cwd, path)]) })
+	return contentDigest({ registration: digest(cwd, registration), command: spec?.command, scripts: [...scripts].sort().map((path) => [path, digest(cwd, path)]) })
 }
 
-export function auditMaterialDigest({ kind, step, plan, state, gate, cwd }) {
+export function auditMaterialDigest({ kind, step, plan, state, gate, cwd, errors = [] }) {
+ const digest = (root, path) => {
+  const value = fileDigest(root, path)
+  if (!/^[a-f0-9]{64}$/.test(value)) errors.push({ path, code: value })
+  return value
+ }
+ const canonicalPath = path => { try { return workspacePath(cwd, path).relative } catch { return path } }
+
 	const currentPlan = (state.plans ?? []).find((row) => row.id === plan?.id) ?? plan
 	const modelIds = new Set((state.hypotheses ?? []).map((row) => row.use).filter(Boolean))
 	const refs = new Set((state.hypotheses ?? []).flatMap((row) => (row.uses ?? []).map((use) => typeof use === 'string' ? use : use.id)))
@@ -39,21 +43,33 @@ export function auditMaterialDigest({ kind, step, plan, state, gate, cwd }) {
 	const files = state.workspace?.files ?? {}
 	const knowledge = Object.entries(files).filter(([, file]) => refs.has(file?.data?.id)).map(([path, file]) => {
 		if (file?.data?.use) modelIds.add(file.data.use)
-		return [path, fileDigest(cwd, path)]
+		return [path, digest(cwd, path)]
 	})
-	const paths = new Set((currentPlan?.steps ?? []).flatMap((row) => row.artifacts ?? []))
+	const paths = new Set(step.artifacts ?? [])
 	for (const row of gate.confirmed ?? []) if (!/^(?:evidence|hypothesis):/.test(row.ref)) paths.add(row.ref)
-	for (const row of state.materials ?? []) for (const path of [row.path, row.ref, ...(row.refs ?? [])]) if (typeof path === 'string' && !path.includes(':')) paths.add(path)
+	for (const row of state.materials ?? []) for (const path of [row.path, row.ref, ...(row.refs ?? [])]) if (typeof path === 'string' && !/^(?:evidence|hypothesis):/.test(path)) paths.add(path)
 	const methods = [...modelIds].sort().map((id) => {
 		const path = `clear/models/${id}.json`
 		let spec = null
 		try { spec = JSON.parse(readFileSync(resolve(cwd, path), 'utf8')) } catch {}
-		return [id, methodSnapshot(cwd, spec, path), (spec?.inputs ?? []).map((input) => [input, fileDigest(cwd, input)]), spec?.output ? fileDigest(cwd, spec.output) : null]
+		return [id, methodSnapshot(cwd, spec, path, digest), (spec?.inputs ?? []).map((input) => [input, digest(cwd, input)]), spec?.output ? digest(cwd, spec.output) : null]
 	})
 	const semantic = (entry) => Object.fromEntries(['id', 'gloss', 'parent', 'kind', 'unit', 'domain', 'range', 'functional', 'shape', 'check', 'type', 'relations', 'status', 'replaced_by'].filter((key) => entry[key] !== undefined).map((key) => [key, entry[key]]))
 	const lexicon = state.lexicon ?? {}
 	const definitions = ['terms', 'predicates', 'entities'].flatMap((key) => (lexicon[key] ?? []).map(semantic))
 	const anomalies = [...(state.anomalies ?? []), ...(gate.anomalies ?? [])].filter((row) => row.by !== 'evaluator' || row.status !== 'open').map((row) => ({ id: row.id, what: row.what, status: row.status, reason: row.reason, explainedBy: row.explainedBy }))
 	const materials = [...new Set((state.materials ?? []).map(({ id, at, ...row }) => JSON.stringify(canonical(row))))].sort().map((row) => JSON.parse(row))
-	return `v5:${contentDigest({ kind, step: step.id, criteria: step.done_criteria, goal: state.goal, steps: currentPlan?.steps, answers: gate.answers, lessons: gate.lessons, extra: gate.extra, hypotheses: (state.hypotheses ?? []).map(({ supportedLevel, refutations, inconclusive, ...row }) => row), facts: state.facts, evidence: (state.evidence ?? []).filter((row) => row.anchor !== 'auditor'), materials, anomalies, definitions, knowledge, methods, artifacts: [...paths].sort().map((path) => [path, fileDigest(cwd, path)]) })}`
+	const fingerprint = contentDigest({ kind, step: step.id, criteria: step.done_criteria, goal: state.goal, steps: currentPlan?.steps, answers: gate.answers, lessons: gate.lessons, extra: gate.extra, hypotheses: (state.hypotheses ?? []).map(({ supportedLevel, refutations, inconclusive, ...row }) => row), facts: state.facts, evidence: (state.evidence ?? []).filter((row) => row.anchor !== 'auditor'), materials, anomalies, definitions, knowledge, methods, artifacts: [...new Set([...paths].map(canonicalPath))].sort().map((path) => [path, digest(cwd, path)]) })
+ return errors.length ? null : `v6:${fingerprint}`
+}
+
+export function auditRerunInputs(cwd, state, step) {
+ const paths = new Set(step.artifacts ?? [])
+ for (const id of new Set((state.hypotheses ?? []).map(row => row.use).filter(Boolean))) {
+  const path = `clear/models/${id}.json`;paths.add(path)
+  const spec = JSON.parse(readFileSync(workspacePath(cwd,path,{mustExist:true}).absolute,'utf8'))
+  for (const value of [...(spec.inputs ?? []), ...(spec.scripts ?? []), spec.output].filter(Boolean)) paths.add(value)
+  for (const word of String(spec.command ?? '').match(/[^\s"'`;|&<>]+/g) ?? []) if (/\.(?:[cm]?js|py|sh|r|R)$/.test(word)) paths.add(word)
+ }
+ return [...paths]
 }

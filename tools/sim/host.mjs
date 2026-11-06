@@ -162,7 +162,8 @@ export function makeSimHost({ workspace, runDir, sessionId = 'sim', answers = {}
 		async startContinuable() {
 			throw new Error('模拟宿主只提供一次性 start()')
 		},
-		async start(provider, request) {
+		async startActivation({ provider, label, request }) {
+   request = { ...request, label }
 			seq += 1
 			const id = `sub-${seq}`
 			let resolve

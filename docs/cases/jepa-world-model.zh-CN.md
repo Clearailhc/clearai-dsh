@@ -1,5 +1,8 @@
 # 案例:JEPA 世界模型
 
+> UI 0.5.8: research now uses a main question column and an action sidebar; ontology shows the map before conclusions and established knowledge. [Current JEPA session replay](../shots/0.5.8/jepa-ontology.png) · [Research](../shots/0.5.8/jepa-explore.png). The older screenshots below document the original session version.
+
+
 [English](jepa-world-model.md)
 
 给一个真模型一个空文件夹和一句请求:调研 JEPA 世界模型,做一个能复查的小实验,给出研究方向,并把已核实、被推翻、说不清分开。它一路做到目标结案,中途没有问人。

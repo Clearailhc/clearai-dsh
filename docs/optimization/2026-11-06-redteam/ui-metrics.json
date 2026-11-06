@@ -1,0 +1,288 @@
+{
+  "probe": {
+    "ok": true,
+    "settled": true,
+    "nodesSized": true,
+    "firstNodeSize": [
+      33,
+      18
+    ],
+    "reactVersion": "19.3.0",
+    "canvas": 1,
+    "nodes": 2,
+    "edges": 1,
+    "controls": 1,
+    "background": 1,
+    "minimap": 0,
+    "styleInjected": true,
+    "degraded": false,
+    "reason": null
+  },
+  "records": [
+    {
+      "width": 1280,
+      "scrollWidth": 1280,
+      "interactiveSpans": [
+        {
+          "text": "本体图 2",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 15,
+            "y": 15,
+            "width": 70.015625,
+            "height": 21,
+            "top": 15,
+            "right": 85.015625,
+            "bottom": 36,
+            "left": 15
+          }
+        },
+        {
+          "text": "实体图 1",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 85.015625,
+            "y": 15,
+            "width": 70.015625,
+            "height": 21,
+            "top": 15,
+            "right": 155.03125,
+            "bottom": 36,
+            "left": 85.015625
+          }
+        },
+        {
+          "text": "适配",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 1205.96875,
+            "y": 17,
+            "width": 24.015625,
+            "height": 17,
+            "top": 17,
+            "right": 1229.984375,
+            "bottom": 34,
+            "left": 1205.96875
+          }
+        },
+        {
+          "text": "全屏",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 1243.984375,
+            "y": 17,
+            "width": 24.015625,
+            "height": 17,
+            "top": 17,
+            "right": 1268,
+            "bottom": 34,
+            "left": 1243.984375
+          }
+        },
+        {
+          "text": "仅显示相关项",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 1148.96875,
+            "y": 415,
+            "width": 72.015625,
+            "height": 17,
+            "top": 415,
+            "right": 1220.984375,
+            "bottom": 432,
+            "left": 1148.96875
+          }
+        },
+        {
+          "text": "关闭",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 1228.984375,
+            "y": 415,
+            "width": 24.015625,
+            "height": 17,
+            "top": 415,
+            "right": 1253,
+            "bottom": 432,
+            "left": 1228.984375
+          }
+        }
+      ],
+      "canvas": {
+        "x": 12,
+        "y": 47,
+        "width": 1256,
+        "height": 342,
+        "top": 47,
+        "right": 1268,
+        "bottom": 389,
+        "left": 12
+      }
+    },
+    {
+      "width": 375,
+      "scrollWidth": 375,
+      "interactiveSpans": [
+        {
+          "text": "本体图 2",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 15,
+            "y": 18.5,
+            "width": 70.015625,
+            "height": 21,
+            "top": 18.5,
+            "right": 85.015625,
+            "bottom": 39.5,
+            "left": 15
+          }
+        },
+        {
+          "text": "实体图 1",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 85.015625,
+            "y": 18.5,
+            "width": 70.015625,
+            "height": 21,
+            "top": 18.5,
+            "right": 155.03125,
+            "bottom": 39.5,
+            "left": 85.015625
+          }
+        },
+        {
+          "text": "适配",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 307.15625,
+            "y": 12,
+            "width": 20.921875,
+            "height": 34,
+            "top": 12,
+            "right": 328.078125,
+            "bottom": 46,
+            "left": 307.15625
+          }
+        },
+        {
+          "text": "全屏",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 342.078125,
+            "y": 12,
+            "width": 20.921875,
+            "height": 34,
+            "top": 12,
+            "right": 363,
+            "bottom": 46,
+            "left": 342.078125
+          }
+        },
+        {
+          "text": "仅显示相关项",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 243.96875,
+            "y": 422,
+            "width": 72.015625,
+            "height": 17,
+            "top": 422,
+            "right": 315.984375,
+            "bottom": 439,
+            "left": 243.96875
+          }
+        },
+        {
+          "text": "关闭",
+          "tag": "SPAN",
+          "role": null,
+          "tabIndex": -1,
+          "rect": {
+            "x": 323.984375,
+            "y": 422,
+            "width": 24.015625,
+            "height": 17,
+            "top": 422,
+            "right": 348,
+            "bottom": 439,
+            "left": 323.984375
+          }
+        }
+      ],
+      "canvas": {
+        "x": 12,
+        "y": 54,
+        "width": 351,
+        "height": 342,
+        "top": 54,
+        "right": 363,
+        "bottom": 396,
+        "left": 12
+      }
+    },
+    {
+      "scenario": "375-fullscreen-inspector",
+      "width": 375,
+      "scrollWidth": 375,
+      "canvas": {
+        "x": 20,
+        "y": 51,
+        "width": 2,
+        "height": 733,
+        "top": 51,
+        "right": 22,
+        "bottom": 784,
+        "left": 20
+      },
+      "inspector": {
+        "x": 32,
+        "y": 51,
+        "width": 380,
+        "height": 733,
+        "top": 51,
+        "right": 412,
+        "bottom": 784,
+        "left": 32
+      },
+      "bodyText": "本体图 2实体图 1已验证待核验适配退出全屏 (Esc)概念A概念BPress enter or space to select a node. You can then use the arrow keys to move the node around. Press delete to remove it and escape to cancel.Press enter or space to select an edge. You can then press delete to remove it or escape to cancel.概念概念A仅显示相关项关闭该项已不在当前词表中(可能已被废止)。\n\n\n\n"
+    },
+    {
+      "scenario": "50-long-labels",
+      "transform": "translate(82.0369px, 72.224px) scale(0.465974)",
+      "fontSize": "12.5px",
+      "nodeRect": {
+        "x": 108,
+        "y": 118.32683563232422,
+        "width": 97.27926635742188,
+        "height": 8.853500366210938,
+        "top": 118.32683563232422,
+        "right": 205.27926635742188,
+        "bottom": 127.18033599853516,
+        "left": 108
+      }
+    }
+  ]
+}

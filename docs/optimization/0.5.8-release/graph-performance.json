@@ -1,0 +1,199 @@
+{
+  "baseline": "v0.5.7",
+  "node": "v24.22.1",
+  "viewport": [
+    1440,
+    1000
+  ],
+  "rows": [
+    {
+      "kind": "baseline",
+      "count": 50,
+      "repeat": 0,
+      "firstMs": 289,
+      "updateMs": 860.7999999998137,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 50,
+      "repeat": 0,
+      "firstMs": 329.69999999925494,
+      "updateMs": 997.2999999998137,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 50,
+      "repeat": 1,
+      "firstMs": 289,
+      "updateMs": 910,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 50,
+      "repeat": 1,
+      "firstMs": 344.90000000037253,
+      "updateMs": 1027.2999999998137,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 50,
+      "repeat": 2,
+      "firstMs": 290.70000000018626,
+      "updateMs": 919.1999999992549,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 50,
+      "repeat": 2,
+      "firstMs": 307.79999999981374,
+      "updateMs": 910.1999999992549,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 50,
+      "repeat": 3,
+      "firstMs": 263.70000000018626,
+      "updateMs": 836.4000000003725,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 50,
+      "repeat": 3,
+      "firstMs": 304.40000000037253,
+      "updateMs": 941.5999999996275,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 50,
+      "repeat": 4,
+      "firstMs": 237.70000000018626,
+      "updateMs": 889.5,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 50,
+      "repeat": 4,
+      "firstMs": 331.5,
+      "updateMs": 1018.7999999998137,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 200,
+      "repeat": 0,
+      "firstMs": 752.5999999996275,
+      "updateMs": 4521,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 200,
+      "repeat": 0,
+      "firstMs": 849.7999999998137,
+      "updateMs": 5166,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 200,
+      "repeat": 1,
+      "firstMs": 834.5999999996275,
+      "updateMs": 4891.899999999441,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 200,
+      "repeat": 1,
+      "firstMs": 806.4000000003725,
+      "updateMs": 4786.799999999814,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 200,
+      "repeat": 2,
+      "firstMs": 683.5,
+      "updateMs": 4619.700000000186,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 200,
+      "repeat": 2,
+      "firstMs": 1207,
+      "updateMs": 5306,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 200,
+      "repeat": 3,
+      "firstMs": 685.2999999998137,
+      "updateMs": 4385.5,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 200,
+      "repeat": 3,
+      "firstMs": 769.5,
+      "updateMs": 4645.0999999996275,
+      "removed": 0
+    },
+    {
+      "kind": "baseline",
+      "count": 200,
+      "repeat": 4,
+      "firstMs": 684.5,
+      "updateMs": 4185.700000000186,
+      "removed": 0
+    },
+    {
+      "kind": "candidate",
+      "count": 200,
+      "repeat": 4,
+      "firstMs": 779.4000000003725,
+      "updateMs": 4274.799999999814,
+      "removed": 0
+    }
+  ],
+  "summary": [
+    {
+      "count": 50,
+      "baseline": {
+        "firstMs": 289,
+        "updateMs": 889.5
+      },
+      "candidate": {
+        "firstMs": 329.69999999925494,
+        "updateMs": 997.2999999998137
+      },
+      "firstRatio": 1.1408304498244115,
+      "updateRatio": 1.1211916807192959
+    },
+    {
+      "count": 200,
+      "baseline": {
+        "firstMs": 685.2999999998137,
+        "updateMs": 4521
+      },
+      "candidate": {
+        "firstMs": 806.4000000003725,
+        "updateMs": 4786.799999999814
+      },
+      "firstRatio": 1.1767109295207818,
+      "updateRatio": 1.0587923025878818
+    }
+  ],
+  "limitation": "Same-machine synthetic graph timing; first render measured after two animation frames, not end-to-end host startup."
+}

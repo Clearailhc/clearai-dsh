@@ -247,9 +247,6 @@
     - id: tool-subagent-control
       name: '@deepseek-ai/dsh-tool-subagent-control'
 
-    - id: tool-subagent-list-agents
-      name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
-
     # 执行者自选模型:重活可以换模型跑(modelSelectionSettings 出面板设置)。
     - id: tool-subagent
       name: '@deepseek-ai/dsh-tool-subagent'

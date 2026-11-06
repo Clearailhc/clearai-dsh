@@ -40,7 +40,7 @@ test('Windows-safe bounded paths preserve every raw logical ID inside the card',
 test('fingerprint binds full answers, lessons, actual file content and meaning, excludes audit echoes', () => {
 	const cwd = tempDir('clearai-audit-material-')
 	writeFileSync(join(cwd, 'answer.txt'), 'value=2')
-	const input = { cwd, kind: 'goal_audit', step: { id: 'goal:g', done_criteria: 'correct' }, plan: { steps: [{ id: 's', artifacts: ['answer.txt'] }] }, state: { goal: { id: 'g' }, hypotheses: [], evidence: [], lexicon: { terms: [{ id: 't', label: 'Title', gloss: 'meaning' }] } }, gate: { answers: [{ conclusion: '2', uses: [] }], lessons: [{ text: 'check instrument' }] } }
+	const input = { cwd, kind: 'goal_audit', step: { id: 'goal:g', done_criteria: 'correct', artifacts: ['answer.txt'] }, plan: { steps: [{ id: 's', artifacts: ['answer.txt'] }] }, state: { goal: { id: 'g' }, hypotheses: [], evidence: [], lexicon: { terms: [{ id: 't', label: 'Title', gloss: 'meaning' }] } }, gate: { answers: [{ conclusion: '2', uses: [] }], lessons: [{ text: 'check instrument' }] } }
 	const original = auditMaterialDigest(input)
 	const changed = structuredClone(input); changed.gate.answers[0].conclusion = '20'
 	assert.notEqual(auditMaterialDigest(changed), original)
@@ -58,10 +58,11 @@ test('fingerprint binds full answers, lessons, actual file content and meaning, 
 
 test('fingerprint ignores duplicate observation metadata but binds content and the current plan', () => {
  const cwd=tempDir('clearai-audit-observation-')
+ writeFileSync(join(cwd, 'raw.json'), '{}')
  const plan={id:'p',steps:[{id:'s',done_criteria:'mean equals 2',artifacts:[]}]}
  const input={cwd,kind:'step_audit',step:plan.steps[0],plan,state:{plans:[plan],materials:[{id:'first',at:1,ref:'raw.json',note:'mean=2'}]},gate:{}}
  const original=auditMaterialDigest(input)
- assert.match(original,/^v5:/)
+ assert.match(original,/^v6:/)
  input.state.materials.push({id:'second',at:2,ref:'raw.json',note:'mean=2'})
  assert.equal(auditMaterialDigest(input),original)
  input.state.materials[1].note='calibration pending'

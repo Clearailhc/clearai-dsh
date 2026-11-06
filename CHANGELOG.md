@@ -2,6 +2,22 @@
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.8] — Unreleased
+
+**DSH 0.2.2-rc.1 兼容性、可复核审计与完整性检测，以及研究 / 本体双面板和图谱升级。**
+
+### Changed
+
+- 移除失效的 list-agents 子入口与旧派遣 API 分支，统一独立评估者预设和 startActivation。
+- 审计材料统一工作区路径与完整内容摘要；不可读取的材料不缓存裁决。L3/L4 支持性裁决要求文件行引用及逐项判据结果。
+- 宿主持久记录权威写入，检查知识与评估文件的未登记写入、修改、删除和链接替换；异常文件保留。此机制不是操作系统隔离，也不保证发现检查前恢复的修改或外部副作用。
+- 复跑副本异步复制、递归过滤工具缓存，输出文件数、字节数和耗时，失败明确阻止依赖复跑的裁决。
+- 研究面板突出问题、候选、下一步和异常；本体按地图、依据、知识展开。统一主题与排版，升级概念、实体、取值、边、搜索、列表、邻域与窄屏详情交互。
+
+### Validation
+
+- 发布前必须完成 [0.5.8 验收记录](docs/optimization/0.5.8-release/README.md) 的工程、浏览器和真实模型门槛。每测试 5 美元、全批次 30 美元；不因模型费用更高而声称效率提升。
+
 ## [0.5.7] — 2026-10-24
 
 **暗色模式下本体图的缩放控件看得清了;会话在跑时图上的关系文字不再闪。**

@@ -13,10 +13,11 @@
  * 跑法:node test/kernel.test.mjs
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync as rawWriteFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
+import { integrityStore, protectedMaterial } from '../preset/plugins/integrity.js'
 import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
 import { citeVerdict, exclusionStrength, negativeItems, relatedKnowledge, resolveAbout } from '../preset/plugins/knowledge-items.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
@@ -30,10 +31,19 @@ const SECTIONS = BILINGUAL_SECTIONS.map((section) => ({ ...section, text: sectio
 // 跑测试不该往用户真实的 ~/.dsh 里塞东西(之前一直塞了,已清理)。
 process.env.DSH_HOME = tempDir('clearai-home-')
 
+// Explicit trusted fixture writer: simulate another kernel's registered output.
+// Attack regressions use rawWriteFileSync or real subprocesses instead.
+function writeFileSync(file, value, options) {
+ const path = String(file).replaceAll('\\', '/')
+ const index = path.lastIndexOf('/clear/')
+ if (index >= 0 && protectedMaterial(path.slice(index + 1))) return integrityStore(path.slice(0, index)).write(path.slice(index + 1), value, { session: 'fixture-kernel', event: 'fixture-write' })
+ return rawWriteFileSync(file, value, options)
+}
+
 const WORKSPACE = tempDir('clearai-ws-')
 const SESSION = 'session-test'
 /** 这一遍用哪一代子代理入口(见 makeHost 的 `subagentApi`)。新一代里评估者的工具面由随包预设决定。 */
-const SUBAGENT_API = process.env.CLEARAI_TEST_SUBAGENT_API ?? 'start'
+const SUBAGENT_API = 'activation'
 const EVALUATOR_PRESET = readFileSync(new URL('../preset/evaluator.cordis.yml', import.meta.url), 'utf8')
 
 // 工作区刻意是一个**用户自己的** git 仓库:账本与世界线都必须落在旁路账本里,
@@ -70,12 +80,13 @@ function check(label, condition, detail = '') {
  * 这一步检验的每条判断(从任务书里列出的 id 取)记为 support。新写法(带 `holds`)原样交回。
  */
 function twoPartVerdict(verdict, request) {
-	if (verdict === undefined || verdict === null || typeof verdict !== 'object' || verdict.holds !== undefined || verdict.verdict === undefined) return verdict
-	const { verdict: legacy, reading: _reading, validity: _validity, ...rest } = verdict
-	const holds = legacy === 'support' ? 'yes' : legacy === 'refute' ? 'no' : 'unclear'
-	const prompt = typeof request?.prompt === 'string' ? request.prompt : (request?.prompt ?? []).map((block) => block?.text ?? '').join('\n')
-	const tested = [...String(prompt).matchAll(/^\s+· (h-[a-z0-9]+):/gm)].map((match) => match[1])
-	return { ...rest, holds, results: holds === 'yes' ? tested.map((hypothesis) => ({ hypothesis, verdict: 'support' })) : [] }
+ if (!verdict || typeof verdict !== 'object') return verdict
+ const prompt = typeof request?.prompt === 'string' ? request.prompt : (request?.prompt ?? []).map(block => block?.text ?? '').join('\n')
+ const tested = [...prompt.matchAll(/^\s+· (h-[a-z0-9]+):/gm)].map(match => match[1])
+ const holds = verdict.holds ?? (verdict.verdict === 'support' ? 'yes' : verdict.verdict === 'refute' ? 'no' : 'unclear')
+ const refs = verdict.refs ?? [{ path: 'lab/probe.txt', line: 1 }]
+ const criteria = verdict.criteria ?? [...prompt.matchAll(/^\[(C\d+)\] (.*)$/gm)].map(match => ({ criterion: match[1], result: 'pass', basis: 'Mock evaluator checked lab/probe.txt:1 against ' + match[2] }))
+ return { ...verdict, holds, refs, criteria, results: verdict.results ?? (holds === 'yes' ? tested.map(hypothesis => ({ hypothesis, verdict: 'support' })) : []) }
 }
 
 // ── 假的宿主:一个内存投影 + 几个服务存根 ──────────────────────────────────
@@ -201,7 +212,7 @@ function makeHost() {
 		 * `activation` = ≥0.2.1-alpha.2 的 `startActivation(spec)`;`none` = 两个都没有。
 		 * 缺省读 `CLEARAI_TEST_SUBAGENT_API`:test/run.sh 用它把整套内核用例在新入口上再跑一遍。
 		 */
-		subagentApi: process.env.CLEARAI_TEST_SUBAGENT_API ?? 'start',
+		subagentApi: 'activation',
 		get hostGoal() {
 			return hostGoal
 		},
@@ -312,7 +323,10 @@ function makeHost() {
 							if (host.capabilityRefusals !== undefined && host.capabilityRefusals.some((capability) => String(request.label ?? '') !== '' && capability === 'all')) {
 								throw new Error('provider refuses every variant')
 							}
-							audits.push({ provider, request })
+							const fixtureCwd = host.cwd ?? WORKSPACE
+       mkdirSync(join(fixtureCwd, 'lab'), { recursive: true })
+       if (!existsSync(join(fixtureCwd, 'lab/probe.txt'))) writeFileSync(join(fixtureCwd, 'lab/probe.txt'), 'Mock evaluator evidence fixture\n')
+       audits.push({ provider, request })
 							// `onAudit`:评估者「运行」的那一刻(查副本在不在、模拟评估者动了产物)。
 							host.onAudit?.(request)
 							// `auditNeverSettles` / `auditDelayMs`:让评估者**晚一点**（或永不）落定——
@@ -453,7 +467,7 @@ async function callOn(host, session, name, args, options = {}) {
 		args = tested.length === 0 ? rest : { ...rest, results: tested.map((hypothesis) => ({ hypothesis, verdict })) }
 	}
 	const value = await tool.execute(args, { callId: 'call-1', agent: { id: session }, signal: options.signal })
-	// 生产同形:宿主按 output.schema 校验工具结果,越界即整次调用失败。
+ // 生产同形:宿主按 output.schema 校验工具结果,越界即整次调用失败。
 	if (value !== null && typeof value === 'object' && tool.output?.schema !== undefined) {
 		const breach = schemaViolation(tool.output.schema, value)
 		if (breach !== null) contractBreaches.push(`${name}: ${breach}`)
@@ -1588,7 +1602,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		const host = makeHost()
 		host.subagentApi = 'none'
 		apply(host.ctx, { blockedThreshold: 3 })
-		check('子代理入口都不在 → 挂载时就警告', host.warnings.some((line) => /neither start\(\) nor startActivation\(\)/.test(line)), host.warnings.join(' | ').slice(0, 200))
+		check('子代理入口都不在 → 挂载时就警告', host.warnings.some((line) => /no startActivation\(\)/.test(line)), host.warnings.join(' | ').slice(0, 200))
 		const S = 'session-no-subagent-api'
 		await callOn(host, S, 'Frame', { claim: 'W 的均值?', done_criteria: '存在 lab/w.txt', hypotheses: [{ name: '大于一', claim: '均值大于 1', refute_when: '均值不大于 1' }] })
 		const [above] = host.service.state(S).hypotheses.map((item) => item.id)
@@ -1622,7 +1636,7 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		check('评估者面(无作用域):主会话的 write 不受影响', unscopedGuards[0]({ name: 'write', agent: { ctx: {} } }) === undefined)
 	}
 
-	// ⑦ 评估者复跑:工作区副本(不含 clear/)+ bash;评估后副本删掉;评估期间产物被改 ⇒ 裁决不认
+	// ⑦ 评估者复跑:工作区副本(排除缓存与副本自身)+ bash;评估后副本删掉;评估期间产物被改 ⇒ 裁决不认
 	{
 		const host = makeHost()
 		apply(host.ctx, { blockedThreshold: 3, auditRerun: true })
@@ -1639,13 +1653,13 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 			const said = typeof request.prompt === 'string' ? request.prompt : (request.prompt ?? []).map((block) => block?.text ?? '').join('\n')
 			briefSaid = said
 			copy = /副本在 ([^\s(（]+)/.exec(said)?.[1] ?? null
-			copied = copy !== null && existsSync(join(copy, 'lab', 'z.txt')) && !existsSync(join(copy, 'clear'))
+			copied = copy !== null && existsSync(join(copy, 'lab', 'z.txt')) && !existsSync(join(copy, '.clearai-reruns'))
 			try { marker = JSON.parse(readFileSync(join(copy, '.clearai-rerun.json'), 'utf8')) } catch { marker = null }
 		}
 		host.nextVerdict = { holds: 'yes', basis: '复跑 mean=2', shortfalls: [], results: [{ hypothesis: above, verdict: 'support' }] }
 		const ok = await callOn(host, S, 'AdvancePlan', { step_id: 'z1' })
 		const request = host.audits.at(-1)?.request
-		check('任务书给出副本路径,副本里有产物、没有 clear/', copied, String(copy))
+		check('任务书给出副本路径,副本里有产物、没有递归副本', copied, String(copy))
 		if (SUBAGENT_API === 'activation') {
 			check('评估者预设挂了本机原生 shell 与后台任务工具(复跑要用)', request?.agentPreset === 'clearai-evaluator' && /dsh-tool-bash/.test(EVALUATOR_PRESET) && /dsh-tool-pwsh/.test(EVALUATOR_PRESET) && /dsh-tool-jobs/.test(EVALUATOR_PRESET), String(request?.agentPreset))
 		} else {
@@ -1982,15 +1996,15 @@ console.log('\n【评估者已结束 ⇒ 先取回它的裁决,取不回才如�
 		await preStep(host, S, 81)
 		await preStep(host, S, 82)
 		const settled = host.journal.filter((mutation) => mutation.t === 'audit/settled')
-		check('子会话日志里有裁决 ⇒ **取回**(不是失联):旧式 verdict=support 读成交付成立', settled.length === 1 && settled[0].holds === 'yes' && /均值差 6\.2/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 160))
+		check('旧裁决缺可复核引用时保存为 unknown,不得恢复推进', settled.length === 1 && settled[0].holds === 'unknown' && /均值差 6\.2/.test(String(settled[0].basis)), JSON.stringify(settled[0] ?? null).slice(0, 160))
 		check('取回的裁决落了评估卡(凭据与在进程里拿到的那条同构)', typeof settled[0]?.card_path === 'string' && existsSync(settled[0].card_path) && JSON.parse(readFileSync(settled[0].card_path)).holds === settled[0].holds, String(settled[0]?.card_path))
 	}
 
 	// Cold child logs are queried without making an Agent live or dispatching again.
 	{
 	 const host=makeHost();apply(host.ctx,{blockedThreshold:3});const S='cold-audit'
-	 host.states.set(S,makePending('cold-child'));host.coldSessionId='cold-child';host.listing=[]
-	 host.coldEvents=[{type:'tool/call',data:{callId:'structured',name:'structured_output',arguments:JSON.stringify({holds:'yes',basis:'independent calculation',results:[{hypothesis:'h-rc',verdict:'support'}],reuse:[],rechecks:[]})}},{type:'tool/result',data:{message:{toolCallId:'structured',isError:false}}},{type:'turn/end',data:{reason:{kind:'completed'}}}]
+	 const coldPending = makePending('cold-child'); coldPending.audits[0].criteria = [{ id: 'C1', text: 'independent calculation' }]; host.states.set(S,coldPending);host.coldSessionId='cold-child';host.listing=[]
+	 host.coldEvents=[{type:'tool/call',data:{callId:'structured',name:'structured_output',arguments:JSON.stringify({holds:'yes',basis:'independent calculation',refs:[{path:'lab/probe.txt',line:1}],criteria:[{criterion:'C1',result:'pass',basis:'lab/probe.txt:1'}],results:[{hypothesis:'h-rc',verdict:'support'}],reuse:[],rechecks:[]})}},{type:'tool/result',data:{message:{toolCallId:'structured',isError:false}}},{type:'turn/end',data:{reason:{kind:'completed'}}}]
 	 await preStep(host,S,83);const settled=host.journal.find(row=>row.t==='audit/settled')
 	 check('真正冷会话经 sessionQuery 恢复原生结构化裁决,不派新评估',settled?.holds==='yes'&&settled.results[0].verdict==='support'&&host.audits.length===0&&host.coldDisposed)
 	}
@@ -2251,10 +2265,14 @@ console.log('\n【跨会话:别的会话升格的事实在这里也是已知;定
 	check('待处理里多一条「定义已变」', other.service.derive(OTHER).needYou.some((item) => item.kind === 'definition_changed' && item.fact === 'f-foreign'))
 	const index = readFileSync(join(WORKSPACE, 'clear/knowledge/facts/INDEX.md'), 'utf8')
 	check('INDEX.md 汇总所有会话的事实,不只本会话', index.includes('f-foreign') && index.includes(promotedId))
-	rmSync(join(WORKSPACE, 'clear/knowledge/facts', 'f-foreign.json'))
+	const removedFixture = readFileSync(join(WORKSPACE, 'clear/knowledge/facts', 'f-foreign.json'))
+ rmSync(join(WORKSPACE, 'clear/knowledge/facts', 'f-foreign.json'))
 	await preStep(other, OTHER, 4)
 	check('文件删掉 ⇒ 同步成 removed,事实行里也没了', !other.service.derive(OTHER).factRows.some((row) => row.id === 'f-foreign'))
-	await preStep(thisHost, SESSION, 901)
+	check('已登记事实被删会显式记录完整性异常', other.service.state(OTHER).workspace.integrity.some(item => item.code === 'removed'))
+ rawWriteFileSync(join(WORKSPACE, 'clear/knowledge/facts', 'f-foreign.json'), removedFixture)
+ writeFileSync(join(WORKSPACE, 'clear/knowledge/facts', 'f-foreign.json'), JSON.stringify({ ...JSON.parse(removedFixture), definitions: {} }))
+ await preStep(thisHost, SESSION, 901)
 }
 
 function factFiles() {
@@ -2327,7 +2345,7 @@ console.log('\n【经验:结案时提议,评估者逐条核,支持的写进 clea
 	writeFileSync(lessonFile, `${JSON.stringify({ ...data, status: 'retracted' }, null, 2)}\n`)
 	await preStep(other, OTHER, 2)
 	check('人在文件上撤回 ⇒ 不再推送', !other.service.derive(OTHER).lessonRows.some((row) => row.id === recorded[0]?.id))
-	rmSync(lessonFile)
+	// Keep the registered, retracted fixture; deletion is covered separately.
 	await preStep(thisHost, SESSION, 902)
 }
 
@@ -3215,15 +3233,16 @@ for (const paused of [false, true]) {
 	const host = makeHost(); host.cwd = tempDir('clearai-orphan-')
 	apply(host.ctx, { minHypotheses: 0 })
 	const S = `orphan-${paused}`
+ mkdirSync(join(host.cwd, 'lab'), { recursive: true }); writeFileSync(join(host.cwd,'lab/probe.txt'), 'recovery evidence\n')
 	await callOn(host, S, 'Frame', { claim: 'verify', done_criteria: 'check evidence' })
 	const originalGoal = { ...host.hostGoal }
-	host.states.set(S, applyMutations(host.service.state(S), [{ t: 'audit/dispatched', id: 'orphan-audit', step: 'old-step', kind: 'evidence_audit', evaluator_session: 'orphan-child', capability: 'outputSchema', digest: 'v5:fixture', goal_id: originalGoal.id, goal_revision: originalGoal.revision }]))
+	host.states.set(S, applyMutations(host.service.state(S), [{ t: 'audit/dispatched', id: 'orphan-audit', step: 'old-step', kind: 'evidence_audit', evaluator_session: 'orphan-child', capability: 'outputSchema', criteria: [{ id: 'C1', text: 'check evidence' }], digest: 'v6:fixture', goal_id: originalGoal.id, goal_revision: originalGoal.revision }]))
 	const messages = []
 	host.liveAgents = { [S]: { id: S, followup: message => messages.push(message), inbox: { nextTurn: messages, nextStep: [] } } }
 	host.childSessions = {
 		[S]: { id: S, header: { cwd: host.cwd }, ownEvents: () => [], append: (type, data) => { if (type === 'hook/result') host.states.set(S, applyEvent(host.service.state(S), { type, data })) } },
 		'orphan-child': { id: 'orphan-child', header: { cwd: host.cwd }, ownEvents: () => [
-			{ type: 'tool/call', data: { callId: 'v', name: 'structured_output', arguments: JSON.stringify({ holds: 'yes', basis: 'checked', results: [] }) } },
+			{ type: 'tool/call', data: { callId: 'v', name: 'structured_output', arguments: JSON.stringify({ holds: 'yes', refs: [{path:'lab/probe.txt',line:1}], criteria: [{criterion:'C1',result:'pass',basis:'lab/probe.txt:1'}], basis: 'checked', results: [] }) } },
 			{ type: 'tool/result', data: { message: { toolCallId: 'v', isError: false } } },
 			{ type: 'turn/end', data: { reason: { kind: 'completed' } } },
 		] },
@@ -3520,6 +3539,7 @@ console.log('\n【0.5.2:可重跑的核算——引用时输入变了先重跑,�
 	const [meanId] = first.service.state(A).hypotheses.map((item) => item.id)
 	await callOn(first, A, 'CreatePlan', { steps: [{ id: 'm1', do: '算均值', artifacts: ['lab/r.txt'], done_criteria: 'lab/r.txt 存在', tests: { hypotheses: [meanId], level: 'L2' } }] })
 	writeText(join(ws, 'lab', 'r.txt'), 'mean=2\n')
+ writeText(join(ws, 'out', 'mean.json'), JSON.stringify({ mean: 2 }))
 	await callOn(first, A, 'AdvancePlan', { step_id: 'm1', basis: 'lab/r.txt', results: [{ hypothesis: meanId, verdict: 'support' }] })
 	await callOn(first, A, 'ClosePlan', {})
 	first.nextVerdict = { holds: 'yes', basis: '在', shortfalls: [], results: [] }

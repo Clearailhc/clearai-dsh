@@ -1,0 +1,208 @@
+{
+  "passed": false,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "requestedEffort": "medium",
+    "providerMappedEffort": "high"
+  },
+  "budget": {
+    "campaignLimitUsd": 30,
+    "perTestLimitUsd": 5,
+    "costUpperBoundUsd": 0.7234953,
+    "perTestCostUpperBoundUsd": {
+      "audit-wait:0:none": 0.4666749,
+      "audit-wait:305:none": 0.0641967,
+      "audit-wait:0:cancel-after-child-request": 0.1926237
+    },
+    "requests": 137,
+    "verifiedRequests": 137,
+    "pendingRequests": 0,
+    "unknownRequests": 0
+  },
+  "runs": [
+    {
+      "test": "fast-1",
+      "reason": "error",
+      "failureCategory": "model-capability",
+      "elapsedMs": 312,
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "calls": 0,
+        "missing": 0,
+        "pending": 0,
+        "processed": 0
+      },
+      "verificationPassed": false,
+      "parentRequestsWhileWaiting": null,
+      "auditCount": null,
+      "packageDigest": "bdfb54ea370385552e5f166ae1e07f5576f48dead69456d275c45962a540dd75",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "1eb3d67e263c6ca09ae182b03b4faa71182980877d7d498a6fa74558b49bbc96"
+    },
+    {
+      "test": "fast-2",
+      "reason": "blocked",
+      "failureCategory": null,
+      "elapsedMs": 54648,
+      "usage": {
+        "input": 19258,
+        "output": 7123,
+        "cacheRead": 260608,
+        "cacheWrite": 0,
+        "calls": 16,
+        "missing": 0,
+        "pending": 0,
+        "processed": 286989
+      },
+      "verificationPassed": false,
+      "parentRequestsWhileWaiting": null,
+      "auditCount": null,
+      "packageDigest": "bdfb54ea370385552e5f166ae1e07f5576f48dead69456d275c45962a540dd75",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "3fca01cb77a8683d7ad5a4709edede1f9195c572a35c03d026a0c783bf6425fd"
+    },
+    {
+      "test": "fast-3",
+      "reason": "completed",
+      "failureCategory": null,
+      "elapsedMs": 101342,
+      "usage": {
+        "input": 20123,
+        "output": 14317,
+        "cacheRead": 293632,
+        "cacheWrite": 0,
+        "calls": 24,
+        "missing": 0,
+        "pending": 0,
+        "processed": 328072
+      },
+      "verificationPassed": false,
+      "parentRequestsWhileWaiting": 0,
+      "auditCount": 1,
+      "packageDigest": "85b062af9b0b1378f51c59e4ab759650fbde26fa61d58d69ef6b7e5ff709777e",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "97ceba186c0bf6a5e06c95fd7a7b4c4aa4bd2818cd8ac493e5e6516010025b9b"
+    },
+    {
+      "test": "fast-4",
+      "reason": "error",
+      "failureCategory": "invalid-tool-json",
+      "elapsedMs": 32526,
+      "usage": {
+        "input": 3278,
+        "output": 4536,
+        "cacheRead": 148480,
+        "cacheWrite": 0,
+        "calls": 11,
+        "missing": 0,
+        "pending": 0,
+        "processed": 156294
+      },
+      "verificationPassed": false,
+      "parentRequestsWhileWaiting": null,
+      "auditCount": null,
+      "packageDigest": "9a06b92f81f63ca80b110732a2343d15b2340d47262b79a9b8e93b8df4b70d70",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "895fa587d04d66cec9035db28ba4c0f2ab22e4b17fe8f485aa53ba38d15654ff"
+    },
+    {
+      "test": "fast-5",
+      "reason": "completed",
+      "failureCategory": null,
+      "elapsedMs": 100698,
+      "usage": {
+        "input": 14833,
+        "output": 15188,
+        "cacheRead": 322432,
+        "cacheWrite": 0,
+        "calls": 23,
+        "missing": 0,
+        "pending": 0,
+        "processed": 352453
+      },
+      "verificationPassed": true,
+      "parentRequestsWhileWaiting": 0,
+      "auditCount": 1,
+      "packageDigest": "3c95eda7ae8f5817f6e64d3638ca59d5d9ef45c3c0a0769e82574a467035209f",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "33f1fb32886c8c321fc0fdf4a9b38c2ad75dda324883ca7464c6c7092186a29f"
+    },
+    {
+      "test": "fast-6",
+      "reason": "error",
+      "failureCategory": "invalid-tool-json",
+      "elapsedMs": 73315,
+      "usage": {
+        "input": 12459,
+        "output": 10500,
+        "cacheRead": 253824,
+        "cacheWrite": 0,
+        "calls": 19,
+        "missing": 0,
+        "pending": 0,
+        "processed": 276783
+      },
+      "verificationPassed": false,
+      "parentRequestsWhileWaiting": null,
+      "auditCount": null,
+      "packageDigest": "128e611fee17657abe5b14f4cee9080cc741f9d0b955339f52356f3184f8c8ec",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "c0ceba3cc5b8c4c8aab20ffe3153c46fa6d8258ba1036b8dfb042b3947ba967f"
+    },
+    {
+      "test": "slow-305s",
+      "reason": "completed",
+      "failureCategory": null,
+      "elapsedMs": 348178,
+      "usage": {
+        "input": 9297,
+        "output": 6693,
+        "cacheRead": 177920,
+        "cacheWrite": 0,
+        "calls": 16,
+        "missing": 0,
+        "pending": 0,
+        "processed": 193910
+      },
+      "verificationPassed": true,
+      "parentRequestsWhileWaiting": 0,
+      "auditCount": 1,
+      "packageDigest": "128e611fee17657abe5b14f4cee9080cc741f9d0b955339f52356f3184f8c8ec",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "be2ff3ee91af39f69c743e485d9525e58dafd7686f96e1b3970a57d8298d7351"
+    },
+    {
+      "test": "cancel",
+      "reason": "error",
+      "failureCategory": "invalid-tool-json",
+      "elapsedMs": 83317,
+      "usage": {
+        "input": 10267,
+        "output": 11137,
+        "cacheRead": 587264,
+        "cacheWrite": 0,
+        "calls": 28,
+        "missing": 0,
+        "pending": 0,
+        "processed": 608668
+      },
+      "verificationPassed": false,
+      "parentRequestsWhileWaiting": null,
+      "auditCount": null,
+      "packageDigest": "dd610c0e9fa60f59c6c12dace7bb81235157446ec99d678352d9e417cd605210",
+      "hostVersion": "0.2.2-rc.1",
+      "sourceSha256": "49370aff812b37ae9a2988fa172e74c6094852e16559164128200d74cbba4883"
+    }
+  ],
+  "notCompleted": [
+    "cancel",
+    "disconnect",
+    "process-recovery",
+    "six paired smoke"
+  ],
+  "disclosure": "Numeric allowlisted summary only. All raw attempts remain in the local test environment. Fast-3 is excluded because the original verifier accepted a replacement copy; later malformed tool JSON is a functional failure. No release tag permitted."
+}

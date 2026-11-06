@@ -79,7 +79,7 @@ export const MUTATION_KIND = 'clearai'
  *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 22
+export const STATE_VERSION = 23
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -597,7 +597,7 @@ export function applyMutation(state, mutation) {
 				verdict: null,
 				evaluator: 'independent',
 				child: mutation.evaluator_session ?? null,
-				capability: mutation.capability ?? null,
+				criteria: mutation.criteria ?? [], capability: mutation.capability ?? null,
 				goal_id: mutation.goal_id ?? null,
 				goal_revision: mutation.goal_revision ?? null,
 				/**
@@ -653,7 +653,9 @@ export function applyMutation(state, mutation) {
 				audit.rechecks = Array.isArray(mutation.rechecks) ? clone(mutation.rechecks) : []
 				audit.lessons = Array.isArray(mutation.lessons) ? clone(mutation.lessons) : []
 				audit.reuse = Array.isArray(mutation.reuse) ? clone(mutation.reuse) : []
-				audit.results = Array.isArray(mutation.results) ? mutation.results : []
+				audit.refs = Array.isArray(mutation.refs) ? clone(mutation.refs) : []
+    audit.criteriaResults = Array.isArray(mutation.criteria) ? clone(mutation.criteria) : []
+    audit.results = Array.isArray(mutation.results) ? mutation.results : []
 				audit.shortfalls = mutation.shortfalls ?? []
 				audit.basis = mutation.basis ?? null
 				audit.card_path = mutation.card_path ?? null
@@ -758,9 +760,15 @@ export function applyMutation(state, mutation) {
 		 * 每条 change 是一个文件的新样子(`data` 或读不成时的 `error`),或 `removed`。
 		 * 按路径覆盖,所以同一批变化折两遍结果一样。
 		 */
-		case 'workspace/synced': {
+		case 'integrity/recorded': {
+   next.integrityReceipts = { ...(next.integrityReceipts ?? {}), [mutation.receipt.path]: mutation.receipt }; break
+  }
+  case 'audit/copy': {
+   next.auditCopies = { ...(next.auditCopies ?? {}), [mutation.id]: { ...(next.auditCopies?.[mutation.id] ?? {}), ...mutation } }; break
+  }
+  case 'workspace/synced': {
 			const files = next.workspace !== null && typeof next.workspace === 'object' && next.workspace.files !== null && typeof next.workspace.files === 'object' ? next.workspace.files : {}
-			next.workspace = { ...(next.workspace ?? {}), files }
+			next.workspace = { ...(next.workspace ?? {}), files, integrity: mutation.integrity ?? next.workspace?.integrity ?? [] }
 			for (const change of Array.isArray(mutation.changes) ? mutation.changes : []) {
 				const path = typeof change?.path === 'string' ? change.path : ''
 				if (path === '') continue
@@ -2372,6 +2380,8 @@ export function view(state, sessionId) {
 		sessionId: sid,
 		/** 待处理:只陈述的几行(计划停下、结论矛盾);面板顶上与输入框旁读同一份。 */
 		needYou: derived.needYou,
+  integrity: state.workspace?.integrity ?? [],
+  auditCopies: Object.values(state.auditCopies ?? {}),
 		/**
 		 * 被闸门裁断过几次(`block/counted`):世界树的**分段通道**画的就是它——
 		 * 这一步磨了几轮、其中几次被驳回。事实在投影里,面板只负责画。

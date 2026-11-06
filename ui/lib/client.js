@@ -105,8 +105,8 @@ window.__ModuleLoader__.load({
 
 		/** 语言命名空间。表按**源文**索引:键就是中文原文,所以漏翻译一条只会退回中文,不会把 key 显示给人。 */
 		const LOCALE_NS = 'clearai'
-		const LOCALE_ZH = {"待执行":"待执行","已交付":"已交付","已作废":"已作废","支持":"支持","推翻":"推翻","不确定":"不确定","第 n 步":"第 n 步","判据:":"判据:","判据":"判据"," · 已修订 ":" · 已修订 "," 次":" 次"," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:","打开目标文档(原生预览)":"打开目标文档(原生预览)","全文在 ":"全文在 ","背景(不参与判定):":"背景(不参与判定):","目标":"目标","命题":"命题","计划":"计划","验证":"验证","观测":"观测","评估":"评估","证据":"证据","事实":"事实","批准":"批准","未解释":"未解释","评估卡":"评估卡","查看评估者":"查看评估者","审批记录":"审批记录","产物":"产物","已验证":"已验证","待核验":"待核验","验证中":"验证中","已推翻":"已推翻","已替换":"已替换","自行检验":"自行检验","独立核验":"独立核验","人工批准":"人工批准","判断":"判断","检验":"检验","纳入本体":"纳入本体","下一步:安排步骤对其进行检验":"下一步:安排步骤对其进行检验","下一步:通过独立核验后标记为已验证":"下一步:通过独立核验后标记为已验证","下一步:改用其他方法重新检验":"下一步:改用其他方法重新检验","下一步:结案时写入长期知识":"下一步:结案时写入长期知识","陈述":"陈述","数值":"数值","公式":"公式","代码":"代码","引用":"引用","概念":"概念","取值形态":"取值形态","实例":"实例","取值":"取值","关系":"关系","在检验阶段被推翻,不再推进。":"在检验阶段被推翻,不再推进。","已被替换,不再推进。":"已被替换,不再推进。","提出":"提出","单步检验":"单步检验",":":":","写入长期知识":"写入长期知识","人工撤回":"人工撤回","进度":"进度","可信度变化":"可信度变化","补充说明":"补充说明","依据":"依据","查看核验":"查看核验","查看记录":"查看记录","范围":"范围","推翻条件":"推翻条件","相关":"相关","在图中定位":"在图中定位","来源":"来源","收起":"收起","点击查看进度与来源":"点击查看进度与来源","暂无结论。模型提出判断后,将在此逐条列出。":"暂无结论。模型提出判断后,将在此逐条列出。","尚未设立目标":"尚未设立目标","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"暂无内容。发送第一条消息后,此处将显示本体图与结论。","仅显示与「":"仅显示与「","」相关的内容":"」相关的内容","清除":"清除","已确立的事实":"已确立的事实","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。","经验(":"经验(",")":")","广度调研":"广度调研","定向求解":"定向求解","先调研后求解":"先调研后求解","考察中":"考察中","已排除":"已排除","已采纳":"已采纳","暂不考察":"暂不考察","未开始":"未开始","调研中":"调研中","已厘清":"已厘清","常见误区":"常见误区","前置核查":"前置核查","不可取的捷径":"不可取的捷径","先验知识":"先验知识","提出依据":"提出依据","未注明(直觉)":"未注明(直觉)","直觉":"直觉","本体关系「":"本体关系「","」":"」","主张":"主张","预测":"预测","排除依据":"排除依据","采纳依据":"采纳依据","关联记录":"关联记录","支持 ":"支持 "," 条 · 推翻 ":" 条 · 推翻 "," 条 · 无法判定 ":" 条 · 无法判定 "," 条":" 条","在本体货架中展开此结论":"在本体货架中展开此结论","已得出结论 · 查看结论":"已得出结论 · 查看结论","已暂缓":"已暂缓","新发现,待您决定":"新发现,待您决定","尚无候选假设":"尚无候选假设","候选假设 ":"候选假设 "," 个:":" 个:","问题 ":"问题 ","候选假设":"候选假设","展开":"展开","已请求立为问题,待模型修订立题后生效。":"已请求立为问题,待模型修订立题后生效。","已请求暂缓,结案时列入「尚未确定的事项」。":"已请求暂缓,结案时列入「尚未确定的事项」。","无法自动发送,请在对话中说明。":"无法自动发送,请在对话中说明。","新发现的问题":"新发现的问题","请将新发现的问题「":"请将新发现的问题「","」立为问题深入研究(问题 ":"」立为问题深入研究(问题 ",")。":")。","立为问题":"立为问题","请暂缓问题「":"请暂缓问题「","」(问题 ":"」(问题 ","),结案时列入「尚未确定的事项」。":"),结案时列入「尚未确定的事项」。","暂缓":"暂缓","调研板块":"调研板块","判断 ":"判断 "," 条 · 已采纳 ":" 条 · 已采纳 ","未解释的现象 ":"未解释的现象 "," 项":" 项","下一步":"下一步","预测:":"预测:","若「":"若「","」成立,预测":"」成立,预测","各候选假设的预测相同,此步骤无法区分它们。":"各候选假设的预测相同,此步骤无法区分它们。","如需调整计划,请在对话中说明。":"如需调整计划,请在对话中说明。","未解释的现象(":"未解释的现象(","结案前须解释、排除或写入「尚未确定的事项」":"结案前须解释、排除或写入「尚未确定的事项」","独立评估发现":"独立评估发现","涉及:":"涉及:","、":"、","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。","阶段 · ":"阶段 · ","调研板块 ":"调研板块 "," 个 · 已厘清 ":" 个 · 已厘清 "," 个":" 个","当前问题 ":"当前问题 "," / 共 ":" / 共 ","计划 已完成 ":"计划 已完成 "," / ":" / "," 步":" 步","独立评估 ":"独立评估 ","计划共 ":"计划共 ","(":"(","进行中)":"进行中)","课题":"课题","待您处理(":"待您处理(","过程记录":"过程记录","结论":"结论","未能回答:":"未能回答:","查看探索记录":"查看探索记录","尚未确定的事项":"尚未确定的事项","待您决策":"待您决策","不适用:":"不适用:","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"暂无计划。建立计划后,此处将显示计划的步骤与闸门。","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)","计划 ":"计划 ","已完成 · 可查看存档":"已完成 · 可查看存档","步 ":"步 ","打开计划文档(原生预览)":"打开计划文档(原生预览)","计划文档":"计划文档","点击查看详情":"点击查看详情","查看步骤详情":"查看步骤详情"," 轮":" 轮","已派出评估者 ":"已派出评估者 ","收起详情":"收起详情","任务内容":"任务内容","状态":"状态","未声明":"未声明","磁盘上未找到该文件":"磁盘上未找到该文件","(缺失)":"(缺失)","在原生预览中打开":"在原生预览中打开","在原生预览中打开(计划声明的产物)":"在原生预览中打开(计划声明的产物)","查看此步骤的证据":"查看此步骤的证据","检验结果:":"检验结果:","独立核验:":"独立核验:","正在裁决":"正在裁决"," 查看核验过程":" 查看核验过程"," 查看核验记录":" 查看核验记录","待处理":"待处理","板块 ":"板块 "," · ":" · "," 个问题待您决定":" 个问题待您决定"," · 待检验假设 ":" · 待检验假设 ","计划受阻,待人工处理":"计划受阻,待人工处理","计划已收尾(":"计划已收尾("," 步)":" 步)","计划已交付 ":"计划已交付 ","待处理 ":"待处理 ","(点击打开探索货架)":"(点击打开探索货架)","仅显示相关项":"仅显示相关项","关闭":"关闭","正在加载…":"正在加载…","无法获取":"无法获取","该项已不在当前词表中(可能已被废止)。":"该项已不在当前词表中(可能已被废止)。","释义":"释义","上位":"上位","下位":"下位","主体":"主体","类型":"类型","该术语已废止,既有结论中的用法仍可查看。":"该术语已废止,既有结论中的用法仍可查看。","引用此项的结论":"引用此项的结论","有矛盾":"有矛盾","范围:":"范围:","展开下一层":"展开下一层","收起下一层":"收起下一层","共 ":"共 "," 条断言的主体尚未建立实体文件。":" 条断言的主体尚未建立实体文件。","实体图暂无内容。":"实体图暂无内容。","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。","本体图":"本体图","实体图":"实体图","矛盾":"矛盾","适配":"适配","退出全屏":"退出全屏","全屏":"全屏","图组件不可用":"图组件不可用","结论仍可正常查看。":"结论仍可正常查看。","本体文件有 ":"本体文件有 "," 项问题(不纳入图中)":" 项问题(不纳入图中)","已提出":"已提出","探索":"探索","本体":"本体","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","适用":"适用","超出适用范围":"超出适用范围","超出取值范围":"超出取值范围","本次条件未声明":"本次条件未声明","条目未声明适用范围":"条目未声明适用范围","口径已变更":"口径已变更","已撤回":"已撤回","本次不能直接沿用,需重新检验":"本次不能直接沿用,需重新检验","补充本次条件后重新判定":"补充本次条件后重新判定","沿用时需自行确认":"沿用时需自行确认","按新口径换算或重新检验":"按新口径换算或重新检验","先复检再沿用":"先复检再沿用","不得沿用":"不得沿用","已确立":"已确立","初步排除":"初步排除","测量或方法缺陷":"测量或方法缺陷","已解释":"已解释","已判定无关":"已判定无关","已提交您处理":"已提交您处理","请求复检":"请求复检","请复检条目「":"请复检条目「","」(":"」(","请求撤回":"请求撤回","请撤回条目「":"请撤回条目「","),并说明对已有结论的影响。":"),并说明对已有结论的影响。","请求修改适用范围":"请求修改适用范围","请与我确认条目「":"请与我确认条目「",")的适用范围应如何修改。":")的适用范围应如何修改。","推翻证据 ":"推翻证据 "," · 独立核验 ":" · 独立核验 ","受质疑":"受质疑","已发送请求,由模型处理后更新。":"已发送请求,由模型处理后更新。","适用边界":"适用边界","测量与口径":"测量与口径","校准关系":"校准关系","未解释的现象":"未解释的现象","经验":"经验","该实体暂无沉淀的知识。":"该实体暂无沉淀的知识。","引用的已有知识(":"引用的已有知识(","引用的已有知识":"引用的已有知识","引用者:":"引用者:","将沉淀的内容":"将沉淀的内容","已写入的排除与未解释项;结案时待独立核验的结论":"已写入的排除与未解释项;结案时待独立核验的结论","待独立核验":"待独立核验","已确立 ":"已确立 ","已排除 ":"已排除 ","未解释 ":"未解释 ","经验 ":"经验 ","本次沉淀":"本次沉淀","点击查看可发出的请求":"点击查看可发出的请求","初步排除(":"初步排除(","测量或方法缺陷 ":"测量或方法缺陷 "}
-		const LOCALE_EN = {"待执行":"to do","已交付":"delivered","已作废":"voided","支持":"Support","推翻":"Refute","不确定":"Uncertain","第 n 步":"Step n","判据:":"Criterion: ","判据":"Criterion"," · 已修订 ":" · revised "," 次":" times"," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: ","打开目标文档(原生预览)":"Open the goal document (native preview)","全文在 ":"Full text at ","背景(不参与判定):":"Background (not part of the verdict): ","目标":"Goal","命题":"Propositions","计划":"Plan","验证":"Verification","观测":"Observation","评估":"Evaluation","证据":"Evidence","事实":"Facts","批准":"approval","未解释":"Unexplained","评估卡":"evaluation card","查看评估者":"view evaluator","审批记录":"approval record","产物":"Deliverables","已验证":"Verified","待核验":"Awaiting check","验证中":"Testing","已推翻":"Refuted","已替换":"Replaced","自行检验":"Self-tested","独立核验":"Independent check","人工批准":"Approved by a person","判断":"Judgment","检验":"Test","纳入本体":"In ontology","下一步:安排步骤对其进行检验":"Next: schedule a step to test it","下一步:通过独立核验后标记为已验证":"Next: marked Verified after an independent check","下一步:改用其他方法重新检验":"Next: test it again by another method","下一步:结案时写入长期知识":"Next: written to long-term knowledge at close","陈述":"Statement","数值":"Quantity","公式":"Formula","代码":"Code","引用":"Reference","概念":"concepts","取值形态":"Value form","实例":"Instances","取值":"Value","关系":"Relation","在检验阶段被推翻,不再推进。":"Refuted at the test stage; it goes no further.","已被替换,不再推进。":"Replaced; it goes no further.","提出":"Proposed","单步检验":"A single test",":":": ","写入长期知识":"Written to long-term knowledge","人工撤回":"Withdrawn by a person","进度":"Progress","可信度变化":"Trust history","补充说明":"Details","依据":"Basis","查看核验":"View check","查看记录":"View record","范围":"Scope","推翻条件":"Refuted if","相关":"Related","在图中定位":"Locate on the graph","来源":"Source","收起":"Collapse","点击查看进度与来源":"Click to view progress and source","暂无结论。模型提出判断后,将在此逐条列出。":"No judgments yet. Each judgment the model proposes is listed here.","尚未设立目标":"No goal set yet","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"Nothing yet. After the first message, the ontology graph and conclusions appear here.","仅显示与「":"Showing only items related to \"","」相关的内容":"\"","清除":"Clear","已确立的事实":"ESTABLISHED FACTS","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"No established facts yet. Judgments appear here once tested and independently checked; the testing process is in the Explore shelf.","经验(":"LESSONS (",")":")","广度调研":"Broad survey","定向求解":"Targeted solving","先调研后求解":"Survey, then solve","考察中":"Being examined","已排除":"Excluded","已采纳":"Adopted","暂不考察":"Set aside","未开始":"Not started","调研中":"In progress","已厘清":"Clarified","常见误区":"Common pitfall","前置核查":"Check first","不可取的捷径":"Misleading shortcut","先验知识":"Prior knowledge","提出依据":"Proposed from","未注明(直觉)":"Not stated (intuition)","直觉":"Intuition","本体关系「":"Ontology relation \"","」":"\"","主张":"Claim","预测":"Prediction","排除依据":"Grounds for exclusion","采纳依据":"Grounds for adoption","关联记录":"Related records","支持 ":"Support "," 条 · 推翻 ":" · refute "," 条 · 无法判定 ":" · inconclusive "," 条":"","在本体货架中展开此结论":"Expand this conclusion in the Ontology shelf","已得出结论 · 查看结论":"Concluded · view the conclusion","已暂缓":"Parked","新发现,待您决定":"Newly found, awaiting your decision","尚无候选假设":"No candidate hypotheses yet","候选假设 ":"Candidate hypotheses: "," 个:":" — ","问题 ":"Question ","候选假设":"Candidate hypotheses","展开":"Expand","已请求立为问题,待模型修订立题后生效。":"Requested as a question; it takes effect once the model revises the framing.","已请求暂缓,结案时列入「尚未确定的事项」。":"Requested to park; it will be listed under open points at conclusion.","无法自动发送,请在对话中说明。":"Could not send automatically; please say it in the conversation.","新发现的问题":"Newly found question","请将新发现的问题「":"Please make the newly found question \"","」立为问题深入研究(问题 ":"\" a question to pursue (question ",")。":").","立为问题":"Make it a question","请暂缓问题「":"Please park the question \"","」(问题 ":"\" (question ","),结案时列入「尚未确定的事项」。":") and list it under open points at conclusion.","暂缓":"Park","调研板块":"Survey areas","判断 ":"Judgments: "," 条 · 已采纳 ":" · adopted ","未解释的现象 ":"Unexplained observations: "," 项":"","下一步":"Next step","预测:":"Prediction: ","若「":"If \"","」成立,预测":"\" holds, the prediction is","各候选假设的预测相同,此步骤无法区分它们。":"All candidate hypotheses predict the same result, so this step cannot tell them apart.","如需调整计划,请在对话中说明。":"To change the plan, say so in the conversation.","未解释的现象(":"Unexplained observations (","结案前须解释、排除或写入「尚未确定的事项」":"Before concluding, each must be explained, ruled out, or written into the open points","独立评估发现":"Found by the independent evaluator","涉及:":"Concerns: ","、":", ","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"Nothing yet. After the first message, questions, candidate hypotheses and the next step appear here.","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"No goal set yet. Once the model frames the goal, questions, candidate hypotheses and the next step appear here.","阶段 · ":"Mode · ","调研板块 ":"Survey areas: "," 个 · 已厘清 ":" · clarified "," 个":"","当前问题 ":"Current question "," / 共 ":" of ","计划 已完成 ":"Plan: completed "," / ":" / "," 步":" steps","独立评估 ":"Independent evaluations: ","计划共 ":"Plan: ","(":" (","进行中)":" in progress)","课题":"Topic","待您处理(":"Awaiting you (","过程记录":"Process record","结论":"Conclusion","未能回答:":"Could not be answered: ","查看探索记录":"View the exploration record","尚未确定的事项":"Open points","待您决策":"For you to decide","不适用:":"Does not apply: ","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"No plan yet. Once a plan is created, its steps and gates appear here.","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"Switch to an earlier plan (all plans are kept; documents are archived under clear/goals/plans/)","计划 ":"Plan ","已完成 · 可查看存档":"closed · archive available","步 ":"step ","打开计划文档(原生预览)":"Open the plan document (native preview)","计划文档":"Plan document","点击查看详情":"click for details","查看步骤详情":"view step details"," 轮":" rounds","已派出评估者 ":"Evaluators dispatched: ","收起详情":"Collapse details","任务内容":"Task","状态":"Status","未声明":"not declared","磁盘上未找到该文件":"this file was not found on disk","(缺失)":" (missing)","在原生预览中打开":"Open in the native preview","在原生预览中打开(计划声明的产物)":"Open in the native preview (an artifact declared by the plan)","查看此步骤的证据":"see the evidence for this step","检验结果:":"Result: ","独立核验:":"Independent check: ","正在裁决":"Deciding"," 查看核验过程":" View the review"," 查看核验记录":" View the review record","待处理":"To handle","板块 ":"Areas "," · ":" · "," 个问题待您决定":" question(s) awaiting your decision"," · 待检验假设 ":" · hypotheses to test: ","计划受阻,待人工处理":"plan blocked, awaiting a person","计划已收尾(":"Plan closed ("," 步)":" steps)","计划已交付 ":"Plan delivered ","待处理 ":"to handle ","(点击打开探索货架)":" (click to open the Explore shelf)","仅显示相关项":"Related only","关闭":"Close","正在加载…":"Loading…","无法获取":"Unavailable","该项已不在当前词表中(可能已被废止)。":"This item is no longer in the vocabulary (it may have been deprecated).","释义":"Gloss","上位":"Broader","下位":"Narrower","主体":"Subject","类型":"Type","该术语已废止,既有结论中的用法仍可查看。":"This term is deprecated; its use in existing conclusions remains readable.","引用此项的结论":"Conclusions citing it","有矛盾":"Conflicting","范围:":"Scope: ","展开下一层":"Expand the next level","收起下一层":"Collapse the next level","共 ":""," 条断言的主体尚未建立实体文件。":" assertion subjects have no entity file yet. ","实体图暂无内容。":"The entity graph is empty. ","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"Entity files under clear/ontology/entities/ and assertions in long-term knowledge appear here.","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"The ontology graph is empty. Concepts and relations appear once the model creates files under clear/ontology/concepts/ and relations/.","本体图":"Ontology graph","实体图":"Entity graph","矛盾":"Conflicts","适配":"Fit","退出全屏":"Exit full screen","全屏":"Full screen","图组件不可用":"The graph component is unavailable","结论仍可正常查看。":"conclusions remain readable.","本体文件有 ":"Ontology files have "," 项问题(不纳入图中)":" problems (kept off the graph)","已提出":"proposed","探索":"Explore","本体":"Ontology","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","适用":"Applies","超出适用范围":"Outside its scope","超出取值范围":"Outside its value range","本次条件未声明":"Conditions of this run not declared","条目未声明适用范围":"Item declares no scope","口径已变更":"Definition changed","已撤回":"Retracted","本次不能直接沿用,需重新检验":"Cannot be reused as is here; test it again","补充本次条件后重新判定":"Declare this run's conditions, then judge again","沿用时需自行确认":"Confirm it applies before reusing it","按新口径换算或重新检验":"Convert to the new definition or test it again","先复检再沿用":"Re-check it before reusing it","不得沿用":"Must not be reused","已确立":"Established","初步排除":"Preliminarily excluded","测量或方法缺陷":"Measurement or method defect","已解释":"Explained","已判定无关":"Ruled irrelevant","已提交您处理":"Handed to you","请求复检":"Request a re-check","请复检条目「":"Please re-check the item \"","」(":"\" (","请求撤回":"Request retraction","请撤回条目「":"Please retract the item \"","),并说明对已有结论的影响。":") and state the effect on existing conclusions.","请求修改适用范围":"Request a scope change","请与我确认条目「":"Please confirm with me how the scope of the item \"",")的适用范围应如何修改。":") should be changed.","推翻证据 ":"Refuting evidence: "," · 独立核验 ":" · independently checked: ","受质疑":"Challenged","已发送请求,由模型处理后更新。":"Request sent; it updates once the model handles it.","适用边界":"Limits of applicability","测量与口径":"Measurement and definitions","校准关系":"Calibration","未解释的现象":"Unexplained observations","经验":"Lessons","该实体暂无沉淀的知识。":"No knowledge has been recorded for this entity yet.","引用的已有知识(":"Existing knowledge cited (","引用的已有知识":"Existing knowledge cited","引用者:":"Cited by: ","将沉淀的内容":"To be recorded","已写入的排除与未解释项;结案时待独立核验的结论":"Exclusions and unexplained items already written; conclusions awaiting an independent check at close","待独立核验":"Awaiting independent check","已确立 ":"Established: ","已排除 ":"Excluded: ","未解释 ":"Unexplained: ","经验 ":"Lessons: ","本次沉淀":"Recorded this time","点击查看可发出的请求":"Click to see the requests you can send","初步排除(":"Preliminarily excluded (","测量或方法缺陷 ":"Measurement or method defects: "}
+		const LOCALE_ZH = {"待执行":"待执行","已交付":"已交付","已作废":"已作废","支持":"支持","推翻":"推翻","不确定":"不确定","第 n 步":"第 n 步","判据:":"判据:","判据":"判据"," · 已修订 ":" · 已修订 "," 次":" 次"," · 最近一次修订的独立裁决:":" · 最近一次修订的独立裁决:","打开目标文档(原生预览)":"打开目标文档(原生预览)","全文在 ":"全文在 ","背景(不参与判定):":"背景(不参与判定):","目标":"目标","命题":"命题","计划":"计划","验证":"验证","观测":"观测","评估":"评估","证据":"证据","事实":"事实","批准":"批准","未解释":"未解释","评估卡":"评估卡","查看评估者":"查看评估者","审批记录":"审批记录","产物":"产物","已验证":"已验证","待核验":"待核验","验证中":"验证中","已推翻":"已推翻","已替换":"已替换","自行检验":"自行检验","独立核验":"独立核验","人工批准":"人工批准","判断":"判断","检验":"检验","纳入本体":"纳入本体","下一步:安排步骤对其进行检验":"下一步:安排步骤对其进行检验","下一步:通过独立核验后标记为已验证":"下一步:通过独立核验后标记为已验证","下一步:改用其他方法重新检验":"下一步:改用其他方法重新检验","下一步:结案时写入长期知识":"下一步:结案时写入长期知识","陈述":"陈述","数值":"数值","公式":"公式","代码":"代码","引用":"引用","概念":"概念","取值形态":"取值形态","实例":"实例","取值":"取值","关系":"关系","在检验阶段被推翻,不再推进。":"在检验阶段被推翻,不再推进。","已被替换,不再推进。":"已被替换,不再推进。","提出":"提出","单步检验":"单步检验",":":":","写入长期知识":"写入长期知识","人工撤回":"人工撤回","进度":"进度","可信度变化":"可信度变化","补充说明":"补充说明","依据":"依据","查看核验":"查看核验","查看记录":"查看记录","范围":"范围","推翻条件":"推翻条件","相关":"相关","在图中定位":"在图中定位","来源":"来源","收起":"收起","点击查看进度与来源":"点击查看进度与来源","暂无结论。模型提出判断后,将在此逐条列出。":"暂无结论。模型提出判断后,将在此逐条列出。","尚未设立目标":"尚未设立目标","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"暂无内容。发送第一条消息后,此处将显示本体图与结论。","仅显示与「":"仅显示与「","」相关的内容":"」相关的内容","清除":"清除","已确立的事实":"已确立的事实","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。","经验(":"经验(",")":")","广度调研":"广度调研","定向求解":"定向求解","先调研后求解":"先调研后求解","考察中":"考察中","已排除":"已排除","已采纳":"已采纳","暂不考察":"暂不考察","未开始":"未开始","调研中":"调研中","已厘清":"已厘清","常见误区":"常见误区","前置核查":"前置核查","不可取的捷径":"不可取的捷径","先验知识":"先验知识","提出依据":"提出依据","未注明(直觉)":"未注明(直觉)","直觉":"直觉","本体关系「":"本体关系「","」":"」","主张":"主张","预测":"预测","排除依据":"排除依据","采纳依据":"采纳依据","关联记录":"关联记录","支持 ":"支持 "," 条 · 推翻 ":" 条 · 推翻 "," 条 · 无法判定 ":" 条 · 无法判定 "," 条":" 条","在本体货架中展开此结论":"在本体货架中展开此结论","已得出结论 · 查看结论":"已得出结论 · 查看结论","已暂缓":"已暂缓","新发现,待您决定":"新发现,待您决定","尚无候选假设":"尚无候选假设","候选假设 ":"候选假设 "," 个:":" 个:","问题 ":"问题 ","候选假设":"候选假设","展开":"展开","已请求立为问题,待模型修订立题后生效。":"已请求立为问题,待模型修订立题后生效。","已请求暂缓,结案时列入「尚未确定的事项」。":"已请求暂缓,结案时列入「尚未确定的事项」。","无法自动发送,请在对话中说明。":"无法自动发送,请在对话中说明。","新发现的问题":"新发现的问题","请将新发现的问题「":"请将新发现的问题「","」立为问题深入研究(问题 ":"」立为问题深入研究(问题 ",")。":")。","立为问题":"立为问题","请暂缓问题「":"请暂缓问题「","」(问题 ":"」(问题 ","),结案时列入「尚未确定的事项」。":"),结案时列入「尚未确定的事项」。","暂缓":"暂缓","调研板块":"调研板块","判断 ":"判断 "," 条 · 已采纳 ":" 条 · 已采纳 ","未解释的现象 ":"未解释的现象 "," 项":" 项","下一步":"下一步","预测:":"预测:","若「":"若「","」成立,预测":"」成立,预测","各候选假设的预测相同,此步骤无法区分它们。":"各候选假设的预测相同,此步骤无法区分它们。","如需调整计划,请在对话中说明。":"如需调整计划,请在对话中说明。","未解释的现象(":"未解释的现象(","结案前须解释、排除或写入「尚未确定的事项」":"结案前须解释、排除或写入「尚未确定的事项」","独立评估发现":"独立评估发现","涉及:":"涉及:","、":"、","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。","阶段 · ":"阶段 · ","调研板块 ":"调研板块 "," 个 · 已厘清 ":" 个 · 已厘清 "," 个":" 个","当前问题 ":"当前问题 "," / 共 ":" / 共 ","计划 已完成 ":"计划 已完成 "," / ":" / "," 步":" 步","独立评估 ":"独立评估 ","计划共 ":"计划共 ","(":"(","进行中)":"进行中)","课题":"课题","待您处理(":"待您处理(","过程记录":"过程记录","结论":"结论","未能回答:":"未能回答:","查看探索记录":"查看探索记录","尚未确定的事项":"尚未确定的事项","待您决策":"待您决策","不适用:":"不适用:","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"暂无计划。建立计划后,此处将显示计划的步骤与闸门。","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)","计划 ":"计划 ","已完成 · 可查看存档":"已完成 · 可查看存档","步 ":"步 ","打开计划文档(原生预览)":"打开计划文档(原生预览)","计划文档":"计划文档","点击查看详情":"点击查看详情","查看步骤详情":"查看步骤详情"," 轮":" 轮","已派出评估者 ":"已派出评估者 ","收起详情":"收起详情","任务内容":"任务内容","状态":"状态","未声明":"未声明","磁盘上未找到该文件":"磁盘上未找到该文件","(缺失)":"(缺失)","在原生预览中打开":"在原生预览中打开","在原生预览中打开(计划声明的产物)":"在原生预览中打开(计划声明的产物)","查看此步骤的证据":"查看此步骤的证据","检验结果:":"检验结果:","独立核验:":"独立核验:","正在裁决":"正在裁决"," 查看核验过程":" 查看核验过程"," 查看核验记录":" 查看核验记录","待处理":"待处理","板块 ":"板块 "," · ":" · "," 个问题待您决定":" 个问题待您决定"," · 待检验假设 ":" · 待检验假设 ","计划受阻,待人工处理":"计划受阻,待人工处理","计划已收尾(":"计划已收尾("," 步)":" 步)","计划已交付 ":"计划已交付 ","待处理 ":"待处理 ","(点击打开探索货架)":"(点击打开探索货架)","仅显示相关项":"仅显示相关项","关闭":"关闭","正在加载…":"正在加载…","无法获取":"无法获取","该项已不在当前词表中(可能已被废止)。":"该项已不在当前词表中(可能已被废止)。","释义":"释义","上位":"上位","下位":"下位","主体":"主体","类型":"类型","该术语已废止,既有结论中的用法仍可查看。":"该术语已废止,既有结论中的用法仍可查看。","引用此项的结论":"引用此项的结论","有矛盾":"有矛盾","范围:":"范围:","展开下一层":"展开下一层","收起下一层":"收起下一层","共 ":"共 "," 条断言的主体尚未建立实体文件。":" 条断言的主体尚未建立实体文件。","实体图暂无内容。":"实体图暂无内容。","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。","本体图":"本体图","实体图":"实体图","矛盾":"矛盾","适配":"适配","退出全屏":"退出全屏","全屏":"全屏","图组件不可用":"图组件不可用","结论仍可正常查看。":"结论仍可正常查看。","本体文件有 ":"本体文件有 "," 项问题(不纳入图中)":" 项问题(不纳入图中)","已提出":"已提出","探索":"探索","本体":"本体","clearai-loop: 席位跟着会话预设进出":"clearai-loop: 席位跟着会话预设进出","适用":"适用","超出适用范围":"超出适用范围","超出取值范围":"超出取值范围","本次条件未声明":"本次条件未声明","条目未声明适用范围":"条目未声明适用范围","口径已变更":"口径已变更","已撤回":"已撤回","本次不能直接沿用,需重新检验":"本次不能直接沿用,需重新检验","补充本次条件后重新判定":"补充本次条件后重新判定","沿用时需自行确认":"沿用时需自行确认","按新口径换算或重新检验":"按新口径换算或重新检验","先复检再沿用":"先复检再沿用","不得沿用":"不得沿用","已确立":"已确立","初步排除":"初步排除","测量或方法缺陷":"测量或方法缺陷","已解释":"已解释","已判定无关":"已判定无关","已提交您处理":"已提交您处理","请求复检":"请求复检","请复检条目「":"请复检条目「","」(":"」(","请求撤回":"请求撤回","请撤回条目「":"请撤回条目「","),并说明对已有结论的影响。":"),并说明对已有结论的影响。","请求修改适用范围":"请求修改适用范围","请与我确认条目「":"请与我确认条目「",")的适用范围应如何修改。":")的适用范围应如何修改。","推翻证据 ":"推翻证据 "," · 独立核验 ":" · 独立核验 ","受质疑":"受质疑","已发送请求,由模型处理后更新。":"已发送请求,由模型处理后更新。","适用边界":"适用边界","测量与口径":"测量与口径","校准关系":"校准关系","未解释的现象":"未解释的现象","经验":"经验","该实体暂无沉淀的知识。":"该实体暂无沉淀的知识。","引用的已有知识(":"引用的已有知识(","引用的已有知识":"引用的已有知识","引用者:":"引用者:","将沉淀的内容":"将沉淀的内容","已写入的排除与未解释项;结案时待独立核验的结论":"已写入的排除与未解释项;结案时待独立核验的结论","待独立核验":"待独立核验","已确立 ":"已确立 ","已排除 ":"已排除 ","未解释 ":"未解释 ","经验 ":"经验 ","本次沉淀":"本次沉淀","点击查看可发出的请求":"点击查看可发出的请求","初步排除(":"初步排除(","测量或方法缺陷 ":"测量或方法缺陷 ","研究":"研究","研究工作台":"研究工作台","知识地图":"知识地图","从问题到证据，逐步推进。":"从问题到证据，逐步推进。","连接概念，理解已形成的知识。":"连接概念，理解已形成的知识。","概念与关系定义，不代表事实已验证。":"概念与关系定义，不代表事实已验证。","对象与断言，核验状态以证据记录为准。":"对象与断言，核验状态以证据记录为准。","结构定义":"结构定义","层级关系":"层级关系","搜索名称或标识…":"搜索名称或标识…","搜索图谱":"搜索图谱","图谱":"图谱","列表":"列表","邻域":"邻域","聚焦所选":"聚焦所选","恢复视图":"恢复视图","概览":"概览","没有匹配的对象":"没有匹配的对象","选择对象查看定义、关系与证据。":"选择对象查看定义、关系与证据。","拖动平移 · 滚轮缩放":"拖动平移 · 滚轮缩放","可读视图":"可读视图","个对象":"个对象","条连接":"条连接","图谱目录":"图谱目录","打开对象详情":"打开对象详情","在图中打开":"在图中打开","知识概览":"知识概览","研究进展":"研究进展","当前焦点":"当前焦点","相关连接":"相关连接","按 Enter 或空格查看详情，方向键移动节点。":"按 Enter 或空格查看详情，方向键移动节点。","按 Enter 或空格查看关系详情。":"按 Enter 或空格查看关系详情。","缩小":"缩小","放大":"放大","对象":"对象","知识文件需要复核":"知识文件需要复核","以下文件未登记或内容已变化，暂不作为可信知识使用。":"以下文件未登记或内容已变化，暂不作为可信知识使用。","复跑不可用":"复跑不可用","复跑副本未能建立；相关裁决不能据此通过。":"复跑副本未能建立；相关裁决不能据此通过。"}
+		const LOCALE_EN = {"待执行":"to do","已交付":"delivered","已作废":"voided","支持":"Support","推翻":"Refute","不确定":"Uncertain","第 n 步":"Step n","判据:":"Criterion: ","判据":"Criterion"," · 已修订 ":" · revised "," 次":" times"," · 最近一次修订的独立裁决:":" · latest revision decided by an independent verdict: ","打开目标文档(原生预览)":"Open the goal document (native preview)","全文在 ":"Full text at ","背景(不参与判定):":"Background (not part of the verdict): ","目标":"Goal","命题":"Propositions","计划":"Plan","验证":"Verification","观测":"Observation","评估":"Evaluation","证据":"Evidence","事实":"Facts","批准":"approval","未解释":"Unexplained","评估卡":"evaluation card","查看评估者":"view evaluator","审批记录":"approval record","产物":"Deliverables","已验证":"Verified","待核验":"Awaiting check","验证中":"Testing","已推翻":"Refuted","已替换":"Replaced","自行检验":"Self-tested","独立核验":"Independent check","人工批准":"Approved by a person","判断":"Judgment","检验":"Test","纳入本体":"In ontology","下一步:安排步骤对其进行检验":"Next: schedule a step to test it","下一步:通过独立核验后标记为已验证":"Next: marked Verified after an independent check","下一步:改用其他方法重新检验":"Next: test it again by another method","下一步:结案时写入长期知识":"Next: written to long-term knowledge at close","陈述":"Statement","数值":"Quantity","公式":"Formula","代码":"Code","引用":"Reference","概念":"concepts","取值形态":"Value form","实例":"Instances","取值":"Value","关系":"Relation","在检验阶段被推翻,不再推进。":"Refuted at the test stage; it goes no further.","已被替换,不再推进。":"Replaced; it goes no further.","提出":"Proposed","单步检验":"A single test",":":": ","写入长期知识":"Written to long-term knowledge","人工撤回":"Withdrawn by a person","进度":"Progress","可信度变化":"Trust history","补充说明":"Details","依据":"Basis","查看核验":"View check","查看记录":"View record","范围":"Scope","推翻条件":"Refuted if","相关":"Related","在图中定位":"Locate on the graph","来源":"Source","收起":"Collapse","点击查看进度与来源":"Click to view progress and source","暂无结论。模型提出判断后,将在此逐条列出。":"No judgments yet. Each judgment the model proposes is listed here.","尚未设立目标":"No goal set yet","暂无内容。发送第一条消息后,此处将显示本体图与结论。":"Nothing yet. After the first message, the ontology graph and conclusions appear here.","仅显示与「":"Showing only items related to \"","」相关的内容":"\"","清除":"Clear","已确立的事实":"ESTABLISHED FACTS","暂无已确立的事实。判断经检验与独立核验后,将在此列出;检验过程见探索货架。":"No established facts yet. Judgments appear here once tested and independently checked; the testing process is in the Explore shelf.","经验(":"LESSONS (",")":")","广度调研":"Broad survey","定向求解":"Targeted solving","先调研后求解":"Survey, then solve","考察中":"Being examined","已排除":"Excluded","已采纳":"Adopted","暂不考察":"Set aside","未开始":"Not started","调研中":"In progress","已厘清":"Clarified","常见误区":"Common pitfall","前置核查":"Check first","不可取的捷径":"Misleading shortcut","先验知识":"Prior knowledge","提出依据":"Proposed from","未注明(直觉)":"Not stated (intuition)","直觉":"Intuition","本体关系「":"Ontology relation \"","」":"\"","主张":"Claim","预测":"Prediction","排除依据":"Grounds for exclusion","采纳依据":"Grounds for adoption","关联记录":"Related records","支持 ":"Support "," 条 · 推翻 ":" · refute "," 条 · 无法判定 ":" · inconclusive "," 条":"","在本体货架中展开此结论":"Expand this conclusion in the Ontology shelf","已得出结论 · 查看结论":"Concluded · view the conclusion","已暂缓":"Parked","新发现,待您决定":"Newly found, awaiting your decision","尚无候选假设":"No candidate hypotheses yet","候选假设 ":"Candidate hypotheses: "," 个:":" — ","问题 ":"Question ","候选假设":"Candidate hypotheses","展开":"Expand","已请求立为问题,待模型修订立题后生效。":"Requested as a question; it takes effect once the model revises the framing.","已请求暂缓,结案时列入「尚未确定的事项」。":"Requested to park; it will be listed under open points at conclusion.","无法自动发送,请在对话中说明。":"Could not send automatically; please say it in the conversation.","新发现的问题":"Newly found question","请将新发现的问题「":"Please make the newly found question \"","」立为问题深入研究(问题 ":"\" a question to pursue (question ",")。":").","立为问题":"Make it a question","请暂缓问题「":"Please park the question \"","」(问题 ":"\" (question ","),结案时列入「尚未确定的事项」。":") and list it under open points at conclusion.","暂缓":"Park","调研板块":"Survey areas","判断 ":"Judgments: "," 条 · 已采纳 ":" · adopted ","未解释的现象 ":"Unexplained observations: "," 项":"","下一步":"Next step","预测:":"Prediction: ","若「":"If \"","」成立,预测":"\" holds, the prediction is","各候选假设的预测相同,此步骤无法区分它们。":"All candidate hypotheses predict the same result, so this step cannot tell them apart.","如需调整计划,请在对话中说明。":"To change the plan, say so in the conversation.","未解释的现象(":"Unexplained observations (","结案前须解释、排除或写入「尚未确定的事项」":"Before concluding, each must be explained, ruled out, or written into the open points","独立评估发现":"Found by the independent evaluator","涉及:":"Concerns: ","、":", ","暂无内容。发送第一条消息后,此处将显示问题、候选假设与下一步。":"Nothing yet. After the first message, questions, candidate hypotheses and the next step appear here.","尚未设立目标。模型立题后,此处将显示问题、候选假设与下一步。":"No goal set yet. Once the model frames the goal, questions, candidate hypotheses and the next step appear here.","阶段 · ":"Mode · ","调研板块 ":"Survey areas: "," 个 · 已厘清 ":" · clarified "," 个":"","当前问题 ":"Current question "," / 共 ":" of ","计划 已完成 ":"Plan: completed "," / ":" / "," 步":" steps","独立评估 ":"Independent evaluations: ","计划共 ":"Plan: ","(":" (","进行中)":" in progress)","课题":"Topic","待您处理(":"Awaiting you (","过程记录":"Process record","结论":"Conclusion","未能回答:":"Could not be answered: ","查看探索记录":"View the exploration record","尚未确定的事项":"Open points","待您决策":"For you to decide","不适用:":"Does not apply: ","暂无计划。建立计划后,此处将显示计划的步骤与闸门。":"No plan yet. Once a plan is created, its steps and gates appear here.","切换到以前的计划(计划均保留,文档归档在 clear/goals/plans/)":"Switch to an earlier plan (all plans are kept; documents are archived under clear/goals/plans/)","计划 ":"Plan ","已完成 · 可查看存档":"closed · archive available","步 ":"step ","打开计划文档(原生预览)":"Open the plan document (native preview)","计划文档":"Plan document","点击查看详情":"click for details","查看步骤详情":"view step details"," 轮":" rounds","已派出评估者 ":"Evaluators dispatched: ","收起详情":"Collapse details","任务内容":"Task","状态":"Status","未声明":"not declared","磁盘上未找到该文件":"this file was not found on disk","(缺失)":" (missing)","在原生预览中打开":"Open in the native preview","在原生预览中打开(计划声明的产物)":"Open in the native preview (an artifact declared by the plan)","查看此步骤的证据":"see the evidence for this step","检验结果:":"Result: ","独立核验:":"Independent check: ","正在裁决":"Deciding"," 查看核验过程":" View the review"," 查看核验记录":" View the review record","待处理":"To handle","板块 ":"Areas "," · ":" · "," 个问题待您决定":" question(s) awaiting your decision"," · 待检验假设 ":" · hypotheses to test: ","计划受阻,待人工处理":"plan blocked, awaiting a person","计划已收尾(":"Plan closed ("," 步)":" steps)","计划已交付 ":"Plan delivered ","待处理 ":"to handle ","(点击打开探索货架)":" (click to open the Explore shelf)","仅显示相关项":"Related only","关闭":"Close","正在加载…":"Loading…","无法获取":"Unavailable","该项已不在当前词表中(可能已被废止)。":"This item is no longer in the vocabulary (it may have been deprecated).","释义":"Gloss","上位":"Broader","下位":"Narrower","主体":"Subject","类型":"Type","该术语已废止,既有结论中的用法仍可查看。":"This term is deprecated; its use in existing conclusions remains readable.","引用此项的结论":"Conclusions citing it","有矛盾":"Conflicting","范围:":"Scope: ","展开下一层":"Expand the next level","收起下一层":"Collapse the next level","共 ":""," 条断言的主体尚未建立实体文件。":" assertion subjects have no entity file yet. ","实体图暂无内容。":"The entity graph is empty. ","clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。":"Entity files under clear/ontology/entities/ and assertions in long-term knowledge appear here.","本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。":"The ontology graph is empty. Concepts and relations appear once the model creates files under clear/ontology/concepts/ and relations/.","本体图":"Ontology graph","实体图":"Entity graph","矛盾":"Conflicts","适配":"Fit","退出全屏":"Exit full screen","全屏":"Full screen","图组件不可用":"The graph component is unavailable","结论仍可正常查看。":"conclusions remain readable.","本体文件有 ":"Ontology files have "," 项问题(不纳入图中)":" problems (kept off the graph)","已提出":"proposed","探索":"Explore","本体":"Ontology","clearai-loop: 席位跟着会话预设进出":"clearai-loop: seats come and go with the session's preset","适用":"Applies","超出适用范围":"Outside its scope","超出取值范围":"Outside its value range","本次条件未声明":"Conditions of this run not declared","条目未声明适用范围":"Item declares no scope","口径已变更":"Definition changed","已撤回":"Retracted","本次不能直接沿用,需重新检验":"Cannot be reused as is here; test it again","补充本次条件后重新判定":"Declare this run's conditions, then judge again","沿用时需自行确认":"Confirm it applies before reusing it","按新口径换算或重新检验":"Convert to the new definition or test it again","先复检再沿用":"Re-check it before reusing it","不得沿用":"Must not be reused","已确立":"Established","初步排除":"Preliminarily excluded","测量或方法缺陷":"Measurement or method defect","已解释":"Explained","已判定无关":"Ruled irrelevant","已提交您处理":"Handed to you","请求复检":"Request a re-check","请复检条目「":"Please re-check the item \"","」(":"\" (","请求撤回":"Request retraction","请撤回条目「":"Please retract the item \"","),并说明对已有结论的影响。":") and state the effect on existing conclusions.","请求修改适用范围":"Request a scope change","请与我确认条目「":"Please confirm with me how the scope of the item \"",")的适用范围应如何修改。":") should be changed.","推翻证据 ":"Refuting evidence: "," · 独立核验 ":" · independently checked: ","受质疑":"Challenged","已发送请求,由模型处理后更新。":"Request sent; it updates once the model handles it.","适用边界":"Limits of applicability","测量与口径":"Measurement and definitions","校准关系":"Calibration","未解释的现象":"Unexplained observations","经验":"Lessons","该实体暂无沉淀的知识。":"No knowledge has been recorded for this entity yet.","引用的已有知识(":"Existing knowledge cited (","引用的已有知识":"Existing knowledge cited","引用者:":"Cited by: ","将沉淀的内容":"To be recorded","已写入的排除与未解释项;结案时待独立核验的结论":"Exclusions and unexplained items already written; conclusions awaiting an independent check at close","待独立核验":"Awaiting independent check","已确立 ":"Established: ","已排除 ":"Excluded: ","未解释 ":"Unexplained: ","经验 ":"Lessons: ","本次沉淀":"Recorded this time","点击查看可发出的请求":"Click to see the requests you can send","初步排除(":"Preliminarily excluded (","测量或方法缺陷 ":"Measurement or method defects: ","研究":"Research","研究工作台":"Research workspace","知识地图":"Knowledge map","从问题到证据，逐步推进。":"Follow the question. Build the evidence.","连接概念，理解已形成的知识。":"Connect concepts. Explore what is known.","概念与关系定义，不代表事实已验证。":"Concepts and relation definitions; not verified facts.","对象与断言，核验状态以证据记录为准。":"Objects and assertions, with evidence-based review status.","结构定义":"Definition","层级关系":"Hierarchy","搜索名称或标识…":"Search names or IDs…","搜索图谱":"Search the graph","图谱":"Graph","列表":"List","邻域":"Neighborhood","聚焦所选":"Focus selection","恢复视图":"Reset view","概览":"Overview","没有匹配的对象":"No matching objects","选择对象查看定义、关系与证据。":"Select an object to inspect its definition, relationships and evidence.","拖动平移 · 滚轮缩放":"Drag to pan · Scroll to zoom","可读视图":"Readable view","个对象":"objects","条连接":"connections","图谱目录":"Graph directory","打开对象详情":"Open object details","在图中打开":"Open in graph","知识概览":"Knowledge overview","研究进展":"Research progress","当前焦点":"Current focus","相关连接":"Related connections","按 Enter 或空格查看详情，方向键移动节点。":"Press Enter or Space for details. Use arrow keys to move the node.","按 Enter 或空格查看关系详情。":"Press Enter or Space for relationship details.","缩小":"Zoom out","放大":"Zoom in","对象":"Object","知识文件需要复核":"Knowledge files need review","以下文件未登记或内容已变化，暂不作为可信知识使用。":"These files are unregistered or changed and are excluded from trusted knowledge.","复跑不可用":"Re-run unavailable","复跑副本未能建立；相关裁决不能据此通过。":"The re-run copy could not be created; affected criteria cannot pass on this basis."}
 
 		/**
 		 * 翻译函数:**由原生 locale 座位绑定**(`ctx.locale.bind`),不是我们自建的一套 i18n。
@@ -175,7 +175,7 @@ window.__ModuleLoader__.load({
 		 * 颜色**只用主题令牌**,不写死色值——深色/浅色跟着宿主走。
 		 */
 		const CSS = `
-.clearai-btn{box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;border:.5px solid var(--dsw-alias-border-l3);border-radius:999px;background:0 0;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;line-height:18px;cursor:pointer;white-space:nowrap}
+.clearai-btn{box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;height:26px;line-height:18px;white-space:nowrap}
 .clearai-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-btn:disabled{color:var(--dsw-alias-label-secondary);opacity:.5;cursor:default}
 .clearai-btn[data-tone="warn"]{border-color:var(--dsw-alias-state-warn-primary)}
@@ -185,8 +185,8 @@ window.__ModuleLoader__.load({
 .clearai-chip:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-tag{display:inline-block;padding:0 6px;border:.5px solid var(--dsw-alias-border-l3);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px;white-space:nowrap}
 .clearai-tag[data-strong="1"]{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-primary)}
-.clearai-link{color:var(--dsw-alias-label-primary);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
-.clearai-link:hover{color:var(--dsw-alias-brand-primary)}
+.clearai-link{text-underline-offset:2px}
+.clearai-link:hover{}
 /* 世界树的**唯一**活性惯用法(照抄 ClearAI PlanTree 的 globals.css):
    节点外的柔光环一呼一吸 = 这东西此刻在动;步骤与世界线共用它——两种闪法并存的话,
    读者得学两次「什么在动」。透明度区间刻意压在 0.22–0.07:光环是底噪级的存在感,
@@ -203,10 +203,10 @@ window.__ModuleLoader__.load({
 .clearai-treerow:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-treerow[data-sel="1"]{background:var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))}
 /* ── 本体格(第六阶段):期刊式排版 + 进度轨。颜色只用主题令牌,深浅色跟着宿主走。 ── */
-.clearai-atlas{height:100%;overflow-y:auto;box-sizing:border-box;padding:22px 26px 180px;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-primary)}
-.clearai-serif,.clearai-question,.clearai-row-title,.clearai-card-title,.clearai-star>span{font-family:ui-serif,"Songti SC","Noto Serif SC","Source Han Serif SC",Georgia,serif}
-.clearai-head{display:flex;flex-direction:column;gap:6px;padding-bottom:16px;margin-bottom:16px;border-bottom:.5px solid var(--dsw-alias-border-l2)}
-.clearai-question{font-size:19px;font-weight:600;line-height:1.45;letter-spacing:.01em}
+.clearai-atlas{height:100%;overflow-y:auto;box-sizing:border-box;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-primary)}
+.clearai-serif,.clearai-question,.clearai-row-title,.clearai-card-title,.clearai-star>span{}
+.clearai-head{display:flex;flex-direction:column;padding-bottom:16px}
+.clearai-question{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .clearai-counts{font-size:12px;color:var(--dsw-alias-label-secondary)}
 .clearai-need{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:4px 10px;border-left:2px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-1);border-radius:0 6px 6px 0}
 .clearai-need b{font-weight:600;color:var(--dsw-alias-state-warn-primary);white-space:nowrap}
@@ -218,21 +218,21 @@ window.__ModuleLoader__.load({
 .clearai-track-line{flex:1 1 18px;max-width:56px;height:1px;background:var(--dsw-alias-border-l2)}
 .clearai-track-line[data-on="1"]{background:var(--dsw-alias-label-secondary)}
 /* 图 */
-.clearai-graph{margin-bottom:18px}
-.clearai-graph[data-full="1"]{position:fixed;inset:0;z-index:40;background:var(--dsw-alias-bg-base);padding:16px 20px;display:flex;flex-direction:column;margin:0}
-.clearai-graph-bar{display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:12px;position:relative;z-index:2}
-.clearai-seg{display:inline-flex;border:.5px solid var(--dsw-alias-border-l3);border-radius:999px;padding:2px}
+.clearai-graph{}
+.clearai-graph[data-full="1"]{position:fixed;inset:0;background:var(--dsw-alias-bg-base);display:flex;flex-direction:column;margin:0}
+.clearai-graph-bar{align-items:center;margin-bottom:8px;font-size:12px;position:relative;z-index:2}
+.clearai-seg{}
 .clearai-seg>span{padding:2px 12px;border-radius:999px;cursor:pointer;color:var(--dsw-alias-label-secondary);white-space:nowrap}
 .clearai-seg>span[data-on="1"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary-inverted)}
-.clearai-legend{display:inline-flex;gap:12px;color:var(--dsw-alias-label-tertiary);font-size:11.5px}
+.clearai-legend{display:inline-flex;color:var(--dsw-alias-label-tertiary)}
 .clearai-legend>span{display:inline-flex;align-items:center;gap:5px}
 .clearai-legend>span::before{content:"";width:16px;border-top:1.3px solid var(--dsw-alias-label-secondary)}
 .clearai-legend>span[data-l="dash"]::before{border-top-style:dashed;border-top-color:var(--dsw-alias-label-tertiary)}
 .clearai-legend>span[data-l="warn"]::before{border-top-color:var(--dsw-alias-state-warn-primary)}
-.clearai-graph-body{display:flex;flex-direction:column;gap:10px;min-height:0}
-.clearai-graph[data-full="1"] .clearai-graph-body{flex:1 1 auto}
-.clearai-graph-body[data-side="1"]{flex-direction:row}
-.clearai-graph-canvas{height:340px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-base)}
+.clearai-graph-body{display:flex;flex-direction:column;min-height:0}
+.clearai-graph[data-full="1"] .clearai-graph-body{}
+.clearai-graph-body[data-side="1"]{}
+.clearai-graph-canvas{overflow:hidden}
 /**
  * **缩放/适配控件跟着宿主主题走**(暗色下原来白底白图标,对比度 1.04:1)。
  *
@@ -252,15 +252,15 @@ window.__ModuleLoader__.load({
 .clearai-graph[data-full="1"] .clearai-link[data-exit="1"]{position:fixed;top:12px;right:20px;z-index:41;padding:3px 10px;border:.5px solid var(--dsw-alias-border-l3);border-radius:8px;background:var(--dsw-alias-bg-base);text-decoration:none}
 .clearai-graph[data-full="1"] .clearai-link[data-exit="1"]:hover{border-color:var(--dsw-alias-label-secondary)}
 .clearai-graph-side{flex:0 0 auto}
-.clearai-graph-body[data-side="1"] .clearai-graph-side{width:380px;overflow-y:auto}
+.clearai-graph-body[data-side="1"] .clearai-graph-side{overflow-y:auto}
 .clearai-graph-problems{margin-top:6px;font-size:11.5px;color:var(--dsw-alias-label-secondary)}.clearai-graph-problems summary{cursor:pointer;color:var(--dsw-alias-state-warn-primary)}.clearai-graph-problems>div{padding:2px 0 2px 12px;line-height:1.5}.clearai-graph-problems>div[data-sev=info]{opacity:.7}.clearai-graph-problems code{font-size:11px}
-.clearai-fold{margin-left:2px;padding:0 4px;border-radius:6px;font-weight:500;font-size:10.5px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-l2,rgba(127,127,127,.12));cursor:pointer}
+.clearai-fold{padding:0 4px;font-weight:500;cursor:pointer}
 .clearai-graph-empty{height:150px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;border:.5px dashed var(--dsw-alias-border-l3);border-radius:10px;color:var(--dsw-alias-label-secondary);font-size:12.5px}
-.react-flow__node.clearai-star-node .react-flow__handle{opacity:0;pointer-events:none;left:4.5px;top:50%;transform:translate(-50%,-50%);min-width:0;min-height:0;width:1px;height:1px;border:0}
+.react-flow__node.clearai-star-node .react-flow__handle{opacity:0;pointer-events:none;min-width:0;min-height:0;width:1px;height:1px;border:0}
 .react-flow__node.clearai-star-node.selected,.react-flow__node.clearai-star-node:focus{box-shadow:none;outline:none}
-.clearai-star{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12.5px;color:var(--dsw-alias-label-primary);cursor:pointer}
-.clearai-star>i{flex:0 0 auto;width:9px;height:9px;border-radius:50%;box-sizing:border-box;border:1.4px solid var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base)}
-.clearai-star[data-kind="instance"]>i{background:var(--dsw-alias-label-primary)}
+.clearai-star{color:var(--dsw-alias-label-primary);cursor:pointer}
+.clearai-star>i{flex:0 0 auto;box-sizing:border-box;border:1.4px solid var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base)}
+.clearai-star[data-kind="instance"]>i{}
 .clearai-star[data-kind="literal"]>i{width:6px;height:6px;border:0;background:var(--dsw-alias-label-secondary)}
 .clearai-star[data-kind="literal"]{color:var(--dsw-alias-label-secondary);font-size:11.5px}
 .clearai-star[data-kind="value_type"]>i{border-radius:2px;width:8px;height:8px;border-color:var(--dsw-alias-label-tertiary)}
@@ -272,14 +272,14 @@ window.__ModuleLoader__.load({
 .clearai-star[data-sel="1"]>i{box-shadow:0 0 0 4px var(--dsw-alias-interactive-bg-hover)}
 .clearai-star[data-sel="1"]>span{font-weight:600}
 /* 小卡 */
-.clearai-card{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
-.clearai-card-head{display:flex;align-items:baseline;gap:8px;font-size:12px}
+.clearai-card{display:flex;flex-direction:column;gap:8px;background:var(--dsw-alias-bg-layer-1)}
+.clearai-card-head{display:flex;align-items:baseline;font-size:12px}
 .clearai-card-kind{font-size:11px;color:var(--dsw-alias-label-tertiary);letter-spacing:.06em}
-.clearai-card-title{font-size:15px;font-weight:600}
+.clearai-card-title{font-weight:600}
 .clearai-card-facts{display:flex;flex-direction:column;gap:4px}
 .clearai-card-fact{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12.5px}
 /* 结论 */
-.clearai-section-head{font-size:11px;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary);margin:4px 0 4px}
+.clearai-section-head{color:var(--dsw-alias-label-tertiary);margin:4px 0 4px}
 .clearai-filter{display:flex;gap:10px;align-items:baseline;font-size:12px;color:var(--dsw-alias-label-secondary);margin:-8px 0 12px}
 .clearai-list{display:flex;flex-direction:column;gap:10px}
 .clearai-group-head{display:flex;gap:6px;align-items:baseline;font-size:11.5px;color:var(--dsw-alias-label-secondary);margin:6px 0 2px}
@@ -329,28 +329,28 @@ window.__ModuleLoader__.load({
 .clearai-quiet{color:var(--dsw-alias-label-secondary);font-size:12.5px;padding:6px 0}
 /* ── 探索货架:问题 → 候选假设 → 下一步;过程记录默认折叠。颜色只用主题令牌。 ── */
 .clearai-head-kind{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
-.clearai-pills{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
-.clearai-pill{padding:1px 10px;border-radius:999px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}
-.clearai-waiting{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:8px 12px;margin-bottom:14px;border-radius:8px;border:.5px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-1);font-size:12.5px}
+.clearai-pills{display:flex;flex-wrap:wrap;font-size:12px}
+.clearai-pill{background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}
+.clearai-waiting{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin-bottom:14px;border:.5px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-1);font-size:12.5px}
 .clearai-waiting b{color:var(--dsw-alias-state-warn-primary);font-weight:600}
-.clearai-box{display:flex;flex-direction:column;margin-bottom:14px;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden}
-.clearai-box-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:10px 14px;background:var(--dsw-alias-bg-layer-1)}
+.clearai-box{display:flex;flex-direction:column;overflow:hidden}
+.clearai-box-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
 .clearai-box[data-compact="1"] .clearai-box-head{background:transparent}
-.clearai-box-kind{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
-.clearai-box-title{flex:1 1 220px;font-size:14px;font-weight:600}
+.clearai-box-kind{color:var(--dsw-alias-label-tertiary)}
+.clearai-box-title{flex:1 1 220px;font-weight:600}
 .clearai-box-note{font-size:12px;color:var(--dsw-alias-label-secondary)}
 .clearai-box-foot{display:flex;flex-direction:column;gap:4px;padding:8px 14px;font-size:12px;color:var(--dsw-alias-label-tertiary);border-top:.5px solid var(--dsw-alias-border-l1)}
 .clearai-parked{display:inline-flex;gap:8px;align-items:baseline}
 .clearai-cand{border-top:.5px solid var(--dsw-alias-border-l1)}
-.clearai-cand-head{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:9px 14px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.clearai-cand-head{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
 .clearai-cand-head[data-static="1"]{cursor:default}
 .clearai-cand-head:not([data-static="1"]):hover{background:var(--dsw-alias-interactive-bg-hover)}
 .clearai-cand-name{font-weight:500}
 .clearai-cand[data-s="excluded"] .clearai-cand-name{text-decoration:line-through;color:var(--dsw-alias-label-tertiary)}
 .clearai-cand-note{flex:1 1 220px;min-width:0;font-size:12px;color:var(--dsw-alias-label-secondary)}
 .clearai-cand-chevron{margin-left:auto;font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
-.clearai-cand-detail{display:flex;flex-direction:column;gap:3px;padding:0 14px 12px}
-.clearai-kvrow{display:grid;grid-template-columns:64px 1fr;gap:10px;font-size:12.5px}
+.clearai-cand-detail{display:flex;flex-direction:column;gap:3px}
+.clearai-kvrow{display:grid;gap:10px;font-size:12.5px}
 .clearai-kvrow>span:first-child{color:var(--dsw-alias-label-tertiary)}
 .clearai-state{flex:0 0 auto;display:inline-block;font-size:11px;line-height:16px;padding:0 7px;border-radius:6px;border:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary);white-space:nowrap}
 .clearai-state[data-s="examining"],.clearai-state[data-s="in_progress"]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
@@ -362,37 +362,37 @@ window.__ModuleLoader__.load({
 .clearai-emergent-text{flex:1 1 200px;font-weight:500}
 .clearai-emergent-actions{display:inline-flex;gap:8px}
 .clearai-emergent-done{margin:0 14px 10px;font-size:12px;color:var(--dsw-alias-label-secondary)}
-.clearai-btn{min-height:30px;padding:0 12px;border-radius:8px;border:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12.5px;cursor:pointer}
+.clearai-btn{border:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}
 .clearai-btn[data-primary="1"]{background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary);color:#fff}
-.clearai-next{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:12px 14px;border-radius:10px;border:.5px solid var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-1)}
+.clearai-next{display:flex;flex-direction:column;margin-bottom:14px}
 .clearai-next-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
-.clearai-next-kind{font-size:11.5px;font-weight:600;color:var(--dsw-alias-brand-primary)}
-.clearai-next-title{font-size:14px;font-weight:600}
-.clearai-preds{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
-.clearai-pred{padding:8px 10px;border-radius:8px;border:.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base)}
+.clearai-next-kind{font-weight:600;color:var(--dsw-alias-brand-primary)}
+.clearai-next-title{}
+.clearai-preds{display:grid;gap:8px}
+.clearai-pred{border:.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base)}
 .clearai-pred-if{font-size:11.5px;color:var(--dsw-alias-label-secondary)}
 .clearai-pred-value{font-size:13.5px;font-weight:600}
 .clearai-next-note{font-size:12px;color:var(--dsw-alias-label-secondary)}
 .clearai-next-warn{font-size:12px;color:var(--dsw-alias-state-warn-primary);font-weight:600}
 .clearai-anomaly{display:flex;flex-wrap:wrap;gap:4px 12px;padding:7px 14px;border-top:.5px solid var(--dsw-alias-border-l1);font-size:12.5px}
 .clearai-anomaly-meta{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
-.clearai-process{border-top:.5px solid var(--dsw-alias-border-l2);padding-top:4px}
-.clearai-process-head{width:100%;min-height:38px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:0;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.clearai-process{border-top:.5px solid var(--dsw-alias-border-l2)}
+.clearai-process-head{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:0;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
 .clearai-process-head span{font-size:12px;color:var(--dsw-alias-label-secondary)}
 .clearai-process-body{display:flex;flex-direction:column;gap:14px;padding:6px 0}
 .clearai-judgments-head{display:flex;flex-direction:column;gap:4px}
 /* 本体货架的结论卡:四部分 */
-.clearai-answers{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
-.clearai-qtab{min-height:28px;padding:0 12px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}
+.clearai-answers{display:flex;flex-direction:column}
+.clearai-qtab{padding:0 12px;border:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}
 .clearai-qtab[aria-pressed="true"]{background:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-primary);color:var(--dsw-alias-label-primary-inverted)}
-.clearai-answer{display:flex;flex-direction:column;border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;overflow:hidden}
-.clearai-answer-part{display:flex;flex-direction:column;gap:4px;padding:10px 14px;border-top:.5px solid var(--dsw-alias-border-l1)}
+.clearai-answer{display:flex;flex-direction:column;overflow:hidden}
+.clearai-answer-part{display:flex;flex-direction:column;border-top:.5px solid var(--dsw-alias-border-l1)}
 .clearai-answer-part:first-child{border-top:0}
 .clearai-answer-part[data-warm="1"]{background:var(--dsw-alias-bg-layer-1)}
-.clearai-answer-label{font-size:11.5px;font-weight:600;color:var(--dsw-alias-label-tertiary)}
+.clearai-answer-label{font-weight:600;color:var(--dsw-alias-label-tertiary)}
 .clearai-answer-part[data-warm="1"] .clearai-answer-label{color:var(--dsw-alias-state-warn-primary)}
-.clearai-answer-main{font-size:15px;font-weight:600}
-.clearai-answer-lines{display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.clearai-answer-main{}
+.clearai-answer-lines{display:flex;flex-direction:column;gap:3px}
 .clearai-lesson{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:12.5px}
 .clearai-lesson-kind{font-size:11px;padding:0 7px;border-radius:6px;border:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary)}
 .clearai-lesson-meta{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
@@ -427,6 +427,109 @@ window.__ModuleLoader__.load({
 .clearai-kcount-legend em[data-b="pending"]{border-style:dashed}
 .clearai-kcount-legend em[data-b="unresolved"]{border-color:var(--dsw-alias-brand-primary)}
 .clearai-settled{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:2px 2px 0;font-size:12.5px}
+/* Research and knowledge share one quiet, responsive reading surface. */
+.clearai-atlas{container-type:inline-size;padding:36px clamp(18px,4vw,52px) 100px;font:14px/1.65 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;scrollbar-gutter:stable}
+.clearai-atlas> *{max-width:1120px;margin-left:auto;margin-right:auto;min-width:0}
+.clearai-serif,.clearai-question,.clearai-row-title,.clearai-card-title,.clearai-star>span{font-family:inherit}
+.clearai-head{gap:10px;padding:0 0 28px;margin-bottom:28px;border-bottom:1px solid var(--dsw-alias-border-l1)}
+.clearai-eyebrow{display:flex;align-items:center;gap:9px;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600;letter-spacing:.04em}
+.clearai-page-note{color:var(--dsw-alias-label-tertiary);font-size:13px}
+.clearai-question{font-size:clamp(22px,2.3vw,30px);font-weight:600;line-height:1.4;letter-spacing:-.025em;max-width:30em;text-wrap:balance;overflow-wrap:anywhere}
+.clearai-pills{gap:8px;margin-top:8px}.clearai-pill{border-radius:6px;padding:3px 9px;font-size:11px}
+.clearai-atlas button,.clearai-graph button,.clearai-graph input{font-family:inherit}
+.clearai-link{border:0;background:none;padding:5px 2px;font:inherit;font-size:12px;color:var(--dsw-alias-label-secondary);cursor:pointer;text-decoration:none}
+.clearai-link:hover{color:var(--dsw-alias-label-primary);text-decoration:underline;text-underline-offset:4px}
+.clearai-link[aria-pressed="true"]{color:var(--dsw-alias-brand-primary);font-weight:600}
+.clearai-atlas :focus-visible,.clearai-graph :focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:3px}
+.clearai-btn{min-height:36px;border-radius:9px;padding:0 12px;font-size:12px;transition:background .15s,border-color .15s}
+.clearai-btn:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.clearai-row-head{width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left}
+.clearai-box{border-radius:14px;margin-bottom:18px;border:1px solid var(--dsw-alias-border-l1)}
+.clearai-box-head{padding:16px 18px;background:var(--dsw-alias-bg-base)}
+.clearai-box-title{font-size:16px;letter-spacing:-.015em}.clearai-box-kind{font-size:11px;letter-spacing:.035em}
+.clearai-cand-head{padding:13px 18px}.clearai-cand-detail{padding:0 18px 16px}
+.clearai-research-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;margin-bottom:12px}
+.clearai-research-main,.clearai-research-next{min-width:0}
+.clearai-next{padding:20px;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;gap:14px;background:var(--dsw-alias-bg-layer-1)}
+.clearai-next-title{font-size:16px;font-weight:550;line-height:1.5}.clearai-next-kind{font-size:11px;letter-spacing:.05em}
+.clearai-preds{grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr))}.clearai-pred{padding:12px;border-radius:10px}
+.clearai-answer{border-radius:14px;border:1px solid var(--dsw-alias-border-l1)}
+.clearai-answers{margin-top:28px;margin-bottom:28px;gap:12px}.clearai-answer-part{padding:18px 20px;gap:8px}
+.clearai-answer-main{font-size:18px;line-height:1.6;font-weight:550}.clearai-answer-label{font-size:11px;letter-spacing:.04em}
+.clearai-answer-lines{font-size:13px;line-height:1.8}.clearai-qtab{min-height:34px;border-radius:8px}
+.clearai-section-head{font-size:15px;font-weight:600;margin-top:28px;margin-bottom:12px;letter-spacing:-.015em}
+.clearai-process{margin-top:24px;padding-top:12px}.clearai-process-head{min-height:48px}
+.clearai-waiting{padding:14px 18px;border-radius:12px;border-color:var(--dsw-alias-border-l2);border-left:3px solid var(--dsw-alias-state-warn-primary)}
+.clearai-kvrow{grid-template-columns:80px minmax(0,1fr)}
+@container (min-width:850px){.clearai-research-grid{grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:24px}.clearai-research-next{align-self:start;position:sticky;top:12px}}
+/* A map is a workspace: heading, tools, canvas, then interpretation. */
+.clearai-graph{container-type:inline-size;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);overflow:hidden;margin-bottom:28px;color:var(--dsw-alias-label-primary);font:13px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-sizing:border-box}
+.clearai-map-heading{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 22px 16px}
+.clearai-map-heading h2{font-size:18px;font-weight:600;letter-spacing:-.02em;margin:0 0 4px}
+.clearai-map-heading p{font-size:12px;color:var(--dsw-alias-label-tertiary);margin:0;max-width:56em}.clearai-map-heading .clearai-btn{flex-shrink:0}
+.clearai-graph-bar{display:flex;flex-wrap:wrap;gap:10px;padding:0 20px 16px;margin:0}
+.clearai-seg{display:inline-flex;align-items:center;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:10px;padding:3px;gap:2px}
+.clearai-seg>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:32px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;white-space:nowrap;cursor:pointer}
+.clearai-seg>button[data-on="1"]{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);box-shadow:0 1px 4px #00000012;font-weight:600}
+.clearai-seg-count{font-size:10px;font-variant-numeric:tabular-nums;opacity:.6}
+.clearai-graph-search{display:flex;align-items:center;gap:8px;flex:1 1 150px;min-width:120px;min-height:38px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:0 10px;color:var(--dsw-alias-label-tertiary)}
+.clearai-graph-search input{border:0;outline:none;background:transparent;min-width:0;width:100%;color:var(--dsw-alias-label-primary);font-size:12px}
+.clearai-graph-search:focus-within{border-color:var(--dsw-alias-brand-primary)}
+.clearai-graph-search button{border:0;background:none;color:inherit;font-size:20px;cursor:pointer}
+.clearai-graph-body{position:relative;gap:0;min-width:0}
+.clearai-graph-canvas{height:460px;border:0;border-radius:0;border-top:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);min-width:0}
+.clearai-graph-body[data-side="1"]{flex-direction:row}
+.clearai-graph-side{box-sizing:border-box;max-height:380px;overflow:auto;border-top:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base)}
+.clearai-graph-body[data-side="1"] .clearai-graph-side{width:320px;max-width:40%;max-height:none;border-left:1px solid var(--dsw-alias-border-l2);border-top:0}
+.clearai-card{border:0;border-radius:0;margin:0;padding:18px}.clearai-card-head{gap:9px;flex-wrap:wrap;margin-bottom:14px}.clearai-card-title{font-size:17px;overflow-wrap:anywhere}
+.clearai-card .clearai-kv{grid-template-columns:60px minmax(0,1fr);font-size:13px;gap:10px}.clearai-card .clearai-kv>span{overflow-wrap:anywhere}
+.clearai-map-footer{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--dsw-alias-border-l1);font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.clearai-legend{gap:12px;font-size:11px;flex-wrap:wrap}.clearai-map-size{margin-left:auto;font-variant-numeric:tabular-nums}.clearai-map-actions{display:flex;align-items:center;gap:12px}.clearai-map-zoom{font-size:11px;font-variant-numeric:tabular-nums}
+.clearai-map-directory{max-height:360px;overflow:auto;padding:8px 18px;border-top:1px solid var(--dsw-alias-border-l1)}
+.clearai-directory-row{display:flex;width:100%;align-items:center;gap:12px;min-height:58px;padding:10px 8px;border:0;border-bottom:1px solid var(--dsw-alias-border-l1);background:none;text-align:left;color:inherit;cursor:pointer}
+.clearai-directory-row:hover{background:var(--dsw-alias-interactive-bg-hover)}.clearai-directory-row strong{font-size:13px;font-weight:550;overflow-wrap:anywhere}.clearai-directory-row small{display:block;font-size:11px;color:var(--dsw-alias-label-tertiary);margin-top:2px}.clearai-directory-arrow{margin-left:auto;color:var(--dsw-alias-label-tertiary)}
+.clearai-directory-dot{width:9px;height:9px;border:1.5px solid var(--dsw-alias-label-secondary);border-radius:3px;flex-shrink:0}.clearai-directory-dot[data-kind="instance"]{border-radius:50%;background:var(--dsw-alias-label-secondary)}
+/* Concepts have an open glyph; concrete entities a filled one. Labels stay legible. */
+.clearai-star{display:inline-flex;align-items:center;gap:10px;box-sizing:border-box;width:180px;min-width:180px;max-width:180px;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base);font-size:14px;line-height:1.35;white-space:normal}
+.clearai-star>i{width:12px;height:12px;border-radius:4px;border-width:1.5px}.clearai-star[data-kind="instance"]>i{border-radius:50%;background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}
+.clearai-star[data-kind="literal"],.clearai-star[data-kind="value_type"]{width:140px;min-width:140px;font-size:12px;box-shadow:none}
+.clearai-node-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.clearai-node-copy small{font-weight:500}.clearai-node-copy>span{overflow-wrap:anywhere}
+.clearai-star[data-sel="1"]{}
+.clearai-star[data-state="conflict"]{border-color:var(--dsw-alias-state-warn-primary)}.clearai-star[data-state="pending"]{border-style:dashed}
+.react-flow__node.clearai-star-node:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:4px;border-radius:12px}
+.clearai-fold{border:0;font:inherit;font-size:11px}
+.clearai-graph-canvas .react-flow__controls{border:1px solid var(--dsw-alias-border-l2);border-radius:9px;overflow:hidden;box-shadow:0 2px 8px #00000008}
+.clearai-graph-canvas .react-flow__controls-button{width:30px;height:30px}.clearai-graph-canvas .react-flow__edge.selected path{stroke:var(--dsw-alias-brand-primary)}
+.clearai-graph[data-full="1"]{border:0;border-radius:0;padding:0;max-width:none;z-index:100;overflow:hidden;box-sizing:border-box}
+.clearai-graph[data-full="1"] .clearai-map-heading{padding:20px 24px 12px}.clearai-graph[data-full="1"] .clearai-graph-bar{padding:0 24px 16px}
+.clearai-graph[data-full="1"] .clearai-graph-body{flex:1;min-height:0}.clearai-graph[data-full="1"] .clearai-graph-canvas{min-height:180px}
+.clearai-graph[data-full="1"] .clearai-map-directory{max-height:45vh}.clearai-graph-problems{padding:8px 20px;margin:0}
+@container (max-width:600px){.clearai-map-heading{padding:16px;gap:12px;align-items:flex-start}.clearai-map-heading h2{font-size:16px}.clearai-map-heading p{font-size:11px}.clearai-graph-bar{padding:0 14px 14px;gap:8px}.clearai-graph-search{order:3;flex-basis:100%}.clearai-seg>button{padding:0 9px}.clearai-graph-canvas{height:380px}.clearai-graph-body[data-side="1"] .clearai-graph-side{position:absolute;z-index:5;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:52%;border:1px solid var(--dsw-alias-border-l2);border-radius:16px 16px 0 0;box-shadow:0 -6px 30px #00000014}.clearai-map-footer{padding:10px 14px;gap:8px}.clearai-map-size{margin-left:0}.clearai-map-actions{margin-left:auto}.clearai-card{padding:16px}}
+@container (max-width:480px){.clearai-question{font-size:23px}.clearai-head{margin-bottom:22px;padding-bottom:22px}.clearai-answer-part{padding:15px}.clearai-answer-main{font-size:16px}.clearai-track{flex-wrap:wrap}.clearai-graph-bar>.clearai-seg:last-child{margin-left:auto}.clearai-pills{gap:5px}}
+@media (prefers-reduced-motion:reduce){.clearai-atlas *,.clearai-graph *{scroll-behavior:auto;transition:none!important}}
+
+
+/* Detail belongs to the focal relationship; the rest supplies quiet context. */
+.clearai-star{border-radius:10px;box-shadow:0 1px 3px #00000005,0 4px 12px #00000003;border-color:var(--dsw-alias-border-l2);padding:11px 14px;transition:border-color .15s,box-shadow .15s}
+.clearai-star:hover{border-color:var(--dsw-alias-border-l3);box-shadow:0 3px 14px #0000000c}
+.clearai-star[data-kind="concept"]>i{width:10px;height:10px;transform:rotate(45deg);border-radius:3px;border-color:var(--dsw-alias-label-secondary)}
+.clearai-root-node .clearai-star{border-color:var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-base)}
+.clearai-root-node .clearai-node-copy>span{font-size:15px;font-weight:650;letter-spacing:-.02em}
+.clearai-root-node .clearai-star>i{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 10%,transparent)}
+.clearai-node-copy small{font-size:9px;letter-spacing:.08em;color:var(--dsw-alias-label-tertiary)}
+.clearai-node-copy>span{font-size:13px;font-weight:550;line-height:1.45;text-align:left;letter-spacing:.005em}
+.clearai-star[data-kind="instance"]>i{width:9px;height:9px;box-shadow:0 0 0 4px color-mix(in srgb,var(--dsw-alias-brand-primary) 9%,transparent)}
+.clearai-star[data-kind="literal"],.clearai-star[data-kind="value_type"]{border-style:solid;background:var(--dsw-alias-bg-layer-1);border-color:transparent;border-radius:8px}
+.clearai-star[data-sel="1"]{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent),0 4px 16px #00000009}
+.clearai-fold{margin-left:auto;border-radius:5px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-tertiary);min-width:20px;min-height:20px}
+.clearai-star>.clearai-kcount{display:none}.clearai-star:hover>.clearai-kcount,.clearai-star[data-sel="1"]>.clearai-kcount{display:inline-flex}
+.clearai-graph-canvas .react-flow__edge path{stroke-linecap:round;stroke-linejoin:round}
+.clearai-graph-canvas .react-flow__edge-textbg{stroke:var(--dsw-alias-border-l1);stroke-width:.7}
+.clearai-graph-canvas .react-flow__edge:hover path{stroke:var(--dsw-alias-brand-primary);stroke-width:1.8}
+.clearai-edge-quiet .react-flow__edge-textwrapper{opacity:0;pointer-events:none}
+.clearai-edge-quiet:hover .react-flow__edge-textwrapper,.clearai-edge-quiet:focus .react-flow__edge-textwrapper{opacity:1}
+.clearai-graph[data-detail="overview"] .react-flow__edge-textwrapper{display:none}
+
 `
 		/** 把上面那段 CSS 挂进页面(带 data-plugin 标记,宿主按包名记账,卸载时收掉)。 */
 		function installStyles() {
@@ -532,7 +635,7 @@ window.__ModuleLoader__.load({
 		}
 		/** 可点的文本(替代裸下划线 span)。 */
 		function Link(props) {
-			return h('span', { className: 'clearai-link', title: props.title, onClick: props.onClick }, props.children)
+			return h('button', { type: 'button', className: 'clearai-link', title: props.title, onClick: props.onClick }, props.children)
 		}
 
 
@@ -988,8 +1091,8 @@ window.__ModuleLoader__.load({
 				'div',
 				{ className: 'clearai-row', 'data-open': open ? '1' : '0', 'data-trust': row.trust },
 				h(
-					'div',
-					{ className: 'clearai-row-head', onClick: () => props.onToggle(row.key), title: open ? t('收起') : t('点击查看进度与来源') },
+					'button',
+					{ type: 'button', 'aria-expanded': open, className: 'clearai-row-head', onClick: () => props.onToggle(row.key), title: open ? t('收起') : t('点击查看进度与来源') },
 					h(TrustTag, { trust: row.trust }),
 					h('span', { className: 'clearai-row-title' }, title),
 					sub === null ? null : h('span', { className: 'clearai-row-sub' }, sub),
@@ -1025,6 +1128,8 @@ window.__ModuleLoader__.load({
 			return h(
 				'div',
 				{ className: 'clearai-head' },
+				h('div', { className: 'clearai-eyebrow' }, h(ClearAIMark, { size: 16 }), t('知识概览')),
+				h('div', { className: 'clearai-page-note' }, t('连接概念，理解已形成的知识。')),
 				h('div', { className: 'clearai-question', title: String(data?.goal?.claim ?? '') }, data?.goal ? String(data.knowledgeView?.goal?.headline ?? data.goal.claim ?? '') : t('尚未设立目标')),
 			)
 		}
@@ -1035,6 +1140,16 @@ window.__ModuleLoader__.load({
 		 * 取数与从前一样:宿主半的会话投影单元 `clearai` 由插座作为 `useProjection` 交下来。
 		 * 界面状态(图层、全屏、选中、展开哪条、只看哪个词)全是界面的事,一个字节都不进账本。
 		 */
+  function IntegrityNotice({ data }) {
+   const issues = data.integrity ?? []
+   const copies = (data.auditCopies ?? []).filter(copy => copy.status === 'unavailable')
+   if (!issues.length && !copies.length) return null
+   return h('section', { className: 'clearai-waiting', role: 'status' },
+    issues.length ? h('div', null, h('strong', null, t('知识文件需要复核')), h('p', null, t('以下文件未登记或内容已变化，暂不作为可信知识使用。')),
+     h('details', null, h('summary', null, t('查看记录')), ...issues.map(item => h('div', { key: item.path }, h(Link, { onClick: () => data.openPreview?.(item.path) }, item.path), ' · ', item.code)))) : null,
+    copies.length ? h('div', null, h('strong', null, t('复跑不可用')), h('p', null, t('复跑副本未能建立；相关裁决不能据此通过。'))) : null)
+  }
+
 		function Atlas(props) {
 			const projected = typeof props.useProjection === 'function' ? props.useProjection('clearai') : undefined
 			const [manual, setManual] = React.useState(null)
@@ -1065,8 +1180,8 @@ window.__ModuleLoader__.load({
 				'div',
 				{ className: 'clearai-atlas' },
 				h(AtlasHeader, { data }),
-				h(AnswerCards, { data, openExplore: props.openExplore }),
-				h(GraphBand, {
+    h(IntegrityNotice, { data }),
+								h(GraphBand, {
 					lexicon,
 					data,
 					send: props.send,
@@ -1079,13 +1194,14 @@ window.__ModuleLoader__.load({
 					fullscreen: workspace,
 					onToggleFullscreen: () => setWorkspace(workspace !== true),
 				}),
+				h(AnswerCards, { data, openExplore: props.openExplore }),
 				filterTerm === null
 					? null
 					: h(
 							'div',
 							{ className: 'clearai-filter' },
 							`${t('仅显示与「')}${String(filterTerm.label ?? filterTerm.id)}${t('」相关的内容')}${t(':')}${shown.length}/${rows.length}`,
-							h('span', { className: 'clearai-link', onClick: () => setFilter(null) }, t('清除')),
+							h('button', { type: 'button', className: 'clearai-link', onClick: () => setFilter(null) }, t('清除')),
 						),
 				h('div', { className: 'clearai-section-head' }, t('已确立的事实')),
 				h(ConclusionList, {
@@ -1165,7 +1281,7 @@ window.__ModuleLoader__.load({
 			const predictionOf = (id) => (next?.predictions ?? []).find((item) => item.hypothesis === id)?.expect ?? null
 			const status =
 				question.status === 'answered'
-					? h('span', { className: 'clearai-link', onClick: () => props.openFacts?.(), title: t('在本体货架中展开此结论') }, t('已得出结论 · 查看结论'))
+					? h('button', { type: 'button', className: 'clearai-link', onClick: () => props.openFacts?.(), title: t('在本体货架中展开此结论') }, t('已得出结论 · 查看结论'))
 					: question.status === 'parked'
 						? h('span', null, t('已暂缓'))
 						: question.status === 'emergent'
@@ -1379,11 +1495,13 @@ window.__ModuleLoader__.load({
 				h(
 					'div',
 					{ className: 'clearai-head' },
-					h('div', { className: 'clearai-head-kind' }, t('课题')),
+					h('div', { className: 'clearai-eyebrow' }, h(ClearAIMark, { size: 16 }), t('研究工作台')),
+					h('div', { className: 'clearai-page-note' }, t('从问题到证据，逐步推进。')),
 					h('div', { className: 'clearai-question', title: String(goal.claim ?? '') }, String(goal.headline ?? data.knowledgeView?.goal?.headline ?? goal.claim ?? '')),
 					chips.length === 0 ? null : h('div', { className: 'clearai-pills' }, ...chips.map((chip, index) => h('span', { key: `c-${index}`, className: 'clearai-pill' }, chip))),
 				),
-				needYou.length === 0
+				h(IntegrityNotice, { data }),
+    needYou.length === 0
 					? null
 					: h(
 							'section',
@@ -1391,10 +1509,16 @@ window.__ModuleLoader__.load({
 							h('b', null, `${t('待您处理(')}${needYou.length}${t(')')}`),
 							...needYou.map((item, index) => h('span', { key: `need-${index}` }, String(item?.text ?? ''))),
 						),
+				h('div', { className: 'clearai-research-grid' },
+					h('div', { className: 'clearai-research-main' },
 				areas.length > 0 ? h(AreaBox, { exploration, send: props.send, sent, onSent }) : null,
 				...questionList.map((question) => h(QuestionBox, { key: question.id, data, question, index: declared.indexOf(question), current: question.id === exploration?.current, next: exploration?.next ?? null, open, onToggle: setOpen, openFacts, send: props.send, sent, onSent })),
+					),
+					h('aside', { className: 'clearai-research-next', 'aria-label': t('当前焦点') },
 				h(NextBox, { next: exploration?.next ?? null }),
 				h(AnomalyBox, { data }),
+					),
+				),
 				h(KnowledgeFlowBox, { data, openPreview: props.openPreview }),
 				h(
 					'section',
@@ -1472,10 +1596,10 @@ window.__ModuleLoader__.load({
 			return h(
 				'div',
 				{ className: 'clearai-kitem', 'data-open': open ? '1' : '0' },
-				h('div', { className: 'clearai-kitem-head', 'data-click': canAsk ? '1' : '0', title: canAsk ? (open ? t('收起') : t('点击查看可发出的请求')) : undefined, onClick: canAsk ? () => setOpen(!open) : undefined }, h(StateTag, { state: item.status }, item.kind === 'lesson' ? (LESSON_WORD[item.status] ?? item.status) : (ITEM_WORD[item.status] ?? item.status)), h('span', null, item.text), item.path ? h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(item.path), title: item.path }, t('查看记录')) : null),
+				h('div', { className: 'clearai-kitem-head' }, h(StateTag, { state: item.status }, item.kind === 'lesson' ? (LESSON_WORD[item.status] ?? item.status) : (ITEM_WORD[item.status] ?? item.status)), canAsk ? h('button', { type: 'button', className: 'clearai-link', 'aria-expanded': open, title: open ? t('收起') : t('点击查看可发出的请求'), onClick: () => setOpen(!open) }, item.text) : h('span', null, item.text), item.path ? h('button', { type: 'button', className: 'clearai-link', onClick: () => props.openPreview?.(item.path), title: item.path }, t('查看记录')) : null),
 				meta.length === 0 ? null : h('div', { className: 'clearai-kitem-meta' }, meta.join(' · ')),
-				...(item.rechecks ?? []).filter((reason) => reason.evidence).map((reason) => h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(reason.evidence), title: reason.evidence }, t('查看核验'))),
-				...(item.evidencePaths ?? []).map((path) => h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(path), title: path }, t('查看核验'))),
+				...(item.rechecks ?? []).filter((reason) => reason.evidence).map((reason) => h('button', { type: 'button', className: 'clearai-link', onClick: () => props.openPreview?.(reason.evidence), title: reason.evidence }, t('查看核验'))),
+				...(item.evidencePaths ?? []).map((path) => h('button', { type: 'button', className: 'clearai-link', onClick: () => props.openPreview?.(path), title: path }, t('查看核验'))),
 				asks.length === 0
 					? null
 					: done !== undefined
@@ -1557,7 +1681,7 @@ window.__ModuleLoader__.load({
 								h(
 									'div',
 									{ key: `${item.id}|${item.verdict}`, className: 'clearai-kitem' },
-									h('div', { className: 'clearai-kitem-head' }, h(StateTag, { state: item.verdict }, VERDICT_WORD[item.verdict] ?? item.verdict), h('span', null, item.text ?? item.id), item.path ? h('span', { className: 'clearai-link', onClick: () => props.openPreview?.(item.path), title: item.path }, t('查看记录')) : null),
+									h('div', { className: 'clearai-kitem-head' }, h(StateTag, { state: item.verdict }, VERDICT_WORD[item.verdict] ?? item.verdict), h('span', null, item.text ?? item.id), item.path ? h('button', { type: 'button', className: 'clearai-link', onClick: () => props.openPreview?.(item.path), title: item.path }, t('查看记录')) : null),
 									h('div', { className: 'clearai-kitem-meta' }, [`${t('引用者:')}${item.by.join(t('、'))}`, VERDICT_NEXT[item.verdict] ?? null].filter((line) => line !== null).join(' · ')),
 								),
 							),
@@ -1621,7 +1745,7 @@ window.__ModuleLoader__.load({
 					'section',
 					{ className: 'clearai-answer' },
 					part(t('结论'), h('span', { className: 'clearai-answer-main' }, chosen.conclusion || `${t('未能回答:')}${chosen.unanswered ?? ''}`)),
-					basis.length === 0 ? null : part(t('依据'), h('div', { className: 'clearai-answer-lines' }, ...basis.map((line, index) => h('div', { key: `b-${index}` }, h('span', null, line), ' ', h('span', { className: 'clearai-link', onClick: () => props.openExplore?.() }, t('查看探索记录')))))),
+					basis.length === 0 ? null : part(t('依据'), h('div', { className: 'clearai-answer-lines' }, ...basis.map((line, index) => h('div', { key: `b-${index}` }, h('span', null, line), ' ', h('button', { type: 'button', className: 'clearai-link', onClick: () => props.openExplore?.() }, t('查看探索记录')))))),
 					open.length === 0 ? null : part(t('尚未确定的事项'), h('div', { className: 'clearai-answer-lines' }, ...open.map((entry, index) => h('div', { key: `o-${index}` }, entry.effect)))),
 					decide.length === 0 ? null : part(t('待您决策'), h('div', { className: 'clearai-answer-lines' }, ...decide.map((line, index) => h('div', { key: `d-${index}` }, line))), true),
 				),
@@ -2251,7 +2375,7 @@ window.__ModuleLoader__.load({
 			if (Force === null || nodes.length < 2) return nodes
 			try {
 				const graph = new Force.Graph({ multi: true, type: 'directed' })
-				for (const node of nodes) graph.addNode(node.id, { x: node.position.x, y: node.position.y, size: 34 })
+				for (const node of nodes) graph.addNode(node.id, { x: node.position.x, y: node.position.y, size: 110 })
 				for (const edge of edges) {
 					if (edge.source === edge.target) continue
 					if (!graph.hasNode(edge.source) || !graph.hasNode(edge.target)) continue
@@ -2307,9 +2431,10 @@ window.__ModuleLoader__.load({
 				if (injected !== undefined) return undefined
 				if (key === '' || typeof sessionId !== 'string' || sessionId === '') return undefined
 				let live = true
-				setState((current) => ({ ...current, loading: true, error: null }))
+    const abort = new AbortController()
+				setState({ inspector: null, loading: true, error: null })
 				const url = `/api/clearai/inspector?sessionId=${encodeURIComponent(sessionId)}&kind=${encodeURIComponent(selection.kind)}&id=${encodeURIComponent(selection.id)}`
-				fetch(url)
+				fetch(url, { signal: abort.signal })
 					.then((response) => response.json())
 					.then((result) => {
 						if (!live) return
@@ -2321,8 +2446,9 @@ window.__ModuleLoader__.load({
 					})
 				return () => {
 					live = false
+     abort.abort()
 				}
-			}, [key, injected])
+			}, [key, injected, sessionId])
 			if (selection === null) return null
 			const data = injected === undefined ? state.inspector : injected
 			const busy = injected === undefined && state.loading === true
@@ -2346,8 +2472,8 @@ window.__ModuleLoader__.load({
 					h('span', { className: 'clearai-card-kind' }, KIND_WORD[selection.kind] ?? t('关系')),
 					h('span', { className: 'clearai-card-title' }, title),
 					h('span', { style: { flex: '1 1 auto' } }),
-					h('span', { className: 'clearai-link', onClick: onFilter }, t('仅显示相关项')),
-					h('span', { className: 'clearai-link', onClick: onClose }, t('关闭')),
+					h('button', { type: 'button', className: 'clearai-link', onClick: onFilter }, t('仅显示相关项')),
+					h('button', { type: 'button', className: 'clearai-link', onClick: onClose }, t('关闭')),
 				),
 				busy === true ? h('div', { className: 'clearai-quiet' }, t('正在加载…')) : null,
 				failure !== null ? h('div', { className: 'clearai-quiet' }, `${t('无法获取')}${t(':')}${failure}`) : null,
@@ -2462,7 +2588,7 @@ window.__ModuleLoader__.load({
 				for (const edge of layerEdges) {
 					const from = nodeById.has(edge.from) ? shownAs(edge.from) : edge.from
 					const to = nodeById.has(edge.to) ? shownAs(edge.to) : edge.to
-					if (from === to) continue
+					if (from === to && edge.from !== edge.to) continue
 					if (from === edge.from && to === edge.to) {
 						out.push(edge)
 						continue
@@ -2528,7 +2654,15 @@ window.__ModuleLoader__.load({
 			 * 力导向会把它收到的节点整个换成新对象,所以**先算坐标、后建节点对象**;
 			 * 反过来的话缓存下来的节点身份会在布局那一步丢掉。
 			 */
-			const positions = small
+			const hierarchy = layer === 'ontology' && [...parentById.values()].some(value => value !== null)
+			const lanes = new Map()
+			const hierarchyPositions = new Map(allNodes.map(node => {
+				const depth = depthOfNode(node.id)
+				const lane = lanes.get(depth) ?? 0
+				lanes.set(depth, lane + 1)
+				return [node.id, dragged[node.id] ?? { x: depth * 290, y: lane * 125 }]
+			}))
+			const positions = hierarchy ? hierarchyPositions : small
 				? new Map(allNodes.map((node) => [node.id, basePosition(node)]))
 				: (() => {
 						const laidOut = forceLayout(
@@ -2539,7 +2673,7 @@ window.__ModuleLoader__.load({
 						for (const node of laidOut) {
 							const x = node?.position?.x
 							const y = node?.position?.y
-							if (Number.isFinite(x) && Number.isFinite(y)) out.set(node.id, { x, y })
+							if (Number.isFinite(x) && Number.isFinite(y)) out.set(node.id, dragged[node.id] ?? { x, y })
 						}
 						return out
 					})()
@@ -2566,21 +2700,25 @@ window.__ModuleLoader__.load({
 					id: node.id,
 					type: 'default',
 					position,
-					initialWidth: 120,
-					initialHeight: 26,
+					initialWidth: 180,
+					initialHeight: 54,
+					sourcePosition: layer === 'ontology' ? 'right' : 'bottom',
+					targetPosition: layer === 'ontology' ? 'left' : 'top',
+					ariaLabel: String(node.label ?? node.ref ?? node.id),
 					selected,
 					data: {
 						label: h(
 							'span',
 							{ className: 'clearai-star', 'data-kind': node.kind, 'data-state': state, 'data-sel': selected ? '1' : '0' },
 							h('i', null),
-							h('span', null, labelText),
+							h('span', { className: 'clearai-node-copy', title: String(node.label ?? node.ref ?? node.id) }, h('small', null, KIND_WORD[node.kind] ?? t('对象')), h('span', null, labelText)),
 							node.layer === 'entity' ? h(CountMarks, { counts }) : null,
 							children > 0
 								? h(
-										'b',
+										'button',
 										{
-											className: 'clearai-fold',
+											type: 'button', 'aria-expanded': !collapsed,
+											className: 'clearai-fold nodrag',
 											title: collapsed ? t('展开下一层') : t('收起下一层'),
 											onClick: (event) => {
 												event.stopPropagation()
@@ -2592,7 +2730,7 @@ window.__ModuleLoader__.load({
 								: null,
 						),
 					},
-					className: 'clearai-star-node',
+					className: `clearai-star-node${node.kind === 'concept' && parentOf(node) === null ? ' clearai-root-node' : ''}`,
 					style: { background: 'transparent', border: 0, padding: 0, width: 'auto', boxShadow: 'none' },
 				}
 				cache.set(node.id, { signature, node: rfNode })
@@ -2604,20 +2742,35 @@ window.__ModuleLoader__.load({
 			/** 投影边 → React Flow 边:实线已验证、虚线待核验、淡线上下位、告警色是矛盾。 */
 			const edgeTone = (edge) => {
 				if (edge.kind === 'assertion' && conflicted.has(edge.fact)) return { stroke: 'var(--dsw-alias-state-warn-primary)', strokeWidth: 1.4 }
-				if (edge.kind === 'is_a') return { stroke: 'var(--dsw-alias-border-l3)', strokeWidth: 1, strokeDasharray: '1 3' }
+				if (edge.kind === 'is_a') return { stroke: 'var(--dsw-alias-label-tertiary)', strokeWidth: 1.2, strokeDasharray: '4 5' }
 				if (edge.status === 'retracted') return { stroke: 'var(--dsw-alias-border-l2)', strokeWidth: 1, strokeDasharray: '2 4' }
 				if (edge.kind === 'assertion' && edge.status !== 'live') return { stroke: 'var(--dsw-alias-label-tertiary)', strokeWidth: 1.1, strokeDasharray: '5 4' }
 				return { stroke: edge.kind === 'assertion' ? 'var(--dsw-alias-label-secondary)' : 'var(--dsw-alias-label-tertiary)', strokeWidth: edge.kind === 'assertion' ? 1.3 : 1 }
 			}
-			const rfEdges = allEdges.map((edge) => ({
+			const edgeGroups = new Map()
+   for (const edge of allEdges) {
+    const key = [edge.from, edge.to].sort().join('\u0001')
+    if (!edgeGroups.has(key)) edgeGroups.set(key, [])
+    edgeGroups.get(key).push(edge.id)
+   }
+   for (const group of edgeGroups.values()) group.sort()
+   const groupOf = edge => edgeGroups.get([edge.from, edge.to].sort().join('\u0001'))
+   const rfEdges = allEdges.map((edge) => ({
 				id: edge.id,
 				source: edge.from,
 				target: edge.to,
-				type: 'straight',
+				type: edge.from === edge.to || groupOf(edge).length > 1 ? 'relationship' : layer === 'ontology' ? 'smoothstep' : 'default',
+    data: { index: groupOf(edge).indexOf(edge.id), count: groupOf(edge).length },
+				pathOptions: { borderRadius: 20, offset: 28 },
+				className: allEdges.length > 24 && edge.from !== selectedId && edge.to !== selectedId ? 'clearai-edge-quiet' : '',
+				interactionWidth: 24,
+				ariaLabel: String(edge.label ?? edge.kind),
 				label: edge.kind === 'is_a' ? '' : (edge.label ?? ''),
-				labelStyle: { fontSize: 10, fill: 'var(--dsw-alias-label-secondary)' },
+				labelStyle: { fontSize: 11.5, fontWeight: 500, fill: 'var(--dsw-alias-label-secondary)' },
 				labelBgStyle: { fill: 'var(--dsw-alias-bg-base)', fillOpacity: 0.9 },
-				labelBgPadding: [3, 1],
+				labelBgPadding: [8, 5],
+				labelBgBorderRadius: 5,
+				markerEnd: { type: 'arrowclosed', width: 14, height: 14, color: edgeTone(edge).stroke },
 				style: edgeTone(edge),
 			}))
 
@@ -2634,9 +2787,33 @@ window.__ModuleLoader__.load({
 			}
 		}
 
+  const RelationshipEdge = props => {
+   const { sourceX: sx, sourceY: sy, targetX: tx, targetY: ty, data = {} } = props
+   let path, labelX, labelY
+   if (props.source === props.target) {
+    const reach = 110 + data.index * 36
+    path = `M ${sx} ${sy} C ${sx + reach} ${sy + 80}, ${tx + reach} ${ty - 80}, ${tx} ${ty}`
+    labelX = (sx + tx) / 2 + reach * .75; labelY = (sy + ty) / 2
+   } else {
+    const dx = tx - sx, dy = ty - sy, distance = Math.max(1, Math.hypot(dx, dy))
+    const offset = (data.index - (data.count - 1) / 2) * 58 * (props.source < props.target ? 1 : -1)
+    const ox = -dy / distance * offset, oy = dx / distance * offset
+    path = `M ${sx} ${sy} C ${sx + dx / 3 + ox} ${sy + dy / 3 + oy}, ${sx + dx * 2 / 3 + ox} ${sy + dy * 2 / 3 + oy}, ${tx} ${ty}`
+    labelX = (sx + tx) / 2 + ox * .75; labelY = (sy + ty) / 2 + oy * .75
+   }
+   return h(XYFlow.BaseEdge, { ...props, path, labelX, labelY })
+  }
+  const relationshipEdgeTypes = { relationship: RelationshipEdge }
+
 		const GraphBand = ({ lexicon, data, send, layer, onLayer, fullscreen, onToggleFullscreen, onFilter, sessionId, unlanded, focus }) => {
 			const [picked, setPicked] = React.useState(null)
 			const [asked, setAsked] = React.useState({})
+			const [query, setQuery] = React.useState('')
+			const [display, setDisplay] = React.useState('graph')
+			const [neighbors, setNeighbors] = React.useState(false)
+			const [zoom, setZoom] = React.useState(1)
+			const [jump, setJump] = React.useState(null)
+			const graphElement = React.useRef(null)
 			const [toggled, setToggled] = React.useState({})
 			const [dragged, setDragged] = React.useState({})
 			/** 节点对象缓存:见 graphViewOf。父级重渲染一个都不换,选中只换选中那个。 */
@@ -2644,6 +2821,9 @@ window.__ModuleLoader__.load({
 			const selectedId = picked?.kind === 'node' ? picked.node.id : (focus ?? null)
 			React.useEffect(() => {
 				setToggled({})
+				setQuery('')
+				setNeighbors(false)
+				setJump(null)
 			}, [layer])
 
 			/**
@@ -2664,7 +2844,8 @@ window.__ModuleLoader__.load({
 			 */
 			React.useEffect(() => {
 				setDragged({})
-			}, [graphKey])
+				setPicked(null)
+			}, [layer])
 			const onNodesChange = React.useCallback((changes) => {
 				setDragged((current) => {
 					let next = current
@@ -2689,7 +2870,7 @@ window.__ModuleLoader__.load({
 			React.useEffect(() => {
 				if (focus === null || focus === undefined) return
 				const original = nodeById.get(focus)
-				if (original !== undefined) setPicked({ kind: 'node', node: original })
+				if (original !== undefined) { setPicked({ kind: 'node', node: original }); setJump({ id: focus }) }
 			}, [focus])
 
 			const inspection =
@@ -2707,9 +2888,22 @@ window.__ModuleLoader__.load({
 			 */
 			const rfRef = React.useRef(null)
 			React.useEffect(() => {
-				const timer = setTimeout(() => rfRef.current?.fitView?.({ padding: 0.18, duration: 200 }), 60)
+				const timer = setTimeout(() => rfRef.current?.fitView?.({ padding: 0.18, minZoom: 0.8, maxZoom: 1.1, duration: 0 }), 60)
 				return () => clearTimeout(timer)
-			}, [fullscreen, layer, picked !== null, allNodes.length])
+			}, [fullscreen, layer])
+
+			React.useEffect(() => {
+				const element = graphElement.current
+				if (!element || typeof ResizeObserver === 'undefined') return
+				let width = element.clientWidth
+				const observer = new ResizeObserver(() => {
+					if (element.clientWidth === width) return
+					width = element.clientWidth
+					rfRef.current?.fitView?.({ padding: 0.18, minZoom: 0.8, maxZoom: 1.1, duration: 0 })
+				})
+				observer.observe(element)
+				return () => observer.disconnect()
+			}, [])
 
 			/**
 			 * **Escape 退出全屏**(issue #33)。
@@ -2726,44 +2920,102 @@ window.__ModuleLoader__.load({
 				return () => window.removeEventListener('keydown', onKey)
 			}, [fullscreen, onToggleFullscreen])
 
+			React.useEffect(() => {
+				if (!fullscreen || typeof document === 'undefined') return
+				const previous = document.activeElement
+				const element = graphElement.current
+				element?.querySelector('[data-exit]')?.focus()
+				const trap = (event) => {
+					if (event.key !== 'Tab') return
+					const controls = [...element.querySelectorAll('button,input,[tabindex="0"]')].filter(item => !item.disabled && item.getClientRects().length)
+					const first = controls[0], last = controls.at(-1)
+					if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+					else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+				}
+				element?.addEventListener('keydown', trap)
+				return () => { element?.removeEventListener('keydown', trap); if (previous?.isConnected) previous.focus?.() }
+			}, [fullscreen])
+
 			/** 全屏时小卡走右侧抽屉:摆在画布下方会把画布压矮,刚点开的那个点直接掉出可视区。 */
 			const sideBySide = fullscreen === true
 			const empty =
 				layer === 'entity'
 					? `${typeof unlanded === 'number' && unlanded > 0 ? `${t('共 ')}${unlanded}${t(' 条断言的主体尚未建立实体文件。')}` : t('实体图暂无内容。')}${t('clear/ontology/entities/ 下的实体文件与写入长期知识的断言将在此显示。')}`
 					: t('本体图暂无内容。模型在 clear/ontology/concepts/ 与 relations/ 下建立概念与关系文件后,将在此显示。')
+			const layerItems = (lexicon?.graph?.nodes ?? []).filter(node => node.layer === layer)
+			const matches = layerItems.filter(node => `${node.label ?? ''} ${node.ref ?? ''}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+			const { visibleNodes, visibleEdges } = React.useMemo(() => {
+				const connected = new Set(selectedId ? [selectedId] : [])
+				for (const edge of allEdges) if (edge.from === selectedId || edge.to === selectedId) { connected.add(edge.from); connected.add(edge.to) }
+				const visibleNodes = neighbors && selectedId ? rfNodes.filter(node => connected.has(node.id)) : rfNodes
+				const visibleIds = new Set(visibleNodes.map(node => node.id))
+				const visibleEdges = rfEdges.filter(edge => visibleIds.has(edge.source) && visibleIds.has(edge.target)).map(edge => ({ ...edge,
+					style: { ...edge.style, opacity: !selectedId || edge.source === selectedId || edge.target === selectedId ? 1 : 0.18 },
+					label: selectedId && edge.source !== selectedId && edge.target !== selectedId ? '' : edge.label,
+				}))
+				return { visibleNodes, visibleEdges }
+			}, [rfNodes, rfEdges, allEdges, neighbors, selectedId])
+			React.useEffect(() => {
+				if (picked?.kind === 'node' && !nodeById.has(picked.node.id)) setPicked(null)
+				if (picked?.kind === 'edge' && !allEdges.some(edge => edge.id === picked.edge.id)) setPicked(null)
+			}, [lexicon, layer])
+
+			const centerNode = (node) => {
+				setPicked({ kind: 'node', node })
+				setDisplay('graph')
+				setQuery('')
+				setJump({ id: node.id })
+				// Reveal collapsed ancestors before locating a search result.
+				setToggled(Object.fromEntries(layerItems.map(item => [item.id, false])))
+			}
+			React.useEffect(() => {
+				if (!jump || !nodeById.has(jump.id)) return
+				const timer = setTimeout(() => rfRef.current?.fitView?.({ nodes: [{ id: jump.id }], minZoom: 1, maxZoom: 1.15, padding: 0.4, duration: 0 }), 80)
+				return () => clearTimeout(timer)
+			}, [jump, layer])
+			const fit = () => rfRef.current?.fitView?.({ padding: 0.18, minZoom: 0.25, maxZoom: 1.1, duration: 0 })
+			const focusPicked = () => selectedId && rfRef.current?.fitView?.({ nodes: [{ id: selectedId }], minZoom: 1, maxZoom: 1.15, duration: 0 })
+
 			return h(
 				'div',
 				{
-					className: 'clearai-graph',
+					className: 'clearai-graph', ref: graphElement, role: fullscreen ? 'dialog' : 'region', 'aria-modal': fullscreen ? true : undefined, 'aria-label': t('知识地图'),
 					'data-full': fullscreen === true ? '1' : '0',
+					'data-detail': zoom < 0.65 ? 'overview' : 'readable',
 					/** 覆盖层内也认 Escape(见上面的 window 监听):两条一起,焦点在哪都能退。 */
-					onKeyDown: fullscreen === true ? (event) => { if (event?.key === 'Escape') onToggleFullscreen() } : undefined,
+					onKeyDown: (event) => {
+      if (fullscreen && event?.key === 'Escape') { event.stopPropagation?.(); onToggleFullscreen(); return }
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      const edge = event.target?.closest?.('.react-flow__edge')
+      if (edge && event.target === edge) { event.preventDefault(); onEdgeClick(event, { id: edge.getAttribute('data-id') }) }
+     },
 				},
-				h(
-					'div',
-					{ className: 'clearai-graph-bar' },
-					h(
-						'span',
-						{ className: 'clearai-seg' },
-						h('span', { 'data-on': layer === 'ontology' ? '1' : '0', onClick: () => { setPicked(null); onLayer('ontology') } }, `${t('本体图')} ${countOf('ontology')}`),
-						h('span', { 'data-on': layer === 'entity' ? '1' : '0', onClick: () => { setPicked(null); onLayer('entity') } }, `${t('实体图')} ${countOf('entity')}`),
-					),
-					h(
-						'span',
-						{ className: 'clearai-legend' },
-						h('span', { 'data-l': 'solid' }, t('已验证')),
-						h('span', { 'data-l': 'dash' }, t('待核验')),
-						layer === 'entity' ? h('span', { className: 'clearai-kcount-legend' }, ...COUNT_ORDER.map((key) => h('span', { key }, h('em', { 'data-b': key }), COUNT_WORD[key]))) : null,
-						conflicts.length > 0 ? h('span', { 'data-l': 'warn' }, `${t('矛盾')} ${conflicts.length}`) : null,
-					),
-					h('span', { style: { flex: '1 1 auto' } }),
-					allNodes.length === 0 ? null : h('span', { className: 'clearai-link', onClick: () => rfRef.current?.fitView?.({ padding: 0.18, duration: 200 }) }, t('适配')),
-					h('span', { className: 'clearai-link', 'data-exit': '1', onClick: onToggleFullscreen }, fullscreen === true ? `${t('退出全屏')} (Esc)` : t('全屏')),
+				h('div', { className: 'clearai-map-heading' },
+					h('div', null, h('h2', null, t('知识地图')), h('p', null, layer === 'ontology' ? t('概念与关系定义，不代表事实已验证。') : t('对象与断言，核验状态以证据记录为准。'))),
+					h('button', { type: 'button', className: 'clearai-btn', 'data-exit': '1', onClick: onToggleFullscreen }, fullscreen ? `${t('退出全屏')} (Esc)` : t('全屏')),
 				),
+				h('div', { className: 'clearai-graph-bar' },
+					h('div', { className: 'clearai-seg', role: 'group', 'aria-label': t('知识地图') },
+						...['ontology', 'entity'].map(value => h('button', { key: value, type: 'button', 'data-on': layer === value ? '1' : '0', 'aria-pressed': layer === value, onClick: () => { setPicked(null); onLayer(value) } },
+							t(value === 'ontology' ? '本体图' : '实体图'), ' ', h('span', { className: 'clearai-seg-count' }, countOf(value)))),
+					),
+					h('label', { className: 'clearai-graph-search' },
+						h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, 'aria-hidden': true }, h('circle', { cx: 10.5, cy: 10.5, r: 6.5 }), h('path', { d: 'M16 16l5 5' })),
+						h('input', { value: query, 'aria-label': t('搜索图谱'), placeholder: t('搜索名称或标识…'), onChange: event => setQuery(event.target.value) }),
+						query ? h('button', { type: 'button', 'aria-label': t('清除'), onClick: () => setQuery('') }, '×') : null,
+					),
+					h('div', { className: 'clearai-seg', role: 'group', 'aria-label': t('图谱目录') }, ...['graph', 'list'].map(value => h('button', { key: value, type: 'button', 'aria-pressed': display === value, 'data-on': display === value ? '1' : '0', onClick: () => setDisplay(value) }, t(value === 'graph' ? '图谱' : '列表')))),
+				),
+				query.trim() || display === 'list' ? h('div', { className: 'clearai-map-directory', 'aria-label': t('图谱目录') },
+					matches.length === 0 ? h('div', { className: 'clearai-quiet', role: 'status' }, t('没有匹配的对象')) : matches.map(node => h('button', { key: node.id, type: 'button', className: 'clearai-directory-row', onClick: () => centerNode(node) },
+						h('span', { className: 'clearai-directory-dot', 'data-kind': node.kind }),
+						h('span', null, h('strong', null, String(node.label ?? node.ref ?? node.id)), h('small', null, KIND_WORD[node.kind] ?? node.kind)),
+						h('span', { className: 'clearai-directory-arrow', 'aria-hidden': true }, '↗'))),
+				) : null,
+
 				h(
 					'div',
-					{ className: 'clearai-graph-body', 'data-side': sideBySide ? '1' : '0' },
+					{ className: 'clearai-graph-body', 'data-side': sideBySide ? '1' : '0', style: display === 'list' ? { display: 'none' } : undefined },
 					XYFlow === null || XYFlow.ReactFlow === undefined || XYFlow.ReactFlow === null
 						? h('div', { className: 'clearai-graph-empty' }, `${t('图组件不可用')}(${String(XYFLOW_LOAD.reason ?? '')}):${t('结论仍可正常查看。')}`)
 						: allNodes.length === 0
@@ -2778,12 +3030,18 @@ window.__ModuleLoader__.load({
 												rfRef.current = instance
 											},
 											onNodesChange,
-											nodes: rfNodes,
-											edges: rfEdges,
+											nodes: visibleNodes,
+											edges: visibleEdges,
+           edgeTypes: relationshipEdgeTypes,
 											onNodeClick,
 											onEdgeClick,
 											onPaneClick: () => setPicked(null),
 											fitView: true,
+											fitViewOptions: { minZoom: 0.8, maxZoom: 1.1, padding: 0.18 },
+											deleteKeyCode: null,
+											onMoveEnd: (_event, viewport) => setZoom(viewport.zoom),
+											onNodeKeyDown: (event, node) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onNodeClick(event, node) } },
+											ariaLabelConfig: { 'node.a11yDescription.default': t('按 Enter 或空格查看详情，方向键移动节点。'), 'edge.a11yDescription.default': t('按 Enter 或空格查看关系详情。'), 'controls.zoomIn.ariaLabel': t('放大'), 'controls.zoomOut.ariaLabel': t('缩小'), 'controls.fitView.ariaLabel': t('适配') },
 											minZoom: 0.2,
 											maxZoom: 3,
 											proOptions: { hideAttribution: true },
@@ -2795,7 +3053,7 @@ window.__ModuleLoader__.load({
 											zoomOnScroll: true,
 											zoomOnDoubleClick: false,
 										},
-										h(XYFlow.Controls, { showInteractive: false }),
+										h(XYFlow.Controls, { showInteractive: false, showFitView: false }),
 										h(XYFlow.Background, { variant: 'dots', gap: 22, size: 1, color: 'var(--dsw-alias-border-l2)' }),
 									),
 								),
@@ -2805,9 +3063,23 @@ window.__ModuleLoader__.load({
 								'div',
 								{ className: 'clearai-graph-side' },
 								picked.kind === 'node' && picked.node.layer === 'entity' && picked.node.kind === 'instance' ? h(EntityCard, { node: picked.node, data, send, sent: asked, onSent: (key, kind) => setAsked({ ...asked, [key]: kind }) }) : null,
-								h(GraphInspector, { selection: inspection, sessionId, names: entityNames, onFilter: () => onFilter(filterTarget), onClose: () => setPicked(null) }),
+								h(GraphInspector, { selection: inspection, sessionId, names: entityNames, onFilter: () => { if (filterTarget) onFilter?.(filterTarget) }, onClose: () => setPicked(null) }),
 							),
 				),
+				h('div', { className: 'clearai-map-footer' },
+					h('div', { className: 'clearai-legend' },
+						h('span', { 'data-l': 'solid' }, t(layer === 'ontology' ? '结构定义' : '已验证')),
+						h('span', { 'data-l': 'dash' }, t(layer === 'ontology' ? '层级关系' : '待核验')),
+						conflicts.length ? h('span', { 'data-l': 'warn' }, `${t('矛盾')} ${conflicts.length}`) : null),
+					h('span', { className: 'clearai-map-size' }, `${visibleNodes.length} ${t('个对象')} · ${visibleEdges.length} ${t('条连接')}`),
+					h('div', { className: 'clearai-map-actions' },
+						selectedId ? h('button', { type: 'button', className: 'clearai-link', 'aria-pressed': neighbors, onClick: () => setNeighbors(!neighbors) }, t('邻域')) : null,
+						selectedId ? h('button', { type: 'button', className: 'clearai-link', onClick: focusPicked }, t('聚焦所选')) : null,
+						h('span', { className: 'clearai-map-zoom' }, `${Math.round(zoom * 100)}%`),
+						h('button', { type: 'button', className: 'clearai-link', onClick: fit }, t('概览')),
+					),
+				),
+
 				/** 读时的跨文件检查只标不拦:有问题的那一份不进图,这里说清是哪个文件、哪里不对。 */
 				problems.length === 0
 					? null

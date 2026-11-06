@@ -1,6 +1,6 @@
 {
   "name": "clearai-dsh",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "ClearAI: an ontology-first DSH agent preset — evidence-checked research that grows into a domain ontology.",
   "type": "module",
   "private": false,
@@ -37,7 +37,7 @@
   ],
   "engines": {
     "node": ">=22",
-    "dsh": ">=0.2.0-rc.2"
+    "dsh": ">=0.2.2-rc.1"
   },
   "dependencies": {
     "zod": "^4.6.1"
@@ -83,7 +83,8 @@
     "e2e:long": "node tools/e2e-parallel.mjs",
     "vendor": "node tools/build-vendor.mjs",
     "check:browser": "node tools/browser-graph-check.mjs",
-    "shots": "node tools/graph-shots.mjs"
+    "shots": "node tools/graph-shots.mjs",
+    "check:panels": "node tools/browser-panels-check.mjs"
   },
   "devDependencies": {
     "@xyflow/react": "^12.11.6",

@@ -3,11 +3,13 @@ import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID, createHash } from 'node:crypto'
+import { campaignBudget } from './budget.mjs'
 import { usageSummary, redact, onceAsync, infrastructureErrorCode } from './accounting.mjs'
 import { installReadIsolation, probeReadIsolation } from './isolation.mjs'
 import { knowledgeRecords, mechanismReceipt } from './mechanisms.mjs'
 
-const resources = process.env.CLEARAI_DSH_RESOURCES || '/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh'
+const resources = process.env.CLEARAI_DSH_RESOURCES
+if (!resources) throw new Error('Explicit DSH runtime required')
 const native = (pkg) => import(pathToFileURL(join(resources, 'node_modules/@deepseek-ai', pkg, 'lib/index.js')).href)
 const { installModelSelection } = await native('dsh-agent')
 const { createUserMessage } = await native('dsh-llm')
@@ -16,11 +18,12 @@ const { load, dump } = await import(pathToFileURL(join(resources, 'node_modules/
 export const name = 'clearai-native-test-carrier'
 export const inject = ['agents', 'agentDefaultModel', 'sessions', 'sessionQuery', 'agentPresets', 'llm', 'tools', 'sandbox', 'shell']
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const model = { provider: 'abhome', model: 'deepseek-flash', reasoningEffort: 'medium' }
+const model = { provider: 'deepseek', model: 'deepseek-flash', reasoningEffort: 'medium' }
 const driverDigest = createHash('sha256').update(readFileSync(import.meta.filename)).digest('hex')
 
 export function apply(ctx, config) {
 	if (!ctx.get('appExit')) throw new Error('Native appExit service required')
+	const budget = campaignBudget(process.env.CLEARAI_TEST_BUDGET_FILE)
 	const spec = JSON.parse(readFileSync(process.env.CLEARAI_NATIVE_SPEC || config.spec, 'utf8'))
 	const out = spec.output; mkdirSync(out, { recursive: true })
 	const started = Date.now(), calls = [], requests = [], approvals = [], saved = new Map()
@@ -67,10 +70,11 @@ export function apply(ctx, config) {
 					throw new Error('Registered audit timeout before provider dispatch')
 				}
 				if(main&&options.sessionId!==main.id&&spec.fault==='disconnect') {call.injectedBeforeProvider='disconnect';atomic('fault-injected.json',{fault:spec.fault,session:options.sessionId,at:Date.now()});throw new Error('Registered native transport disconnect')}
-				call.providerInvoked=true
+				call.budgetId = budget.reserve({ testId: spec.testId || spec.output, session: options.sessionId, model: options.model })
+    call.providerInvoked=true
 				for await (const chunk of next()) { if (chunk.type === 'usage') { call.usage = chunk.usage; checkpoint() } yield chunk }
 			}
-			finally { call.ended = true; call.finished = Date.now(); appendFileSync(join(out, 'llm-calls.jsonl'), JSON.stringify(redact(call)) + '\n'); checkpoint() }
+			finally { try { if (call.budgetId) budget.settle(call.budgetId, call.usage) } finally { call.ended = true; call.finished = Date.now(); appendFileSync(join(out, 'llm-calls.jsonl'), JSON.stringify(redact(call)) + '\n'); checkpoint() } }
 		})()
 	})
 	ctx.on('agent/request', async (payload, next) => {

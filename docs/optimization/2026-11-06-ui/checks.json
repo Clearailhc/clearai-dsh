@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "fixture": true,
+  "narrowDetails": {
+    "canvas": {
+      "x": 0,
+      "y": 178.5,
+      "width": 375,
+      "height": 648,
+      "top": 178.5,
+      "right": 375,
+      "bottom": 826.5,
+      "left": 0
+    },
+    "side": {
+      "x": 0,
+      "y": 585.359375,
+      "width": 375,
+      "height": 241.140625,
+      "top": 585.359375,
+      "right": 375,
+      "bottom": 826.5,
+      "left": 0
+    }
+  }
+}

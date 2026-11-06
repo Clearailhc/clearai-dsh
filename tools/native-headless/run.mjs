@@ -9,7 +9,7 @@ export function nativeTestEnvironment(home,specPath,source=process.env) {
  const env={}
  // Explicit pass-through only (e.g. CLEARAI_NATIVE_PASS_ENV=ABHOME_API_KEY for a provider whose profile resolves apiKeyEnv); the default stays an allowlist.
  const passed=String(source.CLEARAI_NATIVE_PASS_ENV??'').split(',').map(key=>key.trim()).filter(key=>/^[A-Z][A-Z0-9_]*$/.test(key))
- for(const key of ['PATH','HOME','USER','LOGNAME','SHELL','TMPDIR','LANG','LC_ALL','LC_CTYPE','SSL_CERT_FILE','SSL_CERT_DIR',...passed])if(source[key]!==undefined)env[key]=source[key]
+ for(const key of ['PATH','HOME','USER','LOGNAME','SHELL','TMPDIR','LANG','LC_ALL','LC_CTYPE','SSL_CERT_FILE','SSL_CERT_DIR','NODE_EXTRA_CA_CERTS','HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','all_proxy','no_proxy','CLEARAI_DSH_RESOURCES','CLEARAI_TEST_BUDGET_FILE','DS_KEY',...passed])if(source[key]!==undefined)env[key]=source[key]
  return {...env,DSH_HOME:home,ELECTRON_RUN_AS_NODE:'1',CLEARAI_NATIVE_SPEC:specPath,DSH_TELEMETRY_DISABLED:'1'}
 }
 export async function runNative({home,profile='native52',workspace,spec}) {
@@ -26,9 +26,9 @@ export async function runNative({home,profile='native52',workspace,spec}) {
  if(spec.isolation&&(!outputRelative||(!isAbsolute(outputRelative)&&outputRelative!=='..'&&!outputRelative.startsWith('../'))))throw new Error('Controller logs and run specs must stay outside the agent workspace')
  if(existsSync(join(output,'result.json')))throw new Error('Refusing to overwrite a prior run')
  mkdirSync(output,{recursive:true});mkdirSync(workspace,{recursive:true})
- const specPath=join(output,'spec.json');writeFileSync(specPath,JSON.stringify({...spec,output},null,2)+'\n')
+ const specPath=join(output,'spec.json');writeFileSync(specPath,JSON.stringify({...spec,testId:spec.testId || createHash('sha256').update(JSON.stringify([spec.group,spec.task,spec.fault])).digest('hex'),output},null,2)+'\n')
  const log=await import('node:fs').then(fs=>fs.createWriteStream(join(output,'launcher.log')))
- const child=spawn(installation.app,[join(repo,'tools/native-headless/installed-cli.cjs'),'--profile',profile],{cwd:workspace,env:nativeTestEnvironment(home,specPath),stdio:['ignore','pipe','pipe']})
+ const child=spawn(installation.app,[join(repo,'tools/native-headless/installed-cli.cjs'),'--profile',profile],{cwd:workspace,env:{...nativeTestEnvironment(home,specPath),CLEARAI_DSH_RESOURCES:installation.resources},stdio:['ignore','pipe','pipe']})
  child.stdout.pipe(log,{end:false});child.stderr.pipe(log,{end:false})
  let forcedKill
  let stopping=false,stopCause

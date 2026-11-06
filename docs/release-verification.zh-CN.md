@@ -1,5 +1,8 @@
 # 发布前 recheck（逐组件）
 
+> 0.5.8: target DSH 0.2.2-rc.1. Use `CLEARAI_DSH_RESOURCES` for the installed CLI prefix. Linux 22/24 and Windows 24 gates are in `engineering.yml`; release waits for them and `tools/verify-release-evidence.mjs` before npm writes. Real-model tests share a $30 campaign ceiling and $5 per-test ceiling including all agents and retries. Current status and limitations: [0.5.8 acceptance](optimization/0.5.8-release/README.md). Integrity receipts detect changes at defined trust boundaries; they do not make evaluator shell access filesystem-read-only.
+
+
 面向「把这个插件发给别人用」的那一刻。**顺序即优先级**;每一格都写清
 **判据 / 怎么验 / 通过线**,能机械化的就机械化(`tools/recheck.mjs`),剩下的人工项在文末。
 

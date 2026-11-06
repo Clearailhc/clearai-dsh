@@ -25,7 +25,10 @@ on:
     tags: ['v*']
 
 jobs:
+  engineering:
+    uses: ./.github/workflows/engineering.yml
   publish:
+    needs: engineering
     runs-on: ubuntu-latest
     permissions:
       # `contents: write` 是给最后那一步建 GitHub Release 用的(它要写 releases)。
@@ -72,7 +75,7 @@ jobs:
           node tools/build-package.mjs
           node tools/verify-package.mjs
       - name: Install the DSH CLI
-        run: npm install --no-save --prefix "$RUNNER_TEMP/dsh-cli" @deepseek-ai/dsh
+        run: npm install --no-save --prefix "$RUNNER_TEMP/dsh-cli" @deepseek-ai/dsh@0.2.2-rc.1
       - name: Clean install (mechanical half)
         env:
           DSH_CLI_PREFIX: ${{ runner.temp }}/dsh-cli
@@ -102,6 +105,8 @@ jobs:
             })
           '
 
+      - name: Final candidate must have complete real-model acceptance
+        run: node tools/verify-release-evidence.mjs
       - name: Publish the built package
         # 从 dist/ 发布:仓库根的 package.json 永不发布。
         # **幂等**:0.1.0 是手工首发(2FA 只能人敲),之后再打同一个 tag 不能让 CI 红着报

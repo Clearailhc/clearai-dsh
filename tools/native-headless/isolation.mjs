@@ -20,10 +20,17 @@ export function installReadIsolation(ctx,{roots,workspace}) {
  sandbox.confine=async(...args)=>{
   const prepared=await confine(...args)
   const argv=[...prepared.argv],index=argv.indexOf('-p')
-  if(!String(argv[0]).endsWith('sandbox-exec')||index<0||typeof argv[index+1]!=='string')throw new Error('Expected native Seatbelt profile; cannot safely attach read isolation')
-  // One kernel application: nesting sandbox-exec is prohibited by native policy.
-  argv[index+1]+='\n'+restriction
-  return {...prepared,argv,denialSignatures:[...(prepared.denialSignatures??[]),'Operation not permitted']}
+  if (String(argv[0]).endsWith('sandbox-exec') && index >= 0 && typeof argv[index+1] === 'string') {
+   argv[index+1]+='\n'+restriction
+  } else if (String(argv[0]).endsWith('bwrap')) {
+   const separator = argv.indexOf('--')
+   if (separator < 0) throw new Error('Missing bwrap command boundary')
+   const mounts = deny.flatMap(root => ['--tmpfs', root])
+   mounts.push('--bind', allowed, allowed)
+   argv.splice(separator, 0, ...mounts)
+  } else throw new Error('Read-isolation test requires native bwrap or Seatbelt; no unconfined fallback')
+  return {...prepared,argv,denialSignatures:[...(prepared.denialSignatures??[]),'Operation not permitted','No such file or directory']}
+
  }
  ctx.effect(()=>()=>{sandbox.confine=confine})
  ctx.tools.guard(exec=>{
@@ -36,7 +43,7 @@ export function installReadIsolation(ctx,{roots,workspace}) {
    if(!under(path,allowed)&&deny.some(root=>under(path,root)||(scan&&under(root,path))))return 'test_read_isolation: another group, private profile or controller output is unavailable'
   }
  })
- return {backend:'native-write-policy+seatbelt-read-fence',roots:deny,workspace:allowed}
+ return {backend:'native-write-policy+platform-read-fence',roots:deny,workspace:allowed}
 }
 
 export async function probeReadIsolation(ctx,agent,path) {
@@ -46,7 +53,7 @@ export async function probeReadIsolation(ctx,agent,path) {
  const shell=await execute('bash',{command:`cat '${path.replaceAll("'","'\\''")}'`,description:'Verify private controller file is unreadable',workdir:agent.session.header.cwd,timeoutMs:10000,run_in_background:false})
  const positive=await execute('bash',{command:'printf isolation-ok > isolation-public.txt; cat isolation-public.txt',description:'Verify allowed workspace reads and writes succeed',workdir:agent.session.header.cwd,timeoutMs:10000,run_in_background:false})
  const readDenied=read.isError===true&&JSON.stringify(read).includes('test_read_isolation')
- const shellDenied=!shell.isError&&shell.value?.exitCode!==0&&shell.value?.sandbox?.runnerFailed!==true&&/Operation not permitted|Permission denied/i.test(JSON.stringify(shell.value?.stderr))
+ const shellDenied=!shell.isError&&shell.value?.exitCode!==0&&shell.value?.sandbox?.runnerFailed!==true&&/Operation not permitted|Permission denied|No such file or directory/i.test(JSON.stringify(shell.value?.stderr))
  const workspaceWorks=!positive.isError&&positive.value?.exitCode===0&&positive.value?.stdout?.text==='isolation-ok'
  const alias=join(agent.session.header.cwd,'isolation-private-link')
  let symlink

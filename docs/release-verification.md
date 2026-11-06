@@ -1,5 +1,8 @@
 # Release verification
 
+> 0.5.8: target DSH 0.2.2-rc.1. Use `CLEARAI_DSH_RESOURCES` for the installed CLI prefix. Linux 22/24 and Windows 24 gates are in `engineering.yml`; release waits for them and `tools/verify-release-evidence.mjs` before npm writes. Real-model tests share a $30 campaign ceiling and $5 per-test ceiling including all agents and retries. Current status and limitations: [0.5.8 acceptance](optimization/0.5.8-release/README.md). Integrity receipts detect changes at defined trust boundaries; they do not make evaluator shell access filesystem-read-only.
+
+
 What to run before handing this plugin to someone else. Order is priority. Every row states its criterion, how it is checked, and the passing line. Mechanical checks come first; the human gate is at the end, because some things only a real browser can settle.
 
 The detailed Chinese working copy, including the per-component notes accumulated during development, is [release-verification.zh-CN.md](release-verification.zh-CN.md).

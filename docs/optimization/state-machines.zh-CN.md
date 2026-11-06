@@ -351,3 +351,6 @@ stateDiagram-v2
 | 用于回答「现在到底保证什么」 | 用于回答「这套设计打算长成什么样」 |
 
 已确认的差异见 [`../known-gaps.zh-CN.md`](../known-gaps.zh-CN.md)。
+
+| `audit/copy` | Evaluation snapshot diagnostics | yes |
+| `integrity/recorded` | Host receipt for a kernel file write | yes |

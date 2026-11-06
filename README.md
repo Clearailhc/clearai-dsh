@@ -16,25 +16,25 @@
 ClearAI is an **ontology discovery and exploration platform**, built on two core concepts:
 
 - **Domain ontology** (what you get) — your project's own vocabulary, the knowledge entries established through the loop, and their graphs. At the end of a research session you hold a continuously growing knowledge structure, retrievable next round by concept.
-- **Epistemic loop** (how you get it) — question → ontology (how the relevant quantities are measured and how they affect each other) → candidate hypotheses with their predictions → a test that could fail → evidence → bounded conclusion → grows into the ontology. Every edge is tested by evidence and independent evaluation.
+- **Epistemic loop** (how you get it) — question → ontology (how the relevant quantities are measured and how they affect each other) → candidate hypotheses with their predictions → a test that could fail → evidence → bounded conclusion → grows into the ontology. L3/L4 supporting verdicts require independent evaluation with file references and criterion results. Vocabulary and structural edges are definitions, not independently verified claims.
 
-> Other knowledge graphs pile up edges by extraction and assertion; here every edge has to be earned through the loop.
+> Keep structural definitions distinct from evidence-backed assertions; a valid citation alone does not establish truth.
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.5.7
-# or in the app: Plugins → Add plugin → clearai-dsh@0.5.7
+dsh plugin --profile web add clearai-dsh@0.5.8
+# or in the app: Plugins → Add plugin → clearai-dsh@0.5.8
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
 
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/ontology-hero-dark.png">
-  <img src="docs/diagrams/ontology-hero.png" alt="The epistemic loop (left) growing a domain ontology (right)" width="1200">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/shots/0.5.8/jepa-dark-ontology.png">
+  <img src="docs/shots/0.5.8/jepa-en-ontology.png" alt="ClearAI 0.5.8 ontology panel showing the archived JEPA research session" width="1200">
 </picture>
 
-*Left: the Epistemic Loop. Its emerald fact dot is also the first node of the domain ontology on the right. Right: the ontology graph — dark is a concept, light is a value form, emerald an instance; the instance carries two contradictory assertions — **the two readings are tinted amber**, marking that they do not agree. The system reports the conflict; retracting or keeping is a human decision.*
+*0.5.8 production UI replaying the archived JEPA session. Historical research data, not a new 0.5.8 model result. Structural definitions are distinct from verified assertions. [Screenshot provenance](docs/shots/0.5.8/jepa-en-provenance.json).*
 
 ---
 
@@ -58,7 +58,7 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 | Verdict | Whoever did it, says so | Separated — above a level, the doer cannot judge themselves |
 | Failure | Deleted, retried, forgotten | Kept: a refuted hypothesis is a result, not noise |
 | Stopping | The model feels it is done | Every candidate and anomaly that could change the answer is handled, or written into the open points |
-| What accumulates | A chat transcript | **An ontology**: every edge earned through the loop |
+| What accumulates | A chat transcript | **An ontology**: definitions alongside evidence-linked assertions |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/epistemic-loop-hero-dark.png">
@@ -70,11 +70,11 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 In the loop the ontology comes first, not last:
 
 - **The ontology is written at framing.** Which quantities the answer involves, what measures each one, how the reading is checked, and how the quantities affect each other are written in one go with the framing. A measure with no measuring method cannot be framed.
-- **The ontology yields the candidates.** Each question lists at least two candidate hypotheses, each naming the relation it comes from; before each step the model writes a prediction per candidate, and a step that predicts the same for all of them is flagged as unable to tell them apart.
+- **The ontology yields the candidates.** Exploratory questions should compare alternatives, each naming the relation it comes from (two candidates are guidance, not a universal hard gate); before each step the model writes a prediction per candidate, and a step that predicts the same for all of them is flagged as unable to tell them apart.
 - **Anomalies need a destination.** A reading that does not fit the prediction or the ontology becomes an unexplained item: explained, ruled out with a reason, or written into the answer. One that touches an established fact sends that fact back to awaiting check.
 - **Answers are delivered per question.** Each in four parts: conclusion / basis / open points / for you to decide. While a candidate still under examination or an open unexplained item is missing from the answer, the goal cannot close as achieved.
 
-State is derived from the session record with no second store; the tools the model holds contain no field in which it could declare a step complete, and a goal completes only after independent evaluation. ClearAI does only what the host cannot — the epistemic contract, the domain ontology, presentation; goal continuation, subagents, asking you, deliverable cards and file history all come from DSH itself.
+Task state is derived from the session record; file-integrity receipts are persisted separately by the host; the tools the model holds contain no field in which it could declare a step complete, and a goal completes only after independent evaluation. ClearAI does only what the host cannot — the epistemic contract, the domain ontology, presentation; goal continuation, subagents, asking you, deliverable cards and file history all come from DSH itself.
 
 ClearAI does **not** claim recursive self-improvement. It provides the epistemic substrate a self-improving system would need. See [Positioning](docs/positioning.md) and the [OpenRSI survey](docs/research-openrsi.md).
 
@@ -82,16 +82,16 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
-**Requirements:** DSH ≥ `0.2.0-rc.2` (the current `latest`). The preset is registered through a composition declaration line, which is the only way the host's preset registry finds presets. Verified against the host's `0.2.0-rc.2`, and also checked against `0.2.1-alpha.1`. Hosts older than `0.2.0` are no longer supported.
+**Requirements:** DSH ≥ `0.2.2-rc.1`, the target host for 0.5.8. Evaluators use `startActivation` and the dedicated evaluator preset; older dispatch APIs are not supported.
 
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.7`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.8`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.5.7
+dsh plugin --profile web add clearai-dsh@0.5.8
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
@@ -160,29 +160,29 @@ Two panes in the middle: **Explore** and **Ontology**. Explore holds the process
 
 **Explore** — what is being answered, which possibilities are still open, and what comes next. The header gives the topic and mode (survey / solve), the current question and plan progress. Below come the items awaiting you, the survey areas (in survey mode), each question's candidate hypotheses (being examined / excluded / adopted / set aside; open one for its source, refutation condition, prediction and related records), the next step with each candidate's prediction (with a note when the predictions are identical and the step cannot tell them apart), and unexplained observations. A newly found question carries two buttons, "Make it a question" and "Park"; pressing one sends a sentence to the model on your behalf, and the model revises the framing. At the bottom, a collapsed **process record**: judgment counts and the progress rail, every judgment, and the plan's steps and gates.
 
-**Ontology** — conclusions and long-term knowledge. At the top, an **answer card** per question in four parts: conclusion / basis / open points / for you to decide. In the middle, the **graph**: the ontology graph (what your domain looks like) and the entity graph (the concrete things found) toggle with one click, and clicking a node filters by it. Below, the **established facts** and **lessons**. Two contradictory conclusions light up; retracting or keeping is your call.
+**Ontology** — knowledge map first, followed by conclusions with their evidence and established knowledge. Switch between structural definitions and entity assertions; use search or the list to select an object, inspect its neighbors and evidence, and read its complete name in details. The map retains the chosen viewport and dragged positions.
 
 **Deliverables** — at close, the artefacts accepted for each step appear as DSH's native deliverable cards; what changed each turn is in DSH's native change cards.
 
 **Language** — everything the system writes (tool results, the runtime card, questions to you, the files under `clear/`) follows the language you write in, Chinese or English. The panel follows the UI language.
 
 <picture>
-  <img src="docs/shots/en/jepa-ontology-graph.png" alt="The ontology graph, full screen" width="820">
+  <img src="docs/shots/0.5.8/jepa-en-ontology.png" alt="ClearAI 0.5.8 ontology panel replaying the JEPA session" width="820">
 </picture>
 
-*The ontology graph, full screen. The ontology graph and the entity graph come from one deterministic projection of the files under `clear/ontology/`, so the same files always give the same picture.*
+*The current ontology panel, replaying the archived JEPA session. The default zoom keeps labels readable; Overview shows the complete graph. Dense graphs retain all nodes.*
 
 <picture>
-  <img src="docs/shots/en/ns-refuted.png" alt="A refuted judgment, expanded" width="820">
+  <img src="docs/shots/0.5.8/jepa-en-explore.png" alt="ClearAI 0.5.8 research panel, replaying the historical JEPA session" width="820">
 </picture>
 
-*A refuted judgment from the [Navier–Stokes](docs/cases/navier-stokes.md) session: it stopped at the test stage, and the record keeps why.*
+*Research panel: archived JEPA session replayed with the current production build. See [dark](docs/shots/0.5.8/jepa-dark-explore.png), [narrow](docs/shots/0.5.8/jepa-mobile-explore.png) and [entity details](docs/shots/0.5.8/jepa-entity-ontology.png).*
 
 ---
 
 ## Against the bare model
 
-Same model, same tools and budget: one arm runs with ClearAI, one without it, on the same tasks with planted traps, graded blind. These are early dev-set results for 0.5.0 (the developers wrote the tasks, and the samples are small), not a formal validity result; the 0.5.1 comparison is not finished yet.
+Same model, same tools and budget: one arm runs with ClearAI, one without it, on the same tasks with planted traps, graded blind. These are early dev-set results for 0.5.0 (the developers wrote the tasks, and the samples are small), not a formal validity result; the later 0.5.1 development comparison failed its stop-loss gate (see below).
 
 | Experiment | ClearAI | Bare model |
 |---|---|---|
@@ -195,6 +195,18 @@ Both arms **saw** the reference reading disagree. The difference is what came ne
 What did not improve for either arm is exploration depth. Recipes landed just as far from the true optimum, and nobody found the coupling between temperature and a second factor. The cost is about 2.2× the tokens. The candidate hypotheses, per-candidate predictions and stop check in 0.5.1 target exactly this. The walkthrough and the graders' words are in [Case: against the bare model](docs/cases/bare-model-ab.md); every record is in [docs/optimization/sim-runs/](docs/optimization/sim-runs/).
 
 ---
+
+### 0.5.8 integrity and verification boundaries
+
+The host records content digests and authoritative write origins for facts, lessons, negative entries, audit cards and goals. Workspace synchronization, knowledge reuse, delivery, closure and audit recovery check these receipts. Unexpected changes stop affected trust and progress; original files are preserved. Historical unregistered knowledge is visible but requires fresh verification before trusted reuse. Restore registered content or re-verify the material in a clean workspace; editing a receipt is not verification.
+
+This is integrity detection at defined boundaries, not an operating-system sandbox. Shell commands can still write files, a change restored before inspection can escape detection, and effects outside the workspace are not covered. Evaluators rerun in a filtered copy; copy failure prevents criteria requiring a rerun from passing. Audit text limits, model generation budgets and runtime limits are separate controls.
+
+Research puts questions and candidates in the main column, with next actions and anomalies beside them; narrow screens use one column. Ontology reads map → conclusions and evidence → established knowledge. Concepts use hollow diamonds, entities solid dots, and literals quiet labels. Search, list selection, neighborhood browsing, dragging, overview and keyboard controls share graph selection; Escape exits fullscreen and narrow details open below the graph.
+
+0.5.8 release evidence and current gate status: [acceptance record](docs/optimization/0.5.8-release/README.md). Engineering checks and small model samples do not prove general correctness or greater efficiency.
+
+The later [0.5.1 development comparison](docs/optimization/sim-runs/2026-10-08-0.5.1-dev/README.md) did **not** pass its stop-loss gate: total processed tokens including evaluators were **4.8–7.2×** the bare model. The earlier 0.5.0 result above and this negative result describe different versions and samples. Main-model, evaluator and other model usage must all count; token totals are not dollar bills. 0.5.8 has no completed six-run paired result yet, so no current efficiency advantage is claimed.
 
 ## Cases
 

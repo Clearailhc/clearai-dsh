@@ -845,7 +845,7 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			const sentKeys = []
 			const card = components.EntityCard({ node, data: real, send: (text) => (asked.push(text), true), sent: {}, onSent: (key, kind) => sentKeys.push([key, kind]) })
 			const cardText = react.render(card).replace(/\s+/g, ' ')
-			check('实体卡:条目上的请求按钮默认收起(点条目才出现)', findButtons(card).length === 0 && !cardText.includes('请求复检'), cardText)
+			check('实体卡:条目上的请求按钮默认收起(点条目才出现)', findButtons(card).every(button => !/请求复检|请求撤回|请求修改适用范围/.test(String(button.children))) && !cardText.includes('请求复检'), cardText)
 			/** 展开态:把组件里的 `useState(false)` 换成 true(与上面「过程记录」展开同一个办法)。 */
 			const openCard = (() => {
 				const realState = react.useState
@@ -945,9 +945,9 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('图交给 React Flow 渲染', flow !== undefined)
 			check('组件形状是 forwardRef/memo 对象也要认', typeof components.GraphBand === 'function' && flow !== undefined && !String(flatNode(tree)).includes('图组件不可用'))
 			check('适配层不截断:全部节点交出去(视口归库管)', flow?.props?.nodes?.length === 45, String(flow?.props?.nodes?.length))
-			check('节点画成星点(点 + 标签),不是方框', String(flatNode(walkNodes([flow?.props?.nodes?.[0]?.data?.label]))).includes('概念00') && flow?.props?.nodes?.[0]?.data?.label?.props?.className === 'clearai-star')
+			check('节点卡带可读名称和类型标识', String(flatNode(walkNodes([flow?.props?.nodes?.[0]?.data?.label]))).includes('概念00') && flow?.props?.nodes?.[0]?.data?.label?.props?.className === 'clearai-star')
 			check('库的零件用上了(Controls / Background;小地图去掉了)', ['rf-controls', 'rf-background'].every((name) => walkNodes(tree).some((item) => item.type === name)) && !walkNodes(tree).some((item) => item.type === 'rf-minimap'))
-			check('工具条:本体图 / 实体图 / 图例 / 适配 / 全屏', ['本体图', '实体图', '已验证', '待核验', '适配', '全屏'].every((word) => flatNode(tree).includes(word)))
+			check('本体工具条区分结构定义与事实核验,提供搜索、列表与概览', ['本体图', '实体图', '结构定义', '层级关系', '列表', '概览', '全屏'].every((word) => flatNode(tree).includes(word)))
 			check('点击回调交给了库(节点 / 边 / 空白)', typeof flow?.props?.onNodeClick === 'function' && typeof flow?.props?.onEdgeClick === 'function' && typeof flow?.props?.onPaneClick === 'function')
 			check('拖动 / 平移 / 缩放由库承担', flow?.props?.nodesDraggable === true && flow?.props?.panOnDrag === true && flow?.props?.zoomOnScroll === true)
 			check('没选之前不摆小卡', !flatNode(tree).includes('只看相关'))
@@ -972,9 +972,10 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('按 Escape → 同样退出(覆盖层内)', toggles === 2, String(toggles))
 			root?.props?.onKeyDown?.({ key: 'a' })
 			check('别的键不误触退出', toggles === 2, String(toggles))
-			const normal = expandTree(components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))
+			const normal = expandTree(components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => { toggles += 1 }, onFilter: () => {} }))
 			const normalRoot = walkNodes(normal).find((item) => item.props?.['data-full'] === '0')
-			check('非全屏不接 Escape(不把普通面板当覆盖层)', normalRoot?.props?.onKeyDown === undefined)
+			normalRoot?.props?.onKeyDown?.({key:'Escape'})
+			check('非全屏 Escape 不触发退出(保留边的键盘交互)', toggles === 2)
 		}
 		{
 			const small = expandTree(components.GraphBand({ lexicon: atlasView.lexicon, layer: 'ontology', fullscreen: false, sessionId: 's1', onLayer: () => {}, onToggleFullscreen: () => {}, onFilter: () => {} }))

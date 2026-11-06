@@ -1,0 +1,12 @@
+{
+  "kind": "historical-session-replay",
+  "events": "docs/cases/runs/jepa-world-model/events.jsonl",
+  "eventsSha256": "6b6f51b3fd4f27eec0dbe7f21eb9918ce7c0613e35b4a41f4c44819268bf7e6a",
+  "clientSha256": "c9dd632c77702e2ab452354894a2a38a2760dc92ca30f01178a3b9bfac9cb524",
+  "language": "zh",
+  "theme": "dark",
+  "panels": [
+    "ontology",
+    "explore"
+  ]
+}
