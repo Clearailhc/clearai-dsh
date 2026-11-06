@@ -2,7 +2,7 @@
   "kind": "historical-session-replay",
   "events": "docs/cases/runs/jepa-world-model/events.jsonl",
   "eventsSha256": "6b6f51b3fd4f27eec0dbe7f21eb9918ce7c0613e35b4a41f4c44819268bf7e6a",
-  "clientSha256": "3b5a83d06829a5ce533a03d84f84c3459d3604dcdf220a707fb9cb164cd66a8c",
+  "clientSha256": "bc981a1e8224ddcae09aba76751368fd94c5ac36a260a81d20e9d9ba801952ef",
   "foldSha256": "e5d919063581f00f2aa866b68ccfe201a10972f448ff8e119cc93526cd79f9ac",
   "viewport": {
     "width": 375,

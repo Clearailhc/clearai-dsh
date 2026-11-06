@@ -1,5 +1,8 @@
 # 发布前 recheck（逐组件）
 
+0.5.8 的当前门槛与实测证据见[本版验收记录](optimization/0.5.8-release/README.md)。下列旧版检查表保留为行为清单，历史数字与未验项不代表本版结果；本版按知识地图 → 结论与依据 → 已确立知识阅读，结构定义与已核验关系分别标识。
+
+
 > 0.5.8: target DSH 0.2.2-rc.1. Use `CLEARAI_DSH_RESOURCES` for the installed CLI prefix. Linux 22/24 and Windows 24 gates are in `engineering.yml`; release waits for them and `tools/verify-release-evidence.mjs` before npm writes. Real-model tests share a $30 campaign ceiling and $5 per-test ceiling including all agents and retries. Current status and limitations: [0.5.8 acceptance](optimization/0.5.8-release/README.md). Integrity receipts detect changes at defined trust boundaries; they do not make evaluator shell access filesystem-read-only.
 
 

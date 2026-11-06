@@ -1,0 +1,7 @@
+{
+  "previousDigest": "0a91ab84462dceb9eb83043e14e944e23ef755e722322d02c17a21b83d2325e0",
+  "candidateDigest": "d9a93e1cc3fe2ae2c7febf257c95920272729bbbc5bf970b362a500b1ea9bd3a",
+  "changedFiles": [
+    "package/lib/client.js"
+  ]
+}

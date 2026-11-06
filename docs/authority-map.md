@@ -18,9 +18,12 @@ It came from a self-diagnosis: after several rounds of fixes we were patching sy
 | What files changed each turn | **Host**: workspace-changes | No own ledger or snapshots; no restore |
 | Skills, project instructions | **Host**: skill directory, `PROJECT.md` | No bundled skill templates or memory |
 | Which judgement is tested; criteria committed in advance; which observation feeds which evaluation; supports / refutes / inconclusive; why a fact gains or loses citability | **ClearAI**: kernel events in the session log | The irreplaceable part. A task finishing ≠ a hypothesis holding; an evaluation failing ≠ a hypothesis refuted |
-| Domain vocabulary, instances, assertions | **ClearAI**: `ontology/*`, `entity/*`, `fact/promoted.assertions` | Recorded only through named verbs |
+| Domain vocabulary and declared instances/relations | **Workspace ontology files**: `clear/ontology/` | Parsed and checked as definitions; not automatically promoted to verified facts |
+| Verified assertions | **ClearAI**: `fact/promoted.assertions` in kernel events | Promoted through the evidence gates |
 | Conflicts, ontology graph, entity graph, progress, gaps | **Projection (derived)** | Computed every time, never stored |
-| Shelves under `clear/` and the Ontology pane | **Rendering** | Not authoritative; rewritten idempotently, the UI is read-only |
+| Registered authoritative-file contents | **Host-persisted integrity receipts**: workspace, path, digest and authoritative event | Checked at trust boundaries; current files cannot establish their own verified state. Anomalies block related reuse |
+| Knowledge shelves and goal records under `clear/` | **Rendering** | Derived from authoritative events; legitimate kernel writes are registered, anomalous files are preserved |
+| Ontology pane | **Derived read surface** | Displays structural definitions separately from verified assertions |
 
 ## 2. Consequences
 

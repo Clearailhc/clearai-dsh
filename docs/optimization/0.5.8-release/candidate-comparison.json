@@ -1,0 +1,28 @@
+{
+  "candidateDigest": "0a91ab84462dceb9eb83043e14e944e23ef755e722322d02c17a21b83d2325e0",
+  "comparisons": [
+    {
+      "previousDigest": "53d8426d492df7d5e155626039580d1f27c26db7158f5e9f620b2367eb7ce407",
+      "changedFiles": [
+        "package/CHANGELOG.md",
+        "package/lib/client.js",
+        "package/lib/fold.js",
+        "package/presets/clearai/plugins/tool-argument-stream.js"
+      ]
+    },
+    {
+      "previousDigest": "8feab0dce517530d1d0a5d51b6c6ce9e0883f8b41c445dedf4d7d497075c8bac",
+      "changedFiles": [
+        "package/lib/client.js",
+        "package/lib/fold.js"
+      ]
+    },
+    {
+      "previousDigest": "bb9d4aadf4ee3efd8a3bfb249394a61f201b5c54bee32251c16840adf1aa72f7",
+      "changedFiles": [
+        "package/lib/client.js",
+        "package/lib/fold.js"
+      ]
+    }
+  ]
+}

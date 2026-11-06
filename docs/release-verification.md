@@ -1,5 +1,8 @@
 # Release verification
 
+For 0.5.8, use the [current acceptance record](optimization/0.5.8-release/README.md). The older checklist below remains a behavior reference; historical counts and unverified items do not describe current results. The current Ontology pane reads from knowledge map to conclusions/evidence to established knowledge, with definitions distinguished from verified relations.
+
+
 > 0.5.8: target DSH 0.2.2-rc.1. Use `CLEARAI_DSH_RESOURCES` for the installed CLI prefix. Linux 22/24 and Windows 24 gates are in `engineering.yml`; release waits for them and `tools/verify-release-evidence.mjs` before npm writes. Real-model tests share a $30 campaign ceiling and $5 per-test ceiling including all agents and retries. Current status and limitations: [0.5.8 acceptance](optimization/0.5.8-release/README.md). Integrity receipts detect changes at defined trust boundaries; they do not make evaluator shell access filesystem-read-only.
 
 

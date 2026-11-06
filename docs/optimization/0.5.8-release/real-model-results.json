@@ -9,21 +9,25 @@
   "budget": {
     "campaignLimitUsd": 30,
     "perTestLimitUsd": 5,
-    "costUpperBoundUsd": 2.5467608,
-    "verifiedUsageCostUpperBoundUsd": 1.7467608,
+    "costUpperBoundUsd": 6.1993941999999995,
+    "verifiedUsageCostUpperBoundUsd": 4.5993942,
     "perTestCostUpperBoundUsd": {
+      "audit-wait:0:none": 0.5671770000000002,
+      "audit-wait:305:none": 0.3121640999999999,
       "audit-wait:0:cancel-after-child-request": 0.297306,
-      "audit-wait:0:crash-after-child-verdict": 0.5236815,
-      "audit-wait:0:disconnect": 0.2927634,
-      "audit-wait:0:none": 0.5671769999999999,
-      "audit-wait:305:none": 0.0641967,
-      "isolation-probe": 0.8016362
+      "audit-wait:0:disconnect": 0.29276340000000006,
+      "audit-wait:0:crash-after-child-verdict": 0.8810757,
+      "isolation-probe": 0.8016362,
+      "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6": 0.7438011,
+      "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c": 0.0075465,
+      "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129": 2.2959242
     },
-    "requests": 285,
-    "verifiedRequests": 284,
-    "pendingRequests": 0,
+    "requests": 526,
+    "verifiedRequests": 524,
+    "pendingRequests": 1,
     "unknownRequests": 1,
-    "unknownReservedUsd": 0.8
+    "unknownReservedUsd": 0.8,
+    "acceptedUnknownReservations": 1
   },
   "runs": [
     {

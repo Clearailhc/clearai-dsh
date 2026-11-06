@@ -1,0 +1,143 @@
+{
+  "passed": true,
+  "fixture": true,
+  "contrasts": [
+    {
+      "theme": "light",
+      "samples": 15,
+      "minimum": 5.845855343122565,
+      "below45": []
+    },
+    {
+      "theme": "dark",
+      "samples": 15,
+      "minimum": 8.596981524622132,
+      "below45": []
+    }
+  ],
+  "narrowDetails": {
+    "canvas": {
+      "x": 0,
+      "y": 178.5,
+      "width": 375,
+      "height": 648,
+      "top": 178.5,
+      "right": 375,
+      "bottom": 826.5,
+      "left": 0
+    },
+    "side": {
+      "x": 0,
+      "y": 585.359375,
+      "width": 375,
+      "height": 241.140625,
+      "top": 585.359375,
+      "right": 375,
+      "bottom": 826.5,
+      "left": 0
+    }
+  },
+  "stressInteractiveMs": 2409,
+  "projectionUpdates": {
+    "removed": 0,
+    "elapsedMs": 930.8999999985099
+  },
+  "clientSha256": "bc981a1e8224ddcae09aba76751368fd94c5ac36a260a81d20e9d9ba801952ef",
+  "foldSha256": "e5d919063581f00f2aa866b68ccfe201a10972f448ff8e119cc93526cd79f9ac",
+  "nativeHostVersion": "0.2.2-rc.1",
+  "native": {
+    "en": {
+      "passed": true,
+      "kind": "historical-replay-in-native-DSH",
+      "checks": [
+        "Explore-375",
+        "Explore-768",
+        "Explore-1440",
+        "Ontology-375",
+        "Ontology-768",
+        "Ontology-1440",
+        "keyboard-search-details",
+        "neighborhood",
+        "entity-list-details",
+        "keyboard-edge-details",
+        "zoom",
+        "async-detail-race",
+        "node-drag",
+        "narrow-fullscreen-details",
+        "escape"
+      ],
+      "geometry": {
+        "canvas": {
+          "x": 0,
+          "y": 245,
+          "width": 375,
+          "height": 581.5,
+          "top": 245,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        },
+        "side": {
+          "x": 0,
+          "y": 652.15625,
+          "width": 375,
+          "height": 174.34375,
+          "top": 652.15625,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        }
+      },
+      "errors": []
+    },
+    "zh": {
+      "passed": true,
+      "kind": "historical-replay-in-native-DSH",
+      "checks": [
+        "\u63a2\u7d22-375",
+        "\u63a2\u7d22-768",
+        "\u63a2\u7d22-1440",
+        "\u672c\u4f53-375",
+        "\u672c\u4f53-768",
+        "\u672c\u4f53-1440",
+        "keyboard-search-details",
+        "neighborhood",
+        "entity-list-details",
+        "keyboard-edge-details",
+        "narrow-fullscreen-details",
+        "escape"
+      ],
+      "geometry": {
+        "canvas": {
+          "x": 0,
+          "y": 180.5,
+          "width": 375,
+          "height": 646,
+          "top": 180.5,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        },
+        "side": {
+          "x": 0,
+          "y": 651.15625,
+          "width": 375,
+          "height": 175.34375,
+          "top": 651.15625,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        }
+      },
+      "errors": []
+    }
+  },
+  "replay": {
+    "events": "docs/cases/runs/jepa-world-model/events.jsonl",
+    "eventsSha256": "6b6f51b3fd4f27eec0dbe7f21eb9918ce7c0613e35b4a41f4c44819268bf7e6a",
+    "nodes": 96,
+    "edges": 127,
+    "graphEqualityChecked": true,
+    "modelCallsDisabled": true
+  }
+}

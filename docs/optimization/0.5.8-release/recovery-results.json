@@ -3,21 +3,25 @@
   "budget": {
     "campaignLimitUsd": 30,
     "perTestLimitUsd": 5,
-    "costUpperBoundUsd": 2.5467608,
-    "verifiedUsageCostUpperBoundUsd": 1.7467608,
+    "costUpperBoundUsd": 6.1993941999999995,
+    "verifiedUsageCostUpperBoundUsd": 4.5993942,
     "perTestCostUpperBoundUsd": {
+      "audit-wait:0:none": 0.5671770000000002,
+      "audit-wait:305:none": 0.3121640999999999,
       "audit-wait:0:cancel-after-child-request": 0.297306,
-      "audit-wait:0:crash-after-child-verdict": 0.5236815,
-      "audit-wait:0:disconnect": 0.2927634,
-      "audit-wait:0:none": 0.5671769999999999,
-      "audit-wait:305:none": 0.0641967,
-      "isolation-probe": 0.8016362
+      "audit-wait:0:disconnect": 0.29276340000000006,
+      "audit-wait:0:crash-after-child-verdict": 0.8810757,
+      "isolation-probe": 0.8016362,
+      "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6": 0.7438011,
+      "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c": 0.0075465,
+      "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129": 2.2959242
     },
-    "requests": 285,
-    "verifiedRequests": 284,
-    "pendingRequests": 0,
+    "requests": 526,
+    "verifiedRequests": 524,
+    "pendingRequests": 1,
     "unknownRequests": 1,
-    "unknownReservedUsd": 0.8
+    "unknownReservedUsd": 0.8,
+    "acceptedUnknownReservations": 1
   },
   "runs": [
     {
@@ -185,16 +189,75 @@
       },
       "sourceSha256": "c4bb9b94a579d2b9041c7822f3720995171c4bbccbc8b301ae728e55e8870aa7",
       "packageDigest": "8feab0dce517530d1d0a5d51b6c6ce9e0883f8b41c445dedf4d7d497075c8bac"
+    },
+    {
+      "test": "recovery-original-goal",
+      "accepted": true,
+      "reason": "completed",
+      "elapsedMs": 141,
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "calls": 0,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 0,
+        "status": "verified",
+        "processed": 0
+      },
+      "sourceSha256": "ced1bcb22339a6edff2a907d4976f9ff543bb7a28646d315c75c02b91257eaa0",
+      "packageDigest": "8feab0dce517530d1d0a5d51b6c6ce9e0883f8b41c445dedf4d7d497075c8bac",
+      "preCrashUsage": {
+        "input": 28506,
+        "output": 43406,
+        "cacheRead": 989184,
+        "cacheWrite": 0,
+        "calls": 47,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 1061096,
+        "status": "verified",
+        "processed": 1061096
+      },
+      "originalGoalAndAuditPreserved": true
+    },
+    {
+      "test": "slow-305-after-fix",
+      "accepted": true,
+      "reason": "completed",
+      "elapsedMs": 447094,
+      "usage": {
+        "input": 19214,
+        "output": 24780,
+        "cacheRead": 708224,
+        "cacheWrite": 0,
+        "calls": 40,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 752218,
+        "status": "verified",
+        "processed": 752218
+      },
+      "sourceSha256": "2f8f5e835e70f377c20feb5a8078df905c5dd64b0cfaa857dc53820f86105a2d",
+      "packageDigest": "bb9d4aadf4ee3efd8a3bfb249394a61f201b5c54bee32251c16840adf1aa72f7",
+      "delaySeconds": 305,
+      "nativeJobReads": 2,
+      "parentRequestsWhileWaiting": 0,
+      "audits": 1
     }
   ],
   "remaining": [
-    "final-candidate live recovery",
-    "final-candidate slow wait",
     "six paired smoke",
-    "full real-host UI matrix and contrast"
+    "final artifact and release checks"
   ],
   "notes": [
     "Replacement-goal recovery is excluded despite the older verifier passing.",
-    "Paid batches stopped after a cancelled session-title request returned no usage. Its full USD 0.80 reservation remains charged to the test and campaign limits."
+    "The user approved retaining the one unknown title request at its full USD 0.80 bound. It remains unknown; new unknown usage still stops paid calls.",
+    "Recovery and slow-wait checks predate read-only graph inspector changes. Affected inspector behavior and final native UI were retested; the final six-session smoke uses the updated package."
   ]
 }

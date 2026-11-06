@@ -10,9 +10,9 @@ Preliminary failures are retained: first fast run was rejected before any model 
 
 Pre-change red-team evidence remains in [2026-11-06-redteam](../2026-11-06-redteam/). Historical model results remain in [0.5.2 validation status](../0.5.2-plan/pr23-validation-status.zh-CN.md) and the [bare-model comparison](../../cases/bare-model-ab.md). They describe their original versions and samples and are not reclassified as 0.5.8 results. Costs must include main, evaluator and other model calls.
 
-## Current gate results
+## Earlier gate results (retained chronology)
 
-- Strict Linux Node 24 suites passed without skipping installed host or client checks: kernel 703, host 38, client 180, plus domain, ontology, state-machine and other suites. Dedicated integrity/copy tests: 6; monetary budget tests: 5.
+- Strict Linux Node 24 suites passed without skipping installed host or client checks: kernel 704, host 38, client 180, plus domain, ontology, state-machine and other suites. Dedicated integrity/copy tests: 6; monetary budget tests: 6.
 - Reproducible package: 45 checks passed. Workspace residue check passed. Native DSH session append/cold replay contract passed. Real 0.5.7 → 0.5.8 install/upgrade/uninstall/reinstall passed.
 - Production-component browser checks passed in Chinese and English, including 200 nodes, self/reciprocal edges, keyboard edge selection and 30 projection updates with zero graph node/edge removals. Real DSH Explore/Ontology pages loaded in light and dark themes at 1440/768/375px without horizontal overflow or runtime errors; `native-*.png` records the synthetic arithmetic acceptance session. [Final browser checks and build digests](browser-results.json).
 - Same-machine graph performance: an initial 3-sample 50-node result exceeded the 20% line; retained in `graph-performance-initial.json`. A subsequent 5-sample run after other browser workloads finished measured 14.1% / 17.7% first-render increases for 50 / 200 nodes, and 12.1% / 5.9% update increases. This is limited synthetic evidence, not a claim of faster rendering.
@@ -36,8 +36,22 @@ A new fast run passed in 70 seconds with one evaluator and no parent polling. Ca
 
 A separate isolation probe exposed a session-title request that outlived the main agent and lost its usage during shutdown. The test driver now drains all model accounting before exit and rejects completed runs with pending or unknown usage. The unresolved request retains its full $0.80 reservation; all paid batches are paused pending an explicit decision on this accounting exception. Current aggregate bound, including that reservation: $2.5467608. No ledger entry was cleared or treated as free. See [follow-up numeric results](recovery-results.json).
 
-## Continued acceptance (2026-11-06)
+## Current acceptance (2026-11-06)
 
 The user approved charging the one unresolved title request at its full $0.80 reserved upper bound. Its status remains unknown and the reservation remains intact; any new unknown request still stops the campaign. The corrected crash-recovery check passed for the original goal and audit, with zero model requests on recovery. The new 305-second run passed in 447 seconds with one evaluator, two native background-job reads and no parent polling.
 
 Final native DSH historical replay checks passed in English and Chinese at 375/768/1440px, including keyboard search, entity and structural-edge details, neighborhood, narrow fullscreen and Escape. English additionally covered zoom, dragging and delayed asynchronous detail responses. Historical graph equality was checked (96 nodes, 127 edges), with model calls disabled during browser work. Sampled body/control text minima are 5.85:1 light and 8.60:1 dark. The structural-edge and colon-containing fact-ID inspector defects found here have behavioral regressions. [Browser results](browser-results.json), [native interaction script](native-ui-check.mjs), [native replay script](native-ui-replay.mjs). These are read-only historical UI checks, not new research evidence.
+
+
+All Linux Node 22/24 and Windows Node 24 jobs passed for the final inspector implementation in [CI 42176191577](https://github.com/Clearailhc/clearai-dsh/actions/runs/42176191577), and the subsequent documentation commit passed [CI 42176678915](https://github.com/Clearailhc/clearai-dsh/actions/runs/42176678915). The checks include installed-host suites, native contracts, lifecycle and package verification, with browser checks on Linux.
+
+[Package comparison](candidate-comparison.json) records the exact differences from the recovery and slow-wait candidates: only `lib/client.js` and `lib/fold.js` changed. The final native interaction checks cover those read-only rendering/inspector changes. The six paired smoke sessions freeze the final package, model, task matrix, world-key commitment and test-driver hashes before execution. Results will be added after the complete batch; individual successes do not satisfy the release gate.
+
+
+### Final performance repair
+
+A further five-repeat sample of the final client found a 30.2% regression in 50-node first render. The sample is preserved in [pre-fix results](graph-performance-final-before-fix.json). Investigation found redundant mount-time state resets and graph layout recomputation when only the surrounding lexicon object changed. An isolated reset experiment improved first render but retained a 21.8% update regression; [that result is also preserved](graph-performance-reset-experiment.json).
+
+The final change skips empty resets on initial mount and keys graph memoization to actual graph/conflict data. A behavioral regression covers unrelated lexicon updates. [Five-repeat final measurements](graph-performance-optimized.json): 50-node first render 309ms versus 260ms (+19.0%); 200-node first render 682ms versus 713ms (-4.3%). Thirty-update totals were 508ms versus 843ms and 1001ms versus 4336ms, respectively, with no node/edge removals. This measures a synthetic component on one machine, not overall application or model efficiency. Previous samples remain available.
+
+The strict installed-package suite passed again (704 kernel, 38 host, 181 client assertions), as did package verification and production browser checks. Native DSH English and Chinese interactions were repeated and README screenshots regenerated. [Updated browser evidence](browser-results-optimized.json). [Package comparison](performance-candidate-comparison.json) confirms this repair changes only `lib/client.js` relative to the frozen model-test package; the model-facing kernel, preset and driver remain unchanged.
