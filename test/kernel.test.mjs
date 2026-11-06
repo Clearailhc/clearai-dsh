@@ -1690,6 +1690,19 @@ console.log('\n【人门由开门的那次调用当场问:L4 放行 / 连拦 / �
 		host.onAudit = undefined
 	}
 
+	// An unavailable copy must remain visible in the projection; never dispatch a fallback evaluator.
+	{
+		const host = makeHost(); apply(host.ctx, { auditRerun: true })
+		const S = 'session-rerun-excluded'
+		await callOn(host, S, 'Frame', { claim: '核对必要输入', done_criteria: '输入值为 2', hypotheses: [{ name: '输入成立', claim: '输入值为 2', refute_when: '输入值不是 2' }] })
+		const hypothesis = host.service.state(S).hypotheses[0].id
+		await callOn(host, S, 'CreatePlan', { steps: [{ id: 'excluded', do: '复跑必要输入', artifacts: ['node_modules/required.txt'], done_criteria: '输入值为 2', tests: { hypotheses: [hypothesis], level: 'L3' } }] })
+		write('node_modules/required.txt', 'value=2\n')
+		const result = await callOn(host, S, 'AdvancePlan', { step_id: 'excluded' })
+		check('必要输入被排除时不派评估者', result.ok === false && host.audits.length === 0)
+		check('副本失败诊断保留在投影中供 UI 呈现', Object.values(host.service.state(S).auditCopies ?? {}).some(copy => copy.status === 'unavailable' && /required-input-excluded/.test(copy.error)))
+	}
+
 	// ⑧ 交给评估者的材料体积闸门(issue #36):L3+ 才管;超限拒绝、不截断、不落账;上限可调
 	{
 		const host = makeHost()

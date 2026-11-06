@@ -1778,13 +1778,13 @@ export function apply(ctx, config = {}) {
 			}
 			const copy = CFG.auditRerun ? await rerunCopy(sessionId, auditKey, auditRerunInputs(sessionCwd(sessionId), initialState, step), signal) : { directory: null, status: 'disabled' }
    const rerunDir = copy.directory
+   mutations.push(landFact(sessionId, { t: 'audit/copy', id: pendingId, ...copy }))
    if (CFG.auditRerun && copy.status !== 'ready') {
     const stopped = { holds: 'unknown', results: [], basis: copy.error ?? 'Rerun snapshot unavailable', shortfalls: ['audit_rerun_unavailable'], cardPath: null, digest, mutations }
     mutations.push(landFact(sessionId, { t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: stopped.basis, shortfalls: stopped.shortfalls, digest }))
     await flushFacts(sessionId)
     return stopped
    }
-   mutations.push(landFact(sessionId, { t: 'audit/copy', id: pendingId, ...copy }))
    signal?.throwIfAborted()
 			const dispatched = await dispatchSubRun({
     criteria,

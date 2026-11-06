@@ -12,7 +12,7 @@ Pre-change red-team evidence remains in [2026-11-06-redteam](../2026-11-06-redte
 
 ## Current gate results
 
-- Strict Linux Node 24 suites passed without skipping installed host or client checks: kernel 701, host 38, client 180, plus domain, ontology, state-machine and other suites. Dedicated integrity/copy tests: 6; monetary budget tests: 5.
+- Strict Linux Node 24 suites passed without skipping installed host or client checks: kernel 703, host 38, client 180, plus domain, ontology, state-machine and other suites. Dedicated integrity/copy tests: 6; monetary budget tests: 5.
 - Reproducible package: 45 checks passed. Workspace residue check passed. Native DSH session append/cold replay contract passed. Real 0.5.7 → 0.5.8 install/upgrade/uninstall/reinstall passed.
 - Production-component browser checks passed in Chinese and English, including 200 nodes, self/reciprocal edges, keyboard edge selection and 30 projection updates with zero graph node/edge removals. Real DSH Explore/Ontology pages loaded at 1440/768/375px without horizontal overflow or runtime errors; `native-*.png` records the synthetic arithmetic acceptance session.
 - Same-machine graph performance: an initial 3-sample 50-node result exceeded the 20% line; retained in `graph-performance-initial.json`. A subsequent 5-sample run after other browser workloads finished measured 14.1% / 17.7% first-render increases for 50 / 200 nodes, and 12.1% / 5.9% update increases. This is limited synthetic evidence, not a claim of faster rendering.
@@ -21,3 +21,5 @@ Pre-change red-team evidence remains in [2026-11-06-redteam](../2026-11-06-redte
 - Linux Node 22 and 24 passed remote CI run 42159315961. Windows Node 24 exposed a test race: a fixed 50ms sleep was shorter than the new asynchronous snapshot copy. The assertion now waits for evaluator dispatch with a bounded deadline; the next Windows run passed all suites, then exposed `spawnSync npm.cmd EINVAL` in the older package verifier. That verifier now invokes the npm JavaScript entry through Node on Windows; the next Windows run passed package validation. Native-contract imports then exposed Windows drive letters being treated as URL schemes; explicit file URLs now cover both runtime and projection imports. The final Windows rerun remains required.
 
 Raw model logs are retained in the local test environment. Automatic approval rejected copying full conversation payloads into the repository because they could contain sensitive data; this repository contains only an allowlisted numeric summary and content hashes. No successful sample replaces a failed attempt.
+
+The final review also added a regression for unavailable rerun copies: failure diagnostics now land before early return, remain visible in the projection, and do not dispatch a fallback evaluator. This failure-path change is covered by the two new kernel assertions; the earlier model runs retain their original candidate digests.
