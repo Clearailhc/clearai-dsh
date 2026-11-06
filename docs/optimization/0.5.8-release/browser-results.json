@@ -1,6 +1,20 @@
 {
   "passed": true,
   "fixture": true,
+  "contrasts": [
+    {
+      "theme": "light",
+      "samples": 15,
+      "minimum": 5.845855343122565,
+      "below45": []
+    },
+    {
+      "theme": "dark",
+      "samples": 15,
+      "minimum": 8.596981524622132,
+      "below45": []
+    }
+  ],
   "narrowDetails": {
     "canvas": {
       "x": 0,
@@ -23,97 +37,107 @@
       "left": 0
     }
   },
-  "stressInteractiveMs": 3894,
+  "stressInteractiveMs": 3833,
   "projectionUpdates": {
     "removed": 0,
-    "elapsedMs": 914.6000000005588
+    "elapsedMs": 736.3999999985099
   },
-  "clientSha256": "a2540c6eb536a2eae0ede2312e8a71bb6e16e9e30c49a51b06a3319276904d48",
-  "foldSha256": "3308609d5818b74948791ea0465ba6436683117e7abbb1ed091dc83703782bdc",
+  "clientSha256": "3b5a83d06829a5ce533a03d84f84c3459d3604dcdf220a707fb9cb164cd66a8c",
+  "foldSha256": "e5d919063581f00f2aa866b68ccfe201a10972f448ff8e119cc93526cd79f9ac",
   "nativeHostVersion": "0.2.2-rc.1",
-  "nativeSessionKind": "synthetic-arithmetic-acceptance-session",
   "native": {
-    "light": {
-      "panels": [
-        {
-          "panel": "Explore",
-          "width": 1440,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Explore",
-          "width": 768,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Explore",
-          "width": 375,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Ontology",
-          "width": 1440,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Ontology",
-          "width": 768,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Ontology",
-          "width": 375,
-          "overflow": false,
-          "loaded": true
-        }
+    "en": {
+      "passed": true,
+      "kind": "historical-replay-in-native-DSH",
+      "checks": [
+        "Explore-375",
+        "Explore-768",
+        "Explore-1440",
+        "Ontology-375",
+        "Ontology-768",
+        "Ontology-1440",
+        "keyboard-search-details",
+        "neighborhood",
+        "entity-list-details",
+        "keyboard-edge-details",
+        "zoom",
+        "async-detail-race",
+        "node-drag",
+        "narrow-fullscreen-details",
+        "escape"
       ],
+      "geometry": {
+        "canvas": {
+          "x": 0,
+          "y": 245,
+          "width": 375,
+          "height": 581.5,
+          "top": 245,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        },
+        "side": {
+          "x": 0,
+          "y": 652.15625,
+          "width": 375,
+          "height": 174.34375,
+          "top": 652.15625,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        }
+      },
       "errors": []
     },
-    "dark": {
-      "panels": [
-        {
-          "panel": "Explore",
-          "width": 1440,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Explore",
-          "width": 768,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Explore",
-          "width": 375,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Ontology",
-          "width": 1440,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Ontology",
-          "width": 768,
-          "overflow": false,
-          "loaded": true
-        },
-        {
-          "panel": "Ontology",
-          "width": 375,
-          "overflow": false,
-          "loaded": true
-        }
+    "zh": {
+      "passed": true,
+      "kind": "historical-replay-in-native-DSH",
+      "checks": [
+        "探索-375",
+        "探索-768",
+        "探索-1440",
+        "本体-375",
+        "本体-768",
+        "本体-1440",
+        "keyboard-search-details",
+        "neighborhood",
+        "entity-list-details",
+        "keyboard-edge-details",
+        "narrow-fullscreen-details",
+        "escape"
       ],
+      "geometry": {
+        "canvas": {
+          "x": 0,
+          "y": 180.5,
+          "width": 375,
+          "height": 646,
+          "top": 180.5,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        },
+        "side": {
+          "x": 0,
+          "y": 651.15625,
+          "width": 375,
+          "height": 175.34375,
+          "top": 651.15625,
+          "right": 375,
+          "bottom": 826.5,
+          "left": 0
+        }
+      },
       "errors": []
     }
+  },
+  "replay": {
+    "events": "docs/cases/runs/jepa-world-model/events.jsonl",
+    "eventsSha256": "6b6f51b3fd4f27eec0dbe7f21eb9918ce7c0613e35b4a41f4c44819268bf7e6a",
+    "nodes": 96,
+    "edges": 127,
+    "graphEqualityChecked": true,
+    "modelCallsDisabled": true
   }
 }

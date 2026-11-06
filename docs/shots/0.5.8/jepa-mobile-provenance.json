@@ -2,18 +2,18 @@
   "kind": "historical-session-replay",
   "events": "docs/cases/runs/jepa-world-model/events.jsonl",
   "eventsSha256": "6b6f51b3fd4f27eec0dbe7f21eb9918ce7c0613e35b4a41f4c44819268bf7e6a",
-  "clientSha256": "a2540c6eb536a2eae0ede2312e8a71bb6e16e9e30c49a51b06a3319276904d48",
-  "language": "zh",
-  "theme": "light",
-  "panels": [
-    "ontology",
-    "explore"
-  ],
+  "clientSha256": "3b5a83d06829a5ce533a03d84f84c3459d3604dcdf220a707fb9cb164cd66a8c",
+  "foldSha256": "e5d919063581f00f2aa866b68ccfe201a10972f448ff8e119cc93526cd79f9ac",
   "viewport": {
     "width": 375,
     "height": 900
   },
   "entity": false,
   "detail": false,
-  "foldSha256": "3308609d5818b74948791ea0465ba6436683117e7abbb1ed091dc83703782bdc"
+  "language": "zh",
+  "theme": "light",
+  "panels": [
+    "ontology",
+    "explore"
+  ]
 }
