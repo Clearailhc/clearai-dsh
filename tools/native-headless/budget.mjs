@@ -8,7 +8,7 @@ export const PRICE = Object.freeze({ input: 0.3, cached: 0.006, output: 1.2, sou
 export const REQUEST_RESERVE = 0.8
 export function initializeBudget(file) {
 	mkdirSync(dirname(file), { recursive: true })
-	writeFileSync(file, JSON.stringify({ version: 2, limitUsd: 30, testLimitUsd: 5, price: PRICE, requests: {} }), { flag: 'wx', mode: 0o600 })
+	writeFileSync(file, JSON.stringify({ version: 3, limitUsd: 30, testLimitUsd: 5, price: PRICE, requests: {} }), { flag: 'wx', mode: 0o600 })
 }
 export function campaignBudget(file) {
 	if (!file || !existsSync(file)) throw new Error('Initialize CLEARAI_TEST_BUDGET_FILE before any paid run')
@@ -16,7 +16,7 @@ export function campaignBudget(file) {
 		const lock = file + '.lock'; mkdirSync(lock)
 		try {
 			const data = JSON.parse(readFileSync(file))
-			if (data.version !== 2 || data.limitUsd !== 30 || data.testLimitUsd !== 5 || JSON.stringify(data.price) !== JSON.stringify(PRICE)) throw new Error('Budget policy mismatch')
+			if (data.version !== 3 || data.limitUsd !== 30 || data.testLimitUsd !== 5 || JSON.stringify(data.price) !== JSON.stringify(PRICE)) throw new Error('Budget policy mismatch')
 			const result = operation(data), temporary = file + '.' + randomUUID()
 			writeFileSync(temporary, JSON.stringify(data, null, 2), { mode: 0o600 }); renameSync(temporary, file)
 			return result
@@ -41,9 +41,33 @@ export function campaignBudget(file) {
 			const row = data.requests[id]; if (!row || row.status !== 'pending') throw new Error('Unknown or already settled request')
 			if (!usage || ![usage.inputTokens, usage.outputTokens, usage.cacheReadTokens ?? 0, usage.cacheWriteTokens ?? 0].every(value => Number.isFinite(value) && value >= 0)) { row.status = 'unknown'; return }
 			const input = usage.inputTokens + (usage.cacheReadTokens ?? 0) + (usage.cacheWriteTokens ?? 0)
-			const bound = (input * PRICE.input + usage.outputTokens * PRICE.output) / 1e6
-			if (!Number.isFinite(bound) || bound < 0 || bound > REQUEST_RESERVE) { row.status = 'unknown'; row.error = 'Usage exceeded reserved model capacity'; return }
-			Object.assign(row, { usage, status: 'verified', finishedAt: Date.now(), reservedUsd: bound, costUpperBoundUsd: bound })
+			const uncachedCostUpperBoundUsd = (input * PRICE.input + usage.outputTokens * PRICE.output) / 1e6
+			const bound = ((usage.inputTokens + (usage.cacheWriteTokens ?? 0)) * PRICE.input + (usage.cacheReadTokens ?? 0) * PRICE.cached + usage.outputTokens * PRICE.output) / 1e6
+			if (!Number.isFinite(bound) || bound < 0 || uncachedCostUpperBoundUsd > REQUEST_RESERVE) { row.status = 'unknown'; row.error = 'Usage exceeded reserved model capacity'; return }
+			Object.assign(row, { usage, status: 'verified', finishedAt: Date.now(), reservedUsd: bound, costUpperBoundUsd: bound, uncachedCostUpperBoundUsd })
 		}) },
 	}
+}
+
+// Reconcile only verified provider usage. Unknown and in-flight reservations are never discounted.
+export function migrateVerifiedCachePricing(file) {
+ const lock=file+'.lock';mkdirSync(lock)
+ try {
+  const data=JSON.parse(readFileSync(file))
+  if(data.version===3)return
+  if(data.version!==2||data.limitUsd!==30||data.testLimitUsd!==5||JSON.stringify(data.price)!==JSON.stringify(PRICE))throw new Error('Budget policy mismatch')
+  if(Object.values(data.requests).some(row=>row.status==='pending'))throw new Error('Drain pending requests before pricing migration')
+  const previousCostUpperBoundUsd=Object.values(data.requests).reduce((n,row)=>n+row.reservedUsd,0)
+  for(const row of Object.values(data.requests)) {
+   if(row.status!=='verified')continue
+   const u=row.usage
+   if(!u||![u.inputTokens,u.outputTokens,u.cacheReadTokens??0,u.cacheWriteTokens??0].every(n=>Number.isFinite(n)&&n>=0))throw new Error('Invalid verified usage')
+   const old=((u.inputTokens+(u.cacheReadTokens??0)+(u.cacheWriteTokens??0))*PRICE.input+u.outputTokens*PRICE.output)/1e6
+   if(Math.abs(row.reservedUsd-old)>1e-9||old>REQUEST_RESERVE)throw new Error('Unexpected prior reservation')
+   const bound=((u.inputTokens+(u.cacheWriteTokens??0))*PRICE.input+(u.cacheReadTokens??0)*PRICE.cached+u.outputTokens*PRICE.output)/1e6
+   Object.assign(row,{uncachedCostUpperBoundUsd:old,costUpperBoundUsd:bound,reservedUsd:bound})
+  }
+  data.version=3;data.pricingMigration={at:Date.now(),previousCostUpperBoundUsd,basis:'Verified cache hits at published peak cache-read price; all pending/unknown capacity reservations unchanged'}
+  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});renameSync(temporary,file)
+ } finally {rmSync(lock,{recursive:true,force:true})}
 }

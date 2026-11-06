@@ -1,0 +1,33 @@
+{
+  "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+  "checked": "2026-11-06",
+  "ratesUsdPerMillion": {
+    "uncachedInput": 0.3,
+    "cacheRead": 0.006,
+    "output": 1.2
+  },
+  "previousConservativeBoundUsd": 8.1057629,
+  "reconciledPeakRateBoundUsd": 1.921809236,
+  "requestsReconciled": 618,
+  "unknownReservedUsd": 0.8,
+  "pendingAtMigration": 0,
+  "perTestLimitUsd": 5,
+  "campaignLimitUsd": 30,
+  "oldLedgerSha256": "4527caf9e28bb27cb8662cd11cfdf21e745408e908ad1343088122ca7cbf9e1e",
+  "semantics": "DSH passes pi-ai input and cacheRead separately. pi-ai subtracts DeepSeek prompt_cache_hit_tokens from prompt_tokens to compute uncached input; output includes reasoning.",
+  "adapterFiles": [
+    {
+      "package": "dsh-llm-pi-ai",
+      "sha256": "1a3ae58f9b4493e15459cc5000ec80f21b5d3f4a9dea6ffb6bc28e5b8817ae8a"
+    },
+    {
+      "package": "pi-ai/openai-completions",
+      "sha256": "df81627c173163d0b918692f4a3b87e22cbdb5883b809e4d70d6152d1e68d948"
+    }
+  ],
+  "limitations": [
+    "Published peak rates and verified usage, not provider invoices.",
+    "No token counts, statuses or experiment costs were reset. Original uncached bounds remain on every verified ledger row.",
+    "The USD 0.80 unknown title reservation remains intact. New calls still reserve USD 0.80 before invocation."
+  ]
+}

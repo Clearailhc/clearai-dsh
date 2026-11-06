@@ -14,6 +14,9 @@
     "experimentBudget": 30,
     "experimentSpentPreserved": 30,
     "sameSessionAndGoalRequired": true,
-    "newSample": false
+    "newSample": false,
+    "executedDriverSha256": "81e1ea4fdf8a5fdc76adbbaca8562afde5f1f8c96dd6e490f3107355380923e0",
+    "archivedDriver": "continuation-driver.mjs",
+    "archiveDifference": "Only absolute import paths and fixed temporary directories are parameterized; experiment replay, same-goal check and cumulative test ID are unchanged."
   }
 }
