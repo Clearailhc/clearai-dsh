@@ -1,0 +1,4 @@
+{
+  "reason": "candidate_implementation_error",
+  "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+}

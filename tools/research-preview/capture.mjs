@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 const root = new URL('../../', import.meta.url).pathname
 const version = JSON.parse(readFileSync(root + 'package.json')).version
-const output = root + `docs/optimization/${version}/`
+const output = process.env.CLEARAI_PREVIEW_OUTPUT || root + `docs/optimization/${version}/`
 const previewLog = process.env.CLEARAI_PREVIEW_LOG || '/tmp/clearai-preview.log'
 const log = readFileSync(previewLog, 'utf8')
 const previewHome = log.match(/Isolated example profile: (.+)/)?.[1]
@@ -18,7 +18,7 @@ for (const name of ['client.js', 'host.js', 'research-events.js']) {
 mkdirSync(output, { recursive: true })
 let url
 for (let attempt = 0; attempt < 50 && !url; attempt++) {
-  try { url = readFileSync(previewLog, 'utf8').match(/http:\/\/127\.0\.0\.1:3091\/\?token=\S+/)?.[0] } catch {}
+  try { url = readFileSync(previewLog, 'utf8').match(new RegExp('http://127\\.0\\.0\\.1:' + (process.env.CLEARAI_PREVIEW_PORT || '3091') + '/\\?token=\\S+'))?.[0] } catch {}
   if (!url) await new Promise(resolve => setTimeout(resolve, 200))
 }
 if (!url) throw new Error('Preview URL not available')

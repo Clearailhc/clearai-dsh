@@ -1,0 +1,88 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "additive",
+  "models": [
+    {
+      "kind": "additive",
+      "cv_rmse": 0.16775129313145695,
+      "coefficients": [
+        94.92661993956598,
+        -1.2545983936339349,
+        -1.2347484230276566,
+        -6.6457686235618105,
+        -5.887511905056595
+      ]
+    },
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.18048316475510515,
+      "coefficients": [
+        94.92631144284736,
+        -1.2544874824918706,
+        -1.2346409343776488,
+        -6.645642807209113,
+        -5.887383145100432,
+        -0.026939554082150645
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": null,
+  "next_experiments": [],
+  "best_measured": {
+    "x": 0.4517,
+    "y": 0.4485,
+    "value": 95.28007338690013,
+    "impurity": 0.08343010119438346
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "../initial.json",
+    "measurements": [
+      "../lab/f-045-045.json",
+      "../lab/f-opt-1.json",
+      "../lab/f-opt-2.json",
+      "../lab/f-opt-3.json",
+      "../lab/f-opt-4.json",
+      "../lab/f-val-a.json",
+      "../lab/f-val-b.json"
+    ],
+    "digests": {
+      "../initial.json": "sha256:85d63c559158d27a8616bcde58dd14f5e30fea215654a77a399e746e463f7b9f",
+      "../lab/f-045-045.json": "sha256:e83d6a943bf65f10c9e984c6da545d5748769234da45e986fadea4b1e4e156bd",
+      "../lab/f-opt-1.json": "sha256:9bc217b8fa26c0ad9909a798029e20bb1f1a7caf01e1299fd8b20e770ac5bf9b",
+      "../lab/f-opt-2.json": "sha256:0e13466ca0f523c546e17a999a83f71cad9d1f8c974f1a61adbb480673e62598",
+      "../lab/f-opt-3.json": "sha256:9670186967b9e88a44058ef57c973b423d92afe923643822375ca2a87dc6ce73",
+      "../lab/f-opt-4.json": "sha256:0ce94352c9b9ba504c090cee4db93573984cc7b87d7901ca3804c4a0f8ae22d5",
+      "../lab/f-val-a.json": "sha256:acbca917fefb615ee42593b391ba5d43958c7243b94c01df44d02b87b7f04f96",
+      "../lab/f-val-b.json": "sha256:1913c38ae96ad53a8b64dba28fa10f02365354004413237906f9e7a4366904ca"
+    }
+  }
+}

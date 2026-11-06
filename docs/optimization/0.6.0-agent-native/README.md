@@ -1,0 +1,21 @@
+# 0.6 agent-native research candidate
+
+Implementation candidate; not a release acceptance receipt. Earlier paired-test failures remain in `../0.6.0-release/`. No speed or cost improvement is established by changing workflow alone.
+
+New goals record `workflow: agent-v1`; historical goals without this field restore as `steps-v1`. Frame still registers goal criteria, but hypotheses and custom steps are optional during exploration. Explicit plans always retain their completion contract. Conclude remains the only goal-completion authority.
+
+ReviewClaims accepts 1–8 registered hypothesis IDs, 1–24 evidence paths with optional public notes, and L3/L4. It uses the existing independent evaluator, admits sources before dispatch, records each verdict separately, and may commit scoped partial facts without closing the goal. Explorers have a separate native preset and cannot call the knowledge/goal authority tools. Shell access is not an OS security boundary; protected-file integrity is still checked before acceptance.
+
+Conclude.answers.claims selects answer-dependent hypotheses; uses continues to reference existing facts. Other candidates stay pending and their possible impact must be disclosed. The independent final reviewer receives candidate and anomaly records and can reject omitted consequential dependencies. Promotion never treats pending structure as verified knowledge.
+
+Audit cards v3 retain request coverage, criteria and configuration fingerprints. Native requests use v7 material fingerprints; legacy v6 records remain readable. Review receipts are reused only with unchanged material, scope, criteria, reviewer configuration and cited bytes. Final review can use valid claim receipts while checking final-answer fidelity and remaining obligations. This is bounded independent review, not automatic acceptance of the author's summary.
+
+Dependency completeness is not inferred from author claims. This implementation conservatively hashes ordinary workspace files plus registered semantic materials and definitions; unrelated hypothesis/plan/UI changes do not invalidate claim reviews. New or modified ordinary files do invalidate reuse. Symlinks, unreadable files and snapshots exceeding 10,000 files / 128 MiB fail closed. Known untracked dependency directories (node_modules / venv / .venv) or custom evaluator presets disable reuse and force fresh review. No claim of fine-grained runtime dependency tracing is made. ReadEvidence batches up to eight files, 240 lines per file, 24,000 total characters, with explicit truncation and errors; larger files use native search/read.
+
+Public handoffs contain source pointers, author checks, exclusions, unresolved claims and current independent receipts. They do not contain private reasoning or use an extra summarizing model. UI projections remain outside model input. Ordinary exploratory children are metered separately from evaluators.
+
+Acceptance: preserve the original $5/test and $30 cumulative ledger, use fresh hidden worlds, identical model/tools/budgets, retain both groups' outputs for reuse rounds, and keep all failures. Require goal completion and valid knowledge/revalidation behavior before release. A passing data-integrity check alone is not a passing research task.
+
+The first native candidate failed its additive task at the 5,000,000-token limit. Both independent reviews returned positive verdicts, but the new review metadata included an `undefined` field. DSH rejected the tool results as non-lossless JSON, so the corresponding semantic results did not commit. This was a candidate integration defect, not evidence that the reviewer was too strict. The active baseline task was allowed to settle; remaining tasks were marked not run and the failed attempt retained. Cumulative verified campaign spending at that stop was $3.231314732.
+
+The fix serializes dispatch metadata as lossless JSON and captures claim versions and scope at dispatch. Native-flow regression cases now validate every returned value, including with DSH's official `snapshotJsonValue` when the installed host is available. The fixed candidate starts a separate preregistered comparison with fresh hidden worlds and the original cumulative ledger. Its results must not replace or conceal the first failure.

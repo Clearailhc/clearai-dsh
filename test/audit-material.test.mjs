@@ -100,3 +100,34 @@ test('audit criterion protocol rejects the observed invented C1 sub-identities b
  assert.throws(()=>bindAuditCriteria(generic,[]))
  assert.throws(()=>bindAuditCriteria(generic,[{id:'C1'},{id:'C1'}]))
 })
+
+import { researchSnapshot, researchHandoff } from '../preset/plugins/research-contract.js'
+import { readEvidence } from '../preset/plugins/read-evidence.js'
+
+test('native fingerprints ignore unrelated hypotheses and UI echoes but bind evidence, scope, criteria and trust', () => {
+ const cwd=tempDir('clearai-native-digest-');writeFileSync(join(cwd,'source.txt'),'one\ntwo\n')
+ const input={cwd,kind:'claim_audit',step:{id:'review:h1',done_criteria:'Check value',artifacts:['source.txt'],tests:{hypotheses:['h1'],level:'L3'}},state:{goal:{id:'g',workflow:'agent-v1',done_criteria:'correct',conditions:{batch:1}},hypotheses:[{id:'h1',claim:'value=1'},{id:'h2',claim:'other'}],plans:[]},gate:{confirmed:[],trust:{model:'test'}}}
+ const original=auditMaterialDigest(input);assert.match(original,/^v7:/)
+ input.state.hypotheses[1].claim='unrelated revision';input.state.plans.push({id:'other',steps:[{id:'new'}]});input.state.audits=[{id:'ui'}]
+ assert.equal(auditMaterialDigest(input),original)
+ input.gate.trust.model='other';assert.notEqual(auditMaterialDigest(input),original);input.gate.trust.model='test'
+ input.state.goal.conditions.batch=2;assert.notEqual(auditMaterialDigest(input),original);input.state.goal.conditions.batch=1
+ input.step.done_criteria='different';assert.notEqual(auditMaterialDigest(input),original);input.step.done_criteria='Check value'
+ writeFileSync(join(cwd,'counterexample.txt'),'value differs')
+ assert.notEqual(auditMaterialDigest(input),original,'undeclared evidence cannot be excluded by author claims')
+ assert.equal(researchSnapshot(cwd).files.length,2)
+})
+
+test('public handoff preserves contrary observations and labels author checks',()=>{
+ const handoff=researchHandoff({hypotheses:[{id:'unused',claim:'alternative'}],materials:[{ref:'negative.txt',note:'failure',source:'self'}],evidence:[{verdict:'support',evaluator:'self'}],anomalies:[{id:'a',status:'ruled_out',reason:'author exclusion'}]}, {tests:{hypotheses:[]}})
+ assert.equal(handoff.claims[0].selected,false);assert.equal(handoff.observations[0].note,'failure')
+ assert.equal(handoff.checks[0].authority,'author-observation');assert.equal(handoff.exclusions[0].reason,'author exclusion')
+})
+
+test('batched evidence reads preserve citation lines, reject traversal and bound payloads',()=>{
+ const cwd=tempDir('clearai-evidence-batch-');writeFileSync(join(cwd,'source.txt'),'first\nsecond\nthird')
+ const rows=readEvidence(cwd,[{path:'source.txt',line:2,count:1},{path:'../secret'},{path:'source.txt',line:99}])
+ assert.equal(rows[0].text,'2: second');assert.equal(rows[0].digest,fileDigest(cwd,'source.txt'))
+ assert.ok(rows[1].error);assert.ok(rows[2].error)
+ assert.throws(()=>readEvidence(cwd,Array(9).fill({path:'source.txt'})))
+})

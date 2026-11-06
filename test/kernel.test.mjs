@@ -15,10 +15,11 @@
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync as rawWriteFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { integrityStore, protectedMaterial } from '../preset/plugins/integrity.js'
-import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
+import { CONFIG_KEYS, apply as applyKernel } from '../preset/plugins/clearai-kernel.js'
 import { citeVerdict, exclusionStrength, negativeItems, relatedKnowledge, resolveAbout } from '../preset/plugins/knowledge-items.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
 import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
@@ -26,6 +27,10 @@ import { SECTIONS as BILINGUAL_SECTIONS, SECTION_TABLE } from '../preset/plugins
 import { detectLanguage } from '../ui/lib/lang.js'
 /** 段有中英两版;这里的断言读中文那一版(英文那一版另有一组检查)。 */
 const SECTIONS = BILINGUAL_SECTIONS.map((section) => ({ ...section, text: section.text.zh }))
+
+// Existing fixtures exercise the legacy step contract; native cases opt in explicitly.
+const apply = (ctx, config = {}) => applyKernel(ctx, { researchWorkflow: 'steps-v1', ...config })
+const hostSnapshotJson = process.env.CLEARAI_DSH_RESOURCES ? (await import(pathToFileURL(join(process.env.CLEARAI_DSH_RESOURCES, 'node_modules/@deepseek-ai/dsh-util-values/lib/index.js')).href)).snapshotJsonValue : null
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
 // 跑测试不该往用户真实的 ~/.dsh 里塞东西(之前一直塞了,已清理)。
@@ -467,6 +472,14 @@ async function callOn(host, session, name, args, options = {}) {
 		args = tested.length === 0 ? rest : { ...rest, results: tested.map((hypothesis) => ({ hypothesis, verdict })) }
 	}
 	const value = await tool.execute(args, { callId: 'call-1', agent: { id: session }, signal: options.signal })
+ if (host.service.state(session).goal?.workflow === 'agent-v1' || value?.mutations?.some(m => m.t === 'goal/set' && m.workflow === 'agent-v1')) {
+  const lossless = (value, path='result') => {
+   if (value === undefined || typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint' || (typeof value === 'number' && !Number.isFinite(value))) throw new Error('Non-lossless JSON at '+path)
+   if (value && typeof value === 'object') for (const [key, child] of Object.entries(value)) lossless(child, path+'.'+key)
+  }
+  lossless(value)
+  if (hostSnapshotJson && hostSnapshotJson(value) === undefined) throw new Error('Official DSH rejected the native tool result as non-lossless JSON')
+ }
  // 生产同形:宿主按 output.schema 校验工具结果,越界即整次调用失败。
 	if (value !== null && typeof value === 'object' && tool.output?.schema !== undefined) {
 		const breach = schemaViolation(tool.output.schema, value)
@@ -536,7 +549,7 @@ const write = (rel, content) => {
 console.log('\n【装配面】')
 check(
 	'目标与计划六件意图工具全部注册',
-	['Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan'].every((name) => thisHost.tools.has(name)),
+	['Frame', 'ReviewClaims', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan'].every((name) => thisHost.tools.has(name)),
 )
 check('工具 schema 里没有 status / progress / phase 这类可宣告状态的字段(P2 不可表示)', () => false || ![...thisHost.tools.values()].some((tool) => /"status"|"progress"|"phase"/.test(JSON.stringify(tool.parameters))))
 check('注册了 tools/pre-execute 与 agent/pre-step 两个机制位', thisHost.listeners.has('tools/pre-execute') && thisHost.listeners.has('agent/pre-step'))
@@ -591,20 +604,20 @@ console.log('\n【提示词面:预设的提示词段】')
 	check('网页是不可信数据(安全相关的那条)', /不可信/.test(String(byName('clearai/identity')?.text ?? '')))
 	check('对人说话段在(怎么把结论交给人)', (byName('clearai/speaking')?.text ?? '').length > 100)
 	check('身份段刻意不含时间(时间由运行态卡承载)', !/\d{2}:\d{2}/.test(String(byName('clearai/identity')?.text ?? '')))
-	check('循环段写明先摸清现状再立计划', /摸清现状再立计划/.test(String(byName('clearai/loop')?.text ?? '')))
-	check('循环段写明并行交给 subagent、各条路线声明不同的产物路径', /subagent/.test(String(byName('clearai/loop')?.text ?? '')) && /不同的产物路径/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段写明先摸清现状再立计划', /普通工具和原生 todo/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段写明并行交给 subagent、各条路线声明不同的产物路径', /subagent/.test(String(byName('clearai/loop')?.text ?? '')) && /独立产物路径/.test(String(byName('clearai/loop')?.text ?? '')))
 	check('提示词不承诺不存在的机制(不出现 background 自动回灌)', !/background/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
-	check('循环段在:唯一完成动作 + 等级只决定谁来判', /唯一的完成动作/.test(String(byName('clearai/loop')?.text ?? '')) && /等级只决定谁来判/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段在:唯一完成动作 + 等级只决定谁来判', /旧会话/.test(String(byName('clearai/loop')?.text ?? '')) && /事实边界/.test(String(byName('clearai/loop')?.text ?? '')))
 }
 
 console.log('\n【装配:贡献表驱动(阶段 3)】')
 {
 	const NAMES = [
-		'Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan', 'Anomaly',
+		'Frame', 'ReviewClaims', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan', 'Anomaly',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
 	// 本体四件(Define / Deprecate / RegisterInstance / Assert)删了:本体由模型直接写文件。
-	check('工具面恰好 7 件(实测,不是推断)', thisHost.tools.size === 7, `${thisHost.tools.size} 件`)
+	check('工具面恰好 8 件(实测,不是推断)', thisHost.tools.size === 8, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -665,8 +678,8 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	const trimmed = makeHost()
 	apply(trimmed.ctx, { contributions: { mechanisms: { plan: false } } })
 	check(
-		'关掉计划机制 → 4 件计划工具真的没装(剩 2 件)',
-		trimmed.tools.size === 2 && !trimmed.tools.has('AdvancePlan') && trimmed.tools.has('Frame'),
+		'关掉计划机制 → 4 件计划工具真的没装(剩 3 件)',
+		trimmed.tools.size === 3 && !trimmed.tools.has('AdvancePlan') && trimmed.tools.has('Frame'),
 		`${trimmed.tools.size} 件`,
 	)
 	// 只裁工具面、不动机制:能装出来的最小面就是清单本身。
@@ -1784,7 +1797,7 @@ console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 7)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 8)
 	}
 
 console.log('\n【技能目录:面板与模型看同一张表(合并目录随投影下发)】')
@@ -3850,6 +3863,59 @@ console.log('\n【原生 todo 与核验进度同源】')
  check('模型不能用原生todo伪造ClearAI计划完成',overwrite.kind==='deny')
  await callOn(host,S,'RevisePlan',{action:'void',step_id:'b',reason:'清点已经覆盖复核,本步重复'})
  check('作废项从原生todo移除而不是冒充已完成',todo()?.length===1&&host.service.state(S).plans[0].steps[1].status==='void')
+}
+
+console.log('\n【0.6 agent-native: optional exploration and shared independent review】')
+if (hostSnapshotJson) check('official DSH catches the observed undefined audit metadata', hostSnapshotJson({request:{gate:{materialMutations:undefined}}}) === undefined && hostSnapshotJson({request:{gate:{confirmed:[]}}}) !== undefined)
+{
+ const host=makeHost(), ws=tempDir('clearai-native-contract-'), S='native-contract';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true,minHypotheses:0,requireAnswers:true})
+ writeText(join(ws,'lab/input.txt'),'K1 reference peak 900 C\n')
+ writeText(join(ws,'lab/probe.txt'),'Independent fixture citation\n')
+ const base={claim:'Check the K1 peak',done_criteria:'Report the scoped peak using lab/input.txt',conditions:{batch:'one'}}
+ check('native goal starts without hypotheses or plans',(await callOn(host,S,'Frame',base)).ok===true&&host.service.state(S).goal.workflow==='agent-v1'&&host.service.state(S).plans.length===0)
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/input.txt',provenance:{kind:'named',ref:'lab/input.txt'}}]}
+ const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+ const hypotheses=[{name:'Peak',claim:'K1 peak is 900 C in batch one',refute_when:'Reference differs from 900 C',assertions,about:['K1']},{name:'Extra',claim:'Other batches may use less energy',refute_when:'No energy reduction'}]
+ const framed=await callOn(host,S,'Frame',{...base,reason:'Register observed candidate and unrelated lead',ontology,hypotheses})
+ check('native claims registered only when useful',framed.ok===true,String(framed.message))
+ const [h,extra]=host.service.state(S).hypotheses
+ const request={claims:[h.id],observations:[{ref:'lab/input.txt',note:'Author checked reference; other batches were not measured.'}]}
+ const first=await callOn(host,S,'ReviewClaims',request)
+ check('native review commits scoped fact without a custom plan',first.ok===true&&host.service.state(S).facts.length===1&&host.service.state(S).plans.length===0,String(first.message))
+ check('extra hypothesis remains unverified',!host.service.state(S).evidence.some(e=>e.hypothesis===extra.id))
+ const before=host.audits.length, evidenceBefore=host.service.state(S).evidence.length
+ const again=await callOn(host,S,'ReviewClaims',request)
+ check('same request reuses verdict without duplicate evidence',again.code==='review_reused'&&host.audits.length===before&&host.service.state(S).evidence.length===evidenceBefore,String(again.message))
+ const card=host.service.state(S).audits.find(a=>a.holds==='yes')
+ check('review coverage and v7 fingerprint survive replay',card.request?.step?.tests?.hypotheses[0]===h.id&&card.digest.startsWith('v7:')&&applyMutations(emptyState(),host.journal).goal.workflow==='agent-v1',JSON.stringify(card))
+ const answer={conclusion:'K1 peak is 900 C for batch one.',claims:[h.id],basis:['lab/input.txt:1'],open:[{about:[extra.id],effect:'Other batches are outside this answer; energy effects remain unverified.'}]}
+ const close=await callOn(host,S,'Conclude',{outcome:'achieved',answers:[answer]})
+ check('native final review completes without ClosePlan',close.ok===true&&host.service.state(S).goal.status==='achieved',String(close.message))
+ const finalPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
+ check('final reviewer receives current independent receipt and all candidate leads',finalPrompt.includes('independent-current')&&finalPrompt.includes(extra.id)&&finalPrompt.includes('missing claim'),finalPrompt)
+ check('final review does not promote the unrelated candidate',host.service.state(S).facts.length===1&&!host.service.state(S).facts.some(f=>f.hypothesis===extra.id))
+}
+{
+ const host=makeHost(), ws=tempDir('clearai-native-failure-'), S='native-failure';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:false,requireAnswers:true})
+ writeText(join(ws,'lab/probe.txt'),'Source value=1\n')
+ await callOn(host,S,'Frame',{claim:'Inspect value',done_criteria:'Report value and limits',hypotheses:[{claim:'Value is one',refute_when:'Value differs'}]})
+ const h=host.service.state(S).hypotheses[0].id
+ const req={claims:[h],observations:[{ref:'lab/probe.txt'}]}
+ host.nextVerdict={holds:'yes',basis:'Missing claim verdict',results:[]}
+ const missing=await callOn(host,S,'ReviewClaims',req)
+ check('missing per-claim verdict cannot become knowledge',missing.ok===false&&host.service.state(S).facts.length===0)
+ host.nextVerdict={verdict:'support',basis:'lab/probe.txt reference checked'}
+ await callOn(host,S,'ReviewClaims',req)
+ const count=host.audits.length
+ writeText(join(ws,'lab/probe.txt'),'Source value=2\n')
+ await callOn(host,S,'ReviewClaims',req)
+ check('changed evidence triggers fresh independent review',host.audits.length===count+1)
+ host.onAudit=()=>writeText(join(ws,'lab/probe.txt'),'Changed during audit\n')
+ writeText(join(ws,'lab/probe.txt'),'Source value=3\n')
+ const drift=await callOn(host,S,'ReviewClaims',req)
+ check('material change during review cannot commit results',drift.ok===false&&drift.message.includes('audit_material_changed'),String(drift.message))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

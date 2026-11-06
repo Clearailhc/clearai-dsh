@@ -79,7 +79,7 @@ export const MUTATION_KIND = 'clearai'
  *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 23
+export const STATE_VERSION = 24
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -335,6 +335,7 @@ export function applyMutation(state, mutation) {
 				if (previous !== null && previous.status === 'open') previous.status = 'superseded'
 				next.goal = {
 					id: mutation.id,
+					workflow: mutation.workflow === 'agent-v1' ? 'agent-v1' : 'steps-v1',
 					claim: mutation.claim,
 					done_criteria: mutation.done_criteria,
 					promote_at_level: mutation.promote_at_level,
@@ -597,6 +598,7 @@ export function applyMutation(state, mutation) {
 				verdict: null,
 				evaluator: 'independent',
 				child: mutation.evaluator_session ?? null,
+				request: mutation.request ?? null,
 				criteria: mutation.criteria ?? [], capability: mutation.capability ?? null,
 				goal_id: mutation.goal_id ?? null,
 				goal_revision: mutation.goal_revision ?? null,

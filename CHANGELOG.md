@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 candidate — agent-native research
+
+- New goals explore without mandatory step contracts; legacy goals retain their workflow.
+- Add ReviewClaims, explicit final-answer claim coverage, native explorer preset and public evidence handoffs.
+- Bind review reuse to material/scope/configuration; retain pending candidates without certifying them.
+- Add bounded ReadEvidence batches, audit-card v3 coverage and state projection v24.
+- 新目标按需探索，关键主张独立核验；旧会话兼容、候选保持待验证，评估与探索用量分别记录。
+- Release remains blocked until fresh paired completion, reuse and revalidation acceptance passes.
+
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.6.0] — 2026-11-06

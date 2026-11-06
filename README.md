@@ -5,6 +5,10 @@
   </picture>
 </p>
 
+### 0.6 candidate: on-demand exploration
+
+New research goals can explore through ordinary tools and native workers without a custom step plan. `ReviewClaims` reviews related claims on demand; final `Conclude.answers.claims` identifies answer-dependent hypotheses. Independent verification still gates knowledge and completion. Extra candidates may remain unverified; historical plans keep their contracts. See [workflow and limits](docs/optimization/0.6.0-agent-native/README.md). Real-task acceptance is required before release.
+
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 
 <p align="center">

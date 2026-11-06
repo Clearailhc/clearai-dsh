@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { reviewState, researchSnapshot, REVIEW_POLICY } from './research-contract.js'
 import { workspacePath } from './workspace-path.js'
 
 // Both logical identifiers are opaque. No characters from either reach a path.
@@ -28,7 +29,19 @@ export function methodSnapshot(cwd, spec, registration, digest = fileDigest) {
 	return contentDigest({ registration: digest(cwd, registration), command: spec?.command, scripts: [...scripts].sort().map((path) => [path, digest(cwd, path)]) })
 }
 
-export function auditMaterialDigest({ kind, step, plan, state, gate, cwd, errors = [] }) {
+export function auditMaterialDigest(input) {
+ if (input.state.goal?.workflow !== 'agent-v1') return legacyAuditDigest(input)
+ const errors = input.errors ?? []
+ try {
+  const snapshot = researchSnapshot(input.cwd)
+  const state = reviewState(input.state, input.step, input.kind)
+  const base = legacyAuditDigest({ ...input, state, plan: null, errors })
+  if (!base) return null
+  return `v7:${contentDigest({ base, snapshot: snapshot.digest, policy: REVIEW_POLICY, trust: input.gate.trust ?? null })}`
+ } catch (error) { errors.push({ path: '.', code: String(error.message) }); return null }
+}
+
+function legacyAuditDigest({ kind, step, plan, state, gate, cwd, errors = [] }) {
  const digest = (root, path) => {
   const value = fileDigest(root, path)
   if (!/^[a-f0-9]{64}$/.test(value)) errors.push({ path, code: value })
@@ -65,7 +78,7 @@ export function auditMaterialDigest({ kind, step, plan, state, gate, cwd, errors
 
 export function auditRerunInputs(cwd, state, step) {
  const paths = new Set(step.artifacts ?? [])
- for (const id of new Set((state.hypotheses ?? []).map(row => row.use).filter(Boolean))) {
+ for (const id of new Set((state.hypotheses ?? []).filter(row => state.goal?.workflow !== 'agent-v1' || (step.tests?.hypotheses ?? []).includes(row.id)).map(row => row.use).filter(Boolean))) {
   const path = `clear/models/${id}.json`;paths.add(path)
   const spec = JSON.parse(readFileSync(workspacePath(cwd,path,{mustExist:true}).absolute,'utf8'))
   for (const value of [...(spec.inputs ?? []), ...(spec.scripts ?? []), spec.output].filter(Boolean)) paths.add(value)

@@ -31,6 +31,7 @@ import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
 import { citeVerdict, mergeAbout, negativeItems, relatedKnowledge, resolveAbout } from './knowledge-items.js'
+import { researchHandoff, researchSnapshot, REVIEW_POLICY } from './research-contract.js'
 import { auditMaterialDigest, auditRerunInputs, auditPathComponent, contentDigest, fileDigest, methodSnapshot } from './audit-material.js'
 import { auditCriteria, validateAuditEvidence, citationsUnchanged } from './audit-evidence.js'
 import { workspacePath } from './workspace-path.js'
@@ -228,6 +229,7 @@ export const CONFIG_KEYS = [
 	'l4RejectSelfWritten',
 	'minHypotheses',
 	'requireCriteriaVerdict',
+	'researchWorkflow',
 	'requireLandedEntities',
 	'requireAnswers',
 	'bashDenyRules',
@@ -251,7 +253,7 @@ export const CONFIG_KEYS = [
  * 都对它负责:清单里出现目录外的名字、或代码定义了一件目录里没有的工具,都是装配期抛错。
  */
 export const MECHANISM_TOOLS = {
-	goal: ['Frame', 'Conclude'],
+	goal: ['Frame', 'ReviewClaims', 'Conclude'],
 	plan: ['CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan', 'Anomaly'],
 	/**
 	 * 领域本体没有工具:模型用原生文件工具直接写 `clear/ontology/{concepts,relations,entities}/**.json`,
@@ -370,6 +372,7 @@ export function apply(ctx, config = {}) {
 		minHypotheses: config.minHypotheses ?? 0,
 		/** 判据修订门:改「怎样算完成」要带一份独立裁决的 auditKey(机制缺省关,preset 里开)。 */
 		requireCriteriaVerdict: config.requireCriteriaVerdict === true,
+		researchWorkflow: config.researchWorkflow === 'steps-v1' ? 'steps-v1' : 'agent-v1',
 		/**
 		 * **实体门**(结案唯一的结构关口;机制缺省关,preset 里开):将要升格的判断里,
 		 * 断言主体还不是实体图节点 ⇒ 结案被拒。它挡的是「本体写得漂亮、实体图是空的」。
@@ -750,13 +753,13 @@ export function apply(ctx, config = {}) {
 			 * **卡没变就不附**(第六阶段):回合开头与工具返回共用「上次发过的那张」。
 			 * 同一张卡在一轮里重发几遍,只是把同样的话塞给模型几遍——它读得越多,照抄得越多。
 			 */
-			const shown = card !== null && lastCard.get(sessionId) !== card ? cardText(sessionId, card) : ''
+			const shown = preview?.state?.goal?.workflow !== 'agent-v1' && card !== null && lastCard.get(sessionId) !== card ? cardText(sessionId, card) : ''
 			const fresh = shown !== ''
 			const result = {
 				...value,
 				mutations,
 				card,
-				message: fresh ? `${value.message ?? value.code ?? 'ok'}\n\n${shown}` : `${value.message ?? value.code ?? 'ok'}${card === null ? '' : tr('\n(状态卡与上次相同,不再重发。)', '\n(The status card is unchanged and is not repeated.)')}`,
+				message: preview?.state?.goal?.workflow === 'agent-v1' ? String(value.message ?? value.code ?? 'ok') : fresh ? `${value.message ?? value.code ?? 'ok'}\n\n${shown}` : `${value.message ?? value.code ?? 'ok'}${card === null ? '' : tr('\n(状态卡与上次相同,不再重发。)', '\n(The status card is unchanged and is not repeated.)')}`,
 			}
 			// 输出**越界就裁掉并告警**:宿主会拿 output.schema 校验工具结果,多一个未声明的字段
 			// 会让整个工具调用失败(CreatePlan 曾因此全军覆没)。
@@ -1085,6 +1088,25 @@ export function apply(ctx, config = {}) {
 		}
 	}
 
+	function nativeHandoff(state, step, sessionId, gate) {
+		const receipts = []
+		for (const audit of state.audits ?? []) {
+			if (gate.trust?.freshReview || audit.request?.gate?.trust?.freshReview || audit.kind !== 'claim_audit' || audit.holds !== 'yes' || !audit.request || !audit.card_path) continue
+			const request = { ...audit.request, gate: { ...audit.request.gate, trust: gate.trust } }
+			if (auditDigest(request.kind, request.step, null, state, request.gate, sessionId) !== audit.digest || !citationsUnchanged(sessionCwd(sessionId), audit.refs)) continue
+			receipts.push({ id: audit.id, claims: audit.results, path: audit.card_path, digest: audit.digest, authority: 'independent-current' })
+		}
+		const handoff = researchHandoff(state, step, receipts)
+		const files = researchSnapshot(sessionCwd(sessionId)).files.map(([path]) => path)
+		return ['# Public research handoff',
+			'Author and exploration findings are leads, not independent proof. Reuse current independent receipts only within their checked scope; inspect remaining obligations and final-answer consistency. Do not repeat already covered experiments without a concrete gap or contradiction. Do not re-solve the optimization problem.',
+			'Check exclusions and contrary observations. Fail the goal audit if a missing claim, hidden dependency or unresolved contradiction undermines the answer, even when the author omitted it from claims. Unrelated pending hypotheses need not be verified. Registration does not prove a prediction preceded its experiment.',
+			JSON.stringify(handoff),
+			'Workspace source index (all files, including author outputs; inspect originals as needed): ' + JSON.stringify(files),
+			'Batch source reads or script checks where possible; cite actual inspected file lines. A hash binds source bytes, not scientific truth. Return concise findings tied to the registered criteria.'
+		]
+	}
+
 	function evaluatorPrompt(state, step, gate, sessionId, rerunDir = null) {
 		const goal = state.goal
 		const tested = testedBy(step)
@@ -1100,7 +1122,7 @@ export function apply(ctx, config = {}) {
 					`- 步骤:${step.id}${step.ordinal > 0 ? `(第 ${step.ordinal} 步)` : ''}`,
 					`- 这一步要做什么:${step.do}`,
 					goal === null ? '- 目标:未立' : `- 目标:${goal.claim}`,
-					`- **判定标准(在做之前就已登记)**:${step.done_criteria}`,
+					`- **已登记的判定标准(登记时间以记录为准)**:${step.done_criteria}`,
 					step.tests == null ? '- 本步未声明验证等级' : `- 验证等级:${step.tests.level}(决定谁可以写裁决)`,
 					...(tested.length === 0
 						? ['- 本步不检验判断:`results` 给空数组']
@@ -1115,7 +1137,7 @@ export function apply(ctx, config = {}) {
 					`- Step: ${step.id}${step.ordinal > 0 ? ` (step ${step.ordinal})` : ''}`,
 					`- What this step does: ${step.do}`,
 					goal === null ? '- Goal: not set' : `- Goal: ${goal.claim}`,
-					`- **Criteria (registered before the work)**: ${step.done_criteria}`,
+					`- **Registered criteria (the record establishes registration time)**: ${step.done_criteria}`,
 					step.tests == null ? '- This step declares no verification level' : `- Verification level: ${step.tests.level} (decides who may write the verdict)`,
 					...(tested.length === 0
 						? ['- This step tests no judgment: give `results` as an empty array']
@@ -1125,6 +1147,7 @@ export function apply(ctx, config = {}) {
 					...(gate.confirmed.length === 0 ? ['- (none)'] : gate.confirmed.map((item) => `- ${item.ref} — ${item.bytes} bytes — ${item.digest ?? 'digest unavailable'}`)),
 				],
 			),
+			...(state.goal?.workflow === 'agent-v1' ? nativeHandoff(state, step, sessionId, gate) : []),
 			...anomalyBrief(state, gate),
 			...tested.map(item => `Registered hypothesis ${item.id}: uses=${JSON.stringify(item.uses ?? [])}; scope=${JSON.stringify(mergeScope(item.scope, { conditions: goal?.conditions ?? {} }))}. These are framing declarations, not confirmation of final reuse.`),
 			...tested.filter((item) => item.retests).map((item) => `Re-test ${item.retests}: independently inspect each pending reason in clear/knowledge/facts/${item.retests}.json and report only resolved reason IDs in rechecks. A supporting result alone does not resolve all reasons.`),
@@ -1334,10 +1357,15 @@ export function apply(ctx, config = {}) {
 			if (saved) return { holds: auditHolds(saved), basis: saved.basis, results: saved.results ?? [], shortfalls: saved.shortfalls ?? [], cardPath: saved.card_path, digest: saved.digest, mutations: [] }
 			let verdict = result.verdict
    const savedAudit = stateOf(sessionId).audits?.find(item => item.id === audit.id)
+   if (verdict && stateOf(sessionId).goal?.workflow === 'agent-v1' && (audit.request ?? savedAudit?.request)?.step?.tests?.hypotheses?.length) {
+    const requested = (audit.request ?? savedAudit.request).step.tests.hypotheses
+    const results = verdict.results ?? []
+    if (requested.some(id => results.filter(r => r.hypothesis === id).length !== 1) || results.some(r => !requested.includes(r.hypothesis))) verdict = { ...verdict, holds: 'unknown', results: [], shortfalls: [...(verdict.shortfalls ?? []), 'audit_claim_coverage_invalid'] }
+   }
    if (verdict) verdict = validateAuditEvidence(sessionCwd(sessionId), verdict, audit.criteria ?? savedAudit?.criteria ?? [])
 			let cardPath = null
 			if (verdict) {
-				cardPath = writeAuditCard(sessionId, audit.step, { schema_version: 'clearai.audit.v2', kind: audit.kind, step_id: audit.step, auditor_run_id: String(audit.child), ...verdict, card: verdict.basis, created_at: Date.now() })
+				cardPath = writeAuditCard(sessionId, audit.step, { schema_version: savedAudit?.request ? 'clearai.audit.v3' : 'clearai.audit.v2', coverage: savedAudit?.request ? { policy: REVIEW_POLICY, digest: audit.digest, claims: savedAudit.request.claims ?? [], criteria: savedAudit.criteria, trust: savedAudit.request.gate?.trust, scope: savedAudit.request.scope ?? {} } : undefined, kind: audit.kind, step_id: audit.step, auditor_run_id: String(audit.child), ...verdict, card: verdict.basis, created_at: Date.now() })
 				if (cardPath === null) verdict = null
 			}
 			const settled = verdict ?? { holds: 'unknown', results: [], basis: result.verdict ? 'Could not save the evaluation card' : result.basis, shortfalls: result.verdict ? ['card_persist_failed'] : result.shortfalls }
@@ -1655,7 +1683,7 @@ export function apply(ctx, config = {}) {
 		const matched = (state?.audits ?? []).filter((audit) => String(audit?.step ?? '') === String(stepId) && String(audit?.digest ?? '') === digest)
 		for (let index = matched.length - 1; index >= 0; index -= 1) {
 			const audit = matched[index]
-			if (!digest?.startsWith('v6:') || !audit.card_path || !existsSync(audit.card_path) || !['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
+			if (!/^v[67]:/.test(digest ?? '') || !audit.card_path || !existsSync(audit.card_path) || !['yes', 'no', 'unclear'].includes(auditHolds(audit))) continue
    if (auditHolds(audit) === 'yes' && !citationsUnchanged(sessionCwd(sessionId), audit.refs)) continue
 			return audit
 		}
@@ -1674,8 +1702,27 @@ export function apply(ctx, config = {}) {
 		try { return await operation } finally { if (evaluatorCalls.get(key) === operation) evaluatorCalls.delete(key) }
 	}
 
+	function reviewRequest(kind, step, gate, state) {
+		const { materialMutations, ...inputs } = gate
+		return JSON.parse(JSON.stringify({
+			kind, step, gate: inputs, scope: state.goal?.conditions ?? {},
+			claims: (step.tests?.hypotheses ?? []).map(id => {
+				const claim = state.hypotheses.find(row => row.id === id)
+				return { id, version: claim?.version ?? null, scope: claim?.scope ?? null, refute_when: claim?.refute_when ?? null }
+			}),
+		}))
+	}
+
 	async function runEvaluatorOnce(sessionId, agent, plan, step, gate, kind, signal) {
 		const nativeBefore = nativeGoal(agent)
+		const route = agent?.session?.requestHeader?.()?.config ?? agent?.options ?? {}
+		gate.trust = { model: route.model ?? null, modelProvider: route.provider ?? null, reasoningEffort: route.reasoningEffort ?? null, policy: REVIEW_POLICY, preset: CFG.auditPreset, provider: CFG.auditProvider, presetSource: contentDigest(readFileSync(new URL('../evaluator.cordis.yml', import.meta.url))), rerun: CFG.auditRerun, tools: CFG.auditToolFilter, l4Human: CFG.l4RequiresHumanRelease, l4External: CFG.l4RejectSelfWritten }
+		if (stateOf(sessionId).goal?.workflow === 'agent-v1') {
+			try {
+				const snapshot = researchSnapshot(sessionCwd(sessionId))
+				if (snapshot.unbounded.length || CFG.auditPreset !== 'clearai-evaluator') gate.trust.freshReview = randomUUID()
+			} catch { /* auditMaterialDigest reports the precise snapshot error below. */ }
+		}
 		await flushFacts(sessionId)
 		const mutations = []
 		const auditKey = `a-${step.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
@@ -1773,7 +1820,7 @@ export function apply(ctx, config = {}) {
 			 */
 			const criteria = auditCriteria(step.done_criteria)
    const pendingId = `audit:pending:${auditPathComponent(`${sessionId}:${kind}:${step.id}:${digest}:${auditKey}`).slice(0, 32)}`
-			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, criteria, capability: null, evaluator_session: null, status: 'dispatching', goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision })
+			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, criteria, request: reviewRequest(kind, step, gate, initialState), capability: null, evaluator_session: null, status: 'dispatching', goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision })
 			try { await flushFacts(sessionId) } catch (error) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: String(error.message), shortfalls: ['audit_dispatch_not_durable'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: '派发记录未持久保存,未派发评估者', shortfalls: ['audit_dispatch_not_durable'], cardPath: null, digest, mutations }
@@ -1808,7 +1855,7 @@ export function apply(ctx, config = {}) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: tr(`独立评估者无法派遣(${dispatched.reason})`, `The independent evaluator could not be dispatched (${dispatched.reason})`), shortfalls: ['audit_dispatch_failed'], cardPath: null, mutations }
 			}
-			mutations.push(landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' }))
+			mutations.push(landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, criteria, request: reviewRequest(kind, step, gate, initialState), goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision, evaluator_session: String(dispatched.run.id), capability: dispatched.capability, digest, status: 'dispatched' }))
 			try { await flushFacts(sessionId) } catch (error) {
 				try { await dispatched.run.dispose?.() } catch {}
 				await dropRerunCopy(sessionId, pendingId, rerunDir)
@@ -2965,7 +3012,7 @@ export function apply(ctx, config = {}) {
 							question: { type: 'string', description: '可选:所属问题或板块 id' },
 							refute_when: { type: 'string' },
 							about: { type: 'array', items: { type: 'string' }, description: '可选:涉及的实体或量 id;缺省取立题的 about' },
-							uses: { type: 'array', items: { type: 'string' }, description: '可选:用到的已有条目 id(clear/knowledge/ 下的文件名);系统当场判定是否适用' },
+						uses: { type: 'array', items: { type: 'string' }, description: '可选:用到的已有条目 id(clear/knowledge/ 下的文件名);系统当场判定是否适用' },
 							use: { type: 'string', description: '可选:支撑它的可重跑核算 id,先写 clear/models/<id>.json(command、inputs、output、tolerance,可选 baseline);输入或方法变了,引用时系统重跑;偏差与失败保持待核验' },
 							scope: {
 								type: 'object',
@@ -3296,12 +3343,13 @@ export function apply(ctx, config = {}) {
 					...(normalizeScope(hypothesis.scope) !== null ? { scope: normalizeScope(hypothesis.scope) } : {}),
 					...(hAbout.length > 0 ? { about: hAbout } : {}),
 					...(usesOf(hypothesis).length > 0 ? { uses: usesOf(hypothesis) } : {}),
-					version: index + 1,
+					version: contentDigest({ claim, refute_when: hypothesis.refute_when.trim(), assertions: hypothesis.assertions ?? null, scope: hypothesis.scope ?? null, uses: hypothesis.uses ?? [], use: hypothesis.use ?? null, retests: hypothesis.retests ?? null }),
 				}
 			})
 			mutations.push({
 				t: 'goal/set',
 				id: goalId,
+				workflow: isRevision ? (state.goal.workflow ?? 'steps-v1') : CFG.researchWorkflow,
 				headline: headline === '' ? null : headline,
 				legacy,
 				claim: args.claim.trim(),
@@ -3337,6 +3385,92 @@ export function apply(ctx, config = {}) {
 		},
 	})
 
+	// On-demand review uses the existing evaluator and knowledge commit authority.
+	defineTool({
+		name: 'ReviewClaims',
+		description: '按需独立核验一组已登记主张；用于影响下一步的疑点或提前保存知识。普通探索无需调用。Review related registered claims when independent challenge is useful or knowledge must be committed. Findings are separate per claim; this does not close the goal.',
+		parameters: {
+			type: 'object', additionalProperties: false, required: ['claims', 'observations'],
+			properties: {
+				claims: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 8, description: 'Registered hypothesis IDs; use one review for related claims.' },
+				observations: { type: 'array', minItems: 1, maxItems: 24, items: { type: 'object', additionalProperties: false, required: ['ref'], properties: { ref: { type: 'string' }, note: { type: 'string', description: 'Public checks, exclusions and gaps with source pointers; author notes are not independent proof.' } } } },
+				level: { type: 'string', enum: ['L3', 'L4'], description: 'L3 repeatable evidence; L4 external/unrepeatable evidence requires human approval.' },
+			},
+		},
+		output: CARD_OUTPUT,
+		async execute(args, exec) {
+			const call = open(exec, { sync: true })
+			if (!call.ok) return call.response
+			const { hostService, sessionId, state, mutations } = call
+			const done = finish(hostService, sessionId, mutations)
+			if (isSpawnedChild(sessionId)) return fail('child_cannot_certify', 'Exploration children cannot certify knowledge.')
+			if (state.goal?.status !== 'open') return fail('no_open_goal', 'Frame the goal and criteria first.')
+			if (state.goal.workflow !== 'agent-v1') return fail('legacy_workflow', 'This goal retains its original plan contract. Use AdvancePlan.')
+			const ids = [...new Set(args.claims ?? [])].sort()
+			const selected = ids.map(id => state.hypotheses.find(h => h.id === id && h.goal === state.goal.id && ['alive', 'proposed'].includes(h.status)))
+			if (!ids.length || ids.length > 8 || selected.some(h => !h)) return fail('review_claims_invalid', 'Use 1–8 active registered hypothesis IDs from this goal.')
+			const grounding = groundingProblem(state, ids, hostService, sessionId, mutations)
+			if (grounding) return grounding
+			const observations = Array.isArray(args.observations) ? args.observations : []
+			if (!observations.length || observations.length > 24 || observations.some(o => !o?.ref?.trim())) return fail('review_sources_required', 'Supply 1–24 existing evidence paths with optional public notes.')
+			const level = state.goal.promote_at_level === 'L4' ? 'L4' : (args.level ?? 'L3')
+			const step = { id: `review:${contentDigest({ goal: state.goal.id, claims: ids, level }).slice(0, 24)}`, ordinal: 0, do: 'Check the registered claims against their refutation conditions; preserve contrary evidence and limits.', done_criteria: selected.map(h => `${h.id}: independently assess ${h.claim}; test refutation condition: ${h.refute_when}; report support, refute or inconclusive with scope and sources.`).join('\n'), artifacts: [...new Set(observations.map(o => o.ref.trim()))].sort(), tests: { hypotheses: ids, level } }
+			const gate = admission(sessionCwd(sessionId), step)
+			if (!gate.ok && !gate.needs_audit) return fail('review_sources_invalid', gate.hint)
+			const release = await releaseReview(exec, sessionId, state, step, gate, mutations)
+			if (release) return release
+			for (const o of observations) {
+				const source = gate.confirmed.find(row => row.ref === o.ref.trim())
+				if ((state.materials ?? []).some(m => m.ref === o.ref.trim() && m.digest === source?.digest && m.note === (o.note ?? null))) continue
+				mutations.push({ t: 'observation/recorded', id: uniqueId('m'), ref: o.ref.trim(), source: 'self', digest: source?.digest ?? null, bytes: source?.bytes ?? null, note: o.note ?? null, step: step.id })
+			}
+			gate.materialMutations = mutations.filter(m => m.t === 'observation/recorded')
+			const audit = await runEvaluator(sessionId, exec.agent, null, step, gate, 'claim_audit', exec.signal)
+			mutations.push(...audit.mutations)
+			if (audit.holds !== 'yes') {
+				if (audit.holds === 'pending') return fail('audit_pending', audit.basis, { mutations })
+				const key = audit.holds === 'unknown' ? 'infrastructure' : audit.digest
+				const failure = `${state.goal.id}:${key}`
+				const count = (state.blocks[`review:${failure}`] ?? 0) + 1
+				mutations.push({ t: 'block/counted', plan: 'review', step: failure, count, reason: audit.holds })
+				if (count >= CFG.blockedThreshold) blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, 'Independent review remains unavailable or unchanged; inspect the recorded gap before continuing.')
+				return fail('review_not_accepted', `${audit.basis}\n${verdictText(audit.shortfalls)}`, { mutations })
+			}
+			if (ids.some(id => !(audit.results ?? []).some(r => r.hypothesis === id))) return fail('review_coverage_missing', 'Reviewer omitted a requested claim.', { mutations })
+			if (audit.reused) return done({ ok: true, code: 'review_reused', message: `Reused independent verdict; no new review or duplicate evidence. ${audit.basis}` })
+			const origin = buildEvidenceOrigins({ cwd: sessionCwd(sessionId), accepted: [], confirmed: gate.confirmed, cardPath: audit.cardPath, evaluatorSession: audit.evaluatorSession, basis: audit.basis })
+			for (const result of audit.results.filter(r => ids.includes(r.hypothesis))) {
+				mutations.push({ t: 'evidence/recorded', id: uniqueId('e'), step: step.id, plan: 'review', hypothesis: result.hypothesis, verdict: result.verdict, level, evaluator: 'independent', basis: result.basis ?? audit.basis, refs: origin.paths, origins: origin.origins, anchor: 'auditor', basis_reviewable: true })
+				const h = selected.find(h => h.id === result.hypothesis)
+				if (h?.retests && result.verdict === 'support') confirmRechecks(sessionId, h.retests, h, audit, state)
+			}
+			const refuted = audit.results.filter(r => r.verdict === 'refute').map(r => r.hypothesis)
+			if (refuted.length) await reviewRefutedFacts(exec, sessionId, state, refuted, audit.basis, mutations)
+			const current = previewOf(hostService, sessionId, mutations)
+			if (!current) return fail('host_unavailable', 'Cannot commit knowledge without current state.', { mutations })
+			let saved = { promoted: [], held: [] }
+			if (!(current.state.anomalies ?? []).some(a => ['open', 'escalated'].includes(a.status) && a.matters !== 'no')) saved = promoteFacts(hostService, sessionId, current.state, current.derived, current.state.goal, new Map(), mutations, { partial: true, eligible: new Set(audit.results.filter(r => r.verdict === 'support').map(r => r.hypothesis)) })
+			return done({ ok: true, code: 'claims_reviewed', message: `${audit.results.map(r => `${r.hypothesis}: ${r.verdict}`).join('; ')}\n${audit.basis}\nSaved knowledge: ${saved.promoted.map(f => f.id).join(', ') || 'none'}. Goal remains open. ${saved.held.join('; ')}` })
+		},
+	})
+
+	async function releaseReview(exec, sessionId, state, step, gate, mutations) {
+		if (step.tests?.level !== 'L4') return null
+		const sources = [...gate.confirmed, ...(state.materials ?? [])].map(item => item.ref).filter(ref => typeof ref === 'string' && !/^(?:evidence|hypothesis):/.test(ref))
+		if (CFG.l4RejectSelfWritten && !sources.length) return fail('source_external_required', 'Register external L4 sources with ReviewClaims before concluding.')
+		if (CFG.l4RejectSelfWritten) {
+			const written = new Set((state.written ?? []).map(path => resolvePath(sessionCwd(sessionId), path)))
+			if (sources.some(ref => written.has(resolvePath(sessionCwd(sessionId), ref)))) return fail('source_not_external', 'L4 requires external evidence, not author-written observations.')
+		}
+		if (!CFG.l4RequiresHumanRelease) return null
+		const key = `${step.id}:${contentDigest({ criteria: step.done_criteria, sources: gate.confirmed, goal: state.goal })}`
+		if ((state.releases ?? []).some(row => row.step === key)) return null
+		const asked = await askHuman(exec, { id: `release-${key}`, header: tr('L4 须经人工批准', 'L4 needs approval'), question: tr('是否批准这批 L4 证据交给独立评估者核验？', 'Release this L4 evidence for independent review?'), detail: step.done_criteria, options: [{ label: choiceLabel('releaseYes'), description: 'Review this evidence.' }, { label: choiceLabel('releaseNo'), description: 'Keep pending.' }] })
+		if (!asked.ok || !chose(asked, 'releaseYes')) return fail('human_release_missing', 'L4 remains pending human approval.' + blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, 'L4 review requires approval.'), { mutations })
+		mutations.push({ t: 'human/released', plan: 'review', step: key, call: String(exec.callId ?? ''), via: 'ask', note: asked.note })
+		return null
+	}
+
 	// ── Conclude ──────────────────────────────────────────────────────────
 
 	/** 结案时提议的经验:去掉空的、限 5 条,字段裁到能放进一张卡。 */
@@ -3365,6 +3499,7 @@ export function apply(ctx, config = {}) {
 			.map((item) => ({
 				question: String(item?.question ?? '').trim(),
 				uses: mergeAbout(item?.uses),
+				claims: mergeAbout(item?.claims),
 				scope: normalizeScope(item?.scope),
 				conclusion: String(item?.conclusion ?? '').trim(),
 				basis: lines(item?.basis, 300).slice(0, 12),
@@ -3401,6 +3536,7 @@ export function apply(ctx, config = {}) {
 		const about = new Set(answers.flatMap((answer) => answer.open.flatMap((entry) => entry.about)))
 		for (const question of exploration?.questions ?? []) {
 			for (const candidate of question.candidates ?? []) {
+				if (goal.workflow === 'agent-v1' && answers.some(answer => answer.claims.includes(candidate.id))) continue
 				if (candidate.state !== 'examining' || candidate.supportedLevel !== null) continue
 				if (about.has(candidate.id) || about.has(candidate.name)) continue
 				missing.push(tr(`候选假设「${candidate.name}」仍在考察中、未得到支持:写进「尚未确定的事项」(about 写「${candidate.name}」),说明若它成立答案会如何改变;或先检验它。`, `Candidate hypothesis "${candidate.name}" is still being examined and has no support: put it in the open points (about: "${candidate.name}") and say how the answer would change if it holds; or test it first.`))
@@ -3424,6 +3560,7 @@ export function apply(ctx, config = {}) {
 			tr('# 结论(做的人按问题写的四部分;请核它与记录是否一致,依据是否真在记录里)', '# Conclusions (written by the worker per question; check they match the record and that the basis is really in it)'),
 			...answers.flatMap((answer) => [
 				`## ${answer.question || tr('目标', 'goal')}:${answer.conclusion || tr(`未回答(${answer.unanswered})`, `unanswered (${answer.unanswered})`)}`,
+				...(answer.claims.length ? [`- Claims requiring coverage: ${answer.claims.join(', ')}`] : []),
 				...(answer.uses.length ? [`- 实际采用 / actual uses: ${answer.uses.join(', ')}; scope: ${JSON.stringify(answer.scope)}`] : []),
 				...answer.basis.map((line) => tr(`- 依据:${line}`, `- basis: ${line}`)),
 				...answer.open.map((entry) => tr(`- 尚未确定(${entry.about.join('、') || '—'}):${entry.effect}`, `- open (${entry.about.join(', ') || '—'}): ${entry.effect}`)),
@@ -3448,7 +3585,7 @@ export function apply(ctx, config = {}) {
 	defineTool({
 		name: 'Conclude',
 		description:
-			'结案,完成目标的唯一路径。独立评估者逐条核判据:达成才结案为 achieved,它支持的判断升格为事实、支持的经验写入;否则返回缺口。achieved 之前先 ClosePlan;abandoned 写明阻塞,由人决定结束。',
+			'结案,完成目标的唯一路径。独立评估者逐条核判据:达成才结案为 achieved,它支持的判断升格为事实、支持的经验写入;否则返回缺口。已有显式计划须先 ClosePlan；新流程无计划时直接结案。abandoned 写明阻塞,由人决定结束。',
 		parameters: {
 			type: 'object',
 			properties: {
@@ -3462,7 +3599,8 @@ export function apply(ctx, config = {}) {
 						properties: {
 							question: { type: 'string', description: '问题 id;目标没列问题时省略' },
 							conclusion: { type: 'string', description: '一两句结论,带数值与适用条件' },
-							uses: { type: 'array', items: { type: 'string' }, description: '最终答案直接使用的知识条目 id,不自动继承立题引用' },
+								claims: { type: 'array', items: { type: 'string' }, description: '本答案依赖的已登记假设 id；额外待验证假设不列入。Registered hypothesis IDs this answer depends on; omit unrelated pending candidates.' },
+						uses: { type: 'array', items: { type: 'string' }, description: '最终答案直接使用的知识条目 id,不自动继承立题引用' },
 							scope: { type: 'object', description: '此答案的适用范围,数值范围须带 units' },
 							basis: { type: 'array', items: { type: 'string' }, description: '每个采纳、排除的候选或核验的读数一行,注明来源' },
 							open: {
@@ -3566,8 +3704,15 @@ export function apply(ctx, config = {}) {
 			 * 于是 9 次运行 0 条事实,跨会话复用与复检全部空转。结案这次独立评估是唯一必然发生的独立判断,
 			 * 让它逐条读判断:它判「支持」的,与中途到了门槛的一样升格。不加新机制、不多派一次评估者。
 			 */
+			const answers = normalizeAnswers(args.answers)
+			const selected = new Set(answers.flatMap(answer => answer.claims))
+			if (goal.workflow === 'agent-v1') {
+				const invalid = [...selected].filter(id => !derived.hypotheses.some(h => h.id === id && (!h.goal || h.goal === goal.id) && ['alive', 'proposed'].includes(h.status)))
+				if (invalid.length) return fail('answer_claims_invalid', `Unknown or inactive claims: ${invalid.join(', ')}`)
+			}
 			const candidates = derived.hypotheses.filter(
 				(hypothesis) =>
+					(goal.workflow !== 'agent-v1' || selected.has(hypothesis.id)) &&
 					(typeof hypothesis.goal !== 'string' || hypothesis.goal === goal.id) &&
 					(hypothesis.status === 'alive' || hypothesis.status === 'proposed') &&
 					(hypothesis.refutations ?? 0) === 0 &&
@@ -3585,7 +3730,6 @@ export function apply(ctx, config = {}) {
 					)
 				}
 			}
-			const answers = normalizeAnswers(args.answers)
 			if (CFG.requireAnswers) {
 				const missing = unsettledForAnswers(state, derived, answers)
 				if (missing.length > 0) {
@@ -3628,6 +3772,8 @@ export function apply(ctx, config = {}) {
 				answers, lessons: proposedLessons,
 				extra: [...answersBrief(answers), ...lessonBrief(proposedLessons)],
 			}
+			const release = await releaseReview(exec, sessionId, state, syntheticStep, gate, mutations)
+			if (release) return release
 			const audit = await runEvaluator(sessionId, exec.agent, plan, syntheticStep, gate, 'goal_audit', exec.signal)
 			mutations.push(...audit.mutations)
 			if (audit.holds === 'pending') return fail('audit_pending', tr(`目标评估者仍在跑:${plainIds(sessionId, audit.basis)}。先观察当前事实,再谈重试。`, `The goal evaluator is still running: ${plainIds(sessionId, audit.basis)}. Look at the current facts before retrying.`), { mutations: audit.mutations })
@@ -3830,6 +3976,7 @@ export function apply(ctx, config = {}) {
 			 * 不挡的话下一次结案会把它再写一遍(同一条结论两个事实文件)。
 			 */
 			if (typeof hypothesis.goal === 'string' && hypothesis.goal !== goal.id) continue
+			if (!partial && goal.workflow === 'agent-v1' && !judged.has(hypothesis.id)) continue
 			if ((state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id)) continue
 			if (hypothesis.status !== 'alive' && hypothesis.status !== 'proposed') continue
 			if (hypothesis.refutations > 0) continue
@@ -5597,14 +5744,16 @@ export function apply(ctx, config = {}) {
 				reason: 'Required on revision: what changed and why',
 			},
 		},
+		ReviewClaims: { description: 'Independently review related registered claims on demand, preserving evidence, scope and separate verdicts. Qualified knowledge may be saved; the goal stays open.', params: {} },
 		Conclude: {
 			description:
-				'Conclude: the only way to complete the goal (the native "complete goal" is refused). The system dispatches an independent evaluator to check the criteria one by one: only if they are met does the goal conclude as achieved; judgments the evaluator supports are promoted to facts, and supported lessons are written to clear/knowledge/lessons/. Otherwise the goal stays open and the gaps come back. ClosePlan before achieved. On abandoned, state the blocker; a person decides whether to end it.',
+				'Conclude: the only way to complete the goal (the native "complete goal" is refused). The system dispatches an independent evaluator to check the criteria one by one: only if they are met does the goal conclude as achieved; judgments the evaluator supports are promoted to facts, and supported lessons are written to clear/knowledge/lessons/. Otherwise the goal stays open and the gaps come back. ClosePlan is required only when an explicit plan exists. Native exploration can conclude without a custom plan. On abandoned, state the blocker; a person decides whether to end it.',
 			params: {
 				outcome: 'achieved = criteria met; abandoned = give up after stating the blocker',
 				answers: 'On achieved, one per question. Candidates still being examined and open unexplained items go in open with their effect',
 				'answers.items.question': 'Question id; omit when the goal lists no questions',
 				'answers.items.conclusion': 'One or two sentences with values and the conditions where they hold',
+				'answers.items.claims': 'Registered hypothesis IDs the answer depends on; unrelated candidates remain pending.',
 				'answers.items.uses': 'Knowledge entry IDs directly used by this final answer; framing references are not inherited',
 				'answers.items.scope': 'Applicable scope of this answer; numeric ranges need units',
 				'answers.items.basis': 'One line per adopted or excluded candidate or checked reading, naming the source',

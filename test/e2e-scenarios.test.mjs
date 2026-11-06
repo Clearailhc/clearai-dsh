@@ -216,7 +216,7 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 	process.env.DSH_HOME = join(root, 'home')
 	const host = makeSimHost({ workspace, runDir: join(root, 'run') })
 	apply(host.ctx, { ...config, auditTimeoutMs: 5000 })
-	check('装上:7 件工具、3 段提示词', host.tools.size === 7 && host.sections.length === 3, `${host.tools.size} / ${host.sections.length}`)
+	check('装上:8 件工具、3 段提示词', host.tools.size === 8 && host.sections.length === 3, `${host.tools.size} / ${host.sections.length}`)
 
 	/** 预设开着测量门槛:立题时写出读数这个量,以及它由什么测、怎样核对。 */
 	const SIM_ONTOLOGY = {

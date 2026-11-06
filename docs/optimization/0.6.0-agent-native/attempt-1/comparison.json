@@ -1,0 +1,1350 @@
+{
+  "manifest": "manifest.json",
+  "results": [
+    {
+      "id": "initial-direct-A",
+      "phase": "initial",
+      "task": "direct",
+      "group": "A",
+      "mode": "default",
+      "workflow": null,
+      "goalStatus": null,
+      "knowledgeFacts": [],
+      "answers": [],
+      "reason": "completed",
+      "quality": {
+        "score": 100
+      },
+      "submission": {
+        "amount": 391,
+        "unit": "元"
+      },
+      "elapsedMs": 6658,
+      "usage": {
+        "input": 737,
+        "output": 352,
+        "cacheRead": 16384,
+        "cacheWrite": 0,
+        "calls": 4,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 17473,
+        "status": "verified",
+        "processed": 17473
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 198,
+          "output": 139,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "processed": 337,
+          "requestMs": 1986,
+          "costUpperBoundUsd": 0.0002262
+        },
+        "main": {
+          "calls": 3,
+          "input": 539,
+          "output": 213,
+          "cacheRead": 16384,
+          "cacheWrite": 0,
+          "processed": 17136,
+          "requestMs": 6074,
+          "costUpperBoundUsd": 0.000515604
+        }
+      },
+      "costUpperBoundUsd": 0.000741804,
+      "audits": [],
+      "experimentCost": 0,
+      "observations": [],
+      "initialSha256": null,
+      "violations": [],
+      "snapshot": ".controller/snapshots/initial-direct-A"
+    },
+    {
+      "id": "initial-direct-C",
+      "phase": "initial",
+      "task": "direct",
+      "group": "C",
+      "mode": "clearai",
+      "workflow": null,
+      "goalStatus": null,
+      "knowledgeFacts": [],
+      "answers": [],
+      "reason": "completed",
+      "quality": {
+        "score": 100
+      },
+      "submission": {
+        "amount": 391,
+        "unit": "元"
+      },
+      "elapsedMs": 10677,
+      "usage": {
+        "input": 12672,
+        "output": 401,
+        "cacheRead": 24320,
+        "cacheWrite": 0,
+        "calls": 4,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 37393,
+        "status": "verified",
+        "processed": 37393
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 198,
+          "output": 100,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "processed": 298,
+          "requestMs": 4020,
+          "costUpperBoundUsd": 0.0001794
+        },
+        "main": {
+          "calls": 3,
+          "input": 12474,
+          "output": 301,
+          "cacheRead": 24320,
+          "cacheWrite": 0,
+          "processed": 37095,
+          "requestMs": 8816,
+          "costUpperBoundUsd": 0.00424932
+        }
+      },
+      "costUpperBoundUsd": 0.00442872,
+      "audits": [],
+      "experimentCost": 0,
+      "observations": [],
+      "initialSha256": null,
+      "violations": [],
+      "snapshot": ".controller/snapshots/initial-direct-C"
+    },
+    {
+      "id": "initial-additive-C",
+      "phase": "initial",
+      "task": "additive",
+      "group": "C",
+      "mode": "clearai",
+      "workflow": "agent-v1",
+      "goalStatus": "open",
+      "knowledgeFacts": [],
+      "answers": [],
+      "reason": "token_limit",
+      "quality": {
+        "score": 0,
+        "feasible": false,
+        "start": 90.49247910884576,
+        "optimum": 95.0556729499388
+      },
+      "submission": {
+        "x": 0.4517,
+        "y": 0.4485,
+        "evidence": [
+          "lab/f-opt-1.json",
+          "lab/f-opt-2.json",
+          "lab/f-opt-3.json",
+          "lab/f-opt-4.json",
+          "lab/f-045-045.json",
+          "lab/cal-01.json",
+          "initial.json",
+          "lab/model-final.json",
+          "reports/analysis.md"
+        ]
+      },
+      "elapsedMs": 1331352,
+      "usage": {
+        "input": 115185,
+        "output": 186590,
+        "cacheRead": 4753024,
+        "cacheWrite": 0,
+        "calls": 91,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 5054799,
+        "status": "verified",
+        "processed": 5054799
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 85,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 360,
+          "requestMs": 1595,
+          "costUpperBoundUsd": 0.000146868
+        },
+        "main": {
+          "calls": 52,
+          "input": 32102,
+          "output": 67586,
+          "cacheRead": 3088768,
+          "cacheWrite": 0,
+          "processed": 3188456,
+          "requestMs": 462718,
+          "costUpperBoundUsd": 0.109266408
+        },
+        "evaluator": {
+          "calls": 38,
+          "input": 82936,
+          "output": 118919,
+          "cacheRead": 1664128,
+          "cacheWrite": 0,
+          "processed": 1865983,
+          "requestMs": 661876,
+          "costUpperBoundUsd": 0.17756836799999998
+        }
+      },
+      "costUpperBoundUsd": 0.286981644,
+      "audits": [
+        {
+          "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc",
+          "verdict": "yes",
+          "holds": "yes",
+          "basis": "四组判据均按各自推翻条件核对:在副本中复跑 method/response_surface.py 精确重现 lab/model-final.json(加性 CV 0.16775 < 交互 0.18048,交互并未低出 0.18);(0.45,0.45) 的 full 读数 95.0719 与 (0.4517,0.4485) 4 次重复 94.7228–95.2801(均值 95.054、se 0.120)全部 ≥ 初始最佳 94.693,首测 94.7228 也落在事前 10 点模型的 PI [94.547,95.367] 内;该点及邻域杂质 0.0819–0.0840,预测上界 0.1058 < 0.115;5 个 quick 点残差 sd 0.459(quick 标称 0.45),唯一同点对 quick−full=+0.724,推翻条件不成立。submission.json 坐标与证据路径齐备,报告写明模型参数、仪表口径与局限。报告个别派生数字(±0.25、quick 极差 +0.37、交互系数 −0.13)与复算不符,已在 anomalies 登记,不改变判据结论。",
+          "shortfalls": []
+        },
+        {
+          "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945",
+          "verdict": "yes",
+          "holds": "yes",
+          "basis": "C1 四要素均满足：submission.json:2-14 有 x=0.4517、y=0.4485 与 9 条 evidence；最终点 f-opt-1..4 为 full、value 94.7228–95.2801%（均值 95.054）、impurity 0.0819–0.0840≤0.115，最低读数仍高于 initial.json:62 的初始最佳 94.6927；analysis.md:18-58 写明模型参数、仪表口径与局限。副本复跑 response_surface.py 重现 model-final 的加性/交互 LOO CV 0.16775/0.18048、极值 (0.4528,0.4476) 与预测 95.05。报告有三处派生数字转写不实：16 点 PI [94.70,95.40] 实为 [94.676,95.425]（下界低于 94.693）、去重 13 点 CV 0.155/0.156 实为 0.171/0.193、杂质上界 0.1058 实为 0.1041；均不改变最优点、杂质可行性与「改善不显著」的结论，u5/u6 已披露且有界，故判交付成立并把上述登记为 anomalies。",
+          "shortfalls": []
+        }
+      ],
+      "experimentCost": 28,
+      "observations": [
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 2,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 95.41666530148244,
+            "impurity": 0.08794964882188945,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 3,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.2,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.2,
+            "y": 0.45,
+            "value": 93.37702921377968,
+            "impurity": 0.0785470370749368,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 4,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.7,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.7,
+            "y": 0.45,
+            "value": 92.71543152596398,
+            "impurity": 0.09205384420378614,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 5,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.45,
+            "y": 0.2
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.2,
+            "value": 93.84062715951785,
+            "impurity": 0.07046502951246647,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 6,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.45,
+            "y": 0.7
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.7,
+            "value": 93.79015483200874,
+            "impurity": 0.09629373179543257,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 7,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.45,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.45,
+            "value": 95.07193691302326,
+            "impurity": 0.08331362777233885,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 10,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.4517,
+            "y": 0.4485
+          },
+          "result": {
+            "x": 0.4517,
+            "y": 0.4485,
+            "value": 94.72275065583105,
+            "impurity": 0.08402857933011658,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 13,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.4517,
+            "y": 0.4485
+          },
+          "result": {
+            "x": 0.4517,
+            "y": 0.4485,
+            "value": 95.04843235383859,
+            "impurity": 0.08185665679115973,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 16,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.25,
+            "y": 0.6
+          },
+          "result": {
+            "x": 0.25,
+            "y": 0.6,
+            "value": 93.47104649459199,
+            "impurity": 0.08781629755568014,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 19,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.6,
+            "y": 0.25
+          },
+          "result": {
+            "x": 0.6,
+            "y": 0.25,
+            "value": 93.8300040807228,
+            "impurity": 0.07871004215920491,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 22,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.4517,
+            "y": 0.4485
+          },
+          "result": {
+            "x": 0.4517,
+            "y": 0.4485,
+            "value": 95.16428481723304,
+            "impurity": 0.08343151537781539,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 25,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.4517,
+            "y": 0.4485
+          },
+          "result": {
+            "x": 0.4517,
+            "y": 0.4485,
+            "value": 95.28007338690013,
+            "impurity": 0.08343010119438346,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 28,
+            "budget": 30
+          }
+        }
+      ],
+      "initialSha256": "85d63c559158d27a8616bcde58dd14f5e30fea215654a77a399e746e463f7b9f",
+      "violations": [],
+      "snapshot": ".controller/snapshots/initial-additive-C"
+    },
+    {
+      "id": "initial-additive-A",
+      "phase": "initial",
+      "task": "additive",
+      "group": "A",
+      "mode": "default",
+      "workflow": null,
+      "goalStatus": null,
+      "knowledgeFacts": [],
+      "answers": [],
+      "reason": "completed",
+      "quality": {
+        "score": 99.95831481191657,
+        "feasible": true,
+        "value": 95.05377077400352,
+        "impurity": 0.083575,
+        "start": 90.49247910884576,
+        "optimum": 95.0556729499388
+      },
+      "submission": {
+        "x": 0.45,
+        "y": 0.45,
+        "evidence": [
+          "initial.json",
+          "lab/cal-01.json",
+          "lab/quick-01.json",
+          "lab/full-01.json",
+          "lab/full-02.json",
+          "lab/full-03.json",
+          "lab/full-04.json",
+          "lab/full-05.json",
+          "lab/full-06.json",
+          "lab/full-07.json",
+          "lab/full-08.json",
+          "lab/full-09.json",
+          "lab/input-final.json",
+          "lab/model-final.json",
+          "report.md"
+        ]
+      },
+      "elapsedMs": 143378,
+      "usage": {
+        "input": 15433,
+        "output": 22086,
+        "cacheRead": 499584,
+        "cacheWrite": 0,
+        "calls": 23,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 537103,
+        "status": "verified",
+        "processed": 537103
+      },
+      "roles": {
+        "main": {
+          "calls": 22,
+          "input": 15286,
+          "output": 21897,
+          "cacheRead": 499456,
+          "cacheWrite": 0,
+          "processed": 536639,
+          "requestMs": 135681,
+          "costUpperBoundUsd": 0.033858936
+        },
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 189,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 464,
+          "requestMs": 2376,
+          "costUpperBoundUsd": 0.000271668
+        }
+      },
+      "costUpperBoundUsd": 0.034130604,
+      "audits": [],
+      "experimentCost": 30,
+      "observations": [
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 2,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.45,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.45,
+            "value": 95.53145002395614,
+            "impurity": 0.08402464882188945,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 3,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.45,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.45,
+            "value": 95.09821377941724,
+            "impurity": 0.0834220370749368,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 6,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.35,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.35,
+            "y": 0.45,
+            "value": 94.44315581578121,
+            "impurity": 0.08102884420378613,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 9,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.55,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.55,
+            "y": 0.45,
+            "value": 94.89394388326184,
+            "impurity": 0.08596502951246647,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 12,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.45,
+            "y": 0.35
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.35,
+            "value": 94.93274254610692,
+            "impurity": 0.07879373179543257,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 15,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.45,
+            "y": 0.55
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.55,
+            "value": 94.8222278385726,
+            "impurity": 0.08831362777233885,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 18,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.4,
+            "y": 0.4
+          },
+          "result": {
+            "x": 0.4,
+            "y": 0.4,
+            "value": 94.58668714848645,
+            "impurity": 0.0802825926301166,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 21,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 94.93279940154657,
+            "impurity": 0.08581067009115974,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 24,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.45,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.45,
+            "y": 0.45,
+            "value": 95.17838936527446,
+            "impurity": 0.08451629755568014,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 27,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.46,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.46,
+            "y": 0.45,
+            "value": 95.25919045051693,
+            "impurity": 0.0842580421592049,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 30,
+            "budget": 30
+          }
+        }
+      ],
+      "initialSha256": "85d63c559158d27a8616bcde58dd14f5e30fea215654a77a399e746e463f7b9f",
+      "violations": [],
+      "snapshot": ".controller/snapshots/initial-additive-A"
+    },
+    {
+      "id": "initial-interaction-A",
+      "phase": "initial",
+      "task": "interaction",
+      "group": "A",
+      "mode": "default",
+      "workflow": null,
+      "goalStatus": null,
+      "knowledgeFacts": [],
+      "answers": [],
+      "reason": "completed",
+      "quality": {
+        "score": 99.95960576686859,
+        "feasible": true,
+        "value": 95.86891859814372,
+        "impurity": 0.091788,
+        "start": 90.38473644547021,
+        "optimum": 95.87113478668019
+      },
+      "submission": {
+        "x": 0.64,
+        "y": 0.49,
+        "evidence": [
+          "initial.json",
+          "lab/q-0.5-0.5.json",
+          "lab/q2-0.5-0.5.json",
+          "lab/f-0.5-0.5.json",
+          "lab/f-0.55-0.50.json",
+          "lab/f-0.60-0.45.json",
+          "lab/f-0.60-0.55.json",
+          "lab/f-0.65-0.5.json",
+          "lab/f-0.70-0.50.json",
+          "lab/f-0.75-0.45.json",
+          "lab/f-final-0.64-0.49.json",
+          "lab/cal-1.json",
+          "lab/cal-final.json",
+          "lab/input-full2.json",
+          "lab/input-final.json",
+          "lab/model-full2.json",
+          "lab/model-final.json",
+          "lab/model-decision.json",
+          "lab/report.md"
+        ]
+      },
+      "elapsedMs": 147392,
+      "usage": {
+        "input": 17637,
+        "output": 21554,
+        "cacheRead": 522496,
+        "cacheWrite": 0,
+        "calls": 24,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 561687,
+        "status": "verified",
+        "processed": 561687
+      },
+      "roles": {
+        "main": {
+          "calls": 23,
+          "input": 17490,
+          "output": 21422,
+          "cacheRead": 522368,
+          "cacheWrite": 0,
+          "processed": 561280,
+          "requestMs": 139272,
+          "costUpperBoundUsd": 0.034087608000000005
+        },
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 132,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 407,
+          "requestMs": 2438,
+          "costUpperBoundUsd": 0.000203268
+        }
+      },
+      "costUpperBoundUsd": 0.034290876000000005,
+      "audits": [],
+      "experimentCost": 30,
+      "observations": [
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 96.3969783263166,
+            "impurity": 0.08856150722849014,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 1,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 3,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 95.30838712271826,
+            "impurity": 0.08726748291706884,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 6,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 95.76824807470476,
+            "impurity": 0.0875473820595626,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 7,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.65,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.65,
+            "y": 0.5,
+            "value": 95.59969583350802,
+            "impurity": 0.09262329831008584,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 10,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.6,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.6,
+            "y": 0.45,
+            "value": 95.84183656100993,
+            "impurity": 0.08800013286931405,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 13,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.7,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.7,
+            "y": 0.5,
+            "value": 95.67841792433867,
+            "impurity": 0.09388000922283453,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 16,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.6,
+            "y": 0.55
+          },
+          "result": {
+            "x": 0.6,
+            "y": 0.55,
+            "value": 95.99001505081033,
+            "impurity": 0.09387766606901192,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 19,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.55,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.55,
+            "y": 0.5,
+            "value": 95.90795892636784,
+            "impurity": 0.08880712469392332,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 22,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.75,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.75,
+            "y": 0.45,
+            "value": 95.39703658279356,
+            "impurity": 0.09504296781527649,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 25,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.64,
+            "y": 0.49
+          },
+          "result": {
+            "x": 0.64,
+            "y": 0.49,
+            "value": 95.85876783240123,
+            "impurity": 0.09264007903755442,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 28,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.64,
+            "y": 0.49
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 30,
+            "budget": 30
+          }
+        }
+      ],
+      "initialSha256": "626ba8f9edf0bad18fb1ed7a2e1703e1621fc2ef092bc9fb4ceaa295cc7cc6a7",
+      "violations": [],
+      "snapshot": ".controller/snapshots/initial-interaction-A"
+    },
+    {
+      "id": "initial-interaction-C",
+      "phase": "initial",
+      "task": "interaction",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "reuse-additive-A",
+      "phase": "reuse",
+      "task": "additive",
+      "group": "A",
+      "mode": "default",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "reuse-additive-C",
+      "phase": "reuse",
+      "task": "additive",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "reuse-interaction-C",
+      "phase": "reuse",
+      "task": "interaction",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "reuse-interaction-A",
+      "phase": "reuse",
+      "task": "interaction",
+      "group": "A",
+      "mode": "default",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "changed-additive-A",
+      "phase": "changed",
+      "task": "additive",
+      "group": "A",
+      "mode": "default",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "changed-additive-C",
+      "phase": "changed",
+      "task": "additive",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "changed-interaction-C",
+      "phase": "changed",
+      "task": "interaction",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    },
+    {
+      "id": "changed-interaction-A",
+      "phase": "changed",
+      "task": "interaction",
+      "group": "A",
+      "mode": "default",
+      "reason": "not_run",
+      "stop": {
+        "reason": "candidate_implementation_error",
+        "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+      }
+    }
+  ],
+  "complete": true,
+  "stopped": {
+    "reason": "candidate_implementation_error",
+    "detail": "New audit request metadata contained undefined; official DSH rejects successful tool responses as non-lossless JSON. Stop before another task; preserve current worker and all usage."
+  }
+}

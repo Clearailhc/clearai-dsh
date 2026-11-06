@@ -1,0 +1,17 @@
+{
+  "phase": "initial",
+  "task": "根据给定材料:甲17件,每件23元。计算总金额，写 submission.json 为 {\"amount\":数值,\"unit\":\"元\"}，简短回复。",
+  "group": "A",
+  "mode": "default",
+  "tokenBudget": 240000,
+  "timeoutMs": 1200000,
+  "testId": "native060:initial-direct-A",
+  "output": "/tmp/clearai060-native-comparison/runs/initial-direct-A",
+  "isolation": {
+    "roots": [
+      "/tmp/clearai060-native-comparison",
+      "/tmp/clearai060-native"
+    ],
+    "probe": "/tmp/clearai060-native-comparison/.controller/sentinel"
+  }
+}

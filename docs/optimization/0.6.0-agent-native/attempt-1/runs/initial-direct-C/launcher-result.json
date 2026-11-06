@@ -1,0 +1,121 @@
+{
+  "session": "session-native-089432b2-a2f3-4169-8fbb-05fe3f5509af",
+  "group": "C",
+  "mode": "clearai",
+  "reason": "completed",
+  "elapsedMs": 10677,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 12672,
+    "output": 401,
+    "cacheRead": 24320,
+    "cacheWrite": 0,
+    "calls": 4,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 37393,
+    "status": "verified",
+    "processed": 37393
+  },
+  "mount": {
+    "prompt": true,
+    "tools": true
+  },
+  "requests": [
+    {
+      "session": "session-native-089432b2-a2f3-4169-8fbb-05fe3f5509af",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975120516
+    },
+    {
+      "session": "session-native-089432b2-a2f3-4169-8fbb-05fe3f5509af",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975125142
+    },
+    {
+      "session": "session-native-089432b2-a2f3-4169-8fbb-05fe3f5509af",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975127822
+    }
+  ],
+  "approvals": [],
+  "answer": "已完成。\n\n- 结论：总金额为 **391 元**（17 件 × 23 元/件 = 391 元）。\n- 依据：计算结果已由独立核对确认；文件已写入 `@submission.json`，内容为 `{\"amount\": 391, \"unit\": \"元\"}`。\n\n单件单价与件数都直接取自您给定的材料，没有其他假设；若这两项数据有变动，请告知，我会重新计算。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "/tmp/clearai060-native-comparison/workspaces/direct-C/submission.json"
+    ],
+    "sessionId": "session-native-089432b2-a2f3-4169-8fbb-05fe3f5509af"
+  },
+  "violations": {
+    "silent_closure": false,
+    "unresolved_reference_completed": false,
+    "duplicate_dispatch": false,
+    "pending_restored_without_review": false,
+    "outside_historical_retraction": false,
+    "repeated_card_failure": false,
+    "isolation_failed": false
+  },
+  "driverDigest": "3fc1d44e627667eaa5d60754143fd63803e704f5ced428fc40b39d71c289db14",
+  "logs": [
+    {
+      "session": "session-native-089432b2-a2f3-4169-8fbb-05fe3f5509af",
+      "cursor": 36,
+      "path": "dd4f3d716a8666f4ebc6b94edeb7af1942de3caa9bf219ed17ab4614324c4fd6.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "2cdb10a0e1aedaf9181a8762b293e8f113ee6369f1bb194987fc10f0a0f519f9",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}
