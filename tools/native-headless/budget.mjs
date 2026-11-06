@@ -23,9 +23,14 @@ export function campaignBudget(file) {
 		} finally { rmSync(lock, { recursive: true, force: true }) }
 	}
 	return {
+		acceptUnknownReservation(id, authorization) { return transact(data => {
+			const row = data.requests[id]
+			if (!row || row.status !== 'unknown' || row.error || row.reservedUsd !== REQUEST_RESERVE || typeof authorization !== 'string' || !authorization.trim()) throw new Error('Explicit authorization and intact reservation required')
+			row.reservationAcceptance = { authorization, at: Date.now(), upperBoundUsd: REQUEST_RESERVE }
+		}) },
 		reserve(meta = {}) { return transact(data => {
 			if (typeof meta.testId !== 'string' || !meta.testId.trim()) throw new Error('Stable testId required for per-test budget')
-			if (Object.values(data.requests).some(row => row.status === 'unknown')) throw new Error('Unverifiable paid usage: campaign stopped')
+			if (Object.values(data.requests).some(row => row.status === 'unknown' && !(row.reservationAcceptance?.authorization && row.reservationAcceptance.upperBoundUsd === REQUEST_RESERVE && row.reservedUsd === REQUEST_RESERVE && !row.error))) throw new Error('Unverifiable paid usage: campaign stopped')
 			const used = Object.values(data.requests).reduce((sum, row) => sum + row.reservedUsd, 0)
 			if (used + REQUEST_RESERVE > data.limitUsd) throw new Error('Campaign budget exhausted')
 			const testUsed = Object.values(data.requests).filter(row => row.testId === meta.testId).reduce((sum, row) => sum + row.reservedUsd, 0)

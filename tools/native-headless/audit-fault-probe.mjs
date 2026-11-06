@@ -10,7 +10,11 @@ if (!rootArg) throw new Error('Usage: audit-fault-probe.mjs <home> <profile> <ne
 const root = resolve(rootArg)
 assert.ok(!existsSync(root)); mkdirSync(root, { recursive: true })
 const checks = []
-for (const fault of ['cancel-after-child-request', 'disconnect', 'crash-after-child-verdict']) {
+const allFaults = ['cancel-after-child-request', 'disconnect', 'crash-after-child-verdict']
+const selected = process.argv.find(arg => arg.startsWith('--fault='))?.slice(8)
+assert.ok(!selected || allFaults.includes(selected))
+const faults = selected ? [selected] : allFaults
+for (const fault of faults) {
   const base = join(root, fault)
   await promisify(execFile)(process.execPath, [join(import.meta.dirname, 'audit-wait-probe.mjs'), home, profile, base, '0', fault], { maxBuffer: 1024 * 1024 })
   const first = JSON.parse(readFileSync(join(base, 'probe-result.json')))
@@ -38,6 +42,6 @@ for (const fault of ['cancel-after-child-request', 'disconnect', 'crash-after-ch
     assert.equal(recovered.clearai.audits.filter(audit => audit.step === before.step && audit.digest === before.digest && audit.verdict !== 'reused').length, 1)
   }
   checks.push({ fault, passed: true, first: { reason: first.reason, usage: first.usage, installation: first.installation }, ...(recovered ? { recovered: { reason: recovered.reason, usage: recovered.usage, installation: recovered.installation } } : {}) })
-  writeFileSync(join(root, 'receipt.json'), JSON.stringify({ passed: checks.length === 3, checks }, null, 2))
+  writeFileSync(join(root, 'receipt.json'), JSON.stringify({ passed: checks.length === faults.length, faults, checks }, null, 2))
 }
 console.log(JSON.stringify({ passed: true, checks }))

@@ -11,3 +11,12 @@ test('verified usage releases conservative reservations; unknown usage stops eve
 test('out-of-capacity usage leaves a durable stop, never frees reserved cost',t=>{const {b,file}=fixture(t);const id=b.reserve({testId:'x'});b.settle(id,{inputTokens:1e9,outputTokens:1});assert.equal(JSON.parse(readFileSync(file)).requests[id].status,'unknown');assert.throws(()=>campaignBudget(file).reserve({testId:'z'}),/Unverifiable/)} )
 
 test('invalid cache accounting cannot release a reservation',t=>{const {b,file}=fixture(t);const id=b.reserve({testId:'x'});b.settle(id,{inputTokens:1000,outputTokens:10,cacheReadTokens:-1});assert.equal(JSON.parse(readFileSync(file)).requests[id].status,'unknown');assert.throws(()=>b.reserve({testId:'next'}),/Unverifiable/)} )
+test('a specifically authorized unknown retains its full cost and does not approve future unknowns',t=>{
+ const {b,file}=fixture(t),id=b.reserve({testId:'x'});b.settle(id,undefined)
+ assert.throws(()=>b.acceptUnknownReservation(id,''),/authorization/)
+ b.acceptUnknownReservation(id,'Explicit user approval for this request')
+ const row=JSON.parse(readFileSync(file)).requests[id]
+ assert.equal(row.status,'unknown');assert.equal(row.reservedUsd,.8)
+ const next=b.reserve({testId:'x'});b.settle(next,undefined)
+ assert.throws(()=>b.reserve({testId:'y'}),/Unverifiable/)
+})
