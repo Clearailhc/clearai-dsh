@@ -46,7 +46,8 @@ export async function runNative({home,profile='native52',workspace,spec}) {
  }
  const result=JSON.parse(readFileSync(join(output,'result.json')))
  if(stopCause&&stopCause!=='user_cancelled')result.reason=stopCause
- if(result.reason==='completed'&&(!result.usage?.calls||result.usage?.missing||!result.answer)) {result.reason='infrastructure_error';result.failure='Unverifiable usage or missing answer'}
+ const restoredCompletion=spec.resumeSessionId===result.session&&result.clearai?.goal?.status==='achieved'
+ if(result.reason==='completed'&&((!result.usage?.calls&&!restoredCompletion)||result.usage?.missing||!result.answer)) {result.reason='infrastructure_error';result.failure='Unverifiable usage or missing answer'}
  result.installation={version:installation.version,packageDigest:installation.packageDigest,model:installation.model,runtime:installation.runtime,runtimeDigest:installation.runtimeDigest};result.process=status
  writeFileSync(join(output,'launcher-result.json'),JSON.stringify(result,null,2)+'\n');return result
 }

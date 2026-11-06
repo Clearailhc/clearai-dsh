@@ -171,7 +171,8 @@ export function apply(ctx, config) {
 		if (preset && (presets.composedPreset(main.ctx) !== preset.id || !ctx.get('clearai'))) throw new Error('Native preset/projection mount failed')
 		await main.whenIdle()
 		atomic('session-started.json', { session: main.id, resumed: !!spec.resumeSessionId })
-		main.followup(createUserMessage({ content: [{ type: 'text', text: spec.task }], source: { kind: 'user' } }))
+		const restored = spec.resumeSessionId ? checkpoint() : null
+		if (!spec.resumeOnly && restored?.clearai?.goal?.status !== 'achieved') main.followup(createUserMessage({ content: [{ type: 'text', text: spec.task }], source: { kind: 'user' } }))
 		while (!stopping) {
 			const record = checkpoint(), agents = ctx.get('agents').list()
 			if(clearMode&&Date.now()-mechanismCheckedAt>=2000) {

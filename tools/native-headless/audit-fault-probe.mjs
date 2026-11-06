@@ -30,8 +30,9 @@ for (const fault of ['cancel-after-child-request', 'disconnect', 'crash-after-ch
     assert.ok(before)
     const spec = JSON.parse(readFileSync(join(base, 'run/spec.json')))
     delete spec.fault
-    recovered = await runNative({ home, profile, workspace: join(base, 'workspace'), spec: { ...spec, output: join(base, 'recovered'), resumeSessionId: checkpoint.session, task: '恢复原目标，不重新立题。先读取已完成的独立裁决并恢复已有计划；同一份材料不要重派。若旧审计发现真实异常，补足可检查依据后再提交；完成原目标。lab/source.json 是测试控制器提供的来源与口径，0 秒是正常快速对照，不是删改过的延迟。' } })
+    recovered = await runNative({ home, profile, workspace: join(base, 'workspace'), spec: { ...spec, output: join(base, 'recovered'), resumeSessionId: checkpoint.session, resumeOnly: true, task: '恢复原目标，不重新立题。先读取已完成的独立裁决并恢复已有计划；同一份材料不要重派。若旧审计发现真实异常，补足可检查依据后再提交；完成原目标。lab/source.json 是测试控制器提供的来源与口径，0 秒是正常快速对照，不是删改过的延迟。' } })
     assert.equal(recovered.reason, 'completed', recovered.failure)
+    assert.equal(recovered.clearai.goal.id, checkpoint.clearai.goal.id, 'Recovery must finish the original goal, not create a replacement task')
     assert.equal(recovered.usage.status, 'verified')
     assert.ok(recovered.clearai.audits.some(audit => audit.child === injected.child && ['yes','no','unclear'].includes(audit.holds ?? audit.verdict)))
     assert.equal(recovered.clearai.audits.filter(audit => audit.step === before.step && audit.digest === before.digest && audit.verdict !== 'reused').length, 1)
