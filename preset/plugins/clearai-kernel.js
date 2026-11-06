@@ -20,6 +20,7 @@
  */
 
 import { createTodoMirror } from './native-todos.js'
+import { recoverToolArguments } from './tool-argument-stream.js'
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 
@@ -329,6 +330,7 @@ function resolveContributions(contributions) {
 // ── 插件主体 ────────────────────────────────────────────────────────────────
 
 export function apply(ctx, config = {}) {
+	ctx.on('llm/stream', (options, next) => recoverToolArguments(next(), TOOL_CATALOG, options.signal))
 	// 配置面先校验:组合文件里写错一个键名,以前是静默无效(比如把一个键拼错),
 	// 现在是装配期抛错——与贡献表同一套「表外的名字不许出现」的纪律。
 	for (const key of Object.keys(config)) {
@@ -5207,6 +5209,7 @@ export function apply(ctx, config = {}) {
 
 	ctx.on('tools/pre-execute', (exec, next) => (exec.agent === undefined ? next() : inLanguage(languageOf(String(exec.agent.id)), () => guardTool(exec, next))))
 	async function guardTool(exec, next) {
+		if (TOOL_CATALOG.has(exec.name) && typeof exec.arguments === 'string') return { kind: 'deny', reason: 'Invalid tool arguments: submit one valid JSON object. No action was executed; correct the JSON and resubmit the tool call.' }
 		{
 			const sessionId = String(exec.agent.id)
 			const hostService = host()

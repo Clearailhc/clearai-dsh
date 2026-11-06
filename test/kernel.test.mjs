@@ -540,6 +540,12 @@ check(
 )
 check('工具 schema 里没有 status / progress / phase 这类可宣告状态的字段(P2 不可表示)', () => false || ![...thisHost.tools.values()].some((tool) => /"status"|"progress"|"phase"/.test(JSON.stringify(tool.parameters))))
 check('注册了 tools/pre-execute 与 agent/pre-step 两个机制位', thisHost.listeners.has('tools/pre-execute') && thisHost.listeners.has('agent/pre-step'))
+{
+ let dispatched = false
+ const result = await thisHost.listeners.get('tools/pre-execute')({name:'Conclude',arguments:'{\"answers\":[{]',agent:{id:SESSION}},async()=>{dispatched=true;return {kind:'allow'}})
+ check('非法工具 JSON 返回明确拒绝且不执行工具',result.kind==='deny' && !dispatched && result.reason.includes('No action was executed'))
+}
+
 
 console.log('\n【提示词面:预设的提示词段】')
 {

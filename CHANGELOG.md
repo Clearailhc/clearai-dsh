@@ -14,6 +14,8 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - 复跑副本异步复制、递归过滤工具缓存，输出文件数、字节数和耗时，失败明确阻止依赖复跑的裁决。
 - 研究面板突出问题、候选、下一步和异常；本体按地图、依据、知识展开。统一主题与排版，升级概念、实体、取值、边、搜索、列表、邻域与窄屏详情交互。
 
+- 非法 ClearAI 工具 JSON 保留原文并进入工具拒绝反馈，允许模型重新提交；不推测或执行损坏参数，不吞掉取消和其他传输错误。
+
 ### Validation
 
 - 发布前必须完成 [0.5.8 验收记录](docs/optimization/0.5.8-release/README.md) 的工程、浏览器和真实模型门槛。每测试 5 美元、全批次 30 美元；不因模型费用更高而声称效率提升。
