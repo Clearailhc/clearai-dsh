@@ -34,3 +34,16 @@ test('a source declaration does not erase independently promoted evidence for th
 	assert.equal(detail.facts[0].id, 'f1')
 	assert.equal(detail.definition.basis, 'raw.csv')
 })
+
+test('structural edges and fact identifiers containing colons resolve without inventing validation',()=>{
+ const state=emptyState()
+ state.lexicon.terms=[{id:'parent',label:'Parent'},{id:'child',label:'Child',parent:'parent'}]
+ state.entities=[{id:'a',type:'parent'},{id:'b',type:'child',parent:'a'}]
+ state.facts=[{id:'fact:session:1',text:'reading',level:'L3',assertions:[{subject:{type:'child',id:'b'},predicate:'sensor:reading',object:{kind:'quantity',value:2}}]}]
+ const graph=graphProjection(state)
+ for(const edge of graph.edges){
+  const detail=inspectGraphSelection(state,{kind:'edge',id:edge.id});assert.ok(detail,edge.id)
+  if(edge.fact){assert.equal(detail.facts[0].id,'fact:session:1');assert.equal(detail.definition.predicate,'sensor:reading')}
+  else{assert.equal(detail.definition.status,'definition');assert.deepEqual(detail.facts,[])}
+ }
+})

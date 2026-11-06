@@ -1411,6 +1411,7 @@ function normalizeSelection(selection) {
 	if (id === '') return null
 	/** 调用方声明的类型优先认;声明了就必须对得上,不许「说 A 给 B」。 */
 	const declared = typeof raw.kind === 'string' ? raw.kind : ''
+	if (declared === 'edge') return { kind: 'edge', id }
 	const ok = (kind) => declared === '' || declared === kind
 	if (id.startsWith('term:')) return ok('concept') ? { kind: 'concept', id: id.slice('term:'.length) } : null
 	if (id.startsWith('is_a:')) return ok('concept') ? { kind: 'concept', id: id.slice('is_a:'.length) } : null
@@ -1775,8 +1776,18 @@ function inspectLiteral(context, key) {
 /** 断言边:一条事实边的完整链(图上点击一条边时看的就是它)。 */
 function inspectEdge(context, edgeId) {
 	const { lexicon, facts, conflicts } = context
-	const projected = graphProjection(context.state).edges.find(edge => edge.id === edgeId)
+	const graph = graphProjection(context.state)
+	const projected = graph.edges.find(edge => edge.id === edgeId)
 	if (!projected) return null
+	if (projected.layer === 'ontology' || projected.kind === 'part_of') {
+		const label = id => graph.nodes.find(node => node.id === id)?.label ?? id
+		return {
+			selection: { kind: 'edge', id: edgeId, label: projected.label },
+			definition: { kind: projected.kind, status: 'definition', gloss: `${label(projected.from)} → ${projected.label} → ${label(projected.to)}` },
+			relations: {}, facts: [], factsTruncated: 0, conflicts: [], history: [],
+			actions: { canFilter: true, canExpand: true, canEdit: false },
+		}
+	}
 	if (projected.source === 'asserted') {
 		const assertion = (context.state.entityAssertions ?? []).find(item => String(item.id ?? '') === projected.assertion)
 		if (!assertion) return null
@@ -1787,12 +1798,10 @@ function inspectEdge(context, edgeId) {
 			actions: { canFilter: true, canExpand: true, canEdit: false },
 		}
 	}
-	const parts = edgeId.split(':')
-	if (parts[0] !== 'assertion' || parts.length < 4) return null
-	const factId = parts[1]
-	const predicateId = parts[2]
-	/** 主语键里有 `|`,而它自己可能带 `:`——所以从第 4 段起重新拼回去(不按段数硬切)。 */
-	const subjectKey = parts.slice(3).join(':')
+	if (projected.kind !== 'assertion') return null
+	const factId = projected.fact
+	const predicateId = projected.predicate
+	const subjectKey = projected.from
 	const fact = facts.find((item) => String(item.id ?? '') === factId)
 	if (fact === undefined) return null
 	const predicate = lexicon.predicates.find((item) => item.id === predicateId) ?? null
