@@ -48,7 +48,7 @@ export function installReadIsolation(ctx,{roots,workspace}) {
 
 export async function probeReadIsolation(ctx,agent,path) {
  if(!existsSync(path))throw new Error('Actual isolation probe needs an existing external sentinel')
- const execute=async(name,args)=>ctx.tools.execute({name,arguments:args,agent,signal:new AbortController().signal,callId:'isolation-'+name})
+ const execute=async(name,args)=>(await ctx.tools.execute({calls:[{type:'tool-call',id:'isolation-'+name,name,arguments:JSON.stringify(args)}],agent,signal:new AbortController().signal})).results[0].result
  const read=await execute('read',{file_path:path})
  const shell=await execute('bash',{command:`cat '${path.replaceAll("'","'\\''")}'`,description:'Verify private controller file is unreadable',workdir:agent.session.header.cwd,timeoutMs:10000,run_in_background:false})
  const positive=await execute('bash',{command:'printf isolation-ok > isolation-public.txt; cat isolation-public.txt',description:'Verify allowed workspace reads and writes succeed',workdir:agent.session.header.cwd,timeoutMs:10000,run_in_background:false})

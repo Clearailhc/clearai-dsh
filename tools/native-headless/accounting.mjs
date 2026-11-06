@@ -1,3 +1,9 @@
+export async function waitForAccounting(calls, timeoutMs = 15000) {
+	const deadline = Date.now() + timeoutMs
+	while (calls.some(call => !call.ended) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10))
+	return calls.every(call => call.ended)
+}
+
 export function usageSummary(calls) {
 	const out = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, calls: 0, injectedBeforeProvider: 0, missing: 0, pending: 0 }
 	for (const call of calls) {

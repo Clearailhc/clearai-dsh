@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID, createHash } from 'node:crypto'
 import { campaignBudget } from './budget.mjs'
-import { usageSummary, redact, onceAsync, infrastructureErrorCode } from './accounting.mjs'
+import { usageSummary, redact, onceAsync, infrastructureErrorCode, waitForAccounting } from './accounting.mjs'
 import { installReadIsolation, probeReadIsolation } from './isolation.mjs'
 import { knowledgeRecords, mechanismReceipt } from './mechanisms.mjs'
 
@@ -134,6 +134,11 @@ export function apply(ctx, config) {
 		}
 		const drained = await Promise.race([Promise.all(agents.map((a) => a.whenIdle())).then(() => true), delay(15000).then(() => false)])
 		if (!drained) failure = `${failure ?? ''}; associated agents did not settle within cancellation drain limit`
+		// Host title generation can outlive the agent turn; include its final usage.
+		if (!await waitForAccounting(calls)) {
+			failure = `${failure ?? ''}; model accounting did not settle before shutdown`
+			if (reason === 'completed') reason = 'infrastructure_error'
+		}
 		checkpoint()
 		try { const sessions = ctx.get('sessions'); for (const session of sessions.list()) { capture(session); await sessions.flush(session) } } catch (error) { failure = `${failure ?? ''}; native flush: ${error.message}` }
 		atomic('result.json', checkpoint())

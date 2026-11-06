@@ -17,6 +17,14 @@ if(!process.env.CLEARAI_CONTRACT_CHILD) {
 } else {
  const require=createRequire(join(nativeRuntime().resources,'package.json'))
  const {Session,KNOWN_SESSION_EVENT_TYPES}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-session')).href)
+ const {BlockAssembler}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-llm')).href)
+ const {recoverToolArguments}=await import(pathToFileURL(join(repo,'preset/plugins/tool-argument-stream.js')).href)
+ const malformed='{"answers":[{]'
+ async function* adapterFailure(){yield {type:'tool-call-delta',index:0,id:'bad-json',name:'Conclude',argumentsDelta:malformed};yield {type:'finish',reason:{kind:'error',failure:{code:'MALFORMED_RESPONSE'}}}}
+ const live=new BlockAssembler()
+ for await(const chunk of recoverToolArguments(adapterFailure(),new Set(['Conclude'])))live.push(chunk)
+ assert.equal(live.finish.kind,'tool-calls')
+ assert.equal(live.blocks()[0].arguments,malformed,'Native assembler must preserve invalid bytes for tool rejection')
  const {applyEvent,emptyState}=await import(pathToFileURL(join(repo,'ui/lib/fold.js')).href)
  const header={version:4,id:'synthetic-contract',createdAt:Date.now(),cwd:tmpdir(),isSeeded:false}
  const session=Session.create(header.id,[],header)

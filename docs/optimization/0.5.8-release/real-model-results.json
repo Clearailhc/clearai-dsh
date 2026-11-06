@@ -9,16 +9,21 @@
   "budget": {
     "campaignLimitUsd": 30,
     "perTestLimitUsd": 5,
-    "costUpperBoundUsd": 0.7234953,
+    "costUpperBoundUsd": 2.5467608,
+    "verifiedUsageCostUpperBoundUsd": 1.7467608,
     "perTestCostUpperBoundUsd": {
-      "audit-wait:0:none": 0.4666749,
+      "audit-wait:0:cancel-after-child-request": 0.297306,
+      "audit-wait:0:crash-after-child-verdict": 0.5236815,
+      "audit-wait:0:disconnect": 0.2927634,
+      "audit-wait:0:none": 0.5671769999999999,
       "audit-wait:305:none": 0.0641967,
-      "audit-wait:0:cancel-after-child-request": 0.1926237
+      "isolation-probe": 0.8016362
     },
-    "requests": 137,
-    "verifiedRequests": 137,
+    "requests": 285,
+    "verifiedRequests": 284,
     "pendingRequests": 0,
-    "unknownRequests": 0
+    "unknownRequests": 1,
+    "unknownReservedUsd": 0.8
   },
   "runs": [
     {

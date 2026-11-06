@@ -24,3 +24,15 @@ test('faults demonstrably injected before provider dispatch are separate from un
  assert.equal(usageSummary([{...injected,providerInvoked:true}]).status,'unknown')
  assert.equal(usageSummary([{providerInvoked:false,ended:true}]).status,'unknown')
 })
+
+test('shutdown waits for host title usage after the main turn ends',async()=>{
+ const {waitForAccounting}=await import('../tools/native-headless/accounting.mjs')
+ const title={ended:false},calls=[{ended:true,usage:{inputTokens:2,outputTokens:1}},title]
+ const completion=waitForAccounting(calls,1000)
+ setTimeout(()=>Object.assign(title,{ended:true,usage:{inputTokens:3,outputTokens:1}}),20)
+ assert.equal(await completion,true)
+ assert.equal(usageSummary(calls).calls,2)
+ assert.equal(usageSummary(calls).status,'verified')
+ assert.equal(await waitForAccounting([{ended:false}],10),false)
+ assert.equal(usageSummary([{ended:false}]).status,'unknown')
+})

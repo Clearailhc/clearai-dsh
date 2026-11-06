@@ -1,0 +1,200 @@
+{
+  "passed": false,
+  "budget": {
+    "campaignLimitUsd": 30,
+    "perTestLimitUsd": 5,
+    "costUpperBoundUsd": 2.5467608,
+    "verifiedUsageCostUpperBoundUsd": 1.7467608,
+    "perTestCostUpperBoundUsd": {
+      "audit-wait:0:cancel-after-child-request": 0.297306,
+      "audit-wait:0:crash-after-child-verdict": 0.5236815,
+      "audit-wait:0:disconnect": 0.2927634,
+      "audit-wait:0:none": 0.5671769999999999,
+      "audit-wait:305:none": 0.0641967,
+      "isolation-probe": 0.8016362
+    },
+    "requests": 285,
+    "verifiedRequests": 284,
+    "pendingRequests": 0,
+    "unknownRequests": 1,
+    "unknownReservedUsd": 0.8
+  },
+  "runs": [
+    {
+      "test": "fast-after-fix",
+      "accepted": true,
+      "reason": "completed",
+      "elapsedMs": 70247,
+      "usage": {
+        "input": 14595,
+        "output": 10087,
+        "cacheRead": 280064,
+        "cacheWrite": 0,
+        "calls": 21,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 304746,
+        "status": "verified",
+        "processed": 304746
+      },
+      "sourceSha256": "dc40e8558b28dc17e2c9bd7d1170ba62d460cb52f04b88d3f0a843dfb8d170fa",
+      "packageDigest": "53d8426d492df7d5e155626039580d1f27c26db7158f5e9f620b2367eb7ce407"
+    },
+    {
+      "test": "cancel-1",
+      "accepted": true,
+      "reason": "user_cancelled",
+      "elapsedMs": 28733,
+      "usage": {
+        "input": 5076,
+        "output": 3965,
+        "cacheRead": 143104,
+        "cacheWrite": 0,
+        "calls": 11,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 152145,
+        "status": "verified",
+        "processed": 152145
+      },
+      "sourceSha256": "a8c5367aa5b33b854116bc5fe4d4b8fc181a2a7347a5e017c4f52321757afebf",
+      "packageDigest": "53d8426d492df7d5e155626039580d1f27c26db7158f5e9f620b2367eb7ce407"
+    },
+    {
+      "test": "disconnect-1",
+      "accepted": true,
+      "reason": "blocked",
+      "elapsedMs": 46085,
+      "usage": {
+        "input": 4093,
+        "output": 6230,
+        "cacheRead": 222336,
+        "cacheWrite": 0,
+        "calls": 15,
+        "injectedBeforeProvider": 2,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 232659,
+        "status": "verified",
+        "processed": 232659
+      },
+      "sourceSha256": "03bb0c8cad30d595ced1d6ee08aea6ec201037a572ae982f9fe8de3db5e1457f",
+      "packageDigest": "53d8426d492df7d5e155626039580d1f27c26db7158f5e9f620b2367eb7ce407"
+    },
+    {
+      "test": "recovery-replacement-goal",
+      "accepted": false,
+      "reason": "completed",
+      "elapsedMs": 254015,
+      "usage": {
+        "input": 31856,
+        "output": 39228,
+        "cacheRead": 1228288,
+        "cacheWrite": 0,
+        "calls": 39,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 1299372,
+        "status": "verified",
+        "processed": 1299372
+      },
+      "sourceSha256": "7677604d965912022f2e6b8dfcdeb35c9997a88c335beffedc3163fcfd4ed9f6",
+      "packageDigest": "53d8426d492df7d5e155626039580d1f27c26db7158f5e9f620b2367eb7ce407"
+    },
+    {
+      "test": "cancel-2",
+      "accepted": true,
+      "reason": "user_cancelled",
+      "elapsedMs": 30758,
+      "usage": {
+        "input": 5789,
+        "output": 3946,
+        "cacheRead": 163328,
+        "cacheWrite": 0,
+        "calls": 12,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 173063,
+        "status": "verified",
+        "processed": 173063
+      },
+      "sourceSha256": "f9dadc86669fdb0454272fcd07017b6bfbdd3106cf4c6cfee9c7da57d81d6a70",
+      "packageDigest": "8feab0dce517530d1d0a5d51b6c6ce9e0883f8b41c445dedf4d7d497075c8bac"
+    },
+    {
+      "test": "disconnect-budget-stop",
+      "accepted": false,
+      "reason": "error",
+      "elapsedMs": 314242,
+      "usage": {
+        "input": 11749,
+        "output": 19475,
+        "cacheRead": 634880,
+        "cacheWrite": 0,
+        "calls": 29,
+        "injectedBeforeProvider": 2,
+        "missing": 1,
+        "pending": 0,
+        "lowerBound": 666104,
+        "status": "unknown"
+      },
+      "sourceSha256": "b730849b4587ebfdeb27c48a1ff1fd0c6f3d0bded5f9415c9874099f80b494ff",
+      "packageDigest": "8feab0dce517530d1d0a5d51b6c6ce9e0883f8b41c445dedf4d7d497075c8bac"
+    },
+    {
+      "test": "isolation-old-api",
+      "accepted": false,
+      "reason": "error",
+      "elapsedMs": 86,
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "calls": 0,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 0,
+        "status": "verified",
+        "processed": 0
+      },
+      "sourceSha256": "35878b7789c005432b71623fb76986216542316f46b33c9250d6b80b91b2fe10",
+      "packageDigest": "8feab0dce517530d1d0a5d51b6c6ce9e0883f8b41c445dedf4d7d497075c8bac"
+    },
+    {
+      "test": "isolation-title-usage-missing",
+      "accepted": false,
+      "reason": "completed",
+      "elapsedMs": 1163,
+      "usage": {
+        "input": 5446,
+        "output": 2,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "calls": 1,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 1,
+        "lowerBound": 5448,
+        "status": "unknown"
+      },
+      "sourceSha256": "c4bb9b94a579d2b9041c7822f3720995171c4bbccbc8b301ae728e55e8870aa7",
+      "packageDigest": "8feab0dce517530d1d0a5d51b6c6ce9e0883f8b41c445dedf4d7d497075c8bac"
+    }
+  ],
+  "remaining": [
+    "final-candidate live recovery",
+    "final-candidate slow wait",
+    "six paired smoke",
+    "full real-host UI matrix and contrast"
+  ],
+  "notes": [
+    "Replacement-goal recovery is excluded despite the older verifier passing.",
+    "Paid batches stopped after a cancelled session-title request returned no usage. Its full USD 0.80 reservation remains charged to the test and campaign limits."
+  ]
+}
