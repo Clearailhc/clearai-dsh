@@ -1,0 +1,53 @@
+
+> clearai-dsh@0.5.7 test
+> node tools/build-vendor.mjs && bash test/run.sh
+
+【vendor】@xyflow/react@12.11.6 → ui/vendor/xyflow.js(JS+CSS,211 KB · 函数形式,react 外部化)
+【vendor】graphology + FA2@0.10.1 → ui/vendor/force.js(77 KB · 函数形式)
+✔ native audit schema preserves enforceable constraints without unsupported length keywords (2.624485ms)
+✔ restart recovers successful structured tool output, never a rejected call or narrative (0.23092ms)
+✔ Windows-safe bounded paths preserve every raw logical ID inside the card (21.807197ms)
+✔ fingerprint binds full answers, lessons, actual file content and meaning, excludes audit echoes (1.886247ms)
+✔ fingerprint ignores duplicate observation metadata but binds content and the current plan (0.741953ms)
+✔ method digest notices script content changes even with equal size and mtime (0.688444ms)
+✔ scope uncertainty never becomes applicability or historical retraction (0.514137ms)
+✔ cancellation runs once even when signal and normal loop race (1.845618ms)
+✔ missing or pending usage remains unknown with nonzero known lower bound (0.486537ms)
+✔ only credential content is redacted (0.454159ms)
+✔ faults demonstrably injected before provider dispatch are separate from unknown paid requests (1.155572ms)
+✔ grading snapshots freeze each task and reject external evidence, secrets and later edits (7.399598ms)
+✔ only classified infrastructure errors with verifiable use and unchanged model allow retry (0.601666ms)
+✔ registered method evidence captures declared inputs and scripts through the same read fence (2.833233ms)
+✔ feedback coverage includes positive facts and lessons as well as exclusions (0.569098ms)
+✔ direct long-task diagnostics stay separate from formal acceptance and pair independent workspaces (0.71264ms)
+✔ matrix has all 162 fixed sessions and simple tasks select default mode (2.779574ms)
+✔ missing engineering gates and usage cannot pass (0.542359ms)
+✔ task failures consume the fixed experiment penalties (0.154397ms)
+✔ quality and savings verdicts cannot compensate each other (9.605356ms)
+✔ uncompleted tasks score zero despite a locally optimal submission; t2 failure costs 31 (23.746021ms)
+✔ blind grades require complete evidence and safety judgments; disagreements trigger third judge (1.279154ms)
+✔ old submission survives in history but cannot be mistaken for the next task result (0.8762ms)
+✔ native child environment excludes arbitrary inherited provider credentials (0.322014ms)
+✔ persisted negative coverage and actual final confirmed references are different mechanisms (0.792508ms)
+✔ silent closure and repeated settled-material dispatches stop a batch (0.225282ms)
+✔ lost pending reasons and out-of-scope historical retractions are critical (0.670627ms)
+✔ smoke acceptance rejects failed or nonscorable optimization even with six run records (0.746009ms)
+✔ moisture-only cost never replaces total t4 diagnosis cost (0.439537ms)
+✔ factory pairing preserves raw accounting and world-specific changes (405.6801ms)
+✔ formal acceptance uses whole paired worlds, requires auditable usage and observed feedback opportunities (260.486646ms)
+✔ native todos reflect accepted progress, pending blocks and voided steps (2.005804ms)
+✔ native events update once, restore after new turn, and survive mirror restart (0.632922ms)
+✔ display failure retries and cannot change the authority or an unrelated list (0.322234ms)
+✔ paired worlds preserve sequence structure without sharing noise streams across tasks (3.271057ms)
+✔ experiment API exposes observations, never truth, and enforces experiment count (74.948503ms)
+✔ out-of-range or infeasible recipes receive zero, including completed prose claims (27.822986ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 904.791994
+第 1 遍 · 内核:结果:700 通过,0 失败 · 内核(新子代理入口):结果:700 通过,0 失败 · 宿主:结果:38 通过,0 失败 · 客户端:结果:180 通过,0 失败 · 领域语言:结果:251 通过,0 失败 · 本体:结果:101 通过,0 失败 · 真值表:结果:19 通过,0 失败 · 状态机:结果:41 通过,0 失败 · 文档:结果:15 通过,0 失败 · 注释:结果:7 通过,0 失败 · 边界:结果:19 通过,0 失败 · 组合:结果:16 通过,0 失败 · 段:结果:23 通过,0 失败 · 长测:结果:41 通过,0 失败 · 不变量:结果:27 通过,0 失败 · 对照:结果:39 通过,0 失败 · 可读性:结果:37 通过,0 失败 · 预算:结果:28 通过,0 失败
+全绿(1 遍)。
