@@ -176,7 +176,7 @@ Two panes in the middle: **Explore** and **Ontology**. Explore holds the process
   <img src="docs/shots/0.5.8/jepa-en-explore.png" alt="ClearAI 0.5.8 research panel, replaying the historical JEPA session" width="820">
 </picture>
 
-*Research panel: archived JEPA session replayed with the current production build. See [dark](docs/shots/0.5.8/jepa-dark-explore.png), [narrow](docs/shots/0.5.8/jepa-mobile-explore.png) and [entity details](docs/shots/0.5.8/jepa-entity-ontology.png).*
+*Research panel: archived JEPA session replayed with the current production build. See [dark](docs/shots/0.5.8/jepa-dark-explore.png), [narrow](docs/shots/0.5.8/jepa-mobile-explore.png) and [entity details](docs/shots/0.5.8/jepa-entity-ontology.png), and [narrow details](docs/shots/0.5.8/jepa-mobile-details-ontology.png).*
 
 ---
 

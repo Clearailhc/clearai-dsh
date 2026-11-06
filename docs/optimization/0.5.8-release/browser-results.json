@@ -1,0 +1,119 @@
+{
+  "passed": true,
+  "fixture": true,
+  "narrowDetails": {
+    "canvas": {
+      "x": 0,
+      "y": 178.5,
+      "width": 375,
+      "height": 648,
+      "top": 178.5,
+      "right": 375,
+      "bottom": 826.5,
+      "left": 0
+    },
+    "side": {
+      "x": 0,
+      "y": 585.359375,
+      "width": 375,
+      "height": 241.140625,
+      "top": 585.359375,
+      "right": 375,
+      "bottom": 826.5,
+      "left": 0
+    }
+  },
+  "stressInteractiveMs": 3894,
+  "projectionUpdates": {
+    "removed": 0,
+    "elapsedMs": 914.6000000005588
+  },
+  "clientSha256": "a2540c6eb536a2eae0ede2312e8a71bb6e16e9e30c49a51b06a3319276904d48",
+  "foldSha256": "3308609d5818b74948791ea0465ba6436683117e7abbb1ed091dc83703782bdc",
+  "nativeHostVersion": "0.2.2-rc.1",
+  "nativeSessionKind": "synthetic-arithmetic-acceptance-session",
+  "native": {
+    "light": {
+      "panels": [
+        {
+          "panel": "Explore",
+          "width": 1440,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Explore",
+          "width": 768,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Explore",
+          "width": 375,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Ontology",
+          "width": 1440,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Ontology",
+          "width": 768,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Ontology",
+          "width": 375,
+          "overflow": false,
+          "loaded": true
+        }
+      ],
+      "errors": []
+    },
+    "dark": {
+      "panels": [
+        {
+          "panel": "Explore",
+          "width": 1440,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Explore",
+          "width": 768,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Explore",
+          "width": 375,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Ontology",
+          "width": 1440,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Ontology",
+          "width": 768,
+          "overflow": false,
+          "loaded": true
+        },
+        {
+          "panel": "Ontology",
+          "width": 375,
+          "overflow": false,
+          "loaded": true
+        }
+      ],
+      "errors": []
+    }
+  }
+}

@@ -254,7 +254,12 @@ try {
 		await page.waitForTimeout(1400)
   if (option('--theme')==='dark') await page.addStyleTag({content:':root{color-scheme:dark;--dsw-alias-bg-base:#17191b;--dsw-alias-bg-layer-1:#202326;--dsw-alias-bg-layer-2:#292d30;--dsw-alias-label-primary:#f0f2f3;--dsw-alias-label-secondary:#bec5c8;--dsw-alias-label-tertiary:#9aa3a7;--dsw-alias-border-l1:#3c4347;--dsw-alias-border-l2:#4a5358;--dsw-alias-border-l3:#5f6a70}html,body{background:var(--dsw-alias-bg-base)}'})
   if(name==='ontology'&&argv.includes('--entity')) {await page.getByRole('button',{name:/实体图|Entity graph/}).click();await page.waitForTimeout(600)}
-  if(name==='ontology'&&argv.includes('--detail')) {await page.getByRole('button',{name:/^列表$|^List$/}).click();await page.locator('.clearai-directory-row').first().click();await page.waitForTimeout(500)}
+  if(name==='ontology'&&argv.includes('--detail')) {
+   await page.getByRole('button',{name:/^列表$|^List$/}).click()
+   await page.locator('.clearai-directory-row').first().click()
+   await page.locator('.clearai-graph-side .clearai-kv').waitFor({state:'visible'})
+   await page.locator('.clearai-graph-side').scrollIntoViewIfNeeded()
+  }
 
 		/** `--click 文本`(可多次):挂好之后依次点一下,拍展开后的样子。 */
 		for (let index = 0; index < argv.length; index += 1) {
@@ -277,7 +282,7 @@ try {
 	console.log(`\n【面板素材】会话 ${sessionId.slice(0, 16)} · 工作区 ${cwd ?? '(日志里没有 cwd)'} · 本体 ${(projection.lexicon?.terms ?? []).length} 概念 / ${(projection.lexicon?.predicates ?? []).length} 谓词 · 计划 ${(projection.plans ?? []).length} · 事实 ${(projection.facts ?? []).length}`)
 	for (const panel of PANELS) await shot(panel)
 
-	writeFileSync(join(outDir,`${prefix}-provenance.json`),JSON.stringify({kind:'historical-session-replay',events:eventsFile??match.sid,eventsSha256:createHash('sha256').update(readFileSync(match.file)).digest('hex'),clientSha256:createHash('sha256').update(readFileSync(CLIENT)).digest('hex'),language:option('--lang')??'zh',theme:option('--theme')??'light',panels:PANELS},null,2))
+	writeFileSync(join(outDir,`${prefix}-provenance.json`),JSON.stringify({kind:'historical-session-replay',events:eventsFile??match.sid,eventsSha256:createHash('sha256').update(readFileSync(match.file)).digest('hex'),clientSha256:createHash('sha256').update(readFileSync(CLIENT)).digest('hex'),foldSha256:createHash('sha256').update(readFileSync(join(PORT,'ui/lib/fold.js'))).digest('hex'),viewport:{width:Number(option('--width')??780),height:Number(option('--height')??940)},entity:argv.includes('--entity'),detail:argv.includes('--detail'),language:option('--lang')??'zh',theme:option('--theme')??'light',panels:PANELS},null,2))
 	await browser.close()
 	server.close()
 } finally {

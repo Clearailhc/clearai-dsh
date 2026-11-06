@@ -177,7 +177,7 @@ node docs/diagrams/build-hero.mjs   # 重画产品主图(需 google-chrome)
   <img src="docs/shots/0.5.8/jepa-explore.png" alt="0.5.8 研究面板回放 JEPA 历史会话" width="820">
 </picture>
 
-*研究面板：JEPA 历史会话回放。另见[深色](docs/shots/0.5.8/jepa-dark-explore.png)、[窄屏](docs/shots/0.5.8/jepa-mobile-explore.png)与[实体详情](docs/shots/0.5.8/jepa-entity-ontology.png)。*
+*研究面板：JEPA 历史会话回放。另见[深色](docs/shots/0.5.8/jepa-dark-explore.png)、[窄屏](docs/shots/0.5.8/jepa-mobile-explore.png)与[实体详情](docs/shots/0.5.8/jepa-entity-ontology.png)、[窄屏详情](docs/shots/0.5.8/jepa-mobile-details-ontology.png)。*
 
 ---
 
