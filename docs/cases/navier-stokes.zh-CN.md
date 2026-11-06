@@ -1,6 +1,6 @@
 # 案例:Navier–Stokes 被解决了吗?
 
-> UI 0.5.8: research now uses a main question column and an action sidebar; ontology shows the map before conclusions and established knowledge. [Current JEPA session replay](../shots/0.5.8/jepa-ontology.png) · [Research](../shots/0.5.8/jepa-explore.png). The older screenshots below document the original session version.
+> 界面说明（0.5.8）：研究面板以问题为主栏、下一步与异常为侧栏；本体面板先呈现地图，再展示结论和已确立知识。[新版 JEPA 历史会话回放](../shots/0.5.8/jepa-ontology.png) · [研究面板](../shots/0.5.8/jepa-explore.png)。下文旧截图按原会话版本保留。
 
 
 [English](navier-stokes.md)
