@@ -2476,6 +2476,7 @@ window.__ModuleLoader__.load({
 					h('button', { type: 'button', className: 'clearai-link', onClick: onClose }, t('关闭')),
 				),
 				busy === true ? h('div', { className: 'clearai-quiet' }, t('正在加载…')) : null,
+				definition.status === 'asserted' ? h('div', { className: 'clearai-quiet' }, t('对象与断言，核验状态以证据记录为准。')) : null,
 				failure !== null ? h('div', { className: 'clearai-quiet' }, `${t('无法获取')}${t(':')}${failure}`) : null,
 				busy === false && failure === null && data === null ? h('div', { className: 'clearai-quiet' }, t('该项已不在当前词表中(可能已被废止)。')) : null,
 				data === null

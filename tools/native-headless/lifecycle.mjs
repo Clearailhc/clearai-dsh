@@ -20,7 +20,7 @@ const historicalVersions=(process.argv.find(arg=>arg.startsWith('--versions='))?
 assert.ok(historicalVersions.every(version=>/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?$/.test(version)))
 for(const version of historicalVersions){
  const source=join(root,'source-'+version);mkdirSync(source,{recursive:true})
- execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','v'+version],{cwd:repo,maxBuffer:128*1024*1024})})
+ execFileSync('tar',['-xf','-'],{cwd:source,input:execFileSync('git',['archive','v'+version],{cwd:repo,maxBuffer:128*1024*1024})})
  symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),process.platform==='win32'?'junction':'dir')
  const dist=join(root,'package-'+version)
  const build=spawnSync(process.execPath,[join(source,'tools/build-package.mjs'),'--out',dist],{cwd:source,encoding:'utf8',timeout:120000})

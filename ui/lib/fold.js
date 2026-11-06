@@ -1666,6 +1666,10 @@ function inspectPredicate(context, predicateId) {
 }
 
 /** 实例节点:某个具体对象身上挂着的全部断言与它们的链。 */
+function assertionSources(assertions) {
+	return [...new Set(assertions.map(item => item.evidence?.ref).filter(Boolean))].join(' · ') || null
+}
+
 function inspectInstance(context, key) {
 	const { lexicon, facts, conflicts } = context
 	const separator = key.indexOf('|')
@@ -1675,6 +1679,10 @@ function inspectInstance(context, key) {
 	if (ref === '') return null
 	const outgoing = []
 	const incoming = []
+	const registered = (context.state.entities ?? []).find(item => item.type === type && item.id === ref)
+	const asserted = (context.state.entityAssertions ?? []).filter(item =>
+		(item.subject?.type === type && item.subject?.id === ref) ||
+		(item.object?.kind === 'instance' && item.object?.value === ref && (!item.object?.type || item.object.type === type)))
 	for (const fact of facts) {
 		for (const assertion of Array.isArray(fact.assertions) ? fact.assertions : []) {
 			const subjectMatches = String(assertion?.subject?.type ?? '') === type && String(assertion?.subject?.id ?? '') === ref
@@ -1683,7 +1691,7 @@ function inspectInstance(context, key) {
 			if (objectMatches) incoming.push({ fact, assertion, direction: 'in' })
 		}
 	}
-	if (outgoing.length === 0 && incoming.length === 0 && !lexicon.terms.some((item) => item.id === type)) return null
+	if (outgoing.length === 0 && incoming.length === 0 && !registered && asserted.length === 0) return null
 	const touchedFacts = [...new Set([...outgoing, ...incoming].map((item) => item.fact))]
 	const chain = cut(touchedFacts)
 	const edges = [...outgoing, ...incoming].map((item) => ({
@@ -1695,6 +1703,7 @@ function inspectInstance(context, key) {
 		level: item.fact.level ?? null,
 		status: item.fact.review?.decision === 'retracted' ? 'retracted' : item.fact.refuted === true ? 'refuted' : 'live',
 	}))
+	edges.push(...asserted.map(item => ({ direction: item.subject?.id === ref && item.subject?.type === type ? 'out' : 'in', predicate: item.predicate, chip: say(lexicon, item), fact: null, level: null, status: 'asserted' })))
 	return {
 		selection: { kind: 'instance', id: key, label: ref },
 		definition: {
@@ -1703,7 +1712,8 @@ function inspectInstance(context, key) {
 			type: type === '' ? null : type,
 			typeLabel: type === '' ? null : lexicon.terms.find((item) => item.id === type)?.label ?? type,
 			/** 实例**不注册**(从断言投影出来),所以它没有独立生命周期与版本史。 */
-			status: 'projected',
+			status: touchedFacts.length > 0 ? 'projected' : 'asserted',
+			basis: [registered?.basis, assertionSources(asserted)].filter(Boolean).join(' · ') || null,
 		},
 		relations: { edges, out: outgoing.length, in: incoming.length },
 		facts: chain.rows.map((fact) => factChain(context, fact)),
@@ -1732,9 +1742,12 @@ function inspectLiteral(context, key) {
 			holders.push({ fact, assertion })
 		}
 	}
+	for (const assertion of context.state.entityAssertions ?? []) {
+		if (String(assertion.predicate ?? '') === predicateId && objectKey(assertion.object) === objectPart) holders.push({ fact: null, assertion })
+	}
 	if (holders.length === 0) return null
 	const predicate = lexicon.predicates.find((item) => item.id === predicateId) ?? null
-	const touchedFacts = [...new Set(holders.map((item) => item.fact))]
+	const touchedFacts = [...new Set(holders.map((item) => item.fact).filter(Boolean))]
 	const chain = cut(touchedFacts)
 	return {
 		selection: { kind: 'literal', id: key, label: say(lexicon, holders[0].assertion) },
@@ -1746,7 +1759,8 @@ function inspectLiteral(context, key) {
 			value: holders[0].assertion?.object?.value ?? null,
 			unit: holders[0].assertion?.object?.unit ?? null,
 			/** 值形态决定「这个取值是什么东西」:数值 / 公式 / 代码路径 / 引用。 */
-			status: 'projected',
+			status: touchedFacts.length > 0 ? 'projected' : 'asserted',
+			basis: assertionSources(holders.filter(item => item.fact === null).map(item => item.assertion)),
 		},
 		relations: { holders: holders.length, predicateRange: predicate?.range ?? null },
 		facts: chain.rows.map((fact) => factChain(context, fact)),
@@ -1761,6 +1775,18 @@ function inspectLiteral(context, key) {
 /** 断言边:一条事实边的完整链(图上点击一条边时看的就是它)。 */
 function inspectEdge(context, edgeId) {
 	const { lexicon, facts, conflicts } = context
+	const projected = graphProjection(context.state).edges.find(edge => edge.id === edgeId)
+	if (!projected) return null
+	if (projected.source === 'asserted') {
+		const assertion = (context.state.entityAssertions ?? []).find(item => String(item.id ?? '') === projected.assertion)
+		if (!assertion) return null
+		return {
+			selection: { kind: 'edge', id: edgeId, label: projected.label },
+			definition: { kind: 'assertion', status: 'asserted', predicate: assertion.predicate, gloss: say(lexicon, assertion), basis: assertionSources([assertion]) },
+			relations: {}, facts: [], factsTruncated: 0, conflicts: [], history: [],
+			actions: { canFilter: true, canExpand: true, canEdit: false },
+		}
+	}
 	const parts = edgeId.split(':')
 	if (parts[0] !== 'assertion' || parts.length < 4) return null
 	const factId = parts[1]
