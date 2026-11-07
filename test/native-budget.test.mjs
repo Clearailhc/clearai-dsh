@@ -66,7 +66,33 @@ test('budget increase cannot reset pending or authorize arbitrary cap edits',t=>
 })
 
 
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+test('Windows replacement retries preserve the old ledger and hold the lock',t=>{
+ const {file}=fixture(t),moduleUrl=new URL('../tools/native-headless/budget.mjs',import.meta.url).href
+ const child=spawnSync(process.execPath,['--input-type=module','-e',`
+  import assert from 'node:assert/strict';
+  import fs from 'node:fs';
+  import {syncBuiltinESMExports} from 'node:module';
+  import {campaignBudget} from ${JSON.stringify(moduleUrl)};
+  const file=${JSON.stringify(file)},before=fs.readFileSync(file,'utf8'),rename=fs.renameSync;
+  Object.defineProperty(process,'platform',{value:'win32'});
+  let attempts=0;
+  fs.renameSync=(source,target)=>{
+   assert.equal(target,file);
+   assert.ok(fs.existsSync(file+'.lock'));
+   assert.equal(fs.readFileSync(file,'utf8'),before);
+   if(++attempts<3)throw Object.assign(new Error('Transient sharing denial'),{code:'EPERM'});
+   return rename(source,target);
+  };
+  syncBuiltinESMExports();
+  const id=campaignBudget(file).reserve({testId:'windows-sharing'});
+  assert.equal(attempts,3);
+  assert.equal(JSON.parse(fs.readFileSync(file)).requests[id].status,'pending');
+  assert.equal(fs.existsSync(file+'.lock'),false);
+ `],{encoding:'utf8',timeout:10000})
+ assert.equal(child.status,0,child.stderr)
+ assert.equal(Object.keys(JSON.parse(readFileSync(file)).requests).length,1)
+})
 test('concurrent workers preserve all shared reservations and settlements',async t=>{
  const {file}=fixture(t),moduleUrl=new URL('../tools/native-headless/budget.mjs',import.meta.url).href
  await Promise.all(Array.from({length:4},(_,worker)=>new Promise((resolve,reject)=>{
