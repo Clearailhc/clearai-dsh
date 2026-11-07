@@ -5,8 +5,12 @@
 - New goals explore without mandatory step contracts; legacy goals retain their workflow.
 - Add ReviewClaims, explicit final-answer claim coverage, native explorer preset and public evidence handoffs.
 - Bind review reuse to material/scope/configuration; retain pending candidates without certifying them.
-- Add bounded ReadEvidence batches, audit-card v3 coverage and state projection v24.
+- Add bounded ReadEvidence batches, audit-card v3 coverage and state projection v25.
 - 新目标按需探索，关键主张独立核验；旧会话兼容、候选保持待验证，评估与探索用量分别记录。
+- Review policy v2 records dispatcher-owned stage/final obligations, keeps independent counterevidence alongside author observations, and requires support to cover the registered claim and scope.
+- Preserve the original policy when recovering old audit cards; bind legacy cache reuse to reviewer trust and policy changes too.
+- Return ontology format problems together before any write, clarify slug lengths and assertion references, and show valid hypothesis IDs after an invalid ReviewClaims request.
+- 核验范围由内核派发记录确定，旧裁决恢复保留原策略；本体错误批量反馈，未知影响与最终交付守卫不变。
 - Release remains blocked until fresh paired completion, reuse and revalidation acceptance passes.
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

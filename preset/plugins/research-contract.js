@@ -4,7 +4,21 @@ import { contentDigest, fileDigest } from './audit-material.js'
 import { RERUN_EXCLUDED } from './rerun-copy.js'
 
 export const AGENT_WORKFLOW = 'agent-v1'
-export const REVIEW_POLICY = 'clearai.review.v1'
+export const REVIEW_POLICY = 'clearai.review.v2'
+
+// The dispatcher supplies the review kind; author tool arguments cannot change it.
+export function reviewObligation(state, step, kind) {
+ const final = kind === 'goal_audit'
+ return {
+  policy: REVIEW_POLICY,
+  kind,
+  scope: final ? 'final-delivery' : 'selected-work',
+  criteria: step.done_criteria,
+  claims: [...(step.tests?.hypotheses ?? [])],
+  goal_context: { id: state.goal?.id ?? null, claim: state.goal?.claim ?? null, done_criteria: state.goal?.done_criteria ?? null },
+  final_delivery_required_now: final,
+ }
+}
 
 // Unknown impact blocks partial certification; author explanations cannot establish it.
 export function partialReviewClaims(results, anomalies, knownClaims) {
@@ -69,6 +83,7 @@ export function researchHandoff(state, step, receipts = []) {
   observations: (state.materials ?? []).map(m => ({ ref: m.ref, note: m.note, source: m.source, digest: m.digest, step: m.step })),
   checks: (state.evidence ?? []).filter(e => e.evaluator !== 'independent').map(e => ({ hypothesis: e.hypothesis, verdict: e.verdict, basis: e.basis, refs: e.refs, authority: 'author-observation' })),
   exclusions: (state.anomalies ?? []).map(a => ({ id: a.id, what: a.what, status: a.status, reason: a.reason, by: a.by, matters: a.matters, touches: a.touches, impact_basis: a.impact_basis })),
+  independent_counterevidence: (state.evidence ?? []).filter(e => e.evaluator === 'independent' && ['refute', 'inconclusive'].includes(e.verdict)).map(e => ({ evidence: e.id, hypothesis: e.hypothesis, verdict: e.verdict, refs: e.refs, authority: 'historical-independent; applicability must be checked' })),
   receipts,
  }
 }

@@ -101,7 +101,7 @@ test('audit criterion protocol rejects the observed invented C1 sub-identities b
  assert.throws(()=>bindAuditCriteria(generic,[{id:'C1'},{id:'C1'}]))
 })
 
-import { researchSnapshot, researchHandoff, partialReviewClaims, reviewDelta } from '../preset/plugins/research-contract.js'
+import { researchSnapshot, researchHandoff, partialReviewClaims, reviewDelta, reviewObligation, REVIEW_POLICY } from '../preset/plugins/research-contract.js'
 
 test('partial certification requires independent bounded impact and preserves ontology obligations', () => {
  const results = [{hypothesis:'safe',verdict:'support',independent_of_open_issues:true},{hypothesis:'affected',verdict:'support',independent_of_open_issues:true}]
@@ -147,4 +147,45 @@ test('batched evidence reads preserve citation lines, reject traversal and bound
  assert.equal(rows[0].text,'2: second');assert.equal(rows[0].digest,fileDigest(cwd,'source.txt'))
  assert.ok(rows[1].error);assert.ok(rows[2].error)
  assert.throws(()=>readEvidence(cwd,Array(9).fill({path:'source.txt'})))
+})
+
+
+test('review obligations separate current work from final completion without waiving dependencies', () => {
+ const state={goal:{id:'g',claim:'Report temperature',done_criteria:'submission.json contains measured temperature'}}
+ const step={done_criteria:'Reference equals 900 C',tests:{hypotheses:['h1']}}
+ for(const kind of ['claim_audit','evidence_audit']){
+  const obligation=reviewObligation(state,step,kind)
+  assert.equal(obligation.scope,'selected-work');assert.equal(obligation.final_delivery_required_now,false)
+  assert.equal(obligation.goal_context.done_criteria,state.goal.done_criteria)
+  assert.deepEqual(obligation.claims,['h1']);assert.equal(obligation.criteria,step.done_criteria)
+ }
+ const final=reviewObligation(state,step,'goal_audit')
+ assert.equal(final.scope,'final-delivery');assert.equal(final.final_delivery_required_now,true)
+ assert.equal(final.policy,REVIEW_POLICY)
+})
+
+test('handoff preserves contrary independent history beside author support without manufacturing current proof', () => {
+ const state={hypotheses:[{id:'h1'}],evidence:[
+  {hypothesis:'h1',verdict:'support',evaluator:'self',basis:'initial reading'},
+  {hypothesis:'h1',verdict:'refute',evaluator:'independent',basis:'counterexample',refs:['raw.txt:1']},
+  {hypothesis:'h1',verdict:'support',evaluator:'self',basis:'author repeats claim'},
+  {hypothesis:'h2',verdict:'support',evaluator:'independent',basis:'positive finding already covered by receipts'},
+ ]}
+ const original=structuredClone(state),handoff=researchHandoff(state,{tests:{hypotheses:['h1']}})
+ assert.equal(handoff.checks.length,2);assert.equal(handoff.independent_counterevidence.length,1)
+ assert.equal(handoff.independent_counterevidence[0].verdict,'refute')
+ assert.match(handoff.independent_counterevidence[0].authority,/historical.*applicability/)
+ assert.deepEqual(handoff.receipts,[]);assert.deepEqual(state,original)
+})
+
+
+test('legacy review reuse also invalidates changed evaluator trust or policy', () => {
+ const cwd=tempDir('clearai-legacy-review-policy-');writeFileSync(join(cwd,'raw.txt'),'value=1')
+ const input={cwd,kind:'evidence_audit',step:{id:'s1',done_criteria:'value equals 1',artifacts:['raw.txt']},state:{goal:{id:'g',workflow:'steps-v1'}},gate:{trust:{model:'same',policy:'clearai.review.v1'}}}
+ const original=auditMaterialDigest(input)
+ assert.equal(auditMaterialDigest(structuredClone(input)),original)
+ for(const field of ['model','policy','presetSource','l4Human']){
+  const changed=structuredClone(input);changed.gate.trust[field]='changed'
+  assert.notEqual(auditMaterialDigest(changed),original,field)
+ }
 })

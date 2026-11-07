@@ -2035,10 +2035,11 @@ console.log('\n【评估者已结束 ⇒ 先取回它的裁决,取不回才如�
 	// Cold child logs are queried without making an Agent live or dispatching again.
 	{
 	 const host=makeHost();apply(host.ctx,{blockedThreshold:3});const S='cold-audit'
-	 const coldPending = makePending('cold-child'); coldPending.audits[0].criteria = [{ id: 'C1', text: 'independent calculation' }]; host.states.set(S,coldPending);host.coldSessionId='cold-child';host.listing=[]
+	 const coldPending = makePending('cold-child'); coldPending.audits[0].request={gate:{trust:{policy:'clearai.review.v1'}},claims:[]}; coldPending.audits[0].criteria = [{ id: 'C1', text: 'independent calculation' }]; host.states.set(S,coldPending);host.coldSessionId='cold-child';host.listing=[]
 	 host.coldEvents=[{type:'tool/call',data:{callId:'structured',name:'structured_output',arguments:JSON.stringify({holds:'yes',basis:'independent calculation',refs:[{path:'lab/probe.txt',line:1}],criteria:[{criterion:'C1',result:'pass',basis:'lab/probe.txt:1'}],results:[{hypothesis:'h-rc',verdict:'support'}],reuse:[],rechecks:[]})}},{type:'tool/result',data:{message:{toolCallId:'structured',isError:false}}},{type:'turn/end',data:{reason:{kind:'completed'}}}]
 	 await preStep(host,S,83);const settled=host.journal.find(row=>row.t==='audit/settled')
 	 check('真正冷会话经 sessionQuery 恢复原生结构化裁决,不派新评估',settled?.holds==='yes'&&settled.results[0].verdict==='support'&&host.audits.length===0&&host.coldDisposed)
+	 check('冷恢复保留旧评估策略,不冒充新范围契约',JSON.parse(readFileSync(settled.card_path)).coverage.policy==='clearai.review.v1'&&JSON.parse(readFileSync(settled.card_path)).coverage.obligation===null)
 	}
 	// ② 它结束了但未正常完成 ⇒ 如实写「已结束、未正常完成」
 	{
@@ -3881,8 +3882,12 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  check('native claims registered only when useful',framed.ok===true,String(framed.message))
  const [h,extra]=host.service.state(S).hypotheses
  const request={claims:[h.id],observations:[{ref:'lab/input.txt',note:'Author checked reference; other batches were not measured.'}]}
+ const invalid=await callOn(host,S,'ReviewClaims',{...request,claims:['Peak']})
+ check('native review invalid ID returns usable IDs without dispatch',invalid.code==='review_claims_invalid'&&invalid.message.includes(h.id)&&host.audits.length===0,invalid.message)
  const first=await callOn(host,S,'ReviewClaims',request)
  check('native review commits scoped fact without a custom plan',first.ok===true&&host.service.state(S).facts.length===1&&host.service.state(S).plans.length===0,String(first.message))
+ const claimPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
+ check('claim review receives dispatcher-owned stage obligation',claimPrompt.includes('"kind":"claim_audit"')&&claimPrompt.includes('"final_delivery_required_now":false')&&claimPrompt.includes(base.done_criteria),claimPrompt)
  check('extra hypothesis remains unverified',!host.service.state(S).evidence.some(e=>e.hypothesis===extra.id))
  const before=host.audits.length, evidenceBefore=host.service.state(S).evidence.length
  const again=await callOn(host,S,'ReviewClaims',request)
@@ -3894,6 +3899,8 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  check('native final review completes without ClosePlan',close.ok===true&&host.service.state(S).goal.status==='achieved',String(close.message))
  const finalPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
  check('final reviewer receives current independent receipt and all candidate leads',finalPrompt.includes('independent-current')&&finalPrompt.includes(extra.id)&&finalPrompt.includes('missing claim'),finalPrompt)
+ check('final review still requires final delivery',finalPrompt.includes('"kind":"goal_audit"')&&finalPrompt.includes('"final_delivery_required_now":true'),finalPrompt)
+ check('scope obligation survives persisted review request',card.request.obligation?.scope==='selected-work'&&card.request.obligation?.policy==='clearai.review.v2')
  check('final review does not promote the unrelated candidate',host.service.state(S).facts.length===1&&!host.service.state(S).facts.some(f=>f.hypothesis===extra.id))
 }
 {
@@ -3954,9 +3961,20 @@ for (const scenario of ['bounded', 'unknown', 'affected', 'unconfirmed']) {
  const issue={what:'Noise relationship remains unresolved',matters:'yes',...(scenario==='unknown'?{}:{touches:[scenario==='affected'?peak.id:noise.id],impact_basis:'Explicit assessment of measurement dependency.'})}
  host.nextVerdict={holds:'yes',basis:'Independent reference confirms peak',results:[{hypothesis:peak.id,verdict:'support',basis:'lab/probe.txt:1',independent_of_open_issues:scenario!=='unconfirmed'}],anomalies:[issue]}
  await callOn(host,S,'AdvancePlan',{observations:[{ref:'lab/probe.txt'}]})
+ const stepPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
+ check(`${scenario}: step review has stage obligation`,stepPrompt.includes('"kind":"evidence_audit"')&&stepPrompt.includes('"final_delivery_required_now":false'),stepPrompt)
  const state=host.service.state(S)
  check(`${scenario}: step preserves only independently bounded facts`,state.goal.status==='open'&&state.facts.length===(scenario==='bounded'?1:0)&&!state.facts.some(f=>f.hypothesis===noise.id),JSON.stringify({facts:state.facts,anomalies:state.anomalies}))
  if(scenario==='bounded') check('step partial fact survives journal replay',applyMutations(emptyState(),host.journal).facts.some(f=>f.hypothesis===peak.id&&f.assertions?.length))
+}
+
+console.log('\n【本体批量诊断与原子提交】')
+{
+ const host=makeHost(), ws=tempDir('clearai-ontology-diagnostics-'), S='ontology-diagnostics';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true})
+ const rejected=await callOn(host,S,'Frame',{claim:'Check measurements',done_criteria:'Report checked measurements',ontology:{concepts:[{id:'x',label:'X',gloss:'First variable'},{id:'y',label:'Y',gloss:'Second variable'},{id:'valid_type',label:'Valid',gloss:'Valid concept'}],relations:[{id:'relation_ok',label:'Relation',kind:'defines',range:{form:'statement'},shape:'linear'}]},hypotheses:[]})
+ check('all invalid ontology entries reported in one response',rejected.code==='ontology_rejected'&&['concepts/x.json','concepts/y.json','relations/relation_ok.json','2–40'].every(x=>rejected.message.includes(x)),rejected.message)
+ check('invalid batch commits neither valid sibling nor goal',!existsSync(join(ws,'clear/ontology/concepts/valid_type.json'))&&host.service.state(S).goal===null)
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

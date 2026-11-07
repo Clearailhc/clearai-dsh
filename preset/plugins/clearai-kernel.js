@@ -31,7 +31,7 @@ import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
 import { citeVerdict, mergeAbout, negativeItems, relatedKnowledge, resolveAbout } from './knowledge-items.js'
-import { researchHandoff, researchSnapshot, reviewDelta, partialReviewClaims, REVIEW_POLICY } from './research-contract.js'
+import { researchHandoff, researchSnapshot, reviewDelta, partialReviewClaims, reviewObligation, REVIEW_POLICY } from './research-contract.js'
 import { auditMaterialDigest, auditRerunInputs, auditPathComponent, contentDigest, fileDigest, methodSnapshot } from './audit-material.js'
 import { auditCriteria, validateAuditEvidence, citationsUnchanged } from './audit-evidence.js'
 import { workspacePath } from './workspace-path.js'
@@ -1112,13 +1112,21 @@ export function apply(ctx, config = {}) {
 		]
 	}
 
-	function evaluatorPrompt(state, step, gate, sessionId, rerunDir = null) {
+	function evaluatorPrompt(state, step, gate, sessionId, rerunDir = null, kind) {
 		const goal = state.goal
 		const tested = testedBy(step)
 			.map((id) => state.hypotheses.find((item) => item.id === id))
 			.filter((item) => item !== undefined)
 		return [
 			evaluatorDiscipline(),
+			'# Harness review obligation',
+			JSON.stringify(reviewObligation(state, step, kind)),
+			...(kind === 'goal_audit' ? [
+				tr('本次是最终交付核验:逐项核对目标判据、答案覆盖、当前来源与未决风险。最终产物缺失仍须判未完成。有效独立凭据可在其范围内沿用,只补核缺口;未知依赖必须扩大检查。', 'This is final-delivery review: check every goal criterion, answer coverage, current sources and unresolved risks. Missing final artifacts still fail completion. Use valid independent receipts within their checked scope and review remaining gaps; expand checks for unknown dependencies.'),
+			] : [
+				tr('本次只裁决已登记的本步/所选主张。目标判据是背景,未到期的最终产物不自动成为当前证据异常;若缺失确实影响本次判据或主张,必须说明依赖并记录异常。不能替作者补造影响范围,不清楚仍按未知处理。此裁决不能关闭目标。', 'Judge the registered step/selected claims only. Goal criteria are context: a future final artifact is not by itself a current evidence anomaly. If its absence affects a current criterion or claim, explain the dependency and record the issue. Never invent an impact boundary; unknown impact stays unknown. This verdict cannot close the goal.'),
+			]),
+			tr('逐条给出来源、结果及适用限制后即可返回裁决;不要重新优化方案。没有触发推翻条件不等于充分支持:支持必须覆盖原命题与登记范围。仅支持更窄命题时给 inconclusive 并说明建议修订,不把限制藏在正文后仍认证宽命题。历史自判与独立裁决分开保留,矛盾不得由旧 support 掩盖。', 'Return the verdict once each required check has a source, result and scope limit; do not re-optimize the proposal. Absence of refutation alone is not sufficient support: support must cover the registered claim and scope. If only a narrower claim is supported, return inconclusive with the proposed revision instead of certifying the broad claim with a buried caveat. Author checks and independent findings are separate history; old support cannot hide contrary findings.'),
 			'',
 			...tr(
 				[
@@ -1370,7 +1378,7 @@ export function apply(ctx, config = {}) {
    if (verdict) verdict = validateAuditEvidence(sessionCwd(sessionId), verdict, audit.criteria ?? savedAudit?.criteria ?? [])
 			let cardPath = null
 			if (verdict) {
-				cardPath = writeAuditCard(sessionId, audit.step, { schema_version: savedAudit?.request ? 'clearai.audit.v3' : 'clearai.audit.v2', coverage: savedAudit?.request ? { policy: REVIEW_POLICY, digest: audit.digest, claims: savedAudit.request.claims ?? [], criteria: savedAudit.criteria, trust: savedAudit.request.gate?.trust, scope: savedAudit.request.scope ?? {} } : undefined, kind: audit.kind, step_id: audit.step, auditor_run_id: String(audit.child), ...verdict, card: verdict.basis, created_at: Date.now() })
+				cardPath = writeAuditCard(sessionId, audit.step, { schema_version: savedAudit?.request ? 'clearai.audit.v3' : 'clearai.audit.v2', coverage: savedAudit?.request ? { policy: savedAudit.request.gate?.trust?.policy ?? 'clearai.review.v1', obligation: savedAudit.request.obligation ?? null, digest: audit.digest, claims: savedAudit.request.claims ?? [], criteria: savedAudit.criteria, trust: savedAudit.request.gate?.trust, scope: savedAudit.request.scope ?? {} } : undefined, kind: audit.kind, step_id: audit.step, auditor_run_id: String(audit.child), ...verdict, card: verdict.basis, created_at: Date.now() })
 				if (cardPath === null) verdict = null
 			}
 			const settled = verdict ?? { holds: 'unknown', results: [], basis: result.verdict ? 'Could not save the evaluation card' : result.basis, shortfalls: result.verdict ? ['card_persist_failed'] : result.shortfalls }
@@ -1710,7 +1718,7 @@ export function apply(ctx, config = {}) {
 	function reviewRequest(kind, step, gate, state, sessionId) {
 		const { materialMutations, ...inputs } = gate
 		return JSON.parse(JSON.stringify({
-			kind, step, gate: inputs, goal: state.goal?.id ?? null, snapshot: state.goal?.workflow === 'agent-v1' ? researchSnapshot(sessionCwd(sessionId)) : null, scope: state.goal?.conditions ?? {},
+			kind, obligation: reviewObligation(state, step, kind), step, gate: inputs, goal: state.goal?.id ?? null, snapshot: state.goal?.workflow === 'agent-v1' ? researchSnapshot(sessionCwd(sessionId)) : null, scope: state.goal?.conditions ?? {},
 			claims: (step.tests?.hypotheses ?? []).map(id => {
 				const claim = state.hypotheses.find(row => row.id === id)
 				return { id, version: claim?.version ?? null, scope: claim?.scope ?? null, refute_when: claim?.refute_when ?? null }
@@ -1844,7 +1852,7 @@ export function apply(ctx, config = {}) {
     criteria,
 				label: `${kind === 'goal_audit' ? tr('目标评估者', 'Goal evaluator') : tr('评估者', 'Evaluator')} · ${step.id} · ${pendingId}`,
 				persona: evaluatorDiscipline(),
-				prompt: evaluatorPrompt(initialState, step, gate, sessionId, rerunDir),
+				prompt: evaluatorPrompt(initialState, step, gate, sessionId, rerunDir, kind),
 				outputSchema: bindAuditCriteria(verdictSchema(), criteria),
 				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, process.platform === 'win32' ? 'pwsh' : 'bash', 'job_output', 'job_list', 'job_kill']) },
 				parent: agent,
@@ -2938,7 +2946,7 @@ export function apply(ctx, config = {}) {
 			properties: {
 				headline: { type: 'string', maxLength: 120, description: '一句话目标(≤120 字),首次立题必填' },
 				claim: { type: 'string', description: '目标要回答的问题' },
-				done_criteria: { type: 'string', description: '怎样算回答了:可核对,至少一处能清点(数字、条数、存在某文件)' },
+				done_criteria: { type: 'string', description: '首次与修订均必填;未改判据时原样传回。怎样算回答了:可核对,至少一处能清点(数字、条数、存在某文件)' },
 				legacy: { type: 'boolean', description: '仅旧会话迁移用' },
 				criteria: {
 					type: 'array',
@@ -2999,8 +3007,8 @@ export function apply(ctx, config = {}) {
 					type: 'object',
 					description: '可选:本体条目,校验后写进 clear/ontology/(字段见 SCHEMA.json);同 id 替换',
 					properties: {
-						concepts: { type: 'array', items: { type: 'object' }, description: '{id, label, gloss, kind: category|measure|phenomenon, unit?}' },
-						relations: { type: 'array', items: { type: 'object' }, description: '{id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape?, check?}' },
+						concepts: { type: 'array', items: { type: 'object' }, description: '{id (2–40 lowercase slug characters, e.g. var_x), label, gloss, kind: category|measure|phenomenon, unit?}' },
+						relations: { type: 'array', items: { type: 'object' }, description: '{id (2–40 lowercase slug characters), label, kind: affects|measures|defines|manifests_as, domain?, range, shape? (affects only), check?}' },
 						entities: { type: 'array', items: { type: 'object' }, description: '{id, type, label, basis, provenance: {kind: named, ref}}; definitions and assertions may be submitted together' },
 					},
 					additionalProperties: false,
@@ -3032,7 +3040,7 @@ export function apply(ctx, config = {}) {
 							},
 							assertions: {
 								type: 'array',
-								description: '可选:主词–谓词–宾语断言(引用本体 id),提供即严校',
+								description: '可选:主词–谓词–宾语断言,提供即严校。subject.id 引用实体,subject.type 是实体的概念类型 id,不是字面量 concept;predicate 引用关系 id',
 								items: {
 									type: 'object',
 									properties: {
@@ -3080,16 +3088,17 @@ export function apply(ctx, config = {}) {
 			 * 只改判据的修订若把缺省读成空清单,已被支持的判断会一起落成「已替换」,
 			 * 而替换是终态,按原文补登也回不来。要撤掉判断就显式列出留下的那几条。
 			 */
-			const ontologyFiles = []
+			const ontologyFiles = [], ontologyProblems = []
 			for (const [branch, list] of [['concepts', args.ontology?.concepts], ['relations', args.ontology?.relations], ['entities', args.ontology?.entities]]) {
 				for (const item of Array.isArray(list) ? list : []) {
 					const id = String(item?.id ?? '').trim()
 					const rel = `clear/ontology/${branch}/${id}.json`
 					const problems = id === '' ? [tr('要有 id(就是文件名)', 'needs an id (the file name)')] : typeof hostService.domain?.checkFile === 'function' ? hostService.domain.checkFile(rel, item) : []
-					if (problems.length > 0) return fail('ontology_rejected', tr(`本体条目 ${rel} 不能写入:\n${problems.map((line) => `- ${line}`).join('\n')}`, `Ontology entry ${rel} cannot be written:\n${problems.map((line) => `- ${line}`).join('\n')}`))
+					if (problems.length > 0) ontologyProblems.push(...problems.map(line => `${rel}: ${line}`))
 					ontologyFiles.push({ branch, id, rel, data: item })
 				}
 			}
+			if (ontologyProblems.length) return fail('ontology_rejected', tr('本体条目未写入,请一并修复:\n', 'No ontology entries written; fix these together:\n') + ontologyProblems.map(line => `- ${line}`).join('\n'))
 			const ontologyDraft = ontologyFiles.length ? { t: 'workspace/synced', changes: ontologyFiles.map(file => ({ path: file.rel, data: file.data, digest: contentDigest(JSON.stringify(file.data)) })) } : null
 			const assertionMutations = [...mutations, ...(ontologyDraft ? [ontologyDraft] : [])]
 			const carried = args.hypotheses === undefined && state.goal !== null && state.goal.status === 'open'
@@ -3412,8 +3421,9 @@ export function apply(ctx, config = {}) {
 			if (state.goal?.status !== 'open') return fail('no_open_goal', 'Frame the goal and criteria first.')
 			if (state.goal.workflow !== 'agent-v1') return fail('legacy_workflow', 'This goal retains its original plan contract. Use AdvancePlan.')
 			const ids = [...new Set(args.claims ?? [])].sort()
-			const selected = ids.map(id => state.hypotheses.find(h => h.id === id && h.goal === state.goal.id && ['alive', 'proposed'].includes(h.status)))
-			if (!ids.length || ids.length > 8 || selected.some(h => !h)) return fail('review_claims_invalid', 'Use 1–8 active registered hypothesis IDs from this goal.')
+			const active = state.hypotheses.filter(h => h.goal === state.goal.id && ['alive', 'proposed'].includes(h.status))
+			const selected = ids.map(id => active.find(h => h.id === id))
+			if (!ids.length || ids.length > 8 || selected.some(h => !h)) return fail('review_claims_invalid', tr('使用本目标中 1–8 个有效假设 id。', 'Use 1–8 active registered hypothesis IDs from this goal.') + ' ' + active.map(h => `${h.id}: ${handleOf(h)}`).join('; '))
 			const grounding = groundingProblem(state, ids, hostService, sessionId, mutations)
 			if (grounding) return grounding
 			const observations = Array.isArray(args.observations) ? args.observations : []
@@ -5730,7 +5740,7 @@ export function apply(ctx, config = {}) {
 			params: {
 				headline: 'The goal in one sentence (≤120 characters); required the first time',
 				claim: 'The question the goal answers',
-				done_criteria: 'What counts as answered: checkable, with at least one countable form (a number, a count, a file that exists)',
+				done_criteria: 'Required on initial framing and revisions; repeat the exact existing criteria when unchanged. What counts as answered: checkable, with at least one countable form (a number, a count, a file that exists)',
 				legacy: 'Migration of old sessions only',
 				criteria: 'Optional: the criteria one by one; otherwise the full done_criteria text is used',
 				criteria_note: 'Background for the criteria; not part of the verdict',
@@ -5749,8 +5759,8 @@ export function apply(ctx, config = {}) {
 				about: 'Ids of the entities or quantities involved (e.g. "R-2", "yield"): used to locate existing items, and items left by this run attach to them',
 				conditions: 'This run\'s conditions, e.g. {"line": "L2", "month": "2026-09"}; the default scope of judgments and the basis of the applicability check',
 				ontology: 'Optional: ontology entries, checked and written to clear/ontology/ (fields in SCHEMA.json); the same id replaces',
-				'ontology.concepts': '{id, label, gloss, kind: category|measure|phenomenon, unit?}',
-				'ontology.relations': '{id, label, kind: affects|measures|defines|manifests_as, domain?, range, shape?, check?}',
+				'ontology.concepts': '{id (2–40 lowercase slug characters, e.g. var_x), label, gloss, kind: category|measure|phenomenon, unit?}',
+				'ontology.relations': '{id (2–40 lowercase slug characters), label, kind: affects|measures|defines|manifests_as, domain?, range, shape? (affects only), check?}',
 				hypotheses: 'Candidate judgments, one thing each. Omitted on revision = unchanged; given = the full list, and any not listed is recorded as replaced',
 				'hypotheses.items.name': 'Short name (≤ about 20 letters); use it to refer to the judgment later',
 				'hypotheses.items.question': 'Optional: question or area id',
@@ -5759,7 +5769,7 @@ export function apply(ctx, config = {}) {
 				'hypotheses.items.use': 'Optional: id of the re-runnable computation behind it, registered at clear/models/<id>.json (command, inputs, output, tolerance, optional baseline); when its inputs change, the system re-runs it and compares when the item is cited',
 				'hypotheses.items.scope': 'Optional: where it holds. conditions gives conditions, ranges value ranges (e.g. {"temperature": [150, 175]}), note one sentence; defaults to the framing conditions',
 				'hypotheses.items.retests': 'Optional: which existing fact it re-tests (fact id). Copy the original claim; if refuted, the system asks a person to retract or keep the fact',
-				'hypotheses.items.assertions': 'Optional: subject–predicate–object assertions (ontology ids), strictly checked when given',
+				'hypotheses.items.assertions': 'Optional subject–predicate–object assertions, strictly checked. subject.id names an entity; subject.type is its registered concept type ID, not the literal concept; predicate names a relation',
 				reason: 'Required on revision: what changed and why',
 			},
 		},

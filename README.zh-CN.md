@@ -7,7 +7,7 @@
 
 ### 0.6 候选：按需探索与协作核验
 
-新目标使用普通工具和原生子任务探索，不必先建立步骤计划。`ReviewClaims` 按需核验相关主张，`Conclude.answers.claims` 明确答案依赖；独立核验继续把关知识与结案。额外假设可以待验证，旧计划保留原契约。见[流程与限制](docs/optimization/0.6.0-agent-native/README.md)。真实任务验收通过后才发布。
+新目标使用普通工具和原生子任务探索，不必先建立步骤计划。`ReviewClaims` 按需核验相关主张，`Conclude.answers.claims` 明确答案依赖；独立核验继续把关知识与结案。额外假设可以待验证，旧计划保留原契约。见[流程与限制](docs/optimization/0.6.0-agent-native/README.md)。真实任务验收通过后才发布。 核验任务书明确区分阶段检查与最终交付，影响未知仍阻止认证；本体批量提交一次报告格式问题，不部分写入。
 
 <p align="center"><a href="README.md">English</a> · <b>中文</b></p>
 
