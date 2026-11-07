@@ -15,3 +15,7 @@ test('new counterevidence or missing independent basis reopens the original anom
 test('cross-goal and unknown references cannot inherit an old disposition',()=>{
  for(const id of ['missing','a#u1']){let s=fixture();s.anomalies[0].status='escalated';s.audits[1].goal_id='other';s=applyMutation(s,settle('b',[{existing_id:id,disposition:'maintain',what:'new concern',impact_basis:'checked'}]));assert.equal(s.anomalies.length,2);assert.equal(s.anomalies[1].status,'open')}
 })
+
+test('independent review can acknowledge a model finding only in its registered goal',()=>{
+ for(const goal of ['g','other']){let s=emptyState();s.goal={id:'g'};s=applyMutation(s,{t:'anomaly/opened',id:'model',what:'component changed'});s.anomalies[0].status='escalated';s.audits=[{id:'review',goal_id:goal}];s=applyMutation(s,settle('review',[{existing_id:'model',disposition:'maintain',what:'same issue',impact_basis:'source and boundary checked'}]));assert.equal(s.anomalies.length,goal==='g'?1:2);assert.equal(s.anomalies[0].status,'escalated')}
+})
