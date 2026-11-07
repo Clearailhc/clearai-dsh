@@ -2,6 +2,11 @@
 
 ## 0.6.0 candidate — agent-native research
 
+- Preserve explicit same-goal anomaly identity across independent reviews, including author-registered findings; maintain requires independent impact evidence, while changed/unsupported dispositions reopen. Keep review history (projection v29).
+- Serialize unspecified accepted-lesson scope as null so a supported conclusion remains lossless JSON in DSH. Real same-session recovery completed after retaining the failed attempts.
+- Clarify raw-source versus effective graph views. The original MAT017 edge is valid in the raw view; a separate effective exporter includes the approved correction join, cutoff and both source citations. Preserve the original comparison and avoid claiming speed or accuracy superiority.
+
+
 - Add a preregistered complex supply-chain acceptance case against native DSH, preserving transport and structured-output failures, role-level usage, independent reproduction and official DSH recorded-session screenshots. The candidate is not published.
 - 增加供应链复杂案例的过程、产物与费用记录；完整导出图、平台内部结构和独立事实分别计量，保留首次失败及补充恢复，不据单个案例宣称普遍提速。
 

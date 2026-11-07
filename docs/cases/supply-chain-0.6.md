@@ -72,6 +72,10 @@ ClearAI ends with 15 concepts, 63 platform entity records and 10 stored fact fil
 
 The demonstrated value is inspectable scope, evidence and rejection history, including one independently retained fact from a rejected bundle. Native already produces correct quantities and reusable artifacts, so this case establishes neither an accuracy advantage nor an efficiency advantage. ClearAI's main agent accounts for most known processed tokens; evaluators account for most request time. Both paths need attention.
 
+## Graph-view clarification after remediation / 修复后视图澄清
+
+The original scoring assumes an effective current graph. Subsequent independent review confirmed that a graph explicitly representing raw `material_usage` records correctly retains BAT001→MAT017. Calling that edge simply wrong was too broad. It does not supply the corrected current relationship by itself. Source and effective views should be named separately, with the cutoff and correction citations. The original 531/532 current-view score is preserved; it is not an accuracy score for the raw-source view. See [the dual-view remediation](supply-chain-remediation/README.md).
+
 ## Interpretation limits / 结论边界
 
 This is one synthetic case executed by real models, not external supply-chain validation or a statistical benchmark. Native DSH may solve the business problem accurately without the ClearAI knowledge store. A successful ClearAI case must therefore demonstrate the additional evidence and reusable knowledge it retains, while also reporting the additional work and failures.

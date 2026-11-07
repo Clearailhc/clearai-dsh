@@ -1,4 +1,10 @@
-# 0.6.0 release candidate review
+# Current repair review
+
+Post-repair update: the targeted real task completed with goal=achieved after the retained failures. The JSON lesson-scope defect found during verification is fixed. Raw-source and effective graphs are now explicitly distinguished; the original current-view score remains historical. [Evidence and limitations](../../cases/supply-chain-remediation/README.md). The original failed comparison below remains unchanged and does not establish current performance superiority.
+
+Current release preparation is supported by the targeted completion, regression, package and clean-install checks. This is not a new paired benchmark; earlier performance claims remain unproven. The following assessment is retained as history, not the current repair verdict.
+
+# Original comparison review (historical)
 
 Status: real acceptance failed; publication blocked. Local review package is prepared; no tag, npm publication or GitHub Release.
 

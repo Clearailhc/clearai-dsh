@@ -40,5 +40,6 @@
     },
     "decisionExact": true
   },
-  "originalPreserved": true
+  "originalPreserved": true,
+  "verifiedArtifact": "artifacts/graph-effective.json"
 }

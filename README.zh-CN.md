@@ -11,7 +11,9 @@
 
 **发行候选：**0.6.0 尚未发布，下方 npm 安装命令在发布后适用。现在可在此检出中执行 `npm run release`，再通过 DSH 插件管理器安装生成的 `dist/clearai-dsh-0.6.0.tgz`。该命令构建并检查本地包，不执行发布。
 
-**复杂案例验收：发布阻断。** 同一供应链三阶段任务，原生 DSH 完成3/3阶段、累计20.30分钟；ClearAI 完成2/3阶段、累计109.91分钟。已知处理token分别为1136万与7864万（下界，多数为缓存读取）。两组当前暴露量均算对，但 ClearAI 因同一异常重复派评未能结案，导出图还有一条旧关系。沉淀15个概念、63条实体记录、跨历史范围49条断言，不等于整个源图已获认证。[案例、截图与录屏](docs/cases/supply-chain-0.6.md) · [结果与成本](docs/optimization/0.6.0-agent-native/release-case-results.md) · [发布阻断项](docs/optimization/0.6.0-agent-native/release-candidate.md)。
+**修复前的复杂案例对照记录。** 同一供应链三阶段任务，原生 DSH 完成3/3阶段、累计20.30分钟；ClearAI 完成2/3阶段、累计109.91分钟。已知处理token分别为1136万与7864万（下界，多数为缓存读取）。两组当前暴露量均算对，但 ClearAI 因同一异常重复派评未能结案，导出图还有一条旧关系。沉淀15个概念、63条实体记录、跨历史范围49条断言，不等于整个源图已获认证。[案例、截图与录屏](docs/cases/supply-chain-0.6.md) · [结果与成本](docs/optimization/0.6.0-agent-native/release-case-results.md) · [发布阻断项](docs/optimization/0.6.0-agent-native/release-candidate.md)。
+
+**修复后复验：**定向真实任务现已成功结案。同一目标的异常由独立评估关联原身份，未声明的经验范围以 null 返回；原始图与更正后的有效图分开。失败尝试和未知用量预留全部保留，不据此宣称普遍提速。[修复证据与限制](docs/cases/supply-chain-remediation/README.md)。
 
 <p align="center"><a href="README.md">English</a> · <b>中文</b></p>
 

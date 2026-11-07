@@ -1,0 +1,13 @@
+{
+  "testedRuntimeCommit": "aa8917a",
+  "runtimeFilesCompared": 49,
+  "differences": [],
+  "documentationExceptions": [
+    "CHANGELOG.md",
+    "INVENTORY.txt",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "sha256": "47af6e3d81ece0982498e04905f45cdab25629ce3ae867ebb181fc6b79b13666",
+  "bytes": 639037
+}

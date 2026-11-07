@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "analysis/run_phase3.py"
+  ],
+  "exitCode": 0,
+  "equal": {
+    "submission.json": true,
+    "artifacts/graph.json": true
+  },
+  "scope": "raw-source model export"
+}

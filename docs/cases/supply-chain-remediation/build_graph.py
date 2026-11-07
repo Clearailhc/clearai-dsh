@@ -79,6 +79,7 @@ def build(case: Case, view: str = "effective") -> dict:
         if view == "effective" and r.get("_correction_id"):
             correction = case.corrections_by_usage[r["_correction_id"]]
             edges[-1]["evidence"].append({"path": correction["_path"], "row": correction["_row"]})
+            edges[-1]["derivation"] = {"kind": "approved-record-correction", "join_key": "usage_id", "join_value": correction["usage_id"], "effective": correction["effective"]}
 
     # 出货：每个 shipment_id 一个实体，证据取首次出现的行；重复版本不新增实体
     first_seen: dict[str, dict] = {}
@@ -102,7 +103,7 @@ def build(case: Case, view: str = "effective") -> dict:
 def main() -> None:
     # NOTICE-2 的 as-of 视图：纳入新增出货；隔离判定不影响图的结构
     case = Case(notice_path=ROOT / "data" / "notice-v2.json", addenda=True)
-    graph = build(case)
+    graph = build(case, "source")
     for view in ("source", "effective"):
         target = ROOT / "artifacts" / f"graph-{view}.json"
         target.parent.mkdir(parents=True, exist_ok=True)
