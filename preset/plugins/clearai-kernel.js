@@ -761,6 +761,14 @@ export function apply(ctx, config = {}) {
 				card,
 				message: preview?.state?.goal?.workflow === 'agent-v1' ? String(value.message ?? value.code ?? 'ok') : fresh ? `${value.message ?? value.code ?? 'ok'}\n\n${shown}` : `${value.message ?? value.code ?? 'ok'}${card === null ? '' : tr('\n(状态卡与上次相同,不再重发。)', '\n(The status card is unchanged and is not repeated.)')}`,
 			}
+			if (value.ok && ['goal_set', 'goal_revised'].includes(value.code) && preview?.state?.goal?.workflow === 'agent-v1') {
+				const active = (preview.state.hypotheses ?? []).filter(h => h.goal === preview.state.goal.id && ['alive', 'proposed'].includes(h.status))
+				if (active.length) {
+					result.message += '\n' + tr('核验引用（使用 id，不用短名）: ', 'Review references (use IDs, not names): ') + active.map(h => `${h.id}: ${handleOf(h)}`).join('; ')
+					const problem = groundingProblem(preview.state, active.map(h => h.id), hostService, sessionId, mutations)
+					if (problem) result.message += '\n' + tr('候选核验预检（登记成功；仅选入 ReviewClaims 的候选需处理，不阻止探索）: ', 'Candidate review preflight (registered; address only candidates selected for ReviewClaims, exploration may continue): ') + problem.message
+				}
+			}
 			// 输出**越界就裁掉并告警**:宿主会拿 output.schema 校验工具结果,多一个未声明的字段
 			// 会让整个工具调用失败(CreatePlan 曾因此全军覆没)。
 			// 裁掉会让模型少看到一个字段(可接受的降级),但绝不让一次成功的动作整个作废。

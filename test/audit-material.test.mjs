@@ -213,3 +213,21 @@ test('legacy review reuse also invalidates changed evaluator trust or policy', (
   assert.notEqual(auditMaterialDigest(changed),original,field)
  }
 })
+
+test('conditional evidence reads are opt-in, range-bound and never suppress changed or undelivered text',t=>{
+ const cwd=tempDir('clearai-conditional-read-'), receipts=new Map()
+ const file=join(cwd,'records.txt');writeFileSync(file,('one '+ 'x'.repeat(800))+'\nsecond '+ 'y'.repeat(800)+'\n')
+ const source={path:'records.txt',line:1,count:1}
+ const first=readEvidence(cwd,[source],receipts)[0]
+ const conditional=readEvidence(cwd,[{...source,ifUnchanged:true}],receipts)[0]
+ assert.equal(conditional.unchanged,true);assert.equal(conditional.omittedChars,first.text.length)
+ assert.ok(JSON.stringify(conditional).length<JSON.stringify(first).length)
+ assert.equal(readEvidence(cwd,[source],receipts)[0].text,first.text,'ordinary reads always restore text')
+ assert.ok(readEvidence(cwd,[{...source,line:2,ifUnchanged:true}],receipts)[0].text.includes('second'))
+ assert.ok(readEvidence(cwd,[{...source,ifUnchanged:true}],new Map())[0].text,'fresh evaluator cannot inherit parent receipt')
+ writeFileSync(file,'changed '+ 'z'.repeat(800)+'\n')
+ assert.ok(readEvidence(cwd,[{...source,ifUnchanged:true}],receipts)[0].text.includes('changed'))
+ writeFileSync(file,'a'.repeat(26000)+'\n')
+ const large=readEvidence(cwd,[source],receipts)[0];assert.equal(large.truncated,true)
+ assert.notEqual(readEvidence(cwd,[{...source,ifUnchanged:true}],receipts)[0].unchanged,true,'partial delivery cannot become a complete receipt')
+})

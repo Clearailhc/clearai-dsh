@@ -2,6 +2,10 @@
 
 ## 0.6.0 candidate — agent-native research
 
+- Main agents can batch-read evidence; opt-in conditional reads omit only fully delivered, unchanged ranges within that session. Ordinary reads always restore text, changes always return text, and reviewers have separate receipts. Original review workspaces remain read-only; reruns write only isolated copies.
+- Frame returns exact claim IDs and advisory review grounding checks before dispatch. Knowledge overview separates current/loaded facts, pending facts, fact assertions and entity records (projection v26); counts do not certify source records.
+- Source-faithful definitions and observed reuse are explicit instructions; no new semantic verification authority or automatic fine-grained verdict reuse is introduced.
+
 - New goals explore without mandatory step contracts; legacy goals retain their workflow.
 - Add ReviewClaims, explicit final-answer claim coverage, native explorer preset and public evidence handoffs.
 - Bind review reuse to material/scope/configuration; retain pending candidates without certifying them.

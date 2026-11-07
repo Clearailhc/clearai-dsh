@@ -16,9 +16,28 @@ function lockBudget(file) {
  }
 }
 function validLimits(data){
- if(data.limitUsd===30&&data.testLimitUsd===5)return true
- const change=data.limitChanges?.at(-1)
- return data.limitUsd===60&&data.testLimitUsd===10&&change?.from?.limitUsd===30&&change?.from?.testLimitUsd===5&&change?.to?.limitUsd===60&&change?.to?.testLimitUsd===10&&typeof change.authorization==='string'&&change.authorization.trim().length>0
+ let previous={limitUsd:30,testLimitUsd:5}
+ for(const change of data.limitChanges??[]){
+  if(change.from?.limitUsd!==previous.limitUsd||change.from?.testLimitUsd!==previous.testLimitUsd||typeof change.authorization!=='string'||!change.authorization.trim())return false
+  const next=change.to
+  if(!Number.isFinite(next?.limitUsd)||!Number.isFinite(next?.testLimitUsd)||next.limitUsd<previous.limitUsd||next.testLimitUsd<previous.testLimitUsd||next.testLimitUsd>next.limitUsd)return false
+  previous=next
+ }
+ return data.limitUsd===previous.limitUsd&&data.testLimitUsd===previous.testLimitUsd
+}
+export function raiseBudgetLimits(file,to,authorization){
+ if(typeof authorization!=='string'||!authorization.trim())throw new Error('Explicit authorization required')
+ const lock=lockBudget(file)
+ try{
+  const data=JSON.parse(readFileSync(file)),from={limitUsd:data.limitUsd,testLimitUsd:data.testLimitUsd}
+  if(data.version!==3||!validLimits(data)||JSON.stringify(data.price)!==JSON.stringify(PRICE))throw new Error('Budget policy mismatch')
+  if(Object.values(data.requests).some(r=>r.status==='pending'))throw new Error('Drain pending requests before budget increase')
+  if(!Number.isFinite(to.limitUsd)||!Number.isFinite(to.testLimitUsd)||to.limitUsd<from.limitUsd||to.testLimitUsd<from.testLimitUsd||to.testLimitUsd>to.limitUsd||(to.limitUsd===from.limitUsd&&to.testLimitUsd===from.testLimitUsd))throw new Error('A bounded increase is required')
+  const change={from,to,authorization,at:Date.now(),reservedBeforeUsd:Object.values(data.requests).reduce((n,r)=>n+r.reservedUsd,0)}
+  data.limitChanges=[...(data.limitChanges??[]),change];Object.assign(data,to)
+  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});renameSync(temporary,file)
+  return change
+ }finally{rmSync(lock,{recursive:true,force:true})}
 }
 export function doubleBudgetLimits(file, authorization){
  if(typeof authorization!=='string'||!authorization.trim())throw new Error('Explicit authorization required')

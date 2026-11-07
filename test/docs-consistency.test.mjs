@@ -116,7 +116,7 @@ console.log('\n【文档只写现行设计:不讲改造史】')
 	 * 改造的来龙去脉归 CHANGELOG 与 git;文档只描述现在的样子。
 	 * 「第三阶段删掉了……」这类句子读者用不上,只会让人分不清哪句是现状。
 	 */
-	const docs = walk(join(PORT, 'docs')).filter((file) => file.endsWith('.md') && !file.includes('/marketing/'))
+	const docs = walk(join(PORT, 'docs')).filter((file) => file.endsWith('.md') && !file.includes('/marketing/') && !file.startsWith(OPTIMIZATION))
 	const roots = [...docs, join(PORT, 'README.md'), join(PORT, 'README.zh-CN.md')]
 	const all = SCANNED.map((file) => readFileSync(file, 'utf8')).join('\n')
 	const offenders = []

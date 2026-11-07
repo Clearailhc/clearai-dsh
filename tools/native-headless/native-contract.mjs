@@ -5,7 +5,7 @@ import {pathToFileURL} from 'node:url'
 import assert from 'node:assert/strict'
 import {createRequire} from 'node:module'
 import {join,resolve} from 'node:path'
-import {writeFileSync,mkdirSync,readFileSync} from 'node:fs'
+import {writeFileSync,mkdirSync,readFileSync,rmSync} from 'node:fs'
 import {spawnSync} from 'node:child_process'
 const repo=resolve(import.meta.dirname,'../..')
 if(!process.env.CLEARAI_CONTRACT_CHILD) {
@@ -15,6 +15,7 @@ if(!process.env.CLEARAI_CONTRACT_CHILD) {
  writeFileSync(join(output,'native.log'),run.stdout+run.stderr)
  assert.equal(run.status,0,run.stderr);process.stdout.write(run.stdout)
 } else {
+ const output=resolve(process.argv[2])
  const require=createRequire(join(nativeRuntime().resources,'package.json'))
  const {Session,KNOWN_SESSION_EVENT_TYPES}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-session')).href)
  const {BlockAssembler}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-llm')).href)
@@ -23,6 +24,23 @@ if(!process.env.CLEARAI_CONTRACT_CHILD) {
  const claimSchema=bindAuditCriteria({type:'object',properties:{criteria:{type:'array',items:{type:'object',properties:{criterion:{type:'string'}}}},results:{type:'array',items:{type:'object',properties:{hypothesis:{type:'string'},verdict:{type:'string',enum:['support','refute','inconclusive']},coverage:{type:'string',enum:['full','narrower','unknown']}},required:['hypothesis','verdict','coverage']}}}},[{id:'C1'}],['h-one'])
  assert.throws(()=>assertSupportedJsonSchema(claimSchema),/minItems|maxItems/)
  assert.doesNotThrow(()=>assertSupportedJsonSchema(nativeAuditSchema(claimSchema)))
+ const {apply:applyEvidence}=await import(pathToFileURL(join(repo,'preset/plugins/read-evidence.js')).href)
+ let evidenceTool,preStep;const parent={header:{cwd:output},snapshotEvents:()=>[]},reviewer={header:{cwd:output},snapshotEvents:()=>[]}
+ applyEvidence({on:(_event,handler)=>{preStep=handler},tools:{register:definition=>{evidenceTool=definition}},get:()=>({get:id=>id==='parent'?parent:reviewer})})
+ assert.doesNotThrow(()=>assertSupportedJsonSchema(evidenceTool.output.schema))
+ writeFileSync(join(output,'evidence.txt'),'source '+ 'x'.repeat(1000))
+ const args={sources:[{path:'evidence.txt',ifUnchanged:true}]},exec=id=>({agent:{id}})
+ rmSync(join(output,'new-snapshot.txt'),{force:true})
+ preStep({agent:{id:'parent'}},()=>{});preStep({agent:{id:'reviewer'}},()=>{})
+ writeFileSync(join(output,'new-snapshot.txt'),'new snapshot')
+ assert.equal(evidenceTool.execute({sources:[{path:'new-snapshot.txt'}]},exec('parent')).sources[0].sourceOrigin,'created-after-baseline')
+ const initial=evidenceTool.execute(args,exec('parent'))
+ assert.ok(initial.sources[0].text);assert.equal(initial.sources[0].sourceOrigin,'pre-existing')
+ assert.equal(evidenceTool.execute(args,exec('parent')).sources[0].unchanged,true)
+ assert.ok(evidenceTool.execute(args,exec('reviewer')).sources[0].text,'Reviewer reads its own sources')
+ writeFileSync(join(output,'evidence.txt'),'changed '+ 'y'.repeat(1000))
+ assert.ok(evidenceTool.execute(args,exec('parent')).sources[0].text.startsWith('1: changed'),'Main agent always sees changed content')
+ assert.ok(evidenceTool.execute(args,exec('reviewer')).sources[0].text.startsWith('1: changed'))
  const {recoverToolArguments}=await import(pathToFileURL(join(repo,'preset/plugins/tool-argument-stream.js')).href)
  const malformed='{"answers":[{]'
  async function* adapterFailure(){yield {type:'tool-call-delta',index:0,id:'bad-json',name:'Conclude',argumentsDelta:malformed};yield {type:'finish',reason:{kind:'error',failure:{code:'MALFORMED_RESPONSE'}}}}
@@ -47,7 +65,7 @@ if(!process.env.CLEARAI_CONTRACT_CHILD) {
  assert.equal(JSON.stringify(restored.deriveMessages()),surfaceBefore)
  const projection=events.reduce(applyEvent,emptyState())
  assert.equal(projection.audits[0].child,'child:NUL');assert.equal(projection.audits[0].step,'goal:CON ')
- const result={passed:true,runtime:process.version,checks:['native review schema','native append','native cold replay','unchanged model surface','signed projection replay']}
+ const result={passed:true,runtime:process.version,checks:['native evidence schema and session-isolated conditional reads','native review schema','native append','native cold replay','unchanged model surface','signed projection replay']}
  writeFileSync(join(resolve(process.argv[2]),'result.json'),JSON.stringify(result,null,2)+'\n')
  console.log(JSON.stringify(result))
 }

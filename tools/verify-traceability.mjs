@@ -26,9 +26,9 @@ export function publicDecision(dir,phase){
 try {
  const manifest=json(join(root,'manifest.json')),comparison=json(join(root,'comparison.json'));assert.equal(comparison.complete,true);assert.equal(comparison.results.length,manifest.rows.length)
  const key=readFileSync(join(root,'.controller/world-key'));assert.equal(sha(key),manifest.worldKeyCommitment)
- for(const a of manifest.assets)assert.equal(sha(readFileSync(join(import.meta.dirname,'native-headless',a.path))),a.sha256)
+ for(const a of manifest.assets)assert.equal(sha(readFileSync(existsSync(join(root,'.controller/harness',a.path))?join(root,'.controller/harness',a.path):join(import.meta.dirname,'native-headless',a.path))),a.sha256)
  const scenario=traceabilityCase(key),ledger=json(process.env.CLEARAI_TEST_BUDGET_FILE),requests=Object.values(ledger.requests),seen=new Set(),rows=[]
- assert.equal(ledger.limitUsd,60);assert.equal(ledger.testLimitUsd,10);assert.equal(requests.filter(r=>r.status==='pending').length,0)
+ assert.equal(ledger.limitUsd,60);assert.equal(ledger.testLimitUsd,manifest.budgets.testLimitUsd);assert.equal(requests.filter(r=>r.status==='pending').length,0)
  for(const row of comparison.results){
   if(row.reason==='foundation_failed'){assert.equal(row.costUsd,0);rows.push(row);continue}
   assert.notEqual(row.reason,'controller_error')
@@ -64,8 +64,24 @@ try {
   const coreGraph={entities:internalEntities,edges:internalAssertions.filter(a=>a.object?.kind==='instance').map(a=>({subject:a.subject?.id,predicate:a.predicate,object:a.object?.value}))}
   const coreScore=traceabilityScore(gold,null,coreGraph)
   const internalKnowledge={entityTypes,storedFacts:storedFacts.length,storedFactAssertions:storedFacts.reduce((n,f)=>n+(f.assertions?.length??0),0),assertions:internalAssertions.length,coreEntities:coreScore.entities,coreRelations:coreScore.edges,interpretation:'Internal extras can include notices, returns, reworks and hypotheses. Core recall is coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification.'}
+  const evidenceReads={main:{calls:0,sources:0,unchangedRanges:0,omittedChars:0,origins:{}},evaluator:{calls:0,sources:0,unchangedRanges:0,omittedChars:0,origins:{}}}
+  for(const log of result.logs??[]){
+   const role=log.session===result.session?'main':auditors.has(log.session)?'evaluator':null;if(!role)continue
+   const pending=new Set()
+   for(const event of readFileSync(join(run,log.path),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)){
+    if(event.type==='tool/call'&&event.data?.name==='ReadEvidence')pending.add(event.data.id??event.data.callId)
+    if(event.type!=='tool/result')continue
+    const message=event.data?.message
+    if(!pending.has(message?.toolCallId))continue
+    pending.delete(message.toolCallId)
+    for(const block of message.content??[]){if(block.type!=='text')continue;let value;try{value=JSON.parse(block.text)}catch{continue}if(!Array.isArray(value.sources))continue
+     const stats=evidenceReads[role];stats.calls++
+     for(const source of value.sources){if(source.error)continue;stats.sources++;if(source.unchanged){stats.unchangedRanges++;stats.omittedChars+=source.omittedChars??0}const origin=source.sourceOrigin??'unknown';stats.origins[origin]=(stats.origins[origin]??0)+1}
+    }
+   }
+  }
   const facts=result.clearai?.facts??[];for(const fact of facts){const stored=json(join(snapshot,'clear/knowledge/facts',fact.id+'.json'));assert.equal(stored.text,fact.text);assert.deepEqual(stored.scope_spec,fact.scope_spec)}
-  rows.push({...row,ontologySchema,internalKnowledge,storedFacts,parentRequestsWhileWaiting,provenance:{entities:provenance(graph?.entities,gold.entities,entityKey),edges:provenance(graph?.edges,gold.edges,edgeKey)},historyPreserved,reuseDeclarations:declarations,publicToolActivity,facts:facts.map(f=>({id:f.id,text:f.text,scope:f.scope_spec,assertions:f.assertions,evidence:f.evidence})),knowledgeLimits:'Exported graph provenance/accuracy and independent certification are separate. Script/tool activity is behavioral evidence, not a cold-ablation estimate of savings.'})
+  rows.push({...row,ontologySchema,internalKnowledge,storedFacts,evidenceReads,parentRequestsWhileWaiting,provenance:{entities:provenance(graph?.entities,gold.entities,entityKey),edges:provenance(graph?.edges,gold.edges,edgeKey)},historyPreserved,reuseDeclarations:declarations,publicToolActivity,facts:facts.map(f=>({id:f.id,text:f.text,scope:f.scope_spec,assertions:f.assertions,evidence:f.evidence})),knowledgeLimits:'Exported graph provenance/accuracy and independent certification are separate. Script/tool activity is behavioral evidence, not a cold-ablation estimate of savings.'})
  }
  const currentCostUsd=rows.reduce((n,r)=>n+r.costUsd,0),cumulativeReservedUsd=requests.reduce((n,r)=>n+r.reservedUsd,0)
  assert.ok(Math.abs(cumulativeReservedUsd-manifest.costBeforeUsd-currentCostUsd)<1e-8)

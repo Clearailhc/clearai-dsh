@@ -3883,6 +3883,7 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  const framed=await callOn(host,S,'Frame',{...base,reason:'Register observed candidate and unrelated lead',ontology,hypotheses})
  check('native claims registered only when useful',framed.ok===true,String(framed.message))
  const [h,extra]=host.service.state(S).hypotheses
+ check('Frame returns review IDs and flags untyped candidates without dispatch or blocking registration',framed.message.includes(h.id)&&framed.message.includes(extra.id)&&/preflight|预检/.test(framed.message)&&host.audits.length===0,framed.message)
  const request={claims:[h.id],observations:[{ref:'lab/input.txt',note:'Author checked reference; other batches were not measured.'}]}
  const invalid=await callOn(host,S,'ReviewClaims',{...request,claims:['Peak']})
  check('native review invalid ID returns usable IDs without dispatch',invalid.code==='review_claims_invalid'&&invalid.message.includes(h.id)&&host.audits.length===0,invalid.message)

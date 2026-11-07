@@ -174,6 +174,10 @@
           # 通过才把原生 goal 置为完成;续跑由原生 goal 的驱动自己做。需要人而没人能答、或模型如实放弃时,
           # 内核把原生 goal 置为阻塞并写明原因。
           # 配置项就是机制的旋钮:
+          # Bounded source reads are available to the researcher as well as evaluators.
+          - id: clearai-read-evidence
+            name: 'clearai-dsh/presets/clearai/plugins/read-evidence.js'
+
           - id: clearai-kernel
             # 用**包内子路径**而不是 `./plugins/…`:宿主 ≥0.1.7-alpha.1 起,预设是声明行
             # (presets/clearai/clearai.patch.yml)里的 plugins 列表,相对基准不再是本文件所在目录 ——

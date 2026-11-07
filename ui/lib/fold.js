@@ -77,9 +77,10 @@ export const MUTATION_KIND = 'clearai'
  *           同一版里目标、判断与事实还带 `about`(涉及的实体或量),未解释项带 `defect`(解释为测量或方法缺陷);
  *           派生多一份 `negativeRows`(`clear/knowledge/negatives/` 的负向条目)。
  *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
+ *   v25 → v26:读面区分当前/已加载事实、事实内断言与实体文件记录;权威状态与旧日志不变。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 25
+export const STATE_VERSION = 26
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -2306,6 +2307,7 @@ function knowledgeItems(state, derived) {
 		items.push({
 			id: fact.id,
 			kind: 'fact',
+			assertionCount: Array.isArray(fact.assertions) ? fact.assertions.length : 0,
 			status: pending ? 'pending' : 'established',
 			text: fact.text ?? '',
 			about: Array.isArray(fact.about) ? fact.about : [],
@@ -2390,6 +2392,14 @@ function knowledgeFlow(state, derived, items, promotedIds) {
 	const count = (predicate) => mine.filter(predicate).length
 	return {
 		cited: citedRows,
+		summary: {
+			currentFacts: mine.filter(item => item.kind === 'fact' && item.status === 'established').length,
+			loadedFacts: items.filter(item => item.kind === 'fact' && item.status === 'established').length,
+			pendingFacts: items.filter(item => item.kind === 'fact' && item.status === 'pending').length,
+			factAssertions: items.filter(item => item.kind === 'fact' && item.status === 'established').reduce((sum, item) => sum + item.assertionCount, 0),
+			entityRecords: (state.entities ?? []).length,
+			entityAssertions: (state.entityAssertions ?? []).length,
+		},
 		settling: { negatives: mine.filter((item) => item.kind === 'negative'), awaiting },
 		settled:
 			goalId === null

@@ -847,6 +847,9 @@ console.log('\n【渲染冒烟:组件真的跑一遍(捕渲染期错误)】')
 			check('投影:实体按 id 与别名挂上条目,计数分格', node !== undefined && JSON.stringify(real.entityKnowledge[node.id]?.counts) === JSON.stringify({ established: 1, excluded: 1, bounded: 1, pending: 0, unresolved: 1 }), JSON.stringify(real.entityKnowledge))
 			check('投影:引用的已有知识里不适用的排在前面', real.knowledgeFlow.cited.map((item) => item.verdict).join(',') === 'out_of_scope,applies', JSON.stringify(real.knowledgeFlow.cited))
 			check('投影:本次沉淀按本目标计数', JSON.stringify(real.knowledgeFlow.settled) === JSON.stringify({ established: 0, excluded: 1, unresolved: 1, defects: 0, lessons: 0 }), JSON.stringify(real.knowledgeFlow.settled))
+			check('知识统计区分本目标与已加载事实，不把实体计为认证', real.knowledgeFlow.summary.currentFacts === 0 && real.knowledgeFlow.summary.loadedFacts === 2 && real.knowledgeFlow.summary.entityRecords === 1 && real.knowledgeFlow.summary.factAssertions === 0, JSON.stringify(real.knowledgeFlow.summary))
+			const summaryText = react.render(components.KnowledgeSummary({ data: real }))
+			check('知识统计提示适用范围和独立认证边界', summaryText.includes('本目标事实 0') && summaryText.includes('已加载事实 2') && summaryText.includes('不等于独立认证'), summaryText)
 			const asked = []
 			const sentKeys = []
 			const card = components.EntityCard({ node, data: real, send: (text) => (asked.push(text), true), sent: {}, onSent: (key, kind) => sentKeys.push([key, kind]) })

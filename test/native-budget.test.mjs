@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { initializeBudget, campaignBudget, migrateVerifiedCachePricing, doubleBudgetLimits } from '../tools/native-headless/budget.mjs'
+import { initializeBudget, campaignBudget, migrateVerifiedCachePricing, doubleBudgetLimits, raiseBudgetLimits } from '../tools/native-headless/budget.mjs'
 function fixture(t) { const root=mkdtempSync(join(tmpdir(),'clearai-budget-')); t.after(()=>rmSync(root,{recursive:true,force:true})); const file=join(root,'ledger.json'); initializeBudget(file); return {file,b:campaignBudget(file)} }
 test('all sessions and retries share the $5 test ceiling',t=>{const {b}=fixture(t); for(let i=0;i<6;i++) b.reserve({testId:'same',session:String(i)}); assert.throws(()=>b.reserve({testId:'same'}),/Per-test/); assert.doesNotThrow(()=>b.reserve({testId:'different'})); assert.throws(()=>b.reserve({}),/testId/)} )
 test('pending requests across tests share the $30 campaign ceiling',t=>{const {b}=fixture(t); for(let i=0;i<37;i++) b.reserve({testId:String(i)}); assert.throws(()=>b.reserve({testId:'next'}),/Campaign/)} )
@@ -70,3 +70,18 @@ test('concurrent workers preserve all shared reservations and settlements',async
  const rows=Object.values(JSON.parse(readFileSync(file)).requests)
  assert.equal(rows.length,80);assert.ok(rows.every(r=>r.status==='verified'))
 })
+
+ test('further authorized increases preserve reservations and validate the complete limit chain',t=>{
+ const {file,b}=fixture(t);doubleBudgetLimits(file,'User doubled the original limits')
+ const id=b.reserve({testId:'prior'});b.settle(id,{inputTokens:20,outputTokens:10})
+ const before=JSON.parse(readFileSync(file))
+ assert.throws(()=>raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:12},''),/authorization/)
+ assert.throws(()=>raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:9},'raise'),/increase/)
+ raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:12},'User allows a modest further increase')
+ const after=JSON.parse(readFileSync(file));assert.deepEqual(after.requests,before.requests);assert.equal(after.limitChanges.length,2)
+ const pending=b.reserve({testId:'new'})
+ assert.throws(()=>raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:13},'raise'),/pending/)
+ b.settle(pending,{inputTokens:1,outputTokens:1})
+ const tampered=JSON.parse(readFileSync(file));tampered.limitChanges[1].from.testLimitUsd=9;writeFileSync(file,JSON.stringify(tampered))
+ assert.throws(()=>b.reserve({testId:'bad'}),/policy/)
+ })
