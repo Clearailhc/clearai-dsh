@@ -72,7 +72,8 @@ export function apply(ctx, config) {
 					throw new Error('Registered audit timeout before provider dispatch')
 				}
 				if(main&&options.sessionId!==main.id&&spec.fault==='disconnect') {call.injectedBeforeProvider='disconnect';atomic('fault-injected.json',{fault:spec.fault,session:options.sessionId,at:Date.now()});throw new Error('Registered native transport disconnect')}
-				call.budgetId = budget.reserve({ testId: spec.testId || spec.output, session: options.sessionId, model: options.model })
+				try { call.budgetId = budget.reserve({ testId: spec.testId || spec.output, session: options.sessionId, model: options.model }) }
+				catch (error) { call.injectedBeforeProvider = 'budget-guard'; throw error }
     call.providerInvoked=true
 				for await (const chunk of next()) { if (chunk.type === 'usage') { call.usage = chunk.usage; checkpoint() } yield chunk }
 			}

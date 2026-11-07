@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { validPaidUsage } from './accounting.mjs'
 
 // Official peak USD rates checked 2026-11-06. Reserve a full 1M prompt plus
 // 384K output for every request; disable adapter retries in the test profile.
@@ -85,7 +86,7 @@ export function campaignBudget(file) {
 		}) },
 		settle(id, usage) { return transact(data => {
 			const row = data.requests[id]; if (!row || row.status !== 'pending') throw new Error('Unknown or already settled request')
-			if (!usage || ![usage.inputTokens, usage.outputTokens, usage.cacheReadTokens ?? 0, usage.cacheWriteTokens ?? 0].every(value => Number.isFinite(value) && value >= 0)) { row.status = 'unknown'; return }
+			if (!validPaidUsage(usage)) { row.status = 'unknown'; return }
 			const input = usage.inputTokens + (usage.cacheReadTokens ?? 0) + (usage.cacheWriteTokens ?? 0)
 			const uncachedCostUpperBoundUsd = (input * PRICE.input + usage.outputTokens * PRICE.output) / 1e6
 			const bound = ((usage.inputTokens + (usage.cacheWriteTokens ?? 0)) * PRICE.input + (usage.cacheReadTokens ?? 0) * PRICE.cached + usage.outputTokens * PRICE.output) / 1e6

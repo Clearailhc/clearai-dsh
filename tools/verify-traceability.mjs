@@ -27,13 +27,13 @@ try {
  const manifest=json(join(root,'manifest.json')),comparison=json(join(root,'comparison.json'));assert.equal(comparison.complete,true);assert.equal(comparison.results.length,manifest.rows.length)
  const key=readFileSync(join(root,'.controller/world-key'));assert.equal(sha(key),manifest.worldKeyCommitment)
  for(const a of manifest.assets)assert.equal(sha(readFileSync(existsSync(join(root,'.controller/harness',a.path))?join(root,'.controller/harness',a.path):join(import.meta.dirname,'native-headless',a.path))),a.sha256)
- const scenario=traceabilityCase(key),ledger=json(process.env.CLEARAI_TEST_BUDGET_FILE),requests=Object.values(ledger.requests),seen=new Set(),rows=[]
+ const scenario=traceabilityCase(key),ledger=json(process.env.CLEARAI_TEST_BUDGET_FILE),requests=Object.values(ledger.requests),seen=new Set(),rows=[],correctedUnknown=new Set()
  assert.equal(ledger.limitUsd,manifest.budgets.campaignLimitUsd??60);assert.equal(ledger.testLimitUsd,manifest.budgets.testLimitUsd);assert.equal(requests.filter(r=>r.status==='pending').length,0)
  for(const row of comparison.results){
   if(row.reason==='foundation_failed'){assert.equal(row.costUsd,0);rows.push(row);continue}
   assert.notEqual(row.reason,'controller_error')
   const run=join(root,'runs',row.id),snapshot=join(root,'snapshots',row.id),result=json(join(run,'launcher-result.json'))
-  assert.equal(result.installation.packageDigest,manifest.installation.digest);assert.deepEqual(result.model,manifest.model);assert.deepEqual(stopReasons(result),[])
+  assert.equal(result.installation.packageDigest,manifest.installation.digest);assert.deepEqual(result.model,manifest.model)
   assert.equal(result.mount.prompt,row.variant==='clearai');assert.equal(result.mount.tools,row.variant==='clearai');assert.equal(json(join(run,'isolation-probe.json')).passed,true)
   assert.equal(result.reason,row.reason);assert.equal(result.elapsedMs,row.elapsedMs);assert.equal(row.sourcesIntact,true)
   for(const [p,h] of Object.entries({...manifest.initialHashes,...(row.phase===3?manifest.updateHashes:{})}))assert.equal(sha(readFileSync(join(snapshot,p))),h)
@@ -41,12 +41,22 @@ try {
   const gold=scenario.expected(row.phase),decision=publicDecision(snapshot,row.phase);for(const k of Object.keys(decision))assert.deepEqual(decision[k],gold[k])
   let graph=null;try{graph=json(join(snapshot,'artifacts/graph.json'))}catch{}
   assert.deepEqual(traceabilityScore(gold,row.submission,graph),row.score)
-  const calls=readFileSync(join(run,'llm-calls.jsonl'),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse),usage=usageSummary(calls)
-  assert.equal(usage.status,'verified');assert.deepEqual(usage,result.usage);assert.deepEqual(usage,row.usage);assert.deepEqual(usage,row.accountedUsage)
-  const auditors=new Set((result.clearai?.audits??[]).map(a=>a.child).filter(Boolean));let cost=0,parentRequestsWhileWaiting=0
-  for(const c of calls){assert.ok(c.budgetId&&!seen.has(c.budgetId));seen.add(c.budgetId);const r=ledger.requests[c.budgetId];assert.equal(r.status,'verified');assert.equal(r.testId,(manifest.taskIdPrefix??'trace060:')+row.id);assert.deepEqual(r.usage,c.usage);cost+=r.reservedUsd;if(c.role==='evaluator')assert.ok(auditors.has(c.session));if(c.role==='main')assert.equal(c.session,result.session)}
-  assert.equal(requests.filter(r=>r.testId===(manifest.taskIdPrefix??'trace060:')+row.id).length,calls.length);assert.ok(Math.abs(cost-row.costUsd)<1e-9)
-  for(const [role,stats] of Object.entries(row.roles)){const cs=calls.filter(c=>c.role===role);assert.equal(cs.length,stats.calls);assert.equal(usageSummary(cs).processed,stats.processed);const cost=cs.reduce((n,c)=>{const u=c.usage;return n+((u.inputTokens??0)+(u.cacheWriteTokens??0))*PRICE.input/1e6+(u.cacheReadTokens??0)*PRICE.cached/1e6+(u.outputTokens??0)*PRICE.output/1e6},0);assert.ok(Math.abs(cost-stats.costUsd)<1e-9)}
+  const calls=readFileSync(join(run,'llm-calls.jsonl'),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
+  // Preserve raw receipts; reconcile only proven pre-provider budget stops and
+  // the recorded zero-usage transport defect, never substitute invented usage.
+  const blocked=calls.filter(c=>c.ended&&c.providerInvoked===false&&!c.budgetId&&!c.usage)
+  if(blocked.length)assert.equal(result.failure,'Unverifiable paid usage: campaign stopped')
+  const normalized=calls.map(c=>blocked.includes(c)?{...c,injectedBeforeProvider:'reconciled-budget-guard'}:c),usage=usageSummary(normalized)
+  const unknownCalls=calls.filter(c=>c.budgetId&&ledger.requests[c.budgetId]?.status==='unknown')
+  for(const c of unknownCalls){const r=ledger.requests[c.budgetId];assert.equal(c.providerInvoked,true);assert.deepEqual(c.usage,{inputTokens:0,outputTokens:0,totalTokens:0});assert.deepEqual(r.accountingCorrection?.previousUsage,c.usage);assert.equal(r.accountingCorrection?.previousStatus,'verified');assert.equal(r.reservedUsd,.8);correctedUnknown.add(c.budgetId)}
+  assert.equal(usage.missing,unknownCalls.length);assert.equal(usage.pending,0)
+  if(!blocked.length&&!unknownCalls.length){assert.deepEqual(usage,result.usage);assert.deepEqual(usage,row.usage);assert.deepEqual(usage,row.accountedUsage)}
+  else{assert.equal(usage.lowerBound,result.usage.lowerBound);assert.equal(usage.lowerBound,row.usage.lowerBound);assert.equal(usage.lowerBound,row.accountedUsage.lowerBound)}
+  assert.deepEqual(stopReasons(result).filter(reason=>reason!=='unverifiable_usage'||(!blocked.length&&!unknownCalls.length)),[])
+  const auditors=new Set((result.clearai?.audits??[]).map(a=>a.child).filter(Boolean));let cost=0,reservedCost=0,parentRequestsWhileWaiting=0
+  for(const c of calls){if(blocked.includes(c))continue;assert.ok(c.budgetId&&!seen.has(c.budgetId));seen.add(c.budgetId);const r=ledger.requests[c.budgetId];assert.equal(r.testId,(manifest.taskIdPrefix??'trace060:')+row.id);reservedCost+=r.reservedUsd;if(r.status==='verified'){assert.deepEqual(r.usage,c.usage);cost+=r.reservedUsd}else assert.ok(correctedUnknown.has(c.budgetId));if(c.role==='evaluator')assert.ok(auditors.has(c.session));if(c.role==='main')assert.equal(c.session,result.session)}
+  assert.equal(requests.filter(r=>r.testId===(manifest.taskIdPrefix??'trace060:')+row.id).length,calls.length-blocked.length);assert.ok(Math.abs(cost-row.costUsd)<1e-9)
+  for(const [role,stats] of Object.entries(row.roles)){const cs=calls.filter(c=>c.role===role);assert.equal(cs.length,stats.calls);assert.equal(usageSummary(cs).lowerBound,stats.processed);const cost=cs.reduce((n,c)=>{const u=c.usage??{};return n+((u.inputTokens??0)+(u.cacheWriteTokens??0))*PRICE.input/1e6+(u.cacheReadTokens??0)*PRICE.cached/1e6+(u.outputTokens??0)*PRICE.output/1e6},0);assert.ok(Math.abs(cost-stats.costUsd)<1e-9)}
   for(const child of auditors){const cs=calls.filter(c=>c.session===child);if(cs.length){const start=Math.min(...cs.map(c=>c.started)),end=Math.max(...cs.map(c=>c.finished));parentRequestsWhileWaiting+=calls.filter(c=>c.role==='main'&&c.started>start&&c.started<end).length}}
   assert.equal(parentRequestsWhileWaiting,0)
   const provenance=(actual,expected,key)=>{const index=new Map(expected.map(e=>[key(e),e.evidence]));let canonicalSourceCitations=0,locatable=0;for(const row of Array.isArray(actual)?actual:[]){if(!row||typeof row!=='object')continue;const source=index.get(key(row)),refs=Array.isArray(row.evidence)?row.evidence:[];if(refs.some(r=>r.path===source?.path&&r.row===source?.row))canonicalSourceCitations++;if(refs.some(r=>{const p=resolve(snapshot,String(r.path));return p.startsWith(snapshot+'/data/')&&existsSync(p)&&Number.isInteger(r.row)&&r.row>=(p.endsWith('.csv')?2:1)&&r.row<=readFileSync(p,'utf8').trim().split('\n').length}))locatable++}return {canonicalSourceCitations,locatable}}
@@ -63,7 +73,9 @@ try {
   const entityTypes={};for(const entity of internalEntities)entityTypes[entity.type]=(entityTypes[entity.type]??0)+1
   const coreGraph={entities:internalEntities,edges:internalAssertions.filter(a=>a.object?.kind==='instance').map(a=>({subject:a.subject?.id,predicate:a.predicate,object:a.object?.value}))}
   const coreScore=traceabilityScore(gold,null,coreGraph)
-  const internalKnowledge={entityTypes,storedFacts:storedFacts.length,storedFactAssertions:storedFacts.reduce((n,f)=>n+(f.assertions?.length??0),0),assertions:internalAssertions.length,coreEntities:coreScore.entities,coreRelations:coreScore.edges,interpretation:'Internal extras can include notices, returns, reworks and hypotheses. Core recall is coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification.'}
+  const combinedEdges=[...new Map([...internalAssertions,...storedFacts.flatMap(f=>f.assertions??[])].filter(a=>a.object?.kind==='instance').map(a=>{const edge={subject:a.subject?.id,predicate:a.predicate,object:a.object?.value};return [edgeKey(edge),edge]})).values()]
+  const combinedCoreScore=traceabilityScore(gold,null,{entities:internalEntities,edges:combinedEdges})
+  const internalKnowledge={entityTypes,storedFacts:storedFacts.length,storedFactAssertions:storedFacts.reduce((n,f)=>n+(f.assertions?.length??0),0),assertions:internalAssertions.length,coreEntities:coreScore.entities,coreRelations:coreScore.edges,combinedCoreRelations:combinedCoreScore.edges,interpretation:'coreRelations covers entity-file assertions only; combinedCoreRelations also includes deduplicated assertions from stored fact files. Stored facts retain their own historical scopes and are not all certified for the current notice. Internal extras can include notices, returns, reworks and hypotheses. Core recall is structural coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification.'}
   const evidenceReads={main:{calls:0,sources:0,unchangedRanges:0,omittedChars:0,origins:{}},evaluator:{calls:0,sources:0,unchangedRanges:0,omittedChars:0,origins:{}}}
   for(const log of result.logs??[]){
    const role=log.session===result.session?'main':auditors.has(log.session)?'evaluator':null;if(!role)continue
@@ -81,15 +93,15 @@ try {
    }
   }
   const facts=result.clearai?.facts??[];for(const fact of facts){const stored=json(join(snapshot,'clear/knowledge/facts',fact.id+'.json'));assert.equal(stored.text,fact.text);assert.deepEqual(stored.scope_spec,fact.scope_spec)}
-  rows.push({...row,ontologySchema,internalKnowledge,storedFacts,evidenceReads,parentRequestsWhileWaiting,provenance:{entities:provenance(graph?.entities,gold.entities,entityKey),edges:provenance(graph?.edges,gold.edges,edgeKey)},historyPreserved,reuseDeclarations:declarations,publicToolActivity,facts:facts.map(f=>({id:f.id,text:f.text,scope:f.scope_spec,assertions:f.assertions,evidence:f.evidence})),knowledgeLimits:'Exported graph provenance/accuracy and independent certification are separate. Script/tool activity is behavioral evidence, not a cold-ablation estimate of savings.'})
+  rows.push({...row,reportedUsage:row.usage,usage,costUsd:unknownCalls.length?null:cost,knownCostUsd:cost,reservedCostUsd:reservedCost,unknownRequestIds:unknownCalls.map(c=>c.budgetId),blockedBeforeProvider:blocked.length,ontologySchema,internalKnowledge,storedFacts,evidenceReads,parentRequestsWhileWaiting,provenance:{entities:provenance(graph?.entities,gold.entities,entityKey),edges:provenance(graph?.edges,gold.edges,edgeKey)},historyPreserved,reuseDeclarations:declarations,publicToolActivity,facts:facts.map(f=>({id:f.id,text:f.text,scope:f.scope_spec,assertions:f.assertions,evidence:f.evidence})),knowledgeLimits:'Exported graph provenance/accuracy and independent certification are separate. Script/tool activity is behavioral evidence, not a cold-ablation estimate of savings.'})
  }
- const currentCostUsd=rows.reduce((n,r)=>n+r.costUsd,0),cumulativeReservedUsd=requests.reduce((n,r)=>n+r.reservedUsd,0)
- assert.ok(Math.abs(cumulativeReservedUsd-manifest.costBeforeUsd-currentCostUsd)<1e-8)
+ const knownCurrentCostUsd=rows.reduce((n,r)=>n+(r.knownCostUsd??r.costUsd??0),0),currentReservedUsd=rows.reduce((n,r)=>n+(r.reservedCostUsd??r.costUsd??0),0),cumulativeReservedUsd=requests.reduce((n,r)=>n+r.reservedUsd,0)
+ assert.ok(Math.abs(cumulativeReservedUsd-manifest.costBeforeUsd-currentReservedUsd)<1e-8)
  const unknown=requests.filter(r=>r.status==='unknown')
  const historical=manifest.historicalUnknownReservations??[{id:Object.entries(ledger.requests).find(([,r])=>r.status==='unknown')?.[0],reservedUsd:0.8}]
- assert.equal(unknown.length,historical.length)
+ assert.equal(unknown.length,historical.length+correctedUnknown.size)
  for(const prior of historical){const r=ledger.requests[prior.id];assert.equal(r?.status,'unknown');assert.equal(r.reservedUsd,prior.reservedUsd);assert.ok(r.reservationAcceptance?.authorization);assert.equal(r.reservationAcceptance.upperBoundUsd,r.reservedUsd)}
  const historicalUnknownReservationUsd=historical.reduce((n,r)=>n+r.reservedUsd,0)
- const receipt={dataVerified:true,allTasksCompleted:rows.every(r=>r.taskSucceeded),releaseRecommended:false,budget:{previousReservedUsd:manifest.costBeforeUsd,currentCostUsd,cumulativeReservedUsd,historicalUnknownReservationUsd,pending:0,newUnknown:0},rows}
+ const receipt={dataVerified:true,accountingVerified:correctedUnknown.size===0,accountingStatus:correctedUnknown.size?'bounded-unknown':'verified',allTasksCompleted:rows.every(r=>r.taskSucceeded),releaseRecommended:false,budget:{previousReservedUsd:manifest.costBeforeUsd,currentCostUsd:correctedUnknown.size?null:knownCurrentCostUsd,knownCurrentCostUsd,currentReservedUsd,cumulativeReservedUsd,historicalUnknownReservationUsd,newUnknownReservationUsd:currentReservedUsd-knownCurrentCostUsd,pending:0,newUnknown:correctedUnknown.size},rows}
  writeFileSync(join(root,'verification.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify({dataVerified:true,budget:receipt.budget,rows:rows.map(r=>({id:r.id,completed:r.taskSucceeded,exact:r.score?.decisionExact,entities:r.score?.entities,edges:r.score?.edges,seconds:Math.round(r.elapsedMs/1000),tokens:r.usage?.processed,costUsd:r.costUsd,facts:r.nativeKnowledge?.facts}))}))
 }catch(error){writeFileSync(join(root,'verification.json'),JSON.stringify({dataVerified:false,error:String(error.message)},null,2)+'\n');throw error}
