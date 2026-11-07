@@ -33,3 +33,7 @@ Screenshots are production UI replaying actual recorded state, not original live
 A safe repair must preserve the original anomaly identity, evidence, scope and disposition across unchanged reviews, or allow a narrowly defined post-review acknowledgment without repeating an unchanged audit. It must still reopen when evidence or the assessed impact changes; it must never suppress genuinely new counterevidence or auto-escalate it on the user's behalf. Reproduce this path deterministically before another paid acceptance. Publication remains blocked pending that repair and acceptance.
 
 The changed-source graph also retains BAT001→MAT017 instead of MAT002 (531/532 current core relations match). This must be repaired and tested alongside closure before release. [Final measured results](release-case-results.md).
+
+## Retained CI failure
+
+The first final-candidate Windows job failed in the four-process budget reservation test: `mkdir ledger.json.lock` returned transient `EPERM` during lock release. Linux jobs passed. The harness now retries Windows-only `EPERM` within the existing five-second acquisition deadline, always acquiring the lock before entering the transaction. Permanent errors still fail; no budget or knowledge guard is relaxed. Local budget tests pass 13/13; subsequent Windows results remain visible on the PR. This harness-only change occurred after paid execution and does not change the tested product runtime or overwrite the failure.

@@ -11,7 +11,10 @@ function lockBudget(file) {
  const lock=file+'.lock', deadline=Date.now()+5000
  while(true){
   try{mkdirSync(lock);return lock}catch(error){
-   if(error.code!=='EEXIST'||Date.now()>=deadline)throw error
+   // Windows can report a directory pending deletion as EPERM while another
+   // worker releases this lock. Retry acquisition only; never enter unlocked.
+   const contended=error.code==='EEXIST'||(process.platform==='win32'&&error.code==='EPERM')
+   if(!contended||Date.now()>=deadline)throw error
    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,10)
   }
  }
