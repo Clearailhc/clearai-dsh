@@ -24,7 +24,7 @@ CONCEPTS = [
     {"id": "product", "definition": "产品型号，以 products.csv 的 product_id 为唯一身份。"},
     {"id": "customer", "definition": "客户，以 customers.csv 的 customer_id 为唯一身份。"},
     {"id": "material_lot", "definition": "来料批次，以 material_lots.csv 的 lot_id 为唯一身份，含 component（seal/housing）与到货日。"},
-    {"id": "production_batch", "definition": "生产批次，以 production_batches.csv 的 batch_id 为唯一身份；一个批次恰有 seal 与 housing 两条用料行。"},
+    {"id": "production_batch", "definition": "生产批次，以 production_batches.csv 的 batch_id 为唯一身份；原始约定有 seal 与 housing 两条用料行；生效更正引起的组件异常单独登记。"},
     {"id": "shipment", "definition": "出货记录，以 shipments.csv 的 shipment_id 为唯一身份；同一 shipment_id 可有多个 record_version，最高版本为准。"},
 ]
 
@@ -39,7 +39,9 @@ RELATIONS = [
 ]
 
 
-def build(case: Case) -> dict:
+def build(case: Case, view: str = "effective") -> dict:
+    if view not in {"source", "effective"}:
+        raise ValueError("Unknown graph view")
     entities: list[dict] = []
     edges: list[dict] = []
 
@@ -72,9 +74,9 @@ def build(case: Case) -> dict:
         edge(r["batch_id"], "produced_on", r["line_id"], r)
         edge(r["batch_id"], "produces", r["product_id"], r)
 
-    for r in case.usage_effective:
+    for r in (case.usage_effective if view == "effective" else case.usage):
         edge(r["batch_id"], "uses_lot", r["lot_id"], r)
-        if r.get("_correction_id"):
+        if view == "effective" and r.get("_correction_id"):
             correction = case.corrections_by_usage[r["_correction_id"]]
             edges[-1]["evidence"].append({"path": correction["_path"], "row": correction["_row"]})
 
@@ -90,13 +92,21 @@ def build(case: Case) -> dict:
 
     entities.sort(key=lambda e: (e["type"], e["id"]))
     edges.sort(key=lambda e: (e["predicate"], e["subject"], e["object"]))
-    return {"concepts": CONCEPTS, "relations": RELATIONS, "entities": entities, "edges": edges}
+    relations = [dict(r) for r in RELATIONS]
+    for relation in relations:
+        if relation["id"] == "uses_lot":
+            relation["definition"] = ("Effective approved usage record at cutoff; not proof of physical assembly." if view == "effective" else "Original material_usage source record; corrections are not applied.")
+    return {"view": view, "cutoff": case.cutoff, "concepts": CONCEPTS, "relations": relations, "entities": entities, "edges": edges}
 
 
 def main() -> None:
     # NOTICE-2 的 as-of 视图：纳入新增出货；隔离判定不影响图的结构
     case = Case(notice_path=ROOT / "data" / "notice-v2.json", addenda=True)
     graph = build(case)
+    for view in ("source", "effective"):
+        target = ROOT / "artifacts" / f"graph-{view}.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(build(case, view), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     out = ROOT / "artifacts" / "graph.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(graph, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

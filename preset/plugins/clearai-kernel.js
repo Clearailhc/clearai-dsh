@@ -4008,7 +4008,7 @@ export function apply(ctx, config = {}) {
 				const lessonScope = mergeScope({ conditions: goal.conditions ?? {} }, null)
 				const record = { id: `l-${Math.random().toString(36).slice(2, 8)}`, goal: goal.id, ...lesson, about: mergeAbout(lesson.about, goal.about), ...(lessonScope === null ? {} : { scope_spec: lessonScope }), basis: verdict.basis }
 				const path = persistLesson(sessionId, record)
-				mutations.push({ t: 'lesson/recorded', id: record.id, goal: goal.id, text: lesson.text, kind: lesson.kind, about: record.about, scope_spec: record.scope_spec, evidence: lesson.evidence, boundary: lesson.boundary, basis: verdict.basis, path })
+				mutations.push({ t: 'lesson/recorded', id: record.id, goal: goal.id, text: lesson.text, kind: lesson.kind, about: record.about, scope_spec: record.scope_spec ?? null, evidence: lesson.evidence, boundary: lesson.boundary, basis: verdict.basis, path })
 				keptLessons.push(record)
 			})
 			return done({

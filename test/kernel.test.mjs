@@ -2359,6 +2359,7 @@ console.log('\n【经验:结案时提议,评估者逐条核,支持的写进 clea
 	check('评估者任务书里列了待核的经验(L1、L2)', /待核的经验/.test(brief) && /L1 · /.test(brief) && /L2 · /.test(brief), brief.slice(-400))
 	const recorded = eventsOf('lesson/recorded')
 	check('只有被支持的那条记成经验', recorded.length === 1 && recorded[0].kind === 'check' && recorded[0].text.includes('参考读数'), JSON.stringify(recorded))
+	check('未声明经验范围也返回合法 JSON：明确为 null', recorded[0]?.scope_spec === null, String(recorded[0]?.scope_spec))
 	const lessonFile = join(WORKSPACE, 'clear/knowledge/lessons', `${recorded[0]?.id}.json`)
 	const data = existsSync(lessonFile) ? JSON.parse(readFileSync(lessonFile, 'utf8')) : null
 	check('经验由系统写成文件', data?.id === recorded[0]?.id && data?.status === 'active' && data?.boundary === '换了热电偶之后', lessonFile)
