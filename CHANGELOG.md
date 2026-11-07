@@ -2,7 +2,11 @@
 
 ## 0.6.0 candidate — agent-native research
 
-- Main agents can batch-read evidence; opt-in conditional reads omit only fully delivered, unchanged ranges within that session. Ordinary reads always restore text, changes always return text, and reviewers have separate receipts. Original review workspaces remain read-only; reruns write only isolated copies.
+- Conclude uses the same ontology grounding gate as ReviewClaims. Rejected final delivery retains independently bounded, fully covered structured claims and counterevidence while keeping the goal open; unavailable or changed-material reviews cannot promote facts.
+- Native goal failures report saved claims and direct repair through Conclude instead of suggesting a legacy plan. Goal registration records an immutable workspace baseline for version handoff and replay (projection v27); this baseline is not proof of semantic validity or a session-start snapshot.
+- 结案与按需核验共用主张准入；整体未通过时保留与缺口独立的合格事实，修复后直接结案。立题基线与历史审计版本分开，不再诱导转入旧计划流程。
+
+- Main agents can batch-read evidence; opt-in conditional reads omit only fully delivered, unchanged ranges within that session. Ordinary reads always restore text, changes always return text, and reviewers have separate receipts. Reviewers are instructed to read originals and rerun in copies; tool restrictions are not OS filesystem write protection.
 - Frame returns exact claim IDs and advisory review grounding checks before dispatch. Knowledge overview separates current/loaded facts, pending facts, fact assertions and entity records (projection v26); counts do not certify source records.
 - Source-faithful definitions and observed reuse are explicit instructions; no new semantic verification authority or automatic fine-grained verdict reuse is introduced.
 

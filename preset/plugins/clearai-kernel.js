@@ -738,6 +738,10 @@ export function apply(ctx, config = {}) {
 
 	/** 拒绝类结果的卡尾:与收尾同一条「卡没变就不附」。 */
 	function cardTail(sessionId, preview) {
+		if (preview?.state?.goal?.workflow === 'agent-v1' && !(preview.state.plans ?? []).some(p => p.goal === preview.state.goal.id)) {
+			const saved = (preview.state.facts ?? []).filter(f => f.goal === preview.state.goal.id).map(f => f.hypothesis)
+			return tr(`\n已保存的独立主张:${saved.join(', ') || '无'}。目标仍开放；修复上述缺口后直接 Conclude。`, `\nSaved independent claims: ${saved.join(', ') || 'none'}. The goal remains open; repair the gaps above, then call Conclude directly.`)
+		}
 		const card = preview?.card ?? null
 		if (card === null || lastCard.get(sessionId) === card) return ''
 		const shown = cardText(sessionId, card)
@@ -1110,12 +1114,14 @@ export function apply(ctx, config = {}) {
 		}
 		const snapshot = researchSnapshot(sessionCwd(sessionId))
 		const handoff = researchHandoff(state, step, receipts)
+		handoff.workspace_baseline = { boundary: 'goal-registration', digest: state.goal?.workspace_baseline?.digest ?? null, changes: reviewDelta(state.goal?.workspace_baseline, snapshot) }
 		handoff.previous_reviews = (state.audits ?? []).filter(a => a.request?.goal === state.goal?.id && a.card_path && a.verdict !== null).slice(-4).map(a => ({ id: a.id, path: a.card_path, claims: (a.results ?? []).map(({hypothesis, verdict, coverage}) => ({hypothesis, verdict, coverage})), criteria: a.criteriaResults, authority: 'historical-requires-applicability-review', changes: reviewDelta(a.request.snapshot, snapshot), previous_scope: a.request.scope, previous_trust: a.request.gate?.trust ?? null, previous_criteria: a.criteria ?? [], previous_claims: a.request.claims, previous_answers: a.request.gate?.answers ?? [] }))
 		const files = snapshot.files.map(([path]) => path)
 		return ['# Public research handoff',
 			'pending_knowledge lists previously supported claims not yet persisted. In a final audit, selected pending claims require a current per-claim verdict after checking repaired issues and dependencies; delivery acceptance alone never certifies them. Unrelated untested candidates do not require new proof.',
 			'Author and exploration findings are leads, not independent proof. Reuse current independent receipts only within their checked scope; inspect remaining obligations and final-answer consistency. Do not repeat already covered experiments without a concrete gap or contradiction. Do not re-solve the optimization problem.',
 			'Start follow-up review with previous_reviews, changed sources, unresolved issues and revised answers. Historical verdicts are not current proof. Independently establish which prior findings still apply; inspect changed methods, scope, ontology definitions and downstream effects. Expand review wherever dependencies are unknown. Preserve valid independent work without repeating it. Never infer a general noise law from a small sample residual alone.',
+			'workspace_baseline compares current files with goal registration, not an earlier audit. A prior audit binds its own cited version, which may precede the previous final delivery. Do not infer a change during this goal from an older audit digest alone. Missing baselines remain unknown. Verify uncovered edits separately from historical preservation.',
 			'Check exclusions and contrary observations. Fail the goal audit if a missing claim, hidden dependency or unresolved contradiction undermines the answer, even when the author omitted it from claims. Unrelated pending hypotheses need not be verified. Registration does not prove a prediction preceded its experiment.',
 			JSON.stringify(handoff),
 			'Workspace source index (all files, including author outputs; inspect originals as needed): ' + JSON.stringify(files),
@@ -3374,8 +3380,13 @@ export function apply(ctx, config = {}) {
 					version: contentDigest({ claim, refute_when: hypothesis.refute_when.trim(), assertions: hypothesis.assertions ?? null, scope: hypothesis.scope ?? null, uses: hypothesis.uses ?? [], use: hypothesis.use ?? null, retests: hypothesis.retests ?? null }),
 				}
 			})
+			let workspaceBaseline = null
+			if (!isRevision && CFG.researchWorkflow === 'agent-v1') {
+				try { workspaceBaseline = researchSnapshot(sessionCwd(sessionId)) } catch { workspaceBaseline = null }
+			}
 			mutations.push({
 				t: 'goal/set',
+				...(!isRevision && CFG.researchWorkflow === 'agent-v1' ? { workspace_baseline: workspaceBaseline } : {}),
 				id: goalId,
 				workflow: isRevision ? (state.goal.workflow ?? 'steps-v1') : CFG.researchWorkflow,
 				headline: headline === '' ? null : headline,
@@ -3484,6 +3495,27 @@ export function apply(ctx, config = {}) {
 			return done({ ok: true, code: 'claims_reviewed', message: `${audit.results.map(r => `${r.hypothesis}: ${r.verdict}`).join('; ')}\n${audit.basis}\nSaved knowledge: ${saved.promoted.map(f => f.id).join(', ') || 'none'}. Goal remains open. ${saved.held.join('; ')}` })
 		},
 	})
+
+	async function retainClaimFindings(exec, sessionId, hostService, step, audit, mutations) {
+		if (audit.reused || !['yes', 'no', 'unclear'].includes(audit.holds)) return { promoted: [], held: [] }
+		const current = previewOf(hostService, sessionId, mutations)
+		if (!current) return { promoted: [], held: [] }
+		const selected = new Set(step.tests?.hypotheses ?? [])
+		const origin = buildEvidenceOrigins({ cwd: sessionCwd(sessionId), accepted: [], confirmed: [], cardPath: audit.cardPath, evaluatorSession: audit.evaluatorSession ?? null, basis: audit.basis })
+		for (const result of audit.results ?? []) {
+			if (!selected.has(result.hypothesis)) continue
+			const id = `e-${contentDigest({ audit: audit.digest, claim: result.hypothesis }).slice(0, 24)}`
+			if (current.state.evidence.some(e => e.id === id)) continue
+			mutations.push({ t: 'evidence/recorded', id, step: step.id, plan: 'goal', hypothesis: result.hypothesis, verdict: result.verdict, level: step.tests.level, evaluator: 'independent', basis: result.basis ?? audit.basis, refs: origin.paths, origins: origin.origins, anchor: 'auditor', basis_reviewable: true })
+		}
+		const refuted = (audit.results ?? []).filter(r => selected.has(r.hypothesis) && r.verdict === 'refute').map(r => r.hypothesis)
+		if (refuted.length) await reviewRefutedFacts(exec, sessionId, current.state, refuted, audit.basis, mutations)
+		const updated = previewOf(hostService, sessionId, mutations)
+		if (!updated) return { promoted: [], held: [] }
+		const eligible = partialReviewClaims(audit.results, updated.state.anomalies, updated.state.hypotheses.map(h => h.id))
+		if (audit.holds !== 'yes') for (const result of audit.results ?? []) if (result.independent_of_open_issues !== true) eligible.delete(result.hypothesis)
+		return promoteFacts(hostService, sessionId, updated.state, updated.derived, updated.state.goal, new Map(), mutations, { partial: true, eligible })
+	}
 
 	async function releaseReview(exec, sessionId, state, step, gate, mutations) {
 		if (step.tests?.level !== 'L4') return null
@@ -3750,6 +3782,10 @@ export function apply(ctx, config = {}) {
 					(hypothesis.refutations ?? 0) === 0 &&
 					!(state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id),
 			)
+			if (goal.workflow === 'agent-v1') {
+				const grounding = groundingProblem(state, candidates.map(h => h.id), hostService, sessionId, mutations)
+				if (grounding) return grounding
+			}
 			if (CFG.requireLandedEntities && derived.knowledge.mode === 'knowledge') {
 				const offGraph = candidates.filter((hypothesis) => (hypothesis.unlanded ?? []).length > 0)
 				if (offGraph.length > 0) {
@@ -3810,6 +3846,7 @@ export function apply(ctx, config = {}) {
 			mutations.push(...audit.mutations)
 			if (audit.holds === 'pending') return fail('audit_pending', tr(`目标评估者仍在跑:${plainIds(sessionId, audit.basis)}。先观察当前事实,再谈重试。`, `The goal evaluator is still running: ${plainIds(sessionId, audit.basis)}. Look at the current facts before retrying.`), { mutations: audit.mutations })
 			if (audit.holds !== 'yes') {
+				if (goal.workflow === 'agent-v1') await retainClaimFindings(exec, sessionId, hostService, syntheticStep, audit, mutations)
 				// Changing an answer cannot reset a repeatedly unavailable audit service.
 				const failureStep = `goal:${goal.id}:${audit.holds === 'unknown' && !audit.shortfalls?.includes('audit_material_changed') ? 'infrastructure' : audit.digest ?? 'unknown'}`
 				const failures = (state.blocks[`goal:${failureStep}`] ?? 0) + 1
@@ -3879,17 +3916,8 @@ export function apply(ctx, config = {}) {
 			const afterAudit = previewOf(hostService, sessionId, mutations)
 			if (afterAudit === null) return fail('host_unavailable', '审计后无法重新核对材料,保持开放', { mutations })
 			if (goal.workflow === 'agent-v1' && !audit.reused && CFG.requireAnswers && unsettledForAnswers(afterAudit.state, afterAudit.derived, answers).length) {
-                const eligible = partialReviewClaims(audit.results, afterAudit.state.anomalies, afterAudit.state.hypotheses.map(h => h.id))
-                const origin = buildEvidenceOrigins({ cwd: sessionCwd(sessionId), accepted: [], confirmed: [], cardPath: audit.cardPath, evaluatorSession: null, basis: audit.basis })
-                for (const result of audit.results ?? []) {
-                    if (!eligible.has(result.hypothesis)) continue
-                    const id = `e-${contentDigest({ audit: audit.digest, claim: result.hypothesis }).slice(0, 24)}`
-                    if (afterAudit.state.evidence.some(e => e.id === id)) continue
-                    mutations.push({ t: 'evidence/recorded', id, step: syntheticStep.id, plan: 'goal', hypothesis: result.hypothesis, verdict: 'support', level: goal.promote_at_level, evaluator: 'independent', basis: result.basis ?? audit.basis, refs: origin.paths, origins: origin.origins, anchor: 'auditor', basis_reviewable: true })
-                }
-                const partial = previewOf(hostService, sessionId, mutations)
-                if (partial && eligible.size) promoteFacts(hostService, sessionId, partial.state, partial.derived, goal, new Map(), mutations, { partial: true, eligible })
-            }
+				await retainClaimFindings(exec, sessionId, hostService, syntheticStep, audit, mutations)
+			}
 			if (CFG.requireAnswers) {
 				const missing = unsettledForAnswers(afterAudit.state, afterAudit.derived, answers)
 				if (missing.length) return fail('answers_incomplete', `审计后仍有未处理事项:\n${missing.join('\n')}`, { mutations })

@@ -263,3 +263,5 @@ The knowledge overview separates facts from this goal, loaded facts, pending rev
 Read results also report `sourceOrigin`: observed before the session first used tools, created later, or unknown (including resumed sessions without a complete baseline). This is an observed file origin, not proof that its content was reused correctly.
 
 Reviewer restrictions are a tool/authority boundary, not a filesystem sandbox: direct write tools are disabled, and changed referenced materials detected during settlement prevent acceptance. OS-level read-only enforcement depends on the host sandbox. Isolated rerun edits are never copied back as main-agent repairs.
+
+Conclude and ReviewClaims share claim grounding checks. When final delivery fails, fully covered structured claims can still be saved only when the reviewer explicitly establishes independence from unresolved gaps; the goal stays open. Fix those gaps and call Conclude directly. Goal registration preserves a file baseline across revisions and replay, distinct from prior audit versions; unknown baselines remain unknown. Exported graphs are not automatically imported or certified.

@@ -3904,6 +3904,7 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  const finalPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
  check('final reviewer receives current independent receipt and all candidate leads',finalPrompt.includes('independent-current')&&finalPrompt.includes(extra.id)&&finalPrompt.includes('missing claim'),finalPrompt)
  check('final review still requires final delivery',finalPrompt.includes('"kind":"goal_audit"')&&finalPrompt.includes('"final_delivery_required_now":true'),finalPrompt)
+ check('final handoff separates goal baseline from prior audit versions',finalPrompt.includes('workspace_baseline')&&finalPrompt.includes('goal-registration')&&finalPrompt.includes('older audit digest alone'),finalPrompt)
  check('scope obligation survives persisted review request',card.request.obligation?.scope==='selected-work'&&card.request.obligation?.policy==='clearai.review.v3')
  check('review cache binds actual localized discipline',/^[a-f0-9]{64}$/.test(card.request.gate.trust.discipline))
  check('final review does not promote the unrelated candidate',host.service.state(S).facts.length===1&&!host.service.state(S).facts.some(f=>f.hypothesis===extra.id))
@@ -3934,9 +3935,9 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  const host=makeHost(), ws=tempDir('clearai-partial-final-'), S='partial-final';host.cwd=ws
  applyKernel(host.ctx,{ontologyFeedback:true,requireAnswers:true})
  writeText(join(ws,'lab/probe.txt'),'K1 reference peak 900 C. Noise needs further assessment.\n')
- const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/probe.txt',provenance:{kind:'named',ref:'lab/probe.txt'}}]}
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}},{id:'noise_model',label:'Noise model',domain:'kiln',range:{form:'statement'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/probe.txt',provenance:{kind:'named',ref:'lab/probe.txt'}}]}
  const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
- await callOn(host,S,'Frame',{claim:'Report K1 peak and measurement limits',done_criteria:'Reference peak and limitations are documented',ontology,hypotheses:[{name:'Peak',claim:'K1 peak is 900 C',refute_when:'Reference differs',assertions},{name:'Noise',claim:'Noise relationship is stable',refute_when:'Residuals contradict the relationship'}]})
+ await callOn(host,S,'Frame',{claim:'Report K1 peak and measurement limits',done_criteria:'Reference peak and limitations are documented',ontology,hypotheses:[{name:'Peak',claim:'K1 peak is 900 C',refute_when:'Reference differs',assertions},{name:'Noise',claim:'Noise relationship is stable',refute_when:'Residuals contradict the relationship',assertions:[{predicate:'noise_model',subject:{id:'K1',type:'kiln'},object:{kind:'statement',value:'Noise relationship is stable'}}]}]})
  const [peak,noise]=host.service.state(S).hypotheses
  host.nextVerdict={holds:'yes',basis:'Reference confirms peak; noise interpretation remains unresolved',results:[{hypothesis:peak.id,verdict:'support',basis:'lab/probe.txt reference',independent_of_open_issues:true},{hypothesis:noise.id,verdict:'inconclusive'}],anomalies:[{what:'Noise relationship requires clarification',matters:'yes',touches:[noise.id],impact_basis:'Reference peak is independently observed; noise relationship does not enter its measurement.'}]}
  const answers=[{conclusion:'Peak 900 C',claims:[peak.id,noise.id],basis:['lab/probe.txt:1']}]
@@ -4042,6 +4043,51 @@ for(const finalVerdict of ['support','inconclusive','missing']) {
  check(`${finalVerdict}: final audit includes pending claim without unrelated exploration`,obligation.claims.includes(peak.id)&&!obligation.claims.includes(noise.id)&&host.audits.length===before+1)
  check(`${finalVerdict}: current verdict controls promotion, never old supported level`,state.facts.length===(finalVerdict==='support'?1:0),JSON.stringify({result,facts:state.facts}))
  check(`${finalVerdict}: missing verdict cannot silently finish`,finalVerdict==='missing'?state.goal.status==='open':result.ok===true,JSON.stringify(result))
+}
+
+
+console.log('\n【目标核验与主张沉淀走同一通路】')
+for (const scenario of ['bounded', 'unknown-impact', 'affected', 'unconfirmed', 'partial', 'material-change']) {
+ const {host,ws,S,peak,noise}=await closureFixture('goal-'+scenario)
+ if(scenario==='material-change') host.onAudit=()=>writeText(join(ws,'lab/probe.txt'),'Changed during independent review.\n')
+ const answers=[{conclusion:'Reference peak with noise limits',claims:[peak.id,noise.id],basis:['lab/probe.txt:1']}]
+ host.nextVerdict={holds:'no',basis:'Delivery incomplete; peak assessed independently',shortfalls:['Final report missing'],results:[{hypothesis:peak.id,verdict:'support',coverage:scenario==='partial'?'partial':'full',independent_of_open_issues:scenario!=='unconfirmed'},{hypothesis:noise.id,verdict:'inconclusive'}],anomalies:[{what:'Noise unresolved',matters:'yes',...(scenario==='unknown-impact'?{}:{touches:[scenario==='affected'?peak.id:noise.id],impact_basis:'Noise is separate from reference measurement'})}]}
+ const result=await callOn(host,S,'Conclude',{outcome:'achieved',answers}),state=host.service.state(S)
+ check(`${scenario}: failed goal retains only fully independent grounded claims`,!result.ok&&state.goal.status==='open'&&state.facts.length===(scenario==='bounded'?1:0),JSON.stringify({result,facts:state.facts}))
+ check(`${scenario}: failed delivery never promotes unresolved noise`,!state.facts.some(f=>f.hypothesis===noise.id))
+ if(scenario==='bounded') {
+  check('native failure points directly to Conclude without legacy plan card',result.message.includes('Conclude')&&!result.message.includes('CreatePlan')&&!result.message.includes('还没建计划'),result.message)
+  check('failed goal preserves supported and inconclusive evidence in replay',applyMutations(emptyState(),host.journal).evidence.some(e=>e.hypothesis===noise.id&&e.verdict==='inconclusive')&&applyMutations(emptyState(),host.journal).facts[0]?.assertions.length===1)
+ }
+}
+{
+ const {host,ws,S,peak,noise}=await closureFixture('repair-delivery')
+ const args={outcome:'achieved',answers:[{conclusion:'Peak and noise',claims:[peak.id,noise.id],basis:['lab/probe.txt:1']}]}
+ host.nextVerdict={holds:'no',basis:'Report absent; peak is independently established',shortfalls:['Report missing'],results:[{hypothesis:peak.id,verdict:'support',independent_of_open_issues:true},{hypothesis:noise.id,verdict:'inconclusive'}]}
+ await callOn(host,S,'Conclude',args)
+ const saved=host.service.state(S).facts[0]
+ writeText(join(ws,'report.txt'),'Final report with scope and limitations.\n')
+ host.nextVerdict={holds:'yes',basis:'Delivery repaired; remaining claim checked',results:[{hypothesis:noise.id,verdict:'support'}]}
+ const result=await callOn(host,S,'Conclude',args),state=host.service.state(S)
+ check('repair uses Conclude directly without a new plan or ReviewClaims',result.ok&&state.goal.status==='achieved'&&state.plans.length===0&&host.audits.length===2,JSON.stringify(result))
+ check('existing partial fact is not duplicated and remaining assertions are saved',state.facts.length===2&&state.facts.some(f=>f.id===saved?.id)&&state.facts.every(f=>f.assertions?.length),JSON.stringify(state.facts))
+ const request=state.audits.at(-1).request
+ check('final repair review selects only the unpersisted claim',JSON.stringify(request.step.tests.hypotheses)===JSON.stringify([noise.id]))
+}
+{
+ const host=makeHost(),ws=tempDir('clearai-final-grounding-'),S='final-grounding';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true,requireAnswers:false})
+ writeText(join(ws,'report.txt'),'Prior final report, after its earlier audit.\n')
+ const frame={claim:'Check reference',done_criteria:'Reference checked',hypotheses:[{name:'Reference',claim:'Reference is 900 C',refute_when:'Reference differs'}]}
+ await callOn(host,S,'Frame',frame)
+ const baseline=host.service.state(S).goal.workspace_baseline,h=host.service.state(S).hypotheses[0]
+ const result=await callOn(host,S,'Conclude',{outcome:'achieved',answers:[{conclusion:h.claim,claims:[h.id],basis:['report.txt:1']}]})
+ check('Conclude cannot bypass ReviewClaims ontology grounding',result.code==='ontology_grounding_required'&&host.audits.length===0&&host.service.state(S).facts.length===0,result.message)
+ writeText(join(ws,'report.txt'),'Current goal changed report.\n')
+ const revised=await callOn(host,S,'Frame',{...frame,reason:'Clarify reference'})
+ check('baseline test performs a real goal revision',revised.ok&&host.service.state(S).goal.revision===2,JSON.stringify(revised))
+ check('goal revisions do not reset the registered file baseline',JSON.stringify(host.service.state(S).goal.workspace_baseline)===JSON.stringify(baseline))
+ check('registered file baseline survives cold replay',JSON.stringify(applyMutations(emptyState(),host.journal).goal.workspace_baseline)===JSON.stringify(baseline)&&baseline.files.some(([p])=>p==='report.txt'))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

@@ -254,7 +254,7 @@ console.log('\n【图投影:同一份账本 ⇒ 同一张图,坐标也确定】'
 
 console.log('\n【折法:六个本体事件折进 lexicon(旧账本没有它也不崩)】')
 {
-	check('状态版本是 v26(知识范围与断言统计)', fold.STATE_VERSION === 26, String(fold.STATE_VERSION))
+	check('状态版本是 v27(目标文件基线)', fold.STATE_VERSION === 27, String(fold.STATE_VERSION))
 	const empty = fold.emptyState()
 	check('空状态的词汇是空表(不是 undefined)', Array.isArray(empty.lexicon?.terms) && Array.isArray(empty.lexicon?.predicates))
 	const lexicon = seeded()
