@@ -124,3 +124,7 @@ A fact marked "definition changed" on the card: a concept or relation it used at
 Lessons are proposed in the conclusion itself: `Conclude(outcome="achieved", lessons=[…])`, each one sentence on what to do next time, with a kind (pitfall `trap` / check first `check` / misleading shortcut `shortcut` / prior `prior`), the equipment or quantities involved (`about`), the evidence in this run's record and when it does not apply. The evaluator judges each against the record; supported ones are written to `clear/knowledge/lessons/`, and later sessions see them before framing, planning and writing expectations. To retract one, a person sets `status` to `retracted` in its file. An abandoned goal is not checked and writes no lessons.
 
 If the conclusion succeeds and the run found a method worth reusing (how to look up, compute or verify), write it as a native skill: `.agents/skills/<name>/SKILL.md`, with a `description` at the top that says when to use it. The host lists it next time. Skip anything done once and never needed again.
+
+## Current graph and source corrections
+
+When a task exports a current graph, build it from the same effective-dated, versioned view as the calculation. Keep source records and historical graphs intact. Cite both the original record and the applicable correction on changed edges. Before delivery, compare corrected relationships against that view; unchanged node/edge counts and a reproducible script alone do not establish current graph correctness.

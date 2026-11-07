@@ -936,7 +936,8 @@ export function apply(ctx, config = {}) {
 			'  · **交付成立吗**(`holds`):yes = 判据逐条满足、观测真实;no = 有判据不满足,或观测与记录对不上;unclear = 凭现有材料判不了。',
 			'  · **每条判断的结果**(`results`,这一步检验几条就给几格):对照它的推翻条件读——support = 观测支持登记命题及其范围,且未触发推翻条件;refute = 触发推翻条件;inconclusive = 观测不足以区分,或仅支持更窄范围。',
 			'- 交付成立与判断被推翻可以同时为真:推翻是有价值的结果,它不让交付失败。不要为了让步骤通过而写 support。',
-			'- 你还要查**还有什么没解释**(`anomalies`):原始数据里有没有做的人没登记的异常——参考读数对不上、重复点漂移、不同装置或不同批次之间的差、和常识或本体不符的量级?数字复跑对得上不等于数据可信。每条做的人已排除的未解释项,理由站不站得住?站不住的也写进来。结论用到了 clear/knowledge/ 下的已有条目、却没在判断的 uses 里引用的,也写进来(它绕过了适用性判定)。没有就给空数组。',
+			'- 复核已有评估者异常时，返回 existing_id 与 disposition（maintain 或 reopen），impact_basis 写当前独立核对依据。原处置仍成立才 maintain；证据变化或原处置不成立用 reopen。不要将同一问题改写成新异常。新发现不填 existing_id。',
+            '- 你还要查**还有什么没解释**(`anomalies`):原始数据里有没有做的人没登记的异常——参考读数对不上、重复点漂移、不同装置或不同批次之间的差、和常识或本体不符的量级?数字复跑对得上不等于数据可信。每条做的人已排除的未解释项,理由站不站得住?站不住的也写进来。结论用到了 clear/knowledge/ 下的已有条目、却没在判断的 uses 里引用的,也写进来(它绕过了适用性判定)。没有就给空数组。',
 			'',
 			'**回包必须可复核(字符上限限制落账长度,不是生成 token 预算):**',
 			'- `basis` 是**一句话结论**,≤1200 字。**不要在这里写论证**——论证放 `refs`:逐条 `{path, line}` 指到你实际读过的文件与行,让第三方照着就能复核。',
@@ -960,7 +961,9 @@ export function apply(ctx, config = {}) {
 			'  · **Does the delivery hold** (`holds`): yes = every criterion met and the observations are real; no = some criterion unmet, or observations do not match the record; unclear = cannot be decided from the material.',
 			'  · **The result for each judgment** (`results`, one entry per judgment this step tests): read it against its refutation condition; support = observations support the registered claim and scope without triggering refutation; refute = the refutation condition was hit; inconclusive = observations cannot distinguish or support only a narrower scope.',
 			'- A delivery can hold while a judgment is refuted: refutation is a valuable result and does not fail the delivery. Do not write support to let a step pass.',
-			'- You also check **what is still unexplained** (`anomalies`): does the raw data hold anomalies the worker did not record (a reference reading that disagrees, drift between repeated points, a gap between devices or batches, a magnitude that contradicts common knowledge or the ontology)? Re-run numbers matching does not mean the data can be trusted. For each unexplained item the worker ruled out, does the reason hold? If not, list it here too. If the conclusion relies on existing items under clear/knowledge/ that no judgment cites in uses, list that too (it bypassed the applicability check). If there are none, give an empty array.',
+			'- When a task exports a current graph, independently compare changed relationships with applicable effective-dated corrections and the calculation view. Matching counts or replaying a raw-source graph is insufficient. Preserve historical graphs.',
+            '- When revisiting a registered evaluator anomaly, return existing_id and disposition (maintain or reopen), with independently checked impact_basis. Maintain preserves its disposition; changed evidence or an unsound disposition requires reopen. Never emit a paraphrase as a new finding. New anomalies omit existing_id.',
+            '- You also check **what is still unexplained** (`anomalies`): does the raw data hold anomalies the worker did not record (a reference reading that disagrees, drift between repeated points, a gap between devices or batches, a magnitude that contradicts common knowledge or the ontology)? Re-run numbers matching does not mean the data can be trusted. For each unexplained item the worker ruled out, does the reason hold? If not, list it here too. If the conclusion relies on existing items under clear/knowledge/ that no judgment cites in uses, list that too (it bypassed the applicability check). If there are none, give an empty array.',
 			'',
 			'**Your reply must be checkable (character limits bound stored text, not generated tokens):**',
 			'- `basis` is a **one-sentence conclusion**, ≤1200 characters. **Do not argue here**; arguments go in `refs`: one `{path, line}` per file and line you actually read, so a third party can check.',
@@ -1020,6 +1023,8 @@ export function apply(ctx, config = {}) {
 					type: 'object',
 					properties: {
 						what: { type: 'string', maxLength: 400, description: tr('哪里不符(带 path:line)', 'what does not fit (with path:line)') },
+                        existing_id: { type: 'string', description: 'Exact existing anomaly ID from the brief when revisiting it; never invent an ID.' },
+                        disposition: { type: 'string', enum: ['maintain', 'reopen'], description: 'maintain only after independently checking that the existing disposition remains valid under current evidence and scope; explain in impact_basis. Otherwise reopen.' },
 						touches: { type: 'array', items: { type: 'string' }, description: 'All affected hypothesis IDs, including downstream effects. Omit when the impact boundary is unknown.' },
 						impact_basis: { type: 'string', maxLength: 600, description: 'Evidence for the impact boundary; distinguish measured samples from general noise or ontology claims.' },
 						matters: { type: 'string', enum: ['yes', 'no', 'unclear'], description: tr('它会不会动摇这次的结论', 'whether it could shake this conclusion') },
@@ -1261,7 +1266,7 @@ export function apply(ctx, config = {}) {
 			const what = typeof item === 'string' ? item.trim() : String(item?.what ?? '').trim()
 			if (what === '') continue
 			const matters = ['yes', 'no', 'unclear'].includes(item?.matters) ? item.matters : 'unclear'
-			anomalies.push({ what: what.slice(0, 400), matters, touches: Array.isArray(item?.touches) ? [...new Set(item.touches.filter(id => typeof id === 'string'))] : null, impact_basis: String(item?.impact_basis ?? '').slice(0, 600) })
+			anomalies.push({ existing_id: String(item?.existing_id ?? ''), disposition: item?.disposition === 'maintain' ? 'maintain' : 'reopen', what: what.slice(0, 400), matters, touches: Array.isArray(item?.touches) ? [...new Set(item.touches.filter(id => typeof id === 'string'))] : null, impact_basis: String(item?.impact_basis ?? '').slice(0, 600) })
 		}
 		const lessons = []
 		for (const item of Array.isArray(value?.lessons) ? value.lessons : []) {
