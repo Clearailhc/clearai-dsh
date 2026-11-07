@@ -1,0 +1,926 @@
+{
+  "schema": "clearai.traceability-summary.v1",
+  "synthetic": true,
+  "model": "deepseek-flash / medium",
+  "host": "DSH 0.2.2-rc.1",
+  "dataVerified": true,
+  "releaseRecommended": false,
+  "originalProduct": "57c13d5",
+  "fixedProduct": "d1b75ba",
+  "results": [
+    {
+      "id": "native-1",
+      "variant": "native",
+      "phase": 1,
+      "reason": "completed",
+      "taskSucceeded": true,
+      "elapsedMs": 360561,
+      "usage": {
+        "input": 42483,
+        "output": 57826,
+        "cacheRead": 3593088,
+        "cacheWrite": 0,
+        "calls": 59,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 3693397,
+        "status": "verified",
+        "processed": 3693397
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "processed": 640,
+          "output": 7,
+          "requestMs": 1089,
+          "costUsd": 0.0001983
+        },
+        "main": {
+          "calls": 58,
+          "processed": 3692757,
+          "output": 57819,
+          "requestMs": 354237,
+          "costUsd": 0.10349632799999997
+        }
+      },
+      "costUsd": 0.10369462799999997,
+      "score": {
+        "entities": {
+          "expected": 234,
+          "actual": 234,
+          "correct": 234,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 508,
+          "actual": 508,
+          "correct": 508,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 18,
+          "actual": 18,
+          "correct": 18,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10
+        },
+        "decisionExact": true
+      },
+      "graph": {
+        "concepts": 8,
+        "relations": 7,
+        "entities": 234,
+        "edges": 508
+      },
+      "nativeKnowledge": {
+        "concepts": 0,
+        "entities": 0,
+        "facts": 0,
+        "ontologyProblems": []
+      },
+      "historyPreserved": true,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 234,
+          "locatable": 234
+        },
+        "edges": {
+          "canonicalSourceCitations": 508,
+          "locatable": 508
+        }
+      },
+      "reuseDeclarations": []
+    },
+    {
+      "id": "native-2",
+      "variant": "native",
+      "phase": 2,
+      "reason": "completed",
+      "taskSucceeded": true,
+      "elapsedMs": 266808,
+      "usage": {
+        "input": 51663,
+        "output": 44467,
+        "cacheRead": 2185344,
+        "cacheWrite": 0,
+        "calls": 37,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 2281474,
+        "status": "verified",
+        "processed": 2281474
+      },
+      "roles": {
+        "main": {
+          "calls": 36,
+          "processed": 2280832,
+          "output": 44458,
+          "requestMs": 261288,
+          "costUsd": 0.08177066399999999
+        },
+        "other": {
+          "calls": 1,
+          "processed": 642,
+          "output": 9,
+          "requestMs": 1376,
+          "costUsd": 0.0002007
+        }
+      },
+      "costUsd": 0.08197136399999999,
+      "score": {
+        "entities": {
+          "expected": 234,
+          "actual": 234,
+          "correct": 234,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 508,
+          "actual": 508,
+          "correct": 508,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 7,
+          "actual": 7,
+          "correct": 7,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 5,
+          "actual": 5,
+          "correct": 5
+        },
+        "decisionExact": true
+      },
+      "graph": {
+        "concepts": 8,
+        "relations": 7,
+        "entities": 234,
+        "edges": 508
+      },
+      "nativeKnowledge": {
+        "concepts": 0,
+        "entities": 0,
+        "facts": 0,
+        "ontologyProblems": []
+      },
+      "historyPreserved": true,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 234,
+          "locatable": 234
+        },
+        "edges": {
+          "canonicalSourceCitations": 508,
+          "locatable": 508
+        }
+      },
+      "reuseDeclarations": [
+        {
+          "path": "report/phase-1.md",
+          "existedBefore": true
+        },
+        {
+          "path": "artifacts/graph.json",
+          "existedBefore": true
+        },
+        {
+          "path": "artifacts/as-of/NOTICE-1_2026-09-10.json",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/traceability.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/query_exposure.py",
+          "existedBefore": true
+        }
+      ]
+    },
+    {
+      "id": "native-3",
+      "variant": "native",
+      "phase": 3,
+      "reason": "completed",
+      "taskSucceeded": true,
+      "elapsedMs": 408276,
+      "usage": {
+        "input": 88370,
+        "output": 69514,
+        "cacheRead": 6009984,
+        "cacheWrite": 0,
+        "calls": 58,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 6167868,
+        "status": "verified",
+        "processed": 6167868
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "processed": 658,
+          "output": 9,
+          "requestMs": 1283,
+          "costUsd": 0.00020549999999999998
+        },
+        "main": {
+          "calls": 57,
+          "processed": 6167210,
+          "output": 69505,
+          "requestMs": 400087,
+          "costUsd": 0.145782204
+        }
+      },
+      "costUsd": 0.145987704,
+      "score": {
+        "entities": {
+          "expected": 246,
+          "actual": 246,
+          "correct": 246,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 532,
+          "actual": 532,
+          "correct": 532,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 11,
+          "actual": 11,
+          "correct": 11,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 22,
+          "actual": 22,
+          "correct": 22,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10
+        },
+        "decisionExact": true
+      },
+      "graph": {
+        "concepts": 8,
+        "relations": 7,
+        "entities": 246,
+        "edges": 532
+      },
+      "nativeKnowledge": {
+        "concepts": 0,
+        "entities": 0,
+        "facts": 0,
+        "ontologyProblems": []
+      },
+      "historyPreserved": true,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 246,
+          "locatable": 246
+        },
+        "edges": {
+          "canonicalSourceCitations": 532,
+          "locatable": 532
+        }
+      },
+      "reuseDeclarations": [
+        {
+          "path": "report/phase-1.md",
+          "existedBefore": true
+        },
+        {
+          "path": "report/phase-2.md",
+          "existedBefore": true
+        },
+        {
+          "path": "artifacts/graph.json",
+          "existedBefore": true
+        },
+        {
+          "path": "artifacts/as-of/NOTICE-1_2026-09-10.json",
+          "existedBefore": true
+        },
+        {
+          "path": "artifacts/as-of/NOTICE-1_2026-09-10_phase-2.json",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/traceability.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/query_exposure.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/build_graph.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/verify_artifacts.py",
+          "existedBefore": true
+        }
+      ]
+    },
+    {
+      "id": "clearai-1",
+      "variant": "clearai",
+      "phase": 1,
+      "reason": "completed",
+      "taskSucceeded": true,
+      "elapsedMs": 1451895,
+      "usage": {
+        "input": 193782,
+        "output": 239868,
+        "cacheRead": 9401600,
+        "cacheWrite": 0,
+        "calls": 106,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 9835250,
+        "status": "verified",
+        "processed": 9835250
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "processed": 829,
+          "output": 196,
+          "requestMs": 2076,
+          "costUsd": 0.000312204
+        },
+        "main": {
+          "calls": 65,
+          "processed": 7118083,
+          "output": 115952,
+          "requestMs": 663407,
+          "costUsd": 0.19730490000000003
+        },
+        "evaluator": {
+          "calls": 40,
+          "processed": 2716338,
+          "output": 123720,
+          "requestMs": 738455,
+          "costUsd": 0.204768696
+        }
+      },
+      "costUsd": 0.4023858,
+      "score": {
+        "entities": {
+          "expected": 234,
+          "actual": 276,
+          "correct": 234,
+          "precision": 0.8478260869565217,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 508,
+          "actual": 567,
+          "correct": 508,
+          "precision": 0.8959435626102292,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 18,
+          "actual": 18,
+          "correct": 18,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10
+        },
+        "decisionExact": true
+      },
+      "graph": {
+        "concepts": 15,
+        "relations": 14,
+        "entities": 276,
+        "edges": 567
+      },
+      "nativeKnowledge": {
+        "concepts": 15,
+        "entities": 276,
+        "facts": 3,
+        "ontologyProblems": []
+      },
+      "historyPreserved": true,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 234,
+          "locatable": 276
+        },
+        "edges": {
+          "canonicalSourceCitations": 508,
+          "locatable": 567
+        }
+      },
+      "reuseDeclarations": [],
+      "ontologySchema": {
+        "definedTypes": 8,
+        "typedRelations": 7,
+        "expectedTypes": 8,
+        "expectedRelations": 7
+      },
+      "internalKnowledge": {
+        "entityTypes": {
+          "production_batch": 60,
+          "causal_claim": 3,
+          "customer": 12,
+          "line": 4,
+          "material_lot": 24,
+          "notice": 1,
+          "plant": 2,
+          "product": 6,
+          "quarantine_decision": 10,
+          "return_record": 16,
+          "rework": 12,
+          "shipment": 120,
+          "supplier": 6
+        },
+        "storedFacts": 3,
+        "storedFactAssertions": 34,
+        "assertions": 567,
+        "coreEntities": {
+          "expected": 234,
+          "actual": 276,
+          "correct": 234,
+          "precision": 0.8478260869565217,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "coreRelations": {
+          "expected": 508,
+          "actual": 567,
+          "correct": 508,
+          "precision": 0.8959435626102292,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "interpretation": "Internal extras can include notices, returns, reworks and hypotheses. Core recall is coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification."
+      }
+    },
+    {
+      "id": "clearai-2",
+      "variant": "clearai",
+      "phase": 2,
+      "reason": "completed",
+      "taskSucceeded": true,
+      "elapsedMs": 852742,
+      "usage": {
+        "input": 158693,
+        "output": 122388,
+        "cacheRead": 8455936,
+        "cacheWrite": 0,
+        "calls": 101,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 8737017,
+        "status": "verified",
+        "processed": 8737017
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "processed": 747,
+          "output": 114,
+          "requestMs": 1719,
+          "costUsd": 0.000213804
+        },
+        "main": {
+          "calls": 65,
+          "processed": 5884915,
+          "output": 59179,
+          "requestMs": 401698,
+          "costUsd": 0.127515888
+        },
+        "evaluator": {
+          "calls": 35,
+          "processed": 2851355,
+          "output": 63095,
+          "requestMs": 381453,
+          "costUsd": 0.11747942399999997
+        }
+      },
+      "costUsd": 0.24520911599999998,
+      "score": {
+        "entities": {
+          "expected": 234,
+          "actual": 276,
+          "correct": 234,
+          "precision": 0.8478260869565217,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 508,
+          "actual": 567,
+          "correct": 508,
+          "precision": 0.8959435626102292,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 7,
+          "actual": 7,
+          "correct": 7,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 5,
+          "actual": 5,
+          "correct": 5
+        },
+        "decisionExact": true
+      },
+      "graph": {
+        "concepts": 15,
+        "relations": 14,
+        "entities": 276,
+        "edges": 567
+      },
+      "nativeKnowledge": {
+        "concepts": 15,
+        "entities": 276,
+        "facts": 4,
+        "ontologyProblems": []
+      },
+      "historyPreserved": true,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 234,
+          "locatable": 276
+        },
+        "edges": {
+          "canonicalSourceCitations": 508,
+          "locatable": 567
+        }
+      },
+      "reuseDeclarations": [
+        {
+          "path": "analysis/common.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/sql_check.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/out/exposures.csv",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/out/phase1_submission.json",
+          "existedBefore": false
+        },
+        {
+          "path": "artifacts/graph.json",
+          "existedBefore": true
+        },
+        {
+          "path": "report/phase-1.md",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-nrqxa6.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-xgwcn7.json",
+          "existedBefore": true
+        }
+      ],
+      "ontologySchema": {
+        "definedTypes": 8,
+        "typedRelations": 7,
+        "expectedTypes": 8,
+        "expectedRelations": 7
+      },
+      "internalKnowledge": {
+        "entityTypes": {
+          "production_batch": 60,
+          "causal_claim": 3,
+          "customer": 12,
+          "line": 4,
+          "material_lot": 24,
+          "notice": 1,
+          "plant": 2,
+          "product": 6,
+          "quarantine_decision": 10,
+          "return_record": 16,
+          "rework": 12,
+          "shipment": 120,
+          "supplier": 6
+        },
+        "storedFacts": 7,
+        "storedFactAssertions": 34,
+        "assertions": 567,
+        "coreEntities": {
+          "expected": 234,
+          "actual": 276,
+          "correct": 234,
+          "precision": 0.8478260869565217,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "coreRelations": {
+          "expected": 508,
+          "actual": 567,
+          "correct": 508,
+          "precision": 0.8959435626102292,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "interpretation": "Internal extras can include notices, returns, reworks and hypotheses. Core recall is coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification."
+      }
+    },
+    {
+      "id": "clearai-3",
+      "variant": "clearai",
+      "phase": 3,
+      "reason": "token_limit",
+      "taskSucceeded": false,
+      "elapsedMs": 571594,
+      "usage": {
+        "input": 94475,
+        "output": 95237,
+        "cacheRead": 9868416,
+        "cacheWrite": 0,
+        "calls": 81,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 10058128,
+        "status": "verified",
+        "processed": 10058128
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "processed": 668,
+          "output": 19,
+          "requestMs": 1285,
+          "costUsd": 6.697200000000001e-05
+        },
+        "main": {
+          "calls": 80,
+          "processed": 10057460,
+          "output": 95218,
+          "requestMs": 553900,
+          "costUsd": 0.20177042399999998
+        }
+      },
+      "costUsd": 0.20183739599999997,
+      "score": {
+        "entities": {
+          "expected": 246,
+          "actual": 301,
+          "correct": 246,
+          "precision": 0.8172757475083057,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 532,
+          "actual": 616,
+          "correct": 532,
+          "precision": 0.8636363636363636,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 11,
+          "actual": 11,
+          "correct": 11,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 22,
+          "actual": 22,
+          "correct": 22,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10
+        },
+        "decisionExact": true
+      },
+      "graph": {
+        "concepts": 15,
+        "relations": 15,
+        "entities": 301,
+        "edges": 616
+      },
+      "nativeKnowledge": {
+        "concepts": 15,
+        "entities": 301,
+        "facts": 0,
+        "ontologyProblems": []
+      },
+      "historyPreserved": true,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 246,
+          "locatable": 301
+        },
+        "edges": {
+          "canonicalSourceCitations": 532,
+          "locatable": 616
+        }
+      },
+      "reuseDeclarations": [
+        {
+          "path": "analysis/common.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/out/phase1_submission.json",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/out/phase2_submission.json",
+          "existedBefore": false
+        },
+        {
+          "path": "analysis/out/exposures.csv",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/out/phase2_exposures.csv",
+          "existedBefore": true
+        },
+        {
+          "path": "report/phase-1.md",
+          "existedBefore": true
+        },
+        {
+          "path": "report/phase-2.md",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-nrqxa6.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-xgwcn7.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-z130mk.json",
+          "existedBefore": true
+        }
+      ],
+      "ontologySchema": {
+        "definedTypes": 8,
+        "typedRelations": 7,
+        "expectedTypes": 8,
+        "expectedRelations": 7
+      },
+      "internalKnowledge": {
+        "entityTypes": {
+          "production_batch": 60,
+          "causal_claim": 3,
+          "customer": 12,
+          "line": 4,
+          "material_lot": 24,
+          "notice": 2,
+          "plant": 2,
+          "product": 6,
+          "quarantine_decision": 21,
+          "return_record": 16,
+          "rework": 13,
+          "shipment": 132,
+          "supplier": 6
+        },
+        "storedFacts": 7,
+        "storedFactAssertions": 34,
+        "assertions": 616,
+        "coreEntities": {
+          "expected": 246,
+          "actual": 301,
+          "correct": 246,
+          "precision": 0.8172757475083057,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "coreRelations": {
+          "expected": 532,
+          "actual": 616,
+          "correct": 532,
+          "precision": 0.8636363636363636,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "interpretation": "Internal extras can include notices, returns, reworks and hypotheses. Core recall is coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification."
+      }
+    }
+  ],
+  "preservedFailure": {
+    "reason": "DSH schema minItems unsupported",
+    "seconds": 345,
+    "processedTokens": 2900274,
+    "costUsd": 0.099186648,
+    "taskSucceeded": false
+  },
+  "budget": {
+    "previousReservedUsd": 7.697442267999986,
+    "currentCostUsd": 0.8494323119999999,
+    "cumulativeReservedUsd": 8.546874579999992,
+    "historicalUnknownReservationUsd": 0.8,
+    "pending": 0,
+    "newUnknown": 0
+  },
+  "comparisonCostUsd": 1.2802726559999997,
+  "limits": [
+    "One synthetic case, one run per stage; no cold reuse ablation.",
+    "Native default keeps normal DSH tools; this is not a text-only baseline.",
+    "Dictionary provided: ontology instantiation/maintenance, not ontology discovery.",
+    "Core set precision in raw receipts includes legitimate extra objects; do not interpret extras as false claims.",
+    "Stage 3 ClearAI reached token limit before evaluator dispatch; correct partial artifacts are not completed tasks."
+  ],
+  "reproduction": {
+    "native": "Final query scripts reproduce all 3 stages in a separate copy.",
+    "clearai": "Final run_all.sh exits 0 and reproduces all 3 stage decisions in a separate copy; this is deterministic artifact verification, not completion of the interrupted audit."
+  }
+}
