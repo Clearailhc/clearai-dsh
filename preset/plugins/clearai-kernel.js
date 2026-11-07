@@ -2987,7 +2987,7 @@ export function apply(ctx, config = {}) {
 				promote_at_level: { type: 'string', enum: MODEL_LEVELS, description: '升格门槛(默认 L3)' },
 				irreversible: {
 					type: 'array',
-					description: '计划实际执行的不可撤销或不可重复动作;匹配的命令执行前须人批准。禁止事项、判据与只读检查不填这里;没有这类动作写 []。修订时不传 = 不变',
+					description: '计划实际执行的真实不可撤销或不可重复动作;匹配的命令执行前须人批准。已获授权且受限额约束的模拟实验、计算预算消耗、只读检查、判据和禁止事项不填这里；预算计数不可回退不等于真实不可逆操作。没有这类动作写 []。修订时不传 = 不变',
 					items: {
 						type: 'object',
 						properties: {
@@ -5796,7 +5796,7 @@ export function apply(ctx, config = {}) {
 				criteria_note: 'Background for the criteria; not part of the verdict',
 				criteria_verdict: 'The independent verdict auditKey for changing the criteria text',
 				promote_at_level: 'Promotion threshold (default L3)',
-				irreversible: 'Irreversible or unrepeatable actions you actually plan to execute; matching commands need human approval. Do not put prohibitions, criteria, or read-only checks here; use [] when there are no such actions. Omitted on revision = unchanged',
+				irreversible: 'Real irreversible or unrepeatable actions you actually plan to execute; matching commands need human approval. Already-authorized bounded simulations, computational budget consumption, read-only checks, criteria and prohibitions do not belong here: a nonrefundable virtual counter is not a real irreversible effect. Use [] when there are no such actions. Omitted on revision = unchanged',
 				'irreversible.items.action': 'What the action is',
 				'irreversible.items.command': 'Distinctive command text including the operation and arguments; not a bare directory path or generic interpreter name, which would also match read-only checks',
 				mode: 'survey = broad survey; solve = targeted solving; survey_then_solve = survey, then solve',

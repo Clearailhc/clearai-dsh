@@ -16,8 +16,19 @@ const installation = JSON.parse(readFileSync(join(home, 'installation.json')))
 const budgetFile = process.env.CLEARAI_TEST_BUDGET_FILE
 assert.ok(budgetFile && existsSync(budgetFile), 'Use the existing campaign ledger')
 const budget = JSON.parse(readFileSync(budgetFile))
-assert.equal(budget.limitUsd, 30); assert.equal(budget.testLimitUsd, 5)
-assert.ok(Object.values(budget.requests).every(row => ['verified','historical-carry-forward'].includes(row.status)), 'Settle every live request before starting comparison')
+const protocol=process.env.CLEARAI_POLISH_PROTOCOL ? JSON.parse(readFileSync(process.env.CLEARAI_POLISH_PROTOCOL)) : null
+const limits=protocol?.limits??{limitUsd:30,testLimitUsd:5},budgets=protocol?.budgets??BUDGETS
+if(protocol){
+ assert.ok(typeof protocol.authorization==='string'&&protocol.authorization.trim())
+ for(const key of ['limitUsd','testLimitUsd'])assert.ok(Number.isFinite(limits[key])&&limits[key]>0)
+ assert.ok(limits.testLimitUsd<=limits.limitUsd)
+ for(const kind of ['direct','complex'])for(const key of ['tokenBudget','timeoutMs'])assert.ok(Number.isSafeInteger(budgets[kind]?.[key])&&budgets[kind][key]>0)
+ assert.ok(typeof protocol.testIdPrefix==='string'&&/^[a-z0-9:-]+$/.test(protocol.testIdPrefix))
+ assert.ok(Array.isArray(protocol.isolationRoots)&&protocol.isolationRoots.every(p=>typeof p==='string'&&p.startsWith('/')))
+}
+
+assert.equal(budget.limitUsd, limits.limitUsd); assert.equal(budget.testLimitUsd, limits.testLimitUsd)
+assert.ok(Object.values(budget.requests).every(row => (['verified','historical-carry-forward'].includes(row.status)||(protocol&&row.status==='unknown'&&row.reservedUsd===0.8&&!row.error&&row.reservationAcceptance?.authorization&&row.reservationAcceptance.upperBoundUsd===0.8))), 'Settle every live request before starting comparison')
 initializeCampaignRoot(root)
 const privateRoot = join(root, '.controller'); mkdirSync(privateRoot)
 const key = randomBytes(32), probe = join(privateRoot, 'sentinel')
@@ -32,7 +43,7 @@ const tasks = {
 const boundAssets = []
 function bind(dir) { for (const entry of readdirSync(dir, { withFileTypes: true })) { const path = join(dir, entry.name); if (entry.isDirectory()) bind(path); else boundAssets.push({ path: path.slice(assets.length + 1), sha256: sha(readFileSync(path)) }) } }
 bind(assets)
-const manifest = { schema: 'clearai.polish-comparison.v1', version: installation.version, candidateDigest: installation.packageDigest, model: MODEL, rows, tasks, budgets: BUDGETS, experimentBudget: 30, worldKeyCommitment: sha(key), assets: boundAssets, costBeforeUsd: Object.values(budget.requests).reduce((n,r) => n+r.reservedUsd,0), authorization: '这次验收你可以启动多个任务，并和裸模型的效果进行对比，看看最终效果以及token耗费和时长都有什么对比。', policy: 'One run per task/group, sequential counterbalanced order; no quality-based reruns. Same native tools/model/inputs, default preset A versus ClearAI C. Hidden truth is unavailable to agents, validated with native isolation probes. Deterministic objective scoring after each worker exits. Functional failures remain rows; unverifiable usage, isolation or model mismatch stops remaining runs.' }
+const manifest = { schema: 'clearai.polish-comparison.v1', version: installation.version, candidateDigest: installation.packageDigest, model: MODEL, rows, tasks, budgets, approvedLimits:limits, protocol, experimentBudget: 30, worldKeyCommitment: sha(key), assets: boundAssets, costBeforeUsd: Object.values(budget.requests).reduce((n,r) => n+r.reservedUsd,0), authorization: '这次验收你可以启动多个任务，并和裸模型的效果进行对比，看看最终效果以及token耗费和时长都有什么对比。', policy: 'One run per task/group, sequential counterbalanced order; no quality-based reruns. Same native tools/model/inputs, default preset A versus ClearAI C. Hidden truth is unavailable to agents, validated with native isolation probes. Deterministic objective scoring after each worker exits. Functional failures remain rows; unverifiable usage, isolation or model mismatch stops remaining runs.' }
 writeFileSync(join(root, 'manifest.json'), JSON.stringify(manifest, null, 2))
 const results = []
 const checkpoint = () => writeFileSync(join(root,'comparison.json'),JSON.stringify({ manifest:'manifest.json', results, complete:results.length===rows.length },null,2))
@@ -50,7 +61,7 @@ for (const row of rows) {
  }
  let result
  try {
-  result = await runNative({home,profile,workspace,spec:{...row,...(row.task==='direct'?BUDGETS.direct:BUDGETS.complex),testId:`polish060:${id}`,output,task:row.task==='direct'?tasks.direct:tasks.optimization,isolation:{roots:[root,home],probe}}})
+  result = await runNative({home,profile,workspace,spec:{...row,...(row.task==='direct'?budgets.direct:budgets.complex),testId:`${protocol?.testIdPrefix??'polish060:'}${id}`,output,task:row.task==='direct'?tasks.direct:tasks.optimization,isolation:{roots:[root,home,...(protocol?.isolationRoots??[])],probe}}})
  } finally { await service?.close() }
  let submission = null
  try { submission=JSON.parse(readFileSync(join(workspace,'submission.json'))) } catch {}
@@ -58,7 +69,7 @@ for (const row of rows) {
  const calls=existsSync(join(output,'llm-calls.jsonl'))?readFileSync(join(output,'llm-calls.jsonl'),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse):[]
  const roles={}
  for(const call of calls) {
-  const role=call.purpose?'other':call.session===result.session?'main':'evaluator'
+  const auditors=new Set((result.clearai?.audits??[]).map(a=>a.child));const role=call.purpose?'other':call.session===result.session?'main':auditors.has(call.session)?'evaluator':'other'
   const stats=roles[role]??={calls:0,input:0,output:0,cacheRead:0,cacheWrite:0,processed:0,requestMs:0,costUpperBoundUsd:0}
   const u=call.usage??{};stats.calls++
   stats.input+=u.inputTokens??0;stats.output+=u.outputTokens??0;stats.cacheRead+=u.cacheReadTokens??0;stats.cacheWrite+=u.cacheWriteTokens??0

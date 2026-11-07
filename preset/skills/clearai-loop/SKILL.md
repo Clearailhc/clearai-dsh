@@ -128,3 +128,7 @@ If the conclusion succeeds and the run found a method worth reusing (how to look
 ## Current graph and source corrections
 
 When a task exports a current graph, build it from the same effective-dated, versioned view as the calculation. Keep source records and historical graphs intact. Cite both the original record and the applicable correction on changed edges. Before delivery, compare corrected relationships against that view; unchanged node/edge counts and a reproducible script alone do not establish current graph correctness.
+
+## Authorized bounded simulations
+
+Run user-authorized simulated experiments within their stated budget without requesting fresh approval merely because the virtual counter decreases. That counter is not a destructive or irreversible real-world effect. Reserve Frame.irreversible for actual irreversible operations; registered matching commands still require native human approval. This does not authorize real experiments, purchases, publication or destructive actions beyond the user's scope.
