@@ -1,0 +1,582 @@
+{
+  "candidateCommit": "a0ac958b52d97f58e2c0e482b4cb3e12d6dfde07",
+  "packageDigest": "3fdf12fc80bb6c08f177fe8ab1c2b0d48a75210e8409dbb2ffc73510b0227497",
+  "regressionDataVerified": true,
+  "regressionBudget": {
+    "previousReservedUsd": 8.546874579999992,
+    "currentCostUsd": 0.6686380679999999,
+    "cumulativeReservedUsd": 9.215512647999999,
+    "historicalUnknownReservationUsd": 0.8,
+    "pending": 0,
+    "newUnknown": 0
+  },
+  "regressionRows": [
+    {
+      "id": "clearai-1",
+      "reason": "completed",
+      "taskSucceeded": true,
+      "elapsedMs": 778703,
+      "usage": {
+        "input": 114747,
+        "output": 127477,
+        "cacheRead": 3546496,
+        "cacheWrite": 0,
+        "calls": 65,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 3788720,
+        "status": "verified",
+        "processed": 3788720
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "processed": 641,
+          "output": 8,
+          "requestMs": 1760,
+          "costUsd": 8.6604e-05
+        },
+        "main": {
+          "calls": 40,
+          "processed": 2571062,
+          "output": 59847,
+          "requestMs": 359999,
+          "costUsd": 0.10053910799999997
+        },
+        "evaluator": {
+          "calls": 24,
+          "processed": 1217017,
+          "output": 67622,
+          "requestMs": 407498,
+          "costUsd": 0.10804976399999999
+        }
+      },
+      "costUsd": 0.20867547599999997,
+      "score": {
+        "entities": {
+          "expected": 234,
+          "actual": 234,
+          "correct": 234,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 508,
+          "actual": 508,
+          "correct": 508,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 18,
+          "actual": 18,
+          "correct": 18,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10
+        },
+        "decisionExact": true
+      },
+      "nativeKnowledge": {
+        "concepts": 0,
+        "entities": 0,
+        "facts": 6,
+        "ontologyProblems": []
+      },
+      "internalKnowledge": {
+        "entityTypes": {},
+        "storedFacts": 6,
+        "storedFactAssertions": 0,
+        "assertions": 0,
+        "coreEntities": {
+          "expected": 234,
+          "actual": 0,
+          "correct": 0,
+          "precision": 0,
+          "recall": 0,
+          "duplicates": 0
+        },
+        "coreRelations": {
+          "expected": 508,
+          "actual": 0,
+          "correct": 0,
+          "precision": 0,
+          "recall": 0,
+          "duplicates": 0
+        },
+        "interpretation": "Internal extras can include notices, returns, reworks and hypotheses. Core recall is coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification."
+      },
+      "evidenceReads": {
+        "main": {
+          "calls": 0,
+          "sources": 0,
+          "unchangedRanges": 0,
+          "omittedChars": 0,
+          "origins": {}
+        },
+        "evaluator": {
+          "calls": 0,
+          "sources": 0,
+          "unchangedRanges": 0,
+          "omittedChars": 0,
+          "origins": {}
+        }
+      },
+      "historyPreserved": true,
+      "reuseDeclarations": [],
+      "parentRequestsWhileWaiting": 0,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 234,
+          "locatable": 234
+        },
+        "edges": {
+          "canonicalSourceCitations": 508,
+          "locatable": 508
+        }
+      },
+      "storedFactCount": 6,
+      "storedFactAssertions": 0
+    },
+    {
+      "id": "clearai-2",
+      "reason": "token_limit",
+      "taskSucceeded": false,
+      "elapsedMs": 1765953,
+      "usage": {
+        "input": 255000,
+        "output": 246884,
+        "cacheRead": 14533632,
+        "cacheWrite": 0,
+        "calls": 171,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 15035516,
+        "status": "verified",
+        "processed": 15035516
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "processed": 721,
+          "output": 88,
+          "requestMs": 1787,
+          "costUsd": 0.000182604
+        },
+        "main": {
+          "calls": 97,
+          "processed": 11069548,
+          "output": 103380,
+          "requestMs": 717921,
+          "costUsd": 0.21612720000000005
+        },
+        "evaluator": {
+          "calls": 73,
+          "processed": 3965247,
+          "output": 143416,
+          "requestMs": 1015727,
+          "costUsd": 0.24365278799999998
+        }
+      },
+      "costUsd": 0.459962592,
+      "score": {
+        "entities": {
+          "expected": 234,
+          "actual": 234,
+          "correct": 234,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "edges": {
+          "expected": 508,
+          "actual": 508,
+          "correct": 508,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "batches": {
+          "expected": 10,
+          "actual": 10,
+          "correct": 10,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "exposures": {
+          "expected": 7,
+          "actual": 7,
+          "correct": 7,
+          "precision": 1,
+          "recall": 1,
+          "duplicates": 0
+        },
+        "customerTotals": {
+          "expected": 5,
+          "actual": 5,
+          "correct": 5
+        },
+        "decisionExact": true
+      },
+      "nativeKnowledge": {
+        "concepts": 12,
+        "entities": 30,
+        "facts": 2,
+        "ontologyProblems": []
+      },
+      "internalKnowledge": {
+        "entityTypes": {
+          "production_batch": 10,
+          "customer": 6,
+          "material_lot": 2,
+          "product": 3,
+          "report": 1,
+          "analysis_run": 1,
+          "shipment": 7
+        },
+        "storedFacts": 8,
+        "storedFactAssertions": 15,
+        "assertions": 0,
+        "coreEntities": {
+          "expected": 234,
+          "actual": 30,
+          "correct": 28,
+          "precision": 0.9333333333333333,
+          "recall": 0.11965811965811966,
+          "duplicates": 0
+        },
+        "coreRelations": {
+          "expected": 508,
+          "actual": 0,
+          "correct": 0,
+          "precision": 0,
+          "recall": 0,
+          "duplicates": 0
+        },
+        "interpretation": "Internal extras can include notices, returns, reworks and hypotheses. Core recall is coverage; all-object precision counts legitimate extra types and is not an error rate. Backreferences alone are not independent certification."
+      },
+      "evidenceReads": {
+        "main": {
+          "calls": 0,
+          "sources": 0,
+          "unchangedRanges": 0,
+          "omittedChars": 0,
+          "origins": {}
+        },
+        "evaluator": {
+          "calls": 4,
+          "sources": 10,
+          "unchangedRanges": 0,
+          "omittedChars": 0,
+          "origins": {
+            "pre-existing": 10
+          }
+        }
+      },
+      "historyPreserved": true,
+      "reuseDeclarations": [
+        {
+          "path": "analysis/trace.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/verify_independent.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/build_graph.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/make_submission.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/check_outputs.py",
+          "existedBefore": true
+        },
+        {
+          "path": "analysis/README.md",
+          "existedBefore": true
+        },
+        {
+          "path": "artifacts/graph.json",
+          "existedBefore": true
+        },
+        {
+          "path": "report/phase-1.md",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/INDEX.md",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-d71wk3.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-vhs9my.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-8xn5eq.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-wf24am.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-lg6qva.json",
+          "existedBefore": true
+        },
+        {
+          "path": "clear/knowledge/facts/f-m20p9a.json",
+          "existedBefore": true
+        }
+      ],
+      "parentRequestsWhileWaiting": 0,
+      "provenance": {
+        "entities": {
+          "canonicalSourceCitations": 234,
+          "locatable": 234
+        },
+        "edges": {
+          "canonicalSourceCitations": 508,
+          "locatable": 508
+        }
+      },
+      "storedFactCount": 8,
+      "storedFactAssertions": 15
+    },
+    {
+      "id": "clearai-3",
+      "reason": "foundation_failed",
+      "taskSucceeded": false,
+      "elapsedMs": null,
+      "usage": null,
+      "roles": null,
+      "costUsd": 0,
+      "score": null,
+      "nativeKnowledge": null,
+      "internalKnowledge": null,
+      "evidenceReads": null,
+      "historyPreserved": null,
+      "reuseDeclarations": null,
+      "parentRequestsWhileWaiting": null,
+      "provenance": null,
+      "storedFactCount": 0,
+      "storedFactAssertions": 0
+    }
+  ],
+  "freshInterruption": {
+    "recordedAt": "2026-11-07T06:25:12.012Z",
+    "reason": "environment_restart",
+    "recovered": [],
+    "unknown": [
+      {
+        "id": "24f63941-72da-46cb-a427-358b22b6a536",
+        "testId": "evidence060:fresh:native-1",
+        "reservedUsd": 0.8,
+        "reason": "Execution environment restarted; original processes no longer exist; no completed provider usage persisted."
+      },
+      {
+        "id": "20897b15-145c-47d0-a022-8c13a5e1c9f7",
+        "testId": "evidence060:fresh:clearai-1",
+        "reservedUsd": 0.8,
+        "reason": "Execution environment restarted; original processes no longer exist; no completed provider usage persisted."
+      }
+    ],
+    "rows": [
+      {
+        "id": "native-1",
+        "status": "environment_interrupted",
+        "lastObservedElapsedMs": 60770,
+        "usageStatus": "unknown",
+        "verifiedProcessedTokens": 47573,
+        "verifiedCostUsd": 0.00719016,
+        "unknownReservedUsd": 0.8,
+        "taskSucceeded": false,
+        "performanceComparisonValid": false
+      },
+      {
+        "id": "clearai-1",
+        "status": "environment_interrupted",
+        "lastObservedElapsedMs": 60111,
+        "usageStatus": "unknown",
+        "verifiedProcessedTokens": 240184,
+        "verifiedCostUsd": 0.014983127999999998,
+        "unknownReservedUsd": 0.8,
+        "taskSucceeded": false,
+        "performanceComparisonValid": false
+      }
+    ],
+    "cumulativeReservedUsd": 10.837685936000002,
+    "pending": 0,
+    "newUnknown": 2,
+    "paidTestingBlocked": true
+  },
+  "observations": {
+    "candidateCommit": "a0ac958b52d97f58e2c0e482b4cb3e12d6dfde07",
+    "status": "regression_finished_fresh_environment_interrupted",
+    "regressionPhase1": {
+      "exportedEntities": 234,
+      "exportedEdges": 508,
+      "platformEntities": 0,
+      "platformConcepts": 0,
+      "facts": 6,
+      "factAssertions": 0,
+      "reproduction": "submission and graph identical in independent copy; all four checks exit 0",
+      "semanticCaveat": "Exported supplier definition asserts legal-person status; f-lg6qva explicitly says records do not establish legal identity. Source IDs are authoritative, but legal status is not established."
+    },
+    "measurementLimits": [
+      "New 15M token / USD12 per-test limit differs from previous 10M / USD10; aggregate limit unchanged at USD60.",
+      "Same-world regression and one new random same-domain paired instance; no statistical or cross-domain claim.",
+      "ReadEvidence byte savings from deterministic fixture are not measured model token savings.",
+      "Direct reviewer write tools are disabled, but product integrity detection is not an OS filesystem sandbox.",
+      "Browser screenshots are production-bundle fixtures, not real DSH conversation screenshots."
+    ],
+    "regressionPhase2FirstAudit": {
+      "verdict": "no",
+      "numericCriteria": "pass",
+      "shortfall": "phase-1 report differs from phase-1 audit hash",
+      "actualBaseline": "stage-1 final snapshot and stage-2 current report both 87d948a37422fe435afa6e09510da57901a293d18c4e36317a366d1d1722a367",
+      "priorAuditHashPrefix": "9ade848f",
+      "observedCause": "Main edited report after stage-1 successful audit; stage-2 reviewer conflated audit-time version and stage-final version. Genuine unaudited delta requires scoped treatment, but unchanged-history criterion was compared against wrong boundary."
+    }
+  },
+  "reproductions": [
+    {
+      "row": "regression-clearai-1",
+      "copiedFrom": "/tmp/clearai060-evidence-regression/snapshots/clearai-1",
+      "results": [
+        {
+          "command": [
+            "python",
+            "analysis/verify_independent.py"
+          ],
+          "code": 0,
+          "stdout": "SQL 实现: 隔离批次 10 个, 出货行 18 行, 净件数 2069, 客户 10 家\n两套实现一致:隔离批次集合、暴露明细、客户合计完全相同。\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "python",
+            "analysis/build_graph.py",
+            "--check"
+          ],
+          "code": 0,
+          "stdout": "写入 artifacts/graph.json\n实体: supplier=6, plant=2, line=4, product=6, customer=12, material_lot=24, production_batch=60, shipment=120 (合计 234)\n边:   located_at=4, supplied_by=24, produced_on=60, produces=60, uses_lot=120, from_batch=120, delivered_to=120 (合计 508)\n结构自检通过:实体唯一、边两端类型与数据字典一致、所有证据行号有效。\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "python",
+            "analysis/make_submission.py"
+          ],
+          "code": 0,
+          "stdout": "写入 /tmp/clearai-evidence-reproduction/regression-clearai-1/submission.json\nnotice=NOTICE-1 cutoff=2026-09-10 batches=10 exposures=18 net=2069 customers=10\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "python",
+            "analysis/check_outputs.py"
+          ],
+          "code": 0,
+          "stdout": "自检通过[NOTICE-1 @ 2026-09-10]: 隔离 10 批 / 出货 18 行 / 净件数 2069 / 客户 10 家;图 234 实体 508 边;报告与提交一致。\n",
+          "stderr": ""
+        }
+      ],
+      "submissionIdentical": true,
+      "graphIdentical": true
+    },
+    {
+      "row": "regression-clearai-2",
+      "copiedFrom": "/tmp/clearai060-evidence-regression/snapshots/clearai-2",
+      "results": [
+        {
+          "command": [
+            "python",
+            "analysis/verify_independent.py",
+            "--customers",
+            "CUS001,CUS003,CUS005,CUS007,CUS009,CUS011",
+            "--products",
+            "PRD002,PRD004,PRD006"
+          ],
+          "code": 0,
+          "stdout": "SQL 实现[客户=CUS001/CUS003/CUS005/CUS007/CUS009/CUS011 产品=PRD002/PRD004/PRD006]: 隔离批次 10 个, 出货行 7 行, 净件数 899, 客户 5 家\n两套实现一致:隔离批次集合、暴露明细、客户合计完全相同。\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "python",
+            "analysis/build_graph.py",
+            "--check"
+          ],
+          "code": 0,
+          "stdout": "写入 artifacts/graph.json\n实体: supplier=6, plant=2, line=4, product=6, customer=12, material_lot=24, production_batch=60, shipment=120 (合计 234)\n边:   located_at=4, supplied_by=24, produced_on=60, produces=60, uses_lot=120, from_batch=120, delivered_to=120 (合计 508)\n结构自检通过:实体唯一、边两端类型与数据字典一致、所有证据行号有效。\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "python",
+            "analysis/make_submission.py",
+            "--query",
+            "query.json"
+          ],
+          "code": 0,
+          "stdout": "写入 /tmp/clearai-evidence-reproduction/regression-clearai-2/submission.json [筛选]\nnotice=NOTICE-1 cutoff=2026-09-10 batches=10 exposures=7 net=899 customers=5\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "python",
+            "analysis/check_outputs.py"
+          ],
+          "code": 0,
+          "stdout": "自检通过[NOTICE-1 @ 2026-09-10 · 客户×产品筛选]: 隔离 10 批 / 出货 7 行 / 净件数 899 / 客户 5 家;图 234 实体 508 边;报告与提交一致。\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "python",
+            "analysis/check_outputs.py",
+            "--scope",
+            "all",
+            "--submission",
+            "artifacts/submission-phase1.json",
+            "--report",
+            "report/phase-1.md"
+          ],
+          "code": 0,
+          "stdout": "自检通过[NOTICE-1 @ 2026-09-10 · 全量]: 隔离 10 批 / 出货 18 行 / 净件数 2069 / 客户 10 家;图 234 实体 508 边;报告与提交一致。\n",
+          "stderr": ""
+        }
+      ],
+      "businessSubmissionIdentical": true,
+      "graphIdentical": true,
+      "interpretation": "Offline reproduction does not change original token-limit task status; optional reuse metadata was not regenerated."
+    }
+  ],
+  "releaseRecommended": false
+}

@@ -256,8 +256,10 @@ A local-first ontology discovery and exploration platform delivered as a DSH plu
 
 ### Evidence access and knowledge counts
 
-The main agent can read and edit working materials through native tools. `ReadEvidence` batches bounded source reads; ordinary reads always return text. Set `ifUnchanged:true` only to check a range already read in the same session; changed bytes or new ranges return text. After compaction, read normally to restore the excerpt. A matching hash proves neither truth nor reuse applicability. Independent reviewers have their own read receipts, read-only originals, and writable isolated rerun copies; their edits never silently change the main workspace.
+The main agent can read and edit working materials through native tools. `ReadEvidence` batches bounded source reads; ordinary reads always return text. Set `ifUnchanged:true` only to check a range already read in the same session; changed bytes or new ranges return text. After compaction, read normally to restore the excerpt. A matching hash proves neither truth nor reuse applicability. Independent reviewers have their own read receipts and are instructed to treat originals as read-only, using isolated copies for writable reruns. They report findings and proposed repairs to the main agent; copy edits are not promoted into the main workspace. External file changes are not assumed to be present in the main agent’s context.
 
 The knowledge overview separates facts from this goal, loaded facts, pending review, assertions within facts, and entity-file records. Definitions and entity records are not independently certified merely because they exist. These counters do not add model calls. Reuse claims must distinguish pre-existing artifacts actually inspected from snapshots created during the current task.
 
 Read results also report `sourceOrigin`: observed before the session first used tools, created later, or unknown (including resumed sessions without a complete baseline). This is an observed file origin, not proof that its content was reused correctly.
+
+Reviewer restrictions are a tool/authority boundary, not a filesystem sandbox: direct write tools are disabled, and changed referenced materials detected during settlement prevent acceptance. OS-level read-only enforcement depends on the host sandbox. Isolated rerun edits are never copied back as main-agent repairs.
