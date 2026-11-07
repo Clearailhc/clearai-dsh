@@ -1,0 +1,185 @@
+{
+  "schema_version": "clearai.audit.v2",
+  "kind": "evidence_audit",
+  "step_id": "s4",
+  "auditor_run_id": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "verify-052055.json:4-8 为 full 原始读数（95.3428/0.08984），与 full-052055.json:4-8 的 95.2857/0.09068 构成两次 full，impurity 均 ≤0.115；verify-note.md:19-25 以 full 均值与 (0.5,0.5)=95.4464、(0.6,0.6)=95.3110 比较，差 0.1321 <1×0.18，结论明确；:11-12 写明重复性 0.0571 与余量 0.02474。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-4or8f8",
+      "verdict": "support",
+      "basis": "model-0 推荐 (0.5,0.55)/95.2665，连续驻点约 (0.524,0.550)、预测约 95.28，符合“约 (0.52,0.55)、95.3%”；full 最高竞争点 (0.5,0.5) 均值 95.4464 仅高 0.1321 <3×0.18=0.54，边界点最高 92.29，未触推翻条件。"
+    }
+  ],
+  "anomalies": [
+    {
+      "what": "复跑 lab/fit_weighted.py 得 21 条观测（quick 8），而存档 lab/model-weighted.json:3-6 记 20 条（quick 7）：lab/probe-quick-0505.json 与 lab/probe-quick.json 是同一 inode 的硬链接（sha256 2cc1b4c4…），fit_weighted.py:30 的 lab/*.json glob 把同一读数计两次；budget.json:12-14 只声明“不重复计费”，未说明拟合会重复计数。加权预测随之为 95.3015/95.2211/95.3413（存档 95.300/95.219/95.340），排序不变。",
+      "matters": "no"
+    },
+    {
+      "what": "lab/candidates.md:16 写 model-full 是“append 4 条 full 后”，而 lab/model-full.json:124 的输入含 lab/verify-052055.json；同文件 candidates.md:46 仍写“下一步…再做一次独立 full 复测”。verify 文件 mtime 13:04:12 早于 candidates.md 13:06:06，即 step-3 选择记录晚于 step-4 复测，且所用 full 拟合已含复测点（in-sample）。剔除 verify 重算 (0.52,0.55)=95.388 > (0.5,0.5)=95.349，排序不变。",
+      "matters": "no"
+    },
+    {
+      "what": "lab/verify-note.md:30 写“与所有已测可行点的最大差异 0.132”，但该数只对 full 均值成立：quick (0.6,0.6)=95.557（lab/screen-0606.json:4）比 95.3143 高 0.243，其余 8 个可行 full 点未列出。按 lab/instrument-note.md:33 的 full-only 口径结论不变。",
+      "matters": "no"
+    }
+  ],
+  "lessons": [],
+  "basis": "C1 四条子项均满足：lab/verify-052055.json 为 full 原始读数（yield 95.3428、impurity 0.08984），与 lab/full-052055.json（95.2857、0.09068）构成两次 full，impurity 均 ≤0.115；两次均值 95.3143，verify-note 与 (0.5,0.5)=95.4464、(0.6,0.6)=95.3110 比较，最高差 0.1321 < 1×noise_sd 0.18，并给出“拟合排最高、可提交”的明确结论；note 写明重复性 0.0571 与余量 0.02474。复跑 model-0/model-full/model-2 逐位一致；加权拟合因硬链接别名复跑为 21 条而非存档 20 条，预测差 ≤0.002，不影响 C1。复跑只写副本 lab/ 与 /tmp，未触碰原工作区。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "lab/verify-052055.json",
+      "line": 4,
+      "digest": "d2b779ebe18f349dc351adec66da6bf4ecf2714dd80460c95d6012255fea66d0"
+    },
+    {
+      "path": "lab/verify-052055.json",
+      "line": 5,
+      "digest": "d2b779ebe18f349dc351adec66da6bf4ecf2714dd80460c95d6012255fea66d0"
+    },
+    {
+      "path": "lab/verify-052055.json",
+      "line": 8,
+      "digest": "d2b779ebe18f349dc351adec66da6bf4ecf2714dd80460c95d6012255fea66d0"
+    },
+    {
+      "path": "lab/full-052055.json",
+      "line": 4,
+      "digest": "05a9187d71538a901565c91b5a7196801594b3a284941d6a9350b0cb2af8a78f"
+    },
+    {
+      "path": "lab/full-052055.json",
+      "line": 5,
+      "digest": "05a9187d71538a901565c91b5a7196801594b3a284941d6a9350b0cb2af8a78f"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 9,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 11,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 12,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 20,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 21,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 23,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 24,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/verify-note.md",
+      "line": 30,
+      "digest": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "lab/model-0.json",
+      "line": 54,
+      "digest": "ea400e317375d7064026961ea8714162ca49012a29cc51836713a6897736825b"
+    },
+    {
+      "path": "lab/model-0.json",
+      "line": 56,
+      "digest": "ea400e317375d7064026961ea8714162ca49012a29cc51836713a6897736825b"
+    },
+    {
+      "path": "initial.json",
+      "line": 61,
+      "digest": "1949f1472badd06ccc6bc7ee0aea2482289f96268be66ff7991cad37e9ec8c27"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "1949f1472badd06ccc6bc7ee0aea2482289f96268be66ff7991cad37e9ec8c27"
+    },
+    {
+      "path": "lab/full-0505rep.json",
+      "line": 4,
+      "digest": "8be9b9cb7076145d22e9cbc115e20e2a5e40b0a424559cdda89e082fec617531"
+    },
+    {
+      "path": "lab/full-0606.json",
+      "line": 4,
+      "digest": "dbfb339b1c7537ce59aa62f6a46ef0a59f75166c324a12eb7155c2dd4a4b4bb4"
+    },
+    {
+      "path": "lab/model-full.json",
+      "line": 10,
+      "digest": "907c4acf0b5905378ed7a982a127f0da7a708bc9b01e991dbfdb3a03e7823e4c"
+    },
+    {
+      "path": "lab/fit_weighted.py",
+      "line": 30,
+      "digest": "032c727a51993bb65d0edd2c85bea212fb3a908c173a2b829cb3f3b6e0cb7178"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 12,
+      "digest": "4d9b3e150e70cad96938a0ce1a1e30dcbce427fd15aac99c66ec00a553d96409"
+    },
+    {
+      "path": "lab/model-weighted.json",
+      "line": 3,
+      "digest": "96b9c8bb951b82a4a5f9e97e6ecc7e4cd6e531a8ea583c96ebc98c34ac793353"
+    },
+    {
+      "path": "lab/candidates.md",
+      "line": 16,
+      "digest": "abdc4e316a0ec89e470442b16c804f89551a6f3d92d0c2283d0861999f281056"
+    },
+    {
+      "path": "lab/candidates.md",
+      "line": 46,
+      "digest": "abdc4e316a0ec89e470442b16c804f89551a6f3d92d0c2283d0861999f281056"
+    },
+    {
+      "path": "lab/model-full.json",
+      "line": 124,
+      "digest": "907c4acf0b5905378ed7a982a127f0da7a708bc9b01e991dbfdb3a03e7823e4c"
+    },
+    {
+      "path": "lab/screen-0606.json",
+      "line": 4,
+      "digest": "2490f1338ee31b81d2b8b4abfbbaee57960dc40b5f6852668fc9ba1d254091e8"
+    },
+    {
+      "path": "lab/instrument-note.md",
+      "line": 33,
+      "digest": "61cc63f06e020db00f95acc56ca0a63bd3065c1df46ce16b4113fa2b42b22c29"
+    }
+  ],
+  "card": "C1 四条子项均满足：lab/verify-052055.json 为 full 原始读数（yield 95.3428、impurity 0.08984），与 lab/full-052055.json（95.2857、0.09068）构成两次 full，impurity 均 ≤0.115；两次均值 95.3143，verify-note 与 (0.5,0.5)=95.4464、(0.6,0.6)=95.3110 比较，最高差 0.1321 < 1×noise_sd 0.18，并给出“拟合排最高、可提交”的明确结论；note 写明重复性 0.0571 与余量 0.02474。复跑 model-0/model-full/model-2 逐位一致；加权拟合因硬链接别名复跑为 21 条而非存档 20 条，预测差 ≤0.002，不影响 C1。复跑只写副本 lab/ 与 /tmp，未触碰原工作区。",
+  "created_at": 1793970845048,
+  "evaluator": "independent"
+}

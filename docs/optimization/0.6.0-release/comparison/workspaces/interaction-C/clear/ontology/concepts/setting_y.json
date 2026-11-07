@@ -1,0 +1,8 @@
+{
+  "id": "setting_y",
+  "label": "配方变量 y",
+  "gloss": "另一维配方设定值，无量纲，定义域 [0,1]",
+  "kind": "measure",
+  "unit": "1",
+  "basis": "initial.json 的 bounds"
+}

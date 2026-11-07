@@ -2,8 +2,9 @@
 export function nativeAuditSchema(value) {
  if (Array.isArray(value)) return value.map(nativeAuditSchema)
  if (!value || typeof value !== 'object') return value
- const result = Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'maxLength').map(([key, child]) => [key, nativeAuditSchema(child)]))
+ const result = Object.fromEntries(Object.entries(value).filter(([key]) => !['maxLength','minItems','maxItems'].includes(key)).map(([key, child]) => [key, nativeAuditSchema(child)]))
  if (value.maxLength !== undefined) result.description = `${value.description ?? ''} (maximum ${value.maxLength} characters; excess is truncated by the consumer)`
+ if (value.minItems !== undefined || value.maxItems !== undefined) result.description = `${result.description ?? ''} (item count ${value.minItems ?? 0}–${value.maxItems ?? 'unbounded'}; exact requested claim coverage is checked at settlement)`
  return result
 }
 
@@ -22,4 +23,21 @@ export function recoveredStructuredOutput(events) {
   }
  }
  return value
+}
+
+/** Freeze protocol identities before handing the schema to the native tool. */
+export function bindAuditCriteria(schema, criteria, claims) {
+ const ids = criteria.map(row => row.id)
+ if (!ids.length || new Set(ids).size !== ids.length || ids.some(id => typeof id !== 'string' || !id.trim())) throw new Error('Registered audit criterion IDs required')
+ const bound = structuredClone(schema)
+ bound.properties.criteria.description = 'Return exactly one finding per registered criterion ID: ' + ids.join(', ') + '. Copy IDs exactly. Never append text, split, rename, or invent criterion IDs. Put subchecks in basis.'
+ bound.properties.criteria.items.properties.criterion = { type: 'string', enum: ids, description: 'Exact registered criterion ID; explanations belong in basis.' }
+ if (Array.isArray(claims) && bound.properties.results) {
+  if (new Set(claims).size !== claims.length || claims.some(id => typeof id !== 'string' || !id.trim())) throw new Error('Unique registered claim IDs required')
+  bound.properties.results.description = 'Return exactly one verdict per registered claim ID: ' + (claims.join(', ') || '(none; return [])') + '. Coverage full means the entire registered claim, effective scope and assertions are supported. Narrower evidence remains inconclusive; specify the revision in basis.'
+  bound.properties.results.minItems = claims.length
+  bound.properties.results.maxItems = claims.length
+  if (claims.length) bound.properties.results.items.properties.hypothesis = {type:'string',enum:claims}
+ }
+ return bound
 }

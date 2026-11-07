@@ -18,6 +18,9 @@ jobs:
       DSH_PROFILE: check
       CLEARAI_REQUIRE_INSTALLED_TESTS: '1'
     steps:
+      - name: Preserve full evidence paths on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0

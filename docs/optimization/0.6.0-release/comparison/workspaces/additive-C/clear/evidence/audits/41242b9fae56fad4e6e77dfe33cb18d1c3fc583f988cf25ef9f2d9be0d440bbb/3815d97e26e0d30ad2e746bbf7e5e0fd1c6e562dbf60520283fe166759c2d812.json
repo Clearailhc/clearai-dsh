@@ -1,0 +1,117 @@
+{
+  "schema_version": "clearai.audit.v2",
+  "kind": "evidence_audit",
+  "step_id": "s3",
+  "auditor_run_id": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "full-center-1.json:8 mode=full、:6 instrument=original;与 initial.json:62 同点值差 -0.0785<0.54;:5 impurity 0.0875763 vs initial.json:63 0.0874036,差 1.73e-4<0.01;calibrate-1.json:4 offset=0;budget.json:34 记该次 full spent_after=6。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-32z06e",
+      "verdict": "support",
+      "basis": "三条推翻条件均未触发:同点 full 差 0.0785<0.54(full-center-1.json:4 对 initial.json:62);instrument 仍为 original(full-center-1.json:6);calibrate offset=0(calibrate-1.json:4)。仅有一次同点重复,只能把系统偏移上界压到约 0.08,更小偏移或时间漂移未被检验,但未达 0.54 推翻线。"
+    }
+  ],
+  "anomalies": [
+    {
+      "what": "目标 g-mw4yfrsjmxa9 要求 submission.json 与 reports/final-report.md,工作区内两者均不存在(find 全工作区无 submission*、无 reports/);本步判据 C1 不含此二项,按 s3 时序应属后续步骤,故不动摇本步结论。",
+      "matters": "no"
+    }
+  ],
+  "lessons": [],
+  "basis": "C1 逐条满足:lab/full-center-1.json 记 mode=full、instrument=original、noise_sd=0.18;与 initial.json 同点 (0.5,0.5) 的 95.18383484908928 相比差 -0.0785(<0.54,约 0.44σ);impurity 0.0875763 与 initial 0.0874036 差 +0.000173(<0.01);calibrate offset=0、instrument=original;budget 台账记该次 full 花费 3、累计 6/30,与产物 cost/spent 字段一致。故 h-32z06e 三条推翻条件均未触发,判 support。复跑说明:产物自带脚本 experiment.py 会直接向共享端点 127.0.0.1:42499 发一次计费 full,且其值含随机噪声、不可能复现该条记录(只会新增消耗并污染作者预算账),故未发测量;数值以直读产物+差分计算核对。旁证:response_surface.py 的 sha256 与 model-initial.json:117 的 method_digest 一致,initial.json 的 sha256 与 model-initial.json:122 记录一致,说明 initial 未被改写、产物同源。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "lab/full-center-1.json",
+      "line": 4,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 5,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 6,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 8,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 9,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 14,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "line": 63,
+      "digest": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "lab/calibrate-1.json",
+      "line": 4,
+      "digest": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 29,
+      "digest": "900ad4739e70b3d6a44e14c38a133a953bcd52540344270d5d8920e2710a8160"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 34,
+      "digest": "900ad4739e70b3d6a44e14c38a133a953bcd52540344270d5d8920e2710a8160"
+    },
+    {
+      "path": "lab/quick-0.5-0.5.json",
+      "line": 4,
+      "digest": "fdff01b156d9b8c104578447b41dbede1ba9a6073f02bbabe8e7b5604cb51c29"
+    },
+    {
+      "path": "clear/goals/g-mw4yfrsjmxa9.md",
+      "line": 19,
+      "digest": "2d8fb822b6612149ddd211a266465e6b1227c0563115e5d7273924c117f8a411"
+    },
+    {
+      "path": "clear/goals/g-mw4yfrsjmxa9.md",
+      "line": 20,
+      "digest": "2d8fb822b6612149ddd211a266465e6b1227c0563115e5d7273924c117f8a411"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 117,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 122,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    }
+  ],
+  "card": "C1 逐条满足:lab/full-center-1.json 记 mode=full、instrument=original、noise_sd=0.18;与 initial.json 同点 (0.5,0.5) 的 95.18383484908928 相比差 -0.0785(<0.54,约 0.44σ);impurity 0.0875763 与 initial 0.0874036 差 +0.000173(<0.01);calibrate offset=0、instrument=original;budget 台账记该次 full 花费 3、累计 6/30,与产物 cost/spent 字段一致。故 h-32z06e 三条推翻条件均未触发,判 support。复跑说明:产物自带脚本 experiment.py 会直接向共享端点 127.0.0.1:42499 发一次计费 full,且其值含随机噪声、不可能复现该条记录(只会新增消耗并污染作者预算账),故未发测量;数值以直读产物+差分计算核对。旁证:response_surface.py 的 sha256 与 model-initial.json:117 的 method_digest 一致,initial.json 的 sha256 与 model-initial.json:122 记录一致,说明 initial 未被改写、产物同源。",
+  "created_at": 1793968517997,
+  "evaluator": "independent"
+}

@@ -40,7 +40,7 @@ export function apply(ctx, config = {}) {
 	const isEvaluator = (agent) => {
 		if (scoped) return true
 		const composed = agent?.ctx === undefined ? undefined : presets()?.composedPreset?.(agent.ctx)
-		return composed === PRESET_ID
+		return composed === (config.presetId ?? PRESET_ID)
 	}
 
 	try {

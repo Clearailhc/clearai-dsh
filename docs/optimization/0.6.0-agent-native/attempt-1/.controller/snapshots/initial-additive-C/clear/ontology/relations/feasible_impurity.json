@@ -1,0 +1,9 @@
+{
+  "domain": "impurity_surface",
+  "id": "feasible_impurity",
+  "kind": "defines",
+  "label": "杂质可行性",
+  "range": {
+    "form": "statement"
+  }
+}

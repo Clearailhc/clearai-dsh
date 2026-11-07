@@ -1,0 +1,11 @@
+{
+  "id": "response_form_quadratic",
+  "label": "响应用二次面描述",
+  "kind": "defines",
+  "domain": "response_surface",
+  "range": {
+    "form": "formula",
+    "unit": "%"
+  },
+  "basis": "method/response_surface.py 的模型比较（待新数据检验）"
+}

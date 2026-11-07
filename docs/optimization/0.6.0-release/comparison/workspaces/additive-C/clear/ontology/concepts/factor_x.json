@@ -1,0 +1,7 @@
+{
+  "gloss": "第一个实验因素,取值归一化到 [0,1],无量纲",
+  "id": "factor_x",
+  "kind": "measure",
+  "label": "归一化因素 x",
+  "unit": "1"
+}

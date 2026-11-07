@@ -1,0 +1,11 @@
+{
+  "basis": "lab/calibrate-1.json 与 initial.json 同点读数",
+  "check": "calibrate 记录 offset;同点重复读数",
+  "domain": "instrument",
+  "id": "has_calibration",
+  "kind": "measures",
+  "label": "校准状态为",
+  "range": {
+    "form": "statement"
+  }
+}

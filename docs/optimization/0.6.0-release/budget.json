@@ -1,0 +1,5630 @@
+{
+  "version": 3,
+  "limitUsd": 30,
+  "testLimitUsd": 5,
+  "price": {
+    "input": 0.3,
+    "cached": 0.006,
+    "output": 1.2,
+    "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "checked": "2026-11-06"
+  },
+  "requests": {
+    "history-0": {
+      "testId": "audit-wait:0:none",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.10881924000000003,
+      "sourceVersion": "0.5.8"
+    },
+    "history-1": {
+      "testId": "audit-wait:305:none",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.05163776400000001,
+      "sourceVersion": "0.5.8"
+    },
+    "history-2": {
+      "testId": "audit-wait:0:cancel-after-child-request",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.03455937600000002,
+      "sourceVersion": "0.5.8"
+    },
+    "history-3": {
+      "testId": "audit-wait:0:disconnect",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.04074189600000001,
+      "sourceVersion": "0.5.8"
+    },
+    "history-4": {
+      "testId": "audit-wait:0:crash-after-child-verdict",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.15236965200000002,
+      "sourceVersion": "0.5.8"
+    },
+    "history-5": {
+      "testId": "isolation-probe",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.8016362,
+      "sourceVersion": "0.5.8"
+    },
+    "history-6": {
+      "testId": "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.127991052,
+      "sourceVersion": "0.5.8"
+    },
+    "history-7": {
+      "testId": "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.0009985320000000001,
+      "sourceVersion": "0.5.8"
+    },
+    "history-8": {
+      "testId": "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129",
+      "status": "historical-carry-forward",
+      "reservedUsd": 0.8061377159999997,
+      "sourceVersion": "0.5.8"
+    },
+    "500ea870-8530-42ad-a341-8af4794c2a1c": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966358975,
+      "reservedUsd": 0.0035467439999999997,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 11226,
+        "outputTokens": 144,
+        "totalTokens": 12394,
+        "cacheReadTokens": 1024
+      },
+      "finishedAt": 1793966361942,
+      "costUpperBoundUsd": 0.0035467439999999997,
+      "uncachedCostUpperBoundUsd": 0.0038478
+    },
+    "5fa3becb-e25b-42f9-9bac-3c7144727ace": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966358982,
+      "reservedUsd": 0.000183336,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 226,
+        "outputTokens": 95,
+        "totalTokens": 577,
+        "cacheReadTokens": 256
+      },
+      "finishedAt": 1793966362065,
+      "costUpperBoundUsd": 0.000183336,
+      "uncachedCostUpperBoundUsd": 0.0002586
+    },
+    "99a76772-c9cd-4550-b8fe-c34091a8e6f1": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966362134,
+      "reservedUsd": 0.001558428,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2925,
+        "outputTokens": 506,
+        "totalTokens": 15719,
+        "cacheReadTokens": 12288
+      },
+      "finishedAt": 1793966365861,
+      "costUpperBoundUsd": 0.001558428,
+      "uncachedCostUpperBoundUsd": 0.0051711
+    },
+    "afb7cdd9-bd29-427b-b196-d1e7af09e48b": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966365948,
+      "reservedUsd": 0.0012543959999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 537,
+        "outputTokens": 833,
+        "totalTokens": 16986,
+        "cacheReadTokens": 15616
+      },
+      "finishedAt": 1793966371356,
+      "costUpperBoundUsd": 0.0012543959999999999,
+      "uncachedCostUpperBoundUsd": 0.0058455
+    },
+    "cd3094fc-b402-4fe1-9400-49027b8a8889": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966371408,
+      "reservedUsd": 0.000310776,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 434,
+        "outputTokens": 66,
+        "totalTokens": 17396,
+        "cacheReadTokens": 16896
+      },
+      "finishedAt": 1793966372814,
+      "costUpperBoundUsd": 0.000310776,
+      "uncachedCostUpperBoundUsd": 0.005278199999999999
+    },
+    "33eb0d88-55e6-4e86-a868-6c5a4bc39cbe": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966373080,
+      "reservedUsd": 0.00125298,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 183,
+        "outputTokens": 912,
+        "totalTokens": 18375,
+        "cacheReadTokens": 17280
+      },
+      "finishedAt": 1793966378961,
+      "costUpperBoundUsd": 0.00125298,
+      "uncachedCostUpperBoundUsd": 0.006333299999999999
+    },
+    "666cd4d7-dbad-4244-a209-b74566ae4455": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966379020,
+      "reservedUsd": 0.000812556,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 249,
+        "outputTokens": 524,
+        "totalTokens": 18949,
+        "cacheReadTokens": 18176
+      },
+      "finishedAt": 1793966382294,
+      "costUpperBoundUsd": 0.000812556,
+      "uncachedCostUpperBoundUsd": 0.0061563
+    },
+    "6c2a6dcc-ce98-4c72-9bb7-936a65b5d4fa": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966382524,
+      "reservedUsd": 0.000518664,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 246,
+        "outputTokens": 276,
+        "totalTokens": 19466,
+        "cacheReadTokens": 18944
+      },
+      "finishedAt": 1793966385495,
+      "costUpperBoundUsd": 0.000518664,
+      "uncachedCostUpperBoundUsd": 0.0060882
+    },
+    "d88444e7-a4f8-43d4-83b5-db6a7bf8115a": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966385542,
+      "reservedUsd": 0.0009691679999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 240,
+        "outputTokens": 651,
+        "totalTokens": 20219,
+        "cacheReadTokens": 19328
+      },
+      "finishedAt": 1793966390006,
+      "costUpperBoundUsd": 0.0009691679999999999,
+      "uncachedCostUpperBoundUsd": 0.0066516
+    },
+    "3092faf2-ab83-4255-8341-df87e08a5274": {
+      "testId": "audit-wait:0:none",
+      "session": "fa999048-e2e1-4002-8eb7-6c5c7175791a",
+      "model": "deepseek-flash",
+      "startedAt": 1793966390162,
+      "reservedUsd": 0.0009097559999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1729,
+        "outputTokens": 299,
+        "totalTokens": 7404,
+        "cacheReadTokens": 5376
+      },
+      "finishedAt": 1793966392060,
+      "costUpperBoundUsd": 0.0009097559999999998,
+      "uncachedCostUpperBoundUsd": 0.0024903
+    },
+    "6336301a-8507-46b5-a289-044545b15b11": {
+      "testId": "audit-wait:0:none",
+      "session": "fa999048-e2e1-4002-8eb7-6c5c7175791a",
+      "model": "deepseek-flash",
+      "startedAt": 1793966392160,
+      "reservedUsd": 0.00044667599999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 567,
+        "outputTokens": 194,
+        "totalTokens": 8057,
+        "cacheReadTokens": 7296
+      },
+      "finishedAt": 1793966393656,
+      "costUpperBoundUsd": 0.00044667599999999996,
+      "uncachedCostUpperBoundUsd": 0.0025917
+    },
+    "41f3c699-c99e-4b94-896d-2f4359324f16": {
+      "testId": "audit-wait:0:none",
+      "session": "fa999048-e2e1-4002-8eb7-6c5c7175791a",
+      "model": "deepseek-flash",
+      "startedAt": 1793966393761,
+      "reservedUsd": 0.000985416,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1650,
+        "outputTokens": 369,
+        "totalTokens": 9955,
+        "cacheReadTokens": 7936
+      },
+      "finishedAt": 1793966396551,
+      "costUpperBoundUsd": 0.000985416,
+      "uncachedCostUpperBoundUsd": 0.0033186
+    },
+    "aeef1a9f-b730-4c03-b707-f57320b149c6": {
+      "testId": "audit-wait:0:none",
+      "session": "fa999048-e2e1-4002-8eb7-6c5c7175791a",
+      "model": "deepseek-flash",
+      "startedAt": 1793966396934,
+      "reservedUsd": 0.000786636,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 769,
+        "outputTokens": 414,
+        "totalTokens": 11039,
+        "cacheReadTokens": 9856
+      },
+      "finishedAt": 1793966399349,
+      "costUpperBoundUsd": 0.000786636,
+      "uncachedCostUpperBoundUsd": 0.0036843
+    },
+    "52f4aa1b-dc9a-4e60-b652-1b360718ba2b": {
+      "testId": "audit-wait:0:none",
+      "session": "fa999048-e2e1-4002-8eb7-6c5c7175791a",
+      "model": "deepseek-flash",
+      "startedAt": 1793966399573,
+      "reservedUsd": 0.002011548,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3369,
+        "outputTokens": 779,
+        "totalTokens": 15156,
+        "cacheReadTokens": 11008
+      },
+      "finishedAt": 1793966404798,
+      "costUpperBoundUsd": 0.002011548,
+      "uncachedCostUpperBoundUsd": 0.0052479
+    },
+    "6720f63d-83bd-45f6-811c-b0b2d7c532bf": {
+      "testId": "audit-wait:0:none",
+      "session": "fa999048-e2e1-4002-8eb7-6c5c7175791a",
+      "model": "deepseek-flash",
+      "startedAt": 1793966405084,
+      "reservedUsd": 0.001838124,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 821,
+        "outputTokens": 1251,
+        "totalTokens": 17176,
+        "cacheReadTokens": 15104
+      },
+      "finishedAt": 1793966412492,
+      "costUpperBoundUsd": 0.001838124,
+      "uncachedCostUpperBoundUsd": 0.0062787
+    },
+    "afa2ac58-793f-4329-9acb-54479a61388f": {
+      "testId": "audit-wait:0:none",
+      "session": "fa999048-e2e1-4002-8eb7-6c5c7175791a",
+      "model": "deepseek-flash",
+      "startedAt": 1793966412653,
+      "reservedUsd": 0.002870712,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 978,
+        "outputTokens": 2062,
+        "totalTokens": 20192,
+        "cacheReadTokens": 17152
+      },
+      "finishedAt": 1793966422850,
+      "costUpperBoundUsd": 0.002870712,
+      "uncachedCostUpperBoundUsd": 0.0079134
+    },
+    "e5e344ec-27c5-4313-aae3-1448f9f58288": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966422969,
+      "reservedUsd": 0.001892676,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 639,
+        "outputTokens": 1317,
+        "totalTokens": 22052,
+        "cacheReadTokens": 20096
+      },
+      "finishedAt": 1793966433878,
+      "costUpperBoundUsd": 0.001892676,
+      "uncachedCostUpperBoundUsd": 0.0078008999999999995
+    },
+    "e5440476-a029-4df6-9723-83088083bd5f": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966433915,
+      "reservedUsd": 0.0005756279999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 229,
+        "outputTokens": 313,
+        "totalTokens": 22430,
+        "cacheReadTokens": 21888
+      },
+      "finishedAt": 1793966436581,
+      "costUpperBoundUsd": 0.0005756279999999999,
+      "uncachedCostUpperBoundUsd": 0.0070107
+    },
+    "d1cebd62-1f64-44a7-a722-a4c2fb33dadc": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966436672,
+      "reservedUsd": 0.000284832,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 232,
+        "outputTokens": 68,
+        "totalTokens": 22572,
+        "cacheReadTokens": 22272
+      },
+      "finishedAt": 1793966438832,
+      "costUpperBoundUsd": 0.000284832,
+      "uncachedCostUpperBoundUsd": 0.0068328
+    },
+    "9fe1f0b8-4f86-4803-9908-f9922620598d": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966439082,
+      "reservedUsd": 0.001387368,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 454,
+        "outputTokens": 930,
+        "totalTokens": 23912,
+        "cacheReadTokens": 22528
+      },
+      "finishedAt": 1793966445157,
+      "costUpperBoundUsd": 0.001387368,
+      "uncachedCostUpperBoundUsd": 0.0080106
+    },
+    "2f979fce-2fd8-4e83-b65c-de30819beba5": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966445278,
+      "reservedUsd": 0.001863048,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 174,
+        "outputTokens": 1390,
+        "totalTokens": 25372,
+        "cacheReadTokens": 23808
+      },
+      "finishedAt": 1793966454439,
+      "costUpperBoundUsd": 0.001863048,
+      "uncachedCostUpperBoundUsd": 0.008862599999999998
+    },
+    "ff49e417-fa57-41c8-9723-98779510740b": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966454540,
+      "reservedUsd": 0.00094986,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2003,
+        "outputTokens": 262,
+        "totalTokens": 8025,
+        "cacheReadTokens": 5760
+      },
+      "finishedAt": 1793966456682,
+      "costUpperBoundUsd": 0.00094986,
+      "uncachedCostUpperBoundUsd": 0.0026433000000000003
+    },
+    "e08a29ba-a9d5-440f-94f0-78e10e6eab33": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966456803,
+      "reservedUsd": 0.000629316,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1091,
+        "outputTokens": 212,
+        "totalTokens": 9239,
+        "cacheReadTokens": 7936
+      },
+      "finishedAt": 1793966458762,
+      "costUpperBoundUsd": 0.000629316,
+      "uncachedCostUpperBoundUsd": 0.0029625
+    },
+    "e4b9c376-0080-4d6e-aac3-5af1fb85b4f0": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966458861,
+      "reservedUsd": 0.0009456959999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1552,
+        "outputTokens": 354,
+        "totalTokens": 11122,
+        "cacheReadTokens": 9216
+      },
+      "finishedAt": 1793966461626,
+      "costUpperBoundUsd": 0.0009456959999999999,
+      "uncachedCostUpperBoundUsd": 0.0036552000000000004
+    },
+    "220290c2-1dbf-4113-9eae-898dc3ac7f34": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966461714,
+      "reservedUsd": 0.000779748,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 979,
+        "outputTokens": 350,
+        "totalTokens": 12337,
+        "cacheReadTokens": 11008
+      },
+      "finishedAt": 1793966464512,
+      "costUpperBoundUsd": 0.000779748,
+      "uncachedCostUpperBoundUsd": 0.0040161
+    },
+    "1a9e21fe-f1ea-44f3-9454-cf92ae871cd9": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966464625,
+      "reservedUsd": 0.002208228,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3227,
+        "outputTokens": 972,
+        "totalTokens": 16487,
+        "cacheReadTokens": 12288
+      },
+      "finishedAt": 1793966471029,
+      "costUpperBoundUsd": 0.002208228,
+      "uncachedCostUpperBoundUsd": 0.0058208999999999995
+    },
+    "6a837359-dc7a-415b-875f-e9b1019f4f2b": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966471152,
+      "reservedUsd": 0.002420004,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 447,
+        "outputTokens": 1823,
+        "totalTokens": 18654,
+        "cacheReadTokens": 16384
+      },
+      "finishedAt": 1793966483129,
+      "costUpperBoundUsd": 0.002420004,
+      "uncachedCostUpperBoundUsd": 0.007236899999999999
+    },
+    "7838b153-efc3-4e96-8d31-307186e3cfe6": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966484412,
+      "reservedUsd": 0.0012066599999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2703,
+        "outputTokens": 237,
+        "totalTokens": 21500,
+        "cacheReadTokens": 18560
+      },
+      "finishedAt": 1793966486905,
+      "costUpperBoundUsd": 0.0012066599999999998,
+      "uncachedCostUpperBoundUsd": 0.0066633
+    },
+    "b5a77f27-63fb-4cac-b53a-ed0fde3f4711": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966486947,
+      "reservedUsd": 0.0064444559999999994,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1606,
+        "outputTokens": 4862,
+        "totalTokens": 27844,
+        "cacheReadTokens": 21376
+      },
+      "finishedAt": 1793966517368,
+      "costUpperBoundUsd": 0.0064444559999999994,
+      "uncachedCostUpperBoundUsd": 0.012729
+    },
+    "c78111ba-cad9-4e79-846b-3b87abdd3b2b": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966517751,
+      "reservedUsd": 0.007957955999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 923,
+        "outputTokens": 6262,
+        "totalTokens": 34961,
+        "cacheReadTokens": 27776
+      },
+      "finishedAt": 1793966554119,
+      "costUpperBoundUsd": 0.007957955999999999,
+      "uncachedCostUpperBoundUsd": 0.0161241
+    },
+    "df7366a2-2edb-4530-a51a-64ae12d5fb4b": {
+      "testId": "audit-wait:0:none",
+      "session": "96d380e6-c8f6-4433-a366-2fbdd90860c8",
+      "model": "deepseek-flash",
+      "startedAt": 1793966554213,
+      "reservedUsd": 0.002713464,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 234,
+        "outputTokens": 2028,
+        "totalTokens": 37206,
+        "cacheReadTokens": 34944
+      },
+      "finishedAt": 1793966562535,
+      "costUpperBoundUsd": 0.002713464,
+      "uncachedCostUpperBoundUsd": 0.012987
+    },
+    "6b230505-edff-40ea-afa3-ab1fd1d256c2": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966562649,
+      "reservedUsd": 0.00099726,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1113,
+        "outputTokens": 428,
+        "totalTokens": 26501,
+        "cacheReadTokens": 24960
+      },
+      "finishedAt": 1793966566386,
+      "costUpperBoundUsd": 0.00099726,
+      "uncachedCostUpperBoundUsd": 0.0083355
+    },
+    "2785f7d9-c9ff-45f4-b278-7d95c80f8884": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966566492,
+      "reservedUsd": 0.0017252759999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 245,
+        "outputTokens": 1244,
+        "totalTokens": 27985,
+        "cacheReadTokens": 26496
+      },
+      "finishedAt": 1793966574991,
+      "costUpperBoundUsd": 0.0017252759999999998,
+      "uncachedCostUpperBoundUsd": 0.009515099999999999
+    },
+    "50ade816-0d59-4a83-8e46-10b3b0cf7f82": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966575068,
+      "reservedUsd": 0.000555024,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 684,
+        "outputTokens": 152,
+        "totalTokens": 28740,
+        "cacheReadTokens": 27904
+      },
+      "finishedAt": 1793966577236,
+      "costUpperBoundUsd": 0.000555024,
+      "uncachedCostUpperBoundUsd": 0.008758799999999999
+    },
+    "4e8a8c67-62da-4e25-ab90-1a7167d80f6e": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-ee458004-6e24-48a9-9a4d-e800259bbff1",
+      "model": "deepseek-flash",
+      "startedAt": 1793966577277,
+      "reservedUsd": 0.000784932,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 167,
+        "outputTokens": 469,
+        "totalTokens": 29308,
+        "cacheReadTokens": 28672
+      },
+      "finishedAt": 1793966580885,
+      "costUpperBoundUsd": 0.000784932,
+      "uncachedCostUpperBoundUsd": 0.009214499999999999
+    },
+    "91b3d7cc-143c-4fea-9ced-b9ec868cba88": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967093923,
+      "reservedUsd": 0.000309024,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 352,
+        "outputTokens": 110,
+        "totalTokens": 12366,
+        "cacheReadTokens": 11904
+      },
+      "finishedAt": 1793967095820,
+      "costUpperBoundUsd": 0.000309024,
+      "uncachedCostUpperBoundUsd": 0.0038087999999999998
+    },
+    "6cf9c7e1-3bc4-452d-956a-4083bfba6f2b": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967093935,
+      "reservedUsd": 0.000226536,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 226,
+        "outputTokens": 131,
+        "totalTokens": 613,
+        "cacheReadTokens": 256
+      },
+      "finishedAt": 1793967095959,
+      "costUpperBoundUsd": 0.000226536,
+      "uncachedCostUpperBoundUsd": 0.00030179999999999996
+    },
+    "e0e47bb5-8c7b-4279-8e08-8d8b7cfc282b": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967096238,
+      "reservedUsd": 0.000901128,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 530,
+        "outputTokens": 557,
+        "totalTokens": 13375,
+        "cacheReadTokens": 12288
+      },
+      "finishedAt": 1793967100015,
+      "costUpperBoundUsd": 0.000901128,
+      "uncachedCostUpperBoundUsd": 0.004513799999999999
+    },
+    "b27d2a4f-e00f-4c26-82a8-a19bcfd43cab": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967100129,
+      "reservedUsd": 0.001129272,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 426,
+        "outputTokens": 768,
+        "totalTokens": 14506,
+        "cacheReadTokens": 13312
+      },
+      "finishedAt": 1793967105051,
+      "costUpperBoundUsd": 0.001129272,
+      "uncachedCostUpperBoundUsd": 0.005043
+    },
+    "8ed2d2d0-c336-420d-891f-acc0342f0eef": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967105168,
+      "reservedUsd": 0.00031418399999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 330,
+        "outputTokens": 107,
+        "totalTokens": 14901,
+        "cacheReadTokens": 14464
+      },
+      "finishedAt": 1793967106815,
+      "costUpperBoundUsd": 0.00031418399999999996,
+      "uncachedCostUpperBoundUsd": 0.0045666
+    },
+    "0ca12835-bc83-40bc-89cc-fd4889b4fb75": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967107056,
+      "reservedUsd": 0.0012472199999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 255,
+        "outputTokens": 902,
+        "totalTokens": 15877,
+        "cacheReadTokens": 14720
+      },
+      "finishedAt": 1793967112750,
+      "costUpperBoundUsd": 0.0012472199999999998,
+      "uncachedCostUpperBoundUsd": 0.0055749
+    },
+    "9d011652-db86-44df-b793-9205900774c5": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967112852,
+      "reservedUsd": 0.000290664,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 186,
+        "outputTokens": 117,
+        "totalTokens": 16047,
+        "cacheReadTokens": 15744
+      },
+      "finishedAt": 1793967114852,
+      "costUpperBoundUsd": 0.000290664,
+      "uncachedCostUpperBoundUsd": 0.0049194
+    },
+    "574fc5a4-e609-449c-ae1e-21bc2a64ac4b": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967115069,
+      "reservedUsd": 0.0006492,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 172,
+        "outputTokens": 418,
+        "totalTokens": 16590,
+        "cacheReadTokens": 16000
+      },
+      "finishedAt": 1793967118104,
+      "costUpperBoundUsd": 0.0006492,
+      "uncachedCostUpperBoundUsd": 0.0053532
+    },
+    "1cf61960-a9d5-44b8-b0d6-bc05261cd1ad": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967118161,
+      "reservedUsd": 0.000892404,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 247,
+        "outputTokens": 600,
+        "totalTokens": 17231,
+        "cacheReadTokens": 16384
+      },
+      "finishedAt": 1793967122213,
+      "costUpperBoundUsd": 0.000892404,
+      "uncachedCostUpperBoundUsd": 0.0057093000000000005
+    },
+    "36cc9983-1d13-469e-9d32-49335b2c6564": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967122272,
+      "reservedUsd": 0.00047401199999999995,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 305,
+        "outputTokens": 233,
+        "totalTokens": 17690,
+        "cacheReadTokens": 17152
+      },
+      "finishedAt": 1793967124256,
+      "costUpperBoundUsd": 0.00047401199999999995,
+      "uncachedCostUpperBoundUsd": 0.0055167
+    },
+    "116ea858-ad09-4749-9f7a-fab4c214ab24": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967124317,
+      "reservedUsd": 0.0008330160000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 254,
+        "outputTokens": 543,
+        "totalTokens": 18333,
+        "cacheReadTokens": 17536
+      },
+      "finishedAt": 1793967127641,
+      "costUpperBoundUsd": 0.0008330160000000001,
+      "uncachedCostUpperBoundUsd": 0.0059886
+    },
+    "2a7eca23-52ea-4e3c-8839-52e57fdc610c": {
+      "testId": "audit-wait:0:none",
+      "session": "c460daf6-78ed-4f09-9e05-3337940b7150",
+      "model": "deepseek-flash",
+      "startedAt": 1793967127764,
+      "reservedUsd": 0.0016708320000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 4104,
+        "outputTokens": 351,
+        "totalTokens": 7527,
+        "cacheReadTokens": 3072
+      },
+      "finishedAt": 1793967129671,
+      "costUpperBoundUsd": 0.0016708320000000001,
+      "uncachedCostUpperBoundUsd": 0.0025739999999999995
+    },
+    "fea1f63b-4416-47e5-837e-fa7176a64ea7": {
+      "testId": "audit-wait:0:none",
+      "session": "c460daf6-78ed-4f09-9e05-3337940b7150",
+      "model": "deepseek-flash",
+      "startedAt": 1793967129786,
+      "reservedUsd": 0.000503244,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 693,
+        "outputTokens": 209,
+        "totalTokens": 8326,
+        "cacheReadTokens": 7424
+      },
+      "finishedAt": 1793967131232,
+      "costUpperBoundUsd": 0.000503244,
+      "uncachedCostUpperBoundUsd": 0.0026859
+    },
+    "27b0f3be-d500-4bc7-9d59-be367641435f": {
+      "testId": "audit-wait:0:none",
+      "session": "c460daf6-78ed-4f09-9e05-3337940b7150",
+      "model": "deepseek-flash",
+      "startedAt": 1793967131326,
+      "reservedUsd": 0.00096522,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1451,
+        "outputTokens": 400,
+        "totalTokens": 10171,
+        "cacheReadTokens": 8320
+      },
+      "finishedAt": 1793967134264,
+      "costUpperBoundUsd": 0.00096522,
+      "uncachedCostUpperBoundUsd": 0.0034113
+    },
+    "810b356e-f62f-499b-9367-349d185da7a1": {
+      "testId": "audit-wait:0:none",
+      "session": "c460daf6-78ed-4f09-9e05-3337940b7150",
+      "model": "deepseek-flash",
+      "startedAt": 1793967134418,
+      "reservedUsd": 0.0008022719999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1040,
+        "outputTokens": 358,
+        "totalTokens": 11510,
+        "cacheReadTokens": 10112
+      },
+      "finishedAt": 1793967138228,
+      "costUpperBoundUsd": 0.0008022719999999999,
+      "uncachedCostUpperBoundUsd": 0.0037752
+    },
+    "1a016a8e-854b-4709-873c-feb73ee7cec6": {
+      "testId": "audit-wait:0:none",
+      "session": "c460daf6-78ed-4f09-9e05-3337940b7150",
+      "model": "deepseek-flash",
+      "startedAt": 1793967138374,
+      "reservedUsd": 0.0025784519999999997,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1151,
+        "outputTokens": 1804,
+        "totalTokens": 14347,
+        "cacheReadTokens": 11392
+      },
+      "finishedAt": 1793967149332,
+      "costUpperBoundUsd": 0.0025784519999999997,
+      "uncachedCostUpperBoundUsd": 0.005927699999999999
+    },
+    "6874c0a5-786d-48aa-aba5-93d90b1db821": {
+      "testId": "audit-wait:0:none",
+      "session": "c460daf6-78ed-4f09-9e05-3337940b7150",
+      "model": "deepseek-flash",
+      "startedAt": 1793967149525,
+      "reservedUsd": 0.002866116,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 219,
+        "outputTokens": 2262,
+        "totalTokens": 16817,
+        "cacheReadTokens": 14336
+      },
+      "finishedAt": 1793967160512,
+      "costUpperBoundUsd": 0.002866116,
+      "uncachedCostUpperBoundUsd": 0.007080899999999999
+    },
+    "bc2b7958-4c15-4cb5-99e3-aff7016a3f23": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967160699,
+      "reservedUsd": 0.0010197239999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 445,
+        "outputTokens": 647,
+        "totalTokens": 19396,
+        "cacheReadTokens": 18304
+      },
+      "finishedAt": 1793967165888,
+      "costUpperBoundUsd": 0.0010197239999999998,
+      "uncachedCostUpperBoundUsd": 0.0064011
+    },
+    "c0129298-2995-4b22-b91f-1cdae32bf9a4": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967165939,
+      "reservedUsd": 0.000504168,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 394,
+        "outputTokens": 225,
+        "totalTokens": 19947,
+        "cacheReadTokens": 19328
+      },
+      "finishedAt": 1793967167950,
+      "costUpperBoundUsd": 0.000504168,
+      "uncachedCostUpperBoundUsd": 0.0061865999999999996
+    },
+    "d91e049b-0754-40ea-9441-5506c1c0f6e5": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967168012,
+      "reservedUsd": 0.00056124,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 146,
+        "outputTokens": 332,
+        "totalTokens": 20318,
+        "cacheReadTokens": 19840
+      },
+      "finishedAt": 1793967170707,
+      "costUpperBoundUsd": 0.00056124,
+      "uncachedCostUpperBoundUsd": 0.0063942
+    },
+    "6c6ae3c5-fd39-4d11-8cc4-13398a47463c": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967170751,
+      "reservedUsd": 0.000634344,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 166,
+        "outputTokens": 386,
+        "totalTokens": 20776,
+        "cacheReadTokens": 20224
+      },
+      "finishedAt": 1793967173090,
+      "costUpperBoundUsd": 0.000634344,
+      "uncachedCostUpperBoundUsd": 0.0065802
+    },
+    "d7b07cbf-db61-463f-8db3-2bb65c82b480": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-72bfa3c4-f2e9-45b9-8030-38e071432d48",
+      "model": "deepseek-flash",
+      "startedAt": 1793967173158,
+      "reservedUsd": 0.0007220159999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 148,
+        "outputTokens": 461,
+        "totalTokens": 21345,
+        "cacheReadTokens": 20736
+      },
+      "finishedAt": 1793967176491,
+      "costUpperBoundUsd": 0.0007220159999999999,
+      "uncachedCostUpperBoundUsd": 0.0068184
+    },
+    "ab9d092f-1f6e-4a39-84b2-902d8d568731": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793967993818,
+      "reservedUsd": 0.00031622400000000004,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 344,
+        "outputTokens": 118,
+        "totalTokens": 12366,
+        "cacheReadTokens": 11904
+      },
+      "finishedAt": 1793967995795,
+      "costUpperBoundUsd": 0.00031622400000000004,
+      "uncachedCostUpperBoundUsd": 0.003816
+    },
+    "9e13267d-20ce-403a-a07f-e7e34e1c0354": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793967993830,
+      "reservedUsd": 0.000104136,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 226,
+        "outputTokens": 29,
+        "totalTokens": 511,
+        "cacheReadTokens": 256
+      },
+      "finishedAt": 1793967995203,
+      "costUpperBoundUsd": 0.000104136,
+      "uncachedCostUpperBoundUsd": 0.00017939999999999997
+    },
+    "6a0fb43a-0c81-4804-b824-6ac71ad016a1": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793967995938,
+      "reservedUsd": 0.001167528,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 518,
+        "outputTokens": 782,
+        "totalTokens": 13588,
+        "cacheReadTokens": 12288
+      },
+      "finishedAt": 1793968000618,
+      "costUpperBoundUsd": 0.001167528,
+      "uncachedCostUpperBoundUsd": 0.0047802
+    },
+    "1b85e8ea-6811-4484-acd9-74960421fc1f": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968000753,
+      "reservedUsd": 0.000986808,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 410,
+        "outputTokens": 652,
+        "totalTokens": 14630,
+        "cacheReadTokens": 13568
+      },
+      "finishedAt": 1793968004975,
+      "costUpperBoundUsd": 0.000986808,
+      "uncachedCostUpperBoundUsd": 0.004975799999999999
+    },
+    "6d6739cb-9b3f-4eab-9365-401be3586ac6": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968005043,
+      "reservedUsd": 0.0009066839999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 213,
+        "outputTokens": 630,
+        "totalTokens": 15307,
+        "cacheReadTokens": 14464
+      },
+      "finishedAt": 1793968008541,
+      "costUpperBoundUsd": 0.0009066839999999999,
+      "uncachedCostUpperBoundUsd": 0.0051591
+    },
+    "90175205-d854-4a7f-aab4-2a27cc644fc0": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968008603,
+      "reservedUsd": 0.000355692,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 405,
+        "outputTokens": 119,
+        "totalTokens": 15756,
+        "cacheReadTokens": 15232
+      },
+      "finishedAt": 1793968010257,
+      "costUpperBoundUsd": 0.000355692,
+      "uncachedCostUpperBoundUsd": 0.0048338999999999995
+    },
+    "c4cb4101-85bf-4b7f-a399-b3065a68c8a8": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968010417,
+      "reservedUsd": 0.0010713959999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 207,
+        "outputTokens": 763,
+        "totalTokens": 16586,
+        "cacheReadTokens": 15616
+      },
+      "finishedAt": 1793968015004,
+      "costUpperBoundUsd": 0.0010713959999999999,
+      "uncachedCostUpperBoundUsd": 0.0056625
+    },
+    "9d5d0a12-98a8-4e8c-aead-524881e5d04d": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968015075,
+      "reservedUsd": 0.0007400039999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 251,
+        "outputTokens": 472,
+        "totalTokens": 17107,
+        "cacheReadTokens": 16384
+      },
+      "finishedAt": 1793968018054,
+      "costUpperBoundUsd": 0.0007400039999999999,
+      "uncachedCostUpperBoundUsd": 0.0055569
+    },
+    "96e4300e-2e44-4235-96ad-3c6d9b0a7751": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968018137,
+      "reservedUsd": 0.000454944,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 312,
+        "outputTokens": 216,
+        "totalTokens": 17552,
+        "cacheReadTokens": 17024
+      },
+      "finishedAt": 1793968020492,
+      "costUpperBoundUsd": 0.000454944,
+      "uncachedCostUpperBoundUsd": 0.00546
+    },
+    "64fb130d-23c3-49fe-bc98-08e28a3b9aed": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968020578,
+      "reservedUsd": 0.000854448,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 244,
+        "outputTokens": 564,
+        "totalTokens": 18216,
+        "cacheReadTokens": 17408
+      },
+      "finishedAt": 1793968024391,
+      "costUpperBoundUsd": 0.000854448,
+      "uncachedCostUpperBoundUsd": 0.005972399999999999
+    },
+    "03dc3e78-c871-44b7-b199-cca31aeb0ae8": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968024423,
+      "reservedUsd": 0.0010367159999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 177,
+        "outputTokens": 732,
+        "totalTokens": 18445,
+        "cacheReadTokens": 17536
+      },
+      "finishedAt": 1793968029504,
+      "costUpperBoundUsd": 0.0010367159999999998,
+      "uncachedCostUpperBoundUsd": 0.0061922999999999995
+    },
+    "082bc076-7c22-4a06-975a-d37c1b1dab54": {
+      "testId": "audit-wait:0:none",
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "model": "deepseek-flash",
+      "startedAt": 1793968029653,
+      "reservedUsd": 0.000858624,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1536,
+        "outputTokens": 304,
+        "totalTokens": 7344,
+        "cacheReadTokens": 5504
+      },
+      "finishedAt": 1793968031619,
+      "costUpperBoundUsd": 0.000858624,
+      "uncachedCostUpperBoundUsd": 0.0024768000000000004
+    },
+    "b40bf905-88c9-4e7b-959e-6d3f81cfad79": {
+      "testId": "audit-wait:0:none",
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "model": "deepseek-flash",
+      "startedAt": 1793968031728,
+      "reservedUsd": 0.00043287599999999995,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 537,
+        "outputTokens": 190,
+        "totalTokens": 8023,
+        "cacheReadTokens": 7296
+      },
+      "finishedAt": 1793968033575,
+      "costUpperBoundUsd": 0.00043287599999999995,
+      "uncachedCostUpperBoundUsd": 0.0025779
+    },
+    "3e972afd-23d4-4c46-b4bf-db204d8eb19f": {
+      "testId": "audit-wait:0:none",
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "model": "deepseek-flash",
+      "startedAt": 1793968033653,
+      "reservedUsd": 0.000907116,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1261,
+        "outputTokens": 401,
+        "totalTokens": 9598,
+        "cacheReadTokens": 7936
+      },
+      "finishedAt": 1793968036309,
+      "costUpperBoundUsd": 0.000907116,
+      "uncachedCostUpperBoundUsd": 0.0032402999999999998
+    },
+    "d04eb17b-c0e4-4b41-954e-87eaf540bbac": {
+      "testId": "audit-wait:0:none",
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "model": "deepseek-flash",
+      "startedAt": 1793968036473,
+      "reservedUsd": 0.000394032,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 468,
+        "outputTokens": 164,
+        "totalTokens": 10104,
+        "cacheReadTokens": 9472
+      },
+      "finishedAt": 1793968038070,
+      "costUpperBoundUsd": 0.000394032,
+      "uncachedCostUpperBoundUsd": 0.0031788000000000003
+    },
+    "2a31aa8f-a485-4bf8-bd05-d617e30bf373": {
+      "testId": "audit-wait:0:none",
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "model": "deepseek-flash",
+      "startedAt": 1793968038128,
+      "reservedUsd": 0.001393704,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 950,
+        "outputTokens": 874,
+        "totalTokens": 11808,
+        "cacheReadTokens": 9984
+      },
+      "finishedAt": 1793968043217,
+      "costUpperBoundUsd": 0.001393704,
+      "uncachedCostUpperBoundUsd": 0.004329
+    },
+    "e58dd9cd-955c-4f80-b41d-3edc1a44271d": {
+      "testId": "audit-wait:0:none",
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "model": "deepseek-flash",
+      "startedAt": 1793968043344,
+      "reservedUsd": 0.001051656,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 334,
+        "outputTokens": 734,
+        "totalTokens": 12844,
+        "cacheReadTokens": 11776
+      },
+      "finishedAt": 1793968048421,
+      "costUpperBoundUsd": 0.001051656,
+      "uncachedCostUpperBoundUsd": 0.0045138
+    },
+    "044871d6-d0c0-4edd-a66e-d78da38250f1": {
+      "testId": "audit-wait:0:none",
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "model": "deepseek-flash",
+      "startedAt": 1793968048522,
+      "reservedUsd": 0.0020028,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 160,
+        "outputTokens": 1565,
+        "totalTokens": 14525,
+        "cacheReadTokens": 12800
+      },
+      "finishedAt": 1793968056810,
+      "costUpperBoundUsd": 0.0020028,
+      "uncachedCostUpperBoundUsd": 0.005766
+    },
+    "e7a2fefa-30e7-41cf-8d37-65f0c7a60ae1": {
+      "testId": "audit-wait:0:none",
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "model": "deepseek-flash",
+      "startedAt": 1793968056977,
+      "reservedUsd": 0.000603192,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 286,
+        "outputTokens": 339,
+        "totalTokens": 19057,
+        "cacheReadTokens": 18432
+      },
+      "finishedAt": 1793968059654,
+      "costUpperBoundUsd": 0.000603192,
+      "uncachedCostUpperBoundUsd": 0.0060222
+    },
+    "0f7474e2-f981-460a-a6f4-abeb82ec1d0e": {
+      "testId": "polish060:direct-A",
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "model": "deepseek-flash",
+      "startedAt": 1793968185338,
+      "reservedUsd": 0.00028722000000000003,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 355,
+        "outputTokens": 125,
+        "totalTokens": 5600,
+        "cacheReadTokens": 5120
+      },
+      "finishedAt": 1793968187318,
+      "costUpperBoundUsd": 0.00028722000000000003,
+      "uncachedCostUpperBoundUsd": 0.0017925
+    },
+    "7d3d68ee-c181-40e3-a2d8-a9cc5b577e37": {
+      "testId": "polish060:direct-A",
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "model": "deepseek-flash",
+      "startedAt": 1793968185348,
+      "reservedUsd": 0.0002658,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 198,
+        "outputTokens": 172,
+        "totalTokens": 370
+      },
+      "finishedAt": 1793968187548,
+      "costUpperBoundUsd": 0.0002658,
+      "uncachedCostUpperBoundUsd": 0.0002658
+    },
+    "5841ad68-71e2-4112-a423-1c0d92bc929a": {
+      "testId": "polish060:direct-A",
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "model": "deepseek-flash",
+      "startedAt": 1793968187395,
+      "reservedUsd": 0.000205956,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 239,
+        "outputTokens": 85,
+        "totalTokens": 5700,
+        "cacheReadTokens": 5376
+      },
+      "finishedAt": 1793968189121,
+      "costUpperBoundUsd": 0.000205956,
+      "uncachedCostUpperBoundUsd": 0.0017865
+    },
+    "0e0b8352-dd4c-44d0-9cb7-4ad82cc83b53": {
+      "testId": "polish060:direct-A",
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "model": "deepseek-flash",
+      "startedAt": 1793968189181,
+      "reservedUsd": 0.00020012399999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 245,
+        "outputTokens": 78,
+        "totalTokens": 5827,
+        "cacheReadTokens": 5504
+      },
+      "finishedAt": 1793968190468,
+      "costUpperBoundUsd": 0.00020012399999999998,
+      "uncachedCostUpperBoundUsd": 0.0018183
+    },
+    "117ccea4-bf24-423d-822c-e0858fb46744": {
+      "testId": "polish060:direct-A",
+      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "model": "deepseek-flash",
+      "startedAt": 1793968190568,
+      "reservedUsd": 0.00009396,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 138,
+        "outputTokens": 15,
+        "totalTokens": 5913,
+        "cacheReadTokens": 5760
+      },
+      "finishedAt": 1793968191775,
+      "costUpperBoundUsd": 0.00009396,
+      "uncachedCostUpperBoundUsd": 0.0017874
+    },
+    "ac3d9563-7197-4059-8d86-6919a6396e89": {
+      "testId": "polish060:direct-C",
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "model": "deepseek-flash",
+      "startedAt": 1793968210669,
+      "reservedUsd": 0.00034992,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 452,
+        "outputTokens": 121,
+        "totalTokens": 12093,
+        "cacheReadTokens": 11520
+      },
+      "finishedAt": 1793968212659,
+      "costUpperBoundUsd": 0.00034992,
+      "uncachedCostUpperBoundUsd": 0.0037367999999999998
+    },
+    "85bf2af8-e178-4f6e-ae16-5c93c366db67": {
+      "testId": "polish060:direct-C",
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "model": "deepseek-flash",
+      "startedAt": 1793968210678,
+      "reservedUsd": 0.0001458,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 198,
+        "outputTokens": 72,
+        "totalTokens": 270
+      },
+      "finishedAt": 1793968212479,
+      "costUpperBoundUsd": 0.0001458,
+      "uncachedCostUpperBoundUsd": 0.0001458
+    },
+    "a80f2ff3-582e-4dc8-b11c-9b9f45fd7a82": {
+      "testId": "polish060:direct-C",
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "model": "deepseek-flash",
+      "startedAt": 1793968212761,
+      "reservedUsd": 0.00021679199999999997,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 154,
+        "outputTokens": 82,
+        "totalTokens": 12268,
+        "cacheReadTokens": 12032
+      },
+      "finishedAt": 1793968214560,
+      "costUpperBoundUsd": 0.00021679199999999997,
+      "uncachedCostUpperBoundUsd": 0.0037541999999999996
+    },
+    "e5216c2a-01cf-4fca-8fbe-f0c7fc961892": {
+      "testId": "polish060:direct-C",
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "model": "deepseek-flash",
+      "startedAt": 1793968214637,
+      "reservedUsd": 0.00023166,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 157,
+        "outputTokens": 93,
+        "totalTokens": 12410,
+        "cacheReadTokens": 12160
+      },
+      "finishedAt": 1793968216380,
+      "costUpperBoundUsd": 0.00023166,
+      "uncachedCostUpperBoundUsd": 0.0038066999999999997
+    },
+    "2d0ad377-803f-41fb-8393-6fdc9707113e": {
+      "testId": "polish060:direct-C",
+      "session": "session-native-91c58d87-5a33-4bd9-ae0e-0c8197c98c0a",
+      "model": "deepseek-flash",
+      "startedAt": 1793968216531,
+      "reservedUsd": 0.000164928,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 160,
+        "outputTokens": 36,
+        "totalTokens": 12484,
+        "cacheReadTokens": 12288
+      },
+      "finishedAt": 1793968217712,
+      "costUpperBoundUsd": 0.000164928,
+      "uncachedCostUpperBoundUsd": 0.0037775999999999994
+    },
+    "763758fc-b8d4-48e7-8202-5e3c36d3c59d": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968237039,
+      "reservedUsd": 0.00034752,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 528,
+        "outputTokens": 100,
+        "totalTokens": 12148,
+        "cacheReadTokens": 11520
+      },
+      "finishedAt": 1793968238369,
+      "costUpperBoundUsd": 0.00034752,
+      "uncachedCostUpperBoundUsd": 0.0037344
+    },
+    "78016564-fbad-408e-b839-fa9036d118e2": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968237048,
+      "reservedUsd": 0.000239268,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 147,
+        "outputTokens": 162,
+        "totalTokens": 437,
+        "cacheReadTokens": 128
+      },
+      "finishedAt": 1793968239387,
+      "costUpperBoundUsd": 0.000239268,
+      "uncachedCostUpperBoundUsd": 0.00027689999999999995
+    },
+    "7acee318-9327-4863-a413-caf34608ed14": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968238466,
+      "reservedUsd": 0.0006439919999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1322,
+        "outputTokens": 146,
+        "totalTokens": 13500,
+        "cacheReadTokens": 12032
+      },
+      "finishedAt": 1793968240357,
+      "costUpperBoundUsd": 0.0006439919999999999,
+      "uncachedCostUpperBoundUsd": 0.0041814
+    },
+    "98da5e4b-0539-4594-b50d-724834b6ef3a": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968240514,
+      "reservedUsd": 0.00217944,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3236,
+        "outputTokens": 940,
+        "totalTokens": 17616,
+        "cacheReadTokens": 13440
+      },
+      "finishedAt": 1793968246593,
+      "costUpperBoundUsd": 0.00217944,
+      "uncachedCostUpperBoundUsd": 0.0061308000000000005
+    },
+    "5c20b90e-810d-4aa7-97a8-1d8981fd9e45": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968246684,
+      "reservedUsd": 0.002717316,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3399,
+        "outputTokens": 1327,
+        "totalTokens": 22262,
+        "cacheReadTokens": 17536
+      },
+      "finishedAt": 1793968256215,
+      "costUpperBoundUsd": 0.002717316,
+      "uncachedCostUpperBoundUsd": 0.0078729
+    },
+    "089fd3b3-c6d7-4c6e-95ea-0e27f8bb2e2c": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968256471,
+      "reservedUsd": 0.000482664,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 238,
+        "outputTokens": 232,
+        "totalTokens": 22614,
+        "cacheReadTokens": 22144
+      },
+      "finishedAt": 1793968258845,
+      "costUpperBoundUsd": 0.000482664,
+      "uncachedCostUpperBoundUsd": 0.006992999999999999
+    },
+    "e9380bb7-b5b5-4f21-b657-a6644f469ed5": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968259171,
+      "reservedUsd": 0.0007855679999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 348,
+        "outputTokens": 455,
+        "totalTokens": 23331,
+        "cacheReadTokens": 22528
+      },
+      "finishedAt": 1793968263069,
+      "costUpperBoundUsd": 0.0007855679999999999,
+      "uncachedCostUpperBoundUsd": 0.0074088
+    },
+    "805b08bf-8039-4d42-816d-10b906e5bc6f": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968264047,
+      "reservedUsd": 0.008970876000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 789,
+        "outputTokens": 7162,
+        "totalTokens": 31247,
+        "cacheReadTokens": 23296
+      },
+      "finishedAt": 1793968309065,
+      "costUpperBoundUsd": 0.008970876000000001,
+      "uncachedCostUpperBoundUsd": 0.0158199
+    },
+    "9bd529db-eef1-4559-a750-025d88118bfe": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968309605,
+      "reservedUsd": 0.001227792,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 488,
+        "outputTokens": 745,
+        "totalTokens": 32465,
+        "cacheReadTokens": 31232
+      },
+      "finishedAt": 1793968314369,
+      "costUpperBoundUsd": 0.001227792,
+      "uncachedCostUpperBoundUsd": 0.01041
+    },
+    "3857e9cc-160f-4a2b-8a6f-a3ce930b3480": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968314688,
+      "reservedUsd": 0.007055603999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 319,
+        "outputTokens": 5638,
+        "totalTokens": 38341,
+        "cacheReadTokens": 32384
+      },
+      "finishedAt": 1793968344505,
+      "costUpperBoundUsd": 0.007055603999999999,
+      "uncachedCostUpperBoundUsd": 0.0165765
+    },
+    "6f661880-2525-42b5-871c-2399a1c53c7d": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968344598,
+      "reservedUsd": 0.0026183639999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 249,
+        "outputTokens": 1929,
+        "totalTokens": 40322,
+        "cacheReadTokens": 38144
+      },
+      "finishedAt": 1793968352345,
+      "costUpperBoundUsd": 0.0026183639999999998,
+      "uncachedCostUpperBoundUsd": 0.013832699999999998
+    },
+    "5d3eb3fc-e7b9-43e7-b1e9-62f266ef6bf3": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968352454,
+      "reservedUsd": 0.005864520000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 686,
+        "outputTokens": 4514,
+        "totalTokens": 45520,
+        "cacheReadTokens": 40320
+      },
+      "finishedAt": 1793968377953,
+      "costUpperBoundUsd": 0.005864520000000001,
+      "uncachedCostUpperBoundUsd": 0.017718599999999998
+    },
+    "9b65c920-d0cb-4ab1-8320-56f20f836104": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968378014,
+      "reservedUsd": 0.0024321720000000002,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 261,
+        "outputTokens": 1735,
+        "totalTokens": 47308,
+        "cacheReadTokens": 45312
+      },
+      "finishedAt": 1793968385484,
+      "costUpperBoundUsd": 0.0024321720000000002,
+      "uncachedCostUpperBoundUsd": 0.0157539
+    },
+    "68c1c511-1702-43aa-b0d6-375f385021f9": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968385533,
+      "reservedUsd": 0.004265891999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 179,
+        "outputTokens": 3274,
+        "totalTokens": 50685,
+        "cacheReadTokens": 47232
+      },
+      "finishedAt": 1793968401324,
+      "costUpperBoundUsd": 0.004265891999999999,
+      "uncachedCostUpperBoundUsd": 0.018152099999999997
+    },
+    "28ce040a-bd40-4e38-8068-04126265ce10": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968401392,
+      "reservedUsd": 0.0030567600000000004,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 210,
+        "outputTokens": 2242,
+        "totalTokens": 53012,
+        "cacheReadTokens": 50560
+      },
+      "finishedAt": 1793968411940,
+      "costUpperBoundUsd": 0.0030567600000000004,
+      "uncachedCostUpperBoundUsd": 0.0179214
+    },
+    "bd1b6927-66fb-4faa-a547-6c5233068772": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968412036,
+      "reservedUsd": 0.002463252,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 443,
+        "outputTokens": 1677,
+        "totalTokens": 55112,
+        "cacheReadTokens": 52992
+      },
+      "finishedAt": 1793968418698,
+      "costUpperBoundUsd": 0.002463252,
+      "uncachedCostUpperBoundUsd": 0.0180429
+    },
+    "e345a811-1384-4bee-89e8-097b96310520": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968419230,
+      "reservedUsd": 0.00089694,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 557,
+        "outputTokens": 333,
+        "totalTokens": 55930,
+        "cacheReadTokens": 55040
+      },
+      "finishedAt": 1793968421762,
+      "costUpperBoundUsd": 0.00089694,
+      "uncachedCostUpperBoundUsd": 0.0170787
+    },
+    "18675eb7-4393-4f97-a67d-472ee2eecf2b": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968422019,
+      "reservedUsd": 0.001015548,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 173,
+        "outputTokens": 524,
+        "totalTokens": 56505,
+        "cacheReadTokens": 55808
+      },
+      "finishedAt": 1793968426237,
+      "costUpperBoundUsd": 0.001015548,
+      "uncachedCostUpperBoundUsd": 0.017423099999999997
+    },
+    "4f22222b-7f02-47ad-a3a1-68bbd898af1b": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968426344,
+      "reservedUsd": 0.002584488,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 474,
+        "outputTokens": 1753,
+        "totalTokens": 58675,
+        "cacheReadTokens": 56448
+      },
+      "finishedAt": 1793968436233,
+      "costUpperBoundUsd": 0.002584488,
+      "uncachedCostUpperBoundUsd": 0.019180199999999998
+    },
+    "6ec9f411-cade-4b71-93b5-f91738dca1e5": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968436326,
+      "reservedUsd": 0.001586544,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 396,
+        "outputTokens": 930,
+        "totalTokens": 59950,
+        "cacheReadTokens": 58624
+      },
+      "finishedAt": 1793968442732,
+      "costUpperBoundUsd": 0.001586544,
+      "uncachedCostUpperBoundUsd": 0.018822
+    },
+    "e0a13e4d-bc66-481b-bb92-4cc564b59f6f": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968442797,
+      "reservedUsd": 0.000543756,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 217,
+        "outputTokens": 100,
+        "totalTokens": 60093,
+        "cacheReadTokens": 59776
+      },
+      "finishedAt": 1793968445175,
+      "costUpperBoundUsd": 0.000543756,
+      "uncachedCostUpperBoundUsd": 0.0181179
+    },
+    "ee1171b1-c3f9-4474-bd78-a7c56a2d6ddc": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968445447,
+      "reservedUsd": 0.0010324919999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 313,
+        "outputTokens": 482,
+        "totalTokens": 60827,
+        "cacheReadTokens": 60032
+      },
+      "finishedAt": 1793968449211,
+      "costUpperBoundUsd": 0.0010324919999999999,
+      "uncachedCostUpperBoundUsd": 0.0186819
+    },
+    "42bcd716-6daf-423e-bf1b-0019decf811a": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968449857,
+      "reservedUsd": 0.0006276000000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 304,
+        "outputTokens": 143,
+        "totalTokens": 61247,
+        "cacheReadTokens": 60800
+      },
+      "finishedAt": 1793968451863,
+      "costUpperBoundUsd": 0.0006276000000000001,
+      "uncachedCostUpperBoundUsd": 0.0185028
+    },
+    "8f8277d2-2ceb-42a9-b3f1-e85511887237": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968452082,
+      "reservedUsd": 0.0007137239999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1321,
+        "outputTokens": 237,
+        "totalTokens": 7062,
+        "cacheReadTokens": 5504
+      },
+      "finishedAt": 1793968454083,
+      "costUpperBoundUsd": 0.0007137239999999999,
+      "uncachedCostUpperBoundUsd": 0.0023319
+    },
+    "0cbde0cc-c3d8-4997-bb8b-affe94730872": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968454219,
+      "reservedUsd": 0.00063894,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1569,
+        "outputTokens": 105,
+        "totalTokens": 8714,
+        "cacheReadTokens": 7040
+      },
+      "finishedAt": 1793968455561,
+      "costUpperBoundUsd": 0.00063894,
+      "uncachedCostUpperBoundUsd": 0.0027086999999999996
+    },
+    "62de26f1-e20c-43c5-9c35-a61f0ae814b1": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968455611,
+      "reservedUsd": 0.001168524,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1593,
+        "outputTokens": 532,
+        "totalTokens": 10829,
+        "cacheReadTokens": 8704
+      },
+      "finishedAt": 1793968458409,
+      "costUpperBoundUsd": 0.001168524,
+      "uncachedCostUpperBoundUsd": 0.0037275
+    },
+    "5d3a11e0-81b4-4343-8aed-199b52fee356": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968458555,
+      "reservedUsd": 0.001037712,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1148,
+        "outputTokens": 524,
+        "totalTokens": 12424,
+        "cacheReadTokens": 10752
+      },
+      "finishedAt": 1793968462154,
+      "costUpperBoundUsd": 0.001037712,
+      "uncachedCostUpperBoundUsd": 0.0041988
+    },
+    "afd80462-ca51-4877-b4e2-1c26d1db11fb": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968462202,
+      "reservedUsd": 0.0009141959999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1159,
+        "outputTokens": 410,
+        "totalTokens": 13985,
+        "cacheReadTokens": 12416
+      },
+      "finishedAt": 1793968465205,
+      "costUpperBoundUsd": 0.0009141959999999999,
+      "uncachedCostUpperBoundUsd": 0.0045645
+    },
+    "311bbb71-d902-427f-ae4a-f22d4771c0f5": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968465314,
+      "reservedUsd": 0.001197912,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 446,
+        "outputTokens": 817,
+        "totalTokens": 15215,
+        "cacheReadTokens": 13952
+      },
+      "finishedAt": 1793968470129,
+      "costUpperBoundUsd": 0.001197912,
+      "uncachedCostUpperBoundUsd": 0.0052997999999999995
+    },
+    "7d698af7-11b8-461c-a6b6-be31e07ac972": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968470580,
+      "reservedUsd": 0.0007707240000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 475,
+        "outputTokens": 448,
+        "totalTokens": 16027,
+        "cacheReadTokens": 15104
+      },
+      "finishedAt": 1793968473769,
+      "costUpperBoundUsd": 0.0007707240000000001,
+      "uncachedCostUpperBoundUsd": 0.0052113
+    },
+    "8d9f8ca1-7063-43c1-aa95-68c20317f8c6": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968473828,
+      "reservedUsd": 0.0021513,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2315,
+        "outputTokens": 1134,
+        "totalTokens": 19449,
+        "cacheReadTokens": 16000
+      },
+      "finishedAt": 1793968481173,
+      "costUpperBoundUsd": 0.0021513,
+      "uncachedCostUpperBoundUsd": 0.0068553
+    },
+    "8682ae1c-bb72-4eaf-aee0-4d8d2c0abf64": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968481283,
+      "reservedUsd": 0.001507668,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 667,
+        "outputTokens": 993,
+        "totalTokens": 20988,
+        "cacheReadTokens": 19328
+      },
+      "finishedAt": 1793968488078,
+      "costUpperBoundUsd": 0.001507668,
+      "uncachedCostUpperBoundUsd": 0.0071901000000000005
+    },
+    "bbf5a467-ea62-45a4-b61d-2b6fdbb4814f": {
+      "testId": "polish060:additive-C",
+      "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f",
+      "model": "deepseek-flash",
+      "startedAt": 1793968488208,
+      "reservedUsd": 0.0068964840000000005,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1775,
+        "outputTokens": 5199,
+        "totalTokens": 27838,
+        "cacheReadTokens": 20864
+      },
+      "finishedAt": 1793968517956,
+      "costUpperBoundUsd": 0.0068964840000000005,
+      "uncachedCostUpperBoundUsd": 0.0130305
+    },
+    "455872a4-d6fc-46c5-b4c3-7ba0f16e6f93": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968518153,
+      "reservedUsd": 0.001472904,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1618,
+        "outputTokens": 517,
+        "totalTokens": 63319,
+        "cacheReadTokens": 61184
+      },
+      "finishedAt": 1793968522479,
+      "costUpperBoundUsd": 0.001472904,
+      "uncachedCostUpperBoundUsd": 0.019461
+    },
+    "c7813ee1-e136-4e4d-817c-319d7ea58424": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968522563,
+      "reservedUsd": 0.0006139919999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 194,
+        "outputTokens": 147,
+        "totalTokens": 63573,
+        "cacheReadTokens": 63232
+      },
+      "finishedAt": 1793968524831,
+      "costUpperBoundUsd": 0.0006139919999999999,
+      "uncachedCostUpperBoundUsd": 0.0192042
+    },
+    "a287dc0b-a35c-43ca-8bcf-8ae11a6e8cc2": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968525247,
+      "reservedUsd": 0.0009080280000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 337,
+        "outputTokens": 355,
+        "totalTokens": 64180,
+        "cacheReadTokens": 63488
+      },
+      "finishedAt": 1793968528338,
+      "costUpperBoundUsd": 0.0009080280000000001,
+      "uncachedCostUpperBoundUsd": 0.0195735
+    },
+    "9e152f8d-4f60-47be-aa30-6137b2b20cb1": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968528481,
+      "reservedUsd": 0.0006216,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 200,
+        "outputTokens": 148,
+        "totalTokens": 64348,
+        "cacheReadTokens": 64000
+      },
+      "finishedAt": 1793968530498,
+      "costUpperBoundUsd": 0.0006216,
+      "uncachedCostUpperBoundUsd": 0.0194376
+    },
+    "40a1ee2b-1d42-4480-bfe5-d94624615112": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968530638,
+      "reservedUsd": 0.000713124,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1555,
+        "outputTokens": 178,
+        "totalTokens": 7237,
+        "cacheReadTokens": 5504
+      },
+      "finishedAt": 1793968532026,
+      "costUpperBoundUsd": 0.000713124,
+      "uncachedCostUpperBoundUsd": 0.0023312999999999997
+    },
+    "d5ba3688-728d-4ab9-84e5-6aea95abf345": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968532142,
+      "reservedUsd": 0.0004510079999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 928,
+        "outputTokens": 108,
+        "totalTokens": 8204,
+        "cacheReadTokens": 7168
+      },
+      "finishedAt": 1793968533406,
+      "costUpperBoundUsd": 0.0004510079999999999,
+      "uncachedCostUpperBoundUsd": 0.0025583999999999997
+    },
+    "9d19a93a-c073-459e-9e82-8a51b199e7f0": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968533481,
+      "reservedUsd": 0.000709452,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 701,
+        "outputTokens": 375,
+        "totalTokens": 9268,
+        "cacheReadTokens": 8192
+      },
+      "finishedAt": 1793968536307,
+      "costUpperBoundUsd": 0.000709452,
+      "uncachedCostUpperBoundUsd": 0.0031179000000000003
+    },
+    "ceee20d7-add7-4ecc-8e17-958ca8079493": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968536387,
+      "reservedUsd": 0.001405896,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3174,
+        "outputTokens": 332,
+        "totalTokens": 12722,
+        "cacheReadTokens": 9216
+      },
+      "finishedAt": 1793968538700,
+      "costUpperBoundUsd": 0.001405896,
+      "uncachedCostUpperBoundUsd": 0.0041154
+    },
+    "1761b5f6-9e1c-452e-b19e-f1d9cc60341b": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968538829,
+      "reservedUsd": 0.0024721319999999997,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3247,
+        "outputTokens": 1185,
+        "totalTokens": 17104,
+        "cacheReadTokens": 12672
+      },
+      "finishedAt": 1793968545993,
+      "costUpperBoundUsd": 0.0024721319999999997,
+      "uncachedCostUpperBoundUsd": 0.0061976999999999996
+    },
+    "5a411ef9-090f-4de4-a957-7475fbe09106": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968546192,
+      "reservedUsd": 0.001005144,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1434,
+        "outputTokens": 394,
+        "totalTokens": 18852,
+        "cacheReadTokens": 17024
+      },
+      "finishedAt": 1793968548968,
+      "costUpperBoundUsd": 0.001005144,
+      "uncachedCostUpperBoundUsd": 0.006010199999999999
+    },
+    "a6bfe87c-1390-4688-9021-48665ba21556": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968549122,
+      "reservedUsd": 0.003761796,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 5879,
+        "outputTokens": 1571,
+        "totalTokens": 26266,
+        "cacheReadTokens": 18816
+      },
+      "finishedAt": 1793968558780,
+      "costUpperBoundUsd": 0.003761796,
+      "uncachedCostUpperBoundUsd": 0.0092937
+    },
+    "5bd27cee-2f09-4134-a543-f248f12694ee": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968558892,
+      "reservedUsd": 0.00114294,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1057,
+        "outputTokens": 557,
+        "totalTokens": 27854,
+        "cacheReadTokens": 26240
+      },
+      "finishedAt": 1793968562291,
+      "costUpperBoundUsd": 0.00114294,
+      "uncachedCostUpperBoundUsd": 0.0088575
+    },
+    "639b4862-87f5-4041-9629-3cdf2ef05aa9": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968562805,
+      "reservedUsd": 0.001087788,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 229,
+        "outputTokens": 711,
+        "totalTokens": 28588,
+        "cacheReadTokens": 27648
+      },
+      "finishedAt": 1793968566402,
+      "costUpperBoundUsd": 0.001087788,
+      "uncachedCostUpperBoundUsd": 0.009216300000000002
+    },
+    "0dbd2c1a-5f46-41d0-bdd5-bc204fe43e89": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968566671,
+      "reservedUsd": 0.001240164,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 287,
+        "outputTokens": 819,
+        "totalTokens": 29650,
+        "cacheReadTokens": 28544
+      },
+      "finishedAt": 1793968572598,
+      "costUpperBoundUsd": 0.001240164,
+      "uncachedCostUpperBoundUsd": 0.0096321
+    },
+    "5eb0bd93-5faa-4eed-b101-384806f3dc8a": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968572707,
+      "reservedUsd": 0.00045474,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 235,
+        "outputTokens": 173,
+        "totalTokens": 29848,
+        "cacheReadTokens": 29440
+      },
+      "finishedAt": 1793968574737,
+      "costUpperBoundUsd": 0.00045474,
+      "uncachedCostUpperBoundUsd": 0.009110100000000001
+    },
+    "3753adc5-5fff-49b2-871b-5180eb4cf865": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968574961,
+      "reservedUsd": 0.002391444,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 643,
+        "outputTokens": 1683,
+        "totalTokens": 32150,
+        "cacheReadTokens": 29824
+      },
+      "finishedAt": 1793968585335,
+      "costUpperBoundUsd": 0.002391444,
+      "uncachedCostUpperBoundUsd": 0.011159700000000002
+    },
+    "d7d65d9d-da98-4423-b28b-58af912767a7": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968585440,
+      "reservedUsd": 0.002999268,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 731,
+        "outputTokens": 2156,
+        "totalTokens": 35015,
+        "cacheReadTokens": 32128
+      },
+      "finishedAt": 1793968598938,
+      "costUpperBoundUsd": 0.002999268,
+      "uncachedCostUpperBoundUsd": 0.012444899999999998
+    },
+    "c2da97de-1c23-4e24-9039-9da1ea1113f7": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968599033,
+      "reservedUsd": 0.007232964,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1235,
+        "outputTokens": 5544,
+        "totalTokens": 41723,
+        "cacheReadTokens": 34944
+      },
+      "finishedAt": 1793968632745,
+      "costUpperBoundUsd": 0.007232964,
+      "uncachedCostUpperBoundUsd": 0.0175065
+    },
+    "c0cfa483-a7ac-4de0-978b-97419cc6e71c": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968632908,
+      "reservedUsd": 0.0021285,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3331,
+        "outputTokens": 733,
+        "totalTokens": 45664,
+        "cacheReadTokens": 41600
+      },
+      "finishedAt": 1793968638024,
+      "costUpperBoundUsd": 0.0021285,
+      "uncachedCostUpperBoundUsd": 0.014358899999999999
+    },
+    "7c3775a0-57cb-4cc2-85f7-c8944b9fc397": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968638106,
+      "reservedUsd": 0.0006436079999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 182,
+        "outputTokens": 263,
+        "totalTokens": 46013,
+        "cacheReadTokens": 45568
+      },
+      "finishedAt": 1793968640743,
+      "costUpperBoundUsd": 0.0006436079999999999,
+      "uncachedCostUpperBoundUsd": 0.0140406
+    },
+    "67578bc5-c055-4d08-9997-3821843d71e8": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968640815,
+      "reservedUsd": 0.003524712,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 650,
+        "outputTokens": 2545,
+        "totalTokens": 49147,
+        "cacheReadTokens": 45952
+      },
+      "finishedAt": 1793968655778,
+      "costUpperBoundUsd": 0.003524712,
+      "uncachedCostUpperBoundUsd": 0.017034599999999997
+    },
+    "14386709-fe3a-42a3-9ed2-4c0d15686383": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968656405,
+      "reservedUsd": 0.004297644000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 405,
+        "outputTokens": 3235,
+        "totalTokens": 52664,
+        "cacheReadTokens": 49024
+      },
+      "finishedAt": 1793968673914,
+      "costUpperBoundUsd": 0.004297644000000001,
+      "uncachedCostUpperBoundUsd": 0.018710699999999997
+    },
+    "778ce680-2dda-4f99-afcd-176331deb46a": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968674733,
+      "reservedUsd": 0.007181448,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 222,
+        "outputTokens": 5666,
+        "totalTokens": 58496,
+        "cacheReadTokens": 52608
+      },
+      "finishedAt": 1793968707377,
+      "costUpperBoundUsd": 0.007181448,
+      "uncachedCostUpperBoundUsd": 0.0226482
+    },
+    "c37b107d-0cf8-41d7-a1c8-c19f9475e103": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968707487,
+      "reservedUsd": 0.002119776,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 612,
+        "outputTokens": 1321,
+        "totalTokens": 60429,
+        "cacheReadTokens": 58496
+      },
+      "finishedAt": 1793968716278,
+      "costUpperBoundUsd": 0.002119776,
+      "uncachedCostUpperBoundUsd": 0.019317599999999997
+    },
+    "e83d679f-c427-4b57-9ff5-b8ce5467fca9": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968716497,
+      "reservedUsd": 0.011512428,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 261,
+        "outputTokens": 9227,
+        "totalTokens": 69776,
+        "cacheReadTokens": 60288
+      },
+      "finishedAt": 1793968768231,
+      "costUpperBoundUsd": 0.011512428,
+      "uncachedCostUpperBoundUsd": 0.0292371
+    },
+    "cfb9fd7c-194e-4a61-bc9d-d19838c356c6": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968768358,
+      "reservedUsd": 0.00192546,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1359,
+        "outputTokens": 916,
+        "totalTokens": 72035,
+        "cacheReadTokens": 69760
+      },
+      "finishedAt": 1793968773461,
+      "costUpperBoundUsd": 0.00192546,
+      "uncachedCostUpperBoundUsd": 0.0224349
+    },
+    "6471f53e-80d3-450a-8515-8247a1610791": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968773572,
+      "reservedUsd": 0.006681816,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 278,
+        "outputTokens": 5139,
+        "totalTokens": 77353,
+        "cacheReadTokens": 71936
+      },
+      "finishedAt": 1793968800454,
+      "costUpperBoundUsd": 0.006681816,
+      "uncachedCostUpperBoundUsd": 0.027831
+    },
+    "5e4328d2-9c1c-4b85-b8e5-3531648c2e3f": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968801015,
+      "reservedUsd": 0.013389972,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 603,
+        "outputTokens": 10621,
+        "totalTokens": 88536,
+        "cacheReadTokens": 77312
+      },
+      "finishedAt": 1793968851874,
+      "costUpperBoundUsd": 0.013389972,
+      "uncachedCostUpperBoundUsd": 0.0361197
+    },
+    "7270bf10-42e5-4856-ab66-c030c9e7b427": {
+      "testId": "polish060:additive-C",
+      "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17",
+      "model": "deepseek-flash",
+      "startedAt": 1793968852041,
+      "reservedUsd": 0.002930388,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 135,
+        "outputTokens": 1966,
+        "totalTokens": 90549,
+        "cacheReadTokens": 88448
+      },
+      "finishedAt": 1793968859040,
+      "costUpperBoundUsd": 0.002930388,
+      "uncachedCostUpperBoundUsd": 0.028934099999999997
+    },
+    "4d068b76-c6bc-4691-9c87-caa078faf052": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968859275,
+      "reservedUsd": 0.0031941359999999993,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 998,
+        "outputTokens": 2091,
+        "totalTokens": 67345,
+        "cacheReadTokens": 64256
+      },
+      "finishedAt": 1793968873497,
+      "costUpperBoundUsd": 0.0031941359999999993,
+      "uncachedCostUpperBoundUsd": 0.0220854
+    },
+    "a46bab31-8383-4177-ae58-e994ba4c74bd": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968873681,
+      "reservedUsd": 0.000709668,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 147,
+        "outputTokens": 218,
+        "totalTokens": 67693,
+        "cacheReadTokens": 67328
+      },
+      "finishedAt": 1793968876745,
+      "costUpperBoundUsd": 0.000709668,
+      "uncachedCostUpperBoundUsd": 0.020504099999999997
+    },
+    "a431cc61-c665-4d43-b01b-039ea57a8f03": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968876866,
+      "reservedUsd": 0.0006374039999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 213,
+        "outputTokens": 140,
+        "totalTokens": 67937,
+        "cacheReadTokens": 67584
+      },
+      "finishedAt": 1793968879052,
+      "costUpperBoundUsd": 0.0006374039999999999,
+      "uncachedCostUpperBoundUsd": 0.020507099999999997
+    },
+    "cdb28ea6-ff4b-40a7-98a7-3ca568a65c24": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968879703,
+      "reservedUsd": 0.00117414,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 349,
+        "outputTokens": 552,
+        "totalTokens": 68741,
+        "cacheReadTokens": 67840
+      },
+      "finishedAt": 1793968884014,
+      "costUpperBoundUsd": 0.00117414,
+      "uncachedCostUpperBoundUsd": 0.021119100000000002
+    },
+    "2e373187-0468-4144-8c4c-1bae62c700b9": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968884669,
+      "reservedUsd": 0.0032510160000000002,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 394,
+        "outputTokens": 2267,
+        "totalTokens": 71397,
+        "cacheReadTokens": 68736
+      },
+      "finishedAt": 1793968898790,
+      "costUpperBoundUsd": 0.0032510160000000002,
+      "uncachedCostUpperBoundUsd": 0.023459400000000002
+    },
+    "4e1fd6f7-7341-4ffd-bd3e-eb87e13adde2": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793968899041,
+      "reservedUsd": 0.000781308,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 249,
+        "outputTokens": 233,
+        "totalTokens": 71650,
+        "cacheReadTokens": 71168
+      },
+      "finishedAt": 1793968901308,
+      "costUpperBoundUsd": 0.000781308,
+      "uncachedCostUpperBoundUsd": 0.021704699999999997
+    },
+    "43c905fa-f6a6-4b4c-bf66-f991e1b976c8": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968901555,
+      "reservedUsd": 0.0010776240000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2206,
+        "outputTokens": 319,
+        "totalTokens": 8029,
+        "cacheReadTokens": 5504
+      },
+      "finishedAt": 1793968903889,
+      "costUpperBoundUsd": 0.0010776240000000001,
+      "uncachedCostUpperBoundUsd": 0.0026958000000000004
+    },
+    "8b7c97f5-cf20-469a-96da-c7f9d216f7c0": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968904037,
+      "reservedUsd": 0.000594816,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 912,
+        "outputTokens": 228,
+        "totalTokens": 9076,
+        "cacheReadTokens": 7936
+      },
+      "finishedAt": 1793968905624,
+      "costUpperBoundUsd": 0.000594816,
+      "uncachedCostUpperBoundUsd": 0.002928
+    },
+    "d9cf7d3f-1592-4684-9e16-52797be7d6cd": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968905860,
+      "reservedUsd": 0.00294906,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3631,
+        "outputTokens": 1505,
+        "totalTokens": 14096,
+        "cacheReadTokens": 8960
+      },
+      "finishedAt": 1793968914060,
+      "costUpperBoundUsd": 0.00294906,
+      "uncachedCostUpperBoundUsd": 0.005583299999999999
+    },
+    "9d28ea54-ec49-4654-8427-3f5c1234eca7": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968914273,
+      "reservedUsd": 0.00066228,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1014,
+        "outputTokens": 228,
+        "totalTokens": 15322,
+        "cacheReadTokens": 14080
+      },
+      "finishedAt": 1793968916023,
+      "costUpperBoundUsd": 0.00066228,
+      "uncachedCostUpperBoundUsd": 0.0048018
+    },
+    "a03bcb80-be8a-432d-a079-9a607d93db64": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968916274,
+      "reservedUsd": 0.004624392,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2794,
+        "outputTokens": 3079,
+        "totalTokens": 21105,
+        "cacheReadTokens": 15232
+      },
+      "finishedAt": 1793968933046,
+      "costUpperBoundUsd": 0.004624392,
+      "uncachedCostUpperBoundUsd": 0.0091026
+    },
+    "b1e084e4-a570-466c-a044-3bea5d780a53": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968933465,
+      "reservedUsd": 0.0052943519999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 5336,
+        "outputTokens": 2973,
+        "totalTokens": 29301,
+        "cacheReadTokens": 20992
+      },
+      "finishedAt": 1793968950825,
+      "costUpperBoundUsd": 0.0052943519999999996,
+      "uncachedCostUpperBoundUsd": 0.011466
+    },
+    "8362841e-30e3-47ca-9e1a-a7a4cbd12971": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968951080,
+      "reservedUsd": 0.006102204,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 9017,
+        "outputTokens": 2685,
+        "totalTokens": 40886,
+        "cacheReadTokens": 29184
+      },
+      "finishedAt": 1793968967313,
+      "costUpperBoundUsd": 0.006102204,
+      "uncachedCostUpperBoundUsd": 0.014682299999999999
+    },
+    "d2211595-5c7f-4603-9150-18fb6098981a": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968968696,
+      "reservedUsd": 0.006742992000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1140,
+        "outputTokens": 5130,
+        "totalTokens": 47102,
+        "cacheReadTokens": 40832
+      },
+      "finishedAt": 1793968997297,
+      "costUpperBoundUsd": 0.006742992000000001,
+      "uncachedCostUpperBoundUsd": 0.0187476
+    },
+    "7be73f26-0413-4b05-b01b-644f1dd82e9d": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793968997999,
+      "reservedUsd": 0.0058162560000000006,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 808,
+        "outputTokens": 4410,
+        "totalTokens": 52194,
+        "cacheReadTokens": 46976
+      },
+      "finishedAt": 1793969022189,
+      "costUpperBoundUsd": 0.0058162560000000006,
+      "uncachedCostUpperBoundUsd": 0.019627199999999997
+    },
+    "e59404e3-a4d2-4f9b-b9aa-f93bbc7d1753": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969022416,
+      "reservedUsd": 0.001434876,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1881,
+        "outputTokens": 465,
+        "totalTokens": 54442,
+        "cacheReadTokens": 52096
+      },
+      "finishedAt": 1793969025700,
+      "costUpperBoundUsd": 0.001434876,
+      "uncachedCostUpperBoundUsd": 0.016751099999999998
+    },
+    "3b0355ec-94c3-4a89-a9e1-a4b2d2ccb32e": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969026148,
+      "reservedUsd": 0.0012972,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 520,
+        "outputTokens": 679,
+        "totalTokens": 55599,
+        "cacheReadTokens": 54400
+      },
+      "finishedAt": 1793969030521,
+      "costUpperBoundUsd": 0.0012972,
+      "uncachedCostUpperBoundUsd": 0.0172908
+    },
+    "3e4904a8-7f1c-4416-b672-574f0adc4bf9": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969030867,
+      "reservedUsd": 0.004609944,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 202,
+        "outputTokens": 3514,
+        "totalTokens": 59140,
+        "cacheReadTokens": 55424
+      },
+      "finishedAt": 1793969052022,
+      "costUpperBoundUsd": 0.004609944,
+      "uncachedCostUpperBoundUsd": 0.0209046
+    },
+    "9daa43a0-892e-4b14-9b8e-0e4752656ea4": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969052338,
+      "reservedUsd": 0.004315416,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 378,
+        "outputTokens": 3206,
+        "totalTokens": 62720,
+        "cacheReadTokens": 59136
+      },
+      "finishedAt": 1793969070626,
+      "costUpperBoundUsd": 0.004315416,
+      "uncachedCostUpperBoundUsd": 0.021701400000000003
+    },
+    "787eb8b3-15b2-4750-bbbd-50531f369556": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969070806,
+      "reservedUsd": 0.0071698199999999995,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2601,
+        "outputTokens": 5011,
+        "totalTokens": 70332,
+        "cacheReadTokens": 62720
+      },
+      "finishedAt": 1793969097976,
+      "costUpperBoundUsd": 0.0071698199999999995,
+      "uncachedCostUpperBoundUsd": 0.0256095
+    },
+    "beeea03e-c4d7-4a5c-9a2e-98650272052b": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969098154,
+      "reservedUsd": 0.000807132,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 333,
+        "outputTokens": 238,
+        "totalTokens": 70843,
+        "cacheReadTokens": 70272
+      },
+      "finishedAt": 1793969100390,
+      "costUpperBoundUsd": 0.000807132,
+      "uncachedCostUpperBoundUsd": 0.0214671
+    },
+    "e773e3c1-d4f6-41a3-b1b0-cdc511b9c1ed": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969100605,
+      "reservedUsd": 0.013376903999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 958,
+        "outputTokens": 10554,
+        "totalTokens": 82296,
+        "cacheReadTokens": 70784
+      },
+      "finishedAt": 1793969155020,
+      "costUpperBoundUsd": 0.013376903999999998,
+      "uncachedCostUpperBoundUsd": 0.03418739999999999
+    },
+    "d63ba2e6-3f63-4f78-9363-81e9a2d55d9f": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969155155,
+      "reservedUsd": 0.001162356,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 151,
+        "outputTokens": 520,
+        "totalTokens": 82847,
+        "cacheReadTokens": 82176
+      },
+      "finishedAt": 1793969158312,
+      "costUpperBoundUsd": 0.001162356,
+      "uncachedCostUpperBoundUsd": 0.0253221
+    },
+    "178bf27f-da66-4771-a23d-ad16d2da852b": {
+      "testId": "polish060:additive-C",
+      "session": "dd506544-b751-4589-a03d-bb191a9231b9",
+      "model": "deepseek-flash",
+      "startedAt": 1793969158448,
+      "reservedUsd": 0.006237228,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 173,
+        "outputTokens": 4741,
+        "totalTokens": 87602,
+        "cacheReadTokens": 82688
+      },
+      "finishedAt": 1793969180066,
+      "costUpperBoundUsd": 0.006237228,
+      "uncachedCostUpperBoundUsd": 0.0305475
+    },
+    "b67af9cf-7df5-45fb-b937-0adba3a38824": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969180262,
+      "reservedUsd": 0.004191012,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1503,
+        "outputTokens": 2759,
+        "totalTokens": 75814,
+        "cacheReadTokens": 71552
+      },
+      "finishedAt": 1793969196616,
+      "costUpperBoundUsd": 0.004191012,
+      "uncachedCostUpperBoundUsd": 0.025227299999999998
+    },
+    "df52bbcb-d0a7-491d-ac8c-f8d92a4c7194": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969196948,
+      "reservedUsd": 0.001618656,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 396,
+        "outputTokens": 871,
+        "totalTokens": 77043,
+        "cacheReadTokens": 75776
+      },
+      "finishedAt": 1793969202890,
+      "costUpperBoundUsd": 0.001618656,
+      "uncachedCostUpperBoundUsd": 0.0238968
+    },
+    "e5d9a268-7a3d-4728-b089-f9805d288cb0": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969202984,
+      "reservedUsd": 0.002643168,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 164,
+        "outputTokens": 1777,
+        "totalTokens": 78869,
+        "cacheReadTokens": 76928
+      },
+      "finishedAt": 1793969213339,
+      "costUpperBoundUsd": 0.002643168,
+      "uncachedCostUpperBoundUsd": 0.02526
+    },
+    "82450fa0-6a25-48f8-9fe0-c39577357cd0": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969213428,
+      "reservedUsd": 0.001265376,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1224,
+        "outputTokens": 360,
+        "totalTokens": 79280,
+        "cacheReadTokens": 77696
+      },
+      "finishedAt": 1793969216494,
+      "costUpperBoundUsd": 0.001265376,
+      "uncachedCostUpperBoundUsd": 0.024108
+    },
+    "eb69cd99-d482-4dfd-b2c9-d66663f469f0": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969216618,
+      "reservedUsd": 0.0018370919999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 451,
+        "outputTokens": 1022,
+        "totalTokens": 80705,
+        "cacheReadTokens": 79232
+      },
+      "finishedAt": 1793969223564,
+      "costUpperBoundUsd": 0.0018370919999999998,
+      "uncachedCostUpperBoundUsd": 0.0251313
+    },
+    "465325aa-c17f-4389-b2c5-ed5f657e58d7": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969223659,
+      "reservedUsd": 0.00180594,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 263,
+        "outputTokens": 1036,
+        "totalTokens": 81939,
+        "cacheReadTokens": 80640
+      },
+      "finishedAt": 1793969230341,
+      "costUpperBoundUsd": 0.00180594,
+      "uncachedCostUpperBoundUsd": 0.025514099999999998
+    },
+    "7d9f0756-2147-4a43-898f-7a73a22ec7b9": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969230445,
+      "reservedUsd": 0.00209532,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 570,
+        "outputTokens": 1194,
+        "totalTokens": 83684,
+        "cacheReadTokens": 81920
+      },
+      "finishedAt": 1793969237751,
+      "costUpperBoundUsd": 0.00209532,
+      "uncachedCostUpperBoundUsd": 0.0261798
+    },
+    "38f9e75d-0c9b-48f5-ae08-ab3f8e6c6518": {
+      "testId": "polish060:additive-C",
+      "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+      "model": "deepseek-flash",
+      "startedAt": 1793969237845,
+      "reservedUsd": 0.002253204,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 199,
+        "outputTokens": 1410,
+        "totalTokens": 85193,
+        "cacheReadTokens": 83584
+      },
+      "finishedAt": 1793969249758,
+      "costUpperBoundUsd": 0.002253204,
+      "uncachedCostUpperBoundUsd": 0.026826899999999997
+    },
+    "fe63bf8e-1ee2-4864-aa46-325cdc10ae0d": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969249991,
+      "reservedUsd": 0.0013119239999999997,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3527,
+        "outputTokens": 184,
+        "totalTokens": 9215,
+        "cacheReadTokens": 5504
+      },
+      "finishedAt": 1793969251893,
+      "costUpperBoundUsd": 0.0013119239999999997,
+      "uncachedCostUpperBoundUsd": 0.0029300999999999997
+    },
+    "89f695ec-be85-4119-a3b9-78af0beb0a82": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969252034,
+      "reservedUsd": 0.0007466279999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1175,
+        "outputTokens": 283,
+        "totalTokens": 10546,
+        "cacheReadTokens": 9088
+      },
+      "finishedAt": 1793969254124,
+      "costUpperBoundUsd": 0.0007466279999999999,
+      "uncachedCostUpperBoundUsd": 0.0034185
+    },
+    "1b2bbc33-11ec-46c9-a823-839adb526f3b": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969254215,
+      "reservedUsd": 0.0018383759999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 4118,
+        "outputTokens": 450,
+        "totalTokens": 15064,
+        "cacheReadTokens": 10496
+      },
+      "finishedAt": 1793969256475,
+      "costUpperBoundUsd": 0.0018383759999999999,
+      "uncachedCostUpperBoundUsd": 0.0049242
+    },
+    "35ec4e99-41e8-46d2-94f7-573e0e14eb43": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969256711,
+      "reservedUsd": 0.002709156,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 5087,
+        "outputTokens": 911,
+        "totalTokens": 20974,
+        "cacheReadTokens": 14976
+      },
+      "finishedAt": 1793969262079,
+      "costUpperBoundUsd": 0.002709156,
+      "uncachedCostUpperBoundUsd": 0.0071121
+    },
+    "eb5929cb-47d2-4a57-a5a8-305fbea496a8": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969262183,
+      "reservedUsd": 0.001977684,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 4547,
+        "outputTokens": 407,
+        "totalTokens": 25818,
+        "cacheReadTokens": 20864
+      },
+      "finishedAt": 1793969264980,
+      "costUpperBoundUsd": 0.001977684,
+      "uncachedCostUpperBoundUsd": 0.0081117
+    },
+    "99528449-c217-4ddd-b04b-f355ef67d9ec": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969265082,
+      "reservedUsd": 0.001159368,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2222,
+        "outputTokens": 282,
+        "totalTokens": 28232,
+        "cacheReadTokens": 25728
+      },
+      "finishedAt": 1793969266999,
+      "costUpperBoundUsd": 0.001159368,
+      "uncachedCostUpperBoundUsd": 0.0087234
+    },
+    "63802fed-8c88-466d-b074-3ffc81983970": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969267118,
+      "reservedUsd": 0.0031995599999999997,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 8826,
+        "outputTokens": 319,
+        "totalTokens": 37305,
+        "cacheReadTokens": 28160
+      },
+      "finishedAt": 1793969270092,
+      "costUpperBoundUsd": 0.0031995599999999997,
+      "uncachedCostUpperBoundUsd": 0.011478599999999999
+    },
+    "e0e92e74-3b0e-412c-bc6e-c2c06f3df10d": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969270376,
+      "reservedUsd": 0.000912288,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 584,
+        "outputTokens": 428,
+        "totalTokens": 38260,
+        "cacheReadTokens": 37248
+      },
+      "finishedAt": 1793969273152,
+      "costUpperBoundUsd": 0.000912288,
+      "uncachedCostUpperBoundUsd": 0.0118632
+    },
+    "327e65f6-5309-40fa-bee2-b860159aa872": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969273730,
+      "reservedUsd": 0.0008184959999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 260,
+        "outputTokens": 427,
+        "totalTokens": 38703,
+        "cacheReadTokens": 38016
+      },
+      "finishedAt": 1793969276222,
+      "costUpperBoundUsd": 0.0008184959999999999,
+      "uncachedCostUpperBoundUsd": 0.0119952
+    },
+    "94e2bf80-b06a-4a8a-a1b3-613d1cb0c582": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969276419,
+      "reservedUsd": 0.004702368,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 208,
+        "outputTokens": 3674,
+        "totalTokens": 42410,
+        "cacheReadTokens": 38528
+      },
+      "finishedAt": 1793969295128,
+      "costUpperBoundUsd": 0.004702368,
+      "uncachedCostUpperBoundUsd": 0.016029599999999998
+    },
+    "cae3933a-2a06-4f41-b413-71aaa260404a": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969295414,
+      "reservedUsd": 0.003022608,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 448,
+        "outputTokens": 2195,
+        "totalTokens": 45011,
+        "cacheReadTokens": 42368
+      },
+      "finishedAt": 1793969308635,
+      "costUpperBoundUsd": 0.003022608,
+      "uncachedCostUpperBoundUsd": 0.0154788
+    },
+    "8e39e576-56ad-49dd-b836-b6090464d888": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969308893,
+      "reservedUsd": 0.002923068,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 7265,
+        "outputTokens": 395,
+        "totalTokens": 52588,
+        "cacheReadTokens": 44928
+      },
+      "finishedAt": 1793969311846,
+      "costUpperBoundUsd": 0.002923068,
+      "uncachedCostUpperBoundUsd": 0.0161319
+    },
+    "902d0841-5be7-438a-8108-dfb575bdd2b4": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969311970,
+      "reservedUsd": 0.00604878,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 833,
+        "outputTokens": 4570,
+        "totalTokens": 57883,
+        "cacheReadTokens": 52480
+      },
+      "finishedAt": 1793969337123,
+      "costUpperBoundUsd": 0.00604878,
+      "uncachedCostUpperBoundUsd": 0.0214779
+    },
+    "2aea4dc9-5833-4856-bfdb-459a68a8be5a": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969337396,
+      "reservedUsd": 0.002338236,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 541,
+        "outputTokens": 1524,
+        "totalTokens": 59921,
+        "cacheReadTokens": 57856
+      },
+      "finishedAt": 1793969346267,
+      "costUpperBoundUsd": 0.002338236,
+      "uncachedCostUpperBoundUsd": 0.019347899999999998
+    },
+    "0386d513-9560-4628-bde7-d7148ecc87fa": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969346361,
+      "reservedUsd": 0.022630824,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 394,
+        "outputTokens": 18461,
+        "totalTokens": 78759,
+        "cacheReadTokens": 59904
+      },
+      "finishedAt": 1793969440835,
+      "costUpperBoundUsd": 0.022630824,
+      "uncachedCostUpperBoundUsd": 0.040242599999999996
+    },
+    "5e86d17e-b224-4830-88b5-d0d81f72a9b1": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969441017,
+      "reservedUsd": 0.0012247199999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 380,
+        "outputTokens": 532,
+        "totalTokens": 79632,
+        "cacheReadTokens": 78720
+      },
+      "finishedAt": 1793969444218,
+      "costUpperBoundUsd": 0.0012247199999999999,
+      "uncachedCostUpperBoundUsd": 0.024368400000000002
+    },
+    "575428be-a99a-49f9-9734-0fb654c170b2": {
+      "testId": "polish060:additive-C",
+      "session": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+      "model": "deepseek-flash",
+      "startedAt": 1793969444311,
+      "reservedUsd": 0.018141396,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 535,
+        "outputTokens": 14586,
+        "totalTokens": 94737,
+        "cacheReadTokens": 79616
+      },
+      "finishedAt": 1793969508547,
+      "costUpperBoundUsd": 0.018141396,
+      "uncachedCostUpperBoundUsd": 0.0415485
+    },
+    "c23f502e-9298-43a8-9fb8-284da1e6d7ca": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969528624,
+      "reservedUsd": 0.000307188,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 303,
+        "outputTokens": 154,
+        "totalTokens": 5705,
+        "cacheReadTokens": 5248
+      },
+      "finishedAt": 1793969530405,
+      "costUpperBoundUsd": 0.000307188,
+      "uncachedCostUpperBoundUsd": 0.0018501
+    },
+    "e05a28f7-f985-4910-a836-405b750674bf": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969528632,
+      "reservedUsd": 0.000131268,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 147,
+        "outputTokens": 72,
+        "totalTokens": 347,
+        "cacheReadTokens": 128
+      },
+      "finishedAt": 1793969530153,
+      "costUpperBoundUsd": 0.000131268,
+      "uncachedCostUpperBoundUsd": 0.00016889999999999999
+    },
+    "d81ab4a9-954e-469f-b2a7-45e4cc0283f1": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969530556,
+      "reservedUsd": 0.0007228919999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1377,
+        "outputTokens": 230,
+        "totalTokens": 7239,
+        "cacheReadTokens": 5632
+      },
+      "finishedAt": 1793969532490,
+      "costUpperBoundUsd": 0.0007228919999999999,
+      "uncachedCostUpperBoundUsd": 0.0023786999999999997
+    },
+    "e7a3ca3e-280b-4ba1-83a1-7799cc3e1f38": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969532628,
+      "reservedUsd": 0.001909008,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3720,
+        "outputTokens": 625,
+        "totalTokens": 11513,
+        "cacheReadTokens": 7168
+      },
+      "finishedAt": 1793969536750,
+      "costUpperBoundUsd": 0.001909008,
+      "uncachedCostUpperBoundUsd": 0.0040164
+    },
+    "7c04bffc-4dcb-4c88-ae58-ace8c4750c1c": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969537092,
+      "reservedUsd": 0.000997452,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1157,
+        "outputTokens": 485,
+        "totalTokens": 13034,
+        "cacheReadTokens": 11392
+      },
+      "finishedAt": 1793969541122,
+      "costUpperBoundUsd": 0.000997452,
+      "uncachedCostUpperBoundUsd": 0.0043467
+    },
+    "8f657e64-b9f0-4cf9-aed3-e98639194566": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969541288,
+      "reservedUsd": 0.000519768,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 222,
+        "outputTokens": 313,
+        "totalTokens": 13463,
+        "cacheReadTokens": 12928
+      },
+      "finishedAt": 1793969544194,
+      "costUpperBoundUsd": 0.000519768,
+      "uncachedCostUpperBoundUsd": 0.0043206
+    },
+    "1c65eb9a-bc01-42b6-a677-41a36736029b": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969544431,
+      "reservedUsd": 0.00243804,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 550,
+        "outputTokens": 1827,
+        "totalTokens": 15817,
+        "cacheReadTokens": 13440
+      },
+      "finishedAt": 1793969556495,
+      "costUpperBoundUsd": 0.00243804,
+      "uncachedCostUpperBoundUsd": 0.0063894
+    },
+    "a63cacda-eb7a-48b9-a9a9-3116452c31d9": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969556855,
+      "reservedUsd": 0.001878564,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 583,
+        "outputTokens": 1341,
+        "totalTokens": 17668,
+        "cacheReadTokens": 15744
+      },
+      "finishedAt": 1793969564839,
+      "costUpperBoundUsd": 0.001878564,
+      "uncachedCostUpperBoundUsd": 0.006507299999999999
+    },
+    "7ecede6e-d5d3-4282-9dfc-0d5d0e065ac2": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969572356,
+      "reservedUsd": 0.001552584,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 438,
+        "outputTokens": 1096,
+        "totalTokens": 19198,
+        "cacheReadTokens": 17664
+      },
+      "finishedAt": 1793969579893,
+      "costUpperBoundUsd": 0.001552584,
+      "uncachedCostUpperBoundUsd": 0.006745799999999999
+    },
+    "6aa65c44-c977-4261-bf24-18293e49f1ce": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969580104,
+      "reservedUsd": 0.000496332,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 373,
+        "outputTokens": 225,
+        "totalTokens": 19670,
+        "cacheReadTokens": 19072
+      },
+      "finishedAt": 1793969582061,
+      "costUpperBoundUsd": 0.000496332,
+      "uncachedCostUpperBoundUsd": 0.0061035
+    },
+    "31c8a259-b3f7-41cb-bede-7aa9c476f30b": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969582370,
+      "reservedUsd": 0.0026576039999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 451,
+        "outputTokens": 2004,
+        "totalTokens": 22039,
+        "cacheReadTokens": 19584
+      },
+      "finishedAt": 1793969594565,
+      "costUpperBoundUsd": 0.0026576039999999996,
+      "uncachedCostUpperBoundUsd": 0.008415299999999999
+    },
+    "66b346c3-45d2-4dc0-bb94-e8d2c6d14e40": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969595820,
+      "reservedUsd": 0.002479296,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 236,
+        "outputTokens": 1897,
+        "totalTokens": 24149,
+        "cacheReadTokens": 22016
+      },
+      "finishedAt": 1793969608145,
+      "costUpperBoundUsd": 0.002479296,
+      "uncachedCostUpperBoundUsd": 0.008952
+    },
+    "c3485000-c730-4f8d-be83-aff9842742c4": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969608795,
+      "reservedUsd": 0.001200384,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 692,
+        "outputTokens": 707,
+        "totalTokens": 25463,
+        "cacheReadTokens": 24064
+      },
+      "finishedAt": 1793969613243,
+      "costUpperBoundUsd": 0.001200384,
+      "uncachedCostUpperBoundUsd": 0.008275199999999998
+    },
+    "5798526b-5928-489f-9db4-824d7171c04d": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969613556,
+      "reservedUsd": 0.001601364,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 447,
+        "outputTokens": 1096,
+        "totalTokens": 26887,
+        "cacheReadTokens": 25344
+      },
+      "finishedAt": 1793969620004,
+      "costUpperBoundUsd": 0.001601364,
+      "uncachedCostUpperBoundUsd": 0.0090525
+    },
+    "f69a6a68-a03d-4cc7-8b27-ad9e255d224f": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969620269,
+      "reservedUsd": 0.00165798,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 505,
+        "outputTokens": 1121,
+        "totalTokens": 28506,
+        "cacheReadTokens": 26880
+      },
+      "finishedAt": 1793969628049,
+      "costUpperBoundUsd": 0.00165798,
+      "uncachedCostUpperBoundUsd": 0.0095607
+    },
+    "997bf799-8142-48a3-bcac-0cc6756a4181": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969628212,
+      "reservedUsd": 0.001629996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 205,
+        "outputTokens": 1165,
+        "totalTokens": 29786,
+        "cacheReadTokens": 28416
+      },
+      "finishedAt": 1793969636432,
+      "costUpperBoundUsd": 0.001629996,
+      "uncachedCostUpperBoundUsd": 0.0099843
+    },
+    "29b412da-acb0-483c-a490-bb406c6d33fd": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969636804,
+      "reservedUsd": 0.001455576,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 386,
+        "outputTokens": 968,
+        "totalTokens": 31050,
+        "cacheReadTokens": 29696
+      },
+      "finishedAt": 1793969641929,
+      "costUpperBoundUsd": 0.001455576,
+      "uncachedCostUpperBoundUsd": 0.010186200000000001
+    },
+    "844f7489-f530-4736-8fa4-864009c3f920": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969642364,
+      "reservedUsd": 0.001404156,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 525,
+        "outputTokens": 884,
+        "totalTokens": 32385,
+        "cacheReadTokens": 30976
+      },
+      "finishedAt": 1793969648375,
+      "costUpperBoundUsd": 0.001404156,
+      "uncachedCostUpperBoundUsd": 0.010511099999999999
+    },
+    "e440b520-8afe-41f5-be83-7c08eb844488": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969648605,
+      "reservedUsd": 0.002674704,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 248,
+        "outputTokens": 2005,
+        "totalTokens": 34637,
+        "cacheReadTokens": 32384
+      },
+      "finishedAt": 1793969659532,
+      "costUpperBoundUsd": 0.002674704,
+      "uncachedCostUpperBoundUsd": 0.012195600000000001
+    },
+    "5a8a8dcc-0096-49f2-b457-7461b2354351": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969660369,
+      "reservedUsd": 0.00196626,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 483,
+        "outputTokens": 1345,
+        "totalTokens": 36388,
+        "cacheReadTokens": 34560
+      },
+      "finishedAt": 1793969668680,
+      "costUpperBoundUsd": 0.00196626,
+      "uncachedCostUpperBoundUsd": 0.0121269
+    },
+    "0a585daf-5b33-4bd4-942f-bd60eecfc698": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969670668,
+      "reservedUsd": 0.001701612,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 353,
+        "outputTokens": 1148,
+        "totalTokens": 37853,
+        "cacheReadTokens": 36352
+      },
+      "finishedAt": 1793969678421,
+      "costUpperBoundUsd": 0.001701612,
+      "uncachedCostUpperBoundUsd": 0.0123891
+    },
+    "9958a48d-3cc1-474c-8f1e-c92c05190e85": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969678655,
+      "reservedUsd": 0.0014328600000000002,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 237,
+        "outputTokens": 946,
+        "totalTokens": 38943,
+        "cacheReadTokens": 37760
+      },
+      "finishedAt": 1793969684074,
+      "costUpperBoundUsd": 0.0014328600000000002,
+      "uncachedCostUpperBoundUsd": 0.012534300000000002
+    },
+    "327f88ee-e696-4ab4-9354-09e23ca8708f": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969684346,
+      "reservedUsd": 0.0018903719999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 175,
+        "outputTokens": 1337,
+        "totalTokens": 40424,
+        "cacheReadTokens": 38912
+      },
+      "finishedAt": 1793969692822,
+      "costUpperBoundUsd": 0.0018903719999999998,
+      "uncachedCostUpperBoundUsd": 0.0133305
+    },
+    "7ad3b294-c762-4a92-8c62-0c7f358ab2a3": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969692967,
+      "reservedUsd": 0.0045232200000000005,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1631,
+        "outputTokens": 3160,
+        "totalTokens": 45111,
+        "cacheReadTokens": 40320
+      },
+      "finishedAt": 1793969709987,
+      "costUpperBoundUsd": 0.0045232200000000005,
+      "uncachedCostUpperBoundUsd": 0.0163773
+    },
+    "8b2951d6-2992-4ea1-844b-0286c888b191": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969710051,
+      "reservedUsd": 0.003510768,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 232,
+        "outputTokens": 2643,
+        "totalTokens": 47803,
+        "cacheReadTokens": 44928
+      },
+      "finishedAt": 1793969721586,
+      "costUpperBoundUsd": 0.003510768,
+      "uncachedCostUpperBoundUsd": 0.016719599999999998
+    },
+    "82cd05af-025e-4a65-80a2-b8bc9df75137": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969721867,
+      "reservedUsd": 0.000991896,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 246,
+        "outputTokens": 527,
+        "totalTokens": 48389,
+        "cacheReadTokens": 47616
+      },
+      "finishedAt": 1793969724693,
+      "costUpperBoundUsd": 0.000991896,
+      "uncachedCostUpperBoundUsd": 0.014991
+    },
+    "ba02a5cd-7d7d-40bb-bbc6-b401f8db2f4e": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969724764,
+      "reservedUsd": 0.001037736,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 182,
+        "outputTokens": 578,
+        "totalTokens": 49016,
+        "cacheReadTokens": 48256
+      },
+      "finishedAt": 1793969728770,
+      "costUpperBoundUsd": 0.001037736,
+      "uncachedCostUpperBoundUsd": 0.015225
+    },
+    "e02afe66-7425-4daf-97bc-e1782e6ee876": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969728969,
+      "reservedUsd": 0.001848576,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1768,
+        "outputTokens": 854,
+        "totalTokens": 51518,
+        "cacheReadTokens": 48896
+      },
+      "finishedAt": 1793969734584,
+      "costUpperBoundUsd": 0.001848576,
+      "uncachedCostUpperBoundUsd": 0.016224
+    },
+    "e6f56f94-a67a-4984-831a-e2ce4cfd3b9d": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969734938,
+      "reservedUsd": 0.0008772359999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 223,
+        "outputTokens": 418,
+        "totalTokens": 52097,
+        "cacheReadTokens": 51456
+      },
+      "finishedAt": 1793969738123,
+      "costUpperBoundUsd": 0.0008772359999999999,
+      "uncachedCostUpperBoundUsd": 0.0160053
+    },
+    "f60187cc-eb43-409f-9332-bd2e4b047d30": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969738187,
+      "reservedUsd": 0.000750576,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 268,
+        "outputTokens": 298,
+        "totalTokens": 52662,
+        "cacheReadTokens": 52096
+      },
+      "finishedAt": 1793969740924,
+      "costUpperBoundUsd": 0.000750576,
+      "uncachedCostUpperBoundUsd": 0.0160668
+    },
+    "e4e73c69-2642-4feb-b265-bc77d64cb766": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969740971,
+      "reservedUsd": 0.00058998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 217,
+        "outputTokens": 175,
+        "totalTokens": 52872,
+        "cacheReadTokens": 52480
+      },
+      "finishedAt": 1793969742645,
+      "costUpperBoundUsd": 0.00058998,
+      "uncachedCostUpperBoundUsd": 0.016019099999999998
+    },
+    "0ee02441-2e0e-4886-b566-be2b903ba2ee": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969742688,
+      "reservedUsd": 0.0007121159999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 171,
+        "outputTokens": 287,
+        "totalTokens": 53194,
+        "cacheReadTokens": 52736
+      },
+      "finishedAt": 1793969745219,
+      "costUpperBoundUsd": 0.0007121159999999999,
+      "uncachedCostUpperBoundUsd": 0.0162165
+    },
+    "82088812-de5c-404a-8b1b-7cbfadd3d839": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969745351,
+      "reservedUsd": 0.00141672,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 144,
+        "outputTokens": 879,
+        "totalTokens": 54143,
+        "cacheReadTokens": 53120
+      },
+      "finishedAt": 1793969750644,
+      "costUpperBoundUsd": 0.00141672,
+      "uncachedCostUpperBoundUsd": 0.017034
+    },
+    "f18ccffb-3652-402e-91b7-88f7614d287b": {
+      "testId": "polish060:additive-A",
+      "session": "session-native-64d781fc-d7e9-4b10-a2f9-c093be6d8b12",
+      "model": "deepseek-flash",
+      "startedAt": 1793969750771,
+      "reservedUsd": 0.0014574960000000002,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 282,
+        "outputTokens": 874,
+        "totalTokens": 55172,
+        "cacheReadTokens": 54016
+      },
+      "finishedAt": 1793969756286,
+      "costUpperBoundUsd": 0.0014574960000000002,
+      "uncachedCostUpperBoundUsd": 0.0173382
+    },
+    "ce701c94-d11f-4c5d-a14e-94f06764cd5a": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969775386,
+      "reservedUsd": 0.000257988,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 303,
+        "outputTokens": 113,
+        "totalTokens": 5664,
+        "cacheReadTokens": 5248
+      },
+      "finishedAt": 1793969777057,
+      "costUpperBoundUsd": 0.000257988,
+      "uncachedCostUpperBoundUsd": 0.0018008999999999998
+    },
+    "af311546-39df-4a54-956d-938b24e9949d": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969775393,
+      "reservedUsd": 0.00023086799999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 147,
+        "outputTokens": 155,
+        "totalTokens": 430,
+        "cacheReadTokens": 128
+      },
+      "finishedAt": 1793969777303,
+      "costUpperBoundUsd": 0.00023086799999999999,
+      "uncachedCostUpperBoundUsd": 0.0002685
+    },
+    "d8fdb59d-efd2-40f8-9607-e1691553d86f": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969777169,
+      "reservedUsd": 0.0007291919999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1582,
+        "outputTokens": 184,
+        "totalTokens": 7398,
+        "cacheReadTokens": 5632
+      },
+      "finishedAt": 1793969779055,
+      "costUpperBoundUsd": 0.0007291919999999999,
+      "uncachedCostUpperBoundUsd": 0.002385
+    },
+    "8f161841-364a-46cb-afb4-51267f559e7a": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969779221,
+      "reservedUsd": 0.0016904759999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3753,
+        "outputTokens": 434,
+        "totalTokens": 11483,
+        "cacheReadTokens": 7296
+      },
+      "finishedAt": 1793969782929,
+      "costUpperBoundUsd": 0.0016904759999999998,
+      "uncachedCostUpperBoundUsd": 0.0038355
+    },
+    "f365e27a-fb38-4bac-b2ef-f9646703111d": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969783530,
+      "reservedUsd": 0.001780752,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1652,
+        "outputTokens": 1014,
+        "totalTokens": 14058,
+        "cacheReadTokens": 11392
+      },
+      "finishedAt": 1793969790680,
+      "costUpperBoundUsd": 0.001780752,
+      "uncachedCostUpperBoundUsd": 0.00513
+    },
+    "e549a8d5-bbfb-4699-8a06-f4f77761fb44": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969790863,
+      "reservedUsd": 0.000585312,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 364,
+        "outputTokens": 327,
+        "totalTokens": 14643,
+        "cacheReadTokens": 13952
+      },
+      "finishedAt": 1793969793909,
+      "costUpperBoundUsd": 0.000585312,
+      "uncachedCostUpperBoundUsd": 0.0046872
+    },
+    "a8c9a884-af3e-42ac-8679-8a8ce8a796c6": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969794222,
+      "reservedUsd": 0.0018176520000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 167,
+        "outputTokens": 1400,
+        "totalTokens": 16159,
+        "cacheReadTokens": 14592
+      },
+      "finishedAt": 1793969803230,
+      "costUpperBoundUsd": 0.0018176520000000001,
+      "uncachedCostUpperBoundUsd": 0.0061077
+    },
+    "d68dc5ec-338a-437c-a6c4-4ca0534efc6a": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969803586,
+      "reservedUsd": 0.0029536679999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 447,
+        "outputTokens": 2269,
+        "totalTokens": 18844,
+        "cacheReadTokens": 16128
+      },
+      "finishedAt": 1793969818993,
+      "costUpperBoundUsd": 0.0029536679999999996,
+      "uncachedCostUpperBoundUsd": 0.0076952999999999995
+    },
+    "31b50f33-c76c-4995-8a39-ccc257381913": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969819374,
+      "reservedUsd": 0.001739196,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 249,
+        "outputTokens": 1293,
+        "totalTokens": 20358,
+        "cacheReadTokens": 18816
+      },
+      "finishedAt": 1793969828354,
+      "costUpperBoundUsd": 0.001739196,
+      "uncachedCostUpperBoundUsd": 0.0072711
+    },
+    "f70ef2c6-22b6-4432-a8f0-0c9e0bf7abc0": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969829481,
+      "reservedUsd": 0.0008229120000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1072,
+        "outputTokens": 316,
+        "totalTokens": 21740,
+        "cacheReadTokens": 20352
+      },
+      "finishedAt": 1793969831676,
+      "costUpperBoundUsd": 0.0008229120000000001,
+      "uncachedCostUpperBoundUsd": 0.0068064
+    },
+    "cebb721a-a760-4ca8-b621-a64a39921fcf": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969831973,
+      "reservedUsd": 0.001093992,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 874,
+        "outputTokens": 585,
+        "totalTokens": 23091,
+        "cacheReadTokens": 21632
+      },
+      "finishedAt": 1793969835474,
+      "costUpperBoundUsd": 0.001093992,
+      "uncachedCostUpperBoundUsd": 0.0074538
+    },
+    "1846070a-3e2e-4351-90fb-e73834262ace": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969835657,
+      "reservedUsd": 0.00193194,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 403,
+        "outputTokens": 1394,
+        "totalTokens": 24837,
+        "cacheReadTokens": 23040
+      },
+      "finishedAt": 1793969844285,
+      "costUpperBoundUsd": 0.00193194,
+      "uncachedCostUpperBoundUsd": 0.008705699999999999
+    },
+    "1cc392a5-26ee-4f50-92b9-fcc49d9e554f": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969878091,
+      "reservedUsd": 0.0007015919999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 166,
+        "outputTokens": 419,
+        "totalTokens": 25417,
+        "cacheReadTokens": 24832
+      },
+      "finishedAt": 1793969882049,
+      "costUpperBoundUsd": 0.0007015919999999999,
+      "uncachedCostUpperBoundUsd": 0.0080022
+    },
+    "4201fb3b-53b5-4df3-a55b-6362282382c6": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969882311,
+      "reservedUsd": 0.0011204639999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 320,
+        "outputTokens": 727,
+        "totalTokens": 26391,
+        "cacheReadTokens": 25344
+      },
+      "finishedAt": 1793969885814,
+      "costUpperBoundUsd": 0.0011204639999999998,
+      "uncachedCostUpperBoundUsd": 0.0085716
+    },
+    "08518213-c3de-47e2-b632-a9328eef45cc": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969886361,
+      "reservedUsd": 0.0021961079999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 721,
+        "outputTokens": 1518,
+        "totalTokens": 28607,
+        "cacheReadTokens": 26368
+      },
+      "finishedAt": 1793969894850,
+      "costUpperBoundUsd": 0.0021961079999999996,
+      "uncachedCostUpperBoundUsd": 0.009948299999999998
+    },
+    "8a539a79-a6f8-446a-a297-b909552dd363": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969895068,
+      "reservedUsd": 0.000900864,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 312,
+        "outputTokens": 530,
+        "totalTokens": 29386,
+        "cacheReadTokens": 28544
+      },
+      "finishedAt": 1793969899446,
+      "costUpperBoundUsd": 0.000900864,
+      "uncachedCostUpperBoundUsd": 0.009292799999999999
+    },
+    "20903a0f-d34d-4f36-b1d4-3681604d600f": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969899636,
+      "reservedUsd": 0.0015255720000000002,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 319,
+        "outputTokens": 1045,
+        "totalTokens": 30676,
+        "cacheReadTokens": 29312
+      },
+      "finishedAt": 1793969904644,
+      "costUpperBoundUsd": 0.0015255720000000002,
+      "uncachedCostUpperBoundUsd": 0.0101433
+    },
+    "e1702315-1758-4028-bb2e-4aed7f5b5036": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969916585,
+      "reservedUsd": 0.001990752,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1536,
+        "outputTokens": 1122,
+        "totalTokens": 33250,
+        "cacheReadTokens": 30592
+      },
+      "finishedAt": 1793969923801,
+      "costUpperBoundUsd": 0.001990752,
+      "uncachedCostUpperBoundUsd": 0.0109848
+    },
+    "3e61c69c-c9c6-4741-a85a-9a0c3152d3b9": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969923963,
+      "reservedUsd": 0.003015312,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1088,
+        "outputTokens": 2075,
+        "totalTokens": 36315,
+        "cacheReadTokens": 33152
+      },
+      "finishedAt": 1793969936060,
+      "costUpperBoundUsd": 0.003015312,
+      "uncachedCostUpperBoundUsd": 0.012762
+    },
+    "64be06e1-8bb5-485e-a72f-470d658372dd": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969938238,
+      "reservedUsd": 0.002791044,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 195,
+        "outputTokens": 2096,
+        "totalTokens": 38515,
+        "cacheReadTokens": 36224
+      },
+      "finishedAt": 1793969949117,
+      "costUpperBoundUsd": 0.002791044,
+      "uncachedCostUpperBoundUsd": 0.013440899999999999
+    },
+    "764b9cd3-aa1e-4abe-b791-fa28605f6712": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969949279,
+      "reservedUsd": 0.0013749,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 355,
+        "outputTokens": 865,
+        "totalTokens": 39620,
+        "cacheReadTokens": 38400
+      },
+      "finishedAt": 1793969955148,
+      "costUpperBoundUsd": 0.0013749,
+      "uncachedCostUpperBoundUsd": 0.0126645
+    },
+    "25d89760-5eb9-4d4b-b914-44f4822c82ec": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969955255,
+      "reservedUsd": 0.001355412,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 163,
+        "outputTokens": 891,
+        "totalTokens": 40606,
+        "cacheReadTokens": 39552
+      },
+      "finishedAt": 1793969960760,
+      "costUpperBoundUsd": 0.001355412,
+      "uncachedCostUpperBoundUsd": 0.0129837
+    },
+    "768fff9d-2ed8-42f8-87ab-cda8bae1c8cb": {
+      "testId": "polish060:interaction-A",
+      "session": "session-native-0cb61d1c-e685-46e5-bba4-e35211fedac6",
+      "model": "deepseek-flash",
+      "startedAt": 1793969960816,
+      "reservedUsd": 0.0015389879999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 193,
+        "outputTokens": 1032,
+        "totalTokens": 41673,
+        "cacheReadTokens": 40448
+      },
+      "finishedAt": 1793969966753,
+      "costUpperBoundUsd": 0.0015389879999999998,
+      "uncachedCostUpperBoundUsd": 0.013430699999999999
+    },
+    "ef0161e0-a27c-4cb0-b3bd-96d49c06ece3": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793969986042,
+      "reservedUsd": 0.000304656,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 272,
+        "outputTokens": 127,
+        "totalTokens": 12175,
+        "cacheReadTokens": 11776
+      },
+      "finishedAt": 1793969988098,
+      "costUpperBoundUsd": 0.000304656,
+      "uncachedCostUpperBoundUsd": 0.0037668000000000003
+    },
+    "b8cb298e-1dda-45b2-bce5-2387d1bf04e2": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793969986059,
+      "reservedUsd": 0.000209268,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 147,
+        "outputTokens": 137,
+        "totalTokens": 412,
+        "cacheReadTokens": 128
+      },
+      "finishedAt": 1793969987746,
+      "costUpperBoundUsd": 0.000209268,
+      "uncachedCostUpperBoundUsd": 0.0002469
+    },
+    "720eda96-e51b-4ae2-961e-b5cdbef4e16f": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793969988261,
+      "reservedUsd": 0.00080226,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1631,
+        "outputTokens": 200,
+        "totalTokens": 13991,
+        "cacheReadTokens": 12160
+      },
+      "finishedAt": 1793969989998,
+      "costUpperBoundUsd": 0.00080226,
+      "uncachedCostUpperBoundUsd": 0.0043773
+    },
+    "acf2d931-3fb6-40c1-8e36-94a1c58cfb4f": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793969990124,
+      "reservedUsd": 0.001800012,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3741,
+        "outputTokens": 495,
+        "totalTokens": 18188,
+        "cacheReadTokens": 13952
+      },
+      "finishedAt": 1793969993655,
+      "costUpperBoundUsd": 0.001800012,
+      "uncachedCostUpperBoundUsd": 0.0059019
+    },
+    "b3fa03a0-238d-4db9-ab82-9f6958521780": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793969993808,
+      "reservedUsd": 0.001454256,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3872,
+        "outputTokens": 153,
+        "totalTokens": 22201,
+        "cacheReadTokens": 18176
+      },
+      "finishedAt": 1793969995947,
+      "costUpperBoundUsd": 0.001454256,
+      "uncachedCostUpperBoundUsd": 0.006798
+    },
+    "03faf4f3-f4ee-48fb-95a5-2091d702525e": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793969996228,
+      "reservedUsd": 0.002754864,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 588,
+        "outputTokens": 2038,
+        "totalTokens": 24770,
+        "cacheReadTokens": 22144
+      },
+      "finishedAt": 1793970010373,
+      "costUpperBoundUsd": 0.002754864,
+      "uncachedCostUpperBoundUsd": 0.0092652
+    },
+    "fef02e6c-f20a-4e21-a6b0-3d7f1af50774": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970010719,
+      "reservedUsd": 0.004711824,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1088,
+        "outputTokens": 3531,
+        "totalTokens": 29323,
+        "cacheReadTokens": 24704
+      },
+      "finishedAt": 1793970031705,
+      "costUpperBoundUsd": 0.004711824,
+      "uncachedCostUpperBoundUsd": 0.011974799999999999
+    },
+    "43786002-d63c-420d-8e85-5be67f6dfe31": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970031815,
+      "reservedUsd": 0.002059872,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1012,
+        "outputTokens": 1317,
+        "totalTokens": 31641,
+        "cacheReadTokens": 29312
+      },
+      "finishedAt": 1793970039660,
+      "costUpperBoundUsd": 0.002059872,
+      "uncachedCostUpperBoundUsd": 0.010677599999999999
+    },
+    "97d7f328-d38b-4b6f-b540-ce9cb6af0484": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970040279,
+      "reservedUsd": 0.007386995999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 563,
+        "outputTokens": 5857,
+        "totalTokens": 38036,
+        "cacheReadTokens": 31616
+      },
+      "finishedAt": 1793970073614,
+      "costUpperBoundUsd": 0.007386995999999999,
+      "uncachedCostUpperBoundUsd": 0.0166821
+    },
+    "026300d3-e09e-4296-9462-7eefc7541b83": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970073773,
+      "reservedUsd": 0.005671979999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1669,
+        "outputTokens": 4127,
+        "totalTokens": 42276,
+        "cacheReadTokens": 36480
+      },
+      "finishedAt": 1793970092541,
+      "costUpperBoundUsd": 0.005671979999999999,
+      "uncachedCostUpperBoundUsd": 0.016397099999999998
+    },
+    "fe390b94-df30-4399-8af2-435ec5df5b27": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970092629,
+      "reservedUsd": 0.00387984,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 144,
+        "outputTokens": 2986,
+        "totalTokens": 45370,
+        "cacheReadTokens": 42240
+      },
+      "finishedAt": 1793970108899,
+      "costUpperBoundUsd": 0.00387984,
+      "uncachedCostUpperBoundUsd": 0.016298399999999998
+    },
+    "1fda1488-1811-4b73-afcd-832afa676ffb": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970109006,
+      "reservedUsd": 0.000616272,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 180,
+        "outputTokens": 242,
+        "totalTokens": 45734,
+        "cacheReadTokens": 45312
+      },
+      "finishedAt": 1793970111347,
+      "costUpperBoundUsd": 0.000616272,
+      "uncachedCostUpperBoundUsd": 0.013938
+    },
+    "92f48266-aaa3-4799-abac-34e178863e07": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970111440,
+      "reservedUsd": 0.001787208,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 222,
+        "outputTokens": 1206,
+        "totalTokens": 46996,
+        "cacheReadTokens": 45568
+      },
+      "finishedAt": 1793970116176,
+      "costUpperBoundUsd": 0.001787208,
+      "uncachedCostUpperBoundUsd": 0.0151842
+    },
+    "a4cc2a22-95dd-4242-b26c-5f9e0e1bc1e3": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970116453,
+      "reservedUsd": 0.0018673559999999997,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 497,
+        "outputTokens": 1197,
+        "totalTokens": 48670,
+        "cacheReadTokens": 46976
+      },
+      "finishedAt": 1793970121239,
+      "costUpperBoundUsd": 0.0018673559999999997,
+      "uncachedCostUpperBoundUsd": 0.0156783
+    },
+    "c23d00ee-2d4c-4924-b83b-a66216a71f61": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970121478,
+      "reservedUsd": 0.00228354,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 527,
+        "outputTokens": 1528,
+        "totalTokens": 50695,
+        "cacheReadTokens": 48640
+      },
+      "finishedAt": 1793970127575,
+      "costUpperBoundUsd": 0.00228354,
+      "uncachedCostUpperBoundUsd": 0.016583699999999996
+    },
+    "b031db5b-fd5e-47f6-9dcc-a2bf914049ed": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970127691,
+      "reservedUsd": 0.002101728,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 144,
+        "outputTokens": 1462,
+        "totalTokens": 52294,
+        "cacheReadTokens": 50688
+      },
+      "finishedAt": 1793970133302,
+      "costUpperBoundUsd": 0.002101728,
+      "uncachedCostUpperBoundUsd": 0.017004
+    },
+    "5ff9e1df-23ae-4edd-ab0b-55335aa50764": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970133407,
+      "reservedUsd": 0.0031036439999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 445,
+        "outputTokens": 2214,
+        "totalTokens": 54883,
+        "cacheReadTokens": 52224
+      },
+      "finishedAt": 1793970142642,
+      "costUpperBoundUsd": 0.0031036439999999996,
+      "uncachedCostUpperBoundUsd": 0.0184575
+    },
+    "3ce2aa2c-fd0d-495c-978d-2ec8cc820666": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970142742,
+      "reservedUsd": 0.000759804,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 589,
+        "outputTokens": 212,
+        "totalTokens": 55585,
+        "cacheReadTokens": 54784
+      },
+      "finishedAt": 1793970144760,
+      "costUpperBoundUsd": 0.000759804,
+      "uncachedCostUpperBoundUsd": 0.0168663
+    },
+    "069779c0-94b9-4068-a145-c3a5e38a93a8": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970145165,
+      "reservedUsd": 0.005481911999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 214,
+        "outputTokens": 4237,
+        "totalTokens": 60003,
+        "cacheReadTokens": 55552
+      },
+      "finishedAt": 1793970172379,
+      "costUpperBoundUsd": 0.005481911999999999,
+      "uncachedCostUpperBoundUsd": 0.021814199999999995
+    },
+    "68cc1854-7232-4e4a-9af4-73e820e93f84": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970174902,
+      "reservedUsd": 0.0034821239999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 793,
+        "outputTokens": 2404,
+        "totalTokens": 63101,
+        "cacheReadTokens": 59904
+      },
+      "finishedAt": 1793970186425,
+      "costUpperBoundUsd": 0.0034821239999999996,
+      "uncachedCostUpperBoundUsd": 0.0210939
+    },
+    "f54079a4-f66d-46ac-be8d-9152af6758df": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970187032,
+      "reservedUsd": 0.004726656,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 892,
+        "outputTokens": 3401,
+        "totalTokens": 67269,
+        "cacheReadTokens": 62976
+      },
+      "finishedAt": 1793970207793,
+      "costUpperBoundUsd": 0.004726656,
+      "uncachedCostUpperBoundUsd": 0.023241599999999998
+    },
+    "6768e43c-3ae1-4f04-801f-c18cdbaf5a47": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970208114,
+      "reservedUsd": 0.0017037,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 451,
+        "outputTokens": 971,
+        "totalTokens": 68622,
+        "cacheReadTokens": 67200
+      },
+      "finishedAt": 1793970215074,
+      "costUpperBoundUsd": 0.0017037,
+      "uncachedCostUpperBoundUsd": 0.0214605
+    },
+    "26ccbad8-64cd-43a7-8cdf-bf86e6f693ac": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970215504,
+      "reservedUsd": 0.002706348,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 353,
+        "outputTokens": 1824,
+        "totalTokens": 70785,
+        "cacheReadTokens": 68608
+      },
+      "finishedAt": 1793970224830,
+      "costUpperBoundUsd": 0.002706348,
+      "uncachedCostUpperBoundUsd": 0.022877099999999997
+    },
+    "1ebdb0a8-9192-4601-a112-fae24a6d9102": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970225231,
+      "reservedUsd": 0.0062825039999999995,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 862,
+        "outputTokens": 4666,
+        "totalTokens": 76312,
+        "cacheReadTokens": 70784
+      },
+      "finishedAt": 1793970252250,
+      "costUpperBoundUsd": 0.0062825039999999995,
+      "uncachedCostUpperBoundUsd": 0.027093
+    },
+    "2a26e6fd-7a98-4077-ad8a-102047f75fc7": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970253544,
+      "reservedUsd": 0.001362528,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 200,
+        "outputTokens": 704,
+        "totalTokens": 77192,
+        "cacheReadTokens": 76288
+      },
+      "finishedAt": 1793970258287,
+      "costUpperBoundUsd": 0.001362528,
+      "uncachedCostUpperBoundUsd": 0.0237912
+    },
+    "c03d7b65-b9f4-4efb-ad29-dddd6c4af776": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970258979,
+      "reservedUsd": 0.004049004,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 365,
+        "outputTokens": 2897,
+        "totalTokens": 80446,
+        "cacheReadTokens": 77184
+      },
+      "finishedAt": 1793970274247,
+      "costUpperBoundUsd": 0.004049004,
+      "uncachedCostUpperBoundUsd": 0.026741100000000004
+    },
+    "02a37460-c67a-494e-a1ca-519f090d491f": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970274489,
+      "reservedUsd": 0.006463404000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 401,
+        "outputTokens": 4884,
+        "totalTokens": 85669,
+        "cacheReadTokens": 80384
+      },
+      "finishedAt": 1793970299442,
+      "costUpperBoundUsd": 0.006463404000000001,
+      "uncachedCostUpperBoundUsd": 0.0300963
+    },
+    "e477eafc-1ba5-47f6-9a8d-596990aea52a": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970299651,
+      "reservedUsd": 0.0010560239999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 218,
+        "outputTokens": 398,
+        "totalTokens": 86120,
+        "cacheReadTokens": 85504
+      },
+      "finishedAt": 1793970302723,
+      "costUpperBoundUsd": 0.0010560239999999998,
+      "uncachedCostUpperBoundUsd": 0.026194199999999997
+    },
+    "af324e2e-f290-4a02-950b-17ce98da9c87": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970303130,
+      "reservedUsd": 0.001980396,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1165,
+        "outputTokens": 929,
+        "totalTokens": 88110,
+        "cacheReadTokens": 86016
+      },
+      "finishedAt": 1793970308511,
+      "costUpperBoundUsd": 0.001980396,
+      "uncachedCostUpperBoundUsd": 0.027269099999999998
+    },
+    "c0870d77-a1cf-463f-bb9c-cef61158dd1d": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970308620,
+      "reservedUsd": 0.000948816,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 248,
+        "outputTokens": 289,
+        "totalTokens": 88473,
+        "cacheReadTokens": 87936
+      },
+      "finishedAt": 1793970311268,
+      "costUpperBoundUsd": 0.000948816,
+      "uncachedCostUpperBoundUsd": 0.026802
+    },
+    "a44c3df0-f192-4458-8da4-697ead57af1e": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970311591,
+      "reservedUsd": 0.005565888,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 220,
+        "outputTokens": 4141,
+        "totalTokens": 92809,
+        "cacheReadTokens": 88448
+      },
+      "finishedAt": 1793970333302,
+      "costUpperBoundUsd": 0.005565888,
+      "uncachedCostUpperBoundUsd": 0.031569599999999996
+    },
+    "fddbd380-a941-4c87-ae0f-23dc8acec194": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970333409,
+      "reservedUsd": 0.002847132,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 237,
+        "outputTokens": 1850,
+        "totalTokens": 94759,
+        "cacheReadTokens": 92672
+      },
+      "finishedAt": 1793970344132,
+      "costUpperBoundUsd": 0.002847132,
+      "uncachedCostUpperBoundUsd": 0.0300927
+    },
+    "497c3b1a-dd6e-4fd7-823d-680553567f00": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970344457,
+      "reservedUsd": 0.0036838199999999995,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1209,
+        "outputTokens": 2294,
+        "totalTokens": 98223,
+        "cacheReadTokens": 94720
+      },
+      "finishedAt": 1793970356463,
+      "costUpperBoundUsd": 0.0036838199999999995,
+      "uncachedCostUpperBoundUsd": 0.0315315
+    },
+    "b099d735-25f8-489e-9692-eafe76194df2": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970356532,
+      "reservedUsd": 0.002947488,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 228,
+        "outputTokens": 1909,
+        "totalTokens": 100185,
+        "cacheReadTokens": 98048
+      },
+      "finishedAt": 1793970366511,
+      "costUpperBoundUsd": 0.002947488,
+      "uncachedCostUpperBoundUsd": 0.0317736
+    },
+    "2a117f1b-25d3-4627-af1d-ba78c10ff0b0": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970366617,
+      "reservedUsd": 0.0023117759999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 140,
+        "outputTokens": 1391,
+        "totalTokens": 101627,
+        "cacheReadTokens": 100096
+      },
+      "finishedAt": 1793970374357,
+      "costUpperBoundUsd": 0.0023117759999999998,
+      "uncachedCostUpperBoundUsd": 0.03174
+    },
+    "f31bc0bc-8f2f-4362-a617-55ea7b84fa7d": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970374446,
+      "reservedUsd": 0.0015882239999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 200,
+        "outputTokens": 766,
+        "totalTokens": 102470,
+        "cacheReadTokens": 101504
+      },
+      "finishedAt": 1793970380193,
+      "costUpperBoundUsd": 0.0015882239999999998,
+      "uncachedCostUpperBoundUsd": 0.0314304
+    },
+    "a0b3c3bb-4880-4b03-9981-98e586f4edbc": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970380401,
+      "reservedUsd": 0.0012258,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 218,
+        "outputTokens": 455,
+        "totalTokens": 103073,
+        "cacheReadTokens": 102400
+      },
+      "finishedAt": 1793970383271,
+      "costUpperBoundUsd": 0.0012258,
+      "uncachedCostUpperBoundUsd": 0.031331399999999995
+    },
+    "b35995b1-eb3c-4172-a3db-9dc94444abd1": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970383373,
+      "reservedUsd": 0.001358172,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 233,
+        "outputTokens": 559,
+        "totalTokens": 103704,
+        "cacheReadTokens": 102912
+      },
+      "finishedAt": 1793970387050,
+      "costUpperBoundUsd": 0.001358172,
+      "uncachedCostUpperBoundUsd": 0.0316143
+    },
+    "0baf7809-dff7-429d-a16c-4e7c5917bdab": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970387142,
+      "reservedUsd": 0.00350148,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 650,
+        "outputTokens": 2237,
+        "totalTokens": 106567,
+        "cacheReadTokens": 103680
+      },
+      "finishedAt": 1793970401012,
+      "costUpperBoundUsd": 0.00350148,
+      "uncachedCostUpperBoundUsd": 0.033983400000000004
+    },
+    "d4a408de-c9a0-4c00-995d-bbedffd126e4": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970401200,
+      "reservedUsd": 0.002312376,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2010,
+        "outputTokens": 892,
+        "totalTokens": 109398,
+        "cacheReadTokens": 106496
+      },
+      "finishedAt": 1793970406377,
+      "costUpperBoundUsd": 0.002312376,
+      "uncachedCostUpperBoundUsd": 0.0336222
+    },
+    "83f35e10-562b-4898-af68-bc410d4c8e61": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970406488,
+      "reservedUsd": 0.002158272,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 280,
+        "outputTokens": 1182,
+        "totalTokens": 110774,
+        "cacheReadTokens": 109312
+      },
+      "finishedAt": 1793970413174,
+      "costUpperBoundUsd": 0.002158272,
+      "uncachedCostUpperBoundUsd": 0.034296
+    },
+    "a3ca949a-5baa-4d1c-898f-1a867acbc204": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970413444,
+      "reservedUsd": 0.00353472,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 772,
+        "outputTokens": 2199,
+        "totalTokens": 113691,
+        "cacheReadTokens": 110720
+      },
+      "finishedAt": 1793970425474,
+      "costUpperBoundUsd": 0.00353472,
+      "uncachedCostUpperBoundUsd": 0.036086400000000005
+    },
+    "2ab16499-6024-4aa0-8ffe-ffe09a78a1c5": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970425606,
+      "reservedUsd": 0.004523028,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2791,
+        "outputTokens": 2514,
+        "totalTokens": 116793,
+        "cacheReadTokens": 111488
+      },
+      "finishedAt": 1793970439413,
+      "costUpperBoundUsd": 0.004523028,
+      "uncachedCostUpperBoundUsd": 0.0373005
+    },
+    "d30a6bb7-f750-4018-acf6-93c1e71e6740": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970439490,
+      "reservedUsd": 0.001722648,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 238,
+        "outputTokens": 793,
+        "totalTokens": 117639,
+        "cacheReadTokens": 116608
+      },
+      "finishedAt": 1793970444930,
+      "costUpperBoundUsd": 0.001722648,
+      "uncachedCostUpperBoundUsd": 0.03600539999999999
+    },
+    "49f00be4-814d-445e-9296-2e5ad42a0561": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970445031,
+      "reservedUsd": 0.0013512240000000003,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 222,
+        "outputTokens": 483,
+        "totalTokens": 118209,
+        "cacheReadTokens": 117504
+      },
+      "finishedAt": 1793970448119,
+      "costUpperBoundUsd": 0.0013512240000000003,
+      "uncachedCostUpperBoundUsd": 0.035897399999999996
+    },
+    "86e3fb10-1741-4862-aca5-8e6e82148138": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970448259,
+      "reservedUsd": 0.001349364,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 135,
+        "outputTokens": 500,
+        "totalTokens": 118779,
+        "cacheReadTokens": 118144
+      },
+      "finishedAt": 1793970452206,
+      "costUpperBoundUsd": 0.001349364,
+      "uncachedCostUpperBoundUsd": 0.036083699999999996
+    },
+    "2a4da087-6ddf-4af0-afbb-189088b7e137": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970452327,
+      "reservedUsd": 0.001901436,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 241,
+        "outputTokens": 931,
+        "totalTokens": 119828,
+        "cacheReadTokens": 118656
+      },
+      "finishedAt": 1793970458873,
+      "costUpperBoundUsd": 0.001901436,
+      "uncachedCostUpperBoundUsd": 0.036786299999999994
+    },
+    "297d05af-e31c-4213-abc4-a497c6290676": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970459030,
+      "reservedUsd": 0.0009384480000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 152,
+        "outputTokens": 145,
+        "totalTokens": 120105,
+        "cacheReadTokens": 119808
+      },
+      "finishedAt": 1793970461161,
+      "costUpperBoundUsd": 0.0009384480000000001,
+      "uncachedCostUpperBoundUsd": 0.036162
+    },
+    "4622a2d5-7dd8-4681-896b-3804b852ad16": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970461288,
+      "reservedUsd": 0.001350684,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 201,
+        "outputTokens": 475,
+        "totalTokens": 120740,
+        "cacheReadTokens": 120064
+      },
+      "finishedAt": 1793970465142,
+      "costUpperBoundUsd": 0.001350684,
+      "uncachedCostUpperBoundUsd": 0.0366495
+    },
+    "78189c28-3939-4388-a07b-88a0aeab34f1": {
+      "testId": "polish060:interaction-C",
+      "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+      "model": "deepseek-flash",
+      "startedAt": 1793970465301,
+      "reservedUsd": 0.001273356,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 201,
+        "outputTokens": 408,
+        "totalTokens": 121185,
+        "cacheReadTokens": 120576
+      },
+      "finishedAt": 1793970468013,
+      "costUpperBoundUsd": 0.001273356,
+      "uncachedCostUpperBoundUsd": 0.0367227
+    },
+    "b4d3ad53-eb06-4b65-8988-d3b8cfdf0015": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970468379,
+      "reservedUsd": 0.0008313239999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2113,
+        "outputTokens": 137,
+        "totalTokens": 7754,
+        "cacheReadTokens": 5504
+      },
+      "finishedAt": 1793970469839,
+      "costUpperBoundUsd": 0.0008313239999999999,
+      "uncachedCostUpperBoundUsd": 0.0024495
+    },
+    "0a0dae40-0e7d-4957-8ab3-749c1863520c": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970469953,
+      "reservedUsd": 0.00124338,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1923,
+        "outputTokens": 517,
+        "totalTokens": 10120,
+        "cacheReadTokens": 7680
+      },
+      "finishedAt": 1793970473389,
+      "costUpperBoundUsd": 0.00124338,
+      "uncachedCostUpperBoundUsd": 0.0035013
+    },
+    "05aee52c-cd50-4e11-9596-2552e3c3784c": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970473772,
+      "reservedUsd": 0.002115072,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2628,
+        "outputTokens": 1055,
+        "totalTokens": 13795,
+        "cacheReadTokens": 10112
+      },
+      "finishedAt": 1793970480195,
+      "costUpperBoundUsd": 0.002115072,
+      "uncachedCostUpperBoundUsd": 0.005088
+    },
+    "637d29e2-c137-4831-b8b0-bd3fe0cdcaef": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970480370,
+      "reservedUsd": 0.0015983759999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2374,
+        "outputTokens": 670,
+        "totalTokens": 16740,
+        "cacheReadTokens": 13696
+      },
+      "finishedAt": 1793970484592,
+      "costUpperBoundUsd": 0.0015983759999999999,
+      "uncachedCostUpperBoundUsd": 0.005625
+    },
+    "c2a674d9-393c-4af1-9b46-2e8d1f21dd04": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970484735,
+      "reservedUsd": 0.00192564,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1998,
+        "outputTokens": 1022,
+        "totalTokens": 19660,
+        "cacheReadTokens": 16640
+      },
+      "finishedAt": 1793970490948,
+      "costUpperBoundUsd": 0.00192564,
+      "uncachedCostUpperBoundUsd": 0.006817799999999999
+    },
+    "b6899872-0e54-4f8c-9288-79a958653cca": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970491077,
+      "reservedUsd": 0.005871503999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 6652,
+        "outputTokens": 3132,
+        "totalTokens": 29368,
+        "cacheReadTokens": 19584
+      },
+      "finishedAt": 1793970508428,
+      "costUpperBoundUsd": 0.005871503999999999,
+      "uncachedCostUpperBoundUsd": 0.0116292
+    },
+    "6843141a-0966-4e42-8ea7-6716a70cac02": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970508579,
+      "reservedUsd": 0.0061056719999999995,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 6218,
+        "outputTokens": 3387,
+        "totalTokens": 38917,
+        "cacheReadTokens": 29312
+      },
+      "finishedAt": 1793970528242,
+      "costUpperBoundUsd": 0.0061056719999999995,
+      "uncachedCostUpperBoundUsd": 0.0147234
+    },
+    "8fe4c44c-57a9-4d2e-b519-6725b068f3f5": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970528451,
+      "reservedUsd": 0.0014535720000000002,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1507,
+        "outputTokens": 640,
+        "totalTokens": 41059,
+        "cacheReadTokens": 38912
+      },
+      "finishedAt": 1793970532348,
+      "costUpperBoundUsd": 0.0014535720000000002,
+      "uncachedCostUpperBoundUsd": 0.0128937
+    },
+    "8bbc5672-50b1-4820-bdb5-6a6ef22997a8": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970532969,
+      "reservedUsd": 0.0016218600000000001,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1695,
+        "outputTokens": 723,
+        "totalTokens": 43378,
+        "cacheReadTokens": 40960
+      },
+      "finishedAt": 1793970537602,
+      "costUpperBoundUsd": 0.0016218600000000001,
+      "uncachedCostUpperBoundUsd": 0.0136641
+    },
+    "49cc1591-b8d9-41b5-859c-1c08f4a09f76": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970538119,
+      "reservedUsd": 0.0026097839999999995,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 2046,
+        "outputTokens": 1447,
+        "totalTokens": 46757,
+        "cacheReadTokens": 43264
+      },
+      "finishedAt": 1793970545217,
+      "costUpperBoundUsd": 0.0026097839999999995,
+      "uncachedCostUpperBoundUsd": 0.0153294
+    },
+    "6eb984d9-63d0-4492-930c-c429e7121bba": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970546597,
+      "reservedUsd": 0.00309372,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 862,
+        "outputTokens": 2129,
+        "totalTokens": 49711,
+        "cacheReadTokens": 46720
+      },
+      "finishedAt": 1793970557824,
+      "costUpperBoundUsd": 0.00309372,
+      "uncachedCostUpperBoundUsd": 0.0168294
+    },
+    "4083a889-2bc9-4996-9e08-e22a6c74b28d": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970558348,
+      "reservedUsd": 0.0075399840000000004,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 840,
+        "outputTokens": 5825,
+        "totalTokens": 56329,
+        "cacheReadTokens": 49664
+      },
+      "finishedAt": 1793970590485,
+      "costUpperBoundUsd": 0.0075399840000000004,
+      "uncachedCostUpperBoundUsd": 0.022141199999999996
+    },
+    "cb755d54-32ba-4c08-baf0-bc810a1bf9f6": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970590671,
+      "reservedUsd": 0.00162732,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 3122,
+        "outputTokens": 294,
+        "totalTokens": 59736,
+        "cacheReadTokens": 56320
+      },
+      "finishedAt": 1793970593523,
+      "costUpperBoundUsd": 0.00162732,
+      "uncachedCostUpperBoundUsd": 0.018185399999999997
+    },
+    "b37b7316-62a0-4f5b-a268-304c508088a7": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970593631,
+      "reservedUsd": 0.007983588,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 1071,
+        "outputTokens": 6087,
+        "totalTokens": 66806,
+        "cacheReadTokens": 59648
+      },
+      "finishedAt": 1793970628330,
+      "costUpperBoundUsd": 0.007983588,
+      "uncachedCostUpperBoundUsd": 0.025520099999999997
+    },
+    "6a500074-b283-4297-aaec-6687a4a61a9d": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970628542,
+      "reservedUsd": 0.009650028,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 361,
+        "outputTokens": 7618,
+        "totalTokens": 74667,
+        "cacheReadTokens": 66688
+      },
+      "finishedAt": 1793970674471,
+      "costUpperBoundUsd": 0.009650028,
+      "uncachedCostUpperBoundUsd": 0.029256300000000002
+    },
+    "cf141462-f05c-4c51-b2be-5932b99062ac": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970674764,
+      "reservedUsd": 0.000799644,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 521,
+        "outputTokens": 163,
+        "totalTokens": 75308,
+        "cacheReadTokens": 74624
+      },
+      "finishedAt": 1793970676768,
+      "costUpperBoundUsd": 0.000799644,
+      "uncachedCostUpperBoundUsd": 0.022739099999999998
+    },
+    "f26f24fb-a16e-417f-8f6f-42e8f62de022": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970676970,
+      "reservedUsd": 0.001111584,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 200,
+        "outputTokens": 500,
+        "totalTokens": 75964,
+        "cacheReadTokens": 75264
+      },
+      "finishedAt": 1793970680575,
+      "costUpperBoundUsd": 0.001111584,
+      "uncachedCostUpperBoundUsd": 0.0232392
+    },
+    "afd83edb-bfb8-4cb4-999f-c0c95dac60e9": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970680771,
+      "reservedUsd": 0.0033018239999999996,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 952,
+        "outputTokens": 2134,
+        "totalTokens": 78990,
+        "cacheReadTokens": 75904
+      },
+      "finishedAt": 1793970694406,
+      "costUpperBoundUsd": 0.0033018239999999996,
+      "uncachedCostUpperBoundUsd": 0.025617599999999997
+    },
+    "23fe262e-3e42-40f0-b98f-f9d29e77a62b": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970694532,
+      "reservedUsd": 0.007509455999999999,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 160,
+        "outputTokens": 5823,
+        "totalTokens": 84959,
+        "cacheReadTokens": 78976
+      },
+      "finishedAt": 1793970726423,
+      "costUpperBoundUsd": 0.007509455999999999,
+      "uncachedCostUpperBoundUsd": 0.0307284
+    },
+    "099e5d25-e7cd-49ca-827b-86e2985ba71a": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970726795,
+      "reservedUsd": 0.002266584,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 922,
+        "outputTokens": 1234,
+        "totalTokens": 87020,
+        "cacheReadTokens": 84864
+      },
+      "finishedAt": 1793970734181,
+      "costUpperBoundUsd": 0.002266584,
+      "uncachedCostUpperBoundUsd": 0.027216599999999997
+    },
+    "4d082760-a3ba-4721-84f6-42078bb04592": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970734352,
+      "reservedUsd": 0.0056388720000000005,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 742,
+        "outputTokens": 4079,
+        "totalTokens": 91733,
+        "cacheReadTokens": 86912
+      },
+      "finishedAt": 1793970758045,
+      "costUpperBoundUsd": 0.0056388720000000005,
+      "uncachedCostUpperBoundUsd": 0.031191
+    },
+    "196d93b1-1b1f-44eb-b46e-463d02d294df": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970758169,
+      "reservedUsd": 0.010057187999999998,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 807,
+        "outputTokens": 7721,
+        "totalTokens": 100176,
+        "cacheReadTokens": 91648
+      },
+      "finishedAt": 1793970798819,
+      "costUpperBoundUsd": 0.010057187999999998,
+      "uncachedCostUpperBoundUsd": 0.0370017
+    },
+    "e574812c-80ff-4167-9e30-93c4cb50a3e7": {
+      "testId": "polish060:interaction-C",
+      "session": "09913a34-e7bb-4184-a5e1-c621d41ec661",
+      "model": "deepseek-flash",
+      "startedAt": 1793970798999,
+      "reservedUsd": 0.012517176,
+      "status": "verified",
+      "usage": {
+        "inputTokens": 846,
+        "outputTokens": 9719,
+        "totalTokens": 110661,
+        "cacheReadTokens": 100096
+      },
+      "finishedAt": 1793970844965,
+      "costUpperBoundUsd": 0.012517176,
+      "uncachedCostUpperBoundUsd": 0.041945399999999994
+    }
+  },
+  "historicalCarryForward": {
+    "source": "docs/optimization/0.5.8-release/acceptance.json",
+    "requestCount": 676,
+    "meaning": "Historical expense reservations, not new requests or reconstructed token usage. No subsequent paid runs occurred in this session."
+  }
+}

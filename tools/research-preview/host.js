@@ -1,13 +1,13 @@
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, mkdtempSync } from 'node:fs'
 import { scenario, kernelExamples } from './scenario.js'
 
 export const inject = ['sessions', 'workspaceRegistry', 'connection']
 export async function apply(ctx) {
   console.info('ClearAI example: initializing')
-  const cwd = '/tmp/clearai-059-example-workspace'
+  const cwd = mkdtempSync('/tmp/clearai-example-workspace-')
   mkdirSync(cwd, { recursive: true })
-  const workspace = await ctx.workspaceRegistry.create(cwd, 'ClearAI 0.5.9 · 示例回放 / Example replay')
-  const session = ctx.sessions.create('clearai-059-example', { meta: { cwd } })
+  const workspace = await ctx.workspaceRegistry.create(cwd, 'ClearAI · 示例回放 / Example replay')
+  const session = ctx.sessions.create('clearai-example', { meta: { cwd } })
   await workspace.attachSession(session.id)
   console.info('ClearAI example: session attached')
   let cursor = 0

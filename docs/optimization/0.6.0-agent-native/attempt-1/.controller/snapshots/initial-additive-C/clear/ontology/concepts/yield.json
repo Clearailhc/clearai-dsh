@@ -1,0 +1,7 @@
+{
+  "gloss": "full/quick 测量给出的收率百分比；同一点重复读数含噪声，full 标称 sd 0.18、quick 0.45",
+  "id": "yield",
+  "kind": "measure",
+  "label": "收率",
+  "unit": "%"
+}

@@ -1,0 +1,493 @@
+{
+  "task": "optimize yield over x,y in [0,1] subject to impurity <= 0.115",
+  "final_decision": {
+    "x": 0.508,
+    "y": 0.453,
+    "predicted_yield_percent": 95.37169700761939,
+    "predicted_impurity_fraction": 0.08501090063552,
+    "final_full_verification": {
+      "path": "lab/full-0.508-0.453-final.json",
+      "x": 0.508,
+      "y": 0.453,
+      "value_percent": 95.52243714200311,
+      "impurity_fraction": 0.08476566627077523,
+      "mode": "full",
+      "instrument": "original"
+    },
+    "near_final_full_replicates": [
+      {
+        "path": "lab/full-0.508-0.452.json",
+        "x": 0.508,
+        "y": 0.452,
+        "value_percent": 95.40604721153996,
+        "impurity_fraction": 0.08392739218518684
+      },
+      {
+        "path": "lab/full-0.508-0.452-r2.json",
+        "x": 0.508,
+        "y": 0.452,
+        "value_percent": 95.31031428239844,
+        "impurity_fraction": 0.0848516908364113
+      },
+      {
+        "path": "lab/full-0.508-0.452-r3.json",
+        "x": 0.508,
+        "y": 0.452,
+        "value_percent": 95.48664461389366,
+        "impurity_fraction": 0.08564034610451365
+      },
+      {
+        "path": "lab/full-0.508-0.453-final.json",
+        "x": 0.508,
+        "y": 0.453,
+        "value_percent": 95.52243714200311,
+        "impurity_fraction": 0.08476566627077523
+      }
+    ],
+    "near_final_mean_value_percent": 95.43136081245879,
+    "near_final_sample_sd_value_percent": 0.0942412459868929,
+    "near_final_mean_impurity_fraction": 0.08479627384922175,
+    "near_final_max_impurity_fraction": 0.08564034610451365,
+    "impurity_limit": 0.115,
+    "impurity_margin_at_final": 0.03023433372922478
+  },
+  "budget": {
+    "total": 30,
+    "spent": 30,
+    "remaining": 0,
+    "breakdown": {
+      "full_runs": 8,
+      "full_units": 24,
+      "calibrate_runs": 2,
+      "calibrate_units": 4,
+      "quick_runs": 2,
+      "quick_units": 2
+    },
+    "verified_from_last_response": {
+      "spent": 30,
+      "budget": 30
+    }
+  },
+  "instrument_and_units": {
+    "instrument": "original",
+    "metric": "yield",
+    "yield_unit": "%",
+    "impurity_unit": "fraction",
+    "input_coordinate_unit": "normalized [0,1]",
+    "full_mode_noise_sd": 0.18,
+    "quick_mode_noise_sd": 0.45,
+    "calibration_offset": 0,
+    "calibration_correction_applied": false,
+    "calibration_records": [
+      {
+        "path": "lab/cal-0.5-0.5.json",
+        "instrument": "original",
+        "metric": "yield",
+        "offset": 0,
+        "unit": "normalized x",
+        "cost": 2,
+        "spent": 2,
+        "budget": 30,
+        "sha256": "sha256:f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+      },
+      {
+        "path": "lab/cal-0.508-0.452.json",
+        "instrument": "original",
+        "metric": "yield",
+        "offset": 0,
+        "unit": "normalized x",
+        "cost": 2,
+        "spent": 21,
+        "budget": 30,
+        "sha256": "sha256:1de8c3929c67bff8d8d54f0b5263ade5c99fdfac942f8dd479fb287b492568a5"
+      }
+    ],
+    "note": "calibrate separates from measurements; quick readings are not pooled with full because of higher noise"
+  },
+  "model": {
+    "method": "method/response_surface.py",
+    "method_version": "0.5.2-rc.1",
+    "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+    "selected_model": "additive",
+    "fit_input": "lab/input-final.json",
+    "n_observations": 17,
+    "scaled_coordinates": "u=2x-1, v=2y-1",
+    "yield_coefficients_scaled": {
+      "intercept": 95.32192824472953,
+      "u": 0.21199140768272962,
+      "v": -1.027739587035876,
+      "u2": -6.745066089786689,
+      "v2": -5.489504999573213
+    },
+    "yield_cv_rmse_percent": 0.1803152559101928,
+    "interaction_model_cv_rmse_percent": 0.23356150694217753,
+    "yield_coefficients_physical": {
+      "intercept": 83.90310533472278,
+      "x": 27.404247174512214,
+      "y": 19.9025408242211,
+      "x2": -26.980264359146755,
+      "y2": -21.95801999829285
+    },
+    "continuous_optimum": {
+      "x": 0.5078572769774002,
+      "y": 0.45319525212200373,
+      "predicted_yield_percent": 95.37169700761939
+    },
+    "impurity_coefficients_scaled": {
+      "intercept": 0.08709444774616999,
+      "u": 0.015306041908054336,
+      "v": 0.024829020553151213,
+      "u2": 0.007637698318975176,
+      "v2": 0.0003991165089921622
+    },
+    "impurity_coefficients_physical": {
+      "intercept": 0.054996200112931784,
+      "x": 6.12905402079672e-05,
+      "y": 0.048061575070333776,
+      "x2": 0.030550793275900705,
+      "y2": 0.0015964660359686488
+    },
+    "model_file": "lab/model-final.json"
+  },
+  "observations": [
+    {
+      "path": "initial.json",
+      "index": 0,
+      "mode": "full",
+      "x": 0.1,
+      "y": 0.1,
+      "value_percent": 88.11291938781217,
+      "impurity_fraction": 0.06072749494100571,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 1,
+      "mode": "full",
+      "x": 0.1,
+      "y": 0.5,
+      "value_percent": 90.8646572101822,
+      "impurity_fraction": 0.07929529727229111,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 2,
+      "mode": "full",
+      "x": 0.1,
+      "y": 0.9,
+      "value_percent": 86.50785211466605,
+      "impurity_fraction": 0.09979906876993573,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 3,
+      "mode": "full",
+      "x": 0.5,
+      "y": 0.1,
+      "value_percent": 92.65529742893105,
+      "impurity_fraction": 0.06765890029431448,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 4,
+      "mode": "full",
+      "x": 0.5,
+      "y": 0.5,
+      "value_percent": 95.18383484908928,
+      "impurity_fraction": 0.08740356259513082,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 5,
+      "mode": "full",
+      "x": 0.5,
+      "y": 0.9,
+      "value_percent": 90.84179994286328,
+      "impurity_fraction": 0.10776776469569242,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 6,
+      "mode": "full",
+      "x": 0.9,
+      "y": 0.1,
+      "value_percent": 88.4648379295013,
+      "impurity_fraction": 0.08390785134574831,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 7,
+      "mode": "full",
+      "x": 0.9,
+      "y": 0.5,
+      "value_percent": 90.99542229814558,
+      "impurity_fraction": 0.10536303404484001,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "index": 8,
+      "mode": "full",
+      "x": 0.9,
+      "y": 0.9,
+      "value_percent": 87.0097239245802,
+      "impurity_fraction": 0.1238166580810407,
+      "noise_sd": 0.18,
+      "used_in_final_fit": true,
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "lab/full-0.508-0.452.json",
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.452,
+      "value_percent": 95.40604721153996,
+      "impurity_fraction": 0.08392739218518684,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 7,
+      "used_in_final_fit": true,
+      "sha256": "sha256:517c2606946a5fdd518d27499ab76d36d5faf574fe09dc6c617416a6225377ea"
+    },
+    {
+      "path": "lab/full-0.408-0.452.json",
+      "mode": "full",
+      "x": 0.408,
+      "y": 0.452,
+      "value_percent": 95.21393211768154,
+      "impurity_fraction": 0.08170294587710993,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 10,
+      "used_in_final_fit": true,
+      "sha256": "sha256:85392453acf9c18b9bf7bd3e548f13274489ed267acfca3ac36aebd491f9fd02"
+    },
+    {
+      "path": "lab/full-0.608-0.452.json",
+      "mode": "full",
+      "x": 0.608,
+      "y": 0.452,
+      "value_percent": 95.32198461335527,
+      "impurity_fraction": 0.08881865853067843,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 13,
+      "used_in_final_fit": true,
+      "sha256": "sha256:7932c7a533cfb344967d574ceedab7952e8c64f53ca0bb1e8c9be468fdda7171"
+    },
+    {
+      "path": "lab/full-0.508-0.352.json",
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.352,
+      "value_percent": 95.05392653783456,
+      "impurity_fraction": 0.07993929143150193,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 16,
+      "used_in_final_fit": true,
+      "sha256": "sha256:223a4e937b53ca5a003175b3c964a506ee12e55b6d0dcc4f7daa832ce7f08c15"
+    },
+    {
+      "path": "lab/full-0.508-0.552.json",
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.552,
+      "value_percent": 94.95955520142536,
+      "impurity_fraction": 0.08970936255871985,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 19,
+      "used_in_final_fit": true,
+      "sha256": "sha256:fe848367d9d894bea8dff0ac359919ba82ac08bc390a1e686b57e4f25d854e56"
+    },
+    {
+      "path": "lab/full-0.508-0.452-r2.json",
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.452,
+      "value_percent": 95.31031428239844,
+      "impurity_fraction": 0.0848516908364113,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 24,
+      "used_in_final_fit": true,
+      "sha256": "sha256:b19808c719c238a370400034aa2eb76e1001bc1d9102ce4d6029497b783a3932"
+    },
+    {
+      "path": "lab/full-0.508-0.452-r3.json",
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.452,
+      "value_percent": 95.48664461389366,
+      "impurity_fraction": 0.08564034610451365,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 27,
+      "used_in_final_fit": true,
+      "sha256": "sha256:630b03de9293e3b5e511ccbe761a9201408ec52c6374024f8c217bf7af6b0ca7"
+    },
+    {
+      "path": "lab/full-0.508-0.453-final.json",
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.453,
+      "value_percent": 95.52243714200311,
+      "impurity_fraction": 0.08476566627077523,
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 30,
+      "used_in_final_fit": true,
+      "sha256": "sha256:3d488472234d73bafec474791779a01b27442f0056acdbbb418f99cf269f3e65"
+    },
+    {
+      "path": "lab/quick-0.5-0.5.json",
+      "mode": "quick",
+      "x": 0.5,
+      "y": 0.5,
+      "value_percent": 95.56294715040502,
+      "impurity_fraction": 0.08771719539526669,
+      "noise_sd": 0.44999999999999996,
+      "cost": 1,
+      "spent_after": 3,
+      "used_in_final_fit": false,
+      "note": "quick reading, higher noise; reconnaissance only, not pooled with full",
+      "sha256": "sha256:fdff01b156d9b8c104578447b41dbede1ba9a6073f02bbabe8e7b5604cb51c29"
+    },
+    {
+      "path": "lab/quick-0.5-0.45.json",
+      "mode": "quick",
+      "x": 0.5,
+      "y": 0.45,
+      "value_percent": 94.8956252460717,
+      "impurity_fraction": 0.08507631964434265,
+      "noise_sd": 0.44999999999999996,
+      "cost": 1,
+      "spent_after": 4,
+      "used_in_final_fit": false,
+      "note": "quick reading, higher noise; reconnaissance only, not pooled with full",
+      "sha256": "sha256:cb1538195307eafc02aa8e5575c5830289ac31529a8e476f26d941bcb6c4061b"
+    }
+  ],
+  "artifacts": {
+    "initial.json": {
+      "sha256": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd",
+      "bytes": 2864
+    },
+    "report.md": {
+      "sha256": "sha256:dc33e2bb2aa20548caf4d5637b5d2b701bda8340b78f8b534874c4c55316cb7d",
+      "bytes": 6454
+    },
+    "method/SKILL.md": {
+      "sha256": "sha256:ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871",
+      "bytes": 2360
+    },
+    "method/response_surface.py": {
+      "sha256": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+      "bytes": 8022
+    },
+    "lab/model-final.json": {
+      "sha256": "sha256:e8bf9273f34652db8c858e8444e12eac9e388629db88367dedef833b1cf068e0",
+      "bytes": 2846
+    },
+    "lab/input-final.json": {
+      "sha256": "sha256:e1ff0674f6f7bfe7c9cbbf99da6c0ac00f96ca06832440bd9c62f65065b7288b",
+      "bytes": 5736
+    },
+    "lab/model-initial.json": {
+      "sha256": "sha256:2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb",
+      "bytes": 3012
+    },
+    "lab/model-updated-1.json": {
+      "sha256": "sha256:92b99b6ba9162feccb4dee7cbfb3dafd9415b0f0a1450c8aaede594974768f3b",
+      "bytes": 3191
+    },
+    "lab/model-updated-2.json": {
+      "sha256": "sha256:d4f4db8e94e3e2bd5e9ce02f7d8d647a47f0a98d13d1869c9406ecfff9dd4b88",
+      "bytes": 3772
+    },
+    "lab/model-updated-3.json": {
+      "sha256": "sha256:e4da521eb2f896f0921c1f966c5b17ab2798cc6551f3a9d8c953509c8c4cca7d",
+      "bytes": 4074
+    },
+    "lab/full-0.508-0.452.json": {
+      "sha256": "sha256:517c2606946a5fdd518d27499ab76d36d5faf574fe09dc6c617416a6225377ea",
+      "bytes": 289
+    },
+    "lab/full-0.408-0.452.json": {
+      "sha256": "sha256:85392453acf9c18b9bf7bd3e548f13274489ed267acfca3ac36aebd491f9fd02",
+      "bytes": 290
+    },
+    "lab/full-0.608-0.452.json": {
+      "sha256": "sha256:7932c7a533cfb344967d574ceedab7952e8c64f53ca0bb1e8c9be468fdda7171",
+      "bytes": 290
+    },
+    "lab/full-0.508-0.352.json": {
+      "sha256": "sha256:223a4e937b53ca5a003175b3c964a506ee12e55b6d0dcc4f7daa832ce7f08c15",
+      "bytes": 290
+    },
+    "lab/full-0.508-0.552.json": {
+      "sha256": "sha256:fe848367d9d894bea8dff0ac359919ba82ac08bc390a1e686b57e4f25d854e56",
+      "bytes": 290
+    },
+    "lab/full-0.508-0.452-r2.json": {
+      "sha256": "sha256:b19808c719c238a370400034aa2eb76e1001bc1d9102ce4d6029497b783a3932",
+      "bytes": 289
+    },
+    "lab/full-0.508-0.452-r3.json": {
+      "sha256": "sha256:630b03de9293e3b5e511ccbe761a9201408ec52c6374024f8c217bf7af6b0ca7",
+      "bytes": 290
+    },
+    "lab/full-0.508-0.453-final.json": {
+      "sha256": "sha256:3d488472234d73bafec474791779a01b27442f0056acdbbb418f99cf269f3e65",
+      "bytes": 290
+    },
+    "lab/quick-0.5-0.5.json": {
+      "sha256": "sha256:fdff01b156d9b8c104578447b41dbede1ba9a6073f02bbabe8e7b5604cb51c29",
+      "bytes": 301
+    },
+    "lab/quick-0.5-0.45.json": {
+      "sha256": "sha256:cb1538195307eafc02aa8e5575c5830289ac31529a8e476f26d941bcb6c4061b",
+      "bytes": 301
+    },
+    "lab/cal-0.5-0.5.json": {
+      "sha256": "sha256:f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24",
+      "bytes": 136
+    },
+    "lab/cal-0.508-0.452.json": {
+      "sha256": "sha256:1de8c3929c67bff8d8d54f0b5263ade5c99fdfac942f8dd479fb287b492568a5",
+      "bytes": 137
+    }
+  },
+  "limitations": [
+    "empirical quadratic response surface; not causal and higher-order terms cannot be fully excluded",
+    "predictions are not measurements; final point verified by full measurement",
+    "yield noise exists; full mode noise_sd=0.18, final-neighborhood sample sd ~0.094 percent (n=4)",
+    "optimum is flat, so small coordinate changes have little effect and decimals should not be overinterpreted",
+    "observed coverage is [0.1,0.9] x [0.1,0.9]; boundary/extrapolation unsupported",
+    "calibration covers one instrument and two points; offset 0 rules out additive offset only",
+    "quick mode has higher noise and is not pooled with full data"
+  ]
+}

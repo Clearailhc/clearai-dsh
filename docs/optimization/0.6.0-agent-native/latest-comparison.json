@@ -1,0 +1,335 @@
+{
+  "dataVerified": true,
+  "acceptancePassed": false,
+  "currentTrialCostUsd": 0.709040664,
+  "rows": [
+    {
+      "id": "initial-direct-A",
+      "reason": "completed",
+      "elapsedMs": 4183,
+      "costUpperBoundUsd": 0.0006187440000000001,
+      "goalStatus": null,
+      "tokens": 11589,
+      "artifactQuality": {
+        "score": 100
+      },
+      "facts": 0,
+      "audits": [],
+      "roles": {
+        "main": {
+          "calls": 2,
+          "input": 472,
+          "output": 124,
+          "cacheRead": 10624,
+          "cacheWrite": 0,
+          "processed": 11220,
+          "requestMs": 3346,
+          "costUpperBoundUsd": 0.00035414400000000003
+        },
+        "other": {
+          "calls": 1,
+          "input": 198,
+          "output": 171,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "processed": 369,
+          "requestMs": 2314,
+          "costUpperBoundUsd": 0.0002646
+        }
+      }
+    },
+    {
+      "id": "initial-direct-C",
+      "reason": "completed",
+      "elapsedMs": 75840,
+      "costUpperBoundUsd": 0.00123984,
+      "goalStatus": null,
+      "tokens": 50255,
+      "artifactQuality": {
+        "score": 100
+      },
+      "facts": 0,
+      "audits": [],
+      "roles": {
+        "main": {
+          "calls": 4,
+          "input": 902,
+          "output": 353,
+          "cacheRead": 48640,
+          "cacheWrite": 0,
+          "processed": 49895,
+          "requestMs": 33454,
+          "costUpperBoundUsd": 0.00098604
+        },
+        "other": {
+          "calls": 1,
+          "input": 198,
+          "output": 162,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "processed": 360,
+          "requestMs": 24196,
+          "costUpperBoundUsd": 0.0002538
+        }
+      }
+    },
+    {
+      "id": "initial-additive-C",
+      "reason": "token_limit",
+      "elapsedMs": 1531617,
+      "costUpperBoundUsd": 0.350667288,
+      "goalStatus": "open",
+      "tokens": 5024941,
+      "artifactQuality": {
+        "score": 98.70336487575125,
+        "feasible": true,
+        "value": 95.31278882682075,
+        "impurity": 0.07999999999999999,
+        "start": 91.11403176398467,
+        "optimum": 95.36794658048714
+      },
+      "facts": 0,
+      "audits": [
+        {
+          "kind": null,
+          "holds": "yes"
+        },
+        {
+          "kind": null,
+          "holds": "yes"
+        },
+        {
+          "kind": null,
+          "holds": "yes"
+        }
+      ],
+      "roles": {
+        "main": {
+          "calls": 50,
+          "input": 38908,
+          "output": 56366,
+          "cacheRead": 2731136,
+          "cacheWrite": 0,
+          "processed": 2826410,
+          "requestMs": 422404,
+          "costUpperBoundUsd": 0.09569841600000002
+        },
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 166,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 441,
+          "requestMs": 2178,
+          "costUpperBoundUsd": 0.00024406799999999998
+        },
+        "evaluator": {
+          "calls": 44,
+          "input": 129767,
+          "output": 170339,
+          "cacheRead": 1897984,
+          "cacheWrite": 0,
+          "processed": 2198090,
+          "requestMs": 1073785,
+          "costUpperBoundUsd": 0.254724804
+        }
+      }
+    },
+    {
+      "id": "initial-additive-A",
+      "reason": "completed",
+      "elapsedMs": 165075,
+      "costUpperBoundUsd": 0.039460356,
+      "goalStatus": null,
+      "tokens": 587229,
+      "artifactQuality": {
+        "score": 99.93248258485926,
+        "feasible": true,
+        "value": 95.36507444716075,
+        "impurity": 0.07902452,
+        "start": 91.11403176398467,
+        "optimum": 95.36794658048714
+      },
+      "facts": 0,
+      "audits": [],
+      "roles": {
+        "main": {
+          "calls": 21,
+          "input": 18632,
+          "output": 25286,
+          "cacheRead": 542848,
+          "cacheWrite": 0,
+          "processed": 586766,
+          "requestMs": 157849,
+          "costUpperBoundUsd": 0.039189888
+        },
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 188,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 463,
+          "requestMs": 2102,
+          "costUpperBoundUsd": 0.000270468
+        }
+      }
+    },
+    {
+      "id": "initial-interaction-A",
+      "reason": "completed",
+      "elapsedMs": 336133,
+      "costUpperBoundUsd": 0.05559638399999999,
+      "goalStatus": null,
+      "tokens": 1143337,
+      "artifactQuality": {
+        "score": 99.97260873924735,
+        "feasible": true,
+        "value": 95.93800015200529,
+        "impurity": 0.1010753212,
+        "start": 89.26159655975033,
+        "optimum": 95.93982940417737
+      },
+      "facts": 0,
+      "audits": [],
+      "roles": {
+        "main": {
+          "calls": 35,
+          "input": 21153,
+          "output": 35338,
+          "cacheRead": 1086336,
+          "cacheWrite": 0,
+          "processed": 1142827,
+          "requestMs": 240003,
+          "costUpperBoundUsd": 0.05526951599999999
+        },
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 235,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 510,
+          "requestMs": 2865,
+          "costUpperBoundUsd": 0.000326868
+        }
+      }
+    },
+    {
+      "id": "initial-interaction-C",
+      "reason": "token_limit",
+      "elapsedMs": 1016051,
+      "costUpperBoundUsd": 0.26145805199999994,
+      "goalStatus": "open",
+      "tokens": 5065755,
+      "artifactQuality": {
+        "score": 99.96322578943436,
+        "feasible": true,
+        "value": 95.9373735367691,
+        "impurity": 0.10128799999999999,
+        "start": 89.26159655975033,
+        "optimum": 95.93982940417737
+      },
+      "facts": 3,
+      "audits": [
+        {
+          "kind": null,
+          "holds": "yes"
+        },
+        {
+          "kind": null,
+          "holds": "yes"
+        }
+      ],
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 80,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 355,
+          "requestMs": 2033,
+          "costUpperBoundUsd": 0.000140868
+        },
+        "main": {
+          "calls": 55,
+          "input": 25849,
+          "output": 50379,
+          "cacheRead": 2758784,
+          "cacheWrite": 0,
+          "processed": 2835012,
+          "requestMs": 320904,
+          "costUpperBoundUsd": 0.08476220399999998
+        },
+        "evaluator": {
+          "calls": 38,
+          "input": 84439,
+          "output": 115869,
+          "cacheRead": 2030080,
+          "cacheWrite": 0,
+          "processed": 2230388,
+          "requestMs": 660520,
+          "costUpperBoundUsd": 0.17655497999999997
+        }
+      }
+    },
+    {
+      "id": "reuse-additive-A",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    },
+    {
+      "id": "reuse-additive-C",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    },
+    {
+      "id": "reuse-interaction-C",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    },
+    {
+      "id": "reuse-interaction-A",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    },
+    {
+      "id": "changed-additive-A",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    },
+    {
+      "id": "changed-additive-C",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    },
+    {
+      "id": "changed-interaction-C",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    },
+    {
+      "id": "changed-interaction-A",
+      "reason": "not_run",
+      "elapsedMs": null,
+      "costUpperBoundUsd": null,
+      "goalStatus": null
+    }
+  ]
+}

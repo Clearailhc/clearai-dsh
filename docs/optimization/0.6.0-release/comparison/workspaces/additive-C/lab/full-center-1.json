@@ -1,0 +1,17 @@
+{
+  "x": 0.5,
+  "y": 0.5,
+  "value": 95.10537263233219,
+  "impurity": 0.08757631964434265,
+  "instrument": "original",
+  "metric": "yield",
+  "mode": "full",
+  "noise_sd": 0.18,
+  "units": {
+    "value": "%",
+    "impurity": "fraction"
+  },
+  "cost": 3,
+  "spent": 6,
+  "budget": 30
+}

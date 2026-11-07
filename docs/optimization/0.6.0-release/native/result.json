@@ -1,0 +1,562 @@
+{
+  "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+  "group": "C",
+  "mode": "clearai",
+  "reason": "completed",
+  "elapsedMs": 66914,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 8839,
+    "output": 9648,
+    "cacheRead": 234880,
+    "cacheWrite": 0,
+    "calls": 19,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 253367,
+    "status": "verified",
+    "processed": 253367
+  },
+  "mount": {
+    "prompt": true,
+    "tools": true
+  },
+  "requests": [
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793967993770
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793967995929
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968000731
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968005032
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968008595
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968010409
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968015064
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968018127
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968020564
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968024416
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968029632
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968031719
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968033647
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968036468
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968038117
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968043338
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968048516
+    },
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793968056965
+    }
+  ],
+  "approvals": [],
+  "answer": "核对完成：`lab/input.json` 的原始值 `[2,2,2]`（单位 count，来源 synthetic test controller）的算术均值为 **2 count**。\n\n**依据**\n- 原始数据 `[2,2,2]`，运算：求和 2+2+2=6，除以 n=3，得 2。\n- `lab/source.json` 标明单位为 count、来源为 synthetic test controller、夹具名为 `audit-wait`，`delay_seconds: 0` 已注明是授权的测试延迟，并非性能要求或故障。\n- `lab/check.py` 的 `--quick` 自检输出 `mean=2.0, unit=count, quick=true, elapsed_seconds=9.38e-05>=0`，与手算一致。\n- 独立评估者已在系统提供的复跑副本中以默认命令 `python3 lab/check.py`（不带 `--quick`、未改延迟）执行到退出码 0，并实测得 `mean=2.0, quick=false, elapsed_seconds≈1.05e-04>=0`，复跑副本与原工作区的 `lab/` 完全一致。\n\n**范围**：结论仅限 `audit-wait` 夹具下的这三个整数，不外推到任何现实测量、性能或其它夹具数据。\n\n**交付产物**：`@lab/report.md`、`@lab/source.json`、`@lab/input.json`、`@lab/check.py`。没有未解释的反常，也没有需要您决定的事项。",
+  "clearai": {
+    "goal": {
+      "id": "g-mw4y88epcbo1",
+      "claim": "核对 lab/input.json 中三个整数 [2,2,2] 的均值为 2 count，并在系统提供的复跑副本中由独立评估者执行默认命令 python3 lab/check.py 复核 mean=2、quick=false、elapsed_seconds>=0。",
+      "done_criteria": "原始值 [2,2,2]（单位 count，来源 synthetic test controller，见 lab/source.json）的算术均值为 2 count；独立评估者必须在系统提供的复跑副本中执行默认命令 python3 lab/check.py（不得加 --quick、不得删改 0 秒延迟），等命令真正结束后核对 mean=2、quick=false、elapsed_seconds>=0；lab/report.md 存在且列出原始数值、单位、来源、运算及\"仅限本夹具\"的范围说明，并把 report.md、source.json、input.json、check.py 列为交付产物。",
+      "promote_at_level": "L3",
+      "irreversible": [],
+      "status": "achieved",
+      "revision": 1,
+      "reasons": [
+        null
+      ],
+      "openedAt": 1793968000677,
+      "closedAt": 1793968056908,
+      "closeVerdict": "support",
+      "headline": "核对 lab/input.json 中三个整数 [2,2,2] 的均值为 2 count，并在系统提供的复跑副本中由独立评估者执行默认命令 python3 lab/check.py 复核 mean=2、quick=false、elapsed_seconds>=0",
+      "criteria": [],
+      "criteria_note": null,
+      "legacy": false,
+      "criteriaHistory": [],
+      "mode": "solve",
+      "questions": [],
+      "areas": [],
+      "conditions": {
+        "fixture": "audit-wait"
+      },
+      "about": [],
+      "answers": [
+        {
+          "question": "",
+          "uses": [],
+          "scope": {
+            "conditions": {
+              "fixture": "audit-wait"
+            },
+            "ranges": {},
+            "note": "仅限本测试夹具的三个整数，不外推到现实测量、性能或其它夹具数据"
+          },
+          "conclusion": "lab/input.json 中原始值 [2,2,2] 的算术均值为 2 count；独立评估者需在系统复跑副本中以默认命令 python3 lab/check.py（不加 --quick、不删改延迟）等命令结束后复核 mean=2、quick=false、elapsed_seconds>=0。",
+          "basis": [
+            "lab/input.json：原始值为 [2,2,2]",
+            "lab/source.json：单位 count、来源 synthetic test controller、夹具 audit-wait、delay_seconds=0 且注明为授权测试延迟",
+            "lab/check.py 自检 python3 lab/check.py --quick 输出 mean=2.0、unit=count、quick=true、elapsed_seconds=9.38e-05>=0，与 (2+2+2)/3=2 一致",
+            "lab/report.md：列出原始值、单位、来源、运算、仅限本夹具范围，并说明最终默认命令由独立评估者在复跑副本执行"
+          ],
+          "open": [],
+          "decide": [],
+          "uses_review": []
+        }
+      ],
+      "unjudged": []
+    },
+    "hypotheses": [],
+    "plans": [
+      {
+        "id": "p-mw4y8ei61kbd",
+        "goal": "g-mw4y88epcbo1",
+        "phase_id": "g-mw4y88epcbo1",
+        "brief": "这是合成审计等待回归，只核对 lab/input.json 中三个整数 [2,2,2] 的均值为 2 count。所有数据来自测试夹具，没有现实仪器、没有外部业务决定。\n\n## 做法\n\n唯一一个普通文档步骤，不检验任何假设，也不新建本体条目。我读取 lab/source.json、lab/input.json、lab/check.py，确认来源、单位、夹具名与延迟配置；用 `python3 lab/check.py --quick` 做自检（只用于自检，不作为最终证据），随后写 `lab/report.md`：原始数值、单位、来源（直接引用 source.json）、运算过程（(2+2+2)/3=2）、范围只限本夹具，并说明最终默认命令 `python3 lab/check.py` 由独立评估者在系统提供的复跑副本中执行、不加 --quick、不删改延迟。report.md、source.json、input.json、check.py 一并列为交付产物。\n\n## 边界与等待\n\n0 秒固定延迟是授权的测试夹具，不是性能要求，也不是故障；check.py 里的延迟循环是空的（`range(0)`），因此不会真的睡 0 秒以上，`elapsed_seconds` 只反映脚本自身耗时且 >= 0。独立评估者的默认命令必须等它真正结束再核对 mean=2、quick=false、elapsed_seconds>=0；该评估者等待超过四分钟仍属正常，我不重派、不另建验证框架。",
+        "status": "closed",
+        "at": 1793968008564,
+        "closedAt": 1793968020518,
+        "summary": "单步文档计划完成：已读 lab/source.json、lab/input.json、lab/check.py，确认原始值 [2,2,2]、单位 count、来源 synthetic test controller、夹具 audit-wait、0 秒授权延迟；以 python3 lab/check.py --quick 自检得 mean=2.0、unit=count、quick=true、elapsed_seconds=9.38e-05>=0，与手算 (2+2+2)/3=2 一致；已写 lab/report.md，涵盖原始值、单位、来源、运算、仅限本夹具的范围说明，并注明最终默认命令 python3 lab/check.py（不加 --quick、不删改延迟）由独立评估者在系统提供的复跑副本中执行并核对 mean=2、quick=false、elapsed_seconds>=0。",
+        "steps": [
+          {
+            "id": "s1",
+            "ordinal": 1,
+            "do": "读三个夹具文件，运行 python3 lab/check.py --quick 自检，写 lab/report.md（原始值、单位、来源、运算、仅限本夹具的范围说明、最终默认命令由独立评估者在复跑副本执行）",
+            "artifacts": [
+              "lab/report.md",
+              "lab/source.json",
+              "lab/input.json",
+              "lab/check.py"
+            ],
+            "done_criteria": "lab/report.md 存在且非空，列出原始值 [2,2,2]、单位 count、来源 synthetic test controller、运算 (2+2+2)/3=2、范围仅限 audit-wait 夹具，说明独立评估者将以默认命令 python3 lab/check.py（不加 --quick、不删改延迟）在复跑副本中复核 mean=2、quick=false、elapsed_seconds>=0，且把 report.md、source.json、input.json、check.py 列为交付产物",
+            "tests": null,
+            "expect": "自检输出 mean=2.0、unit=count、quick=true、elapsed_seconds>=0",
+            "serves": null,
+            "predictions": [],
+            "status": "advanced",
+            "evidence": [],
+            "advancedAt": 1793968018097,
+            "voidReason": null,
+            "criteria_versions": [
+              "lab/report.md 存在且非空，列出原始值 [2,2,2]、单位 count、来源 synthetic test controller、运算 (2+2+2)/3=2、范围仅限 audit-wait 夹具，说明独立评估者将以默认命令 python3 lab/check.py（不加 --quick、不删改延迟）在复跑副本中复核 mean=2、quick=false、elapsed_seconds>=0，且把 report.md、source.json、input.json、check.py 列为交付产物"
+            ],
+            "delivery": {
+              "evaluator": "self",
+              "basis": "lab/report.md 已存在且非空，完整列出原始值 [2,2,2]、单位 count、来源 synthetic test controller、运算 (2+2+2)/3=2=2 count、范围仅限 audit-wait 夹具；并写明最终默认命令 python3 lab/check.py（不加 --quick、不删改延迟）由独立评估者在系统提供的复跑副本中执行，结束后核对 mean=2、quick=false、elapsed_seconds>=0；四个交付产物均已列出且存在。自检 python3 lab/check.py --quick 输出 mean=2.0、unit=count、quick=true、elapsed_seconds=9.38e-05>=0，与手算一致。",
+              "refs": [
+                "lab/check.py",
+                "lab/report.md",
+                "lab/source.json",
+                "lab/input.json"
+              ],
+              "origins": [
+                {
+                  "kind": "artifact",
+                  "path": "lab/check.py"
+                },
+                {
+                  "kind": "artifact",
+                  "path": "lab/report.md"
+                },
+                {
+                  "kind": "artifact",
+                  "path": "lab/source.json"
+                },
+                {
+                  "kind": "artifact",
+                  "path": "lab/input.json"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "evidence": [],
+    "audits": [
+      {
+        "id": "audit:pending:d3ddd49a85531670c7c34fbca139eb0b",
+        "step": "goal:g-mw4y88epcbo1",
+        "plan": "goal",
+        "kind": "goal_audit",
+        "verdict": "yes",
+        "evaluator": "independent",
+        "child": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+        "criteria": [
+          {
+            "id": "C1",
+            "text": "原始值 [2,2,2]（单位 count，来源 synthetic test controller，见 lab/source.json）的算术均值为 2 count；独立评估者必须在系统提供的复跑副本中执行默认命令 python3 lab/check.py（不得加 --quick、不得删改 0 秒延迟），等命令真正结束后核对 mean=2、quick=false、elapsed_seconds>=0；lab/report.md 存在且列出原始数值、单位、来源、运算及\"仅限本夹具\"的范围说明，并把 report.md、source.json、input.json、check.py 列为交付产物。"
+          }
+        ],
+        "capability": "preset:clearai-evaluator+outputSchema",
+        "goal_id": "goal-14a9b643-b1b4-472e-aa87-7edf0f68978a",
+        "goal_revision": 1,
+        "digest": "v6:3e0ecea399c91447f5c2e9b9053fc5862b36df04179de4482898dbc7b1c86969",
+        "shortfalls": [],
+        "basis": "判据逐条满足且观测真实：原始值 [2,2,2]（count，synthetic test controller）算术均值为 2；我在系统提供的复跑副本中以默认命令 python3 lab/check.py（未加 --quick、未改延迟）执行至退出码 0，实测 mean=2.0、quick=false、elapsed_seconds≈1.05e-04>=0；lab/report.md 存在并列出原始值、单位、来源、运算、仅限 audit-wait 夹具的范围说明，且把四个文件列为交付产物。复跑副本 lab/ 与原工作区 lab/ diff 完全一致；clear/knowledge/ 不存在，不存在绕开适用性判定的既有条目。",
+        "card_path": "/tmp/clearai060-e2e1/workspace/clear/evidence/audits/cace90163312815760beb092eda80f75cf46bd59db8d7fd0c6ae66aca53a0724/ad4ea5e5447728a597b87e31f6966884419c181c362ba553445005ef304a38c4.json",
+        "at": 1793968029538,
+        "holds": "yes",
+        "settledAt": 1793968056861,
+        "rechecks": [],
+        "lessons": [],
+        "reuse": [],
+        "refs": [
+          {
+            "path": "lab/input.json",
+            "line": 1,
+            "digest": "81f71118f616fe05658183c25e908b7596c7ad6747a3ca0ffe63365e51d2ffbe"
+          },
+          {
+            "path": "lab/source.json",
+            "line": 3,
+            "digest": "6cc3be6494b95a2b3167eb7017b7fd94ad0473db289b0ef08ad2c80d1841da83"
+          },
+          {
+            "path": "lab/source.json",
+            "line": 4,
+            "digest": "6cc3be6494b95a2b3167eb7017b7fd94ad0473db289b0ef08ad2c80d1841da83"
+          },
+          {
+            "path": "lab/source.json",
+            "line": 11,
+            "digest": "6cc3be6494b95a2b3167eb7017b7fd94ad0473db289b0ef08ad2c80d1841da83"
+          },
+          {
+            "path": "lab/source.json",
+            "line": 12,
+            "digest": "6cc3be6494b95a2b3167eb7017b7fd94ad0473db289b0ef08ad2c80d1841da83"
+          },
+          {
+            "path": "lab/check.py",
+            "line": 5,
+            "digest": "ff93c577d44a64662a97c737feec370148eb8dacf3f5544697731ee80ddc13b9"
+          },
+          {
+            "path": "lab/check.py",
+            "line": 6,
+            "digest": "ff93c577d44a64662a97c737feec370148eb8dacf3f5544697731ee80ddc13b9"
+          },
+          {
+            "path": "lab/check.py",
+            "line": 9,
+            "digest": "ff93c577d44a64662a97c737feec370148eb8dacf3f5544697731ee80ddc13b9"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 5,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 11,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 13,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 21,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 23,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 30,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 37,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 41,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 45,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 46,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 47,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": "lab/report.md",
+            "line": 48,
+            "digest": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+          },
+          {
+            "path": ".clearai-reruns/39457d2454179cafe2dc1b942ab853d2b4a0fd8beb589dace34b1847fdcc8ff3/.clearai-rerun.json",
+            "line": 5,
+            "digest": "cf3629c468aa41680bbf9b1b1332edb1e66bf6032bc866c133cf09f0b104b72e"
+          },
+          {
+            "path": "clear/goals/g-mw4y88epcbo1.md",
+            "line": 6,
+            "digest": "b8f49b29b6aa633624eb52c45b4f9178873f25e8cf86058e5094210b514e4b7d"
+          },
+          {
+            "path": "clear/goals/plans/p-mw4y8ei61kbd.md",
+            "line": 5,
+            "digest": "5f3ea2334d9702411f1bb497428ece2828782d3f6645f07922be82f146dfd58a"
+          }
+        ],
+        "criteriaResults": [
+          {
+            "criterion": "C1",
+            "result": "pass",
+            "basis": "①原始值/单位/来源：input.json:1 为 [2,2,2]，source.json:3-4 为 count/synthetic test controller，observations 与 input 完全一致（重算 sum=6,n=3,mean=2.0）；②我在副本 39457d… 执行默认命令 python3 lab/check.py（check.py:5 走默认分支，无 --quick）得 mean=2.0、quick=false、elapsed_seconds=0.00010479600132384803>=0、exit 0；副本与原工作区 lab/ diff 一致，check.py:6 的 range(0) 即 source.json:11 的 delay_seconds=0，未删改延迟；③report.md:11-15 列出原始值/单位/来源/夹具与 0 秒延迟说明，21-24 列出运算，5 与 39-41 给出「仅限本夹具」范围，45-48 列出 report.md、source.json、input.json、check.py 四个交付产物。"
+          }
+        ],
+        "results": []
+      }
+    ],
+    "materials": [
+      {
+        "id": "m-htms2s",
+        "ref": "lab/check.py",
+        "source": "self",
+        "digest": "sha256:ff93c577d44a6466",
+        "bytes": 430,
+        "note": "自检输出 mean=2.0、unit=count、quick=true、elapsed_seconds=9.38e-05>=0，与手算 (2+2+2)/3=2 一致",
+        "path": null,
+        "step": "s1",
+        "at": 1793968018097
+      },
+      {
+        "id": "m-xe388z",
+        "ref": "lab/report.md",
+        "source": "self",
+        "digest": "sha256:5a0fbe5735121ef3",
+        "bytes": 1845,
+        "note": "报告列出原始值 [2,2,2]、单位 count、来源 synthetic test controller、运算 (2+2+2)/3=2、范围仅限 audit-wait 夹具，并说明最终默认命令由独立评估者在复跑副本执行",
+        "path": null,
+        "step": "s1",
+        "at": 1793968018097
+      },
+      {
+        "id": "m-sw2j6a",
+        "ref": "lab/source.json",
+        "source": "self",
+        "digest": "sha256:6cc3be6494b95a2b",
+        "bytes": 291,
+        "note": "来源、单位、夹具名与 0 秒延迟配置，以及 delay_purpose 的夹具说明",
+        "path": null,
+        "step": "s1",
+        "at": 1793968018097
+      },
+      {
+        "id": "m-ez5ncx",
+        "ref": "lab/input.json",
+        "source": "self",
+        "digest": "sha256:81f71118f616fe05",
+        "bytes": 8,
+        "note": "原始值 [2,2,2]",
+        "path": null,
+        "step": "s1",
+        "at": 1793968018097
+      }
+    ],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "lab/report.md"
+    ],
+    "sessionId": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+    "integrityReceipts": {
+      "clear/goals/g-mw4y88epcbo1.md": {
+        "path": "clear/goals/g-mw4y88epcbo1.md",
+        "digest": "dfe7cf585a5acbdff9215c0fc6989a42e790e9a2ceda3398c0d5e34567c2c0ae",
+        "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+        "event": "write-mw4y9ftwoy2x",
+        "revision": 2
+      },
+      "clear/goals/plans/p-mw4y8ei61kbd.md": {
+        "path": "clear/goals/plans/p-mw4y8ei61kbd.md",
+        "digest": "5f3ea2334d9702411f1bb497428ece2828782d3f6645f07922be82f146dfd58a",
+        "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+        "event": "write-mw4y8nq4nobn",
+        "revision": 1
+      },
+      "clear/evidence/audits/cace90163312815760beb092eda80f75cf46bd59db8d7fd0c6ae66aca53a0724/ad4ea5e5447728a597b87e31f6966884419c181c362ba553445005ef304a38c4.json": {
+        "path": "clear/evidence/audits/cace90163312815760beb092eda80f75cf46bd59db8d7fd0c6ae66aca53a0724/ad4ea5e5447728a597b87e31f6966884419c181c362ba553445005ef304a38c4.json",
+        "digest": "7029a4c59397da9d9465062e2be43b0b82948ccf97c160254d8fa6a7bf818db7",
+        "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+        "event": "write-mw4y9frprmf7",
+        "revision": 1
+      }
+    },
+    "auditCopies": {
+      "audit:pending:d3ddd49a85531670c7c34fbca139eb0b": {
+        "t": "audit/copy",
+        "id": "audit:pending:d3ddd49a85531670c7c34fbca139eb0b",
+        "directory": "/tmp/clearai060-e2e1/workspace/.clearai-reruns/39457d2454179cafe2dc1b942ab853d2b4a0fd8beb589dace34b1847fdcc8ff3",
+        "files": 8,
+        "bytes": 16359,
+        "elapsedMs": 14.284654000002774,
+        "status": "ready",
+        "at": 1793968056908,
+        "cleanup": "removed",
+        "cleanupElapsedMs": 12.644264999995357
+      }
+    }
+  },
+  "violations": {
+    "silent_closure": false,
+    "unresolved_reference_completed": false,
+    "duplicate_dispatch": false,
+    "pending_restored_without_review": false,
+    "outside_historical_retraction": false,
+    "repeated_card_failure": false,
+    "isolation_failed": false
+  },
+  "driverDigest": "54b7718c0a7e2816e53b789890b67023c621e014a1957df79acd809b53f675a9",
+  "logs": [
+    {
+      "session": "session-native-38582030-6223-4146-8755-2537ca18fbbd",
+      "cursor": 102,
+      "path": "87a05ccbc6fa67919163ce8983424a504ded6f45381acde32e79b481939609bf.jsonl"
+    },
+    {
+      "session": "3b4ef37a-0882-4d45-a0ae-c9bc42160bfb",
+      "cursor": 78,
+      "path": "ad4ea5e5447728a597b87e31f6966884419c181c362ba553445005ef304a38c4.jsonl"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "id": "f-e2bsz3",
+  "goal": "g-mw52i41h09ow",
+  "hypothesis": "h-173dc0",
+  "text": "收率响应面在 x,y 上近似加性二次，交互项可忽略",
+  "about": [
+    "yield_surface_xy",
+    "yield_surface",
+    "has_surface_structure",
+    "yield",
+    "impurity",
+    "instrument"
+  ],
+  "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+  "scope_spec": {
+    "conditions": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    },
+    "ranges": {}
+  },
+  "refute_when": "补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上",
+  "level": "L3",
+  "evidence": [
+    "e-80yurv"
+  ],
+  "evidence_records": [
+    {
+      "t": "evidence/recorded",
+      "id": "e-80yurv",
+      "step": "goal:g-mw52i41h09ow",
+      "plan": "goal",
+      "hypothesis": "h-173dc0",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "复跑 16 点加性 CV 0.16775、交互 0.18048，交互未比加性低出 0.18（反而高 0.0127）；9 点 0.09239/0.11418；物理交互系数 −0.108，脚本 SE≈0.140，不显著。报告去重 13 点 0.155/0.156 与复跑 0.171/0.193 不符，但 16 点结论不变。",
+      "refs": [
+        "initial.json"
+      ],
+      "origins": [
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+        },
+        {
+          "kind": "artifact",
+          "path": "initial.json",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "加性二次：yield = 84.883 + 24.074x + 21.081y − 26.583x² − 23.550y²（16 个 full 点，残差 sd 0.170）；交互模型留一 CV 0.180 > 加性 0.168"
+      },
+      "predicate": "has_surface_structure",
+      "subject": {
+        "id": "yield_surface_xy",
+        "type": "yield_surface"
+      }
+    }
+  ],
+  "definitions": {
+    "has_surface_structure": "fnv:0e168600",
+    "yield_surface": "fnv:2868a8ff",
+    "impurity": "fnv:d916b361",
+    "instrument": "fnv:8ae62f56",
+    "yield": "fnv:b5e997fa"
+  },
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "status": "established",
+  "review": null,
+  "at": 1793976433943,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793976433943,
+      "level": "L3"
+    }
+  ]
+}

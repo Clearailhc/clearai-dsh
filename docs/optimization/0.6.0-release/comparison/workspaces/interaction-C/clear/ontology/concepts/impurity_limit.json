@@ -1,0 +1,8 @@
+{
+  "id": "impurity_limit",
+  "label": "杂质上限",
+  "gloss": "工艺规范允许的杂质分数上限，取值 0.115（fraction）；超过即不可行",
+  "kind": "measure",
+  "unit": "1",
+  "basis": "initial.json 的 impurity_limit"
+}

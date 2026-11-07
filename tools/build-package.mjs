@@ -155,6 +155,7 @@ const readPresetMeta = (file) => {
 	const meta = readPresetMeta(join(PRESET_DIR, 'preset.yml'))
 	const rows = readSourceText(join(PRESET_DIR, 'agent.cordis.yml')).replace(/\n+$/, '').split('\n')
 	// 独立评估者的组合(宿主 ≥0.2.1-alpha.2 用 `agentPreset` 选它,见 preset/evaluator.cordis.yml)。
+	const explorerRows = readSourceText(join(PRESET_DIR, 'explorer.cordis.yml')).replace(/\n+$/, '').split('\n')
 	const evaluatorRows = readSourceText(join(PRESET_DIR, 'evaluator.cordis.yml')).replace(/\n+$/, '').split('\n')
 	// `plugins:` 在 8 格,其下的列表项在 10 格 —— 整份组合平移过来,注释一并留下。
 	const row = (line) => (line.trim() === '' ? '' : `          ${line}`)
@@ -194,6 +195,15 @@ const readPresetMeta = (file) => {
 			'        order: 90',
 			'        plugins:',
 			...evaluatorRows.map(row),
+			'    - id: preset-clearai-explorer',
+			"      name: '@deepseek-ai/dsh-agent-preset'",
+			'      config:',
+			'        id: clearai-explorer',
+			'        name: ClearAI 探索者 · Explorer',
+			'        description: Independent exploration worker; findings remain unverified until reviewed.',
+			'        order: 80',
+			'        plugins:',
+			...explorerRows.map(row),
 			'',
 		].join('\n'),
 		'utf8',

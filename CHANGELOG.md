@@ -1,6 +1,43 @@
 # Changelog
 
+## 0.6.0 candidate — agent-native research
+
+- Conclude uses the same ontology grounding gate as ReviewClaims. Rejected final delivery retains independently bounded, fully covered structured claims and counterevidence while keeping the goal open; unavailable or changed-material reviews cannot promote facts.
+- Native goal failures report saved claims and direct repair through Conclude instead of suggesting a legacy plan. Goal registration records an immutable workspace baseline for version handoff and replay (projection v27); this baseline is not proof of semantic validity or a session-start snapshot.
+- 结案与按需核验共用主张准入；整体未通过时保留与缺口独立的合格事实，修复后直接结案。立题基线与历史审计版本分开，不再诱导转入旧计划流程。
+
+- Main agents can batch-read evidence; opt-in conditional reads omit only fully delivered, unchanged ranges within that session. Ordinary reads always restore text, changes always return text, and reviewers have separate receipts. Reviewers are instructed to read originals and rerun in copies; tool restrictions are not OS filesystem write protection.
+- Frame returns exact claim IDs and advisory review grounding checks before dispatch. Knowledge overview separates current/loaded facts, pending facts, fact assertions and entity records (projection v26); counts do not certify source records.
+- Source-faithful definitions and observed reuse are explicit instructions; no new semantic verification authority or automatic fine-grained verdict reuse is introduced.
+
+- New goals explore without mandatory step contracts; legacy goals retain their workflow.
+- Add ReviewClaims, explicit final-answer claim coverage, native explorer preset and public evidence handoffs.
+- Bind review reuse to material/scope/configuration; retain pending candidates without certifying them.
+- Add bounded ReadEvidence batches, audit-card v3 coverage and state projection v25.
+- 新目标按需探索，关键主张独立核验；旧会话兼容、候选保持待验证，评估与探索用量分别记录。
+- Review policy v2 records dispatcher-owned stage/final obligations, keeps independent counterevidence alongside author observations, and requires support to cover the registered claim and scope.
+- Preserve the original policy when recovering old audit cards; bind legacy cache reuse to reviewer trust and policy changes too.
+- Return ontology format problems together before any write, clarify slug lengths and assertion references, and show valid hypothesis IDs after an invalid ReviewClaims request.
+- 核验范围由内核派发记录确定，旧裁决恢复保留原策略；本体错误批量反馈，未知影响与最终交付守卫不变。
+- Review policy v3 requires explicit full claim/scope/assertion coverage; narrower or unknown coverage remains inconclusive. Final promotion requires current support and independently bounded impact.
+- Retain qualified partial facts and contrary evidence from rejected claim-review bundles; recheck supported but unsaved claims in the existing final audit without certifying unrelated leads.
+- Freeze claim IDs in native review schemas and enforce exact counts at settlement and validate against the dispatched request even when the host projection lags. Preserve step-review receipts under the existing material/trust checks.
+- 整包拒绝不丢独立局部成果；异常修复不自动晋升，待沉淀主张并入已有结案评估。范围不足和新证据不足不能被旧支持覆盖。
+- Adapt array-count constraints to DSH's supported output-schema subset; retain exact coverage enforcement in the kernel and check every test dispatch with the installed official schema validator.
+- Release remains blocked until fresh paired completion, reuse and revalidation acceptance passes.
+
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.6.0] — 2026-11-06
+
+Small fixes on 0.5.9; the research workflow and host integration remain unchanged.
+
+- Bind independent evaluator output to the registered criterion IDs. Reject invented subcriteria in the native structured output tool before settlement; keep evidence and completeness checks intact.
+- Avoid scanning the entire historical deduplication index for duplicate UI events. Ignore malformed mutation entries and empty evidence references during replay.
+- Show review handoff only after a child session exists. Keep pending audit ownership across goal changes so late results remain attached to the original task.
+- Label hypothesis refutation conditions, retain structured audit shortfalls, translate completed/reused statuses, and make the research layout respond to the pane width.
+- Clean up locale listeners when the plugin is disposed; coalesce seat updates without continually postponing them during event bursts.
+- See [0.6.0 review and acceptance](docs/optimization/0.6.0-release/README.md) for measured scope, retained failures and limitations. No additional model calls are used for display.
 
 ## [0.5.9] — 2026-11-06
 

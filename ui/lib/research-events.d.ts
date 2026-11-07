@@ -14,6 +14,7 @@ export interface ResearchEventRecord {
   time: number | null
   objects: { kind: string; id: string; label: string }[]
   summary: string[]
+  refutationCondition?: string | null
   status: string
   links: { kind: string; path?: string; sessionId?: string }[]
   revision: number | null

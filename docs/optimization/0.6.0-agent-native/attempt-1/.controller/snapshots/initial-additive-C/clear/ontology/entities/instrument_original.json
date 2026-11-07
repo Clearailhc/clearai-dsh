@@ -1,0 +1,10 @@
+{
+  "basis": "全部读数的 instrument 字段与 calibrate 输出均为 original、offset 0",
+  "id": "instrument_original",
+  "label": "original 仪器",
+  "provenance": {
+    "kind": "named",
+    "ref": "lab/cal-01.json"
+  },
+  "type": "instrument"
+}

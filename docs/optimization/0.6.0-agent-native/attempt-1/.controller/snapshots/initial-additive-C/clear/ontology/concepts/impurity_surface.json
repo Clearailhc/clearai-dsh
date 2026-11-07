@@ -1,0 +1,6 @@
+{
+  "gloss": "(x,y)→杂质 的映射，用于判断 0.115 约束是否活跃",
+  "id": "impurity_surface",
+  "kind": "phenomenon",
+  "label": "杂质响应面"
+}

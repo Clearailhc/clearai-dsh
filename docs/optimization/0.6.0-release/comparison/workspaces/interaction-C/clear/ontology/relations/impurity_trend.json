@@ -1,0 +1,10 @@
+{
+  "id": "impurity_trend",
+  "label": "杂质随设定变化的趋势",
+  "kind": "affects",
+  "domain": "response_surface",
+  "range": {
+    "form": "statement"
+  },
+  "basis": "initial.json 的 9 点读数"
+}

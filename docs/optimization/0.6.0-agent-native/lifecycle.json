@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "root": "/tmp/clearai060-native-fixed-lifecycle",
+  "checks": [
+    {
+      "check": "replay",
+      "version": "0.5.9",
+      "oldStateVersion": 23,
+      "newStateVersion": 24,
+      "ledgerDigest": "39ef2749c5b1228a67d5b650f50853713adcf99b1d14480dc8a4dadc7d26ffa1",
+      "passed": true
+    },
+    {
+      "check": "native-install-upgrade",
+      "version": "0.5.9",
+      "packageDigest": "15d604e40f729c3bc20772e315997ff267883eaaf3ea4b62d5e4022b2993d867",
+      "passed": true
+    },
+    {
+      "check": "native-install-upgrade",
+      "version": "0.6.0",
+      "packageDigest": "3e56308b5982be43208642c0f323001871fddd601d2d08b45ffaf902b18d6151",
+      "passed": true
+    },
+    {
+      "check": "native-uninstall",
+      "passed": true
+    },
+    {
+      "check": "native-reinstall",
+      "passed": true
+    },
+    {
+      "check": "user-configuration-preserved",
+      "passed": true
+    }
+  ]
+}

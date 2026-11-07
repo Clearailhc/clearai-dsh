@@ -216,7 +216,7 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 	process.env.DSH_HOME = join(root, 'home')
 	const host = makeSimHost({ workspace, runDir: join(root, 'run') })
 	apply(host.ctx, { ...config, auditTimeoutMs: 5000 })
-	check('装上:7 件工具、3 段提示词', host.tools.size === 7 && host.sections.length === 3, `${host.tools.size} / ${host.sections.length}`)
+	check('装上:8 件工具、3 段提示词', host.tools.size === 8 && host.sections.length === 3, `${host.tools.size} / ${host.sections.length}`)
 
 	/** 预设开着测量门槛:立题时写出读数这个量,以及它由什么测、怎样核对。 */
 	const SIM_ONTOLOGY = {
@@ -239,7 +239,7 @@ console.log('\n【⑤ 模拟宿主:真内核 + 外部评估者 + 同一个判官
 	while (!(request = [...host.pending.values()].find((entry) => entry.settled === false)) && Date.now() < deadline) await new Promise(done => setTimeout(done, 10))
 	if (!request) throw new Error('Evaluator was not dispatched within 5s: ' + JSON.stringify(host.mutations().slice(-3)))
 	check('L3 交付把评估者挂起来,等外部交回裁决(提示词是正文,不是对象)', request !== undefined && request.prompt.length > 40 && !request.prompt.includes('[object Object]'), String(request?.prompt ?? '').slice(0, 80))
-	host.settle(request.id, { structured: { holds: 'yes', criteria: [{criterion:'C1',result:'pass',basis:'lab/run.txt:1'}], basis: 'lab/run.txt 第 1 行 value=2', results: [{ hypothesis, verdict: 'support', basis: '读数是 2' }], refs: [{ path: 'lab/run.txt', line: 1 }] } })
+	host.settle(request.id, { structured: { holds: 'yes', criteria: [{criterion:'C1',result:'pass',basis:'lab/run.txt:1'}], basis: 'lab/run.txt 第 1 行 value=2', results: [{ hypothesis, verdict: 'support', coverage: 'full', basis: '读数是 2' }], refs: [{ path: 'lab/run.txt', line: 1 }] } })
 	const delivered = await delivering
 	const kinds = host.mutations().map((mutation) => mutation.t)
 	check('交回裁决之后交付落定:派发、结算、推进都在账上', delivered.ok === true && kinds.includes('audit/dispatched') && kinds.includes('audit/settled') && kinds.includes('step/advanced'), kinds.join(','))

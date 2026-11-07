@@ -1,0 +1,9 @@
+{
+  "id": "mode_reads_yield",
+  "label": "模式读出收率",
+  "kind": "measures",
+  "domain": "assay_mode",
+  "range": "yield_pct",
+  "check": "同点 full 复测/校准样对照",
+  "basis": "experiment.py 的 quick/full 模式"
+}

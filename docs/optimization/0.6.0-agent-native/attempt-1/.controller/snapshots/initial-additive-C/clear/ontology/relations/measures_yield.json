@@ -1,0 +1,8 @@
+{
+  "check": "同点重复 full 读数、与 calibrate 的 offset 对照",
+  "domain": "instrument",
+  "id": "measures_yield",
+  "kind": "measures",
+  "label": "测量收率",
+  "range": "yield"
+}

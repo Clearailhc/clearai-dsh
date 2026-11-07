@@ -1,0 +1,6 @@
+{
+  "gloss": "给出 value 与 impurity 读数的装置；本次全程为 original，calibrate 返回 offset 0",
+  "id": "instrument",
+  "kind": "category",
+  "label": "测量仪器"
+}

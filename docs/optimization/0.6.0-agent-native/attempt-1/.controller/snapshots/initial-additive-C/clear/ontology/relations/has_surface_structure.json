@@ -1,0 +1,9 @@
+{
+  "domain": "yield_surface",
+  "id": "has_surface_structure",
+  "kind": "defines",
+  "label": "曲面结构",
+  "range": {
+    "form": "statement"
+  }
+}

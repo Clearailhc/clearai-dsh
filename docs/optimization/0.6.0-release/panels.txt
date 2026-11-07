@@ -1,0 +1,1 @@
+PASS: panel render, research widths, graph search, keyboard selection, neighborhood, entity layer, list browsing, fullscreen, narrow details, Escape, dark theme, stable viewport, dense graph search. Screenshots: /workspace/clearai-audit-opt/.tmp-audit/design

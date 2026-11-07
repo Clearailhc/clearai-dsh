@@ -1,0 +1,7 @@
+{
+  "id": "instrument",
+  "label": "测量仪器",
+  "gloss": "产生 yield 与 impurity 读数的仪器或测量通道；不同模式的读数口径需校准",
+  "kind": "category",
+  "basis": "initial.json 的 instrument 字段与 experiment.py"
+}

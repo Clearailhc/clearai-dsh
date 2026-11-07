@@ -1,0 +1,196 @@
+{
+  "id": "f-78qael",
+  "goal": "g-mw52i41h09ow",
+  "hypothesis": "h-dfrfe9",
+  "text": "可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%",
+  "about": [
+    "yield_surface_xy",
+    "yield_surface",
+    "maximized_at",
+    "yield",
+    "impurity",
+    "instrument"
+  ],
+  "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+  "scope_spec": {
+    "conditions": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    },
+    "ranges": {}
+  },
+  "refute_when": "在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界",
+  "level": "L3",
+  "evidence": [
+    "e-mw52xoverjbj"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw52xoverjbj",
+      "step": "review:79839a3c2d2d6e2830f952e3",
+      "plan": "review",
+      "hypothesis": "h-dfrfe9",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "(0.45,0.45) 附近 full 读数 94.7228–95.2801（均值 95.054）、(0.45,0.45) 单点 95.0719，均不低于已测最佳 94.693，也不低于事前 PI 下界 94.547；可行域内模型极值复算在 (0.452,0.448)。“约 94.9%”与事前预测 94.895/94.957 一致。",
+      "refs": [
+        "initial.json",
+        "lab/cal-01.json",
+        "lab/f-opt-1.json",
+        "lab/f-val-a.json",
+        "lab/model-final.json",
+        "lab/q-0505.json",
+        "reports/analysis.md",
+        "submission.json",
+        "method/response_surface.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal-01.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-opt-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-val-a.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q-0505.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "reports/analysis.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "method/response_surface.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw52xoverjbj",
+      "step": "review:79839a3c2d2d6e2830f952e3",
+      "plan": "review",
+      "hypothesis": "h-dfrfe9",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "(0.45,0.45) 附近 full 读数 94.7228–95.2801（均值 95.054）、(0.45,0.45) 单点 95.0719，均不低于已测最佳 94.693，也不低于事前 PI 下界 94.547；可行域内模型极值复算在 (0.452,0.448)。“约 94.9%”与事前预测 94.895/94.957 一致。",
+      "refs": [
+        "initial.json",
+        "lab/cal-01.json",
+        "lab/f-opt-1.json",
+        "lab/f-val-a.json",
+        "lab/model-final.json",
+        "lab/q-0505.json",
+        "reports/analysis.md",
+        "submission.json",
+        "method/response_surface.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal-01.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-opt-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-val-a.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q-0505.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "reports/analysis.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "method/response_surface.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "x=0.4528, y=0.4476，预测 95.05%；在 (0.4517,0.4485) 的 4 次 full 读数 94.72/95.05/95.16/95.28，均值 95.05"
+      },
+      "predicate": "maximized_at",
+      "subject": {
+        "id": "yield_surface_xy",
+        "type": "yield_surface"
+      }
+    }
+  ],
+  "definitions": {
+    "maximized_at": "fnv:0e168600",
+    "yield_surface": "fnv:2868a8ff",
+    "impurity": "fnv:d916b361",
+    "instrument": "fnv:8ae62f56",
+    "yield": "fnv:b5e997fa",
+    "measures_yield": "fnv:50ab64f6"
+  },
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "status": "established",
+  "review": null,
+  "at": 1793975906914,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793975906914,
+      "level": "L3"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "check": "同批读数、与杂质模型残差对照",
+  "domain": "instrument",
+  "id": "measures_impurity",
+  "kind": "measures",
+  "label": "测量杂质",
+  "range": "impurity"
+}

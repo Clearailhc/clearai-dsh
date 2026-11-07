@@ -1,0 +1,23 @@
+✔ uncommitted JSON, user prose and other tool results do not create achievements (5.031257ms)
+✔ different hypotheses remain separate and revisions preserve their source (0.843116ms)
+✔ committed definition changes group per operation and never become verified facts (0.806765ms)
+✔ invalid and partial ontology files do not create structure achievements (1.485836ms)
+✔ valid committed ontology files produce structural records with evidence paths (0.417968ms)
+✔ validation failure and insufficient evidence remain distinguishable (0.334385ms)
+✔ tool and internal fact channels deduplicate, refresh replays the same history (2.379656ms)
+✔ high-frequency activity does not update the projection or trigger model work (0.267626ms)
+✔ a goal revision does not repropose unchanged hypotheses (0.459548ms)
+✔ records inherit only the task committed in their own session history (0.989118ms)
+✔ late review results retain their original task after a new goal starts (0.543012ms)
+✔ malformed mutation entries and evidence origins do not crash history replay (0.338719ms)
+✔ duplicate event lookup does not enumerate the history index (0.27079ms)
+✔ pending dispatch has no handoff and successful dispatch retains its original task (0.545725ms)
+✔ structured audit shortfalls retain the criterion, finding and missing evidence (0.340385ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 159.41875

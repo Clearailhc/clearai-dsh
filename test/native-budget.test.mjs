@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { initializeBudget, campaignBudget, migrateVerifiedCachePricing } from '../tools/native-headless/budget.mjs'
+import { initializeBudget, campaignBudget, migrateVerifiedCachePricing, doubleBudgetLimits, raiseBudgetLimits } from '../tools/native-headless/budget.mjs'
 function fixture(t) { const root=mkdtempSync(join(tmpdir(),'clearai-budget-')); t.after(()=>rmSync(root,{recursive:true,force:true})); const file=join(root,'ledger.json'); initializeBudget(file); return {file,b:campaignBudget(file)} }
 test('all sessions and retries share the $5 test ceiling',t=>{const {b}=fixture(t); for(let i=0;i<6;i++) b.reserve({testId:'same',session:String(i)}); assert.throws(()=>b.reserve({testId:'same'}),/Per-test/); assert.doesNotThrow(()=>b.reserve({testId:'different'})); assert.throws(()=>b.reserve({}),/testId/)} )
 test('pending requests across tests share the $30 campaign ceiling',t=>{const {b}=fixture(t); for(let i=0;i<37;i++) b.reserve({testId:String(i)}); assert.throws(()=>b.reserve({testId:'next'}),/Campaign/)} )
@@ -35,3 +35,53 @@ test('pricing reconciliation refuses pending requests without changing the ledge
  const old=JSON.parse(readFileSync(file));old.version=2;writeFileSync(file,JSON.stringify(old));const before=readFileSync(file,'utf8')
  assert.throws(()=>migrateVerifiedCachePricing(file),/Drain pending/);assert.equal(readFileSync(file,'utf8'),before)
 })
+
+
+test('explicit doubling preserves every prior charge and unknown reservation, and cannot repeat',t=>{
+ const {file,b}=fixture(t),id=b.reserve({testId:'old'});b.settle(id,{inputTokens:1000,outputTokens:200})
+ const unknown=b.reserve({testId:'old'});b.settle(unknown,undefined);b.acceptUnknownReservation(unknown,'Earlier specific exception')
+ const before=JSON.parse(readFileSync(file))
+ assert.throws(()=>doubleBudgetLimits(file,''),/authorization/)
+ doubleBudgetLimits(file,'User explicitly requests all budgets x2')
+ const after=JSON.parse(readFileSync(file));assert.deepEqual(after.requests,before.requests)
+ assert.equal(after.limitUsd,60);assert.equal(after.testLimitUsd,10)
+ assert.throws(()=>doubleBudgetLimits(file,'repeat'),/once/)
+ for(let i=0;i<12;i++)b.reserve({testId:'new'})
+ assert.throws(()=>b.reserve({testId:'new'}),/Per-test/)
+ for(let i=0;i<61;i++)b.reserve({testId:'other-'+i})
+ assert.throws(()=>b.reserve({testId:'overflow'}),/Campaign/)
+})
+test('budget increase cannot reset pending or authorize arbitrary cap edits',t=>{
+ const {file,b}=fixture(t);b.reserve({testId:'pending'})
+ const before=readFileSync(file,'utf8');assert.throws(()=>doubleBudgetLimits(file,'approved'),/Drain pending/);assert.equal(readFileSync(file,'utf8'),before)
+ const data=JSON.parse(before);data.limitUsd=60;data.testLimitUsd=10;writeFileSync(file,JSON.stringify(data))
+ assert.throws(()=>b.reserve({testId:'new'}),/policy mismatch/)
+})
+
+
+import { spawn } from 'node:child_process'
+test('concurrent workers preserve all shared reservations and settlements',async t=>{
+ const {file}=fixture(t),moduleUrl=new URL('../tools/native-headless/budget.mjs',import.meta.url).href
+ await Promise.all(Array.from({length:4},(_,worker)=>new Promise((resolve,reject)=>{
+  const source=`import {campaignBudget} from ${JSON.stringify(moduleUrl)};const b=campaignBudget(${JSON.stringify(file)});for(let i=0;i<20;i++){const id=b.reserve({testId:'worker-'+${worker}});b.settle(id,{inputTokens:10,outputTokens:10});}`
+  const child=spawn(process.execPath,['--input-type=module','-e',source],{stdio:['ignore','ignore','pipe']});let stderr=''
+  child.stderr.on('data',data=>stderr+=data);child.on('error',reject);child.on('exit',code=>code===0?resolve():reject(new Error(stderr)))
+ })))
+ const rows=Object.values(JSON.parse(readFileSync(file)).requests)
+ assert.equal(rows.length,80);assert.ok(rows.every(r=>r.status==='verified'))
+})
+
+ test('further authorized increases preserve reservations and validate the complete limit chain',t=>{
+ const {file,b}=fixture(t);doubleBudgetLimits(file,'User doubled the original limits')
+ const id=b.reserve({testId:'prior'});b.settle(id,{inputTokens:20,outputTokens:10})
+ const before=JSON.parse(readFileSync(file))
+ assert.throws(()=>raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:12},''),/authorization/)
+ assert.throws(()=>raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:9},'raise'),/increase/)
+ raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:12},'User allows a modest further increase')
+ const after=JSON.parse(readFileSync(file));assert.deepEqual(after.requests,before.requests);assert.equal(after.limitChanges.length,2)
+ const pending=b.reserve({testId:'new'})
+ assert.throws(()=>raiseBudgetLimits(file,{limitUsd:60,testLimitUsd:13},'raise'),/pending/)
+ b.settle(pending,{inputTokens:1,outputTokens:1})
+ const tampered=JSON.parse(readFileSync(file));tampered.limitChanges[1].from.testLimitUsd=9;writeFileSync(file,JSON.stringify(tampered))
+ assert.throws(()=>b.reserve({testId:'bad'}),/policy/)
+ })

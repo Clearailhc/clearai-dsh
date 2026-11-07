@@ -177,11 +177,13 @@ check('VERDICT_SCHEMA 取得出来(不是靠猜)', verdict !== null && typeof ve
   criteria: [],
 		holds: 'no',
 		basis: '判据③不满足:31 条反例里 v17 无具名文献。',
-		results: [{ hypothesis: 'h-abc123', verdict: 'inconclusive', basis: '交付不成立,读不出结果' }],
+		results: [{ hypothesis: 'h-abc123', verdict: 'inconclusive', coverage: 'unknown', basis: '交付不成立,读不出结果' }],
 		shortfalls: [{ criterion: '③ 语料库每条带可追溯出处', what: 'boundary-negatives-verified.json:24 v17 只写「B站分区形成史」', missing: '一条可点开的一手来源' }],
 		refs: [{ path: 'lab/data/boundary-negatives-verified.json', line: 24 }],
 	}
 	check('活检查:合规样本过得了同一份 schema', shapeProblems(verdict, goodSample).length === 0, shapeProblems(verdict, goodSample).join(' ;; '))
+	const withoutCoverage = structuredClone(goodSample); delete withoutCoverage.results[0].coverage
+	check('范围确认缺失时不能作为合规裁决', shapeProblems(verdict, withoutCoverage).some(problem => problem.includes('coverage')))
 }
 
 // ═══ ② EVALUATOR_DISCIPLINE:要短裁决 + 逐条 refs ═════════════════════════

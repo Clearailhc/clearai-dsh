@@ -1,0 +1,57 @@
+{
+  "budget_total": 30,
+  "cost_schedule": {
+    "quick": 1,
+    "full": 3,
+    "calibrate": 2
+  },
+  "entries": [
+    {
+      "seq": 1,
+      "mode": "calibrate",
+      "x": null,
+      "y": null,
+      "cost": 2,
+      "spent_after": 2,
+      "artifact": "lab/calibrate-1.json"
+    },
+    {
+      "seq": 2,
+      "mode": "quick",
+      "x": 0.5,
+      "y": 0.5,
+      "cost": 1,
+      "spent_after": 3,
+      "artifact": "lab/quick-0.5-0.5.json"
+    },
+    {
+      "seq": 3,
+      "mode": "full",
+      "x": 0.5,
+      "y": 0.5,
+      "cost": 3,
+      "spent_after": 6,
+      "artifact": "lab/full-center-1.json"
+    },
+    {
+      "seq": 4,
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.452,
+      "cost": 3,
+      "spent_after": 9,
+      "artifact": "lab/full-optimum-1.json"
+    },
+    {
+      "seq": 5,
+      "mode": "full",
+      "x": 0.508,
+      "y": 0.452,
+      "cost": 3,
+      "spent_after": 12,
+      "artifact": "lab/full-optimum-2.json"
+    }
+  ],
+  "spent": 12,
+  "remaining": 18
+}

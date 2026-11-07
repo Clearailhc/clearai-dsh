@@ -7,6 +7,12 @@ description: Use when working inside the ClearAI preset and a delivery keeps get
 
 循环本身写在提示词的「循环」一段,每个工具的用法写在工具说明里。这份技能只讲那两处没写的:准入核什么、被拦之后怎么走、评估卡怎么读、本体文件怎么被检查。这里的每条规则都由 `clearai-kernel` 执行,不是劝告。
 
+## 新目标按需探索（0.6）
+
+新目标使用 `agent-v1`：先 Frame 登记目标与判据，假设可空；普通工具和原生子任务负责探索。有价值的主张再登记，需要提前核验或保存知识时使用 `ReviewClaims`，相关主张合并提交，公开检查与排除理由放在 observations 的证据引用中。不要为走流程制造计划或额外实验。
+
+最终 `Conclude.answers.claims` 列答案依赖的假设，`uses` 列实际采用的已验证知识；其他假设可以留待验证并说明影响。没有显式计划不需要 ClosePlan。旧 `steps-v1` 目标以及显式创建的计划仍遵守下述步骤契约。评估者可以用 ReadEvidence 批量取得原文、行号与指纹；文件存在或指纹相同不证明结论正确。
+
 ## 准入只回答「收不收」
 
 `AdvancePlan` 交付时,系统按这个次序核对:
@@ -63,6 +69,12 @@ description: Use when working inside the ClearAI preset and a delivery keeps get
 # The ClearAI loop: what to do when blocked (English)
 
 The loop itself is in the "loop" section of the prompt, and each tool's usage is in its own description. This skill covers only what those leave out: what intake checks, how to proceed after a rejection, how to read an evaluator's card, and how ontology files are checked. Every rule here is enforced by `clearai-kernel`; none of it is advice.
+
+## On-demand exploration for new goals (0.6)
+
+New goals use `agent-v1`: Frame the goal and criteria with optional hypotheses, explore through ordinary tools and native workers, and register useful claims when they emerge. ReviewClaims batches related claims when an independent challenge or early knowledge commitment is useful. Observations point to public checks, exclusions and raw evidence. Do not create plans or experiments merely to satisfy a workflow.
+
+Conclude.answers.claims identifies answer-dependent hypotheses; uses identifies verified knowledge actually used. Extra candidates may remain pending with their impact stated. ClosePlan is needed only for an explicit plan. Existing steps-v1 goals retain the step contract below. Evaluators can batch-read source text, exact lines and hashes with ReadEvidence; existence and matching hashes do not establish truth.
 
 ## Intake only answers "accept or not"
 

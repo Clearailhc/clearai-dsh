@@ -1,0 +1,100 @@
+{
+  "about": "本体文件的字段定义(系统铺设,只读)。命名规则:X.json 描述节点 X,它的子节点放在同级的 X/ 目录里;id 必须等于文件名。概念目录嵌套 = is_a;实体目录嵌套 = 组成 / 属于;关系可以平铺,也可以分目录(只是分组)。引用一律只写 id,挪目录不断引用。写入时只查单个文件;引用断了、类型对不上等跨文件问题在卡片上提示,升格时才拦。",
+  "concept": {
+    "where": "clear/ontology/concepts/**/<id>.json",
+    "required": {
+      "id": "slug:小写字母开头,字母/数字/下划线,≤40,等于文件名",
+      "label": "给人看的名字",
+      "gloss": "一句话释义:它指什么;度量(良率、收率……)写明口径,也就是怎么算"
+    },
+    "optional": {
+      "kind": "category = 类别(反应器、催化剂);measure = 度量(收率、杂质,要写 unit);phenomenon = 现象(漂移、失活)",
+      "unit": "单位(度量必填,无量纲写 \"1\")",
+      "aliases": "别名数组",
+      "basis": "依据:哪份材料让这个词成立",
+      "status": "active | deprecated",
+      "replaced_by": "废止后由哪个 id 接替",
+      "note": "备注"
+    },
+    "example": {
+      "id": "jepa",
+      "label": "联合嵌入预测架构",
+      "aliases": [
+        "JEPA"
+      ],
+      "gloss": "在表示空间里从上下文预测目标的表示,不还原像素",
+      "basis": "LeCun 2022"
+    }
+  },
+  "relation": {
+    "where": "clear/ontology/relations/**/<id>.json",
+    "required": {
+      "id": "slug,同概念(概念与关系共用一个 id 空间)",
+      "label": "给人看的名字",
+      "range": "宾语是哪种东西:一个概念 id(宾语是该概念的实体),或 {\"form\": \"statement\" | \"quantity\" | \"formula\" | \"code\" | \"reference\", \"unit\"?: \"...\"}(宾语是字面值)"
+    },
+    "optional": {
+      "gloss": "一句话释义",
+      "kind": "affects = 影响(一个量怎样随另一个量变);defines = 定义(一个度量怎么算);measures = 测量(哪个仪器测哪个量);manifests_as = 表现为(一个现象在读数上什么样)",
+      "shape": "影响的大致形状:increasing | decreasing | peak | threshold | coupled;预期从这里来",
+      "check": "测量关系:读数怎么核(参考探头、标样、重复点)",
+      "domain": "主语必须是哪个概念(下位概念也算)",
+      "functional": "true = 单值:同一主语只能有一个取值,两个不同取值会被报成冲突",
+      "basis": "依据",
+      "status": "active | deprecated",
+      "replaced_by": "接替的 id",
+      "note": "备注"
+    },
+    "example": {
+      "id": "derived_from",
+      "label": "衍生自",
+      "domain": "method",
+      "range": "method",
+      "functional": false
+    }
+  },
+  "entity": {
+    "where": "clear/ontology/entities/**/<id>.json",
+    "required": {
+      "id": "字母或数字开头,字母/数字/下划线/短横,≤60,等于文件名",
+      "label": "给人看的名字",
+      "type": "它是哪个概念的实体(概念 id)",
+      "basis": "依据:哪份材料让它可以被指认",
+      "provenance": "出处 {\"kind\": \"url\" | \"named\" | \"backref\", \"ref\": \"链接 / 文献名 / 工作区里的文件\"}"
+    },
+    "optional": {
+      "aliases": "别名数组",
+      "history": "带日期的经历:[{\"at\": \"YYYY-MM-DD\", \"what\": \"校准 / 更换 / 发现漂移\", \"evidence\"?: {\"kind\", \"ref\"}}]",
+      "relations": "它对外的关系,每条一个出处:{\"predicate\": 关系 id, \"object\": 另一个实体的 id} 或 {\"predicate\": 关系 id, \"value\": 字面值, \"unit\"?: 单位};两种都要带 \"evidence\": {\"kind\", \"ref\"}",
+      "note": "备注"
+    },
+    "example": {
+      "id": "v_jepa_2_ac",
+      "label": "V-JEPA 2-AC",
+      "type": "world_model",
+      "basis": "动作条件的 V-JEPA 2",
+      "provenance": {
+        "kind": "named",
+        "ref": "sources/vjepa2.md"
+      },
+      "relations": [
+        {
+          "predicate": "derived_from",
+          "object": "v_jepa_2",
+          "evidence": {
+            "kind": "named",
+            "ref": "V-JEPA 2 论文"
+          }
+        },
+        {
+          "predicate": "released_year",
+          "value": 2025,
+          "evidence": {
+            "kind": "named",
+            "ref": "V-JEPA 2 论文"
+          }
+        }
+      ]
+    }
+  }
+}

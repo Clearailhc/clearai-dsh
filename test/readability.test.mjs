@@ -201,7 +201,7 @@ console.log('\n【③ 卡/文档层:裁决要指认判据条目,且没有相反�
 	 * (`criterion` / `what` / `missing`),而不是评估者回的那串原始散文。
 	 * 当场结算与日志回收共用同一个写卡入口。
 	 */
-	const cardWindows = [...KERNEL_SOURCE.matchAll(/schema_version: 'clearai\.audit\.v2'/g)].map((match) => KERNEL_SOURCE.slice(match.index, match.index + 420))
+	const cardWindows = [...KERNEL_SOURCE.matchAll(/cardPath = writeAuditCard\(sessionId, audit.step/g)].map((match) => KERNEL_SOURCE.slice(match.index, match.index + 850))
 	// 裁决 schema 是一个按会话语言出说明的函数(`verdictSchema = () => ({...})`);取它返回的那个字面量,`tr` 取中文。
 	const verdictSchemaAt = KERNEL_SOURCE.indexOf('const verdictSchema = () => ({')
 	const verdictSchema = verdictSchemaAt < 0 ? null : extractLiteral(KERNEL_SOURCE, KERNEL_SOURCE.indexOf('{', verdictSchemaAt), { tr: (zh) => zh })

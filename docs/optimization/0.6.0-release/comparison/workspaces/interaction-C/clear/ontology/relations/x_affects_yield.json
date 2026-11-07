@@ -1,0 +1,9 @@
+{
+  "id": "x_affects_yield",
+  "label": "x 影响收率",
+  "kind": "affects",
+  "domain": "setting_x",
+  "range": "yield_pct",
+  "shape": "coupled",
+  "basis": "initial.json 的 3x3 网格读数"
+}

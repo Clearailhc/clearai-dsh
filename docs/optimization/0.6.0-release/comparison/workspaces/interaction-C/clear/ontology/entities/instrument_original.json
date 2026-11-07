@@ -1,0 +1,10 @@
+{
+  "id": "instrument_original",
+  "label": "original 全量测量通道（full 模式）",
+  "type": "instrument",
+  "basis": "initial.json 每条观测的 instrument 字段为 original",
+  "provenance": {
+    "kind": "backref",
+    "ref": "initial.json"
+  }
+}

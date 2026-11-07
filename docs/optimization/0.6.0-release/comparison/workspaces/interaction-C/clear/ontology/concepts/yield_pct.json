@@ -1,0 +1,8 @@
+{
+  "id": "yield_pct",
+  "label": "收率",
+  "gloss": "目标产物收率，以百分比表示（%）；数值越高越好",
+  "kind": "measure",
+  "unit": "%",
+  "basis": "initial.json 的 metric 与 units"
+}

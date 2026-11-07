@@ -255,7 +255,8 @@ if (spec === null) {
 			'const list = await ctx.agentPresets.list()',
 			"const entry = list.find((item) => item.id === 'clearai')",
 			"const evaluator = list.find((item) => item.id === 'clearai-evaluator')",
-			"process.stdout.write('ROSTER ' + JSON.stringify({ ids: list.map((i) => i.id), entry: entry === undefined ? null : entry, evaluator: evaluator === undefined ? null : evaluator }) + '\\n')",
+			"const explorer = list.find((item) => item.id === 'clearai-explorer')",
+			"process.stdout.write('ROSTER ' + JSON.stringify({ ids: list.map((i) => i.id), entry: entry === undefined ? null : entry, evaluator: evaluator === undefined ? null : evaluator, explorer: explorer ?? null }) + '\\n')",
 			'process.exit(entry !== undefined && entry.broken === undefined ? 0 : 3)',
 		].join('\n')
 		const roster = spawnSync(process.execPath, ['--input-type=module', '-e', rosterScript], {
@@ -267,14 +268,17 @@ if (spec === null) {
 		let ids = []
 		let entry = null
 		let evaluator = null
+		let explorer = null
 		try {
 			const parsed = JSON.parse(reported.slice('ROSTER '.length))
 			ids = parsed.ids ?? []
 			entry = parsed.entry
 			evaluator = parsed.evaluator ?? null
+			explorer = parsed.explorer ?? null
 		} catch {
 			console.log(`  · 名册读不到(退出码 ${roster.status})——stderr 尾部:${String(roster.stderr ?? '').split('\n').filter((line) => line.trim() !== '').slice(-2).join(' | ').slice(0, 200)}`)
 		}
+		check('探索者预设 clearai-explorer 在名册且没有 broken', explorer !== null && explorer.broken === undefined, String(explorer?.broken ?? ''))
 		if (ids.length > 0) console.log(`  · 名册条目:${ids.join(', ')}`)
 		check('④″ 名册运行态:clearai 在列表里', ids.includes('clearai'), ids.join(', ') || '(空)')
 		check(

@@ -1,0 +1,25 @@
+{
+  "id": "l-5pofwr",
+  "goal": "g-mw52i41h09ow",
+  "text": "工具给的 best_measured 是单次最大值，当结论口径要用重复均值，避免把选择偏差当改善。",
+  "kind": "shortcut",
+  "about": [
+    "yield",
+    "impurity",
+    "instrument"
+  ],
+  "evidence": "第 u4 条：best_measured 95.28 比 4 次均值 95.054 高 +0.23。",
+  "boundary": "同坐标有多次重复时。",
+  "scope_spec": {
+    "conditions": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    },
+    "ranges": {}
+  },
+  "basis": "model-final:55-59 的 best_measured=95.2801 是 4 次重复最大值，均值 95.054（+0.23）；报告结论改用均值，照做可避免选择偏差。",
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "status": "active",
+  "at": 1793976434010
+}

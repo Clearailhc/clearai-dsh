@@ -1,0 +1,195 @@
+{
+  "id": "f-x1arz0",
+  "goal": "g-mw52i41h09ow",
+  "hypothesis": "h-173dc0",
+  "text": "收率响应面在 x,y 上近似加性二次，交互项可忽略",
+  "about": [
+    "yield_surface_xy",
+    "yield_surface",
+    "has_surface_structure",
+    "yield",
+    "impurity",
+    "instrument"
+  ],
+  "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+  "scope_spec": {
+    "conditions": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    },
+    "ranges": {}
+  },
+  "refute_when": "补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上",
+  "level": "L3",
+  "evidence": [
+    "e-mw52xove9auu"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw52xove9auu",
+      "step": "review:79839a3c2d2d6e2830f952e3",
+      "plan": "review",
+      "hypothesis": "h-173dc0",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "复跑得加性 CV 0.16775、交互 CV 0.18048，交互并未比加性低出 0.18（差 −0.0127），交互系数 −0.108（物理 xy 尺度），报告有 9 点 0.0923/0.1142 与观测盒局限；推翻条件未触发。",
+      "refs": [
+        "initial.json",
+        "lab/cal-01.json",
+        "lab/f-opt-1.json",
+        "lab/f-val-a.json",
+        "lab/model-final.json",
+        "lab/q-0505.json",
+        "reports/analysis.md",
+        "submission.json",
+        "method/response_surface.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal-01.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-opt-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-val-a.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q-0505.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "reports/analysis.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "method/response_surface.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw52xove9auu",
+      "step": "review:79839a3c2d2d6e2830f952e3",
+      "plan": "review",
+      "hypothesis": "h-173dc0",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "复跑得加性 CV 0.16775、交互 CV 0.18048，交互并未比加性低出 0.18（差 −0.0127），交互系数 −0.108（物理 xy 尺度），报告有 9 点 0.0923/0.1142 与观测盒局限；推翻条件未触发。",
+      "refs": [
+        "initial.json",
+        "lab/cal-01.json",
+        "lab/f-opt-1.json",
+        "lab/f-val-a.json",
+        "lab/model-final.json",
+        "lab/q-0505.json",
+        "reports/analysis.md",
+        "submission.json",
+        "method/response_surface.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal-01.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-opt-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-val-a.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q-0505.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "reports/analysis.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "method/response_surface.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "加性二次：yield = 84.883 + 24.074x + 21.081y − 26.583x² − 23.550y²（16 个 full 点，残差 sd 0.170）；交互模型留一 CV 0.180 > 加性 0.168"
+      },
+      "predicate": "has_surface_structure",
+      "subject": {
+        "id": "yield_surface_xy",
+        "type": "yield_surface"
+      }
+    }
+  ],
+  "definitions": {
+    "has_surface_structure": "fnv:0e168600",
+    "yield_surface": "fnv:2868a8ff",
+    "impurity": "fnv:d916b361",
+    "instrument": "fnv:8ae62f56",
+    "yield": "fnv:b5e997fa"
+  },
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "status": "established",
+  "review": null,
+  "at": 1793975906889,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793975906889,
+      "level": "L3"
+    }
+  ]
+}

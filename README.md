@@ -5,6 +5,10 @@
   </picture>
 </p>
 
+### 0.6 candidate: on-demand exploration
+
+New research goals can explore through ordinary tools and native workers without a custom step plan. `ReviewClaims` reviews related claims on demand; final `Conclude.answers.claims` identifies answer-dependent hypotheses. Independent verification still gates knowledge and completion. Extra candidates may remain unverified; historical plans keep their contracts. See [workflow and limits](docs/optimization/0.6.0-agent-native/README.md). Real-task acceptance is required before release. Review briefs explicitly separate stage checks from final delivery; unknown impact still blocks certification. Ontology batches report format errors together without partial writes. A rejected review bundle can still retain independently bounded facts. Previously supported but unsaved claims receive current verdicts in the existing final review. Incomplete scope coverage cannot certify a claim, and old support cannot override a new inconclusive verdict.
+
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 
 <p align="center">
@@ -20,12 +24,12 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 > Keep structural definitions distinct from evidence-backed assertions; a valid citation alone does not establish truth.
 
-> 0.5.9 uses official DSH research events and independent Research/Ontology tabs. [Release validation](docs/optimization/0.5.9-release/README.md) records the real end-to-end task, costs and limitations.
+> 0.6.0 uses official DSH research events and independent Research/Ontology tabs. [Release validation](docs/optimization/0.6.0-release/README.md) records the real end-to-end task, costs and limitations.
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.5.9
-# or in the app: Plugins → Add plugin → clearai-dsh@0.5.9
+dsh plugin --profile web add clearai-dsh@0.6.0
+# or in the app: Plugins → Add plugin → clearai-dsh@0.6.0
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
@@ -84,16 +88,16 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
-**Requirements:** DSH ≥ `0.2.2-rc.1`, the target host for 0.5.9. Evaluators use `startActivation` and the dedicated evaluator preset; older dispatch APIs are not supported.
+**Requirements:** DSH ≥ `0.2.2-rc.1`, the target host for 0.6.0. Evaluators use `startActivation` and the dedicated evaluator preset; older dispatch APIs are not supported.
 
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.9`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.6.0`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.5.9
+dsh plugin --profile web add clearai-dsh@0.6.0
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
@@ -249,3 +253,15 @@ Apache-2.0, see [LICENSE](LICENSE).
 ## Status
 
 A local-first ontology discovery and exploration platform delivered as a DSH plugin. What is not yet implemented, and what has not been verified in a real browser, is written in [Known gaps](docs/known-gaps.md).
+
+### Evidence access and knowledge counts
+
+The main agent can read and edit working materials through native tools. `ReadEvidence` batches bounded source reads; ordinary reads always return text. Set `ifUnchanged:true` only to check a range already read in the same session; changed bytes or new ranges return text. After compaction, read normally to restore the excerpt. A matching hash proves neither truth nor reuse applicability. Independent reviewers have their own read receipts and are instructed to treat originals as read-only, using isolated copies for writable reruns. They report findings and proposed repairs to the main agent; copy edits are not promoted into the main workspace. External file changes are not assumed to be present in the main agent’s context.
+
+The knowledge overview separates facts from this goal, loaded facts, pending review, assertions within facts, and entity-file records. Definitions and entity records are not independently certified merely because they exist. These counters do not add model calls. Reuse claims must distinguish pre-existing artifacts actually inspected from snapshots created during the current task.
+
+Read results also report `sourceOrigin`: observed before the session first used tools, created later, or unknown (including resumed sessions without a complete baseline). This is an observed file origin, not proof that its content was reused correctly.
+
+Reviewer restrictions are a tool/authority boundary, not a filesystem sandbox: direct write tools are disabled, and changed referenced materials detected during settlement prevent acceptance. OS-level read-only enforcement depends on the host sandbox. Isolated rerun edits are never copied back as main-agent repairs.
+
+Conclude and ReviewClaims share claim grounding checks. When final delivery fails, fully covered structured claims can still be saved only when the reviewer explicitly establishes independence from unresolved gaps; the goal stays open. Fix those gaps and call Conclude directly. Goal registration preserves a file baseline across revisions and replay, distinct from prior audit versions; unknown baselines remain unknown. Exported graphs are not automatically imported or certified.

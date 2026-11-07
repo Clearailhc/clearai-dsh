@@ -1,0 +1,9 @@
+{
+  "basis": "initial.json 3x3 网格:收率在 x≈0.5 附近最高",
+  "domain": "factor_x",
+  "id": "x_affects_yield",
+  "kind": "affects",
+  "label": "x 影响收率",
+  "range": "yield",
+  "shape": "peak"
+}

@@ -19,7 +19,8 @@ test('different hypotheses remain separate and revisions preserve their source',
   assert.equal(events[0].taskId, 'g1')
   assert.equal(events[0].status, 'pending')
   assert.equal(events[0].sourceSeq, 1)
-  assert.ok(events[0].summary.includes('A control fails'))
+  assert.equal(events[0].refutationCondition, 'A control fails')
+  assert.ok(!events[0].summary.includes('A control fails'))
 })
 
 test('committed definition changes group per operation and never become verified facts', () => {
@@ -91,4 +92,37 @@ test('late review results retain their original task after a new goal starts', (
   assert.ok(state.bySeq[3].every(record => record.taskId === 'g1'))
   state = applyResearchProjection(state, result(4, [{ t: 'evidence/recorded', id: 'e-unknown', verdict: 'unknown' }]))
   assert.equal(state.bySeq[4][0].taskId, null)
+})
+
+test('malformed mutation entries and evidence origins do not crash history replay', () => {
+ const s=applyResearchProjection(emptyResearchProjection('s'),result(1,[null,7,'partial',{}, {t:'goal/set',id:'g',hypotheses:[null]}, {t:'evidence/recorded',id:'e',origins:[null,3,{path:'evidence.txt'}]}]))
+ assert.equal(s.bySeq[1].length,1)
+ assert.deepEqual(s.bySeq[1][0].links,[{path:'evidence.txt'}])
+})
+test('duplicate event lookup does not enumerate the history index', () => {
+ const e=result(1,[hypothesis]);const s=applyResearchProjection(emptyResearchProjection('s'),e)
+ s.seen=new Proxy(s.seen,{ownKeys(){throw Error('historical index enumerated')}})
+ assert.equal(applyResearchProjection(s,e),s)
+})
+
+
+test('pending dispatch has no handoff and successful dispatch retains its original task', () => {
+ let s=applyResearchProjection(emptyResearchProjection('s'),result(1,[hypothesis]))
+ const view=researchProjectionView(s)
+ s=applyResearchProjection(s,result(2,[{t:'audit/dispatched',id:'a',status:'dispatching',goal_id:'g1'}]))
+ assert.equal(researchProjectionView(s),view)
+ assert.equal(s.bySeq[2],undefined)
+ s=applyResearchProjection(s,result(3,[{...hypothesis,id:'g2',hypotheses:[]}]))
+ s=applyResearchProjection(s,result(4,[{t:'audit/dispatched',id:'a',status:'dispatched',evaluator_session:'child'}]))
+ assert.equal(s.bySeq[4][0].taskId,'g1')
+ assert.equal(s.bySeq[4][0].links[0].sessionId,'child')
+ s=applyResearchProjection(s,result(5,[{t:'audit/settled',id:'a',verdict:'unknown',basis:'Dispatch failure'}]))
+ assert.equal(s.bySeq[5][0].taskId,'g1')
+})
+
+
+test('structured audit shortfalls retain the criterion, finding and missing evidence', () => {
+ const [row]=researchEvents(result(1,[{t:'audit/settled',id:'a',verdict:'unknown',shortfalls:[null,{criterion:'C1',what:'Control absent',missing:'Independent control observation'},'Legacy limitation',{detail:'Older detail'}]}]))
+ assert.deepEqual(row.summary,['C1 · Control absent · Independent control observation','Legacy limitation','Older detail'])
+ assert.equal(row.status,'unknown')
 })

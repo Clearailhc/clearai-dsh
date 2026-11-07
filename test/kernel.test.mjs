@@ -15,10 +15,11 @@
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync as rawWriteFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { tempDir, trackTemp } from './tmp.mjs'
 import { execFileSync } from 'node:child_process'
 import { integrityStore, protectedMaterial } from '../preset/plugins/integrity.js'
-import { CONFIG_KEYS, apply } from '../preset/plugins/clearai-kernel.js'
+import { CONFIG_KEYS, apply as applyKernel } from '../preset/plugins/clearai-kernel.js'
 import { citeVerdict, exclusionStrength, negativeItems, relatedKnowledge, resolveAbout } from '../preset/plugins/knowledge-items.js'
 import { HUMAN_GATE_MARK, applyEvent, applyMutations, derive, emptyState, parseHumanGate, renderCard, view } from '../ui/lib/fold.js'
 import { ONTOLOGY_SCHEMA, checkOntologyFile, describeDomainShelf, fingerprintDefinitions, formatAssertion, graphProjection, validateAssertions, validatePredicate, validateTerm } from '../ui/lib/domain-language.js'
@@ -26,6 +27,11 @@ import { SECTIONS as BILINGUAL_SECTIONS, SECTION_TABLE } from '../preset/plugins
 import { detectLanguage } from '../ui/lib/lang.js'
 /** 段有中英两版;这里的断言读中文那一版(英文那一版另有一组检查)。 */
 const SECTIONS = BILINGUAL_SECTIONS.map((section) => ({ ...section, text: section.text.zh }))
+
+// Existing fixtures exercise the legacy step contract; native cases opt in explicitly.
+const apply = (ctx, config = {}) => applyKernel(ctx, { researchWorkflow: 'steps-v1', ...config })
+const hostSnapshotJson = process.env.CLEARAI_DSH_RESOURCES ? (await import(pathToFileURL(join(process.env.CLEARAI_DSH_RESOURCES, 'node_modules/@deepseek-ai/dsh-util-values/lib/index.js')).href)).snapshotJsonValue : null
+const hostAssertSchema = process.env.CLEARAI_DSH_RESOURCES ? (await import(pathToFileURL(join(process.env.CLEARAI_DSH_RESOURCES, 'node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.js')).href)).assertSupportedJsonSchema : null
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
 // 跑测试不该往用户真实的 ~/.dsh 里塞东西(之前一直塞了,已清理)。
@@ -86,7 +92,7 @@ function twoPartVerdict(verdict, request) {
  const holds = verdict.holds ?? (verdict.verdict === 'support' ? 'yes' : verdict.verdict === 'refute' ? 'no' : 'unclear')
  const refs = verdict.refs ?? [{ path: 'lab/probe.txt', line: 1 }]
  const criteria = verdict.criteria ?? [...prompt.matchAll(/^\[(C\d+)\] (.*)$/gm)].map(match => ({ criterion: match[1], result: 'pass', basis: 'Mock evaluator checked lab/probe.txt:1 against ' + match[2] }))
- return { ...verdict, holds, refs, criteria, results: verdict.results ?? (holds === 'yes' ? tested.map(hypothesis => ({ hypothesis, verdict: 'support' })) : []) }
+ return { ...verdict, holds, refs, criteria, results: (verdict.results ?? (holds === 'yes' ? tested.map(hypothesis => ({ hypothesis, verdict: 'support' })) : [])).map(result => ({ coverage: 'full', ...result })) }
 }
 
 // ── 假的宿主:一个内存投影 + 几个服务存根 ──────────────────────────────────
@@ -367,6 +373,7 @@ function makeHost() {
 						 * 这里照样不认它们:记进 `audits` 的就是平台真正看得见的那一份。
 						 */
 						async startActivation(spec) {
+							if (spec.request?.outputSchema && hostAssertSchema) hostAssertSchema(spec.request.outputSchema)
 							if (typeof spec?.provider !== 'string' || typeof spec?.label !== 'string' || !(spec?.signal instanceof AbortSignal) || !['parent', 'caller'].includes(spec?.delivery)) throw new Error('invalid SubagentActivationSpec')
 							if (spec.request?.parent === undefined || !Array.isArray(spec.request?.prompt)) throw new Error('startActivation request requires parent and prompt blocks')
 							const { persona: _persona, toolFilter: _toolFilter, ...request } = spec.request
@@ -467,6 +474,14 @@ async function callOn(host, session, name, args, options = {}) {
 		args = tested.length === 0 ? rest : { ...rest, results: tested.map((hypothesis) => ({ hypothesis, verdict })) }
 	}
 	const value = await tool.execute(args, { callId: 'call-1', agent: { id: session }, signal: options.signal })
+ if (host.service.state(session).goal?.workflow === 'agent-v1' || value?.mutations?.some(m => m.t === 'goal/set' && m.workflow === 'agent-v1')) {
+  const lossless = (value, path='result') => {
+   if (value === undefined || typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint' || (typeof value === 'number' && !Number.isFinite(value))) throw new Error('Non-lossless JSON at '+path)
+   if (value && typeof value === 'object') for (const [key, child] of Object.entries(value)) lossless(child, path+'.'+key)
+  }
+  lossless(value)
+  if (hostSnapshotJson && hostSnapshotJson(value) === undefined) throw new Error('Official DSH rejected the native tool result as non-lossless JSON')
+ }
  // 生产同形:宿主按 output.schema 校验工具结果,越界即整次调用失败。
 	if (value !== null && typeof value === 'object' && tool.output?.schema !== undefined) {
 		const breach = schemaViolation(tool.output.schema, value)
@@ -536,7 +551,7 @@ const write = (rel, content) => {
 console.log('\n【装配面】')
 check(
 	'目标与计划六件意图工具全部注册',
-	['Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan'].every((name) => thisHost.tools.has(name)),
+	['Frame', 'ReviewClaims', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan'].every((name) => thisHost.tools.has(name)),
 )
 check('工具 schema 里没有 status / progress / phase 这类可宣告状态的字段(P2 不可表示)', () => false || ![...thisHost.tools.values()].some((tool) => /"status"|"progress"|"phase"/.test(JSON.stringify(tool.parameters))))
 check('注册了 tools/pre-execute 与 agent/pre-step 两个机制位', thisHost.listeners.has('tools/pre-execute') && thisHost.listeners.has('agent/pre-step'))
@@ -591,20 +606,20 @@ console.log('\n【提示词面:预设的提示词段】')
 	check('网页是不可信数据(安全相关的那条)', /不可信/.test(String(byName('clearai/identity')?.text ?? '')))
 	check('对人说话段在(怎么把结论交给人)', (byName('clearai/speaking')?.text ?? '').length > 100)
 	check('身份段刻意不含时间(时间由运行态卡承载)', !/\d{2}:\d{2}/.test(String(byName('clearai/identity')?.text ?? '')))
-	check('循环段写明先摸清现状再立计划', /摸清现状再立计划/.test(String(byName('clearai/loop')?.text ?? '')))
-	check('循环段写明并行交给 subagent、各条路线声明不同的产物路径', /subagent/.test(String(byName('clearai/loop')?.text ?? '')) && /不同的产物路径/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段写明先摸清现状再立计划', /普通工具和原生 todo/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段写明并行交给 subagent、各条路线声明不同的产物路径', /subagent/.test(String(byName('clearai/loop')?.text ?? '')) && /独立产物路径/.test(String(byName('clearai/loop')?.text ?? '')))
 	check('提示词不承诺不存在的机制(不出现 background 自动回灌)', !/background/.test(SECTIONS.map((section) => String(section.text ?? '')).join('\n')))
-	check('循环段在:唯一完成动作 + 等级只决定谁来判', /唯一的完成动作/.test(String(byName('clearai/loop')?.text ?? '')) && /等级只决定谁来判/.test(String(byName('clearai/loop')?.text ?? '')))
+	check('循环段在:唯一完成动作 + 等级只决定谁来判', /旧会话/.test(String(byName('clearai/loop')?.text ?? '')) && /事实边界/.test(String(byName('clearai/loop')?.text ?? '')))
 }
 
 console.log('\n【装配:贡献表驱动(阶段 3)】')
 {
 	const NAMES = [
-		'Frame', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan', 'Anomaly',
+		'Frame', 'ReviewClaims', 'Conclude', 'CreatePlan', 'AdvancePlan', 'RevisePlan', 'ClosePlan', 'Anomaly',
 	]
 	// 工具面是**清单事实**,不是注释里的一句话:注册出来的名字集合必须与目录逐字相符。
 	// 本体四件(Define / Deprecate / RegisterInstance / Assert)删了:本体由模型直接写文件。
-	check('工具面恰好 7 件(实测,不是推断)', thisHost.tools.size === 7, `${thisHost.tools.size} 件`)
+	check('工具面恰好 8 件(实测,不是推断)', thisHost.tools.size === 8, `${thisHost.tools.size} 件`)
 	check(
 		'注册的工具名 = 目录(机制 → 工具 的并集)',
 		[...thisHost.tools.keys()].sort().join(',') === [...NAMES].sort().join(','),
@@ -665,8 +680,8 @@ console.log('\n【装配:贡献表驱动(阶段 3)】')
 	const trimmed = makeHost()
 	apply(trimmed.ctx, { contributions: { mechanisms: { plan: false } } })
 	check(
-		'关掉计划机制 → 4 件计划工具真的没装(剩 2 件)',
-		trimmed.tools.size === 2 && !trimmed.tools.has('AdvancePlan') && trimmed.tools.has('Frame'),
+		'关掉计划机制 → 4 件计划工具真的没装(剩 3 件)',
+		trimmed.tools.size === 3 && !trimmed.tools.has('AdvancePlan') && trimmed.tools.has('Frame'),
 		`${trimmed.tools.size} 件`,
 	)
 	// 只裁工具面、不动机制:能装出来的最小面就是清单本身。
@@ -903,7 +918,7 @@ console.log('\n【观测准入:只查收不收,不做裁决】')
 	check('裁决来自独立评估者,不是做的人', pass.evaluator === 'independent')
 	check('评估卡由系统落盘(两项裁决都在卡上)', (() => {
 		const card = JSON.parse(readFileSync(thisHost.journal.find((row) => row.t === 'audit/settled' && row.step === 's1').card_path, 'utf8'))
-		return card.schema_version === 'clearai.audit.v2' && card.holds === 'yes' && Array.isArray(card.results)
+		return card.schema_version === 'clearai.audit.v3' && card.coverage.policy === 'clearai.review.v3' && card.holds === 'yes' && Array.isArray(card.results)
 	})())
 	// 只读面现在含 `read_image`(看图也是读):断言改成「⊆ 只读集合且都读得到东西」,
 	// 写死名单会让「补一个只读工具」变成「改三处测试」。
@@ -1784,7 +1799,7 @@ console.log('\n【外脑:把工作区投影成原生条目,自建只有写侧两
 		const noSkills = makeHost()
 		noSkills.skillsAvailable = false
 		apply(noSkills.ctx, {})
-		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 7)
+		check('宿主没有 skills 服务时,装配照常(降级不抛)', noSkills.tools.size === 8)
 	}
 
 console.log('\n【技能目录:面板与模型看同一张表(合并目录随投影下发)】')
@@ -2022,10 +2037,11 @@ console.log('\n【评估者已结束 ⇒ 先取回它的裁决,取不回才如�
 	// Cold child logs are queried without making an Agent live or dispatching again.
 	{
 	 const host=makeHost();apply(host.ctx,{blockedThreshold:3});const S='cold-audit'
-	 const coldPending = makePending('cold-child'); coldPending.audits[0].criteria = [{ id: 'C1', text: 'independent calculation' }]; host.states.set(S,coldPending);host.coldSessionId='cold-child';host.listing=[]
-	 host.coldEvents=[{type:'tool/call',data:{callId:'structured',name:'structured_output',arguments:JSON.stringify({holds:'yes',basis:'independent calculation',refs:[{path:'lab/probe.txt',line:1}],criteria:[{criterion:'C1',result:'pass',basis:'lab/probe.txt:1'}],results:[{hypothesis:'h-rc',verdict:'support'}],reuse:[],rechecks:[]})}},{type:'tool/result',data:{message:{toolCallId:'structured',isError:false}}},{type:'turn/end',data:{reason:{kind:'completed'}}}]
+	 const coldPending = makePending('cold-child'); coldPending.audits[0].request={gate:{trust:{policy:'clearai.review.v1'}},claims:[]}; coldPending.audits[0].criteria = [{ id: 'C1', text: 'independent calculation' }]; host.states.set(S,coldPending);host.coldSessionId='cold-child';host.listing=[]
+	 host.coldEvents=[{type:'tool/call',data:{callId:'structured',name:'structured_output',arguments:JSON.stringify({holds:'yes',basis:'independent calculation',refs:[{path:'lab/probe.txt',line:1}],criteria:[{criterion:'C1',result:'pass',basis:'lab/probe.txt:1'}],results:[{hypothesis:'h-rc',verdict:'support',coverage:'full'}],reuse:[],rechecks:[]})}},{type:'tool/result',data:{message:{toolCallId:'structured',isError:false}}},{type:'turn/end',data:{reason:{kind:'completed'}}}]
 	 await preStep(host,S,83);const settled=host.journal.find(row=>row.t==='audit/settled')
 	 check('真正冷会话经 sessionQuery 恢复原生结构化裁决,不派新评估',settled?.holds==='yes'&&settled.results[0].verdict==='support'&&host.audits.length===0&&host.coldDisposed)
+	 check('冷恢复保留旧评估策略,不冒充新范围契约',JSON.parse(readFileSync(settled.card_path)).coverage.policy==='clearai.review.v1'&&JSON.parse(readFileSync(settled.card_path)).coverage.obligation===null)
 	}
 	// ② 它结束了但未正常完成 ⇒ 如实写「已结束、未正常完成」
 	{
@@ -3850,6 +3866,228 @@ console.log('\n【原生 todo 与核验进度同源】')
  check('模型不能用原生todo伪造ClearAI计划完成',overwrite.kind==='deny')
  await callOn(host,S,'RevisePlan',{action:'void',step_id:'b',reason:'清点已经覆盖复核,本步重复'})
  check('作废项从原生todo移除而不是冒充已完成',todo()?.length===1&&host.service.state(S).plans[0].steps[1].status==='void')
+}
+
+console.log('\n【0.6 agent-native: optional exploration and shared independent review】')
+if (hostSnapshotJson) check('official DSH catches the observed undefined audit metadata', hostSnapshotJson({request:{gate:{materialMutations:undefined}}}) === undefined && hostSnapshotJson({request:{gate:{confirmed:[]}}}) !== undefined)
+{
+ const host=makeHost(), ws=tempDir('clearai-native-contract-'), S='native-contract';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true,minHypotheses:0,requireAnswers:true})
+ writeText(join(ws,'lab/input.txt'),'K1 reference peak 900 C\n')
+ writeText(join(ws,'lab/probe.txt'),'Independent fixture citation\n')
+ const base={claim:'Check the K1 peak',done_criteria:'Report the scoped peak using lab/input.txt',conditions:{batch:'one'}}
+ check('native goal starts without hypotheses or plans',(await callOn(host,S,'Frame',base)).ok===true&&host.service.state(S).goal.workflow==='agent-v1'&&host.service.state(S).plans.length===0)
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/input.txt',provenance:{kind:'named',ref:'lab/input.txt'}}]}
+ const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+ const hypotheses=[{name:'Peak',claim:'K1 peak is 900 C in batch one',refute_when:'Reference differs from 900 C',assertions,about:['K1']},{name:'Extra',claim:'Other batches may use less energy',refute_when:'No energy reduction'}]
+ const framed=await callOn(host,S,'Frame',{...base,reason:'Register observed candidate and unrelated lead',ontology,hypotheses})
+ check('native claims registered only when useful',framed.ok===true,String(framed.message))
+ const [h,extra]=host.service.state(S).hypotheses
+ check('Frame returns review IDs and flags untyped candidates without dispatch or blocking registration',framed.message.includes(h.id)&&framed.message.includes(extra.id)&&/preflight|预检/.test(framed.message)&&host.audits.length===0,framed.message)
+ const request={claims:[h.id],observations:[{ref:'lab/input.txt',note:'Author checked reference; other batches were not measured.'}]}
+ const invalid=await callOn(host,S,'ReviewClaims',{...request,claims:['Peak']})
+ check('native review invalid ID returns usable IDs without dispatch',invalid.code==='review_claims_invalid'&&invalid.message.includes(h.id)&&host.audits.length===0,invalid.message)
+ const first=await callOn(host,S,'ReviewClaims',request)
+ check('native review commits scoped fact without a custom plan',first.ok===true&&host.service.state(S).facts.length===1&&host.service.state(S).plans.length===0,String(first.message))
+ const claimPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
+ check('claim review receives dispatcher-owned stage obligation',claimPrompt.includes('"kind":"claim_audit"')&&claimPrompt.includes('"final_delivery_required_now":false')&&claimPrompt.includes(base.done_criteria),claimPrompt)
+ check('review persona does not equate absence of refutation with support',!/support = (没碰到推翻条件|the condition was not hit)/.test(claimPrompt),claimPrompt)
+ check('extra hypothesis remains unverified',!host.service.state(S).evidence.some(e=>e.hypothesis===extra.id))
+ const before=host.audits.length, evidenceBefore=host.service.state(S).evidence.length
+ const again=await callOn(host,S,'ReviewClaims',request)
+ check('same request reuses verdict without duplicate evidence',again.code==='review_reused'&&host.audits.length===before&&host.service.state(S).evidence.length===evidenceBefore,String(again.message))
+ const card=host.service.state(S).audits.find(a=>a.holds==='yes')
+ check('review coverage and v7 fingerprint survive replay',card.request?.step?.tests?.hypotheses[0]===h.id&&card.digest.startsWith('v7:')&&applyMutations(emptyState(),host.journal).goal.workflow==='agent-v1',JSON.stringify(card))
+ const answer={conclusion:'K1 peak is 900 C for batch one.',claims:[h.id],basis:['lab/input.txt:1'],open:[{about:[extra.id],effect:'Other batches are outside this answer; energy effects remain unverified.'}]}
+ const close=await callOn(host,S,'Conclude',{outcome:'achieved',answers:[answer]})
+ check('native final review completes without ClosePlan',close.ok===true&&host.service.state(S).goal.status==='achieved',String(close.message))
+ const finalPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
+ check('final reviewer receives current independent receipt and all candidate leads',finalPrompt.includes('independent-current')&&finalPrompt.includes(extra.id)&&finalPrompt.includes('missing claim'),finalPrompt)
+ check('final review still requires final delivery',finalPrompt.includes('"kind":"goal_audit"')&&finalPrompt.includes('"final_delivery_required_now":true'),finalPrompt)
+ check('final handoff separates goal baseline from prior audit versions',finalPrompt.includes('workspace_baseline')&&finalPrompt.includes('goal-registration')&&finalPrompt.includes('older audit digest alone'),finalPrompt)
+ check('scope obligation survives persisted review request',card.request.obligation?.scope==='selected-work'&&card.request.obligation?.policy==='clearai.review.v3')
+ check('review cache binds actual localized discipline',/^[a-f0-9]{64}$/.test(card.request.gate.trust.discipline))
+ check('final review does not promote the unrelated candidate',host.service.state(S).facts.length===1&&!host.service.state(S).facts.some(f=>f.hypothesis===extra.id))
+}
+{
+ const host=makeHost(), ws=tempDir('clearai-native-failure-'), S='native-failure';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:false,requireAnswers:true})
+ writeText(join(ws,'lab/probe.txt'),'Source value=1\n')
+ await callOn(host,S,'Frame',{claim:'Inspect value',done_criteria:'Report value and limits',hypotheses:[{claim:'Value is one',refute_when:'Value differs'}]})
+ const h=host.service.state(S).hypotheses[0].id
+ const req={claims:[h],observations:[{ref:'lab/probe.txt'}]}
+ host.nextVerdict={holds:'yes',basis:'Missing claim verdict',results:[]}
+ const missing=await callOn(host,S,'ReviewClaims',req)
+ check('missing per-claim verdict cannot become knowledge',missing.ok===false&&host.service.state(S).facts.length===0)
+ host.nextVerdict={verdict:'support',basis:'lab/probe.txt reference checked'}
+ await callOn(host,S,'ReviewClaims',req)
+ const count=host.audits.length
+ writeText(join(ws,'lab/probe.txt'),'Source value=2\n')
+ await callOn(host,S,'ReviewClaims',req)
+ check('changed evidence triggers fresh independent review',host.audits.length===count+1)
+ host.onAudit=()=>writeText(join(ws,'lab/probe.txt'),'Changed during audit\n')
+ writeText(join(ws,'lab/probe.txt'),'Source value=3\n')
+ const drift=await callOn(host,S,'ReviewClaims',req)
+ check('material change during review cannot commit results',drift.ok===false&&drift.message.includes('audit_material_changed'),String(drift.message))
+}
+
+{
+ const host=makeHost(), ws=tempDir('clearai-partial-final-'), S='partial-final';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true,requireAnswers:true})
+ writeText(join(ws,'lab/probe.txt'),'K1 reference peak 900 C. Noise needs further assessment.\n')
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}},{id:'noise_model',label:'Noise model',domain:'kiln',range:{form:'statement'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/probe.txt',provenance:{kind:'named',ref:'lab/probe.txt'}}]}
+ const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+ await callOn(host,S,'Frame',{claim:'Report K1 peak and measurement limits',done_criteria:'Reference peak and limitations are documented',ontology,hypotheses:[{name:'Peak',claim:'K1 peak is 900 C',refute_when:'Reference differs',assertions},{name:'Noise',claim:'Noise relationship is stable',refute_when:'Residuals contradict the relationship',assertions:[{predicate:'noise_model',subject:{id:'K1',type:'kiln'},object:{kind:'statement',value:'Noise relationship is stable'}}]}]})
+ const [peak,noise]=host.service.state(S).hypotheses
+ host.nextVerdict={holds:'yes',basis:'Reference confirms peak; noise interpretation remains unresolved',results:[{hypothesis:peak.id,verdict:'support',basis:'lab/probe.txt reference',independent_of_open_issues:true},{hypothesis:noise.id,verdict:'inconclusive'}],anomalies:[{what:'Noise relationship requires clarification',matters:'yes',touches:[noise.id],impact_basis:'Reference peak is independently observed; noise relationship does not enter its measurement.'}]}
+ const answers=[{conclusion:'Peak 900 C',claims:[peak.id,noise.id],basis:['lab/probe.txt:1']}]
+ const result=await callOn(host,S,'Conclude',{outcome:'achieved',answers})
+ const state=host.service.state(S)
+ check('unresolved final issue keeps goal open while preserving independent scoped ontology fact',result.code==='answers_incomplete'&&state.goal.status==='open'&&state.facts.length===1&&state.facts[0].hypothesis===peak.id,JSON.stringify({code:result.code,facts:state.facts}))
+ check('affected noise claim is not certified',!state.facts.some(f=>f.hypothesis===noise.id))
+ check('evaluator impact boundary survives replay',applyMutations(emptyState(),host.journal).anomalies.some(a=>a.touches?.includes(noise.id)&&a.impact_basis))
+ writeText(join(ws,'lab/new-check.txt'),'Additional residual check, not a general noise law.\n')
+ host.nextVerdict={holds:'yes',basis:'Revised answer preserves limitation',results:[{hypothesis:noise.id,verdict:'inconclusive'}]}
+ await callOn(host,S,'Conclude',{outcome:'achieved',answers:[{...answers[0],open:[{about:[state.anomalies[0].id],effect:'Noise relationship remains unverified and does not determine peak.'}]}]})
+ const prompt=host.audits.at(-1).request.prompt.map(b=>b.text??'').join('\n')
+ check('changed material handoff retains prior review with explicit delta and no automatic trust',prompt.includes('historical-requires-applicability-review')&&prompt.includes('lab/new-check.txt')&&prompt.includes('previous_answers'),prompt)
+}
+
+console.log('\n【步骤核验仅沉淀与未决问题独立的事实】')
+for (const scenario of ['bounded', 'unknown', 'affected', 'unconfirmed']) {
+ const host=makeHost(), ws=tempDir('clearai-partial-step-'), S='partial-step-'+scenario;host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true})
+ writeText(join(ws,'lab/probe.txt'),'K1 reference peak 900 C. Noise requires separate assessment.\n')
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/probe.txt',provenance:{kind:'named',ref:'lab/probe.txt'}}]}
+ const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+ await callOn(host,S,'Frame',{claim:'Check reference peak and noise limits',done_criteria:'Peak and limitations documented',ontology,hypotheses:[{name:'Peak',claim:'K1 peak is 900 C',refute_when:'Reference differs',assertions},{name:'Noise',claim:'Noise relationship is stable',refute_when:'Residuals contradict it'}]})
+ const [peak,noise]=host.service.state(S).hypotheses
+ const plan=await callOn(host,S,'CreatePlan',{steps:[{id:'peak',do:'Check reference peak',artifacts:['lab/probe.txt'],done_criteria:'Reference peak is independently confirmed',tests:{hypotheses:[peak.id],level:'L3'}}]})
+ check(`${scenario}: scoped step plan accepted`,plan.ok===true,JSON.stringify(plan))
+ const issue={what:'Noise relationship remains unresolved',matters:'yes',...(scenario==='unknown'?{}:{touches:[scenario==='affected'?peak.id:noise.id],impact_basis:'Explicit assessment of measurement dependency.'})}
+ host.nextVerdict={holds:'yes',basis:'Independent reference confirms peak',results:[{hypothesis:peak.id,verdict:'support',basis:'lab/probe.txt:1',independent_of_open_issues:scenario!=='unconfirmed'}],anomalies:[issue]}
+ await callOn(host,S,'AdvancePlan',{observations:[{ref:'lab/probe.txt'}]})
+ const stepPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
+ check(`${scenario}: step review has stage obligation`,stepPrompt.includes('"kind":"evidence_audit"')&&stepPrompt.includes('"final_delivery_required_now":false'),stepPrompt)
+ const state=host.service.state(S)
+ check(`${scenario}: step preserves only independently bounded facts`,state.goal.status==='open'&&state.facts.length===(scenario==='bounded'?1:0)&&!state.facts.some(f=>f.hypothesis===noise.id),JSON.stringify({facts:state.facts,anomalies:state.anomalies}))
+ if(scenario==='bounded') check('step partial fact survives journal replay',applyMutations(emptyState(),host.journal).facts.some(f=>f.hypothesis===peak.id&&f.assertions?.length))
+}
+
+console.log('\n【本体批量诊断与原子提交】')
+{
+ const host=makeHost(), ws=tempDir('clearai-ontology-diagnostics-'), S='ontology-diagnostics';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true})
+ const rejected=await callOn(host,S,'Frame',{claim:'Check measurements',done_criteria:'Report checked measurements',ontology:{concepts:[{id:'x',label:'X',gloss:'First variable'},{id:'y',label:'Y',gloss:'Second variable'},{id:'valid_type',label:'Valid',gloss:'Valid concept'}],relations:[{id:'relation_ok',label:'Relation',kind:'defines',range:{form:'statement'},shape:'linear'}]},hypotheses:[]})
+ check('all invalid ontology entries reported in one response',rejected.code==='ontology_rejected'&&['concepts/x.json','concepts/y.json','relations/relation_ok.json','2–40'].every(x=>rejected.message.includes(x)),rejected.message)
+ check('invalid batch commits neither valid sibling nor goal',!existsSync(join(ws,'clear/ontology/concepts/valid_type.json'))&&host.service.state(S).goal===null)
+}
+
+
+console.log('\n【局部核验与修复后的知识闭环】')
+async function closureFixture(suffix) {
+ const host=makeHost(), ws=tempDir('clearai-closure-'), S='closure-'+suffix;host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true,requireAnswers:false})
+ writeText(join(ws,'lab/probe.txt'),'K1 reference peak 900 C; batch one only.\n')
+ const ontology={concepts:[{id:'kiln',label:'Kiln',gloss:'Firing equipment'}],relations:[{id:'peak_temp',label:'Peak',domain:'kiln',range:{form:'quantity',unit:'C'}},{id:'noise_sd',label:'Noise sd',domain:'kiln',range:{form:'quantity',unit:'C'}}],entities:[{id:'K1',type:'kiln',label:'K1',basis:'lab/probe.txt',provenance:{kind:'named',ref:'lab/probe.txt'}}]}
+ const assertions=[{predicate:'peak_temp',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]
+ await callOn(host,S,'Frame',{claim:'Report reference peak',done_criteria:'Report peak and limits',conditions:{batch:'one'},ontology,hypotheses:[{name:'Peak',claim:'K1 peak is 900 C in batch one',refute_when:'Reference differs',assertions},{name:'Noise',claim:'Noise is stable',refute_when:'Residuals contradict stability',assertions:[{predicate:'noise_sd',subject:{id:'K1',type:'kiln'},object:{kind:'quantity',value:900,unit:'C'}}]}]})
+ const [peak,noise]=host.service.state(S).hypotheses
+ return {host,ws,S,peak,noise,req:{claims:[peak.id,noise.id],observations:[{ref:'lab/probe.txt'}]}}
+}
+for(const holds of ['no','unclear']) {
+ const {host,S,peak,noise,req}=await closureFixture(holds)
+ host.nextVerdict={holds,basis:'Peak independently confirmed; noise is unresolved',results:[{hypothesis:peak.id,verdict:'support',independent_of_open_issues:true},{hypothesis:noise.id,verdict:'inconclusive'}],anomalies:[{what:'Noise unknown',matters:'yes',touches:[noise.id],impact_basis:'Noise is not used by the reference measurement'}]}
+ const result=await callOn(host,S,'ReviewClaims',req),state=host.service.state(S)
+ check(`${holds}: rejected bundle retains independent fact and uncertainty`,!result.ok&&state.goal.status==='open'&&state.facts.length===1&&state.facts[0].hypothesis===peak.id&&state.evidence.some(e=>e.hypothesis===noise.id&&e.verdict==='inconclusive'),JSON.stringify(result))
+ const counts=[host.audits.length,state.evidence.length,state.facts.length]
+ await callOn(host,S,'ReviewClaims',req)
+ check(`${holds}: same rejection does not redispatch or duplicate partial facts`,JSON.stringify(counts)===JSON.stringify([host.audits.length,host.service.state(S).evidence.length,host.service.state(S).facts.length]))
+ check(`${holds}: partial evidence and fact survive replay`,applyMutations(emptyState(),host.journal).facts.length===1)
+}
+
+for(const changed of [false,true]) {
+ const {host,ws,S,peak}=await closureFixture('step-receipt-'+changed)
+ await callOn(host,S,'CreatePlan',{steps:[{id:'verify',do:'Check reference peak',artifacts:['lab/probe.txt'],done_criteria:'Reference confirms 900 C',tests:{hypotheses:[peak.id],level:'L3'}}]})
+ await callOn(host,S,'AdvancePlan',{observations:[{ref:'lab/probe.txt'}]})
+ await callOn(host,S,'ClosePlan',{})
+ if(changed)writeText(join(ws,'lab/probe.txt'),'K1 reference changed; requires a fresh check.\n')
+ await callOn(host,S,'Conclude',{outcome:'achieved',answers:[{conclusion:'Peak 900 C for batch one',basis:['lab/probe.txt:1']}]})
+ const prompt=host.audits.at(-1).request.prompt.map(b=>b.text??'').join('\n')
+ check(`${changed}: only unchanged step receipts are current independent evidence`,prompt.includes('"authority":"independent-current"')===!changed,prompt.slice(0,250))
+}
+for(const coverage of ['narrower','unknown',null,'full']) {
+ const {host,S,peak,req}=await closureFixture('coverage-'+coverage)
+ host.nextVerdict={holds:'yes',basis:'Checked reference boundary',results:[{hypothesis:peak.id,verdict:'support',coverage,basis:'Only batch one measured'}]}
+ await callOn(host,S,'ReviewClaims',{...req,claims:[peak.id]})
+ const state=host.service.state(S)
+ check(`${coverage}: broad or unconfirmed support cannot become fact`,state.facts.length===(coverage==='full'?1:0)&&state.evidence.at(-1).verdict===(coverage==='full'?'support':'inconclusive'))
+ const schema=host.audits.at(-1).request.outputSchema
+ check(`${coverage}: native schema binds claim IDs and coverage`,schema.properties.results.minItems===undefined&&schema.properties.results.description.includes('item count 1–1')&&schema.properties.results.items.properties.hypothesis.enum[0]===peak.id&&schema.properties.results.items.required.includes('coverage'))
+}
+for(const finalVerdict of ['support','inconclusive','missing']) {
+ const {host,ws,S,peak,noise,req}=await closureFixture('repair-'+finalVerdict)
+ host.nextVerdict={holds:'yes',basis:'Peak supported, report dependency unknown',results:[{hypothesis:peak.id,verdict:'support',independent_of_open_issues:true}],anomalies:[{what:'Report parameters mismatch',matters:'unclear'}]}
+ await callOn(host,S,'ReviewClaims',{...req,claims:[peak.id]})
+ let state=host.service.state(S)
+ check(`${finalVerdict}: unknown impact holds knowledge despite support`,state.facts.length===0&&state.evidence.some(e=>e.hypothesis===peak.id&&e.verdict==='support'))
+ const issue=state.anomalies[0]
+ await callOn(host,S,'Anomaly',{action:'resolve',id:issue.id,outcome:'explained',reason:'Report corrected; independent confirmation still required'})
+ writeText(join(ws,'lab/report.txt'),'Corrected report citing batch one reference.\n')
+ check(`${finalVerdict}: author repair alone never promotes`,host.service.state(S).facts.length===0)
+ host.nextVerdict={holds:'yes',basis:'Rechecked repaired report against reference',results:finalVerdict==='missing'?[]:[{hypothesis:peak.id,verdict:finalVerdict}]}
+ const before=host.audits.length
+ const result=await callOn(host,S,'Conclude',{outcome:'achieved',answers:[{conclusion:'Batch one peak 900 C',basis:['lab/probe.txt:1']}]})
+ state=host.service.state(S)
+ const obligation=JSON.parse(host.audits.at(-1).request.prompt.map(b=>b.text??'').join('\n').split('# Harness review obligation\n')[1].split('\n')[0])
+ check(`${finalVerdict}: final audit includes pending claim without unrelated exploration`,obligation.claims.includes(peak.id)&&!obligation.claims.includes(noise.id)&&host.audits.length===before+1)
+ check(`${finalVerdict}: current verdict controls promotion, never old supported level`,state.facts.length===(finalVerdict==='support'?1:0),JSON.stringify({result,facts:state.facts}))
+ check(`${finalVerdict}: missing verdict cannot silently finish`,finalVerdict==='missing'?state.goal.status==='open':result.ok===true,JSON.stringify(result))
+}
+
+
+console.log('\n【目标核验与主张沉淀走同一通路】')
+for (const scenario of ['bounded', 'unknown-impact', 'affected', 'unconfirmed', 'partial', 'material-change']) {
+ const {host,ws,S,peak,noise}=await closureFixture('goal-'+scenario)
+ if(scenario==='material-change') host.onAudit=()=>writeText(join(ws,'lab/probe.txt'),'Changed during independent review.\n')
+ const answers=[{conclusion:'Reference peak with noise limits',claims:[peak.id,noise.id],basis:['lab/probe.txt:1']}]
+ host.nextVerdict={holds:'no',basis:'Delivery incomplete; peak assessed independently',shortfalls:['Final report missing'],results:[{hypothesis:peak.id,verdict:'support',coverage:scenario==='partial'?'partial':'full',independent_of_open_issues:scenario!=='unconfirmed'},{hypothesis:noise.id,verdict:'inconclusive'}],anomalies:[{what:'Noise unresolved',matters:'yes',...(scenario==='unknown-impact'?{}:{touches:[scenario==='affected'?peak.id:noise.id],impact_basis:'Noise is separate from reference measurement'})}]}
+ const result=await callOn(host,S,'Conclude',{outcome:'achieved',answers}),state=host.service.state(S)
+ check(`${scenario}: failed goal retains only fully independent grounded claims`,!result.ok&&state.goal.status==='open'&&state.facts.length===(scenario==='bounded'?1:0),JSON.stringify({result,facts:state.facts}))
+ check(`${scenario}: failed delivery never promotes unresolved noise`,!state.facts.some(f=>f.hypothesis===noise.id))
+ if(scenario==='bounded') {
+  check('native failure points directly to Conclude without legacy plan card',result.message.includes('Conclude')&&!result.message.includes('CreatePlan')&&!result.message.includes('还没建计划'),result.message)
+  check('failed goal preserves supported and inconclusive evidence in replay',applyMutations(emptyState(),host.journal).evidence.some(e=>e.hypothesis===noise.id&&e.verdict==='inconclusive')&&applyMutations(emptyState(),host.journal).facts[0]?.assertions.length===1)
+ }
+}
+{
+ const {host,ws,S,peak,noise}=await closureFixture('repair-delivery')
+ const args={outcome:'achieved',answers:[{conclusion:'Peak and noise',claims:[peak.id,noise.id],basis:['lab/probe.txt:1']}]}
+ host.nextVerdict={holds:'no',basis:'Report absent; peak is independently established',shortfalls:['Report missing'],results:[{hypothesis:peak.id,verdict:'support',independent_of_open_issues:true},{hypothesis:noise.id,verdict:'inconclusive'}]}
+ await callOn(host,S,'Conclude',args)
+ const saved=host.service.state(S).facts[0]
+ writeText(join(ws,'report.txt'),'Final report with scope and limitations.\n')
+ host.nextVerdict={holds:'yes',basis:'Delivery repaired; remaining claim checked',results:[{hypothesis:noise.id,verdict:'support'}]}
+ const result=await callOn(host,S,'Conclude',args),state=host.service.state(S)
+ check('repair uses Conclude directly without a new plan or ReviewClaims',result.ok&&state.goal.status==='achieved'&&state.plans.length===0&&host.audits.length===2,JSON.stringify(result))
+ check('existing partial fact is not duplicated and remaining assertions are saved',state.facts.length===2&&state.facts.some(f=>f.id===saved?.id)&&state.facts.every(f=>f.assertions?.length),JSON.stringify(state.facts))
+ const request=state.audits.at(-1).request
+ check('final repair review selects only the unpersisted claim',JSON.stringify(request.step.tests.hypotheses)===JSON.stringify([noise.id]))
+}
+{
+ const host=makeHost(),ws=tempDir('clearai-final-grounding-'),S='final-grounding';host.cwd=ws
+ applyKernel(host.ctx,{ontologyFeedback:true,requireAnswers:false})
+ writeText(join(ws,'report.txt'),'Prior final report, after its earlier audit.\n')
+ const frame={claim:'Check reference',done_criteria:'Reference checked',hypotheses:[{name:'Reference',claim:'Reference is 900 C',refute_when:'Reference differs'}]}
+ await callOn(host,S,'Frame',frame)
+ const baseline=host.service.state(S).goal.workspace_baseline,h=host.service.state(S).hypotheses[0]
+ const result=await callOn(host,S,'Conclude',{outcome:'achieved',answers:[{conclusion:h.claim,claims:[h.id],basis:['report.txt:1']}]})
+ check('Conclude cannot bypass ReviewClaims ontology grounding',result.code==='ontology_grounding_required'&&host.audits.length===0&&host.service.state(S).facts.length===0,result.message)
+ writeText(join(ws,'report.txt'),'Current goal changed report.\n')
+ const revised=await callOn(host,S,'Frame',{...frame,reason:'Clarify reference'})
+ check('baseline test performs a real goal revision',revised.ok&&host.service.state(S).goal.revision===2,JSON.stringify(revised))
+ check('goal revisions do not reset the registered file baseline',JSON.stringify(host.service.state(S).goal.workspace_baseline)===JSON.stringify(baseline))
+ check('registered file baseline survives cold replay',JSON.stringify(applyMutations(emptyState(),host.journal).goal.workspace_baseline)===JSON.stringify(baseline)&&baseline.files.some(([p])=>p==='report.txt'))
 }
 
 console.log(`\n结果:${passed} 通过,${failed} 失败`)

@@ -1,0 +1,11 @@
+{
+  "id": "mode_agreement",
+  "label": "模式读数一致性",
+  "kind": "measures",
+  "domain": "instrument",
+  "range": {
+    "form": "statement"
+  },
+  "check": "同一 (x,y) 上 quick 与 full 对照，并用 calibrate 记录校正",
+  "basis": "method/SKILL.md 关于校准与口径的说明"
+}

@@ -1,0 +1,21 @@
+{
+  "x": 0.45,
+  "y": 0.45,
+  "evidence": [
+    "initial.json",
+    "lab/cal-01.json",
+    "lab/quick-01.json",
+    "lab/full-01.json",
+    "lab/full-02.json",
+    "lab/full-03.json",
+    "lab/full-04.json",
+    "lab/full-05.json",
+    "lab/full-06.json",
+    "lab/full-07.json",
+    "lab/full-08.json",
+    "lab/full-09.json",
+    "lab/input-final.json",
+    "lab/model-final.json",
+    "report.md"
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "id": "f-rgtoho",
+  "goal": "g-mw4yfrsjmxa9",
+  "hypothesis": "h-32z06e",
+  "text": "当前实验端点仍使用 original 仪表,读数与 initial.json 无系统偏移,二者可在注明噪声的前提下合并使用。",
+  "about": [
+    "instrument_original",
+    "yield",
+    "impurity",
+    "instrument",
+    "has_calibration",
+    "factor_x",
+    "factor_y"
+  ],
+  "scope": "条件 仪表=original、预算单位=30(已花 3,余 27)、杂质上限=0.115、自变量范围=x,y∈[0,1]、读数噪声=full sd 0.18;quick sd 0.45",
+  "scope_spec": {
+    "conditions": {
+      "仪表": "original",
+      "预算单位": "30(已花 3,余 27)",
+      "杂质上限": "0.115",
+      "自变量范围": "x,y∈[0,1]",
+      "读数噪声": "full sd 0.18;quick sd 0.45"
+    },
+    "ranges": {}
+  },
+  "refute_when": "同点 full 重复读数与 initial 同点值差超过 3×0.18≈0.54,或读数 instrument 字段变为 replacement,或 calibrate 返回非零 offset。",
+  "level": "L3",
+  "evidence": [
+    "e-tq1g9m",
+    "e-pdu91q"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-tq1g9m",
+      "step": "s1",
+      "plan": "p-mw4yh6zowacy",
+      "hypothesis": "h-32z06e",
+      "verdict": "support",
+      "level": "L2",
+      "evaluator": "self",
+      "basis": "calibrate 返回 original/offset 0;同点 quick 与 initial 差 0.379 < 1.35(quick 3σ),instrument 字段仍为 original。",
+      "refs": [
+        "lab/calibrate-1.json",
+        "lab/quick-0.5-0.5.json",
+        "lab/budget.json",
+        "initial.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/calibrate-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/quick-0.5-0.5.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/budget.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "initial.json",
+          "from_basis": true
+        }
+      ],
+      "anchor": "artifact",
+      "basis_reviewable": true,
+      "at": 1793968426273
+    },
+    {
+      "id": "e-pdu91q",
+      "step": "s3",
+      "plan": "p-mw4yh6zowacy",
+      "hypothesis": "h-32z06e",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "三条推翻条件均未触发:同点 full 差 0.0785<0.54(full-center-1.json:4 对 initial.json:62);instrument 仍为 original(full-center-1.json:6);calibrate offset=0(calibrate-1.json:4)。仅有一次同点重复,只能把系统偏移上界压到约 0.08,更小偏移或时间漂移未被检验,但未达 0.54 推翻线。",
+      "refs": [
+        "lab/full-center-1.json",
+        "lab/budget.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/full-center-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/budget.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/41242b9fae56fad4e6e77dfe33cb18d1c3fc583f988cf25ef9f2d9be0d440bbb/3815d97e26e0d30ad2e746bbf7e5e0fd1c6e562dbf60520283fe166759c2d812.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-pdu91q",
+      "step": "s3",
+      "plan": "p-mw4yh6zowacy",
+      "hypothesis": "h-32z06e",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "三条推翻条件均未触发:同点 full 差 0.0785<0.54(full-center-1.json:4 对 initial.json:62);instrument 仍为 original(full-center-1.json:6);calibrate offset=0(calibrate-1.json:4)。仅有一次同点重复,只能把系统偏移上界压到约 0.08,更小偏移或时间漂移未被检验,但未达 0.54 推翻线。",
+      "refs": [
+        "lab/full-center-1.json",
+        "lab/budget.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/full-center-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/budget.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/41242b9fae56fad4e6e77dfe33cb18d1c3fc583f988cf25ef9f2d9be0d440bbb/3815d97e26e0d30ad2e746bbf7e5e0fd1c6e562dbf60520283fe166759c2d812.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "bc08656d-9292-4336-a6c3-9df2f4f6cb6f"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "instrument=original;calibrate offset=0;与 initial.json 同点读数一致(差值<3σ)"
+      },
+      "predicate": "has_calibration",
+      "qualifiers": {
+        "full噪声sd": "0.18",
+        "quick噪声sd": "0.45"
+      },
+      "subject": {
+        "id": "instrument_original",
+        "type": "instrument"
+      }
+    }
+  ],
+  "definitions": {
+    "has_calibration": "fnv:e40f67de",
+    "instrument": "fnv:6af9ea78",
+    "factor_x": "fnv:8bd239ec",
+    "factor_y": "fnv:25be4820",
+    "impurity": "fnv:044e7587",
+    "yield": "fnv:41115b10"
+  },
+  "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+  "status": "established",
+  "review": null,
+  "at": 1793968518045,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793968518045,
+      "level": "L3"
+    }
+  ]
+}
