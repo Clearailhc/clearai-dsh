@@ -29,16 +29,30 @@ for(const row of comparison.results) {
  assert.equal(calls.length,Object.values(row.roles).reduce((n,r)=>n+r.calls,0))
  assert.equal(row.usage.processed,Object.values(row.roles).reduce((n,r)=>n+r.processed,0))
  const childIds=new Set((result.clearai?.audits??[]).map(a=>a.child))
- assert.ok(calls.filter(call=>!call.purpose&&call.session!==result.session).every(call=>childIds.has(call.session)), 'Child roles must actually be independent auditors; classify any other delegation separately')
+ for(const [role,stats] of Object.entries(row.roles)){
+  const cs=calls.filter(call=>(call.purpose?'other':call.session===result.session?'main':childIds.has(call.session)?'evaluator':'other')===role)
+  assert.equal(cs.length,stats.calls);assert.equal(usageSummary(cs).lowerBound,stats.processed)
+ }
+ const loggedSessions=new Set((result.logs??[]).map(log=>log.session))
+ assert.ok(calls.filter(call=>!call.purpose&&call.session!==result.session).every(call=>loggedSessions.has(call.session)), 'Delegation requires an actual native session log')
  const expected=row.task==='direct'?{score:result.reason==='completed'&&row.submission?.amount===391&&row.submission?.unit==='元'?100:0}:score(makeWorld(key,'polish-060-'+row.task,row.task),result.reason==='completed'?row.submission:null)
  const partialArtifactQuality=row.task==='direct'?null:score(makeWorld(key,'polish-060-'+row.task,row.task),row.submission)
  assert.deepEqual(row.quality,expected)
+ let finalFullMeasurements=0
+ if(row.task!=='direct'){
+  const spent=(row.observations??[]).reduce((n,call)=>n+call.result.cost,0)
+  assert.equal(spent,row.experimentCost);assert.ok(spent<=manifest.experimentBudget)
+  if(result.reason==='completed'){
+   finalFullMeasurements=row.observations.filter(call=>call.request.mode==='full'&&Math.abs(call.request.x-row.submission.x)<1e-8&&Math.abs(call.request.y-row.submission.y)<1e-8).length
+   assert.ok(finalFullMeasurements>0,'Final recipe needs an actual full experiment, not a declared experiment')
+  }
+ }
  const references=(row.submission?.evidence??[]).map(path=>{
   const absolute=resolve(root,'workspaces',row.id,path)
   assert.ok(absolute.startsWith(resolve(root,'workspaces',row.id)+'/'),'Evidence must remain in its workspace')
   return {path,bytes:readFileSync(absolute).length}
  })
- rows.push({id:row.id,reason:result.reason,completed:result.reason==='completed',score:expected.score,partialArtifactQuality,evidenceFiles:references,independentAudits:row.audits.length,invalidOrFailedAudits:row.audits.filter(a=>a.holds!=='yes').length,realExperimentBudget:row.experimentCost})
+ rows.push({id:row.id,reason:result.reason,completed:result.reason==='completed',score:expected.score,partialArtifactQuality,evidenceFiles:references,independentAudits:row.audits.length,invalidOrFailedAudits:row.audits.filter(a=>a.holds!=='yes').length,realExperimentBudget:row.experimentCost,finalFullMeasurements})
 }
 for(const task of ['additive','interaction']){
  const pair=comparison.results.filter(row=>row.task===task)

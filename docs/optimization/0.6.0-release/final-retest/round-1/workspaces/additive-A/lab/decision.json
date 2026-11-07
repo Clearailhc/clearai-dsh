@@ -1,0 +1,105 @@
+{
+  "selected": {
+    "x": 0.72,
+    "y": 0.49
+  },
+  "objective": "maximize yield subject to impurity <= 0.115; x,y in [0,1]",
+  "instrument": "original",
+  "units": {
+    "value": "%",
+    "impurity": "fraction"
+  },
+  "calibration": {
+    "offset": 0,
+    "unit": "normalized x",
+    "checked_points": [
+      [
+        0.5,
+        0.5
+      ],
+      [
+        0.9,
+        0.5
+      ],
+      [
+        0.72,
+        0.49
+      ]
+    ],
+    "correction_applied": false
+  },
+  "yield_model": {
+    "kind": "additive",
+    "coordinates": "x_s=2x-1, y_s=2y-1",
+    "coefficients": [
+      95.11920526643013,
+      5.917021665832251,
+      -0.06280670957991309,
+      -6.680795623967627,
+      -5.7487922216264264
+    ],
+    "cv_rmse": 0.3465311241847826,
+    "interaction_model_cv_rmse": 0.2635795508421538
+  },
+  "impurity_model": {
+    "kind": "additive",
+    "coordinates": "x_s=2x-1, y_s=2y-1",
+    "coefficients": [
+      0.08758504652838953,
+      0.015036712096874811,
+      0.02481858140983629,
+      0.008407697417177264,
+      -0.00034062630195832576
+    ],
+    "cv_rmse": 0.0008661254191108258,
+    "noise_sd_used": 0.002
+  },
+  "continuous_optimum": {
+    "additive_yield": {
+      "x": 0.7214190494244688,
+      "y": 0.4972686997912518,
+      "predicted_yield": 96.42951812308166
+    },
+    "interaction_yield": {
+      "x": 0.7217733869301323,
+      "y": 0.48991526616415965,
+      "predicted_yield": 96.42974197659123
+    }
+  },
+  "predicted_at_selected": {
+    "yield": 96.42824938389913,
+    "impurity": 0.09533242219226244
+  },
+  "verification": {
+    "paths": [
+      "lab/full-0.72-0.49-final.json",
+      "lab/full-0.72-0.49-rep.json"
+    ],
+    "mode": "full",
+    "n": 2,
+    "yield_values": [
+      96.56119752805704,
+      96.59976492765198
+    ],
+    "yield_mean": 96.5804812278545,
+    "impurity_values": [
+      0.09531186584466339,
+      0.09519900552894889
+    ],
+    "impurity_mean": 0.09525543568680614,
+    "impurity_max": 0.09531186584466339,
+    "impurity_limit": 0.115,
+    "feasible": true
+  },
+  "budget": {
+    "total": 30,
+    "spent": 28,
+    "remaining": 2
+  },
+  "notes": [
+    "Best single reading was 96.6979 at (0.70,0.50), but its repeat was 95.8497; replicate mean 96.2738, so it was not selected.",
+    "(0.72,0.50) replicate mean was 96.4583; (0.72,0.49) replicate mean was 96.5805.",
+    "The selected point is inside the observed box x,y in [0.1,0.9]; no extrapolation is claimed.",
+    "Predictions are model outputs, not measurements; the two full readings at the selected point are the verification."
+  ]
+}

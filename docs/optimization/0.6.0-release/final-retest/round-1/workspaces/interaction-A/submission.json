@@ -1,0 +1,29 @@
+{
+  "x": 0.708,
+  "y": 0.611,
+  "evidence": [
+    "initial.json",
+    "lab/quick-01.json",
+    "lab/full-01.json",
+    "lab/full-02.json",
+    "lab/full-03.json",
+    "lab/full-04-optimum.json",
+    "lab/full-05-optimum-replicate.json",
+    "lab/full-06-final.json",
+    "lab/calibration-01.json",
+    "lab/calibration-02.json",
+    "lab/calibration-03.json",
+    "lab/calibration-04.json",
+    "lab/calibration-05.json",
+    "lab/input-final.json",
+    "lab/input-pre-final-sensitivity.json",
+    "lab/model-final-default.json",
+    "lab/model-final-sensitivity-101.json",
+    "lab/model-pre-final-sensitivity.json",
+    "lab/model-updated-05.json",
+    "lab/final-analysis.json",
+    "lab/final-report.md",
+    "method/response_surface.py",
+    "method/SKILL.md"
+  ]
+}

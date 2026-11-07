@@ -1,0 +1,88 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "additive",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.2635795508421538,
+      "coefficients": [
+        95.11691406207521,
+        5.916837601531758,
+        -0.0625499610631844,
+        -6.678590665953348,
+        -5.7467204696165,
+        -0.38162068663895554
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 0.3465311241847826,
+      "coefficients": [
+        95.11920526643013,
+        5.917021665832251,
+        -0.06280670957991309,
+        -6.680795623967627,
+        -5.7487922216264264
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": null,
+  "next_experiments": [],
+  "best_measured": {
+    "x": 0.7,
+    "y": 0.5,
+    "value": 96.69787713906754,
+    "impurity": 0.0951582309081273
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "lab/input-final-base.json",
+    "measurements": [
+      "lab/full-0.65-0.45.json",
+      "lab/full-0.70-0.50.json",
+      "lab/full-0.70-0.50-rep.json",
+      "lab/full-0.72-0.50.json",
+      "lab/full-0.72-0.50-rep.json",
+      "lab/full-0.72-0.49-final.json",
+      "lab/full-0.72-0.49-rep.json"
+    ],
+    "digests": {
+      "lab/input-final-base.json": "sha256:fe9a99394e4d085112b68f620e80dcfd5ef9527712255d38d38f6910a0a4a66e",
+      "lab/full-0.65-0.45.json": "sha256:e4e8a7ef1b603cda0278b699baf0bd3c0e8cd35553ac4870f099e6e354819a11",
+      "lab/full-0.70-0.50.json": "sha256:47c871bd52bf52afca6851821289445de4e9af824144a2e884fe8d4d4232400e",
+      "lab/full-0.70-0.50-rep.json": "sha256:f1a4922c4d478a4986139accf2a2beab9de592d626d96aa3d3da9738636d72ed",
+      "lab/full-0.72-0.50.json": "sha256:030826a714aa8dd4a78a158e77a577744d82869c2afc5da09ce1682fd1f001f9",
+      "lab/full-0.72-0.50-rep.json": "sha256:dd47b97ad1b54ed57661dbd34310b161f97886fc284f34dd8ffd4ee4adcb9e4f",
+      "lab/full-0.72-0.49-final.json": "sha256:ff9e5da1bd3d81b614440379e9c74818aef19f866ae9aef023a944cc5286b706",
+      "lab/full-0.72-0.49-rep.json": "sha256:74a7231c1289a4541d36370e10c3df1ae15b952afee051b7b4bae52af83359ca"
+    }
+  }
+}

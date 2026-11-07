@@ -1,0 +1,108 @@
+{
+  "session": "session-native-b375e0a1-421a-4d3b-9eb1-ec98e205a674",
+  "group": "A",
+  "mode": "default",
+  "reason": "completed",
+  "elapsedMs": 4206,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 798,
+    "output": 164,
+    "cacheRead": 10496,
+    "cacheWrite": 0,
+    "calls": 3,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 11458,
+    "status": "verified",
+    "processed": 11458
+  },
+  "mount": {
+    "prompt": false,
+    "tools": false
+  },
+  "requests": [
+    {
+      "session": "session-native-b375e0a1-421a-4d3b-9eb1-ec98e205a674",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065833407
+    },
+    {
+      "session": "session-native-b375e0a1-421a-4d3b-9eb1-ec98e205a674",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065835896
+    }
+  ],
+  "approvals": [],
+  "answer": "17 × 23 = **391 元**，已写入 `submission.json`。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "/tmp/clearai-polish-final-release/workspaces/direct-A/submission.json"
+    ],
+    "sessionId": "session-native-b375e0a1-421a-4d3b-9eb1-ec98e205a674"
+  },
+  "violations": {
+    "isolation_failed": false
+  },
+  "driverDigest": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587",
+  "logs": [
+    {
+      "session": "session-native-b375e0a1-421a-4d3b-9eb1-ec98e205a674",
+      "cursor": 28,
+      "path": "1ed93779b63ef59a17ef312fb774eb1fc671ba32aa5d7df0197f0b9947f56f29.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "4edb4589e02f9a81af6c350dbb8c108dc87696446a0a2493ca8936669415fa70",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}

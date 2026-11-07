@@ -1,0 +1,8 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {verifyReleaseBudget} from '../tools/release-budget.mjs'
+import {PRICE} from '../tools/native-headless/budget.mjs'
+const caps={limitUsd:240,testLimitUsd:40}
+function fixture(){return {version:3,...caps,price:PRICE,limitChanges:[{from:{limitUsd:30,testLimitUsd:5},to:caps,authorization:'User expanded test budget'}],requests:{old:{status:'historical-carry-forward',sourceVersion:'0.5.8',testId:'old',reservedUsd:1},known:{status:'verified',testId:'current',reservedUsd:.0003,usage:{inputTokens:1000,outputTokens:0}},unknown:{status:'unknown',testId:'prior',reservedUsd:.8,reservationAcceptance:{authorization:'Specific preserved reserve accepted',upperBoundUsd:.8}}}}}
+test('expanded publication budget preserves historical costs and full unknown reservations',()=>{const r=verifyReleaseBudget(fixture(),caps);assert.equal(r.costUpperBoundUsd,1.8003);assert.equal(r.unknownRequests,1);assert.equal(r.accountingStatus,'bounded-unknown')})
+for(const fault of ['pending','unaccepted','released-unknown','price-tamper','limit-reset','over-cap','free-zero'])test('publication budget rejects '+fault,()=>{const l=fixture();if(fault==='pending')l.requests.known.status='pending';if(fault==='unaccepted')delete l.requests.unknown.reservationAcceptance;if(fault==='released-unknown')l.requests.unknown.reservedUsd=0;if(fault==='price-tamper')l.requests.known.reservedUsd=0;if(fault==='limit-reset')l.limitChanges[0].from.limitUsd=0;if(fault==='over-cap')l.requests.old.reservedUsd=241;if(fault==='free-zero'){l.requests.known.usage={inputTokens:0,outputTokens:0};l.requests.known.reservedUsd=0}assert.throws(()=>verifyReleaseBudget(l,caps))})

@@ -11,8 +11,10 @@ assert.ok(!existsSync(destination), 'Keep previous attempt archives intact')
 const json = path => JSON.parse(readFileSync(join(source, path)))
 const comparison = json('comparison.json'), verification = json('verification.json')
 assert.equal(comparison.complete, true)
-assert.equal(verification.dataVerified, true)
-assert.equal(json('grading-truth.json').disclosedAfterAllWorkersExited, true)
+const polish=json('manifest.json').schema==='clearai.polish-comparison.v1'
+assert.equal(polish?verification.passed:verification.dataVerified,true)
+assert.equal(polish?json('grading-truth.json').releasedAfterAllRuns:json('grading-truth.json').disclosedAfterAllWorkersExited,true)
+const acceptancePassed=verification.passed===true&&(verification.allTasksCompleted??true)
 const secrets = [process.env.DS_KEY].filter(Boolean)
 for (const entry of readdirSync(join(source, 'workspaces'), { withFileTypes: true })) {
  const endpoint = join(source, 'workspaces', entry.name, 'experiment-endpoint.json')
@@ -45,7 +47,7 @@ for (const row of comparison.results.filter(r => r.reason !== 'not_run')) {
   const measuredCalls = name === 'llm-calls.jsonl'
   save(`${run}/${measuredCalls ? name : name.replace('.jsonl', '.public.jsonl')}`, measuredCalls ? records : records.filter(row => publicTypes.has(row.type)), 'jsonl')
  }
- const snapshot = resolve(source, row.snapshot)
+ const snapshot = resolve(source, row.snapshot ?? (polish?`workspaces/${row.id}`:''))
  assert.ok(snapshot.startsWith(source + '/'))
  function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -60,5 +62,5 @@ for (const row of comparison.results.filter(r => r.reason !== 'not_run')) {
  }
  walk(snapshot)
 }
-save('archive.json', { schema: 'clearai.public-comparison-archive.v1', complete: true, acceptancePassed: verification.passed, policy: 'Original sessions remain private. Public archives retain measured usage, tool calls/results, task lifecycle and source artifacts. Assistant reasoning and duplicate stream payloads are omitted; credentials are redacted. Sanitized files have separate hashes and do not claim byte identity with originals.', files })
-console.log(JSON.stringify({ destination, files: files.length, acceptancePassed: verification.passed }))
+save('archive.json', { schema: 'clearai.public-comparison-archive.v1', complete: true, acceptancePassed, policy: 'Original sessions remain private. Public archives retain measured usage, tool calls/results, task lifecycle and source artifacts. Assistant reasoning and duplicate stream payloads are omitted; credentials are redacted. Sanitized files have separate hashes and do not claim byte identity with originals.', files })
+console.log(JSON.stringify({ destination, files: files.length, acceptancePassed }))

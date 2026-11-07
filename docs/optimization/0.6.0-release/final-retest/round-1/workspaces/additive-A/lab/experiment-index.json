@@ -1,0 +1,152 @@
+{
+  "objective": "maximize yield subject to impurity <= 0.115; x,y in [0,1]",
+  "instrument": "original",
+  "units": {
+    "value": "%",
+    "impurity": "fraction"
+  },
+  "budget": {
+    "total": 30,
+    "spent": 28,
+    "remaining": 2,
+    "accounting": "initial 9 observations provided; charged experiments: 3 calibrate x2 + 1 quick x1 + 7 full x3 = 28"
+  },
+  "initial": {
+    "path": "initial.json",
+    "n": 9,
+    "cost": 0
+  },
+  "calibrations": [
+    {
+      "path": "lab/cal-0.5-0.5.json",
+      "x": 0.5,
+      "y": 0.5,
+      "instrument": "original",
+      "metric": "yield",
+      "offset": 0,
+      "unit": "normalized x",
+      "cost": 2,
+      "spent_after": 2
+    },
+    {
+      "path": "lab/cal-0.9-0.5.json",
+      "x": 0.9,
+      "y": 0.5,
+      "instrument": "original",
+      "metric": "yield",
+      "offset": 0,
+      "unit": "normalized x",
+      "cost": 2,
+      "spent_after": 4
+    },
+    {
+      "path": "lab/cal-0.72-0.49.json",
+      "x": 0.72,
+      "y": 0.49,
+      "instrument": "original",
+      "metric": "yield",
+      "offset": 0,
+      "unit": "normalized x",
+      "cost": 2,
+      "spent_after": 22
+    }
+  ],
+  "measurements": [
+    {
+      "path": "lab/quick-0.65-0.45.json",
+      "x": 0.65,
+      "y": 0.45,
+      "value": 96.32894297797164,
+      "impurity": 0.08925456753581833,
+      "mode": "quick",
+      "instrument": "original",
+      "noise_sd": 0.44999999999999996,
+      "cost": 1,
+      "spent_after": 5
+    },
+    {
+      "path": "lab/full-0.65-0.45.json",
+      "x": 0.65,
+      "y": 0.45,
+      "value": 96.19261509814179,
+      "impurity": 0.09153204376496356,
+      "mode": "full",
+      "instrument": "original",
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 8
+    },
+    {
+      "path": "lab/full-0.70-0.50.json",
+      "x": 0.7,
+      "y": 0.5,
+      "value": 95.84968491537734,
+      "impurity": 0.09451392398713881,
+      "mode": "full",
+      "instrument": "original",
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 14
+    },
+    {
+      "path": "lab/full-0.70-0.50-rep.json",
+      "x": 0.7,
+      "y": 0.5,
+      "value": 96.69787713906754,
+      "impurity": 0.0951582309081273,
+      "mode": "full",
+      "instrument": "original",
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 20
+    },
+    {
+      "path": "lab/full-0.72-0.50.json",
+      "x": 0.72,
+      "y": 0.5,
+      "value": 96.50093105972608,
+      "impurity": 0.09615285583032529,
+      "mode": "full",
+      "instrument": "original",
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 11
+    },
+    {
+      "path": "lab/full-0.72-0.50-rep.json",
+      "x": 0.72,
+      "y": 0.5,
+      "value": 96.41560637412195,
+      "impurity": 0.09624279321554008,
+      "mode": "full",
+      "instrument": "original",
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 17
+    },
+    {
+      "path": "lab/full-0.72-0.49-final.json",
+      "x": 0.72,
+      "y": 0.49,
+      "value": 96.56119752805704,
+      "impurity": 0.09531186584466339,
+      "mode": "full",
+      "instrument": "original",
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 25
+    },
+    {
+      "path": "lab/full-0.72-0.49-rep.json",
+      "x": 0.72,
+      "y": 0.49,
+      "value": 96.59976492765198,
+      "impurity": 0.09519900552894889,
+      "mode": "full",
+      "instrument": "original",
+      "noise_sd": 0.18,
+      "cost": 3,
+      "spent_after": 28
+    }
+  ]
+}

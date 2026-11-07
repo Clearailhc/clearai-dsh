@@ -1,0 +1,325 @@
+{
+  "passed": true,
+  "allTasksCompleted": false,
+  "rows": [
+    {
+      "id": "direct-A",
+      "reason": "completed",
+      "completed": true,
+      "score": 100,
+      "partialArtifactQuality": null,
+      "evidenceFiles": [],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 0,
+      "finalFullMeasurements": 0
+    },
+    {
+      "id": "direct-C",
+      "reason": "completed",
+      "completed": true,
+      "score": 100,
+      "partialArtifactQuality": null,
+      "evidenceFiles": [],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 0,
+      "finalFullMeasurements": 0
+    },
+    {
+      "id": "additive-C",
+      "reason": "blocked",
+      "completed": false,
+      "score": 0,
+      "partialArtifactQuality": {
+        "score": 0,
+        "feasible": false,
+        "start": 84.6593295337173,
+        "optimum": 96.39272564642545
+      },
+      "evidenceFiles": [],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 0,
+      "finalFullMeasurements": 0
+    },
+    {
+      "id": "additive-A",
+      "reason": "completed",
+      "completed": true,
+      "score": 99.97648853947655,
+      "partialArtifactQuality": {
+        "score": 99.97648853947655,
+        "feasible": true,
+        "value": 96.38996695363035,
+        "impurity": 0.095052,
+        "start": 84.6593295337173,
+        "optimum": 96.39272564642545
+      },
+      "evidenceFiles": [
+        {
+          "path": "initial.json",
+          "bytes": 2865
+        },
+        {
+          "path": "report.md",
+          "bytes": 6460
+        },
+        {
+          "path": "lab/experiment-index.json",
+          "bytes": 3442
+        },
+        {
+          "path": "lab/input-final.json",
+          "bytes": 5408
+        },
+        {
+          "path": "lab/model-final.json",
+          "bytes": 2702
+        },
+        {
+          "path": "lab/decision.json",
+          "bytes": 2563
+        },
+        {
+          "path": "lab/cal-0.5-0.5.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/cal-0.9-0.5.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/cal-0.72-0.49.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/quick-0.65-0.45.json",
+          "bytes": 303
+        },
+        {
+          "path": "lab/full-0.65-0.45.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-0.70-0.50.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/full-0.70-0.50-rep.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/full-0.72-0.50.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-0.72-0.50-rep.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-0.72-0.49-final.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/full-0.72-0.49-rep.json",
+          "bytes": 288
+        }
+      ],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 28,
+      "finalFullMeasurements": 2
+    },
+    {
+      "id": "interaction-A",
+      "reason": "completed",
+      "completed": true,
+      "score": 99.96644436383069,
+      "partialArtifactQuality": {
+        "score": 99.96644436383069,
+        "feasible": true,
+        "value": 96.2237454887157,
+        "impurity": 0.10058792,
+        "start": 89.42910629806217,
+        "optimum": 96.22602623844162
+      },
+      "evidenceFiles": [
+        {
+          "path": "initial.json",
+          "bytes": 2863
+        },
+        {
+          "path": "lab/quick-01.json",
+          "bytes": 301
+        },
+        {
+          "path": "lab/full-01.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/full-02.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/full-03.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/full-04-optimum.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/full-05-optimum-replicate.json",
+          "bytes": 289
+        },
+        {
+          "path": "lab/full-06-final.json",
+          "bytes": 290
+        },
+        {
+          "path": "lab/calibration-01.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/calibration-02.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/calibration-03.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/calibration-04.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/calibration-05.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/input-final.json",
+          "bytes": 5005
+        },
+        {
+          "path": "lab/input-pre-final-sensitivity.json",
+          "bytes": 4693
+        },
+        {
+          "path": "lab/model-final-default.json",
+          "bytes": 2484
+        },
+        {
+          "path": "lab/model-final-sensitivity-101.json",
+          "bytes": 3105
+        },
+        {
+          "path": "lab/model-pre-final-sensitivity.json",
+          "bytes": 3102
+        },
+        {
+          "path": "lab/model-updated-05.json",
+          "bytes": 3727
+        },
+        {
+          "path": "lab/final-analysis.json",
+          "bytes": 1696
+        },
+        {
+          "path": "lab/final-report.md",
+          "bytes": 9186
+        },
+        {
+          "path": "method/response_surface.py",
+          "bytes": 8022
+        },
+        {
+          "path": "method/SKILL.md",
+          "bytes": 2360
+        }
+      ],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 29,
+      "finalFullMeasurements": 3
+    },
+    {
+      "id": "interaction-C",
+      "reason": "completed",
+      "completed": true,
+      "score": 99.97647634291882,
+      "partialArtifactQuality": {
+        "score": 99.97647634291882,
+        "feasible": true,
+        "value": 96.22442735430276,
+        "impurity": 0.10062299999999999,
+        "start": 89.42910629806217,
+        "optimum": 96.22602623844162
+      },
+      "evidenceFiles": [
+        {
+          "path": "initial.json",
+          "bytes": 2863
+        },
+        {
+          "path": "lab/calib-1.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/f-0.71-0.61.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/f-0.71-0.61-r2.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/f-0.71-0.61-r3.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/f-0.5-0.5.json",
+          "bytes": 284
+        },
+        {
+          "path": "lab/f-0.6-0.6.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/f-0.70-0.60.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/f-0.75-0.60.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/f-0.75-0.65.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/f-0.8-0.6.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/input-all.json",
+          "bytes": 6064
+        },
+        {
+          "path": "lab/model-all.json",
+          "bytes": 2890
+        },
+        {
+          "path": "lab/verification.json",
+          "bytes": 1839
+        }
+      ],
+      "independentAudits": 1,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 30,
+      "finalFullMeasurements": 3
+    }
+  ],
+  "method": "Scores recomputed from hidden truth after workers exited; real mount, isolation probes, role accounting and submitted evidence checked. No model judge.",
+  "limitation": "One sample per task/variant; not a significance test or external domain accuracy benchmark."
+}

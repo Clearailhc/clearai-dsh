@@ -1,0 +1,86 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.1690648398705391,
+      "coefficients": [
+        95.20781233854906,
+        4.230560000997265,
+        -0.21445190634230063,
+        -6.786679815260347,
+        -5.439776888144841,
+        6.2941863313079045
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 4.4564443875579345,
+      "coefficients": [
+        95.59784393705226,
+        4.3569659770019,
+        -0.1390100812054102,
+        -7.020858865179143,
+        -5.860620289857972
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": null,
+  "next_experiments": [],
+  "best_measured": {
+    "x": 0.708,
+    "y": 0.611,
+    "value": 96.32168910038257,
+    "impurity": 0.10037421846611876
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/full-01.json",
+      "lab/full-02.json",
+      "lab/full-03.json",
+      "lab/full-04-optimum.json",
+      "lab/full-05-optimum-replicate.json",
+      "lab/full-06-final.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:d61146cc1e0992f9700e1c8fbfd3747fd952c0a5d70bbe31ac5a9189ea0da9a9",
+      "lab/full-01.json": "sha256:b98fa4eb2478319ad47b43eea152098796d5b22e73b82a6a5e5bf0599c72cfa9",
+      "lab/full-02.json": "sha256:1d3a48fa44d019a3e92e846a0b56c025e5a9203318ba34fc84e62ce8f2404772",
+      "lab/full-03.json": "sha256:52f25687356f0ff434c617098326338cac1dd8cf8cc96903a21ed61b5d4bfa15",
+      "lab/full-04-optimum.json": "sha256:d97a758d30e84159cc25377176994653fe1f1dcc8c7078640300c68841e66ec2",
+      "lab/full-05-optimum-replicate.json": "sha256:086ada74541e7f6040fb298fa16229ea7ef70c1a8f8775c5deec338747e9f78b",
+      "lab/full-06-final.json": "sha256:481c764bff44447bfe953a41ac6c528496c3080671f6c089d989752e0098555c"
+    }
+  }
+}
