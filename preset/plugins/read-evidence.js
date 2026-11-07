@@ -9,10 +9,10 @@ export const inject = ['tools', 'sessions']
 // Observation only: do not infer semantic reuse from an existing file. Capture
 // names before the first tool call, not when a model later declares reuse.
 export function sourceInventory(cwd) {
- const paths = new Set(); let complete = true
+ const paths = new Set(); let complete = true, visited = 0
  const walk = (dir, prefix = '') => {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-   if (paths.size >= 10000) { complete = false; return }
+   if (++visited > 10000) { complete = false; return }
    const path = prefix + entry.name
    if (entry.isSymbolicLink() || ['node_modules', '.git', '.venv', 'venv'].includes(entry.name)) { complete = false; continue }
    if (entry.isDirectory()) walk(join(dir, entry.name), path + '/')
