@@ -184,7 +184,7 @@ test('legacy review reuse also invalidates changed evaluator trust or policy', (
  const input={cwd,kind:'evidence_audit',step:{id:'s1',done_criteria:'value equals 1',artifacts:['raw.txt']},state:{goal:{id:'g',workflow:'steps-v1'}},gate:{trust:{model:'same',policy:'clearai.review.v1'}}}
  const original=auditMaterialDigest(input)
  assert.equal(auditMaterialDigest(structuredClone(input)),original)
- for(const field of ['model','policy','presetSource','l4Human']){
+ for(const field of ['model','policy','discipline','presetSource','l4Human']){
   const changed=structuredClone(input);changed.gate.trust[field]='changed'
   assert.notEqual(auditMaterialDigest(changed),original,field)
  }

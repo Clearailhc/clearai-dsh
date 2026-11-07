@@ -922,7 +922,7 @@ export function apply(ctx, config = {}) {
 			'- 本次裁决发生在系统收下交付/结案之前。本次评估卡、事实升格、目标完成标记都在裁决返回并复核后落盘,此刻尚未出现是正常时序,不是缺失证据。仍须核对已经声称存在的历史记录及实质产物。',
 			'- 你给**两项**裁决,不要混在一起:',
 			'  · **交付成立吗**(`holds`):yes = 判据逐条满足、观测真实;no = 有判据不满足,或观测与记录对不上;unclear = 凭现有材料判不了。',
-			'  · **每条判断的结果**(`results`,这一步检验几条就给几格):对照它的推翻条件读——support = 没碰到推翻条件,refute = 碰到了,inconclusive = 这次观测区分不了。',
+			'  · **每条判断的结果**(`results`,这一步检验几条就给几格):对照它的推翻条件读——support = 观测支持登记命题及其范围,且未触发推翻条件;refute = 触发推翻条件;inconclusive = 观测不足以区分,或仅支持更窄范围。',
 			'- 交付成立与判断被推翻可以同时为真:推翻是有价值的结果,它不让交付失败。不要为了让步骤通过而写 support。',
 			'- 你还要查**还有什么没解释**(`anomalies`):原始数据里有没有做的人没登记的异常——参考读数对不上、重复点漂移、不同装置或不同批次之间的差、和常识或本体不符的量级?数字复跑对得上不等于数据可信。每条做的人已排除的未解释项,理由站不站得住?站不住的也写进来。结论用到了 clear/knowledge/ 下的已有条目、却没在判断的 uses 里引用的,也写进来(它绕过了适用性判定)。没有就给空数组。',
 			'',
@@ -946,7 +946,7 @@ export function apply(ctx, config = {}) {
 			'- This evaluation precedes acceptance and closure. Its card, fact promotion and goal completion markers are persisted only after your verdict returns and is rechecked; their absence now is expected, not missing evidence. Still verify claimed historical records and substantive outputs.',
 			'- You give **two** verdicts; keep them apart:',
 			'  · **Does the delivery hold** (`holds`): yes = every criterion met and the observations are real; no = some criterion unmet, or observations do not match the record; unclear = cannot be decided from the material.',
-			'  · **The result for each judgment** (`results`, one entry per judgment this step tests): read it against its refutation condition; support = the condition was not hit, refute = it was hit, inconclusive = this observation cannot tell.',
+			'  · **The result for each judgment** (`results`, one entry per judgment this step tests): read it against its refutation condition; support = observations support the registered claim and scope without triggering refutation; refute = the refutation condition was hit; inconclusive = observations cannot distinguish or support only a narrower scope.',
 			'- A delivery can hold while a judgment is refuted: refutation is a valuable result and does not fail the delivery. Do not write support to let a step pass.',
 			'- You also check **what is still unexplained** (`anomalies`): does the raw data hold anomalies the worker did not record (a reference reading that disagrees, drift between repeated points, a gap between devices or batches, a magnitude that contradicts common knowledge or the ontology)? Re-run numbers matching does not mean the data can be trusted. For each unexplained item the worker ruled out, does the reason hold? If not, list it here too. If the conclusion relies on existing items under clear/knowledge/ that no judgment cites in uses, list that too (it bypassed the applicability check). If there are none, give an empty array.',
 			'',
@@ -1729,7 +1729,7 @@ export function apply(ctx, config = {}) {
 	async function runEvaluatorOnce(sessionId, agent, plan, step, gate, kind, signal) {
 		const nativeBefore = nativeGoal(agent)
 		const route = agent?.session?.requestHeader?.()?.config ?? agent?.options ?? {}
-		gate.trust = { model: route.model ?? null, modelProvider: route.provider ?? null, reasoningEffort: route.reasoningEffort ?? null, policy: REVIEW_POLICY, preset: CFG.auditPreset, provider: CFG.auditProvider, presetSource: contentDigest(readFileSync(new URL('../evaluator.cordis.yml', import.meta.url))), rerun: CFG.auditRerun, tools: CFG.auditToolFilter, l4Human: CFG.l4RequiresHumanRelease, l4External: CFG.l4RejectSelfWritten }
+		gate.trust = { model: route.model ?? null, modelProvider: route.provider ?? null, reasoningEffort: route.reasoningEffort ?? null, policy: REVIEW_POLICY, discipline: contentDigest(evaluatorDiscipline()), preset: CFG.auditPreset, provider: CFG.auditProvider, presetSource: contentDigest(readFileSync(new URL('../evaluator.cordis.yml', import.meta.url))), rerun: CFG.auditRerun, tools: CFG.auditToolFilter, l4Human: CFG.l4RequiresHumanRelease, l4External: CFG.l4RejectSelfWritten }
 		if (stateOf(sessionId).goal?.workflow === 'agent-v1') {
 			try {
 				const snapshot = researchSnapshot(sessionCwd(sessionId))

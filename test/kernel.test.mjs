@@ -3888,6 +3888,7 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  check('native review commits scoped fact without a custom plan',first.ok===true&&host.service.state(S).facts.length===1&&host.service.state(S).plans.length===0,String(first.message))
  const claimPrompt=host.audits.at(-1).request.prompt.map(block=>block.text??'').join('\n')
  check('claim review receives dispatcher-owned stage obligation',claimPrompt.includes('"kind":"claim_audit"')&&claimPrompt.includes('"final_delivery_required_now":false')&&claimPrompt.includes(base.done_criteria),claimPrompt)
+ check('review persona does not equate absence of refutation with support',!/support = (没碰到推翻条件|the condition was not hit)/.test(claimPrompt),claimPrompt)
  check('extra hypothesis remains unverified',!host.service.state(S).evidence.some(e=>e.hypothesis===extra.id))
  const before=host.audits.length, evidenceBefore=host.service.state(S).evidence.length
  const again=await callOn(host,S,'ReviewClaims',request)
@@ -3901,6 +3902,7 @@ if (hostSnapshotJson) check('official DSH catches the observed undefined audit m
  check('final reviewer receives current independent receipt and all candidate leads',finalPrompt.includes('independent-current')&&finalPrompt.includes(extra.id)&&finalPrompt.includes('missing claim'),finalPrompt)
  check('final review still requires final delivery',finalPrompt.includes('"kind":"goal_audit"')&&finalPrompt.includes('"final_delivery_required_now":true'),finalPrompt)
  check('scope obligation survives persisted review request',card.request.obligation?.scope==='selected-work'&&card.request.obligation?.policy==='clearai.review.v2')
+ check('review cache binds actual localized discipline',/^[a-f0-9]{64}$/.test(card.request.gate.trust.discipline))
  check('final review does not promote the unrelated candidate',host.service.state(S).facts.length===1&&!host.service.state(S).facts.some(f=>f.hypothesis===extra.id))
 }
 {
