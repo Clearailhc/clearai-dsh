@@ -16,7 +16,7 @@ Status: real acceptance failed; publication blocked. Local review package is pre
 - Documentation consistency: 15 passed after final results insertion.
 - Official DSH replay: all three stages each produced 9 screenshots, including 375/768/1440 px, keyboard object inspection and dark mode; no browser errors or display model calls.
 - Production build passed; package verification 45/45 and official DSH clean installation 23/23 passed. Final package runtime matches all 49 compared tested files; all screenshot production hashes match. [Package proof and SHA256](release-package-checks.json).
-- CI for the final documentation/verifier commit: pending push.
+- CI for the candidate branch is tracked on [draft PR #46](https://github.com/Clearailhc/clearai-dsh/pull/46). Green engineering checks do not override the failed real-task acceptance.
 
 ## Known limitations and release decision
 
