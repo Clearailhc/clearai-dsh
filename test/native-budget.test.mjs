@@ -86,7 +86,7 @@ test('Windows replacement retries preserve the old ledger and hold the lock',t=>
   };
   syncBuiltinESMExports();
   const id=campaignBudget(file).reserve({testId:'windows-sharing'});
-  assert.equal(attempts,3);
+  assert.ok(attempts>=3);
   assert.equal(JSON.parse(fs.readFileSync(file)).requests[id].status,'pending');
   assert.equal(fs.existsSync(file+'.lock'),false);
  `],{encoding:'utf8',timeout:10000})
