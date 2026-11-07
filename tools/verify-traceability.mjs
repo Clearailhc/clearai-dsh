@@ -28,7 +28,7 @@ try {
  const key=readFileSync(join(root,'.controller/world-key'));assert.equal(sha(key),manifest.worldKeyCommitment)
  for(const a of manifest.assets)assert.equal(sha(readFileSync(existsSync(join(root,'.controller/harness',a.path))?join(root,'.controller/harness',a.path):join(import.meta.dirname,'native-headless',a.path))),a.sha256)
  const scenario=traceabilityCase(key),ledger=json(process.env.CLEARAI_TEST_BUDGET_FILE),requests=Object.values(ledger.requests),seen=new Set(),rows=[]
- assert.equal(ledger.limitUsd,60);assert.equal(ledger.testLimitUsd,manifest.budgets.testLimitUsd);assert.equal(requests.filter(r=>r.status==='pending').length,0)
+ assert.equal(ledger.limitUsd,manifest.budgets.campaignLimitUsd??60);assert.equal(ledger.testLimitUsd,manifest.budgets.testLimitUsd);assert.equal(requests.filter(r=>r.status==='pending').length,0)
  for(const row of comparison.results){
   if(row.reason==='foundation_failed'){assert.equal(row.costUsd,0);rows.push(row);continue}
   assert.notEqual(row.reason,'controller_error')
@@ -85,7 +85,11 @@ try {
  }
  const currentCostUsd=rows.reduce((n,r)=>n+r.costUsd,0),cumulativeReservedUsd=requests.reduce((n,r)=>n+r.reservedUsd,0)
  assert.ok(Math.abs(cumulativeReservedUsd-manifest.costBeforeUsd-currentCostUsd)<1e-8)
- const unknown=requests.filter(r=>r.status==='unknown');assert.equal(unknown.length,1);assert.equal(unknown[0].reservedUsd,0.8);assert.ok(unknown[0].reservationAcceptance?.authorization)
- const receipt={dataVerified:true,allTasksCompleted:rows.every(r=>r.taskSucceeded),releaseRecommended:false,budget:{previousReservedUsd:manifest.costBeforeUsd,currentCostUsd,cumulativeReservedUsd,historicalUnknownReservationUsd:0.8,pending:0,newUnknown:0},rows}
+ const unknown=requests.filter(r=>r.status==='unknown')
+ const historical=manifest.historicalUnknownReservations??[{id:Object.entries(ledger.requests).find(([,r])=>r.status==='unknown')?.[0],reservedUsd:0.8}]
+ assert.equal(unknown.length,historical.length)
+ for(const prior of historical){const r=ledger.requests[prior.id];assert.equal(r?.status,'unknown');assert.equal(r.reservedUsd,prior.reservedUsd);assert.ok(r.reservationAcceptance?.authorization);assert.equal(r.reservationAcceptance.upperBoundUsd,r.reservedUsd)}
+ const historicalUnknownReservationUsd=historical.reduce((n,r)=>n+r.reservedUsd,0)
+ const receipt={dataVerified:true,allTasksCompleted:rows.every(r=>r.taskSucceeded),releaseRecommended:false,budget:{previousReservedUsd:manifest.costBeforeUsd,currentCostUsd,cumulativeReservedUsd,historicalUnknownReservationUsd,pending:0,newUnknown:0},rows}
  writeFileSync(join(root,'verification.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify({dataVerified:true,budget:receipt.budget,rows:rows.map(r=>({id:r.id,completed:r.taskSucceeded,exact:r.score?.decisionExact,entities:r.score?.entities,edges:r.score?.edges,seconds:Math.round(r.elapsedMs/1000),tokens:r.usage?.processed,costUsd:r.costUsd,facts:r.nativeKnowledge?.facts}))}))
 }catch(error){writeFileSync(join(root,'verification.json'),JSON.stringify({dataVerified:false,error:String(error.message)},null,2)+'\n');throw error}
