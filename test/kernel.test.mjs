@@ -31,6 +31,7 @@ const SECTIONS = BILINGUAL_SECTIONS.map((section) => ({ ...section, text: sectio
 // Existing fixtures exercise the legacy step contract; native cases opt in explicitly.
 const apply = (ctx, config = {}) => applyKernel(ctx, { researchWorkflow: 'steps-v1', ...config })
 const hostSnapshotJson = process.env.CLEARAI_DSH_RESOURCES ? (await import(pathToFileURL(join(process.env.CLEARAI_DSH_RESOURCES, 'node_modules/@deepseek-ai/dsh-util-values/lib/index.js')).href)).snapshotJsonValue : null
+const hostAssertSchema = process.env.CLEARAI_DSH_RESOURCES ? (await import(pathToFileURL(join(process.env.CLEARAI_DSH_RESOURCES, 'node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.js')).href)).assertSupportedJsonSchema : null
 
 // 测试用自己的数据区:世界线工作副本与旁路账本都按 DSH_HOME 落盘,
 // 跑测试不该往用户真实的 ~/.dsh 里塞东西(之前一直塞了,已清理)。
@@ -372,6 +373,7 @@ function makeHost() {
 						 * 这里照样不认它们:记进 `audits` 的就是平台真正看得见的那一份。
 						 */
 						async startActivation(spec) {
+							if (spec.request?.outputSchema && hostAssertSchema) hostAssertSchema(spec.request.outputSchema)
 							if (typeof spec?.provider !== 'string' || typeof spec?.label !== 'string' || !(spec?.signal instanceof AbortSignal) || !['parent', 'caller'].includes(spec?.delivery)) throw new Error('invalid SubagentActivationSpec')
 							if (spec.request?.parent === undefined || !Array.isArray(spec.request?.prompt)) throw new Error('startActivation request requires parent and prompt blocks')
 							const { persona: _persona, toolFilter: _toolFilter, ...request } = spec.request
@@ -4019,7 +4021,7 @@ for(const coverage of ['narrower','unknown',null,'full']) {
  const state=host.service.state(S)
  check(`${coverage}: broad or unconfirmed support cannot become fact`,state.facts.length===(coverage==='full'?1:0)&&state.evidence.at(-1).verdict===(coverage==='full'?'support':'inconclusive'))
  const schema=host.audits.at(-1).request.outputSchema
- check(`${coverage}: native schema binds claim IDs and coverage`,schema.properties.results.minItems===1&&schema.properties.results.items.properties.hypothesis.enum[0]===peak.id&&schema.properties.results.items.required.includes('coverage'))
+ check(`${coverage}: native schema binds claim IDs and coverage`,schema.properties.results.minItems===undefined&&schema.properties.results.description.includes('item count 1–1')&&schema.properties.results.items.properties.hypothesis.enum[0]===peak.id&&schema.properties.results.items.required.includes('coverage'))
 }
 for(const finalVerdict of ['support','inconclusive','missing']) {
  const {host,ws,S,peak,noise,req}=await closureFixture('repair-'+finalVerdict)

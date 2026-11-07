@@ -2,8 +2,9 @@
 export function nativeAuditSchema(value) {
  if (Array.isArray(value)) return value.map(nativeAuditSchema)
  if (!value || typeof value !== 'object') return value
- const result = Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'maxLength').map(([key, child]) => [key, nativeAuditSchema(child)]))
+ const result = Object.fromEntries(Object.entries(value).filter(([key]) => !['maxLength','minItems','maxItems'].includes(key)).map(([key, child]) => [key, nativeAuditSchema(child)]))
  if (value.maxLength !== undefined) result.description = `${value.description ?? ''} (maximum ${value.maxLength} characters; excess is truncated by the consumer)`
+ if (value.minItems !== undefined || value.maxItems !== undefined) result.description = `${result.description ?? ''} (item count ${value.minItems ?? 0}–${value.maxItems ?? 'unbounded'}; exact requested claim coverage is checked at settlement)`
  return result
 }
 

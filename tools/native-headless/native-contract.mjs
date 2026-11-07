@@ -18,6 +18,11 @@ if(!process.env.CLEARAI_CONTRACT_CHILD) {
  const require=createRequire(join(nativeRuntime().resources,'package.json'))
  const {Session,KNOWN_SESSION_EVENT_TYPES}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-session')).href)
  const {BlockAssembler}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-llm')).href)
+ const {assertSupportedJsonSchema}=await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-tools')).href)
+ const {nativeAuditSchema,bindAuditCriteria}=await import(pathToFileURL(join(repo,'preset/plugins/audit-schema.js')).href)
+ const claimSchema=bindAuditCriteria({type:'object',properties:{criteria:{type:'array',items:{type:'object',properties:{criterion:{type:'string'}}}},results:{type:'array',items:{type:'object',properties:{hypothesis:{type:'string'},verdict:{type:'string',enum:['support','refute','inconclusive']},coverage:{type:'string',enum:['full','narrower','unknown']}},required:['hypothesis','verdict','coverage']}}}},[{id:'C1'}],['h-one'])
+ assert.throws(()=>assertSupportedJsonSchema(claimSchema),/minItems|maxItems/)
+ assert.doesNotThrow(()=>assertSupportedJsonSchema(nativeAuditSchema(claimSchema)))
  const {recoverToolArguments}=await import(pathToFileURL(join(repo,'preset/plugins/tool-argument-stream.js')).href)
  const malformed='{"answers":[{]'
  async function* adapterFailure(){yield {type:'tool-call-delta',index:0,id:'bad-json',name:'Conclude',argumentsDelta:malformed};yield {type:'finish',reason:{kind:'error',failure:{code:'MALFORMED_RESPONSE'}}}}
@@ -42,7 +47,7 @@ if(!process.env.CLEARAI_CONTRACT_CHILD) {
  assert.equal(JSON.stringify(restored.deriveMessages()),surfaceBefore)
  const projection=events.reduce(applyEvent,emptyState())
  assert.equal(projection.audits[0].child,'child:NUL');assert.equal(projection.audits[0].step,'goal:CON ')
- const result={passed:true,runtime:process.version,checks:['native append','native cold replay','unchanged model surface','signed projection replay']}
+ const result={passed:true,runtime:process.version,checks:['native review schema','native append','native cold replay','unchanged model surface','signed projection replay']}
  writeFileSync(join(resolve(process.argv[2]),'result.json'),JSON.stringify(result,null,2)+'\n')
  console.log(JSON.stringify(result))
 }

@@ -123,6 +123,7 @@ test('native review schema binds exact claim identities and count without changi
  assert.deepEqual(bound.properties.results.items.properties.hypothesis.enum,['h1','h2'])
  assert.equal(bound.properties.results.minItems,2);assert.equal(bound.properties.results.maxItems,2)
  assert.equal(bindAuditCriteria(schema,[{id:'C1'}],[]).properties.results.maxItems,0)
+ const native=nativeAuditSchema(bound);assert.equal(native.properties.results.minItems,undefined);assert.equal(native.properties.results.maxItems,undefined);assert.match(native.properties.results.description,/item count 2–2/)
  assert.throws(()=>bindAuditCriteria(schema,[{id:'C1'}],['h1','h1']))
 })
 
