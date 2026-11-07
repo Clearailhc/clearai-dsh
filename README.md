@@ -7,7 +7,11 @@
 
 ### 0.6 candidate: on-demand exploration
 
-New research goals can explore through ordinary tools and native workers without a custom step plan. `ReviewClaims` reviews related claims on demand; final `Conclude.answers.claims` identifies answer-dependent hypotheses. Independent verification still gates knowledge and completion. Extra candidates may remain unverified; historical plans keep their contracts. See [workflow and limits](docs/optimization/0.6.0-agent-native/README.md). Real-task acceptance is required before release. Review briefs explicitly separate stage checks from final delivery; unknown impact still blocks certification. Ontology batches report format errors together without partial writes. A rejected review bundle can still retain independently bounded facts. Previously supported but unsaved claims receive current verdicts in the existing final review. Incomplete scope coverage cannot certify a claim, and old support cannot override a new inconclusive verdict.
+Explore with ordinary tools and native workers; review the claims that matter. `ReviewClaims` and `Conclude` share the same ontology grounding gate. Independent checks retain evidence, scope and counterevidence; rejected delivery can still preserve independently supported claims. [Workflow and limits](docs/optimization/0.6.0-agent-native/README.md).
+
+**Release candidate:** 0.6.0 is not published yet. The registry commands below apply after release. To inspect this candidate now, run `npm run release` from this checkout and install the resulting `dist/clearai-dsh-0.6.0.tgz` with DSH’s plugin manager. This builds and checks a local package; it does not publish it.
+
+**Complex-case acceptance: release blocked.** In the same three-stage supply-chain task, native DSH completed 3/3 stages in 20.30 cumulative minutes; ClearAI completed 2/3 in 109.91 minutes. Known processed tokens were 11.36M vs 78.64M (lower bounds, mostly cache reads). Both calculated the current exposure correctly, but ClearAI repeated final review for the same anomaly and left one stale graph edge. It retained 15 concepts, 63 entity records and 49 historical assertions; this is not full source-graph certification. [Case, screenshots and video](docs/cases/supply-chain-0.6.md) · [Results and costs](docs/optimization/0.6.0-agent-native/release-case-results.md) · [Release blockers](docs/optimization/0.6.0-agent-native/release-candidate.md).
 
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 
@@ -36,11 +40,11 @@ Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a ne
 
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/shots/0.5.8/jepa-dark-ontology.png">
-  <img src="docs/shots/0.5.8/jepa-en-ontology.png" alt="ClearAI 0.5.8 ontology panel showing the archived JEPA research session" width="1200">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/shots/0.6.0-supply-chain/phase-2/entity-detail-dark-1440.png">
+  <img src="docs/shots/0.6.0-supply-chain/phase-2/entity-detail-1440.png" alt="ClearAI supply-chain ontology in official DSH — recorded task replay" width="1200">
 </picture>
 
-*0.5.8 production UI replaying the archived JEPA session. Historical research data, not a new 0.5.8 model result. Structural definitions are distinct from verified assertions. [Screenshot provenance](docs/shots/0.5.8/jepa-en-provenance.json).*
+*Production UI replaying this real three-stage supply-chain run in official DSH. The platform graph shows persisted objects and scoped assertions; the complete exported source graph is counted separately. [Case and limitations](docs/cases/supply-chain-0.6.md) · [Screenshot provenance](docs/shots/0.6.0-supply-chain/phase-2/provenance.json).*
 
 ---
 
@@ -73,10 +77,10 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 
 *Inside the ring is the instrument's read-out: the L0–L4 axis, the **pre-registered** threshold as a dashed line, and five observations with error bars — the supported one filled, the inconclusive drawn as a dashed circle, the refuted left in place with a slash through it (nothing is deleted). The emerald dot at the opening is the one reading that crossed the threshold and settled as a fact.*
 
-In the loop the ontology comes first, not last:
+The ontology grows with the research; structure and evidence are checked before trusted knowledge is committed:
 
-- **The ontology is written at framing.** Which quantities the answer involves, what measures each one, how the reading is checked, and how the quantities affect each other are written in one go with the framing. A measure with no measuring method cannot be framed.
-- **The ontology yields the candidates.** Exploratory questions should compare alternatives, each naming the relation it comes from (two candidates are guidance, not a universal hard gate); before each step the model writes a prediction per candidate, and a step that predicts the same for all of them is flagged as unable to tell them apart.
+- **Set the goal, then model what matters.** Register the goal and checkable completion criteria first; hypotheses and ontology can grow incrementally. Before selected claims enter independent review, supply their concepts, relations, entities, units and assertions. `ReviewClaims` and `Conclude` share the same grounding gate.
+- **Give candidates explicit boundaries.** Register useful claims with refutation conditions and scope, preserving alternatives and counterevidence. Ordinary reads, calculations and exploration do not require per-step review or a custom plan; historical plans retain their contracts.
 - **Anomalies need a destination.** A reading that does not fit the prediction or the ontology becomes an unexplained item: explained, ruled out with a reason, or written into the answer. One that touches an established fact sends that fact back to awaiting check.
 - **Answers are delivered per question.** Each in four parts: conclusion / basis / open points / for you to decide. While a candidate still under examination or an open unexplained item is missing from the answer, the goal cannot close as achieved.
 

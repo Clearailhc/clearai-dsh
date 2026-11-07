@@ -7,7 +7,11 @@
 
 ### 0.6 候选：按需探索与协作核验
 
-新目标使用普通工具和原生子任务探索，不必先建立步骤计划。`ReviewClaims` 按需核验相关主张，`Conclude.answers.claims` 明确答案依赖；独立核验继续把关知识与结案。额外假设可以待验证，旧计划保留原契约。见[流程与限制](docs/optimization/0.6.0-agent-native/README.md)。真实任务验收通过后才发布。 核验任务书明确区分阶段检查与最终交付，影响未知仍阻止认证；本体批量提交一次报告格式问题，不部分写入。 整包核验未通过时，仍可保存有独立影响边界的合格事实；暂缓保存的支持主张由已有结案核验重新确认。范围覆盖不足不认证，旧支持不能覆盖新的证据不足。
+使用普通工具和原生子任务探索，按需核验影响答案的主张。`ReviewClaims` 与 `Conclude` 共用本体准入检查；独立核验保留证据、范围与反证，整体交付未通过也可保留与缺口独立的合格事实。见[流程与限制](docs/optimization/0.6.0-agent-native/README.md)。
+
+**发行候选：**0.6.0 尚未发布，下方 npm 安装命令在发布后适用。现在可在此检出中执行 `npm run release`，再通过 DSH 插件管理器安装生成的 `dist/clearai-dsh-0.6.0.tgz`。该命令构建并检查本地包，不执行发布。
+
+**复杂案例验收：发布阻断。** 同一供应链三阶段任务，原生 DSH 完成3/3阶段、累计20.30分钟；ClearAI 完成2/3阶段、累计109.91分钟。已知处理token分别为1136万与7864万（下界，多数为缓存读取）。两组当前暴露量均算对，但 ClearAI 因同一异常重复派评未能结案，导出图还有一条旧关系。沉淀15个概念、63条实体记录、跨历史范围49条断言，不等于整个源图已获认证。[案例、截图与录屏](docs/cases/supply-chain-0.6.md) · [结果与成本](docs/optimization/0.6.0-agent-native/release-case-results.md) · [发布阻断项](docs/optimization/0.6.0-agent-native/release-candidate.md)。
 
 <p align="center"><a href="README.md">English</a> · <b>中文</b></p>
 
@@ -36,11 +40,11 @@ dsh plugin --profile web add clearai-dsh@0.6.0
 
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/ontology-hero-dark.zh-CN.png">
-  <img src="docs/diagrams/ontology-hero.zh-CN.png" alt="认识论循环（左）长出领域本体（右）" width="1200">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/shots/0.6.0-supply-chain/phase-2/entity-detail-dark-1440.png">
+  <img src="docs/shots/0.6.0-supply-chain/phase-2/entity-detail-1440.png" alt="ClearAI supply-chain ontology in official DSH — recorded task replay" width="1200">
 </picture>
 
-*0.5.8 生产界面回放已归档的 JEPA 真实会话。图中是历史研究数据，不是本版新增模型结果；结构定义与已核验断言分开呈现。[截图来源](docs/shots/0.5.8/jepa-provenance.json)。*
+*生产界面在官方 DSH 中回放本轮真实供应链任务。平台图展示已沉淀对象与带范围的断言，完整源数据导出图另行计量。[案例与限制](docs/cases/supply-chain-0.6.md) · [截图来源](docs/shots/0.6.0-supply-chain/phase-2/provenance.json)。*
 
 ---
 
@@ -73,10 +77,10 @@ dsh plugin --profile web add clearai-dsh@0.6.0
 
 *环内是这台仪器的读数面：横轴是 L0–L4 七个等级，那条虚线是**事先登记进判据**的阈值；五个观测各带误差棒——被支持的填实、无法判定的画虚圈、被推翻的留在原位打一道斜杠（什么都不删）。开口处那颗 emerald 是唯一越过判据、落定成事实的读数。*
 
-循环里本体在前，不在后：
+本体随着研究逐步形成，进入可信知识前检查结构与证据：
 
-- **立题时写本体。** 答案涉及哪些量、各由什么测量、读数如何核对、量之间如何相互影响，随立题一次写入。缺测量方式的度量，不能立题。
-- **本体给出候选。** 探索问题建议比较多个候选并注明来源关系；至少两个候选是指导原则，并非所有任务的硬门槛；每一步动手前按候选分别写预测，预测都一样的步骤会被指出无法区分它们。
+- **先定目标，再按需建模。** 先登记目标与可检查的完成标准，假设和本体可以逐步补充。选中主张进入独立核验前，补齐它实际使用的概念、关系、实体、单位和断言；`ReviewClaims` 与 `Conclude` 使用相同准入。
+- **候选有明确边界。** 为有价值的主张登记命题、推翻条件和适用范围，保留替代解释与反例。普通读取、计算和探索无需逐步派评，也不必先创建自定义计划；旧计划保留原契约。
 - **反常要有去处。** 和预测或本体对不上的读数记成未解释项：被解释、写明理由排除，或写进结论；指向已确立事实的未解释项会让那条事实回到「待核验」。
 - **结论按问题交付。** 每个问题四部分：结论 / 依据 / 尚未确定的事项 / 待您决策。仍在考察中的候选和开着的未解释项没写进结论，就不能以「达成」结案。
 

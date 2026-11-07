@@ -1,0 +1,113 @@
+{
+  "kind": "official-dsh-recorded-session-replay",
+  "sourceReplay": {
+    "kind": "official-dsh-recorded-session-replay",
+    "sourceRun": "/tmp/clearai060-release-recovery/runs/clearai-2",
+    "mainSession": "session-native-8ddfaf38-8859-4070-96c8-0901de845436",
+    "workspace": "/tmp/clearai060-release-recovery/snapshots/clearai-2",
+    "modelCalls": 0,
+    "blockedModelRequests": 0,
+    "sessions": [
+      {
+        "session": "session-native-8ddfaf38-8859-4070-96c8-0901de845436",
+        "sha256": "5df69c2463148d91a5c95b945f5d2e18d0997373b2f0a61b6170a5cdfe4c6f2e",
+        "sourceEvents": 732,
+        "replayedEvents": 734
+      },
+      {
+        "session": "ba9b56cf-9528-472f-9962-c5a08293f882",
+        "sha256": "9bc293027ff3b6453c507b553cc8c024c7649e428663c58c2cc1c4244db0b911",
+        "sourceEvents": 238,
+        "replayedEvents": 239
+      }
+    ]
+  },
+  "production": {
+    "client.js": "3c8d697de519fac1ada0edfeb0147402efc0f13bff4ec94a92ec3b36789bea23",
+    "host.js": "efff08fb10c5261c52fa1bf9009ec215b889ece11cadc8ae3228e5e4e8eeee31",
+    "research-events.js": "53835fa48155e75eefc593b302e45b953389c5cb710459e3d51ae3cfbff34843"
+  },
+  "shots": [
+    {
+      "file": "ontology-1440.png",
+      "sha256": "3500b4b1e741e47ebea086de61794cca0c3c187908ccb73a1ab90059956867bf",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "concepts-1440.png",
+      "sha256": "6a7642b654feee13818a63bf953c57b2f0ead216803ce82487fe15b1e64caaf6",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entities-1440.png",
+      "sha256": "6d4fe481ced211c37a0f69f1e41aa0d92c2ff533f29249532472547a018cff2b",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-1440.png",
+      "sha256": "eeaf564b9126a62d200b7a462b0f3cf1224a3188e1b62b09c7c1b727647f6072",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "claim-neighborhood-1440.png",
+      "sha256": "3a8fc8975c0269747958785efc12fde399de455fe350d51a187e09aa5adb1542",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-768.png",
+      "sha256": "5670adc1cc36f7ba90508e0072b874374a68dc0923ed0441e5abfa49c35e8821",
+      "viewport": {
+        "width": 768,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-375.png",
+      "sha256": "634a2ab7be7805957708ec06d7aec06e0ce88a3753d3ee2afc696727af28e2e1",
+      "viewport": {
+        "width": 375,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-dark-1440.png",
+      "sha256": "88df88a45c8707d29d3b6dd2ab0491f92e5b5edaf999dd5297a1e4b40ec3422c",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "research-1440.png",
+      "sha256": "8299e1d14245bcd3d0a9815364016e7a519f5cf61561496a40d66d9aad69c8c4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    }
+  ],
+  "checks": [
+    "keyboard-object-inspection",
+    "related-claim-neighborhood",
+    "no-document-overflow-768",
+    "no-document-overflow-375"
+  ],
+  "errors": [],
+  "modelCalls": 0,
+  "note": "Real acceptance session replayed through official DSH session seeding; captures show recorded state, not the original live execution."
+}

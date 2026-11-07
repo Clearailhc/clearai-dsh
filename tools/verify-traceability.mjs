@@ -28,34 +28,51 @@ try {
  const key=readFileSync(join(root,'.controller/world-key'));assert.equal(sha(key),manifest.worldKeyCommitment)
  for(const a of manifest.assets)assert.equal(sha(readFileSync(existsSync(join(root,'.controller/harness',a.path))?join(root,'.controller/harness',a.path):join(import.meta.dirname,'native-headless',a.path))),a.sha256)
  const scenario=traceabilityCase(key),ledger=json(process.env.CLEARAI_TEST_BUDGET_FILE),requests=Object.values(ledger.requests),seen=new Set(),rows=[],correctedUnknown=new Set()
+ const priorRequestIds=new Set()
+ if(manifest.budgetBaseline){
+  const bytes=readFileSync(join(root,manifest.budgetBaseline.path));assert.equal(sha(bytes),manifest.budgetBaseline.sha256)
+  const baseline=JSON.parse(bytes);assert.ok(Math.abs(Object.values(baseline.requests).reduce((n,r)=>n+r.reservedUsd,0)-manifest.costBeforeUsd)<1e-8)
+  for(const [id,row] of Object.entries(baseline.requests)){assert.deepEqual(ledger.requests[id],row);priorRequestIds.add(id)}
+ }
  assert.equal(ledger.limitUsd,manifest.budgets.campaignLimitUsd??60);assert.equal(ledger.testLimitUsd,manifest.budgets.testLimitUsd);assert.equal(requests.filter(r=>r.status==='pending').length,0)
  for(const row of comparison.results){
   if(row.reason==='foundation_failed'){assert.equal(row.costUsd,0);rows.push(row);continue}
   assert.notEqual(row.reason,'controller_error')
   const run=join(root,'runs',row.id),snapshot=join(root,'snapshots',row.id),result=json(join(run,'launcher-result.json'))
   assert.equal(result.installation.packageDigest,manifest.installation.digest);assert.deepEqual(result.model,manifest.model)
-  assert.equal(result.mount.prompt,row.variant==='clearai');assert.equal(result.mount.tools,row.variant==='clearai');assert.equal(json(join(run,'isolation-probe.json')).passed,true)
+  let promptFromResumedHistory=false
+  if(row.variant==='clearai'&&!result.mount.prompt){
+   assert.ok(manifest.recovery);assert.equal(json(join(run,'spec.json')).resumeSessionId,result.session)
+   const mainLog=result.logs.find(log=>log.session===result.session);assert.ok(mainLog)
+   promptFromResumedHistory=readFileSync(join(run,mainLog.path),'utf8').trim().split('\n').map(JSON.parse).some(event=>event.type==='system/message'&&/ClearAI.*boundary of fact|ClearAI.*事实边界/.test(JSON.stringify(event.data)))
+  }
+  assert.equal(result.mount.prompt||promptFromResumedHistory,row.variant==='clearai');assert.equal(result.mount.tools,row.variant==='clearai');assert.equal(json(join(run,'isolation-probe.json')).passed,true)
   assert.equal(result.reason,row.reason);assert.equal(result.elapsedMs,row.elapsedMs);assert.equal(row.sourcesIntact,true)
   for(const [p,h] of Object.entries({...manifest.initialHashes,...(row.phase===3?manifest.updateHashes:{})}))assert.equal(sha(readFileSync(join(snapshot,p))),h)
   if(row.phase===2)assert.deepEqual(json(join(snapshot,'query.json')),scenario.query)
   const gold=scenario.expected(row.phase),decision=publicDecision(snapshot,row.phase);for(const k of Object.keys(decision))assert.deepEqual(decision[k],gold[k])
   let graph=null;try{graph=json(join(snapshot,'artifacts/graph.json'))}catch{}
   assert.deepEqual(traceabilityScore(gold,row.submission,graph),row.score)
+  const customerIds=new Set(csv(snapshot,'data/customers.csv').map(r=>r.customer_id))
+  const extraCustomers=Object.keys(row.submission?.customer_totals??{}).filter(id=>!Object.hasOwn(gold.customer_totals,id))
+  const explicitZeroCustomers=extraCustomers.filter(id=>customerIds.has(id)&&row.submission.customer_totals[id]===0)
+  const adjustedTotals=Object.fromEntries(Object.entries(row.submission?.customer_totals??{}).filter(([id])=>!explicitZeroCustomers.includes(id)))
+  const decisionInterpretation={strictExact:row.score.decisionExact,explicitZeroCustomers,equivalentWithExplicitZeroCustomers:row.phase===3&&extraCustomers.length===explicitZeroCustomers.length&&traceabilityScore(gold,{...row.submission,customer_totals:adjustedTotals},graph).decisionExact,postHoc:true,basis:'Phase 3 asks for all customers. Explicit zero entries for known customers do not change exposure quantities. This supplemental interpretation preserves the preregistered strict score; it is not a replacement grading rule.'}
   const calls=readFileSync(join(run,'llm-calls.jsonl'),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
   // Preserve raw receipts; reconcile only proven pre-provider budget stops and
-  // the recorded zero-usage transport defect, never substitute invented usage.
+  // the recorded zero-usage transport defect or a fully reserved cancellation at the token boundary. Never substitute invented usage.
   const blocked=calls.filter(c=>c.ended&&c.providerInvoked===false&&!c.budgetId&&!c.usage)
   if(blocked.length)assert.equal(result.failure,'Unverifiable paid usage: campaign stopped')
   const normalized=calls.map(c=>blocked.includes(c)?{...c,injectedBeforeProvider:'reconciled-budget-guard'}:c),usage=usageSummary(normalized)
   const unknownCalls=calls.filter(c=>c.budgetId&&ledger.requests[c.budgetId]?.status==='unknown')
-  for(const c of unknownCalls){const r=ledger.requests[c.budgetId];assert.equal(c.providerInvoked,true);assert.deepEqual(c.usage,{inputTokens:0,outputTokens:0,totalTokens:0});assert.deepEqual(r.accountingCorrection?.previousUsage,c.usage);assert.equal(r.accountingCorrection?.previousStatus,'verified');assert.equal(r.reservedUsd,.8);correctedUnknown.add(c.budgetId)}
+  for(const c of unknownCalls){const r=ledger.requests[c.budgetId];assert.equal(c.providerInvoked,true);assert.deepEqual(c.usage,{inputTokens:0,outputTokens:0,totalTokens:0});if(r.accountingCorrection){assert.deepEqual(r.accountingCorrection.previousUsage,c.usage);assert.equal(r.accountingCorrection.previousStatus,'verified')}else{assert.equal(result.reason,'token_limit');assert.equal(c.ended,true);assert.equal(r.usage,undefined);assert.equal(r.error,undefined)}assert.equal(r.reservedUsd,.8);correctedUnknown.add(c.budgetId)}
   assert.equal(usage.missing,unknownCalls.length);assert.equal(usage.pending,0)
   if(!blocked.length&&!unknownCalls.length){assert.deepEqual(usage,result.usage);assert.deepEqual(usage,row.usage);assert.deepEqual(usage,row.accountedUsage)}
   else{assert.equal(usage.lowerBound,result.usage.lowerBound);assert.equal(usage.lowerBound,row.usage.lowerBound);assert.equal(usage.lowerBound,row.accountedUsage.lowerBound)}
   assert.deepEqual(stopReasons(result).filter(reason=>reason!=='unverifiable_usage'||(!blocked.length&&!unknownCalls.length)),[])
   const auditors=new Set((result.clearai?.audits??[]).map(a=>a.child).filter(Boolean));let cost=0,reservedCost=0,parentRequestsWhileWaiting=0
   for(const c of calls){if(blocked.includes(c))continue;assert.ok(c.budgetId&&!seen.has(c.budgetId));seen.add(c.budgetId);const r=ledger.requests[c.budgetId];assert.equal(r.testId,(manifest.taskIdPrefix??'trace060:')+row.id);reservedCost+=r.reservedUsd;if(r.status==='verified'){assert.deepEqual(r.usage,c.usage);cost+=r.reservedUsd}else assert.ok(correctedUnknown.has(c.budgetId));if(c.role==='evaluator')assert.ok(auditors.has(c.session));if(c.role==='main')assert.equal(c.session,result.session)}
-  assert.equal(requests.filter(r=>r.testId===(manifest.taskIdPrefix??'trace060:')+row.id).length,calls.length-blocked.length);assert.ok(Math.abs(cost-row.costUsd)<1e-9)
+  assert.equal(Object.entries(ledger.requests).filter(([id,r])=>!priorRequestIds.has(id)&&r.testId===(manifest.taskIdPrefix??'trace060:')+row.id).length,calls.length-blocked.length);assert.ok(Math.abs(cost-row.costUsd)<1e-9)
   for(const [role,stats] of Object.entries(row.roles)){const cs=calls.filter(c=>c.role===role);assert.equal(cs.length,stats.calls);assert.equal(usageSummary(cs).lowerBound,stats.processed);const cost=cs.reduce((n,c)=>{const u=c.usage??{};return n+((u.inputTokens??0)+(u.cacheWriteTokens??0))*PRICE.input/1e6+(u.cacheReadTokens??0)*PRICE.cached/1e6+(u.outputTokens??0)*PRICE.output/1e6},0);assert.ok(Math.abs(cost-stats.costUsd)<1e-9)}
   for(const child of auditors){const cs=calls.filter(c=>c.session===child);if(cs.length){const start=Math.min(...cs.map(c=>c.started)),end=Math.max(...cs.map(c=>c.finished));parentRequestsWhileWaiting+=calls.filter(c=>c.role==='main'&&c.started>start&&c.started<end).length}}
   assert.equal(parentRequestsWhileWaiting,0)
@@ -64,7 +81,7 @@ try {
   const relations=[['supplied_by','material_lot','supplier'],['located_at','line','plant'],['uses_lot','production_batch','material_lot'],['produced_on','production_batch','line'],['produces','production_batch','product'],['from_batch','shipment','production_batch'],['delivered_to','shipment','customer']]
   const ontologySchema={definedTypes:types.filter(id=>graph?.concepts?.some(c=>c.id===id&&typeof c.definition==='string'&&c.definition.trim())).length,typedRelations:relations.filter(([id,domain,range])=>graph?.relations?.some(r=>r.id===id&&r.domain===domain&&r.range===range&&typeof r.definition==='string'&&r.definition.trim())).length,expectedTypes:types.length,expectedRelations:relations.length}
   const entityKey=e=>e.id+'|'+e.type,edgeKey=e=>e.subject+'|'+e.predicate+'|'+e.object
-  const priorReports=Object.entries(row.priorFiles).filter(([p])=>/^report\/phase-[12]\.md$/.test(p));const historyPreserved=priorReports.every(([p,h])=>existsSync(join(snapshot,p))&&sha(readFileSync(join(snapshot,p)))===h)
+  const existingReports=Object.entries(row.priorFiles).filter(([p])=>/^report\/phase-[12]\.md$/.test(p));const allExistingReportsPreserved=existingReports.every(([p,h])=>existsSync(join(snapshot,p))&&sha(readFileSync(join(snapshot,p)))===h);const priorReports=existingReports.filter(([p])=>Number(p.match(/phase-(\d+)/)[1])<row.phase);const historyPreserved=priorReports.every(([p,h])=>existsSync(join(snapshot,p))&&sha(readFileSync(join(snapshot,p)))===h)
   const declarations=(row.submission?.reused_artifacts??[]).map(path=>({path,existedBefore:Object.hasOwn(row.priorFiles,path)}))
   const publicToolActivity=[]
   for(const log of result.logs??[]){for(const event of readFileSync(join(run,log.path),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse))if(event.type==='tool/call'&&['read','bash','ReadEvidence'].includes(event.data?.name)){let args;try{args=JSON.parse(event.data.arguments)}catch{continue}const command=String(args.command??''),path=args.file_path??args.path??null;if(['analysis/','artifacts/','clear/knowledge/'].some(prefix=>command.includes(prefix)||String(path).startsWith(prefix)))publicToolActivity.push({session:log.session,role:log.session===result.session?'main':auditors.has(log.session)?'evaluator':'other',tool:event.data.name,path,description:args.description??null,command:command.slice(0,1000)})}}
@@ -93,7 +110,7 @@ try {
    }
   }
   const facts=result.clearai?.facts??[];for(const fact of facts){const stored=json(join(snapshot,'clear/knowledge/facts',fact.id+'.json'));assert.equal(stored.text,fact.text);assert.deepEqual(stored.scope_spec,fact.scope_spec)}
-  rows.push({...row,reportedUsage:row.usage,usage,costUsd:unknownCalls.length?null:cost,knownCostUsd:cost,reservedCostUsd:reservedCost,unknownRequestIds:unknownCalls.map(c=>c.budgetId),blockedBeforeProvider:blocked.length,ontologySchema,internalKnowledge,storedFacts,evidenceReads,parentRequestsWhileWaiting,provenance:{entities:provenance(graph?.entities,gold.entities,entityKey),edges:provenance(graph?.edges,gold.edges,edgeKey)},historyPreserved,reuseDeclarations:declarations,publicToolActivity,facts:facts.map(f=>({id:f.id,text:f.text,scope:f.scope_spec,assertions:f.assertions,evidence:f.evidence})),knowledgeLimits:'Exported graph provenance/accuracy and independent certification are separate. Script/tool activity is behavioral evidence, not a cold-ablation estimate of savings.'})
+  rows.push({...row,promptFromResumedHistory,decisionInterpretation,reportedUsage:row.usage,usage,costUsd:unknownCalls.length?null:cost,knownCostUsd:cost,reservedCostUsd:reservedCost,unknownRequestIds:unknownCalls.map(c=>c.budgetId),blockedBeforeProvider:blocked.length,ontologySchema,internalKnowledge,storedFacts,evidenceReads,parentRequestsWhileWaiting,provenance:{entities:provenance(graph?.entities,gold.entities,entityKey),edges:provenance(graph?.edges,gold.edges,edgeKey)},historyPreserved,allExistingReportsPreserved,reuseDeclarations:declarations,publicToolActivity,facts:facts.map(f=>({id:f.id,text:f.text,scope:f.scope_spec,assertions:f.assertions,evidence:f.evidence})),knowledgeLimits:'Exported graph provenance/accuracy and independent certification are separate. Script/tool activity is behavioral evidence, not a cold-ablation estimate of savings.'})
  }
  const knownCurrentCostUsd=rows.reduce((n,r)=>n+(r.knownCostUsd??r.costUsd??0),0),currentReservedUsd=rows.reduce((n,r)=>n+(r.reservedCostUsd??r.costUsd??0),0),cumulativeReservedUsd=requests.reduce((n,r)=>n+r.reservedUsd,0)
  assert.ok(Math.abs(cumulativeReservedUsd-manifest.costBeforeUsd-currentReservedUsd)<1e-8)

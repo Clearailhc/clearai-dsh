@@ -1,5 +1,7 @@
 # 0.6.0 review and acceptance / 审查与验收
 
+> Historical first 0.6 engineering pass and its original budget/results. The current repaired candidate uses the separately preregistered [complex release-case protocol](../0.6.0-agent-native/release-case-protocol.md); the limits below are historical, not the current ledger limits.
+
 Scope: small fixes on released 0.5.9. No workflow redesign, graph redesign or DSH host changes. The user requested an overall performance and experience review, then a 0.6 release. Paid runs retain the existing $5/test and $30 campaign limits and historical expense reservations.
 
 ## Findings / 本轮问题

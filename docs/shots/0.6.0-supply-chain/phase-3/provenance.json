@@ -1,0 +1,155 @@
+{
+  "kind": "official-dsh-recorded-session-replay",
+  "sourceReplay": {
+    "kind": "official-dsh-recorded-session-replay",
+    "sourceRun": "/tmp/clearai060-release-recovery/runs/clearai-3",
+    "mainSession": "session-native-468d1602-0bd2-4b86-a0b6-6763f9bd022e",
+    "workspace": "/tmp/clearai060-release-recovery/snapshots/clearai-3",
+    "modelCalls": 0,
+    "blockedModelRequests": 0,
+    "sessions": [
+      {
+        "session": "session-native-468d1602-0bd2-4b86-a0b6-6763f9bd022e",
+        "sha256": "238cc3805e4d931fe06f92194b31e81d19ab348203994351e1efcb0f4aa19997",
+        "sourceEvents": 1241,
+        "replayedEvents": 1243
+      },
+      {
+        "session": "17de1300-97ce-464f-a4a5-31cd759435ec",
+        "sha256": "29f572b69430280e6088c1c883ba04a8cbb8d7c66fd766f905847405ed6363c8",
+        "sourceEvents": 261,
+        "replayedEvents": 262
+      },
+      {
+        "session": "b7c3f620-10f5-478e-a07c-28d7349e145a",
+        "sha256": "9eae5f3d880555717d81c0e372cef263ec6a867030168f7947d2fb30cd75a19d",
+        "sourceEvents": 161,
+        "replayedEvents": 162
+      },
+      {
+        "session": "0b8e1279-8660-465e-9c7f-aa9a379e8382",
+        "sha256": "8b878f8bb2200a089c2e37da090c5e3455b96a235087207d84b1fdd72e7a393a",
+        "sourceEvents": 241,
+        "replayedEvents": 242
+      },
+      {
+        "session": "806624d7-242b-4354-b0d1-b1135eb81511",
+        "sha256": "688c9adaf343c3c31ef37ced1ff9c99ce85688bd4683863f00decdd7fb640100",
+        "sourceEvents": 215,
+        "replayedEvents": 216
+      },
+      {
+        "session": "d78cac2d-c238-4f69-9762-75f9c8aa7200",
+        "sha256": "710efe12d4645caf649ae90419a001b7776d57c73540989d09a082c744de397e",
+        "sourceEvents": 249,
+        "replayedEvents": 250
+      },
+      {
+        "session": "3ea69db3-2217-4a24-a150-26956038959e",
+        "sha256": "4d78c7b7858fe0499602397e27bc63393cd5272ebdefb5be977151e79c044f34",
+        "sourceEvents": 357,
+        "replayedEvents": 358
+      },
+      {
+        "session": "154bab38-7186-4556-b35c-ef7a09fc9f05",
+        "sha256": "176244af0ebd6d1259578fb5c295352885df1cd5c7fdb7ec3e903003c08b57d6",
+        "sourceEvents": 176,
+        "replayedEvents": 177
+      }
+    ]
+  },
+  "production": {
+    "client.js": "3c8d697de519fac1ada0edfeb0147402efc0f13bff4ec94a92ec3b36789bea23",
+    "host.js": "efff08fb10c5261c52fa1bf9009ec215b889ece11cadc8ae3228e5e4e8eeee31",
+    "research-events.js": "53835fa48155e75eefc593b302e45b953389c5cb710459e3d51ae3cfbff34843"
+  },
+  "shots": [
+    {
+      "file": "ontology-1440.png",
+      "sha256": "703ce63c0c1c113ac2c27d148b0680d7f75c3b532db220217cda360de6102903",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "concepts-1440.png",
+      "sha256": "4d4aaf71610f14a143bc0bb2bf3766d634b44ccd9797c4e662c6d6862509c598",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entities-1440.png",
+      "sha256": "31e115b0a0a2259270eb208baa8faef9e3ff7717eccf43dac86318e70ee99f42",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-1440.png",
+      "sha256": "8d32194f74f216dbca3718394d093c6551901826554e38f729cd97f6143dac02",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "claim-neighborhood-1440.png",
+      "sha256": "dfa8c6c00da12fdfbf2e5d924d354f154e8e741753651a0c2ef56315401df1e2",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-768.png",
+      "sha256": "eecee8148f183f5ce555a1d03fc12e50bf00ff08ce34b4f84d9d42246e2b6f4d",
+      "viewport": {
+        "width": 768,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-375.png",
+      "sha256": "9f22bd435ad5494a5f853609fb60337d9f4d0a4182c79a8aca20dafc36036edd",
+      "viewport": {
+        "width": 375,
+        "height": 1000
+      }
+    },
+    {
+      "file": "entity-detail-dark-1440.png",
+      "sha256": "f5fee67b07e2fc2a7848c87c680fb29c6dc1e7cff54b7d88875a28f3359e9cd2",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "research-1440.png",
+      "sha256": "2281a4f5bd9886c1a7f5a142d450e3da67df9ee16be522aaf7e5123a233a1b91",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    }
+  ],
+  "video": {
+    "file": "replay.webm",
+    "sha256": "23de40b53c1b09155914df429a0137f99995a77efaa27969ccea1d985a7e971d",
+    "frames": 78,
+    "kind": "Browser screencast of official DSH recorded-session replay; starts after opening Ontology."
+  },
+  "checks": [
+    "keyboard-object-inspection",
+    "related-claim-neighborhood",
+    "no-document-overflow-768",
+    "no-document-overflow-375"
+  ],
+  "errors": [],
+  "modelCalls": 0,
+  "note": "Real acceptance session replayed through official DSH session seeding; captures show recorded state, not the original live execution."
+}

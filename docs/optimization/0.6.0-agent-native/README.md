@@ -1,5 +1,7 @@
 # 0.6 agent-native research candidate
 
+Current complex-case campaign: [protocol and expanded budget](release-case-protocol.md), [case explanation](../../cases/supply-chain-0.6.md), and [release review](release-candidate.md). Earlier budget figures below belong to their recorded historical campaigns; they are not a reset of the current cumulative ledger.
+
 Implementation candidate; not a release acceptance receipt. Earlier paired-test failures remain in `../0.6.0-release/`. No speed or cost improvement is established by changing workflow alone.
 
 New goals record `workflow: agent-v1`; historical goals without this field restore as `steps-v1`. Frame still registers goal criteria, but hypotheses and custom steps are optional during exploration. Explicit plans always retain their completion contract. Conclude remains the only goal-completion authority.
