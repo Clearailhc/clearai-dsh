@@ -19,6 +19,17 @@ function lockBudget(file) {
   }
  }
 }
+function replaceBudget(temporary,file) {
+ const deadline=Date.now()+5000
+ while(true){
+  try{return renameSync(temporary,file)}catch(error){
+   // A Windows reader/scanner can briefly deny atomic replacement. Keep the
+   // transaction lock and old ledger intact; never unlink as a fallback.
+   if(process.platform!=='win32'||error.code!=='EPERM'||Date.now()>=deadline)throw error
+   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,10)
+  }
+ }
+}
 function validLimits(data){
  let previous={limitUsd:30,testLimitUsd:5}
  for(const change of data.limitChanges??[]){
@@ -39,7 +50,7 @@ export function raiseBudgetLimits(file,to,authorization){
   if(!Number.isFinite(to.limitUsd)||!Number.isFinite(to.testLimitUsd)||to.limitUsd<from.limitUsd||to.testLimitUsd<from.testLimitUsd||to.testLimitUsd>to.limitUsd||(to.limitUsd===from.limitUsd&&to.testLimitUsd===from.testLimitUsd))throw new Error('A bounded increase is required')
   const change={from,to,authorization,at:Date.now(),reservedBeforeUsd:Object.values(data.requests).reduce((n,r)=>n+r.reservedUsd,0)}
   data.limitChanges=[...(data.limitChanges??[]),change];Object.assign(data,to)
-  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});renameSync(temporary,file)
+  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});replaceBudget(temporary,file)
   return change
  }finally{rmSync(lock,{recursive:true,force:true})}
 }
@@ -52,7 +63,7 @@ export function doubleBudgetLimits(file, authorization){
   if(Object.values(data.requests).some(r=>r.status==='pending'))throw new Error('Drain pending requests before budget increase')
   const change={from:{limitUsd:30,testLimitUsd:5},to:{limitUsd:60,testLimitUsd:10},authorization,at:Date.now(),reservedBeforeUsd:Object.values(data.requests).reduce((n,r)=>n+r.reservedUsd,0)}
   data.limitChanges=[...(data.limitChanges??[]),change];data.limitUsd=60;data.testLimitUsd=10
-  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});renameSync(temporary,file)
+  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});replaceBudget(temporary,file)
   return change
  }finally{rmSync(lock,{recursive:true,force:true})}
 }
@@ -68,7 +79,7 @@ export function campaignBudget(file) {
 			const data = JSON.parse(readFileSync(file))
 			if (data.version !== 3 || !validLimits(data) || JSON.stringify(data.price) !== JSON.stringify(PRICE)) throw new Error('Budget policy mismatch')
 			const result = operation(data), temporary = file + '.' + randomUUID()
-			writeFileSync(temporary, JSON.stringify(data, null, 2), { mode: 0o600 }); renameSync(temporary, file)
+			writeFileSync(temporary, JSON.stringify(data, null, 2), { mode: 0o600 }); replaceBudget(temporary, file)
 			return result
 		} finally { rmSync(lock, { recursive: true, force: true }) }
 	}
@@ -118,6 +129,6 @@ export function migrateVerifiedCachePricing(file) {
    Object.assign(row,{uncachedCostUpperBoundUsd:old,costUpperBoundUsd:bound,reservedUsd:bound})
   }
   data.version=3;data.pricingMigration={at:Date.now(),previousCostUpperBoundUsd,basis:'Verified cache hits at published peak cache-read price; all pending/unknown capacity reservations unchanged'}
-  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});renameSync(temporary,file)
+  const temporary=file+'.'+randomUUID();writeFileSync(temporary,JSON.stringify(data,null,2),{mode:0o600});replaceBudget(temporary,file)
  } finally {rmSync(lock,{recursive:true,force:true})}
 }
