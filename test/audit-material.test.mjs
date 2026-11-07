@@ -102,6 +102,29 @@ test('audit criterion protocol rejects the observed invented C1 sub-identities b
 })
 
 import { researchSnapshot, researchHandoff, partialReviewClaims, reviewDelta, reviewObligation, REVIEW_POLICY } from '../preset/plugins/research-contract.js'
+import { pendingKnowledgeClaims, coveredClaimVerdict } from '../preset/plugins/research-contract.js'
+
+test('pending knowledge is current-goal independent support, never an unrelated or superseded lead', () => {
+ const hypotheses=['held','saved','self','later','refuted','old','retired','new'].map(id=>({id,goal:id==='old'?'previous':'current',status:id==='retired'?'superseded':'alive',refutations:id==='refuted'?1:0}))
+ const evidence=hypotheses.filter(h=>h.id!=='new').map(h=>({hypothesis:h.id,evaluator:h.id==='self'?'self':'independent',verdict:'support'}))
+ evidence.push({hypothesis:'later',evaluator:'independent',verdict:'inconclusive'})
+ const state={goal:{id:'current',conditions:{batch:'one'}},hypotheses,evidence,facts:[{hypothesis:'saved'}]}
+ assert.deepEqual(pendingKnowledgeClaims(state),['held'])
+ const handoff=researchHandoff({...state,hypotheses:[{...hypotheses[0],scope:{ranges:{x:[0,1]}},assertions:[{predicate:'measured'}]}]},{tests:{hypotheses:['held']}})
+ assert.deepEqual(handoff.claims[0].scope,{conditions:{batch:'one'},ranges:{x:[0,1]}})
+ assert.deepEqual(handoff.claims[0].assertions,[{predicate:'measured'}])
+ for(const coverage of [undefined,null,'narrower','unknown'])assert.equal(coveredClaimVerdict('support',coverage),'inconclusive')
+ assert.equal(coveredClaimVerdict('support','full'),'support');assert.equal(coveredClaimVerdict('refute','full'),'refute')
+})
+
+test('native review schema binds exact claim identities and count without changing criteria', () => {
+ const schema={properties:{criteria:{items:{properties:{criterion:{}}}},results:{items:{properties:{hypothesis:{}}}}}}
+ const bound=bindAuditCriteria(schema,[{id:'C1'}],['h1','h2'])
+ assert.deepEqual(bound.properties.results.items.properties.hypothesis.enum,['h1','h2'])
+ assert.equal(bound.properties.results.minItems,2);assert.equal(bound.properties.results.maxItems,2)
+ assert.equal(bindAuditCriteria(schema,[{id:'C1'}],[]).properties.results.maxItems,0)
+ assert.throws(()=>bindAuditCriteria(schema,[{id:'C1'}],['h1','h1']))
+})
 
 test('partial certification requires independent bounded impact and preserves ontology obligations', () => {
  const results = [{hypothesis:'safe',verdict:'support',independent_of_open_issues:true},{hypothesis:'affected',verdict:'support',independent_of_open_issues:true}]

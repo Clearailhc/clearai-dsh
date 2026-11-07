@@ -7,7 +7,7 @@
 
 ### 0.6 candidate: on-demand exploration
 
-New research goals can explore through ordinary tools and native workers without a custom step plan. `ReviewClaims` reviews related claims on demand; final `Conclude.answers.claims` identifies answer-dependent hypotheses. Independent verification still gates knowledge and completion. Extra candidates may remain unverified; historical plans keep their contracts. See [workflow and limits](docs/optimization/0.6.0-agent-native/README.md). Real-task acceptance is required before release. Review briefs explicitly separate stage checks from final delivery; unknown impact still blocks certification. Ontology batches report format errors together without partial writes.
+New research goals can explore through ordinary tools and native workers without a custom step plan. `ReviewClaims` reviews related claims on demand; final `Conclude.answers.claims` identifies answer-dependent hypotheses. Independent verification still gates knowledge and completion. Extra candidates may remain unverified; historical plans keep their contracts. See [workflow and limits](docs/optimization/0.6.0-agent-native/README.md). Real-task acceptance is required before release. Review briefs explicitly separate stage checks from final delivery; unknown impact still blocks certification. Ontology batches report format errors together without partial writes. A rejected review bundle can still retain independently bounded facts. Previously supported but unsaved claims receive current verdicts in the existing final review. Incomplete scope coverage cannot certify a claim, and old support cannot override a new inconclusive verdict.
 
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 

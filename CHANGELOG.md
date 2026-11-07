@@ -11,6 +11,10 @@
 - Preserve the original policy when recovering old audit cards; bind legacy cache reuse to reviewer trust and policy changes too.
 - Return ontology format problems together before any write, clarify slug lengths and assertion references, and show valid hypothesis IDs after an invalid ReviewClaims request.
 - 核验范围由内核派发记录确定，旧裁决恢复保留原策略；本体错误批量反馈，未知影响与最终交付守卫不变。
+- Review policy v3 requires explicit full claim/scope/assertion coverage; narrower or unknown coverage remains inconclusive. Final promotion requires current support and independently bounded impact.
+- Retain qualified partial facts and contrary evidence from rejected claim-review bundles; recheck supported but unsaved claims in the existing final audit without certifying unrelated leads.
+- Freeze claim IDs/counts in native review schemas and validate against the dispatched request even when the host projection lags. Preserve step-review receipts under the existing material/trust checks.
+- 整包拒绝不丢独立局部成果；异常修复不自动晋升，待沉淀主张并入已有结案评估。范围不足和新证据不足不能被旧支持覆盖。
 - Release remains blocked until fresh paired completion, reuse and revalidation acceptance passes.
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

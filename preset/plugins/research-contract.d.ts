@@ -11,7 +11,7 @@ export interface AnswerClaimReferences {
  uses?: string[]
 }
 export interface ReviewCoverage {
- policy: 'clearai.review.v1' | 'clearai.review.v2'
+ policy: 'clearai.review.v1' | 'clearai.review.v2' | 'clearai.review.v3'
  obligation?: ReviewObligation | null
  digest: string
  claims: Array<{ id: string; version: string | number | null; scope: unknown; refute_when: string | null }>
@@ -27,12 +27,13 @@ export interface ReviewImpact {
 export interface ClaimReviewResult {
  hypothesis: string
  verdict: 'support' | 'refute' | 'inconclusive'
+ coverage?: 'full' | 'narrower' | 'unknown'
  independent_of_open_issues?: boolean
  basis?: string
 }
 
 export interface ReviewObligation {
- policy: 'clearai.review.v2'
+ policy: 'clearai.review.v3'
  kind: string
  scope: 'selected-work' | 'final-delivery'
  criteria: string

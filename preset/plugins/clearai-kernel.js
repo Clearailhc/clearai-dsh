@@ -31,7 +31,7 @@ import { SECTION_TABLE } from './prompts.js'
 import { VERIFICATION_LOOP, describeOntology, validateOntology } from './ontology.js'
 import { compareScope, mergeScope, normalizeScope, scopeText, scopeVerdictText } from './scope.js'
 import { citeVerdict, mergeAbout, negativeItems, relatedKnowledge, resolveAbout } from './knowledge-items.js'
-import { researchHandoff, researchSnapshot, reviewDelta, partialReviewClaims, reviewObligation, REVIEW_POLICY } from './research-contract.js'
+import { researchHandoff, researchSnapshot, reviewDelta, partialReviewClaims, reviewObligation, pendingKnowledgeClaims, coveredClaimVerdict, REVIEW_POLICY } from './research-contract.js'
 import { auditMaterialDigest, auditRerunInputs, auditPathComponent, contentDigest, fileDigest, methodSnapshot } from './audit-material.js'
 import { auditCriteria, validateAuditEvidence, citationsUnchanged } from './audit-evidence.js'
 import { workspacePath } from './workspace-path.js'
@@ -977,12 +977,13 @@ export function apply(ctx, config = {}) {
 				items: {
 					type: 'object',
 					properties: {
+						coverage: { type: 'string', enum: ['full', 'narrower', 'unknown'], description: 'Does evidence cover the entire registered claim, effective scope and ontology assertions? full only if all are supported; narrower or unknown cannot certify the registered claim. State the concrete supported boundary and required revision in basis.' },
 						independent_of_open_issues: { type: 'boolean', description: 'True only after checking that every unresolved issue is independent of this claim, its evidence, method, scope and ontology assertions. Unknown dependencies mean false.' },
 						hypothesis: { type: 'string', maxLength: 80, description: tr('判断的 id', 'the judgment id') },
 						verdict: { type: 'string', enum: ['support', 'refute', 'inconclusive'] },
 						basis: { type: 'string', maxLength: 600, description: tr('一句话:这次观测对照推翻条件读出了什么', 'One sentence: what this observation shows against the refutation condition') },
 					},
-					required: ['hypothesis', 'verdict'],
+					required: ['hypothesis', 'verdict', 'coverage'],
 					additionalProperties: false,
 				},
 			},
@@ -1094,15 +1095,17 @@ export function apply(ctx, config = {}) {
 	function nativeHandoff(state, step, sessionId, gate) {
 		const receipts = []
 		for (const audit of state.audits ?? []) {
-			if (gate.trust?.freshReview || audit.request?.gate?.trust?.freshReview || audit.kind !== 'claim_audit' || audit.holds !== 'yes' || !audit.request || !audit.card_path) continue
+			if (gate.trust?.freshReview || audit.request?.gate?.trust?.freshReview || !['claim_audit', 'evidence_audit'].includes(audit.kind) || !['yes', 'no', 'unclear'].includes(audit.holds) || !audit.request || !audit.card_path) continue
 			const request = { ...audit.request, gate: { ...audit.request.gate, trust: gate.trust } }
 			if (auditDigest(request.kind, request.step, null, state, request.gate, sessionId) !== audit.digest || !citationsUnchanged(sessionCwd(sessionId), audit.refs)) continue
 			receipts.push({ id: audit.id, claims: audit.results, path: audit.card_path, digest: audit.digest, authority: 'independent-current' })
 		}
+		const snapshot = researchSnapshot(sessionCwd(sessionId))
 		const handoff = researchHandoff(state, step, receipts)
-		handoff.previous_reviews = (state.audits ?? []).filter(a => a.request?.goal === state.goal?.id && a.card_path && a.verdict !== null).slice(-4).map(a => ({ id: a.id, path: a.card_path, claims: a.results, criteria: a.criteriaResults, basis: a.basis, authority: 'historical-requires-applicability-review', changes: reviewDelta(a.request.snapshot, researchSnapshot(sessionCwd(sessionId))), previous_scope: a.request.scope, previous_trust: a.request.gate?.trust ?? null, previous_criteria: a.criteria ?? [], previous_claims: a.request.claims, previous_answers: a.request.gate?.answers ?? [] }))
-		const files = researchSnapshot(sessionCwd(sessionId)).files.map(([path]) => path)
+		handoff.previous_reviews = (state.audits ?? []).filter(a => a.request?.goal === state.goal?.id && a.card_path && a.verdict !== null).slice(-4).map(a => ({ id: a.id, path: a.card_path, claims: (a.results ?? []).map(({hypothesis, verdict, coverage}) => ({hypothesis, verdict, coverage})), criteria: a.criteriaResults, authority: 'historical-requires-applicability-review', changes: reviewDelta(a.request.snapshot, snapshot), previous_scope: a.request.scope, previous_trust: a.request.gate?.trust ?? null, previous_criteria: a.criteria ?? [], previous_claims: a.request.claims, previous_answers: a.request.gate?.answers ?? [] }))
+		const files = snapshot.files.map(([path]) => path)
 		return ['# Public research handoff',
+			'pending_knowledge lists previously supported claims not yet persisted. In a final audit, selected pending claims require a current per-claim verdict after checking repaired issues and dependencies; delivery acceptance alone never certifies them. Unrelated untested candidates do not require new proof.',
 			'Author and exploration findings are leads, not independent proof. Reuse current independent receipts only within their checked scope; inspect remaining obligations and final-answer consistency. Do not repeat already covered experiments without a concrete gap or contradiction. Do not re-solve the optimization problem.',
 			'Start follow-up review with previous_reviews, changed sources, unresolved issues and revised answers. Historical verdicts are not current proof. Independently establish which prior findings still apply; inspect changed methods, scope, ontology definitions and downstream effects. Expand review wherever dependencies are unknown. Preserve valid independent work without repeating it. Never infer a general noise law from a small sample residual alone.',
 			'Check exclusions and contrary observations. Fail the goal audit if a missing claim, hidden dependency or unresolved contradiction undermines the answer, even when the author omitted it from claims. Unrelated pending hypotheses need not be verified. Registration does not prove a prediction preceded its experiment.',
@@ -1213,7 +1216,8 @@ export function apply(ctx, config = {}) {
 			const hypothesis = String(item.hypothesis ?? '').trim()
 			const verdict = String(item.verdict ?? '').toLowerCase()
 			if (hypothesis === '' || !['support', 'refute', 'inconclusive'].includes(verdict)) continue
-			results.push({ hypothesis: hypothesis.slice(0, 80), verdict, independent_of_open_issues: item.independent_of_open_issues === true, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim().slice(0, 600) : null })
+			const coverage = ['full', 'narrower', 'unknown'].includes(item.coverage) ? item.coverage : 'unknown'
+			results.push({ hypothesis: hypothesis.slice(0, 80), verdict: coveredClaimVerdict(verdict, coverage), coverage, independent_of_open_issues: item.independent_of_open_issues === true, basis: typeof item.basis === 'string' && item.basis.trim() !== '' ? item.basis.trim().slice(0, 600) : null })
 		}
 		const shortfalls = []
 		for (const item of Array.isArray(value?.shortfalls) ? value.shortfalls : []) {
@@ -1370,15 +1374,16 @@ export function apply(ctx, config = {}) {
 			if (saved) return { holds: auditHolds(saved), basis: saved.basis, results: saved.results ?? [], shortfalls: saved.shortfalls ?? [], cardPath: saved.card_path, digest: saved.digest, mutations: [] }
 			let verdict = result.verdict
    const savedAudit = stateOf(sessionId).audits?.find(item => item.id === audit.id)
-   if (verdict && stateOf(sessionId).goal?.workflow === 'agent-v1' && (audit.request ?? savedAudit?.request)?.step?.tests?.hypotheses?.length) {
-    const requested = (audit.request ?? savedAudit.request).step.tests.hypotheses
+   const request = audit.request ?? savedAudit?.request
+   if (verdict && request?.snapshot && request.step?.tests?.hypotheses?.length) {
+    const requested = request.step.tests.hypotheses
     const results = verdict.results ?? []
     if (requested.some(id => results.filter(r => r.hypothesis === id).length !== 1) || results.some(r => !requested.includes(r.hypothesis))) verdict = { ...verdict, holds: 'unknown', results: [], shortfalls: [...(verdict.shortfalls ?? []), 'audit_claim_coverage_invalid'] }
    }
    if (verdict) verdict = validateAuditEvidence(sessionCwd(sessionId), verdict, audit.criteria ?? savedAudit?.criteria ?? [])
 			let cardPath = null
 			if (verdict) {
-				cardPath = writeAuditCard(sessionId, audit.step, { schema_version: savedAudit?.request ? 'clearai.audit.v3' : 'clearai.audit.v2', coverage: savedAudit?.request ? { policy: savedAudit.request.gate?.trust?.policy ?? 'clearai.review.v1', obligation: savedAudit.request.obligation ?? null, digest: audit.digest, claims: savedAudit.request.claims ?? [], criteria: savedAudit.criteria, trust: savedAudit.request.gate?.trust, scope: savedAudit.request.scope ?? {} } : undefined, kind: audit.kind, step_id: audit.step, auditor_run_id: String(audit.child), ...verdict, card: verdict.basis, created_at: Date.now() })
+				cardPath = writeAuditCard(sessionId, audit.step, { schema_version: request ? 'clearai.audit.v3' : 'clearai.audit.v2', coverage: request ? { policy: request.gate?.trust?.policy ?? 'clearai.review.v1', obligation: request.obligation ?? null, digest: audit.digest, claims: request.claims ?? [], criteria: audit.criteria ?? savedAudit?.criteria ?? [], trust: request.gate?.trust, scope: request.scope ?? {} } : undefined, kind: audit.kind, step_id: audit.step, auditor_run_id: String(audit.child), ...verdict, card: verdict.basis, created_at: Date.now() })
 				if (cardPath === null) verdict = null
 			}
 			const settled = verdict ?? { holds: 'unknown', results: [], basis: result.verdict ? 'Could not save the evaluation card' : result.basis, shortfalls: result.verdict ? ['card_persist_failed'] : result.shortfalls }
@@ -1721,7 +1726,7 @@ export function apply(ctx, config = {}) {
 			kind, obligation: reviewObligation(state, step, kind), step, gate: inputs, goal: state.goal?.id ?? null, snapshot: state.goal?.workflow === 'agent-v1' ? researchSnapshot(sessionCwd(sessionId)) : null, scope: state.goal?.conditions ?? {},
 			claims: (step.tests?.hypotheses ?? []).map(id => {
 				const claim = state.hypotheses.find(row => row.id === id)
-				return { id, version: claim?.version ?? null, scope: claim?.scope ?? null, refute_when: claim?.refute_when ?? null }
+				return { id, version: claim?.version ?? null, scope: mergeScope(claim?.scope, {conditions: state.goal?.conditions ?? {}}), assertions: claim?.assertions ?? [], refute_when: claim?.refute_when ?? null }
 			}),
 		}))
 	}
@@ -1833,7 +1838,8 @@ export function apply(ctx, config = {}) {
 			 */
 			const criteria = auditCriteria(step.done_criteria)
    const pendingId = `audit:pending:${auditPathComponent(`${sessionId}:${kind}:${step.id}:${digest}:${auditKey}`).slice(0, 32)}`
-			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, criteria, request: reviewRequest(kind, step, gate, initialState, sessionId), capability: null, evaluator_session: null, status: 'dispatching', goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision })
+			const request = reviewRequest(kind, step, gate, initialState, sessionId)
+			landFact(sessionId, { t: 'audit/dispatched', id: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, digest, criteria, request, capability: null, evaluator_session: null, status: 'dispatching', goal_id: nativeBefore?.id, goal_revision: nativeBefore?.revision })
 			try { await flushFacts(sessionId) } catch (error) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: String(error.message), shortfalls: ['audit_dispatch_not_durable'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: '派发记录未持久保存,未派发评估者', shortfalls: ['audit_dispatch_not_durable'], cardPath: null, digest, mutations }
@@ -1853,7 +1859,7 @@ export function apply(ctx, config = {}) {
 				label: `${kind === 'goal_audit' ? tr('目标评估者', 'Goal evaluator') : tr('评估者', 'Evaluator')} · ${step.id} · ${pendingId}`,
 				persona: evaluatorDiscipline(),
 				prompt: evaluatorPrompt(initialState, step, gate, sessionId, rerunDir, kind),
-				outputSchema: bindAuditCriteria(verdictSchema(), criteria),
+				outputSchema: bindAuditCriteria(verdictSchema(), criteria, testedBy(step)),
 				toolFilter: { allow: resolveToolFace(agent, rerunDir === null ? CFG.auditToolFilter : [...CFG.auditToolFilter, process.platform === 'win32' ? 'pwsh' : 'bash', 'job_output', 'job_list', 'job_kill']) },
 				parent: agent,
 				signal,
@@ -1875,7 +1881,7 @@ export function apply(ctx, config = {}) {
 				mutations.push({ t: 'audit/settled', id: pendingId, step: step.id, verdict: 'unknown', holds: 'unknown', basis: String(error.message), shortfalls: ['audit_child_not_durable'], card_path: null, digest })
 				return { holds: 'unknown', results: [], basis: '子会话关联未持久保存,已停止评估', shortfalls: ['audit_child_not_durable'], cardPath: null, digest, mutations }
 			}
-			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, criteria, rerunDir, settled: undefined, startedAt: Date.now() }
+			entry = { sessionId, run: dispatched.run, capability: dispatched.capability, auditKey: pendingId, step: step.id, plan: plan?.id ?? 'goal', kind, criteria, request, rerunDir, settled: undefined, startedAt: Date.now() }
 			pendingAudits.set(key, entry)
 			const diagnostic = setTimeout(() => ctx.logger?.warn?.(`clearai: evaluator ${entry.run.id} is still running; continuing to wait without restarting it`), CFG.auditTimeoutMs)
 			diagnostic.unref?.()
@@ -1887,7 +1893,7 @@ export function apply(ctx, config = {}) {
 					return { verdict: normalizeVerdict(value?.structured ?? parseLooseJson(value?.output)) }
 				},
 				(error) => ({ basis: `Evaluator failed: ${String(error?.message ?? error)}`, shortfalls: [signal?.aborted ? 'audit_cancelled' : 'audit_failed'] }),
-			).then((result) => settleAudit(sessionId, { id: entry.auditKey, step: entry.step, kind: entry.kind, child: entry.run.id, digest, criteria }, result)).finally(async () => {
+			).then((result) => settleAudit(sessionId, { id: entry.auditKey, step: entry.step, kind: entry.kind, child: entry.run.id, digest, criteria, request: entry.request }, result)).finally(async () => {
 				clearTimeout(diagnostic)
 				pendingAudits.delete(key)
 				await dropRerunCopy(sessionId, entry.auditKey, entry.rerunDir)
@@ -3449,10 +3455,10 @@ export function apply(ctx, config = {}) {
 				const count = (state.blocks[`review:${failure}`] ?? 0) + 1
 				mutations.push({ t: 'block/counted', plan: 'review', step: failure, count, reason: audit.holds })
 				if (count >= CFG.blockedThreshold) blockNativeGoal(exec.agent, BLOCK_CODES.needsHuman, 'Independent review remains unavailable or unchanged; inspect the recorded gap before continuing.')
-				return fail('review_not_accepted', `${audit.basis}\n${verdictText(audit.shortfalls)}`, { mutations })
+				if (!['no', 'unclear'].includes(audit.holds)) return fail('review_not_accepted', `${audit.basis}\n${verdictText(audit.shortfalls)}`, { mutations })
 			}
-			if (ids.some(id => !(audit.results ?? []).some(r => r.hypothesis === id))) return fail('review_coverage_missing', 'Reviewer omitted a requested claim.', { mutations })
-			if (audit.reused) return done({ ok: true, code: 'review_reused', message: `Reused independent verdict; no new review or duplicate evidence. ${audit.basis}` })
+			const missingCoverage = ids.some(id => !(audit.results ?? []).some(r => r.hypothesis === id))
+			if (audit.reused) return audit.holds === 'yes' && !missingCoverage ? done({ ok: true, code: 'review_reused', message: `Reused independent verdict; no new review or duplicate evidence. ${audit.basis}` }) : fail('review_not_accepted', audit.basis, { mutations })
 			const origin = buildEvidenceOrigins({ cwd: sessionCwd(sessionId), accepted: [], confirmed: gate.confirmed, cardPath: audit.cardPath, evaluatorSession: audit.evaluatorSession, basis: audit.basis })
 			for (const result of audit.results.filter(r => ids.includes(r.hypothesis))) {
 				mutations.push({ t: 'evidence/recorded', id: uniqueId('e'), step: step.id, plan: 'review', hypothesis: result.hypothesis, verdict: result.verdict, level, evaluator: 'independent', basis: result.basis ?? audit.basis, refs: origin.paths, origins: origin.origins, anchor: 'auditor', basis_reviewable: true })
@@ -3466,6 +3472,7 @@ export function apply(ctx, config = {}) {
 			let saved = { promoted: [], held: [] }
 			const eligible = partialReviewClaims(audit.results, current.state.anomalies, current.state.hypotheses.map(h => h.id))
 			saved = promoteFacts(hostService, sessionId, current.state, current.derived, current.state.goal, new Map(), mutations, { partial: true, eligible })
+			if (audit.holds !== 'yes' || missingCoverage) return fail(missingCoverage ? 'review_coverage_missing' : 'review_not_accepted', `${audit.basis}\n${verdictText(audit.shortfalls)}\nSaved independent knowledge: ${saved.promoted.map(f => f.id).join(', ') || 'none'}. Unresolved claims remain unverified.`, { mutations })
 			return done({ ok: true, code: 'claims_reviewed', message: `${audit.results.map(r => `${r.hypothesis}: ${r.verdict}`).join('; ')}\n${audit.basis}\nSaved knowledge: ${saved.promoted.map(f => f.id).join(', ') || 'none'}. Goal remains open. ${saved.held.join('; ')}` })
 		},
 	})
@@ -3722,6 +3729,7 @@ export function apply(ctx, config = {}) {
 			 */
 			const answers = normalizeAnswers(args.answers)
 			const selected = new Set(answers.flatMap(answer => answer.claims))
+			if (goal.workflow === 'agent-v1') for (const id of pendingKnowledgeClaims(state, derived.hypotheses)) selected.add(id)
 			if (goal.workflow === 'agent-v1') {
 				const invalid = [...selected].filter(id => !derived.hypotheses.some(h => h.id === id && (!h.goal || h.goal === goal.id) && ['alive', 'proposed'].includes(h.status)))
 				if (invalid.length) return fail('answer_claims_invalid', `Unknown or inactive claims: ${invalid.join(', ')}`)
@@ -3863,7 +3871,7 @@ export function apply(ctx, config = {}) {
 			const afterAudit = previewOf(hostService, sessionId, mutations)
 			if (afterAudit === null) return fail('host_unavailable', '审计后无法重新核对材料,保持开放', { mutations })
 			if (goal.workflow === 'agent-v1' && !audit.reused && CFG.requireAnswers && unsettledForAnswers(afterAudit.state, afterAudit.derived, answers).length) {
-                const eligible = partialReviewClaims(audit.results, afterAudit.state.anomalies, candidates.map(h => h.id))
+                const eligible = partialReviewClaims(audit.results, afterAudit.state.anomalies, afterAudit.state.hypotheses.map(h => h.id))
                 const origin = buildEvidenceOrigins({ cwd: sessionCwd(sessionId), accepted: [], confirmed: [], cardPath: audit.cardPath, evaluatorSession: null, basis: audit.basis })
                 for (const result of audit.results ?? []) {
                     if (!eligible.has(result.hypothesis)) continue
@@ -3943,7 +3951,7 @@ export function apply(ctx, config = {}) {
 					}
 				}
 			}
-			const { promoted, held } = promoteFacts(hostService, sessionId, state, derived, goal, judged, mutations)
+			const { promoted, held } = promoteFacts(hostService, sessionId, state, derived, goal, judged, mutations, { eligible: partialReviewClaims(audit.results, afterAudit.state.anomalies, afterAudit.state.hypotheses.map(h => h.id)) })
 			/** 评估者判为支持的经验写成文件;别的如实说出来,不写。 */
 			const lessonVerdicts = new Map((audit.lessons ?? []).map((item) => [item.lesson, item]))
 			const keptLessons = []
@@ -4004,7 +4012,7 @@ export function apply(ctx, config = {}) {
 			 * 不挡的话下一次结案会把它再写一遍(同一条结论两个事实文件)。
 			 */
 			if (typeof hypothesis.goal === 'string' && hypothesis.goal !== goal.id) continue
-			if (!partial && goal.workflow === 'agent-v1' && !judged.has(hypothesis.id)) continue
+			if (!partial && goal.workflow === 'agent-v1' && (judged.get(hypothesis.id)?.verdict !== 'support' || !eligible.has(hypothesis.id))) continue
 			if ((state.facts ?? []).some((fact) => fact.hypothesis === hypothesis.id)) continue
 			if (hypothesis.status !== 'alive' && hypothesis.status !== 'proposed') continue
 			if (hypothesis.refutations > 0) continue

@@ -2,9 +2,22 @@ import { readdirSync, lstatSync } from 'node:fs'
 import { join } from 'node:path'
 import { contentDigest, fileDigest } from './audit-material.js'
 import { RERUN_EXCLUDED } from './rerun-copy.js'
+import { mergeScope } from './scope.js'
 
 export const AGENT_WORKFLOW = 'agent-v1'
-export const REVIEW_POLICY = 'clearai.review.v2'
+export const REVIEW_POLICY = 'clearai.review.v3'
+
+// A held independent finding needs a current claim verdict, not an author's
+// anomaly resolution or a delivery-only pass. Reuse the existing final audit.
+export function pendingKnowledgeClaims(state, hypotheses = state.hypotheses ?? []) {
+ const saved = new Set((state.facts ?? []).map(f => f.hypothesis))
+ return hypotheses.filter(h => h.goal === state.goal?.id && ['alive', 'proposed'].includes(h.status) && !saved.has(h.id) && !(h.refutations > 0) &&
+  (state.evidence ?? []).filter(e => e.hypothesis === h.id && e.evaluator === 'independent').at(-1)?.verdict === 'support').map(h => h.id)
+}
+
+export function coveredClaimVerdict(verdict, coverage) {
+ return verdict === 'support' && coverage !== 'full' ? 'inconclusive' : verdict
+}
 
 // The dispatcher supplies the review kind; author tool arguments cannot change it.
 export function reviewObligation(state, step, kind) {
@@ -79,11 +92,12 @@ export function researchHandoff(state, step, receipts = []) {
  const selected = new Set(step.tests?.hypotheses ?? [])
  return {
   policy: REVIEW_POLICY,
-  claims: (state.hypotheses ?? []).map(h => ({ id: h.id, version: h.version, claim: h.claim, refute_when: h.refute_when, scope: h.scope, status: h.status, selected: selected.has(h.id) })),
+  claims: (state.hypotheses ?? []).map(h => ({ id: h.id, version: h.version, claim: h.claim, refute_when: h.refute_when, scope: mergeScope(h.scope, {conditions: state.goal?.conditions ?? {}}), assertions: selected.has(h.id) ? h.assertions ?? [] : [], status: h.status, selected: selected.has(h.id) })),
   observations: (state.materials ?? []).map(m => ({ ref: m.ref, note: m.note, source: m.source, digest: m.digest, step: m.step })),
   checks: (state.evidence ?? []).filter(e => e.evaluator !== 'independent').map(e => ({ hypothesis: e.hypothesis, verdict: e.verdict, basis: e.basis, refs: e.refs, authority: 'author-observation' })),
   exclusions: (state.anomalies ?? []).map(a => ({ id: a.id, what: a.what, status: a.status, reason: a.reason, by: a.by, matters: a.matters, touches: a.touches, impact_basis: a.impact_basis })),
   independent_counterevidence: (state.evidence ?? []).filter(e => e.evaluator === 'independent' && ['refute', 'inconclusive'].includes(e.verdict)).map(e => ({ evidence: e.id, hypothesis: e.hypothesis, verdict: e.verdict, refs: e.refs, authority: 'historical-independent; applicability must be checked' })),
+  pending_knowledge: pendingKnowledgeClaims(state),
   receipts,
  }
 }
