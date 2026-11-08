@@ -1,0 +1,11 @@
+{
+  "failedCommit": "6d5796d5a23dbec992fc812d0efa0b936b6da48e",
+  "failedRuns": [42441144610, 42441139338],
+  "platform": "Windows Node24",
+  "step": "npm test",
+  "finding": "The new public recovery archive regression exposed hardcoded POSIX path separators in the archive tool containment checks.",
+  "fix": "Use native path separators for containment and POSIX separators for portable archive inventory paths. Apply the same portability correction to comparison evidence containment.",
+  "runtimeChange": false,
+  "paidRerun": false,
+  "acceptance": "Retain these failures and require the corrected final commit to pass every platform before merge/tag."
+}

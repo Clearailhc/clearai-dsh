@@ -1,7 +1,7 @@
 /** Verify paired observations, metering, mount/isolation and objective scores after all workers exit. */
 import assert from 'node:assert/strict'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import { createHash } from 'node:crypto'
 import { usageSummary } from './native-headless/accounting.mjs'
 import { makeWorld, score } from './native-headless/world.mjs'
@@ -65,7 +65,7 @@ for(const row of comparison.results) {
  }
  const references=(row.submission?.evidence??[]).map(path=>{
   const absolute=resolve(root,'workspaces',row.id,path)
-  assert.ok(absolute.startsWith(resolve(root,'workspaces',row.id)+'/'),'Evidence must remain in its workspace')
+  assert.ok(absolute.startsWith(resolve(root,'workspaces',row.id)+sep),'Evidence must remain in its workspace')
   return {path,bytes:readFileSync(absolute).length}
  })
  rows.push({id:row.id,reason:result.reason,completed:result.reason==='completed',score:expected.score,partialArtifactQuality,evidenceFiles:references,independentAudits:row.audits.length,invalidOrFailedAudits:row.audits.filter(a=>a.holds!=='yes').length,realExperimentBudget:row.experimentCost,finalFullMeasurements})

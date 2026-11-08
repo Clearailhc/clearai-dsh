@@ -34,7 +34,7 @@
       "source": "engineering-final-release.txt",
       "installedHostRequired": true,
       "hostVersion": "0.2.2-rc.1",
-      "nodeTests": 115,
+      "nodeTests": 116,
       "kernel": 798,
       "host": 38,
       "client": 195,
@@ -1152,7 +1152,7 @@
     },
     {
       "path": "docs/optimization/0.6.0-release/engineering-final-release.txt",
-      "sha256": "83a89967e1535cc97bfcda58de827ff89ef09bf9d1eaea0c03d8fd54744c8769"
+      "sha256": "8741f2005a8e61b58bb5615f31c4823d5774a8ac6faebf253681d0098f160bb4"
     },
     {
       "path": "docs/optimization/0.6.0-release/engineering-final.txt",
@@ -1165,6 +1165,10 @@
     {
       "path": "docs/optimization/0.6.0-release/engineering-shortfalls.txt",
       "sha256": "6090a6cdd9789d4190aedbfb95a4b2e38ec42cbc381777f64c0c6e432e6d20ce"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-ci-path-fix.json",
+      "sha256": "2b2f1e951b9b977c64b108b07edb670a86abb28e42f4f80f38a4456e48f4066f"
     },
     {
       "path": "docs/optimization/0.6.0-release/final-retest/PROTOCOL.md",
@@ -3032,7 +3036,7 @@
     },
     {
       "path": "tools/archive-native-comparison.mjs",
-      "sha256": "afbc5d6e9da4467be456f683beeb5de5c3aeaf5aa63a6439dd88d6acfc5bb03a"
+      "sha256": "e4c3622724d5c83e10c803821974c700d6fdab031f0dfcec8f2c6476509f8927"
     },
     {
       "path": "tools/benchmark-research-events.mjs",
@@ -3212,7 +3216,7 @@
     },
     {
       "path": "tools/verify-polish-comparison.mjs",
-      "sha256": "17dbfd7469958311b2a3069128a59af6a14257c4735393e3f56666348a2b5569"
+      "sha256": "2fd8783cbeb55e77a45ca92a668e9c552fd6f76cba0da20891a3766c3b573d8c"
     },
     {
       "path": "tools/verify-release-evidence.mjs",

@@ -1,7 +1,7 @@
 /** Export settled measurements and public tool activity; private model streams stay local. */
 import assert from 'node:assert/strict'
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs'
-import { resolve, join, relative, extname } from 'node:path'
+import { resolve, join, relative, extname, sep } from 'node:path'
 import { createHash } from 'node:crypto'
 
 const [sourceArg, destinationArg] = process.argv.slice(2)
@@ -32,7 +32,7 @@ function scrub(value) {
 const files = []
 function save(path, value, format = 'json') {
  const target = resolve(destination, path)
- assert.ok(target.startsWith(destination + '/'))
+ assert.ok(target.startsWith(destination + sep))
  const text = format === 'json' ? JSON.stringify(scrub(value), null, 2) + '\n' : format === 'jsonl' ? value.map(v => JSON.stringify(scrub(v))).join('\n') + '\n' : scrub(value)
  for (const secret of secrets) if (secret) assert.ok(!text.includes(secret), 'Secret in archive')
  assert.ok(!/sk-[a-zA-Z0-9]{20,}/.test(text), 'Possible API credential in archive')
@@ -58,10 +58,10 @@ for (const row of comparison.results.filter(r => r.reason !== 'not_run')) {
   save(`${run}/${measuredCalls ? name : name.replace('.jsonl', '.public.jsonl')}`, measuredCalls ? records : records.filter(row => publicTypes.has(row.type)), 'jsonl')
  }
  const snapshot = resolve(source, row.snapshot ?? (polish?`workspaces/${row.id}`:''))
- assert.ok(snapshot.startsWith(source + '/'))
+ assert.ok(snapshot.startsWith(source + sep))
  function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-   const path = join(dir, entry.name), output = relative(source, path)
+   const path = join(dir, entry.name), output = relative(source, path).split(sep).join('/')
    if (['node_modules', '.git', '.clearai-reruns', '__pycache__'].includes(entry.name) || entry.isSymbolicLink()) continue
    if (entry.isDirectory()) walk(path)
    else if (entry.isFile() && ['.json', '.md', '.txt', '.py', '.csv', '.js', '.mjs'].includes(extname(path))) {
@@ -74,7 +74,7 @@ for (const row of comparison.results.filter(r => r.reason !== 'not_run')) {
 }
 if (polish) for (const row of verification.rows) for (const evidence of row.evidenceFiles) {
  const evidencePath=resolve(destination,'workspaces',row.id,evidence.path)
- assert.ok(evidencePath.startsWith(resolve(destination,'workspaces',row.id)+'/'))
+ assert.ok(evidencePath.startsWith(resolve(destination,'workspaces',row.id)+sep))
  evidence.bytes=readFileSync(evidencePath).length
 }
 save('verification.json',verification)
