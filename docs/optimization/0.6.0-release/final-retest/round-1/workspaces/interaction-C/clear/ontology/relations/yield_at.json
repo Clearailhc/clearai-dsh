@@ -1,0 +1,10 @@
+{
+  "domain": "candidate_point",
+  "id": "yield_at",
+  "kind": "manifests_as",
+  "label": "该点收率",
+  "range": {
+    "form": "quantity",
+    "unit": "%"
+  }
+}

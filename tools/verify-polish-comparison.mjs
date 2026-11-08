@@ -21,7 +21,13 @@ for(const row of comparison.results) {
  assert.ok(['completed','token_limit','time_limit','blocked','incomplete','error'].includes(result.reason));assert.equal(result.usage.status,'verified')
  assert.equal(result.installation.packageDigest,manifest.candidateDigest)
  assert.deepEqual(result.model,manifest.model)
- assert.equal(result.mount.prompt,row.group==='C');assert.equal(result.mount.tools,row.group==='C')
+ let restoredPrompt=false
+ if(row.recovery&&!result.mount.prompt){
+  assert.equal(JSON.parse(readFileSync(join(root,`runs/${row.id}/spec.json`))).resumeSessionId,result.session)
+  const main=result.logs.find(log=>log.session===result.session);assert.ok(main)
+  restoredPrompt=readFileSync(join(root,`runs/${row.id}/${main.path}`),'utf8').trim().split('\n').map(JSON.parse).some(e=>e.type==='system/message'&&/ClearAI.*boundary of fact|ClearAI.*事实边界/.test(JSON.stringify(e.data)))
+ }
+ assert.equal(result.mount.prompt||restoredPrompt,row.group==='C');assert.equal(result.mount.tools,row.group==='C')
  assert.ok(Object.values(result.violations).every(value=>value===false))
  assert.equal(json(`runs/${row.id}/isolation-probe.json`).passed,true)
  const calls=readFileSync(join(root,`runs/${row.id}/llm-calls.jsonl`),'utf8').trim().split('\n').map(JSON.parse)

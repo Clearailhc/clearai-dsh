@@ -1,0 +1,10 @@
+{
+  "basis": "三次 full 实测",
+  "id": "point_071_061",
+  "label": "候选点 (0.71,0.61)",
+  "provenance": {
+    "kind": "named",
+    "ref": "lab/f-0.71-0.61.json"
+  },
+  "type": "candidate_point"
+}

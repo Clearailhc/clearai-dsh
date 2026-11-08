@@ -1,0 +1,7 @@
+{
+  "gloss": "实验产出的收率百分数",
+  "id": "yield",
+  "kind": "measure",
+  "label": "收率",
+  "unit": "%"
+}

@@ -1,0 +1,116 @@
+{
+  "id": "f-fppc3m",
+  "goal": "g-mw6l0ur8pvg1",
+  "hypothesis": "h-tro9zd",
+  "text": "在观测覆盖范围 x,y∈[0.1,0.9] 内,含交互项的二次响应面足以定位收率最优点;残差 RMSE(0.173)与测量噪声(0.18)一致,无需更高阶项。",
+  "about": [
+    "yield",
+    "model_error",
+    "surface_all",
+    "response_surface",
+    "surface_error",
+    "impurity",
+    "var_x",
+    "var_y"
+  ],
+  "scope": "条件 x_bounds=[0,1]、y_bounds=[0,1]、impurity_limit=0.115、instrument=original、budget=30、x区间=[0.1,0.9]、y区间=[0.1,0.9];取值 x 0.1–0.9、y 0.1–0.9;适用范围为实测包围盒,不外推",
+  "scope_spec": {
+    "conditions": {
+      "x_bounds": "[0,1]",
+      "y_bounds": "[0,1]",
+      "impurity_limit": "0.115",
+      "instrument": "original",
+      "budget": "30",
+      "x区间": "[0.1,0.9]",
+      "y区间": "[0.1,0.9]"
+    },
+    "ranges": {
+      "x": [
+        0.1,
+        0.9
+      ],
+      "y": [
+        0.1,
+        0.9
+      ]
+    },
+    "note": "适用范围为实测包围盒,不外推"
+  },
+  "refute_when": "残差呈系统性空间结构,或留一交叉验证误差显著超过 0.18。",
+  "level": "L3",
+  "evidence": [
+    "e-lmgnk2"
+  ],
+  "evidence_records": [
+    {
+      "t": "evidence/recorded",
+      "id": "e-lmgnk2",
+      "step": "goal:g-mw6l0ur8pvg1",
+      "plan": "goal",
+      "hypothesis": "h-tro9zd",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "18 点二次面残差 RMSE 0.1734、LOO 0.2022;6 参数/18 点及杠杆下 LOO 期望 RMSE≈0.25,0.202 不显著高于 0.18;缺乏拟合 F(9,3)=2.14 p=0.29、三次项 F(4,8)=0.69 p=0.62、批次虚拟变量 F(1,11)=2.54 p=0.14;三次拟合最优 (0.695,0.5525) 与二次 (0.708,0.610) 差约 0.06、预测差 0.12<噪声,未触发推翻条件。",
+      "refs": [
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/cbed4509c3f3781e82a4e34a1b9cb3aaf2ee2236487da17ed1f78bbb5912ceac/3a63511bda9675044d9bf899613c9fcd1b31dd0fc191b924de929ec68e3ce8c4.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "b512ac41-93a7-4a6e-ae56-b054b047f599"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "quantity",
+        "unit": "%",
+        "value": 0.173
+      },
+      "predicate": "surface_error",
+      "qualifiers": {
+        "loo_cv_rmse": 0.202,
+        "n_obs": 18,
+        "noise_sd": 0.18
+      },
+      "subject": {
+        "id": "surface_all",
+        "type": "response_surface"
+      }
+    }
+  ],
+  "definitions": {
+    "surface_error": "fnv:cd62a0c7",
+    "response_surface": "fnv:50f2d6f3",
+    "impurity": "fnv:653a8575",
+    "model_error": "fnv:4d2e600e",
+    "var_x": "fnv:7ca31b5a",
+    "var_y": "fnv:3503f965",
+    "yield": "fnv:c3d21646"
+  },
+  "session": "session-native-d22c8b34-3411-4b2a-808e-b1cb088f858b",
+  "status": "established",
+  "review": null,
+  "at": 1794067405458,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794067405458,
+      "level": "L3"
+    }
+  ]
+}

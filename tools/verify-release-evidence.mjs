@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { resolve, relative, join } from 'node:path'
-import { verifyReleaseBudget } from './release-budget.mjs'
+import { verifyReleaseBudget, verifyComparisonFunding } from './release-budget.mjs'
 const root=resolve(import.meta.dirname,'..')
 const version=JSON.parse(readFileSync(resolve(root,'package.json'))).version
 const receipt=JSON.parse(readFileSync(resolve(root,`docs/optimization/${version}-release/acceptance.json`)))
@@ -11,6 +11,7 @@ assert.equal(receipt.version,version)
 assert.equal(receipt.passed,true)
 const polish=receipt.scope?.kind==='polish-paired-review'
 let approvedLimits={limitUsd:30,testLimitUsd:5}
+let expandedLedger=null
 if(polish) {
  assert.equal(version,'0.6.0')
  assert.equal(receipt.scope.authorizedByUser,true)
@@ -19,7 +20,8 @@ if(polish) {
  if(manifest.approvedLimits){
   assert.ok(typeof manifest.protocol?.authorization==='string'&&manifest.protocol.authorization.trim())
   approvedLimits=manifest.approvedLimits
-  const budget=verifyReleaseBudget(JSON.parse(readFileSync(resolve(root,`docs/optimization/${version}-release/budget.json`))),approvedLimits)
+  expandedLedger=JSON.parse(readFileSync(resolve(root,`docs/optimization/${version}-release/budget.json`)))
+  const budget=verifyReleaseBudget(expandedLedger,approvedLimits)
   for(const key of ['limitUsd','perTestLimitUsd','pendingRequests','unknownRequests','acceptedUnknownReservations'])assert.equal(receipt.budget[key],budget[key])
   assert.ok(Math.abs(receipt.budget.costUpperBoundUsd-budget.costUpperBoundUsd)<1e-8)
   assert.deepEqual(receipt.budget.perTestCostUpperBoundUsd,budget.perTestCostUpperBoundUsd)
@@ -27,6 +29,10 @@ if(polish) {
  assert.equal(comparison.complete,true)
  assert.equal(comparison.results.length,6)
  assert.deepEqual(comparison.results.map(row=>row.id).sort(),['additive-A','additive-C','direct-A','direct-C','interaction-A','interaction-C'])
+ if(expandedLedger){
+  const calls=Object.fromEntries(comparison.results.map(row=>[row.id,readFileSync(resolve(root,`docs/optimization/${version}-release/comparison/runs/${row.id}/llm-calls.jsonl`),'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)]))
+  verifyComparisonFunding(expandedLedger,manifest,comparison,calls)
+ }
  for(const row of comparison.results) {
   assert.equal(row.reason,'completed');assert.equal(row.usage.status,'verified')
   assert.deepEqual(row.violations,[])

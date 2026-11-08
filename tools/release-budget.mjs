@@ -30,3 +30,20 @@ export function verifyReleaseBudget(ledger,approved){
  assert.ok(total<=limits.limitUsd);for(const cost of Object.values(perTest))assert.ok(cost<=limits.testLimitUsd)
  return {limitUsd:limits.limitUsd,perTestLimitUsd:limits.testLimitUsd,costUpperBoundUsd:total,pendingRequests:0,unknownRequests:unknown,acceptedUnknownReservations:accepted,perTestCostUpperBoundUsd:perTest,accountingStatus:unknown?'bounded-unknown':'verified'}
 }
+export function verifyComparisonFunding(ledger,manifest,comparison,callsById){
+ const budget=verifyReleaseBudget(ledger,manifest.approvedLimits)
+ assert.ok(Number.isFinite(manifest.costBeforeUsd)&&manifest.costBeforeUsd>=0)
+ const seen=new Set();let current=0
+ for(const row of comparison.results){
+  let cost=0
+  for(const call of callsById[row.id]){
+   assert.equal(call.ended,true);assert.ok(call.budgetId&&!seen.has(call.budgetId));seen.add(call.budgetId)
+   const request=ledger.requests[call.budgetId]
+   assert.equal(request?.status,'verified');assert.equal(request.testId,manifest.protocol.testIdPrefix+row.id)
+   assert.deepEqual(request.usage,call.usage);cost+=request.reservedUsd
+  }
+  assert.ok(Math.abs(cost-row.costUpperBoundUsd)<1e-9);current+=cost
+ }
+ assert.ok(Math.abs(budget.costUpperBoundUsd-manifest.costBeforeUsd-current)<1e-8,'Prior expenses and every current request must remain in the cumulative ledger')
+ return budget
+}

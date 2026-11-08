@@ -1,0 +1,28 @@
+{
+  "id": "l-w1d6uw",
+  "goal": "g-mw6l0ur8pvg1",
+  "text": "方法默认 impurity_noise_sd=0.01 会让可行域偏保守、把真最优排除在外;本次实测杂质残差约 0.001、最优杂质 0.100,约束实际不紧,应以实测杂质而非默认噪声判断可行性。",
+  "kind": "shortcut",
+  "about": [
+    "impurity",
+    "yield",
+    "var_x",
+    "var_y"
+  ],
+  "evidence": "lab/model-all.json 与 lab/verification.json 中预测杂质 0.1005、实测 0.1004–0.1014",
+  "boundary": "样本很少或杂质信噪比低时",
+  "scope_spec": {
+    "conditions": {
+      "x_bounds": "[0,1]",
+      "y_bounds": "[0,1]",
+      "impurity_limit": "0.115",
+      "instrument": "original",
+      "budget": "30"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/model-updated.json:53-64 的推荐为 (0.65,0.5) 预测 95.82,而二次面最优约 (0.709,0.612) 预测 96.02;method/response_surface.py:60,72 的默认 impurity_noise_sd=0.01 使可行域保守;实测杂质残差约 0.0006、最优杂质 0.1005,约束不紧。",
+  "session": "session-native-d22c8b34-3411-4b2a-808e-b1cb088f858b",
+  "status": "active",
+  "at": 1794067405467
+}

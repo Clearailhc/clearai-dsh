@@ -1,0 +1,7 @@
+{
+  "gloss": "响应面残差或留一交叉验证误差",
+  "id": "model_error",
+  "kind": "measure",
+  "label": "模型误差",
+  "unit": "%"
+}

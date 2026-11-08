@@ -1,0 +1,8 @@
+{
+  "domain": "var_x",
+  "id": "affects_x_impurity",
+  "kind": "affects",
+  "label": "x 影响杂质",
+  "range": "impurity",
+  "shape": "coupled"
+}

@@ -24,8 +24,9 @@ const publicTypes = new Set(['tool/call', 'tool/result', 'goal/change', 'subagen
 const omittedKeys = new Set(['stream', 'reasoning', 'reasoning_content', 'reasoningContent'])
 function scrub(value) {
  if (Array.isArray(value)) return value.filter(v => !(v && typeof v === 'object' && /reasoning/i.test(v.type ?? ''))).map(scrub)
- if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => !omittedKeys.has(key)).map(([key, item]) => [key, scrub(item)]))
+ if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => !omittedKeys.has(key)).map(([key, item]) => [key, key.toLowerCase()==='token'&&typeof item==='string'&&/^[a-f0-9]{32,}$/i.test(item)?'[credential redacted]':scrub(item)]))
  if (typeof value === 'string') for (const secret of secrets) if (secret) value = value.replaceAll(secret, '[credential redacted]')
+ if (typeof value === 'string') value=value.replace(/("token"\s*:\s*")[a-f0-9]{32,}(")/gi,'$1[credential redacted]$2').replace(/Bearer [A-Za-z0-9._-]{16,}/g,'Bearer [credential redacted]')
  return value
 }
 const files = []
