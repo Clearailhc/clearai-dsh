@@ -1,0 +1,10 @@
+{
+  "id": "point_yield",
+  "label": "点收率",
+  "kind": "defines",
+  "domain": "process_point",
+  "range": {
+    "form": "quantity",
+    "unit": "%"
+  }
+}

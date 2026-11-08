@@ -18,5 +18,5 @@ export const kernelExamples = [
   [{ t: 'hypothesis/superseded', goal: 'example-goal', id: 'example-h1', claim: '客户流失差异可能来自试用客户占比。', by: 'rev2' }, { t: 'goal/set', id: 'example-goal', revision: 2, claim: '比较最近 90 天客户流失差异', done_criteria: '明确分组差异与证据限制', promote_at_level: 'L3', reason: '用户要求只比较最近 90 天客户', hypotheses: [{ id: 'example-h1r2', name: '最近 90 天的分组差异', claim: '最近 90 天的客户流失差异可能来自试用客户占比。', refute_when: '分组后差异仍存在' }] }],
   [{ t: 'evidence/recorded', id: 'example-e1', hypothesis: 'example-h1r2', verdict: 'unknown', level: 'L2', evaluator: 'self', refs: [], basis: '付费组样本不足；数据口径通过不代表假设成立。' }],
   [{ t: 'audit/dispatched', id: 'example-a1', goal_id: 'example-goal', kind: 'evidence_audit', criteria: ['复核样本覆盖限制；仅为交接示例，未运行评估者'] }],
-  [{ t: 'audit/settled', id: 'example-a1', verdict: 'fail', basis: '示例裁决：证据不足，不能推广到总体。', shortfalls: ['样本选择解释尚未排除'] }, { t: 'goal/closed', id: 'example-goal', status: 'abandoned', answers: [{ conclusion: '样本内描述保留，总体推断未成立。', basis: ['示例客户分组记录'], open: [{ effect: '需补充付费客户样本' }] }] }],
+  [{ t: 'audit/settled', id: 'example-a1', verdict: 'fail', basis: '示例裁决：证据不足，不能推广到总体。', shortfalls: [{ criterion: '样本覆盖', what: '样本选择解释尚未排除', missing: '需补充付费客户样本' }] }, { t: 'goal/closed', id: 'example-goal', status: 'abandoned', answers: [{ conclusion: '样本内描述保留，总体推断未成立。', basis: ['示例客户分组记录'], open: [{ effect: '需补充付费客户样本' }] }] }],
 ]

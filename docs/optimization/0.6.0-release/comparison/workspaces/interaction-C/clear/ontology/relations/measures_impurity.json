@@ -1,0 +1,8 @@
+{
+  "id": "measures_impurity",
+  "label": "测量杂质",
+  "kind": "measures",
+  "range": "impurity",
+  "check": "同点 full 重复",
+  "gloss": "仪器测量杂质。"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "process_point",
+  "label": "工艺点",
+  "gloss": "归一化工艺坐标 (x,y) 的一个取值点，x,y∈[0,1]",
+  "kind": "category"
+}

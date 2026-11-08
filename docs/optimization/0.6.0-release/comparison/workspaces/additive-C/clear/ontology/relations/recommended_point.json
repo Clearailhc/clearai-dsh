@@ -1,0 +1,9 @@
+{
+  "id": "recommended_point",
+  "label": "推荐点说明",
+  "kind": "defines",
+  "domain": "process_point",
+  "range": {
+    "form": "statement"
+  }
+}

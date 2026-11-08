@@ -1,0 +1,238 @@
+{
+  "schema_version": "clearai.audit.v3",
+  "coverage": {
+    "policy": "clearai.review.v1",
+    "digest": "v7:b260c5494a1eb6b947cea8b6994fa2f9023dfdce2f426d9e4bc4796171f07c1a",
+    "claims": [
+      "h-173dc0",
+      "h-dfrfe9",
+      "h-gux36c",
+      "h-r2abbn"
+    ],
+    "criteria": [
+      {
+        "id": "C1",
+        "text": "h-173dc0: independently assess 收率响应面在 x,y 上近似加性二次，交互项可忽略; test refutation condition: 补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上; report support, refute or inconclusive with scope and sources."
+      },
+      {
+        "id": "C2",
+        "text": "h-dfrfe9: independently assess 可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%; test refutation condition: 在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界; report support, refute or inconclusive with scope and sources."
+      },
+      {
+        "id": "C3",
+        "text": "h-gux36c: independently assess 预测最优点 (0.45,0.45) 的杂质约 0.085，远低于 0.115，约束不活跃; test refutation condition: 该点及其邻域实测杂质超过 0.115; report support, refute or inconclusive with scope and sources."
+      },
+      {
+        "id": "C4",
+        "text": "h-r2abbn: independently assess quick 模式与 full 模式读数之间存在系统性偏差（或噪声更大），需校准后才能混用; test refutation condition: 同一批点的 quick 与 full 读数差值在噪声 sd=0.18 以内且无系统方向; report support, refute or inconclusive with scope and sources."
+      }
+    ],
+    "trust": {
+      "model": "deepseek-flash",
+      "modelProvider": "deepseek",
+      "reasoningEffort": "medium",
+      "policy": "clearai.review.v1",
+      "preset": "clearai-evaluator",
+      "provider": "spawn",
+      "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+      "rerun": true,
+      "tools": [
+        "read",
+        "glob",
+        "grep",
+        "read_image"
+      ],
+      "l4Human": true,
+      "l4External": true
+    },
+    "scope": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    }
+  },
+  "kind": "claim_audit",
+  "step_id": "review:79839a3c2d2d6e2830f952e3",
+  "auditor_run_id": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "复跑精确重现 lab/model-final.json:8,19：加性 LOO CV 0.16775 < 交互 0.18048，交互反而更差 0.0127，远未达到“低出 0.18”；物理坐标交互系数 −0.108（model-final:26），报告给出 9 点 0.0923/0.1142（analysis.md:12）和观测盒 [0.1,0.9]² 的局限。推翻条件未触发。"
+    },
+    {
+      "criterion": "C2",
+      "result": "pass",
+      "basis": "full 实测 (0.45,0.45)=95.0719（f-045-045:4），(0.4517,0.4485) 4 次重复 94.7228/95.0484/95.1643/95.2801，均值 95.054，全部 ≥ 初始最佳 94.693（initial.json:62）；事前 10 点模型预测 94.957、PI 下界 94.547（model-01:56,58），首测在区间内。推翻条件两项均未触发。"
+    },
+    {
+      "criterion": "C3",
+      "result": "pass",
+      "basis": "该点实测杂质 0.0819/0.0834/0.0834/0.0840，与 (0.45,0.45) 的 0.0833（f-045-045:5）一致；二次杂质模型在该点预测 0.0832–0.0833，预测上界 0.1058 < 0.115（model-01:61）。仅 (0.9,0.9)=0.1247 越限，远离最优点，约束不活跃成立。"
+    },
+    {
+      "criterion": "C4",
+      "result": "pass",
+      "basis": "5 个 quick 点对 full 二次面残差 +0.49/+0.03/−0.71/+0.23/+0.24，sd 0.459、均值 +0.06；唯一同点对 (0.5,0.5) quick−full=+0.724=4.0×0.18（q-0505:4 vs initial.json:62）。差值未落在 0.18 内，推翻条件不成立；但“系统方向”未获证实，支持仅来自“噪声更大”一支。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-173dc0",
+      "verdict": "support",
+      "basis": "复跑得加性 CV 0.16775、交互 CV 0.18048，交互并未比加性低出 0.18（差 −0.0127），交互系数 −0.108（物理 xy 尺度），报告有 9 点 0.0923/0.1142 与观测盒局限；推翻条件未触发。"
+    },
+    {
+      "hypothesis": "h-dfrfe9",
+      "verdict": "support",
+      "basis": "(0.45,0.45) 附近 full 读数 94.7228–95.2801（均值 95.054）、(0.45,0.45) 单点 95.0719，均不低于已测最佳 94.693，也不低于事前 PI 下界 94.547；可行域内模型极值复算在 (0.452,0.448)。“约 94.9%”与事前预测 94.895/94.957 一致。"
+    },
+    {
+      "hypothesis": "h-gux36c",
+      "verdict": "support",
+      "basis": "该点及邻域实测杂质 0.0819–0.0840，预测 0.0833，模型预测上界 0.1058 < 0.115；推翻条件（实测超 0.115）未出现，约束不活跃。"
+    },
+    {
+      "hypothesis": "h-r2abbn",
+      "verdict": "support",
+      "basis": "quick 残差 sd 0.459（标称 0.45）远大于 0.18，唯一同点对差 +0.724（4.0×0.18），推翻条件“差值在 0.18 内且无系统方向”不成立；但均值仅 +0.06，支持来自“噪声更大”而非已证实的系统偏差。"
+    }
+  ],
+  "anomalies": [
+    {
+      "what": "reports/analysis.md:51 称 95.05 的置信区间约 ±0.25；同一脚本在 (0.45,0.45) 给出 95% 预测区间 [94.676,95.425]（±0.37），10 点模型为 [94.547,95.367]（model-01.json:57-60），下界已低于初始最佳 94.693。报告把不确定性说窄了，也未指出“优于初始最佳”在 95% 水平并不成立。",
+      "matters": "no"
+    },
+    {
+      "what": "reports/analysis.md:13 称“4 次 quick 扫描”、残差 −0.71~+0.37；实际有 5 个 quick 文件（q-0505/q-020-045/q-070-045/q-045-020/q-045-070），对最终面残差为 +0.490/+0.026/−0.711/+0.234/+0.240，上端是 +0.49 而非 +0.37。",
+      "matters": "no"
+    },
+    {
+      "what": "reports/analysis.md:48 把 (0.25,0.60)、(0.60,0.25) 的 +0.06/+0.28 当作验证偏差，但这两点已并入 16 点最终拟合，属事后残差；用并入前 10 点模型预测，偏差为 +0.115/+0.368（仍在噪声内，但“验证”口径被夸大）。",
+      "matters": "no"
+    },
+    {
+      "what": "lab/model-final.json:55-59 的 best_measured=95.2801 是同坐标 4 次重复的最大值（均值 95.054、sd 0.240），比均值高 +0.23；submission.json:12 把它列为证据。报告正文用的是均值，未把这一选择偏差写成口径。",
+      "matters": "no"
+    },
+    {
+      "what": "同一坐标 4 次重复（f-opt-1.json:4 → f-opt-4.json:4）从 94.7228 单调升到 95.2801，极差 0.557，报告未讨论漂移/顺序效应；这 4 点又占最终 16 点中的 4 点，使交互系数标准误由 0.055 增至 0.138（缩放坐标）。去重后加性/交互 CV 为 0.151/0.171，结论不变。",
+      "matters": "no"
+    },
+    {
+      "what": "初始 9 点对 5 参加性二次的残差 sd 仅 0.062（4 df，与标称 0.18 下约 2% 概率），后续 7 个 full 点残差 sd≈0.197；两批噪声水平明显不一致，报告未提，故 9 点阶段的 CV 0.092 偏乐观。",
+      "matters": "no"
+    }
+  ],
+  "lessons": [],
+  "basis": "四组判据均按各自推翻条件核对:在副本中复跑 method/response_surface.py 精确重现 lab/model-final.json(加性 CV 0.16775 < 交互 0.18048,交互并未低出 0.18);(0.45,0.45) 的 full 读数 95.0719 与 (0.4517,0.4485) 4 次重复 94.7228–95.2801(均值 95.054、se 0.120)全部 ≥ 初始最佳 94.693,首测 94.7228 也落在事前 10 点模型的 PI [94.547,95.367] 内;该点及邻域杂质 0.0819–0.0840,预测上界 0.1058 < 0.115;5 个 quick 点残差 sd 0.459(quick 标称 0.45),唯一同点对 quick−full=+0.724,推翻条件不成立。submission.json 坐标与证据路径齐备,报告写明模型参数、仪表口径与局限。报告个别派生数字(±0.25、quick 极差 +0.37、交互系数 −0.13)与复算不符,已在 anomalies 登记,不改变判据结论。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "lab/model-final.json",
+      "line": 8,
+      "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 19,
+      "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 26,
+      "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 58,
+      "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+    },
+    {
+      "path": "lab/f-045-045.json",
+      "line": 4,
+      "digest": "e83d6a943bf65f10c9e984c6da545d5748769234da45e986fadea4b1e4e156bd"
+    },
+    {
+      "path": "lab/f-opt-1.json",
+      "line": 4,
+      "digest": "9bc217b8fa26c0ad9909a798029e20bb1f1a7caf01e1299fd8b20e770ac5bf9b"
+    },
+    {
+      "path": "lab/f-opt-4.json",
+      "line": 4,
+      "digest": "0ce94352c9b9ba504c090cee4db93573984cc7b87d7901ca3804c4a0f8ae22d5"
+    },
+    {
+      "path": "lab/model-01.json",
+      "line": 56,
+      "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+    },
+    {
+      "path": "lab/model-01.json",
+      "line": 58,
+      "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+    },
+    {
+      "path": "lab/model-01.json",
+      "line": 61,
+      "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "85d63c559158d27a8616bcde58dd14f5e30fea215654a77a399e746e463f7b9f"
+    },
+    {
+      "path": "lab/q-0505.json",
+      "line": 4,
+      "digest": "92476b55f11d3bf32f374f722c07bf46c64251bf8996706ffb044999d0fd18eb"
+    },
+    {
+      "path": "lab/cal-01.json",
+      "line": 4,
+      "digest": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 12,
+      "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 13,
+      "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 27,
+      "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 42,
+      "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 48,
+      "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 51,
+      "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+    },
+    {
+      "path": "submission.json",
+      "line": 2,
+      "digest": "d7669425fbf21242abbc320cc6d3cf6394d3dc4bfb645dfb03ae1430928dbadb"
+    }
+  ],
+  "card": "四组判据均按各自推翻条件核对:在副本中复跑 method/response_surface.py 精确重现 lab/model-final.json(加性 CV 0.16775 < 交互 0.18048,交互并未低出 0.18);(0.45,0.45) 的 full 读数 95.0719 与 (0.4517,0.4485) 4 次重复 94.7228–95.2801(均值 95.054、se 0.120)全部 ≥ 初始最佳 94.693,首测 94.7228 也落在事前 10 点模型的 PI [94.547,95.367] 内;该点及邻域杂质 0.0819–0.0840,预测上界 0.1058 < 0.115;5 个 quick 点残差 sd 0.459(quick 标称 0.45),唯一同点对 quick−full=+0.724,推翻条件不成立。submission.json 坐标与证据路径齐备,报告写明模型参数、仪表口径与局限。报告个别派生数字(±0.25、quick 极差 +0.37、交互系数 −0.13)与复算不符,已在 anomalies 登记,不改变判据结论。",
+  "created_at": 1793975906797,
+  "evaluator": "independent"
+}

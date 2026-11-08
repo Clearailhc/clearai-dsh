@@ -1,0 +1,177 @@
+{
+  "observations": [
+    {
+      "x": 0.1,
+      "y": 0.1,
+      "value": 82.21791539627809,
+      "impurity": 0.06100864775665318,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.1,
+      "y": 0.5,
+      "value": 86.15145308416128,
+      "impurity": 0.08079507315261018,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.1,
+      "y": 0.9,
+      "value": 82.6050684946301,
+      "impurity": 0.10075158417572584,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.5,
+      "y": 0.1,
+      "value": 91.42477281896112,
+      "impurity": 0.06669057913576462,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.5,
+      "y": 0.5,
+      "value": 95.2528611061247,
+      "impurity": 0.08668144029500233,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.5,
+      "y": 0.9,
+      "value": 91.3259979220598,
+      "impurity": 0.10770244549912814,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.9,
+      "y": 0.1,
+      "value": 92.27612390914955,
+      "impurity": 0.08551925749198097,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.9,
+      "y": 0.5,
+      "value": 95.37471790530712,
+      "impurity": 0.10452797864964507,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.9,
+      "y": 0.9,
+      "value": 91.68773286758525,
+      "impurity": 0.12403536555698237,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      }
+    },
+    {
+      "x": 0.65,
+      "y": 0.45,
+      "value": 96.19261509814179,
+      "impurity": 0.09153204376496356,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      },
+      "cost": 3,
+      "spent": 8,
+      "budget": 30
+    },
+    {
+      "x": 0.72,
+      "y": 0.5,
+      "value": 96.50093105972608,
+      "impurity": 0.09615285583032529,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "full",
+      "noise_sd": 0.18,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      },
+      "cost": 3,
+      "spent": 11,
+      "budget": 30
+    }
+  ],
+  "bounds": [
+    [
+      0,
+      1
+    ],
+    [
+      0,
+      1
+    ]
+  ],
+  "noise_sd": 0.18,
+  "impurity_limit": 0.115,
+  "remaining_budget": 19
+}

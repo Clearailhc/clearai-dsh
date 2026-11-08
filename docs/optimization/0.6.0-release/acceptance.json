@@ -1,0 +1,3268 @@
+{
+  "version": "0.6.0",
+  "passed": true,
+  "stopReasons": [],
+  "scope": {
+    "kind": "polish-paired-review",
+    "authorizedByUser": true,
+    "request": "请你在从性能、体验等维度整体再看一看当前版本还有哪些小的、潜在的、明显的问题。我们完整地过一轮之后，可以发布0.6版本。这个版本就以0.9为基础，暂时不要大的改动。",
+    "comparisonRequest": "这次验收你可以启动多个任务，并和裸模型的效果进行对比，看看最终效果以及token耗费和时长都有什么对比。",
+    "base": "0.5.9",
+    "limitations": "Small review release, synthetic paired real-model tasks; historical long-wait and recovery evidence is not reclassified as current live runs.",
+    "finalAuthorization": "用户明确授权：我看错了，就是0.2.2-rc.1 ，提交tag发版把"
+  },
+  "gates": {
+    "single-native-e2e": {
+      "passed": true,
+      "source": "comparison/runs/additive-C/launcher-result.json",
+      "reason": "completed",
+      "usageStatus": "verified",
+      "independentAudits": 2,
+      "parentRequestsWhileWaiting": 0,
+      "elapsedMs": 949177
+    },
+    "paired-comparison": {
+      "passed": true,
+      "measurementVerified": true,
+      "runs": 6,
+      "verification": "comparison/verification.json",
+      "costUpperBoundUsd": 0.627472512,
+      "recovery": "interaction-C retains infrastructure interruption; see comparison row recovery for combined active time, known tokens and unknown reservation."
+    },
+    "engineering": {
+      "passed": true,
+      "source": "engineering-final-release.txt",
+      "installedHostRequired": true,
+      "hostVersion": "0.2.2-rc.1",
+      "nodeTests": 116,
+      "kernel": 798,
+      "host": 38,
+      "client": 195,
+      "platform": "Linux Node24; remote cross-platform matrix additionally required before merge/tag."
+    },
+    "package": {
+      "passed": true,
+      "checks": 45,
+      "source": "package-final-release.txt",
+      "status": "Final runtime and published docs rebuilt; frozen paid candidate digest remains in the comparison manifest."
+    },
+    "lifecycle": {
+      "passed": true,
+      "cleanInstallChecks": 23,
+      "source": "clean-install-final-release.txt",
+      "nativeLifecycle": "host-compatibility-2026-11-08.json"
+    },
+    "production-ui": {
+      "passed": true,
+      "source": "host-compatibility-2026-11-08.json",
+      "preview": "../0.6.0/preview-checks.json",
+      "scope": "Production bundle and deterministic fixture, not a new paid UI task."
+    },
+    "performance": {
+      "passed": true,
+      "source": "projection-performance-final.json",
+      "scope": "Duplicate projection processing only; no full UI or task speed claim."
+    }
+  },
+  "budget": {
+    "limitUsd": 240,
+    "perTestLimitUsd": 40,
+    "costUpperBoundUsd": 23.81244676799989,
+    "pendingRequests": 0,
+    "unknownRequests": 14,
+    "acceptedUnknownReservations": 14,
+    "perTestCostUpperBoundUsd": {
+      "audit-wait:0:none": 0.20112945599999998,
+      "audit-wait:305:none": 0.05163776400000001,
+      "audit-wait:0:cancel-after-child-request": 0.03455937600000002,
+      "audit-wait:0:disconnect": 0.04074189600000001,
+      "audit-wait:0:crash-after-child-verdict": 0.15236965200000002,
+      "isolation-probe": 0.8016362,
+      "c6b07bccec71546812b2081f7ab4571f7eb59edb861f5cd09892e4401d70dba6": 0.127991052,
+      "aafe160bce3f4369d0a819945996a39e778dde886551ea6dcf8b693c1e72087c": 0.0009985320000000001,
+      "7cda0c8b67769706a3c17d371a1c43dae3b557414ddc6fbb2174d95f55c48129": 0.8061377159999997,
+      "polish060:direct-A": 0.00105306,
+      "polish060:direct-C": 0.0011090999999999998,
+      "polish060:additive-C": 0.33509345999999984,
+      "polish060:additive-A": 0.052421579999999995,
+      "polish060:interaction-A": 0.034144956,
+      "polish060:interaction-C": 0.229717284,
+      "native060:initial-direct-A": 0.0026930279999999997,
+      "native060:initial-direct-C": 0.006302808,
+      "native060:initial-additive-C": 3.230693448000002,
+      "native060:initial-additive-A": 0.07359096,
+      "native060:initial-interaction-A": 0.08988726,
+      "native060:initial-interaction-C": 0.2614580520000001,
+      "released059-fixed:additive": 1.037642456,
+      "released059-fixed:interaction": 1.100658788,
+      "double060:interaction-after": 0.6031117080000001,
+      "double060:additive-after": 0.318402,
+      "double060:interaction-before": 0.47708786400000003,
+      "double060:additive-bare": 0.041569128000000004,
+      "double060:interaction-bare": 0.036767976,
+      "double060:additive-before": 0.31599536400000017,
+      "trace060:native-1": 0.10369462799999998,
+      "trace060:clearai-1": 0.09918664800000002,
+      "trace060:native-2": 0.081971364,
+      "trace060:native-3": 0.14598770400000002,
+      "trace060-fixed:clearai-1": 0.4023858,
+      "trace060-fixed:clearai-2": 0.24520911599999992,
+      "trace060-fixed:clearai-3": 1.001837396,
+      "evidence060:regression:clearai-1": 0.20867547600000003,
+      "evidence060:regression:clearai-2": 0.45996259199999995,
+      "evidence060:fresh:native-1": 0.80719016,
+      "evidence060:fresh:clearai-1": 0.8149831280000001,
+      "evidence060:release-case:clearai-1": 1.3203073640000003,
+      "evidence060:release-case:native-1": 0.08424130800000003,
+      "evidence060:release-case:native-2": 0.8697335239999999,
+      "evidence060:release-case:clearai-2": 0.3117162479999999,
+      "evidence060:release-case:native-3": 0.16571287199999996,
+      "evidence060:release-case:clearai-3": 1.9690419559999996,
+      "evidence060:anomaly-repair:phase3": 2.4142903359999988,
+      "polish060:release-final:direct-A": 0.000499176,
+      "polish060:release-final:direct-C": 0.0012316319999999999,
+      "polish060:release-final:additive-C": 0.010588727999999999,
+      "polish060:release-final:additive-A": 0.053308079999999994,
+      "polish060:release-final:interaction-A": 0.07073949599999999,
+      "polish060:release-final:interaction-C": 0.21552294,
+      "polish060:release-final-v2:direct-A": 0.000757104,
+      "polish060:release-final-v2:direct-C": 0.0036250799999999997,
+      "polish060:release-final-v2:additive-C": 0.247672044,
+      "polish060:release-final-v2:additive-A": 0.04933303200000001,
+      "polish060:release-final-v2:interaction-A": 0.08392026000000001,
+      "polish060:release-final-v2:interaction-C": 1.1025196519999998
+    },
+    "accountingStatus": "bounded-unknown",
+    "verified": true,
+    "comparisonCostUpperBoundUsd": 0.627472512,
+    "interpretation": "Cumulative monetary upper bounds, with all unknown historical requests fully reserved and explicitly accepted; not exact invoices or reconstructed token usage."
+  },
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "4be5fcc72fdafdfe7b351d6969aa7841676495829cfc04bbc6bb02104d34a751"
+    },
+    {
+      "path": "README.md",
+      "sha256": "beef054f50b65e85cb6539c7f3998645df394ebafd2b5d20a425da464c6a8589"
+    },
+    {
+      "path": "README.zh-CN.md",
+      "sha256": "b2a124002251267004a96855be31240ace55c26a1770668814b626d31e67bf0c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/README.md",
+      "sha256": "a1e32f81627a101f37cb799e660b5510e3ca4463d6ee8a0de0dc7b4b246df54c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/budget.json",
+      "sha256": "235746fb3cf7b7a1527ba6cc64a599edc8a7208349aee577333378636018e9e6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/clean-install-final-release.txt",
+      "sha256": "86b8bb529f44e58e6fe9bfea8eeb6fcb112a99f2a08c41b4c3c1f72f0a15c47e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/archive.json",
+      "sha256": "959d226703b0ef7a5e06084c8dca73b4c921e52ba41c2155bc390114983123ac"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/comparison.json",
+      "sha256": "525c7a639b6466011eaa33260a643f9b989de2c84a5baee6abc5e2ada07ff00f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/grading-truth.json",
+      "sha256": "b8c4f3f6b3285eaf7d84356f01ae04e5ddff2bb208dad1b27a67cf76b787f283"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/manifest.json",
+      "sha256": "dc3640a9fd45cf4c3c5715f9b4f4fde55cecc0cb117112bc1bbf2afed8c1e8af"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-A/carrier-started.json",
+      "sha256": "33692b887b658e6f3db302e9159e83c4703df6a8a923ba7d2d413fb8fe8379bb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-A/e6945d4e0eeeddc0cbd1a33ab43faad2d3befad28919530e930161e85469b282.public.jsonl",
+      "sha256": "ad35ba834a91991628bf9ffd29550206779ca76c472b85994cb01ca4b50f5d02"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-A/isolation-probe.json",
+      "sha256": "d319c6e4992e1dd75360b18ace1d9c29c1f530b286e732a9d8160a211ee21d25"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-A/launcher-result.json",
+      "sha256": "17f704334af456bb7048baa4785f7e80f2ede7fbfc6a411f2895c4df5803aeef"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-A/llm-calls.jsonl",
+      "sha256": "4f3bdf2683e04cab34c21ca9f696838e0ed0cf0c9a00720f726424735f7dd558"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-A/session-started.json",
+      "sha256": "239797298e9ad7bd1cb0e3982e94e457d405fac2822ce1d092a7591dedd597c6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-A/spec.json",
+      "sha256": "380d98b3efd870288fd7b65a09285545adfd40591c677260bc2af23a479e87a0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/1d4e28054c8f5cc9b731a959df19cc0b7dc9b0ccff051ddc8859b7f6eadcb139.public.jsonl",
+      "sha256": "0294ba372bc81d08d1721c2bd8a3dd2e60de23fc36ad898e70375db2e807e180"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/68acf2c00631725580065d654f80b5a44163276ab0817e8127627c6f320afca8.public.jsonl",
+      "sha256": "5c922d0ef6e3585041c0e0c849c50c8aae6244be3e7ea33d133847194adc5166"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/carrier-started.json",
+      "sha256": "d01f1b52328b24fdfb28113607ce15320e4f92d86fcac4d4e2255b737d6e7d5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.public.jsonl",
+      "sha256": "8470b2d08fa236b858f5052bac08e444cd2a57116c3f440317375433207b889e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/isolation-probe.json",
+      "sha256": "f4f366200a97d892e46fb694178de3bc1fdac10cc9c57d5e351989202eb2ce4c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/launcher-result.json",
+      "sha256": "f13872be72a479334e4b7c81e632359c640465e56747609ad118773c5ba5acd1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/llm-calls.jsonl",
+      "sha256": "c739c394e8deeb18e5257e9310cd666a2c92bb2fcd0503a4995b152b47d4a5dc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/session-started.json",
+      "sha256": "1d6e5111688cb89b844fead3e29e56200012a998c7853e6a39481d87d6dbc644"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/additive-C/spec.json",
+      "sha256": "ff9c985464d7484ca812c5a5d4a598e099e4e4b19c1d40ffb04058f23591149b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-A/a9ece5aae50c14a6418292edbd3660c1655d59bc02d230856c97ace90422e5f1.public.jsonl",
+      "sha256": "e2542a64c6518e380921db6cc4be1ddba53a2bce30d54c54a1a0abf3ee3c0df5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-A/carrier-started.json",
+      "sha256": "38a0cdb50183ccccaaf510856074952016adcc3c194cea8718ca5ef62a77d4cf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-A/isolation-probe.json",
+      "sha256": "330e62f8384a0d702eca02f0e30d03b4592108fae20daa56c18fcd21af4a6e58"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-A/launcher-result.json",
+      "sha256": "579e5297b0b3c480a7cd4755ad63bd1696a4b2978163e079c637c1dacfea1a26"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-A/llm-calls.jsonl",
+      "sha256": "cf4b18f83dd4711a4f8ce00e0d9f7ca2f9c8934fca88497a2bb0af8362c6f316"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-A/session-started.json",
+      "sha256": "f8d2b1065f903431ad8227559e9b4972739780b397e93f1fbafc7cbbd66fe6e2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-A/spec.json",
+      "sha256": "3d5e0cf45e2efcaed686738a1a38728e637c9fe4820c4652c486942594c45a55"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-C/2756fed932b0c4884d5d8bdac45078c39aa1b4e0abdc90ce458b573b84ba5f5f.public.jsonl",
+      "sha256": "09402b6a4cb53549e5a01b545322be3ff6a71a628417fadf3676e0c69467caa9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-C/carrier-started.json",
+      "sha256": "c48490b11e85018476faaa1e8c642e00d0aaba35f74e0adb63456e926f5c3248"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-C/isolation-probe.json",
+      "sha256": "1c30a193faac4db1c1c0d4921232116e4dca93c9e3c6e0c72473a2c8adea01cc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-C/launcher-result.json",
+      "sha256": "300c4303dc0a9c05f70030d78c879463e284e2819b5890a3d682820f764eb9f5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-C/llm-calls.jsonl",
+      "sha256": "8855d84ace7c22215e9ad8a5e6ab882a42a183af4156570e0e01f78a8d59cf12"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-C/session-started.json",
+      "sha256": "a79c091985fe511ae099f4c78f30c3a0bd1879670701f1cdd57adc93738dc268"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/direct-C/spec.json",
+      "sha256": "937837c1931dac6a748fe73205ffe9517cdb3322984bd04eea6f85e11375de26"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-A/74fe9aa3d924d0bcddaff9d8f7977d0a63c5f13aeeba8aa1e5b5afeedecd78ef.public.jsonl",
+      "sha256": "27625c8d42ad23e944296eef98d2de69493b8f64ed0f9b9d6fce2ea4021103c9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-A/carrier-started.json",
+      "sha256": "0b61997eae69cb5e2d2b1255a5fcb39385eeb7c971bced8d3091832b64ee898a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-A/isolation-probe.json",
+      "sha256": "e834034874335952896d29452217c6c815ec7c2dd17375b3bfd720b0750b964f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-A/launcher-result.json",
+      "sha256": "a2c25ba878de18970e9100d0b4718aa26f32a1ac3cb39d0058565c2e48b7f39c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-A/llm-calls.jsonl",
+      "sha256": "784461b2172ef98f63bd9caf7582f6baec1d4a4bd1f8760fb83bb30c95aa022d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-A/session-started.json",
+      "sha256": "be647a93e800eb15557ed26773a6d4654fc729d6a34952fe6e1c8d93a5ac54fe"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-A/spec.json",
+      "sha256": "410d35867b6126bc9f51fef07d01caccfd3dd593418c51513b02acb4bb0a8836"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/58fcc4668c69a7818aec02b2c172cdca36358560466f424ea082297619fc2a94.public.jsonl",
+      "sha256": "39d22625acebe5c3e2ca59ef9ae898efecb26dd39a6d08ef114eb514fd5968d2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.public.jsonl",
+      "sha256": "dcc5ad308c45fed2af29559ec246445064b383f62d1a0a711c722cf46cde1dc4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/carrier-started.json",
+      "sha256": "2d7c8bf12cc37fd3cc84d412f06684f217f47d6579824a26791a6f1b85f2c46b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/e390b5522f8703e3044ed418dfc1483d4e211cb21c941ad5b7af98c7e90cca1a.public.jsonl",
+      "sha256": "29ebc1571d802bc70fd32914db8a326891303d8025d52d6e2dbea0983e179b80"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/isolation-probe.json",
+      "sha256": "add1b63c57abb57e714fe844c6c6e0b703831dbceaa880c3b3efdbf45a1b41e6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/launcher-result.json",
+      "sha256": "576fd4b390783b06e635512b8f92d9965c733074d7d4c5f3bb6a869f4638899c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/llm-calls.jsonl",
+      "sha256": "b97666f72c50f62af4cb51a8922fe725d756445e240dbb37e651c265a7805812"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/mount-evidence.json",
+      "sha256": "af973cc04c102f0d670a74e33640e35a4a045c4cde45e77f7bf288ed0b03a295"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/session-started.json",
+      "sha256": "23b76910ad306643095e6fd5a192a13e96ee50ccc3b505d038e19c4b7e0ead60"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/runs/interaction-C/spec.json",
+      "sha256": "b5840b8d5476d481eafd20415a51fc6a49ebfa0e5d303309b77495d50a499f12"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/verification.json",
+      "sha256": "fd7ba1c352972772e9e200baf9e0f6a940b77f23bcb8ac6f971e134d3342c9de"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/experiment-endpoint.json",
+      "sha256": "d3ff32e922eb6b2681efbc687c7dd782e920be14507e88bef7fdeea4f1d33b15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/initial.json",
+      "sha256": "45c169af3c604152e8e81c8dc0fc96e88a583c9fab28fb0338619b19340eba48"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/analyze.py",
+      "sha256": "06768733b037d5496573e25e0de2fd6a71bd93f9df6e8f43b106a4cc958204e5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/cal-01.json",
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/cal-02-final.json",
+      "sha256": "490faf67861d5c4da861e39ff80172a40fa7d0bcd9075a98dd53629ca1945e47"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/final-summary.json",
+      "sha256": "f26542feec69d27434c34f3c56fec2015709940f157d482f28cd505e26372712"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/full-01.json",
+      "sha256": "6d3b85c8d1923e190dbcb6b7e0756706dcccbc5e449ee3926406069fb31efd73"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/full-02.json",
+      "sha256": "c05a014aa640d2d99aeb67b98bcf329ce12c657420db0178b698bedb8e6c5e12"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/full-03.json",
+      "sha256": "9219b989694739f719ec7c2c0f28f2f85051e0a318127e56795af2b59c45c2ff"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/full-04.json",
+      "sha256": "aca6e76b81e00cc6fd34d8aad8c4ecf6a160379a7a733916138d0924b32a02e7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/full-05.json",
+      "sha256": "1f64fd3b743a6ecf4cddd6e29615c222ea1dfd15af6c477d353109c848988372"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/full-06.json",
+      "sha256": "2f5d2b217b48eb4b9d3127f7def0072546a5fd2d3cec354853cd5d8431b902ee"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/full-07.json",
+      "sha256": "cd8a3e2a3c00f91ec6581fc4e06d72cbd22e2865a44f19224c672a4ca47d3c28"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/input-final.json",
+      "sha256": "a3f578c9cf3723e42aa7943bd2f0181b40ce966da83db45d15a72ab452b3df00"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/input-full01.json",
+      "sha256": "41d8ae47bc3b4726fd1a615170c5e77bf25367e05fbc2fa4d84ff2405805625f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/input-full06.json",
+      "sha256": "c035beeb0b890bb87720a2716315f5038d92fdfbc94da1ee0d374e4f804b8ac2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/model-final.json",
+      "sha256": "72daa22935e14e8f6b888185618e433271fe37698f6f46b556b3a13502a7abbe"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/model-full01.json",
+      "sha256": "8914952097c8570bf2fad5063f7101e63c36a2a529e2cb30291f6c642fa65ec4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/model-full06.json",
+      "sha256": "916ad0968dd4d8324aa6fbc7e75d5cfe8ee9d413d7d6b75d221258764e18381c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/model-initial.json",
+      "sha256": "6043b9d642f210d1d7daba5e849c670dc54c910a98be4310fe8ccf2903966b43"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/quick-01.json",
+      "sha256": "717a8296fdc5376facaa777f2ab5fc30bebecaccd51375007723aadb05c8c89f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/quick-edge-x0.json",
+      "sha256": "758962529054afb6af75204d8875d7dc2d1e8cc2caa5020a5f670f557af05bab"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/quick-edge-x1.json",
+      "sha256": "e09b2fbb2649b47f97eefa6aff0cc699aa67180e9c4a45b9f0beb2bf7287d449"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/quick-edge-y0.json",
+      "sha256": "cea4368076f7d5084641673857c6b3172ec0b4bc52fc059b8cb499b15231eac8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/lab/quick-edge-y1.json",
+      "sha256": "f760be303a84e94f14bc8ff8b39a5c4d27faad5a7b2292e4628ad36785c42572"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/report.md",
+      "sha256": "52ee9898c052469ea29457763af30bd0bbc1f93113169b3a283de510d678f590"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-A/submission.json",
+      "sha256": "171708690633bf1d7f7996f05ace5de9b53c5c1e4beeb940b2f326b59f4bdd97"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/evidence/audits/4b8dfa872129105ebd020a17d3f443d71c79d5dde8fa7166634e9a45d970ca3a/68acf2c00631725580065d654f80b5a44163276ab0817e8127627c6f320afca8.json",
+      "sha256": "ad18f89bad81ef2239c28189d2f278490106885c814380cc596108f72a724151"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/evidence/audits/909bacd3a6ff70a2debef1449c94fcdb1bae7b50678d182d05123647ffde0b83/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.json",
+      "sha256": "d0829f9815bc3cf329645b790921aaf4773af0c1658f6ef0042ca4f464054a31"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/goals/g-mw6ll1t7lqbr.md",
+      "sha256": "2d0754e89a8160524630503e57e234729bb8bb2edc51fae7c961acc749b437b3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/facts/INDEX.md",
+      "sha256": "a9ac40ca97c5b82476b6f82bcef7aad2165f0202a75f9919eedcb4f13e8952f3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/facts/f-0xrpr7.json",
+      "sha256": "78171d436ee8b34bb3da355e6e9f95f353ffdfb74e271245ce956939b63fc4ee"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/facts/f-i180ha.json",
+      "sha256": "96512ec73ac86a439c1258e12bf6d2ed16f921af816683722dd69e4f4f4f949e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/facts/f-min74v.json",
+      "sha256": "174cd1bec772e3384ab255502fd128a85a0c19444ad3cac472394d00572c1cb6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/facts/f-ofwy4n.json",
+      "sha256": "a208767c119f99f3803cf4d48f8a5f35c1a5529e83aaad16f88955adb42a79b5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/lessons/l-2cnee3.json",
+      "sha256": "1f93c37bca46fd372ec42e5ff13f4aca6926277096146e72dacc956f4a2d8b8b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/lessons/l-7t8kzh.json",
+      "sha256": "feeb57aee600d8bfda6cb1dd2dccbf3802dc5ea1ec7e974521da54c3dfe7e315"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/lessons/l-fetnqq.json",
+      "sha256": "5020c5b7d30bb4e5c1219fba37e57b80b7de935a2f403c93374102c4a9efd7d1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/knowledge/lessons/l-wqfbd8.json",
+      "sha256": "78238ae47cdfb6d5ff84aa0cb566495673d0fd76e092bf3a586909ffd7c260e6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/SCHEMA.json",
+      "sha256": "5219cc1d67ed25fd7dc2b60fb22341cc1f84956ecd0b3cca51056a7adfa5ce5a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/concepts/impurity.json",
+      "sha256": "cf3eae11f8421c74241e82bd981e7913c9c16baced15172b6b0ca686bd88ce92"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/concepts/original_instrument.json",
+      "sha256": "d8544b22ec37702abd3279d82faeb05f128d97498e6f1f7274a951e2aa1b881b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/concepts/process_point.json",
+      "sha256": "52ae9ea6abb3c12ab2459c4d5a6f21d399b82117c75d3163ffaa50750e2f4402"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/concepts/response_surface.json",
+      "sha256": "c4b7c7c3060c665182f1ac9c0e57027f213cdb19a0bb1f774999f7be55dc8af1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/concepts/x_factor.json",
+      "sha256": "3ed5178af258c1de98f9ffcedf3adb50d9212d9a3baed1494bd049f099bed746"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/concepts/y_factor.json",
+      "sha256": "c15afdeca83db64d952237c2fd1b9897a498c17d560a43ff42a25486c263ddca"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/concepts/yield.json",
+      "sha256": "24c72a9c64c71fafe6fa4e5a580a2cfbc12cd9613913c57b22767c3337104ac7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/entities/model_final.json",
+      "sha256": "b8dfe5d3e5e2cb2f2ff70b6b61c64c9aaefb75a770ba8cc6b5009c360b3caa8a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/entities/original_instrument.json",
+      "sha256": "b8998519bc00fd31eccfc235afdd9a44d5453b3f04d8775db5b8d2a0683074a2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/entities/point_050_045.json",
+      "sha256": "20fb20ee3a63a6e5b22b1c51086b5cb5c32e5ea90f5e648f2e010edf889a81bc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/impurity_affected_by_x.json",
+      "sha256": "4402d379a3c041a5e38c46d634dbf8dfe6468d5aadff178dac9f7948b99a06d4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/impurity_affected_by_y.json",
+      "sha256": "7982f6da464016ff01cae6113ec5732a9eb8af7752c6dd2d154edeaa77d60736"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/instrument_measures_impurity.json",
+      "sha256": "e17cb9f516e0cc1d6d43dfefcbaf5d46092e97383c7b42b1b837a80c4d3e62b1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/instrument_measures_yield.json",
+      "sha256": "8405f68678bd7d505a4d72fe1973c6f399cf5501c6dfb8deea9469c460159ca6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/instrument_offset.json",
+      "sha256": "92cb78ac136c9055d84cf08e1125f2a9196fbd0864c0f470de325677bb9cdeca"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/model_predicts_yield.json",
+      "sha256": "00f8bd06cbf24582418c2dc97d1ea5ba615a71bf211919688194acb1d0f9f354"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/model_structure.json",
+      "sha256": "f8a9845183747729e4ac473a5f1ce90d1b94ddca8e0136d7cbac57e39df9f758"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/point_impurity.json",
+      "sha256": "0073b70a7ad5e9b4ac9137df9c1ce9895c9d9cce7db582c800d3d7954daeef3e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/point_yield.json",
+      "sha256": "5eea09c5d80b16e676d0e48e6a206e7fa29c52175d451dbeac55eb54aff11cb4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/recommended_point.json",
+      "sha256": "813cdf10fe1d9bbf4fb20bb81d149cefb782f90ab2b26345388a67d30e726d51"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/yield_affected_by_x.json",
+      "sha256": "24bd136a5b1f2f4bae593d7b4fe652b604e3760cf6b7cb8ca99eb28b5461d541"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/relations/yield_affected_by_y.json",
+      "sha256": "d68762f0aecd0e8d05e6860ef9b82d3d35381ca6faca5901ad6030058bb0e061"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/experiment-endpoint.json",
+      "sha256": "ad2f677e441964d8152a5aed6ec4330f406a0c2bb0968042cbfebc2afdcadded"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/initial.json",
+      "sha256": "45c169af3c604152e8e81c8dc0fc96e88a583c9fab28fb0338619b19340eba48"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/calib-1.json",
+      "sha256": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/calib-2.json",
+      "sha256": "8aa4069bae105312f80251b83e45c5ebf6687e4fcb5bca39fb6c3653c8b71b7b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/calib-final.json",
+      "sha256": "490faf67861d5c4da861e39ff80172a40fa7d0bcd9075a98dd53629ca1945e47"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/f-050-040.json",
+      "sha256": "491f0fb8eefc71c995fc2d0973b466aae0eb6b335b56a49b96f7a38a01f2da1b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/f-050-045-rep.json",
+      "sha256": "46edcb02de6f770c8907d56deec57a6f72e46161f40a3b8176727ad19134ba7c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/f-050-045.json",
+      "sha256": "dcc57e623e9b9eed853830ccfbac86930aa16b825f741bacf980f7c73b17a113"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/f-050-060.json",
+      "sha256": "d4e5bd558cb086c94c7681f0c27c965335be3008436bef98c9296944b33f6ed1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/f-055-045.json",
+      "sha256": "ab3d8fb27a4d8e11ee4c34ec52228e328b07dbacccc630740d3e72227ebbd38f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/input-final.json",
+      "sha256": "9dd737874d92db59e6a49f84a43cd0ec48a62de1f189129dc4afa33b40468ea7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/input-full.json",
+      "sha256": "e3d2e5bdf4348e6559fec706544278742045c7a259710614f58aa37c28ae7bee"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/input-round1.json",
+      "sha256": "00324b6b026152a38d87ae9ce5cdfde8b02478c2a50657e7d8bf13c41d5c2bca"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/model-final-budgetok.json",
+      "sha256": "3df0d663b4a625c67d2cde500f1caf42aa070dd46298f1ec12fe8550b5380708"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/model-final.json",
+      "sha256": "9d316c0ac87b59a726d98ebc470b2ba6d4009d0002cb5ec682c24faf2b929993"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/model-full.json",
+      "sha256": "7baeca9d07693f2ae0452106e862690ee24978b2a29a376b18ad5a28cbfb329c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/model-initial.json",
+      "sha256": "6043b9d642f210d1d7daba5e849c670dc54c910a98be4310fe8ccf2903966b43"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/model-round1.json",
+      "sha256": "5da852d73b0b55cf511f2d7aab3f27c880b5386c14aef65eb0938b27904012a9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/probe-q-0505.json",
+      "sha256": "01b6c6342ab7932c2bac67186edaa805b41af967e97e9804a70652153756f99d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.3-0.3.json",
+      "sha256": "9ce48a0bd7050aeb36add5781fb326b432ca530ca537f57870d6423cdd7359a7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.3-0.5.json",
+      "sha256": "88b095a1d6eecd33eb2d90c41e003ee198439e88f8150115531a386514b6e4a1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.3-0.7.json",
+      "sha256": "c79f1adff6701b96564b38b05696ab1080165b731782d3617f80c26460fe73b9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.5-0.3.json",
+      "sha256": "b57f8d6a850fa41f893f6f3b3cb4081281e5738346c3da0a5774d0f6fe8846a1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.5-0.7.json",
+      "sha256": "50f98d5cf49066ac0a8fa6d03a1eebd90cefdbeea93203ef1ce0d13d5e55c82b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.7-0.3.json",
+      "sha256": "09e6b04f03ea8fa751e97c24a4a7c809a1e104cde857790fbbdfd9bda06cc632"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.7-0.5.json",
+      "sha256": "7b31b82840922825c2867ea6e4835431bf7da26fd380b9a9182e54a69b46f243"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/lab/q-0.7-0.7.json",
+      "sha256": "adfb7496174ddf44f3b56761d82a76102f30bf6be59ccd3e68249368313542d8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/report.md",
+      "sha256": "3f6f4ba9ba1e60f1db2c654f00c74b8c6a661b6abacd559f32b6170fe4e9ab81"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/additive-C/submission.json",
+      "sha256": "2233c5da97374a1280ecff92a4cc36b3ee263dab2372d8f4cbaef618f0575247"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/direct-A/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/direct-A/submission.json",
+      "sha256": "312b6fba617055bb2d1b4fd512ab85cbe13609be73aa14a2466606884b3404e1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/direct-C/clear/ontology/SCHEMA.json",
+      "sha256": "5219cc1d67ed25fd7dc2b60fb22341cc1f84956ecd0b3cca51056a7adfa5ce5a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/direct-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/direct-C/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/direct-C/submission.json",
+      "sha256": "312b6fba617055bb2d1b4fd512ab85cbe13609be73aa14a2466606884b3404e1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/experiment-endpoint.json",
+      "sha256": "1e86797a6af87128f388a39f9cccf8bca50f982aee81f758b085db7ba56d2a1b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/initial.json",
+      "sha256": "ccf1c68a05f551586e35ecc93fa4536003ec9e1b9f7dc2c4681527378b2fcb67"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/cal-0.json",
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/cal-1.json",
+      "sha256": "5595594a4d2b0d145bc359a1b1e1fbcd0de53a2d04ed0a739e9788be111ebe43"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/evidence-manifest.json",
+      "sha256": "ae48ff75f5a22f64b273c367b671a0c628553abe8935371cb53983ff31206a42"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/final-analysis.json",
+      "sha256": "34187243b8852cf87cc1f970d3b4f98b071ab17604d7316f42eb5bf5ce8242bf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/final_analysis.py",
+      "sha256": "c5a29c7dbafdaab66c4836e13612c0471ea2edbc55eb40199a0ac8ed9ba111c3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-0.3-0.3.json",
+      "sha256": "23ccd45dd5d31f3088cbe71753fd87789d1000d7c4512c089c0ebef5a9d8e65c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-0.3-0.7.json",
+      "sha256": "2a62903a9448955f2bc6fe13a03a2f57671733f1c8a5b8f1a84a8d11915e820a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-0.7-0.3.json",
+      "sha256": "094b8fa3da9f3e0ca1206bfc0571efae69dd026792e905a895fba6b3beb20136"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-0.7-0.7.json",
+      "sha256": "fa9fb56c9fedf9947d9fb357562597a7d0b74132ba7cb2e133b5e5db11a9b80d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-center-rep.json",
+      "sha256": "e29534f3d7cf0c424e5b6837e7692452d2868840824cfee701bc8de5e07fafb3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-final.json",
+      "sha256": "97b9b33f38ed2b89f12bc2015c9b027439904445c539aea32ca8401d8b522ea8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-opt-1-rep.json",
+      "sha256": "a2101eb91898f5f1927aafe60478acd391498cca35851bfbe4aa827adda9d2e6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/full-opt-1.json",
+      "sha256": "09df38e792886516fc85bad78b691ef633c2366671191fdf95d7a84d5f6015f3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/input-final-updated.json",
+      "sha256": "43c8122dabc1c39106729f92d7710d629f8afbaabaa200980c02eace69efda57"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/input-final.json",
+      "sha256": "a43c9224b029b5c101d469672db332fb1c8808a93da12653ce8ec1244e6f42d9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/input-updated.json",
+      "sha256": "aedfef029e05306851500a42c29ec11c7682bdc8d7455236cffbf176999d320c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/model-final-all.json",
+      "sha256": "4bb217262f534a65ce4e58df0ed776f4cf8b5302449d707a8182e56c722b26e9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/model-final.json",
+      "sha256": "64dea32a067b13feca38f70d2adfad6d14c5161e07bfd0af98faa83167b2adab"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/model-initial.json",
+      "sha256": "e4ab515e9ea237c08b99f1253bf11dec099300cda6ae5391f4bd26f2fcfe79e8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/model-updated.json",
+      "sha256": "e6b92fa218464f70e087961d0adc60333c16b5f029b16b31fd61a8abdfa8fc49"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/quick-0.5-0.5.json",
+      "sha256": "b7a6ca548da9bbd2c3c28d45d2c180e9294a2cfa45cea70e93b21efc592b4e31"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/lab/report.md",
+      "sha256": "367064d8e3f9a0f2217ed4967def10cd8ce2041041541de7fd201bde17e0b720"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-A/submission.json",
+      "sha256": "61c2d2bcc9d2c62320f0de9b8dc28d8c38614cf30d160759eb9d488e4342c3af"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/evidence/audits/24396206998f24a19948f0d4820c2f46beb514903d491246d4ffd3f76fb22554/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.json",
+      "sha256": "95dd843546c3cdb5ca44bfe4f6ede0aa4a295f20c6daf97ff1f5da816faf85bb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/evidence/audits/57c9cb89350c469cbdd72bafbd59870415a7944a89c736a6d36c08a9b917bc5e/58fcc4668c69a7818aec02b2c172cdca36358560466f424ea082297619fc2a94.json",
+      "sha256": "b337f13dcca33c58b6dc842b1c0f3e415899ae2c01c41ac88eaa16246c736100"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/goals/g-mw6mkhds4x2e.md",
+      "sha256": "01556af6807863cb148a4e05a2330de0eaf347aa9f56b7bd8981fc02d50ab60a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/facts/INDEX.md",
+      "sha256": "955dfbf91a0ca8db23c32e06e5cb3c5baad9184b19ea1580b6bfd5ddfc0bf534"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/facts/f-7n7xpb.json",
+      "sha256": "b1dbd82f9e371d76f7fa1cc17aaa5d5ba86d93ccf995400daa135551f101eef4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/facts/f-82xjwr.json",
+      "sha256": "b9112afff46e2f5675d85cb9f05287767aa31efc9315be369a29d7389a7a2514"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/facts/f-l2mmz4.json",
+      "sha256": "ba63e4777a564111d4abedab9f15d84875733aab5272c63613fed99ed5a34bf2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/lessons/l-b714ui.json",
+      "sha256": "4e6e97f1e51015280042c50c44297776621c7affc8e31e1c26272c7ed16002fb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/lessons/l-c8oj8m.json",
+      "sha256": "886776f35e23af1c1f20f1b895cdc47bd51f8c9d7052ef84c10e8ef478cc3552"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/lessons/l-db9iky.json",
+      "sha256": "a3ca65034885080f038d575b724bf2abeb62a8bfb1af5afd5aff8d76ff486ae1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/knowledge/lessons/l-iakhlz.json",
+      "sha256": "862fb8fc057942a1f7e64cf3c02a191958d8bfc439e8889fd5301f919e456d77"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/SCHEMA.json",
+      "sha256": "5219cc1d67ed25fd7dc2b60fb22341cc1f84956ecd0b3cca51056a7adfa5ce5a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/concepts/impurity.json",
+      "sha256": "3f96a47330944d6d7c4431fb568c6134c3c1cfbdc9effc3e18b50505e21bf8ff"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/concepts/instrument.json",
+      "sha256": "c8a5a2c432a7b8efa39f1e5c3a30260206ba5710c1a83cda22006f060eefeb6e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/concepts/response_surface.json",
+      "sha256": "f137944b8cd4857c05c97acf6ff6f2e364a1cf43e99d4879ee6a6458403e64e1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/concepts/var_x.json",
+      "sha256": "8ccbe1e15dedbac8a6dbc614aa5e718e96855fb500b2b39a66cd8fcf42c6c38e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/concepts/var_y.json",
+      "sha256": "99f5e2bd93970a2059f043bdb137a6eda47db443d2fe1e04e0a640d65174b66c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/concepts/yield.json",
+      "sha256": "8d76f60f73d6cf8b1583f4416aba018d2be64b3886272c78af6ae35f5764d09c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/entities/instrument_original.json",
+      "sha256": "d445199d8bb7151a389c9ebc42e44745e3b1e02690a87dfc4c02e099af99b368"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/entities/surface_fit.json",
+      "sha256": "0a3e3cc6fa4b6adf609e3a854eea65451a0b3ca6bf2e13d7a0eb123eb2156b96"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/relations/affects_impurity.json",
+      "sha256": "a8f60b5d0822e5fe3615a460ec458d062d3de9423f904bad3c68e55dc7877494"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/relations/affects_yield.json",
+      "sha256": "955a6ef6a31d2ef5b304113376b35624f57035b180d154b54abfc4cf81a9b29e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/relations/measures_impurity.json",
+      "sha256": "321d30b7da4947b18b2aab632b158bb456f26666bed5470a1295b97bafd49b66"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/relations/measures_yield.json",
+      "sha256": "8dc4887d8512c5bf427eb6be44e0538b9d90c50cbde1ec5410fd8256945100e1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/relations/test_states.json",
+      "sha256": "30530ffd9c2280d39c7692561d921ed63271e645f191ca5191d08764d6d2db84"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/experiment-endpoint.json",
+      "sha256": "801aba4056ad6353b4370ee519bd339b8bff25346979f861439b1c9746b8c7d0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/initial.json",
+      "sha256": "ccf1c68a05f551586e35ecc93fa4536003ec9e1b9f7dc2c4681527378b2fcb67"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/analysis-final.json",
+      "sha256": "4465aa79233712e6b2848247be8f3db5930dff3ed04fd1724c9b385b1528b95b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/analyze_final.py",
+      "sha256": "19d73f6d24f9b63597bae144fef8501fefe5e0e9f34d66faf09dfe95b836d25c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/cal_1.json",
+      "sha256": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/cal_2.json",
+      "sha256": "475c2fe2d8ff20d34ebfa7e366310d6c02fec3a43722f46aafc2c7822e9bfb13"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/cal_3.json",
+      "sha256": "88c654f28cc0367e577ebedeb01b8e922e48ef702e1d86e2ab281d0719d11f52"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/f_0.45_0.45.json",
+      "sha256": "63df473470d6d707b836d7f0021e7903186558c7b49b9a4e455b94d64ee6474b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/f_0.48_0.48.json",
+      "sha256": "154beae0b991db5eef478e81f880dfedf7873a34150b3221921e1321fed631de"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/f_0.49_0.49.json",
+      "sha256": "6c953881549340c5c280dfbfdf5dea3ddde10e4a8febb8409b7c5ee7263cf5c4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/f_0.5_0.5_rep.json",
+      "sha256": "c382a21ad5c378195696843bc4628ae5385f7e8db00e15e5e2c360f123163b4c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/f_final_0.5_0.5.json",
+      "sha256": "2c8fc4acf73a8aa24562bdbd55fb862b65208abe99d6f68bbd39838dda35aa93"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/input-final-raw.json",
+      "sha256": "30cc7dad7c7010d80c81d74ef1c3468c882e28b9e21374f2db65780386c3c5a4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/input-final.json",
+      "sha256": "c933bfd1ac158072e2efac01ab62f556557db56921a5bbb534c5f273df83921b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/input-r1.json",
+      "sha256": "dc83d3da1460feb3e5b7b16faed5985fee6a912751cd45b0e27720a89d73d9e0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/model-final-raw.json",
+      "sha256": "57e811b6e31a38be580988cc55da6411cac7e7764491c691d0260285d3b3d766"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/model-final.json",
+      "sha256": "8622ba589e7c6ce3bd47ee309cea7d2c2626430276bec7c921b5d1b0df0ac000"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/model-initial.json",
+      "sha256": "e4ab515e9ea237c08b99f1253bf11dec099300cda6ae5391f4bd26f2fcfe79e8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/model-r1.json",
+      "sha256": "619e8e757b0a03451cf8644ab8f8cc79002b20a251e62e7e735dfdd202046ef4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/probe_quick_0505.json",
+      "sha256": "cac34406f15b85815f6a52d19619d9fbc46066d7f1c8b9dff6442cda07cfd68b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/q_0.3_0.5.json",
+      "sha256": "93d900e89c4a635f87bca45c5c695231566ca3bd7db2ccb92744703704b93887"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/q_0.48_0.48.json",
+      "sha256": "7bdd5639f45803ed7bdb834a1cf217ecccef04693ba33772cd0799fa1a97f509"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/q_0.4_0.4.json",
+      "sha256": "97cff609ddd4b8ba86db7759b73dcfb51f0bfd50b9890ccbb372e937a1a6fbdf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/q_0.5_0.3.json",
+      "sha256": "f94aab96e917772d921ca0875b3c86ae5a02142ed2be8214c0f81d937d07ca14"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/q_0.5_0.7.json",
+      "sha256": "6817ab97c362eae6d08dce722bf3515c7028e3474188c9131b7e6f374137bb75"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/q_0.6_0.6.json",
+      "sha256": "71a8500287bf40ddf862bdf1854e6d0bf73c828077766c9eac040522a2eb10bc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/lab/q_0.7_0.5.json",
+      "sha256": "fc79d09797fad22629f7741c2e1e168ca557e16c7c7a2b40e14c303c19481118"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/reports/yield-optimization-report.md",
+      "sha256": "374c48554bbcb2cd8837fd8c424405ccb5eb09d9d800de3a95d6c4b389a71f8e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/comparison/workspaces/interaction-C/submission.json",
+      "sha256": "9811f12940fb959ead77445d1366d34b3e1e1e057ecbdc47481a1f85ca8d434c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/docs-fixed.txt",
+      "sha256": "8194ea64abdd7107de2bebf244a238809a7e7daa3fa7024976af2e53911f1bfb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/engineering-final-release.txt",
+      "sha256": "8741f2005a8e61b58bb5615f31c4823d5774a8ac6faebf253681d0098f160bb4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/engineering-final.txt",
+      "sha256": "9d0a87b490a88337c8401ddbce699efa2f85a0acee5cc2b9fc209bc6119cf2f2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/engineering-initial.txt",
+      "sha256": "93c865d0c2655525796b87875f1c1ac77487d9d0110c8da3ea0b3c5f83082d0c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/engineering-shortfalls.txt",
+      "sha256": "6090a6cdd9789d4190aedbfb95a4b2e38ec42cbc381777f64c0c6e432e6d20ce"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-ci-path-fix.json",
+      "sha256": "2b2f1e951b9b977c64b108b07edb670a86abb28e42f4f80f38a4456e48f4066f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/PROTOCOL.md",
+      "sha256": "cecbabaaf4473a64a122cc19bb94cc4c76919793b16f6c3fd99667f2a04c6259"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/README.md",
+      "sha256": "0e447f3aba813885399e7eecb04f96b88092086f4af5ba9f18473476320d10f8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/acceptance.json",
+      "sha256": "b8e45e3a5f331e56f00dd7df2b0a9671bd7fe550e2652bdd081b7f636870cbaf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/budget.json",
+      "sha256": "fc7abbba6d27bf061cb22e828e5c1b4a4a13f1c0a1769000bbbedf9cbc28c308"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/comparison.json",
+      "sha256": "a0588071d62d3dae4e0b85e9c239b59e3a2eec7e4fa7315c11132f012df876ea"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/grading-truth.json",
+      "sha256": "50a2647ba8b0b59627a84ab819f0da0cbc411f5370ab067eb20ac8d0b05eecfd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/manifest.json",
+      "sha256": "bee43c77c346457e6376099a695aa6b1513bb833e7dd82b843bab74deada56bc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/2e12c62e36e7a2102ebecf0eb8d976ea84fb28ef75b047498258c2b974dafce7.jsonl",
+      "sha256": "4ae516a6999ebbebe715e7e6c20bd06204276ea017fe34a752fd7f6b67d1c064"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/carrier-started.json",
+      "sha256": "ae110a89990c9d409682d2a0a29a8a4dceee86c86b27bdbbdee1d8c9a5520ca6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/isolation-policy.json",
+      "sha256": "bfebe3d49324c52f2771cc6ca3756d6313332d5412f5d6c097e84a85105595bf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/isolation-probe.json",
+      "sha256": "a4cc0f93201298bc37fdb5bfe391614f587db4b295711c63abfd3e21e37bf3bd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/launcher-result.json",
+      "sha256": "c42110cce4132f2aa756a72624a75fa4ba1145ad885aaffeb392682f6d870078"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/llm-calls.jsonl",
+      "sha256": "db45350fbd5b300e2221760275295572c08f87bda16b59754956d2b700055356"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/result.json",
+      "sha256": "deeb949e9bc7336348ce1e37ead349a65f9ccf01d6e03094441950c6777dec9e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/session-started.json",
+      "sha256": "d5f5d05919b24bce866a0e029f015a4cbe6e7f8ae727cc574872280e1e4bceea"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-A/spec.json",
+      "sha256": "902c5127a6f8c02097f75c3edf0d1427af4ac2a23d949f943426454283b11155"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/3815d97e26e0d30ad2e746bbf7e5e0fd1c6e562dbf60520283fe166759c2d812.jsonl",
+      "sha256": "a118249b3b93c408fdfd28600c26bff72418c2a3b2c4bf1e97951256e0dd5cb3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/5df2eaa781ca16fcc3ecd49d452eab77fac122cb1ae02fc9f7450ef2209f9b7f.jsonl",
+      "sha256": "eceac55b83463ebb367109bcf66da8007338d34f36c3e489fca17d27eeb2fff5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/6eb2af862f68c5190ac0e4a5c5126ef6a323c04348b3e65bdf2827dbddfca526.jsonl",
+      "sha256": "e6acaaa0b41f3ba75d215e7931d06c18eb2f46ba9f4e1a64a80919594697bd9b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/7e9c2c403bbebca9cd94eb6b5fcbbcba2eff5bb37402755dcdcb9417ca352d7c.jsonl",
+      "sha256": "dd7150c5b9fa3f3f78e4136c5db5a186cf15855abcb0ed45477fc915fcd5eb0d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/a35a5e62bfdc7f31b68a0ee28745c5710790ff1ac53f4781474bc83275f2b1cd.jsonl",
+      "sha256": "b7e8d5bfe3d2ee7b4f2bd974403d1f5d31cb592d8ede7ae7abab080324e967eb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/carrier-started.json",
+      "sha256": "5d00c830f16a36b19ed81d6108daa3d629488e611ba6dbf748ecedaef12dc92d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/isolation-policy.json",
+      "sha256": "d6dc0905138f43f146f88b54bff0ae185838ef3d778978ca0150aa89805882c5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/isolation-probe.json",
+      "sha256": "f3dfeff84a2689dd3ee76ff202d650b144fdab3c1678148aa684ecef50634b41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/launcher-result.json",
+      "sha256": "619a92075591327c744f5941c515bf291767a457952b3c385e5791638f8553f2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/llm-calls.jsonl",
+      "sha256": "b73fb374f9ca57e30611fa7ff20213b85628096d0a5a73fe2717e985a7fe042b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/result.json",
+      "sha256": "9a0d1c2bfbcdbb4abdb6e27414b5f65eaa6132e246ad741633f4cb049a37c32c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/session-started.json",
+      "sha256": "7ea1cfe3d3183630c50128fa2eba82a33565ffdfee2c5c69cd659d747feee8d8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/additive-C/spec.json",
+      "sha256": "6aa9b7974391f7538dba57670b874b1622e8f5c5a62aa26743d473d7af1425ec"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/95c591035a51e583af758a0f7c059f957d2d5196c912c7aa1e2e2cedc6624a45.jsonl",
+      "sha256": "634461861c204740c503118afc5b996c82c2a62f210cb06a5b1168029639f2e1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/carrier-started.json",
+      "sha256": "86404b7f47c7bdc188c035028c941014dadbdd6cf57e73c6d24c4f639579c794"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/isolation-policy.json",
+      "sha256": "f94bc757128509b7dce05a9d5169ef733d5fd9dd4da0868e6c520da5ede4470c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/isolation-probe.json",
+      "sha256": "469930155f2ed359c6041fbc0c2f550274ca05125d9dfd41b67c1a32263a58c7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/launcher-result.json",
+      "sha256": "b2e5e450af131fcd24fb2eadcb03a41a6a3d71f0439748a1c510720bfc307bbd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/llm-calls.jsonl",
+      "sha256": "2a250d38a5781c825432af65b2810f1145d92e719c93ecb03edd27f320979120"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/result.json",
+      "sha256": "6a9b2da9077d9d2289d76b9d672dd45c3d44faecb2226968e8fcc8a8d55dfec5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/session-started.json",
+      "sha256": "7582294a07f1b814b317056ac90fdb6a83d7b717b7c4cd724c64f38dc07ca95d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-A/spec.json",
+      "sha256": "225ee56a323f598994bf66f19d4a02878a8d8611c76f1e0bdc803295558a0234"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/carrier-started.json",
+      "sha256": "8f3948de5c78becd8db0c150f9d6440dfc72457f249b4bb30ee0c6e025d60b83"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/cdd3170da0280bd65ed5b3d2c10ea74076c14603ccc8dc72cd81f65f4695d302.jsonl",
+      "sha256": "0b6a0e03041a6c9da0299e40086cf069c7eb4c697df376d3b51e4902ad373b2d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/isolation-policy.json",
+      "sha256": "b25d93eda48bc7943ca9becffaee93d74dbd99262a2c937ce088e831e93dc548"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/isolation-probe.json",
+      "sha256": "789c1adbcb11fc2fa57a8c00ee3512a811f9c0606029a18b574e02406cab1e48"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/launcher-result.json",
+      "sha256": "9244f1e3aff82065e629c2af96f8264b22690585d890b71bf0fa7fc4ca0d81ab"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/llm-calls.jsonl",
+      "sha256": "d4896f3870dd5a656ccb525d86cd0e4f967e0dc1e2c3517fbcb0ce373f0eb92e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/result.json",
+      "sha256": "e6955efac83190f03d8e67cdf52f5e08cc41b1dac5106be8660d1c53efcc835f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/session-started.json",
+      "sha256": "e8decba05b518a9da411c7e58938502b3de23e829a74bcfc21df7a380157271e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/direct-C/spec.json",
+      "sha256": "588619cb5398ea725c6f5de2b495d7763bc0f431320cd6774b5c2da541d749d9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/51e254aea9dc211482842d98bf0a738c1177dfef95da1256ccd47d72a8bb17c0.jsonl",
+      "sha256": "57ad070d195c455c8fec08a254bf6a14297b94b8d64f24261dadfca3289ed48e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/carrier-started.json",
+      "sha256": "0d8817e0878aaf2a7075f6a7450a4fcb6c8ac2e3227c3d9bfd403e4db3c3ed59"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/isolation-policy.json",
+      "sha256": "57ded4420963dd6955e9a9a17fae0ba608a645f756e421171f3e323409c0a5d3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/isolation-probe.json",
+      "sha256": "257d6499572bf7ed34b6e3835e3c43f94b82f2f7b6e5eff6bfed360d62ad79d4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/launcher-result.json",
+      "sha256": "6dc1974753a411194426bdae50fc706f0ea4ffee63fc1e6c22b34e383f21a09e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/llm-calls.jsonl",
+      "sha256": "70806da36bf9f7f8d3ec91c821fefe9804c662724a41a6442a5d64d40f899f14"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/result.json",
+      "sha256": "2f5c1b35ce9e76f6ad13835c7635721be0a2d850edda1658e81d3f3684e2edc4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/session-started.json",
+      "sha256": "0ea05664e69a4f2348cbc2e1f06a5f58b1120c301bdb169a6687f632f072b948"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-A/spec.json",
+      "sha256": "15773c7c4bf3c54145fd1a15d8732d1041159f64ee768a30b40cd860279dd211"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/87a4793fb24124b89e796b7b3f2c05a51bbf1f1cf1d9259ef6e2ab8c414e13f8.jsonl",
+      "sha256": "952df978f9874f07656ab7766ee36c72b371925685cbd1df98ab2e92503a7181"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/b1350b26ed474e14143eeaba0859896c34096239233dab816961cff94417e6f1.jsonl",
+      "sha256": "6366d64b1d9c0d780ed8d2eeeb13641621bab86411caa36e4f7a47dd4fcdd1aa"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/carrier-started.json",
+      "sha256": "07cc120793da0cd9daf98c90d4aa8d7bce2f81a73a9516597593daf1cb6348d8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/isolation-policy.json",
+      "sha256": "5eb39cbef19596d035128af17600e1987fae48b9eeef16dae6ff2c2e575f58bb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/isolation-probe.json",
+      "sha256": "aadf9136e09b36f3de793d3c7226724a959e710a1d0d6b0fecb83a58d6cffab8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/launcher-result.json",
+      "sha256": "2be060d17e16baef1ee500fb62b8dde480bd4f03eb146773d3bd5d7052c975cf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/llm-calls.jsonl",
+      "sha256": "3f053b40060737dbec6cac5ee29eb3e277f1f48f1f0171ea5faffac6d12a1094"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/result.json",
+      "sha256": "8a7163f8f67917a6e8cb81a7b74b99bf593e0596734e68488289cb1043b251f2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/session-started.json",
+      "sha256": "9dfa45c56ae964fc5cba94e4cc02e14087ec7e7978e27d56ec401ecc83b04fd3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/runs/interaction-C/spec.json",
+      "sha256": "35eb4d44a5da6dbbe9a6232cafcd97ce6d2ad79bdc06a9ac5a124966a7e954de"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/synthetic-campaign.json",
+      "sha256": "2328273f4dd85d944002d6900deda0648673d96ca489587a6239720d7331d7b4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/verification.json",
+      "sha256": "99c10f995b2454ce32891e1cf935b0792b5654a4d0fab9e74a045313dc2b37a0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/initial.json",
+      "sha256": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/cal-0.5-0.5.json",
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/cal-0.508-0.452.json",
+      "sha256": "1de8c3929c67bff8d8d54f0b5263ade5c99fdfac942f8dd479fb287b492568a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/evidence.json",
+      "sha256": "1beefeabb122150e390e38e2a3eb6612642753ded9cee151c39f409a5509fe06"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.408-0.452.json",
+      "sha256": "85392453acf9c18b9bf7bd3e548f13274489ed267acfca3ac36aebd491f9fd02"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.508-0.352.json",
+      "sha256": "223a4e937b53ca5a003175b3c964a506ee12e55b6d0dcc4f7daa832ce7f08c15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.508-0.452-r2.json",
+      "sha256": "b19808c719c238a370400034aa2eb76e1001bc1d9102ce4d6029497b783a3932"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.508-0.452-r3.json",
+      "sha256": "630b03de9293e3b5e511ccbe761a9201408ec52c6374024f8c217bf7af6b0ca7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.508-0.452.json",
+      "sha256": "517c2606946a5fdd518d27499ab76d36d5faf574fe09dc6c617416a6225377ea"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.508-0.453-final.json",
+      "sha256": "3d488472234d73bafec474791779a01b27442f0056acdbbb418f99cf269f3e65"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.508-0.552.json",
+      "sha256": "fe848367d9d894bea8dff0ac359919ba82ac08bc390a1e686b57e4f25d854e56"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/full-0.608-0.452.json",
+      "sha256": "7932c7a533cfb344967d574ceedab7952e8c64f53ca0bb1e8c9be468fdda7171"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/input-final.json",
+      "sha256": "e1ff0674f6f7bfe7c9cbbf99da6c0ac00f96ca06832440bd9c62f65065b7288b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/input-updated-1.json",
+      "sha256": "30b0baf8a25d43890bb9022d4e061ffa68b3c91dce4f3ddeb59f74fdde22242d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/input-updated-2.json",
+      "sha256": "16ca1f2657608535528b185c618de3fb87332028f226f03be03341e055df081f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/input-updated-3.json",
+      "sha256": "278a4365d3906db36cbd0ff0f5375feb27f346d226bc93551e893300a787f959"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/model-final.json",
+      "sha256": "e8bf9273f34652db8c858e8444e12eac9e388629db88367dedef833b1cf068e0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/model-initial.json",
+      "sha256": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/model-updated-1.json",
+      "sha256": "92b99b6ba9162feccb4dee7cbfb3dafd9415b0f0a1450c8aaede594974768f3b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/model-updated-2.json",
+      "sha256": "d4f4db8e94e3e2bd5e9ce02f7d8d647a47f0a98d13d1869c9406ecfff9dd4b88"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/model-updated-3.json",
+      "sha256": "e4da521eb2f896f0921c1f966c5b17ab2798cc6551f3a9d8c953509c8c4cca7d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/quick-0.5-0.45.json",
+      "sha256": "cb1538195307eafc02aa8e5575c5830289ac31529a8e476f26d941bcb6c4061b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/lab/quick-0.5-0.5.json",
+      "sha256": "fdff01b156d9b8c104578447b41dbede1ba9a6073f02bbabe8e7b5604cb51c29"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/report.md",
+      "sha256": "dc33e2bb2aa20548caf4d5637b5d2b701bda8340b78f8b534874c4c55316cb7d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-A/submission.json",
+      "sha256": "5e88fb5878cd06e52aaf01de5904efd13530f49b053e7df5d46cc8037b935f20"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/evidence/audits/3b96fc064fa874a80a132bda60bebf54efbc780a358fdcae4fbbd7e12b66b630/7e9c2c403bbebca9cd94eb6b5fcbbcba2eff5bb37402755dcdcb9417ca352d7c.json",
+      "sha256": "0d74dc3f041860a22106d51a0cc65ea03148276cb588abff8f06cc488ef897e7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/evidence/audits/41242b9fae56fad4e6e77dfe33cb18d1c3fc583f988cf25ef9f2d9be0d440bbb/3815d97e26e0d30ad2e746bbf7e5e0fd1c6e562dbf60520283fe166759c2d812.json",
+      "sha256": "c58da2f6e605ac223751e40450177555dcfd55d9eda34d1327eaad1561957a3f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/evidence/audits/5b840157e7e86aef3b3fd0fc24f3add34d3e7f210370d429475ed1bcd3e7fca2/5df2eaa781ca16fcc3ecd49d452eab77fac122cb1ae02fc9f7450ef2209f9b7f.json",
+      "sha256": "b396e1009d6d33be6fd61cd3c503232b3469a634de0094282742789d26f381b6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/evidence/audits/f94cb76900aecf6732e8a769a495e72c653aedc840f7c2f83a60fa8a1d1f4a48/a35a5e62bfdc7f31b68a0ee28745c5710790ff1ac53f4781474bc83275f2b1cd.json",
+      "sha256": "80a568842ef5beaa53e85907d5956aa886d2383f5a92dd52055eff8b9ac9000f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/goals/g-mw4yfrsjmxa9.md",
+      "sha256": "1f6a5e02f3c317a88af875ea6bdea682318ee22d039de54ee50817aca9fdddff"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/goals/plans/p-mw4yh6zowacy.md",
+      "sha256": "ef420d6977dad7ee9b7e1dd2f546ffa8edaa471089ca8727dcacaf37ea510944"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/knowledge/facts/INDEX.md",
+      "sha256": "ddc0eee28f13f2714cf39e63add8dc57a967e6d44ed1150d0b61608dbcafb608"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/knowledge/facts/f-1hz4yc.json",
+      "sha256": "5d00d50de2e0ced667e330445adfbb55df97462e910ec16d2fc5e37ab55499a6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/knowledge/facts/f-rgtoho.json",
+      "sha256": "129838bcaab69571253533ecbca962c13c14da8487911b6acc784bd9c4aa6e7a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/SCHEMA.json",
+      "sha256": "dbedd6eff2a8d801d07b674012be855a65c2212faa00f5c08862f120b22f1845"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/concepts/factor_x.json",
+      "sha256": "dc6f8b4e81b387e2b675a883a883d33dcffec9330b1964f24fe8b9e3278098ac"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/concepts/factor_y.json",
+      "sha256": "454ad8df661d755dd61ebfade9a19587b2bc583faf5a2af113d75a0adc4b800a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/concepts/impurity.json",
+      "sha256": "d58adcbf6302b9651c75b5dc1135acee0a55925f6995aa3f0e02bc4715f4f58c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/concepts/instrument.json",
+      "sha256": "3224741ce668f8a33d8376b0fdad90d03a05fd8fed3f9800d8c84ffe65009dcd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/concepts/response_surface.json",
+      "sha256": "70ed323fb2ad9e4dc0869d07aa21ef8ae697ea5fd28c5511928384de53561e21"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/concepts/yield.json",
+      "sha256": "6fde15faa9455d4b911f130ee3c15ab526068ef32deeda19e197d6b227b8f270"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/entities/instrument_original.json",
+      "sha256": "98e540b7e966fe7bff419ef4b5c856c24f9e6b1378c972c27ca420fed3a90266"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/entities/yield_response.json",
+      "sha256": "14719dcd7932732546f21b723dab31e66c8a79f59956f0d6e47e1f6bd52ca6a8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/described_by_surface.json",
+      "sha256": "b0f722bc2bbd95de6386437f6c6357984260706d6abcb06b89d244706803e945"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/has_calibration.json",
+      "sha256": "a717669151fe6aa45509be1689093189060ca09179297fa44234792fff3ee6d2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/impurity_measured_by.json",
+      "sha256": "8e1074d8fdfc5a1b5874f6b43eac404d6c3236bedc76d5b99cd8eff76afc4888"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/peak_at.json",
+      "sha256": "8c91432036cf176ea665cbb6b85aa312d523544305da6a6bb17bad2dab9cb1f2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/x_affects_impurity.json",
+      "sha256": "c7061456de3342369791e72753f9e7b0ab51c1591dd46135b458faeddb6ca844"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/x_affects_yield.json",
+      "sha256": "117f947537a9349031fe53787cbe3b37ff3ef0073c723bf4b6c61dedcd32ad07"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/y_affects_impurity.json",
+      "sha256": "7b2679cdcbb0bf34c6aec946bb1944a1f25f448604eeb38faeff881cfbe007b7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/y_affects_yield.json",
+      "sha256": "77f50bd49916258a48e2a9d454449f34cb295d7754a2954d89a8b39a3b8f6cf1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/relations/yield_measured_by.json",
+      "sha256": "ca3af085ad23302907e90a4f590cd3cd2fc92293501d3ff18230a0264b29a961"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/initial.json",
+      "sha256": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/budget.json",
+      "sha256": "76309a60585306d44bd6e3d661ef88cb203e275d549654b2201a14a66b4ba406"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/calibrate-1.json",
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/full-center-1.json",
+      "sha256": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/full-optimum-1.json",
+      "sha256": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/full-optimum-2.json",
+      "sha256": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/input-final.json",
+      "sha256": "83e5b664311431924f36ef6e484195a7104026763ba0a5bbc35f2fd3ef616bfa"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/model-final.json",
+      "sha256": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/model-initial.json",
+      "sha256": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/lab/quick-0.5-0.5.json",
+      "sha256": "fdff01b156d9b8c104578447b41dbede1ba9a6073f02bbabe8e7b5604cb51c29"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/reports/final-report.md",
+      "sha256": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/additive-C/submission.json",
+      "sha256": "10e25db233439afc62e71580f4c71121c5960147a369c79f3e833db2c9664a77"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/direct-A/submission.json",
+      "sha256": "88bd2488ca03ed9e621278979a8831e38b80887d86e0239e33983acc5571fd38"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/direct-C/clear/ontology/SCHEMA.json",
+      "sha256": "dbedd6eff2a8d801d07b674012be855a65c2212faa00f5c08862f120b22f1845"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/direct-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/direct-C/submission.json",
+      "sha256": "88bd2488ca03ed9e621278979a8831e38b80887d86e0239e33983acc5571fd38"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/initial.json",
+      "sha256": "1949f1472badd06ccc6bc7ee0aea2482289f96268be66ff7991cad37e9ec8c27"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/cal-01.json",
+      "sha256": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-01-x005-y005.json",
+      "sha256": "73db76c5b6793d8b3a86a7d891174102263bf25dfb583f215b22b0471648c660"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-02-x095-y005.json",
+      "sha256": "442f0fd23ef75a606d6e230942fe2977e2e1529260d954ec2e99b74d2ea48658"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-03-x005-y095.json",
+      "sha256": "7fd3efbe0196cfea262cdf6f3f7bc20d5dac3cef7a014757f3be35086ed42c43"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-04-x095-y095.json",
+      "sha256": "44c5634ee252f6f2036d7abf0bcba558ceb668a93150860a2764a83d7ccde76a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-05-x005-y050.json",
+      "sha256": "099ab5d6edfdaf9e3013a58b790114d30d259d1be7a6b81db99c34e5b2c6adcb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-06-x050-y005.json",
+      "sha256": "b0ddf4efcd1e7855d79aa67cd19433b416f100f5c8aeb16d6cc17999dc5ee8ac"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-07-x050-y095.json",
+      "sha256": "45edaf106e73ff860c8e5e7f98bcefe1d9d0681e10f1a47b2904943b9559c8dd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-08-x0520-y0551-provisional.json",
+      "sha256": "608375464d1d0cb22708bd4a4ec94426b670ba92b7987310cdec5f2aefc2a70d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/full-09-x0520-y0551-final.json",
+      "sha256": "92651ee99e9a4368a7b04839bc2294cae2b1743a6ef158aff1870c86442ce68a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/input-after-7-full.json",
+      "sha256": "9817e692228eef6d3ca1d1ffb9c5834b49798ea0165c882f031c3a9637b91289"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/input-after-8-full.json",
+      "sha256": "9f69c0b50852e49817994a57d5434e8451cd6fdc6b50143d456283a99ffeb220"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/input-final.json",
+      "sha256": "95d14104a6ccf7c9fb4fcd3b88183a133afbbea631513c39004320e7efb4fadb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/model-after-7-full.json",
+      "sha256": "a1e7e8547fad9bf5ebcf91b54febb39a807aa075d28e709a6bbf25a4903c1c97"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/model-after-8-full.json",
+      "sha256": "67ec183a6bad0791b235d62df1cd8a3b3d4666b756218f83c64844e9ed4be047"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/model-final.json",
+      "sha256": "a4731bffa29330310846d069071fd5141bb813bda713102b5a34671b8eebcd60"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/model-initial.json",
+      "sha256": "ea400e317375d7064026961ea8714162ca49012a29cc51836713a6897736825b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/lab/quick-01.json",
+      "sha256": "4e38ce52c2aef7b78782ca42e34276c55b8d1a13b19d664ae3ae78539d2d7dcd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/report.md",
+      "sha256": "26719da7bb943aff2806461ef027db4b351d792ab75848af196345eee39f8abc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-A/submission.json",
+      "sha256": "4a843c6e38eec39efd788e6ba3647132d4a43d161007028dbd9f6cdb853b0810"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/evidence/audits/5b840157e7e86aef3b3fd0fc24f3add34d3e7f210370d429475ed1bcd3e7fca2/87a4793fb24124b89e796b7b3f2c05a51bbf1f1cf1d9259ef6e2ab8c414e13f8.json",
+      "sha256": "b19fa146341afe67eb7e378e15617eb734b739302647fb7f68760ba88e5950ca"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/goals/g-mw4zfrls4bb8.md",
+      "sha256": "80551424593f27a8264a4c8e2ed5e3387484d644682b5f210631bb05450b8a2d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/knowledge/facts/f-wqw8v7.json",
+      "sha256": "e7651c40590dc21f8b73ca10e5a6fbbc0239bc07ce5567e2a8b6ec2c6620b4cf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/knowledge/negatives/n-u-5l5slz.json",
+      "sha256": "6b5d5d34d8e4bff504c753590eff9dca0b8e5ac923026aa641dd9c5c39511e43"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/knowledge/negatives/n-u-awyy5f.json",
+      "sha256": "ea5b256b4a9df8269ac2103eaa97a5f8bbdf89219b436ee745f14b87f24ee977"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/knowledge/negatives/n-u-fn0dpc.json",
+      "sha256": "cf09252bb61f3fb9cdb8d0d863758e1b35b7a9a1b41d58cb1e462ac8f0ab4cee"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/SCHEMA.json",
+      "sha256": "dbedd6eff2a8d801d07b674012be855a65c2212faa00f5c08862f120b22f1845"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/assay_mode.json",
+      "sha256": "41eadcec0837703d1b6cc2452b15b703805cd7d1d94ddbadb25f213ca7d39d7c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/impurity_frac.json",
+      "sha256": "b37fa2c50c15996dbd448624156dbb2a7cbaec43a8b2e82dd1fcb54607abc0e2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/impurity_limit.json",
+      "sha256": "9dddc4d2fc23691aae0c08bc8b4448deca744eb85b97e3310ebe72bcdd2e38c9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/instrument.json",
+      "sha256": "ffc87fea0b5df19b2279cbc961d72a41d3b821eeba1c365dc8a5573b6914fdc1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/response_surface.json",
+      "sha256": "ea62e0bbaabdf8a18fe021dc0cdc448435946633794118db1980195b116cb970"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/setting_x.json",
+      "sha256": "470b511fb49b7098c2db2591969871534ae1d436f5b1df91a730f7b6d14e4b1e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/setting_y.json",
+      "sha256": "a059a2076faecbf18f93fe13cd76e4b8360c9e8d5e19d8bf553f5aefe2bc3e94"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/concepts/yield_pct.json",
+      "sha256": "00f1e0c4c18f97bf78870817d50e3932136f402821df22c6bc81edcefd522c93"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/entities/instrument_original.json",
+      "sha256": "c02c53268e714d3380eb52e6801b228f96dfe46937a9daf34e79283f38ac6fbd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/entities/surface_c.json",
+      "sha256": "7aaeef23195195cac409a20adab29a4810d4952a2291d9e2b1afeebaadd387f4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/impurity_trend.json",
+      "sha256": "1f2ee521b8fe3019d79c686020ecd46b15b0d9f4468381471929e6b5d58d8df3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/mode_agreement.json",
+      "sha256": "16baa30ea5f6225b1e8a44741f578144612f2b68cf7f12396cd001dd38819880"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/mode_reads_yield.json",
+      "sha256": "bc4be5ad096ca1f96de9f71963ca0c920104e0f1382edd9a7c80bcd1b65462ae"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/optimum_location.json",
+      "sha256": "035cfd906cc9cbc983f366929de1d1edef4c49b2c657bd1586e4e2c2e503fc2c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/response_form_quadratic.json",
+      "sha256": "15a51b674184c83fcb88c6e1b74dd2c844248b2b764ee0890336935dec1f91f4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/x_affects_impurity.json",
+      "sha256": "4573bd6fad962821120ac4495bcaa15bedf189d4d34890a0864831ab08411546"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/x_affects_yield.json",
+      "sha256": "4a41e58b30ec8a6dbce5c73630e986d066b110d96fe4cca9a2ed556cd59dd848"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/y_affects_impurity.json",
+      "sha256": "8b9bc056075dd0f21b2208cf61e15a4d63989c952c0f152ac4e7eddc7aa15bd8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/relations/y_affects_yield.json",
+      "sha256": "794b1a36914330ab6175c0b2894ad336afb4bcd9bdce2f2739d5ecc1580f92a0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/initial.json",
+      "sha256": "1949f1472badd06ccc6bc7ee0aea2482289f96268be66ff7991cad37e9ec8c27"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/budget.json",
+      "sha256": "4d9b3e150e70cad96938a0ce1a1e30dcbce427fd15aac99c66ec00a553d96409"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/candidates.md",
+      "sha256": "abdc4e316a0ec89e470442b16c804f89551a6f3d92d0c2283d0861999f281056"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/fit_weighted.py",
+      "sha256": "032c727a51993bb65d0edd2c85bea212fb3a908c173a2b829cb3f3b6e0cb7178"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/full-0505rep.json",
+      "sha256": "8be9b9cb7076145d22e9cbc115e20e2a5e40b0a424559cdda89e082fec617531"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/full-052055.json",
+      "sha256": "05a9187d71538a901565c91b5a7196801594b3a284941d6a9350b0cb2af8a78f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/full-0606.json",
+      "sha256": "dbfb339b1c7537ce59aa62f6a46ef0a59f75166c324a12eb7155c2dd4a4b4bb4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/input-all.json",
+      "sha256": "e104ed078f1643deb6c33ce0f5a4966a801930b8fc820b4eefea22b7cfca35c4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/input-full.json",
+      "sha256": "d9a62b5ee4d488e736f3db5c42d0727709a3113b5a61c49426c6d6ee4e9a51ae"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/input-quick.json",
+      "sha256": "5caa6c2f16f73545cc1141f2652b55dbf7dbfdd1644313d37801850b48d1f293"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/instrument-note.md",
+      "sha256": "61cc63f06e020db00f95acc56ca0a63bd3065c1df46ce16b4113fa2b42b22c29"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/model-0.json",
+      "sha256": "ea400e317375d7064026961ea8714162ca49012a29cc51836713a6897736825b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/model-1.json",
+      "sha256": "2ee29eecb47568f522f424a9491c7945de2118cfdc73e99db992abcd3644bb38"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/model-2.json",
+      "sha256": "53cb2e4f9b44d979c8e106a536f79637a0990f947109309cf7a6fbb8b3632932"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/model-full.json",
+      "sha256": "907c4acf0b5905378ed7a982a127f0da7a708bc9b01e991dbfdb3a03e7823e4c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/model-weighted.json",
+      "sha256": "96b9c8bb951b82a4a5f9e97e6ecc7e4cd6e531a8ea583c96ebc98c34ac793353"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/probe-calibrate-2.json",
+      "sha256": "32b0489b99855b9bd312ac8d96e942af366a63f3586657d778f86158c897935f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/probe-calibrate.json",
+      "sha256": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/probe-quick-0505.json",
+      "sha256": "2cc1b4c4c519c502feea5d5d292dde03eb819ba4663670a3bcdf803c3ca0166e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/probe-quick.json",
+      "sha256": "2cc1b4c4c519c502feea5d5d292dde03eb819ba4663670a3bcdf803c3ca0166e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-0307.json",
+      "sha256": "7f64e67e1b5600a0ba83f3cf30edff4add4167187d56377bc43a23f313d4ba81"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-0406.json",
+      "sha256": "a82f23597bda0239ace864dcc28b12d0ff8ba4299d237447940ab5b61e331006"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-0508.json",
+      "sha256": "11f2ae9e71bb8fbf5e1286fd2d76adcffdbf2e9d7bd76717ecbdb205510ff8f3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-0604.json",
+      "sha256": "b53aeac690c14d6945f6f13b01b883a0b95532a4606487058441a86a118c48d1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-0606.json",
+      "sha256": "2490f1338ee31b81d2b8b4abfbbaee57960dc40b5f6852668fc9ba1d254091e8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-0703.json",
+      "sha256": "1e865371d0dfa002ee387c1bd22a31018e2972739da9b81a4ce5596ba509c082"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-fit.json",
+      "sha256": "6f4ea70758ea1d41c3faad23d70caedda2e30ca7c45664430355983bd8cc82fb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/screen-note.md",
+      "sha256": "6447e0783d3bfe27a25f65ad6a416a41fe7f7e078fcded6a90ab07638560fac3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/verify-052055.json",
+      "sha256": "d2b779ebe18f349dc351adec66da6bf4ecf2714dd80460c95d6012255fea66d0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/lab/verify-note.md",
+      "sha256": "70c9d7436bbecd9c37b4db9051c36957294fdcaecfe86d4d69999f9f4636e6e0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/original/comparison/workspaces/interaction-C/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/archive.json",
+      "sha256": "9693b4638aa883cc00265afcb33a6d4847812be9004118fd571e3e62d42880e4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/comparison.json",
+      "sha256": "fc9e1a60a0edbfef3e75dd699cc317e1b8836a0d276a5a1694a0bffff9d893a8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/grading-truth.json",
+      "sha256": "86d409da43855e4a25cd7b118be897923a27af1f3f63e2e59fa505a84f27aeaf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/manifest.json",
+      "sha256": "f8267b31ff85b3c3a3677ed90a4d1f1dc6473ab31367341979c20f0551a81cdc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-A/155233cabb8f06049be68991682953d823ac26aea69b61144e9184158ce372f3.public.jsonl",
+      "sha256": "4f688580c2f64e82a29b8340759593da0696961c193b7025b951cbe8c2b6c967"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-A/carrier-started.json",
+      "sha256": "e3d8adef218d4780a53722529908e5f1c77197ac918954a757aaead4baa8f691"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-A/isolation-probe.json",
+      "sha256": "7cf284f5c50e88f0025a0b8602acc92a6436aaf7fe73cfb0cdb8eba2769051ac"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-A/launcher-result.json",
+      "sha256": "27a3d7b5eb05043f6f4af58b6031fb74594f856c6207d9f2c2784c51d1c8a946"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-A/llm-calls.jsonl",
+      "sha256": "382a6483c39c883665814f6b5a9d514f3b69259f18a67190f854132cb8ef628f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-A/session-started.json",
+      "sha256": "6d8686bf111d21f04ad635a8d2ff3afbae961dd523231bb05c2e9e03c2ae8a6d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-A/spec.json",
+      "sha256": "c40f5d65309dbf79ed88ec7332944d81b04d7b8f13425d1429cf160a24e56a47"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-C/c094c09475116ac87069f0331efab08424657f4d89e03860bc58ae59fc8daf0c.public.jsonl",
+      "sha256": "9853359052ca33968367cb353c259ff4e3b118e7aba0ee08993745ad728f0f0a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-C/carrier-started.json",
+      "sha256": "c89f6cb019b191f94d1715822bdf776f3fd640c7d2b9ec2bbfb40502474ce667"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-C/isolation-probe.json",
+      "sha256": "8bb27722189976bd13b26d402ff6d0e7b44c58edd5b4840dc366886fe7667a1d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-C/launcher-result.json",
+      "sha256": "abb884e5f2e762b9de8a9398de127c7a161313031bb4d21391f2b3e5ef2a45cb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-C/llm-calls.jsonl",
+      "sha256": "f5c2381820def07ba6ae8e6dc8db22e42aa0312f6b6857f549e6928f591d9f68"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-C/session-started.json",
+      "sha256": "e27286b989de623d18bd8ea59f6e6d64624953a91c9dae7be2bc4a1473d95b5e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/additive-C/spec.json",
+      "sha256": "877867fe4ef0fb8ffe4f15705b3f916be81aa5b5b46bde975a57d8af1af74e63"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-A/1ed93779b63ef59a17ef312fb774eb1fc671ba32aa5d7df0197f0b9947f56f29.public.jsonl",
+      "sha256": "570909901cb8b0260f8db4c1168bf8837041c3454d8c878ebcfd2e9ff6f6f49f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-A/carrier-started.json",
+      "sha256": "be8f0b408d784a861a9d406dc1f9c285c31dbf440a53e27f4e27638412a2bede"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-A/isolation-probe.json",
+      "sha256": "97cbd643c5098231e5bb44d29394f2be0242b4fa7eff46a5a1280e0b3812c050"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-A/launcher-result.json",
+      "sha256": "00975b57d2814ea0dfb9103a4fbb5cde7ec7a8845a409766191d6bcd52f9ee8f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-A/llm-calls.jsonl",
+      "sha256": "4b7b32286d3ed541dba4e075ed25bea9dd390756154180601fbdbd50a9795da5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-A/session-started.json",
+      "sha256": "9f73ff30f031cca00dfc08c9f6235d40a14497adeb3ffbee04e564625b01d31d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-A/spec.json",
+      "sha256": "118ae9332f1cc158aef059d79b5f262c275be62a9f1882d05032f73d7054bf4f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-C/carrier-started.json",
+      "sha256": "54d991181a5d336fb651ac2b9b925a7fb739225cd63a4c24af39cf5dce9079b6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-C/dd3a1f9153b2cae8ff125bbce041806603fcb9be3fed200f51667f714f3ea00c.public.jsonl",
+      "sha256": "cb1277045cafc2dfa9e5e5c31c2990977d4cb6d90127f39422da1734b3c253fb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-C/isolation-probe.json",
+      "sha256": "c045639a9c483922a5ae86532e236873c909930d7bb540f5840e32c52e87ca07"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-C/launcher-result.json",
+      "sha256": "93ecae5623e55f39c0b065415973da3599ca5916ef8f53b5c0d7f1e8e040506d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-C/llm-calls.jsonl",
+      "sha256": "b8f7d8a0e443ea69cf8b24617dc9dcb93830c20a30cad885d770d5c62db83e9e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-C/session-started.json",
+      "sha256": "5ba665e284e76dc4b1d22b50dbf8758d016995362d87677180a4e7f40e29d0fc"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/direct-C/spec.json",
+      "sha256": "113129611a8283dd58b8f3cd98749c75cb45ae1a7aea69e878617d0aa99637bf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-A/carrier-started.json",
+      "sha256": "f7d8ab42e2f84fea651cf18e33a9aa1123f266f5606c3ae61b3e09474fdf16f0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-A/e4951df28459e73a83a22ee9a17d52087c840f4541cb233fe4700897999227d2.public.jsonl",
+      "sha256": "77062771f5964659b7d296ab3fa7e91a4a03b655a96680c5684ba43df612af06"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-A/isolation-probe.json",
+      "sha256": "e4aaac999db5403f6aa6459454c92e2097beb52b8f570297c3d0581f60678fa3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-A/launcher-result.json",
+      "sha256": "169afdff3e81c9afc60517f89e8a1f54bb453516f042a2844c959a563c29aaac"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-A/llm-calls.jsonl",
+      "sha256": "ca013035a84440ba85ba3be5c0b29c8f9c2eaa54291aa4da56cacd1403e875e4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-A/session-started.json",
+      "sha256": "76e1181b5190f74b60265fe7e469e063f9258122af0da6c0484a1eea5378b8e4"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-A/spec.json",
+      "sha256": "6de530466ddd114535880d180d94a2323684c6e73460e6e84aca68bcd0906a05"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/3a63511bda9675044d9bf899613c9fcd1b31dd0fc191b924de929ec68e3ce8c4.public.jsonl",
+      "sha256": "ed16eeb0e907de2ec475a62f40e7b2e4087980c54762adbf36ce7605fe7e0778"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/7fb5f22faa863ea0f138feaa6f927b747c55ddca0816c9c4e899b7a854afefeb.public.jsonl",
+      "sha256": "48e81e3e6a52cc6da7017c1a81c2720698fe000c1a86a52abae15227084ce661"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/carrier-started.json",
+      "sha256": "74e80e1199f0657c4cec558c5640a195362f549bb00b6c745009b975ad66a84b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/isolation-probe.json",
+      "sha256": "5bb2aea74f5ab53d06d45b8970cb15e6d494e24ee11abb71604cea072e956e1f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/launcher-result.json",
+      "sha256": "e805002a2c1ad92cb2530a374351fe5014f976255dc01f7e0ac126e57f5ed195"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/llm-calls.jsonl",
+      "sha256": "5f0feeb19b6a5f9d8d84b714ee8c8efa70111ecf5db6b8c9f504e57785b63515"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/session-started.json",
+      "sha256": "d86906b5f5b6ed0eaf65b42648b28757182e0276257cd5a6cb02e8e2e062d0dd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/runs/interaction-C/spec.json",
+      "sha256": "fa836a9349aaf3144001e3f2a54fefc3493a00bd96aa15a7e975163ee786ade2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/verification.json",
+      "sha256": "2e4a86e24c8d09839dfef9614a772f127a8378604a22be55c51c58deeef92081"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/experiment-endpoint.json",
+      "sha256": "6533e8e859482e6997429a8f63ba2e3cde82b873c241ca8df24f5a5ce63469b3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/initial.json",
+      "sha256": "a8f068889c3da4840535e383284ce125130424f50f360fe7321d95dd1dc957ee"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/cal-0.5-0.5.json",
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/cal-0.72-0.49.json",
+      "sha256": "c8c5021f2c8191d7d27903575faed26e6636302b1db6d1fd9d38cbd7bc221aaf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/cal-0.9-0.5.json",
+      "sha256": "d103efa829e3def7c2f7fad652544ffa6f2f8664f01f68aef7fe0a9b31554c2a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/decision.json",
+      "sha256": "b58a91cc058a887aa5ed77d375c5d8f6cad4e8f01a4b16ba32501be083afbc73"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/experiment-index.json",
+      "sha256": "2561525f48471334ce6553ea7096a81c263dac4e0abf5d97c1ddfa530c54548d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/full-0.65-0.45.json",
+      "sha256": "e4e8a7ef1b603cda0278b699baf0bd3c0e8cd35553ac4870f099e6e354819a11"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/full-0.70-0.50-rep.json",
+      "sha256": "f1a4922c4d478a4986139accf2a2beab9de592d626d96aa3d3da9738636d72ed"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/full-0.70-0.50.json",
+      "sha256": "47c871bd52bf52afca6851821289445de4e9af824144a2e884fe8d4d4232400e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/full-0.72-0.49-final.json",
+      "sha256": "ff9e5da1bd3d81b614440379e9c74818aef19f866ae9aef023a944cc5286b706"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/full-0.72-0.49-rep.json",
+      "sha256": "74a7231c1289a4541d36370e10c3df1ae15b952afee051b7b4bae52af83359ca"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/full-0.72-0.50-rep.json",
+      "sha256": "dd47b97ad1b54ed57661dbd34310b161f97886fc284f34dd8ffd4ee4adcb9e4f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/full-0.72-0.50.json",
+      "sha256": "030826a714aa8dd4a78a158e77a577744d82869c2afc5da09ce1682fd1f001f9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/input-1.json",
+      "sha256": "d3ed6e12e756e02037fc68add2356753bca476affd0e61e9e803771394dd40a6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/input-2.json",
+      "sha256": "61a6d426cf3431f7c09e4bf22990f21d05b659b47dc5691b2c724ae226036b60"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/input-final-base.json",
+      "sha256": "fe9a99394e4d085112b68f620e80dcfd5ef9527712255d38d38f6910a0a4a66e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/input-final.json",
+      "sha256": "f00af3e2ee4f5a15640a2e9b0585ade9eac977e4d5b478e27436c93bab56c3c9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/model-1.json",
+      "sha256": "bef38136d9f47c51f7257b1a76665898643cbeba6862a47843ebe8d6d832a57c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/model-2.json",
+      "sha256": "b58a70bfdd9d269b19a7fcc140d26569845ade6161f3cc5df1fd572724f19ab7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/model-final.json",
+      "sha256": "1fb18dc7bcbe17af86021e5ad5fb30285449734c6c5f83292730dcf2e2d1f88b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/model-initial.json",
+      "sha256": "7cd5b4bdbff19b9a1b00d9a6a048bdbcec72903d4740a9f2e6908e8a467d95b6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/lab/quick-0.65-0.45.json",
+      "sha256": "415c2de7b222d819ff108bf27a08c4813b2fa091452e0dfd0da2f9338d21d2f3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/report.md",
+      "sha256": "d1a07b712fcb135262f93ebb1e74c1ca26fc17ecf8562ccf6b3106e45580191d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-A/submission.json",
+      "sha256": "9fe0df64ce2816e886bb26f51db7de1f66993ac0f8479b5f0106cca38f304c81"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/clear/goals/g-mw6kirk4h04i.md",
+      "sha256": "f8d6ad0c565ecc3c9151dadd904f8f5a9cd9f245690a997728a455ce64a64105"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/clear/ontology/SCHEMA.json",
+      "sha256": "5219cc1d67ed25fd7dc2b60fb22341cc1f84956ecd0b3cca51056a7adfa5ce5a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/experiment-endpoint.json",
+      "sha256": "5b129a67b4c4db459ef72883092068393109396ef946747cbcfa04a43e10b673"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/initial.json",
+      "sha256": "a8f068889c3da4840535e383284ce125130424f50f360fe7321d95dd1dc957ee"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/additive-C/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/direct-A/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/direct-A/submission.json",
+      "sha256": "312b6fba617055bb2d1b4fd512ab85cbe13609be73aa14a2466606884b3404e1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/direct-C/clear/ontology/SCHEMA.json",
+      "sha256": "5219cc1d67ed25fd7dc2b60fb22341cc1f84956ecd0b3cca51056a7adfa5ce5a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/direct-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/direct-C/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/direct-C/submission.json",
+      "sha256": "312b6fba617055bb2d1b4fd512ab85cbe13609be73aa14a2466606884b3404e1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/experiment-endpoint.json",
+      "sha256": "0edb615136bbf9e1a9418beab1d78127000af99d3ef0628707cc717f801dcd73"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/initial.json",
+      "sha256": "a6aa809d6319881d7bd3f09fa95e95d19f8937e8d8d045e82969a8f83d1f56d1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/calibration-01.json",
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/calibration-02.json",
+      "sha256": "b8ece24660960eb6382c60ac3afcaef063626d83837faa3d28a5fd2cf3ad67a3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/calibration-03.json",
+      "sha256": "5d0264d6df6a1c423dcaf4c9ac6dbf64c8a27ffa7c8f37956cd7f8fa4956726a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/calibration-04.json",
+      "sha256": "1de8c3929c67bff8d8d54f0b5263ade5c99fdfac942f8dd479fb287b492568a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/calibration-05.json",
+      "sha256": "88c654f28cc0367e577ebedeb01b8e922e48ef702e1d86e2ab281d0719d11f52"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/design_eval.py",
+      "sha256": "78560a6d517f6e5400183f0b38aa89a01b8ddd5d6f39b82902ed18562eb1188d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/dopt.py",
+      "sha256": "93d37e2dad19efff6123a2e09dc9c6ddb85f94bc18ed4b01eefb096b28fd7c86"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/expand.py",
+      "sha256": "af1487f24c7c1c882c379e08552d6a15d090b8291ab050d6701abe76650f68b2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/explore.py",
+      "sha256": "cb7c0bd5dd7ffd1d3665eae04c2970836f706c8086c1564202be67c292c575ed"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/final-analysis.json",
+      "sha256": "cccb6c22416076e6356a267057c2be33ef283cd6472d79b62e90034f30f55300"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/final-report.md",
+      "sha256": "0077209ae8e760d00af6abbf9fee7bc7e5fb8d6c817585ed9ea7844778c7764c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/final_analysis.py",
+      "sha256": "99647ff35d64e0a222724d2c29079e5f02c265dee48f28556422c74418395414"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/fit.py",
+      "sha256": "362e4358735e3f8275cea62f7cc96f9f7027ae8d7e0b8da62280faa28e846d81"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/full-01.json",
+      "sha256": "b98fa4eb2478319ad47b43eea152098796d5b22e73b82a6a5e5bf0599c72cfa9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/full-02.json",
+      "sha256": "1d3a48fa44d019a3e92e846a0b56c025e5a9203318ba34fc84e62ce8f2404772"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/full-03.json",
+      "sha256": "52f25687356f0ff434c617098326338cac1dd8cf8cc96903a21ed61b5d4bfa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/full-04-optimum.json",
+      "sha256": "d97a758d30e84159cc25377176994653fe1f1dcc8c7078640300c68841e66ec2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/full-05-optimum-replicate.json",
+      "sha256": "086ada74541e7f6040fb298fa16229ea7ef70c1a8f8775c5deec338747e9f78b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/full-06-final.json",
+      "sha256": "481c764bff44447bfe953a41ac6c528496c3080671f6c089d989752e0098555c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/input-final-sensitivity-101.json",
+      "sha256": "bb9be6df23d1d47c566080eadf8c49d78868bac5de07671449e52d4401eeb086"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/input-final-sensitivity.json",
+      "sha256": "fb74c0d54131645724ef532e2da70c233bd884e6a734dd796f36f0de46c36f8f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/input-final.json",
+      "sha256": "280bbf9e61c32a500904fa17ac3b8b99095526541e2437361f0212f2c2c6a1d2"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/input-pre-final-sensitivity.json",
+      "sha256": "ef38ab7d8ed4a955193a5f8a797f07aaf4c6f040975f22293b2829ef274f93ed"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/input-updated-01.json",
+      "sha256": "2b3e01a56c1912cd8f8663208f84d7df6bc2dda1b68f31920350125f671b124e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/input-updated-03.json",
+      "sha256": "5815029799009911c3408b581407fc37a56e99a7d52f4549277022e6c017ec26"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/input-updated-05.json",
+      "sha256": "00b4854febac26083d1d3cbe4c1cc391f8f555229466f53ee760e1652acfd69a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-final-default.json",
+      "sha256": "2dd82546ed45b852a6006c42ab824c5f9e279d993f90e3c44336879d1e0f0624"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-final-sensitivity-101.json",
+      "sha256": "d95cb1370bebd5dbb86771d6e1aa93a8ac25798f2ffbe2ac233b96494a482013"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-final-sensitivity.json",
+      "sha256": "00cebab0cfc62b07a6c37e9c6f6f0d82f6534641bd6512b3d7c60bf010053528"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-initial.json",
+      "sha256": "22178daa3247ff180d33d0ca799b98d585685b013b276ace5c091601d67ef373"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-pre-final-sensitivity.json",
+      "sha256": "8bd661d125080f744a58caf535896a55fc04270f9542c8740e4bd499e914ce74"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-updated-01.json",
+      "sha256": "3c13ddbcc8172bfaf1d06208dc4973a0c1875682e4a336421d5486912c59197d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-updated-03.json",
+      "sha256": "2fa0c378cbe54d9c7875eabb67db18212e57e6406cbb720816bd9e4db01faa43"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/model-updated-05.json",
+      "sha256": "f68066293f0827c3354afa586ab87e6e678974c12eaa66decc6f803082543735"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/quick-01.json",
+      "sha256": "666f736bdbffa48e0daca93bf8f99ee6d3f846b4c10ca8e22c39e276459d37e6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/lab/uncertainty.py",
+      "sha256": "bde65fc3a164c57899dd1a109c6e5b0a75138eecfe2ee1ba2db937d74e60acb7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-A/submission.json",
+      "sha256": "1362db2ace00d5b6e76e3e9dbda10a0f182e844335fab5139058e86a7b201947"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/evidence/audits/cbed4509c3f3781e82a4e34a1b9cb3aaf2ee2236487da17ed1f78bbb5912ceac/3a63511bda9675044d9bf899613c9fcd1b31dd0fc191b924de929ec68e3ce8c4.json",
+      "sha256": "35649d16ee43ae8e97d97b6e35fe25b94036f4db4e38a76e08d4bbd8c399a1c0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/goals/g-mw6l0ur8pvg1.md",
+      "sha256": "6738ee6cca3ab19b5ec730c6d34270d57ed6f25094034514634b57fc9c250a26"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/knowledge/facts/INDEX.md",
+      "sha256": "19f2cd42b496868c2783faa78888b67309a00da6a885232c5bcc4501f7bbb50e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/knowledge/facts/f-fppc3m.json",
+      "sha256": "f20df8ff1203bec60500a9efde0684cde2b6ae214922001e382f61f1e0edba18"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/knowledge/facts/f-ymd34x.json",
+      "sha256": "844356b6b30d0211c17435dec9177c59148c22534835ee70a265e0d05dc8118e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/knowledge/lessons/l-cparz6.json",
+      "sha256": "8de54422710ef8b72ada029f50d7927d9ca0a17732b3067ed234a5d2440cfdef"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/knowledge/lessons/l-d37xos.json",
+      "sha256": "9cdcd031d40adb6c3f4275088d09208d047c66e47a883cd062df8137c4011399"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/knowledge/lessons/l-w1d6uw.json",
+      "sha256": "3cf4c3504c78ef36940ad9afb94ad4a0536b30181521204919316bba3d6b740d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/SCHEMA.json",
+      "sha256": "5219cc1d67ed25fd7dc2b60fb22341cc1f84956ecd0b3cca51056a7adfa5ce5a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/concepts/candidate_point.json",
+      "sha256": "a569db0ad0de3ec100f42feb52e40f00e247c0517972a29166252659b8b44268"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/concepts/impurity.json",
+      "sha256": "0a1deea6520dee328b0ef53f8043950542ca6eca1e005f951928d964d00050df"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/concepts/model_error.json",
+      "sha256": "005d6318ddd42d9ac4f38a1c113d46b3a47aac7d79e0bf47e9c0ebb9927b5410"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/concepts/response_surface.json",
+      "sha256": "0f03d6233587cc40bfe27bd1d371221bb880be4497890a32b66b84d1b2653c67"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/concepts/var_x.json",
+      "sha256": "1ed84d0fb4ad3995a26a43f8219165b317cc1c284b13dd2f53c960d849f78339"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/concepts/var_y.json",
+      "sha256": "193924687410d62a594a91aac5936d49423ca4ef16bf8868a4bbc67a6ed03eb1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/concepts/yield.json",
+      "sha256": "5c98892389d1c33ce4229ec4dc8b73c04732730ed40a9f6a2fe11f6f4c6a4244"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/entities/point_071_061.json",
+      "sha256": "290c05705b3b50c047d21064523377e0813f15d5e4c99f77aa8d0abd3c7740ce"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/entities/surface_all.json",
+      "sha256": "d1203b95eb0ec39e484392b2ab91151aa9b4bff8077205353b10e3b53319ad0a"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/relations/affects_x_impurity.json",
+      "sha256": "676511b67ff5ff30518939053f8a2daaa0970e394fc91ecb3d410df8412eb845"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/relations/affects_x_yield.json",
+      "sha256": "1c1df0ecd29862e739da80d1d3e66ce0c3563fc1839593182699d9cfa56903cf"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/relations/affects_y_impurity.json",
+      "sha256": "59224115dfecb80b15976b08cf5d16a8d8e24b5e56b88a8127fce93bea4b4fc3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/relations/affects_y_yield.json",
+      "sha256": "72913992b5335ef12f1cc14493310138b5641f0b78842bb3232083fdced46d4d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/relations/impurity_at.json",
+      "sha256": "763385a39dd9011944dc2ae8ad206b025f371ca80164d5c6bfa56c91b1b94939"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/relations/surface_error.json",
+      "sha256": "7b65f1444ac6819bf98d4a526554524fefb23720d38027894594bab779372dcd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/relations/yield_at.json",
+      "sha256": "0fed18d42c89f59d6a93c4267d89bd9dd0a9f02969b3f6561dbb546678cda662"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/clear/ontology/verification-loop.md",
+      "sha256": "220dba316478bc4b8af3fd48a3cb7736a29365bb816d2832416c081b9e341b5c"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/experiment-endpoint.json",
+      "sha256": "9511151e211b6fb67b91600a5e32ef0b10def0c6bf1c96e5d2748644c54c5dd3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/initial.json",
+      "sha256": "a6aa809d6319881d7bd3f09fa95e95d19f8937e8d8d045e82969a8f83d1f56d1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/isolation-public.txt",
+      "sha256": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/README.md",
+      "sha256": "fff4f9a2f7e93311214dc7df77bb47607b4c24de8fb9f70f37fcebb3c45f6b64"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/calib-1.json",
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.5-0.5.json",
+      "sha256": "0ed015975e4da6b2f4495da721e4d4222cd453e3f56aa1bad4a9fed72041f849"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.6-0.6.json",
+      "sha256": "d89203e550e5cd7e8ab1a5a22cd1c3a9399bdff0f3e7637b322d52dddaa211ee"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.70-0.60.json",
+      "sha256": "4a16aa50d741071d7ebfbb8818a2170e2b1960bf7b20c140a01325110f398df6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.71-0.61-r2.json",
+      "sha256": "097e198b74ef2de1bc4b5953d3d983ebb5e2970cbb6094aadea42d4ce3f9b327"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.71-0.61-r3.json",
+      "sha256": "6f8d8a40d5a1ef03a99016520a852f7c6ca8ce2e3b0c66de5f2ec2eca8efeda0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.71-0.61.json",
+      "sha256": "95a2447f8b84509d7634951f1ec9f736c38b80c314222beff94e968469df7dc7"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.75-0.60.json",
+      "sha256": "5649222d7be97d60ce803605e00b628b7e3f079c50b910d87c24ee617578f242"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.75-0.65.json",
+      "sha256": "54ffd57571452d835baa9d17d31ede561b03dad63e5cd04b0379e68b4ea759d1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/f-0.8-0.6.json",
+      "sha256": "a3e445749e6b56e6a4caffbb15e6e038eab0ea77058596bd42642041c1da1000"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/input-all.json",
+      "sha256": "6fa3aa4aa6fe62cf97c845d1723a469a1142769604b8530699b3b25d11ce3c8b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/input-final.json",
+      "sha256": "b22853a92e267c8d5aaa2a8796a65fa8a5acbad20a94c677ed861616bc287235"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/input-initial.json",
+      "sha256": "a6aa809d6319881d7bd3f09fa95e95d19f8937e8d8d045e82969a8f83d1f56d1"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/input-updated.json",
+      "sha256": "e17746d7ae824cc86efa84802d35851f9177f319c6df87138675c868a0bfa3dd"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/model-all.json",
+      "sha256": "a35d822efb3bc1322158d91ad27951a317a5ea2759e03e6599142b3893ce0223"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/model-final.json",
+      "sha256": "fd1b11a162042b9bd3b4061e7532761aa5233989508f7539592753dee1eede95"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/model-initial.json",
+      "sha256": "9158d1bc113dbf78c20a5ab7c1bde231a3b78d179f949840d2e2c8948602a944"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/model-updated.json",
+      "sha256": "dd7dd1d0bf91582c8fd98c8172bf5a442594b267dca18d97bf09c8a52c5d7b79"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/q-0.5-0.5.json",
+      "sha256": "666f736bdbffa48e0daca93bf8f99ee6d3f846b4c10ca8e22c39e276459d37e6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/verification.json",
+      "sha256": "e0261050ebdd7449fd970dd24dc1546d7ec0c8c0acbb3ff78aa3cc1f4e8458eb"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/lab/verify_final.py",
+      "sha256": "301ec9e65414389685952dcba0dafa7d7c0ef20bcaa2efc1c313abc6523334b8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/reports/final-report.md",
+      "sha256": "3719cb44c3a18769a9748f122c043c24ed107302a4f70d3ad00af649cfbb2851"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/final-retest/round-1/workspaces/interaction-C/submission.json",
+      "sha256": "8e8d841979cd670bf20d111c971e4a6eae1943092c91f5d891cf33e67ec707fa"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/host-compatibility-2026-11-08.json",
+      "sha256": "28d986cfe67e59a187a88c7d89358fdf93d65094e596d169aa6cc6fdcd6d67b8"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/host-compatibility-2026-11-08.md",
+      "sha256": "0ebd7318765ec29a523ca995f82870bb477d08349ffa71bd13240f50724a6e67"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/lifecycle.txt",
+      "sha256": "6e11f6920b45a28041d9110c191540eb1d0c7f5fa9f7ec5938018cc2655a69e6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native-probe-result.json",
+      "sha256": "2dee897c506822ac60c2caa491617b1b2e46ae59ee37b98b2149919348067aa6"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native-receipt.json",
+      "sha256": "a8e46f6f691385f9d53521b6fba9f05f6090b7179279e8c0f79f855d2d0e285f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/87a05ccbc6fa67919163ce8983424a504ded6f45381acde32e79b481939609bf.jsonl",
+      "sha256": "c892301af460dbbe09a43173b8e76301f1bc39635446f5bd0725c6a5c70f1b20"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/ad4ea5e5447728a597b87e31f6966884419c181c362ba553445005ef304a38c4.jsonl",
+      "sha256": "7818c1894caeb392d799eca82d1e243140076c8ec2da6a92277fb06619fe584d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/carrier-started.json",
+      "sha256": "a2b7307cc61584042e42b1eacb0cb57391b12d602536aa534f3260968eea57b0"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/launcher-result.json",
+      "sha256": "a23a187ad92f71c6defa8f5b1013349d8145914accfe5a5baf58fbf1ae6ddf02"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/llm-calls.jsonl",
+      "sha256": "c302d231d2077c1cecd47d1ffda8cc0b0b980bfe463ce27cc7a7849060cefe4d"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/result.json",
+      "sha256": "503dcdda5a9c8c895981d263583b10bbcaab9aa9009cf844a2f29b9a386be94f"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/session-started.json",
+      "sha256": "b3e9b67abdffca7556b7af7cfa938c4548a6fe6e9cb0ecb7fd5eec9fc1aa43d5"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/spec.json",
+      "sha256": "bbfcb81a99dbb88f249594a52e519d0ad525231529c636b421046d51ea6c5ee3"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/workspace/lab/check.py",
+      "sha256": "ff93c577d44a64662a97c737feec370148eb8dacf3f5544697731ee80ddc13b9"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/workspace/lab/input.json",
+      "sha256": "81f71118f616fe05658183c25e908b7596c7ad6747a3ca0ffe63365e51d2ffbe"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/workspace/lab/report.md",
+      "sha256": "5a0fbe5735121ef3463395aa214810a681aca3ea93cc8b96b1307624e49a874e"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/native/workspace/lab/source.json",
+      "sha256": "6cc3be6494b95a2b3167eb7017b7fd94ad0473db289b0ef08ad2c80d1841da83"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/package-final-release.txt",
+      "sha256": "5bee13bd9849e9cf47255aedbaddb557fbd511fa51c8a31476a120dfbf88daec"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/package-shortfalls.txt",
+      "sha256": "9af2d59bde6e17fb5de612c9017d3b0a090b723a8491a019d0c2103763976281"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/package.txt",
+      "sha256": "753f5f8d5da19ea4257a560008986ce7b772fc0a2cbbde05bf35cc4166e46a22"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/panels.txt",
+      "sha256": "06517b8edb3974044fde7d7127824d19e44639c295424f7df33c4446f342d209"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/preview-obsolete-count.txt",
+      "sha256": "f880a2538bea79823144bc8e246cf3fa37444ccf66e32fa2c3bb10b47ff90e73"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/projection-performance-final.json",
+      "sha256": "a69da633001530cb4a9076e28fd9f6dfde0e4098bb6e1ed603eeba42a1f19b5b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/projection-performance.json",
+      "sha256": "fbac0fc687a6f98530b0fac8f897d4f3981b2f52e846323f01578a3a20f61044"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/residue.txt",
+      "sha256": "00c88a8581fc5b4c71b4d3583603316c93e6dc93349df5aa574576cf13e9399b"
+    },
+    {
+      "path": "docs/optimization/0.6.0-release/shortfalls-regression.txt",
+      "sha256": "bf8af1bb3beb799ec0da9a92b8d8c5936a3e4600ea9b34e58695c0235468185c"
+    },
+    {
+      "path": "docs/optimization/0.6.0/preview-checks.json",
+      "sha256": "b3aabda4ad0fa8e3c0acd8fc5c9b664ac3a92f386e671755aec5e93836ee56f9"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "4c2e5f45facfa4c43e854f7b8c498d18e4fec3d7f9255895c5be41de7652c377"
+    },
+    {
+      "path": "package.json",
+      "sha256": "257054e6828e51447b3cc96caf407c1eb04a6846235d68c255126687713aa442"
+    },
+    {
+      "path": "preset/agent.cordis.yml",
+      "sha256": "29e8502a60127fe6f46a53e3dd8b6bad3cc16cf083cfa86c9d02b59cde0454e6"
+    },
+    {
+      "path": "preset/plugins/audit-evidence.js",
+      "sha256": "224646c971fba0860dec3afeec9d4069874fd3b94ac10d3a009787220a1d989b"
+    },
+    {
+      "path": "preset/plugins/audit-material.js",
+      "sha256": "f210e78d19ad1c6120cd6d6cecca57414c0f8f46b2f86eb9197967a848827712"
+    },
+    {
+      "path": "preset/plugins/audit-schema.js",
+      "sha256": "f7b7fffd97b5a7c85c89373a501177761157949fc18436a710d845eb6bcdb851"
+    },
+    {
+      "path": "preset/plugins/clearai-evaluator-face.js",
+      "sha256": "e3ccd8841297fc5a94ecc338c5e00d100bbea93daf61e9f6d5a5da991a5f2f20"
+    },
+    {
+      "path": "preset/plugins/clearai-kernel.js",
+      "sha256": "016b06c18060a0b861aa1bdb2272772fb105483117681afb3c4ddadcea456ed5"
+    },
+    {
+      "path": "preset/plugins/integrity.js",
+      "sha256": "b6490f3849f5eacf8b92b798957a67e1f24266961ed350823683158f431f2cfd"
+    },
+    {
+      "path": "preset/plugins/knowledge-items.js",
+      "sha256": "2c67e9d669ffd0b12063180c94d9e4b6bcb63e7294cfcffd7836b4f42ead7335"
+    },
+    {
+      "path": "preset/plugins/models.js",
+      "sha256": "f30146b8954a35e9ef1ed29cbba795bba40100107b794adc2c46d3216dc49166"
+    },
+    {
+      "path": "preset/plugins/native-todos.js",
+      "sha256": "9ef6eea391fc0c9e68f69b11026f5da8c7ca34f93207cdcd3795d2af8e454a58"
+    },
+    {
+      "path": "preset/plugins/ontology.js",
+      "sha256": "b7eaa25e0538105389de32671a3277c5e4967dc5b2499d9d7a7941302972aec9"
+    },
+    {
+      "path": "preset/plugins/prompts.js",
+      "sha256": "52aab0919ffe97fb76e4d238e8c7632f17c1ef659045c48c4ae02c9eb86c8089"
+    },
+    {
+      "path": "preset/plugins/read-evidence.js",
+      "sha256": "1741aae5de59484a579b5da16767772105b10b5cb275d6154f323fbf02dcdf06"
+    },
+    {
+      "path": "preset/plugins/rerun-copy.js",
+      "sha256": "5d2de2244b59c86353ca72334b0227873d933dd2b69b4457b06d078a09cbe433"
+    },
+    {
+      "path": "preset/plugins/research-contract.d.ts",
+      "sha256": "24b6b622ace968ad308825f87b57cf482665518755a4386dc69265666477d228"
+    },
+    {
+      "path": "preset/plugins/research-contract.js",
+      "sha256": "65704ff06e313892e7215e59c36d053371b1e48a3c1aee1c150c0154aad57d5d"
+    },
+    {
+      "path": "preset/plugins/scope.js",
+      "sha256": "0ea0c2ad36d7d2193b7a2d93a00aaa2f1d9465531e8181c0a65014cb08edd565"
+    },
+    {
+      "path": "preset/plugins/tool-argument-stream.js",
+      "sha256": "b9655a28402803deee1f1e94b925e7960775e50a8f91da21551d7b4a7627804f"
+    },
+    {
+      "path": "preset/plugins/workspace-path.js",
+      "sha256": "2023c6d2fbf7fadec2d7e4f0f8aa25b4b34d4802822c624f2a8c25b02022842c"
+    },
+    {
+      "path": "tools/archive-native-comparison.mjs",
+      "sha256": "e4c3622724d5c83e10c803821974c700d6fdab031f0dfcec8f2c6476509f8927"
+    },
+    {
+      "path": "tools/benchmark-research-events.mjs",
+      "sha256": "128f4d2c51c268b7451c1f57ffc6f7df6c64cc07f50aa3bd8192a6439ad76fb4"
+    },
+    {
+      "path": "tools/native-headless/ablation-probe.mjs",
+      "sha256": "2d4106ef604b74bdca6e6277a5f5581ecafcf2d97761d21a92b809cefb4dffc8"
+    },
+    {
+      "path": "tools/native-headless/acceptance.mjs",
+      "sha256": "6ef50652e7f77af6249be7fe255a566dc358efef9e7bd12a1ab32066b7789540"
+    },
+    {
+      "path": "tools/native-headless/accounting.mjs",
+      "sha256": "53f0a4d9cfcd773fe2713ba677f7dcf8f49d6357fd7afaf7bf8f69e17430c3a4"
+    },
+    {
+      "path": "tools/native-headless/all-stages.mjs",
+      "sha256": "d54c3132d528afb483e607550730c6c352537f419fc1a950e2349412d3450592"
+    },
+    {
+      "path": "tools/native-headless/analyze.mjs",
+      "sha256": "a9bcca15ba0f69e64341624abac80f54db3d00af99fe43710b709cb026a66650"
+    },
+    {
+      "path": "tools/native-headless/audit-fault-probe.mjs",
+      "sha256": "251b935835f113145666bd6cf72679b0ba5e49a79adfaa88ddb550c677120719"
+    },
+    {
+      "path": "tools/native-headless/audit-wait-probe.mjs",
+      "sha256": "cdd8495e13276ce159d1312453c023a652276a1243618d6435dca7a907f6f530"
+    },
+    {
+      "path": "tools/native-headless/budget.mjs",
+      "sha256": "7186e33a302464fd92c17770c8d2fadd97fa1a9ad4dae13d2230a4f4f40050c6"
+    },
+    {
+      "path": "tools/native-headless/campaign.mjs",
+      "sha256": "ccd38ef8febad3038be235ead107b05eb8d935222abb54a65a6ac1a854fa386c"
+    },
+    {
+      "path": "tools/native-headless/carrier.mjs",
+      "sha256": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587"
+    },
+    {
+      "path": "tools/native-headless/compare-double.mjs",
+      "sha256": "3d4e9f03064b1969ee980c545215132b03409376294d0cb7c3307649e7682e8b"
+    },
+    {
+      "path": "tools/native-headless/compare-evidence-candidate.mjs",
+      "sha256": "c40b000882a62a20cdf4f5746f8ebdc74294cf4220d5a6611784d2f1522597f4"
+    },
+    {
+      "path": "tools/native-headless/compare-native.mjs",
+      "sha256": "7746c02451db82402e8654488e2048cf8909035e67f73e148c921ac2ab66a8a6"
+    },
+    {
+      "path": "tools/native-headless/compare-polish.mjs",
+      "sha256": "ea18b0c23fa755772ee3cad3c58a89f7f0e4af261c79b5b94cb84117b87c8033"
+    },
+    {
+      "path": "tools/native-headless/compare-traceability-fixed.mjs",
+      "sha256": "1317be1f5155c6ac598f43280dd33074f372067fd1c41b086e64e5e79f1a231b"
+    },
+    {
+      "path": "tools/native-headless/compare-traceability.mjs",
+      "sha256": "260668607fc44c5ccdcb1709253af89317e1caf509720fa3384bed9cfef3ef3d"
+    },
+    {
+      "path": "tools/native-headless/diagnostic-protocol.mjs",
+      "sha256": "267d954fef58c6e4a71d652c300912d56aedea01196768f6093a1fab0fc48906"
+    },
+    {
+      "path": "tools/native-headless/experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "tools/native-headless/factory.mjs",
+      "sha256": "275c60d920982cf1d23aceee0ebfe84566579f400e001bfe321bed352ea0cce8"
+    },
+    {
+      "path": "tools/native-headless/faults.mjs",
+      "sha256": "5211d3978b22e4f73a29186cc5f13df18d2789d35d1c796db8d3891a6ee4d5f4"
+    },
+    {
+      "path": "tools/native-headless/freeze.mjs",
+      "sha256": "0e5511b1c58ee493436c410f57ef7a2c75b778a50f972125c735c65331574761"
+    },
+    {
+      "path": "tools/native-headless/grading-probe.mjs",
+      "sha256": "2bb370e950ada04c08686bea6f6dc4f5da0d4729da1dd320d5a1e3da6c633ba4"
+    },
+    {
+      "path": "tools/native-headless/installed-cli.cjs",
+      "sha256": "c9d20cd5d34006c84c05ac9d68e65b90e04a364236e81d5cc6e893f5b2d958cf"
+    },
+    {
+      "path": "tools/native-headless/isolation.mjs",
+      "sha256": "15d99a798481fab6fb0c18da084500e11984bba0439b93d04f8e21e5aee100f5"
+    },
+    {
+      "path": "tools/native-headless/lifecycle.mjs",
+      "sha256": "ac484a1af42b85097ecbe3a50880747eb428aad36f02793879f7cdd5fe402954"
+    },
+    {
+      "path": "tools/native-headless/matrix.mjs",
+      "sha256": "526a64cf113d6509bd860b731ffd3c1c97a9b65d5d6fb5532bd71614f8ec5221"
+    },
+    {
+      "path": "tools/native-headless/mechanisms.mjs",
+      "sha256": "3172739ebdd092e3c1fea396d4aae9e8b0cdac00083909493f6f17678bc1a2ac"
+    },
+    {
+      "path": "tools/native-headless/method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "tools/native-headless/method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "tools/native-headless/native-contract.mjs",
+      "sha256": "001903383447bbbc797ecff63974cb636786e9bd3fc27a863a9a1d31eebb6301"
+    },
+    {
+      "path": "tools/native-headless/ontology-probe.mjs",
+      "sha256": "c3a0fec2b10476e04bd7cb5b9f217e04b15f9113949d4f405f07349790168295"
+    },
+    {
+      "path": "tools/native-headless/public-materials.mjs",
+      "sha256": "3f17f3ee3b6fad3422d88fd999de78d46203fff98a779920fd31a87e7738135e"
+    },
+    {
+      "path": "tools/native-headless/recheck-probe.mjs",
+      "sha256": "735808e075a53c22e6e61283a52aa146d198bd2d34ed972fd3fd3f0914a6762c"
+    },
+    {
+      "path": "tools/native-headless/run.mjs",
+      "sha256": "89cc5019337cf2f6fc90018a39f225d5bbcb24c3bbe4f12846e11a1031f557a1"
+    },
+    {
+      "path": "tools/native-headless/runtime.mjs",
+      "sha256": "f38c7478d3a976183828680f378fec729a81b9eb1e68c125e102b13acbec716a"
+    },
+    {
+      "path": "tools/native-headless/scoring.mjs",
+      "sha256": "9e00a7aedfaeb280cd6736a5037c219629ed287bdc73b4c81272944360b902c3"
+    },
+    {
+      "path": "tools/native-headless/sequence.mjs",
+      "sha256": "8e72e2851c94c1686114ad0ba06d2a779a84d4499f24583f04169b1674c77cb0"
+    },
+    {
+      "path": "tools/native-headless/setup.mjs",
+      "sha256": "26084900e01b94cf1243b3846f6262bab443876eb008dce48cc4056e12cc6be2"
+    },
+    {
+      "path": "tools/native-headless/traceability.mjs",
+      "sha256": "73d21aa37424ba19b8b3e064632c2fc6444763226ad59ec03ec4b619c785231d"
+    },
+    {
+      "path": "tools/native-headless/ui-fixture.mjs",
+      "sha256": "4a663aa38dadd45aafa8f0f85846f36a4d2ed0c7828b1c933abbb761838adc62"
+    },
+    {
+      "path": "tools/native-headless/ui-setup.mjs",
+      "sha256": "2322f091a888d099c348364ad4c07f1c97f9fbb6752e9aaa0653591753e1300b"
+    },
+    {
+      "path": "tools/native-headless/world.mjs",
+      "sha256": "5b80622f6c3c28cce604882cdbca00bafd1cffa74790aa01b4806aea18a6fe34"
+    },
+    {
+      "path": "tools/release-budget.mjs",
+      "sha256": "cb51e3b63994da943f79b1529377e31d969377162725b5e7ca812bfdfb8e9f9c"
+    },
+    {
+      "path": "tools/verify-polish-comparison.mjs",
+      "sha256": "2fd8783cbeb55e77a45ca92a668e9c552fd6f76cba0da20891a3766c3b573d8c"
+    },
+    {
+      "path": "tools/verify-release-evidence.mjs",
+      "sha256": "af8aaba2f3dfaf1a267a185e980647e8cabcd7ebaebdeca07e931f3a1dccca34"
+    },
+    {
+      "path": "ui/lib/client.js",
+      "sha256": "e1e1a1d8d1b05e4cc7ce6c60da609a877fce7b0d1e1ada9b5ef1b7259307811f"
+    },
+    {
+      "path": "ui/lib/domain-language.js",
+      "sha256": "fa3f9285938228681fe5a7cac6e1af9b7c97bf5c7e0be6a48b6940cc8f06285b"
+    },
+    {
+      "path": "ui/lib/fold.js",
+      "sha256": "4fe3ead6dc8c380f56a1171dee4a1edcbe756d2c6a1b076c63b277b5346894c5"
+    },
+    {
+      "path": "ui/lib/index.js",
+      "sha256": "efff08fb10c5261c52fa1bf9009ec215b889ece11cadc8ae3228e5e4e8eeee31"
+    },
+    {
+      "path": "ui/lib/invariant.js",
+      "sha256": "81ca16cc6b3feed707d0a1beb4efb08a8970a5d2ca730359cf1bdebe9207414b"
+    },
+    {
+      "path": "ui/lib/knowledge-view.js",
+      "sha256": "64046b5b2b059ef520ab412bb30e24fff66a5ffedb350dee2306a8bad890b8a1"
+    },
+    {
+      "path": "ui/lib/lang.js",
+      "sha256": "8b5b19847d25287812a20103faa68329912fa6a7c4fc795724f9c9e919141326"
+    },
+    {
+      "path": "ui/lib/research-events.d.ts",
+      "sha256": "f5bd8709dfd80a59174e227fee68f06bc685579d9404affd676f6f01cf8329af"
+    },
+    {
+      "path": "ui/lib/research-events.js",
+      "sha256": "53835fa48155e75eefc593b302e45b953389c5cb710459e3d51ae3cfbff34843"
+    },
+    {
+      "path": "ui/lib/scope.js",
+      "sha256": "b6b58dab8360e40d81c12386d3e05d49d4dfd5b5b27ce7c55158371c3cdda14d"
+    }
+  ],
+  "date": "2026-11-08",
+  "timezone": "Asia/Shanghai"
+}

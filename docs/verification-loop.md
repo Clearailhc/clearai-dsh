@@ -45,6 +45,14 @@ There are three levels only: self-tested (L2), independently checked (L3), appro
 
 ## 4. Flow: from question to fact
 
+New goals in 0.6 use `agent-v1`. `Frame` first registers the goal and its criteria; exploration can then use ordinary tools and native exploratory children without registering hypotheses or a custom plan. Register a hypothesis when a claim needs durable evidence. `ReviewClaims` can independently check several related claims against shared materials and commit scoped facts before the goal closes. It does not complete the goal.
+
+At conclusion, `Conclude.answers.claims` selects the hypotheses that each answer depends on; `uses` cites already established facts. Other hypotheses remain pending and relevant gaps must be disclosed. The independent final review checks the answer, goal criteria and omitted consequential dependencies, using earlier receipts only while their material, scope, criteria and reviewer configuration remain valid. Author checks and exclusions help direct review but are not independent proof. Unknown dependency completeness disables reuse.
+
+The diagram below describes `steps-v1`, retained for historical goals without a workflow field. New goals may also opt into an explicit plan; once created, that plan must still be closed before conclusion. Native exploration does not require creating and advancing a step for every action.
+
+Follow-up review receives historical verdicts and source changes as leads, never as automatic current proof. Independently supported ontology facts can be retained while unrelated final-answer issues remain open, only when the independent reviewer establishes the impact boundary; unknown impact blocks partial certification.
+
 ```
 Human     Model                      System                      Independent evaluator
  │ ask ──▶ │ native goal + Frame: criteria, hypotheses (each with a refutation condition)
@@ -77,7 +85,7 @@ All state is folded from the session log; the model has no writable state field.
 |---|---|---|
 | proposed | Claim and refutation condition are written | First evidence → alive |
 | alive | From proposed | Threshold reached → confirmed; refuting evidence → refuted; rewritten → superseded |
-| confirmed (a fact) | At close, threshold reached and nothing refutes it | A human retracts it → retracted |
+| confirmed (a fact) | ReviewClaims or conclusion meets the applicable evidence threshold and no consequential contradiction remains | A human retracts it → retracted |
 | refuted (kept) | Refuting evidence at any level | Terminal |
 | superseded | Old version when a hypothesis is revised | Terminal |
 | retracted (kept) | A human decides after review | Terminal |

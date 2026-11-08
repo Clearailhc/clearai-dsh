@@ -1,0 +1,10 @@
+{
+  "basis": "16 个 full 点拟合的加性二次面",
+  "id": "yield_surface_xy",
+  "label": "x–y 收率响应面",
+  "provenance": {
+    "kind": "named",
+    "ref": "lab/model-final.json"
+  },
+  "type": "yield_surface"
+}

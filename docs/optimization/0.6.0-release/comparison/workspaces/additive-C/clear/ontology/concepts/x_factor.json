@@ -1,0 +1,7 @@
+{
+  "id": "x_factor",
+  "label": "工艺因子 x",
+  "gloss": "归一化工艺参数 x，范围 [0,1]",
+  "kind": "measure",
+  "unit": "1"
+}

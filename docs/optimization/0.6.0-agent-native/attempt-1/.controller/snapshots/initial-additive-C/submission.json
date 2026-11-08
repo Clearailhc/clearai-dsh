@@ -1,0 +1,15 @@
+{
+  "x": 0.4517,
+  "y": 0.4485,
+  "evidence": [
+    "lab/f-opt-1.json",
+    "lab/f-opt-2.json",
+    "lab/f-opt-3.json",
+    "lab/f-opt-4.json",
+    "lab/f-045-045.json",
+    "lab/cal-01.json",
+    "initial.json",
+    "lab/model-final.json",
+    "reports/analysis.md"
+  ]
+}

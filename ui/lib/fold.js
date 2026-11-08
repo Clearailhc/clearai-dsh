@@ -77,9 +77,13 @@ export const MUTATION_KIND = 'clearai'
  *           同一版里目标、判断与事实还带 `about`(涉及的实体或量),未解释项带 `defect`(解释为测量或方法缺陷);
  *           派生多一份 `negativeRows`(`clear/knowledge/negatives/` 的负向条目)。
  *   v20 → v21:持久核算复核、最终实际引用、幂等审计派发;旧日志原样重放。
+ *   v28 → v29:主代理异常同样绑定原目标，供独立评估复核。
+ *   v27 → v28:独立复核显式关联同一目标下的异常与处置历史。
+ *   v26 → v27:目标登记保留文件基线;旧会话无基线时保持未知。
+ *   v25 → v26:读面区分当前/已加载事实、事实内断言与实体文件记录;权威状态与旧日志不变。
  * 投影缓存按版本判定,所以旧缓存会被丢弃、从日志重折一遍。
  */
-export const STATE_VERSION = 23
+export const STATE_VERSION = 29
 
 /**
  * **只留台账、不折进视图**的变更类型(词汇表的另一半)。
@@ -335,6 +339,8 @@ export function applyMutation(state, mutation) {
 				if (previous !== null && previous.status === 'open') previous.status = 'superseded'
 				next.goal = {
 					id: mutation.id,
+					workflow: mutation.workflow === 'agent-v1' ? 'agent-v1' : 'steps-v1',
+					workspace_baseline: mutation.workspace_baseline ? clone(mutation.workspace_baseline) : null,
 					claim: mutation.claim,
 					done_criteria: mutation.done_criteria,
 					promote_at_level: mutation.promote_at_level,
@@ -504,7 +510,7 @@ export function applyMutation(state, mutation) {
 		}
 		case 'anomaly/opened': {
 			if (next.anomalies.some((item) => item.id === mutation.id)) break
-			next.anomalies.push({ id: mutation.id, what: String(mutation.what ?? ''), anchor: mutation.anchor ?? null, touches: Array.isArray(mutation.touches) ? mutation.touches.map(String) : [], step: mutation.step ?? null, by: mutation.by ?? 'model', status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+			next.anomalies.push({ id: mutation.id, goal_id: next.goal?.id ?? null, what: String(mutation.what ?? ''), anchor: mutation.anchor ?? null, touches: Array.isArray(mutation.touches) ? mutation.touches.map(String) : [], step: mutation.step ?? null, by: mutation.by ?? 'model', status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
 			break
 		}
 		case 'lesson/recorded': {
@@ -597,6 +603,7 @@ export function applyMutation(state, mutation) {
 				verdict: null,
 				evaluator: 'independent',
 				child: mutation.evaluator_session ?? null,
+				request: mutation.request ?? null,
 				criteria: mutation.criteria ?? [], capability: mutation.capability ?? null,
 				goal_id: mutation.goal_id ?? null,
 				goal_revision: mutation.goal_revision ?? null,
@@ -665,8 +672,26 @@ export function applyMutation(state, mutation) {
 			const found = Array.isArray(mutation.anomalies) ? mutation.anomalies : []
 			for (const [index, item] of found.entries()) {
 				const id = `${mutation.id}#u${index + 1}`
+                const prior = next.anomalies.find(entry => entry.id === item?.existing_id)
+                const origin = prior && next.audits.find(entry => entry.id === prior.id.split('#u')[0])
+                // Identity is explicit and confined to the same goal. Unknown or
+                // cross-goal references remain new, open findings.
+                if (prior && (prior.goal_id ?? origin?.goal_id) && (prior.goal_id ?? origin?.goal_id) === audit?.goal_id) {
+                    const history = prior.reviews ?? []
+                    if (!history.some(review => review.audit === mutation.id)) {
+                        history.push({audit: mutation.id, what: String(item.what ?? ''), disposition: item.disposition ?? 'reopen', basis: String(item.impact_basis ?? ''), at})
+                        prior.reviews = history
+                        if (item.disposition !== 'maintain' || !String(item.impact_basis ?? '').trim()) {
+                            prior.status = 'open'
+                            prior.reason = null
+                            prior.resolvedAt = null
+                        }
+                    }
+                    continue
+                }
+
 				if (next.anomalies.some((entry) => entry.id === id || (entry.by === 'evaluator' && entry.step === mutation.step && entry.what === String(item?.what ?? '')))) continue
-				next.anomalies.push({ id, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
+				next.anomalies.push({ id, goal_id: audit?.goal_id ?? null, what: String(item?.what ?? ''), anchor: null, step: mutation.step ?? null, by: 'evaluator', matters: item?.matters ?? null, touches: Array.isArray(item?.touches) ? clone(item.touches) : null, impact_basis: item?.impact_basis ?? null, status: 'open', reason: null, explainedBy: null, at, resolvedAt: null })
 			}
 			break
 		}
@@ -2304,6 +2329,7 @@ function knowledgeItems(state, derived) {
 		items.push({
 			id: fact.id,
 			kind: 'fact',
+			assertionCount: Array.isArray(fact.assertions) ? fact.assertions.length : 0,
 			status: pending ? 'pending' : 'established',
 			text: fact.text ?? '',
 			about: Array.isArray(fact.about) ? fact.about : [],
@@ -2388,6 +2414,14 @@ function knowledgeFlow(state, derived, items, promotedIds) {
 	const count = (predicate) => mine.filter(predicate).length
 	return {
 		cited: citedRows,
+		summary: {
+			currentFacts: mine.filter(item => item.kind === 'fact' && item.status === 'established').length,
+			loadedFacts: items.filter(item => item.kind === 'fact' && item.status === 'established').length,
+			pendingFacts: items.filter(item => item.kind === 'fact' && item.status === 'pending').length,
+			factAssertions: items.filter(item => item.kind === 'fact' && item.status === 'established').reduce((sum, item) => sum + item.assertionCount, 0),
+			entityRecords: (state.entities ?? []).length,
+			entityAssertions: (state.entityAssertions ?? []).length,
+		},
 		settling: { negatives: mine.filter((item) => item.kind === 'negative'), awaiting },
 		settled:
 			goalId === null

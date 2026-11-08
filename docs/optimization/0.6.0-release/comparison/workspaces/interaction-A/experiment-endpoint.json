@@ -1,0 +1,4 @@
+{
+  "endpoint": "http://127.0.0.1:37651/experiment",
+  "token": "[credential redacted]"
+}

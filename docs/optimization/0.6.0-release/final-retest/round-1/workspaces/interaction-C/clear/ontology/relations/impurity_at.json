@@ -1,0 +1,10 @@
+{
+  "domain": "candidate_point",
+  "id": "impurity_at",
+  "kind": "manifests_as",
+  "label": "该点杂质",
+  "range": {
+    "form": "quantity",
+    "unit": "fraction"
+  }
+}

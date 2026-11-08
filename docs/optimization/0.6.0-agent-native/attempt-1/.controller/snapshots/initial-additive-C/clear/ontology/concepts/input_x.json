@@ -1,0 +1,7 @@
+{
+  "gloss": "归一化到 0–1 的第一配方变量（bounds 为 [0,1]）",
+  "id": "input_x",
+  "kind": "measure",
+  "label": "输入 x",
+  "unit": "1"
+}

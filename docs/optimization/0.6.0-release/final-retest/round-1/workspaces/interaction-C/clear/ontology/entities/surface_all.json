@@ -1,0 +1,10 @@
+{
+  "basis": "method/response_surface.py 拟合",
+  "id": "surface_all",
+  "label": "18 点交互响应面",
+  "provenance": {
+    "kind": "named",
+    "ref": "lab/model-all.json"
+  },
+  "type": "response_surface"
+}

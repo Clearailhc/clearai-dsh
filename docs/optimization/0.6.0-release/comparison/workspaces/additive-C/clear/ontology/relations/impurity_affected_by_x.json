@@ -1,0 +1,8 @@
+{
+  "id": "impurity_affected_by_x",
+  "label": "杂质受 x 影响",
+  "kind": "affects",
+  "domain": "impurity",
+  "range": "x_factor",
+  "shape": "increasing"
+}

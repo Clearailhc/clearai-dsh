@@ -1,0 +1,6 @@
+{
+  "id": "response_surface",
+  "label": "响应面",
+  "gloss": "用二次多项式近似 yield/impurity 对 x,y 的依赖；预测不是测量",
+  "kind": "category"
+}

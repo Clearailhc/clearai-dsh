@@ -1,0 +1,9 @@
+{
+  "id": "model_structure",
+  "label": "模型结构说明",
+  "kind": "defines",
+  "domain": "response_surface",
+  "range": {
+    "form": "statement"
+  }
+}

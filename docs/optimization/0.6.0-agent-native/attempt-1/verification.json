@@ -1,0 +1,127 @@
+{
+  "dataVerified": true,
+  "passed": false,
+  "allTasksCompleted": false,
+  "stopReasons": [
+    "initial-additive-C: token_limit",
+    "initial-additive-C: infeasible or no useful improvement",
+    "initial-additive-C: goal not achieved",
+    "initial-interaction-C: candidate_implementation_error",
+    "reuse-additive-A: candidate_implementation_error",
+    "reuse-additive-C: candidate_implementation_error",
+    "reuse-interaction-C: candidate_implementation_error",
+    "reuse-interaction-A: candidate_implementation_error",
+    "changed-additive-A: candidate_implementation_error",
+    "changed-additive-C: candidate_implementation_error",
+    "changed-interaction-C: candidate_implementation_error",
+    "changed-interaction-A: candidate_implementation_error",
+    "additive: no reusable verified knowledge"
+  ],
+  "rows": [
+    {
+      "id": "initial-direct-A",
+      "reason": "completed",
+      "quality": {
+        "score": 100
+      },
+      "artifactQuality": {
+        "score": 100
+      },
+      "processed": 17473,
+      "elapsedMs": 6658,
+      "cost": 0.000741804,
+      "independentAudits": 0,
+      "parentRequestsWhileWaiting": 0
+    },
+    {
+      "id": "initial-direct-C",
+      "reason": "completed",
+      "quality": {
+        "score": 100
+      },
+      "artifactQuality": {
+        "score": 100
+      },
+      "processed": 37393,
+      "elapsedMs": 10677,
+      "cost": 0.00442872,
+      "independentAudits": 0,
+      "parentRequestsWhileWaiting": 0
+    },
+    {
+      "id": "initial-additive-C",
+      "reason": "token_limit",
+      "quality": {
+        "score": 0,
+        "feasible": false,
+        "start": 90.49247910884576,
+        "optimum": 95.0556729499388
+      },
+      "artifactQuality": {
+        "score": 99.97690332355678,
+        "feasible": true,
+        "value": 95.05461900382184,
+        "impurity": 0.08354598669999999,
+        "start": 90.49247910884576,
+        "optimum": 95.0556729499388
+      },
+      "processed": 5054799,
+      "elapsedMs": 1331352,
+      "cost": 0.286981644,
+      "independentAudits": 2,
+      "parentRequestsWhileWaiting": 0
+    },
+    {
+      "id": "initial-additive-A",
+      "reason": "completed",
+      "quality": {
+        "score": 99.95831481191657,
+        "feasible": true,
+        "value": 95.05377077400352,
+        "impurity": 0.083575,
+        "start": 90.49247910884576,
+        "optimum": 95.0556729499388
+      },
+      "artifactQuality": {
+        "score": 99.95831481191657,
+        "feasible": true,
+        "value": 95.05377077400352,
+        "impurity": 0.083575,
+        "start": 90.49247910884576,
+        "optimum": 95.0556729499388
+      },
+      "processed": 537103,
+      "elapsedMs": 143378,
+      "cost": 0.034130604,
+      "independentAudits": 0,
+      "parentRequestsWhileWaiting": 0
+    },
+    {
+      "id": "initial-interaction-A",
+      "reason": "completed",
+      "quality": {
+        "score": 99.95960576686859,
+        "feasible": true,
+        "value": 95.86891859814372,
+        "impurity": 0.091788,
+        "start": 90.38473644547021,
+        "optimum": 95.87113478668019
+      },
+      "artifactQuality": {
+        "score": 99.95960576686859,
+        "feasible": true,
+        "value": 95.86891859814372,
+        "impurity": 0.091788,
+        "start": 90.38473644547021,
+        "optimum": 95.87113478668019
+      },
+      "processed": 561687,
+      "elapsedMs": 147392,
+      "cost": 0.034290876000000005,
+      "independentAudits": 0,
+      "parentRequestsWhileWaiting": 0
+    }
+  ],
+  "reuse": [],
+  "limitation": "One sample per task/phase/variant. Paired objective tolerance is two observation-noise standard deviations; this is not a statistical superiority claim."
+}

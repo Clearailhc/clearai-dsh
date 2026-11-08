@@ -1,0 +1,218 @@
+{
+  "id": "f-7n7xpb",
+  "goal": "g-mw6mkhds4x2e",
+  "hypothesis": "h-vfvblr",
+  "text": "在最优点附近杂质约 0.088–0.10,约束 0.115 不绑定,最优化不需要为杂质牺牲收率。",
+  "about": [
+    "impurity",
+    "var_y",
+    "surface_fit",
+    "response_surface",
+    "test_states",
+    "var_x",
+    "yield"
+  ],
+  "scope": "条件 变量范围=x,y∈[0,1]、杂质上限=0.115、预算=30 单位、仪表=original",
+  "scope_spec": {
+    "conditions": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    },
+    "ranges": {}
+  },
+  "refute_when": "最优点实测杂质 >0.10,或为满足杂质上限必须把 y 压低 0.05 以上并因此损失收率。",
+  "level": "L3",
+  "evidence": [
+    "e-mw77uzbdg1rg"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw77uzbdg1rg",
+      "step": "review:a71ff33a44356b54a7f8595b",
+      "plan": "review",
+      "hypothesis": "h-vfvblr",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "最优点 full 杂质 0.0879/0.0880/0.0887(≤0.10),预测 0.0874;全网格受约束最大=无约束最大 95.142@(0.48,0.48),杂质 0.0859;沿 x=0.5 预测杂质最大 0.11288(y=1)≤0.115,故不需为杂质压低 y。(0.9,0.9) 实测 0.1234 超限但在最优点区域之外。",
+      "refs": [
+        "initial.json",
+        "lab/analysis-final.json",
+        "lab/cal_1.json",
+        "lab/f_0.45_0.45.json",
+        "lab/f_0.48_0.48.json",
+        "lab/f_0.49_0.49.json",
+        "lab/f_0.5_0.5_rep.json",
+        "lab/model-final.json",
+        "lab/q_0.3_0.5.json",
+        "submission.json",
+        "lab/analyze_final.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analysis-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal_1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.45_0.45.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.48_0.48.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.49_0.49.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.5_0.5_rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q_0.3_0.5.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/24396206998f24a19948f0d4820c2f46beb514903d491246d4ffd3f76fb22554/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analyze_final.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw77uzbdg1rg",
+      "step": "review:a71ff33a44356b54a7f8595b",
+      "plan": "review",
+      "hypothesis": "h-vfvblr",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "最优点 full 杂质 0.0879/0.0880/0.0887(≤0.10),预测 0.0874;全网格受约束最大=无约束最大 95.142@(0.48,0.48),杂质 0.0859;沿 x=0.5 预测杂质最大 0.11288(y=1)≤0.115,故不需为杂质压低 y。(0.9,0.9) 实测 0.1234 超限但在最优点区域之外。",
+      "refs": [
+        "initial.json",
+        "lab/analysis-final.json",
+        "lab/cal_1.json",
+        "lab/f_0.45_0.45.json",
+        "lab/f_0.48_0.48.json",
+        "lab/f_0.49_0.49.json",
+        "lab/f_0.5_0.5_rep.json",
+        "lab/model-final.json",
+        "lab/q_0.3_0.5.json",
+        "submission.json",
+        "lab/analyze_final.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analysis-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal_1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.45_0.45.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.48_0.48.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.49_0.49.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.5_0.5_rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q_0.3_0.5.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/24396206998f24a19948f0d4820c2f46beb514903d491246d4ffd3f76fb22554/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analyze_final.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "subject": {
+        "id": "surface_fit",
+        "type": "response_surface"
+      },
+      "predicate": "test_states",
+      "object": {
+        "kind": "statement",
+        "value": "最优点实测杂质 0.0879–0.0887,上限 0.115;x=0.5 线上 y∈[0,1] 预测杂质均 ≤0.115。"
+      }
+    }
+  ],
+  "definitions": {
+    "test_states": "fnv:1aa5340d",
+    "response_surface": "fnv:e8497e65",
+    "impurity": "fnv:1f61c99f",
+    "var_x": "fnv:905200ac",
+    "var_y": "fnv:d33aa245",
+    "yield": "fnv:40e9f228"
+  },
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "status": "established",
+  "review": null,
+  "at": 1794105110889,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794105110889,
+      "level": "L3"
+    }
+  ]
+}

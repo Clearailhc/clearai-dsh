@@ -1,0 +1,386 @@
+{
+  "schema_version": "clearai.audit.v3",
+  "coverage": {
+    "policy": "clearai.review.v3",
+    "obligation": {
+      "policy": "clearai.review.v3",
+      "kind": "goal_audit",
+      "scope": "final-delivery",
+      "criteria": "submission.json 存在且含数值 x,y∈[0,1] 与 evidence 路径列表;列表内文件均存在,且其中至少一个是最终点 (x,y) 的 full 原始读数、其杂质≤0.115;reports/final-report.md 给出参数、仪表口径与局限。",
+      "claims": [
+        "h-1gqs52",
+        "h-tro9zd"
+      ],
+      "goal_context": {
+        "id": "g-mw6l0ur8pvg1",
+        "claim": "在 x,y∈[0,1]、杂质≤0.115 的约束下,用不超过 30 单位预算找到使收率最大的参数点,并交付经 full 实测验证的结果。",
+        "done_criteria": "submission.json 存在且含数值 x,y∈[0,1] 与 evidence 路径列表;列表内文件均存在,且其中至少一个是最终点 (x,y) 的 full 原始读数、其杂质≤0.115;reports/final-report.md 给出参数、仪表口径与局限。"
+      },
+      "final_delivery_required_now": true
+    },
+    "digest": "v7:79c016254b194d9e19d24eef4ddfa2161b513790d5a99b236b083b5624038624",
+    "claims": [
+      {
+        "id": "h-1gqs52",
+        "version": "ac4a0860253981e949989ce0177079172aaea8182da38d8c22c27a1f6ef3f2c2",
+        "scope": {
+          "conditions": {
+            "x_bounds": "[0,1]",
+            "y_bounds": "[0,1]",
+            "impurity_limit": "0.115",
+            "instrument": "original",
+            "budget": "30",
+            "x区间": "[0,1]",
+            "y区间": "[0,1]",
+            "杂质上限": "0.115"
+          },
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "note": "仅在本实验条件下成立"
+        },
+        "assertions": [
+          {
+            "object": {
+              "kind": "quantity",
+              "unit": "%",
+              "value": 96.31
+            },
+            "predicate": "yield_at",
+            "qualifiers": {
+              "n": 3,
+              "observed_range": [
+                96.167,
+                96.455
+              ],
+              "sd": 0.144
+            },
+            "subject": {
+              "id": "point_071_061",
+              "type": "candidate_point"
+            }
+          },
+          {
+            "object": {
+              "kind": "quantity",
+              "unit": "fraction",
+              "value": 0.1009
+            },
+            "predicate": "impurity_at",
+            "qualifiers": {
+              "limit": 0.115,
+              "max": 0.1014
+            },
+            "subject": {
+              "id": "point_071_061",
+              "type": "candidate_point"
+            }
+          }
+        ],
+        "refute_when": "该点 full 实测收率显著低于其他可行已测点(均值差 > 2σ≈0.36),或任一实测杂质 > 0.115。"
+      },
+      {
+        "id": "h-tro9zd",
+        "version": "02971e8b4a4f9a7770b66dbb5922317945dad1e772ae20cd3eb8d90142a8d3d8",
+        "scope": {
+          "conditions": {
+            "x_bounds": "[0,1]",
+            "y_bounds": "[0,1]",
+            "impurity_limit": "0.115",
+            "instrument": "original",
+            "budget": "30",
+            "x区间": "[0.1,0.9]",
+            "y区间": "[0.1,0.9]"
+          },
+          "ranges": {
+            "x": [
+              0.1,
+              0.9
+            ],
+            "y": [
+              0.1,
+              0.9
+            ]
+          },
+          "note": "适用范围为实测包围盒,不外推"
+        },
+        "assertions": [
+          {
+            "object": {
+              "kind": "quantity",
+              "unit": "%",
+              "value": 0.173
+            },
+            "predicate": "surface_error",
+            "qualifiers": {
+              "loo_cv_rmse": 0.202,
+              "n_obs": 18,
+              "noise_sd": 0.18
+            },
+            "subject": {
+              "id": "surface_all",
+              "type": "response_surface"
+            }
+          }
+        ],
+        "refute_when": "残差呈系统性空间结构,或留一交叉验证误差显著超过 0.18。"
+      }
+    ],
+    "criteria": [
+      {
+        "id": "C1",
+        "text": "submission.json 存在且含数值 x,y∈[0,1] 与 evidence 路径列表;列表内文件均存在,且其中至少一个是最终点 (x,y) 的 full 原始读数、其杂质≤0.115;reports/final-report.md 给出参数、仪表口径与局限。"
+      }
+    ],
+    "trust": {
+      "model": "deepseek-flash",
+      "modelProvider": "deepseek",
+      "reasoningEffort": "medium",
+      "policy": "clearai.review.v3",
+      "discipline": "21ad786a79b0e618a898faaed6b3e466bd36b2498f3b783e8a87635e59313299",
+      "preset": "clearai-evaluator",
+      "provider": "spawn",
+      "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+      "rerun": true,
+      "tools": [
+        "read",
+        "glob",
+        "grep",
+        "read_image"
+      ],
+      "l4Human": true,
+      "l4External": true
+    },
+    "scope": {
+      "x_bounds": "[0,1]",
+      "y_bounds": "[0,1]",
+      "impurity_limit": "0.115",
+      "instrument": "original",
+      "budget": "30"
+    }
+  },
+  "kind": "goal_audit",
+  "step_id": "goal:g-mw6l0ur8pvg1",
+  "auditor_run_id": "b512ac41-93a7-4a6e-ae56-b054b047f599",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "submission.json:2-3 的 x=0.71、y=0.61 为数值且在 [0,1];:4-19 的 14 条 evidence 路径全部存在;lab/f-0.71-0.61.json:4-8 是该点 full 原始读数(impurity 0.100409≤0.115;r2/r3 为 0.101394/0.100862);final-report.md:5-8,30-42,50-58 给出参数、instrument=original/offset=0/单位/噪声口径与 7 条局限(其中平坦性数值有误,见 anomalies A4,但不影响判据的字面满足)。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-1gqs52",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "三次 full 均值 96.315(sd 0.144),杂质最大 0.1014≤0.115;其他可行已测点最高 (0.75,0.6)=96.184,与终点均值差 0.13<0.36,未触发推翻条件;18 点二次面最优 (0.708,0.610) 与终点一致;该检查含终点 3 次重复,但 14 点预选拟合最优 (0.709,0.612) 独立佐证。"
+    },
+    {
+      "hypothesis": "h-tro9zd",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "18 点二次面残差 RMSE 0.1734、LOO 0.2022;6 参数/18 点及杠杆下 LOO 期望 RMSE≈0.25,0.202 不显著高于 0.18;缺乏拟合 F(9,3)=2.14 p=0.29、三次项 F(4,8)=0.69 p=0.62、批次虚拟变量 F(1,11)=2.54 p=0.14;三次拟合最优 (0.695,0.5525) 与二次 (0.708,0.610) 差约 0.06、预测差 0.12<噪声,未触发推翻条件。"
+    }
+  ],
+  "anomalies": [
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "任务书结论第1条依据称『初始 9 个 full 上,加性 LOO 3.95、交互 0.202』;但 lab/model-initial.json:8 交互=0.1455、:20 加性=6.0422;3.9506/0.2022 实为 lab/model-all.json:8/:20 的 18 点值。",
+      "matters": "no",
+      "touches": null,
+      "impact_basis": "两种比较方向一致(交互远优于加性),final-report.md:33 对 18 点比较的表述正确;误标不改变推荐点、实测值或判据。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "结论称『残差与各模型项最大相关仅 −0.28』;OLS 残差与模型项严格正交(我复算 |r|≈1e-13),−0.2769 实为 LOO 残差与 u 的相关;lab/model-all.json 与 lab/verification.json 均未存该统计量。",
+      "matters": "no",
+      "touches": null,
+      "impact_basis": "该句标签不准;独立复算的缺乏拟合 F(9,3)=2.14 p=0.29、三次项 F(4,8)=0.69 p=0.62 仍支持『无系统结构』;不影响判据。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "初始 9 点二次面拟合残差 RMSE 0.075(3 dof,chi² p≈0.09),低于声明噪声 0.18;后续 9 点相对该初始面平均高 +0.192(se 0.131,z≈1.46);18 点拟合的批次虚拟变量 +0.189,F(1,11)=2.54,p=0.14。作者未量化该差异,只在 final-report.md:54 泛称系统误差未评估。",
+      "matters": "no",
+      "touches": null,
+      "impact_basis": "测量样本层面:终点三次实测值与杂质(0.1004–0.1014)不受影响;若该差异是真实曲面/批次效应,三次拟合最优 (0.695,0.5525) 与二次 (0.708,0.610) 相差约 0.06、预测差 0.12<噪声 0.18,不足以推翻 h-1gqs52/h-tro9zd;但它是未解释的弱模式,不能当作一般噪声律。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "final-report.md:53 与结论称『±0.05 内预测收率变化 <0.05%』;按 lab/model-all.json:9-16 的系数复算,四角最大变化为 0.194%(0.76,0.56),轴向约 0.05–0.07%;0.19 才与噪声 0.18 同量级,故『<0.05%』与『同量级』自相矛盾。",
+      "matters": "no",
+      "touches": null,
+      "impact_basis": "该数值低估了平坦区变化约 4 倍,但 0.194≈1.1σ,『多个近邻点统计上不可区分』的定性结论仍成立;不影响推荐点与实测值,属报告数值转写错误。"
+    }
+  ],
+  "lessons": [
+    {
+      "lesson": "L1",
+      "verdict": "support",
+      "basis": "lab/q-0.5-0.5.json:4-9(quick 96.139,sd 0.45)与 lab/f-0.5-0.5.json:4-8(full 95.181)、initial.json:62(95.062)对照,差值约 1.0;quick 噪声更大,排除单点 quick 的决定合理。"
+    },
+    {
+      "lesson": "L2",
+      "verdict": "support",
+      "basis": "lab/calib-1.json:2-5 返回 original/offset=0;lab/f-0.5-0.5.json:4-8 的 95.181 与 initial.json:62 的 95.062 差 0.119;先校准+同点 full 复测的做法在记录中成立。"
+    },
+    {
+      "lesson": "L3",
+      "verdict": "support",
+      "basis": "lab/model-updated.json:53-64 的推荐为 (0.65,0.5) 预测 95.82,而二次面最优约 (0.709,0.612) 预测 96.02;method/response_surface.py:60,72 的默认 impurity_noise_sd=0.01 使可行域保守;实测杂质残差约 0.0006、最优杂质 0.1005,约束不紧。"
+    }
+  ],
+  "basis": "交付成立:submission.json:2-3 的 x=0.71、y=0.61 为数值且 ∈[0,1],14 条 evidence 路径全部存在;lab/f-0.71-0.61.json(及 -r2、-r3)是终点三次 full 原始读数,收率 96.322/96.167/96.455(均值 96.315,sd 0.144)、杂质 0.100409/0.101394/0.100862(最大 0.1014≤0.115);我在一次性副本内复跑 lab/verify_final.py,输出与 lab/verification.json 逐字节一致(sha256 相同),未运行 experiment.py、未写原工作区;final-report.md 给出参数、instrument=original/offset=0/单位/噪声口径及 7 条局限;预算 spent 序列 2→30 恰好 30。结论/报告另有几处数值转写错误(初始 9 点 LOO 误标、±0.05 内变化 <0.05% 实为 0.194% 等,见 anomalies),但均不改变推荐点、实测约束与判据。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "submission.json",
+      "line": 2,
+      "digest": "8e8d841979cd670bf20d111c971e4a6eae1943092c91f5d891cf33e67ec707fa"
+    },
+    {
+      "path": "submission.json",
+      "line": 4,
+      "digest": "8e8d841979cd670bf20d111c971e4a6eae1943092c91f5d891cf33e67ec707fa"
+    },
+    {
+      "path": "lab/f-0.71-0.61.json",
+      "line": 4,
+      "digest": "95a2447f8b84509d7634951f1ec9f736c38b80c314222beff94e968469df7dc7"
+    },
+    {
+      "path": "lab/f-0.71-0.61-r2.json",
+      "line": 4,
+      "digest": "097e198b74ef2de1bc4b5953d3d983ebb5e2970cbb6094aadea42d4ce3f9b327"
+    },
+    {
+      "path": "lab/f-0.71-0.61-r3.json",
+      "line": 4,
+      "digest": "6f8d8a40d5a1ef03a99016520a852f7c6ca8ce2e3b0c66de5f2ec2eca8efeda0"
+    },
+    {
+      "path": "lab/verification.json",
+      "line": 26,
+      "digest": "e0261050ebdd7449fd970dd24dc1546d7ec0c8c0acbb3ff78aa3cc1f4e8458eb"
+    },
+    {
+      "path": "lab/verification.json",
+      "line": 65,
+      "digest": "e0261050ebdd7449fd970dd24dc1546d7ec0c8c0acbb3ff78aa3cc1f4e8458eb"
+    },
+    {
+      "path": "lab/verification.json",
+      "line": 72,
+      "digest": "e0261050ebdd7449fd970dd24dc1546d7ec0c8c0acbb3ff78aa3cc1f4e8458eb"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 6,
+      "digest": "75eaddff5a29d3507e20465d010cf6fb96d490b5734d2c9ac3160ec131e0671f"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 7,
+      "digest": "75eaddff5a29d3507e20465d010cf6fb96d490b5734d2c9ac3160ec131e0671f"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 33,
+      "digest": "75eaddff5a29d3507e20465d010cf6fb96d490b5734d2c9ac3160ec131e0671f"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 40,
+      "digest": "75eaddff5a29d3507e20465d010cf6fb96d490b5734d2c9ac3160ec131e0671f"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 53,
+      "digest": "75eaddff5a29d3507e20465d010cf6fb96d490b5734d2c9ac3160ec131e0671f"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 54,
+      "digest": "75eaddff5a29d3507e20465d010cf6fb96d490b5734d2c9ac3160ec131e0671f"
+    },
+    {
+      "path": "lab/model-all.json",
+      "line": 8,
+      "digest": "87051f392bb50da91932898fdd3abc9b8afb3fc7d18789aee838470a1c3ea15c"
+    },
+    {
+      "path": "lab/model-all.json",
+      "line": 20,
+      "digest": "87051f392bb50da91932898fdd3abc9b8afb3fc7d18789aee838470a1c3ea15c"
+    },
+    {
+      "path": "lab/model-all.json",
+      "line": 55,
+      "digest": "87051f392bb50da91932898fdd3abc9b8afb3fc7d18789aee838470a1c3ea15c"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 8,
+      "digest": "f60981ad2251576f1ac5947e4ac9994c06889c40fb4e41efd871b393e716bf00"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 20,
+      "digest": "f60981ad2251576f1ac5947e4ac9994c06889c40fb4e41efd871b393e716bf00"
+    },
+    {
+      "path": "lab/model-updated.json",
+      "line": 53,
+      "digest": "6c9800224de2ea0cd88b99a0f20d82617bd358b2eeeea255c87b61db7c349aba"
+    },
+    {
+      "path": "lab/calib-1.json",
+      "line": 4,
+      "digest": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "lab/q-0.5-0.5.json",
+      "line": 8,
+      "digest": "666f736bdbffa48e0daca93bf8f99ee6d3f846b4c10ca8e22c39e276459d37e6"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 60,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "lab/verify_final.py",
+      "line": 88,
+      "digest": "301ec9e65414389685952dcba0dafa7d7c0ef20bcaa2efc1c313abc6523334b8"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "d61146cc1e0992f9700e1c8fbfd3747fd952c0a5d70bbe31ac5a9189ea0da9a9"
+    },
+    {
+      "path": "lab/input-all.json",
+      "line": 132,
+      "digest": "3777716d81f8555c095d82e57ce5980c0ca39dc3d26f07ad173095e12e7c1f69"
+    }
+  ],
+  "card": "交付成立:submission.json:2-3 的 x=0.71、y=0.61 为数值且 ∈[0,1],14 条 evidence 路径全部存在;lab/f-0.71-0.61.json(及 -r2、-r3)是终点三次 full 原始读数,收率 96.322/96.167/96.455(均值 96.315,sd 0.144)、杂质 0.100409/0.101394/0.100862(最大 0.1014≤0.115);我在一次性副本内复跑 lab/verify_final.py,输出与 lab/verification.json 逐字节一致(sha256 相同),未运行 experiment.py、未写原工作区;final-report.md 给出参数、instrument=original/offset=0/单位/噪声口径及 7 条局限;预算 spent 序列 2→30 恰好 30。结论/报告另有几处数值转写错误(初始 9 点 LOO 误标、±0.05 内变化 <0.05% 实为 0.194% 等,见 anomalies),但均不改变推荐点、实测约束与判据。",
+  "created_at": 1794067405410,
+  "evaluator": "independent"
+}

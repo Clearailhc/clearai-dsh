@@ -1,0 +1,264 @@
+{
+  "id": "f-wqw8v7",
+  "goal": "g-mw4zfrls4bb8",
+  "hypothesis": "h-4or8f8",
+  "text": "约束最优可行点位于 x,y 的内部（不在 x=0/1 或 y=0 边界），初始拟合给出约 (0.52,0.55)，预测 yield≈95.3%。",
+  "about": [
+    "surface_c",
+    "response_surface",
+    "optimum_location",
+    "setting_x",
+    "setting_y",
+    "yield_pct",
+    "impurity_frac",
+    "impurity_limit",
+    "assay_mode"
+  ],
+  "scope": "条件 bounds=x,y in [0,1]、impurity_limit=0.115 fraction、budget_units=30、costs=quick=1, full=3, calibrate=2、initial_design=3x3 grid at 0.1/0.5/0.9, full mode, noise_sd=0.18 %",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "budget_units": "30",
+      "costs": "quick=1, full=3, calibrate=2",
+      "initial_design": "3x3 grid at 0.1/0.5/0.9, full mode, noise_sd=0.18 %"
+    },
+    "ranges": {}
+  },
+  "refute_when": "在内部邻域或其他位置的 full 实测出现更高的可行 yield（差>3×noise_sd），或最优落在边界。",
+  "level": "L3",
+  "evidence": [
+    "e-8kr6wa",
+    "e-2owyle"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-8kr6wa",
+      "step": "s3",
+      "plan": "p-mw4zi578ss17",
+      "hypothesis": "h-4or8f8",
+      "verdict": "support",
+      "level": "L2",
+      "evaluator": "self",
+      "basis": "full-only 与加权两种拟合的驻点均在 (0.52,0.55) 附近（内部），预测极大 95.34–95.38；所有实测可行 full 点 impurity ≤0.096 <0.115，且没有边界点、也没有可行点给出超过噪声范围的高 yield。单次读数的高低（(0.5,0.5) 95.601）在噪声内，不构成对“内部最优”的推翻。",
+      "refs": [
+        "lab/full-052055.json",
+        "lab/full-0606.json",
+        "lab/full-0505rep.json",
+        "lab/model-full.json",
+        "lab/model-weighted.json",
+        "lab/candidates.md",
+        "lab/model-2.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/full-052055.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-0606.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-0505rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-full.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-weighted.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/candidates.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-2.json"
+        }
+      ],
+      "anchor": "artifact",
+      "basis_reviewable": true,
+      "at": 1793970425527
+    },
+    {
+      "id": "e-2owyle",
+      "step": "s4",
+      "plan": "p-mw4zi578ss17",
+      "hypothesis": "h-4or8f8",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "model-0 推荐 (0.5,0.55)/95.2665，连续驻点约 (0.524,0.550)、预测约 95.28，符合“约 (0.52,0.55)、95.3%”；full 最高竞争点 (0.5,0.5) 均值 95.4464 仅高 0.1321 <3×0.18=0.54，边界点最高 92.29，未触推翻条件。",
+      "refs": [
+        "lab/verify-052055.json",
+        "lab/full-052055.json",
+        "lab/verify-note.md",
+        "lab/full-0505rep.json",
+        "lab/full-0606.json",
+        "lab/model-full.json",
+        "lab/model-weighted.json",
+        "lab/probe-calibrate-2.json",
+        "lab/"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/verify-052055.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-052055.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/verify-note.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-0505rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-0606.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-full.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-weighted.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/probe-calibrate-2.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/5b840157e7e86aef3b3fd0fc24f3add34d3e7f210370d429475ed1bcd3e7fca2/87a4793fb24124b89e796b7b3f2c05a51bbf1f1cf1d9259ef6e2ab8c414e13f8.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "09913a34-e7bb-4184-a5e1-c621d41ec661"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-2owyle",
+      "step": "s4",
+      "plan": "p-mw4zi578ss17",
+      "hypothesis": "h-4or8f8",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "model-0 推荐 (0.5,0.55)/95.2665，连续驻点约 (0.524,0.550)、预测约 95.28，符合“约 (0.52,0.55)、95.3%”；full 最高竞争点 (0.5,0.5) 均值 95.4464 仅高 0.1321 <3×0.18=0.54，边界点最高 92.29，未触推翻条件。",
+      "refs": [
+        "lab/verify-052055.json",
+        "lab/full-052055.json",
+        "lab/verify-note.md",
+        "lab/full-0505rep.json",
+        "lab/full-0606.json",
+        "lab/model-full.json",
+        "lab/model-weighted.json",
+        "lab/probe-calibrate-2.json",
+        "lab/"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/verify-052055.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-052055.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/verify-note.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-0505rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/full-0606.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-full.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-weighted.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/probe-calibrate-2.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/5b840157e7e86aef3b3fd0fc24f3add34d3e7f210370d429475ed1bcd3e7fca2/87a4793fb24124b89e796b7b3f2c05a51bbf1f1cf1d9259ef6e2ab8c414e13f8.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "09913a34-e7bb-4184-a5e1-c621d41ec661"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "predicate": "optimum_location",
+      "subject": {
+        "id": "surface_c",
+        "type": "response_surface"
+      },
+      "object": {
+        "kind": "statement",
+        "value": "impurity≤0.115 约束下收率最优位于 x≈0.52、y≈0.55 的内部，预测 yield≈95.3%"
+      }
+    }
+  ],
+  "definitions": {
+    "optimum_location": "fnv:f4a55016",
+    "response_surface": "fnv:fc6a5292",
+    "assay_mode": "fnv:340e435a",
+    "impurity_frac": "fnv:a9e51e8b",
+    "impurity_limit": "fnv:04a18ccb",
+    "setting_x": "fnv:e1f0de5e",
+    "setting_y": "fnv:0e89f11c",
+    "yield_pct": "fnv:0f536319"
+  },
+  "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+  "status": "established",
+  "review": null,
+  "at": 1793970845503,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793970845503,
+      "level": "L3"
+    }
+  ]
+}

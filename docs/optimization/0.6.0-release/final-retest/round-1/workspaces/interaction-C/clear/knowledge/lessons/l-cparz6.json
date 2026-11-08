@@ -1,0 +1,28 @@
+{
+  "id": "l-cparz6",
+  "goal": "g-mw6l0ur8pvg1",
+  "text": "低成本 quick 模式噪声(sd 0.45)远大于 full(0.18),同点 quick 读数比两次 full 高约 1.0;不要用 quick 单点决定最优点。",
+  "kind": "trap",
+  "about": [
+    "var_x",
+    "var_y",
+    "yield",
+    "impurity"
+  ],
+  "evidence": "lab/q-0.5-0.5.json 为 96.14,而 lab/f-0.5-0.5.json 为 95.18、初始 95.06",
+  "boundary": "需要优于约 0.3% 的分辨率时",
+  "scope_spec": {
+    "conditions": {
+      "x_bounds": "[0,1]",
+      "y_bounds": "[0,1]",
+      "impurity_limit": "0.115",
+      "instrument": "original",
+      "budget": "30"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/q-0.5-0.5.json:4-9(quick 96.139,sd 0.45)与 lab/f-0.5-0.5.json:4-8(full 95.181)、initial.json:62(95.062)对照,差值约 1.0;quick 噪声更大,排除单点 quick 的决定合理。",
+  "session": "session-native-d22c8b34-3411-4b2a-808e-b1cb088f858b",
+  "status": "active",
+  "at": 1794067405462
+}

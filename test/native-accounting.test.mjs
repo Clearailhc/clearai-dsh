@@ -13,6 +13,15 @@ test('missing or pending usage remains unknown with nonzero known lower bound', 
 		const result = usageSummary([known, extra]); assert.equal(result.status, 'unknown'); assert.equal(result.processed, null); assert.equal(result.lowerBound, 100)
 	}
 })
+test('zero host fallback after provider dispatch is unknown, not a free completed call',()=>{
+ const zero={providerInvoked:true,ended:true,usage:{inputTokens:0,outputTokens:0,totalTokens:0}}
+ const known={ended:true,usage:{inputTokens:4,outputTokens:2,cacheReadTokens:10}}
+ assert.equal(usageSummary([zero,known]).status,'unknown')
+ assert.equal(usageSummary([zero,known]).processed,null)
+ assert.equal(usageSummary([zero,known]).lowerBound,16)
+ assert.equal(usageSummary([{...zero,providerInvoked:false,injectedBeforeProvider:'budget-guard'}]).status,'verified')
+ assert.equal(usageSummary([{ended:true,usage:{inputTokens:0,outputTokens:0,cacheReadTokens:10}}]).processed,10)
+})
 test('only credential content is redacted', () => {
 	assert.deepEqual(redact({ apiKey: 'hidden', token: 'experiment', text: 'Bearer abc.123', inputTokens: 20 }), { apiKey: '[redacted]', token: '[redacted]', text: 'Bearer [redacted]', inputTokens: 20 })
 })

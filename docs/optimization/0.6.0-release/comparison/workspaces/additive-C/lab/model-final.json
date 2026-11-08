@@ -1,0 +1,84 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "additive",
+  "models": [
+    {
+      "kind": "additive",
+      "cv_rmse": 0.1696574301993755,
+      "coefficients": [
+        95.23631137753713,
+        0.05961998024946524,
+        -1.0797482897717385,
+        -6.737576149015829,
+        -5.790798530779091
+      ]
+    },
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.19141078965486288,
+      "coefficients": [
+        95.23628906287598,
+        0.05961664674923384,
+        -1.0797461623381226,
+        -6.737556596359005,
+        -5.790776341066534,
+        -0.015044974231308522
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": null,
+  "next_experiments": [],
+  "best_measured": {
+    "x": 0.5,
+    "y": 0.45,
+    "value": 95.54121283925649,
+    "impurity": 0.08516179262189659
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/f-050-040.json",
+      "lab/f-050-060.json",
+      "lab/f-050-045.json",
+      "lab/f-055-045.json",
+      "lab/f-050-045-rep.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:30e52e8d7ff537575f97834bf7193352889892a18cfd6a1a524f1ae6eedb466d",
+      "lab/f-050-040.json": "sha256:491f0fb8eefc71c995fc2d0973b466aae0eb6b335b56a49b96f7a38a01f2da1b",
+      "lab/f-050-060.json": "sha256:d4e5bd558cb086c94c7681f0c27c965335be3008436bef98c9296944b33f6ed1",
+      "lab/f-050-045.json": "sha256:dcc57e623e9b9eed853830ccfbac86930aa16b825f741bacf980f7c73b17a113",
+      "lab/f-055-045.json": "sha256:ab3d8fb27a4d8e11ee4c34ec52228e328b07dbacccc630740d3e72227ebbd38f",
+      "lab/f-050-045-rep.json": "sha256:46edcb02de6f770c8907d56deec57a6f72e46161f40a3b8176727ad19134ba7c"
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "objective": "maximize yield over x,y in [0,1] subject to impurity <= 0.115",
+  "submission": {
+    "x": 0.5,
+    "y": 0.45
+  },
+  "model": {
+    "kind": "additive quadratic response surface",
+    "coordinate_scaling": "u=2*x-1, v=2*y-1",
+    "yield_coefficients_order": [
+      "intercept",
+      "u",
+      "v",
+      "u^2",
+      "v^2"
+    ],
+    "yield_coefficients": [
+      95.14758361723396,
+      0.04801045055849684,
+      -1.0607325562634584,
+      -6.641257346495894,
+      -5.73223338165833
+    ],
+    "yield_fit_rmse": 0.14866039545163715,
+    "yield_loo_rmse": 0.15865184706494492,
+    "n_full_observations": 16,
+    "predicted_optimum": {
+      "x": 0.5018072801599771,
+      "y": 0.4537382514964617,
+      "predicted_yield": 95.1967417283161
+    },
+    "predicted_at_submission": {
+      "yield": 95.19633453904372,
+      "yield_prediction_interval_95": [
+        94.88736954442719,
+        95.50529953366025
+      ],
+      "impurity": 0.08515269323274245,
+      "impurity_upper_95_empirical_fit": 0.08666935011256088,
+      "impurity_upper_95_conservative_method": 0.10609464899283397,
+      "conservative_method_note": "response_surface.py uses default impurity_noise_sd=0.01; the grid recommendation in lab/model-full06.json reports 0.10609 at (0.5,0.45)."
+    },
+    "impurity_additive_coefficients_order": [
+      "intercept",
+      "u",
+      "v",
+      "u^2",
+      "v^2"
+    ],
+    "impurity_additive_coefficients": [
+      0.08758049546968764,
+      0.015366914504520324,
+      0.02428938462606979,
+      0.008443078162928717,
+      0.00011362256617822799
+    ]
+  },
+  "verification": {
+    "full_measurements_at_submission": [
+      {
+        "path": "lab/full-01.json",
+        "x": 0.5,
+        "y": 0.45,
+        "value": 95.1785447311144,
+        "impurity": 0.08511438892980357,
+        "instrument": "original",
+        "mode": "full",
+        "noise_sd": 0.18
+      },
+      {
+        "path": "lab/full-07.json",
+        "x": 0.5,
+        "y": 0.45,
+        "value": 95.54121283925649,
+        "impurity": 0.08516179262189659,
+        "instrument": "original",
+        "mode": "full",
+        "noise_sd": 0.18
+      }
+    ],
+    "full_yield_mean": 95.35987878518544,
+    "full_impurity_mean": 0.08513809077585008,
+    "impurity_limit": 0.115,
+    "both_impurities_below_limit": true
+  },
+  "instrument": {
+    "name": "original",
+    "metric": "yield",
+    "value_unit": "%",
+    "impurity_unit": "fraction",
+    "full_noise_sd": 0.18,
+    "quick_noise_sd": 0.45,
+    "calibration": [
+      {
+        "instrument": "original",
+        "metric": "yield",
+        "offset": 0,
+        "unit": "normalized x",
+        "cost": 2,
+        "spent": 2,
+        "budget": 30
+      },
+      {
+        "instrument": "original",
+        "metric": "yield",
+        "offset": 0,
+        "unit": "normalized x",
+        "cost": 2,
+        "spent": 30,
+        "budget": 30
+      }
+    ],
+    "calibration_offset": 0
+  },
+  "budget": {
+    "limit": 30,
+    "spent": 30,
+    "remaining": 0
+  },
+  "evidence_full_fit": [
+    "initial.json",
+    "lab/full-01.json",
+    "lab/full-02.json",
+    "lab/full-03.json",
+    "lab/full-04.json",
+    "lab/full-05.json",
+    "lab/full-06.json",
+    "lab/full-07.json"
+  ],
+  "evidence_screening_quick": [
+    "lab/quick-01.json",
+    "lab/quick-edge-x0.json",
+    "lab/quick-edge-x1.json",
+    "lab/quick-edge-y0.json",
+    "lab/quick-edge-y1.json"
+  ],
+  "limitations": [
+    "Empirical quadratic model; no causal validity.",
+    "Observed full design spans x,y in [0.1,0.9]; only quick screening at four mid-edges, so boundary behavior is less certain.",
+    "Quick readings have noise_sd 0.45 and were not merged into the full-measurement fit.",
+    "Yield noise_sd is 0.18; the two full measurements at the submission point differ by 0.36 percentage points, consistent with noise.",
+    "The impurity surface is very well fit (residual RMSE ~0.001), but the limit is a hard fraction and not a guarantee under process variation.",
+    "A single original instrument was used; calibration found offset 0, so no correction was applied."
+  ]
+}

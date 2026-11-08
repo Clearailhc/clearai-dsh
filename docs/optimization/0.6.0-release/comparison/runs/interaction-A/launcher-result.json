@@ -1,0 +1,381 @@
+{
+  "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+  "group": "A",
+  "mode": "default",
+  "reason": "completed",
+  "elapsedMs": 526545,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 23539,
+    "output": 56340,
+    "cacheRead": 1541760,
+    "cacheWrite": 0,
+    "calls": 42,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 1621639,
+    "status": "verified",
+    "processed": 1621639
+  },
+  "mount": {
+    "prompt": false,
+    "tools": false
+  },
+  "requests": [
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068766530
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068768441
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068770412
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068772022
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068775508
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068780439
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068783250
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068786277
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068802355
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068820084
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068893346
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068955432
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068957976
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068992251
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794068996023
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069006353
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069014414
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069024263
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069040532
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069043647
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069049750
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069054749
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069071503
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069076593
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069086264
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069095169
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069103550
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069136677
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069142700
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069150706
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069155865
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069172418
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069182147
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069196334
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069200415
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069237441
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069241481
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069266027
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069270090
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069274570
+    },
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794069281197
+    }
+  ],
+  "approvals": [],
+  "answer": "已完成，`submission.json` 已写入。\n\n## 最终提交\n\n```json\n{\n  \"x\": 0.491,\n  \"y\": 0.495,\n  \"evidence\": [\n    \"initial.json\",\n    \"lab/cal-0.json\",\n    \"lab/cal-1.json\",\n    \"lab/quick-0.5-0.5.json\",\n    \"lab/full-0.3-0.3.json\",\n    \"lab/full-0.7-0.3.json\",\n    \"lab/full-0.3-0.7.json\",\n    \"lab/full-0.7-0.7.json\",\n    \"lab/full-opt-1.json\",\n    \"lab/full-center-rep.json\",\n    \"lab/full-opt-1-rep.json\",\n    \"lab/full-final.json\",\n    \"lab/model-final-all.json\",\n    \"lab/final-analysis.json\",\n    \"lab/final_analysis.py\",\n    \"lab/report.md\",\n    \"lab/evidence-manifest.json\"\n  ]\n}\n```\n\n## 关键结果\n\n- 连续最优解：`x* = 0.49081`，`y* = 0.49491`；提交时按实测坐标取 `(0.491, 0.495)`。\n- 预测收率：**95.163%**；预测杂质：**0.08682**，保守 95% 上界 **0.10766 < 0.115**。\n- 提交点两次独立 `full` 验证：\n  - `lab/full-opt-1.json`：收率 94.787%，杂质 0.08709\n  - `lab/full-opt-1-rep.json`：收率 95.152%，杂质 0.08658\n- 两次均满足杂质约束。\n\n## 模型参数\n\n采用归一化坐标 `u = 2x - 1`、`v = 2y - 1` 的二次交互响应面，使用 17 个 `full` 观测拟合：\n\n```text\nyield(u,v) = 95.16124\n             - 0.17702 u\n             - 0.00189 v\n             - 6.58244 u²\n             - 5.84459 v²\n             + 6.37438 u v\n```\n\n- 拟合 σ = 0.217，收率 RMSE = 0.175，与 full 模式 `noise_sd = 0.18` 一致。\n- 交互模型留一 CV RMSE = 0.264，显著优于加性模型的 4.085，故选择交互模型。\n\n杂质面：\n\n```text\nimpurity(u,v) = 0.087346\n                + 0.014973 u\n                + 0.024401 v\n                + 0.007055 u²\n                + 0.000874 v²\n                - 0.000234 u v\n```\n\n杂质拟合 RMSE = 0.00045，约束在最优点附近不活跃。\n\n## 仪表口径\n\n- 仪表：`original`；指标：`yield`。\n- 收率单位：`%`；杂质单位：`fraction`。\n- 在 `(0.5,0.5)` 和 `(0.1,0.9)` 两次 `calibrate` 均返回 `offset = 0`、`unit = normalized x`，因此未做任何加性/比例校正，直接使用原始读数。\n- `full`：`noise_sd = 0.18`，成本 3；`quick`：`noise_sd = 0.45`，成本 1；`calibrate` 成本 2。\n- 新增实验共消耗 **29 / 30** 单位，剩余 1 单位，不足以再做一次 full。\n\n## 局限\n\n1. 模型为二次响应面；预测不是测量，也不能证明因果有效性。\n2. 顶部非常平坦：中心 `(0.5,0.5)` 的实测收率均值 95.349%，略高于提交点，但中心位于拟合顶点的 95% 置信椭圆内，二者统计上不可区分；预测收率差约 0.002%，远小于噪声。\n3. 顶点坐标标准误约 0.006–0.007；坐标在 0.01–0.02 范围内的偏移对收率影响很小。\n4. 杂质上界使用了保守的 0.01 噪声尺度；实际杂质拟合残差仅 0.00045。\n5. 最优点在内部，未依赖边界外推；但二次模型若遗漏高阶项，顶点位置可能有偏。\n\n完整说明见 `lab/report.md`，可复现分析见 `lab/final-analysis.json` 和 `lab/final_analysis.py`。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "lab/report.md"
+    ],
+    "sessionId": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa"
+  },
+  "violations": {
+    "isolation_failed": false
+  },
+  "driverDigest": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587",
+  "logs": [
+    {
+      "session": "session-native-a2dfac66-0a1d-4e7f-98b7-65a815fe25aa",
+      "cursor": 303,
+      "path": "74fe9aa3d924d0bcddaff9d8f7977d0a63c5f13aeeba8aa1e5b5afeedecd78ef.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "9ac6da6caf3bb88190da09443cb69e1ac2f5ffebf4e368dde438833b6fca02c0",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}

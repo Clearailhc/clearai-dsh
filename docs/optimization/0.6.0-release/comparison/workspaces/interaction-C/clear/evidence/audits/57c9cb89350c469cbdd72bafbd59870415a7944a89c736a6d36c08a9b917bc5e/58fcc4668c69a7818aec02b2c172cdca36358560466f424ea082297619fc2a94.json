@@ -1,0 +1,352 @@
+{
+  "schema_version": "clearai.audit.v3",
+  "coverage": {
+    "policy": "clearai.review.v3",
+    "obligation": {
+      "policy": "clearai.review.v3",
+      "kind": "goal_audit",
+      "scope": "final-delivery",
+      "criteria": "submission.json 存在且含数值 x,y 与 evidence 路径列表(每条指向保留的原始读数文件);所列最终点有 full 模式实测读数且 impurity≤0.115;累计花费(含 calibrate/quick/full)≤30;报告给出参数、仪表口径(calibrate offset、quick/full 噪声)与局限。清点项:evidence 路径文件全部存在,至少一条为 full 模式。",
+      "claims": [],
+      "goal_context": {
+        "id": "g-mw6mkhds4x2e",
+        "claim": "在 x,y∈[0,1] 内把收率(yield)做到最大,同时杂质(impurity)不超过 0.115,总实验预算 ≤30 单位;最终点须有 full 模式实测读数,结果写入 submission.json。",
+        "done_criteria": "submission.json 存在且含数值 x,y 与 evidence 路径列表(每条指向保留的原始读数文件);所列最终点有 full 模式实测读数且 impurity≤0.115;累计花费(含 calibrate/quick/full)≤30;报告给出参数、仪表口径(calibrate offset、quick/full 噪声)与局限。清点项:evidence 路径文件全部存在,至少一条为 full 模式。"
+      },
+      "final_delivery_required_now": true
+    },
+    "digest": "v7:ba2f3cc5c266be32f22bc59b9efdf252ca9ed0b653f73477b9914d444eeaef3e",
+    "claims": [],
+    "criteria": [
+      {
+        "id": "C1",
+        "text": "submission.json 存在且含数值 x,y 与 evidence 路径列表(每条指向保留的原始读数文件);所列最终点有 full 模式实测读数且 impurity≤0.115;累计花费(含 calibrate/quick/full)≤30;报告给出参数、仪表口径(calibrate offset、quick/full 噪声)与局限。清点项:evidence 路径文件全部存在,至少一条为 full 模式。"
+      }
+    ],
+    "trust": {
+      "model": "deepseek-flash",
+      "modelProvider": "deepseek",
+      "reasoningEffort": "medium",
+      "policy": "clearai.review.v3",
+      "discipline": "21ad786a79b0e618a898faaed6b3e466bd36b2498f3b783e8a87635e59313299",
+      "preset": "clearai-evaluator",
+      "provider": "spawn",
+      "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+      "rerun": true,
+      "tools": [
+        "read",
+        "glob",
+        "grep",
+        "read_image"
+      ],
+      "l4Human": true,
+      "l4External": true
+    },
+    "scope": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    }
+  },
+  "kind": "goal_audit",
+  "step_id": "goal:g-mw6mkhds4x2e",
+  "auditor_run_id": "c2ce45a3-63ea-42ba-aed7-52d719a9f21d",
+  "rechecks": [],
+  "reuse": [
+    {
+      "id": "f-82xjwr",
+      "verdict": "support",
+      "basis": "scope 与目标相同;报告:18-19 与复跑给驻点 0.479/0.481、峰值 95.142,实测 0.5/0.5;结论直接采用。"
+    },
+    {
+      "id": "f-7n7xpb",
+      "verdict": "support",
+      "basis": "最优点 full 杂质 0.0879–0.0887<0.115;x=0.5 线 y=1 均值 0.1129<0.115;结论直接采用。"
+    },
+    {
+      "id": "f-l2mmz4",
+      "verdict": "support",
+      "basis": "配对 4 行 2 位置,|Δ|≤0.418<0.9;offset=0;full-only 重拟合驻点移 0.009;结论用 quick 定位、full 报数。"
+    }
+  ],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "submission.json:2-3 给 x=y=0.5、:4-15 共 11 条 evidence 全部存在;final 点 3 条 full(f_final:4-8、f_rep:4-8、initial:62-66)impurity 0.0879–0.0887≤0.115;initial:142 remaining_budget=30,付费 16 条(analysis-final:79-175)从 spent 1 起、cost 合计 29≤30;报告 10-33 参数/口径(offset=0、normalized x、quick/full sd 0.45/0.18)、59-67 七条局限;副本复跑一致。备注:model-final/analysis-final 为派生汇总(非原始读数),final 点 full 原始读数齐备。"
+    }
+  ],
+  "results": [],
+  "anomalies": [
+    {
+      "existing_id": "audit:pending:3e45acefb59d9518281cf24512780dd0#u1",
+      "disposition": "maintain",
+      "what": "experiment-endpoint.json 相对 goal 注册变更(workspace_baseline 标 changed),作者未登记;mtime 2026-11-08 02:21,晚于全部读数(2026-11-07 16:35–16:39),isolation-public.txt 同时刻重写。",
+      "matters": "no",
+      "touches": [
+        "h-5fwi2k",
+        "h-exjsfx",
+        "h-vfvblr"
+      ],
+      "impact_basis": "实测:全部 16 条 ledger 的 spent 1→29 连续,cal_1/2/3 instrument=original/offset=0;02:21 后无新读数文件,spent 仍 29,isolation-public.txt 仍 isolation-ok。重写原因(会话恢复)为推断,但对读数/花费/仪器无影响,原“已解释”处置仍成立。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "结论称 full (0.45,0.45)=95.129、(0.48,0.48)=94.985、(0.49,0.49)=95.051 与中心两次 95.039/94.859“均不高于中心均值”,但 lab/f_0.45_0.45.json:4=95.129 > lab/analysis-final.json:38 的中心均值 95.1146;lab/q_0.4_0.4.json:4=95.21 亦高于该均值,reports/yield-optimization-report.md:55 的“没有找到高于中心”未列这两点。",
+      "matters": "no",
+      "touches": [
+        "h-exjsfx"
+      ],
+      "impact_basis": "实测差:0.45 高 0.014(full sd 0.18,1 次),0.4 高 0.093(quick sd 0.45);中心有 3 次 full 重复,模型驻点 0.479/0.481 预测 95.142 vs 中心 95.133;差异 <1 se,不触发推翻条件,不改提交点,但“均不高于”表述应更正。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "结论以“独立核验(ReviewClaims,L3)”采用三条 L3 fact(f-82xjwr/f-7n7xpb/f-l2mmz4),但 clear/goals/g-mw6mkhds4x2e.md:12/17/22 的 uses 仍为空,未逐条声明适用性。",
+      "matters": "no",
+      "touches": [
+        "h-exjsfx",
+        "h-vfvblr",
+        "h-5fwi2k"
+      ],
+      "impact_basis": "三条 fact 的 scope_spec 与目标条件(变量[0,1]、杂质 0.115、预算 30、instrument original)逐字相同,证据记录引用本目标 submission;无范围错配,仅声明缺口。"
+    }
+  ],
+  "lessons": [
+    {
+      "lesson": "L1",
+      "verdict": "support",
+      "basis": "lab/analysis-final.json:31-44: n=3,95.445/95.039/94.859,mean 95.1146,se 0.173;95.445 比均值高 0.33;重复后再报数更稳。"
+    },
+    {
+      "lesson": "L2",
+      "verdict": "support",
+      "basis": "lab/analysis-final.json:46-74 配对 4 行 2 位置,|Δ|≤0.418<0.9;复算模式残差均值差 +0.09±0.17(quick sd 0.465/full 0.182);full-only 重拟合驻点移 0.009;支持 quick 定位/full 报数。"
+    },
+    {
+      "lesson": "L3",
+      "verdict": "support",
+      "basis": "lab/cal_1.json:4、cal_2:4、cal_3:4 均 instrument=original、offset=0、unit=normalized x;未做校正;换仪器需重校,记录支持。"
+    },
+    {
+      "lesson": "L4",
+      "verdict": "support",
+      "basis": "复算 impurity 残差 sd=0.000693≈0.0007;input-final 的 impurity_noise_sd=0.001;用 0.01 时中心 95% 上限 0.1062<0.115,不会在最优点绑定(仅 y≈1 边界收紧),核心“用 0.001”成立。"
+    }
+  ],
+  "basis": "交付成立:C1 实质项满足——submission 有 x=y=0.5 与 11 条 evidence(均存在,final 点 3 条 full,impurity 0.0879–0.0887≤0.115),16 条付费记录 cost 合计 29≤30,报告含系数、calibrate offset=0/单位 normalized x、quick/full sd 0.45/0.18 与 7 条局限,副本复跑 analyze_final.py/response_surface.py 数值一致;未解释项为 endpoint 02:21 重写(无新读数,maintain)、结论“0.45 等均不高于中心均值”的 0.014 误差(噪声内,不改提交点)与三条 L3 fact 的 uses 为空(scope 同)。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "clear/goals/g-mw6mkhds4x2e.md",
+      "line": 6,
+      "digest": "6565629bccf902e132552f8b70e341b6510454465be941a9909e613fe0196293"
+    },
+    {
+      "path": "submission.json",
+      "line": 2,
+      "digest": "9811f12940fb959ead77445d1366d34b3e1e1e057ecbdc47481a1f85ca8d434c"
+    },
+    {
+      "path": "submission.json",
+      "line": 4,
+      "digest": "9811f12940fb959ead77445d1366d34b3e1e1e057ecbdc47481a1f85ca8d434c"
+    },
+    {
+      "path": "submission.json",
+      "line": 14,
+      "digest": "9811f12940fb959ead77445d1366d34b3e1e1e057ecbdc47481a1f85ca8d434c"
+    },
+    {
+      "path": "lab/f_final_0.5_0.5.json",
+      "line": 4,
+      "digest": "2c8fc4acf73a8aa24562bdbd55fb862b65208abe99d6f68bbd39838dda35aa93"
+    },
+    {
+      "path": "lab/f_final_0.5_0.5.json",
+      "line": 5,
+      "digest": "2c8fc4acf73a8aa24562bdbd55fb862b65208abe99d6f68bbd39838dda35aa93"
+    },
+    {
+      "path": "lab/f_final_0.5_0.5.json",
+      "line": 8,
+      "digest": "2c8fc4acf73a8aa24562bdbd55fb862b65208abe99d6f68bbd39838dda35aa93"
+    },
+    {
+      "path": "lab/f_0.5_0.5_rep.json",
+      "line": 4,
+      "digest": "c382a21ad5c378195696843bc4628ae5385f7e8db00e15e5e2c360f123163b4c"
+    },
+    {
+      "path": "lab/f_0.5_0.5_rep.json",
+      "line": 5,
+      "digest": "c382a21ad5c378195696843bc4628ae5385f7e8db00e15e5e2c360f123163b4c"
+    },
+    {
+      "path": "lab/f_0.5_0.5_rep.json",
+      "line": 8,
+      "digest": "c382a21ad5c378195696843bc4628ae5385f7e8db00e15e5e2c360f123163b4c"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "1c29f31dff95dcb33ae404a91a15c1aee46fb6b23eec0e8f2da5c1014d392222"
+    },
+    {
+      "path": "initial.json",
+      "line": 63,
+      "digest": "1c29f31dff95dcb33ae404a91a15c1aee46fb6b23eec0e8f2da5c1014d392222"
+    },
+    {
+      "path": "initial.json",
+      "line": 66,
+      "digest": "1c29f31dff95dcb33ae404a91a15c1aee46fb6b23eec0e8f2da5c1014d392222"
+    },
+    {
+      "path": "initial.json",
+      "line": 142,
+      "digest": "1c29f31dff95dcb33ae404a91a15c1aee46fb6b23eec0e8f2da5c1014d392222"
+    },
+    {
+      "path": "lab/analysis-final.json",
+      "line": 38,
+      "digest": "7d179216e07492c207604bae8354edf1d1a6bd8bc8f4e330a851a5b328a256a2"
+    },
+    {
+      "path": "lab/analysis-final.json",
+      "line": 79,
+      "digest": "7d179216e07492c207604bae8354edf1d1a6bd8bc8f4e330a851a5b328a256a2"
+    },
+    {
+      "path": "lab/analysis-final.json",
+      "line": 171,
+      "digest": "7d179216e07492c207604bae8354edf1d1a6bd8bc8f4e330a851a5b328a256a2"
+    },
+    {
+      "path": "lab/analysis-final.json",
+      "line": 177,
+      "digest": "7d179216e07492c207604bae8354edf1d1a6bd8bc8f4e330a851a5b328a256a2"
+    },
+    {
+      "path": "lab/analysis-final.json",
+      "line": 21,
+      "digest": "7d179216e07492c207604bae8354edf1d1a6bd8bc8f4e330a851a5b328a256a2"
+    },
+    {
+      "path": "lab/analysis-final.json",
+      "line": 24,
+      "digest": "7d179216e07492c207604bae8354edf1d1a6bd8bc8f4e330a851a5b328a256a2"
+    },
+    {
+      "path": "lab/analysis-final.json",
+      "line": 46,
+      "digest": "7d179216e07492c207604bae8354edf1d1a6bd8bc8f4e330a851a5b328a256a2"
+    },
+    {
+      "path": "lab/cal_1.json",
+      "line": 4,
+      "digest": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "lab/cal_2.json",
+      "line": 4,
+      "digest": "475c2fe2d8ff20d34ebfa7e366310d6c02fec3a43722f46aafc2c7822e9bfb13"
+    },
+    {
+      "path": "lab/cal_3.json",
+      "line": 4,
+      "digest": "88c654f28cc0367e577ebedeb01b8e922e48ef702e1d86e2ab281d0719d11f52"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 8,
+      "digest": "ea129ff25ddef8c807208db8529ac64fdb0115bec5ef0fda5fa01582df810347"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 58,
+      "digest": "ea129ff25ddef8c807208db8529ac64fdb0115bec5ef0fda5fa01582df810347"
+    },
+    {
+      "path": "reports/yield-optimization-report.md",
+      "line": 15,
+      "digest": "62b4f852495660213fd010033b852f50ea2ec9b36048ca50e483d1bcfe55798e"
+    },
+    {
+      "path": "reports/yield-optimization-report.md",
+      "line": 27,
+      "digest": "62b4f852495660213fd010033b852f50ea2ec9b36048ca50e483d1bcfe55798e"
+    },
+    {
+      "path": "reports/yield-optimization-report.md",
+      "line": 31,
+      "digest": "62b4f852495660213fd010033b852f50ea2ec9b36048ca50e483d1bcfe55798e"
+    },
+    {
+      "path": "reports/yield-optimization-report.md",
+      "line": 55,
+      "digest": "62b4f852495660213fd010033b852f50ea2ec9b36048ca50e483d1bcfe55798e"
+    },
+    {
+      "path": "reports/yield-optimization-report.md",
+      "line": 59,
+      "digest": "62b4f852495660213fd010033b852f50ea2ec9b36048ca50e483d1bcfe55798e"
+    },
+    {
+      "path": "lab/f_0.45_0.45.json",
+      "line": 4,
+      "digest": "63df473470d6d707b836d7f0021e7903186558c7b49b9a4e455b94d64ee6474b"
+    },
+    {
+      "path": "lab/q_0.4_0.4.json",
+      "line": 4,
+      "digest": "97cff609ddd4b8ba86db7759b73dcfb51f0bfd50b9890ccbb372e937a1a6fbdf"
+    },
+    {
+      "path": "clear/knowledge/facts/INDEX.md",
+      "line": 6,
+      "digest": "955dfbf91a0ca8db23c32e06e5cb3c5baad9184b19ea1580b6bfd5ddfc0bf534"
+    },
+    {
+      "path": "clear/knowledge/facts/INDEX.md",
+      "line": 13,
+      "digest": "955dfbf91a0ca8db23c32e06e5cb3c5baad9184b19ea1580b6bfd5ddfc0bf534"
+    },
+    {
+      "path": "clear/knowledge/facts/INDEX.md",
+      "line": 20,
+      "digest": "955dfbf91a0ca8db23c32e06e5cb3c5baad9184b19ea1580b6bfd5ddfc0bf534"
+    },
+    {
+      "path": "clear/goals/g-mw6mkhds4x2e.md",
+      "line": 12,
+      "digest": "6565629bccf902e132552f8b70e341b6510454465be941a9909e613fe0196293"
+    },
+    {
+      "path": "clear/goals/g-mw6mkhds4x2e.md",
+      "line": 17,
+      "digest": "6565629bccf902e132552f8b70e341b6510454465be941a9909e613fe0196293"
+    },
+    {
+      "path": "clear/goals/g-mw6mkhds4x2e.md",
+      "line": 22,
+      "digest": "6565629bccf902e132552f8b70e341b6510454465be941a9909e613fe0196293"
+    },
+    {
+      "path": "experiment-endpoint.json",
+      "line": 1,
+      "digest": "b5d56a6e5f0d69239fb650927ec8b43d170cef797df3e87b3b1f5415bbe234f7"
+    },
+    {
+      "path": "isolation-public.txt",
+      "line": 1,
+      "digest": "a3ca2c0c7f959b8b18925f967a2eeba5215a22c0ecd0ff7f7e594e609f38aa15"
+    }
+  ],
+  "card": "交付成立:C1 实质项满足——submission 有 x=y=0.5 与 11 条 evidence(均存在,final 点 3 条 full,impurity 0.0879–0.0887≤0.115),16 条付费记录 cost 合计 29≤30,报告含系数、calibrate offset=0/单位 normalized x、quick/full sd 0.45/0.18 与 7 条局限,副本复跑 analyze_final.py/response_surface.py 数值一致;未解释项为 endpoint 02:21 重写(无新读数,maintain)、结论“0.45 等均不高于中心均值”的 0.014 误差(噪声内,不改提交点)与三条 L3 fact 的 uses 为空(scope 同)。",
+  "created_at": 1794105626719,
+  "evaluator": "independent"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "instrument",
+  "label": "测量仪器",
+  "gloss": "测量仪器;响应含 instrument 字段与 calibrate 的 offset(normalized x)。",
+  "kind": "category"
+}

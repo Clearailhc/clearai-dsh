@@ -1,0 +1,8 @@
+{
+  "schema": "clearai.public-mount-evidence.v1",
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "sourcePath": "e390b5522f8703e3044ed418dfc1483d4e211cb21c941ad5b7af98c7e90cca1a.jsonl",
+  "sourceSha256": "153e6422938cc90c468cb5b527555e6de08e362e18c5fade3000ed33f81f84c9",
+  "restoredPrompt": true,
+  "method": "Derived from the original native session system/message; private prompt content omitted."
+}

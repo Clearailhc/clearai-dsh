@@ -1,0 +1,18 @@
+{
+  "testedPackageDigest": "04103b5310fecde9fff31b509061444e9625703b9054d3659267e5dad2c99a67",
+  "runtimeFilesCompared": 49,
+  "differentRuntimeFiles": [],
+  "documentationExceptions": [
+    "CHANGELOG.md",
+    "INVENTORY.txt",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "screenshotProductionMatches": {
+    "phase-2": true,
+    "phase-1": true,
+    "phase-3": true
+  },
+  "tarballSha256": "d769aa40b7c296db6f03176a15cd31b421f6c27c0881fd88fc4119479306a6c1",
+  "tarballBytes": 637079
+}

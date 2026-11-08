@@ -1,0 +1,9 @@
+{
+  "domain": "yield_surface",
+  "id": "maximized_at",
+  "kind": "defines",
+  "label": "极值位置",
+  "range": {
+    "form": "statement"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "budget_total": 30,
+  "spent": 23,
+  "remaining": 7,
+  "costs": {
+    "quick": 1,
+    "full": 3,
+    "calibrate": 2
+  },
+  "aliases": [
+    {
+      "file": "lab/probe-quick-0505.json",
+      "same_as": "lab/probe-quick.json",
+      "note": "同一份 quick 原始读数（(0.5,0.5)，sha256 2cc1b4c4…）。lab/model-2.json 记录的是改名前的路径，故保留同名硬链接；不重复计费。"
+    }
+  ],
+  "experiments": [
+    {"file": "lab/probe-quick.json", "mode": "quick", "x": 0.5, "y": 0.5, "cost": 1, "spent_after": 1},
+    {"file": "lab/probe-calibrate.json", "mode": "calibrate", "x": 0.5, "y": 0.5, "cost": 2, "spent_after": 3},
+    {"file": "lab/screen-0307.json", "mode": "quick", "x": 0.3, "y": 0.7, "cost": 1, "spent_after": 4},
+    {"file": "lab/screen-0703.json", "mode": "quick", "x": 0.7, "y": 0.3, "cost": 1, "spent_after": 5},
+    {"file": "lab/screen-0606.json", "mode": "quick", "x": 0.6, "y": 0.6, "cost": 1, "spent_after": 6},
+    {"file": "lab/screen-0406.json", "mode": "quick", "x": 0.4, "y": 0.6, "cost": 1, "spent_after": 7},
+    {"file": "lab/screen-0604.json", "mode": "quick", "x": 0.6, "y": 0.4, "cost": 1, "spent_after": 8},
+    {"file": "lab/screen-0508.json", "mode": "quick", "x": 0.5, "y": 0.8, "cost": 1, "spent_after": 9},
+    {"file": "lab/full-052055.json", "mode": "full", "x": 0.52, "y": 0.55, "cost": 3, "spent_after": 12},
+    {"file": "lab/full-0606.json", "mode": "full", "x": 0.6, "y": 0.6, "cost": 3, "spent_after": 15},
+    {"file": "lab/full-0505rep.json", "mode": "full", "x": 0.5, "y": 0.5, "cost": 3, "spent_after": 18},
+    {"file": "lab/verify-052055.json", "mode": "full", "x": 0.52, "y": 0.55, "cost": 3, "spent_after": 21},
+    {"file": "lab/probe-calibrate-2.json", "mode": "calibrate", "x": 0.52, "y": 0.55, "cost": 2, "spent_after": 23}
+  ]
+}

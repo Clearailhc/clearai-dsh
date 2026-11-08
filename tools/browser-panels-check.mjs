@@ -18,6 +18,7 @@ const edges = nodes.slice(1).map((node, i) => ({ id: `hierarchy:${i}`, from: `te
 for (const [i, label] of ['催化剂 A', '催化剂 B', '240 °C', '产率 62%', '连续运行 48h'].entries()) nodes.push({ id: `entity:${i}`, ref: `e${i}`, label, kind: i < 2 ? 'instance' : 'literal', layer: 'entity', status: 'live', facts: ['f1'], x: i * 220, y: 180 })
 for (const [i, label] of ['对照', '反应温度', '测得产率', '稳定性检验'].entries()) edges.push({ id: `assertion:${i}`, from: 'entity:0', to: `entity:${i+1}`, layer: 'entity', kind: 'assertion', fact: 'f1', label, status: i === 3 ? 'pending' : 'live' })
 const fixture = {
+ knowledgeFlow:{summary:{currentFacts:3,loadedFacts:7,pendingFacts:1,factAssertions:34,entityRecords:301,entityAssertions:616}},
  sessionId:'preview', goal:{id:'g1',headline:'寻找更高效、更稳定的催化路径',claim:'催化剂 A 能否在保持选择性的同时提高产率？',phase:'executing',status:'open',hypotheses:[],answers:[{question:'q1',conclusion:'催化剂 A 在当前实验条件下表现出更高的产率。',basis:['三组独立重复实验显示一致趋势；稳定性尚需长时间复核。'],open:[{effect:'当前结论尚不能外推至更高温度或长期运行。'}],decide:['是否开展下一轮中试验证？']}]},
  plan:{id:'p1',steps:[{id:'s1',ordinal:1,do:'建立基线并复核测量口径',status:'advanced'},{id:'s2',ordinal:2,do:'在两档温度下重复对照实验',status:'open'}]},
  exploration:{mode:'solve',current:'q1',areas:[],questions:[{id:'q1',text:'活性提升来自材料结构，还是反应温度？',status:'open',implicit:false,counts:{examining:2},candidates:[{id:'h1',name:'材料结构主导',claim:'活性位点密度决定产率。',state:'examining',refuteWhen:'温度控制后差异消失'},{id:'h2',name:'反应温度主导',claim:'实际温度差异造成观测优势。',state:'examining',refuteWhen:'等温条件下差异仍显著'}]},{id:'q2',text:'长期运行是否改变催化剂表面结构？',status:'open',implicit:false,counts:{examining:1},candidates:[{id:'h3',name:'表面重构',claim:'高温运行改变活性位点。',state:'examining'}]}],next:{ordinal:2,do:'在两档温度下重复对照实验',predictions:[{hypothesis:'h1',name:'材料结构主导',expect:'等温后 A 的优势仍然存在'},{hypothesis:'h2',name:'反应温度主导',expect:'等温后两者差异显著缩小'}],indistinct:false}},
@@ -73,6 +74,8 @@ window.renderPanel('Atlas');
   await page.waitForFunction(()=>{const value=document.querySelector('.react-flow__viewport')?.getAttribute('style');window.stableFrames=window.lastViewport===value?(window.stableFrames??0)+1:0;window.lastViewport=value;return window.stableFrames>=10},undefined,{polling:'raf'})
  }
  await settle()
+ await page.getByText('本目标事实 3', {exact:false}).waitFor()
+ for(const width of [375,768,1440]){await page.setViewportSize({width,height:1050});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Knowledge summary must wrap within viewport')}
  await measureContrast('light')
  await page.screenshot({animations:'disabled',path:join(output,'ontology-desktop.png'),fullPage:true})
  await page.evaluate(()=>window.renderPanel('ExploreView'))
@@ -140,6 +143,9 @@ window.renderPanel('Atlas');
  await page.evaluate(()=>{window.language='en';window.localeChange();window.renderPanel('ExploreView')})
  await page.getByText('Research workspace',{exact:true}).waitFor()
  for(const width of [375,768,1440]) {await page.setViewportSize({width,height:1000});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'English layout must not overflow')}
+ await page.evaluate(()=>window.renderPanel('Atlas'))
+ await page.getByText('Facts from this goal 3',{exact:false}).waitFor()
+ for(const width of [375,768,1440]){await page.setViewportSize({width,height:1000});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'English knowledge summary must wrap')}
  const started=Date.now()
  await page.evaluate(()=>{
   const nodes=Array.from({length:200},(_,i)=>({id:'term:s'+i,ref:'s'+i,label:'Long research concept '+i+' with applicability boundaries',kind:'concept',layer:'ontology'}));

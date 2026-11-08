@@ -12,7 +12,7 @@ const env={...process.env,CLEARAI_DSH_RESOURCES:runtime.resources,DSH_HOME:home,
 mkdirSync(home,{recursive:true})
 function dsh(args){const result=spawnSync(runtime.app,[join(repo,'tools/native-headless/installed-cli.cjs'),...args],{env,encoding:'utf8',timeout:900000});if(result.status!==0)throw new Error('Native CLI failed: '+result.stderr.slice(-1500));return result.stdout}
 dsh(['--profile',profile,...(existsSync(join(home,'profiles',profile,'package.json'))?[]:['--from-default-profile','headless']),'--dump-config'])
-const dist=join(repo,'dist/clearai-dsh')
+const dist=resolve(process.env.CLEARAI_TEST_PACKAGE_DIR ?? join(repo,'dist/clearai-dsh'))
 const packed=spawnSync(...npmCommand(['pack',dist,'--pack-destination',home,'--json']),{encoding:'utf8',env,timeout:120000})
 if(packed.status!==0)throw new Error('Could not pack candidate')
 const initial=join(home,JSON.parse(packed.stdout)[0].filename),sha=bytes=>createHash('sha256').update(bytes).digest('hex'),packageDigest=sha(readFileSync(initial)),tarball=initial.replace(/\.tgz$/,`-${packageDigest.slice(0,16)}.tgz`)

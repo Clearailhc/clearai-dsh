@@ -1,0 +1,140 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.17824771896546568,
+      "coefficients": [
+        95.21221036565825,
+        4.247103756750504,
+        -0.20729924349095477,
+        -6.759676950601967,
+        -5.462207342341777,
+        6.303475286620204
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 4.203956264739752,
+      "coefficients": [
+        95.53824622735537,
+        4.431730117830519,
+        -0.1220435726468401,
+        -6.834488152898818,
+        -5.887955637438551
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": {
+    "x": 0.65,
+    "y": 0.5,
+    "predicted_value": 95.87797056712922,
+    "prediction_interval": [
+      95.50116947699111,
+      96.25477165726734
+    ],
+    "predicted_impurity_upper": 0.11373867370653847,
+    "experiment_cost": 3,
+    "within_observed_bounding_box": true,
+    "verified": false
+  },
+  "next_experiments": [
+    {
+      "x": 0.09999999999999998,
+      "y": 0.09999999999999998,
+      "predicted_value": 88.19258499100356,
+      "prediction_interval": [
+        87.72326334908638,
+        88.66190663292073
+      ],
+      "predicted_impurity_upper": 0.08504782720445872,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.9,
+      "y": 0.09999999999999998,
+      "predicted_value": 86.9195026349305,
+      "prediction_interval": [
+        86.44752467479157,
+        87.39148059506942
+      ],
+      "predicted_impurity_upper": 0.11092051698732117,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.15000000000000002,
+      "y": 0.09999999999999998,
+      "predicted_value": 89.12696888633928,
+      "prediction_interval": [
+        88.67519184146266,
+        89.5787459312159
+      ],
+      "predicted_impurity_upper": 0.08464428846018908,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    }
+  ],
+  "best_measured": {
+    "x": 0.71,
+    "y": 0.61,
+    "value": 96.32237096596963,
+    "impurity": 0.10040929846611875
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "lab/input-initial.json",
+    "measurements": [
+      "lab/f-0.5-0.5.json",
+      "lab/f-0.70-0.60.json",
+      "lab/f-0.8-0.6.json",
+      "lab/f-0.6-0.6.json",
+      "lab/f-0.75-0.65.json",
+      "lab/f-0.71-0.61.json",
+      "lab/f-0.75-0.60.json"
+    ],
+    "digests": {
+      "lab/input-initial.json": "sha256:d61146cc1e0992f9700e1c8fbfd3747fd952c0a5d70bbe31ac5a9189ea0da9a9",
+      "lab/f-0.5-0.5.json": "sha256:0ed015975e4da6b2f4495da721e4d4222cd453e3f56aa1bad4a9fed72041f849",
+      "lab/f-0.70-0.60.json": "sha256:4a16aa50d741071d7ebfbb8818a2170e2b1960bf7b20c140a01325110f398df6",
+      "lab/f-0.8-0.6.json": "sha256:a3e445749e6b56e6a4caffbb15e6e038eab0ea77058596bd42642041c1da1000",
+      "lab/f-0.6-0.6.json": "sha256:d89203e550e5cd7e8ab1a5a22cd1c3a9399bdff0f3e7637b322d52dddaa211ee",
+      "lab/f-0.75-0.65.json": "sha256:54ffd57571452d835baa9d17d31ede561b03dad63e5cd04b0379e68b4ea759d1",
+      "lab/f-0.71-0.61.json": "sha256:95a2447f8b84509d7634951f1ec9f736c38b80c314222beff94e968469df7dc7",
+      "lab/f-0.75-0.60.json": "sha256:5649222d7be97d60ce803605e00b628b7e3f079c50b910d87c24ee617578f242"
+    }
+  }
+}

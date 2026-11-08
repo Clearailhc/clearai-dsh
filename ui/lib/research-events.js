@@ -2,7 +2,7 @@ import { checkOntologyFile } from './domain-language.js'
 import { createHash } from 'node:crypto'
 
 /** UI-only projection. Source metadata remains the authority; never used as model input. */
-export const RESEARCH_EVENT_VERSION = 3
+export const RESEARCH_EVENT_VERSION = 4
 
 const list = value => Array.isArray(value) ? value : []
 const text = value => typeof value === 'string' ? value : ''
@@ -32,7 +32,7 @@ export function researchEvents(event, mutations = mutationsFromResearchEvent(eve
       taskId: text(mutation.goal_id) || text(mutation.goal) || (mutation.t === 'goal/set' || mutation.t === 'goal/closed' ? text(mutation.id) : null),
       time: typeof event.time === 'number' ? event.time : null,
       objects: objects.filter(item => item.id), summary: summary.filter(Boolean), status,
-      links, revision: mutation.revision ?? null, replaces: mutation.t === 'hypothesis/superseded' ? text(mutation.id) : null,
+      links: links.filter(link => link && typeof link === 'object'), revision: mutation.revision ?? null, replaces: mutation.t === 'hypothesis/superseded' ? text(mutation.id) : null,
       sourceTypes: [mutation.t],
     })
   }
@@ -42,8 +42,9 @@ export function researchEvents(event, mutations = mutationsFromResearchEvent(eve
     const m = mutation
     if (m.t === 'goal/set') {
       list(m.hypotheses).forEach((hypothesis, offset) => {
-        if (!text(hypothesis.id) || !text(hypothesis.claim)) return
-        add('hypothesis', m, `${index}.${offset}`, [object('hypothesis', hypothesis.id, hypothesis.name)], [hypothesis.claim, hypothesis.retests, hypothesis.refute_when, m.reason], 'pending')
+        if (!text(hypothesis?.id) || !text(hypothesis?.claim)) return
+        add('hypothesis', m, `${index}.${offset}`, [object('hypothesis', hypothesis.id, hypothesis.name)], [text(hypothesis.claim), text(m.reason)], 'pending')
+        output.at(-1).refutationCondition = text(hypothesis.refute_when) || null
       })
     } else if (m.t === 'hypothesis/superseded') {
       add('hypothesis', m, index, [object('hypothesis', m.id)], [text(m.claim), text(m.reason), text(m.by)], 'superseded')
@@ -57,17 +58,17 @@ export function researchEvents(event, mutations = mutationsFromResearchEvent(eve
         const row = { mutation: { t: m.t, id: match[2], label: change.data.label, basis: change.data.basis, path: change.path }, index }
         ;(match[1] === 'entities' ? entities : structure).push(row)
       })
-      if (list(m.integrity).length) add('integrity', m, index, [], list(m.integrity).map(item => text(item.path) + ': ' + text(item.code)), 'review-required')
+      if (list(m.integrity).length) add('integrity', m, index, [], list(m.integrity).map(item => text(item?.path) + ': ' + text(item?.code)), 'review-required')
     } else if (m.t === 'entity/registered' || m.t === 'entity/asserted') {
       entities.push({ mutation: m, index })
     } else if (m.t === 'evidence/recorded') {
       add('validation', m, index, [object('hypothesis', m.hypothesis), object('evidence', m.id)], [text(m.basis)], text(m.verdict) || 'unknown', list(m.origins))
-    } else if (m.t === 'audit/dispatched') {
+    } else if (m.t === 'audit/dispatched' && text(m.evaluator_session) && m.status !== 'dispatching') {
       add('handoff', m, index, [object('audit', m.id)], [text(m.reason), ...list(m.criteria).map(item => typeof item === 'string' ? item : text(item?.text))], 'dispatched', text(m.evaluator_session) ? [{ kind: 'evaluator-session', sessionId: m.evaluator_session }] : [])
     } else if (m.t === 'audit/settled') {
-      add('adjudication', m, index, [object('audit', m.id)], [text(m.basis), ...list(m.shortfalls).map(item => typeof item === 'string' ? item : text(item?.detail))], text(m.verdict) || 'unknown', text(m.card_path) ? [{ kind: 'audit-card', path: m.card_path }] : [])
+      add('adjudication', m, index, [object('audit', m.id)], [text(m.basis), ...list(m.shortfalls).map(item => typeof item === 'string' ? item : text(item?.detail) || [text(item?.criterion), text(item?.what), text(item?.missing)].filter(Boolean).join(' · '))], text(m.verdict) || 'unknown', text(m.card_path) ? [{ kind: 'audit-card', path: m.card_path }] : [])
     } else if (m.t === 'goal/closed') {
-      add('outcome', m, index, [object('goal', m.id)], list(m.answers).flatMap(answer => [text(answer.conclusion), ...list(answer.basis).map(text), ...list(answer.open).map(item => text(item?.effect) || text(item))]), text(m.status) || 'unknown')
+      add('outcome', m, index, [object('goal', m.id)], list(m.answers).flatMap(answer => [text(answer?.conclusion), ...list(answer?.basis).map(text), ...list(answer?.open).map(item => text(item?.effect) || text(item))]), text(m.status) || 'unknown')
     }
   })
   for (const [category, rows] of [['structure', structure], ['entities', entities]]) {
@@ -93,12 +94,12 @@ export function emptyResearchProjection(sessionId) {
 }
 
 export function applyResearchProjection(state, event) {
-  const candidates = mutationsFromResearchEvent(event)
+  const candidates = mutationsFromResearchEvent(event).filter(mutation => mutation && typeof mutation === 'object' && typeof mutation.t === 'string')
   if (!candidates.length) return state
-  const accepted = new Set(Object.keys(state.seen))
+  const accepted = new Set()
   const fresh = candidates.filter(mutation => {
     const key = fingerprint(mutation)
-    if (accepted.has(key)) return false
+    if (Object.hasOwn(state.seen, key) || accepted.has(key)) return false
     accepted.add(key)
     return true
   })
@@ -115,12 +116,16 @@ export function applyResearchProjection(state, event) {
   })
   const records = researchEvents(event, displayMutations)
   const taskId = [...fresh].reverse().find(mutation => mutation.t === 'goal/set')?.id ?? state.taskId
-  if (!records.length) return taskId !== state.taskId ? { ...state, taskId } : state
   const objectTasks = { ...state.objectTasks }
   for (const mutation of fresh) {
-    if (mutation.t === 'goal/set') for (const hypothesis of list(mutation.hypotheses)) objectTasks[`hypothesis:${hypothesis.id}`] = mutation.id
-    if (mutation.t === 'audit/dispatched') objectTasks[`audit:${mutation.id}`] = mutation.goal_id ?? mutation.goal ?? taskId
+    if (mutation.t === 'goal/set') for (const hypothesis of list(mutation.hypotheses).filter(item => text(item?.id))) objectTasks[`hypothesis:${hypothesis.id}`] = mutation.id
+    if (mutation.t === 'audit/dispatched' && text(mutation.id)) {
+      const key = `audit:${mutation.id}`
+      objectTasks[key] = mutation.goal_id ?? mutation.goal ?? objectTasks[key] ?? taskId
+    }
   }
+  const contextChanged = taskId !== state.taskId || Object.keys(objectTasks).some(key => objectTasks[key] !== state.objectTasks[key])
+  if (!records.length && !contextChanged) return state
   for (const record of records) if (!record.taskId) {
     const sourceTask = record.objects.map(item => objectTasks[`${item.kind}:${item.id}`]).find(Boolean)
     record.taskId = sourceTask ?? (['validation', 'adjudication'].includes(record.category) ? null : taskId)
@@ -128,7 +133,7 @@ export function applyResearchProjection(state, event) {
   const seen = { ...state.seen }
   for (const mutation of fresh) seen[fingerprint(mutation)] = event.seq
   for (const key of hypothesisKeys) seen[key] = event.seq
-  return { ...state, taskId, objectTasks, seen, bySeq: { ...state.bySeq, [event.seq]: records } }
+  return { ...state, taskId, objectTasks, seen, bySeq: records.length ? { ...state.bySeq, [event.seq]: records } : state.bySeq }
 }
 
 const views = new WeakMap()

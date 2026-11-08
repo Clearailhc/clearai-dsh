@@ -1,0 +1,8 @@
+{
+  "domain": "var_y",
+  "id": "affects_y_yield",
+  "kind": "affects",
+  "label": "y 影响收率",
+  "range": "yield",
+  "shape": "coupled"
+}

@@ -1,0 +1,256 @@
+{
+  "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+  "group": "A",
+  "mode": "default",
+  "reason": "completed",
+  "elapsedMs": 147392,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 17637,
+    "output": 21554,
+    "cacheRead": 522496,
+    "cacheWrite": 0,
+    "calls": 24,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 561687,
+    "status": "verified",
+    "processed": 561687
+  },
+  "mount": {
+    "prompt": false,
+    "tools": false
+  },
+  "requests": [
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976671486
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976673577
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976675701
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976679302
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976681493
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976685803
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976692913
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976706570
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976709594
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976715972
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976719691
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976728374
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976734836
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976738542
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976745865
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976750425
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976760354
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976765106
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976772092
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976782220
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976802297
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976805101
+    },
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976809787
+    }
+  ],
+  "approvals": [],
+  "answer": "已完成优化并写入 `submission.json`。\n\n**最终提交**\n- `x = 0.64`，`y = 0.49`\n\n**验证结果（full 原始读数）**\n- 收率：`95.8588 %`\n- 杂质：`0.09264`（≤ 0.115，满足约束）\n- 文件：`lab/f-final-0.64-0.49.json`\n\n**模型参数**\n最终采用交互二次响应面（`u=2x-1, v=2y-1`）：\n\n```text\nyield = 95.381937\n      + 3.812367u\n      - 1.597874v\n      - 6.836549u²\n      - 5.691298v²\n      + 5.085731uv\n```\n\n- 交互模型 LOO-CV RMSE：`0.2007 %`（加性模型为 `3.3425 %`）\n- 拟合残差 sd：`0.155 %`，与 full 模式噪声 `0.18 %` 一致\n- 驻点：`u=0.27177, v=-0.01895` → `x=0.63589, y=0.49052`\n- 驻点预测收率：`95.915 %`\n- 杂质模型预测驻点杂质：`0.0917`，低于 `0.115`\n- 方法按保守杂质上界给出的推荐点为 `(0.65, 0.50)`，与驻点预测收率几乎相同；最终选择驻点 `(0.64, 0.49)` 并做了 full 验证。\n\n**仪表口径**\n- 所有记录：`instrument = \"original\"`，`metric = \"yield\"`\n- `value` 单位为 `%`，`impurity` 为分数\n- full：`noise_sd = 0.18`，成本 3；quick：`noise_sd = 0.45`，成本 1\n- 两次 calibrate 均返回 `instrument = \"original\"`、`offset = 0`、`unit = \"normalized x\"`，未施加偏移修正\n- quick 与 full 在 `(0.5,0.5)` 的重复对比显示 quick 噪声/偏差更大，仅用于诊断，未纳入最终拟合\n\n**预算**\n- 8 次 full × 3 = 24\n- 2 次 quick × 1 = 2\n- 2 次 calibrate × 2 = 4\n- 合计 30/30，剩余 0\n\n**局限**\n- 二次响应面是局部近似，不能证明因果性\n- 观测覆盖范围为 `[0.1,0.9]²`，该范围外属于外推\n- 仅使用单一 `\"original\"` 仪表，结论依赖该仪表及零偏移校准\n- 存在测量噪声；最终验证为单次 full 读数\n- 预算已用尽，未能对最终点做额外 full 重复\n\n**证据**\n- 提交文件：`submission.json`\n- 参数、口径与局限报告：`lab/report.md`\n- 关键原始读数：`lab/f-final-0.64-0.49.json`\n- 模型：`lab/model-final.json`、`lab/model-decision.json`",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "/tmp/clearai060-native-comparison/workspaces/interaction-A/lab/report.md",
+      "/tmp/clearai060-native-comparison/workspaces/interaction-A/submission.json"
+    ],
+    "sessionId": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77"
+  },
+  "violations": {
+    "isolation_failed": false
+  },
+  "driverDigest": "3fc1d44e627667eaa5d60754143fd63803e704f5ced428fc40b39d71c289db14",
+  "logs": [
+    {
+      "session": "session-native-1dac1852-bb23-4d16-9fdd-b959c0b93f77",
+      "cursor": 189,
+      "path": "296c35fd594991b10a3b099129d8c133031659cbfaffd88e6e26f36217fe858e.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "2cdb10a0e1aedaf9181a8762b293e8f113ee6369f1bb194987fc10f0a0f519f9",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "id": "f-hglh9t",
+  "goal": "g-mw52i41h09ow",
+  "hypothesis": "h-dfrfe9",
+  "text": "可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%",
+  "about": [
+    "yield_surface_xy",
+    "yield_surface",
+    "maximized_at",
+    "yield",
+    "impurity",
+    "instrument"
+  ],
+  "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+  "scope_spec": {
+    "conditions": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    },
+    "ranges": {}
+  },
+  "refute_when": "在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界",
+  "level": "L3",
+  "evidence": [
+    "e-ah7wjl"
+  ],
+  "evidence_records": [
+    {
+      "t": "evidence/recorded",
+      "id": "e-ah7wjl",
+      "step": "goal:g-mw52i41h09ow",
+      "plan": "goal",
+      "hypothesis": "h-dfrfe9",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "4 次 full 94.7228–95.2801、均值 95.054，均 ≥94.6927；(0.45,0.45) 单测 95.0719；16 点极值复算 (0.4528,0.4476)、预测 95.05，最低读数仍高于 16 点 PI 下界 94.676 与 10 点 94.547。「约 94.9%」与预测 94.895/94.957 一致，推翻条件未触发；但 PI 下界低于 94.693，改善不显著。",
+      "refs": [
+        "initial.json"
+      ],
+      "origins": [
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+        },
+        {
+          "kind": "artifact",
+          "path": "initial.json",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "x=0.4528, y=0.4476，预测 95.05%；在 (0.4517,0.4485) 的 4 次 full 读数 94.72/95.05/95.16/95.28，均值 95.05"
+      },
+      "predicate": "maximized_at",
+      "subject": {
+        "id": "yield_surface_xy",
+        "type": "yield_surface"
+      }
+    }
+  ],
+  "definitions": {
+    "maximized_at": "fnv:0e168600",
+    "yield_surface": "fnv:2868a8ff",
+    "impurity": "fnv:d916b361",
+    "instrument": "fnv:8ae62f56",
+    "yield": "fnv:b5e997fa",
+    "measures_yield": "fnv:50ab64f6"
+  },
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "status": "established",
+  "review": null,
+  "at": 1793976433965,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793976433965,
+      "level": "L3"
+    }
+  ]
+}

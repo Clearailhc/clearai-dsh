@@ -1,5 +1,7 @@
 # 发布前 recheck（逐组件）
 
+Current 0.6.0 review and paired model comparison: [acceptance evidence](optimization/0.6.0-release/README.md). Older version-specific results below remain historical. / 当前 0.6.0 审查与配对测试见该记录，下方旧版结果仅为历史依据。
+
 0.5.8 的当前门槛与实测证据见[本版验收记录](optimization/0.5.8-release/README.md)。下列旧版检查表保留为行为清单，历史数字与未验项不代表本版结果；本版按知识地图 → 结论与依据 → 已确立知识阅读，结构定义与已核验关系分别标识。
 
 

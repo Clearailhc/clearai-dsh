@@ -1,0 +1,1684 @@
+{
+  "schema": "clearai.double-budget-review.v1",
+  "date": "2026-11-07",
+  "productCommit": "2bbda38e86ac055bc4ee5e349562dcc0dc5dab90",
+  "manifest": {
+    "schema": "clearai.double-comparison.v1",
+    "authorization": "2026-11-07 user: 效果怎样？预算统一x2看看",
+    "rows": [
+      {
+        "id": "additive-bare",
+        "task": "additive",
+        "variant": "bare",
+        "group": "A",
+        "mode": "default"
+      },
+      {
+        "id": "additive-before",
+        "task": "additive",
+        "variant": "before",
+        "group": "C",
+        "mode": "clearai"
+      },
+      {
+        "id": "additive-after",
+        "task": "additive",
+        "variant": "after",
+        "group": "C",
+        "mode": "clearai"
+      },
+      {
+        "id": "interaction-bare",
+        "task": "interaction",
+        "variant": "bare",
+        "group": "A",
+        "mode": "default"
+      },
+      {
+        "id": "interaction-before",
+        "task": "interaction",
+        "variant": "before",
+        "group": "C",
+        "mode": "clearai"
+      },
+      {
+        "id": "interaction-after",
+        "task": "interaction",
+        "variant": "after",
+        "group": "C",
+        "mode": "clearai"
+      }
+    ],
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "installations": {
+      "before": {
+        "version": "0.6.0",
+        "digest": "dfd138524ac543073423a7c58df8733d573f6ddaa24db0a77252085902adb147",
+        "model": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "reasoningEffort": "medium"
+        },
+        "runtime": {
+          "node": "v24.22.1",
+          "cli": "0.2.2-rc.1",
+          "agent": "0.2.2-rc.1"
+        }
+      },
+      "after": {
+        "version": "0.6.0",
+        "digest": "a48b5aea757c9d0890300d51d89dec0a78c44893d257f2be96dd99b32ef63311",
+        "model": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "reasoningEffort": "medium"
+        },
+        "runtime": {
+          "node": "v24.22.1",
+          "cli": "0.2.2-rc.1",
+          "agent": "0.2.2-rc.1"
+        }
+      },
+      "bare": {
+        "version": "0.6.0",
+        "digest": "a48b5aea757c9d0890300d51d89dec0a78c44893d257f2be96dd99b32ef63311",
+        "model": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "reasoningEffort": "medium"
+        },
+        "runtime": {
+          "node": "v24.22.1",
+          "cli": "0.2.2-rc.1",
+          "agent": "0.2.2-rc.1"
+        }
+      }
+    },
+    "task": "依据 initial.json 优化 x,y∈[0,1] 的收率，杂质不得超过0.115。允许使用 method/ 通用脚本和说明。用 python3 experiment.py quick|full|calibrate --x X --y Y --output lab/N.json 做实验，成本1/3/2，总预算60单位。保留原始读数，验证后把最终 {\"x\":数值,\"y\":数值,\"evidence\":[\"路径\"]} 写 submission.json，报告参数、仪表口径和局限，完成任务。",
+    "budgets": {
+      "tokenBudget": 10000000,
+      "timeoutMs": 10800000,
+      "experimentBudget": 60,
+      "testLimitUsd": 10,
+      "campaignLimitUsd": 60
+    },
+    "worldKeyCommitment": "96c2a9b0b13b73f0e943ea48b89f7a7cc0b5ae52cb993d988093afbf92157c11",
+    "seedPrefix": "double-060-",
+    "assets": [
+      {
+        "path": "budget.mjs",
+        "sha256": "cd5408da42ad7fa05e1604b811ad3916f9a8c6b879006567315bc0545152d2db"
+      },
+      {
+        "path": "carrier.mjs",
+        "sha256": "3fc1d44e627667eaa5d60754143fd63803e704f5ced428fc40b39d71c289db14"
+      },
+      {
+        "path": "run.mjs",
+        "sha256": "89cc5019337cf2f6fc90018a39f225d5bbcb24c3bbe4f12846e11a1031f557a1"
+      },
+      {
+        "path": "world.mjs",
+        "sha256": "5b80622f6c3c28cce604882cdbca00bafd1cffa74790aa01b4806aea18a6fe34"
+      },
+      {
+        "path": "accounting.mjs",
+        "sha256": "a3871fbdbc0de475ab2990d250c4e42837b1a1eb7c22231a26400cbe1537006e"
+      },
+      {
+        "path": "matrix.mjs",
+        "sha256": "526a64cf113d6509bd860b731ffd3c1c97a9b65d5d6fb5532bd71614f8ec5221"
+      },
+      {
+        "path": "experiment.py",
+        "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+      },
+      {
+        "path": "method/SKILL.md",
+        "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+      },
+      {
+        "path": "method/response_surface.py",
+        "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+      },
+      {
+        "path": "compare-double.mjs",
+        "sha256": "3d4e9f03064b1969ee980c545215132b03409376294d0cb7c3307649e7682e8b"
+      }
+    ],
+    "costBeforeUsd": 5.4736678839999895,
+    "policy": "Fresh hidden worlds; identical inputs and model per task across bare/prior/current. Six isolated concurrent sessions, one sample each; API contention affects timing. No quality-based retries. Prior charges and the accepted unknown reservation remain. Report all failures and distinguish artifact quality from goal completion. No causal separation of each individual code change."
+  },
+  "pricingCheck": {
+    "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "checkedAt": "2026-11-07T03:00:13.387Z",
+    "htmlSha256": "af6679690eb9a7838c47727bfc5ffdc4ac91c4445a0c1219741ffe00c076ece5",
+    "model": "deepseek-flash",
+    "ratesUsdPerMillion": {
+      "input": 0.3,
+      "cached": 0.006,
+      "output": 1.2
+    },
+    "basis": "Official peak rates match frozen accounting; off-peak rates are lower, so reported amounts remain estimates at the peak rate."
+  },
+  "verification": {
+    "dataVerified": true,
+    "allTasksCompleted": true,
+    "releaseRecommended": false,
+    "budget": {
+      "limitUsd": 60,
+      "testLimitUsd": 10,
+      "previousReservedUsd": 5.4736678839999895,
+      "currentCostUsd": 1.79293404,
+      "cumulativeReservedUsd": 7.266601923999989,
+      "historicalUnknownReservationUsd": 0.8,
+      "pending": 0,
+      "newUnknown": 0
+    },
+    "rows": [
+      {
+        "id": "additive-bare",
+        "task": "additive",
+        "variant": "bare",
+        "group": "A",
+        "mode": "default",
+        "reason": "completed",
+        "error": null,
+        "goalStatus": null,
+        "elapsedMs": 208358,
+        "usage": {
+          "input": 18090,
+          "output": 27097,
+          "cacheRead": 604288,
+          "cacheWrite": 0,
+          "calls": 25,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 649475,
+          "status": "verified",
+          "processed": 649475
+        },
+        "accountedUsage": {
+          "input": 18090,
+          "output": 27097,
+          "cacheRead": 604288,
+          "cacheWrite": 0,
+          "calls": 25,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 649475,
+          "status": "verified",
+          "processed": 649475
+        },
+        "roles": {
+          "main": {
+            "calls": 24,
+            "processed": 649004,
+            "output": 26901,
+            "requestMs": 200724,
+            "costUsd": 0.04128906
+          },
+          "other": {
+            "calls": 1,
+            "processed": 471,
+            "output": 196,
+            "requestMs": 2142,
+            "costUsd": 0.000280068
+          }
+        },
+        "costUsd": 0.041569128000000004,
+        "initialSha256": "e65f9ca94897e898dafff53be272a282407c432437a06bda67f9f3ca9a17e67f",
+        "submission": {
+          "x": 0.4667,
+          "y": 0.6251,
+          "evidence": [
+            "initial.json",
+            "lab/model-refined.json",
+            "lab/model-final.json",
+            "lab/input-refined.json",
+            "lab/report.md",
+            "lab/cal-0505.json",
+            "lab/cal-0505-late.json",
+            "lab/quick-0505.json",
+            "lab/full-0.35-0.55.json",
+            "lab/full-0.35-0.65.json",
+            "lab/full-0.40-0.60.json",
+            "lab/full-0.42-0.60.json",
+            "lab/full-0.42-0.70.json",
+            "lab/full-0.427-0.624.json",
+            "lab/full-0.45-0.65.json",
+            "lab/full-0.467-0.584.json",
+            "lab/full-0.467-0.624.json",
+            "lab/full-0.467-0.664.json",
+            "lab/full-0.47-0.625.json",
+            "lab/full-0.50-0.60.json",
+            "lab/full-0.507-0.624.json",
+            "lab/full-0.52-0.65.json",
+            "lab/full-0.55-0.55.json",
+            "lab/full-0.55-0.70.json",
+            "lab/full-final-rep1-0.4668-0.6248.json",
+            "lab/full-final-rep2-0.4668-0.6248.json"
+          ]
+        },
+        "artifactQuality": {
+          "score": 99.98602332176895,
+          "feasible": true,
+          "value": 95.0860224170076,
+          "impurity": 0.0927892667,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "completionQuality": {
+          "score": 99.98602332176895,
+          "feasible": true,
+          "value": 95.0860224170076,
+          "impurity": 0.0927892667,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "facts": [],
+        "ontology": {
+          "concepts": 0,
+          "entities": 0
+        },
+        "audits": [],
+        "experimentCost": 59,
+        "violations": [],
+        "taskSucceeded": true,
+        "taskQuality": {
+          "score": 99.98602332176895,
+          "feasible": true,
+          "value": 95.0860224170076,
+          "impurity": 0.0927892667,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "parentRequestsWhileWaiting": 0,
+        "auditWork": [],
+        "ontologyProblems": [],
+        "planCount": 0
+      },
+      {
+        "id": "additive-before",
+        "task": "additive",
+        "variant": "before",
+        "group": "C",
+        "mode": "clearai",
+        "reason": "completed",
+        "error": null,
+        "goalStatus": "achieved",
+        "elapsedMs": 1322840,
+        "usage": {
+          "input": 144743,
+          "output": 186233,
+          "cacheRead": 8182144,
+          "cacheWrite": 0,
+          "calls": 119,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 8513120,
+          "status": "verified",
+          "processed": 8513120
+        },
+        "accountedUsage": {
+          "input": 144743,
+          "output": 186233,
+          "cacheRead": 8182144,
+          "cacheWrite": 0,
+          "calls": 119,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 8513120,
+          "status": "verified",
+          "processed": 8513120
+        },
+        "roles": {
+          "main": {
+            "calls": 71,
+            "processed": 5643644,
+            "output": 80270,
+            "requestMs": 555620,
+            "costUsd": 0.14324647199999999
+          },
+          "other": {
+            "calls": 1,
+            "processed": 423,
+            "output": 148,
+            "requestMs": 2311,
+            "costUsd": 0.000222468
+          },
+          "evaluator": {
+            "calls": 47,
+            "processed": 2869053,
+            "output": 105815,
+            "requestMs": 684868,
+            "costUsd": 0.17252642400000004
+          }
+        },
+        "costUsd": 0.31599536400000006,
+        "initialSha256": "e65f9ca94897e898dafff53be272a282407c432437a06bda67f9f3ca9a17e67f",
+        "submission": {
+          "x": 0.46,
+          "y": 0.63,
+          "evidence": [
+            "lab/f-0.46-0.63-a.json",
+            "lab/f-0.46-0.63-b.json",
+            "lab/f-0.46-0.63-c.json",
+            "lab/model-r2.json",
+            "reports/diagnostics.json",
+            "reports/report.md"
+          ]
+        },
+        "artifactQuality": {
+          "score": 99.95864773318809,
+          "feasible": true,
+          "value": 95.0839111708235,
+          "impurity": 0.092848,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "completionQuality": {
+          "score": 99.95864773318809,
+          "feasible": true,
+          "value": 95.0839111708235,
+          "impurity": 0.092848,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "facts": [
+          {
+            "id": "f-hf4b4g",
+            "hypothesis": "h-molrl6",
+            "text": "在 impurity≤0.115 约束下,收率最优约在 x≈0.45–0.50、y≈0.60–0.65,预测收率约 95.0–95.2%,更高收率的区域不存在。",
+            "scope": {
+              "conditions": {
+                "bounds": "x,y∈[0,1]",
+                "impurity_limit": "0.115",
+                "budget": "60 units",
+                "instrument": "original",
+                "model": "additive quadratic",
+                "mode": "full"
+              },
+              "ranges": {
+                "setpoint_x": [
+                  0.1,
+                  0.9
+                ],
+                "setpoint_y": [
+                  0.1,
+                  0.9
+                ]
+              },
+              "note": "观测箱体内、加性二次模型下的最优;箱体外与更高阶结构未验证"
+            },
+            "assertions": [
+              {
+                "predicate": "has_optimum",
+                "subject": {
+                  "id": "yield_candidate",
+                  "type": "yield"
+                },
+                "object": {
+                  "kind": "statement",
+                  "value": "18 个 full 观测的加性二次模型解析最优 (0.4643,0.6254),预测 95.149%;提交点 (0.46,0.63) 三次 full 均值 95.192%(se 0.082),邻域与箱体内未见更高收率点"
+                },
+                "qualifiers": {
+                  "x": 0.4643,
+                  "y": 0.6254,
+                  "predicted_yield": 95.149,
+                  "submitted_point": [
+                    0.46,
+                    0.63
+                  ],
+                  "repeats": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": "f-hmx5qc",
+            "hypothesis": "h-zyq619",
+            "text": "收率曲面可用加性二次模型描述,交互项在测量噪声内;加入交互项不会带来超过噪声的 LOO 改善。",
+            "scope": {
+              "conditions": {
+                "bounds": "x,y ∈ [0,1]",
+                "impurity_limit": "0.115 (fraction)",
+                "budget": "60 units",
+                "instrument": "original",
+                "mode": "full",
+                "noise_sd": "0.18"
+              },
+              "ranges": {
+                "setpoint_x": [
+                  0.1,
+                  0.9
+                ],
+                "setpoint_y": [
+                  0.1,
+                  0.9
+                ]
+              },
+              "note": "18 个 full 观测;LOO 留一交叉验证"
+            },
+            "assertions": [
+              {
+                "predicate": "model_form",
+                "subject": {
+                  "id": "yield_candidate",
+                  "type": "yield"
+                },
+                "object": {
+                  "kind": "reference",
+                  "value": "lab/model-r2.json"
+                },
+                "qualifiers": {
+                  "selected": "additive",
+                  "additive_loo_rmse": 0.2445,
+                  "interaction_loo_rmse": 0.3066,
+                  "additive_resid_sd": 0.1855,
+                  "cubic_loo_rmse": 0.2397,
+                  "noise_sd": 0.18
+                }
+              }
+            ]
+          },
+          {
+            "id": "f-nmx2ji",
+            "hypothesis": "h-cqhssp",
+            "text": "最优点的杂质约 0.09–0.10,明显低于 0.115;杂质约束不构成收率瓶颈(y 可到约 0.8 才触限)。",
+            "scope": {
+              "conditions": {
+                "bounds": "x,y ∈ [0,1]",
+                "impurity_limit": "0.115",
+                "budget": "60 units",
+                "instrument": "original",
+                "model": "additive quadratic"
+              },
+              "ranges": {
+                "setpoint_x": [
+                  0.1,
+                  0.9
+                ],
+                "setpoint_y": [
+                  0.1,
+                  0.9
+                ]
+              },
+              "note": "杂质模型残差约 0.001;约束余量约 0.02"
+            },
+            "assertions": [
+              {
+                "predicate": "within_limit",
+                "subject": {
+                  "id": "impurity_candidate",
+                  "type": "impurity"
+                },
+                "object": {
+                  "kind": "quantity",
+                  "value": 0.09493,
+                  "unit": "1"
+                },
+                "qualifiers": {
+                  "limit": 0.115,
+                  "margin": 0.02007,
+                  "candidate_measured_mean": 0.09364,
+                  "model_prediction_at_candidate": 0.09293
+                }
+              }
+            ]
+          },
+          {
+            "id": "f-5rkvk9",
+            "hypothesis": "h-ldcnf7",
+            "text": "仪表为 original,标定 offset=0(归一化 x 单位);quick 与 full 是同一仪表,仅噪声不同(0.45 vs 0.18),无需对读数做仪器校正。",
+            "scope": {
+              "conditions": {
+                "bounds": "x,y ∈ [0,1]",
+                "impurity_limit": "0.115 (fraction)",
+                "budget": "60 units",
+                "instrument": "original",
+                "modes": "quick,full",
+                "calibration_points": "0.5,0.5,0.46,0.63",
+                "quick_full_check_point": "0.4,0.6"
+              },
+              "ranges": {},
+              "note": "offset 在两点标定为 0,假设在本实验范围内恒定;未做更换仪表比对"
+            },
+            "assertions": [
+              {
+                "predicate": "has_offset",
+                "subject": {
+                  "id": "original",
+                  "type": "instrument"
+                },
+                "object": {
+                  "kind": "quantity",
+                  "value": 0,
+                  "unit": "1"
+                },
+                "qualifiers": {
+                  "unit": "normalized x",
+                  "calibrations": 2,
+                  "quick_noise_sd": 0.45,
+                  "full_noise_sd": 0.18,
+                  "quick_full_diff": 0.5288,
+                  "combined_sd": 0.4847
+                }
+              }
+            ]
+          }
+        ],
+        "ontology": {
+          "concepts": 6,
+          "entities": 3
+        },
+        "audits": [
+          {
+            "id": "audit:pending:4fa73df96467d1357096e95e49fa7e45",
+            "kind": "claim_audit",
+            "step": "review:8cc88765e80c40e52fe63087",
+            "holds": "yes",
+            "status": null,
+            "child": "d5b68451-b03e-4f17-80a7-aae8e1acc699",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-cqhssp",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件(a)提交点 full 杂质>0.115:三次 0.09254/0.09493/0.09347,未触发;(b)约束边界把最优 y 压到 0.65 以下:无约束与约束最优同为 (0.4643,0.6254),该 x 上可行 y 到 0.99(默认 0.01 先验 0.656),边界未起作用,未触发。y*=0.625<0.65 是收率曲面曲率所致,不是约束所致。"
+              },
+              {
+                "hypothesis": "h-ldcnf7",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件(a)标定非零 offset:cal-01/cal-02 均 offset=0、original、normalized x,未触发;(b)同坐标系统差超噪声:q-01 94.4846 vs f-0.4-0.6 95.0134,差 0.5288,合并 sd 0.4847(1.09σ),未触发。范围:单点单对、n=1,只能排除大于约 1σ 的偏移;quick 不参与拟合。"
+              },
+              {
+                "hypothesis": "h-molrl6",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件(a)邻域/边界 full 读数高于提交点 2se:提交点均值 95.192、se 0.082,阈值 95.356,其他坐标最高 95.030(同点单次最高 95.354 属同坐标噪声),未触发;(b)提交点 full 收率<94.8:95.192,未触发。预测 95.149 落在 95.0–95.2;箱体内、加性模型下无更高区域(三次仅 +0.018)。"
+              },
+              {
+                "hypothesis": "h-zyq619",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件(a)交互/高阶 LOO 改善>0.18:交互 0.3066(更差)、三次 0.2397(改善 0.0048)、cubic_full 1.0747,未触发;(b)新 full 点系统性曲面偏离:18 点最大残差 0.285(1.5σ),无 >2σ 者,残差符号随 y 不一致,未触发。交互系数 -0.0476(t≈-0.32)确在噪声内。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:8f7888b7aaa1af080d77aa48cb966018",
+            "kind": "goal_audit",
+            "step": "goal:g-mw5tddb8533c",
+            "holds": "yes",
+            "status": null,
+            "child": "21040c7a-d17d-4d5d-9c36-9872432f81e2",
+            "shortfalls": [],
+            "results": []
+          }
+        ],
+        "experimentCost": 32,
+        "violations": [],
+        "taskSucceeded": true,
+        "taskQuality": {
+          "score": 99.95864773318809,
+          "feasible": true,
+          "value": 95.0839111708235,
+          "impurity": 0.092848,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "parentRequestsWhileWaiting": 0,
+        "auditWork": [
+          {
+            "id": "audit:pending:4fa73df96467d1357096e95e49fa7e45",
+            "kind": "claim_audit",
+            "holds": "yes",
+            "calls": 23,
+            "processed": 1174464,
+            "output": 44785,
+            "requestMs": 303498,
+            "spanMs": 312939
+          },
+          {
+            "id": "audit:pending:8f7888b7aaa1af080d77aa48cb966018",
+            "kind": "goal_audit",
+            "holds": "yes",
+            "calls": 24,
+            "processed": 1694589,
+            "output": 61030,
+            "requestMs": 381370,
+            "spanMs": 398213
+          }
+        ],
+        "ontologyProblems": [],
+        "planCount": 0
+      },
+      {
+        "id": "additive-after",
+        "task": "additive",
+        "variant": "after",
+        "group": "C",
+        "mode": "clearai",
+        "reason": "completed",
+        "error": null,
+        "goalStatus": "achieved",
+        "elapsedMs": 1395617,
+        "usage": {
+          "input": 136748,
+          "output": 204812,
+          "cacheRead": 5267200,
+          "cacheWrite": 0,
+          "calls": 88,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 5608760,
+          "status": "verified",
+          "processed": 5608760
+        },
+        "accountedUsage": {
+          "input": 136748,
+          "output": 204812,
+          "cacheRead": 5267200,
+          "cacheWrite": 0,
+          "calls": 88,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 5608760,
+          "status": "verified",
+          "processed": 5608760
+        },
+        "roles": {
+          "main": {
+            "calls": 56,
+            "processed": 3575314,
+            "output": 63973,
+            "requestMs": 436437,
+            "costUsd": 0.107746092
+          },
+          "other": {
+            "calls": 1,
+            "processed": 403,
+            "output": 128,
+            "requestMs": 1973,
+            "costUsd": 0.00019846799999999998
+          },
+          "evaluator": {
+            "calls": 31,
+            "processed": 2033043,
+            "output": 140711,
+            "requestMs": 886666,
+            "costUsd": 0.21045744
+          }
+        },
+        "costUsd": 0.31840199999999996,
+        "initialSha256": "e65f9ca94897e898dafff53be272a282407c432437a06bda67f9f3ca9a17e67f",
+        "submission": {
+          "x": 0.466,
+          "y": 0.624,
+          "evidence": [
+            "initial.json",
+            "lab/full-04.json",
+            "lab/full-07.json",
+            "lab/full-08.json",
+            "lab/full-05.json",
+            "lab/full-09.json",
+            "lab/model-final.json",
+            "lab/input-final-cfg.json",
+            "lab/input-final.json",
+            "lab/final-numbers.json",
+            "lab/manifest.json",
+            "lab/cal-01.json",
+            "lab/quick-01.json",
+            "reports/report.md"
+          ]
+        },
+        "artifactQuality": {
+          "score": 99.9910826114624,
+          "feasible": true,
+          "value": 95.08641259696768,
+          "impurity": 0.09271468,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "completionQuality": {
+          "score": 99.9910826114624,
+          "feasible": true,
+          "value": 95.08641259696768,
+          "impurity": 0.09271468,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "facts": [],
+        "ontology": {
+          "concepts": 6,
+          "entities": 2
+        },
+        "audits": [
+          {
+            "id": "audit:pending:69795750554db955c18588b18c56b9e4",
+            "kind": "claim_audit",
+            "step": "review:a99216a0543b45e523504cb1",
+            "holds": "yes",
+            "status": null,
+            "child": "33df6a95-dd60-4f2f-8512-e3fa727a5aad",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-xbuwr2",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "3 次 full 在 (0.466,0.624) 杂质 0.0933/0.0938/0.0948,最大 0.0948、裕度 0.0202;平台内 (0.45,0.60) 0.0902/0.0919,(0.5,0.65) 0.0955,无 full 点 >0.115;独立 18 点拟合的约束/无约束最优同为 (0.466,0.624),推翻条件未触发。范围:平台内已测点与观测框;未测平台边缘。"
+              },
+              {
+                "hypothesis": "h-ysf42t",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "18 点独立拟合加性残差 sd 0.1817(声明 0.18);8 次新增 full 测量仅 5 个不同位置,最大 |残差| 0.311(前瞻 0.335)<0.5;161 网格加性/交互最优同为 (0.46875,0.625),差 0<0.05;推翻条件未触发。范围:观测框 [0.1,0.9]^2;交互项本身不可分辨。"
+              },
+              {
+                "hypothesis": "h-zpjb7n",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "3 次 full 均值 95.217(n=3,sem 0.077),杂质最大 0.09479;竞争点 (0.45,0.60) 2 次均值 95.207,无 full 点高出 0.5 pp;独立拟合峰值同点;推翻条件未触发。范围:观测框内平台,(0.45,0.60) 与提交点仅差 0.01 pp,统计不可区分。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:1adfe765cda3cfbf4a6935f419903641",
+            "kind": "goal_audit",
+            "step": "goal:g-mw5tce9pr62f",
+            "holds": "yes",
+            "status": null,
+            "child": "b76bb73e-55a7-40d4-8b5b-a74982a2e10a",
+            "shortfalls": [],
+            "results": []
+          }
+        ],
+        "experimentCost": 33,
+        "violations": [],
+        "taskSucceeded": true,
+        "taskQuality": {
+          "score": 99.9910826114624,
+          "feasible": true,
+          "value": 95.08641259696768,
+          "impurity": 0.09271468,
+          "start": 87.37495130787194,
+          "optimum": 95.08710031925962
+        },
+        "parentRequestsWhileWaiting": 0,
+        "auditWork": [
+          {
+            "id": "audit:pending:69795750554db955c18588b18c56b9e4",
+            "kind": "claim_audit",
+            "holds": "yes",
+            "calls": 16,
+            "processed": 1143141,
+            "output": 76260,
+            "requestMs": 492381,
+            "spanMs": 539385
+          },
+          {
+            "id": "audit:pending:1adfe765cda3cfbf4a6935f419903641",
+            "kind": "goal_audit",
+            "holds": "yes",
+            "calls": 15,
+            "processed": 889902,
+            "output": 64451,
+            "requestMs": 394285,
+            "spanMs": 398286
+          }
+        ],
+        "ontologyProblems": [],
+        "planCount": 0
+      },
+      {
+        "id": "interaction-bare",
+        "task": "interaction",
+        "variant": "bare",
+        "group": "A",
+        "mode": "default",
+        "reason": "completed",
+        "error": null,
+        "goalStatus": null,
+        "elapsedMs": 182106,
+        "usage": {
+          "input": 15342,
+          "output": 23408,
+          "cacheRead": 679296,
+          "cacheWrite": 0,
+          "calls": 29,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 718046,
+          "status": "verified",
+          "processed": 718046
+        },
+        "accountedUsage": {
+          "input": 15342,
+          "output": 23408,
+          "cacheRead": 679296,
+          "cacheWrite": 0,
+          "calls": 29,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 718046,
+          "status": "verified",
+          "processed": 718046
+        },
+        "roles": {
+          "other": {
+            "calls": 1,
+            "processed": 283,
+            "output": 8,
+            "requestMs": 1202,
+            "costUsd": 5.4467999999999994e-05
+          },
+          "main": {
+            "calls": 28,
+            "processed": 717763,
+            "output": 23400,
+            "requestMs": 174998,
+            "costUsd": 0.036713508
+          }
+        },
+        "costUsd": 0.036767976,
+        "initialSha256": "85037920f716c9191671ee5baaee81def13e0260858c9da1ca259a975f39e743",
+        "submission": {
+          "x": 0.7294,
+          "y": 0.4258,
+          "evidence": [
+            "initial.json",
+            "lab/full-opt-01.json",
+            "lab/full-final.json",
+            "lab/full-01.json",
+            "lab/full-x0.3-y0.3.json",
+            "lab/full-x0.3-y0.7.json",
+            "lab/full-x0.7-y0.3.json",
+            "lab/full-x0.7-y0.7.json",
+            "lab/quick-01.json",
+            "lab/calibrate-01.json",
+            "lab/input-final.json",
+            "lab/model-final.json"
+          ]
+        },
+        "artifactQuality": {
+          "score": 99.92636190760446,
+          "feasible": true,
+          "value": 96.28176831588965,
+          "impurity": 0.0922507308,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "completionQuality": {
+          "score": 99.92636190760446,
+          "feasible": true,
+          "value": 96.28176831588965,
+          "impurity": 0.0922507308,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "facts": [],
+        "ontology": {
+          "concepts": 0,
+          "entities": 0
+        },
+        "audits": [],
+        "experimentCost": 24,
+        "violations": [],
+        "taskSucceeded": true,
+        "taskQuality": {
+          "score": 99.92636190760446,
+          "feasible": true,
+          "value": 96.28176831588965,
+          "impurity": 0.0922507308,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "parentRequestsWhileWaiting": 0,
+        "auditWork": [],
+        "ontologyProblems": [],
+        "planCount": 0
+      },
+      {
+        "id": "interaction-before",
+        "task": "interaction",
+        "variant": "before",
+        "group": "C",
+        "mode": "clearai",
+        "reason": "completed",
+        "error": null,
+        "goalStatus": "achieved",
+        "elapsedMs": 2015408,
+        "usage": {
+          "input": 242774,
+          "output": 293377,
+          "cacheRead": 8700544,
+          "cacheWrite": 0,
+          "calls": 168,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 9236695,
+          "status": "verified",
+          "processed": 9236695
+        },
+        "accountedUsage": {
+          "input": 242774,
+          "output": 293377,
+          "cacheRead": 8700544,
+          "cacheWrite": 0,
+          "calls": 168,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 9236695,
+          "status": "verified",
+          "processed": 9236695
+        },
+        "roles": {
+          "main": {
+            "calls": 73,
+            "processed": 4615984,
+            "output": 54541,
+            "requestMs": 407821,
+            "costUsd": 0.10652619599999998
+          },
+          "other": {
+            "calls": 1,
+            "processed": 444,
+            "output": 169,
+            "requestMs": 2457,
+            "costUsd": 0.000247668
+          },
+          "evaluator": {
+            "calls": 94,
+            "processed": 4620267,
+            "output": 238667,
+            "requestMs": 1575363,
+            "costUsd": 0.370314
+          }
+        },
+        "costUsd": 0.477087864,
+        "initialSha256": "85037920f716c9191671ee5baaee81def13e0260858c9da1ca259a975f39e743",
+        "submission": {
+          "x": 0.733,
+          "y": 0.43,
+          "evidence": [
+            "lab/final-full-1.json",
+            "lab/final-full-2.json",
+            "lab/full-073043.json",
+            "lab/full-076044.json",
+            "lab/model-grid101.json",
+            "lab/input-updated-15.json",
+            "reports/final-verification.md",
+            "reports/instrument-check.md",
+            "reports/optimization-report.md"
+          ]
+        },
+        "artifactQuality": {
+          "score": 99.91322544188053,
+          "feasible": true,
+          "value": 96.28090043772927,
+          "impurity": 0.09261867,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "completionQuality": {
+          "score": 99.91322544188053,
+          "feasible": true,
+          "value": 96.28090043772927,
+          "impurity": 0.09261867,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "facts": [
+          {
+            "id": "f-zh91yr",
+            "hypothesis": "h-1s7wlf",
+            "text": "收率响应面含显著 x·y 交互项，含交互模型的留一误差明显低于加性模型。",
+            "scope": {
+              "conditions": {
+                "x范围": "[0,1]",
+                "y范围": "[0,1]",
+                "杂质上限": "0.115",
+                "预算": "60"
+              },
+              "ranges": {}
+            },
+            "assertions": [
+              {
+                "predicate": "yield_response_shape",
+                "subject": {
+                  "id": "process_s1",
+                  "type": "response_surface"
+                },
+                "object": {
+                  "kind": "statement",
+                  "value": "yield 响应面含 x·y 交互项，且交互模型 LOO 误差不高于加性模型 + 0.18"
+                }
+              }
+            ]
+          },
+          {
+            "id": "f-g2elyk",
+            "hypothesis": "h-5ksj6e",
+            "text": "预算内能找到一个点，其 full 实测 impurity≤0.115 且 yield>95.678（初始 9 点中可行点的最大收率）。",
+            "scope": {
+              "conditions": {
+                "x范围": "[0,1]",
+                "y范围": "[0,1]",
+                "杂质上限": "0.115",
+                "预算": "60"
+              },
+              "ranges": {}
+            },
+            "assertions": [
+              {
+                "predicate": "best_feasible_yield",
+                "subject": {
+                  "id": "process_s1",
+                  "type": "response_surface"
+                },
+                "object": {
+                  "kind": "quantity",
+                  "value": 95.678,
+                  "unit": "%"
+                },
+                "qualifiers": {
+                  "comparison": ">"
+                }
+              }
+            ]
+          }
+        ],
+        "ontology": {
+          "concepts": 4,
+          "entities": 2
+        },
+        "audits": [
+          {
+            "id": "audit:pending:8606fc155fc837d8782410abef83e930",
+            "kind": "evidence_audit",
+            "step": "s1",
+            "holds": "no",
+            "status": null,
+            "child": "4d49fa2f-dfff-4116-b73a-69196ac80b0c",
+            "shortfalls": [
+              {
+                "criterion": "报告 quick-full 差值",
+                "what": "工作区全量文件与登记观测中都没有写出 quick-full 同点差值；lab/quick-0505.json:4 的 93.9288 与 initial.json:62 同点 full 的 94.4969 从未被并列比较，登记观测只把 (0.7,0.4) 的 95.482（lab/quick-0704.json:4）与 95.942（lab/full-0704.json:4）并列，且仍未给差值。",
+                "missing": "在同点 (0.5,0.5) 明确写出 quick-full 差值（并对照 0.36 阈值）。"
+              },
+              {
+                "criterion": "明确 quick 能否无偏筛选",
+                "what": "没有任何文件或登记记录给出“能/不能无偏筛选”的结论；而按原始读数，quick 在两点分别比 full 低 0.568 与 0.460（lab/quick-0505.json:4、initial.json:62、lab/quick-0704.json:4、lab/full-0704.json:4），已触发 h-kcjfse 的推翻条件。",
+                "missing": "一句明确结论：quick 能否用于无偏筛选，且与实测差值一致。"
+              }
+            ],
+            "results": [
+              {
+                "hypothesis": "h-kcjfse",
+                "verdict": "refute",
+                "independent_of_open_issues": false,
+                "basis": "两次同坐标比较均越过 0.36：(0.5,0.5) quick 93.9288（lab/quick-0505.json:4）vs initial full 94.4969（initial.json:62），|Δ|=0.568；(0.7,0.4) 95.4820（lab/quick-0704.json:4）vs 95.9417（lab/full-0704.json:4），|Δ|=0.460。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:fb949eefeb62278772823ea3afc70935",
+            "kind": "evidence_audit",
+            "step": "s1",
+            "holds": "yes",
+            "status": null,
+            "child": "b97988fc-9676-4b3b-8b1e-dae8e5ac0ea2",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-kcjfse",
+                "verdict": "refute",
+                "independent_of_open_issues": false,
+                "basis": "两处同点差均越过 0.36 推翻线：(0.5,0.5) quick 93.9288（lab/quick-0505.json:4）vs initial full 94.4969（initial.json:62），|Δ|=0.5681；(0.7,0.4) 95.4820（lab/quick-0704.json:4）vs 95.9417（lab/full-0704.json:4），|Δ|=0.4597。未决项 u2（quick noise_sd=0.45 未计入推翻线，两差仅约 1.17σ/0.95σ）直接关系到该判断的证据解释，故独立性为 false。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:fa3b7da98e7e597fc0b8bf582bfbc37f",
+            "kind": "evidence_audit",
+            "step": "s2",
+            "holds": "yes",
+            "status": null,
+            "child": "f4b95251-383b-4939-9dd8-02287f28e781",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-1s7wlf",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "加性 LOO=5.8963、交互 LOO=0.4110；推翻线为加性不高于 0.4110+0.18=0.5910，实际 5.8963 远高于该线，推翻条件未触发。交互项（scaled）系数 6.1358、t≈38（df=3）、嵌套 F≈1.5e3；3×3 设计下加性残差集中在四角（±3.9）而同位置交互残差≤0.15，副本逐点重拟合复现 0.411/5.896。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:f94ed520659a2517f59182dffe308fb6",
+            "kind": "evidence_audit",
+            "step": "s3",
+            "holds": "yes",
+            "status": null,
+            "child": "a5824465-1987-4d03-b533-30787baec840",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-gi1viw",
+                "verdict": "refute",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件第二支成立：15 点 full 中可行最高收率 (0.76,0.44)=96.383、impurity=0.09426≤0.10（lab/full-076044.json:4-5）；模型推荐点 (0.73,0.43) 实测 impurity=0.09367 也≤0.10（lab/full-073043.json:4-5）。模型在 (0.73,0.43) 的杂质均值约 0.0926，x 增至 1.0（y=0.43）仍约 0.1072<0.115，约束不绑定；报告 :7 同结论。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:5b71a6696c4c92c221c7a9a3af776288",
+            "kind": "evidence_audit",
+            "step": "s4",
+            "holds": "yes",
+            "status": null,
+            "child": "d6e7fa46-7297-4dbc-bb94-d6169a4e808d",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-5ksj6e",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件“预算用尽仍无任何 full 点同时满足”未触发：预算仅用 30/60，(0.733,0.430) 的 full 实测 96.2699/0.09221 与 96.4302/0.09154 同时满足 impurity≤0.115、yield>95.6785；此前 (0.73,0.43)=96.354、(0.76,0.44)=96.383 亦满足。未决异常只涉 quick 口径与报告笔误，不触本条 full 读数。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:b3ab03759b75ad7446d6626e4e927e90",
+            "kind": "goal_audit",
+            "step": "goal:g-mw5tcgr55yih",
+            "holds": "yes",
+            "status": null,
+            "child": "fd5ec727-bc1e-4f4e-98c9-ae4830cd48ee",
+            "shortfalls": [],
+            "results": []
+          }
+        ],
+        "experimentCost": 30,
+        "violations": [],
+        "taskSucceeded": true,
+        "taskQuality": {
+          "score": 99.91322544188053,
+          "feasible": true,
+          "value": 96.28090043772927,
+          "impurity": 0.09261867,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "parentRequestsWhileWaiting": 0,
+        "auditWork": [
+          {
+            "id": "audit:pending:8606fc155fc837d8782410abef83e930",
+            "kind": "evidence_audit",
+            "holds": "no",
+            "calls": 10,
+            "processed": 288383,
+            "output": 28074,
+            "requestMs": 194161,
+            "spanMs": 195511
+          },
+          {
+            "id": "audit:pending:fb949eefeb62278772823ea3afc70935",
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "calls": 11,
+            "processed": 268200,
+            "output": 17811,
+            "requestMs": 128225,
+            "spanMs": 129578
+          },
+          {
+            "id": "audit:pending:fa3b7da98e7e597fc0b8bf582bfbc37f",
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "calls": 15,
+            "processed": 502411,
+            "output": 26857,
+            "requestMs": 198209,
+            "spanMs": 200172
+          },
+          {
+            "id": "audit:pending:f94ed520659a2517f59182dffe308fb6",
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "calls": 21,
+            "processed": 1540108,
+            "output": 82199,
+            "requestMs": 507726,
+            "spanMs": 513473
+          },
+          {
+            "id": "audit:pending:5b71a6696c4c92c221c7a9a3af776288",
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "calls": 16,
+            "processed": 643448,
+            "output": 19143,
+            "requestMs": 139482,
+            "spanMs": 141570
+          },
+          {
+            "id": "audit:pending:b3ab03759b75ad7446d6626e4e927e90",
+            "kind": "goal_audit",
+            "holds": "yes",
+            "calls": 21,
+            "processed": 1377717,
+            "output": 64583,
+            "requestMs": 407560,
+            "spanMs": 411529
+          }
+        ],
+        "ontologyProblems": [],
+        "planCount": 1
+      },
+      {
+        "id": "interaction-after",
+        "task": "interaction",
+        "variant": "after",
+        "group": "C",
+        "mode": "clearai",
+        "reason": "completed",
+        "error": null,
+        "goalStatus": "achieved",
+        "elapsedMs": 2494778,
+        "usage": {
+          "input": 301745,
+          "output": 381665,
+          "cacheRead": 9098368,
+          "cacheWrite": 0,
+          "calls": 141,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 9781778,
+          "status": "verified",
+          "processed": 9781778
+        },
+        "accountedUsage": {
+          "input": 301745,
+          "output": 381665,
+          "cacheRead": 9098368,
+          "cacheWrite": 0,
+          "calls": 141,
+          "injectedBeforeProvider": 0,
+          "missing": 0,
+          "pending": 0,
+          "lowerBound": 9781778,
+          "status": "verified",
+          "processed": 9781778
+        },
+        "roles": {
+          "main": {
+            "calls": 53,
+            "processed": 4586364,
+            "output": 97373,
+            "requestMs": 644089,
+            "costUsd": 0.15846713999999995
+          },
+          "other": {
+            "calls": 1,
+            "processed": 418,
+            "output": 143,
+            "requestMs": 2744,
+            "costUsd": 0.0002541
+          },
+          "evaluator": {
+            "calls": 87,
+            "processed": 5194996,
+            "output": 284149,
+            "requestMs": 1798382,
+            "costUsd": 0.44439046799999987
+          }
+        },
+        "costUsd": 0.6031117079999998,
+        "initialSha256": "85037920f716c9191671ee5baaee81def13e0260858c9da1ca259a975f39e743",
+        "submission": {
+          "x": 0.72,
+          "y": 0.42,
+          "evidence": [
+            "initial.json",
+            "lab/input-round6.json",
+            "lab/model-round6.json",
+            "lab/model-compare.json",
+            "lab/full-0.72-0.42.json",
+            "lab/full-0.72-0.42-b.json",
+            "lab/full-0.72-0.42-c.json",
+            "lab/full-0.72-0.42-d.json",
+            "lab/full-0.72-0.42-e.json",
+            "lab/cal-final.json",
+            "lab/mode-comparison.json",
+            "reports/optimization-report.md"
+          ]
+        },
+        "artifactQuality": {
+          "score": 99.95578708676966,
+          "feasible": true,
+          "value": 96.28371232966774,
+          "impurity": 0.091552,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "completionQuality": {
+          "score": 99.95578708676966,
+          "feasible": true,
+          "value": 96.28371232966774,
+          "impurity": 0.091552,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "facts": [
+          {
+            "id": "f-9u9btf",
+            "hypothesis": "h-a375wd",
+            "text": "含 x*y 项的二次响应面比可加二次面更符合收率数据(LOO 误差显著更低)。",
+            "scope": {
+              "conditions": {
+                "x_range": "[0,1]",
+                "y_range": "[0,1]",
+                "impurity_limit": "0.115",
+                "budget": "60"
+              },
+              "ranges": {}
+            },
+            "assertions": [
+              {
+                "predicate": "surface_form",
+                "subject": {
+                  "id": "yield_surface",
+                  "type": "response_surface"
+                },
+                "object": {
+                  "kind": "statement",
+                  "value": "含 x*y 交互项的二次面优于可加二次面"
+                }
+              }
+            ]
+          },
+          {
+            "id": "f-9y7nx5",
+            "hypothesis": "h-u83i0p",
+            "text": "收率最优在内部 (x≈0.7,y≈0.4) 附近,且该点杂质显著低于 0.115,约束不紧。",
+            "scope": {
+              "conditions": {
+                "x_range": "[0,1]",
+                "y_range": "[0,1]",
+                "impurity_limit": "0.115",
+                "budget": "60"
+              },
+              "ranges": {}
+            },
+            "assertions": [
+              {
+                "predicate": "location",
+                "subject": {
+                  "id": "optimum_r1",
+                  "type": "operating_point"
+                },
+                "object": {
+                  "kind": "statement",
+                  "value": "x≈0.72,y≈0.42;预测收率≈96.3%;预测杂质≈0.092<0.115"
+                }
+              }
+            ]
+          }
+        ],
+        "ontology": {
+          "concepts": 7,
+          "entities": 4
+        },
+        "audits": [
+          {
+            "id": "audit:pending:92688948452f9d5520dc342836e1181d",
+            "kind": "claim_audit",
+            "step": "review:645505dcab4dac524e31b77e",
+            "holds": "no",
+            "status": null,
+            "child": "31cfa9b3-ebc7-420b-a6f9-cd12577dc4b8",
+            "shortfalls": [
+              {
+                "criterion": "h-yc3tqb 推翻条件中的'2 倍合并噪声'(杂质一侧)",
+                "what": "lab/input-round6.json 无 impurity_noise_sd,方法回退到默认 0.01(method/response_surface.py:60);quick−full 杂质差 0.00170(lab/quick-0.7-0.4.json:5 vs lab/full-0.70-0.40-a.json:5)约为同点 5 次 full 复测杂质 sd 0.000227(lab/model-compare.json:434)的 7.5 倍,作者未登记。",
+                "missing": "杂质噪声尺度或 quick 重复读数,才能按 2 倍合并噪声判定杂质一侧是否越过推翻线。"
+              },
+              {
+                "criterion": "h-yc3tqb 'quick 与 full 同一 original、无系统偏差'",
+                "what": "只有 1 个同点对 (0.7,0.4):quick 95.688 vs full 95.955,差 −0.267;其余证据仅为 instrument 字段(lab/quick-0.7-0.4.json:6;lab/full-0.70-0.40-a.json:6)与两次 calibrate offset=0(lab/cal-1.json:4;lab/cal-final.json:4)。",
+                "missing": "≥2–3 个跨区域的成对 quick/full 点以及 quick 模式的 calibrate,才能支撑登记范围 x,y∈[0,1] 的无偏主张。"
+              },
+              {
+                "criterion": "h-yc3tqb 'quick 噪声更大'",
+                "what": "0.45 与 0.18 都只是文件声明的 noise_sd(lab/quick-0.7-0.4.json:9;lab/full-0.70-0.40-a.json:9),全部数据仅 1 条 quick 读数,没有任何 quick 重复。",
+                "missing": "同点多次 quick 重复读数,实测其离散度是否大于 full。"
+              }
+            ],
+            "results": [
+              {
+                "hypothesis": "h-a375wd",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件未触发:可加面 LOO 3.0608 > 交互面 0.3010+0.18=0.481;我方逐点精确 LOO 与产物一致(3.061/0.301),x*y 项 t≈41.6;支持范围限于 27 个 full 点的收率拟合。"
+              },
+              {
+                "hypothesis": "h-u83i0p",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "推翻条件未触发:观测盒内可行边界实测最高 94.321,低于内部 96.371 均值 2.05(≫0.18);(1.0,0.30)=92.534;内部点杂质 0.09159,上界 0.0918<0.115。范围限于观测盒 [0.1,1]×[0.1,0.9],杂质约束边界本身无实测点。"
+              },
+              {
+                "hypothesis": "h-yc3tqb",
+                "verdict": "inconclusive",
+                "independent_of_open_issues": false,
+                "basis": "收率侧一致:差 −0.267<2×0.969,offset=0;但仅 1 个同点对、quick 噪声 0.45 仅为声明值,杂质噪声无记录且杂质差 0.0017 远大于同点复测杂质 sd,不足以判定无系统偏差或差异仅来自噪声。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:e007f7497e49486da77dac631c0eeb94",
+            "kind": "evidence_audit",
+            "step": "s3",
+            "holds": "yes",
+            "status": null,
+            "child": "521f8bf3-b121-4b73-ad84-98e507e20a1c",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-a375wd",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "27 个 full 点(初始 9 + 新增 18)上，可加面 LOO 3.0608 > 交互面 0.3010+noise_sd 0.18=0.481，推翻条件未触发；独立逐点精确 LOO 重拟合同值(3.0608/0.3010)，交互面残差 RMSE 0.177。范围限 27 个 full 点、[0,1]^2 拟合；quick 未入模。"
+              },
+              {
+                "hypothesis": "h-u83i0p",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "内部 (0.72,0.42) 5 次 full 均值 96.371(sd 0.129)；官方观测盒 [0.1,1]×[0.1,0.9] 可行边界实测最高 94.321，若按 [0.1,0.9]^2 的 x=0.9 边界为 95.678，均低于内部超过 noise 0.18；x=1 为 92.534。杂质均值 0.09159、repeat 上界 0.0918，模型网格最优上界 0.112<0.115；网格最大仍在无约束驻点 (0.715,0.425)，约束未 binding。范围限 full 实测与模型支持。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:8428053590789e43b038c0db3b050f65",
+            "kind": "evidence_audit",
+            "step": "s4",
+            "holds": "yes",
+            "status": null,
+            "child": "02b05543-f782-4404-926b-7484eb8e0e28",
+            "shortfalls": [],
+            "results": [
+              {
+                "hypothesis": "h-yc3tqb",
+                "verdict": "inconclusive",
+                "independent_of_open_issues": false,
+                "basis": "收率侧同点差 −0.266(0.7,0.4)与 +0.223(0.72,0.42),均 < 2×sqrt(0.45²+0.18²)=0.969;cal-1/cal-final 的 offset 均为 0,未触发'非零 offset'。但 quick 的杂质噪声未记录,两对 quick−full 杂质差 −0.00170/−0.00101 同号为负,分别是同点 full 复测杂质 sd 0.000227 的约 7.5/4.5 倍;只能确认差异存在,不能确认'仅来自噪声'或'无系统偏差',故 inconclusive。"
+              },
+              {
+                "hypothesis": "h-u83i0p",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "观测盒 [0.1,1]×[0.1,0.9] 内可行边界点最高实测 (0.9,0.5)=95.678,比内部 5 次均值 96.371 低约 0.69>noise 0.18;(1.0,0.3)=92.534;杂质约束边界无更高可行实测点((0.9,0.9) 杂质 0.1237 不可行、收率 92.551)。内部 (0.72,0.42) 杂质均值 0.09159、复测上界 0.0918,模型网格最优上界 0.112<0.115,网格最大仍在无约束驻点 (0.715,0.425),约束不紧。推翻条件未触发;范围限观测盒。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:8880fa3e3a77d84ec50dc0adc2e9c8ff",
+            "kind": "evidence_audit",
+            "step": "s5",
+            "holds": "yes",
+            "status": null,
+            "child": "cfd44935-3907-44e7-940f-819950664073",
+            "shortfalls": [
+              {
+                "criterion": "h-yc3tqb: 无系统偏差/差异仅来自噪声",
+                "what": "两对同点 quick−full 杂质差 −0.00170(lab/mode-comparison.json:18)与 −0.00101(:37)同号为负;lab/quick-final.json:5 的 0.09058 低于全部 5 个 full;quick 杂质噪声/重复未记录。收率差 −0.266/+0.223 在 2×0.969 内,cal offset=0。",
+                "missing": "quick 模式的独立杂质噪声/重复读数或标定,才能判定差异仅来自噪声;否则只能判 inconclusive。"
+              }
+            ],
+            "results": [
+              {
+                "hypothesis": "h-a375wd",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "27 个 full 点逐点精确 LOO 复算:交互面 0.3010、可加面 3.0608;3.0608 > 0.3010+0.18=0.481,推翻条件未触发。范围限 27 个 full 点、x,y∈[0,1] 的收率拟合;quick 未入模。交互面残差 RMSE 0.177 与噪声 0.18 同量级。"
+              },
+              {
+                "hypothesis": "h-u83i0p",
+                "verdict": "support",
+                "independent_of_open_issues": true,
+                "basis": "内部 (0.72,0.42) 5 次 full 均值 96.371(sd 0.129);观测盒 [0.1,1]×[0.1,0.9] 内可行边界实测最高 (0.9,0.5)=95.678、(1.0,0.3)=92.534,均低 >0.69(>0.18 noise);5 次杂质 0.09139–0.09195,模型默认 0.01 噪声 95% 上界 0.1119<0.115,网格最大仍在内部驻点 (0.7165,0.4252),约束不紧,推翻条件未触发。注:报告 0.0234 是均值余量,按 0.01 噪声上界余量约 0.0031,且无独立杂质参考。"
+              },
+              {
+                "hypothesis": "h-yc3tqb",
+                "verdict": "inconclusive",
+                "independent_of_open_issues": false,
+                "basis": "收率侧同点 quick−full 差 −0.266/+0.223,均 <2×sqrt(0.45²+0.18²)=0.969;两次 calibrate offset=0、instrument=original,未触发'非零 offset'。但杂质侧两对差同为负(−0.00170/−0.00101),quick-final 0.09058 低于全部 5 个 full;quick 杂质噪声/重复无记录,不能判定是模式偏差还是随机,故'无系统偏差、差异仅来自噪声'未确立,推翻条件既未确认也未排除。"
+              }
+            ]
+          },
+          {
+            "id": "audit:pending:748203aa7c123ae46fd2ba09968a234f",
+            "kind": "goal_audit",
+            "step": "goal:g-mw5tcsde0ox3",
+            "holds": "yes",
+            "status": null,
+            "child": "21706dc2-2fe0-429b-a766-03c689a73866",
+            "shortfalls": [],
+            "results": []
+          }
+        ],
+        "experimentCost": 60,
+        "violations": [],
+        "taskSucceeded": true,
+        "taskQuality": {
+          "score": 99.95578708676966,
+          "feasible": true,
+          "value": 96.28371232966774,
+          "impurity": 0.091552,
+          "start": 89.6799996995717,
+          "optimum": 96.28663331485551
+        },
+        "parentRequestsWhileWaiting": 0,
+        "auditWork": [
+          {
+            "id": "audit:pending:92688948452f9d5520dc342836e1181d",
+            "kind": "claim_audit",
+            "holds": "no",
+            "calls": 14,
+            "processed": 587357,
+            "output": 33910,
+            "requestMs": 231895,
+            "spanMs": 236406
+          },
+          {
+            "id": "audit:pending:e007f7497e49486da77dac631c0eeb94",
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "calls": 16,
+            "processed": 979447,
+            "output": 66541,
+            "requestMs": 432111,
+            "spanMs": 437330
+          },
+          {
+            "id": "audit:pending:8428053590789e43b038c0db3b050f65",
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "calls": 19,
+            "processed": 1168242,
+            "output": 74501,
+            "requestMs": 455217,
+            "spanMs": 460609
+          },
+          {
+            "id": "audit:pending:8880fa3e3a77d84ec50dc0adc2e9c8ff",
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "calls": 20,
+            "processed": 1317702,
+            "output": 59309,
+            "requestMs": 364077,
+            "spanMs": 369650
+          },
+          {
+            "id": "audit:pending:748203aa7c123ae46fd2ba09968a234f",
+            "kind": "goal_audit",
+            "holds": "yes",
+            "calls": 18,
+            "processed": 1142248,
+            "output": 49888,
+            "requestMs": 315082,
+            "spanMs": 318196
+          }
+        ],
+        "ontologyProblems": [],
+        "planCount": 1
+      }
+    ],
+    "limitation": "Fresh synthetic tasks, one sample per variant. Concurrent API calls share service resources. Artifact quality and task completion are separate. Additional budget, different worlds and cumulative code changes prevent attributing differences to any single mechanism. No cross-task ontology reuse benefit is measured here."
+  },
+  "evidenceHashes": {
+    "manifest.json": "dff76409dec5671db80f77eeffb894c1d379291b2884ee5fb36a8814ea2f8988",
+    "comparison.json": "b8b7675c910db045226534839ad2b8086bd1cd84e205748482f55ed080b90e60",
+    "verification.json": "cd8ce11658a01ff7e21f84859d92d2b966af950f2866b06b24fde60de98205f0",
+    "runs/additive-bare/launcher-result.json": "e0d100dc6b6608b6629ee2e4ce28a86961dbbca532c14cd7e57a6a799b9865b4",
+    "runs/additive-bare/llm-calls.jsonl": "b40769a8f134c7a3706b6f0a76591950269572e211838a5f6cd34ac51ba1ba12",
+    "runs/additive-bare/isolation-probe.json": "dcebb6f5d7994a23dfe654a0573e59b8d54325933b251304b50fdc4f3bf010b9",
+    "runs/additive-before/launcher-result.json": "a4f5c930af96405949391700b710728836c35cae580fada982764da0a5543053",
+    "runs/additive-before/llm-calls.jsonl": "88d078e2323de22a5fc6de0cbb133c02548a11aae1d7fe74d534996d6dbadb4a",
+    "runs/additive-before/isolation-probe.json": "7e0ca3348f8671c92e5a0ce6b96150a69d3a35e907b2f705d6a0f6ee98edab2a",
+    "runs/additive-after/launcher-result.json": "67bface36fc1e6d24ca347a46af3183629d4876c44b17aaa6648f591325376c3",
+    "runs/additive-after/llm-calls.jsonl": "46e83ee7912c21245c9cb8694cadb3e843d33a848e4fd688289af113defb51d8",
+    "runs/additive-after/isolation-probe.json": "c70f9123444b0d4a96aaf9c130ceefa8877161f758a9e5785de78990611916ca",
+    "runs/interaction-bare/launcher-result.json": "df8fcbf03d0017d463796b2169acb925c6c5b79434ee2d680ee91a86dc222d6f",
+    "runs/interaction-bare/llm-calls.jsonl": "4f807f55c0e9cf2b390d761ec8ec0aa2793ded03e66515127ed4f04eff86c5f2",
+    "runs/interaction-bare/isolation-probe.json": "6ad09c84f01a76ba3ba8e652ea1c8869457ad98fad8bf8b068e90083594cf4c3",
+    "runs/interaction-before/launcher-result.json": "69dab06a197ec6d19421f80ea504a31477150fc307da807dfbeac75145cd39da",
+    "runs/interaction-before/llm-calls.jsonl": "1448ea087ae9342978a87b22f2bf4bf8c41913907aada7f41e049fd3a2735474",
+    "runs/interaction-before/isolation-probe.json": "b0704a04f5b5fd150c2ca671085ecdc4b4ea8e2524c99f5f249a8ef555673226",
+    "runs/interaction-after/launcher-result.json": "e9eb6cb4a97c0c4288dc79b5cbcfa0d98b5a8d037329de7ce9aa966a45c1babc",
+    "runs/interaction-after/llm-calls.jsonl": "baad0178827d2f8932a4d6985c8311e57f40f39cf8c92ac70505ff798576c382",
+    "runs/interaction-after/isolation-probe.json": "c440fcb458a0a012b500a41f2f1e9d2188989684f9ae1d380448d328e13279d5"
+  }
+}

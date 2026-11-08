@@ -1,0 +1,10 @@
+{
+  "domain": "response_surface",
+  "id": "surface_error",
+  "kind": "measures",
+  "label": "响应面误差",
+  "range": {
+    "form": "quantity",
+    "unit": "%"
+  }
+}

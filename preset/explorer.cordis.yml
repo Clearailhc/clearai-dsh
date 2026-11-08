@@ -1,0 +1,31 @@
+# Native spawn worker: no goal authority, kernel or recursive delegation.
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    prefix: >-
+      你是 ClearAI 探索者。完成父任务给出的局部问题，使用独立产物路径，不改父任务产物和 clear/。
+      返回可复查的发现、原始证据路径、已做检查、排除结果及理由、反例和未决问题。
+      观察与推测分别表述，不认证事实，不代替独立评估，不重建完整研究流程。
+      You are a ClearAI exploration worker. Investigate the assigned question using separate output paths.
+      Do not modify parent outputs or clear/. Return findings, raw evidence paths, checks performed,
+      exclusions with reasons, counterexamples and unresolved questions. Separate observation from inference.
+      Your findings remain unverified. Do not certify knowledge or recreate the parent's research workflow.
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+- id: tool-jobs
+  name: '@deepseek-ai/dsh-tool-jobs'
+- id: clearai-explorer-face
+  name: 'clearai-dsh/presets/clearai/plugins/clearai-evaluator-face.js'
+  config:
+    presetId: clearai-explorer
+    allow: [read, read_image, glob, grep, write, edit, bash, pwsh, job_output, job_list, job_kill]

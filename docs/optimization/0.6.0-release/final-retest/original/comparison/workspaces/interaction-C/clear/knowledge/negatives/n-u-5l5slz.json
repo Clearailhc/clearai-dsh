@@ -1,0 +1,48 @@
+{
+  "id": "n-u-5l5slz",
+  "kind": "unresolved",
+  "status": "explained",
+  "statement": "计划预测拟最优点 (0.52,0.55) 的 full 实测会高于其他可行 full 点、竞争点低 0.2–1.0；实际 (0.52,0.55)=95.286，低于 (0.6,0.6)=95.311 和 (0.5,0.5) 重复测量的 95.601。三次单次读数的极差 0.32，接近 full 的 1.8×noise_sd，尚不能按单次读数排序。",
+  "touches": [
+    "内部最优"
+  ],
+  "evidence": [
+    {
+      "ref": "lab/full-052055.json"
+    }
+  ],
+  "about": [
+    "lab/full-052055.json",
+    "内部最优",
+    "setting_x",
+    "setting_y",
+    "yield_pct",
+    "impurity_frac",
+    "impurity_limit",
+    "assay_mode"
+  ],
+  "scope": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "budget_units": "30",
+      "costs": "quick=1, full=3, calibrate=2",
+      "initial_design": "3x3 grid at 0.1/0.5/0.9, full mode, noise_sd=0.18 %"
+    },
+    "ranges": {}
+  },
+  "resolution": {
+    "outcome": "explained",
+    "reason": "复测后按同一口径（各点 full 均值）比较：(0.52,0.55)=95.3143，(0.5,0.5)=95.4464（差 0.1321 <1×noise_sd=0.18），(0.6,0.6)=95.3110（差 0.003）。原预测的“低 0.2–1.0”在单次读数上不成立，但单次极差 0.32 与 full 噪声一致；拟合法仍把 (0.52,0.55) 排在最高（95.34–95.38 vs 95.30–95.34）。差异在噪声内，不推翻“内部最优”，只说明单次 full 不足以给三点排序。",
+    "by": "内部最优 + lab/verify-052055.json"
+  },
+  "source": {
+    "session": "session-native-2717df94-1130-4430-861a-5e7216c67966",
+    "goal": "g-mw4zfrls4bb8",
+    "anomaly": "u-5l5slz",
+    "by": "model"
+  },
+  "review": null,
+  "at": 1793970425521,
+  "updated": 1793970444958
+}

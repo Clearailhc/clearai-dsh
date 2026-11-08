@@ -1,0 +1,311 @@
+{
+  "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+  "group": "A",
+  "mode": "default",
+  "reason": "completed",
+  "elapsedMs": 224736,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 21568,
+    "output": 34385,
+    "cacheRead": 929280,
+    "cacheWrite": 0,
+    "calls": 32,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 985233,
+    "status": "verified",
+    "processed": 985233
+  },
+  "mount": {
+    "prompt": false,
+    "tools": false
+  },
+  "requests": [
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065942366
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065944782
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065946793
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065953033
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065957731
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065960170
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065964675
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065967358
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065973431
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065978825
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065988706
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794065990584
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066005562
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066021186
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066027645
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066030054
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066039552
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066050179
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066052484
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066068408
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066073750
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066077025
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066084456
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066099844
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066109731
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066116975
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066132482
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066137134
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066151627
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066156630
+    },
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066159348
+    }
+  ],
+  "approvals": [],
+  "answer": "已完成任务，最终结果写入 `submission.json`：\n\n```json\n{\"x\": 0.72, \"y\": 0.49, \"evidence\": [\"initial.json\", \"report.md\", \"lab/experiment-index.json\", \"lab/input-final.json\", \"lab/model-final.json\", \"lab/decision.json\", \"...各原始实验与校准文件\"]}\n```\n\n## 最终点与验证\n\n建议点：**`x = 0.72, y = 0.49`**\n\n两次独立 `full` 原始读数：\n\n| 原始文件 | 收率 | 杂质 |\n|---|---:|---:|\n| `lab/full-0.72-0.49-final.json` | 96.5612 | 0.09531 |\n| `lab/full-0.72-0.49-rep.json` | 96.5998 | 0.09520 |\n\n- 收率均值：**96.5805%**\n- 杂质均值：**0.09526**，最大 **0.09531 < 0.115**，满足约束。\n- `(0.70, 0.50)` 虽有一次 96.6979 的高读数，但重复仅 95.8497（均值 96.2738），因此未追逐单次噪声；`(0.72, 0.50)` 重复均值为 96.4583。\n\n## 参数\n\n标准化坐标 `x_s = 2x-1, y_s = 2y-1`。\n\n**收率加性模型**（LOO-CV RMSE 0.3465）：\n\n```text\nY = 95.1192052664\n  + 5.9170216658*x_s - 0.0628067096*y_s\n  - 6.6807956240*x_s^2 - 5.7487922216*y_s^2\n```\n\n**杂质加性模型**（LOO-CV RMSE 0.000866）：\n\n```text\nI = 0.0875850465\n  + 0.0150367121*x_s + 0.0248185814*y_s\n  + 0.0084076974*x_s^2 - 0.0003406263*y_s^2\n```\n\n连续最优点：加性模型 `(0.7214, 0.4973)`，交互模型 `(0.7218, 0.4899)`，预测收率均约 96.430。最终点位于两者附近并通过实测验证。\n\n## 仪表口径与校准\n\n- 仪表：`original`；指标：`yield`；收率单位 `%`，杂质单位 `fraction`。\n- 在 `(0.5,0.5)`、`(0.9,0.5)`、`(0.72,0.49)` 三次校准，均返回 `offset = 0`、`unit = normalized x`、`instrument = original`。\n- 未施加任何偏移修正，直接使用原始读数；未出现替换仪表。\n- `full` 标称 `noise_sd = 0.18`，`quick` 为 `0.45`；`quick` 仅作探索，未纳入最终拟合。\n\n## 预算\n\n初始 9 个观测不计费；本次消耗：\n\n- 3 次 `calibrate` × 2 = 6\n- 1 次 `quick` × 1 = 1\n- 7 次 `full` × 3 = 21\n\n合计 **28 / 30**，剩余 2。剩余预算不足以再做一次 `full`，因此 `lab/model-final.json` 的 `recommendation` 为空；最终点由连续最优点和两次 `full` 验证共同确定。`initial.json` 哈希保持不变。\n\n## 局限\n\n1. 经验二次响应面，仅适用于观测覆盖区；实际覆盖为 `x,y ∈ [0.1,0.9]`，不能外推到边界端点或作因果结论。\n2. 收率残差 SD 约 0.266，高于标称 0.18；单次读数噪声明显，结论依赖重复均值和模型。\n3. 杂质噪声按 0.002 保守建模；最终点实测杂质远低于 0.115，约束结论稳健。\n4. 校准只验证了上述三点的零点偏移，不等同于完整计量溯源。\n5. 预测区间不是测量值；最终判断以 `full` 原始读数为准。\n\n详细报告见 **`report.md`**，原始读数汇总见 **`lab/experiment-index.json`**，决策记录见 **`lab/decision.json`**。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "/tmp/clearai-polish-final-release/workspaces/additive-A/report.md"
+    ],
+    "sessionId": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e"
+  },
+  "violations": {
+    "isolation_failed": false
+  },
+  "driverDigest": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587",
+  "logs": [
+    {
+      "session": "session-native-f2acc29c-bdf5-40bb-8e7b-680cd880907e",
+      "cursor": 243,
+      "path": "155233cabb8f06049be68991682953d823ac26aea69b61144e9184158ce372f3.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "4edb4589e02f9a81af6c350dbb8c108dc87696446a0a2493ca8936669415fa70",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}

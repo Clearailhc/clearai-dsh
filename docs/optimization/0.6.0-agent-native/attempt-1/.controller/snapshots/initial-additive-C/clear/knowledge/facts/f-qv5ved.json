@@ -1,0 +1,92 @@
+{
+  "id": "f-qv5ved",
+  "goal": "g-mw52i41h09ow",
+  "hypothesis": "h-gux36c",
+  "text": "预测最优点 (0.45,0.45) 的杂质约 0.085，远低于 0.115，约束不活跃",
+  "about": [
+    "impurity_surface_xy",
+    "impurity_surface",
+    "feasible_impurity",
+    "yield",
+    "impurity",
+    "instrument"
+  ],
+  "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+  "scope_spec": {
+    "conditions": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    },
+    "ranges": {}
+  },
+  "refute_when": "该点及其邻域实测杂质超过 0.115",
+  "level": "L3",
+  "evidence": [
+    "e-t7kyvh"
+  ],
+  "evidence_records": [
+    {
+      "t": "evidence/recorded",
+      "id": "e-t7kyvh",
+      "step": "goal:g-mw52i41h09ow",
+      "plan": "goal",
+      "hypothesis": "h-gux36c",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "该点 4 次 full 杂质 0.0819–0.0840，邻域 val/quick 0.0787–0.0921，均 ≤0.115；16 点模型预测 0.0833、上界 0.1041（报告 0.1058 是 10 点值）远低于 0.115；仅 (0.9,0.9)=0.1247 越限。推翻条件未触发。",
+      "refs": [
+        "initial.json"
+      ],
+      "origins": [
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+        },
+        {
+          "kind": "artifact",
+          "path": "initial.json",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "推荐点预测杂质 0.0832，4 次 full 实测 0.0819–0.0840，均 ≤ 0.115（余量约 0.031）；约束只在 (0.9,0.9) 附近被触碰（实测 0.1247）"
+      },
+      "predicate": "feasible_impurity",
+      "subject": {
+        "id": "impurity_surface_xy",
+        "type": "impurity_surface"
+      }
+    }
+  ],
+  "definitions": {
+    "feasible_impurity": "fnv:0a8c7b46",
+    "impurity_surface": "fnv:677d242b",
+    "impurity": "fnv:d916b361",
+    "instrument": "fnv:8ae62f56",
+    "yield": "fnv:b5e997fa"
+  },
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "status": "established",
+  "review": null,
+  "at": 1793976433980,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793976433980,
+      "level": "L3"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "gloss": "归一化输入变量 y,取值 [0,1]",
+  "id": "var_y",
+  "kind": "measure",
+  "label": "y 输入",
+  "unit": "1"
+}

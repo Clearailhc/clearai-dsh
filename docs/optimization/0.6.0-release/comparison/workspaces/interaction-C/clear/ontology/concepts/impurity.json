@@ -1,0 +1,8 @@
+{
+  "id": "impurity",
+  "label": "杂质",
+  "gloss": "杂质分数(0–1),上限 0.115;同点 full 重复残差 sd≈0.0007。",
+  "kind": "measure",
+  "unit": "fraction",
+  "basis": "initial.json"
+}

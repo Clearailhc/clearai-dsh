@@ -1,0 +1,146 @@
+{
+  "kind": "targeted-repair-acceptance-with-retained-failed-attempts",
+  "productCommit": "aa8917a",
+  "reason": "completed",
+  "goal": "achieved",
+  "resumeMs": 285476,
+  "resumeUsage": {
+    "input": 42939,
+    "output": 43950,
+    "cacheRead": 2525056,
+    "cacheWrite": 0,
+    "calls": 38,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 2611945,
+    "status": "verified",
+    "processed": 2611945
+  },
+  "rawScore": {
+    "entities": {
+      "expected": 246,
+      "actual": 246,
+      "correct": 246,
+      "precision": 1,
+      "recall": 1,
+      "duplicates": 0
+    },
+    "edges": {
+      "expected": 532,
+      "actual": 532,
+      "correct": 531,
+      "precision": 0.9981203007518797,
+      "recall": 0.9981203007518797,
+      "duplicates": 0
+    },
+    "batches": {
+      "expected": 11,
+      "actual": 11,
+      "correct": 11,
+      "precision": 1,
+      "recall": 1,
+      "duplicates": 0
+    },
+    "exposures": {
+      "expected": 22,
+      "actual": 22,
+      "correct": 22,
+      "precision": 1,
+      "recall": 1,
+      "duplicates": 0
+    },
+    "customerTotals": {
+      "expected": 10,
+      "actual": 12,
+      "correct": 10
+    },
+    "decisionExact": false
+  },
+  "decisionEquivalentWithKnownZeroCustomers": true,
+  "explicitZeroCustomers": [
+    "CUS007",
+    "CUS008"
+  ],
+  "graphScope": "model export is raw source; 531/532 against effective-view gold is not raw-source accuracy",
+  "audit": [
+    {
+      "id": "audit:pending:88da75ffe365888dcfb2517e4829ebc0",
+      "kind": "claim_audit",
+      "holds": "yes",
+      "basis": "六条登记主张均由我从原始 CSV 独立重算并与产物逐项一致：NOTICE-2 下 13 候选−RWK006/RWK012 放行=11 批；22 条出货毛 2352−退货 20=净 2332，12 家客户值逐项相同；旧 MAT024 6 批在 2026-09-15 为 1066 件、并集 3398；新增 12 条全 pack×24，隔离批 4 条 72/72/96/120、差 345；USE001 于 2026-09-15 生效使 BAT001 计 128；交换图无 BAT001→MAT002，uses_lot 仅引 material_usage 源行，更正记于本体与分析产物。副本复跑 recheck_phase3.py 54/54、verify_graph/verify_submission/verify_phase3 均退出 0，graph.json 246/532 且我逐边核对 532 条证据行均含两端 ID；phase-1/2 的 sha256 与登记前缀一致。唯一瑕疵是报告对 CUS008=0 的原因表述自相矛盾（§5 表已给正确原因），不影响任何数字。复跑仅写副本内 analysis/out 与 artifacts，无全局用户数据目录。"
+    },
+    {
+      "id": "audit:pending:692998e2f0524bbe1676f3f83320da05",
+      "kind": "goal_audit",
+      "holds": "yes",
+      "basis": "四项判据逐条满足：①我用独立于其脚本的另一条路径从原始 CSV 重算（最高 record_version、仅 shipped、<=2026-09-15、退货折件、返工放行/PRD006 例外、更正按 effective）得 13 候选/11 隔离、22 条、毛 2352−退 20=净 2332、12 家客户（CUS007/CUS008=0）逐项与 submission.json 相同，recheck_phase3.py 亦 54/54 通过；②graph.json 为数据字典 8 类型/7 关系/246 实体/532 边，我另写校验逐条回查全部 246 实体与 532 边的证据行均含被引端点，verify_graph 与 verify_submission 在副本退出 0；③report/phase-3.md §10 记录三处复验发现与修正（图证据、客户汇总 10→12、取消单表述），phase-1/2 的 sha256 仍为 a4785623…/42736339…；④六条关键主张此前经独立评估 support，我复算未触发任一推翻条件。唯一未决是 USE001 更正把 seal 料 MAT017 换成 housing 料 MAT002（报告 §6.5.1 已写明、撤回则净暴露 2204），属已披露并量化的不确定，不改变本判据。"
+    },
+    {
+      "id": "audit:pending:1d39610633e5fd48d3814bab69eb4071",
+      "kind": "goal_audit",
+      "holds": "unknown",
+      "basis": "Evaluator did not complete (aborted)"
+    },
+    {
+      "id": "audit:pending:15716d81bcb6135586347cb83c54ce46",
+      "kind": "goal_audit",
+      "holds": "yes",
+      "basis": "我在副本内独立重算（自写脚本，不用作者代码）：NOTICE-2 疑点料 MAT015/MAT002 + USE001 更正得 13 候选，RWK006/RWK012 获批且 2026-09-10≤截止日放行，余 11 批；22 条出货、毛 2352、退货 20、净 2332，12 家客户逐项与 submission.json 相同（10 非零，CUS007/CUS008=0），并与 recheck_phase3.py 的 54/54 ok 逐项一致。graph.json 8 类型/7 关系/246 实体/532 边，我用独立脚本核对全部实体与边证据行均含被引 ID（BAT001 uses_lot 仅 MAT017/022 源行，无同时含 BAT001 与 MAT002 的源行），verify_graph 与 verify_submission（阶段 3/1/2）均退出 0。phase-3.md:465 §10 记录 F1–F3 复验修正；phase-1/2 sha256=a4785623…/42736339… 未变。六条登记主张此前独立核验为 support，我的重算未触发任何推翻条件（BAT026/BAT056 为 PRD002 非 PRD006；旧 6 批 1066、并集 3398；4 条 pack 360/差 345；BAT001 计 128；RWK-NEW approved=no）。已登记异常 u1 的三处改写核对成立。"
+    }
+  ],
+  "anomalies": [
+    {
+      "id": "audit:pending:88da75ffe365888dcfb2517e4829ebc0#u1",
+      "goal_id": "goal-e9bff067-6b6b-4bad-a45d-eb916132cc75",
+      "what": "report/phase-3.md:293（及 :31）称 CUS007/CUS008 的出货批次全部是 batch_not_quarantined，但同报告 :205 与 analysis/out/phase3/coverage.csv 均显示 CUS008 的 SHP103 在隔离批次 BAT043 上、仅因最高版本 cancelled 未计入；零暴露原因表述自相矛盾。",
+      "anchor": null,
+      "step": "review:fc57162d0e7115d89eb41353",
+      "by": "evaluator",
+      "matters": "no",
+      "touches": [
+        "h-v21aoh"
+      ],
+      "impact_basis": "按最高 record_version 重算 CUS008 仍=0（SHP103 v2 cancelled），22 条/净 2332 不变；属报告叙述不一致，不是读数差异。",
+      "status": "explained",
+      "reason": "评估者指出报告 §0/§3.2/§5 对 CUS008=0 的说法自相矛盾：SHP103 在隔离批次 BAT043 上但因最高版本 cancelled 归 status_cancelled（coverage.csv），其余批次才是 batch_not_quarantined。已改写这三处：§0 明确 CUS007 与 CUS008 原因不同；§3.2 CUS008 行改为“SHP103 在 BAT043 上但 cancelled（不计入）”；§5 说明 CUS007 全为 batch_not_quarantined、CUS008 含 1 条 status_cancelled。数字不变（22 条/2332 件），recheck 54/54 与 verify_phase3 仍退出 0。",
+      "explainedBy": "h-v21aoh",
+      "at": 1794056204063,
+      "resolvedAt": 1794056222243,
+      "reviews": [
+        {
+          "audit": "audit:pending:692998e2f0524bbe1676f3f83320da05",
+          "what": "report/phase-3.md:31、:204-205、:294-296 称 CUS007/CUS008=0；修复后 CUS008 写明 SHP103 在隔离批 BAT043 上但最高版本 cancelled（coverage.csv:133 为 status_cancelled），CUS007 批次均非隔离，与我的独立重算一致，无残留矛盾。",
+          "disposition": "maintain",
+          "basis": "独立重算：CUS008=0 因 SHP103 v2 cancelled（BAT043 不计入）、其余批次非隔离；CUS007=0 因其批次均不在 11 批。22 条/2332 与 12 家客户汇总不变，原“已解释”处置仍成立。",
+          "at": 1794056548703
+        },
+        {
+          "audit": "audit:pending:15716d81bcb6135586347cb83c54ce46",
+          "what": "我复核了改写后的三处：report/phase-3.md:31 已把 CUS007 与 CUS008 的零暴露原因分开，:205 明确 CUS008 的 SHP103 在隔离批 BAT043 上但最高版本 cancelled，:294-295 说明 CUS007 全为 batch_not_quarantined、CUS008 含 1 条 status_cancelled；与 analysis/out/phase3/coverage.csv:133 及 data/shipments.csv:128（SHP103 v2 cancelled）一致，矛盾已消除。",
+          "disposition": "maintain",
+          "basis": "按最高 record_version 独立复算 CUS008 仍=0（SHP103 v2 cancelled），22 条/毛 2352/退 20/净 2332 与 12 家汇总均未变；属叙述修正，不改变任何数字或证据。",
+          "at": 1794057110068
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "stageCapUsd": 20,
+    "stageReservedUsd": 2.4142903359999988,
+    "unknownReservations": [
+      {
+        "reservedUsd": 0.8
+      },
+      {
+        "reservedUsd": 0.8
+      }
+    ],
+    "pending": 0
+  },
+  "limitations": [
+    "Two superseded runs retained; do not claim a first-attempt pass.",
+    "Targeted case uses existing artifacts; not a new native-vs-ClearAI benchmark.",
+    "Dual-view exporter separately verified offline; do not attribute engineered output to the model."
+  ]
+}

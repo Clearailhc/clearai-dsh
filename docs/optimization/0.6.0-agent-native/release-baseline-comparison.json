@@ -1,0 +1,301 @@
+{
+  "dataVerified": true,
+  "acceptancePassed": false,
+  "releaseRecommended": false,
+  "rows": [
+    {
+      "task": "additive",
+      "baseline": {
+        "reason": "token_limit",
+        "goalStatus": "open",
+        "elapsedMs": 869384,
+        "tokens": 5085070,
+        "costUsd": 0.23764245599999986,
+        "artifactQuality": {
+          "score": 0,
+          "feasible": false,
+          "start": 91.11403176398467,
+          "optimum": 95.36794658048714
+        },
+        "facts": 2,
+        "roles": {
+          "other": {
+            "calls": 1,
+            "processed": 353,
+            "requestMs": 1402,
+            "costUsd": 0.000138468
+          },
+          "main": {
+            "calls": 61,
+            "processed": 3732830,
+            "requestMs": 373715,
+            "costUsd": 0.10664743199999999
+          },
+          "evaluator": {
+            "calls": 36,
+            "processed": 1351887,
+            "requestMs": 469874,
+            "costUsd": 0.13085655599999998
+          }
+        },
+        "audits": [
+          {
+            "kind": "evidence_audit",
+            "holds": "no",
+            "step": "verify2"
+          },
+          {
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "step": "verify2"
+          }
+        ],
+        "parentRequestsWhileWaiting": 0
+      },
+      "candidate": {
+        "reason": "token_limit",
+        "goalStatus": "open",
+        "elapsedMs": 1531617,
+        "tokens": 5024941,
+        "costUsd": 0.350667288,
+        "artifactQuality": {
+          "score": 98.70336487575125,
+          "feasible": true,
+          "value": 95.31278882682075,
+          "impurity": 0.07999999999999999,
+          "start": 91.11403176398467,
+          "optimum": 95.36794658048714
+        },
+        "facts": 0,
+        "roles": {
+          "main": {
+            "calls": 50,
+            "input": 38908,
+            "output": 56366,
+            "cacheRead": 2731136,
+            "cacheWrite": 0,
+            "processed": 2826410,
+            "requestMs": 422404,
+            "costUpperBoundUsd": 0.09569841600000002
+          },
+          "other": {
+            "calls": 1,
+            "input": 147,
+            "output": 166,
+            "cacheRead": 128,
+            "cacheWrite": 0,
+            "processed": 441,
+            "requestMs": 2178,
+            "costUpperBoundUsd": 0.00024406799999999998
+          },
+          "evaluator": {
+            "calls": 44,
+            "input": 129767,
+            "output": 170339,
+            "cacheRead": 1897984,
+            "cacheWrite": 0,
+            "processed": 2198090,
+            "requestMs": 1073785,
+            "costUpperBoundUsd": 0.254724804
+          }
+        },
+        "audits": [
+          {
+            "id": "audit:pending:aa53b243eca729a966e9d06d0c897b9d",
+            "verdict": "yes",
+            "holds": "yes",
+            "basis": "C1 满足:lab/full-candidate.json 的 (0.5,0.35) 读数 95.5144%、杂质 0.080344≤0.115;lab/decision.md 按降序列出全部 10 个 full 可行点(含 95.2310 的 (0.5,0.40))并记录本读数与全部已测 full 可行点的对比;唯一更高的 quick 96.5393 已按同点 full 95.2310 与 3σ 离群排除,理由成立。离线复跑 response_surface.py(仅在副本内写 eval-model-q3.json,未调用 /experiment 共享账本/预算)得加性面候选预测 95.3566、顶点 x≈0.521,与实测一致。仍存不影响本步结论的遗留:decision.md:17 的 \"94.6605\" 与同表 95.2310 不一致;h-76nfgi 的 quick/full 差 1.308 超 0.54 阈值;工作区尚无 submission.json。",
+            "shortfalls": []
+          },
+          {
+            "id": "audit:pending:0c7b1c2ce32f0625d0cb3df33ad6e537",
+            "verdict": "yes",
+            "holds": "yes",
+            "basis": "交付成立:C1 逐条满足。p4 新增 full 原始读数至少 3 条:lab/full-repeat.json:4=95.3937、lab/full-competitor.json:4=95.2669、lab/full-0.50-0.30.json:4=95.4944(spent 18/21/24,杂质 0.0803/0.0805/0.0769≤0.115);lab/recheck.md:3-6 记录两次差 0.1207、均值 95.4541,:8-10 对比 (0.55,0.30)(−0.187)与 (0.50,0.30)(+0.040),:16-18 给出最终选择 (0.50,0.35)。副本按作者命令重跑 response_surface.py(initial.json + 5 个 --append + --remaining-budget 6),输出与 lab/model-fullonly.json 逐字节一致(加性 cv 0.30624 < 交互 0.43010,顶点 x=0.521/y=0.319,best_measured 95.5144);复跑只写副本,未调用 /experiment、未消耗预算,/log 探测返回 404,未能用服务端日志二次核验原始读数。h-ikuzxi 亦 support。遗留异常见 anomalies(decision.md:17 的 94.6605、h-76nfgi 的 1.308 差与账本 alive、无 submission.json、'13 条' 实为 14 行),均不推翻 C1 或 x 带结论。",
+            "shortfalls": []
+          },
+          {
+            "id": "audit:pending:daa372e42a6a6d0f0034a296543f44f7",
+            "verdict": "yes",
+            "holds": "yes",
+            "basis": "交付成立。submission.json 的 x=0.5、y=0.35 均为数值,8 条 evidence 路径全部存在;其中 lab/full-0.50-0.35.json 是 full 原始读数,value=95.5144%、impurity=0.0803≤0.115,且为全部 full 可行读数中的最高单次值;累计 spent=27≤30。副本内以 initial.json+5 个 --append 重跑 response_surface.py,逐项复现 lab/model-fullonly.json(加性 LOO 0.3062<交互 0.4301,顶点 0.521/0.319,best_measured=95.5144),复跑只写副本、未调用 /experiment。p3-full、p4-recheck 两份独立 audit 记录均 holds=yes,本次 L3 复核为 p5 记录。遗留异常:h-76nfgi 的 quick−full=+1.308>0.54 已触发推翻(作者 final-note:13 已承认);提交点两次均值 95.454 比 (0.50,0.30) 均值 95.468 低 0.0136,作者已声明为噪声内平台;均不改变 C1。",
+            "shortfalls": []
+          }
+        ]
+      }
+    },
+    {
+      "task": "interaction",
+      "baseline": {
+        "reason": "token_limit",
+        "goalStatus": "open",
+        "elapsedMs": 1155242,
+        "tokens": 5028204,
+        "costUsd": 0.3006587880000001,
+        "artifactQuality": {
+          "score": 99.96322578943436,
+          "feasible": true,
+          "value": 95.9373735367691,
+          "impurity": 0.10128799999999999,
+          "start": 89.26159655975033,
+          "optimum": 95.93982940417737
+        },
+        "facts": 1,
+        "roles": {
+          "main": {
+            "calls": 47,
+            "processed": 2812096,
+            "requestMs": 353915,
+            "costUsd": 0.100283304
+          },
+          "other": {
+            "calls": 1,
+            "processed": 368,
+            "requestMs": 1524,
+            "costUsd": 0.000156468
+          },
+          "evaluator": {
+            "calls": 52,
+            "processed": 2215740,
+            "requestMs": 778852,
+            "costUsd": 0.200219016
+          }
+        },
+        "audits": [
+          {
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "step": "s2"
+          },
+          {
+            "kind": "evidence_audit",
+            "holds": "yes",
+            "step": "s3"
+          },
+          {
+            "kind": "evidence_audit",
+            "step": "s4"
+          }
+        ],
+        "parentRequestsWhileWaiting": 0
+      },
+      "candidate": {
+        "reason": "token_limit",
+        "goalStatus": "open",
+        "elapsedMs": 1016051,
+        "tokens": 5065755,
+        "costUsd": 0.26145805199999994,
+        "artifactQuality": {
+          "score": 99.96322578943436,
+          "feasible": true,
+          "value": 95.9373735367691,
+          "impurity": 0.10128799999999999,
+          "start": 89.26159655975033,
+          "optimum": 95.93982940417737
+        },
+        "facts": 3,
+        "roles": {
+          "other": {
+            "calls": 1,
+            "input": 147,
+            "output": 80,
+            "cacheRead": 128,
+            "cacheWrite": 0,
+            "processed": 355,
+            "requestMs": 2033,
+            "costUpperBoundUsd": 0.000140868
+          },
+          "main": {
+            "calls": 55,
+            "input": 25849,
+            "output": 50379,
+            "cacheRead": 2758784,
+            "cacheWrite": 0,
+            "processed": 2835012,
+            "requestMs": 320904,
+            "costUpperBoundUsd": 0.08476220399999998
+          },
+          "evaluator": {
+            "calls": 38,
+            "input": 84439,
+            "output": 115869,
+            "cacheRead": 2030080,
+            "cacheWrite": 0,
+            "processed": 2230388,
+            "requestMs": 660520,
+            "costUpperBoundUsd": 0.17655497999999997
+          }
+        },
+        "audits": [
+          {
+            "id": "audit:pending:e34163d888c7080191099e13fe6d980d",
+            "verdict": "yes",
+            "holds": "yes",
+            "basis": "三条判据逐条对照均未被推翻：两次 calibrate 均为 original/offset=0/unit=normalized x，18 条读数 instrument 全为 original，(0.5,0.5) 复测 95.150 与 initial 95.436 差 0.286 < 2×0.18=0.36；最优点 (0.64,0.68) 四次 full 杂质均值 0.10137（最大 0.10211）< 0.115，杂质面 y>0.8 处 d²/dy² 恒为 -0.003 无显著弯曲，无约束最优即可行最优；副本复跑 fit_check.py 与独立重算（17 点）都给最优点 (0.6401,0.6771)、预测 95.979，(0.64,0.68) 实测均值 96.008±0.071 与预测差 0.03，全部重复 >95.4。记录另有几处不吻合（cal-2 次序、quick 计入拟合、remaining_budget、uses 空、\"+0.57≈4×se\"），已逐条核对，均不动摇判据与提交点。",
+            "shortfalls": []
+          },
+          {
+            "id": "audit:pending:7aae607ab1fb2b42fd2c2e928d0576e3",
+            "verdict": "yes",
+            "holds": "yes",
+            "basis": "三条判据均未被推翻：lab/cal-1.json:2-5 与 lab/cal-2.json:2-5 均 original、offset=0、unit=normalized x，全部 17 条 full + 1 条 quick 读数无其它表名；(0.5,0.5) 复测 95.1498 对 initial.json:62 的 95.4362 差 0.286<0.36（lab/f-050-050.json:4）。最优点 4 次 full 杂质 0.10137、最大 0.10211<0.115（reports/fit_check.json:45-46），杂质面 c_vv=-0.000375（d²/dy²=-0.0015），y>0.8 无显著弯曲。独立 17-full 重算最优点 (0.64012,0.67708)、预测 95.979（reports/fit_check.json:27-31），提交点实测 96.008±0.071，4 次均>95.436；两侧新点 96.031/95.963 未指向边界。目标判据亦满足：submission.json:2-3 含 x/y 与证据列表，r1-r4 为 full、impurity 0.1005–0.1021≤0.115、value 95.80–96.13>95.436，report.md:5/41/66-72 写明参数、仪表口径与局限，花费 29/30。唯一未登记异常是报告 LOO 表 0.127/3.858 实为 18 点含 quick（17-full 为 0.131/4.005），模型选择与提交点不变；此前 cal-2 次序、remaining_budget、8×se 三项已与当前文件自洽。",
+            "shortfalls": []
+          }
+        ]
+      }
+    }
+  ],
+  "limitation": "Two fixed tasks, one sample per version. Noncontemporaneous timings; model sampling and service variability prevent statistical or per-feature causal claims. Artifact score is separate from successful goal completion. Existing candidate failures are retained, not rerun.",
+  "manifest": {
+    "schema": "clearai.fixed-version-comparison.v1",
+    "baselineVersion": "0.5.9",
+    "baselineDigest": "15d604e40f729c3bc20772e315997ff267883eaaf3ea4b62d5e4022b2993d867",
+    "candidateDigest": "dfd138524ac543073423a7c58df8733d573f6ddaa24db0a77252085902adb147",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "priorManifestDigest": "8688022ded16398b3f8131e3ac1a08fb09e34e517a6fdd198198d32df400b443",
+    "priorComparisonDigest": "764918c005ce93fb3dfcac13be1b3bcfb7d3c03c7ad6ea485824d029c37e0efc",
+    "tasks": [
+      "additive",
+      "interaction"
+    ],
+    "task": "依据 initial.json 优化 x,y∈[0,1] 的收率，杂质不得超过0.115。允许使用 method/ 通用脚本和说明。用 python3 experiment.py quick|full|calibrate --x X --y Y --output lab/N.json 做实验，成本1/3/2，总预算30单位。保留原始读数，验证后把最终 {\"x\":数值,\"y\":数值,\"evidence\":[\"路径\"]} 写 submission.json，报告参数、仪表口径和局限，完成任务。",
+    "budgets": {
+      "tokenBudget": 5000000,
+      "timeoutMs": 5400000
+    },
+    "experimentBudget": 30,
+    "worldKeyCommitment": "1598909c6b68346c9281df3fcd98ac4ae43ba37637859c25fe47a91de1e59db0",
+    "costBeforeUsd": 4.935366639999992,
+    "driverDigest": "29c51e51b4c13ce9cc9e1bc25926431721c1533d7d276ed1f315ce4aa7445892",
+    "policy": "Both predeclared original complex tasks; reuse every original candidate outcome, including failures. Exactly one released-version run per task. Identical initial bytes, hidden world, experimental service, model, tools and budgets. No quality-based reruns. Baseline cannot read the prior trial. Sequential noncontemporaneous single-sample comparison; timing includes service variability. Historical unknown capacity remains fully charged."
+  },
+  "cost": {
+    "thisBaselineTrialUsd": 0.538301244,
+    "campaignReservedUsd": 5.473667884,
+    "limitUsd": 30,
+    "testLimitUsd": 5,
+    "pendingRequests": 0,
+    "historicalAcceptedUnknownUsd": 0.8
+  },
+  "baselineSource": {
+    "tag": "v0.5.9",
+    "commit": "1da79fabcddd77f56b1d844aa5422a9e2c835058",
+    "checkedSourceFiles": 33,
+    "sourceMismatches": 0
+  },
+  "repair": {
+    "commit": "77c4259",
+    "includedInPaidComparison": false,
+    "kernelChecksPassed": 730,
+    "hostChecksPassed": 38,
+    "clientChecksPassed": 193,
+    "packageChecksPassed": 45,
+    "fullSuitePassed": true,
+    "ciRun": 42312319833,
+    "ciConclusion": "success"
+  }
+}

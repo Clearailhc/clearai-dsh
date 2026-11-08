@@ -1,0 +1,8 @@
+{
+  "id": "impurity_frac",
+  "label": "杂质",
+  "gloss": "产物中杂质所占分数（fraction，0-1），上限 0.115",
+  "kind": "measure",
+  "unit": "1",
+  "basis": "initial.json 的 impurity 与 impurity_limit"
+}

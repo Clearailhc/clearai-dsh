@@ -1,0 +1,445 @@
+{
+  "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+  "group": "A",
+  "mode": "default",
+  "reason": "completed",
+  "elapsedMs": 355943,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 25554,
+    "output": 42739,
+    "cacheRead": 1964416,
+    "cacheWrite": 0,
+    "calls": 51,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 2032709,
+    "status": "verified",
+    "processed": 2032709
+  },
+  "mount": {
+    "prompt": false,
+    "tools": false
+  },
+  "requests": [
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066184629
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066186663
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066188264
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066192910
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066197423
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066207320
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066222688
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066228450
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066237018
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066260133
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066268878
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066273716
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066301388
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066306754
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066309297
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066311829
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066318040
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066321004
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066329106
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066331145
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066338219
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066350572
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066356068
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066360752
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066362676
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066377960
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066394355
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066398213
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066420778
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066426887
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066430016
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066433690
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066460977
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066462667
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066466053
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066469585
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066480321
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066484752
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066486660
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066488806
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066491122
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066496006
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066502615
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066506230
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066510214
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066513116
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066516041
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066518626
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066531090
+    },
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794066533505
+    }
+  ],
+  "approvals": [],
+  "answer": "已完成，最终结果写入 `submission.json`：\n\n```json\n{\"x\": 0.708, \"y\": 0.611}\n```\n\n## 关键结果\n\n在 `(0.708, 0.611)` 用 `full` 模式重复测量 3 次：\n\n| 文件 | yield (%) | impurity |\n|---|---:|---:|\n| `lab/full-04-optimum.json` | 96.206768 | 0.100013 |\n| `lab/full-05-optimum-replicate.json` | 95.902641 | 0.100773 |\n| `lab/full-06-final.json` | 96.321689 | 0.100374 |\n\n- 三次实测杂质均 ≤ 0.115，最大 0.100773，余量约 0.0142。\n- 收率均值 **96.144%**，均值标准误 0.125。\n- 15 个 `full` 观测的二次交互模型给出连续最优点 `(0.706731, 0.609745)`，预测收率 **96.0589%**、杂质 **0.100325**；提交点与最优点几乎重合，且已实测验证。\n- 模型比较：交互模型 LOO CV-RMSE 0.169，加性模型 4.456，选择交互模型。\n\n## 仪表口径\n\n- `full`：成本 3，yield 单位 `%`，impurity 为 fraction，标称噪声 0.18。\n- `quick`：成本 1，标称噪声 0.45；仅做了一次对照，未纳入最终拟合。\n- `calibrate`：成本 2，共做 5 次，均返回 `instrument=\"original\"`、`offset=0`、`unit=\"normalized x\"`；未发现仪器更换或漂移，因此未施加偏移修正。\n- 预算：已用 **29/30**，剩余 1。\n\n## 局限\n\n- 二次响应面是局部近似，不主张因果性；观测覆盖范围为 `[0.1,0.9]²`。\n- 最优点位置 Monte Carlo 不确定性约 `sd(x)=0.0103`、`sd(y)=0.0102`，收率面在顶部较平坦，位置小偏差对收率影响很小。\n- 脚本默认 `impurity_noise_sd=0.01` 偏保守，默认推荐点会偏离；已用数据驱动杂质噪声（残差 sd≈0.00072）做敏感性分析，结果与提交点一致。\n- 剩余 1 单位不足以再做一次 `full`，最终点已在预算内完成 3 次 `full` 验证。\n\n完整参数、预算流水和证据见 `lab/final-report.md`；`submission.json` 的 evidence 已列出全部原始读数、校准记录、模型输出和报告路径。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "lab/final-report.md",
+      "submission.json"
+    ],
+    "sessionId": "session-native-682067d2-6750-4645-bddc-45cc1a44b574"
+  },
+  "violations": {
+    "isolation_failed": false
+  },
+  "driverDigest": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587",
+  "logs": [
+    {
+      "session": "session-native-682067d2-6750-4645-bddc-45cc1a44b574",
+      "cursor": 376,
+      "path": "e4951df28459e73a83a22ee9a17d52087c840f4541cb233fe4700897999227d2.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "4edb4589e02f9a81af6c350dbb8c108dc87696446a0a2493ca8936669415fa70",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}

@@ -118,7 +118,7 @@ export function validateTerm(lexicon, draft) {
 	const at = instance ? '实例' : '概念'
 	if (!isPlainObject(draft)) return [problem('term_shape', `${at}必须是一个对象`)]
 	const id = text(draft.id)
-	if (!ID_PATTERN.test(id)) problems.push(problem('id_shape', `${at} id 要小写字母开头的 slug(字母/数字/下划线,≤40):收到「${id}」`))
+	if (!ID_PATTERN.test(id)) problems.push(problem('id_shape', `${at} id 要小写字母开头的 slug(字母/数字/下划线,2–40 字符):收到「${id}」`))
 	else if (idTaken(lexicon, id)) problems.push(problem('id_taken', `id「${id}」已经被占用(概念与谓词共用一个命名空间)`))
 	if (text(draft.label) === '') problems.push(problem('label_required', `${at}要有名字`))
 	if (text(draft.gloss) === '') problems.push(problem('gloss_required', `${at}要有释义:一句话说清它指什么,不然引用它的人各读各的`))
@@ -158,7 +158,7 @@ export function validatePredicate(lexicon, draft) {
 	const at = '谓词'
 	if (!isPlainObject(draft)) return [problem('predicate_shape', `${at}必须是一个对象`)]
 	const id = text(draft.id)
-	if (!ID_PATTERN.test(id)) problems.push(problem('id_shape', `${at} id 要小写字母开头的 slug(字母/数字/下划线,≤40):收到「${id}」`))
+	if (!ID_PATTERN.test(id)) problems.push(problem('id_shape', `${at} id 要小写字母开头的 slug(字母/数字/下划线,2–40 字符):收到「${id}」`))
 	else if (idTaken(lexicon, id)) problems.push(problem('id_taken', `id「${id}」已经被占用(概念与谓词共用一个命名空间)`))
 	if (text(draft.label) === '') problems.push(problem('label_required', `${at}要有名字`))
 	if (text(draft.basis) === '') problems.push(problem('basis_required', `${at}要写依据`))
@@ -1258,7 +1258,7 @@ export const ONTOLOGY_SCHEMA = bilingual({
 	concept: {
 		where: 'clear/ontology/concepts/**/<id>.json',
 		required: {
-			id: ['slug:小写字母开头,字母/数字/下划线,≤40,等于文件名', 'slug: starts with a lowercase letter; letters, digits, underscores; ≤40; equals the file name'],
+			id: ['slug:小写字母开头,字母/数字/下划线,2–40 字符,等于文件名', 'slug: starts with a lowercase letter; letters, digits, underscores; 2–40 characters; equals the file name'],
 			label: ['给人看的名字', 'the human-readable name'],
 			gloss: ['一句话释义:它指什么;度量(良率、收率……)写明口径,也就是怎么算', 'one-sentence gloss: what it refers to; for a measure (yield, conversion …) state its definition, that is, how it is computed'],
 		},
@@ -1378,7 +1378,7 @@ export function checkOntologyFile(path, content) {
 	if (!pattern.test(place.id)) problems.push(
 			kind === 'entity'
 				? tr(`文件名「${place.id}」不能当实体 id:字母或数字开头,只用字母/数字/下划线/短横,≤60`, `File name "${place.id}" cannot be an entity id: start with a letter or digit; letters, digits, underscores, hyphens only; ≤60`)
-				: tr(`文件名「${place.id}」不能当 id:小写字母开头,只用小写字母/数字/下划线,≤40`, `File name "${place.id}" cannot be an id: start with a lowercase letter; lowercase letters, digits, underscores only; ≤40`),
+				: tr(`文件名「${place.id}」不能当 id:小写字母开头,只用小写字母/数字/下划线,2–40 字符`, `File name "${place.id}" cannot be an id: start with a lowercase letter; lowercase letters, digits, underscores only; 2–40 characters`),
 		)
 	if (data.id !== undefined && text(data.id) !== place.id) problems.push(tr(`id「${text(data.id)}」要等于文件名「${place.id}」(身份就是文件名;改 id 就是改文件名)`, `id "${text(data.id)}" must equal the file name "${place.id}" (identity is the file name; changing the id means renaming the file)`))
 	const extra = Object.keys(data).filter((key) => !FIELDS[kind].includes(key))

@@ -1,0 +1,7 @@
+{
+  "id": "impurity",
+  "label": "杂质",
+  "gloss": "杂质含量，以 fraction 计（不是百分数）；本任务上限 0.115",
+  "kind": "measure",
+  "unit": "fraction"
+}

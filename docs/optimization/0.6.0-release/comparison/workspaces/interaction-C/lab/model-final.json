@@ -1,0 +1,73 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.5040665196377905,
+      "coefficients": [
+        95.13271805169715,
+        -0.2972779097588649,
+        -0.18214052890218085,
+        -6.494679197691285,
+        -5.872779998015159,
+        6.387712450456713
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 3.552682317831161,
+      "coefficients": [
+        95.1744642056351,
+        -0.29704621760689065,
+        -0.18190883675020653,
+        -6.532345271653362,
+        -5.9104460719772325
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": null,
+  "next_experiments": [],
+  "best_measured": {
+    "x": 0.5,
+    "y": 0.5,
+    "value": 95.44487499391182,
+    "impurity": 0.0878692502900575
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "lab/input-final.json",
+    "measurements": [],
+    "digests": {
+      "lab/input-final.json": "sha256:770e366e40a76c3d0a8bc8faf3daca71362fbb6ff65f3c1dba3d70ef48fc28f9"
+    }
+  }
+}

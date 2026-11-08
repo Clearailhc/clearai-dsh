@@ -1,0 +1,9 @@
+{
+  "pid": 50288,
+  "group": "A",
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  }
+}

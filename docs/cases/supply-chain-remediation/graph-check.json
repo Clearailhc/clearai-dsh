@@ -1,0 +1,45 @@
+{
+  "kind": "post-failure-script-remediation-not-new-model-acceptance",
+  "score": {
+    "entities": {
+      "expected": 246,
+      "actual": 246,
+      "correct": 246,
+      "precision": 1,
+      "recall": 1,
+      "duplicates": 0
+    },
+    "edges": {
+      "expected": 532,
+      "actual": 532,
+      "correct": 532,
+      "precision": 1,
+      "recall": 1,
+      "duplicates": 0
+    },
+    "batches": {
+      "expected": 11,
+      "actual": 11,
+      "correct": 11,
+      "precision": 1,
+      "recall": 1,
+      "duplicates": 0
+    },
+    "exposures": {
+      "expected": 22,
+      "actual": 22,
+      "correct": 22,
+      "precision": 1,
+      "recall": 1,
+      "duplicates": 0
+    },
+    "customerTotals": {
+      "expected": 10,
+      "actual": 10,
+      "correct": 10
+    },
+    "decisionExact": true
+  },
+  "originalPreserved": true,
+  "verifiedArtifact": "artifacts/graph-effective.json"
+}

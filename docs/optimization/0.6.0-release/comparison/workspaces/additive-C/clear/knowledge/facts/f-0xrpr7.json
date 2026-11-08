@@ -1,0 +1,250 @@
+{
+  "id": "f-0xrpr7",
+  "goal": "g-mw6ll1t7lqbr",
+  "hypothesis": "h-zsq1f7",
+  "text": "收率面可用加性二次模型描述：加性模型 LOO CV-RMSE 0.1697% 不高于含交互模型 0.1914%，交互项系数 −0.015 在噪声内。",
+  "about": [
+    "model_final",
+    "response_surface",
+    "model_structure",
+    "yield",
+    "impurity",
+    "x_factor",
+    "y_factor",
+    "original_instrument"
+  ],
+  "scope": "条件 bounds=x,y in [0,1]、impurity_limit=0.115 fraction、instrument=original、budget=30 cost units、n_full=14、noise_sd=0.18",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units",
+      "n_full": "14",
+      "noise_sd": "0.18"
+    },
+    "ranges": {}
+  },
+  "refute_when": "用同一 14 条 full 数据复算，交互模型 LOO CV-RMSE 比加性模型低超过噪声 sd=0.18，或交互项显著改变最优点位置。",
+  "level": "L3",
+  "evidence": [
+    "e-mw6lw4d7k3xn"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw6lw4d7k3xn",
+      "step": "review:f0c9e4980a75cc73301f2d97",
+      "plan": "review",
+      "hypothesis": "h-zsq1f7",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发推翻：同一 14 条 full 复跑得加性 CV 0.169657、交互 0.191411（交互反而高 0.02175，未低过 0.18）；交互系数 -0.015045，SE 0.1406；两模型最优点位移<0.0001。",
+      "refs": [
+        "initial.json",
+        "lab/calib-1.json",
+        "lab/calib-2.json",
+        "lab/calib-final.json",
+        "lab/f-050-040.json",
+        "lab/f-050-045-rep.json",
+        "lab/f-050-045.json",
+        "lab/f-050-060.json",
+        "lab/f-055-045.json",
+        "lab/input-final.json",
+        "lab/model-final-budgetok.json",
+        "lab/model-final.json",
+        "report.md",
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-2.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-040.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045-rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-060.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-055-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/input-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final-budgetok.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "report.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/909bacd3a6ff70a2debef1449c94fcdb1bae7b50678d182d05123647ffde0b83/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.json"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw6lw4d7k3xn",
+      "step": "review:f0c9e4980a75cc73301f2d97",
+      "plan": "review",
+      "hypothesis": "h-zsq1f7",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发推翻：同一 14 条 full 复跑得加性 CV 0.169657、交互 0.191411（交互反而高 0.02175，未低过 0.18）；交互系数 -0.015045，SE 0.1406；两模型最优点位移<0.0001。",
+      "refs": [
+        "initial.json",
+        "lab/calib-1.json",
+        "lab/calib-2.json",
+        "lab/calib-final.json",
+        "lab/f-050-040.json",
+        "lab/f-050-045-rep.json",
+        "lab/f-050-045.json",
+        "lab/f-050-060.json",
+        "lab/f-055-045.json",
+        "lab/input-final.json",
+        "lab/model-final-budgetok.json",
+        "lab/model-final.json",
+        "report.md",
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-2.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-040.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045-rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-060.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-055-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/input-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final-budgetok.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "report.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/909bacd3a6ff70a2debef1449c94fcdb1bae7b50678d182d05123647ffde0b83/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.json"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "subject": {
+        "id": "model_final",
+        "type": "response_surface"
+      },
+      "predicate": "model_structure",
+      "object": {
+        "kind": "statement",
+        "value": "加性二次；LOO CV-RMSE 0.16966% 对交互 0.19141%；交互系数 -0.015045；数据 n=14 full。"
+      }
+    }
+  ],
+  "definitions": {
+    "model_structure": "fnv:f4a55016",
+    "response_surface": "fnv:e55ba389",
+    "impurity": "fnv:0d892300",
+    "original_instrument": "fnv:e75d2e6c",
+    "x_factor": "fnv:9b4156c5",
+    "y_factor": "fnv:83beb01a",
+    "yield": "fnv:4a9208fc"
+  },
+  "session": "session-native-43b8c437-ff1b-4991-99dd-203f4529f1bb",
+  "status": "established",
+  "review": null,
+  "at": 1794068212575,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794068212575,
+      "level": "L3"
+    }
+  ]
+}

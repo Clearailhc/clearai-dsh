@@ -1,0 +1,10 @@
+{
+  "basis": "initial.json 的 9 个 full 读数及其加性二次拟合",
+  "id": "yield_response",
+  "label": "本实验观测到的收率响应面",
+  "provenance": {
+    "kind": "named",
+    "ref": "initial.json"
+  },
+  "type": "response_surface"
+}

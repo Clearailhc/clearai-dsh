@@ -1,0 +1,136 @@
+{
+  "id": "f-ymd34x",
+  "goal": "g-mw6l0ur8pvg1",
+  "hypothesis": "h-1gqs52",
+  "text": "在 x,y∈[0,1]、杂质≤0.115 下,收率最优点约为 (0.71,0.61);该点三次 full 实测收率均值约 96.3%、杂质均值约 0.101(最大 0.1014)。",
+  "about": [
+    "var_x",
+    "var_y",
+    "yield",
+    "impurity",
+    "point_071_061",
+    "candidate_point",
+    "yield_at",
+    "impurity_at"
+  ],
+  "scope": "条件 x_bounds=[0,1]、y_bounds=[0,1]、impurity_limit=0.115、instrument=original、budget=30、x区间=[0,1]、y区间=[0,1]、杂质上限=0.115;取值 x 0–1、y 0–1;仅在本实验条件下成立",
+  "scope_spec": {
+    "conditions": {
+      "x_bounds": "[0,1]",
+      "y_bounds": "[0,1]",
+      "impurity_limit": "0.115",
+      "instrument": "original",
+      "budget": "30",
+      "x区间": "[0,1]",
+      "y区间": "[0,1]",
+      "杂质上限": "0.115"
+    },
+    "ranges": {
+      "x": [
+        0,
+        1
+      ],
+      "y": [
+        0,
+        1
+      ]
+    },
+    "note": "仅在本实验条件下成立"
+  },
+  "refute_when": "该点 full 实测收率显著低于其他可行已测点(均值差 > 2σ≈0.36),或任一实测杂质 > 0.115。",
+  "level": "L3",
+  "evidence": [
+    "e-3mlukv"
+  ],
+  "evidence_records": [
+    {
+      "t": "evidence/recorded",
+      "id": "e-3mlukv",
+      "step": "goal:g-mw6l0ur8pvg1",
+      "plan": "goal",
+      "hypothesis": "h-1gqs52",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "三次 full 均值 96.315(sd 0.144),杂质最大 0.1014≤0.115;其他可行已测点最高 (0.75,0.6)=96.184,与终点均值差 0.13<0.36,未触发推翻条件;18 点二次面最优 (0.708,0.610) 与终点一致;该检查含终点 3 次重复,但 14 点预选拟合最优 (0.709,0.612) 独立佐证。",
+      "refs": [
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/cbed4509c3f3781e82a4e34a1b9cb3aaf2ee2236487da17ed1f78bbb5912ceac/3a63511bda9675044d9bf899613c9fcd1b31dd0fc191b924de929ec68e3ce8c4.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "b512ac41-93a7-4a6e-ae56-b054b047f599"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "quantity",
+        "unit": "%",
+        "value": 96.31
+      },
+      "predicate": "yield_at",
+      "qualifiers": {
+        "n": 3,
+        "observed_range": [
+          96.167,
+          96.455
+        ],
+        "sd": 0.144
+      },
+      "subject": {
+        "id": "point_071_061",
+        "type": "candidate_point"
+      }
+    },
+    {
+      "object": {
+        "kind": "quantity",
+        "unit": "fraction",
+        "value": 0.1009
+      },
+      "predicate": "impurity_at",
+      "qualifiers": {
+        "limit": 0.115,
+        "max": 0.1014
+      },
+      "subject": {
+        "id": "point_071_061",
+        "type": "candidate_point"
+      }
+    }
+  ],
+  "definitions": {
+    "yield_at": "fnv:ec3ae3b4",
+    "candidate_point": "fnv:f225301f",
+    "impurity_at": "fnv:c3a9177b",
+    "impurity": "fnv:653a8575",
+    "var_x": "fnv:7ca31b5a",
+    "var_y": "fnv:3503f965",
+    "yield": "fnv:c3d21646"
+  },
+  "session": "session-native-d22c8b34-3411-4b2a-808e-b1cb088f858b",
+  "status": "established",
+  "review": null,
+  "at": 1794067405450,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794067405450,
+      "level": "L3"
+    }
+  ]
+}

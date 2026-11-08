@@ -1,0 +1,23 @@
+{
+  "x": 0.72,
+  "y": 0.49,
+  "evidence": [
+    "initial.json",
+    "report.md",
+    "lab/experiment-index.json",
+    "lab/input-final.json",
+    "lab/model-final.json",
+    "lab/decision.json",
+    "lab/cal-0.5-0.5.json",
+    "lab/cal-0.9-0.5.json",
+    "lab/cal-0.72-0.49.json",
+    "lab/quick-0.65-0.45.json",
+    "lab/full-0.65-0.45.json",
+    "lab/full-0.70-0.50.json",
+    "lab/full-0.70-0.50-rep.json",
+    "lab/full-0.72-0.50.json",
+    "lab/full-0.72-0.50-rep.json",
+    "lab/full-0.72-0.49-final.json",
+    "lab/full-0.72-0.49-rep.json"
+  ]
+}

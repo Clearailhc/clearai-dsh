@@ -1,0 +1,27 @@
+{
+  "id": "l-c8oj8m",
+  "goal": "g-mw6mkhds4x2e",
+  "text": "中心点单次读数会骗人:初始 full 95.445 偏高,重复 3 次均值 95.11(se 0.17);报数值前先做重复。",
+  "kind": "trap",
+  "about": [
+    "yield",
+    "var_x",
+    "var_y",
+    "impurity"
+  ],
+  "evidence": "lab/analysis-final.json 的 centre_full_repeats",
+  "boundary": "噪声 sd 0.18、需要比较单点差异时",
+  "scope_spec": {
+    "conditions": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/analysis-final.json:31-44: n=3,95.445/95.039/94.859,mean 95.1146,se 0.173;95.445 比均值高 0.33;重复后再报数更稳。",
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "status": "active",
+  "at": 1794105626771
+}

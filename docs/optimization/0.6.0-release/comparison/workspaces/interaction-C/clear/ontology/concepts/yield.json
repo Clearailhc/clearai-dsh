@@ -1,0 +1,8 @@
+{
+  "id": "yield",
+  "label": "收率",
+  "gloss": "收率读数,端点 metric=yield、单位 %;full 模式噪声 sd 0.18,quick 0.45。",
+  "kind": "measure",
+  "unit": "%",
+  "basis": "initial.json"
+}

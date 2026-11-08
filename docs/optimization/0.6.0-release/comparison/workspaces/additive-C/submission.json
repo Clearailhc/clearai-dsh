@@ -1,0 +1,18 @@
+{
+  "x": 0.5,
+  "y": 0.45,
+  "evidence": [
+    "initial.json",
+    "lab/f-050-045.json",
+    "lab/f-050-045-rep.json",
+    "lab/f-055-045.json",
+    "lab/f-050-040.json",
+    "lab/f-050-060.json",
+    "lab/calib-final.json",
+    "lab/input-final.json",
+    "lab/model-final.json",
+    "report.md",
+    "lab/calib-1.json",
+    "lab/calib-2.json"
+  ]
+}

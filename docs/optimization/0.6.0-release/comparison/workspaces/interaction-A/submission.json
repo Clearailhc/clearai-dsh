@@ -1,0 +1,23 @@
+{
+  "x": 0.491,
+  "y": 0.495,
+  "evidence": [
+    "initial.json",
+    "lab/cal-0.json",
+    "lab/cal-1.json",
+    "lab/quick-0.5-0.5.json",
+    "lab/full-0.3-0.3.json",
+    "lab/full-0.7-0.3.json",
+    "lab/full-0.3-0.7.json",
+    "lab/full-0.7-0.7.json",
+    "lab/full-opt-1.json",
+    "lab/full-center-rep.json",
+    "lab/full-opt-1-rep.json",
+    "lab/full-final.json",
+    "lab/model-final-all.json",
+    "lab/final-analysis.json",
+    "lab/final_analysis.py",
+    "lab/report.md",
+    "lab/evidence-manifest.json"
+  ]
+}

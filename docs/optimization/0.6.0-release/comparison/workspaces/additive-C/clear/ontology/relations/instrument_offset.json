@@ -1,0 +1,10 @@
+{
+  "id": "instrument_offset",
+  "label": "仪表校准偏移",
+  "kind": "defines",
+  "domain": "original_instrument",
+  "range": {
+    "form": "quantity",
+    "unit": "1"
+  }
+}

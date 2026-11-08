@@ -1,0 +1,264 @@
+{
+  "schema_version": "clearai.audit.v2",
+  "kind": "goal_audit",
+  "step_id": "goal:g-mw4yfrsjmxa9",
+  "auditor_run_id": "1b16a3f7-49ba-43a3-ab73-4afd661fb2f5",
+  "rechecks": [],
+  "reuse": [
+    {
+      "id": "f-1hz4yc",
+      "verdict": "support",
+      "basis": "直接采用:e-shvb23(L3)与复跑 model-final 支持最优 (0.5077,0.4528)/预测 95.307/杂质 0.0850,提交点实测 95.46/0.0842 在内点;scope 的预算快照 3/27 已过期,但总预算 30、成本表未变、余 18≥3,实质适用范围成立。"
+    },
+    {
+      "id": "f-rgtoho",
+      "verdict": "support",
+      "basis": "e-tq1g9m/e-pdu91q 支持:calibrate-1.json:2,4 为 original/offset 0;full-center-1.json:4 与 initial.json:62 同点差 −0.078<0.54,instrument 仍 original;12 点合并拟合已复现;预算快照同样只是过期元数据。"
+    }
+  ],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "逐项通过:submission.json:2-9 仅 x=0.508、y=0.452 与 4 条现存路径;lab/full-optimum-1/2.json:4-8 记 mode=full、impurity 0.083927/0.084451≤0.115;final-report.md:18-50、66-73 含系数、original/offset 0/full 0.18/quick 0.45 与局限;initial.json 哈希 c3386… 与 model-initial.json:122 一致,新读数均在 lab/。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-ygqh0i",
+      "verdict": "support",
+      "basis": "副本复跑复现 lab/model-final.json:8,19:12 点加性 LOO CV 0.1900、交互 0.2600;lab/model-initial.json:8,19 的 9 点为 0.1868/0.2760。交互并未比加性低 0.18(反高 0.070),加性 0.190 仅高于 0.18 约 5.6%,非「明显高于」,两条推翻条件均未触发。"
+    }
+  ],
+  "anomalies": [
+    {
+      "what": "reports/final-report.md:33 称单因素偏离 0.01 损失约 0.004–0.005 个百分点;按 lab/model-final.json:13-14 的二次系数换算(物理曲率 26.79/21.66)复算,单因素仅 0.0027/0.0022,0.004–0.005 是 x、y 同时偏移之和;不影响「远低于噪声 0.18」的结论。",
+      "matters": "no"
+    }
+  ],
+  "lessons": [
+    {
+      "lesson": "L1",
+      "verdict": "support",
+      "basis": "记录确实做了:calibrate-1.json:2,4 为 original/offset 0;full-center-1.json:4 与 initial.json:62 同点差 −0.078<0.54;quick-0.5-0.5.json:4,9 的 0.45 噪声只能粗查(差 0.379<1.35)。"
+    },
+    {
+      "lesson": "L2",
+      "verdict": "support",
+      "basis": "model-final.json:54-56 网格推荐 (0.5,0.45) 预测 95.305,连续解析最优 (0.5077,0.4528) 预测 95.307,差 0.0018<0.01;提交 0.508/0.452,记录支持「网格不够精确、可解析求连续最优」。"
+    },
+    {
+      "lesson": "L3",
+      "verdict": "support",
+      "basis": "model-final.json:13-14 物理曲率 26.79/21.66,0.01 偏移损失约 0.0027/0.0022(合计 0.0048),远低于 0.18;budget.json:51,55 显示 12/30、两次 full 验证而非微调,记录支持该预算取舍。"
+    },
+    {
+      "lesson": "L4",
+      "verdict": "support",
+      "basis": "初始 9 点杂质拟合残差 sd≈0.00079(final-report.md:37),model-final.json:61 默认 0.01 噪声上界 0.1061;实测杂质 0.0839/0.0845,余量 0.031,记录支持「别把默认上界当真实值」。"
+    }
+  ],
+  "basis": "交付成立:C1 四项均满足——submission.json 仅含数值 x=0.508、y=0.452 与 4 条现存路径;提交点两次 full(95.406/95.517,杂质 0.0839/0.0845)均≤0.115;final-report.md 写明加性二次系数、original/offset 0、full 0.18 与 quick 0.45 噪声及局限;initial.json 的 sha256 与 model-initial.json:122 一致,新读数均在 lab/。副本复跑 response_surface.py 逐字节复现 model-initial/model-final/input-final(仅 inputs 路径不同),且只写副本内输出,未触实验端点或全局用户目录。h-ygqh0i 的 12 点加性 LOO CV 0.190、交互 0.260(交互反高 0.070,未低 0.18),加性 0.190 仅比 0.18 高 5.6%,未触发推翻条件。f-1hz4yc/f-rgtoho 实质 scope 适用(预算快照 3/27 过期但总预算/成本表未变、余 18≥full 3);另见 reports/final-report.md:33 一处「单因素」曲率措辞与复算不符,不影响结论。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "submission.json",
+      "line": 2,
+      "digest": "10e25db233439afc62e71580f4c71121c5960147a369c79f3e833db2c9664a77"
+    },
+    {
+      "path": "submission.json",
+      "line": 3,
+      "digest": "10e25db233439afc62e71580f4c71121c5960147a369c79f3e833db2c9664a77"
+    },
+    {
+      "path": "submission.json",
+      "line": 5,
+      "digest": "10e25db233439afc62e71580f4c71121c5960147a369c79f3e833db2c9664a77"
+    },
+    {
+      "path": "submission.json",
+      "line": 8,
+      "digest": "10e25db233439afc62e71580f4c71121c5960147a369c79f3e833db2c9664a77"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 4,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 5,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-1.json",
+      "line": 8,
+      "digest": "cfb342b79d91bd37d0ce7d5a7d27d72e33e6c0bffec7e1e967615c260f4f36ff"
+    },
+    {
+      "path": "lab/full-optimum-2.json",
+      "line": 4,
+      "digest": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "lab/full-optimum-2.json",
+      "line": 5,
+      "digest": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "lab/full-optimum-2.json",
+      "line": 8,
+      "digest": "0206c7f9d504a10962f9edb5305f51e0c7eba7e57ec050c2cba7a232d5f34a80"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 4,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/full-center-1.json",
+      "line": 6,
+      "digest": "e1b665dc92de86e5040876f05a6b579e3c8e158d8775d347c22b1e4cc7d43669"
+    },
+    {
+      "path": "lab/calibrate-1.json",
+      "line": 2,
+      "digest": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "lab/calibrate-1.json",
+      "line": 4,
+      "digest": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+    },
+    {
+      "path": "lab/quick-0.5-0.5.json",
+      "line": 4,
+      "digest": "fdff01b156d9b8c104578447b41dbede1ba9a6073f02bbabe8e7b5604cb51c29"
+    },
+    {
+      "path": "lab/quick-0.5-0.5.json",
+      "line": 9,
+      "digest": "fdff01b156d9b8c104578447b41dbede1ba9a6073f02bbabe8e7b5604cb51c29"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "line": 140,
+      "digest": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "initial.json",
+      "line": 141,
+      "digest": "c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 8,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 19,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 26,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 54,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 118,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 8,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 19,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "lab/model-initial.json",
+      "line": 122,
+      "digest": "2770c0f67235d5a3af74fa2e41fe51f403e0f30b1dbe9c742e6556af05ebccdb"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 21,
+      "digest": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 30,
+      "digest": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 33,
+      "digest": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 37,
+      "digest": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 47,
+      "digest": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 49,
+      "digest": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "reports/final-report.md",
+      "line": 86,
+      "digest": "9a5824e32df3971b399104816557bea5ea9b8eddf399a31d0a2b65b3948fdcce"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 51,
+      "digest": "76309a60585306d44bd6e3d661ef88cb203e275d549654b2201a14a66b4ba406"
+    },
+    {
+      "path": "lab/budget.json",
+      "line": 55,
+      "digest": "76309a60585306d44bd6e3d661ef88cb203e275d549654b2201a14a66b4ba406"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 65,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": ".clearai-reruns/2f1e96fab3f82f57885e9fc0bbf276d320c67b26249439026eea52fe1a1fa772/lab/rerun-model-final.json",
+      "line": 8,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    },
+    {
+      "path": ".clearai-reruns/2f1e96fab3f82f57885e9fc0bbf276d320c67b26249439026eea52fe1a1fa772/lab/rerun-model-final.json",
+      "line": 19,
+      "digest": "a16be94122614479d37c1efcf3af35e04f9e85176f555d59ef09d46561a0ff9a"
+    }
+  ],
+  "card": "交付成立:C1 四项均满足——submission.json 仅含数值 x=0.508、y=0.452 与 4 条现存路径;提交点两次 full(95.406/95.517,杂质 0.0839/0.0845)均≤0.115;final-report.md 写明加性二次系数、original/offset 0、full 0.18 与 quick 0.45 噪声及局限;initial.json 的 sha256 与 model-initial.json:122 一致,新读数均在 lab/。副本复跑 response_surface.py 逐字节复现 model-initial/model-final/input-final(仅 inputs 路径不同),且只写副本内输出,未触实验端点或全局用户目录。h-ygqh0i 的 12 点加性 LOO CV 0.190、交互 0.260(交互反高 0.070,未低 0.18),加性 0.190 仅比 0.18 高 5.6%,未触发推翻条件。f-1hz4yc/f-rgtoho 实质 scope 适用(预算快照 3/27 过期但总预算/成本表未变、余 18≥full 3);另见 reports/final-report.md:33 一处「单因素」曲率措辞与复算不符,不影响结论。",
+  "created_at": 1793969508776,
+  "evaluator": "independent"
+}

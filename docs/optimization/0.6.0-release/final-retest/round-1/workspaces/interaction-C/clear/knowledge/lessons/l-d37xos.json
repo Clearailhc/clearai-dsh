@@ -1,0 +1,28 @@
+{
+  "id": "l-d37xos",
+  "goal": "g-mw6l0ur8pvg1",
+  "text": "动手优化前先用 calibrate 加同点 full 复测核对仪表口径(本次 offset=0、复测差 0.12),再决定能否沿用初始数据。",
+  "kind": "check",
+  "about": [
+    "yield",
+    "impurity",
+    "var_x",
+    "var_y"
+  ],
+  "evidence": "lab/calib-1.json 与 lab/f-0.5-0.5.json",
+  "boundary": "更换仪表或换批次时必须重做",
+  "scope_spec": {
+    "conditions": {
+      "x_bounds": "[0,1]",
+      "y_bounds": "[0,1]",
+      "impurity_limit": "0.115",
+      "instrument": "original",
+      "budget": "30"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/calib-1.json:2-5 返回 original/offset=0;lab/f-0.5-0.5.json:4-8 的 95.181 与 initial.json:62 的 95.062 差 0.119;先校准+同点 full 复测的做法在记录中成立。",
+  "session": "session-native-d22c8b34-3411-4b2a-808e-b1cb088f858b",
+  "status": "active",
+  "at": 1794067405465
+}

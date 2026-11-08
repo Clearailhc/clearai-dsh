@@ -1,0 +1,239 @@
+{
+  "schema_version": "clearai.audit.v3",
+  "coverage": {
+    "policy": "clearai.review.v1",
+    "digest": "v7:c43c81dadad76d870e11146f7cb9f5a06b08ed59805bb67a44a41855abe8d434",
+    "claims": [
+      "h-173dc0",
+      "h-dfrfe9",
+      "h-gux36c",
+      "h-r2abbn"
+    ],
+    "criteria": [
+      {
+        "id": "C1",
+        "text": "submission.json 存在且含 x、y 数值与 evidence 路径列表；最终点有一次 full 原始读数（value 为收率%、impurity 为分数）且 impurity≤0.115；该 full 收率不低于初始 9 点中最好的 94.693%；报告写明模型参数、仪表口径与局限。"
+      }
+    ],
+    "trust": {
+      "model": "deepseek-flash",
+      "modelProvider": "deepseek",
+      "reasoningEffort": "medium",
+      "policy": "clearai.review.v1",
+      "preset": "clearai-evaluator",
+      "provider": "spawn",
+      "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+      "rerun": true,
+      "tools": [
+        "read",
+        "glob",
+        "grep",
+        "read_image"
+      ],
+      "l4Human": true,
+      "l4External": true
+    },
+    "scope": {
+      "范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "总预算": "30"
+    }
+  },
+  "kind": "goal_audit",
+  "step_id": "goal:g-mw52i41h09ow",
+  "auditor_run_id": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+  "rechecks": [],
+  "reuse": [
+    {
+      "id": "f-x1arz0",
+      "verdict": "support",
+      "basis": "16 点复跑加性 CV 0.16775 < 交互 0.18048，残差 sd 0.170，物理交互系数 −0.108；与 model-final:8,19,26 一致，观测盒 [0.1,0.9]² 内适用。"
+    },
+    {
+      "id": "f-78qael",
+      "verdict": "support",
+      "basis": "极值复算 (0.4528,0.4476)、预测 95.05；4 次 full 94.7228–95.2801、均值 95.054，均在观测盒内；断言可复核。"
+    },
+    {
+      "id": "f-wcwg6t",
+      "verdict": "support",
+      "basis": "实测 0.0819–0.0840、预测 0.0833，均 ≤0.115；断言里的上界 0.1058 是 10 点值，16 点复跑 0.1041，仍远低于 0.115，核心结论成立。"
+    },
+    {
+      "id": "f-cn6udq",
+      "verdict": "support",
+      "basis": "5 个 quick 残差均值 +0.06、sd 0.459（标称 0.45），同点差 +0.724；「噪声更大」成立，未混入拟合。"
+    }
+  ],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "C1 四要素齐备：submission.json:2-14 有 x=0.4517、y=0.4485 与 9 条 evidence；f-opt-1..4 为 full、value 94.7228–95.2801%（均值 95.054）、impurity 0.0819–0.0840≤0.115，最低值仍 > initial.json:62 的 94.6927；analysis.md:18-58 写明模型参数、仪表口径与局限。报告 16 点 PI、去重 CV、杂质上界与复跑不符（见 anomalies），但四要素本身满足。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-173dc0",
+      "verdict": "support",
+      "basis": "复跑 16 点加性 CV 0.16775、交互 0.18048，交互未比加性低出 0.18（反而高 0.0127）；9 点 0.09239/0.11418；物理交互系数 −0.108，脚本 SE≈0.140，不显著。报告去重 13 点 0.155/0.156 与复跑 0.171/0.193 不符，但 16 点结论不变。"
+    },
+    {
+      "hypothesis": "h-dfrfe9",
+      "verdict": "support",
+      "basis": "4 次 full 94.7228–95.2801、均值 95.054，均 ≥94.6927；(0.45,0.45) 单测 95.0719；16 点极值复算 (0.4528,0.4476)、预测 95.05，最低读数仍高于 16 点 PI 下界 94.676 与 10 点 94.547。「约 94.9%」与预测 94.895/94.957 一致，推翻条件未触发；但 PI 下界低于 94.693，改善不显著。"
+    },
+    {
+      "hypothesis": "h-gux36c",
+      "verdict": "support",
+      "basis": "该点 4 次 full 杂质 0.0819–0.0840，邻域 val/quick 0.0787–0.0921，均 ≤0.115；16 点模型预测 0.0833、上界 0.1041（报告 0.1058 是 10 点值）远低于 0.115；仅 (0.9,0.9)=0.1247 越限。推翻条件未触发。"
+    },
+    {
+      "hypothesis": "h-r2abbn",
+      "verdict": "support",
+      "basis": "5 个 quick 对 full 面残差 +0.49/+0.03/−0.71/+0.23/+0.24，sd 0.459（标称 0.45）远大于 full 的 0.18；唯一同点 (0.5,0.5) quick−full=+0.724，差值不在 0.18 内，推翻条件不成立；均值 +0.06 不支持系统偏移，支持来自「噪声更大」一支。"
+    }
+  ],
+  "anomalies": [
+    {
+      "what": "reports/analysis.md:9,64 称 16 点 95% 预测区间 [94.70,95.40]（±0.35，按脚本口径）；副本复跑 method/response_surface.py 的 predict（variance=0.18²=0.0324）得 [94.6759,95.4245]（±0.374），下界 94.676 已低于初始最佳 94.693。报告用的是残差 sd 0.170 而非脚本的噪声下限 0.18。",
+      "matters": "no"
+    },
+    {
+      "what": "reports/analysis.md:29,68 及结论依据称去重 13 点加性/交互 LOO CV 0.1545/0.1559；按所述「同坐标 4 次重复只留 1 条」复跑得 0.1711/0.1932（12 点合并得 0.1507/0.1714），无一种所述去重得到 0.1545/0.1559；line 29 的交互 SE「0.06→0.14」也与脚本口径不符（9 点已 0.1406，16 点 0.1398）。",
+      "matters": "no"
+    },
+    {
+      "what": "reports/analysis.md:37 把杂质预测上界 0.1058 写在 n=16 模型段；该值是 lab/model-01.json:61 的 10 点模型上界，16 点复跑加性/交互上界均为 0.1041（预测 0.0833）。报告的杂质系数是 16 点交互拟合，而脚本按最小 CV 选加性（0.001003 vs 0.001099）。",
+      "matters": "no"
+    },
+    {
+      "what": "同一坐标 4 次 full 重复 f-opt-1:4→f-opt-4:4 从 94.7228 单调升到 95.2801（极差 0.557）；报告局限 6 承认无法区分漂移与峰顶曲率。按后段残差 +0.39 校正，改善从 +0.36 降到约 +0.15~+0.20，初始最佳 94.693 仍被超过。",
+      "matters": "no"
+    },
+    {
+      "what": "初始 9 点对加性二次的残差 sd 0.062（4 df）与后 7 点 0.18–0.20 不一致（u6）；报告局限 5 已披露并用 16 点 CV 0.168 替代 9 点 0.092，但 analysis.md:13 仍把 9 点 CV 0.0923 作为方法依据。",
+      "matters": "no"
+    }
+  ],
+  "lessons": [
+    {
+      "lesson": "L1",
+      "verdict": "support",
+      "basis": "f-opt-1:4→f-opt-4:4 单调升 94.7228→95.2801（极差 0.557）；报告局限 6 已讨论漂移/顺序并给出去伪后约 +0.15，照做可避免把漂移当改善。"
+    },
+    {
+      "lesson": "L2",
+      "verdict": "support",
+      "basis": "初始 9 点残差 sd 0.062（4 df）远低于标称 0.18，9 点 CV 0.092 偏乐观；16 点重算 0.168 后结论不变。报告 13 点去重 0.155/0.156 与复跑 0.171/0.193 不符，重算口径仍需固定。"
+    },
+    {
+      "lesson": "L3",
+      "verdict": "support",
+      "basis": "model-final:55-59 的 best_measured=95.2801 是 4 次重复最大值，均值 95.054（+0.23）；报告结论改用均值，照做可避免选择偏差。"
+    }
+  ],
+  "basis": "C1 四要素均满足：submission.json:2-14 有 x=0.4517、y=0.4485 与 9 条 evidence；最终点 f-opt-1..4 为 full、value 94.7228–95.2801%（均值 95.054）、impurity 0.0819–0.0840≤0.115，最低读数仍高于 initial.json:62 的初始最佳 94.6927；analysis.md:18-58 写明模型参数、仪表口径与局限。副本复跑 response_surface.py 重现 model-final 的加性/交互 LOO CV 0.16775/0.18048、极值 (0.4528,0.4476) 与预测 95.05。报告有三处派生数字转写不实：16 点 PI [94.70,95.40] 实为 [94.676,95.425]（下界低于 94.693）、去重 13 点 CV 0.155/0.156 实为 0.171/0.193、杂质上界 0.1058 实为 0.1041；均不改变最优点、杂质可行性与「改善不显著」的结论，u5/u6 已披露且有界，故判交付成立并把上述登记为 anomalies。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "submission.json",
+      "line": 2,
+      "digest": "d7669425fbf21242abbc320cc6d3cf6394d3dc4bfb645dfb03ae1430928dbadb"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 9,
+      "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 18,
+      "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 29,
+      "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 37,
+      "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 47,
+      "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+    },
+    {
+      "path": "reports/analysis.md",
+      "line": 58,
+      "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+    },
+    {
+      "path": "lab/f-opt-1.json",
+      "line": 4,
+      "digest": "9bc217b8fa26c0ad9909a798029e20bb1f1a7caf01e1299fd8b20e770ac5bf9b"
+    },
+    {
+      "path": "lab/f-opt-4.json",
+      "line": 4,
+      "digest": "0ce94352c9b9ba504c090cee4db93573984cc7b87d7901ca3804c4a0f8ae22d5"
+    },
+    {
+      "path": "initial.json",
+      "line": 62,
+      "digest": "85d63c559158d27a8616bcde58dd14f5e30fea215654a77a399e746e463f7b9f"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 8,
+      "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 19,
+      "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 55,
+      "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+    },
+    {
+      "path": "lab/model-01.json",
+      "line": 57,
+      "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+    },
+    {
+      "path": "lab/q-0505.json",
+      "line": 4,
+      "digest": "92476b55f11d3bf32f374f722c07bf46c64251bf8996706ffb044999d0fd18eb"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 37,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 69,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "clear/knowledge/facts/f-wcwg6t.json",
+      "line": 1,
+      "digest": "ce809d9f1aad182a3c82c750fd903029eae89cc1b39f3b34785ed283ca505a02"
+    },
+    {
+      "path": "clear/knowledge/facts/f-cn6udq.json",
+      "line": 1,
+      "digest": "f21490e3b4c9678940462948ea2678721b9722c603f4707ea10fbcfc7bf1b1e3"
+    }
+  ],
+  "card": "C1 四要素均满足：submission.json:2-14 有 x=0.4517、y=0.4485 与 9 条 evidence；最终点 f-opt-1..4 为 full、value 94.7228–95.2801%（均值 95.054）、impurity 0.0819–0.0840≤0.115，最低读数仍高于 initial.json:62 的初始最佳 94.6927；analysis.md:18-58 写明模型参数、仪表口径与局限。副本复跑 response_surface.py 重现 model-final 的加性/交互 LOO CV 0.16775/0.18048、极值 (0.4528,0.4476) 与预测 95.05。报告有三处派生数字转写不实：16 点 PI [94.70,95.40] 实为 [94.676,95.425]（下界低于 94.693）、去重 13 点 CV 0.155/0.156 实为 0.171/0.193、杂质上界 0.1058 实为 0.1041；均不改变最优点、杂质可行性与「改善不显著」的结论，u5/u6 已披露且有界，故判交付成立并把上述登记为 anomalies。",
+  "created_at": 1793976433889,
+  "evaluator": "independent"
+}

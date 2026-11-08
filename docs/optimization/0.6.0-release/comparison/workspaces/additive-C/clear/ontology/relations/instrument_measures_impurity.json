@@ -1,0 +1,7 @@
+{
+  "id": "instrument_measures_impurity",
+  "label": "仪表测杂质",
+  "kind": "measures",
+  "domain": "original_instrument",
+  "range": "impurity"
+}

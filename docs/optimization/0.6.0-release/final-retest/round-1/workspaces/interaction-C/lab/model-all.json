@@ -1,0 +1,92 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.202159299638406,
+      "coefficients": [
+        95.25316071452124,
+        4.261177543117596,
+        -0.1994331361709272,
+        -6.788454907891331,
+        -5.50442692976537,
+        6.310600791753664
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 3.9506053821540865,
+      "coefficients": [
+        95.61372500510416,
+        4.4578204733791384,
+        -0.1074982120177766,
+        -6.887212400915214,
+        -5.965958882719501
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": null,
+  "next_experiments": [],
+  "best_measured": {
+    "x": 0.71,
+    "y": 0.61,
+    "value": 96.45512833820065,
+    "impurity": 0.10086201066493548
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "lab/input-initial.json",
+    "measurements": [
+      "lab/f-0.5-0.5.json",
+      "lab/f-0.70-0.60.json",
+      "lab/f-0.8-0.6.json",
+      "lab/f-0.6-0.6.json",
+      "lab/f-0.75-0.65.json",
+      "lab/f-0.71-0.61.json",
+      "lab/f-0.75-0.60.json",
+      "lab/f-0.71-0.61-r2.json",
+      "lab/f-0.71-0.61-r3.json"
+    ],
+    "digests": {
+      "lab/input-initial.json": "sha256:d61146cc1e0992f9700e1c8fbfd3747fd952c0a5d70bbe31ac5a9189ea0da9a9",
+      "lab/f-0.5-0.5.json": "sha256:0ed015975e4da6b2f4495da721e4d4222cd453e3f56aa1bad4a9fed72041f849",
+      "lab/f-0.70-0.60.json": "sha256:4a16aa50d741071d7ebfbb8818a2170e2b1960bf7b20c140a01325110f398df6",
+      "lab/f-0.8-0.6.json": "sha256:a3e445749e6b56e6a4caffbb15e6e038eab0ea77058596bd42642041c1da1000",
+      "lab/f-0.6-0.6.json": "sha256:d89203e550e5cd7e8ab1a5a22cd1c3a9399bdff0f3e7637b322d52dddaa211ee",
+      "lab/f-0.75-0.65.json": "sha256:54ffd57571452d835baa9d17d31ede561b03dad63e5cd04b0379e68b4ea759d1",
+      "lab/f-0.71-0.61.json": "sha256:95a2447f8b84509d7634951f1ec9f736c38b80c314222beff94e968469df7dc7",
+      "lab/f-0.75-0.60.json": "sha256:5649222d7be97d60ce803605e00b628b7e3f079c50b910d87c24ee617578f242",
+      "lab/f-0.71-0.61-r2.json": "sha256:097e198b74ef2de1bc4b5953d3d983ebb5e2970cbb6094aadea42d4ce3f9b327",
+      "lab/f-0.71-0.61-r3.json": "sha256:6f8d8a40d5a1ef03a99016520a852f7c6ca8ce2e3b0c66de5f2ec2eca8efeda0"
+    }
+  }
+}

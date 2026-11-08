@@ -1,0 +1,258 @@
+{
+  "id": "f-i180ha",
+  "goal": "g-mw6ll1t7lqbr",
+  "hypothesis": "h-3x198v",
+  "text": "在约束内收率最大点位于 x≈0.50、y≈0.45（模型连续最优 x=0.5022,y=0.4534；实测 (0.5,0.45) 均值 95.318%）。",
+  "about": [
+    "point_050_045",
+    "process_point",
+    "recommended_point",
+    "yield",
+    "impurity",
+    "x_factor",
+    "y_factor",
+    "original_instrument"
+  ],
+  "scope": "条件 bounds=x,y in [0,1]、impurity_limit=0.115、instrument=original、budget=30 cost units;取值 x 0.45–0.55、y 0.4–0.5",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115",
+      "instrument": "original",
+      "budget": "30 cost units"
+    },
+    "ranges": {
+      "x": [
+        0.45,
+        0.55
+      ],
+      "y": [
+        0.4,
+        0.5
+      ]
+    }
+  },
+  "refute_when": "出现另一个可行实测点收率均值高于 (0.5,0.45) 超过 2 倍合并噪声，或加入新数据后模型最优点移出 x∈[0.45,0.55]、y∈[0.40,0.50]。",
+  "level": "L3",
+  "evidence": [
+    "e-mw6lw4d7idi0"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw6lw4d7idi0",
+      "step": "review:f0c9e4980a75cc73301f2d97",
+      "plan": "review",
+      "hypothesis": "h-3x198v",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发推翻：x=0.55 单次 95.5038 比 (0.5,0.45) 均值 95.3184 高 0.1853，2×合并噪声为 0.441（单次 vs 均值）或 0.509（单次 vs 单次），未超过；14 点模型最优点 (0.50221,0.45339) 仍在 x∈[0.45,0.55]、y∈[0.40,0.50]。",
+      "refs": [
+        "initial.json",
+        "lab/calib-1.json",
+        "lab/calib-2.json",
+        "lab/calib-final.json",
+        "lab/f-050-040.json",
+        "lab/f-050-045-rep.json",
+        "lab/f-050-045.json",
+        "lab/f-050-060.json",
+        "lab/f-055-045.json",
+        "lab/input-final.json",
+        "lab/model-final-budgetok.json",
+        "lab/model-final.json",
+        "report.md",
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-2.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-040.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045-rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-060.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-055-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/input-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final-budgetok.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "report.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/909bacd3a6ff70a2debef1449c94fcdb1bae7b50678d182d05123647ffde0b83/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.json"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw6lw4d7idi0",
+      "step": "review:f0c9e4980a75cc73301f2d97",
+      "plan": "review",
+      "hypothesis": "h-3x198v",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发推翻：x=0.55 单次 95.5038 比 (0.5,0.45) 均值 95.3184 高 0.1853，2×合并噪声为 0.441（单次 vs 均值）或 0.509（单次 vs 单次），未超过；14 点模型最优点 (0.50221,0.45339) 仍在 x∈[0.45,0.55]、y∈[0.40,0.50]。",
+      "refs": [
+        "initial.json",
+        "lab/calib-1.json",
+        "lab/calib-2.json",
+        "lab/calib-final.json",
+        "lab/f-050-040.json",
+        "lab/f-050-045-rep.json",
+        "lab/f-050-045.json",
+        "lab/f-050-060.json",
+        "lab/f-055-045.json",
+        "lab/input-final.json",
+        "lab/model-final-budgetok.json",
+        "lab/model-final.json",
+        "report.md",
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-2.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-040.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045-rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-060.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-055-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/input-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final-budgetok.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "report.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/909bacd3a6ff70a2debef1449c94fcdb1bae7b50678d182d05123647ffde0b83/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.json"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "subject": {
+        "id": "point_050_045",
+        "type": "process_point"
+      },
+      "predicate": "recommended_point",
+      "object": {
+        "kind": "statement",
+        "value": "模型连续最优 (0.5022,0.4534)；实测 (0.5,0.45) 两次 full 均值 95.318%；x=0.55 单次 95.504%，差 0.186 在 2 倍合并噪声 0.51 内。"
+      }
+    }
+  ],
+  "definitions": {
+    "recommended_point": "fnv:bc54429d",
+    "process_point": "fnv:0e949178",
+    "impurity": "fnv:0d892300",
+    "original_instrument": "fnv:e75d2e6c",
+    "x_factor": "fnv:9b4156c5",
+    "y_factor": "fnv:83beb01a",
+    "yield": "fnv:4a9208fc",
+    "point_yield": "fnv:5521bc50"
+  },
+  "session": "session-native-43b8c437-ff1b-4991-99dd-203f4529f1bb",
+  "status": "established",
+  "review": null,
+  "at": 1794068212535,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794068212535,
+      "level": "L3"
+    }
+  ]
+}

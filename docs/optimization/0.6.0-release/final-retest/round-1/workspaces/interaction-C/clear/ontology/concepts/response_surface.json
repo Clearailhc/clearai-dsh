@@ -1,0 +1,6 @@
+{
+  "gloss": "对收率/杂质的二次响应面拟合",
+  "id": "response_surface",
+  "kind": "category",
+  "label": "响应面模型"
+}

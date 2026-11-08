@@ -1,0 +1,32 @@
+【干净安装验收】
+  pnpm 11.25.0
+  一次性 DSH_HOME:/tmp/dsh-clean-aSx1UA
+  ✓ 空 home + 官方模板能建出 web profile
+  ✓ profile 的补丁层是空的(我们还没动过它)
+  · 跳过模型凭据:这台机器上没有 ~/.dsh/.credentials.yaml —— 浏览器那半跑不了,机械那半照跑
+  ✓ 没有搬 settings.yaml(实测:搬了会把干净 profile 里没有的 provider 带进来)
+  ✓ 没有搬 .agent-presets(预设要由包提供)
+  ✓ 构建并打出了 tgz
+  ✓ dsh plugin add <tgz> 成功
+  装到的版本:clearai-dsh@0.6.0
+  ✓ ① 依赖里有 clearai-dsh
+  ✓ ② bundles 里有它,而且恰好一次
+  ✓ ②′ 发行版自己的三条 bundle 还在
+  ✓ ③ 组合里 clearai-host 恰好一行
+  ✓ ③′ 宿主行用的是包名(不是路径)
+  ✓ ④ 名册注册表行在(agent-preset-registry)
+  ✓ ④′ 预设声明行在,且 id/name/description/order/plugins 齐备
+  ✓ 探索者预设 clearai-explorer 在名册且没有 broken
+  · 名册条目:standard, ptc, minimal, cordis, clearai, clearai-explorer, clearai-evaluator
+  ✓ ④″ 名册运行态:clearai 在列表里
+  ✓ ④‴ 名册运行态:clearai 没有 broken(子插件真的起来了)
+  ✓ ④⁗ 名册运行态:评估者预设 clearai-evaluator 在列表里且没有 broken
+  ✓ ⑤ 包内预设自洽(组合文件 + 元数据,不再带工作区模板)
+  ✓ ⑥ 包内没有本机路径(仓库根 / 这次装到哪儿)
+  ✓ ⑦ 宿主读显示元数据不报诊断
+  ✓ ⑦′ 标题是产品名,不是包名(不是回退值)
+  ✓ ⑦″ 介绍按语言各有一份(中文界面不必读英文)
+  ✓ ⑦‴ 图标被宿主收下(data URL,不是默认图)
+
+结果:23 通过,0 失败
+临时 home 已清掉(要留现场用 --keep)。

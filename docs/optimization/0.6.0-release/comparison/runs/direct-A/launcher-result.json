@@ -1,0 +1,115 @@
+{
+  "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
+  "group": "A",
+  "mode": "default",
+  "reason": "completed",
+  "elapsedMs": 5971,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 804,
+    "output": 348,
+    "cacheRead": 16384,
+    "cacheWrite": 0,
+    "calls": 4,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 17536,
+    "status": "verified",
+    "processed": 17536
+  },
+  "mount": {
+    "prompt": false,
+    "tools": false
+  },
+  "requests": [
+    {
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794067506012
+    },
+    {
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794067508446
+    },
+    {
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794067510051
+    }
+  ],
+  "approvals": [],
+  "answer": "总金额：17 × 23 = **391元**。已写入 `submission.json`。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "/tmp/clearai-polish-final-v2-release/workspaces/direct-A/submission.json"
+    ],
+    "sessionId": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096"
+  },
+  "violations": {
+    "isolation_failed": false
+  },
+  "driverDigest": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587",
+  "logs": [
+    {
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
+      "cursor": 35,
+      "path": "a9ece5aae50c14a6418292edbd3660c1655d59bc02d230856c97ace90422e5f1.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "9ac6da6caf3bb88190da09443cb69e1ac2f5ffebf4e368dde438833b6fca02c0",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}

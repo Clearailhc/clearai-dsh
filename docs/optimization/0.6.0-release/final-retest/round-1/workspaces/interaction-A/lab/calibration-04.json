@@ -1,0 +1,9 @@
+{
+  "instrument": "original",
+  "metric": "yield",
+  "offset": 0,
+  "unit": "normalized x",
+  "cost": 2,
+  "spent": 21,
+  "budget": 30
+}

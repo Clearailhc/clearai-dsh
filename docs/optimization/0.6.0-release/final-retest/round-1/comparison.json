@@ -1,0 +1,1182 @@
+{
+  "manifest": "manifest.json",
+  "results": [
+    {
+      "id": "direct-A",
+      "task": "direct",
+      "group": "A",
+      "mode": "default",
+      "reason": "completed",
+      "quality": {
+        "score": 100
+      },
+      "submission": {
+        "amount": 391,
+        "unit": "元"
+      },
+      "elapsedMs": 4206,
+      "usage": {
+        "input": 798,
+        "output": 164,
+        "cacheRead": 10496,
+        "cacheWrite": 0,
+        "calls": 3,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 11458,
+        "status": "verified",
+        "processed": 11458
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 198,
+          "output": 47,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "processed": 245,
+          "requestMs": 1647,
+          "costUpperBoundUsd": 0.0001158
+        },
+        "main": {
+          "calls": 2,
+          "input": 600,
+          "output": 117,
+          "cacheRead": 10496,
+          "cacheWrite": 0,
+          "processed": 11213,
+          "requestMs": 3585,
+          "costUpperBoundUsd": 0.00038337599999999994
+        }
+      },
+      "costUpperBoundUsd": 0.0004991759999999999,
+      "audits": [],
+      "experimentCost": 0,
+      "observations": [],
+      "initialSha256": null,
+      "violations": []
+    },
+    {
+      "id": "direct-C",
+      "task": "direct",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "completed",
+      "quality": {
+        "score": 100
+      },
+      "submission": {
+        "amount": 391,
+        "unit": "元"
+      },
+      "elapsedMs": 7370,
+      "usage": {
+        "input": 1056,
+        "output": 507,
+        "cacheRead": 51072,
+        "cacheWrite": 0,
+        "calls": 5,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 52635,
+        "status": "verified",
+        "processed": 52635
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 198,
+          "output": 105,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "processed": 303,
+          "requestMs": 1684,
+          "costUpperBoundUsd": 0.0001854
+        },
+        "main": {
+          "calls": 4,
+          "input": 858,
+          "output": 402,
+          "cacheRead": 51072,
+          "cacheWrite": 0,
+          "processed": 52332,
+          "requestMs": 6435,
+          "costUpperBoundUsd": 0.001046232
+        }
+      },
+      "costUpperBoundUsd": 0.001231632,
+      "audits": [],
+      "experimentCost": 0,
+      "observations": [],
+      "initialSha256": null,
+      "violations": []
+    },
+    {
+      "id": "additive-C",
+      "task": "additive",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "blocked",
+      "quality": {
+        "score": 0,
+        "feasible": false,
+        "start": 84.6593295337173,
+        "optimum": 96.39272564642545
+      },
+      "submission": null,
+      "elapsedMs": 43252,
+      "usage": {
+        "input": 11254,
+        "output": 5501,
+        "cacheRead": 101888,
+        "cacheWrite": 0,
+        "calls": 7,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 118643,
+        "status": "verified",
+        "processed": 118643
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 7,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 282,
+          "requestMs": 1337,
+          "costUpperBoundUsd": 0.000053268
+        },
+        "main": {
+          "calls": 6,
+          "input": 11107,
+          "output": 5494,
+          "cacheRead": 101760,
+          "cacheWrite": 0,
+          "processed": 118361,
+          "requestMs": 40579,
+          "costUpperBoundUsd": 0.01053546
+        }
+      },
+      "costUpperBoundUsd": 0.010588728,
+      "audits": [],
+      "experimentCost": 0,
+      "observations": [],
+      "initialSha256": "49f7857f706812fce7779ace4f521a87587fb9ecbd08fb1c04e6c5aa87c1821d",
+      "violations": []
+    },
+    {
+      "id": "additive-A",
+      "task": "additive",
+      "group": "A",
+      "mode": "default",
+      "reason": "completed",
+      "quality": {
+        "score": 99.97648853947655,
+        "feasible": true,
+        "value": 96.38996695363035,
+        "impurity": 0.095052,
+        "start": 84.6593295337173,
+        "optimum": 96.39272564642545
+      },
+      "submission": {
+        "x": 0.72,
+        "y": 0.49,
+        "evidence": [
+          "initial.json",
+          "report.md",
+          "lab/experiment-index.json",
+          "lab/input-final.json",
+          "lab/model-final.json",
+          "lab/decision.json",
+          "lab/cal-0.5-0.5.json",
+          "lab/cal-0.9-0.5.json",
+          "lab/cal-0.72-0.49.json",
+          "lab/quick-0.65-0.45.json",
+          "lab/full-0.65-0.45.json",
+          "lab/full-0.70-0.50.json",
+          "lab/full-0.70-0.50-rep.json",
+          "lab/full-0.72-0.50.json",
+          "lab/full-0.72-0.50-rep.json",
+          "lab/full-0.72-0.49-final.json",
+          "lab/full-0.72-0.49-rep.json"
+        ]
+      },
+      "elapsedMs": 224736,
+      "usage": {
+        "input": 21568,
+        "output": 34385,
+        "cacheRead": 929280,
+        "cacheWrite": 0,
+        "calls": 32,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 985233,
+        "status": "verified",
+        "processed": 985233
+      },
+      "roles": {
+        "main": {
+          "calls": 31,
+          "input": 21421,
+          "output": 34233,
+          "cacheRead": 929152,
+          "cacheWrite": 0,
+          "processed": 984806,
+          "requestMs": 215656,
+          "costUpperBoundUsd": 0.053080812000000005
+        },
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 152,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 427,
+          "requestMs": 2103,
+          "costUpperBoundUsd": 0.000227268
+        }
+      },
+      "costUpperBoundUsd": 0.05330808000000001,
+      "audits": [],
+      "experimentCost": 28,
+      "observations": [
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 2,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.9,
+            "y": 0.5
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 4,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.65,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.65,
+            "y": 0.45,
+            "value": 96.32894297797164,
+            "impurity": 0.08925456753581833,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 5,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.65,
+            "y": 0.45
+          },
+          "result": {
+            "x": 0.65,
+            "y": 0.45,
+            "value": 96.19261509814179,
+            "impurity": 0.09153204376496356,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 8,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.72,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.72,
+            "y": 0.5,
+            "value": 96.50093105972608,
+            "impurity": 0.09615285583032529,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 11,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.7,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.7,
+            "y": 0.5,
+            "value": 95.84968491537734,
+            "impurity": 0.09451392398713881,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 14,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.72,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.72,
+            "y": 0.5,
+            "value": 96.41560637412195,
+            "impurity": 0.09624279321554008,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 17,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.7,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.7,
+            "y": 0.5,
+            "value": 96.69787713906754,
+            "impurity": 0.0951582309081273,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 20,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.72,
+            "y": 0.49
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 22,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.72,
+            "y": 0.49
+          },
+          "result": {
+            "x": 0.72,
+            "y": 0.49,
+            "value": 96.56119752805704,
+            "impurity": 0.09531186584466339,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 25,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.72,
+            "y": 0.49
+          },
+          "result": {
+            "x": 0.72,
+            "y": 0.49,
+            "value": 96.59976492765198,
+            "impurity": 0.09519900552894889,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 28,
+            "budget": 30
+          }
+        }
+      ],
+      "initialSha256": "49f7857f706812fce7779ace4f521a87587fb9ecbd08fb1c04e6c5aa87c1821d",
+      "violations": []
+    },
+    {
+      "id": "interaction-A",
+      "task": "interaction",
+      "group": "A",
+      "mode": "default",
+      "reason": "completed",
+      "quality": {
+        "score": 99.96644436383069,
+        "feasible": true,
+        "value": 96.2237454887157,
+        "impurity": 0.10058792,
+        "start": 89.42910629806217,
+        "optimum": 96.22602623844162
+      },
+      "submission": {
+        "x": 0.708,
+        "y": 0.611,
+        "evidence": [
+          "initial.json",
+          "lab/quick-01.json",
+          "lab/full-01.json",
+          "lab/full-02.json",
+          "lab/full-03.json",
+          "lab/full-04-optimum.json",
+          "lab/full-05-optimum-replicate.json",
+          "lab/full-06-final.json",
+          "lab/calibration-01.json",
+          "lab/calibration-02.json",
+          "lab/calibration-03.json",
+          "lab/calibration-04.json",
+          "lab/calibration-05.json",
+          "lab/input-final.json",
+          "lab/input-pre-final-sensitivity.json",
+          "lab/model-final-default.json",
+          "lab/model-final-sensitivity-101.json",
+          "lab/model-pre-final-sensitivity.json",
+          "lab/model-updated-05.json",
+          "lab/final-analysis.json",
+          "lab/final-report.md",
+          "method/response_surface.py",
+          "method/SKILL.md"
+        ]
+      },
+      "elapsedMs": 355943,
+      "usage": {
+        "input": 25554,
+        "output": 42739,
+        "cacheRead": 1964416,
+        "cacheWrite": 0,
+        "calls": 51,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 2032709,
+        "status": "verified",
+        "processed": 2032709
+      },
+      "roles": {
+        "main": {
+          "calls": 50,
+          "input": 25407,
+          "output": 42625,
+          "cacheRead": 1964288,
+          "cacheWrite": 0,
+          "processed": 2032320,
+          "requestMs": 284921,
+          "costUpperBoundUsd": 0.07055782799999999
+        },
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 114,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 389,
+          "requestMs": 1878,
+          "costUpperBoundUsd": 0.00018166799999999998
+        }
+      },
+      "costUpperBoundUsd": 0.07073949599999999,
+      "audits": [],
+      "experimentCost": 29,
+      "observations": [
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 2,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 96.13935189101078,
+            "impurity": 0.08786746296018025,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 3,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.7,
+            "y": 0.6
+          },
+          "result": {
+            "x": 0.7,
+            "y": 0.6,
+            "value": 96.05052244384233,
+            "impurity": 0.10048221062657116,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 6,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.7,
+            "y": 0.6
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 8,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.75,
+            "y": 0.65
+          },
+          "result": {
+            "x": 0.75,
+            "y": 0.65,
+            "value": 95.84952326444926,
+            "impurity": 0.10489449269823296,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 11,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.65,
+            "y": 0.55
+          },
+          "result": {
+            "x": 0.65,
+            "y": 0.55,
+            "value": 96.1033393551492,
+            "impurity": 0.0937837446759094,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 14,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.71,
+            "y": 0.61
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 16,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.708,
+            "y": 0.611
+          },
+          "result": {
+            "x": 0.708,
+            "y": 0.611,
+            "value": 96.2067679115918,
+            "impurity": 0.1000127840764382,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 19,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.707,
+            "y": 0.61
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 21,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.708,
+            "y": 0.611
+          },
+          "result": {
+            "x": 0.708,
+            "y": 0.611,
+            "value": 95.9026407012026,
+            "impurity": 0.10077300566390125,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 24,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.708,
+            "y": 0.611
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 26,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.708,
+            "y": 0.611
+          },
+          "result": {
+            "x": 0.708,
+            "y": 0.611,
+            "value": 96.32168910038257,
+            "impurity": 0.10037421846611876,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 29,
+            "budget": 30
+          }
+        }
+      ],
+      "initialSha256": "d61146cc1e0992f9700e1c8fbfd3747fd952c0a5d70bbe31ac5a9189ea0da9a9",
+      "violations": []
+    },
+    {
+      "id": "interaction-C",
+      "task": "interaction",
+      "group": "C",
+      "mode": "clearai",
+      "reason": "completed",
+      "quality": {
+        "score": 99.97647634291882,
+        "feasible": true,
+        "value": 96.22442735430276,
+        "impurity": 0.10062299999999999,
+        "start": 89.42910629806217,
+        "optimum": 96.22602623844162
+      },
+      "submission": {
+        "x": 0.71,
+        "y": 0.61,
+        "evidence": [
+          "initial.json",
+          "lab/calib-1.json",
+          "lab/f-0.71-0.61.json",
+          "lab/f-0.71-0.61-r2.json",
+          "lab/f-0.71-0.61-r3.json",
+          "lab/f-0.5-0.5.json",
+          "lab/f-0.6-0.6.json",
+          "lab/f-0.70-0.60.json",
+          "lab/f-0.75-0.60.json",
+          "lab/f-0.75-0.65.json",
+          "lab/f-0.8-0.6.json",
+          "lab/input-all.json",
+          "lab/model-all.json",
+          "lab/verification.json"
+        ]
+      },
+      "elapsedMs": 893594,
+      "usage": {
+        "input": 66889,
+        "output": 146941,
+        "cacheRead": 3187840,
+        "cacheWrite": 0,
+        "calls": 66,
+        "injectedBeforeProvider": 0,
+        "missing": 0,
+        "pending": 0,
+        "lowerBound": 3401670,
+        "status": "verified",
+        "processed": 3401670
+      },
+      "roles": {
+        "other": {
+          "calls": 1,
+          "input": 147,
+          "output": 107,
+          "cacheRead": 128,
+          "cacheWrite": 0,
+          "processed": 382,
+          "requestMs": 1701,
+          "costUpperBoundUsd": 0.000173268
+        },
+        "main": {
+          "calls": 39,
+          "input": 24353,
+          "output": 52222,
+          "cacheRead": 1871360,
+          "cacheWrite": 0,
+          "processed": 1947935,
+          "requestMs": 310952,
+          "costUpperBoundUsd": 0.08120045999999999
+        },
+        "evaluator": {
+          "calls": 26,
+          "input": 42389,
+          "output": 94612,
+          "cacheRead": 1316352,
+          "cacheWrite": 0,
+          "processed": 1453353,
+          "requestMs": 559013,
+          "costUpperBoundUsd": 0.134149212
+        }
+      },
+      "costUpperBoundUsd": 0.21552294,
+      "audits": [
+        {
+          "id": "audit:pending:10970dbdaf3c3f0d1c3218a2e9d5cb3a",
+          "verdict": "yes",
+          "holds": "yes",
+          "basis": "交付成立:submission.json:2-3 的 x=0.71、y=0.61 为数值且 ∈[0,1],14 条 evidence 路径全部存在;lab/f-0.71-0.61.json(及 -r2、-r3)是终点三次 full 原始读数,收率 96.322/96.167/96.455(均值 96.315,sd 0.144)、杂质 0.100409/0.101394/0.100862(最大 0.1014≤0.115);我在一次性副本内复跑 lab/verify_final.py,输出与 lab/verification.json 逐字节一致(sha256 相同),未运行 experiment.py、未写原工作区;final-report.md 给出参数、instrument=original/offset=0/单位/噪声口径及 7 条局限;预算 spent 序列 2→30 恰好 30。结论/报告另有几处数值转写错误(初始 9 点 LOO 误标、±0.05 内变化 <0.05% 实为 0.194% 等,见 anomalies),但均不改变推荐点、实测约束与判据。",
+          "shortfalls": []
+        }
+      ],
+      "experimentCost": 30,
+      "observations": [
+        {
+          "request": {
+            "mode": "calibrate",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "instrument": "original",
+            "metric": "yield",
+            "offset": 0,
+            "unit": "normalized x",
+            "cost": 2,
+            "spent": 2,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "quick",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 96.13935189101078,
+            "impurity": 0.08786746296018025,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "quick",
+            "noise_sd": 0.44999999999999996,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 1,
+            "spent": 3,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.5,
+            "y": 0.5
+          },
+          "result": {
+            "x": 0.5,
+            "y": 0.5,
+            "value": 95.1812251070993,
+            "impurity": 0.08828221062657117,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 6,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.7,
+            "y": 0.6
+          },
+          "result": {
+            "x": 0.7,
+            "y": 0.6,
+            "value": 95.90180932252407,
+            "impurity": 0.10021949269823295,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 9,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.8,
+            "y": 0.6
+          },
+          "result": {
+            "x": 0.8,
+            "y": 0.6,
+            "value": 95.9426828691491,
+            "impurity": 0.10280874467590938,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 12,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.6,
+            "y": 0.6
+          },
+          "result": {
+            "x": 0.6,
+            "y": 0.6,
+            "value": 95.90179258930726,
+            "impurity": 0.0952248640764382,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 15,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.75,
+            "y": 0.65
+          },
+          "result": {
+            "x": 0.75,
+            "y": 0.65,
+            "value": 95.85144892271346,
+            "impurity": 0.10456008566390125,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 18,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.71,
+            "y": 0.61
+          },
+          "result": {
+            "x": 0.71,
+            "y": 0.61,
+            "value": 96.32237096596963,
+            "impurity": 0.10040929846611875,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 21,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.75,
+            "y": 0.6
+          },
+          "result": {
+            "x": 0.75,
+            "y": 0.6,
+            "value": 96.18359767125807,
+            "impurity": 0.10155544285292081,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 24,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.71,
+            "y": 0.61
+          },
+          "result": {
+            "x": 0.71,
+            "y": 0.61,
+            "value": 96.16703735011752,
+            "impurity": 0.10139378997513236,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 27,
+            "budget": 30
+          }
+        },
+        {
+          "request": {
+            "mode": "full",
+            "x": 0.71,
+            "y": 0.61
+          },
+          "result": {
+            "x": 0.71,
+            "y": 0.61,
+            "value": 96.45512833820065,
+            "impurity": 0.10086201066493548,
+            "instrument": "original",
+            "metric": "yield",
+            "mode": "full",
+            "noise_sd": 0.18,
+            "units": {
+              "value": "%",
+              "impurity": "fraction"
+            },
+            "cost": 3,
+            "spent": 30,
+            "budget": 30
+          }
+        }
+      ],
+      "initialSha256": "d61146cc1e0992f9700e1c8fbfd3747fd952c0a5d70bbe31ac5a9189ea0da9a9",
+      "violations": []
+    }
+  ],
+  "complete": true
+}

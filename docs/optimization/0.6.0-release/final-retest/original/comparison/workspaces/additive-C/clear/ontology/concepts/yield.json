@@ -1,0 +1,7 @@
+{
+  "gloss": "目标度量,实验返回的 value 字段,full 模式单位 %(百分数)",
+  "id": "yield",
+  "kind": "measure",
+  "label": "收率",
+  "unit": "%"
+}

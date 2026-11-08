@@ -1,0 +1,150 @@
+{
+  "id": "f-1hz4yc",
+  "goal": "g-mw4yfrsjmxa9",
+  "hypothesis": "h-7kkgaq",
+  "text": "在杂质≤0.115 的可行域内,收率最优位于 x≈0.51、y≈0.45 的内部点,预测收率约 95.2%,预测杂质约 0.086,杂质约束不紧。",
+  "about": [
+    "factor_x",
+    "factor_y",
+    "yield",
+    "impurity",
+    "yield_response",
+    "response_surface",
+    "peak_at",
+    "instrument_original"
+  ],
+  "scope": "条件 仪表=original、预算单位=30(已花 3,余 27)、杂质上限=0.115、自变量范围=x,y∈[0,1]、读数噪声=full sd 0.18;quick sd 0.45;取值 x 0–1、y 0–1",
+  "scope_spec": {
+    "conditions": {
+      "仪表": "original",
+      "预算单位": "30(已花 3,余 27)",
+      "杂质上限": "0.115",
+      "自变量范围": "x,y∈[0,1]",
+      "读数噪声": "full sd 0.18;quick sd 0.45"
+    },
+    "ranges": {
+      "x": [
+        0,
+        1
+      ],
+      "y": [
+        0,
+        1
+      ]
+    }
+  },
+  "refute_when": "若任一可行 full 实测点收率比该点预测高 0.5 个百分点以上(≥95.7%),或该候选点的 full 实测杂质 >0.115,或 full 实测收率明显低于 94.8%。",
+  "level": "L3",
+  "evidence": [
+    "e-shvb23"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-shvb23",
+      "step": "s4",
+      "plan": "p-mw4yh6zowacy",
+      "hypothesis": "h-7kkgaq",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发任一推翻条件:可行 full 点最高为 full-optimum-1.json:4 的 95.4060(<95.7),:5 杂质 0.083927(<0.115),收率 95.4060 不低于 94.8;full-center-1.json:4 95.105、initial.json:62 可行点最高 95.184 也均<95.7。模型复算该点预测 95.2208、杂质 0.08554(≈0.086),预测杂质上界 0.1099<0.115,约束不紧;实测-预测差 +0.185(≈1.0σ/0.18),杂质差 -0.0016。故 support。",
+      "refs": [
+        "lab/full-optimum-1.json",
+        "lab/budget.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/full-optimum-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/budget.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/5b840157e7e86aef3b3fd0fc24f3add34d3e7f210370d429475ed1bcd3e7fca2/5df2eaa781ca16fcc3ecd49d452eab77fac122cb1ae02fc9f7450ef2209f9b7f.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-shvb23",
+      "step": "s4",
+      "plan": "p-mw4yh6zowacy",
+      "hypothesis": "h-7kkgaq",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发任一推翻条件:可行 full 点最高为 full-optimum-1.json:4 的 95.4060(<95.7),:5 杂质 0.083927(<0.115),收率 95.4060 不低于 94.8;full-center-1.json:4 95.105、initial.json:62 可行点最高 95.184 也均<95.7。模型复算该点预测 95.2208、杂质 0.08554(≈0.086),预测杂质上界 0.1099<0.115,约束不紧;实测-预测差 +0.185(≈1.0σ/0.18),杂质差 -0.0016。故 support。",
+      "refs": [
+        "lab/full-optimum-1.json",
+        "lab/budget.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "lab/full-optimum-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/budget.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/5b840157e7e86aef3b3fd0fc24f3add34d3e7f210370d429475ed1bcd3e7fca2/5df2eaa781ca16fcc3ecd49d452eab77fac122cb1ae02fc9f7450ef2209f9b7f.json"
+        },
+        {
+          "kind": "evaluator-session",
+          "session": "a767a9db-2ff8-4c74-98d5-d519eb906e17"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "object": {
+        "kind": "statement",
+        "value": "x≈0.508,y≈0.453;预测收率≈95.2%,预测杂质≈0.086;杂质限值0.115"
+      },
+      "predicate": "peak_at",
+      "qualifiers": {
+        "约束": "impurity<=0.115",
+        "范围": "x,y∈[0,1]"
+      },
+      "subject": {
+        "id": "yield_response",
+        "type": "response_surface"
+      }
+    }
+  ],
+  "definitions": {
+    "peak_at": "fnv:861cf01e",
+    "response_surface": "fnv:1d7576cb",
+    "factor_x": "fnv:8bd239ec",
+    "factor_y": "fnv:25be4820",
+    "impurity": "fnv:044e7587",
+    "instrument": "fnv:6af9ea78",
+    "yield": "fnv:41115b10"
+  },
+  "session": "session-native-eea833f8-1f74-4f3b-b610-b96022afb235",
+  "status": "established",
+  "review": null,
+  "at": 1793968859145,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1793968859145,
+      "level": "L3"
+    }
+  ]
+}

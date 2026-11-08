@@ -1,0 +1,283 @@
+{
+  "passed": true,
+  "allTasksCompleted": false,
+  "rows": [
+    {
+      "id": "direct-A",
+      "reason": "completed",
+      "completed": true,
+      "score": 100,
+      "partialArtifactQuality": null,
+      "evidenceFiles": [],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 0
+    },
+    {
+      "id": "direct-C",
+      "reason": "completed",
+      "completed": true,
+      "score": 100,
+      "partialArtifactQuality": null,
+      "evidenceFiles": [],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 0
+    },
+    {
+      "id": "additive-C",
+      "reason": "token_limit",
+      "completed": false,
+      "score": 0,
+      "partialArtifactQuality": {
+        "score": 99.98313120814362,
+        "feasible": true,
+        "value": 95.33776953918525,
+        "impurity": 0.08534192,
+        "start": 89.66260914255449,
+        "optimum": 95.33872703169749
+      },
+      "evidenceFiles": [
+        {
+          "path": "lab/full-optimum-1.json",
+          "bytes": 289
+        },
+        {
+          "path": "lab/full-optimum-2.json",
+          "bytes": 290
+        },
+        {
+          "path": "lab/full-center-1.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/calibrate-1.json",
+          "bytes": 136
+        }
+      ],
+      "independentAudits": 4,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 12
+    },
+    {
+      "id": "additive-A",
+      "reason": "completed",
+      "completed": true,
+      "score": 99.98273335785946,
+      "partialArtifactQuality": {
+        "score": 99.98273335785946,
+        "feasible": true,
+        "value": 95.3377469567341,
+        "impurity": 0.08539192,
+        "start": 89.66260914255449,
+        "optimum": 95.33872703169749
+      },
+      "evidenceFiles": [
+        {
+          "path": "initial.json",
+          "bytes": 2864
+        },
+        {
+          "path": "report.md",
+          "bytes": 6454
+        },
+        {
+          "path": "lab/evidence.json",
+          "bytes": 15939
+        },
+        {
+          "path": "lab/input-final.json",
+          "bytes": 5736
+        },
+        {
+          "path": "lab/model-initial.json",
+          "bytes": 3012
+        },
+        {
+          "path": "lab/model-updated-1.json",
+          "bytes": 3191
+        },
+        {
+          "path": "lab/model-updated-2.json",
+          "bytes": 3772
+        },
+        {
+          "path": "lab/model-updated-3.json",
+          "bytes": 4074
+        },
+        {
+          "path": "lab/model-final.json",
+          "bytes": 2846
+        },
+        {
+          "path": "lab/cal-0.5-0.5.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/cal-0.508-0.452.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/quick-0.5-0.5.json",
+          "bytes": 301
+        },
+        {
+          "path": "lab/quick-0.5-0.45.json",
+          "bytes": 301
+        },
+        {
+          "path": "lab/full-0.508-0.452.json",
+          "bytes": 289
+        },
+        {
+          "path": "lab/full-0.408-0.452.json",
+          "bytes": 290
+        },
+        {
+          "path": "lab/full-0.608-0.452.json",
+          "bytes": 290
+        },
+        {
+          "path": "lab/full-0.508-0.352.json",
+          "bytes": 290
+        },
+        {
+          "path": "lab/full-0.508-0.552.json",
+          "bytes": 290
+        },
+        {
+          "path": "lab/full-0.508-0.452-r2.json",
+          "bytes": 289
+        },
+        {
+          "path": "lab/full-0.508-0.452-r3.json",
+          "bytes": 290
+        },
+        {
+          "path": "lab/full-0.508-0.453-final.json",
+          "bytes": 290
+        },
+        {
+          "path": "method/SKILL.md",
+          "bytes": 2360
+        },
+        {
+          "path": "method/response_surface.py",
+          "bytes": 8022
+        }
+      ],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 30
+    },
+    {
+      "id": "interaction-A",
+      "reason": "completed",
+      "completed": true,
+      "score": 99.99937751575702,
+      "partialArtifactQuality": {
+        "score": 99.99937751575702,
+        "feasible": true,
+        "value": 95.28216603354362,
+        "impurity": 0.090662,
+        "start": 91.76126231692287,
+        "optimum": 95.2821879507509
+      },
+      "evidenceFiles": [
+        {
+          "path": "initial.json",
+          "bytes": 2867
+        },
+        {
+          "path": "lab/quick-01.json",
+          "bytes": 301
+        },
+        {
+          "path": "lab/cal-01.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/full-01-x005-y005.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-02-x095-y005.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-03-x005-y095.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-04-x095-y095.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/full-05-x005-y050.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-06-x050-y005.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-07-x050-y095.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/full-08-x0520-y0551-provisional.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/full-09-x0520-y0551-final.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/model-initial.json",
+          "bytes": 3042
+        },
+        {
+          "path": "lab/model-after-7-full.json",
+          "bytes": 4078
+        },
+        {
+          "path": "lab/model-after-8-full.json",
+          "bytes": 4270
+        },
+        {
+          "path": "lab/model-final.json",
+          "bytes": 3026
+        },
+        {
+          "path": "lab/input-final.json",
+          "bytes": 6075
+        },
+        {
+          "path": "report.md",
+          "bytes": 4886
+        }
+      ],
+      "independentAudits": 0,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 30
+    },
+    {
+      "id": "interaction-C",
+      "reason": "token_limit",
+      "completed": false,
+      "score": 0,
+      "partialArtifactQuality": {
+        "score": 0,
+        "feasible": false,
+        "start": 91.76126231692287,
+        "optimum": 95.2821879507509
+      },
+      "evidenceFiles": [],
+      "independentAudits": 1,
+      "invalidOrFailedAudits": 0,
+      "realExperimentBudget": 23
+    }
+  ],
+  "method": "Scores recomputed from hidden truth after workers exited; real mount, isolation probes, role accounting and submitted evidence checked. No model judge.",
+  "limitation": "One sample per task/variant; not a significance test or external domain accuracy benchmark."
+}

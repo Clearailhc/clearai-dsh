@@ -1,5 +1,7 @@
 # Release verification
 
+Current 0.6.0 review and paired model comparison: [acceptance evidence](optimization/0.6.0-release/README.md). Older version-specific results below remain historical. / 当前 0.6.0 审查与配对测试见该记录，下方旧版结果仅为历史依据。
+
 For 0.5.8, use the [current acceptance record](optimization/0.5.8-release/README.md). The older checklist below remains a behavior reference; historical counts and unverified items do not describe current results. The current Ontology pane reads from knowledge map to conclusions/evidence to established knowledge, with definitions distinguished from verified relations.
 
 

@@ -1,0 +1,77 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "n_full_observations": 18,
+  "chosen_point": {
+    "x": 0.71,
+    "y": 0.61
+  },
+  "model": {
+    "kind": "interaction",
+    "yield_coefficients_scaled": [
+      95.25316071452124,
+      4.261177543117596,
+      -0.1994331361709272,
+      -6.788454907891331,
+      -5.50442692976537,
+      6.310600791753664
+    ],
+    "impurity_coefficients_scaled": [
+      0.08785936555553046,
+      0.014847421246597867,
+      0.024816986864040148,
+      0.006828043282726974,
+      -0.0008904098059747086,
+      -0.0015686637136826781
+    ],
+    "resid_rmse": 0.17338312896543717,
+    "stated_noise_sd": 0.18,
+    "loo_cv_rmse": 0.202159299638406
+  },
+  "fitted_optimum": {
+    "x": 0.708,
+    "y": 0.61,
+    "predicted_yield": 96.11828435102117,
+    "predicted_impurity": 0.10049060382485418
+  },
+  "predicted_at_chosen": {
+    "yield": 96.1181817966784,
+    "impurity": 0.10057144606250998
+  },
+  "replicates_at_chosen": [
+    {
+      "file": "lab/f-0.71-0.61.json",
+      "x": 0.71,
+      "y": 0.61,
+      "value": 96.32237096596963,
+      "impurity": 0.10040929846611875
+    },
+    {
+      "file": "lab/f-0.71-0.61-r2.json",
+      "x": 0.71,
+      "y": 0.61,
+      "value": 96.16703735011752,
+      "impurity": 0.10139378997513236
+    },
+    {
+      "file": "lab/f-0.71-0.61-r3.json",
+      "x": 0.71,
+      "y": 0.61,
+      "value": 96.45512833820065,
+      "impurity": 0.10086201066493548
+    }
+  ],
+  "replicate_summary": {
+    "n": 3,
+    "mean_yield": 96.31484555142927,
+    "sd_yield": 0.1441928509035079,
+    "mean_impurity": 0.10088836636872886,
+    "max_impurity": 0.10139378997513236
+  },
+  "impurity_limit": 0.115,
+  "impurity_margin": 0.014111633631271145,
+  "checks": {
+    "all_replicates_feasible": true,
+    "residual_consistent_with_noise": true,
+    "chosen_near_fitted_optimum": true
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "session": "session-native-b8061813-3f0c-423a-a94c-ef9268686a87",
+  "group": "C",
+  "mode": "clearai",
+  "reason": "completed",
+  "elapsedMs": 8256,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 9002,
+    "output": 556,
+    "cacheRead": 42880,
+    "cacheWrite": 0,
+    "calls": 5,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 52438,
+    "status": "verified",
+    "processed": 52438
+  },
+  "mount": {
+    "prompt": true,
+    "tools": true
+  },
+  "requests": [
+    {
+      "session": "session-native-b8061813-3f0c-423a-a94c-ef9268686a87",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794067529463
+    },
+    {
+      "session": "session-native-b8061813-3f0c-423a-a94c-ef9268686a87",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794067532341
+    },
+    {
+      "session": "session-native-b8061813-3f0c-423a-a94c-ef9268686a87",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794067533669
+    },
+    {
+      "session": "session-native-b8061813-3f0c-423a-a94c-ef9268686a87",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1794067535673
+    }
+  ],
+  "approvals": [],
+  "answer": "总金额：17 × 23 = **391 元**。\n\n已写入 `@submission.json`：`{\"amount\": 391, \"unit\": \"元\"}`，并校验可解析、数值与乘积一致。",
+  "clearai": {
+    "goal": null,
+    "hypotheses": [],
+    "plans": [],
+    "evidence": [],
+    "audits": [],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [],
+      "predicates": []
+    },
+    "entities": [],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {}
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "/tmp/clearai-polish-final-v2-release/workspaces/direct-C/submission.json"
+    ],
+    "sessionId": "session-native-b8061813-3f0c-423a-a94c-ef9268686a87"
+  },
+  "violations": {
+    "silent_closure": false,
+    "unresolved_reference_completed": false,
+    "duplicate_dispatch": false,
+    "pending_restored_without_review": false,
+    "outside_historical_retraction": false,
+    "repeated_card_failure": false,
+    "isolation_failed": false
+  },
+  "driverDigest": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587",
+  "logs": [
+    {
+      "session": "session-native-b8061813-3f0c-423a-a94c-ef9268686a87",
+      "cursor": 43,
+      "path": "2756fed932b0c4884d5d8bdac45078c39aa1b4e0abdc90ce458b573b84ba5f5f.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "9ac6da6caf3bb88190da09443cb69e1ac2f5ffebf4e368dde438833b6fca02c0",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 0,
+    "signal": null
+  }
+}

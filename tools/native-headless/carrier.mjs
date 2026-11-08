@@ -58,7 +58,9 @@ export function apply(ctx, config) {
 	atomic('carrier-started.json', { pid: process.pid, group: spec.group, model })
 	ctx.on('llm/stream', (options, next) => {
 		if (options.provider !== model.provider || options.model !== model.model) throw new Error('Unexpected native LLM model route')
-		const call = { session: options.sessionId, purpose: options.purpose, provider: options.provider, model: options.model, reasoningEffort: options.reasoningEffort, started: Date.now(), ended: false, providerInvoked: false }
+		const activeAgent = ctx.get('agents')?.get?.(options.sessionId)
+		const presetId = activeAgent?.ctx ? ctx.get('agentPresets')?.composedPreset?.(activeAgent.ctx) : null
+		const call = { role: options.purpose ? 'other' : presetId === 'clearai-evaluator' ? 'evaluator' : presetId === 'clearai-explorer' ? 'explorer' : options.sessionId === main?.id ? 'main' : 'other', session: options.sessionId, purpose: options.purpose, provider: options.provider, model: options.model, reasoningEffort: options.reasoningEffort, started: Date.now(), ended: false, providerInvoked: false }
 		calls.push(call); checkpoint()
 		return (async function* () {
 			try {
@@ -70,7 +72,8 @@ export function apply(ctx, config) {
 					throw new Error('Registered audit timeout before provider dispatch')
 				}
 				if(main&&options.sessionId!==main.id&&spec.fault==='disconnect') {call.injectedBeforeProvider='disconnect';atomic('fault-injected.json',{fault:spec.fault,session:options.sessionId,at:Date.now()});throw new Error('Registered native transport disconnect')}
-				call.budgetId = budget.reserve({ testId: spec.testId || spec.output, session: options.sessionId, model: options.model })
+				try { call.budgetId = budget.reserve({ testId: spec.testId || spec.output, session: options.sessionId, model: options.model }) }
+				catch (error) { call.injectedBeforeProvider = 'budget-guard'; throw error }
     call.providerInvoked=true
 				for await (const chunk of next()) { if (chunk.type === 'usage') { call.usage = chunk.usage; checkpoint() } yield chunk }
 			}

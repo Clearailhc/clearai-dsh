@@ -1,0 +1,214 @@
+{
+  "schema": "clearai.polish-comparison.v1",
+  "version": "0.6.0",
+  "candidateDigest": "854dafb63da162c40a7cdefda6c7443710d949693804e5ccfed050a16ad79e4b",
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "rows": [
+    {
+      "task": "direct",
+      "group": "A",
+      "mode": "default"
+    },
+    {
+      "task": "direct",
+      "group": "C",
+      "mode": "clearai"
+    },
+    {
+      "task": "additive",
+      "group": "C",
+      "mode": "clearai"
+    },
+    {
+      "task": "additive",
+      "group": "A",
+      "mode": "default"
+    },
+    {
+      "task": "interaction",
+      "group": "A",
+      "mode": "default"
+    },
+    {
+      "task": "interaction",
+      "group": "C",
+      "mode": "clearai"
+    }
+  ],
+  "tasks": {
+    "direct": "根据给定材料:甲17件,每件23元。计算总金额，写 submission.json 为 {\"amount\":数值,\"unit\":\"元\"}，简短回复。",
+    "optimization": "依据 initial.json 优化 x,y∈[0,1] 的收率，杂质不得超过0.115。允许使用 method/ 通用脚本和说明。用 python3 experiment.py quick|full|calibrate --x X --y Y --output lab/N.json 做实验，成本1/3/2，总预算30单位。保留原始读数，验证后把最终 {\"x\":数值,\"y\":数值,\"evidence\":[\"路径\"]} 写 submission.json，报告参数、仪表口径和局限，完成任务。"
+  },
+  "budgets": {
+    "complex": {
+      "tokenBudget": 5000000,
+      "timeoutMs": 5400000
+    },
+    "direct": {
+      "tokenBudget": 240000,
+      "timeoutMs": 1200000
+    },
+    "experiments": [
+      30,
+      30,
+      30,
+      12
+    ],
+    "auditTimeoutMs": 240000
+  },
+  "experimentBudget": 30,
+  "worldKeyCommitment": "2561def0bda8986a7794637454354fb85a0455930c90ca1469bdaf5d62305c0b",
+  "assets": [
+    {
+      "path": "ablation-probe.mjs",
+      "sha256": "2d4106ef604b74bdca6e6277a5f5581ecafcf2d97761d21a92b809cefb4dffc8"
+    },
+    {
+      "path": "acceptance.mjs",
+      "sha256": "6ef50652e7f77af6249be7fe255a566dc358efef9e7bd12a1ab32066b7789540"
+    },
+    {
+      "path": "accounting.mjs",
+      "sha256": "a3871fbdbc0de475ab2990d250c4e42837b1a1eb7c22231a26400cbe1537006e"
+    },
+    {
+      "path": "all-stages.mjs",
+      "sha256": "d54c3132d528afb483e607550730c6c352537f419fc1a950e2349412d3450592"
+    },
+    {
+      "path": "analyze.mjs",
+      "sha256": "a9bcca15ba0f69e64341624abac80f54db3d00af99fe43710b709cb026a66650"
+    },
+    {
+      "path": "audit-fault-probe.mjs",
+      "sha256": "251b935835f113145666bd6cf72679b0ba5e49a79adfaa88ddb550c677120719"
+    },
+    {
+      "path": "audit-wait-probe.mjs",
+      "sha256": "cdd8495e13276ce159d1312453c023a652276a1243618d6435dca7a907f6f530"
+    },
+    {
+      "path": "budget.mjs",
+      "sha256": "2721f0c6af9c792e4ef436baa3805502f722dd72f57f23676beb90150fbffc7a"
+    },
+    {
+      "path": "campaign.mjs",
+      "sha256": "ccd38ef8febad3038be235ead107b05eb8d935222abb54a65a6ac1a854fa386c"
+    },
+    {
+      "path": "carrier.mjs",
+      "sha256": "54b7718c0a7e2816e53b789890b67023c621e014a1957df79acd809b53f675a9"
+    },
+    {
+      "path": "compare-polish.mjs",
+      "sha256": "faf35a5278b12799ecd9e7349786859dc7a65a63d555965eee7c1a4f9989747a"
+    },
+    {
+      "path": "diagnostic-protocol.mjs",
+      "sha256": "267d954fef58c6e4a71d652c300912d56aedea01196768f6093a1fab0fc48906"
+    },
+    {
+      "path": "experiment.py",
+      "sha256": "e9549ce0d6456421261b3fd174d2bbf12789d30160d459813eeff552dbce54a5"
+    },
+    {
+      "path": "factory.mjs",
+      "sha256": "275c60d920982cf1d23aceee0ebfe84566579f400e001bfe321bed352ea0cce8"
+    },
+    {
+      "path": "faults.mjs",
+      "sha256": "5211d3978b22e4f73a29186cc5f13df18d2789d35d1c796db8d3891a6ee4d5f4"
+    },
+    {
+      "path": "freeze.mjs",
+      "sha256": "0e5511b1c58ee493436c410f57ef7a2c75b778a50f972125c735c65331574761"
+    },
+    {
+      "path": "grading-probe.mjs",
+      "sha256": "2bb370e950ada04c08686bea6f6dc4f5da0d4729da1dd320d5a1e3da6c633ba4"
+    },
+    {
+      "path": "installed-cli.cjs",
+      "sha256": "c9d20cd5d34006c84c05ac9d68e65b90e04a364236e81d5cc6e893f5b2d958cf"
+    },
+    {
+      "path": "isolation.mjs",
+      "sha256": "15d99a798481fab6fb0c18da084500e11984bba0439b93d04f8e21e5aee100f5"
+    },
+    {
+      "path": "lifecycle.mjs",
+      "sha256": "ac484a1af42b85097ecbe3a50880747eb428aad36f02793879f7cdd5fe402954"
+    },
+    {
+      "path": "matrix.mjs",
+      "sha256": "526a64cf113d6509bd860b731ffd3c1c97a9b65d5d6fb5532bd71614f8ec5221"
+    },
+    {
+      "path": "mechanisms.mjs",
+      "sha256": "3172739ebdd092e3c1fea396d4aae9e8b0cdac00083909493f6f17678bc1a2ac"
+    },
+    {
+      "path": "method/SKILL.md",
+      "sha256": "ff02407bdaebb77ce7ce267bdabfbeb89b2c22cadc62c1e6748e5ccab555c871"
+    },
+    {
+      "path": "method/response_surface.py",
+      "sha256": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "native-contract.mjs",
+      "sha256": "dcbd1b9765d333d996d474e0a5f779dbe6f6c7a7f8edc8e9c7e2f68a5ec8815d"
+    },
+    {
+      "path": "ontology-probe.mjs",
+      "sha256": "c3a0fec2b10476e04bd7cb5b9f217e04b15f9113949d4f405f07349790168295"
+    },
+    {
+      "path": "public-materials.mjs",
+      "sha256": "3f17f3ee3b6fad3422d88fd999de78d46203fff98a779920fd31a87e7738135e"
+    },
+    {
+      "path": "recheck-probe.mjs",
+      "sha256": "735808e075a53c22e6e61283a52aa146d198bd2d34ed972fd3fd3f0914a6762c"
+    },
+    {
+      "path": "run.mjs",
+      "sha256": "89cc5019337cf2f6fc90018a39f225d5bbcb24c3bbe4f12846e11a1031f557a1"
+    },
+    {
+      "path": "runtime.mjs",
+      "sha256": "f38c7478d3a976183828680f378fec729a81b9eb1e68c125e102b13acbec716a"
+    },
+    {
+      "path": "scoring.mjs",
+      "sha256": "9e00a7aedfaeb280cd6736a5037c219629ed287bdc73b4c81272944360b902c3"
+    },
+    {
+      "path": "sequence.mjs",
+      "sha256": "8e72e2851c94c1686114ad0ba06d2a779a84d4499f24583f04169b1674c77cb0"
+    },
+    {
+      "path": "setup.mjs",
+      "sha256": "91769a85f6a37d8044d9e5129e8f898632a4a993d3b4093bf77d5035e7730548"
+    },
+    {
+      "path": "ui-fixture.mjs",
+      "sha256": "4a663aa38dadd45aafa8f0f85846f36a4d2ed0c7828b1c933abbb761838adc62"
+    },
+    {
+      "path": "ui-setup.mjs",
+      "sha256": "2322f091a888d099c348364ad4c07f1c97f9fbb6752e9aaa0653591753e1300b"
+    },
+    {
+      "path": "world.mjs",
+      "sha256": "5b80622f6c3c28cce604882cdbca00bafd1cffa74790aa01b4806aea18a6fe34"
+    }
+  ],
+  "costBeforeUsd": 2.2172016440000006,
+  "authorization": "这次验收你可以启动多个任务，并和裸模型的效果进行对比，看看最终效果以及token耗费和时长都有什么对比。",
+  "policy": "One run per task/group, sequential counterbalanced order; no quality-based reruns. Same native tools/model/inputs, default preset A versus ClearAI C. Hidden truth is unavailable to agents, validated with native isolation probes. Deterministic objective scoring after each worker exits. Functional failures remain rows; unverifiable usage, isolation or model mismatch stops remaining runs."
+}

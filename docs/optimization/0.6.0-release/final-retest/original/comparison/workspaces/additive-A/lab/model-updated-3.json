@@ -1,0 +1,140 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "additive",
+  "models": [
+    {
+      "kind": "additive",
+      "cv_rmse": 0.17947021541008235,
+      "coefficients": [
+        95.30415805274481,
+        0.2118590797066915,
+        -1.0270237011122474,
+        -6.727956926314819,
+        -5.472695194323504
+      ]
+    },
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.2338033517328885,
+      "coefficients": [
+        95.3042223525227,
+        0.21197105263626526,
+        -1.027046052166557,
+        -6.728014116502528,
+        -5.472750668797398,
+        0.05682948252994667
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        1.0
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": {
+    "x": 0.5,
+    "y": 0.45,
+    "predicted_value": 95.3521334709128,
+    "prediction_interval": [
+      94.97922627278253,
+      95.72504066904308
+    ],
+    "predicted_impurity_upper": 0.10536135564066682,
+    "experiment_cost": 3.0,
+    "within_observed_bounding_box": true,
+    "verified": false
+  },
+  "next_experiments": [
+    {
+      "x": 0.9,
+      "y": 0.09999999999999998,
+      "predicted_value": 88.48684692019144,
+      "prediction_interval": [
+        88.04938876758044,
+        88.92430507280244
+      ],
+      "predicted_impurity_upper": 0.10891755454177898,
+      "experiment_cost": 3.0,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.09999999999999998,
+      "y": 0.09999999999999998,
+      "predicted_value": 88.14787239266073,
+      "prediction_interval": [
+        87.71058070868503,
+        88.58516407663643
+      ],
+      "predicted_impurity_upper": 0.08441829478944463,
+      "experiment_cost": 3.0,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.09999999999999998,
+      "y": 0.15000000000000002,
+      "predicted_value": 88.86607430169803,
+      "prediction_interval": [
+        88.43989009400163,
+        89.29225850939444
+      ],
+      "predicted_impurity_upper": 0.08622823291484394,
+      "experiment_cost": 3.0,
+      "within_observed_bounding_box": true,
+      "verified": false
+    }
+  ],
+  "best_measured": {
+    "x": 0.508,
+    "y": 0.452,
+    "value": 95.48664461389366,
+    "impurity": 0.08564034610451365
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/full-0.508-0.452.json",
+      "lab/full-0.408-0.452.json",
+      "lab/full-0.608-0.452.json",
+      "lab/full-0.508-0.352.json",
+      "lab/full-0.508-0.552.json",
+      "lab/full-0.508-0.452-r2.json",
+      "lab/full-0.508-0.452-r3.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd",
+      "lab/full-0.508-0.452.json": "sha256:517c2606946a5fdd518d27499ab76d36d5faf574fe09dc6c617416a6225377ea",
+      "lab/full-0.408-0.452.json": "sha256:85392453acf9c18b9bf7bd3e548f13274489ed267acfca3ac36aebd491f9fd02",
+      "lab/full-0.608-0.452.json": "sha256:7932c7a533cfb344967d574ceedab7952e8c64f53ca0bb1e8c9be468fdda7171",
+      "lab/full-0.508-0.352.json": "sha256:223a4e937b53ca5a003175b3c964a506ee12e55b6d0dcc4f7daa832ce7f08c15",
+      "lab/full-0.508-0.552.json": "sha256:fe848367d9d894bea8dff0ac359919ba82ac08bc390a1e686b57e4f25d854e56",
+      "lab/full-0.508-0.452-r2.json": "sha256:b19808c719c238a370400034aa2eb76e1001bc1d9102ce4d6029497b783a3932",
+      "lab/full-0.508-0.452-r3.json": "sha256:630b03de9293e3b5e511ccbe761a9201408ec52c6374024f8c217bf7af6b0ca7"
+    }
+  }
+}

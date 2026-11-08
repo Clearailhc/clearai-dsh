@@ -1,0 +1,8 @@
+{
+  "domain": "input_x",
+  "id": "x_affects_impurity",
+  "kind": "affects",
+  "label": "x 影响杂质",
+  "range": "impurity",
+  "shape": "increasing"
+}

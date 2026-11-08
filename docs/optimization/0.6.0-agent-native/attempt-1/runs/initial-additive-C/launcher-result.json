@@ -1,0 +1,3573 @@
+{
+  "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+  "group": "C",
+  "mode": "clearai",
+  "reason": "token_limit",
+  "elapsedMs": 1331352,
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium"
+  },
+  "usage": {
+    "input": 115185,
+    "output": 186590,
+    "cacheRead": 4753024,
+    "cacheWrite": 0,
+    "calls": 91,
+    "injectedBeforeProvider": 0,
+    "missing": 0,
+    "pending": 0,
+    "lowerBound": 5054799,
+    "status": "verified",
+    "processed": 5054799
+  },
+  "mount": {
+    "prompt": true,
+    "tools": true
+  },
+  "requests": [
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975159685
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975162644
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975164727
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975166271
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975170624
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975180082
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975182374
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975184691
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975203525
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975217679
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975228363
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975244509
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975250206
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975271098
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975285336
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975294592
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975299554
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975309439
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975320012
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975328699
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975339968
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975350509
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975353087
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975356689
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975361983
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975367904
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975564801
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975574634
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975579458
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975585625
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975588371
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975592342
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975595835
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975616392
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975650073
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975655035
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975659862
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975671539
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975680708
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975689453
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975695375
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975721409
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975734974
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975873417
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975883998
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975907037
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975919516
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975921923
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975934500
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975945083
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975958106
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975974488
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793975977187
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976000596
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976009575
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976012565
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976015892
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976019784
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976024335
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976034108
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976044606
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976047449
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976048776
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976051107
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976066638
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976070919
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976074726
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976087630
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976091153
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976115479
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976128270
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976132587
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976140360
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976149546
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976152724
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976173430
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976217731
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976236091
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976260021
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976367000
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976386884
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976390867
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976434102
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976448924
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976459047
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976464256
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976478276
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976482088
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976485179
+    },
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium",
+      "at": 1793976489476
+    }
+  ],
+  "approvals": [],
+  "answer": "I'll start by inspecting the workspace and reading the key files.",
+  "clearai": {
+    "goal": {
+      "id": "g-mw52i41h09ow",
+      "workflow": "agent-v1",
+      "claim": "在 x,y∈[0,1] 内、杂质≤0.115 的约束下找到收率最高的配方点，并用 full 测量验证，写入 submission.json。",
+      "done_criteria": "submission.json 存在且含 x、y 数值与 evidence 路径列表；最终点有一次 full 原始读数（value 为收率%、impurity 为分数）且 impurity≤0.115；该 full 收率不低于初始 9 点中最好的 94.693%；报告写明模型参数、仪表口径与局限。",
+      "promote_at_level": "L3",
+      "irreversible": [],
+      "status": "open",
+      "revision": 2,
+      "reasons": [
+        null,
+        "补齐核验所需的图引用与断言：登记 yield/impurity/instrument 等概念、测量与影响关系、仪器与两个响应面实体，并把四条判断各自写成主词–谓词–宾语断言；判断本身与判据文本不变。"
+      ],
+      "openedAt": 1793975180035,
+      "closedAt": null,
+      "closeVerdict": null,
+      "headline": "在 x,y∈[0,1] 内、杂质≤0.115 的约束下找到收率最高的配方点，并用 full 测量验证，写入 submission.json",
+      "criteria": [],
+      "criteria_note": null,
+      "legacy": false,
+      "criteriaHistory": [],
+      "mode": "solve",
+      "questions": [],
+      "areas": [],
+      "conditions": {
+        "范围": "x,y∈[0,1]",
+        "杂质上限": "0.115",
+        "总预算": "30"
+      },
+      "about": [
+        "yield",
+        "impurity",
+        "instrument"
+      ],
+      "answers": []
+    },
+    "hypotheses": [
+      {
+        "id": "h-173dc0",
+        "goal": "g-mw52i41h09ow",
+        "name": "加性曲面",
+        "claim": "收率响应面在 x,y 上近似加性二次，交互项可忽略",
+        "refute_when": "补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上",
+        "status": "proposed",
+        "version": "7c2eeb6b5d9f7f8502717334ad546be664811e82ff087f537ec30eaad8df89ea",
+        "assertions": [
+          {
+            "object": {
+              "kind": "statement",
+              "value": "加性二次：yield = 84.883 + 24.074x + 21.081y − 26.583x² − 23.550y²（16 个 full 点，残差 sd 0.170）；交互模型留一 CV 0.180 > 加性 0.168"
+            },
+            "predicate": "has_surface_structure",
+            "subject": {
+              "id": "yield_surface_xy",
+              "type": "yield_surface"
+            }
+          }
+        ],
+        "at": 1793975180035,
+        "about": [
+          "yield_surface_xy",
+          "yield_surface",
+          "has_surface_structure"
+        ]
+      },
+      {
+        "id": "h-dfrfe9",
+        "goal": "g-mw52i41h09ow",
+        "name": "内部最优",
+        "claim": "可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%",
+        "refute_when": "在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界",
+        "status": "proposed",
+        "version": "eb67686704bf38ad6fd18f14cef80c1232d788f383dd4ccc66608899e3a07878",
+        "assertions": [
+          {
+            "object": {
+              "kind": "statement",
+              "value": "x=0.4528, y=0.4476，预测 95.05%；在 (0.4517,0.4485) 的 4 次 full 读数 94.72/95.05/95.16/95.28，均值 95.05"
+            },
+            "predicate": "maximized_at",
+            "subject": {
+              "id": "yield_surface_xy",
+              "type": "yield_surface"
+            }
+          }
+        ],
+        "at": 1793975180035,
+        "about": [
+          "yield_surface_xy",
+          "yield_surface",
+          "maximized_at"
+        ]
+      },
+      {
+        "id": "h-gux36c",
+        "goal": "g-mw52i41h09ow",
+        "name": "杂质不约束",
+        "claim": "预测最优点 (0.45,0.45) 的杂质约 0.085，远低于 0.115，约束不活跃",
+        "refute_when": "该点及其邻域实测杂质超过 0.115",
+        "status": "proposed",
+        "version": "90a62f57b6eff56fbcf241d18ba3188109173a7c3701f07ec1bead78b8fc5af6",
+        "assertions": [
+          {
+            "object": {
+              "kind": "statement",
+              "value": "推荐点预测杂质 0.0832，4 次 full 实测 0.0819–0.0840，均 ≤ 0.115（余量约 0.031）；约束只在 (0.9,0.9) 附近被触碰（实测 0.1247）"
+            },
+            "predicate": "feasible_impurity",
+            "subject": {
+              "id": "impurity_surface_xy",
+              "type": "impurity_surface"
+            }
+          }
+        ],
+        "at": 1793975180035,
+        "about": [
+          "impurity_surface_xy",
+          "impurity_surface",
+          "feasible_impurity"
+        ]
+      },
+      {
+        "id": "h-r2abbn",
+        "goal": "g-mw52i41h09ow",
+        "name": "快捷模式偏置",
+        "claim": "quick 模式与 full 模式读数之间存在系统性偏差（或噪声更大），需校准后才能混用",
+        "refute_when": "同一批点的 quick 与 full 读数差值在噪声 sd=0.18 以内且无系统方向",
+        "status": "proposed",
+        "version": "57a9b6ffaebe227a27f5df1fb38b031ff6ae2f9abdb14f14d1622c7dbdb732bc",
+        "assertions": [
+          {
+            "object": {
+              "kind": "statement",
+              "value": "同一 original 仪器、calibrate offset=0；full 标称 sd 0.18、quick 0.45；5 个 quick 点相对 full 拟合残差均值 +0.06、sd 0.46，无系统偏移，但 quick 噪声约为 full 的 2.5 倍，故未混入拟合"
+            },
+            "predicate": "has_noise_basis",
+            "subject": {
+              "id": "instrument_original",
+              "type": "instrument"
+            }
+          }
+        ],
+        "at": 1793975180035,
+        "about": [
+          "instrument_original",
+          "instrument",
+          "has_noise_basis"
+        ]
+      }
+    ],
+    "plans": [],
+    "evidence": [],
+    "audits": [
+      {
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc",
+        "step": "review:79839a3c2d2d6e2830f952e3",
+        "plan": "goal",
+        "kind": "claim_audit",
+        "verdict": "yes",
+        "evaluator": "independent",
+        "child": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+        "request": {
+          "step": {
+            "id": "review:79839a3c2d2d6e2830f952e3",
+            "ordinal": 0,
+            "do": "Check the registered claims against their refutation conditions; preserve contrary evidence and limits.",
+            "done_criteria": "h-173dc0: independently assess 收率响应面在 x,y 上近似加性二次，交互项可忽略; test refutation condition: 补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上; report support, refute or inconclusive with scope and sources.\nh-dfrfe9: independently assess 可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%; test refutation condition: 在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界; report support, refute or inconclusive with scope and sources.\nh-gux36c: independently assess 预测最优点 (0.45,0.45) 的杂质约 0.085，远低于 0.115，约束不活跃; test refutation condition: 该点及其邻域实测杂质超过 0.115; report support, refute or inconclusive with scope and sources.\nh-r2abbn: independently assess quick 模式与 full 模式读数之间存在系统性偏差（或噪声更大），需校准后才能混用; test refutation condition: 同一批点的 quick 与 full 读数差值在噪声 sd=0.18 以内且无系统方向; report support, refute or inconclusive with scope and sources.",
+            "artifacts": [
+              "initial.json",
+              "lab/cal-01.json",
+              "lab/f-opt-1.json",
+              "lab/f-val-a.json",
+              "lab/model-final.json",
+              "lab/q-0505.json",
+              "reports/analysis.md",
+              "submission.json"
+            ],
+            "tests": {
+              "hypotheses": [
+                "h-173dc0",
+                "h-dfrfe9",
+                "h-gux36c",
+                "h-r2abbn"
+              ],
+              "level": "L3"
+            }
+          },
+          "gate": {
+            "ok": false,
+            "verified_by": "needs_audit",
+            "missing": [],
+            "directories": [],
+            "empty": [],
+            "structural": [],
+            "confirmed": [
+              {
+                "ref": "initial.json",
+                "bytes": 2868,
+                "digest": "sha256:85d63c559158d27a"
+              },
+              {
+                "ref": "lab/cal-01.json",
+                "bytes": 136,
+                "digest": "sha256:f4d4479cb4e7824c"
+              },
+              {
+                "ref": "lab/f-opt-1.json",
+                "bytes": 292,
+                "digest": "sha256:9bc217b8fa26c0ad"
+              },
+              {
+                "ref": "lab/f-val-a.json",
+                "bytes": 287,
+                "digest": "sha256:acbca917fefb615e"
+              },
+              {
+                "ref": "lab/model-final.json",
+                "bytes": 2609,
+                "digest": "sha256:a922905b47581b7f"
+              },
+              {
+                "ref": "lab/q-0505.json",
+                "bytes": 301,
+                "digest": "sha256:92476b55f11d3bf3"
+              },
+              {
+                "ref": "reports/analysis.md",
+                "bytes": 4578,
+                "digest": "sha256:1e56e1db5a7d67ca"
+              },
+              {
+                "ref": "submission.json",
+                "bytes": 273,
+                "digest": "sha256:d7669425fbf21242"
+              }
+            ],
+            "needs_audit": true,
+            "hint": "坐标齐备,判据非空 → 交独立评估者裁决(准入不裁决)。",
+            "trust": {
+              "model": "deepseek-flash",
+              "modelProvider": "deepseek",
+              "reasoningEffort": "medium",
+              "policy": "clearai.review.v1",
+              "preset": "clearai-evaluator",
+              "provider": "spawn",
+              "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+              "rerun": true,
+              "tools": [
+                "read",
+                "glob",
+                "grep",
+                "read_image"
+              ],
+              "l4Human": true,
+              "l4External": true
+            }
+          },
+          "kind": "claim_audit"
+        },
+        "criteria": [
+          {
+            "id": "C1",
+            "text": "h-173dc0: independently assess 收率响应面在 x,y 上近似加性二次，交互项可忽略; test refutation condition: 补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上; report support, refute or inconclusive with scope and sources."
+          },
+          {
+            "id": "C2",
+            "text": "h-dfrfe9: independently assess 可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%; test refutation condition: 在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界; report support, refute or inconclusive with scope and sources."
+          },
+          {
+            "id": "C3",
+            "text": "h-gux36c: independently assess 预测最优点 (0.45,0.45) 的杂质约 0.085，远低于 0.115，约束不活跃; test refutation condition: 该点及其邻域实测杂质超过 0.115; report support, refute or inconclusive with scope and sources."
+          },
+          {
+            "id": "C4",
+            "text": "h-r2abbn: independently assess quick 模式与 full 模式读数之间存在系统性偏差（或噪声更大），需校准后才能混用; test refutation condition: 同一批点的 quick 与 full 读数差值在噪声 sd=0.18 以内且无系统方向; report support, refute or inconclusive with scope and sources."
+          }
+        ],
+        "capability": "preset:clearai-evaluator+outputSchema",
+        "goal_id": "goal-e06dc539-2167-4acd-b8e4-a392486d7134",
+        "goal_revision": 2,
+        "digest": "v7:b260c5494a1eb6b947cea8b6994fa2f9023dfdce2f426d9e4bc4796171f07c1a",
+        "shortfalls": [],
+        "basis": "四组判据均按各自推翻条件核对:在副本中复跑 method/response_surface.py 精确重现 lab/model-final.json(加性 CV 0.16775 < 交互 0.18048,交互并未低出 0.18);(0.45,0.45) 的 full 读数 95.0719 与 (0.4517,0.4485) 4 次重复 94.7228–95.2801(均值 95.054、se 0.120)全部 ≥ 初始最佳 94.693,首测 94.7228 也落在事前 10 点模型的 PI [94.547,95.367] 内;该点及邻域杂质 0.0819–0.0840,预测上界 0.1058 < 0.115;5 个 quick 点残差 sd 0.459(quick 标称 0.45),唯一同点对 quick−full=+0.724,推翻条件不成立。submission.json 坐标与证据路径齐备,报告写明模型参数、仪表口径与局限。报告个别派生数字(±0.25、quick 极差 +0.37、交互系数 −0.13)与复算不符,已在 anomalies 登记,不改变判据结论。",
+        "card_path": "/tmp/clearai060-native-comparison/workspaces/additive-C/clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json",
+        "at": 1793975585229,
+        "holds": "yes",
+        "settledAt": 1793975906806,
+        "rechecks": [],
+        "lessons": [],
+        "reuse": [],
+        "refs": [
+          {
+            "path": "lab/model-final.json",
+            "line": 8,
+            "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+          },
+          {
+            "path": "lab/model-final.json",
+            "line": 19,
+            "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+          },
+          {
+            "path": "lab/model-final.json",
+            "line": 26,
+            "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+          },
+          {
+            "path": "lab/model-final.json",
+            "line": 58,
+            "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+          },
+          {
+            "path": "lab/f-045-045.json",
+            "line": 4,
+            "digest": "e83d6a943bf65f10c9e984c6da545d5748769234da45e986fadea4b1e4e156bd"
+          },
+          {
+            "path": "lab/f-opt-1.json",
+            "line": 4,
+            "digest": "9bc217b8fa26c0ad9909a798029e20bb1f1a7caf01e1299fd8b20e770ac5bf9b"
+          },
+          {
+            "path": "lab/f-opt-4.json",
+            "line": 4,
+            "digest": "0ce94352c9b9ba504c090cee4db93573984cc7b87d7901ca3804c4a0f8ae22d5"
+          },
+          {
+            "path": "lab/model-01.json",
+            "line": 56,
+            "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+          },
+          {
+            "path": "lab/model-01.json",
+            "line": 58,
+            "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+          },
+          {
+            "path": "lab/model-01.json",
+            "line": 61,
+            "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+          },
+          {
+            "path": "initial.json",
+            "line": 62,
+            "digest": "85d63c559158d27a8616bcde58dd14f5e30fea215654a77a399e746e463f7b9f"
+          },
+          {
+            "path": "lab/q-0505.json",
+            "line": 4,
+            "digest": "92476b55f11d3bf32f374f722c07bf46c64251bf8996706ffb044999d0fd18eb"
+          },
+          {
+            "path": "lab/cal-01.json",
+            "line": 4,
+            "digest": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 12,
+            "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 13,
+            "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 27,
+            "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 42,
+            "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 48,
+            "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 51,
+            "digest": "1e56e1db5a7d67ca3fa73f9a8030cdde541b0a1172bd0801d2a30201390640aa"
+          },
+          {
+            "path": "submission.json",
+            "line": 2,
+            "digest": "d7669425fbf21242abbc320cc6d3cf6394d3dc4bfb645dfb03ae1430928dbadb"
+          }
+        ],
+        "criteriaResults": [
+          {
+            "criterion": "C1",
+            "result": "pass",
+            "basis": "复跑精确重现 lab/model-final.json:8,19：加性 LOO CV 0.16775 < 交互 0.18048，交互反而更差 0.0127，远未达到“低出 0.18”；物理坐标交互系数 −0.108（model-final:26），报告给出 9 点 0.0923/0.1142（analysis.md:12）和观测盒 [0.1,0.9]² 的局限。推翻条件未触发。"
+          },
+          {
+            "criterion": "C2",
+            "result": "pass",
+            "basis": "full 实测 (0.45,0.45)=95.0719（f-045-045:4），(0.4517,0.4485) 4 次重复 94.7228/95.0484/95.1643/95.2801，均值 95.054，全部 ≥ 初始最佳 94.693（initial.json:62）；事前 10 点模型预测 94.957、PI 下界 94.547（model-01:56,58），首测在区间内。推翻条件两项均未触发。"
+          },
+          {
+            "criterion": "C3",
+            "result": "pass",
+            "basis": "该点实测杂质 0.0819/0.0834/0.0834/0.0840，与 (0.45,0.45) 的 0.0833（f-045-045:5）一致；二次杂质模型在该点预测 0.0832–0.0833，预测上界 0.1058 < 0.115（model-01:61）。仅 (0.9,0.9)=0.1247 越限，远离最优点，约束不活跃成立。"
+          },
+          {
+            "criterion": "C4",
+            "result": "pass",
+            "basis": "5 个 quick 点对 full 二次面残差 +0.49/+0.03/−0.71/+0.23/+0.24，sd 0.459、均值 +0.06；唯一同点对 (0.5,0.5) quick−full=+0.724=4.0×0.18（q-0505:4 vs initial.json:62）。差值未落在 0.18 内，推翻条件不成立；但“系统方向”未获证实，支持仅来自“噪声更大”一支。"
+          }
+        ],
+        "results": [
+          {
+            "hypothesis": "h-173dc0",
+            "verdict": "support",
+            "basis": "复跑得加性 CV 0.16775、交互 CV 0.18048，交互并未比加性低出 0.18（差 −0.0127），交互系数 −0.108（物理 xy 尺度），报告有 9 点 0.0923/0.1142 与观测盒局限；推翻条件未触发。"
+          },
+          {
+            "hypothesis": "h-dfrfe9",
+            "verdict": "support",
+            "basis": "(0.45,0.45) 附近 full 读数 94.7228–95.2801（均值 95.054）、(0.45,0.45) 单点 95.0719，均不低于已测最佳 94.693，也不低于事前 PI 下界 94.547；可行域内模型极值复算在 (0.452,0.448)。“约 94.9%”与事前预测 94.895/94.957 一致。"
+          },
+          {
+            "hypothesis": "h-gux36c",
+            "verdict": "support",
+            "basis": "该点及邻域实测杂质 0.0819–0.0840，预测 0.0833，模型预测上界 0.1058 < 0.115；推翻条件（实测超 0.115）未出现，约束不活跃。"
+          },
+          {
+            "hypothesis": "h-r2abbn",
+            "verdict": "support",
+            "basis": "quick 残差 sd 0.459（标称 0.45）远大于 0.18，唯一同点对差 +0.724（4.0×0.18），推翻条件“差值在 0.18 内且无系统方向”不成立；但均值仅 +0.06，支持来自“噪声更大”而非已证实的系统偏差。"
+          }
+        ]
+      },
+      {
+        "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945",
+        "step": "goal:g-mw52i41h09ow",
+        "plan": "goal",
+        "kind": "goal_audit",
+        "verdict": "yes",
+        "evaluator": "independent",
+        "child": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+        "request": {
+          "step": {
+            "id": "goal:g-mw52i41h09ow",
+            "ordinal": 0,
+            "do": "核验目标 g-mw52i41h09ow 的判据与转写忠实度",
+            "done_criteria": "submission.json 存在且含 x、y 数值与 evidence 路径列表；最终点有一次 full 原始读数（value 为收率%、impurity 为分数）且 impurity≤0.115；该 full 收率不低于初始 9 点中最好的 94.693%；报告写明模型参数、仪表口径与局限。",
+            "artifacts": [],
+            "tests": {
+              "hypotheses": [
+                "h-173dc0",
+                "h-dfrfe9",
+                "h-gux36c",
+                "h-r2abbn"
+              ],
+              "level": "L3"
+            }
+          },
+          "gate": {
+            "confirmed": [
+              {
+                "ref": "hypothesis:h-173dc0",
+                "bytes": 0,
+                "digest": "proposed/支持到—"
+              },
+              {
+                "ref": "hypothesis:h-dfrfe9",
+                "bytes": 0,
+                "digest": "proposed/支持到—"
+              },
+              {
+                "ref": "hypothesis:h-gux36c",
+                "bytes": 0,
+                "digest": "proposed/支持到—"
+              },
+              {
+                "ref": "hypothesis:h-r2abbn",
+                "bytes": 0,
+                "digest": "proposed/支持到—"
+              }
+            ],
+            "answers": [
+              {
+                "question": "",
+                "uses": [
+                  "f-x1arz0",
+                  "f-78qael",
+                  "f-wcwg6t",
+                  "f-cn6udq"
+                ],
+                "claims": [
+                  "h-173dc0",
+                  "h-dfrfe9",
+                  "h-gux36c",
+                  "h-r2abbn"
+                ],
+                "scope": {
+                  "conditions": {
+                    "范围": "x,y∈[0,1]",
+                    "杂质上限": "0.115",
+                    "仪器": "original",
+                    "预算": "30（已花 28）"
+                  },
+                  "ranges": {
+                    "x": [
+                      0.1,
+                      0.9
+                    ],
+                    "y": [
+                      0.1,
+                      0.9
+                    ]
+                  },
+                  "units": {
+                    "x": "1",
+                    "y": "1"
+                  },
+                  "note": "仅在有观测的盒 [0.1,0.9]² 内成立；盒外不外推。"
+                },
+                "conclusion": "最优配方 x=0.4517、y=0.4485（0–1 归一化坐标）：4 次 full 读数均值 95.05%（94.72/95.05/95.16/95.28），杂质 0.082–0.084 ≤ 0.115。二次面拟合极值 (0.4528,0.4476)、预测 95.05 与实测一致；比初始最佳 94.693 高 +0.36，但 95% 预测区间 [94.70,95.40] 的下界几乎贴在初始最佳上，改善幅度未达统计显著。",
+                "basis": [
+                  "加性 vs 交互：16 点 LOO CV 0.168 vs 0.180；去重 13 点 0.155 vs 0.156；交互系数 ≈ −0.11，未达推翻条件（lab/model-final.json）",
+                  "最优点：4 次 full 重复 94.72–95.28，均值 95.05，se 0.12；(0.45,0.45) 单测 95.072，均 ≥ 初始最佳 94.693（lab/f-opt-1..4.json、lab/f-045-045.json）",
+                  "杂质：推荐点实测 0.0819–0.0840，模型预测 0.0832、上界 0.1058 < 0.115；仅 (0.9,0.9)=0.1247 越限（lab/f-opt-*.json、reports/analysis.md）",
+                  "quick 口径：5 点相对 full 面残差 +0.49/+0.03/−0.71/+0.23/+0.24（sd 0.46 ≈ 标称 0.45），无系统偏移但噪声约为 full 的 2.5 倍，未混入拟合（lab/q-*.json）",
+                  "排除项：盒外/边界不外推（模型在 x 或 y→0/1 时预测明显下降，但无支撑）；(0.9,0.9) 因杂质越限排除"
+                ],
+                "open": [
+                  {
+                    "about": [
+                      "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u5"
+                    ],
+                    "effect": "若 4 次重复的单调上升是仪器正漂移而非峰顶局部曲率，则真实改善应从 +0.36 降到约 +0.15，但不改变最优位置与杂质可行性。"
+                  },
+                  {
+                    "about": [
+                      "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u6"
+                    ],
+                    "effect": "初始 9 点残差 sd 0.062 与后 7 点 0.18–0.20 不一致；若初始批噪声确实更低，模型参数不确定度应按较大者计（偏保守），结论方向不变。"
+                  }
+                ],
+                "decide": [
+                  "是否追加预算（当前余 2，单次 full 需 3）复测同坐标或做一次末次 calibrate，以区分漂移与局部曲率。"
+                ]
+              }
+            ],
+            "lessons": [
+              {
+                "text": "同一坐标的重复读数若按时间单调上升，先排查漂移/顺序效应，再下\"优于基线\"的结论。",
+                "kind": "trap",
+                "about": [
+                  "yield",
+                  "instrument"
+                ],
+                "evidence": "评估者第 u5 条：f-opt-1→f-opt-4 从 94.7228 单调升到 95.2801，初稿未讨论。",
+                "boundary": "重复次数≥3 且跨度覆盖多次实验时适用。"
+              },
+              {
+                "text": "初始设计点残差远小于标称噪声时，该批的 CV 会偏乐观，决策前用去重/扩样本重算一遍。",
+                "kind": "check",
+                "about": [
+                  "yield_surface"
+                ],
+                "evidence": "第 u6 条：初始 9 点残差 sd 0.062，后 7 点约 0.19；去重 13 点 CV 0.155 vs 0.156。",
+                "boundary": "小样本（≤10 点）拟合约 5 个参数时尤其要查。"
+              },
+              {
+                "text": "工具给的 best_measured 是单次最大值，当结论口径要用重复均值，避免把选择偏差当改善。",
+                "kind": "shortcut",
+                "about": [
+                  "yield"
+                ],
+                "evidence": "第 u4 条：best_measured 95.28 比 4 次均值 95.054 高 +0.23。",
+                "boundary": "同坐标有多次重复时。"
+              }
+            ],
+            "extra": [
+              "# 结论(做的人按问题写的四部分;请核它与记录是否一致,依据是否真在记录里)",
+              "## 目标:最优配方 x=0.4517、y=0.4485（0–1 归一化坐标）：4 次 full 读数均值 95.05%（94.72/95.05/95.16/95.28），杂质 0.082–0.084 ≤ 0.115。二次面拟合极值 (0.4528,0.4476)、预测 95.05 与实测一致；比初始最佳 94.693 高 +0.36，但 95% 预测区间 [94.70,95.40] 的下界几乎贴在初始最佳上，改善幅度未达统计显著。",
+              "- Claims requiring coverage: h-173dc0, h-dfrfe9, h-gux36c, h-r2abbn",
+              "- 实际采用 / actual uses: f-x1arz0, f-78qael, f-wcwg6t, f-cn6udq; scope: {\"conditions\":{\"范围\":\"x,y∈[0,1]\",\"杂质上限\":\"0.115\",\"仪器\":\"original\",\"预算\":\"30（已花 28）\"},\"ranges\":{\"x\":[0.1,0.9],\"y\":[0.1,0.9]},\"units\":{\"x\":\"1\",\"y\":\"1\"},\"note\":\"仅在有观测的盒 [0.1,0.9]² 内成立；盒外不外推。\"}",
+              "- 依据:加性 vs 交互：16 点 LOO CV 0.168 vs 0.180；去重 13 点 0.155 vs 0.156；交互系数 ≈ −0.11，未达推翻条件（lab/model-final.json）",
+              "- 依据:最优点：4 次 full 重复 94.72–95.28，均值 95.05，se 0.12；(0.45,0.45) 单测 95.072，均 ≥ 初始最佳 94.693（lab/f-opt-1..4.json、lab/f-045-045.json）",
+              "- 依据:杂质：推荐点实测 0.0819–0.0840，模型预测 0.0832、上界 0.1058 < 0.115；仅 (0.9,0.9)=0.1247 越限（lab/f-opt-*.json、reports/analysis.md）",
+              "- 依据:quick 口径：5 点相对 full 面残差 +0.49/+0.03/−0.71/+0.23/+0.24（sd 0.46 ≈ 标称 0.45），无系统偏移但噪声约为 full 的 2.5 倍，未混入拟合（lab/q-*.json）",
+              "- 依据:排除项：盒外/边界不外推（模型在 x 或 y→0/1 时预测明显下降，但无支撑）；(0.9,0.9) 因杂质越限排除",
+              "- 尚未确定(audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u5):若 4 次重复的单调上升是仪器正漂移而非峰顶局部曲率，则真实改善应从 +0.36 降到约 +0.15，但不改变最优位置与杂质可行性。",
+              "- 尚未确定(audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u6):初始 9 点残差 sd 0.062 与后 7 点 0.18–0.20 不一致；若初始批噪声确实更低，模型参数不确定度应按较大者计（偏保守），结论方向不变。",
+              "- 待您决策:是否追加预算（当前余 2，单次 full 需 3）复测同坐标或做一次末次 calibrate，以区分漂移与局部曲率。",
+              "# 待核的经验(做的人提议:下次在同类现场要怎么做)",
+              "- L1 · 坑 · 同一坐标的重复读数若按时间单调上升，先排查漂移/顺序效应，再下\"优于基线\"的结论。(凭据:评估者第 u5 条：f-opt-1→f-opt-4 从 94.7228 单调升到 95.2801，初稿未讨论。)(不适用:重复次数≥3 且跨度覆盖多次实验时适用。)",
+              "- L2 · 要核的 · 初始设计点残差远小于标称噪声时，该批的 CV 会偏乐观，决策前用去重/扩样本重算一遍。(凭据:第 u6 条：初始 9 点残差 sd 0.062，后 7 点约 0.19；去重 13 点 CV 0.155 vs 0.156。)(不适用:小样本（≤10 点）拟合约 5 个参数时尤其要查。)",
+              "- L3 · 会骗人的捷径 · 工具给的 best_measured 是单次最大值，当结论口径要用重复均值，避免把选择偏差当改善。(凭据:第 u4 条：best_measured 95.28 比 4 次均值 95.054 高 +0.23。)(不适用:同坐标有多次重复时。)",
+              "每条在 `lessons` 里各给一格:support = 记录里确实发生过它说的事,而且照它做下次会更好;refute = 记录与它矛盾,或照它做会误导;inconclusive = 凭记录判不了,或它只是这次结论的复述。经验不影响 `holds`。"
+            ],
+            "trust": {
+              "model": "deepseek-flash",
+              "modelProvider": "deepseek",
+              "reasoningEffort": "medium",
+              "policy": "clearai.review.v1",
+              "preset": "clearai-evaluator",
+              "provider": "spawn",
+              "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+              "rerun": true,
+              "tools": [
+                "read",
+                "glob",
+                "grep",
+                "read_image"
+              ],
+              "l4Human": true,
+              "l4External": true
+            }
+          },
+          "kind": "goal_audit"
+        },
+        "criteria": [
+          {
+            "id": "C1",
+            "text": "submission.json 存在且含 x、y 数值与 evidence 路径列表；最终点有一次 full 原始读数（value 为收率%、impurity 为分数）且 impurity≤0.115；该 full 收率不低于初始 9 点中最好的 94.693%；报告写明模型参数、仪表口径与局限。"
+          }
+        ],
+        "capability": "preset:clearai-evaluator+outputSchema",
+        "goal_id": "goal-e06dc539-2167-4acd-b8e4-a392486d7134",
+        "goal_revision": 2,
+        "digest": "v7:c43c81dadad76d870e11146f7cb9f5a06b08ed59805bb67a44a41855abe8d434",
+        "shortfalls": [],
+        "basis": "C1 四要素均满足：submission.json:2-14 有 x=0.4517、y=0.4485 与 9 条 evidence；最终点 f-opt-1..4 为 full、value 94.7228–95.2801%（均值 95.054）、impurity 0.0819–0.0840≤0.115，最低读数仍高于 initial.json:62 的初始最佳 94.6927；analysis.md:18-58 写明模型参数、仪表口径与局限。副本复跑 response_surface.py 重现 model-final 的加性/交互 LOO CV 0.16775/0.18048、极值 (0.4528,0.4476) 与预测 95.05。报告有三处派生数字转写不实：16 点 PI [94.70,95.40] 实为 [94.676,95.425]（下界低于 94.693）、去重 13 点 CV 0.155/0.156 实为 0.171/0.193、杂质上界 0.1058 实为 0.1041；均不改变最优点、杂质可行性与「改善不显著」的结论，u5/u6 已披露且有界，故判交付成立并把上述登记为 anomalies。",
+        "card_path": "/tmp/clearai060-native-comparison/workspaces/additive-C/clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json",
+        "at": 1793976044397,
+        "holds": "yes",
+        "settledAt": 1793976433893,
+        "rechecks": [],
+        "lessons": [
+          {
+            "lesson": "L1",
+            "verdict": "support",
+            "basis": "f-opt-1:4→f-opt-4:4 单调升 94.7228→95.2801（极差 0.557）；报告局限 6 已讨论漂移/顺序并给出去伪后约 +0.15，照做可避免把漂移当改善。"
+          },
+          {
+            "lesson": "L2",
+            "verdict": "support",
+            "basis": "初始 9 点残差 sd 0.062（4 df）远低于标称 0.18，9 点 CV 0.092 偏乐观；16 点重算 0.168 后结论不变。报告 13 点去重 0.155/0.156 与复跑 0.171/0.193 不符，重算口径仍需固定。"
+          },
+          {
+            "lesson": "L3",
+            "verdict": "support",
+            "basis": "model-final:55-59 的 best_measured=95.2801 是 4 次重复最大值，均值 95.054（+0.23）；报告结论改用均值，照做可避免选择偏差。"
+          }
+        ],
+        "reuse": [
+          {
+            "id": "f-x1arz0",
+            "verdict": "support",
+            "basis": "16 点复跑加性 CV 0.16775 < 交互 0.18048，残差 sd 0.170，物理交互系数 −0.108；与 model-final:8,19,26 一致，观测盒 [0.1,0.9]² 内适用。"
+          },
+          {
+            "id": "f-78qael",
+            "verdict": "support",
+            "basis": "极值复算 (0.4528,0.4476)、预测 95.05；4 次 full 94.7228–95.2801、均值 95.054，均在观测盒内；断言可复核。"
+          },
+          {
+            "id": "f-wcwg6t",
+            "verdict": "support",
+            "basis": "实测 0.0819–0.0840、预测 0.0833，均 ≤0.115；断言里的上界 0.1058 是 10 点值，16 点复跑 0.1041，仍远低于 0.115，核心结论成立。"
+          },
+          {
+            "id": "f-cn6udq",
+            "verdict": "support",
+            "basis": "5 个 quick 残差均值 +0.06、sd 0.459（标称 0.45），同点差 +0.724；「噪声更大」成立，未混入拟合。"
+          }
+        ],
+        "refs": [
+          {
+            "path": "submission.json",
+            "line": 2,
+            "digest": "d7669425fbf21242abbc320cc6d3cf6394d3dc4bfb645dfb03ae1430928dbadb"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 9,
+            "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 18,
+            "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 29,
+            "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 37,
+            "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 47,
+            "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+          },
+          {
+            "path": "reports/analysis.md",
+            "line": 58,
+            "digest": "e785c83a0ad5d454057e84ab31a6769da0a28f16014e9966a5d78078970e3cbf"
+          },
+          {
+            "path": "lab/f-opt-1.json",
+            "line": 4,
+            "digest": "9bc217b8fa26c0ad9909a798029e20bb1f1a7caf01e1299fd8b20e770ac5bf9b"
+          },
+          {
+            "path": "lab/f-opt-4.json",
+            "line": 4,
+            "digest": "0ce94352c9b9ba504c090cee4db93573984cc7b87d7901ca3804c4a0f8ae22d5"
+          },
+          {
+            "path": "initial.json",
+            "line": 62,
+            "digest": "85d63c559158d27a8616bcde58dd14f5e30fea215654a77a399e746e463f7b9f"
+          },
+          {
+            "path": "lab/model-final.json",
+            "line": 8,
+            "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+          },
+          {
+            "path": "lab/model-final.json",
+            "line": 19,
+            "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+          },
+          {
+            "path": "lab/model-final.json",
+            "line": 55,
+            "digest": "a922905b47581b7f99935e4b3712f84abd986ca4b250f51adc1c59389656371d"
+          },
+          {
+            "path": "lab/model-01.json",
+            "line": 57,
+            "digest": "5e713dd8d9df48eed186a7bb5de78fc11a62be67e146f7141ead2d4e927e2194"
+          },
+          {
+            "path": "lab/q-0505.json",
+            "line": 4,
+            "digest": "92476b55f11d3bf32f374f722c07bf46c64251bf8996706ffb044999d0fd18eb"
+          },
+          {
+            "path": "method/response_surface.py",
+            "line": 37,
+            "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+          },
+          {
+            "path": "method/response_surface.py",
+            "line": 69,
+            "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+          },
+          {
+            "path": "clear/knowledge/facts/f-wcwg6t.json",
+            "line": 1,
+            "digest": "ce809d9f1aad182a3c82c750fd903029eae89cc1b39f3b34785ed283ca505a02"
+          },
+          {
+            "path": "clear/knowledge/facts/f-cn6udq.json",
+            "line": 1,
+            "digest": "f21490e3b4c9678940462948ea2678721b9722c603f4707ea10fbcfc7bf1b1e3"
+          }
+        ],
+        "criteriaResults": [
+          {
+            "criterion": "C1",
+            "result": "pass",
+            "basis": "C1 四要素齐备：submission.json:2-14 有 x=0.4517、y=0.4485 与 9 条 evidence；f-opt-1..4 为 full、value 94.7228–95.2801%（均值 95.054）、impurity 0.0819–0.0840≤0.115，最低值仍 > initial.json:62 的 94.6927；analysis.md:18-58 写明模型参数、仪表口径与局限。报告 16 点 PI、去重 CV、杂质上界与复跑不符（见 anomalies），但四要素本身满足。"
+          }
+        ],
+        "results": [
+          {
+            "hypothesis": "h-173dc0",
+            "verdict": "support",
+            "basis": "复跑 16 点加性 CV 0.16775、交互 0.18048，交互未比加性低出 0.18（反而高 0.0127）；9 点 0.09239/0.11418；物理交互系数 −0.108，脚本 SE≈0.140，不显著。报告去重 13 点 0.155/0.156 与复跑 0.171/0.193 不符，但 16 点结论不变。"
+          },
+          {
+            "hypothesis": "h-dfrfe9",
+            "verdict": "support",
+            "basis": "4 次 full 94.7228–95.2801、均值 95.054，均 ≥94.6927；(0.45,0.45) 单测 95.0719；16 点极值复算 (0.4528,0.4476)、预测 95.05，最低读数仍高于 16 点 PI 下界 94.676 与 10 点 94.547。「约 94.9%」与预测 94.895/94.957 一致，推翻条件未触发；但 PI 下界低于 94.693，改善不显著。"
+          },
+          {
+            "hypothesis": "h-gux36c",
+            "verdict": "support",
+            "basis": "该点 4 次 full 杂质 0.0819–0.0840，邻域 val/quick 0.0787–0.0921，均 ≤0.115；16 点模型预测 0.0833、上界 0.1041（报告 0.1058 是 10 点值）远低于 0.115；仅 (0.9,0.9)=0.1247 越限。推翻条件未触发。"
+          },
+          {
+            "hypothesis": "h-r2abbn",
+            "verdict": "support",
+            "basis": "5 个 quick 对 full 面残差 +0.49/+0.03/−0.71/+0.23/+0.24，sd 0.459（标称 0.45）远大于 full 的 0.18；唯一同点 (0.5,0.5) quick−full=+0.724，差值不在 0.18 内，推翻条件不成立；均值 +0.06 不支持系统偏移，支持来自「噪声更大」一支。"
+          }
+        ]
+      }
+    ],
+    "materials": [],
+    "facts": [],
+    "blocks": {},
+    "releases": [],
+    "anomalies": [
+      {
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u1",
+        "what": "reports/analysis.md:51 称 95.05 的置信区间约 ±0.25；同一脚本在 (0.45,0.45) 给出 95% 预测区间 [94.676,95.425]（±0.37），10 点模型为 [94.547,95.367]（model-01.json:57-60），下界已低于初始最佳 94.693。报告把不确定性说窄了，也未指出“优于初始最佳”在 95% 水平并不成立。",
+        "anchor": null,
+        "step": "review:79839a3c2d2d6e2830f952e3",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "报告把 4 次重复的标准误 0.12 误写成\"±0.25\"，与本工具口径不符。已改为脚本口径：16 点模型在推荐点的 95% 预测区间 [94.70, 95.40]（±0.35），事前 10 点模型 [94.55, 95.37]；并在结论里写明\"下界几乎落在初始最佳 94.693 上，改善在 95% 水平未获证实\"。见 reports/analysis.md 的「结论」「验证与局限」。",
+        "explainedBy": null,
+        "at": 1793975906807,
+        "resolvedAt": 1793976012446
+      },
+      {
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u2",
+        "what": "reports/analysis.md:13 称“4 次 quick 扫描”、残差 −0.71~+0.37；实际有 5 个 quick 文件（q-0505/q-020-045/q-070-045/q-045-020/q-045-070），对最终面残差为 +0.490/+0.026/−0.711/+0.234/+0.240，上端是 +0.49 而非 +0.37。",
+        "anchor": null,
+        "step": "review:79839a3c2d2d6e2830f952e3",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "原稿漏计 (0.5,0.5) 那次 quick，且残差上限写错。已改为：5 个 quick 文件，相对最终 full 二次面的残差 +0.49 / +0.03 / −0.71 / +0.23 / +0.24（均值 +0.06，sd 0.46），并注明 quick 未混入拟合。见 reports/analysis.md「方法」第 2 条与「证据文件」。",
+        "explainedBy": null,
+        "at": 1793975906807,
+        "resolvedAt": 1793976015798
+      },
+      {
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u3",
+        "what": "reports/analysis.md:48 把 (0.25,0.60)、(0.60,0.25) 的 +0.06/+0.28 当作验证偏差，但这两点已并入 16 点最终拟合，属事后残差；用并入前 10 点模型预测，偏差为 +0.115/+0.368（仍在噪声内，但“验证”口径被夸大）。",
+        "anchor": null,
+        "step": "review:79839a3c2d2d6e2830f952e3",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "两个中间半径点确实已并入 16 点拟合，原稿用并入后的残差 (+0.06/+0.28) 当验证口径不成立。已改为并入前 10 点模型的预测偏差 +0.115/+0.368，并明确标注\"并入后属事后残差，不算独立验证\"。见 reports/analysis.md「验证与局限」。",
+        "explainedBy": null,
+        "at": 1793975906807,
+        "resolvedAt": 1793976015844
+      },
+      {
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u4",
+        "what": "lab/model-final.json:55-59 的 best_measured=95.2801 是同坐标 4 次重复的最大值（均值 95.054、sd 0.240），比均值高 +0.23；submission.json:12 把它列为证据。报告正文用的是均值，未把这一选择偏差写成口径。",
+        "anchor": null,
+        "step": "review:79839a3c2d2d6e2830f952e3",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "脚本的 best_measured 取同坐标 4 次重复中的单次最大值 95.28（比均值 95.054 高 +0.23），属选择偏差。已在报告「验证与局限」中写明：模型层点估计一律用均值 95.05，不用最大值；submission 的 evidence 同时列出 4 次原始读数，读者可自行复算均值。",
+        "explainedBy": null,
+        "at": 1793975906807,
+        "resolvedAt": 1793976019719
+      },
+      {
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u5",
+        "what": "同一坐标 4 次重复（f-opt-1.json:4 → f-opt-4.json:4）从 94.7228 单调升到 95.2801，极差 0.557，报告未讨论漂移/顺序效应；这 4 点又占最终 16 点中的 4 点，使交互系数标准误由 0.055 增至 0.138（缩放坐标）。去重后加性/交互 CV 为 0.151/0.171，结论不变。",
+        "anchor": null,
+        "step": "review:79839a3c2d2d6e2830f952e3",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "escalated",
+        "reason": "同坐标 4 次重复按时间单调升 94.72→95.28（极差 0.56；iid 下出现单调序列约 4%），后 7 点相对初始 9 点模型的残差均值 +0.20、末两点 +0.27/+0.39，提示可能有小幅正漂移，也可能只是峰顶局部曲率（二次面在中心欠拟合）。已查：最早一次 quick（spent 3，(0.5,0.5)）就已比模型高 +0.49，不支持\"漂移从初始 9 点之后才开始\"；但 4 点重复的单调性仍无法排除顺序效应。剩余预算 2 不足一次 full（成本 3），无法用新数据判定。影响有界：只影响\"改善幅度 +0.36\"这一句（若漂移约 +0.2，则真实改善约 +0.15），不改变最优位置 (0.45,0.45) 与杂质可行性。是否追加预算或接受该不确定性，交给人。",
+        "explainedBy": null,
+        "at": 1793975906807,
+        "resolvedAt": 1793976024314
+      },
+      {
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc#u6",
+        "what": "初始 9 点对 5 参加性二次的残差 sd 仅 0.062（4 df，与标称 0.18 下约 2% 概率），后续 7 个 full 点残差 sd≈0.197；两批噪声水平明显不一致，报告未提，故 9 点阶段的 CV 0.092 偏乐观。",
+        "anchor": null,
+        "step": "review:79839a3c2d2d6e2830f952e3",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "escalated",
+        "reason": "初始 9 点残差 sd 0.062（4 df，标称 0.18 下约 2% 概率）与后 7 点 0.18–0.20 确实不一致，仅靠现有数据无法判定是当批噪声更低、还是中心区局部曲率导致模型误差。处理：9 点 CV 不再作为依据，已用 16 点（加性 0.168 vs 交互 0.180）和去重 13 点（0.155 vs 0.156）重算，加性结论不变；但参数不确定度应按 0.17 估。是否需追加预算复测由人决定（当前余 2 单位，不足一次 full）。",
+        "explainedBy": null,
+        "at": 1793975906807,
+        "resolvedAt": 1793976019742
+      },
+      {
+        "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945#u1",
+        "what": "reports/analysis.md:9,64 称 16 点 95% 预测区间 [94.70,95.40]（±0.35，按脚本口径）；副本复跑 method/response_surface.py 的 predict（variance=0.18²=0.0324）得 [94.6759,95.4245]（±0.374），下界 94.676 已低于初始最佳 94.693。报告用的是残差 sd 0.170 而非脚本的噪声下限 0.18。",
+        "anchor": null,
+        "step": "goal:g-mw52i41h09ow",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "确认：脚本 predict 的 variance 取 max(残差方差, noise²)=0.18²=0.0324，16 点模型在推荐点的 σ_pred=0.191，95% 区间 [94.676, 95.425]。上一版报告的 [94.70,95.40] 用错了方差，已改为 [94.68,95.43]，并据此写明\"下界 94.68 略低于初始最佳 94.693，改善在 95% 水平不显著\"。见 reports/analysis.md「结论」「评估者疑点的处理」第 7 条。",
+        "explainedBy": null,
+        "at": 1793976433893,
+        "resolvedAt": 1793976482008
+      },
+      {
+        "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945#u2",
+        "what": "reports/analysis.md:29,68 及结论依据称去重 13 点加性/交互 LOO CV 0.1545/0.1559；按所述「同坐标 4 次重复只留 1 条」复跑得 0.1711/0.1932（12 点合并得 0.1507/0.1714），无一种所述去重得到 0.1545/0.1559；line 29 的交互 SE「0.06→0.14」也与脚本口径不符（9 点已 0.1406，16 点 0.1398）。",
+        "anchor": null,
+        "step": "goal:g-mw52i41h09ow",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "确认上一版去重索引写错（漏 val-b、误取 f-opt-4）。按\"同坐标只留 1 条\"的正确 13 个不同坐标复跑：加性 LOO CV 0.1711、交互 0.1932（12 点合并口径 0.1507/0.1714）。报告已改为 0.1711/0.1932，加性结论不变。",
+        "explainedBy": null,
+        "at": 1793976433893,
+        "resolvedAt": 1793976482033
+      },
+      {
+        "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945#u3",
+        "what": "reports/analysis.md:37 把杂质预测上界 0.1058 写在 n=16 模型段；该值是 lab/model-01.json:61 的 10 点模型上界，16 点复跑加性/交互上界均为 0.1041（预测 0.0833）。报告的杂质系数是 16 点交互拟合，而脚本按最小 CV 选加性（0.001003 vs 0.001099）。",
+        "anchor": null,
+        "step": "goal:g-mw52i41h09ow",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "确认 0.1058 是 10 点模型（lab/model-01.json:61）的杂质预测上界，被误写进 16 点模型段。16 点复跑：加性杂质模型预测 0.0833、上界 0.1041（交互 0.0832/0.1040）。报告已改为 0.1041，并把杂质系数改成脚本实际选中的加性式。",
+        "explainedBy": null,
+        "at": 1793976433893,
+        "resolvedAt": 1793976485068
+      },
+      {
+        "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945#u4",
+        "what": "同一坐标 4 次 full 重复 f-opt-1:4→f-opt-4:4 从 94.7228 单调升到 95.2801（极差 0.557）；报告局限 6 承认无法区分漂移与峰顶曲率。按后段残差 +0.39 校正，改善从 +0.36 降到约 +0.15~+0.20，初始最佳 94.693 仍被超过。",
+        "anchor": null,
+        "step": "goal:g-mw52i41h09ow",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "open",
+        "reason": null,
+        "explainedBy": null,
+        "at": 1793976433893,
+        "resolvedAt": null
+      },
+      {
+        "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945#u5",
+        "what": "初始 9 点对加性二次的残差 sd 0.062（4 df）与后 7 点 0.18–0.20 不一致（u6）；报告局限 5 已披露并用 16 点 CV 0.168 替代 9 点 0.092，但 analysis.md:13 仍把 9 点 CV 0.0923 作为方法依据。",
+        "anchor": null,
+        "step": "goal:g-mw52i41h09ow",
+        "by": "evaluator",
+        "matters": "no",
+        "status": "explained",
+        "reason": "「方法」第 1 条已改写：明确 9 点残差 sd 0.062 偏低、CV 0.0923 偏乐观，最终结论不以 9 点 CV 为依据，改用 16 点（加性 0.168 vs 交互 0.180）与去重 13 点（0.171 vs 0.193）。9 点数字只作为过程记录保留并标注其局限。",
+        "explainedBy": null,
+        "at": 1793976433893,
+        "resolvedAt": 1793976485102
+      }
+    ],
+    "lessons": [],
+    "ontology": null,
+    "lexicon": {
+      "terms": [
+        {
+          "id": "impurity",
+          "label": "杂质含量",
+          "gloss": "与收率同批读出的杂质，按分数计（0–1）；上限 0.115 即 11.5%",
+          "kind": "measure",
+          "unit": "1",
+          "aliases": [],
+          "parent": null,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/concepts/impurity.json"
+        },
+        {
+          "id": "impurity_surface",
+          "label": "杂质响应面",
+          "gloss": "(x,y)→杂质 的映射，用于判断 0.115 约束是否活跃",
+          "kind": "phenomenon",
+          "aliases": [],
+          "parent": null,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/concepts/impurity_surface.json"
+        },
+        {
+          "id": "input_x",
+          "label": "输入 x",
+          "gloss": "归一化到 0–1 的第一配方变量（bounds 为 [0,1]）",
+          "kind": "measure",
+          "unit": "1",
+          "aliases": [],
+          "parent": null,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/concepts/input_x.json"
+        },
+        {
+          "id": "input_y",
+          "label": "输入 y",
+          "gloss": "归一化到 0–1 的第二配方变量（bounds 为 [0,1]）",
+          "kind": "measure",
+          "unit": "1",
+          "aliases": [],
+          "parent": null,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/concepts/input_y.json"
+        },
+        {
+          "id": "instrument",
+          "label": "测量仪器",
+          "gloss": "给出 value 与 impurity 读数的装置；本次全程为 original，calibrate 返回 offset 0",
+          "kind": "category",
+          "aliases": [],
+          "parent": null,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/concepts/instrument.json"
+        },
+        {
+          "id": "yield",
+          "label": "收率",
+          "gloss": "full/quick 测量给出的收率百分比；同一点重复读数含噪声，full 标称 sd 0.18、quick 0.45",
+          "kind": "measure",
+          "unit": "%",
+          "aliases": [],
+          "parent": null,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/concepts/yield.json"
+        },
+        {
+          "id": "yield_surface",
+          "label": "收率响应面",
+          "gloss": "(x,y)→收率 的映射，用二次面近似并给留一验证",
+          "kind": "phenomenon",
+          "aliases": [],
+          "parent": null,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/concepts/yield_surface.json"
+        }
+      ],
+      "predicates": [
+        {
+          "id": "feasible_impurity",
+          "label": "杂质可行性",
+          "gloss": "",
+          "kind": "defines",
+          "domain": "impurity_surface",
+          "range": {
+            "form": "statement"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/feasible_impurity.json"
+        },
+        {
+          "id": "has_noise_basis",
+          "label": "噪声与零点口径",
+          "gloss": "",
+          "kind": "defines",
+          "domain": "instrument",
+          "range": {
+            "form": "statement"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/has_noise_basis.json"
+        },
+        {
+          "id": "has_surface_structure",
+          "label": "曲面结构",
+          "gloss": "",
+          "kind": "defines",
+          "domain": "yield_surface",
+          "range": {
+            "form": "statement"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/has_surface_structure.json"
+        },
+        {
+          "id": "maximized_at",
+          "label": "极值位置",
+          "gloss": "",
+          "kind": "defines",
+          "domain": "yield_surface",
+          "range": {
+            "form": "statement"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/maximized_at.json"
+        },
+        {
+          "id": "measures_impurity",
+          "label": "测量杂质",
+          "gloss": "",
+          "kind": "measures",
+          "check": "同批读数、与杂质模型残差对照",
+          "domain": "instrument",
+          "range": {
+            "term": "impurity"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/measures_impurity.json"
+        },
+        {
+          "id": "measures_yield",
+          "label": "测量收率",
+          "gloss": "",
+          "kind": "measures",
+          "check": "同点重复 full 读数、与 calibrate 的 offset 对照",
+          "domain": "instrument",
+          "range": {
+            "term": "yield"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/measures_yield.json"
+        },
+        {
+          "id": "x_affects_impurity",
+          "label": "x 影响杂质",
+          "gloss": "",
+          "kind": "affects",
+          "shape": "increasing",
+          "domain": "input_x",
+          "range": {
+            "term": "impurity"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/x_affects_impurity.json"
+        },
+        {
+          "id": "x_affects_yield",
+          "label": "x 影响收率",
+          "gloss": "",
+          "kind": "affects",
+          "shape": "peak",
+          "domain": "input_x",
+          "range": {
+            "term": "yield"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/x_affects_yield.json"
+        },
+        {
+          "id": "y_affects_impurity",
+          "label": "y 影响杂质",
+          "gloss": "",
+          "kind": "affects",
+          "shape": "increasing",
+          "domain": "input_y",
+          "range": {
+            "term": "impurity"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/y_affects_impurity.json"
+        },
+        {
+          "id": "y_affects_yield",
+          "label": "y 影响收率",
+          "gloss": "",
+          "kind": "affects",
+          "shape": "peak",
+          "domain": "input_y",
+          "range": {
+            "term": "yield"
+          },
+          "functional": false,
+          "status": "admitted",
+          "basis": null,
+          "replacedBy": null,
+          "path": "clear/ontology/relations/y_affects_yield.json"
+        }
+      ]
+    },
+    "entities": [
+      {
+        "id": "impurity_surface_xy",
+        "type": "impurity_surface",
+        "label": "x–y 杂质响应面",
+        "basis": "16 个 full 点拟合的二次杂质模型",
+        "provenance": {
+          "kind": "named",
+          "ref": "reports/analysis.md"
+        },
+        "aliases": [],
+        "parent": null,
+        "path": "clear/ontology/entities/impurity_surface_xy.json"
+      },
+      {
+        "id": "instrument_original",
+        "type": "instrument",
+        "label": "original 仪器",
+        "basis": "全部读数的 instrument 字段与 calibrate 输出均为 original、offset 0",
+        "provenance": {
+          "kind": "named",
+          "ref": "lab/cal-01.json"
+        },
+        "aliases": [],
+        "parent": null,
+        "path": "clear/ontology/entities/instrument_original.json"
+      },
+      {
+        "id": "yield_surface_xy",
+        "type": "yield_surface",
+        "label": "x–y 收率响应面",
+        "basis": "16 个 full 点拟合的加性二次面",
+        "provenance": {
+          "kind": "named",
+          "ref": "lab/model-final.json"
+        },
+        "aliases": [],
+        "parent": null,
+        "path": "clear/ontology/entities/yield_surface_xy.json"
+      }
+    ],
+    "entityAssertions": [],
+    "hostHealth": [],
+    "workspace": {
+      "files": {
+        "clear/ontology/concepts/impurity_surface.json": {
+          "digest": "ab3d6e274b4b941c84aa2618b58ed6e67e641d78061f95fbdb035815b3311718",
+          "data": {
+            "gloss": "(x,y)→杂质 的映射，用于判断 0.115 约束是否活跃",
+            "id": "impurity_surface",
+            "kind": "phenomenon",
+            "label": "杂质响应面"
+          }
+        },
+        "clear/ontology/concepts/impurity.json": {
+          "digest": "a47bd0fd7ba952b08c5f0d988e3dcb7af88ae149b2207b175a17b71a1dee620e",
+          "data": {
+            "gloss": "与收率同批读出的杂质，按分数计（0–1）；上限 0.115 即 11.5%",
+            "id": "impurity",
+            "kind": "measure",
+            "label": "杂质含量",
+            "unit": "1"
+          }
+        },
+        "clear/ontology/concepts/input_x.json": {
+          "digest": "18842371168cb93b0744eb80b3ba2855d0812351cf7d27a67a9a7a54b8a552f6",
+          "data": {
+            "gloss": "归一化到 0–1 的第一配方变量（bounds 为 [0,1]）",
+            "id": "input_x",
+            "kind": "measure",
+            "label": "输入 x",
+            "unit": "1"
+          }
+        },
+        "clear/ontology/concepts/input_y.json": {
+          "digest": "65ef2b1a46a12cb8dd2ced87e45d5b3ed7ac80e7b0239a1313ffadc20f3eddee",
+          "data": {
+            "gloss": "归一化到 0–1 的第二配方变量（bounds 为 [0,1]）",
+            "id": "input_y",
+            "kind": "measure",
+            "label": "输入 y",
+            "unit": "1"
+          }
+        },
+        "clear/ontology/concepts/instrument.json": {
+          "digest": "9a80a4f3130d5e6fc041ebde28557a725827f2d97b7f4a2356851984283e5703",
+          "data": {
+            "gloss": "给出 value 与 impurity 读数的装置；本次全程为 original，calibrate 返回 offset 0",
+            "id": "instrument",
+            "kind": "category",
+            "label": "测量仪器"
+          }
+        },
+        "clear/ontology/concepts/yield_surface.json": {
+          "digest": "583979cdedba7a57145216948868e79a70e727e3ab183cedc39bdcecb1a77b54",
+          "data": {
+            "gloss": "(x,y)→收率 的映射，用二次面近似并给留一验证",
+            "id": "yield_surface",
+            "kind": "phenomenon",
+            "label": "收率响应面"
+          }
+        },
+        "clear/ontology/concepts/yield.json": {
+          "digest": "6277fbc6f936fc3dbe4ed58776f27ffb564d9b7dd11bad02fa32fffc80018e9a",
+          "data": {
+            "gloss": "full/quick 测量给出的收率百分比；同一点重复读数含噪声，full 标称 sd 0.18、quick 0.45",
+            "id": "yield",
+            "kind": "measure",
+            "label": "收率",
+            "unit": "%"
+          }
+        },
+        "clear/ontology/relations/feasible_impurity.json": {
+          "digest": "1b2fe12313a11ac1101f837398f1db9d5436a1d14cceeddb975d4add92a63c99",
+          "data": {
+            "domain": "impurity_surface",
+            "id": "feasible_impurity",
+            "kind": "defines",
+            "label": "杂质可行性",
+            "range": {
+              "form": "statement"
+            }
+          }
+        },
+        "clear/ontology/relations/has_noise_basis.json": {
+          "digest": "dda7506c8631b775893b210a6c686aa9617c55dd32fdf782187950af433057d9",
+          "data": {
+            "domain": "instrument",
+            "id": "has_noise_basis",
+            "kind": "defines",
+            "label": "噪声与零点口径",
+            "range": {
+              "form": "statement"
+            }
+          }
+        },
+        "clear/ontology/relations/has_surface_structure.json": {
+          "digest": "7406040f07103278fead8335bc5b59a587ea30322e8e4e3cc96af8b7137d21ca",
+          "data": {
+            "domain": "yield_surface",
+            "id": "has_surface_structure",
+            "kind": "defines",
+            "label": "曲面结构",
+            "range": {
+              "form": "statement"
+            }
+          }
+        },
+        "clear/ontology/relations/maximized_at.json": {
+          "digest": "aa7de6ee18d2b1c1c8249f5a9e39268497828950a90c2e0daafb14b0413a1030",
+          "data": {
+            "domain": "yield_surface",
+            "id": "maximized_at",
+            "kind": "defines",
+            "label": "极值位置",
+            "range": {
+              "form": "statement"
+            }
+          }
+        },
+        "clear/ontology/relations/measures_impurity.json": {
+          "digest": "bdbee4e8437d84a890406939ebd370ba3292dd66cae7737cc29040ac1fea95d6",
+          "data": {
+            "check": "同批读数、与杂质模型残差对照",
+            "domain": "instrument",
+            "id": "measures_impurity",
+            "kind": "measures",
+            "label": "测量杂质",
+            "range": "impurity"
+          }
+        },
+        "clear/ontology/relations/measures_yield.json": {
+          "digest": "16277ad160710e062afb07957eaa37523debebf072a92db524df1218844ce494",
+          "data": {
+            "check": "同点重复 full 读数、与 calibrate 的 offset 对照",
+            "domain": "instrument",
+            "id": "measures_yield",
+            "kind": "measures",
+            "label": "测量收率",
+            "range": "yield"
+          }
+        },
+        "clear/ontology/relations/x_affects_impurity.json": {
+          "digest": "8c3ca6e60561f7daeda2ebd80abb281171070ba9f35b385be7d1cc9775dbd4d2",
+          "data": {
+            "domain": "input_x",
+            "id": "x_affects_impurity",
+            "kind": "affects",
+            "label": "x 影响杂质",
+            "range": "impurity",
+            "shape": "increasing"
+          }
+        },
+        "clear/ontology/relations/x_affects_yield.json": {
+          "digest": "cf8f640465a2938565ffa238c14a89d79981daf6972b58fd46b139fabbdae472",
+          "data": {
+            "domain": "input_x",
+            "id": "x_affects_yield",
+            "kind": "affects",
+            "label": "x 影响收率",
+            "range": "yield",
+            "shape": "peak"
+          }
+        },
+        "clear/ontology/relations/y_affects_impurity.json": {
+          "digest": "2ff64dbd148dd58060dc68ec7464f383cd15b0cf23ceaffec25c2a90426d2c12",
+          "data": {
+            "domain": "input_y",
+            "id": "y_affects_impurity",
+            "kind": "affects",
+            "label": "y 影响杂质",
+            "range": "impurity",
+            "shape": "increasing"
+          }
+        },
+        "clear/ontology/relations/y_affects_yield.json": {
+          "digest": "8f2f7707e7e93ae2d802a1a6df5fa9e40d2490c3efbecf9096de3e13d38edc8e",
+          "data": {
+            "domain": "input_y",
+            "id": "y_affects_yield",
+            "kind": "affects",
+            "label": "y 影响收率",
+            "range": "yield",
+            "shape": "peak"
+          }
+        },
+        "clear/ontology/entities/impurity_surface_xy.json": {
+          "digest": "0c41ecd0e381624a07305b8c2c3ba14fda8cb9e4566861342230fcd1cb6f30f9",
+          "data": {
+            "basis": "16 个 full 点拟合的二次杂质模型",
+            "id": "impurity_surface_xy",
+            "label": "x–y 杂质响应面",
+            "provenance": {
+              "kind": "named",
+              "ref": "reports/analysis.md"
+            },
+            "type": "impurity_surface"
+          }
+        },
+        "clear/ontology/entities/instrument_original.json": {
+          "digest": "6cb90264874bf458d97666b2c4b61e664b909200db8091e6ff2728f57447f48c",
+          "data": {
+            "basis": "全部读数的 instrument 字段与 calibrate 输出均为 original、offset 0",
+            "id": "instrument_original",
+            "label": "original 仪器",
+            "provenance": {
+              "kind": "named",
+              "ref": "lab/cal-01.json"
+            },
+            "type": "instrument"
+          }
+        },
+        "clear/ontology/entities/yield_surface_xy.json": {
+          "digest": "6134ea23152182841be0d0f814144b0563e3000666b75edfd1947e8a4e588965",
+          "data": {
+            "basis": "16 个 full 点拟合的加性二次面",
+            "id": "yield_surface_xy",
+            "label": "x–y 收率响应面",
+            "provenance": {
+              "kind": "named",
+              "ref": "lab/model-final.json"
+            },
+            "type": "yield_surface"
+          }
+        },
+        "clear/knowledge/facts/f-78qael.json": {
+          "digest": "9a30e447193f45372631ebf1cc011a9b49749a8cd7242c306fad44491dd523c3",
+          "data": {
+            "id": "f-78qael",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-dfrfe9",
+            "text": "可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%",
+            "about": [
+              "yield_surface_xy",
+              "yield_surface",
+              "maximized_at",
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界",
+            "level": "L3",
+            "evidence": [
+              "e-mw52xoverjbj"
+            ],
+            "evidence_records": [
+              {
+                "id": "e-mw52xoverjbj",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-dfrfe9",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "(0.45,0.45) 附近 full 读数 94.7228–95.2801（均值 95.054）、(0.45,0.45) 单点 95.0719，均不低于已测最佳 94.693，也不低于事前 PI 下界 94.547；可行域内模型极值复算在 (0.452,0.448)。“约 94.9%”与事前预测 94.895/94.957 一致。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true,
+                "at": 0
+              },
+              {
+                "t": "evidence/recorded",
+                "id": "e-mw52xoverjbj",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-dfrfe9",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "(0.45,0.45) 附近 full 读数 94.7228–95.2801（均值 95.054）、(0.45,0.45) 单点 95.0719，均不低于已测最佳 94.693，也不低于事前 PI 下界 94.547；可行域内模型极值复算在 (0.452,0.448)。“约 94.9%”与事前预测 94.895/94.957 一致。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "x=0.4528, y=0.4476，预测 95.05%；在 (0.4517,0.4485) 的 4 次 full 读数 94.72/95.05/95.16/95.28，均值 95.05"
+                },
+                "predicate": "maximized_at",
+                "subject": {
+                  "id": "yield_surface_xy",
+                  "type": "yield_surface"
+                }
+              }
+            ],
+            "definitions": {
+              "maximized_at": "fnv:0e168600",
+              "yield_surface": "fnv:2868a8ff",
+              "impurity": "fnv:d916b361",
+              "instrument": "fnv:8ae62f56",
+              "yield": "fnv:b5e997fa",
+              "measures_yield": "fnv:50ab64f6"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793975906914,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793975906914,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/facts/f-cn6udq.json": {
+          "digest": "f21490e3b4c9678940462948ea2678721b9722c603f4707ea10fbcfc7bf1b1e3",
+          "data": {
+            "id": "f-cn6udq",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-r2abbn",
+            "text": "quick 模式与 full 模式读数之间存在系统性偏差（或噪声更大），需校准后才能混用",
+            "about": [
+              "instrument_original",
+              "instrument",
+              "has_noise_basis",
+              "yield",
+              "impurity"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "同一批点的 quick 与 full 读数差值在噪声 sd=0.18 以内且无系统方向",
+            "level": "L3",
+            "evidence": [
+              "e-mw52xovelu44"
+            ],
+            "evidence_records": [
+              {
+                "id": "e-mw52xovelu44",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-r2abbn",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "quick 残差 sd 0.459（标称 0.45）远大于 0.18，唯一同点对差 +0.724（4.0×0.18），推翻条件“差值在 0.18 内且无系统方向”不成立；但均值仅 +0.06，支持来自“噪声更大”而非已证实的系统偏差。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true,
+                "at": 0
+              },
+              {
+                "t": "evidence/recorded",
+                "id": "e-mw52xovelu44",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-r2abbn",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "quick 残差 sd 0.459（标称 0.45）远大于 0.18，唯一同点对差 +0.724（4.0×0.18），推翻条件“差值在 0.18 内且无系统方向”不成立；但均值仅 +0.06，支持来自“噪声更大”而非已证实的系统偏差。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "同一 original 仪器、calibrate offset=0；full 标称 sd 0.18、quick 0.45；5 个 quick 点相对 full 拟合残差均值 +0.06、sd 0.46，无系统偏移，但 quick 噪声约为 full 的 2.5 倍，故未混入拟合"
+                },
+                "predicate": "has_noise_basis",
+                "subject": {
+                  "id": "instrument_original",
+                  "type": "instrument"
+                }
+              }
+            ],
+            "definitions": {
+              "has_noise_basis": "fnv:e3fa03e8",
+              "instrument": "fnv:8ae62f56",
+              "impurity": "fnv:d916b361",
+              "yield": "fnv:b5e997fa"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793975906951,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793975906951,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/facts/f-wcwg6t.json": {
+          "digest": "ce809d9f1aad182a3c82c750fd903029eae89cc1b39f3b34785ed283ca505a02",
+          "data": {
+            "id": "f-wcwg6t",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-gux36c",
+            "text": "预测最优点 (0.45,0.45) 的杂质约 0.085，远低于 0.115，约束不活跃",
+            "about": [
+              "impurity_surface_xy",
+              "impurity_surface",
+              "feasible_impurity",
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "该点及其邻域实测杂质超过 0.115",
+            "level": "L3",
+            "evidence": [
+              "e-mw52xoverf0r"
+            ],
+            "evidence_records": [
+              {
+                "id": "e-mw52xoverf0r",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-gux36c",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "该点及邻域实测杂质 0.0819–0.0840，预测 0.0833，模型预测上界 0.1058 < 0.115；推翻条件（实测超 0.115）未出现，约束不活跃。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true,
+                "at": 0
+              },
+              {
+                "t": "evidence/recorded",
+                "id": "e-mw52xoverf0r",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-gux36c",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "该点及邻域实测杂质 0.0819–0.0840，预测 0.0833，模型预测上界 0.1058 < 0.115；推翻条件（实测超 0.115）未出现，约束不活跃。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "推荐点预测杂质 0.0832，4 次 full 实测 0.0819–0.0840，均 ≤ 0.115（余量约 0.031）；约束只在 (0.9,0.9) 附近被触碰（实测 0.1247）"
+                },
+                "predicate": "feasible_impurity",
+                "subject": {
+                  "id": "impurity_surface_xy",
+                  "type": "impurity_surface"
+                }
+              }
+            ],
+            "definitions": {
+              "feasible_impurity": "fnv:0a8c7b46",
+              "impurity_surface": "fnv:677d242b",
+              "impurity": "fnv:d916b361",
+              "instrument": "fnv:8ae62f56",
+              "yield": "fnv:b5e997fa"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793975906938,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793975906938,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/facts/f-x1arz0.json": {
+          "digest": "abdc570a9c4c54029e7139f36b9629abd4384f3bffaf7ca8555bab7e314be75d",
+          "data": {
+            "id": "f-x1arz0",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-173dc0",
+            "text": "收率响应面在 x,y 上近似加性二次，交互项可忽略",
+            "about": [
+              "yield_surface_xy",
+              "yield_surface",
+              "has_surface_structure",
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上",
+            "level": "L3",
+            "evidence": [
+              "e-mw52xove9auu"
+            ],
+            "evidence_records": [
+              {
+                "id": "e-mw52xove9auu",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-173dc0",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "复跑得加性 CV 0.16775、交互 CV 0.18048，交互并未比加性低出 0.18（差 −0.0127），交互系数 −0.108（物理 xy 尺度），报告有 9 点 0.0923/0.1142 与观测盒局限；推翻条件未触发。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true,
+                "at": 0
+              },
+              {
+                "t": "evidence/recorded",
+                "id": "e-mw52xove9auu",
+                "step": "review:79839a3c2d2d6e2830f952e3",
+                "plan": "review",
+                "hypothesis": "h-173dc0",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "复跑得加性 CV 0.16775、交互 CV 0.18048，交互并未比加性低出 0.18（差 −0.0127），交互系数 −0.108（物理 xy 尺度），报告有 9 点 0.0923/0.1142 与观测盒局限；推翻条件未触发。",
+                "refs": [
+                  "initial.json",
+                  "lab/cal-01.json",
+                  "lab/f-opt-1.json",
+                  "lab/f-val-a.json",
+                  "lab/model-final.json",
+                  "lab/q-0505.json",
+                  "reports/analysis.md",
+                  "submission.json",
+                  "method/response_surface.py"
+                ],
+                "origins": [
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/cal-01.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-opt-1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/f-val-a.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/model-final.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "lab/q-0505.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "reports/analysis.md"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "submission.json"
+                  },
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "method/response_surface.py",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "加性二次：yield = 84.883 + 24.074x + 21.081y − 26.583x² − 23.550y²（16 个 full 点，残差 sd 0.170）；交互模型留一 CV 0.180 > 加性 0.168"
+                },
+                "predicate": "has_surface_structure",
+                "subject": {
+                  "id": "yield_surface_xy",
+                  "type": "yield_surface"
+                }
+              }
+            ],
+            "definitions": {
+              "has_surface_structure": "fnv:0e168600",
+              "yield_surface": "fnv:2868a8ff",
+              "impurity": "fnv:d916b361",
+              "instrument": "fnv:8ae62f56",
+              "yield": "fnv:b5e997fa"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793975906889,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793975906889,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/facts/f-e2bsz3.json": {
+          "digest": "037c293796b0a4900df33224d57aaedc0de848a8a7baa07c6ee382fd9e794d27",
+          "data": {
+            "id": "f-e2bsz3",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-173dc0",
+            "text": "收率响应面在 x,y 上近似加性二次，交互项可忽略",
+            "about": [
+              "yield_surface_xy",
+              "yield_surface",
+              "has_surface_structure",
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "补充测量后交互模型的留一交叉验证误差比加性模型低出噪声 sd=0.18 以上",
+            "level": "L3",
+            "evidence": [
+              "e-80yurv"
+            ],
+            "evidence_records": [
+              {
+                "t": "evidence/recorded",
+                "id": "e-80yurv",
+                "step": "goal:g-mw52i41h09ow",
+                "plan": "goal",
+                "hypothesis": "h-173dc0",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "复跑 16 点加性 CV 0.16775、交互 0.18048，交互未比加性低出 0.18（反而高 0.0127）；9 点 0.09239/0.11418；物理交互系数 −0.108，脚本 SE≈0.140，不显著。报告去重 13 点 0.155/0.156 与复跑 0.171/0.193 不符，但 16 点结论不变。",
+                "refs": [
+                  "initial.json"
+                ],
+                "origins": [
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+                  },
+                  {
+                    "kind": "evaluator-session",
+                    "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "加性二次：yield = 84.883 + 24.074x + 21.081y − 26.583x² − 23.550y²（16 个 full 点，残差 sd 0.170）；交互模型留一 CV 0.180 > 加性 0.168"
+                },
+                "predicate": "has_surface_structure",
+                "subject": {
+                  "id": "yield_surface_xy",
+                  "type": "yield_surface"
+                }
+              }
+            ],
+            "definitions": {
+              "has_surface_structure": "fnv:0e168600",
+              "yield_surface": "fnv:2868a8ff",
+              "impurity": "fnv:d916b361",
+              "instrument": "fnv:8ae62f56",
+              "yield": "fnv:b5e997fa"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793976433943,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793976433943,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/facts/f-hglh9t.json": {
+          "digest": "78dd3761cb71c673058a8576fff9e3d2e5a736dfd85536b2acc02e7a51130d4d",
+          "data": {
+            "id": "f-hglh9t",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-dfrfe9",
+            "text": "可行域内收率最大点在 (0.45,0.45) 附近，full 读数约 94.9%",
+            "about": [
+              "yield_surface_xy",
+              "yield_surface",
+              "maximized_at",
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "在 (0.45,0.45) 附近 full 测量收率低于已测最佳 94.693% 或明显低于预测区间下界",
+            "level": "L3",
+            "evidence": [
+              "e-ah7wjl"
+            ],
+            "evidence_records": [
+              {
+                "t": "evidence/recorded",
+                "id": "e-ah7wjl",
+                "step": "goal:g-mw52i41h09ow",
+                "plan": "goal",
+                "hypothesis": "h-dfrfe9",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "4 次 full 94.7228–95.2801、均值 95.054，均 ≥94.6927；(0.45,0.45) 单测 95.0719；16 点极值复算 (0.4528,0.4476)、预测 95.05，最低读数仍高于 16 点 PI 下界 94.676 与 10 点 94.547。「约 94.9%」与预测 94.895/94.957 一致，推翻条件未触发；但 PI 下界低于 94.693，改善不显著。",
+                "refs": [
+                  "initial.json"
+                ],
+                "origins": [
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+                  },
+                  {
+                    "kind": "evaluator-session",
+                    "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "x=0.4528, y=0.4476，预测 95.05%；在 (0.4517,0.4485) 的 4 次 full 读数 94.72/95.05/95.16/95.28，均值 95.05"
+                },
+                "predicate": "maximized_at",
+                "subject": {
+                  "id": "yield_surface_xy",
+                  "type": "yield_surface"
+                }
+              }
+            ],
+            "definitions": {
+              "maximized_at": "fnv:0e168600",
+              "yield_surface": "fnv:2868a8ff",
+              "impurity": "fnv:d916b361",
+              "instrument": "fnv:8ae62f56",
+              "yield": "fnv:b5e997fa",
+              "measures_yield": "fnv:50ab64f6"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793976433965,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793976433965,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/facts/f-qv5ved.json": {
+          "digest": "9849ded714c52fd79809bc4ccd5f8d0faadd196dd56dc7b4faeebd503d5bed5d",
+          "data": {
+            "id": "f-qv5ved",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-gux36c",
+            "text": "预测最优点 (0.45,0.45) 的杂质约 0.085，远低于 0.115，约束不活跃",
+            "about": [
+              "impurity_surface_xy",
+              "impurity_surface",
+              "feasible_impurity",
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "该点及其邻域实测杂质超过 0.115",
+            "level": "L3",
+            "evidence": [
+              "e-t7kyvh"
+            ],
+            "evidence_records": [
+              {
+                "t": "evidence/recorded",
+                "id": "e-t7kyvh",
+                "step": "goal:g-mw52i41h09ow",
+                "plan": "goal",
+                "hypothesis": "h-gux36c",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "该点 4 次 full 杂质 0.0819–0.0840，邻域 val/quick 0.0787–0.0921，均 ≤0.115；16 点模型预测 0.0833、上界 0.1041（报告 0.1058 是 10 点值）远低于 0.115；仅 (0.9,0.9)=0.1247 越限。推翻条件未触发。",
+                "refs": [
+                  "initial.json"
+                ],
+                "origins": [
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+                  },
+                  {
+                    "kind": "evaluator-session",
+                    "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "推荐点预测杂质 0.0832，4 次 full 实测 0.0819–0.0840，均 ≤ 0.115（余量约 0.031）；约束只在 (0.9,0.9) 附近被触碰（实测 0.1247）"
+                },
+                "predicate": "feasible_impurity",
+                "subject": {
+                  "id": "impurity_surface_xy",
+                  "type": "impurity_surface"
+                }
+              }
+            ],
+            "definitions": {
+              "feasible_impurity": "fnv:0a8c7b46",
+              "impurity_surface": "fnv:677d242b",
+              "impurity": "fnv:d916b361",
+              "instrument": "fnv:8ae62f56",
+              "yield": "fnv:b5e997fa"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793976433980,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793976433980,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/facts/f-ze0ztb.json": {
+          "digest": "f699d3574d6337e8f7af9c32fa55a5e6b69ec387168100298ece4ba4c3601db8",
+          "data": {
+            "id": "f-ze0ztb",
+            "goal": "g-mw52i41h09ow",
+            "hypothesis": "h-r2abbn",
+            "text": "quick 模式与 full 模式读数之间存在系统性偏差（或噪声更大），需校准后才能混用",
+            "about": [
+              "instrument_original",
+              "instrument",
+              "has_noise_basis",
+              "yield",
+              "impurity"
+            ],
+            "scope": "条件 范围=x,y∈[0,1]、杂质上限=0.115、总预算=30",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "refute_when": "同一批点的 quick 与 full 读数差值在噪声 sd=0.18 以内且无系统方向",
+            "level": "L3",
+            "evidence": [
+              "e-wce3wh"
+            ],
+            "evidence_records": [
+              {
+                "t": "evidence/recorded",
+                "id": "e-wce3wh",
+                "step": "goal:g-mw52i41h09ow",
+                "plan": "goal",
+                "hypothesis": "h-r2abbn",
+                "verdict": "support",
+                "level": "L3",
+                "evaluator": "independent",
+                "basis": "5 个 quick 对 full 面残差 +0.49/+0.03/−0.71/+0.23/+0.24，sd 0.459（标称 0.45）远大于 full 的 0.18；唯一同点 (0.5,0.5) quick−full=+0.724，差值不在 0.18 内，推翻条件不成立；均值 +0.06 不支持系统偏移，支持来自「噪声更大」一支。",
+                "refs": [
+                  "initial.json"
+                ],
+                "origins": [
+                  {
+                    "kind": "audit-card",
+                    "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json"
+                  },
+                  {
+                    "kind": "evaluator-session",
+                    "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83"
+                  },
+                  {
+                    "kind": "artifact",
+                    "path": "initial.json",
+                    "from_basis": true
+                  }
+                ],
+                "anchor": "auditor",
+                "basis_reviewable": true
+              }
+            ],
+            "assertions": [
+              {
+                "object": {
+                  "kind": "statement",
+                  "value": "同一 original 仪器、calibrate offset=0；full 标称 sd 0.18、quick 0.45；5 个 quick 点相对 full 拟合残差均值 +0.06、sd 0.46，无系统偏移，但 quick 噪声约为 full 的 2.5 倍，故未混入拟合"
+                },
+                "predicate": "has_noise_basis",
+                "subject": {
+                  "id": "instrument_original",
+                  "type": "instrument"
+                }
+              }
+            ],
+            "definitions": {
+              "has_noise_basis": "fnv:e3fa03e8",
+              "instrument": "fnv:8ae62f56",
+              "impurity": "fnv:d916b361",
+              "yield": "fnv:b5e997fa"
+            },
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "established",
+            "review": null,
+            "at": 1793976433997,
+            "history": [
+              {
+                "event": "promoted",
+                "at": 1793976433997,
+                "level": "L3"
+              }
+            ]
+          }
+        },
+        "clear/knowledge/lessons/l-5pofwr.json": {
+          "digest": "c0c6a43c1c75129aca9aba8c1f9b2d68a657f81c45e63f51de6284e31e57062b",
+          "data": {
+            "id": "l-5pofwr",
+            "goal": "g-mw52i41h09ow",
+            "text": "工具给的 best_measured 是单次最大值，当结论口径要用重复均值，避免把选择偏差当改善。",
+            "kind": "shortcut",
+            "about": [
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "evidence": "第 u4 条：best_measured 95.28 比 4 次均值 95.054 高 +0.23。",
+            "boundary": "同坐标有多次重复时。",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "basis": "model-final:55-59 的 best_measured=95.2801 是 4 次重复最大值，均值 95.054（+0.23）；报告结论改用均值，照做可避免选择偏差。",
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "active",
+            "at": 1793976434010
+          }
+        },
+        "clear/knowledge/lessons/l-dif233.json": {
+          "digest": "8586fa78ee211d0c609bbeee5a2433be734ff50728e84203eed3615a07673023",
+          "data": {
+            "id": "l-dif233",
+            "goal": "g-mw52i41h09ow",
+            "text": "初始设计点残差远小于标称噪声时，该批的 CV 会偏乐观，决策前用去重/扩样本重算一遍。",
+            "kind": "check",
+            "about": [
+              "yield_surface",
+              "yield",
+              "impurity",
+              "instrument"
+            ],
+            "evidence": "第 u6 条：初始 9 点残差 sd 0.062，后 7 点约 0.19；去重 13 点 CV 0.155 vs 0.156。",
+            "boundary": "小样本（≤10 点）拟合约 5 个参数时尤其要查。",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "basis": "初始 9 点残差 sd 0.062（4 df）远低于标称 0.18，9 点 CV 0.092 偏乐观；16 点重算 0.168 后结论不变。报告 13 点去重 0.155/0.156 与复跑 0.171/0.193 不符，重算口径仍需固定。",
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "active",
+            "at": 1793976434006
+          }
+        },
+        "clear/knowledge/lessons/l-n04ahh.json": {
+          "digest": "56f614e3395a9b50a19db066fded60e5f68a3f72b977cf389f41592f54e61781",
+          "data": {
+            "id": "l-n04ahh",
+            "goal": "g-mw52i41h09ow",
+            "text": "同一坐标的重复读数若按时间单调上升，先排查漂移/顺序效应，再下\"优于基线\"的结论。",
+            "kind": "trap",
+            "about": [
+              "yield",
+              "instrument",
+              "impurity"
+            ],
+            "evidence": "评估者第 u5 条：f-opt-1→f-opt-4 从 94.7228 单调升到 95.2801，初稿未讨论。",
+            "boundary": "重复次数≥3 且跨度覆盖多次实验时适用。",
+            "scope_spec": {
+              "conditions": {
+                "范围": "x,y∈[0,1]",
+                "杂质上限": "0.115",
+                "总预算": "30"
+              },
+              "ranges": {}
+            },
+            "basis": "f-opt-1:4→f-opt-4:4 单调升 94.7228→95.2801（极差 0.557）；报告局限 6 已讨论漂移/顺序并给出去伪后约 +0.15，照做可避免把漂移当改善。",
+            "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+            "status": "active",
+            "at": 1793976434001
+          }
+        }
+      },
+      "integrity": []
+    },
+    "ontologyProblems": [],
+    "language": "zh",
+    "inFlight": null,
+    "written": [
+      "reports/analysis.md",
+      "submission.json"
+    ],
+    "sessionId": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+    "integrityReceipts": {
+      "clear/goals/g-mw52i41h09ow.md": {
+        "path": "clear/goals/g-mw52i41h09ow.md",
+        "digest": "17af7e5499e03ba4f7e8918f2595860e2fc86262c8d09e788c5ab37169c30389",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw52qkhjpvrm",
+        "revision": 2
+      },
+      "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json": {
+        "path": "clear/evidence/audits/733a8fef00179da09e2d29df04b58dd447bafc1b2af257b6f28b17be6dd94bd2/bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.json",
+        "digest": "399b28a7cf6798af4806dcb7778c60affa475ed6d182e65dbe350baa9dbf9ada",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw52xotpelsp",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-x1arz0.json": {
+        "path": "clear/knowledge/facts/f-x1arz0.json",
+        "digest": "abdc570a9c4c54029e7139f36b9629abd4384f3bffaf7ca8555bab7e314be75d",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw52xow9non5",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-78qael.json": {
+        "path": "clear/knowledge/facts/f-78qael.json",
+        "digest": "9a30e447193f45372631ebf1cc011a9b49749a8cd7242c306fad44491dd523c3",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw52xowysp7m",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-wcwg6t.json": {
+        "path": "clear/knowledge/facts/f-wcwg6t.json",
+        "digest": "ce809d9f1aad182a3c82c750fd903029eae89cc1b39f3b34785ed283ca505a02",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw52xoxmnuir",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-cn6udq.json": {
+        "path": "clear/knowledge/facts/f-cn6udq.json",
+        "digest": "f21490e3b4c9678940462948ea2678721b9722c603f4707ea10fbcfc7bf1b1e3",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw52xoxz7gzn",
+        "revision": 1
+      },
+      "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json": {
+        "path": "clear/evidence/audits/aa5aad563087ae30509625b0336bf6ec4faed24df2f446077232f798770b38f9/95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.json",
+        "digest": "b39c99ef0758f51ca5474f794aeaa82e77981d0976df8b4b5f5c186ec9a8b1eb",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zj5owdu",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-e2bsz3.json": {
+        "path": "clear/knowledge/facts/f-e2bsz3.json",
+        "digest": "037c293796b0a4900df33224d57aaedc0de848a8a7baa07c6ee382fd9e794d27",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zkn7gei",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-hglh9t.json": {
+        "path": "clear/knowledge/facts/f-hglh9t.json",
+        "digest": "78dd3761cb71c673058a8576fff9e3d2e5a736dfd85536b2acc02e7a51130d4d",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zl9lo2b",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-qv5ved.json": {
+        "path": "clear/knowledge/facts/f-qv5ved.json",
+        "digest": "9849ded714c52fd79809bc4ccd5f8d0faadd196dd56dc7b4faeebd503d5bed5d",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zlpxgda",
+        "revision": 1
+      },
+      "clear/knowledge/facts/f-ze0ztb.json": {
+        "path": "clear/knowledge/facts/f-ze0ztb.json",
+        "digest": "f699d3574d6337e8f7af9c32fa55a5e6b69ec387168100298ece4ba4c3601db8",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zm5cfto",
+        "revision": 1
+      },
+      "clear/knowledge/lessons/l-n04ahh.json": {
+        "path": "clear/knowledge/lessons/l-n04ahh.json",
+        "digest": "56f614e3395a9b50a19db066fded60e5f68a3f72b977cf389f41592f54e61781",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zm95rvg",
+        "revision": 1
+      },
+      "clear/knowledge/lessons/l-dif233.json": {
+        "path": "clear/knowledge/lessons/l-dif233.json",
+        "digest": "8586fa78ee211d0c609bbeee5a2433be734ff50728e84203eed3615a07673023",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zme3nk0",
+        "revision": 1
+      },
+      "clear/knowledge/lessons/l-5pofwr.json": {
+        "path": "clear/knowledge/lessons/l-5pofwr.json",
+        "digest": "c0c6a43c1c75129aca9aba8c1f9b2d68a657f81c45e63f51de6284e31e57062b",
+        "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+        "event": "write-mw538zmipd81",
+        "revision": 1
+      }
+    },
+    "auditCopies": {
+      "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc": {
+        "t": "audit/copy",
+        "id": "audit:pending:6cc13c7cc2159bcd7a980cd9c77a36fc",
+        "directory": "/tmp/clearai060-native-comparison/workspaces/additive-C/.clearai-reruns/6fcbeb2bb2d23169f622e45f9a481b64096ee4b0ba8b19e65b0e17d11bd53ad8",
+        "files": 48,
+        "bytes": 54936,
+        "elapsedMs": 220.94052000000374,
+        "status": "ready",
+        "at": 1793975906830,
+        "cleanup": "removed",
+        "cleanupElapsedMs": 8.415524000069126
+      },
+      "audit:pending:e7cc2ccad498ea66a7a0332d91756945": {
+        "t": "audit/copy",
+        "id": "audit:pending:e7cc2ccad498ea66a7a0332d91756945",
+        "directory": "/tmp/clearai060-native-comparison/workspaces/additive-C/.clearai-reruns/7cc7dcb91d15370b6df8038acd6e1157745ffaa82d44cb9835a28a9fa89e90d9",
+        "files": 54,
+        "bytes": 94253,
+        "elapsedMs": 107.45268200000282,
+        "status": "ready",
+        "at": 1793976433909,
+        "cleanup": "removed",
+        "cleanupElapsedMs": 8.76665800018236
+      }
+    }
+  },
+  "violations": {
+    "silent_closure": false,
+    "unresolved_reference_completed": false,
+    "duplicate_dispatch": false,
+    "pending_restored_without_review": false,
+    "outside_historical_retraction": false,
+    "repeated_card_failure": false,
+    "isolation_failed": false
+  },
+  "driverDigest": "3fc1d44e627667eaa5d60754143fd63803e704f5ced428fc40b39d71c289db14",
+  "logs": [
+    {
+      "session": "session-native-037a6300-9c63-4f64-8ab4-3c0b7f41388e",
+      "cursor": 429,
+      "path": "cb179f787383a62c67e0177538ee6f65f5e02e76adeab3216c6e84b6b7f54fa7.jsonl"
+    },
+    {
+      "session": "d66c274f-4b07-4ab4-831f-afb3c97e94a1",
+      "cursor": 137,
+      "path": "bacc92be80e0da1376ff524f7f5eed921f74610220de0f817f5b796cdfc0aaf1.jsonl"
+    },
+    {
+      "session": "cbcd53c4-4acd-4589-b492-aa93c6589f83",
+      "cursor": 179,
+      "path": "95b6fde6f8c759aafad3a2a8064edb3b4b091dde8dcba7003925816ae717f2bc.jsonl"
+    }
+  ],
+  "installation": {
+    "version": "0.6.0",
+    "packageDigest": "2cdb10a0e1aedaf9181a8762b293e8f113ee6369f1bb194987fc10f0a0f519f9",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoningEffort": "medium"
+    },
+    "runtime": {
+      "node": "v24.22.1",
+      "cli": "0.2.2-rc.1",
+      "agent": "0.2.2-rc.1"
+    },
+    "runtimeDigest": "ed75c3e328a848fbb1db9ecd9cf43db3d5ff6f6baa6e138427add304cd78885d"
+  },
+  "process": {
+    "code": 1,
+    "signal": null
+  }
+}

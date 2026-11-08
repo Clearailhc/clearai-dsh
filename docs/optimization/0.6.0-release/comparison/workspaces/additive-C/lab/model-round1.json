@@ -1,0 +1,144 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "additive",
+  "models": [
+    {
+      "kind": "additive",
+      "cv_rmse": 0.3254938874430227,
+      "coefficients": [
+        94.98303039687917,
+        0.012431851692438656,
+        -1.1030406144100058,
+        -6.620037021240272,
+        -5.468741727858492
+      ]
+    },
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.33245455317688866,
+      "coefficients": [
+        94.98303039687916,
+        0.012431851692438656,
+        -1.103040614410005,
+        -6.620037021240262,
+        -5.468741727858493,
+        -0.04246166498390812
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": {
+    "x": 0.5,
+    "y": 0.45,
+    "predicted_value": 95.03864704104159,
+    "prediction_interval": [
+      94.3878051568401,
+      95.68948892524307
+    ],
+    "predicted_impurity_upper": 0.1061211707513123,
+    "experiment_cost": 3,
+    "within_observed_bounding_box": true,
+    "verified": false
+  },
+  "next_experiments": [
+    {
+      "x": 0.09999999999999998,
+      "y": 0.09999999999999998,
+      "predicted_value": 88.11869900763001,
+      "prediction_interval": [
+        87.37576220684791,
+        88.86163580841212
+      ],
+      "predicted_impurity_upper": 0.08503473395784311,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.9,
+      "y": 0.09999999999999998,
+      "predicted_value": 88.13858997033792,
+      "prediction_interval": [
+        87.39565316955581,
+        88.88152677112002
+      ],
+      "predicted_impurity_upper": 0.10966904904404162,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.15000000000000002,
+      "y": 0.09999999999999998,
+      "predicted_value": 89.11294774598531,
+      "prediction_interval": [
+        88.3889922733644,
+        89.83690321860622
+      ],
+      "predicted_impurity_upper": 0.08473898135428888,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    }
+  ],
+  "best_measured": {
+    "x": 0.5,
+    "y": 0.5,
+    "value": 95.07410388414509,
+    "impurity": 0.08702456503815756
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/probe-q-0505.json",
+      "lab/q-0.3-0.3.json",
+      "lab/q-0.3-0.5.json",
+      "lab/q-0.3-0.7.json",
+      "lab/q-0.5-0.3.json",
+      "lab/q-0.5-0.7.json",
+      "lab/q-0.7-0.3.json",
+      "lab/q-0.7-0.5.json",
+      "lab/q-0.7-0.7.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:30e52e8d7ff537575f97834bf7193352889892a18cfd6a1a524f1ae6eedb466d",
+      "lab/probe-q-0505.json": "sha256:01b6c6342ab7932c2bac67186edaa805b41af967e97e9804a70652153756f99d",
+      "lab/q-0.3-0.3.json": "sha256:9ce48a0bd7050aeb36add5781fb326b432ca530ca537f57870d6423cdd7359a7",
+      "lab/q-0.3-0.5.json": "sha256:88b095a1d6eecd33eb2d90c41e003ee198439e88f8150115531a386514b6e4a1",
+      "lab/q-0.3-0.7.json": "sha256:c79f1adff6701b96564b38b05696ab1080165b731782d3617f80c26460fe73b9",
+      "lab/q-0.5-0.3.json": "sha256:b57f8d6a850fa41f893f6f3b3cb4081281e5738346c3da0a5774d0f6fe8846a1",
+      "lab/q-0.5-0.7.json": "sha256:50f98d5cf49066ac0a8fa6d03a1eebd90cefdbeea93203ef1ce0d13d5e55c82b",
+      "lab/q-0.7-0.3.json": "sha256:09e6b04f03ea8fa751e97c24a4a7c809a1e104cde857790fbbdfd9bda06cc632",
+      "lab/q-0.7-0.5.json": "sha256:7b31b82840922825c2867ea6e4835431bf7da26fd380b9a9182e54a69b46f243",
+      "lab/q-0.7-0.7.json": "sha256:adfb7496174ddf44f3b56761d82a76102f30bf6be59ccd3e68249368313542d8"
+    }
+  }
+}

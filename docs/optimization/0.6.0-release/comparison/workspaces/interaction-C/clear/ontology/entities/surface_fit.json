@@ -1,0 +1,10 @@
+{
+  "id": "surface_fit",
+  "type": "response_surface",
+  "label": "收率-杂质二次响应面(22 条观测)",
+  "basis": "method/response_surface.py 对 initial.json 与 lab/*.json 的拟合",
+  "provenance": {
+    "kind": "named",
+    "ref": "lab/model-final.json"
+  }
+}

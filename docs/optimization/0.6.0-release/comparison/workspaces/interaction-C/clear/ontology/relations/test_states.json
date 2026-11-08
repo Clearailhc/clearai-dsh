@@ -1,0 +1,8 @@
+{
+  "id": "test_states",
+  "label": "检验陈述",
+  "range": {
+    "form": "statement"
+  },
+  "gloss": "对拟合面或仪表的可核对陈述;候选假设,未升格为因果结论。"
+}

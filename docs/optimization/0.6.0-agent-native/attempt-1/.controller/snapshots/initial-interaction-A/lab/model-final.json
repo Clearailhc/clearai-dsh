@@ -1,0 +1,90 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.2006621514018933,
+      "coefficients": [
+        95.38193734558081,
+        3.8123670202231223,
+        -1.597874170187203,
+        -6.836549056349117,
+        -5.691297792260011,
+        5.08573125309076
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 3.342516500784701,
+      "coefficients": [
+        95.36287078446017,
+        3.791675110835766,
+        -1.5868821060889473,
+        -6.851545900578945,
+        -5.65221509223333
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": null,
+  "next_experiments": [],
+  "best_measured": {
+    "x": 0.6,
+    "y": 0.55,
+    "value": 95.99001505081033,
+    "impurity": 0.09387766606901192
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/f-0.5-0.5.json",
+      "lab/f-0.65-0.5.json",
+      "lab/f-0.60-0.45.json",
+      "lab/f-0.70-0.50.json",
+      "lab/f-0.60-0.55.json",
+      "lab/f-0.55-0.50.json",
+      "lab/f-0.75-0.45.json",
+      "lab/f-final-0.64-0.49.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:626ba8f9edf0bad18fb1ed7a2e1703e1621fc2ef092bc9fb4ceaa295cc7cc6a7",
+      "lab/f-0.5-0.5.json": "sha256:64423fceb729aa087355712b5d26292138cf82e72770a0efd5d1da86e5a6e28b",
+      "lab/f-0.65-0.5.json": "sha256:79ad1ec7ead970b8bcc40ac2fb76fde1b9ba835ec0ba6d50376c30dfef61d0b8",
+      "lab/f-0.60-0.45.json": "sha256:57556896428a303c5c905a838805a2b804efcb2d05c64c22adb1914395e60d6a",
+      "lab/f-0.70-0.50.json": "sha256:763b604f662041bc53d6591505a344b52710ec469517984354670fbf1e913415",
+      "lab/f-0.60-0.55.json": "sha256:4830fb9da23dec218fcce4207bff095392edca6204bf24a6dc8891e06c4097ca",
+      "lab/f-0.55-0.50.json": "sha256:7e3a6b6b48fb27b455558d2a7d3af59d8a46f6fd83db8f2e25b3855ad8ad0a74",
+      "lab/f-0.75-0.45.json": "sha256:caf80d9050c8f66055aab872bbd1acce6ea5afbd201706c9621b9998419e1452",
+      "lab/f-final-0.64-0.49.json": "sha256:8a61f65dc1d1f52a8cb57700f804b2c62ff2263d0b7be451a50d09713ef018a8"
+    }
+  }
+}

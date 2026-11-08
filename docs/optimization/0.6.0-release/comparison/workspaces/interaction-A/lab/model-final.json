@@ -1,0 +1,140 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.26438402867108407,
+      "coefficients": [
+        95.18724096714027,
+        -0.17758280145143956,
+        -0.0025508569166030133,
+        -6.609513898908877,
+        -5.871653122411681,
+        6.374413782724783
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 4.085297334357715,
+      "coefficients": [
+        95.18758507900459,
+        -0.1775892563998145,
+        -0.0025544429990765555,
+        -6.60987204992737,
+        -5.87201171272529
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": {
+    "x": 0.49,
+    "y": 0.49,
+    "predicted_value": 95.18840093901218,
+    "prediction_interval": [
+      94.72642655848253,
+      95.65037531954184
+    ],
+    "predicted_impurity_upper": 0.10757816902398329,
+    "experiment_cost": 3,
+    "within_observed_bounding_box": true,
+    "verified": false
+  },
+  "next_experiments": [
+    {
+      "x": 0.09999999999999998,
+      "y": 0.09999999999999998,
+      "predicted_value": 91.42302582113341,
+      "prediction_interval": [
+        90.85652151538696,
+        91.98953012687986
+      ],
+      "predicted_impurity_upper": 0.08487676186208298,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.9,
+      "y": 0.09999999999999998,
+      "predicted_value": 82.97964369692338,
+      "prediction_interval": [
+        82.41334874866925,
+        83.5459386451775
+      ],
+      "predicted_impurity_upper": 0.10882348064480947,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.09999999999999998,
+      "y": 0.10999999999999999,
+      "predicted_value": 91.5065284221397,
+      "prediction_interval": [
+        90.94505728419479,
+        92.0679995600846
+      ],
+      "predicted_impurity_upper": 0.08518454320412341,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    }
+  ],
+  "best_measured": {
+    "x": 0.5,
+    "y": 0.5,
+    "value": 95.44487499391182,
+    "impurity": 0.0878692502900575
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "lab/input-final.json",
+    "measurements": [
+      "lab/full-0.3-0.3.json",
+      "lab/full-0.7-0.3.json",
+      "lab/full-0.3-0.7.json",
+      "lab/full-0.7-0.7.json",
+      "lab/full-opt-1.json",
+      "lab/full-center-rep.json",
+      "lab/full-opt-1-rep.json"
+    ],
+    "digests": {
+      "lab/input-final.json": "sha256:2e476952822cff280ad2ecfb42ab03996f54d57b5884752f11c089857825b9f6",
+      "lab/full-0.3-0.3.json": "sha256:23ccd45dd5d31f3088cbe71753fd87789d1000d7c4512c089c0ebef5a9d8e65c",
+      "lab/full-0.7-0.3.json": "sha256:094b8fa3da9f3e0ca1206bfc0571efae69dd026792e905a895fba6b3beb20136",
+      "lab/full-0.3-0.7.json": "sha256:2a62903a9448955f2bc6fe13a03a2f57671733f1c8a5b8f1a84a8d11915e820a",
+      "lab/full-0.7-0.7.json": "sha256:fa9fb56c9fedf9947d9fb357562597a7d0b74132ba7cb2e133b5e5db11a9b80d",
+      "lab/full-opt-1.json": "sha256:09df38e792886516fc85bad78b691ef633c2366671191fdf95d7a84d5f6015f3",
+      "lab/full-center-rep.json": "sha256:e29534f3d7cf0c424e5b6837e7692452d2868840824cfee701bc8de5e07fafb3",
+      "lab/full-opt-1-rep.json": "sha256:a2101eb91898f5f1927aafe60478acd391498cca35851bfbe4aa827adda9d2e6"
+    }
+  }
+}

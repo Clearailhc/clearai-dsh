@@ -1,0 +1,6 @@
+{
+  "id": "response_surface",
+  "label": "响应面",
+  "gloss": "收率/杂质对 (x,y) 的二次响应面拟合;预测不是测量。",
+  "kind": "category"
+}

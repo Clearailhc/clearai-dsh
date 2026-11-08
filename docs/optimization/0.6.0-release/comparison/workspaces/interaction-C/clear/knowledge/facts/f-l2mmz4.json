@@ -1,0 +1,218 @@
+{
+  "id": "f-l2mmz4",
+  "goal": "g-mw6mkhds4x2e",
+  "hypothesis": "h-5fwi2k",
+  "text": "quick 模式与 full 模式对同一 (x,y) 的收率读数无系统偏差,仅噪声更大(sd 0.45 vs 0.18),可混用于拟合。",
+  "about": [
+    "yield",
+    "instrument",
+    "instrument_original",
+    "test_states",
+    "var_x",
+    "var_y",
+    "impurity"
+  ],
+  "scope": "条件 变量范围=x,y∈[0,1]、杂质上限=0.115、预算=30 单位、仪表=original",
+  "scope_spec": {
+    "conditions": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    },
+    "ranges": {}
+  },
+  "refute_when": "同点 quick-full 配对差 |Δ| 持续超过 2 倍合并噪声(约 0.9),或 calibrate 显示仪表偏移需要校正。",
+  "level": "L3",
+  "evidence": [
+    "e-mw77uzbdxznf"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw77uzbdxznf",
+      "step": "review:a71ff33a44356b54a7f8595b",
+      "plan": "review",
+      "hypothesis": "h-5fwi2k",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "复跑一致;独立同点配对 2 组:(0.48,0.48)+0.172、(0.5,0.5)−0.087,|Δ|≪0.9;模式残差均值差 +0.09±0.17,残差 sd quick 0.465/full 0.182≈声明 0.45/0.18;只用 14 条 full 重拟合驻点 (0.488,0.491)、峰值 95.09,与混用 22 条的 (0.479,0.481)/95.14 仅差 ~0.01,支持可混用;cal_1/2/3 offset=0。配对表 4 行实为 2 个独立位置。",
+      "refs": [
+        "initial.json",
+        "lab/analysis-final.json",
+        "lab/cal_1.json",
+        "lab/f_0.45_0.45.json",
+        "lab/f_0.48_0.48.json",
+        "lab/f_0.49_0.49.json",
+        "lab/f_0.5_0.5_rep.json",
+        "lab/model-final.json",
+        "lab/q_0.3_0.5.json",
+        "submission.json",
+        "lab/analyze_final.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analysis-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal_1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.45_0.45.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.48_0.48.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.49_0.49.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.5_0.5_rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q_0.3_0.5.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/24396206998f24a19948f0d4820c2f46beb514903d491246d4ffd3f76fb22554/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analyze_final.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw77uzbdxznf",
+      "step": "review:a71ff33a44356b54a7f8595b",
+      "plan": "review",
+      "hypothesis": "h-5fwi2k",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "复跑一致;独立同点配对 2 组:(0.48,0.48)+0.172、(0.5,0.5)−0.087,|Δ|≪0.9;模式残差均值差 +0.09±0.17,残差 sd quick 0.465/full 0.182≈声明 0.45/0.18;只用 14 条 full 重拟合驻点 (0.488,0.491)、峰值 95.09,与混用 22 条的 (0.479,0.481)/95.14 仅差 ~0.01,支持可混用;cal_1/2/3 offset=0。配对表 4 行实为 2 个独立位置。",
+      "refs": [
+        "initial.json",
+        "lab/analysis-final.json",
+        "lab/cal_1.json",
+        "lab/f_0.45_0.45.json",
+        "lab/f_0.48_0.48.json",
+        "lab/f_0.49_0.49.json",
+        "lab/f_0.5_0.5_rep.json",
+        "lab/model-final.json",
+        "lab/q_0.3_0.5.json",
+        "submission.json",
+        "lab/analyze_final.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analysis-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal_1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.45_0.45.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.48_0.48.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.49_0.49.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.5_0.5_rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q_0.3_0.5.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/24396206998f24a19948f0d4820c2f46beb514903d491246d4ffd3f76fb22554/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analyze_final.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "subject": {
+        "id": "instrument_original",
+        "type": "instrument"
+      },
+      "predicate": "test_states",
+      "object": {
+        "kind": "statement",
+        "value": "同点 quick−full 配对差 −0.42/−0.01/+0.17/+0.17,均值 ≈ −0.02;quick sd 0.45,full sd 0.18。"
+      }
+    }
+  ],
+  "definitions": {
+    "test_states": "fnv:1aa5340d",
+    "instrument": "fnv:691f3a51",
+    "impurity": "fnv:1f61c99f",
+    "var_x": "fnv:905200ac",
+    "var_y": "fnv:d33aa245",
+    "yield": "fnv:40e9f228"
+  },
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "status": "established",
+  "review": null,
+  "at": 1794105110900,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794105110900,
+      "level": "L3"
+    }
+  ]
+}

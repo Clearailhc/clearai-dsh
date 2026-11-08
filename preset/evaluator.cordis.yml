@@ -61,6 +61,7 @@
   config:
     allow:
       - read
+      - ReadEvidence
       - read_image
       - glob
       - grep
@@ -74,3 +75,6 @@
 #
 # · ClearAI 内核:评估者不立题、不推进、不结案;它的裁决经结构化回包回到父会话的内核。
 # · 子代理 / workflow / ralph / ask-user / web:判的人不再派人,也不找人问。
+
+- id: clearai-read-evidence
+  name: clearai-dsh/presets/clearai/plugins/read-evidence.js

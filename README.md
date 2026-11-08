@@ -5,6 +5,16 @@
   </picture>
 </p>
 
+### 0.6: on-demand exploration
+
+Explore with ordinary tools and native workers; review the claims that matter. `ReviewClaims` and `Conclude` share the same ontology grounding gate. Independent checks retain evidence, scope and counterevidence; rejected delivery can still preserve independently supported claims. [Workflow and limits](docs/optimization/0.6.0-agent-native/README.md).
+
+
+**0.6.0 acceptance:** All six final real-model paired tasks completed; fresh official DSH 0.2.2-rc.1 compatibility passed. The observations do not show a speed or token advantage. Independent review retains evidence, scope, counterevidence and reusable ontology. Failed rounds and same-session recovery remain recorded. [Final results and limitations](docs/optimization/0.6.0-release/README.md).
+**Original complex-case comparison, before remediation.** In the same three-stage supply-chain task, native DSH completed 3/3 stages in 20.30 cumulative minutes; ClearAI completed 2/3 in 109.91 minutes. Known processed tokens were 11.36M vs 78.64M (lower bounds, mostly cache reads). Both calculated the current exposure correctly, but ClearAI repeated final review for the same anomaly and left one stale graph edge. It retained 15 concepts, 63 entity records and 49 historical assertions; this is not full source-graph certification. [Case, screenshots and video](docs/cases/supply-chain-0.6.md) · [Results and costs](docs/optimization/0.6.0-agent-native/release-case-results.md) · [Original review](docs/optimization/0.6.0-agent-native/release-candidate.md).
+
+**Post-repair verification:** the targeted real task now closes successfully. Same-goal anomalies retain identity under independent review, and undeclared lesson scope serializes as null. Raw-source graphs remain distinct from corrected effective graphs. Failed attempts and unknown usage reserves are retained. [Repair evidence and limitations](docs/cases/supply-chain-remediation/README.md).
+
 <p align="center"><b>English</b> · <a href="README.zh-CN.md">中文</a></p>
 
 <p align="center">
@@ -20,23 +30,23 @@ ClearAI is an **ontology discovery and exploration platform**, built on two core
 
 > Keep structural definitions distinct from evidence-backed assertions; a valid citation alone does not establish truth.
 
-> 0.5.9 uses official DSH research events and independent Research/Ontology tabs. [Release validation](docs/optimization/0.5.9-release/README.md) records the real end-to-end task, costs and limitations.
+> 0.6.0 uses official DSH research events and independent Research/Ontology tabs. [Release validation](docs/optimization/0.6.0-release/README.md) records the real end-to-end task, costs and limitations.
 
 ```bash
 # Install (npm package, prebuilt — no build step, no allowBuilds prompt)
-dsh plugin --profile web add clearai-dsh@0.5.9
-# or in the app: Plugins → Add plugin → clearai-dsh@0.5.9
+dsh plugin --profile web add clearai-dsh@0.6.0
+# or in the app: Plugins → Add plugin → clearai-dsh@0.6.0
 ```
 
 Restart `dsh web`, then pick **ClearAI** in the preset picker at the top of a new session. That is the whole setup. [Full install notes ↓](#install-and-use)
 
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/shots/0.5.8/jepa-dark-ontology.png">
-  <img src="docs/shots/0.5.8/jepa-en-ontology.png" alt="ClearAI 0.5.8 ontology panel showing the archived JEPA research session" width="1200">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/shots/0.6.0-supply-chain/phase-2/entity-detail-dark-1440.png">
+  <img src="docs/shots/0.6.0-supply-chain/phase-2/entity-detail-1440.png" alt="ClearAI supply-chain ontology in official DSH — recorded task replay" width="1200">
 </picture>
 
-*0.5.8 production UI replaying the archived JEPA session. Historical research data, not a new 0.5.8 model result. Structural definitions are distinct from verified assertions. [Screenshot provenance](docs/shots/0.5.8/jepa-en-provenance.json).*
+*Production UI replaying this real three-stage supply-chain run in official DSH. The platform graph shows persisted objects and scoped assertions; the complete exported source graph is counted separately. [Case and limitations](docs/cases/supply-chain-0.6.md) · [Screenshot provenance](docs/shots/0.6.0-supply-chain/phase-2/provenance.json).*
 
 ---
 
@@ -69,10 +79,10 @@ Most agent loops track one thing: whether the task is done. The Epistemic Loop a
 
 *Inside the ring is the instrument's read-out: the L0–L4 axis, the **pre-registered** threshold as a dashed line, and five observations with error bars — the supported one filled, the inconclusive drawn as a dashed circle, the refuted left in place with a slash through it (nothing is deleted). The emerald dot at the opening is the one reading that crossed the threshold and settled as a fact.*
 
-In the loop the ontology comes first, not last:
+The ontology grows with the research; structure and evidence are checked before trusted knowledge is committed:
 
-- **The ontology is written at framing.** Which quantities the answer involves, what measures each one, how the reading is checked, and how the quantities affect each other are written in one go with the framing. A measure with no measuring method cannot be framed.
-- **The ontology yields the candidates.** Exploratory questions should compare alternatives, each naming the relation it comes from (two candidates are guidance, not a universal hard gate); before each step the model writes a prediction per candidate, and a step that predicts the same for all of them is flagged as unable to tell them apart.
+- **Set the goal, then model what matters.** Register the goal and checkable completion criteria first; hypotheses and ontology can grow incrementally. Before selected claims enter independent review, supply their concepts, relations, entities, units and assertions. `ReviewClaims` and `Conclude` share the same grounding gate.
+- **Give candidates explicit boundaries.** Register useful claims with refutation conditions and scope, preserving alternatives and counterevidence. Ordinary reads, calculations and exploration do not require per-step review or a custom plan; historical plans retain their contracts.
 - **Anomalies need a destination.** A reading that does not fit the prediction or the ontology becomes an unexplained item: explained, ruled out with a reason, or written into the answer. One that touches an established fact sends that fact back to awaiting check.
 - **Answers are delivered per question.** Each in four parts: conclusion / basis / open points / for you to decide. While a candidate still under examination or an open unexplained item is missing from the answer, the goal cannot close as achieved.
 
@@ -84,16 +94,16 @@ ClearAI does **not** claim recursive self-improvement. It provides the epistemic
 
 ## Install and use
 
-**Requirements:** DSH ≥ `0.2.2-rc.1`, the target host for 0.5.9. Evaluators use `startActivation` and the dedicated evaluator preset; older dispatch APIs are not supported.
+**Requirements:** DSH ≥ `0.2.2-rc.1`, the target host for 0.6.0. Evaluators use `startActivation` and the dedicated evaluator preset; older dispatch APIs are not supported.
 
 **Recommended — install it in the app, with the version pinned:**
 
-In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.5.9`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
+In the sidebar open **Plugins → Add plugin**, enter `clearai-dsh@0.6.0`, and install. That is DSH's own plugin manager: it hands what you type to pnpm, checks that the package declares a bundle and is compatible with this host, and applies it live. (The Settings page **插件列表 / Plugins** is the read-only inventory — installing happens on the sidebar's Plugins page.)
 
 **Or from a terminal — the same install:**
 
 ```bash
-dsh plugin --profile web add clearai-dsh@0.5.9
+dsh plugin --profile web add clearai-dsh@0.6.0
 ```
 
 This installs the prebuilt package from the npm registry. Nothing is compiled on your machine, so there is no `allowBuilds` grant to approve — the plugin is ready the moment the command returns.
@@ -249,3 +259,15 @@ Apache-2.0, see [LICENSE](LICENSE).
 ## Status
 
 A local-first ontology discovery and exploration platform delivered as a DSH plugin. What is not yet implemented, and what has not been verified in a real browser, is written in [Known gaps](docs/known-gaps.md).
+
+### Evidence access and knowledge counts
+
+The main agent can read and edit working materials through native tools. `ReadEvidence` batches bounded source reads; ordinary reads always return text. Set `ifUnchanged:true` only to check a range already read in the same session; changed bytes or new ranges return text. After compaction, read normally to restore the excerpt. A matching hash proves neither truth nor reuse applicability. Independent reviewers have their own read receipts and are instructed to treat originals as read-only, using isolated copies for writable reruns. They report findings and proposed repairs to the main agent; copy edits are not promoted into the main workspace. External file changes are not assumed to be present in the main agent’s context.
+
+The knowledge overview separates facts from this goal, loaded facts, pending review, assertions within facts, and entity-file records. Definitions and entity records are not independently certified merely because they exist. These counters do not add model calls. Reuse claims must distinguish pre-existing artifacts actually inspected from snapshots created during the current task.
+
+Read results also report `sourceOrigin`: observed before the session first used tools, created later, or unknown (including resumed sessions without a complete baseline). This is an observed file origin, not proof that its content was reused correctly.
+
+Reviewer restrictions are a tool/authority boundary, not a filesystem sandbox: direct write tools are disabled, and changed referenced materials detected during settlement prevent acceptance. OS-level read-only enforcement depends on the host sandbox. Isolated rerun edits are never copied back as main-agent repairs.
+
+Conclude and ReviewClaims share claim grounding checks. When final delivery fails, fully covered structured claims can still be saved only when the reviewer explicitly establishes independence from unresolved gaps; the goal stays open. Fix those gaps and call Conclude directly. Goal registration preserves a file baseline across revisions and replay, distinct from prior audit versions; unknown baselines remain unknown. Exported graphs are not automatically imported or certified.

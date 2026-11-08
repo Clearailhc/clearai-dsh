@@ -1,0 +1,7 @@
+{
+  "gloss": "产出中的杂质分数",
+  "id": "impurity",
+  "kind": "measure",
+  "label": "杂质",
+  "unit": "fraction"
+}

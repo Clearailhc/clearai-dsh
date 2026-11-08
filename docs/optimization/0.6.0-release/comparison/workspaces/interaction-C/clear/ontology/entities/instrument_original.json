@@ -1,0 +1,10 @@
+{
+  "id": "instrument_original",
+  "type": "instrument",
+  "label": "原始仪表(original)",
+  "basis": "calibrate 三次返回 instrument=original、offset=0",
+  "provenance": {
+    "kind": "named",
+    "ref": "lab/cal_1.json"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "yield",
+  "label": "收率",
+  "gloss": "目标产物收率，以 % 计；本任务中由 full/quick 实验读数直接给出",
+  "kind": "measure",
+  "unit": "%"
+}

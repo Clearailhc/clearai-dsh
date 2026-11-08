@@ -1,0 +1,9 @@
+{
+  "id": "affects_impurity",
+  "label": "影响杂质",
+  "kind": "affects",
+  "shape": "increasing",
+  "range": "impurity",
+  "gloss": "工艺变量改变杂质;本任务随 x、y 上升。",
+  "basis": "lab/model-final.json"
+}

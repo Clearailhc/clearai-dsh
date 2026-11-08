@@ -1,0 +1,179 @@
+{
+  "note": "post-hoc analysis only; predictions are not measurements",
+  "input": "lab/input-final.json",
+  "model": "lab/model-final.json",
+  "value_coefficients_scaled": [
+    95.13271805169715,
+    -0.2972779097588649,
+    -0.18214052890218085,
+    -6.494679197691285,
+    -5.872779998015159,
+    6.387712450456713
+  ],
+  "impurity_coefficients_scaled": [
+    0.08743460546357079,
+    0.015095735086009124,
+    0.02464045998146728,
+    0.007011308776150689,
+    0.0008009206262222749,
+    -0.0002609642734312393
+  ],
+  "quadratic_stationary_point": {
+    "x": 0.47917424466411007,
+    "y": 0.4809205179509483,
+    "predicted_yield": 95.14238423566415,
+    "predicted_impurity": 0.08587850587690132
+  },
+  "centre_0.5_0.5": {
+    "predicted_yield": 95.13271805169715,
+    "predicted_impurity": 0.08743460546357079
+  },
+  "centre_full_repeats": {
+    "n": 3,
+    "values": [
+      95.44487499391182,
+      95.03946444783618,
+      94.85933440411999
+    ],
+    "mean": 95.11455794862268,
+    "sd": 0.2999061869463837,
+    "se": 0.17315091776512886,
+    "impurity_range": [
+      0.0878692502900575,
+      0.0887068703718417
+    ]
+  },
+  "paired_quick_full": [
+    {
+      "x": 0.5,
+      "y": 0.5,
+      "quick": 95.02710553344001,
+      "full": 95.44487499391182,
+      "diff_quick_minus_full": -0.41776946047181696
+    },
+    {
+      "x": 0.5,
+      "y": 0.5,
+      "quick": 95.02710553344001,
+      "full": 95.03946444783618,
+      "diff_quick_minus_full": -0.012358914396173759
+    },
+    {
+      "x": 0.5,
+      "y": 0.5,
+      "quick": 95.02710553344001,
+      "full": 94.85933440411999,
+      "diff_quick_minus_full": 0.16777112932001614
+    },
+    {
+      "x": 0.48,
+      "y": 0.48,
+      "quick": 95.15748966966716,
+      "full": 94.98525888591662,
+      "diff_quick_minus_full": 0.17223078375053547
+    }
+  ],
+  "impurity_limit": 0.115,
+  "feasible_y_upper_at_x_0.5": 1,
+  "feasible_t_upper_on_diagonal": 0.81,
+  "ledger": [
+    {
+      "file": "probe_quick_0505.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 1
+    },
+    {
+      "file": "cal_1.json",
+      "mode": "calibrate",
+      "cost": 2,
+      "spent": 3
+    },
+    {
+      "file": "q_0.5_0.7.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 4
+    },
+    {
+      "file": "q_0.7_0.5.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 5
+    },
+    {
+      "file": "q_0.3_0.5.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 6
+    },
+    {
+      "file": "q_0.5_0.3.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 7
+    },
+    {
+      "file": "q_0.6_0.6.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 8
+    },
+    {
+      "file": "q_0.4_0.4.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 9
+    },
+    {
+      "file": "q_0.48_0.48.json",
+      "mode": "quick",
+      "cost": 1,
+      "spent": 10
+    },
+    {
+      "file": "f_0.48_0.48.json",
+      "mode": "full",
+      "cost": 3,
+      "spent": 13
+    },
+    {
+      "file": "cal_2.json",
+      "mode": "calibrate",
+      "cost": 2,
+      "spent": 15
+    },
+    {
+      "file": "f_0.45_0.45.json",
+      "mode": "full",
+      "cost": 3,
+      "spent": 18
+    },
+    {
+      "file": "f_0.49_0.49.json",
+      "mode": "full",
+      "cost": 3,
+      "spent": 21
+    },
+    {
+      "file": "f_0.5_0.5_rep.json",
+      "mode": "full",
+      "cost": 3,
+      "spent": 24
+    },
+    {
+      "file": "cal_3.json",
+      "mode": "calibrate",
+      "cost": 2,
+      "spent": 26
+    },
+    {
+      "file": "f_final_0.5_0.5.json",
+      "mode": "full",
+      "cost": 3,
+      "spent": 29
+    }
+  ],
+  "spent_final": 29,
+  "budget": 30
+}

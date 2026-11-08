@@ -160,7 +160,7 @@
 
           # ── 认识论内核(本预设的灵魂) ───────────────────────────────────────────────
 
-          # 7 件意图工具(目标 2 + 计划 5,见 `MECHANISM_TOOLS`;领域本体没有工具,
+          # 8 件意图工具(目标 3 + 计划 5,见 `MECHANISM_TOOLS`;领域本体没有工具,
           #   模型用原生文件工具直接写 clear/ontology/{concepts,relations,entities}/**.json)
           # + 一个 guard + 每回合派生的运行态卡 + 面板数据路由。
           # 逐条对照 docs/loop-philosophy.md 的哲学,见 ./plugins/clearai-kernel.js 的文件头。
@@ -174,6 +174,10 @@
           # 通过才把原生 goal 置为完成;续跑由原生 goal 的驱动自己做。需要人而没人能答、或模型如实放弃时,
           # 内核把原生 goal 置为阻塞并写明原因。
           # 配置项就是机制的旋钮:
+          # Bounded source reads are available to the researcher as well as evaluators.
+          - id: clearai-read-evidence
+            name: 'clearai-dsh/presets/clearai/plugins/read-evidence.js'
+
           - id: clearai-kernel
             # 用**包内子路径**而不是 `./plugins/…`:宿主 ≥0.1.7-alpha.1 起,预设是声明行
             # (presets/clearai/clearai.patch.yml)里的 plugins 列表,相对基准不再是本文件所在目录 ——
@@ -233,7 +237,7 @@
               # 当场抛错——未知机制 / 未知工具 / 未知段 / 已关机制却仍列着它的工具,四种错法都在装配期炸,
               # 而不是静默少装一件工具、等某一轮才发现。
               #
-              # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(7 件意图工具、3 段提示词,全部在场)。
+              # 这里只写**机制开关**;tools / sections 缺省 = 目录全量(8 件意图工具、3 段提示词,全部在场)。
               # 这些数字不靠人眼维持:`node tools/verify-truth-table.mjs` 会拿代码算出来的数核对它们。
               # 要裁剪就把 tools 或 sections 显式写出来:
               #   tools: [Frame, CreatePlan, AdvancePlan, ...]      # 名字必须都在工具目录里
@@ -269,6 +273,8 @@
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
                   provider: spawn
+                  agentPreset: clearai-explorer
+                  allowedAgentPresets: [clearai-explorer]
                   toolName: subagent
                   modelSelectionSettings: true
                   backgroundMode: continuable
@@ -398,6 +404,7 @@
             config:
               allow:
                 - read
+                - ReadEvidence
                 - read_image
                 - glob
                 - grep
@@ -411,3 +418,45 @@
           #
           # · ClearAI 内核:评估者不立题、不推进、不结案;它的裁决经结构化回包回到父会话的内核。
           # · 子代理 / workflow / ralph / ask-user / web:判的人不再派人,也不找人问。
+
+          - id: clearai-read-evidence
+            name: clearai-dsh/presets/clearai/plugins/read-evidence.js
+    - id: preset-clearai-explorer
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: clearai-explorer
+        name: ClearAI 探索者 · Explorer
+        description: Independent exploration worker; findings remain unverified until reviewed.
+        order: 80
+        plugins:
+          # Native spawn worker: no goal authority, kernel or recursive delegation.
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: >-
+                你是 ClearAI 探索者。完成父任务给出的局部问题，使用独立产物路径，不改父任务产物和 clear/。
+                返回可复查的发现、原始证据路径、已做检查、排除结果及理由、反例和未决问题。
+                观察与推测分别表述，不认证事实，不代替独立评估，不重建完整研究流程。
+                You are a ClearAI exploration worker. Investigate the assigned question using separate output paths.
+                Do not modify parent outputs or clear/. Return findings, raw evidence paths, checks performed,
+                exclusions with reasons, counterexamples and unresolved questions. Separate observation from inference.
+                Your findings remain unverified. Do not certify knowledge or recreate the parent's research workflow.
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: clearai-explorer-face
+            name: 'clearai-dsh/presets/clearai/plugins/clearai-evaluator-face.js'
+            config:
+              presetId: clearai-explorer
+              allow: [read, read_image, glob, grep, write, edit, bash, pwsh, job_output, job_list, job_kill]

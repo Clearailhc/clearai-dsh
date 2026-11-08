@@ -1,0 +1,254 @@
+{
+  "id": "f-min74v",
+  "goal": "g-mw6ll1t7lqbr",
+  "hypothesis": "h-kh6r4a",
+  "text": "本次运行中仪器为 original，三次 calibrate（spent=3、19、30）offset 均为 0，未发生仪器更换或可检出的零点漂移。",
+  "about": [
+    "original_instrument",
+    "instrument_offset",
+    "yield",
+    "impurity",
+    "x_factor",
+    "y_factor"
+  ],
+  "scope": "条件 bounds=x,y in [0,1]、impurity_limit=0.115 fraction、instrument=original、budget=30 cost units",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units"
+    },
+    "ranges": {}
+  },
+  "refute_when": "任一 calibrate 记录显示 instrument 非 original 或 offset 非 0，或同一坐标的 full 复测出现超过 3 倍噪声的系统偏移。",
+  "level": "L3",
+  "evidence": [
+    "e-mw6lw4d7thsg"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw6lw4d7thsg",
+      "step": "review:f0c9e4980a75cc73301f2d97",
+      "plan": "review",
+      "hypothesis": "h-kh6r4a",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发推翻：三份 calib 均 original/offset=0/spent=3,19,30；所有 full/quick/initial 记录 instrument=original；同点 (0.5,0.45) 两次 full 差 0.4456<3×0.18=0.54，无 >3σ 系统偏移。calib unit=normalized x，offset=0 不依赖单位。",
+      "refs": [
+        "initial.json",
+        "lab/calib-1.json",
+        "lab/calib-2.json",
+        "lab/calib-final.json",
+        "lab/f-050-040.json",
+        "lab/f-050-045-rep.json",
+        "lab/f-050-045.json",
+        "lab/f-050-060.json",
+        "lab/f-055-045.json",
+        "lab/input-final.json",
+        "lab/model-final-budgetok.json",
+        "lab/model-final.json",
+        "report.md",
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-2.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-040.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045-rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-060.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-055-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/input-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final-budgetok.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "report.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/909bacd3a6ff70a2debef1449c94fcdb1bae7b50678d182d05123647ffde0b83/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.json"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw6lw4d7thsg",
+      "step": "review:f0c9e4980a75cc73301f2d97",
+      "plan": "review",
+      "hypothesis": "h-kh6r4a",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "未触发推翻：三份 calib 均 original/offset=0/spent=3,19,30；所有 full/quick/initial 记录 instrument=original；同点 (0.5,0.45) 两次 full 差 0.4456<3×0.18=0.54，无 >3σ 系统偏移。calib unit=normalized x，offset=0 不依赖单位。",
+      "refs": [
+        "initial.json",
+        "lab/calib-1.json",
+        "lab/calib-2.json",
+        "lab/calib-final.json",
+        "lab/f-050-040.json",
+        "lab/f-050-045-rep.json",
+        "lab/f-050-045.json",
+        "lab/f-050-060.json",
+        "lab/f-055-045.json",
+        "lab/input-final.json",
+        "lab/model-final-budgetok.json",
+        "lab/model-final.json",
+        "report.md",
+        "submission.json"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-2.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/calib-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-040.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045-rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-050-060.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f-055-045.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/input-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final-budgetok.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "report.md"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/909bacd3a6ff70a2debef1449c94fcdb1bae7b50678d182d05123647ffde0b83/d8336757db079b1833b7056cb1daea4268a20e70bc220f6f4929a7910cedea2b.json"
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "subject": {
+        "id": "original_instrument",
+        "type": "original_instrument"
+      },
+      "predicate": "instrument_offset",
+      "object": {
+        "kind": "quantity",
+        "value": 0,
+        "unit": "1"
+      },
+      "qualifiers": {
+        "n_calibrations": 3,
+        "spent": [
+          3,
+          19,
+          30
+        ]
+      }
+    }
+  ],
+  "definitions": {
+    "instrument_offset": "fnv:fcd19529",
+    "original_instrument": "fnv:e75d2e6c",
+    "impurity": "fnv:0d892300",
+    "x_factor": "fnv:9b4156c5",
+    "y_factor": "fnv:83beb01a",
+    "yield": "fnv:4a9208fc"
+  },
+  "session": "session-native-43b8c437-ff1b-4991-99dd-203f4529f1bb",
+  "status": "established",
+  "review": null,
+  "at": 1794068212594,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794068212594,
+      "level": "L3"
+    }
+  ]
+}

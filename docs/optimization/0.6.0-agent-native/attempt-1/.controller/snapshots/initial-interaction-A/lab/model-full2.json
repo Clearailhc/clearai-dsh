@@ -1,0 +1,140 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.20606934530857904,
+      "coefficients": [
+        95.38832274838511,
+        3.8137365199009157,
+        -1.5980159433586478,
+        -6.841843455818315,
+        -5.69781141355418,
+        5.085714562864122
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 3.45072464727492,
+      "coefficients": [
+        95.3695123456418,
+        3.7930996063682167,
+        -1.5870296027428075,
+        -6.857052586317372,
+        -5.6589900825652135
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": {
+    "x": 0.65,
+    "y": 0.5,
+    "predicted_value": 95.91667779333173,
+    "prediction_interval": [
+      95.54449479120112,
+      96.28886079546234
+    ],
+    "predicted_impurity_upper": 0.11330223829531082,
+    "experiment_cost": 3,
+    "within_observed_bounding_box": true,
+    "verified": false
+  },
+  "next_experiments": [
+    {
+      "x": 0.09999999999999998,
+      "y": 0.09999999999999998,
+      "predicted_value": 88.84522449098593,
+      "prediction_interval": [
+        88.37547814794279,
+        89.31497083402907
+      ],
+      "predicted_impurity_upper": 0.08559412087902864,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.9,
+      "y": 0.09999999999999998,
+      "predicted_value": 88.43748828236131,
+      "prediction_interval": [
+        87.96735808210762,
+        88.907618482615
+      ],
+      "predicted_impurity_upper": 0.10963654434546188,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.09999999999999998,
+      "y": 0.15000000000000002,
+      "predicted_value": 89.13323744365407,
+      "prediction_interval": [
+        88.68012227363788,
+        89.58635261367026
+      ],
+      "predicted_impurity_upper": 0.08756407881974784,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    }
+  ],
+  "best_measured": {
+    "x": 0.6,
+    "y": 0.55,
+    "value": 95.99001505081033,
+    "impurity": 0.09387766606901192
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/f-0.5-0.5.json",
+      "lab/f-0.65-0.5.json",
+      "lab/f-0.60-0.45.json",
+      "lab/f-0.70-0.50.json",
+      "lab/f-0.60-0.55.json",
+      "lab/f-0.55-0.50.json",
+      "lab/f-0.75-0.45.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:626ba8f9edf0bad18fb1ed7a2e1703e1621fc2ef092bc9fb4ceaa295cc7cc6a7",
+      "lab/f-0.5-0.5.json": "sha256:64423fceb729aa087355712b5d26292138cf82e72770a0efd5d1da86e5a6e28b",
+      "lab/f-0.65-0.5.json": "sha256:79ad1ec7ead970b8bcc40ac2fb76fde1b9ba835ec0ba6d50376c30dfef61d0b8",
+      "lab/f-0.60-0.45.json": "sha256:57556896428a303c5c905a838805a2b804efcb2d05c64c22adb1914395e60d6a",
+      "lab/f-0.70-0.50.json": "sha256:763b604f662041bc53d6591505a344b52710ec469517984354670fbf1e913415",
+      "lab/f-0.60-0.55.json": "sha256:4830fb9da23dec218fcce4207bff095392edca6204bf24a6dc8891e06c4097ca",
+      "lab/f-0.55-0.50.json": "sha256:7e3a6b6b48fb27b455558d2a7d3af59d8a46f6fd83db8f2e25b3855ad8ad0a74",
+      "lab/f-0.75-0.45.json": "sha256:caf80d9050c8f66055aab872bbd1acce6ea5afbd201706c9621b9998419e1452"
+    }
+  }
+}

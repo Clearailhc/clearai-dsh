@@ -1,0 +1,9 @@
+{
+  "id": "y_affects_yield",
+  "label": "y 影响收率",
+  "kind": "affects",
+  "domain": "setting_y",
+  "range": "yield_pct",
+  "shape": "peak",
+  "basis": "initial.json 的 3x3 网格读数"
+}
