@@ -1,0 +1,28 @@
+{
+  "id": "l-2cnee3",
+  "goal": "g-mw6ll1t7lqbr",
+  "text": "中段和末段各做一次 calibrate，先看 instrument 与 offset 再合并新旧读数；本次三次均 original/offset=0。",
+  "kind": "check",
+  "about": [
+    "original_instrument",
+    "yield",
+    "impurity",
+    "x_factor",
+    "y_factor"
+  ],
+  "evidence": "lab/calib-1.json、lab/calib-2.json、lab/calib-final.json。",
+  "boundary": "若 instrument 变为 replacement，旧 offset 不可沿用，需重新校准。",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/calib-1.json:2-7、lab/calib-2.json:2-7、lab/calib-final.json:2-7 均在 spent=3/19/30 返回 original、offset=0，先校准再合并新旧读数的次序与记录一致。",
+  "session": "session-native-43b8c437-ff1b-4991-99dd-203f4529f1bb",
+  "status": "active",
+  "at": 1794068477180
+}

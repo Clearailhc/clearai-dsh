@@ -1,0 +1,467 @@
+{
+  "schema_version": "clearai.audit.v3",
+  "coverage": {
+    "policy": "clearai.review.v3",
+    "obligation": {
+      "policy": "clearai.review.v3",
+      "kind": "claim_audit",
+      "scope": "selected-work",
+      "criteria": "h-3x198v: independently assess 在约束内收率最大点位于 x≈0.50、y≈0.45（模型连续最优 x=0.5022,y=0.4534；实测 (0.5,0.45) 均值 95.318%）。; test refutation condition: 出现另一个可行实测点收率均值高于 (0.5,0.45) 超过 2 倍合并噪声，或加入新数据后模型最优点移出 x∈[0.45,0.55]、y∈[0.40,0.50]。; report support, refute or inconclusive with scope and sources.\nh-kh6r4a: independently assess 本次运行中仪器为 original，三次 calibrate（spent=3、19、30）offset 均为 0，未发生仪器更换或可检出的零点漂移。; test refutation condition: 任一 calibrate 记录显示 instrument 非 original 或 offset 非 0，或同一坐标的 full 复测出现超过 3 倍噪声的系统偏移。; report support, refute or inconclusive with scope and sources.\nh-ojabk8: independently assess 提交点 (0.5,0.45) 的杂质均值为 0.0849（两次 full：0.08516、0.08463），低于上限 0.115，余量约 0.030；模型 95% 杂质预测上界 0.1063 仍低于上限。; test refutation condition: 该点新的 full 读数杂质 >0.115，或独立复算显示模型杂质上界 ≥0.115。; report support, refute or inconclusive with scope and sources.\nh-zsq1f7: independently assess 收率面可用加性二次模型描述：加性模型 LOO CV-RMSE 0.1697% 不高于含交互模型 0.1914%，交互项系数 −0.015 在噪声内。; test refutation condition: 用同一 14 条 full 数据复算，交互模型 LOO CV-RMSE 比加性模型低超过噪声 sd=0.18，或交互项显著改变最优点位置。; report support, refute or inconclusive with scope and sources.",
+      "claims": [
+        "h-3x198v",
+        "h-kh6r4a",
+        "h-ojabk8",
+        "h-zsq1f7"
+      ],
+      "goal_context": {
+        "id": "g-mw6ll1t7lqbr",
+        "claim": "在 x,y∈[0,1]、杂质≤0.115 的约束下找到收率最大的工艺点，用 full 模式复测验证，并提交 submission.json 与参数/仪表/局限报告。",
+        "done_criteria": "submission.json 存在，含 x∈[0,1]、y∈[0,1] 与均存在的 evidence 路径；提交点至少有 2 次 full 原始读数且杂质均≤0.115；report.md 写明模型参数、仪表口径与局限；实验总花费≤30 且原始读数保留在 lab/。"
+      },
+      "final_delivery_required_now": false
+    },
+    "digest": "v7:70797a3f137de01f0861108bcbd04cfb74202a959ff9f3701af5c15544270f68",
+    "claims": [
+      {
+        "id": "h-3x198v",
+        "version": "68f32971f15a870cde20b2b6c3b816f72b0a018ace401920bdf552678b4c471c",
+        "scope": {
+          "conditions": {
+            "bounds": "x,y in [0,1]",
+            "impurity_limit": "0.115",
+            "instrument": "original",
+            "budget": "30 cost units"
+          },
+          "ranges": {
+            "x": [
+              0.45,
+              0.55
+            ],
+            "y": [
+              0.4,
+              0.5
+            ]
+          }
+        },
+        "assertions": [
+          {
+            "subject": {
+              "id": "point_050_045",
+              "type": "process_point"
+            },
+            "predicate": "recommended_point",
+            "object": {
+              "kind": "statement",
+              "value": "模型连续最优 (0.5022,0.4534)；实测 (0.5,0.45) 两次 full 均值 95.318%；x=0.55 单次 95.504%，差 0.186 在 2 倍合并噪声 0.51 内。"
+            }
+          }
+        ],
+        "refute_when": "出现另一个可行实测点收率均值高于 (0.5,0.45) 超过 2 倍合并噪声，或加入新数据后模型最优点移出 x∈[0.45,0.55]、y∈[0.40,0.50]。"
+      },
+      {
+        "id": "h-kh6r4a",
+        "version": "24dbceaa008013828070766d9572b136ecd21b460e235649c095f3cc6f042246",
+        "scope": {
+          "conditions": {
+            "bounds": "x,y in [0,1]",
+            "impurity_limit": "0.115 fraction",
+            "instrument": "original",
+            "budget": "30 cost units"
+          },
+          "ranges": {}
+        },
+        "assertions": [
+          {
+            "subject": {
+              "id": "original_instrument",
+              "type": "original_instrument"
+            },
+            "predicate": "instrument_offset",
+            "object": {
+              "kind": "quantity",
+              "value": 0,
+              "unit": "1"
+            },
+            "qualifiers": {
+              "n_calibrations": 3,
+              "spent": [
+                3,
+                19,
+                30
+              ]
+            }
+          }
+        ],
+        "refute_when": "任一 calibrate 记录显示 instrument 非 original 或 offset 非 0，或同一坐标的 full 复测出现超过 3 倍噪声的系统偏移。"
+      },
+      {
+        "id": "h-ojabk8",
+        "version": "0f6ce5f400d4a71329d02cde0a992f61d50ef49aaaf3a5df7b968cb4448132f2",
+        "scope": {
+          "conditions": {
+            "bounds": "x,y in [0,1]",
+            "impurity_limit": "0.115",
+            "instrument": "original",
+            "budget": "30 cost units"
+          },
+          "ranges": {}
+        },
+        "assertions": [
+          {
+            "subject": {
+              "id": "point_050_045",
+              "type": "process_point"
+            },
+            "predicate": "point_impurity",
+            "object": {
+              "kind": "quantity",
+              "value": 0.084895,
+              "unit": "fraction"
+            },
+            "qualifiers": {
+              "limit": 0.115,
+              "model_upper_95": 0.10632,
+              "n_full": 2
+            }
+          }
+        ],
+        "refute_when": "该点新的 full 读数杂质 >0.115，或独立复算显示模型杂质上界 ≥0.115。"
+      },
+      {
+        "id": "h-zsq1f7",
+        "version": "d7b1b6efbc962c8aaaf792852184e5d1b7e0ad8a3c0c13e25e1533267d39201a",
+        "scope": {
+          "conditions": {
+            "bounds": "x,y in [0,1]",
+            "impurity_limit": "0.115 fraction",
+            "instrument": "original",
+            "budget": "30 cost units",
+            "n_full": "14",
+            "noise_sd": "0.18"
+          },
+          "ranges": {}
+        },
+        "assertions": [
+          {
+            "subject": {
+              "id": "model_final",
+              "type": "response_surface"
+            },
+            "predicate": "model_structure",
+            "object": {
+              "kind": "statement",
+              "value": "加性二次；LOO CV-RMSE 0.16966% 对交互 0.19141%；交互系数 -0.015045；数据 n=14 full。"
+            }
+          }
+        ],
+        "refute_when": "用同一 14 条 full 数据复算，交互模型 LOO CV-RMSE 比加性模型低超过噪声 sd=0.18，或交互项显著改变最优点位置。"
+      }
+    ],
+    "criteria": [
+      {
+        "id": "C1",
+        "text": "h-3x198v: independently assess 在约束内收率最大点位于 x≈0.50、y≈0.45（模型连续最优 x=0.5022,y=0.4534；实测 (0.5,0.45) 均值 95.318%）。; test refutation condition: 出现另一个可行实测点收率均值高于 (0.5,0.45) 超过 2 倍合并噪声，或加入新数据后模型最优点移出 x∈[0.45,0.55]、y∈[0.40,0.50]。; report support, refute or inconclusive with scope and sources."
+      },
+      {
+        "id": "C2",
+        "text": "h-kh6r4a: independently assess 本次运行中仪器为 original，三次 calibrate（spent=3、19、30）offset 均为 0，未发生仪器更换或可检出的零点漂移。; test refutation condition: 任一 calibrate 记录显示 instrument 非 original 或 offset 非 0，或同一坐标的 full 复测出现超过 3 倍噪声的系统偏移。; report support, refute or inconclusive with scope and sources."
+      },
+      {
+        "id": "C3",
+        "text": "h-ojabk8: independently assess 提交点 (0.5,0.45) 的杂质均值为 0.0849（两次 full：0.08516、0.08463），低于上限 0.115，余量约 0.030；模型 95% 杂质预测上界 0.1063 仍低于上限。; test refutation condition: 该点新的 full 读数杂质 >0.115，或独立复算显示模型杂质上界 ≥0.115。; report support, refute or inconclusive with scope and sources."
+      },
+      {
+        "id": "C4",
+        "text": "h-zsq1f7: independently assess 收率面可用加性二次模型描述：加性模型 LOO CV-RMSE 0.1697% 不高于含交互模型 0.1914%，交互项系数 −0.015 在噪声内。; test refutation condition: 用同一 14 条 full 数据复算，交互模型 LOO CV-RMSE 比加性模型低超过噪声 sd=0.18，或交互项显著改变最优点位置。; report support, refute or inconclusive with scope and sources."
+      }
+    ],
+    "trust": {
+      "model": "deepseek-flash",
+      "modelProvider": "deepseek",
+      "reasoningEffort": "medium",
+      "policy": "clearai.review.v3",
+      "discipline": "21ad786a79b0e618a898faaed6b3e466bd36b2498f3b783e8a87635e59313299",
+      "preset": "clearai-evaluator",
+      "provider": "spawn",
+      "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+      "rerun": true,
+      "tools": [
+        "read",
+        "glob",
+        "grep",
+        "read_image"
+      ],
+      "l4Human": true,
+      "l4External": true
+    },
+    "scope": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units"
+    }
+  },
+  "kind": "claim_audit",
+  "step_id": "review:f0c9e4980a75cc73301f2d97",
+  "auditor_run_id": "a76e82f3-7955-4524-b301-b13dd2cf876a",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "复算 model-final 系数得最优 (0.50221,0.45339)，仍在登记范围；两次 full 均值 95.3184；唯一更高的可行实测点 x=0.55 单次 95.5038，差 0.1853，小于 2×合并噪声 0.441（单次 vs 均值）或 0.509（单次 vs 单次）；其余 full 点更低。"
+    },
+    {
+      "criterion": "C2",
+      "result": "pass",
+      "basis": "calib-1/2/final 均 instrument=original、offset=0、spent=3/19/30；全部 initial/full/quick 记录 instrument=original；同点 (0.5,0.45) 两次 full 差 0.44555<3×0.18=0.54。calib 记录 unit=normalized x，offset=0 不依赖单位。"
+    },
+    {
+      "criterion": "C3",
+      "result": "pass",
+      "basis": "两次 full 杂质 0.085162/0.084628，均值 0.084895，余量 0.030105；同一 14 点加性杂质模型在 (0.5,0.45) 的 95% 上界复算 0.106315<0.115；交互杂质模型同值 0.10632。"
+    },
+    {
+      "criterion": "C4",
+      "result": "pass",
+      "basis": "同一 14 条 full 复跑 method/response_surface.py：加性 CV 0.169657≤交互 0.191411；交互系数 -0.015045，SE 0.1406（|t|=0.11）；两模型最优点 (0.50221,0.45339) 与 (0.50226,0.45338) 位移<0.0001。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-3x198v",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "未触发推翻：x=0.55 单次 95.5038 比 (0.5,0.45) 均值 95.3184 高 0.1853，2×合并噪声为 0.441（单次 vs 均值）或 0.509（单次 vs 单次），未超过；14 点模型最优点 (0.50221,0.45339) 仍在 x∈[0.45,0.55]、y∈[0.40,0.50]。"
+    },
+    {
+      "hypothesis": "h-kh6r4a",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "未触发推翻：三份 calib 均 original/offset=0/spent=3,19,30；所有 full/quick/initial 记录 instrument=original；同点 (0.5,0.45) 两次 full 差 0.4456<3×0.18=0.54，无 >3σ 系统偏移。calib unit=normalized x，offset=0 不依赖单位。"
+    },
+    {
+      "hypothesis": "h-ojabk8",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "未触发推翻：两次 full 杂质 0.085162/0.084628 均<0.115，均值 0.084895；同一 14 点加性杂质模型在 (0.5,0.45) 的 95% 上界 0.106315<0.115（交互模型亦 0.10632）；无新的 full 读数。"
+    },
+    {
+      "hypothesis": "h-zsq1f7",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "未触发推翻：同一 14 条 full 复跑得加性 CV 0.169657、交互 0.191411（交互反而高 0.02175，未低过 0.18）；交互系数 -0.015045，SE 0.1406；两模型最优点位移<0.0001。"
+    }
+  ],
+  "anomalies": [
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "report.md:24 把 impurity 交互 CV-RMSE 写成 0.00122（低于加性 0.00125）；对同一 lab/input-final.json 用 method/response_surface.py 复算得加性 0.0012536、交互 0.0016177，0.00122 无法复现。",
+      "matters": "no",
+      "touches": [
+        "h-ojabk8"
+      ],
+      "impact_basis": "两杂质模型在 (0.5,0.45) 的 95% 上界均为 0.10632（<0.115），h-ojabk8 的上界结论不受影响；但报告表把 impurity 的模型比较方向写反，属未登记的数字错误。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "report.md:58 称 x 0.50→0.55 实测差 0.04，report.md:60 称提交点为已实测最高；这用 95.5412 单次对 95.5038，按报告表 95.318 的两次均值则 x=0.55 高 0.1853（仍<2×合并噪声 0.441/0.509）。",
+      "matters": "no",
+      "touches": [
+        "h-3x198v"
+      ],
+      "impact_basis": "原始读数 95.5412/95.0957/95.5038；均值差 0.1853<0.441（单次 vs 均值）<0.509（单次 vs 单次），未触发 h-3x198v 的推翻条件；报告的选择性比较低估了平坦度。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "lab/model-final-budgetok.json:53-65 的 recommendation 仅在 --remaining-budget 30 时复现；lab/input-final.json:227 的 remaining_budget=0.0，默认运行 method/response_surface.py 得 recommendation=null。artifact 的 inputs 未记录该覆盖，report.md:68 只称“同一模型的细网格推荐”。",
+      "matters": "no",
+      "touches": [
+        "h-3x198v"
+      ],
+      "impact_basis": "覆盖前后模型系数与 best_measured 完全相同；连续最优 (0.5022,0.4534) 由 model-final.json:8-15 的系数解析得到，不依赖该网格推荐；h-3x198v 的结论不变，但该 artifact 的生成条件未登记。"
+    }
+  ],
+  "lessons": [],
+  "basis": "四条登记主张均支持：同一 14 条 full 复跑得加性 CV 0.169657 对交互 0.191411，连续最优 (0.5022,0.4534) 仍在 x∈[0.45,0.55]、y∈[0.40,0.50]；实测 (0.5,0.45) 均值 95.3184，x=0.55 单次 95.5038，差 0.1853<2×合并噪声 0.441/0.509；杂质均值 0.084895，模型 95% 上界 0.106315<0.115；三次 calib 均 original/offset=0，同点复测差 0.4456<3×0.18=0.54。报告另有两处可复核数字不一致（impurity 交互 CV 0.00122 应为 0.00162；x 0.50→0.55 的 0.04 是挑单次读数，均值差 0.186），且 model-final-budgetok 的推荐需以 --remaining-budget 30 覆盖 input-final 的 remaining_budget=0 才复现；这些不改变四条主张的裁决。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "initial.json",
+      "line": 60,
+      "digest": "30e52e8d7ff537575f97834bf7193352889892a18cfd6a1a524f1ae6eedb466d"
+    },
+    {
+      "path": "lab/f-050-045.json",
+      "line": 4,
+      "digest": "dcc57e623e9b9eed853830ccfbac86930aa16b825f741bacf980f7c73b17a113"
+    },
+    {
+      "path": "lab/f-050-045.json",
+      "line": 5,
+      "digest": "dcc57e623e9b9eed853830ccfbac86930aa16b825f741bacf980f7c73b17a113"
+    },
+    {
+      "path": "lab/f-050-045-rep.json",
+      "line": 4,
+      "digest": "46edcb02de6f770c8907d56deec57a6f72e46161f40a3b8176727ad19134ba7c"
+    },
+    {
+      "path": "lab/f-050-045-rep.json",
+      "line": 5,
+      "digest": "46edcb02de6f770c8907d56deec57a6f72e46161f40a3b8176727ad19134ba7c"
+    },
+    {
+      "path": "lab/f-055-045.json",
+      "line": 4,
+      "digest": "ab3d8fb27a4d8e11ee4c34ec52228e328b07dbacccc630740d3e72227ebbd38f"
+    },
+    {
+      "path": "lab/f-050-040.json",
+      "line": 4,
+      "digest": "491f0fb8eefc71c995fc2d0973b466aae0eb6b335b56a49b96f7a38a01f2da1b"
+    },
+    {
+      "path": "lab/f-050-060.json",
+      "line": 4,
+      "digest": "d4e5bd558cb086c94c7681f0c27c965335be3008436bef98c9296944b33f6ed1"
+    },
+    {
+      "path": "lab/calib-1.json",
+      "line": 2,
+      "digest": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "lab/calib-1.json",
+      "line": 4,
+      "digest": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "lab/calib-1.json",
+      "line": 5,
+      "digest": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "lab/calib-1.json",
+      "line": 7,
+      "digest": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "lab/calib-2.json",
+      "line": 2,
+      "digest": "8aa4069bae105312f80251b83e45c5ebf6687e4fcb5bca39fb6c3653c8b71b7b"
+    },
+    {
+      "path": "lab/calib-2.json",
+      "line": 4,
+      "digest": "8aa4069bae105312f80251b83e45c5ebf6687e4fcb5bca39fb6c3653c8b71b7b"
+    },
+    {
+      "path": "lab/calib-2.json",
+      "line": 7,
+      "digest": "8aa4069bae105312f80251b83e45c5ebf6687e4fcb5bca39fb6c3653c8b71b7b"
+    },
+    {
+      "path": "lab/calib-final.json",
+      "line": 2,
+      "digest": "490faf67861d5c4da861e39ff80172a40fa7d0bcd9075a98dd53629ca1945e47"
+    },
+    {
+      "path": "lab/calib-final.json",
+      "line": 4,
+      "digest": "490faf67861d5c4da861e39ff80172a40fa7d0bcd9075a98dd53629ca1945e47"
+    },
+    {
+      "path": "lab/calib-final.json",
+      "line": 7,
+      "digest": "490faf67861d5c4da861e39ff80172a40fa7d0bcd9075a98dd53629ca1945e47"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 8,
+      "digest": "09d30f34f5212052b100516275d49625381c16035d393483dd5ec211ed04705e"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 19,
+      "digest": "09d30f34f5212052b100516275d49625381c16035d393483dd5ec211ed04705e"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 26,
+      "digest": "09d30f34f5212052b100516275d49625381c16035d393483dd5ec211ed04705e"
+    },
+    {
+      "path": "lab/model-final-budgetok.json",
+      "line": 56,
+      "digest": "3394748206debbea065473bb7221670462654310aa41fa29161d1a704b46d430"
+    },
+    {
+      "path": "lab/model-final-budgetok.json",
+      "line": 61,
+      "digest": "3394748206debbea065473bb7221670462654310aa41fa29161d1a704b46d430"
+    },
+    {
+      "path": "lab/input-final.json",
+      "line": 225,
+      "digest": "c0923243fbd97b405c1f32e98aea7a7325b0d8decf6148f81a036d542fbc2520"
+    },
+    {
+      "path": "lab/input-final.json",
+      "line": 227,
+      "digest": "c0923243fbd97b405c1f32e98aea7a7325b0d8decf6148f81a036d542fbc2520"
+    },
+    {
+      "path": "report.md",
+      "line": 24,
+      "digest": "db212f0e6a6f8769dc04e2d74d1489da9cecfa626c07b27b1fae872e5123cf9e"
+    },
+    {
+      "path": "report.md",
+      "line": 58,
+      "digest": "db212f0e6a6f8769dc04e2d74d1489da9cecfa626c07b27b1fae872e5123cf9e"
+    },
+    {
+      "path": "report.md",
+      "line": 60,
+      "digest": "db212f0e6a6f8769dc04e2d74d1489da9cecfa626c07b27b1fae872e5123cf9e"
+    },
+    {
+      "path": "report.md",
+      "line": 68,
+      "digest": "db212f0e6a6f8769dc04e2d74d1489da9cecfa626c07b27b1fae872e5123cf9e"
+    },
+    {
+      "path": "submission.json",
+      "line": 2,
+      "digest": "98121a2eb4856dd1d9f046aedaf78844aa12d4fa29f929685b9f91fa08f449d7"
+    },
+    {
+      "path": "submission.json",
+      "line": 3,
+      "digest": "98121a2eb4856dd1d9f046aedaf78844aa12d4fa29f929685b9f91fa08f449d7"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 65,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 96,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    }
+  ],
+  "card": "四条登记主张均支持：同一 14 条 full 复跑得加性 CV 0.169657 对交互 0.191411，连续最优 (0.5022,0.4534) 仍在 x∈[0.45,0.55]、y∈[0.40,0.50]；实测 (0.5,0.45) 均值 95.3184，x=0.55 单次 95.5038，差 0.1853<2×合并噪声 0.441/0.509；杂质均值 0.084895，模型 95% 上界 0.106315<0.115；三次 calib 均 original/offset=0，同点复测差 0.4456<3×0.18=0.54。报告另有两处可复核数字不一致（impurity 交互 CV 0.00122 应为 0.00162；x 0.50→0.55 的 0.04 是挑单次读数，均值差 0.186），且 model-final-budgetok 的推荐需以 --remaining-budget 30 覆盖 input-final 的 remaining_budget=0 才复现；这些不改变四条主张的裁决。",
+  "created_at": 1794068212468,
+  "evaluator": "independent"
+}

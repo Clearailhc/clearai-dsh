@@ -1,0 +1,281 @@
+{
+  "schema_version": "clearai.audit.v3",
+  "coverage": {
+    "policy": "clearai.review.v3",
+    "obligation": {
+      "policy": "clearai.review.v3",
+      "kind": "goal_audit",
+      "scope": "final-delivery",
+      "criteria": "submission.json 存在，含 x∈[0,1]、y∈[0,1] 与均存在的 evidence 路径；提交点至少有 2 次 full 原始读数且杂质均≤0.115；report.md 写明模型参数、仪表口径与局限；实验总花费≤30 且原始读数保留在 lab/。",
+      "claims": [],
+      "goal_context": {
+        "id": "g-mw6ll1t7lqbr",
+        "claim": "在 x,y∈[0,1]、杂质≤0.115 的约束下找到收率最大的工艺点，用 full 模式复测验证，并提交 submission.json 与参数/仪表/局限报告。",
+        "done_criteria": "submission.json 存在，含 x∈[0,1]、y∈[0,1] 与均存在的 evidence 路径；提交点至少有 2 次 full 原始读数且杂质均≤0.115；report.md 写明模型参数、仪表口径与局限；实验总花费≤30 且原始读数保留在 lab/。"
+      },
+      "final_delivery_required_now": true
+    },
+    "digest": "v7:6c25a70e35a0266411750bc54783452c86192e0f9db68cc83e9a71bd9b6f9728",
+    "claims": [],
+    "criteria": [
+      {
+        "id": "C1",
+        "text": "submission.json 存在，含 x∈[0,1]、y∈[0,1] 与均存在的 evidence 路径；提交点至少有 2 次 full 原始读数且杂质均≤0.115；report.md 写明模型参数、仪表口径与局限；实验总花费≤30 且原始读数保留在 lab/。"
+      }
+    ],
+    "trust": {
+      "model": "deepseek-flash",
+      "modelProvider": "deepseek",
+      "reasoningEffort": "medium",
+      "policy": "clearai.review.v3",
+      "discipline": "21ad786a79b0e618a898faaed6b3e466bd36b2498f3b783e8a87635e59313299",
+      "preset": "clearai-evaluator",
+      "provider": "spawn",
+      "presetSource": "230fe67b8474a7702a93319bd781f6a1e47668ec020299b870975736065f2c5d",
+      "rerun": true,
+      "tools": [
+        "read",
+        "glob",
+        "grep",
+        "read_image"
+      ],
+      "l4Human": true,
+      "l4External": true
+    },
+    "scope": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units"
+    }
+  },
+  "kind": "goal_audit",
+  "step_id": "goal:g-mw6ll1t7lqbr",
+  "auditor_run_id": "5434d7ae-cadc-45b1-a924-a2b1a5b93b09",
+  "rechecks": [],
+  "reuse": [],
+  "holds": "yes",
+  "criteria": [
+    {
+      "criterion": "C1",
+      "result": "pass",
+      "basis": "submission.json:2-3 的 x=0.5,y=0.45 均在[0,1]，:4-17 的 12 条 evidence 全部存在；提交点 2 次 full（lab/f-050-045.json:8、lab/f-050-045-rep.json:8）杂质 0.085162/0.084628 均≤0.115；report.md:29-30 模型系数、48-53 仪表口径、55-61 局限齐备；lab 记录 cost 合计 30、spent 终值 30，原始读数在 lab/（初始 9 条保留在根 initial.json 未改）。"
+    }
+  ],
+  "results": [
+    {
+      "hypothesis": "h-3x198v",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "副本复跑得连续最优 (0.50221,0.45339)，在登记范围 x[0.45,0.55]、y[0.40,0.50] 内；提交点两次 full 均值 95.3184；唯一更高的可行实测 x=0.55 单次 95.5038 仅高 0.1853，小于 2×合并噪声 0.441（单次对均值）或 0.509（单次对单次）；其余可行实测点更低，未触发推翻条件。"
+    },
+    {
+      "hypothesis": "h-ojabk8",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "两次 full 杂质 0.085162/0.084628，均值 0.084895<0.115；用同一 14 点复算杂质加性模型在 (0.5,0.45) 的 95% 上界 0.106315<0.115；无新 full 读数超限，未触发推翻条件。"
+    },
+    {
+      "hypothesis": "h-zsq1f7",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "同一 14 条 full 复跑：加性 LOO CV 0.169657≤交互 0.191411；交互系数 −0.015045；两模型最优点 (0.50221,0.45339) 对 (0.50226,0.45338) 位移<0.0001；交互未更低且未改变最优点，未触发推翻条件。"
+    },
+    {
+      "hypothesis": "h-kh6r4a",
+      "verdict": "support",
+      "coverage": "full",
+      "independent_of_open_issues": true,
+      "basis": "lab/calib-1/2/final.json 均 instrument=original、offset=0、spent=3/19/30；全部 full/quick 记录 instrument=original；同坐标两次 full 差 0.44555<3×0.18=0.54，未触发推翻条件。"
+    }
+  ],
+  "anomalies": [
+    {
+      "existing_id": "audit:pending:d7a457bd5ae514f17eb88c087350d0ec#u1",
+      "disposition": "maintain",
+      "what": "report.md:24 的 impurity 交互 CV-RMSE 原写 0.00122，与同一 14 点复算不符。",
+      "matters": "no",
+      "touches": [
+        "h-ojabk8"
+      ],
+      "impact_basis": "report.md:23-24 现为加性 0.00125、交互 0.00162；我在副本按 method/response_surface.py 同一 fit 逻辑复算 lab/input-final.json 得加性 0.001254、交互 0.001618，与修改后表述一致，模型选择方向已纠正，处置仍成立。"
+    },
+    {
+      "existing_id": "audit:pending:d7a457bd5ae514f17eb88c087350d0ec#u2",
+      "disposition": "maintain",
+      "what": "report.md:58 原把 x=0.50→0.55 的单次差 0.04 与两次均值口径混用，并称提交点为已实测最高。",
+      "matters": "no",
+      "touches": [
+        "h-3x198v"
+      ],
+      "impact_basis": "report.md:58 现同时给出单次差 0.037、均值差 0.186，并注明两者均小于 2×合并噪声 0.44–0.51；复算 0.1853<0.441/0.509，report.md:60 改为“已复测点中均值最高，单次最高读数也在此点”，与 lab/f-050-045*.json、lab/f-055-045.json 一致，处置仍成立。"
+    },
+    {
+      "existing_id": "audit:pending:d7a457bd5ae514f17eb88c087350d0ec#u3",
+      "disposition": "maintain",
+      "what": "lab/model-final-budgetok.json:53-65 的 recommendation 依赖 --remaining-budget 覆盖（覆盖值应为 3，原处置文字写 30）。",
+      "matters": "no",
+      "touches": [
+        "h-3x198v"
+      ],
+      "impact_basis": "report.md:68 记载命令 `--remaining-budget 3`；我在副本按该命令复跑，输出与 lab/model-final-budgetok.json 逐字段完全相同（推荐 (0.5,0.45)、预测 95.286378、杂质上界 0.106315），覆盖不改系数与提交点，处置仍成立。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "report.md:57 称边界模型预测“约 88–90%”，按 lab/model-final.json:9-15 加性系数复算：(0,0)=83.73、(1,1)=81.69、(0.1,0.9)=86.31，仅边中点约 88.4–90.5。",
+      "matters": "no",
+      "touches": [
+        "h-3x198v"
+      ],
+      "impact_basis": "仅为局限条文的数值精度问题：角点 81.7–83.7 或边中点 88–90.5 都远低于峰值 95.29，“边界更优缺乏支持”的方向性结论不变。"
+    },
+    {
+      "existing_id": "",
+      "disposition": "reopen",
+      "what": "report.md:17 称 lab/model-final.json 的输入快照是 lab/input-final.json，但 lab/model-final.json:66-82 记录的 inputs.initial=initial.json 加 5 条 --append；我在副本仅用 `initial.json --append ... --remaining-budget 0` 才逐字段复现该文件。",
+      "matters": "no",
+      "touches": [
+        "h-zsq1f7"
+      ],
+      "impact_basis": "两路径含同一 14 条 full 观测，复跑系数、CV、最优点与 best_measured 完全相同；只是产物来源描述不精确，不改变 h-zsq1f7 的模型结构结论。"
+    }
+  ],
+  "lessons": [
+    {
+      "lesson": "L1",
+      "verdict": "support",
+      "basis": "lab/probe-q-0505.json:11 的 noise_sd=0.45 与 lab/f-050-045.json:9 的 0.18；记录显示先用 9 次 quick 扫面再转 full 复测候选点，做法与教训一致。"
+    },
+    {
+      "lesson": "L2",
+      "verdict": "support",
+      "basis": "lab/calib-1.json:2-7、lab/calib-2.json:2-7、lab/calib-final.json:2-7 均在 spent=3/19/30 返回 original、offset=0，先校准再合并新旧读数的次序与记录一致。"
+    },
+    {
+      "lesson": "L3",
+      "verdict": "support",
+      "basis": "复跑 14 条 full：加性 CV 0.169657<交互 0.191411，交互系数 −0.015045，最优点位移<0.0001，确证加性二次面足够、无需强加交互。"
+    },
+    {
+      "lesson": "L4",
+      "verdict": "support",
+      "basis": "lab/f-050-045.json、lab/f-050-045-rep.json 与 lab/f-055-045.json 显示 x 0.50→0.55 均值差 0.186，远小于 2×合并噪声 0.44–0.51，报告取到 0.01 的精度与平坦峰事实相符。"
+    }
+  ],
+  "basis": "交付成立：submission.json 记 x=0.5、y=0.45（均在[0,1]），12 条 evidence 路径逐一存在；提交点两次 full 原始读数杂质 0.085162/0.084628≤0.115；report.md 写明 yield/impurity 二次系数、original/offset=0 的仪表口径与 5 条局限；lab 内实验记录 cost 合计恰为 30、spent 终值 30（9 条初始 full 为免费初始数据，保留在根 initial.json 未改）。在副本复跑 method/response_surface.py 逐字段复现 lab/model-final.json（加性 CV 0.169657、交互 0.191411、系数、best_measured）与 lab/model-final-budgetok.json（(0.5,0.45)、预测 95.2864、杂质 95% 上界 0.106315）；连续最优 (0.50221,0.45339) 在登记范围内，impurity 系数复算与报告一致。四项判断均未触发各自推翻条件。",
+  "shortfalls": [],
+  "refs": [
+    {
+      "path": "submission.json",
+      "line": 2,
+      "digest": "2233c5da97374a1280ecff92a4cc36b3ee263dab2372d8f4cbaef618f0575247"
+    },
+    {
+      "path": "submission.json",
+      "line": 4,
+      "digest": "2233c5da97374a1280ecff92a4cc36b3ee263dab2372d8f4cbaef618f0575247"
+    },
+    {
+      "path": "lab/f-050-045.json",
+      "line": 4,
+      "digest": "dcc57e623e9b9eed853830ccfbac86930aa16b825f741bacf980f7c73b17a113"
+    },
+    {
+      "path": "lab/f-050-045-rep.json",
+      "line": 4,
+      "digest": "46edcb02de6f770c8907d56deec57a6f72e46161f40a3b8176727ad19134ba7c"
+    },
+    {
+      "path": "lab/f-055-045.json",
+      "line": 4,
+      "digest": "ab3d8fb27a4d8e11ee4c34ec52228e328b07dbacccc630740d3e72227ebbd38f"
+    },
+    {
+      "path": "report.md",
+      "line": 23,
+      "digest": "2f507dfd6ba3bf41f438c50d4558cc9263e338de4b95aa961b4e888f2c2bc23f"
+    },
+    {
+      "path": "report.md",
+      "line": 29,
+      "digest": "2f507dfd6ba3bf41f438c50d4558cc9263e338de4b95aa961b4e888f2c2bc23f"
+    },
+    {
+      "path": "report.md",
+      "line": 50,
+      "digest": "2f507dfd6ba3bf41f438c50d4558cc9263e338de4b95aa961b4e888f2c2bc23f"
+    },
+    {
+      "path": "report.md",
+      "line": 57,
+      "digest": "2f507dfd6ba3bf41f438c50d4558cc9263e338de4b95aa961b4e888f2c2bc23f"
+    },
+    {
+      "path": "report.md",
+      "line": 58,
+      "digest": "2f507dfd6ba3bf41f438c50d4558cc9263e338de4b95aa961b4e888f2c2bc23f"
+    },
+    {
+      "path": "report.md",
+      "line": 68,
+      "digest": "2f507dfd6ba3bf41f438c50d4558cc9263e338de4b95aa961b4e888f2c2bc23f"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 8,
+      "digest": "09d30f34f5212052b100516275d49625381c16035d393483dd5ec211ed04705e"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 55,
+      "digest": "09d30f34f5212052b100516275d49625381c16035d393483dd5ec211ed04705e"
+    },
+    {
+      "path": "lab/model-final.json",
+      "line": 66,
+      "digest": "09d30f34f5212052b100516275d49625381c16035d393483dd5ec211ed04705e"
+    },
+    {
+      "path": "lab/model-final-budgetok.json",
+      "line": 53,
+      "digest": "3394748206debbea065473bb7221670462654310aa41fa29161d1a704b46d430"
+    },
+    {
+      "path": "lab/input-final.json",
+      "line": 227,
+      "digest": "c0923243fbd97b405c1f32e98aea7a7325b0d8decf6148f81a036d542fbc2520"
+    },
+    {
+      "path": "initial.json",
+      "line": 142,
+      "digest": "30e52e8d7ff537575f97834bf7193352889892a18cfd6a1a524f1ae6eedb466d"
+    },
+    {
+      "path": "lab/calib-1.json",
+      "line": 7,
+      "digest": "f327d44e46d15fc4c1439cd586572d57215efb9374c4612ab24499ac067e954e"
+    },
+    {
+      "path": "lab/calib-2.json",
+      "line": 7,
+      "digest": "8aa4069bae105312f80251b83e45c5ebf6687e4fcb5bca39fb6c3653c8b71b7b"
+    },
+    {
+      "path": "lab/calib-final.json",
+      "line": 7,
+      "digest": "490faf67861d5c4da861e39ff80172a40fa7d0bcd9075a98dd53629ca1945e47"
+    },
+    {
+      "path": "method/response_surface.py",
+      "line": 33,
+      "digest": "95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41"
+    }
+  ],
+  "card": "交付成立：submission.json 记 x=0.5、y=0.45（均在[0,1]），12 条 evidence 路径逐一存在；提交点两次 full 原始读数杂质 0.085162/0.084628≤0.115；report.md 写明 yield/impurity 二次系数、original/offset=0 的仪表口径与 5 条局限；lab 内实验记录 cost 合计恰为 30、spent 终值 30（9 条初始 full 为免费初始数据，保留在根 initial.json 未改）。在副本复跑 method/response_surface.py 逐字段复现 lab/model-final.json（加性 CV 0.169657、交互 0.191411、系数、best_measured）与 lab/model-final-budgetok.json（(0.5,0.45)、预测 95.2864、杂质 95% 上界 0.106315）；连续最优 (0.50221,0.45339) 在登记范围内，impurity 系数复算与报告一致。四项判断均未触发各自推翻条件。",
+  "created_at": 1794068477115,
+  "evaluator": "independent"
+}

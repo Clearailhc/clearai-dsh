@@ -5,13 +5,13 @@
   </picture>
 </p>
 
-### 0.6 候选：按需探索与协作核验
+### 0.6：按需探索与协作核验
 
 使用普通工具和原生子任务探索，按需核验影响答案的主张。`ReviewClaims` 与 `Conclude` 共用本体准入检查；独立核验保留证据、范围与反证，整体交付未通过也可保留与缺口独立的合格事实。见[流程与限制](docs/optimization/0.6.0-agent-native/README.md)。
 
-**发行候选：**0.6.0 尚未发布，下方 npm 安装命令在发布后适用。现在可在此检出中执行 `npm run release`，再通过 DSH 插件管理器安装生成的 `dist/clearai-dsh-0.6.0.tgz`。该命令构建并检查本地包，不执行发布。
 
-**修复前的复杂案例对照记录。** 同一供应链三阶段任务，原生 DSH 完成3/3阶段、累计20.30分钟；ClearAI 完成2/3阶段、累计109.91分钟。已知处理token分别为1136万与7864万（下界，多数为缓存读取）。两组当前暴露量均算对，但 ClearAI 因同一异常重复派评未能结案，导出图还有一条旧关系。沉淀15个概念、63条实体记录、跨历史范围49条断言，不等于整个源图已获认证。[案例、截图与录屏](docs/cases/supply-chain-0.6.md) · [结果与成本](docs/optimization/0.6.0-agent-native/release-case-results.md) · [发布阻断项](docs/optimization/0.6.0-agent-native/release-candidate.md)。
+**0.6.0 验收：**六场最终真实模型配对任务全部完成，DSH 0.2.2-rc.1 全新安装兼容性通过。结果不支持提速或省 token 的声明；独立核验的价值在于证据、范围、反证和可复用本体。保留失败轮次及最后一场的同会话恢复记录。[最终结果与限制](docs/optimization/0.6.0-release/README.md)。
+**修复前的复杂案例对照记录。** 同一供应链三阶段任务，原生 DSH 完成3/3阶段、累计20.30分钟；ClearAI 完成2/3阶段、累计109.91分钟。已知处理token分别为1136万与7864万（下界，多数为缓存读取）。两组当前暴露量均算对，但 ClearAI 因同一异常重复派评未能结案，导出图还有一条旧关系。沉淀15个概念、63条实体记录、跨历史范围49条断言，不等于整个源图已获认证。[案例、截图与录屏](docs/cases/supply-chain-0.6.md) · [结果与成本](docs/optimization/0.6.0-agent-native/release-case-results.md) · [原始复盘](docs/optimization/0.6.0-agent-native/release-candidate.md)。
 
 **修复后复验：**定向真实任务现已成功结案。同一目标的异常由独立评估关联原身份，未声明的经验范围以 null 返回；原始图与更正后的有效图分开。失败尝试和未知用量预留全部保留，不据此宣称普遍提速。[修复证据与限制](docs/cases/supply-chain-remediation/README.md)。
 

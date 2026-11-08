@@ -1,0 +1,10 @@
+{
+  "id": "point_050_045",
+  "type": "process_point",
+  "label": "提交点 (0.5,0.45)",
+  "basis": "两次 full 实测：95.541/0.08516 与 95.096/0.08463",
+  "provenance": {
+    "kind": "backref",
+    "ref": "lab/f-050-045.json"
+  }
+}

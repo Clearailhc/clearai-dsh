@@ -1,0 +1,20 @@
+{
+  "id": "original_instrument",
+  "type": "original_instrument",
+  "label": "original 仪表",
+  "basis": "initial.json 与 lab/*.json 的 instrument 字段；三次 calibrate 记录",
+  "provenance": {
+    "kind": "named",
+    "ref": "lab/calib-final.json"
+  },
+  "history": [
+    {
+      "at": "2026-11-07",
+      "what": "三次校准 offset 均为 0，未更换",
+      "evidence": {
+        "kind": "backref",
+        "ref": "lab/calib-final.json"
+      }
+    }
+  ]
+}

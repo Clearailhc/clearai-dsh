@@ -1,0 +1,10 @@
+{
+  "id": "model_final",
+  "type": "response_surface",
+  "label": "最终加性二次模型",
+  "basis": "14 条 full 观测，加性 LOO CV-RMSE 0.1697；连续最优 x=0.5022,y=0.4534",
+  "provenance": {
+    "kind": "backref",
+    "ref": "lab/model-final.json"
+  }
+}

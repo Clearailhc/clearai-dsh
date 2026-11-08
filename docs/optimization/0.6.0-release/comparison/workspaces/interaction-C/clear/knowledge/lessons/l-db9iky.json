@@ -1,0 +1,27 @@
+{
+  "id": "l-db9iky",
+  "goal": "g-mw6mkhds4x2e",
+  "text": "杂质重复性远好于收率(残差 sd≈0.0007),拟合可行性时 impurity_noise_sd 用 0.001 而非默认 0.01,否则会把不绑定的约束误判为绑定。",
+  "kind": "prior",
+  "about": [
+    "impurity",
+    "var_x",
+    "var_y",
+    "yield"
+  ],
+  "evidence": "lab/analysis-final.json 的 impurity_coefficients_scaled 与残差",
+  "boundary": "仅当同点重复显示小残差时适用",
+  "scope_spec": {
+    "conditions": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    },
+    "ranges": {}
+  },
+  "basis": "复算 impurity 残差 sd=0.000693≈0.0007;input-final 的 impurity_noise_sd=0.001;用 0.01 时中心 95% 上限 0.1062<0.115,不会在最优点绑定(仅 y≈1 边界收紧),核心“用 0.001”成立。",
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "status": "active",
+  "at": 1794105626790
+}

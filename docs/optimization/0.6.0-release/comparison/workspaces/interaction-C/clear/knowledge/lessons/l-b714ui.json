@@ -1,0 +1,28 @@
+{
+  "id": "l-b714ui",
+  "goal": "g-mw6mkhds4x2e",
+  "text": "calibrate 的 offset 单位是 normalized x;本任务三次均为 0、instrument 始终 original,故未校正;换仪器后旧校正不可沿用。",
+  "kind": "check",
+  "about": [
+    "instrument",
+    "var_x",
+    "var_y",
+    "yield",
+    "impurity"
+  ],
+  "evidence": "lab/cal_1.json, lab/cal_2.json, lab/cal_3.json",
+  "boundary": "instrument 字段变化时必须重新 calibrate",
+  "scope_spec": {
+    "conditions": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/cal_1.json:4、cal_2:4、cal_3:4 均 instrument=original、offset=0、unit=normalized x;未做校正;换仪器需重校,记录支持。",
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "status": "active",
+  "at": 1794105626782
+}

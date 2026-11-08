@@ -1,0 +1,28 @@
+{
+  "id": "l-7t8kzh",
+  "goal": "g-mw6ll1t7lqbr",
+  "text": "峰值平台很平（x 0.50→0.55 均值差 0.186，在噪声内），报告精度到 0.01 即可，第三位小数无实际意义。",
+  "kind": "prior",
+  "about": [
+    "yield",
+    "x_factor",
+    "y_factor",
+    "impurity",
+    "original_instrument"
+  ],
+  "evidence": "report.md 局限第 2 条；lab/f-055-045.json 与 lab/f-050-045*.json。",
+  "boundary": "若后续发现更窄的峰或不同工艺区间，需重新估计曲率。",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/f-050-045.json、lab/f-050-045-rep.json 与 lab/f-055-045.json 显示 x 0.50→0.55 均值差 0.186，远小于 2×合并噪声 0.44–0.51，报告取到 0.01 的精度与平坦峰事实相符。",
+  "session": "session-native-43b8c437-ff1b-4991-99dd-203f4529f1bb",
+  "status": "active",
+  "at": 1794068477189
+}

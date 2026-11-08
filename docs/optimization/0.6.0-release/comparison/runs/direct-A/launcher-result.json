@@ -1,26 +1,26 @@
 {
-  "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+  "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
   "group": "A",
   "mode": "default",
   "reason": "completed",
-  "elapsedMs": 6916,
+  "elapsedMs": 5971,
   "model": {
     "provider": "deepseek",
     "model": "deepseek-flash",
     "reasoningEffort": "medium"
   },
   "usage": {
-    "input": 1175,
-    "output": 475,
-    "cacheRead": 21760,
+    "input": 804,
+    "output": 348,
+    "cacheRead": 16384,
     "cacheWrite": 0,
-    "calls": 5,
+    "calls": 4,
     "injectedBeforeProvider": 0,
     "missing": 0,
     "pending": 0,
-    "lowerBound": 23410,
+    "lowerBound": 17536,
     "status": "verified",
-    "processed": 23410
+    "processed": 17536
   },
   "mount": {
     "prompt": false,
@@ -28,36 +28,29 @@
   },
   "requests": [
     {
-      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
       "provider": "deepseek",
       "model": "deepseek-flash",
       "reasoningEffort": "medium",
-      "at": 1793968185302
+      "at": 1794067506012
     },
     {
-      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
       "provider": "deepseek",
       "model": "deepseek-flash",
       "reasoningEffort": "medium",
-      "at": 1793968187388
+      "at": 1794067508446
     },
     {
-      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
       "provider": "deepseek",
       "model": "deepseek-flash",
       "reasoningEffort": "medium",
-      "at": 1793968189161
-    },
-    {
-      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
-      "provider": "deepseek",
-      "model": "deepseek-flash",
-      "reasoningEffort": "medium",
-      "at": 1793968190543
+      "at": 1794067510051
     }
   ],
   "approvals": [],
-  "answer": "总金额：391元。已写入 `submission.json`。",
+  "answer": "总金额：17 × 23 = **391元**。已写入 `submission.json`。",
   "clearai": {
     "goal": null,
     "hypotheses": [],
@@ -85,24 +78,24 @@
     "language": "zh",
     "inFlight": null,
     "written": [
-      "/tmp/clearai060-comparison/workspaces/direct-A/submission.json"
+      "/tmp/clearai-polish-final-v2-release/workspaces/direct-A/submission.json"
     ],
-    "sessionId": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2"
+    "sessionId": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096"
   },
   "violations": {
     "isolation_failed": false
   },
-  "driverDigest": "54b7718c0a7e2816e53b789890b67023c621e014a1957df79acd809b53f675a9",
+  "driverDigest": "98e7c223cf76f9ba1d765e8122ee9982f567cea16d3d271d8189f3757f932587",
   "logs": [
     {
-      "session": "session-native-d8c68d5d-1865-46d8-aa5d-3f02e98bbcd2",
-      "cursor": 38,
-      "path": "95c591035a51e583af758a0f7c059f957d2d5196c912c7aa1e2e2cedc6624a45.jsonl"
+      "session": "session-native-7b9cb49b-d9a9-4b98-8fb6-e6798a807096",
+      "cursor": 35,
+      "path": "a9ece5aae50c14a6418292edbd3660c1655d59bc02d230856c97ace90422e5f1.jsonl"
     }
   ],
   "installation": {
     "version": "0.6.0",
-    "packageDigest": "854dafb63da162c40a7cdefda6c7443710d949693804e5ccfed050a16ad79e4b",
+    "packageDigest": "9ac6da6caf3bb88190da09443cb69e1ac2f5ffebf4e368dde438833b6fca02c0",
     "model": {
       "provider": "deepseek",
       "model": "deepseek-flash",

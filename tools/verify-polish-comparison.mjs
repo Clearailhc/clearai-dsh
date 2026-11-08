@@ -25,7 +25,17 @@ for(const row of comparison.results) {
  if(row.recovery&&!result.mount.prompt){
   assert.equal(JSON.parse(readFileSync(join(root,`runs/${row.id}/spec.json`))).resumeSessionId,result.session)
   const main=result.logs.find(log=>log.session===result.session);assert.ok(main)
-  restoredPrompt=readFileSync(join(root,`runs/${row.id}/${main.path}`),'utf8').trim().split('\n').map(JSON.parse).some(e=>e.type==='system/message'&&/ClearAI.*boundary of fact|ClearAI.*事实边界/.test(JSON.stringify(e.data)))
+  const rawPath=join(root,`runs/${row.id}/${main.path}`)
+  if(existsSync(rawPath)) restoredPrompt=readFileSync(rawPath,'utf8').trim().split('\n').map(JSON.parse).some(e=>e.type==='system/message'&&/ClearAI.*boundary of fact|ClearAI.*事实边界/.test(JSON.stringify(e.data)))
+  else {
+   const evidencePath=`runs/${row.id}/mount-evidence.json`, evidence=json(evidencePath)
+   assert.equal(evidence.schema,'clearai.public-mount-evidence.v1')
+   assert.equal(evidence.session,result.session);assert.equal(evidence.sourcePath,main.path)
+   assert.match(evidence.sourceSha256,/^[a-f0-9]{64}$/)
+   const recorded=json('archive.json').files.find(file=>file.path===evidencePath)
+   assert.equal(recorded?.sha256,createHash('sha256').update(readFileSync(join(root,evidencePath))).digest('hex'))
+   restoredPrompt=evidence.restoredPrompt===true
+  }
  }
  assert.equal(result.mount.prompt||restoredPrompt,row.group==='C');assert.equal(result.mount.tools,row.group==='C')
  assert.ok(Object.values(result.violations).every(value=>value===false))
@@ -64,7 +74,7 @@ for(const task of ['additive','interaction']){
  const pair=comparison.results.filter(row=>row.task===task)
  assert.equal(pair.length,2);assert.equal(pair[0].initialSha256,pair[1].initialSha256)
 }
-writeFileSync(join(root,'verification.json'),JSON.stringify({passed:true,allTasksCompleted:rows.every(row=>row.completed),rows,method:'Scores recomputed from hidden truth after workers exited; real mount, isolation probes, role accounting and submitted evidence checked. No model judge.',limitation:'One sample per task/variant; not a significance test or external domain accuracy benchmark.'},null,2))
+writeFileSync(join(root,'verification.json'),JSON.stringify({passed:true,allTasksCompleted:rows.every(row=>row.completed),rows,method:'Scores recomputed from hidden truth after workers exited; real mount, isolation probes, role accounting and submitted evidence checked. No model judge.',limitation:'One sample per task/variant; not a significance test or external domain accuracy benchmark.'},null,2)+'\n')
 // This is a synthetic grading seed, disclosed only after every paid worker exited.
-writeFileSync(join(root,'grading-truth.json'),JSON.stringify({releasedAfterAllRuns:true,worldKeyHex:key.toString('hex'),worldKeyCommitment:manifest.worldKeyCommitment},null,2))
+writeFileSync(join(root,'grading-truth.json'),JSON.stringify({releasedAfterAllRuns:true,worldKeyHex:key.toString('hex'),worldKeyCommitment:manifest.worldKeyCommitment},null,2)+'\n')
 console.log(JSON.stringify(rows,null,2))

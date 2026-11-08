@@ -1,0 +1,213 @@
+{
+  "objective": "maximize yield (%) over x,y in [0,1] subject to impurity fraction <= 0.115",
+  "method": {
+    "model": "quadratic response surface with interaction, normalized u=2x-1, v=2y-1",
+    "selection": "interaction model has much lower leave-one-out CV RMSE than additive",
+    "fit_sigma": 0.21694684694074912,
+    "yield_rmse": 0.17451197133600913,
+    "n_full_observations": 17,
+    "dof": 11
+  },
+  "yield_model_scaled": {
+    "terms": [
+      "intercept",
+      "u",
+      "v",
+      "u^2",
+      "v^2",
+      "u*v"
+    ],
+    "coefficients": [
+      95.16124256159003,
+      -0.177017407670359,
+      -0.0018925928033684354,
+      -6.582438684801859,
+      -5.844592129074303,
+      6.374379303972289
+    ]
+  },
+  "yield_model_physical": {
+    "terms": [
+      "intercept",
+      "x",
+      "y",
+      "x^2",
+      "y^2",
+      "x*y"
+    ],
+    "coefficients": [
+      89.28750105215997,
+      13.226961315922027,
+      10.625824722745755,
+      -26.329754739207345,
+      -23.378368516297087,
+      25.49751721588915
+    ]
+  },
+  "impurity_model_scaled": {
+    "terms": [
+      "intercept",
+      "u",
+      "v",
+      "u^2",
+      "v^2",
+      "u*v"
+    ],
+    "coefficients": [
+      0.08734569647552569,
+      0.014972953767416343,
+      0.024401393316751716,
+      0.007054831526184457,
+      0.0008742395802199946,
+      -0.00023351898428162528
+    ],
+    "rmse": 0.0004527428004637069
+  },
+  "continuous_optimum": {
+    "u": -0.018376868173089415,
+    "v": -0.010183235915265643,
+    "x": 0.4908115659134553,
+    "y": 0.4949083820423672,
+    "predicted_yield": 95.16287871073207,
+    "prediction_sd": 0.230659102828304,
+    "prediction_interval_95": [
+      94.7107868691886,
+      95.61497055227555
+    ],
+    "predicted_impurity": 0.0868244847726247,
+    "predicted_impurity_upper_95": 0.10766331455598392,
+    "vertex_se": [
+      0.012078629496250213,
+      0.013256878060708849
+    ],
+    "vertex_covariance": [
+      [
+        0.0001458932905076857,
+        0.00013023537880294968
+      ],
+      [
+        0.00013023537880294965,
+        0.00017574481591650363
+      ]
+    ]
+  },
+  "submitted_point": {
+    "x": 0.491,
+    "y": 0.495,
+    "note": "rounded model vertex; two independent full measurements exist at these exact coordinates",
+    "full_measurements": [
+      {
+        "x": 0.491,
+        "y": 0.495,
+        "value": 95.152038801176,
+        "impurity": 0.08657524497669697,
+        "source": "lab/full-opt-1-rep.json"
+      },
+      {
+        "x": 0.491,
+        "y": 0.495,
+        "value": 94.7868410375608,
+        "impurity": 0.08708834383123387,
+        "source": "lab/full-opt-1.json"
+      }
+    ],
+    "predicted_yield_at_submitted": 95.16287801978406,
+    "predicted_impurity_at_submitted": 0.0868345005305
+  },
+  "center_comparison": {
+    "full_measurements": [
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "value": 95.44487499391182,
+        "impurity": 0.0878692502900575,
+        "source": "initial.json"
+      },
+      {
+        "x": 0.5,
+        "y": 0.5,
+        "value": 95.25337541855562,
+        "impurity": 0.08785701662613346,
+        "source": "lab/full-center-rep.json"
+      }
+    ],
+    "mean_yield": 95.34912520623372,
+    "mean_impurity": 0.08786313345809549,
+    "mahalanobis2_vertex_vs_center": 2.965419261257515,
+    "chi2_2df_survival": 0.22702170924595927,
+    "interpretation": "center is inside the 95% vertex confidence region; measured difference is within noise"
+  },
+  "quick_check": {
+    "record": {
+      "x": 0.5,
+      "y": 0.5,
+      "value": 95.02710553344001,
+      "impurity": 0.08638609564757617,
+      "instrument": "original",
+      "metric": "yield",
+      "mode": "quick",
+      "noise_sd": 0.44999999999999996,
+      "units": {
+        "value": "%",
+        "impurity": "fraction"
+      },
+      "cost": 1,
+      "spent": 3,
+      "budget": 30
+    },
+    "note": "quick mode has noise_sd 0.45 and is not included in the full-mode fit"
+  },
+  "calibration": {
+    "records": [
+      {
+        "instrument": "original",
+        "metric": "yield",
+        "offset": 0,
+        "unit": "normalized x",
+        "cost": 2,
+        "spent": 2,
+        "budget": 30
+      },
+      {
+        "instrument": "original",
+        "metric": "yield",
+        "offset": 0,
+        "unit": "normalized x",
+        "cost": 2,
+        "spent": 5,
+        "budget": 30
+      }
+    ],
+    "instrument": "original",
+    "offset": 0,
+    "units": {
+      "yield": "%",
+      "impurity": "fraction"
+    },
+    "note": "calibration offset 0 at two locations; no correction applied"
+  },
+  "budget": {
+    "total": 30,
+    "spent": 29,
+    "remaining": 1,
+    "breakdown": "29 new units = 2 calibrations x 2 + 1 quick x 1 + 8 full x 3; the 9 initial full observations were supplied and are not recharged"
+  },
+  "limitations": [
+    "Model is quadratic; predictions are not measurements and causal validity is not established.",
+    "Observed design covers x,y in [0.1,0.9] for most points; the optimum is interior, so boundary extrapolation is not used.",
+    "The surface is very flat near the top; several points within 0.02 of the vertex are statistically indistinguishable.",
+    "Full-mode noise_sd is 0.18; quick-mode noise_sd is 0.45; calibration has a separate 2-unit cost.",
+    "Impurity predictions use the fitted quadratic and a conservative 0.01 impurity noise scale; the observed impurity fit RMSE is smaller."
+  ],
+  "sources": [
+    "initial.json",
+    "lab/full-0.3-0.3.json",
+    "lab/full-0.3-0.7.json",
+    "lab/full-0.7-0.3.json",
+    "lab/full-0.7-0.7.json",
+    "lab/full-center-rep.json",
+    "lab/full-final.json",
+    "lab/full-opt-1-rep.json",
+    "lab/full-opt-1.json"
+  ]
+}

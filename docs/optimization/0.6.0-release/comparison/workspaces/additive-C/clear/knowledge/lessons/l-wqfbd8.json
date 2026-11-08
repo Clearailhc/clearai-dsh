@@ -1,0 +1,28 @@
+{
+  "id": "l-wqfbd8",
+  "goal": "g-mw6ll1t7lqbr",
+  "text": "quick 模式噪声 sd=0.45，单次读数不足以分辨 <0.5 个百分点的差异；先用 quick 扫面定位，再用 full 复测候选点。",
+  "kind": "trap",
+  "about": [
+    "yield",
+    "x_factor",
+    "y_factor",
+    "impurity",
+    "original_instrument"
+  ],
+  "evidence": "lab/q-*.json 的 noise_sd=0.45 与 lab/f-*.json 的 0.18；报告第 2 条局限。",
+  "boundary": "若预算只够 quick 且只需粗定位，可接受其噪声。",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/probe-q-0505.json:11 的 noise_sd=0.45 与 lab/f-050-045.json:9 的 0.18；记录显示先用 9 次 quick 扫面再转 full 复测候选点，做法与教训一致。",
+  "session": "session-native-43b8c437-ff1b-4991-99dd-203f4529f1bb",
+  "status": "active",
+  "at": 1794068477175
+}

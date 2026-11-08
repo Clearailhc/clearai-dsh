@@ -1,7 +1,6 @@
 {
   "id": "response_surface",
-  "label": "配方响应面",
-  "gloss": "从 (x,y) 到收率与杂质的映射；本任务用二次响应面近似",
-  "kind": "phenomenon",
-  "basis": "initial.json 的 9 点 full 读数"
+  "label": "响应面",
+  "gloss": "收率/杂质对 (x,y) 的二次响应面拟合;预测不是测量。",
+  "kind": "category"
 }

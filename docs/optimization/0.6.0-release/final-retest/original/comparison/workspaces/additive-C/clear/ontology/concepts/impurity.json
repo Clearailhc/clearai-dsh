@@ -1,0 +1,7 @@
+{
+  "gloss": "约束度量,实验返回的 impurity 字段,以分数表示,本次限值 0.115",
+  "id": "impurity",
+  "kind": "measure",
+  "label": "杂质",
+  "unit": "fraction"
+}

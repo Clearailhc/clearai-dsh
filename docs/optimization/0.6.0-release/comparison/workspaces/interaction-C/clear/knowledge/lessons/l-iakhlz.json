@@ -1,0 +1,27 @@
+{
+  "id": "l-iakhlz",
+  "goal": "g-mw6mkhds4x2e",
+  "text": "quick(sd 0.45,成本 1)只用于定位,最终数值用 full(sd 0.18,成本 3);配对残差偏移 +0.09±0.17,未发现系统偏置。",
+  "kind": "shortcut",
+  "about": [
+    "yield",
+    "var_x",
+    "var_y",
+    "impurity"
+  ],
+  "evidence": "lab/analysis-final.json 的 paired_quick_full",
+  "boundary": "同点配对仅 2 个独立位置,不能据此断言任意点无偏",
+  "scope_spec": {
+    "conditions": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    },
+    "ranges": {}
+  },
+  "basis": "lab/analysis-final.json:46-74 配对 4 行 2 位置,|Δ|≤0.418<0.9;复算模式残差均值差 +0.09±0.17(quick sd 0.465/full 0.182);full-only 重拟合驻点移 0.009;支持 quick 定位/full 报数。",
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "status": "active",
+  "at": 1794105626777
+}

@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "allTasksCompleted": false,
+  "allTasksCompleted": true,
   "rows": [
     {
       "id": "direct-A",
@@ -11,7 +11,8 @@
       "evidenceFiles": [],
       "independentAudits": 0,
       "invalidOrFailedAudits": 0,
-      "realExperimentBudget": 0
+      "realExperimentBudget": 0,
+      "finalFullMeasurements": 0
     },
     {
       "id": "direct-C",
@@ -22,140 +23,162 @@
       "evidenceFiles": [],
       "independentAudits": 0,
       "invalidOrFailedAudits": 0,
-      "realExperimentBudget": 0
+      "realExperimentBudget": 0,
+      "finalFullMeasurements": 0
     },
     {
       "id": "additive-C",
-      "reason": "token_limit",
-      "completed": false,
-      "score": 0,
+      "reason": "completed",
+      "completed": true,
+      "score": 99.96376597747538,
       "partialArtifactQuality": {
-        "score": 99.98313120814362,
+        "score": 99.96376597747538,
         "feasible": true,
-        "value": 95.33776953918525,
-        "impurity": 0.08534192,
-        "start": 89.66260914255449,
-        "optimum": 95.33872703169749
+        "value": 95.30298659752366,
+        "impurity": 0.08499999999999999,
+        "start": 89.71780666656336,
+        "optimum": 95.3050110664244
       },
       "evidenceFiles": [
         {
-          "path": "lab/full-optimum-1.json",
-          "bytes": 289
+          "path": "initial.json",
+          "bytes": 2867
         },
         {
-          "path": "lab/full-optimum-2.json",
-          "bytes": 290
+          "path": "lab/f-050-045.json",
+          "bytes": 287
         },
         {
-          "path": "lab/full-center-1.json",
-          "bytes": 285
+          "path": "lab/f-050-045-rep.json",
+          "bytes": 287
         },
         {
-          "path": "lab/calibrate-1.json",
+          "path": "lab/f-055-045.json",
+          "bytes": 287
+        },
+        {
+          "path": "lab/f-050-040.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/f-050-060.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/calib-final.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/input-final.json",
+          "bytes": 4644
+        },
+        {
+          "path": "lab/model-final.json",
+          "bytes": 2316
+        },
+        {
+          "path": "report.md",
+          "bytes": 5088
+        },
+        {
+          "path": "lab/calib-1.json",
           "bytes": 136
+        },
+        {
+          "path": "lab/calib-2.json",
+          "bytes": 137
         }
       ],
-      "independentAudits": 4,
+      "independentAudits": 2,
       "invalidOrFailedAudits": 0,
-      "realExperimentBudget": 12
+      "realExperimentBudget": 30,
+      "finalFullMeasurements": 2
     },
     {
       "id": "additive-A",
       "reason": "completed",
       "completed": true,
-      "score": 99.98273335785946,
+      "score": 99.96376597747538,
       "partialArtifactQuality": {
-        "score": 99.98273335785946,
+        "score": 99.96376597747538,
         "feasible": true,
-        "value": 95.3377469567341,
-        "impurity": 0.08539192,
-        "start": 89.66260914255449,
-        "optimum": 95.33872703169749
+        "value": 95.30298659752366,
+        "impurity": 0.08499999999999999,
+        "start": 89.71780666656336,
+        "optimum": 95.3050110664244
       },
       "evidenceFiles": [
         {
           "path": "initial.json",
-          "bytes": 2864
+          "bytes": 2867
         },
         {
-          "path": "report.md",
-          "bytes": 6454
+          "path": "lab/full-01.json",
+          "bytes": 285
         },
         {
-          "path": "lab/evidence.json",
-          "bytes": 15939
+          "path": "lab/full-02.json",
+          "bytes": 288
         },
         {
-          "path": "lab/input-final.json",
-          "bytes": 5736
+          "path": "lab/full-03.json",
+          "bytes": 288
         },
         {
-          "path": "lab/model-initial.json",
-          "bytes": 3012
+          "path": "lab/full-04.json",
+          "bytes": 286
         },
         {
-          "path": "lab/model-updated-1.json",
-          "bytes": 3191
+          "path": "lab/full-05.json",
+          "bytes": 286
         },
         {
-          "path": "lab/model-updated-2.json",
-          "bytes": 3772
+          "path": "lab/full-06.json",
+          "bytes": 287
         },
         {
-          "path": "lab/model-updated-3.json",
-          "bytes": 4074
+          "path": "lab/full-07.json",
+          "bytes": 287
         },
         {
-          "path": "lab/model-final.json",
-          "bytes": 2846
+          "path": "lab/quick-01.json",
+          "bytes": 302
         },
         {
-          "path": "lab/cal-0.5-0.5.json",
+          "path": "lab/quick-edge-x0.json",
+          "bytes": 299
+        },
+        {
+          "path": "lab/quick-edge-x1.json",
+          "bytes": 299
+        },
+        {
+          "path": "lab/quick-edge-y0.json",
+          "bytes": 298
+        },
+        {
+          "path": "lab/quick-edge-y1.json",
+          "bytes": 300
+        },
+        {
+          "path": "lab/cal-01.json",
           "bytes": 136
         },
         {
-          "path": "lab/cal-0.508-0.452.json",
+          "path": "lab/cal-02-final.json",
           "bytes": 137
         },
         {
-          "path": "lab/quick-0.5-0.5.json",
-          "bytes": 301
+          "path": "lab/model-full06.json",
+          "bytes": 3798
         },
         {
-          "path": "lab/quick-0.5-0.45.json",
-          "bytes": 301
+          "path": "lab/model-final.json",
+          "bytes": 2543
         },
         {
-          "path": "lab/full-0.508-0.452.json",
-          "bytes": 289
-        },
-        {
-          "path": "lab/full-0.408-0.452.json",
-          "bytes": 290
-        },
-        {
-          "path": "lab/full-0.608-0.452.json",
-          "bytes": 290
-        },
-        {
-          "path": "lab/full-0.508-0.352.json",
-          "bytes": 290
-        },
-        {
-          "path": "lab/full-0.508-0.552.json",
-          "bytes": 290
-        },
-        {
-          "path": "lab/full-0.508-0.452-r2.json",
-          "bytes": 289
-        },
-        {
-          "path": "lab/full-0.508-0.452-r3.json",
-          "bytes": 290
-        },
-        {
-          "path": "lab/full-0.508-0.453-final.json",
-          "bytes": 290
+          "path": "lab/final-summary.json",
+          "bytes": 4103
         },
         {
           "path": "method/SKILL.md",
@@ -164,118 +187,168 @@
         {
           "path": "method/response_surface.py",
           "bytes": 8022
+        },
+        {
+          "path": "report.md",
+          "bytes": 7148
         }
       ],
       "independentAudits": 0,
       "invalidOrFailedAudits": 0,
-      "realExperimentBudget": 30
+      "realExperimentBudget": 30,
+      "finalFullMeasurements": 2
     },
     {
       "id": "interaction-A",
       "reason": "completed",
       "completed": true,
-      "score": 99.99937751575702,
+      "score": 99.99760268518257,
       "partialArtifactQuality": {
-        "score": 99.99937751575702,
+        "score": 99.99760268518257,
         "feasible": true,
-        "value": 95.28216603354362,
-        "impurity": 0.090662,
-        "start": 91.76126231692287,
-        "optimum": 95.2821879507509
+        "value": 95.14588816550538,
+        "impurity": 0.08698243,
+        "start": 92.26802427912796,
+        "optimum": 95.14595715861674
       },
       "evidenceFiles": [
         {
           "path": "initial.json",
-          "bytes": 2867
+          "bytes": 2868
         },
         {
-          "path": "lab/quick-01.json",
-          "bytes": 301
-        },
-        {
-          "path": "lab/cal-01.json",
+          "path": "lab/cal-0.json",
           "bytes": 136
         },
         {
-          "path": "lab/full-01-x005-y005.json",
-          "bytes": 287
+          "path": "lab/cal-1.json",
+          "bytes": 136
         },
         {
-          "path": "lab/full-02-x095-y005.json",
-          "bytes": 287
+          "path": "lab/quick-0.5-0.5.json",
+          "bytes": 301
         },
         {
-          "path": "lab/full-03-x005-y095.json",
-          "bytes": 287
+          "path": "lab/full-0.3-0.3.json",
+          "bytes": 285
         },
         {
-          "path": "lab/full-04-x095-y095.json",
+          "path": "lab/full-0.7-0.3.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/full-0.3-0.7.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/full-0.7-0.7.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/full-opt-1.json",
+          "bytes": 289
+        },
+        {
+          "path": "lab/full-center-rep.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/full-opt-1-rep.json",
           "bytes": 288
         },
         {
-          "path": "lab/full-05-x005-y050.json",
-          "bytes": 287
-        },
-        {
-          "path": "lab/full-06-x050-y005.json",
-          "bytes": 287
-        },
-        {
-          "path": "lab/full-07-x050-y095.json",
-          "bytes": 287
-        },
-        {
-          "path": "lab/full-08-x0520-y0551-provisional.json",
+          "path": "lab/full-final.json",
           "bytes": 288
         },
         {
-          "path": "lab/full-09-x0520-y0551-final.json",
-          "bytes": 287
+          "path": "lab/model-final-all.json",
+          "bytes": 2769
         },
         {
-          "path": "lab/model-initial.json",
-          "bytes": 3042
+          "path": "lab/final-analysis.json",
+          "bytes": 5684
         },
         {
-          "path": "lab/model-after-7-full.json",
-          "bytes": 4078
+          "path": "lab/final_analysis.py",
+          "bytes": 8452
         },
         {
-          "path": "lab/model-after-8-full.json",
-          "bytes": 4270
+          "path": "lab/report.md",
+          "bytes": 6806
         },
         {
-          "path": "lab/model-final.json",
-          "bytes": 3026
-        },
-        {
-          "path": "lab/input-final.json",
-          "bytes": 6075
-        },
-        {
-          "path": "report.md",
-          "bytes": 4886
+          "path": "lab/evidence-manifest.json",
+          "bytes": 2282
         }
       ],
       "independentAudits": 0,
       "invalidOrFailedAudits": 0,
-      "realExperimentBudget": 30
+      "realExperimentBudget": 29,
+      "finalFullMeasurements": 2
     },
     {
       "id": "interaction-C",
-      "reason": "token_limit",
-      "completed": false,
-      "score": 0,
+      "reason": "completed",
+      "completed": true,
+      "score": 99.95210143807176,
       "partialArtifactQuality": {
-        "score": 0,
-        "feasible": false,
-        "start": 91.76126231692287,
-        "optimum": 95.2821879507509
+        "score": 99.95210143807176,
+        "feasible": true,
+        "value": 95.1445786701542,
+        "impurity": 0.0875,
+        "start": 92.26802427912796,
+        "optimum": 95.14595715861674
       },
-      "evidenceFiles": [],
-      "independentAudits": 1,
+      "evidenceFiles": [
+        {
+          "path": "lab/f_final_0.5_0.5.json",
+          "bytes": 285
+        },
+        {
+          "path": "lab/f_0.5_0.5_rep.json",
+          "bytes": 286
+        },
+        {
+          "path": "lab/f_0.49_0.49.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/f_0.48_0.48.json",
+          "bytes": 288
+        },
+        {
+          "path": "lab/f_0.45_0.45.json",
+          "bytes": 288
+        },
+        {
+          "path": "initial.json",
+          "bytes": 2868
+        },
+        {
+          "path": "lab/cal_1.json",
+          "bytes": 136
+        },
+        {
+          "path": "lab/cal_2.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/cal_3.json",
+          "bytes": 137
+        },
+        {
+          "path": "lab/model-final.json",
+          "bytes": 1663
+        },
+        {
+          "path": "lab/analysis-final.json",
+          "bytes": 3639
+        }
+      ],
+      "independentAudits": 2,
       "invalidOrFailedAudits": 0,
-      "realExperimentBudget": 23
+      "realExperimentBudget": 29,
+      "finalFullMeasurements": 2
     }
   ],
   "method": "Scores recomputed from hidden truth after workers exited; real mount, isolation probes, role accounting and submitted evidence checked. No model judge.",

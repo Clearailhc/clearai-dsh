@@ -1,0 +1,11 @@
+{
+  "id": "var_x",
+  "label": "工艺变量 x",
+  "gloss": "归一化工艺变量 x,范围 [0,1];口径见 initial.json 的 bounds。",
+  "kind": "measure",
+  "unit": "1",
+  "aliases": [
+    "x"
+  ],
+  "basis": "initial.json"
+}

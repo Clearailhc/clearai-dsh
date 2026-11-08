@@ -1,0 +1,69 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "initial.json": {
+      "sha256": "1c29f31dff95dcb33ae404a91a15c1aee46fb6b23eec0e8f2da5c1014d392222",
+      "bytes": 2867
+    },
+    "lab/cal-0.json": {
+      "sha256": "f4d4479cb4e7824cb6ddd84e1996c9214cf0f80202a177409b35e6bf5a2ffb24",
+      "bytes": 136
+    },
+    "lab/cal-1.json": {
+      "sha256": "5595594a4d2b0d145bc359a1b1e1fbcd0de53a2d04ed0a739e9788be111ebe43",
+      "bytes": 136
+    },
+    "lab/quick-0.5-0.5.json": {
+      "sha256": "b7a6ca548da9bbd2c3c28d45d2c180e9294a2cfa45cea70e93b21efc592b4e31",
+      "bytes": 301
+    },
+    "lab/full-0.3-0.3.json": {
+      "sha256": "23ccd45dd5d31f3088cbe71753fd87789d1000d7c4512c089c0ebef5a9d8e65c",
+      "bytes": 285
+    },
+    "lab/full-0.7-0.3.json": {
+      "sha256": "094b8fa3da9f3e0ca1206bfc0571efae69dd026792e905a895fba6b3beb20136",
+      "bytes": 285
+    },
+    "lab/full-0.3-0.7.json": {
+      "sha256": "2a62903a9448955f2bc6fe13a03a2f57671733f1c8a5b8f1a84a8d11915e820a",
+      "bytes": 286
+    },
+    "lab/full-0.7-0.7.json": {
+      "sha256": "fa9fb56c9fedf9947d9fb357562597a7d0b74132ba7cb2e133b5e5db11a9b80d",
+      "bytes": 286
+    },
+    "lab/full-opt-1.json": {
+      "sha256": "09df38e792886516fc85bad78b691ef633c2366671191fdf95d7a84d5f6015f3",
+      "bytes": 289
+    },
+    "lab/full-center-rep.json": {
+      "sha256": "e29534f3d7cf0c424e5b6837e7692452d2868840824cfee701bc8de5e07fafb3",
+      "bytes": 286
+    },
+    "lab/full-opt-1-rep.json": {
+      "sha256": "a2101eb91898f5f1927aafe60478acd391498cca35851bfbe4aa827adda9d2e6",
+      "bytes": 288
+    },
+    "lab/full-final.json": {
+      "sha256": "97b9b33f38ed2b89f12bc2015c9b027439904445c539aea32ca8401d8b522ea8",
+      "bytes": 288
+    },
+    "lab/model-final-all.json": {
+      "sha256": "96576e0b3d374b1b0127ef730d49133ac7683142cce6adfb6c292da722ccd9a5",
+      "bytes": 2777
+    },
+    "lab/final-analysis.json": {
+      "sha256": "34187243b8852cf87cc1f970d3b4f98b071ab17604d7316f42eb5bf5ce8242bf",
+      "bytes": 5684
+    },
+    "lab/final_analysis.py": {
+      "sha256": "c5a29c7dbafdaab66c4836e13612c0471ea2edbc55eb40199a0ac8ed9ba111c3",
+      "bytes": 8452
+    },
+    "lab/report.md": {
+      "sha256": "367064d8e3f9a0f2217ed4967def10cd8ce2041041541de7fd201bde17e0b720",
+      "bytes": 6806
+    }
+  }
+}

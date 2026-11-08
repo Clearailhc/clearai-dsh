@@ -3,7 +3,7 @@
   "concept": {
     "where": "clear/ontology/concepts/**/<id>.json",
     "required": {
-      "id": "slug:小写字母开头,字母/数字/下划线,≤40,等于文件名",
+      "id": "slug:小写字母开头,字母/数字/下划线,2–40 字符,等于文件名",
       "label": "给人看的名字",
       "gloss": "一句话释义:它指什么;度量(良率、收率……)写明口径,也就是怎么算"
     },

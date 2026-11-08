@@ -1,0 +1,17 @@
+{
+  "x": 0.5,
+  "y": 0.5,
+  "evidence": [
+    "lab/f_final_0.5_0.5.json",
+    "lab/f_0.5_0.5_rep.json",
+    "lab/f_0.49_0.49.json",
+    "lab/f_0.48_0.48.json",
+    "lab/f_0.45_0.45.json",
+    "initial.json",
+    "lab/cal_1.json",
+    "lab/cal_2.json",
+    "lab/cal_3.json",
+    "lab/model-final.json",
+    "lab/analysis-final.json"
+  ]
+}

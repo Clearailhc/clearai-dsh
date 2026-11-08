@@ -1,0 +1,29 @@
+{
+  "id": "l-fetnqq",
+  "goal": "g-mw6ll1t7lqbr",
+  "text": "交互项 LOO 不优于加性面时不要强行加交互；加性二次面已足够把最优点定位到 0.01。",
+  "kind": "shortcut",
+  "about": [
+    "response_surface",
+    "yield",
+    "impurity",
+    "x_factor",
+    "y_factor",
+    "original_instrument"
+  ],
+  "evidence": "lab/model-final.json：加性 0.16966 对交互 0.19141。",
+  "boundary": "若数据覆盖更宽或出现明显非对称，需重新比较结构。",
+  "scope_spec": {
+    "conditions": {
+      "bounds": "x,y in [0,1]",
+      "impurity_limit": "0.115 fraction",
+      "instrument": "original",
+      "budget": "30 cost units"
+    },
+    "ranges": {}
+  },
+  "basis": "复跑 14 条 full：加性 CV 0.169657<交互 0.191411，交互系数 −0.015045，最优点位移<0.0001，确证加性二次面足够、无需强加交互。",
+  "session": "session-native-43b8c437-ff1b-4991-99dd-203f4529f1bb",
+  "status": "active",
+  "at": 1794068477184
+}

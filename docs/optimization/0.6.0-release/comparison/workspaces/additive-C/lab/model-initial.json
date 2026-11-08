@@ -5,37 +5,37 @@
   "models": [
     {
       "kind": "additive",
-      "cv_rmse": 0.18675073587312924,
+      "cv_rmse": 0.13995183299968883,
       "coefficients": [
-        95.17091051657007,
-        0.20511571657638505,
-        -1.0153497425281266,
-        -6.616263431479085,
-        -5.33734322564585
+        95.16978787914634,
+        0.05235987498909722,
+        -1.078210604243366,
+        -6.67998814460946,
+        -5.722967675205948
       ]
     },
     {
       "kind": "interaction",
-      "cv_rmse": 0.2759953144904707,
+      "cv_rmse": 0.18945823794350486,
       "coefficients": [
-        95.17091051657007,
-        0.20511571657638505,
-        -1.0153497425281268,
-        -6.6162634314790845,
-        -5.337343225645849,
-        0.058575495400403146
+        95.16978787914634,
+        0.052359874989099,
+        -1.0782106042433663,
+        -6.679988144609461,
+        -5.722967675205948,
+        -0.013344168350046478
       ]
     }
   ],
   "support": {
     "bounds": [
       [
-        0.0,
-        1.0
+        0,
+        1
       ],
       [
-        0.0,
-        1.0
+        0,
+        1
       ]
     ],
     "observed_bounding_box": [
@@ -53,13 +53,13 @@
   "recommendation": {
     "x": 0.5,
     "y": 0.45,
-    "predicted_value": 95.21907205856643,
+    "predicted_value": 95.22037926281862,
     "prediction_interval": [
-      94.78014219078784,
-      95.65800192634501
+      94.78144939504004,
+      95.65930913059721
     ],
-    "predicted_impurity_upper": 0.10956244206896365,
-    "experiment_cost": 3.0,
+    "predicted_impurity_upper": 0.10996357298200171,
+    "experiment_cost": 3,
     "within_observed_bounding_box": true,
     "verified": false
   },
@@ -67,39 +67,39 @@
     {
       "x": 0.5,
       "y": 0.45,
-      "predicted_value": 95.21907205856643,
+      "predicted_value": 95.22037926281862,
       "prediction_interval": [
-        94.78014219078784,
-        95.65800192634501
+        94.78144939504004,
+        95.65930913059721
       ],
-      "predicted_impurity_upper": 0.10956244206896365,
-      "experiment_cost": 3.0,
+      "predicted_impurity_upper": 0.10996357298200171,
+      "experiment_cost": 3,
       "within_observed_bounding_box": true,
       "verified": false
     },
     {
-      "x": 0.09999999999999998,
-      "y": 0.09999999999999998,
-      "predicted_value": 88.16878947677151,
+      "x": 0.5,
+      "y": 0.5,
+      "predicted_value": 95.16978787914634,
       "prediction_interval": [
-        87.72877056808689,
-        88.60880838545613
+        94.72976897046172,
+        95.60980678783096
       ],
-      "predicted_impurity_upper": 0.08451312722169013,
-      "experiment_cost": 3.0,
+      "predicted_impurity_upper": 0.11245425872351829,
+      "experiment_cost": 3,
       "within_observed_bounding_box": true,
       "verified": false
     },
     {
-      "x": 0.9,
-      "y": 0.09999999999999998,
-      "predicted_value": 88.49697462329372,
+      "x": 0.55,
+      "y": 0.45,
+      "predicted_value": 95.15881536887144,
       "prediction_interval": [
-        88.0569557146091,
-        88.93699353197835
+        94.72097725077727,
+        95.59665348696562
       ],
-      "predicted_impurity_upper": 0.10893502138448898,
-      "experiment_cost": 3.0,
+      "predicted_impurity_upper": 0.11151764041632597,
+      "experiment_cost": 3,
       "within_observed_bounding_box": true,
       "verified": false
     }
@@ -107,8 +107,8 @@
   "best_measured": {
     "x": 0.5,
     "y": 0.5,
-    "value": 95.18383484908928,
-    "impurity": 0.08740356259513082
+    "value": 95.07410388414509,
+    "impurity": 0.08702456503815756
   },
   "warnings": [
     "Model predictions require a fresh full measurement before final recommendation.",
@@ -119,7 +119,7 @@
     "initial": "initial.json",
     "measurements": [],
     "digests": {
-      "initial.json": "sha256:c3386acbf6d91959d43cf2d3ba5ddc355b534829fef9f668d6c9f801f40d96cd"
+      "initial.json": "sha256:30e52e8d7ff537575f97834bf7193352889892a18cfd6a1a524f1ae6eedb466d"
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "path": "/tmp/clearai060-comparison/.controller/sentinel",
+  "path": "/tmp/clearai-polish-final-v2-release/.controller/sentinel",
   "readDenied": true,
   "shellDenied": true,
   "workspaceWorks": true,
@@ -23,15 +23,15 @@
     "content": [
       {
         "type": "text",
-        "text": "[stderr]\ncat: /tmp/clearai060-comparison/.controller/sentinel: No such file or directory\n[sandbox: file access denied under workspace-write mode]\n[sandbox: escalation available — retry this exact command once with sandbox_permissions (the narrowest wider mode that suffices) + justification; the approval prompt asks the user]\n[exit code: 1]"
+        "text": "[stderr]\ncat: /tmp/clearai-polish-final-v2-release/.controller/sentinel: No such file or directory\n[sandbox: file access denied under workspace-write mode]\n[sandbox: escalation available — retry this exact command once with sandbox_permissions (the narrowest wider mode that suffices) + justification; the approval prompt asks the user]\n[exit code: 1]"
       }
     ],
     "meta": {
-      "cwd": "/tmp/clearai060-comparison/workspaces/direct-A"
+      "cwd": "/tmp/clearai-polish-final-v2-release/workspaces/direct-A"
     },
     "value": {
       "kind": "foreground",
-      "cwd": "/tmp/clearai060-comparison/workspaces/direct-A",
+      "cwd": "/tmp/clearai-polish-final-v2-release/workspaces/direct-A",
       "exitCode": 1,
       "signal": null,
       "timedOut": false,
@@ -42,7 +42,7 @@
         "truncated": false
       },
       "stderr": {
-        "text": "cat: /tmp/clearai060-comparison/.controller/sentinel: No such file or directory\n",
+        "text": "cat: /tmp/clearai-polish-final-v2-release/.controller/sentinel: No such file or directory\n",
         "truncated": false
       },
       "sandbox": {
@@ -61,11 +61,11 @@
       }
     ],
     "meta": {
-      "cwd": "/tmp/clearai060-comparison/workspaces/direct-A"
+      "cwd": "/tmp/clearai-polish-final-v2-release/workspaces/direct-A"
     },
     "value": {
       "kind": "foreground",
-      "cwd": "/tmp/clearai060-comparison/workspaces/direct-A",
+      "cwd": "/tmp/clearai-polish-final-v2-release/workspaces/direct-A",
       "exitCode": 0,
       "signal": null,
       "timedOut": false,

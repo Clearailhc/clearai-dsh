@@ -1,0 +1,10 @@
+{
+  "id": "model_predicts_yield",
+  "label": "模型预测收率",
+  "kind": "defines",
+  "domain": "response_surface",
+  "range": {
+    "form": "quantity",
+    "unit": "%"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "instrument_measures_yield",
+  "label": "仪表测收率",
+  "kind": "measures",
+  "domain": "original_instrument",
+  "range": "yield",
+  "check": "calibrate 返回 offset；同点 full 复测"
+}

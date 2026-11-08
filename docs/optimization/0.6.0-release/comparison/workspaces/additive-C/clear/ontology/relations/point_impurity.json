@@ -1,0 +1,10 @@
+{
+  "id": "point_impurity",
+  "label": "点杂质",
+  "kind": "defines",
+  "domain": "process_point",
+  "range": {
+    "form": "quantity",
+    "unit": "fraction"
+  }
+}

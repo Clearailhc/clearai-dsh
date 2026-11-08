@@ -1,0 +1,130 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "additive",
+  "models": [
+    {
+      "kind": "additive",
+      "cv_rmse": 0.12248287801666446,
+      "coefficients": [
+        95.14394704070394,
+        0.05235987498909367,
+        -1.0710006828128673,
+        -6.654818496775897,
+        -5.700157681856778
+      ]
+    },
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.1720655714630365,
+      "coefficients": [
+        95.1439470407039,
+        0.052359874989095445,
+        -1.0710006828128678,
+        -6.654818496775906,
+        -5.700157681856798,
+        -0.013344168350036352
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": {
+    "x": 0.5,
+    "y": 0.45,
+    "predicted_value": 95.19404553216665,
+    "prediction_interval": [
+      94.79625819890997,
+      95.59183286542334
+    ],
+    "predicted_impurity_upper": 0.10727970437519965,
+    "experiment_cost": 3,
+    "within_observed_bounding_box": true,
+    "verified": false
+  },
+  "next_experiments": [
+    {
+      "x": 0.5,
+      "y": 0.45,
+      "predicted_value": 95.19404553216665,
+      "prediction_interval": [
+        94.79625819890997,
+        95.59183286542334
+      ],
+      "predicted_impurity_upper": 0.10727970437519965,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.5,
+      "y": 0.5,
+      "predicted_value": 95.14394704070394,
+      "prediction_interval": [
+        94.74572245117645,
+        95.54217163023142
+      ],
+      "predicted_impurity_upper": 0.1097253103239873,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.55,
+      "y": 0.45,
+      "predicted_value": 95.1327333346978,
+      "prediction_interval": [
+        94.73530323994177,
+        95.53016342945384
+      ],
+      "predicted_impurity_upper": 0.1088785426790582,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    }
+  ],
+  "best_measured": {
+    "x": 0.5,
+    "y": 0.5,
+    "value": 95.07410388414509,
+    "impurity": 0.08702456503815756
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/f-050-040.json",
+      "lab/f-050-060.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:30e52e8d7ff537575f97834bf7193352889892a18cfd6a1a524f1ae6eedb466d",
+      "lab/f-050-040.json": "sha256:491f0fb8eefc71c995fc2d0973b466aae0eb6b335b56a49b96f7a38a01f2da1b",
+      "lab/f-050-060.json": "sha256:d4e5bd558cb086c94c7681f0c27c965335be3008436bef98c9296944b33f6ed1"
+    }
+  }
+}

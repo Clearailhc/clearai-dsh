@@ -1,0 +1,8 @@
+{
+  "id": "yield_affected_by_y",
+  "label": "收率受 y 影响",
+  "kind": "affects",
+  "domain": "yield",
+  "range": "y_factor",
+  "shape": "peak"
+}

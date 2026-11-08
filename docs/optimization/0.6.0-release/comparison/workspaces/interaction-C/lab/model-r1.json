@@ -1,0 +1,140 @@
+{
+  "method_version": "0.5.2-rc.1",
+  "status": "ok",
+  "selected_model": "interaction",
+  "models": [
+    {
+      "kind": "interaction",
+      "cv_rmse": 0.6074190109326995,
+      "coefficients": [
+        95.21295370938265,
+        -0.2988070376400529,
+        -0.18366965678336758,
+        -6.5765385496489355,
+        -5.9546393499728065,
+        6.38422931540507
+      ]
+    },
+    {
+      "kind": "additive",
+      "cv_rmse": 4.21948111347685,
+      "coefficients": [
+        95.27682279325958,
+        -0.29880703764004934,
+        -0.18366965678336855,
+        -6.636817676630374,
+        -6.014918476954246
+      ]
+    }
+  ],
+  "support": {
+    "bounds": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "observed_bounding_box": [
+      [
+        0.1,
+        0.9
+      ],
+      [
+        0.1,
+        0.9
+      ]
+    ],
+    "limitation": "bounding box is not interpolation support or proof of causal validity"
+  },
+  "recommendation": {
+    "x": 0.5,
+    "y": 0.5,
+    "predicted_value": 95.21295370938265,
+    "prediction_interval": [
+      94.32177016713528,
+      96.10413725163001
+    ],
+    "predicted_impurity_upper": 0.10811831342586055,
+    "experiment_cost": 3,
+    "within_observed_bounding_box": true,
+    "verified": false
+  },
+  "next_experiments": [
+    {
+      "x": 0.09999999999999998,
+      "y": 0.09999999999999998,
+      "predicted_value": 91.66488797102271,
+      "prediction_interval": [
+        90.55650335614835,
+        92.77327258589706
+      ],
+      "predicted_impurity_upper": 0.08477863730267651,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.9,
+      "y": 0.09999999999999998,
+      "predicted_value": 83.01498318708015,
+      "prediction_interval": [
+        81.90403213245578,
+        84.12593424170451
+      ],
+      "predicted_impurity_upper": 0.10900955289780412,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    },
+    {
+      "x": 0.15000000000000002,
+      "y": 0.09999999999999998,
+      "predicted_value": 92.11074970447365,
+      "prediction_interval": [
+        91.04563257510729,
+        93.17586683384
+      ],
+      "predicted_impurity_upper": 0.08459834812428466,
+      "experiment_cost": 3,
+      "within_observed_bounding_box": true,
+      "verified": false
+    }
+  ],
+  "best_measured": {
+    "x": 0.5,
+    "y": 0.5,
+    "value": 95.44487499391182,
+    "impurity": 0.0878692502900575
+  },
+  "warnings": [
+    "Model predictions require a fresh full measurement before final recommendation.",
+    "Check source, units and calibration; poor fit can reflect omitted variables, noise or measurement problems."
+  ],
+  "method_digest": "sha256:95643d01eb466391171363350472dfc2e39a3dbee27512abb0da778860d9ed41",
+  "inputs": {
+    "initial": "initial.json",
+    "measurements": [
+      "lab/probe_quick_0505.json",
+      "lab/q_0.5_0.7.json",
+      "lab/q_0.7_0.5.json",
+      "lab/q_0.3_0.5.json",
+      "lab/q_0.5_0.3.json",
+      "lab/q_0.6_0.6.json",
+      "lab/q_0.4_0.4.json"
+    ],
+    "digests": {
+      "initial.json": "sha256:1c29f31dff95dcb33ae404a91a15c1aee46fb6b23eec0e8f2da5c1014d392222",
+      "lab/probe_quick_0505.json": "sha256:cac34406f15b85815f6a52d19619d9fbc46066d7f1c8b9dff6442cda07cfd68b",
+      "lab/q_0.5_0.7.json": "sha256:6817ab97c362eae6d08dce722bf3515c7028e3474188c9131b7e6f374137bb75",
+      "lab/q_0.7_0.5.json": "sha256:fc79d09797fad22629f7741c2e1e168ca557e16c7c7a2b40e14c303c19481118",
+      "lab/q_0.3_0.5.json": "sha256:93d900e89c4a635f87bca45c5c695231566ca3bd7db2ccb92744703704b93887",
+      "lab/q_0.5_0.3.json": "sha256:f94aab96e917772d921ca0875b3c86ae5a02142ed2be8214c0f81d937d07ca14",
+      "lab/q_0.6_0.6.json": "sha256:71a8500287bf40ddf862bdf1854e6d0bf73c828077766c9eac040522a2eb10bc",
+      "lab/q_0.4_0.4.json": "sha256:97cff609ddd4b8ba86db7759b73dcfb51f0bfd50b9890ccbb372e937a1a6fbdf"
+    }
+  }
+}

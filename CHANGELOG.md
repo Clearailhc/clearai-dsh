@@ -1,13 +1,18 @@
 # Changelog
 
-## 0.6.0 candidate — agent-native research
+## [0.6.0] — 2026-11-08
+
+**Agent-native research with bounded independent review.**
+
+- Complete all six final real-model paired tasks on official DSH 0.2.2-rc.1. Preserve failed rounds and same-session infrastructure recovery; no speed, cost or accuracy superiority claim. [Final acceptance](docs/optimization/0.6.0-release/README.md).
+- Verify a fresh official DSH installation, native contract, lifecycle and production browser compatibility without changing host code.
 
 - Preserve explicit same-goal anomaly identity across independent reviews, including author-registered findings; maintain requires independent impact evidence, while changed/unsupported dispositions reopen. Keep review history (projection v29).
 - Serialize unspecified accepted-lesson scope as null so a supported conclusion remains lossless JSON in DSH. Real same-session recovery completed after retaining the failed attempts.
 - Clarify raw-source versus effective graph views. The original MAT017 edge is valid in the raw view; a separate effective exporter includes the approved correction join, cutoff and both source citations. Preserve the original comparison and avoid claiming speed or accuracy superiority.
 
 
-- Add a preregistered complex supply-chain acceptance case against native DSH, preserving transport and structured-output failures, role-level usage, independent reproduction and official DSH recorded-session screenshots. The candidate is not published.
+- Add a preregistered complex supply-chain acceptance case against native DSH, preserving transport and structured-output failures, role-level usage, independent reproduction and official DSH recorded-session screenshots. The original failures remain available alongside the successful repair.
 - 增加供应链复杂案例的过程、产物与费用记录；完整导出图、平台内部结构和独立事实分别计量，保留首次失败及补充恢复，不据单个案例宣称普遍提速。
 
 - Conclude uses the same ontology grounding gate as ReviewClaims. Rejected final delivery retains independently bounded, fully covered structured claims and counterevidence while keeping the goal open; unavailable or changed-material reviews cannot promote facts.
@@ -32,11 +37,11 @@
 - Freeze claim IDs in native review schemas and enforce exact counts at settlement and validate against the dispatched request even when the host projection lags. Preserve step-review receipts under the existing material/trust checks.
 - 整包拒绝不丢独立局部成果；异常修复不自动晋升，待沉淀主张并入已有结案评估。范围不足和新证据不足不能被旧支持覆盖。
 - Adapt array-count constraints to DSH's supported output-schema subset; retain exact coverage enforcement in the kernel and check every test dispatch with the installed official schema validator.
-- Expanded-budget complex acceptance remains blocked: native completed 3/3 stages; ClearAI completed 2/3. Repeated audit-specific anomaly IDs prevented closure, and one exported relation retained the old material lot after correction. Preserve all failures, three unknown-usage reservations and the stopped session; do not publish this candidate.
+- Preserve the original expanded-budget complex failure (native 3/3, ClearAI 2/3), then verify the anomaly-identity and JSON serialization repairs with real completion. Distinguish raw-source edges from corrected effective views; neither implies full source-graph certification.
 
 All notable changes to this project are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Initial 0.6.0 engineering pass — 2026-11-06 (unreleased)
+### Initial engineering pass — 2026-11-06
 
 Small fixes on 0.5.9; the research workflow and host integration remain unchanged.
 

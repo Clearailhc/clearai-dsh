@@ -1,0 +1,218 @@
+{
+  "id": "f-82xjwr",
+  "goal": "g-mw6mkhds4x2e",
+  "hypothesis": "h-exjsfx",
+  "text": "收率在 (x,y)≈(0.49,0.49) 附近取最大,交互二次面峰值预测约 95.3%,实测最优点应落在 x∈[0.4,0.6]、y∈[0.4,0.6]。",
+  "about": [
+    "var_x",
+    "var_y",
+    "yield",
+    "surface_fit",
+    "response_surface",
+    "test_states",
+    "impurity"
+  ],
+  "scope": "条件 变量范围=x,y∈[0,1]、杂质上限=0.115、预算=30 单位、仪表=original",
+  "scope_spec": {
+    "conditions": {
+      "变量范围": "x,y∈[0,1]",
+      "杂质上限": "0.115",
+      "预算": "30 单位",
+      "仪表": "original"
+    },
+    "ranges": {}
+  },
+  "refute_when": "在 x∈[0.4,0.6]、y∈[0.4,0.6] 之外找到实测收率高于中心区域最优点且杂质≤0.115的点(差值超过噪声)。",
+  "level": "L3",
+  "evidence": [
+    "e-mw77uzbdft7f"
+  ],
+  "evidence_records": [
+    {
+      "id": "e-mw77uzbdft7f",
+      "step": "review:a71ff33a44356b54a7f8595b",
+      "plan": "review",
+      "hypothesis": "h-exjsfx",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "独立复算驻点 (0.479,0.481),se≈(0.010,0.011),峰值 95.142%;实测 full 最高 95.445@(0.5,0.5),前四名实测点均在框内;框外最高 94.883(0.3,0.5,quick,杂质 0.082),未高于中心,推翻条件未触发。'95.3%' 为初版 9 点模型 (0.489,0.492;95.285) 数值,终版 95.142;两者均在约 95.3 的近似范围内。",
+      "refs": [
+        "initial.json",
+        "lab/analysis-final.json",
+        "lab/cal_1.json",
+        "lab/f_0.45_0.45.json",
+        "lab/f_0.48_0.48.json",
+        "lab/f_0.49_0.49.json",
+        "lab/f_0.5_0.5_rep.json",
+        "lab/model-final.json",
+        "lab/q_0.3_0.5.json",
+        "submission.json",
+        "lab/analyze_final.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analysis-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal_1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.45_0.45.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.48_0.48.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.49_0.49.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.5_0.5_rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q_0.3_0.5.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/24396206998f24a19948f0d4820c2f46beb514903d491246d4ffd3f76fb22554/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analyze_final.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true,
+      "at": 0
+    },
+    {
+      "t": "evidence/recorded",
+      "id": "e-mw77uzbdft7f",
+      "step": "review:a71ff33a44356b54a7f8595b",
+      "plan": "review",
+      "hypothesis": "h-exjsfx",
+      "verdict": "support",
+      "level": "L3",
+      "evaluator": "independent",
+      "basis": "独立复算驻点 (0.479,0.481),se≈(0.010,0.011),峰值 95.142%;实测 full 最高 95.445@(0.5,0.5),前四名实测点均在框内;框外最高 94.883(0.3,0.5,quick,杂质 0.082),未高于中心,推翻条件未触发。'95.3%' 为初版 9 点模型 (0.489,0.492;95.285) 数值,终版 95.142;两者均在约 95.3 的近似范围内。",
+      "refs": [
+        "initial.json",
+        "lab/analysis-final.json",
+        "lab/cal_1.json",
+        "lab/f_0.45_0.45.json",
+        "lab/f_0.48_0.48.json",
+        "lab/f_0.49_0.49.json",
+        "lab/f_0.5_0.5_rep.json",
+        "lab/model-final.json",
+        "lab/q_0.3_0.5.json",
+        "submission.json",
+        "lab/analyze_final.py"
+      ],
+      "origins": [
+        {
+          "kind": "artifact",
+          "path": "initial.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analysis-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/cal_1.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.45_0.45.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.48_0.48.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.49_0.49.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/f_0.5_0.5_rep.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/model-final.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/q_0.3_0.5.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "submission.json"
+        },
+        {
+          "kind": "audit-card",
+          "path": "clear/evidence/audits/24396206998f24a19948f0d4820c2f46beb514903d491246d4ffd3f76fb22554/aca8831c72b87534baa2e52fb21ad048a376cd7c80f53e4ac09f7dc26002862e.json"
+        },
+        {
+          "kind": "artifact",
+          "path": "lab/analyze_final.py",
+          "from_basis": true
+        }
+      ],
+      "anchor": "auditor",
+      "basis_reviewable": true
+    }
+  ],
+  "assertions": [
+    {
+      "subject": {
+        "id": "surface_fit",
+        "type": "response_surface"
+      },
+      "predicate": "test_states",
+      "object": {
+        "kind": "statement",
+        "value": "二次面驻点 (x,y)≈(0.479,0.481),预测收率 95.142%;中心 (0.5,0.5) 预测 95.133%;实测 full 最高 (0.5,0.5)=95.445。"
+      }
+    }
+  ],
+  "definitions": {
+    "test_states": "fnv:1aa5340d",
+    "response_surface": "fnv:e8497e65",
+    "impurity": "fnv:1f61c99f",
+    "var_x": "fnv:905200ac",
+    "var_y": "fnv:d33aa245",
+    "yield": "fnv:40e9f228"
+  },
+  "session": "session-native-7ab972cb-0de8-47ad-8643-ecb14ea9cfa6",
+  "status": "established",
+  "review": null,
+  "at": 1794105110877,
+  "history": [
+    {
+      "event": "promoted",
+      "at": 1794105110877,
+      "level": "L3"
+    }
+  ]
+}

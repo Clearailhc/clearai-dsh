@@ -1,6 +1,6 @@
 {
-  "gloss": "以 x、y 的二次多项式拟合收率或杂质;加性模型不含 x*y 交互项",
   "id": "response_surface",
-  "kind": "phenomenon",
-  "label": "响应曲面"
+  "label": "响应面",
+  "gloss": "用二次多项式近似 yield/impurity 对 x,y 的依赖；预测不是测量",
+  "kind": "category"
 }

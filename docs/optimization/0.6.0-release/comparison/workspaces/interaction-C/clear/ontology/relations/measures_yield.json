@@ -1,0 +1,8 @@
+{
+  "id": "measures_yield",
+  "label": "测量收率",
+  "kind": "measures",
+  "range": "yield",
+  "check": "同点 full 重复;见 lab/f_*.json",
+  "gloss": "仪器测量收率。"
+}

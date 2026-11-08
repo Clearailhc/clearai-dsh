@@ -5,13 +5,13 @@
   </picture>
 </p>
 
-### 0.6 candidate: on-demand exploration
+### 0.6: on-demand exploration
 
 Explore with ordinary tools and native workers; review the claims that matter. `ReviewClaims` and `Conclude` share the same ontology grounding gate. Independent checks retain evidence, scope and counterevidence; rejected delivery can still preserve independently supported claims. [Workflow and limits](docs/optimization/0.6.0-agent-native/README.md).
 
-**Release candidate:** 0.6.0 is not published yet. The registry commands below apply after release. To inspect this candidate now, run `npm run release` from this checkout and install the resulting `dist/clearai-dsh-0.6.0.tgz` with DSH’s plugin manager. This builds and checks a local package; it does not publish it.
 
-**Original complex-case comparison, before remediation.** In the same three-stage supply-chain task, native DSH completed 3/3 stages in 20.30 cumulative minutes; ClearAI completed 2/3 in 109.91 minutes. Known processed tokens were 11.36M vs 78.64M (lower bounds, mostly cache reads). Both calculated the current exposure correctly, but ClearAI repeated final review for the same anomaly and left one stale graph edge. It retained 15 concepts, 63 entity records and 49 historical assertions; this is not full source-graph certification. [Case, screenshots and video](docs/cases/supply-chain-0.6.md) · [Results and costs](docs/optimization/0.6.0-agent-native/release-case-results.md) · [Release blockers](docs/optimization/0.6.0-agent-native/release-candidate.md).
+**0.6.0 acceptance:** All six final real-model paired tasks completed; fresh official DSH 0.2.2-rc.1 compatibility passed. The observations do not show a speed or token advantage. Independent review retains evidence, scope, counterevidence and reusable ontology. Failed rounds and same-session recovery remain recorded. [Final results and limitations](docs/optimization/0.6.0-release/README.md).
+**Original complex-case comparison, before remediation.** In the same three-stage supply-chain task, native DSH completed 3/3 stages in 20.30 cumulative minutes; ClearAI completed 2/3 in 109.91 minutes. Known processed tokens were 11.36M vs 78.64M (lower bounds, mostly cache reads). Both calculated the current exposure correctly, but ClearAI repeated final review for the same anomaly and left one stale graph edge. It retained 15 concepts, 63 entity records and 49 historical assertions; this is not full source-graph certification. [Case, screenshots and video](docs/cases/supply-chain-0.6.md) · [Results and costs](docs/optimization/0.6.0-agent-native/release-case-results.md) · [Original review](docs/optimization/0.6.0-agent-native/release-candidate.md).
 
 **Post-repair verification:** the targeted real task now closes successfully. Same-goal anomalies retain identity under independent review, and undeclared lesson scope serializes as null. Raw-source graphs remain distinct from corrected effective graphs. Failed attempts and unknown usage reserves are retained. [Repair evidence and limitations](docs/cases/supply-chain-remediation/README.md).
 

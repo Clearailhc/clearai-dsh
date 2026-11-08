@@ -1,0 +1,9 @@
+{
+  "id": "affects_yield",
+  "label": "影响收率",
+  "kind": "affects",
+  "shape": "peak",
+  "range": "yield",
+  "gloss": "工艺变量改变收率;本任务观测为单峰。",
+  "basis": "lab/model-final.json"
+}

@@ -39,9 +39,18 @@ function save(path, value, format = 'json') {
  mkdirSync(resolve(target, '..'), { recursive: true }); writeFileSync(target, text)
  files.push({ path, sha256: createHash('sha256').update(text).digest('hex') })
 }
-for (const name of ['manifest.json', 'comparison.json', 'verification.json', 'grading-truth.json', 'stop-after-current.json']) if (existsSync(join(source, name))) save(name, json(name))
+for (const name of ['manifest.json', 'comparison.json', 'grading-truth.json', 'stop-after-current.json']) if (existsSync(join(source, name))) save(name, json(name))
 for (const row of comparison.results.filter(r => r.reason !== 'not_run')) {
  const run = `runs/${row.id}`
+ if (row.recovery) {
+  const result=json(`${run}/launcher-result.json`)
+  const main=result.logs.find(log=>log.session===result.session)
+  assert.ok(main)
+  const raw=readFileSync(join(source,run,main.path))
+  const records=raw.toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
+  const restoredPrompt=records.some(e=>e.type==='system/message'&&/ClearAI.*boundary of fact|ClearAI.*事实边界/.test(JSON.stringify(e.data)))
+  save(`${run}/mount-evidence.json`, {schema:'clearai.public-mount-evidence.v1',session:result.session,sourcePath:main.path,sourceSha256:createHash('sha256').update(raw).digest('hex'),restoredPrompt,method:'Derived from the original native session system/message; private prompt content omitted.'})
+ }
  for (const name of ['launcher-result.json', 'isolation-probe.json', 'spec.json', 'carrier-started.json', 'session-started.json']) if (existsSync(join(source, run, name))) save(`${run}/${name}`, json(`${run}/${name}`))
  for (const name of readdirSync(join(source, run)).filter(name => name.endsWith('.jsonl'))) {
   const records = readFileSync(join(source, run, name), 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
@@ -63,5 +72,11 @@ for (const row of comparison.results.filter(r => r.reason !== 'not_run')) {
  }
  walk(snapshot)
 }
+if (polish) for (const row of verification.rows) for (const evidence of row.evidenceFiles) {
+ const evidencePath=resolve(destination,'workspaces',row.id,evidence.path)
+ assert.ok(evidencePath.startsWith(resolve(destination,'workspaces',row.id)+'/'))
+ evidence.bytes=readFileSync(evidencePath).length
+}
+save('verification.json',verification)
 save('archive.json', { schema: 'clearai.public-comparison-archive.v1', complete: true, acceptancePassed, policy: 'Original sessions remain private. Public archives retain measured usage, tool calls/results, task lifecycle and source artifacts. Assistant reasoning and duplicate stream payloads are omitted; credentials are redacted. Sanitized files have separate hashes and do not claim byte identity with originals.', files })
 console.log(JSON.stringify({ destination, files: files.length, acceptancePassed }))

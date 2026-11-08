@@ -1,0 +1,10 @@
+{
+  "x": 0.508,
+  "y": 0.452,
+  "evidence": [
+    "lab/full-optimum-1.json",
+    "lab/full-optimum-2.json",
+    "lab/full-center-1.json",
+    "lab/calibrate-1.json"
+  ]
+}
