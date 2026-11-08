@@ -1,0 +1,88 @@
+{
+  "checkedDate": "2026-11-08",
+  "timezone": "Asia/Shanghai",
+  "host": "@deepseek-ai/dsh",
+  "target": "npm @latest, fresh isolated install",
+  "resolvedVersion": "0.2.2-rc.1",
+  "previousVersion": "0.2.2-rc.1",
+  "newerOfficialReleaseFound": false,
+  "registryTags": {
+    "latest": "0.2.2-rc.1",
+    "alpha": "0.2.2-alpha.3",
+    "next": "0.2.2-rc.1"
+  },
+  "officialRepository": "https://github.com/deepseek-ai/deepseek-harness",
+  "dependencyComparison": {
+    "officialPackagesCompared": 331,
+    "versionDifferences": []
+  },
+  "runtime": {
+    "node": "v24.22.1",
+    "os": "Linux"
+  },
+  "checks": {
+    "nodeTests": {
+      "passed": 115,
+      "failed": 0
+    },
+    "kernel": 798,
+    "installedHost": 38,
+    "installedClient": 195,
+    "nativeContract": {
+      "passed": true,
+      "runtime": "v24.22.1",
+      "checks": [
+        "native evidence schema and session-isolated conditional reads",
+        "native review schema",
+        "native append",
+        "native cold replay",
+        "unchanged model surface",
+        "signed projection replay"
+      ]
+    },
+    "lifecycle": [
+      {
+        "check": "replay",
+        "version": "0.5.9",
+        "oldStateVersion": 23,
+        "newStateVersion": 29,
+        "ledgerDigest": "39ef2749c5b1228a67d5b650f50853713adcf99b1d14480dc8a4dadc7d26ffa1",
+        "passed": true
+      },
+      {
+        "check": "native-install-upgrade",
+        "version": "0.5.9",
+        "packageDigest": "15d604e40f729c3bc20772e315997ff267883eaaf3ea4b62d5e4022b2993d867",
+        "passed": true
+      },
+      {
+        "check": "native-install-upgrade",
+        "version": "0.6.0",
+        "packageDigest": "9ac6da6caf3bb88190da09443cb69e1ac2f5ffebf4e368dde438833b6fca02c0",
+        "passed": true
+      },
+      {
+        "check": "native-uninstall",
+        "passed": true
+      },
+      {
+        "check": "native-reinstall",
+        "passed": true
+      },
+      {
+        "check": "user-configuration-preserved",
+        "passed": true
+      }
+    ],
+    "productionBrowser": {
+      "passed": true,
+      "scope": "production bundle with deterministic fixture; keyboard, graph inspection, narrow layouts, dark theme"
+    }
+  },
+  "paidModelCalls": 0,
+  "limitations": [
+    "No newer version than 0.2.2-rc.1 was found in the queried official npm/GitHub channels.",
+    "This is same-version fresh-install verification, not evidence for an unidentified newer desktop build.",
+    "Fresh runtime tests here ran on Linux/Node24; no new Windows run is claimed."
+  ]
+}
